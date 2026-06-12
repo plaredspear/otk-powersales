@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../domain/entities/inspection_field_type.dart';
 import '../../../domain/entities/inspection_list_item.dart';
 import '../../../domain/entities/inspection_theme.dart';
+import 'legacy_segmented_toggle.dart';
 
 /// 현장 점검 등록 - 공통 필드 위젯
 ///
@@ -67,6 +68,12 @@ class InspectionCommonForm extends StatelessWidget {
         _buildThemeField(context),
         const Divider(height: 1),
 
+        // 현장점검 시작일/종료일 (선택된 테마 기간 표시, 읽기 전용 — 레거시 정합)
+        _buildThemePeriodField('현장점검 시작일', selectedTheme?.startDate),
+        const Divider(height: 1),
+        _buildThemePeriodField('현장점검 종료일', selectedTheme?.endDate),
+        const Divider(height: 1),
+
         // 분류 선택 (자사/경쟁사)
         _buildCategoryField(context),
         const Divider(height: 1),
@@ -121,6 +128,26 @@ class InspectionCommonForm extends StatelessWidget {
     );
   }
 
+  /// 현장점검 기간 표시 필드 (읽기 전용 — 선택된 테마의 시작/종료일)
+  Widget _buildThemePeriodField(String label, DateTime? date) {
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    return ListTile(
+      title: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 16,
+          color: Colors.black87,
+        ),
+      ),
+      subtitle: date != null
+          ? Text(
+              dateFormat.format(date),
+              style: const TextStyle(fontSize: 14, color: Colors.black),
+            )
+          : null,
+    );
+  }
+
   /// 분류 선택 필드 (자사/경쟁사 토글)
   Widget _buildCategoryField(BuildContext context) {
     return Padding(
@@ -148,32 +175,15 @@ class InspectionCommonForm extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          ToggleButtons(
-            isSelected: [
-              category == InspectionCategory.OWN,
-              category == InspectionCategory.COMPETITOR,
-            ],
-            onPressed: (index) {
+          LegacySegmentedToggle(
+            labels: const ['자사', '경쟁사'],
+            selectedIndex: category == InspectionCategory.OWN ? 0 : 1,
+            onChanged: (index) {
               final newCategory = index == 0
                   ? InspectionCategory.OWN
                   : InspectionCategory.COMPETITOR;
               onCategoryChanged(newCategory);
             },
-            borderRadius: BorderRadius.circular(8),
-            constraints: const BoxConstraints(
-              minWidth: 80,
-              minHeight: 36,
-            ),
-            children: const [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('자사'),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Text('경쟁사'),
-              ),
-            ],
           ),
         ],
       ),
@@ -219,11 +229,18 @@ class InspectionCommonForm extends StatelessWidget {
   Widget _buildDateField(BuildContext context) {
     final dateFormat = DateFormat('yyyy-MM-dd');
     return ListTile(
-      title: const Text(
-        '점검일',
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.black87,
+      title: RichText(
+        text: const TextSpan(
+          children: [
+            TextSpan(
+              text: '점검일',
+              style: TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+            TextSpan(
+              text: ' *',
+              style: TextStyle(fontSize: 16, color: Colors.red),
+            ),
+          ],
         ),
       ),
       subtitle: Text(

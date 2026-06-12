@@ -4,7 +4,8 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.request.InspectionRegisterRequest
@@ -47,7 +48,7 @@ class SiteActivityService(
     private val productRepository: com.otoki.powersales.product.repository.ProductRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val fileStorageService: FileStorageService,
-    private val publicUrlResolver: PublicUrlResolver,
+    private val storageService: StorageService,
     private val siteActivityDraftRepository: SiteActivityDraftRepository
 ) {
 
@@ -194,8 +195,9 @@ class SiteActivityService(
             null -> null
         }
 
+    // 현장점검 사진은 private/ 저장 → presigned URL 로만 조회 가능 (본인만 조회 권한 통제와 정합).
     private fun composeS3Url(key: String): String =
-        publicUrlResolver.resolve(key)!!
+        storageService.getPresignedUrl(key, StorageConstants.SITE_ACTIVITY_PRESIGN_TTL_SECONDS)
 
     private fun formatFileSize(bytes: Long): String =
         when {

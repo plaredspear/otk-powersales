@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_router.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/image_picker_helper.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/my_account_repository.dart';
@@ -178,8 +179,6 @@ class _InspectionRegisterPageState
                         },
                       ),
 
-                    const Divider(height: 32, thickness: 8),
-
                     // 사진 선택
                     InspectionPhotoPicker(
                       photos: state.form?.photos ?? [],
@@ -200,53 +199,38 @@ class _InspectionRegisterPageState
     );
   }
 
-  /// 하단 버튼 (임시저장 + 전송)
+  /// 하단 버튼 (임시저장 + 전송) — 레거시 정합: 풀폭, 어두운 슬레이트 + 순노랑
   Widget _buildBottomButtons(
     BuildContext context,
     InspectionRegisterState state,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 임시저장 버튼
-          Expanded(
-            child: ElevatedButton(
-              onPressed: state.isLoading ? null : () => _handleDraftSave(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text('임시저장', style: TextStyle(fontSize: 16)),
-            ),
-          ),
-          const SizedBox(width: 16),
-          // 전송 버튼
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: state.isLoading ? null : () => _handleSubmit(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.yellow[700],
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: const Text(
-                '전송',
-                style: TextStyle(fontSize: 16, color: Colors.black),
+    final disabled = state.isLoading;
+    return SafeArea(
+      top: false,
+      child: SizedBox(
+        height: 56,
+        child: Row(
+          children: [
+            // 임시저장 버튼 (어두운 슬레이트)
+            Expanded(
+              child: _BottomBarButton(
+                label: '임시저장',
+                backgroundColor: const Color(0xFF3F4859),
+                foregroundColor: Colors.white,
+                onPressed: disabled ? null : _handleDraftSave,
               ),
             ),
-          ),
-        ],
+            // 전송 버튼 (오뚜기 노랑)
+            Expanded(
+              child: _BottomBarButton(
+                label: '전송',
+                backgroundColor: AppColors.otokiYellow,
+                foregroundColor: Colors.black,
+                onPressed: disabled ? null : _handleSubmit,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -401,5 +385,40 @@ class _InspectionRegisterPageState
       ).showSnackBar(SnackBar(content: Text(errorMessage)));
       ref.read(inspectionRegisterProvider.notifier).clearError();
     }
+  }
+}
+
+/// 하단 풀폭 버튼 (레거시 정합 — 모서리 각짐, 간격 없음)
+class _BottomBarButton extends StatelessWidget {
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final VoidCallback? onPressed;
+
+  const _BottomBarButton({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: backgroundColor,
+      child: InkWell(
+        onTap: onPressed,
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: foregroundColor,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

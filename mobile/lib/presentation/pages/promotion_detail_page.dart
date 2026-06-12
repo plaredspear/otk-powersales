@@ -16,7 +16,7 @@ import '../widgets/promotion/promotion_employee_list.dart';
 ///
 /// 레거시 Heroku `promotion/event/view.jsp` 정합 — 상단 헤더(`[행사유형] 행사명` + 기간)
 /// 아래 "매출" / "행사 정보" 두 탭 구성.
-/// - 매출 탭: 진행율(날짜 경과율) + 목표·달성 금액(달성률) + 내 일별 매출.
+/// - 매출 탭: 기간 경과율(날짜 경과율) + 목표·달성 금액(달성률) + 내 일별 매출.
 /// - 행사 정보 탭: 행사번호~기타상품 기본 정보 + 배정 조원 목록(모바일 확장).
 class PromotionDetailPage extends ConsumerStatefulWidget {
   final int promotionId;
@@ -203,14 +203,14 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
     );
   }
 
-  /// 진행율 = 날짜 경과율. 레거시 view.jsp: `round(100 - 남은일수/전체일수 * 100)`.
+  /// 기간 경과율 = 날짜 경과율. 레거시 view.jsp: `round(100 - 남은일수/전체일수 * 100)`.
   /// 프로그레스 바 표시 안정성을 위해 0~100 범위로 클램프.
   Widget _buildProgressSection(PromotionDetail detail) {
     final percent = _progressPercent(detail);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader(Icons.show_chart, '진행율'),
+        _sectionHeader(Icons.show_chart, '기간 경과율'),
         const SizedBox(height: AppSpacing.md),
         ClipRRect(
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
@@ -567,14 +567,22 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
 
   /// 레거시 view.jsp 진행율: `round(100 - (남은일수/전체일수) * 100)`.
   /// `dateCompare` = `ceil(|a-b| / 1day)`. 클라이언트 현재 시각 기준.
+  ///
+  /// 레거시 공식은 `dateCompare`가 절댓값이라 기간 밖(종료 후/시작 전)에서
+  /// 음수·100% 초과가 나온다. 기간이 끝난 행사는 경과율 100%가 의도이므로
+  /// 경계를 먼저 처리한 뒤 기간 내에서만 비례 계산한다.
   int _progressPercent(PromotionDetail detail) {
     final start = DateTime.tryParse(detail.startDate);
     final end = DateTime.tryParse(detail.endDate);
     if (start == null || end == null) return 0;
 
+    final now = DateTime.now();
+    if (!now.isBefore(end)) return 100; // 종료일 도달/경과 → 100%
+    if (now.isBefore(start)) return 0; // 시작 전 → 0%
+
     final totalDays = _ceilDays(start, end);
     if (totalDays == 0) return 0;
-    final remainingDays = _ceilDays(DateTime.now(), end);
+    final remainingDays = _ceilDays(now, end);
     final pct = 100 - (remainingDays / totalDays * 100);
     return pct.round().clamp(0, 100);
   }

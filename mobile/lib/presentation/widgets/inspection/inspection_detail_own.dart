@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/inspection_detail.dart';
+import 'inspection_detail_row.dart';
 
 /// 자사 현장점검 상세 정보 위젯
 ///
-/// 제품명, 제품코드, 설명을 표시합니다.
+/// 레거시 view.jsp 정합 — 별도 섹션 헤더/카드 없이 제품·설명 행만 공통 정보에 이어 표시.
 class InspectionDetailOwnWidget extends StatelessWidget {
   final InspectionDetail detail;
 
@@ -18,65 +16,19 @@ class InspectionDetailOwnWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: AppSpacing.cardPadding,
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppSpacing.cardBorderRadius,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 섹션 제목
-          Text(
-            '자사 활동 정보',
-            style: AppTypography.headlineSmall.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // 제품 정보
-          if (detail.productName != null || detail.productCode != null) ...[
-            _buildInfoRow(
-              '제품',
-              detail.productName != null && detail.productCode != null
-                  ? '${detail.productName}(${detail.productCode})'
-                  : detail.productName ?? detail.productCode ?? '-',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-
-          // 설명
-          if (detail.description != null && detail.description!.isNotEmpty) ...[
-            _buildInfoRow('설명', detail.description!),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: AppTypography.labelLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
+        // 제품 (레거시: ProductName 만 표시)
+        if (detail.productName != null || detail.productCode != null)
+          InspectionDetailRow(
+            label: '제품',
+            value: detail.productName ?? detail.productCode ?? '-',
           ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(
-            value,
-            style: AppTypography.bodyMedium,
-          ),
-        ),
+
+        // 설명
+        if (detail.description != null && detail.description!.isNotEmpty)
+          InspectionDetailRow(label: '설명', value: detail.description!),
       ],
     );
   }

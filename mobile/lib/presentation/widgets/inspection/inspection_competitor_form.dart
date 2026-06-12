@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../common/synced_text_field.dart';
+import 'inspection_section_header.dart';
+import 'legacy_segmented_toggle.dart';
 
 /// 현장 점검 등록 - 경쟁사 활동 정보 폼
 ///
@@ -71,14 +73,10 @@ class InspectionCompetitorForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 활동 정보 섹션 헤더
-        const Padding(
-          padding: EdgeInsets.all(16),
-          child: Text(
-            '경쟁사 활동 정보',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
+        // 활동 정보 섹션 헤더 (레거시 슬레이트 바)
+        const InspectionSectionHeader(title: '경쟁사 활동 정보'),
+
+        const SizedBox(height: 16),
 
         // 경쟁사명 (필수)
         Padding(
@@ -133,26 +131,13 @@ class InspectionCompetitorForm extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              ToggleButtons(
-                isSelected: [
-                  competitorTasting == true,
-                  competitorTasting == false,
-                ],
-                onPressed: (index) {
-                  onCompetitorTastingChanged(index == 0);
-                },
-                borderRadius: BorderRadius.circular(8),
-                constraints: const BoxConstraints(minWidth: 80, minHeight: 36),
-                children: const [
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('예'),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('아니요'),
-                  ),
-                ],
+              LegacySegmentedToggle(
+                labels: const ['예', '아니요'],
+                // null(미선택)은 -1 → 어떤 칸도 강조되지 않음
+                selectedIndex: competitorTasting == null
+                    ? -1
+                    : (competitorTasting == true ? 0 : 1),
+                onChanged: (index) => onCompetitorTastingChanged(index == 0),
               ),
             ],
           ),

@@ -7,16 +7,16 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/entities/inspection_detail.dart';
-import '../../domain/entities/inspection_list_item.dart';
 import '../providers/inspection_detail_provider.dart';
 import '../providers/inspection_detail_state.dart';
 import '../widgets/inspection/inspection_detail_competitor.dart';
 import '../widgets/inspection/inspection_detail_own.dart';
+import '../widgets/inspection/inspection_detail_row.dart';
 
 /// 현장점검 상세 페이지
 ///
 /// 점검 ID를 기반으로 점검 상세 정보를 조회하고,
-/// 자사/경쟁사에 따라 다른 위젯을 표시합니다.
+/// 레거시 view.jsp 정합으로 단일 정보 블록(타이틀 → 필드 → 사진)을 표시합니다.
 class InspectionDetailPage extends ConsumerWidget {
   /// 점검 ID (라우트 arguments로 전달)
   final int inspectionId;
@@ -114,41 +114,18 @@ class InspectionDetailPage extends ConsumerWidget {
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 공통 정보 헤더
-            _buildInfoHeader(detail),
-
-            const SizedBox(height: AppSpacing.lg),
-
-            // 자사/경쟁사 구분 위젯
-            if (state.isOwn)
-              InspectionDetailOwnWidget(detail: detail)
-            else if (state.isCompetitor)
-              InspectionDetailCompetitorWidget(detail: detail),
-
-            const SizedBox(height: AppSpacing.lg),
-
-            // 사진 섹션
-            if (detail.photos.isNotEmpty) ...[
-              _buildPhotosSection(detail.photos),
-              const SizedBox(height: AppSpacing.lg),
-            ],
-
-            // 하단 여백
-            const SizedBox(height: AppSpacing.xxxl),
-          ],
-        ),
+        child: _buildDetailCard(state, detail),
       ),
     );
   }
 
-  /// 공통 정보 헤더 위젯
-  Widget _buildInfoHeader(detail) {
+  /// 레거시 view.jsp 정합 — 단일 정보 블록 (타이틀 → 필드 → 사진)
+  Widget _buildDetailCard(InspectionDetailState state, InspectionDetail detail) {
     final dateFormat = DateFormat('yyyy-MM-dd');
+    final categoryLabel = detail.isOwn ? '자사' : '경쟁사';
 
     return Container(
+      width: double.infinity,
       padding: AppSpacing.cardPadding,
       decoration: BoxDecoration(
         color: AppColors.card,
@@ -158,133 +135,83 @@ class InspectionDetailPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 카테고리 배지
-          _buildCategoryBadge(detail.category),
-
+          // 타이틀: [분류] 거래처명 (레거시 .txt01 — 16px, weight 800)
+          Text(
+            '[$categoryLabel] ${detail.accountName}',
+            style: AppTypography.headlineSmall.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: AppSpacing.md),
 
-          // 거래처명
-          _buildInfoRow('거래처', detail.accountName),
+          // 공통 필드 (테마 → 점검일 → 현장 유형)
+          InspectionDetailRow(label: '테마', value: detail.themeName),
+          InspectionDetailRow(
+            label: '점검일',
+            value: dateFormat.format(detail.inspectionDate),
+          ),
+          InspectionDetailRow(label: '현장 유형', value: detail.fieldType),
 
-          const SizedBox(height: AppSpacing.sm),
+          // 분류별 추가 필드 (섹션 헤더 없이 이어서 표시)
+          if (state.isOwn)
+            InspectionDetailOwnWidget(detail: detail)
+          else if (state.isCompetitor)
+            InspectionDetailCompetitorWidget(detail: detail),
 
-          // 점검일
-          _buildInfoRow('점검일', dateFormat.format(detail.inspectionDate)),
-
-          const SizedBox(height: AppSpacing.sm),
-
-          // 테마
-          _buildInfoRow('테마', detail.themeName),
-
-          const SizedBox(height: AppSpacing.sm),
-
-          // 매대
-          _buildInfoRow('매대', detail.fieldType),
+          // 사진 (레거시: 세로로 풀폭 적층)
+          if (detail.photos.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            _buildPhotos(detail.photos),
+          ],
         ],
       ),
     );
   }
 
-  /// 카테고리 배지
-  Widget _buildCategoryBadge(InspectionCategory category) {
-    final isOwn = category == InspectionCategory.OWN;
-    final label = isOwn ? '자사' : '경쟁사';
-    final backgroundColor = isOwn ? AppColors.primary : AppColors.secondary;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.labelSmall.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  /// 정보 행 위젯
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
+  /// 사진 영역 — 레거시 .con 정합: 세로 풀폭 적층, 사이 간격 10px
+  Widget _buildPhotos(List<InspectionPhoto> photos) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: AppTypography.labelLarge.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(
-            value,
-            style: AppTypography.bodyMedium,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 사진 섹션 위젯
-  Widget _buildPhotosSection(List<InspectionPhoto> photos) {
-    return Container(
-      padding: AppSpacing.cardPadding,
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: AppSpacing.cardBorderRadius,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '사진 (${photos.length})',
-            style: AppTypography.headlineSmall.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: AppSpacing.sm,
-              mainAxisSpacing: AppSpacing.sm,
-            ),
-            itemCount: photos.length,
-            itemBuilder: (context, index) {
-              final photo = photos[index];
-              return ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+        for (var i = 0; i < photos.length; i++)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: AspectRatio(
+                aspectRatio: 4 / 3,
                 child: Image.network(
-                  photo.url,
+                  photos[i].url,
                   fit: BoxFit.cover,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return Container(
+                      color: AppColors.surface,
+                      child: const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    );
+                  },
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: AppColors.border,
+                      color: AppColors.surface,
+                      alignment: Alignment.center,
                       child: const Icon(
                         Icons.broken_image,
                         color: AppColors.textTertiary,
+                        size: 40,
                       ),
                     );
                   },
                 ),
-              );
-            },
+              ),
+            ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

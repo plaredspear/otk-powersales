@@ -1,7 +1,8 @@
 package com.otoki.powersales.promotion.service
 
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.promotion.dto.request.DailySalesCloseRequest
 import com.otoki.powersales.promotion.dto.request.DailySalesDraftRequest
 import com.otoki.powersales.promotion.dto.response.DailySalesFormResponse
@@ -34,7 +35,8 @@ import java.math.BigDecimal
  * - SF Apex push 제거: 신규는 SoT 가 자체 DB 이므로 [PromotionEmployee] 본 row 에 직접 반영하고
  *   `promoCloseByTm = true` 로 마감한다. (legacy SF push → 로컬 엔티티 dirty checking)
  * - 임시저장은 신규 `daily_sales_draft` 테이블([DailySalesDraft])로 대체 (tmp_promotion 대응).
- * - 사진은 레거시와 동일하게 S3 업로드 후 key 만 보관([FileStorageService.uploadDailySalesPhoto]).
+ * - 사진은 S3 private/ 업로드 후 key 만 보관([FileStorageService.uploadDailySalesPhoto]), 조회 시 presigned URL 로 변환.
+ *   (레거시는 public S3 URL 이었으나, "본인 PE 만 조회" 권한 통제 정합 위해 private 전환 — 현장점검과 동일.)
  *
  * ## S3 객체 수명주기
  * 교체/폐기된 이전 S3 객체는 트랜잭션 롤백 시 데이터 손실(아직 참조 중이거나 커밋 전 삭제)을 막기 위해
@@ -46,15 +48,20 @@ class MobileDailySalesService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val dailySalesDraftRepository: DailySalesDraftRepository,
     private val fileStorageService: FileStorageService,
-    private val publicUrlResolver: PublicUrlResolver
+    private val storageService: StorageService
 ) {
 
     fun getForm(userId: Long, promotionEmployeeId: Long): DailySalesFormResponse {
         val pe = loadOwnedPromotionEmployee(userId, promotionEmployeeId)
         val draft = dailySalesDraftRepository.findByPromotionEmployeeId(promotionEmployeeId)
         val imageKey = draft?.s3ImageUniqueKey ?: pe.s3ImageUniqueKey
-        return DailySalesFormResponse.from(pe, draft, publicUrlResolver.resolve(imageKey))
+        return DailySalesFormResponse.from(pe, draft, imageUrl(imageKey))
     }
+
+    // 일매출 사진은 private/ 저장 → presigned URL 로만 조회 가능 (본인 PE 만 조회 권한 통제와 정합). key 없으면 null.
+    private fun imageUrl(key: String?): String? =
+        key?.takeIf { it.isNotBlank() }
+            ?.let { storageService.getPresignedUrl(it, StorageConstants.DAILY_SALES_PRESIGN_TTL_SECONDS) }
 
     @Transactional
     fun close(
@@ -103,7 +110,7 @@ class MobileDailySalesService(
             promotionEmployeeId = pe.id,
             isClosed = true,
             actualAmount = pe.actualAmount,
-            imageUrl = publicUrlResolver.resolve(finalKey)
+            imageUrl = imageUrl(finalKey)
         )
     }
 
@@ -134,7 +141,7 @@ class MobileDailySalesService(
 
         val saved = dailySalesDraftRepository.save(draft)
         val imageKey = saved.s3ImageUniqueKey ?: pe.s3ImageUniqueKey
-        return DailySalesFormResponse.from(pe, saved, publicUrlResolver.resolve(imageKey))
+        return DailySalesFormResponse.from(pe, saved, imageUrl(imageKey))
     }
 
     @Transactional

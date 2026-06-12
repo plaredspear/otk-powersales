@@ -22,6 +22,15 @@ object StorageConstants {
 	// 재요청을 흡수하므로 만료 마찰이 작다.
 	const val NOTICE_PRESIGN_TTL_SECONDS: Int = 1800
 
+	// 현장점검(site-activity) 사진 presigned URL 만료 시간(초). 상세 화면 1회 조회 소비 + 클라이언트
+	// 새로고침으로 만료를 흡수하므로 클레임과 동일하게 10분. (엑셀 export 는 만료 회피 위해 URL 이 아닌
+	// 이미지 바이트를 임베드하므로 이 TTL 과 무관.)
+	const val SITE_ACTIVITY_PRESIGN_TTL_SECONDS: Int = 600
+
+	// 일매출(daily-sales) 마감 사진 presigned URL 만료 시간(초). 마감 폼 1회 조회 소비 + 새로고침 흡수로
+	// 현장점검과 동일하게 10분. (사진은 마감 필수값, PromotionEmployee.s3ImageUniqueKey 단일 보관.)
+	const val DAILY_SALES_PRESIGN_TTL_SECONDS: Int = 600
+
 	// 모바일 앱 패키지(APK/IPA) 최대 크기(초). 이미지(20MB)와 달리 수십~수백 MB 바이너리이므로 별도 상한.
 	const val APP_PACKAGE_MAX_BYTES: Long = 500L * 1024 * 1024
 

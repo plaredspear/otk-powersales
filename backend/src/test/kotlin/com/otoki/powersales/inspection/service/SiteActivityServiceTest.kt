@@ -5,7 +5,7 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -40,6 +40,8 @@ class SiteActivityServiceTest {
     private val productRepository: ProductRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk(relaxUnitFun = true)
     private val fileStorageService: FileStorageService = mockk()
+    // 사진 조회는 presigned URL 발급(storageService.getPresignedUrl) — 본 테스트는 사진 없는 케이스라 호출 없음.
+    private val storageService: StorageService = mockk()
     // 등록 성공 시 임시저장 삭제 호출 — findByEmployeeId 는 기본 null(삭제 미수행)로 동작한다.
     private val siteActivityDraftRepository: SiteActivityDraftRepository = mockk(relaxed = true)
 
@@ -51,7 +53,7 @@ class SiteActivityServiceTest {
         productRepository = productRepository,
         uploadFileRepository = uploadFileRepository,
         fileStorageService = fileStorageService,
-        publicUrlResolver = PublicUrlResolver(prefix = ""),
+        storageService = storageService,
         siteActivityDraftRepository = siteActivityDraftRepository
     )
 
