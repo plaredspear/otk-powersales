@@ -335,7 +335,10 @@ final saveInspectionDraftUseCaseProvider =
 });
 
 /// InspectionRegisterProvider
-final inspectionRegisterProvider = StateNotifierProvider<
+///
+/// autoDispose: 등록 화면을 벗어나면 폼 state(테마/사진 등)를 폐기한다.
+/// (미적용 시 provider 가 싱글톤처럼 유지되어 재진입 시 이전 입력값이 그대로 남는 버그 발생)
+final inspectionRegisterProvider = StateNotifierProvider.autoDispose<
     InspectionRegisterNotifier, InspectionRegisterState>((ref) {
   return InspectionRegisterNotifier(
     getThemes: ref.watch(getThemesUseCaseProvider),
