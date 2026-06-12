@@ -7533,6 +7533,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseOroraMonthlyMaterializeTriggerResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OroraMonthlyMaterializeTriggerResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePPTConfirmedReportResponse" : {
         "properties" : {
           "data" : {
@@ -16837,6 +16866,34 @@
         "type" : "object"
       },
       "OroraMonthlyMaterializeResult" : {
+        "properties" : {
+          "fetchedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : "string"
+          },
+          "skippedAccountUnmatchedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "upsertedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraMonthlyMaterializeTriggerRequest" : {
+        "properties" : {
+          "salesMonth" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "OroraMonthlyMaterializeTriggerResponse" : {
         "properties" : {
           "fetchedCount" : {
             "format" : "int32",
@@ -31479,6 +31536,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListRegisteredScheduledJobDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/orora-monthly/trigger" : {
+      "post" : {
+        "operationId" : "triggerOroraMonthly",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OroraMonthlyMaterializeTriggerRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraMonthlyMaterializeTriggerResponse"
                 }
               }
             },
