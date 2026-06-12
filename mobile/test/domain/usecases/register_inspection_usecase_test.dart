@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/inspection_list_item.dart';
 import 'package:mobile/domain/entities/inspection_detail.dart';
+import 'package:mobile/domain/entities/inspection_draft.dart';
 import 'package:mobile/domain/entities/inspection_form.dart';
 import 'package:mobile/domain/entities/inspection_theme.dart';
 import 'package:mobile/domain/entities/inspection_field_type.dart';
@@ -46,6 +47,16 @@ class _MockInspectionRepository implements InspectionRepository {
     if (error != null) throw error!;
     return fieldTypesResult!;
   }
+
+  @override
+  Future<InspectionDraft?> getDraft() async => null;
+
+  @override
+  Future<void> saveDraft(
+    InspectionRegisterForm form, {
+    String? accountName,
+    String? productName,
+  }) async {}
 }
 
 File _createMockFile(String path) {
@@ -59,6 +70,8 @@ InspectionRegisterForm _createValidOwnForm() {
     accountId: 3001,
     inspectionDate: DateTime(2020, 8, 19),
     fieldTypeCode: 'FT01',
+    // 자사 점검은 설명이 필수(레거시 정합)
+    description: '본매대 진열 점검',
     productCode: '12345678',
     photos: [_createMockFile('/path/to/photo1.jpg')],
   );

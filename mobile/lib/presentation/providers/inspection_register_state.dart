@@ -132,7 +132,8 @@ class InspectionRegisterState {
         errors: ['폼 데이터가 없습니다'],
       );
     }
-    return form!.validate();
+    // 점검일 ≤ 테마 종료일 검증을 위해 선택된 테마의 종료일을 전달 (레거시 정합)
+    return form!.validate(themeEndDate: selectedTheme?.endDate);
   }
 
   InspectionRegisterState copyWith({

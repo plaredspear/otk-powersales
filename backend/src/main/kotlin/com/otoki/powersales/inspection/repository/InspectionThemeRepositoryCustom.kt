@@ -7,7 +7,11 @@ import org.springframework.data.domain.Pageable
 
 interface InspectionThemeRepositoryCustom {
 
-    fun findActiveThemesByDate(targetDate: LocalDate): List<InspectionTheme>
+    /**
+     * 현장점검 등록용 활성 테마 목록(레거시 fieldChk selectTheme 정합).
+     * 오늘이 기간 내이고, branch_code 가 공통 화이트리스트이거나 사원 코스트센터([costCenterCode])와 일치하는 테마.
+     */
+    fun findActiveThemesByDate(targetDate: LocalDate, costCenterCode: String?): List<InspectionTheme>
 
     /** admin 테마 목록 — 키워드(테마번호/이름/부서) + 부서/지점코드 필터 + 시작일 내림차순 페이징. */
     fun searchForAdmin(

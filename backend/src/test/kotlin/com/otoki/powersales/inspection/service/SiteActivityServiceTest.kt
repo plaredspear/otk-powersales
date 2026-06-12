@@ -14,6 +14,7 @@ import com.otoki.powersales.inspection.entity.InspectionTheme
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
+import com.otoki.powersales.inspection.repository.SiteActivityDraftRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
 import com.otoki.powersales.product.repository.ProductRepository
 import io.mockk.every
@@ -39,6 +40,8 @@ class SiteActivityServiceTest {
     private val productRepository: ProductRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk(relaxUnitFun = true)
     private val fileStorageService: FileStorageService = mockk()
+    // 등록 성공 시 임시저장 삭제 호출 — findByEmployeeId 는 기본 null(삭제 미수행)로 동작한다.
+    private val siteActivityDraftRepository: SiteActivityDraftRepository = mockk(relaxed = true)
 
     private val service = SiteActivityService(
         siteActivityRepository = siteActivityRepository,
@@ -48,7 +51,8 @@ class SiteActivityServiceTest {
         productRepository = productRepository,
         uploadFileRepository = uploadFileRepository,
         fileStorageService = fileStorageService,
-        publicUrlResolver = PublicUrlResolver(prefix = "")
+        publicUrlResolver = PublicUrlResolver(prefix = ""),
+        siteActivityDraftRepository = siteActivityDraftRepository
     )
 
     private fun account(id: Long = 1L, name: String = "테스트마트") =

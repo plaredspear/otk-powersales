@@ -1,4 +1,5 @@
 import '../../domain/entities/inspection_detail.dart';
+import '../../domain/entities/inspection_draft.dart';
 import '../../domain/entities/inspection_field_type.dart';
 import '../../domain/entities/inspection_form.dart';
 import '../../domain/entities/inspection_list_item.dart';
@@ -55,5 +56,24 @@ class InspectionRepositoryImpl implements InspectionRepository {
   Future<List<InspectionFieldType>> getFieldTypes() async {
     final models = await _remoteDataSource.getFieldTypes();
     return models.map((model) => model.toEntity()).toList();
+  }
+
+  @override
+  Future<InspectionDraft?> getDraft() async {
+    final model = await _remoteDataSource.getDraft();
+    return model?.toEntity();
+  }
+
+  @override
+  Future<void> saveDraft(
+    InspectionRegisterForm form, {
+    String? accountName,
+    String? productName,
+  }) {
+    return _remoteDataSource.saveDraft(
+      form,
+      accountName: accountName,
+      productName: productName,
+    );
   }
 }

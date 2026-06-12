@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/inspection_detail.dart';
+import 'package:mobile/domain/entities/inspection_draft.dart';
 import 'package:mobile/domain/entities/inspection_field_type.dart';
 import 'package:mobile/domain/entities/inspection_form.dart';
 import 'package:mobile/domain/entities/inspection_list_item.dart';
@@ -48,6 +49,16 @@ class _MockInspectionRepository implements InspectionRepository {
   Future<List<InspectionFieldType>> getFieldTypes() async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<InspectionDraft?> getDraft() async => null;
+
+  @override
+  Future<void> saveDraft(
+    InspectionRegisterForm form, {
+    String? accountName,
+    String? productName,
+  }) async {}
 }
 
 void main() {

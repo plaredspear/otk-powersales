@@ -38,8 +38,38 @@ class _InspectionRegisterPageState
     super.initState();
     // 페이지 로드 시 초기화
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(inspectionRegisterProvider.notifier).initialize();
+      _initialize();
     });
+  }
+
+  /// 초기화(테마/현장유형 로드) 후, 임시저장이 있으면 "이어서 작성?" 을 묻는다.
+  Future<void> _initialize() async {
+    final draft = await ref
+        .read(inspectionRegisterProvider.notifier)
+        .initialize();
+    if (!mounted || draft == null) return;
+
+    final resume = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('임시저장 불러오기'),
+        content: const Text('이전에 작성 중인 내용이 있습니다.\n이어서 작성하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('새로 작성'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('이어서 작성'),
+          ),
+        ],
+      ),
+    );
+
+    if (resume == true && mounted) {
+      ref.read(inspectionRegisterProvider.notifier).applyDraft(draft);
+    }
   }
 
   @override
@@ -224,7 +254,12 @@ class _InspectionRegisterPageState
   /// 테마 선택 다이얼로그
   void _showThemeSelector(BuildContext context) {
     final themes = ref.read(inspectionRegisterProvider).themes;
-    if (themes.isEmpty) return;
+    if (themes.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('진행 중인 테마가 없습니다')));
+      return;
+    }
 
     showModalBottomSheet(
       context: context,
@@ -334,12 +369,15 @@ class _InspectionRegisterPageState
     ref.read(inspectionRegisterProvider.notifier).addPhoto(file);
   }
 
-  /// 임시 저장
-  void _handleDraftSave() {
-    // TODO: 로컬 저장 구현
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('임시 저장되었습니다')));
+  /// 임시 저장 — 검증 없이 현재 폼 상태를 서버에 저장(레거시 tempFieldChkProc 정합).
+  Future<void> _handleDraftSave() async {
+    final success = await ref
+        .read(inspectionRegisterProvider.notifier)
+        .saveDraft();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(success ? '임시저장되었습니다' : '임시저장에 실패했습니다')),
+    );
   }
 
   /// 등록 전송

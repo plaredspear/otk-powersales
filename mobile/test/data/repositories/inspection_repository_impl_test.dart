@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/datasources/inspection_remote_datasource.dart';
 import 'package:mobile/data/models/inspection_detail_model.dart';
+import 'package:mobile/data/models/inspection_draft_model.dart';
 import 'package:mobile/data/models/inspection_field_type_model.dart';
 import 'package:mobile/data/models/inspection_list_item_model.dart';
 import 'package:mobile/data/models/inspection_register_request.dart';
@@ -75,6 +76,25 @@ class _MockInspectionRemoteDataSource implements InspectionRemoteDataSource {
   Future<List<InspectionFieldTypeModel>> getFieldTypes() async {
     if (error != null) throw error!;
     return fieldTypesResult!;
+  }
+
+  InspectionDraftModel? draftResult;
+  InspectionRegisterForm? savedDraftForm;
+
+  @override
+  Future<InspectionDraftModel?> getDraft() async {
+    if (error != null) throw error!;
+    return draftResult;
+  }
+
+  @override
+  Future<void> saveDraft(
+    InspectionRegisterForm form, {
+    String? accountName,
+    String? productName,
+  }) async {
+    savedDraftForm = form;
+    if (error != null) throw error!;
   }
 }
 
