@@ -117,7 +117,7 @@ class _HomePageState extends ConsumerState<HomePage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── ① 헤더 + 카드 영역 (노란 배경) ──
-        // 카드는 -55 로 헤더를 겹쳐 솟고, 카드 아래 남는 노란 영역에
+        // 카드는 노란 영역 위에 떠 있고, 카드 아래 작은 노란 strip에
         // 프로필 아바타 상단이 걸친다(카드와 프로필은 겹치지 않음).
         ColoredBox(
           color: AppColors.legacyYellow,
@@ -130,45 +130,45 @@ class _HomePageState extends ConsumerState<HomePage>
               // AppBar 영역 (로고 + 햄버거 메뉴)
               _buildAppBar(),
 
-              // #1 스케줄 카드 (Transform.translate -55 로 노란 헤더 겹침)
+              // #1 스케줄 카드
               // 출근/근태 대상(여사원/조장)만 노출. 지점장 등은 카드 자체를 숨김.
               if (homeData.attendanceApplicable)
-                Transform.translate(
-                  offset: const Offset(0, -AppSpacing.homeCardOverlap),
-                  child: Padding(
-                    padding: horizontalGutter,
-                    child: ScheduleCard(
-                      schedules: homeData.todaySchedules,
-                      currentDate: homeData.currentDate,
-                      attendanceSummary: homeData.attendanceSummary,
-                      userRole: userRole,
-                      onRegisterTap: () => throttledTapAsync(() async {
-                        await _handleRegisterTap(userRole);
-                        if (mounted) {
-                          ref.read(homeProvider.notifier).refresh();
-                        }
-                      }),
-                      onScheduleTap: (schedule) {
-                        final date =
-                            DateTime.tryParse(homeData.currentDate) ??
-                                DateTime.now();
-                        AppRouter.navigateTo(
-                          context,
-                          AppRouter.myScheduleDetail,
-                          arguments: date,
-                        );
-                      },
-                      // 조장/지점장: 레거시 home.jsp "일정 관리" → /employee/mgnSchedule
-                      // 여사원 전체 모드의 월간 일정 캘린더(LeaderTeamMemberScheduleScreen)로 연결.
-                      onScheduleManageTap: () {
-                        AppRouter.navigateTo(
-                          context,
-                          AppRouter.leaderSchedule,
-                        );
-                      },
-                    ),
+                Padding(
+                  padding: horizontalGutter,
+                  child: ScheduleCard(
+                    schedules: homeData.todaySchedules,
+                    currentDate: homeData.currentDate,
+                    attendanceSummary: homeData.attendanceSummary,
+                    userRole: userRole,
+                    onRegisterTap: () => throttledTapAsync(() async {
+                      await _handleRegisterTap(userRole);
+                      if (mounted) {
+                        ref.read(homeProvider.notifier).refresh();
+                      }
+                    }),
+                    onScheduleTap: (schedule) {
+                      final date =
+                          DateTime.tryParse(homeData.currentDate) ??
+                              DateTime.now();
+                      AppRouter.navigateTo(
+                        context,
+                        AppRouter.myScheduleDetail,
+                        arguments: date,
+                      );
+                    },
+                    // 조장/지점장: 레거시 home.jsp "일정 관리" → /employee/mgnSchedule
+                    // 여사원 전체 모드의 월간 일정 캘린더(LeaderTeamMemberScheduleScreen)로 연결.
+                    onScheduleManageTap: () {
+                      AppRouter.navigateTo(
+                        context,
+                        AppRouter.leaderSchedule,
+                      );
+                    },
                   ),
                 ),
+
+              // 카드 아래 노란 strip (프로필 아바타 상단이 걸치는 여백)
+              const SizedBox(height: AppSpacing.homeCardProfileGap),
             ],
           ),
         ),
@@ -255,10 +255,11 @@ class _HomePageState extends ConsumerState<HomePage>
     );
   }
 
-  /// AppBar 영역 (로고 + 햄버거 메뉴) - 레거시 CSS height:116, padding:14 0 0 20
+  /// AppBar 영역 (로고 + 햄버거 메뉴) - 레거시 CSS padding:14 0 0 20
+  /// 높이 = 레거시 헤더(116) − 카드 겹침(55) = 카드 위에 보이는 노란 헤더 영역.
   Widget _buildAppBar() {
     return SizedBox(
-      height: AppSpacing.homeHeaderHeight,
+      height: AppSpacing.homeHeaderHeight - AppSpacing.homeCardOverlap,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.homeGutter,

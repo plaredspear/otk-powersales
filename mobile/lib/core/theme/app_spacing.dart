@@ -103,9 +103,12 @@ abstract final class AppSpacing {
   /// 직원 정보 영역 캐릭터 일러스트 크기
   static const double homeProfileSize = 64;
 
+  /// 카드 아래 ~ 프로필 사이 노란 strip 높이 (아바타가 걸치는 여백)
+  static const double homeCardProfileGap = 14;
+
   /// 프로필 영역(아바타+텍스트)을 통째로 위로 끌어올려 노란 영역에 겹치는 깊이.
   /// 아바타와 텍스트의 세로 정렬은 유지(함께 이동)하고, 키가 큰 아바타 상단만 노랑에 걸친다.
-  static const double homeProfileRaise = 18;
+  static const double homeProfileRaise = 14;
 
   // ─── Component Sizes ─────────────────────────────────────
   /// AppBar 높이
