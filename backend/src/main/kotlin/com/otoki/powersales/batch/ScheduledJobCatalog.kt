@@ -91,8 +91,8 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = OroraMonthlySalesMaterializeBatch.JOB_NAME,
-            cron = "\${app.batch.orora.monthly.cron:0 0 5 * * *}",
-            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매일 05시) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등",
+            cron = "\${app.batch.orora.monthly.cron:0 0 5 3 * *}",
+            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매월 3일 05시, 전월분) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등. 수동 트리거로 특정 월 재적재 가능",
         ),
     )
 

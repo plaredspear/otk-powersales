@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
@@ -8,6 +9,7 @@ import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
 import com.otoki.powersales.batch.ScheduledJobCatalog
 import com.otoki.powersales.common.jobrun.ScheduledJobRun
 import com.otoki.powersales.common.jobrun.ScheduledJobRunRepository
+import com.otoki.powersales.sales.materialize.OroraSalesMaterializeFacade
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -24,6 +26,7 @@ import java.time.LocalDateTime
 @Transactional(readOnly = true)
 class AdminScheduledJobService(
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
+    private val ororaSalesMaterializeFacade: OroraSalesMaterializeFacade,
 ) {
 
     fun search(query: AdminScheduledJobQuery): ScheduledJobRunListResponse {
@@ -77,6 +80,31 @@ class AdminScheduledJobService(
                 description = it.description,
             )
         }
+
+    /**
+     * ORORA 월매출 적재를 특정 월(`YYYYMM`)로 수동 실행한다.
+     *
+     * 입력 월을 검증한 뒤 [OroraSalesMaterializeFacade.materializeMonthly] 에 명시 월로 위임한다 (전월
+     * 자동 산출 대신 운영자 지정 월 재적재). 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+     * facade 내부 chunk processor 가 `REQUIRES_NEW` 트랜잭션으로 적재하므로 본 서비스의 readOnly 경계와 무관.
+     *
+     * @param salesMonth `YYYYMM` 6자 (예: `202604`). null/blank 면 전월 자동 산출.
+     */
+    fun triggerOroraMonthly(salesMonth: String?): OroraMonthlyMaterializeTriggerResponse {
+        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() }
+        if (normalized != null) {
+            require(normalized.length == 6 && normalized.all { it.isDigit() }) {
+                "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
+            }
+        }
+        val result = ororaSalesMaterializeFacade.materializeMonthly(normalized)
+        return OroraMonthlyMaterializeTriggerResponse(
+            salesMonth = result.salesMonth,
+            fetchedCount = result.fetchedCount,
+            upsertedCount = result.upsertedCount,
+            skippedAccountUnmatchedCount = result.skippedAccountUnmatchedCount,
+        )
+    }
 
     private fun ScheduledJobRun.toDto(): ScheduledJobRunDto {
         val durationMs = endedAt?.let { end ->

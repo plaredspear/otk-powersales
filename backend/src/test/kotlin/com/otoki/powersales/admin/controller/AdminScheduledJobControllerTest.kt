@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
@@ -11,10 +12,13 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import io.mockk.every
 import io.mockk.slot
+import io.mockk.verify
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import com.ninjasquad.springmockk.MockkBean
+import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDateTime
@@ -121,5 +125,43 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.failureCount").value(3))
             .andExpect(jsonPath("$.data.runningCount").value(2))
             .andExpect(jsonPath("$.data.distinctJobNames.length()").value(2))
+    }
+
+    @Test
+    @DisplayName("POST /orora-monthly/trigger - salesMonth 가 service 로 전달되고 결과 반환")
+    fun triggerOroraMonthly_withMonth() {
+        every { adminScheduledJobService.triggerOroraMonthly("202604") } returns
+            OroraMonthlyMaterializeTriggerResponse(
+                salesMonth = "202604",
+                fetchedCount = 8900,
+                upsertedCount = 8900,
+                skippedAccountUnmatchedCount = 3,
+            )
+
+        mockMvc.perform(
+            post("/api/v1/admin/scheduled-jobs/orora-monthly/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"salesMonth":"202604"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.salesMonth").value("202604"))
+            .andExpect(jsonPath("$.data.upsertedCount").value(8900))
+            .andExpect(jsonPath("$.data.skippedAccountUnmatchedCount").value(3))
+
+        verify(exactly = 1) { adminScheduledJobService.triggerOroraMonthly("202604") }
+    }
+
+    @Test
+    @DisplayName("POST /orora-monthly/trigger - body 없으면 service 에 null 전달 (전월 자동)")
+    fun triggerOroraMonthly_noBody() {
+        every { adminScheduledJobService.triggerOroraMonthly(null) } returns
+            OroraMonthlyMaterializeTriggerResponse("202605", 0, 0, 0)
+
+        mockMvc.perform(post("/api/v1/admin/scheduled-jobs/orora-monthly/trigger"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.salesMonth").value("202605"))
+
+        verify(exactly = 1) { adminScheduledJobService.triggerOroraMonthly(null) }
     }
 }

@@ -88,3 +88,27 @@ export async function getScheduledJobSummary(
   }
   return res.data.data;
 }
+
+export interface OroraMonthlyMaterializeTriggerResponse {
+  salesMonth: string;
+  fetchedCount: number;
+  upsertedCount: number;
+  skippedAccountUnmatchedCount: number;
+}
+
+/**
+ * ORORA 월매출 적재를 특정 월(`YYYYMM`)로 수동 실행한다 (`salesMonth` 미지정 시 전월).
+ * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function triggerOroraMonthlyMaterialize(
+  salesMonth?: string,
+): Promise<OroraMonthlyMaterializeTriggerResponse> {
+  const res = await client.post<ApiResponse<OroraMonthlyMaterializeTriggerResponse>>(
+    '/api/v1/admin/scheduled-jobs/orora-monthly/trigger',
+    salesMonth ? { salesMonth } : {},
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'ORORA 월매출 수동 적재에 실패했습니다');
+  }
+  return res.data.data;
+}

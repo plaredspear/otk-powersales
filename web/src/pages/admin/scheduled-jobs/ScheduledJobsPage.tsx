@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import {
   Alert,
+  App,
+  Button,
   Card,
   Col,
   DatePicker,
+  Popconfirm,
   Row,
   Select,
   Space,
@@ -18,12 +21,14 @@ import {
   useScheduledJobCatalog,
   useScheduledJobRuns,
   useScheduledJobSummary,
+  useTriggerOroraMonthlyMaterialize,
 } from '@/hooks/admin/useScheduledJobs';
 import type {
   RegisteredScheduledJob,
   ScheduledJobRun,
   ScheduledJobStatus,
 } from '@/api/admin/scheduledJob';
+import { usePermission } from '@/hooks/usePermission';
 import JobRunDetailModal from './JobRunDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -57,6 +62,8 @@ const JOB_LABELS: Record<string, string> = {
   'salesProgressRateMaster.sync': '목표마스터 sync',
   'sap-outbox-worker': 'SAP outbox',
   'scheduledJobRun.cleanup': '이력 정리',
+  'orora-daily-sales-materialize-batch': 'ORORA 일매출',
+  'orora-monthly-sales-materialize-batch': 'ORORA 월매출',
 };
 
 function jobLabel(jobName: string): string {
@@ -77,6 +84,8 @@ const JOB_SCHEDULES: Record<string, string> = {
   'salesProgressRateMaster.sync': '기본 1시간 주기',
   'sap-outbox-worker': '기본 30초 주기',
   'scheduledJobRun.cleanup': '매일 04시',
+  'orora-daily-sales-materialize-batch': '기본 매일 04:30',
+  'orora-monthly-sales-materialize-batch': '기본 매월 3일 05시',
 };
 
 /** 잡 이름 → 해당 스케줄 작업이 무슨 일을 하는지에 대한 자연어 설명. */
@@ -105,7 +114,14 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
     '송신 대기(PENDING)·재시도(RETRY) 상태의 SAP 아웃박스 행을 일괄 조회하여, 각 행의 인터페이스 ID로 엔드포인트를 찾아 페이로드를 SAP REST 어댑터로 전송합니다. 응답을 검증해 성공이면 SENT, 실패면 재시도 한도 내에서 RETRY, 한도 초과 시 FAILED로 상태를 갱신하고 도메인별 후처리를 수행합니다. 트랜잭셔널 아웃박스 패턴의 범용 SAP 송신 엔진입니다.',
   'scheduledJobRun.cleanup':
     '배치 실행 이력 테이블에서 보존 기간(90일)을 초과한 오래된 행을 일괄 삭제로 정리합니다. 배치 실행 로그가 무한히 쌓이는 것을 막기 위한 보존 정책 정리 배치입니다.',
+  'orora-daily-sales-materialize-batch':
+    'ORORA 영업시스템의 일별 매출 view를 거래처 범위 단위로 조회하여 daily_sales_history 테이블에 적재하고, 해당 월의 monthly_sales_history 원장매출 합계를 갱신합니다. 당월을 대상으로 매일 실행되어 진행 중인 달의 일별 매출을 누적합니다. (legacy Queueable_OroraDailySalesHistory_M1 동등)',
+  'orora-monthly-sales-materialize-batch':
+    'ORORA 영업시스템의 월별 마감 view(ABC/물류 마감실적)를 거래처 범위 단위로 조회하여 monthly_sales_history 테이블에 적재(upsert)합니다. 익월 초에 전월 마감분을 적재하며, 운영 목표/비고/마감확정 컬럼은 보존합니다. 아래에서 특정 월을 지정해 수동 재적재할 수 있습니다. (legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등)',
 };
+
+/** ORORA 월매출 수동 트리거 대상 jobName (해당 탭에서만 수동 적재 UI 노출). */
+const ORORA_MONTHLY_JOB = 'orora-monthly-sales-materialize-batch';
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-';
@@ -124,6 +140,68 @@ function formatDuration(ms: number | null | undefined): string {
 
 const ALL_JOBS_KEY = '__all__';
 const CATALOG_KEY = '__catalog__';
+
+/**
+ * ORORA 월매출 수동 적재 패널. 월 선택(미지정 시 전월) 후 실행하면 backend 가 ORORA view 를 조회해
+ * 해당 월을 monthly_sales_history 에 upsert 한다. `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function OroraMonthlyTriggerPanel() {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const [month, setMonth] = useState<Dayjs | null>(null);
+  const trigger = useTriggerOroraMonthlyMaterialize();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const salesMonth = month ? month.format('YYYYMM') : undefined;
+
+  const handleRun = () => {
+    trigger.mutate(salesMonth, {
+      onSuccess: (result) => {
+        message.success(
+          `${result.salesMonth} 적재 완료 — 조회 ${result.fetchedCount}건 / 적재 ${result.upsertedCount}건` +
+            (result.skippedAccountUnmatchedCount > 0
+              ? ` / 거래처 미매칭 ${result.skippedAccountUnmatchedCount}건`
+              : ''),
+        );
+      },
+      onError: (err) => {
+        message.error(err instanceof Error ? err.message : 'ORORA 월매출 수동 적재에 실패했습니다');
+      },
+    });
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="수동 적재">
+      <Space wrap align="center">
+        <Text type="secondary">대상 월</Text>
+        <DatePicker
+          picker="month"
+          placeholder="미지정 시 전월"
+          value={month}
+          onChange={(value) => setMonth(value)}
+          disabledDate={(current) => current && current > dayjs().endOf('month')}
+        />
+        <Popconfirm
+          title="ORORA 월매출 수동 적재"
+          description={`${salesMonth ?? '전월'} 마감분을 ORORA에서 조회하여 적재합니다. 실행하시겠습니까?`}
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+        >
+          <Button type="primary" loading={trigger.isPending}>
+            적재 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          ORORA view 를 조회해 monthly_sales_history 에 upsert 합니다. 외부 연동이므로 수십 초 소요될 수 있습니다.
+        </Text>
+      </Space>
+    </Card>
+  );
+}
 
 export default function ScheduledJobsPage() {
   const [activeTab, setActiveTab] = useState<string>(ALL_JOBS_KEY);
@@ -297,6 +375,7 @@ export default function ScheduledJobsPage() {
             }
             description={JOB_DESCRIPTIONS[name] ?? '등록된 설명이 없습니다.'}
           />
+          {name === ORORA_MONTHLY_JOB && <OroraMonthlyTriggerPanel />}
           {runsHistoryNode}
         </>
       ),

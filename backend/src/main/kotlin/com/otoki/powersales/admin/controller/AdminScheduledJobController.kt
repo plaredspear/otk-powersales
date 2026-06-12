@@ -4,6 +4,8 @@ import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.request.OroraMonthlyMaterializeTriggerRequest
+import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
@@ -12,6 +14,8 @@ import com.otoki.powersales.common.dto.ApiResponse
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
@@ -66,5 +70,18 @@ class AdminScheduledJobController(
         @RequestParam(defaultValue = "24") windowHours: Long,
     ): ResponseEntity<ApiResponse<ScheduledJobSummaryResponse>> {
         return ResponseEntity.ok(ApiResponse.success(adminScheduledJobService.summary(windowHours)))
+    }
+
+    /**
+     * ORORA 월매출 적재를 특정 월로 수동 실행한다 (`salesMonth` 미지정 시 전월).
+     * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+     */
+    @PostMapping("/api/v1/admin/scheduled-jobs/orora-monthly/trigger")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun triggerOroraMonthly(
+        @RequestBody(required = false) request: OroraMonthlyMaterializeTriggerRequest?,
+    ): ResponseEntity<ApiResponse<OroraMonthlyMaterializeTriggerResponse>> {
+        val response = adminScheduledJobService.triggerOroraMonthly(request?.salesMonth)
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

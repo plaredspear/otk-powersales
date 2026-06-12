@@ -35,3 +35,18 @@ data class RegisteredScheduledJobDto(
     val cron: String,
     val description: String,
 )
+
+/**
+ * ORORA 월매출 수동 적재 트리거 결과.
+ *
+ * @property salesMonth 적재한 대상 매출월 (`YYYYMM`)
+ * @property fetchedCount ORORA view 에서 조회된 row 수
+ * @property upsertedCount RDS 에 적재(신규+갱신)된 row 수
+ * @property skippedAccountUnmatchedCount account 미매칭으로 account_id=null 적재된 row 수
+ */
+data class OroraMonthlyMaterializeTriggerResponse(
+    val salesMonth: String,
+    val fetchedCount: Int,
+    val upsertedCount: Int,
+    val skippedAccountUnmatchedCount: Int,
+)
