@@ -98,28 +98,51 @@ class _HomePageState extends ConsumerState<HomePage>
     );
   }
 
-  /// 홈 화면 콘텐츠 (Stack: 배경 + 콘텐츠가 함께 스크롤)
+  /// 홈 화면 콘텐츠 (Stack: 배경 레이어 + 콘텐츠 레이어, 함께 스크롤)
   Widget _buildContent(HomeState state, String userRole) {
     final homeData = state.homeData!;
     final mediaPadding = MediaQuery.of(context).padding;
     final topPadding = mediaPadding.top;
     final bottomPadding = mediaPadding.bottom;
-    // 노란 헤더 = status bar/노치 영역 + 콘텐츠 116dp - 카드 겹침(-55)
-    final yellowHeight =
-        topPadding + AppSpacing.homeHeaderHeight - AppSpacing.homeCardOverlap;
+    // 노란 헤더 높이 = status bar/노치 + 레거시 헤더 116dp(#header.main_header)
+    // 레거시: 헤더 116 전체가 노란색, 그 아래는 회색→흰색 그라데이션(.main_bg)
+    final yellowHeight = topPadding + AppSpacing.homeHeaderHeight;
     const horizontalGutter = EdgeInsets.symmetric(
       horizontal: AppSpacing.homeGutter,
     );
 
     return Stack(
       children: [
-        // 배경 레이어: 상단 노란색 (콘텐츠와 함께 스크롤)
-        Container(
-          height: yellowHeight,
-          width: double.infinity,
-          color: AppColors.legacyYellow,
+        // 배경 레이어: 상단 노란 헤더(116) + 하단 회색→흰색 그라데이션
+        // 레거시 common.css: #header.main_header(#FFE40C) + .main_bg:after(#f7f7f7→#fff)
+        // 콘텐츠 전체 높이를 채워 카드 하단/프로필은 그라데이션 위에 놓이게 한다.
+        Positioned.fill(
+          child: Column(
+            children: [
+              Container(
+                height: yellowHeight,
+                width: double.infinity,
+                color: AppColors.legacyYellow,
+              ),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.homeBgGradientStart,
+                        AppColors.homeBgGradientEnd,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        // 콘텐츠 레이어
+        // 콘텐츠 레이어 (배경 투명 — 배경 레이어가 노란/그라데이션 담당)
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -169,85 +192,72 @@ class _HomePageState extends ConsumerState<HomePage>
                 ),
               ),
 
-            // 본문 그라데이션 배경 (스케줄 카드 이후 콘텐츠)
+            // 스케줄 카드 이후 콘텐츠 (배경은 뒤쪽 그라데이션 레이어가 담당)
             // 카드가 있을 때만 -55 겹침. 카드 미노출 시 헤더 바로 아래에서 시작.
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.homeBgGradientStart,
-                    AppColors.homeBgGradientEnd,
-                  ],
-                ),
-              ),
-              child: Transform.translate(
-                offset: homeData.attendanceApplicable
-                    ? const Offset(0, -AppSpacing.homeCardOverlap)
-                    : Offset.zero,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSpacing.lg),
+            Transform.translate(
+              offset: homeData.attendanceApplicable
+                  ? const Offset(0, -AppSpacing.homeCardOverlap)
+                  : Offset.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.lg),
 
-                    // #2 유통기한 알림
-                    Padding(
-                      padding: horizontalGutter,
-                      child: ExpiryAlertCard(
-                        expiryAlert: homeData.expiryAlert,
-                        onTap: () {
-                          AppRouter.navigateTo(
-                              context, AppRouter.productExpiration);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // #3 공지 영역 (가로 스크롤)
-                    NoticeCarousel(
-                      notices: homeData.notices,
-                      onNoticeTap: (notice) {
+                  // #2 유통기한 알림
+                  Padding(
+                    padding: horizontalGutter,
+                    child: ExpiryAlertCard(
+                      expiryAlert: homeData.expiryAlert,
+                      onTap: () {
                         AppRouter.navigateTo(
-                          context,
-                          AppRouter.noticeDetail,
-                          arguments: notice.id,
-                        );
-                      },
-                      onViewAllTap: () {
-                        AppRouter.navigateTo(context, AppRouter.notices);
+                            context, AppRouter.productExpiration);
                       },
                     ),
-                    const SizedBox(height: AppSpacing.xl),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
 
-                    // #4 제품 검색 바
-                    Padding(
-                      padding: horizontalGutter,
-                      child: ProductSearchBar(
-                        onTap: () {
-                          AppRouter.navigateTo(
-                              context, AppRouter.productSearch);
-                        },
-                      ),
+                  // #3 공지 영역 (가로 스크롤)
+                  NoticeCarousel(
+                    notices: homeData.notices,
+                    onNoticeTap: (notice) {
+                      AppRouter.navigateTo(
+                        context,
+                        AppRouter.noticeDetail,
+                        arguments: notice.id,
+                      );
+                    },
+                    onViewAllTap: () {
+                      AppRouter.navigateTo(context, AppRouter.notices);
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // #4 제품 검색 바
+                  Padding(
+                    padding: horizontalGutter,
+                    child: ProductSearchBar(
+                      onTap: () {
+                        AppRouter.navigateTo(
+                            context, AppRouter.productSearch);
+                      },
                     ),
-                    // 레거시(common.css): 검색창 ~ 메뉴 그리드 간격 20px
-                    const SizedBox(height: AppSpacing.xl),
+                  ),
+                  // 레거시(common.css): 검색창 ~ 메뉴 그리드 간격 20px
+                  const SizedBox(height: AppSpacing.xl),
 
-                    // #5 빠른 메뉴
-                    Padding(
-                      padding: horizontalGutter,
-                      child: QuickMenuGrid(
-                        onMenuTap: (item) {
-                          throttledTap(() => _handleQuickMenuTap(item, userRole));
-                        },
-                      ),
+                  // #5 빠른 메뉴
+                  Padding(
+                    padding: horizontalGutter,
+                    child: QuickMenuGrid(
+                      onMenuTap: (item) {
+                        throttledTap(() => _handleQuickMenuTap(item, userRole));
+                      },
                     ),
+                  ),
 
-                    // 마지막 여백: home indicator/네비바 회피
-                    SizedBox(height: AppSpacing.xxxl + bottomPadding),
-                  ],
-                ),
+                  // 마지막 여백: home indicator/네비바 회피
+                  SizedBox(height: AppSpacing.xxxl + bottomPadding),
+                ],
               ),
             ),
           ],
