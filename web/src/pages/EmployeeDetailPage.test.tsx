@@ -44,6 +44,10 @@ const sapEmployee: EmployeeDetail = {
   crmWorkStartDate: null,
   totalAnnualLeave: null,
   usedAnnualLeave: null,
+  appVersionName: null,
+  appVersionCode: null,
+  appPlatform: null,
+  appVersionSeenAt: null,
 };
 
 vi.mock('@/hooks/employee/useEmployeeWorkHistory', () => ({
