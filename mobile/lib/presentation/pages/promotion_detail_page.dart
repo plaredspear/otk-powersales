@@ -567,14 +567,22 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
 
   /// 레거시 view.jsp 진행율: `round(100 - (남은일수/전체일수) * 100)`.
   /// `dateCompare` = `ceil(|a-b| / 1day)`. 클라이언트 현재 시각 기준.
+  ///
+  /// 레거시 공식은 `dateCompare`가 절댓값이라 기간 밖(종료 후/시작 전)에서
+  /// 음수·100% 초과가 나온다. 기간이 끝난 행사는 경과율 100%가 의도이므로
+  /// 경계를 먼저 처리한 뒤 기간 내에서만 비례 계산한다.
   int _progressPercent(PromotionDetail detail) {
     final start = DateTime.tryParse(detail.startDate);
     final end = DateTime.tryParse(detail.endDate);
     if (start == null || end == null) return 0;
 
+    final now = DateTime.now();
+    if (!now.isBefore(end)) return 100; // 종료일 도달/경과 → 100%
+    if (now.isBefore(start)) return 0; // 시작 전 → 0%
+
     final totalDays = _ceilDays(start, end);
     if (totalDays == 0) return 0;
-    final remainingDays = _ceilDays(DateTime.now(), end);
+    final remainingDays = _ceilDays(now, end);
     final pct = 100 - (remainingDays / totalDays * 100);
     return pct.round().clamp(0, 100);
   }
