@@ -32,7 +32,7 @@ object SystemAdminProfilePolicy {
      * 한글 표기는 SF retrieve 메타 (`force-app/main/default/profiles/<name>.profile-meta.xml`) 의 실측을 따른다.
      * 예: '8. 마케팅' (점 다음 공백), '9. Staff' (점 다음 공백) — SF 운영 Profile.Name 그대로.
      * '시스템 관리자' 는 SF 부재 (SF 표준 'System Administrator' / 'Admin') — Stage1 Profile 적재 후
-     * [com.otoki.powersales.sfmigration.stage1.Stage1S3CopyService] 의 post-copy hook 이 SF Admin row 의
+     * [com.otoki.powersales._migration.sf.stage1.Stage1S3CopyService] 의 post-copy hook 이 SF Admin row 의
      * name 만 alias 로 rename.
      */
     val REQUIRED_PROFILE_NAMES: List<String> = listOf(
