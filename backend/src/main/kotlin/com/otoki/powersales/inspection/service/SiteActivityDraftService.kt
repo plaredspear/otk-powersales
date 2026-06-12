@@ -1,7 +1,8 @@
 package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageConstants
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.inspection.dto.request.SiteActivityDraftRequest
 import com.otoki.powersales.inspection.dto.response.SiteActivityDraftResponse
 import com.otoki.powersales.inspection.entity.SiteActivityDraft
@@ -21,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile
  *
  * ## 신규 차이 (deviation)
  * - 임시저장은 신규 `site_activity_draft` 테이블([SiteActivityDraft])로 대체 (tmp_onsite 대응, claim_draft 패턴 정합).
- * - 사진은 등록과 동일 도메인("site-activity") public 업로드 후 key 만 보관, 조회 시 public URL 로 변환.
+ * - 사진은 등록과 동일 도메인("site-activity") private 업로드 후 key 만 보관, 조회 시 presigned URL 로 변환.
  * - 사진은 전달된 목록으로 전체 교체한다(복원 시 임시파일로 재첨부되어 다음 저장에 재전송되므로 안전).
  */
 @Service
@@ -29,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile
 class SiteActivityDraftService(
     private val siteActivityDraftRepository: SiteActivityDraftRepository,
     private val fileStorageService: FileStorageService,
-    private val publicUrlResolver: PublicUrlResolver
+    private val storageService: StorageService
 ) {
 
     companion object {
@@ -92,7 +93,8 @@ class SiteActivityDraftService(
     // ───── private helpers ─────
 
     private fun resolveUrl(key: String?): String? =
-        key?.takeIf { it.isNotBlank() }?.let { publicUrlResolver.resolve(it) }
+        key?.takeIf { it.isNotBlank() }
+            ?.let { storageService.getPresignedUrl(it, StorageConstants.SITE_ACTIVITY_PRESIGN_TTL_SECONDS) }
 
     /** 임시저장은 날짜가 부분 입력일 수 있으므로 파싱 실패 시 null 로 저장한다. */
     private fun parseDateOrNull(raw: String?): LocalDate? {

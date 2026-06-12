@@ -2,7 +2,6 @@ package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.CreateThemeRequest
@@ -41,7 +40,6 @@ class AdminInspectionThemeServiceTest {
         employeeRepository = employeeRepository,
         userRepository = userRepository,
         uploadFileRepository = uploadFileRepository,
-        publicUrlResolver = PublicUrlResolver(prefix = ""),
     )
 
     private fun theme(id: Long = 1L, deleted: Boolean = false) = InspectionTheme(
@@ -110,7 +108,8 @@ class AdminInspectionThemeServiceTest {
             assertThat(saved.captured.name).isEqualTo("TM00000042")
             assertThat(saved.captured.department).isEqualTo("영업3팀")
             assertThat(saved.captured.branchCode).isEqualTo("B003")
-            assertThat(saved.captured.publicFlag).isTrue()
+            // 레거시 Theme__c.PublicFlag__c 기본값 정합 — 생성 시 false 고정(조회 필터엔 미사용).
+            assertThat(saved.captured.publicFlag).isFalse()
             assertThat(saved.captured.title).isEqualTo("신규 테마")
             assertThat(response.name).isEqualTo("TM00000042")
         }

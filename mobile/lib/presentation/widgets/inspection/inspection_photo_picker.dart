@@ -33,63 +33,66 @@ class InspectionPhotoPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 사진 섹션 헤더
+        // 사진 라벨 행 — 우측에 "사진 선택" 알약버튼 (레거시 정합)
         Padding(
-          padding: const EdgeInsets.all(16),
-          child: RichText(
-            text: const TextSpan(
-              children: [
-                TextSpan(
-                  text: '사진',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-                TextSpan(
-                  text: ' *',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-                TextSpan(
-                  text: ' (최대 2장)',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // 사진 그리드
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Row(
             children: [
-              // 선택된 사진들
-              ...List.generate(
-                photos.length,
-                (index) => _buildPhotoItem(
-                  photos[index],
-                  index,
+              RichText(
+                text: const TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '사진 (최대 2장)',
+                      style: TextStyle(fontSize: 16, color: Colors.black87),
+                    ),
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(fontSize: 16, color: Colors.red),
+                    ),
+                  ],
                 ),
               ),
-
-              // 사진 추가 버튼
-              if (canAddPhoto) _buildAddPhotoButton(),
+              const Spacer(),
+              if (canAddPhoto)
+                OutlinedButton.icon(
+                  onPressed: onAddPhoto,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('사진 선택'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black87,
+                    side: const BorderSide(color: Color(0xFFBDBDBD)),
+                    shape: const StadiumBorder(),
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
             ],
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
+
+        // 사진 영역: 비어있으면 플레이스홀더, 있으면 썸네일 그리드
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: photos.isEmpty
+              ? const Text(
+                  '사진 선택',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: List.generate(
+                    photos.length,
+                    (index) => _buildPhotoItem(photos[index], index),
+                  ),
+                ),
+        ),
       ],
     );
   }
@@ -136,37 +139,4 @@ class InspectionPhotoPicker extends StatelessWidget {
     );
   }
 
-  /// 사진 추가 버튼 위젯
-  Widget _buildAddPhotoButton() {
-    return GestureDetector(
-      onTap: onAddPhoto,
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey, width: 2),
-          borderRadius: BorderRadius.circular(8),
-          color: Colors.grey[100],
-        ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_a_photo,
-              size: 40,
-              color: Colors.grey,
-            ),
-            SizedBox(height: 8),
-            Text(
-              '사진 추가',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

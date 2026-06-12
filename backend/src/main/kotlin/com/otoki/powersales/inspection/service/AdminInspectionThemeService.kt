@@ -2,7 +2,6 @@ package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.PublicUrlResolver
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.AdminThemeDetailResponse
@@ -32,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 신규 차이
  * - 테마번호 채번: DB 의 `TM` 최대 일련번호 + 1 (8자리 zero-pad) — SF AutoNumber 형식 유지
- * - `PublicFlag__c`: SF 에서 사실상 미사용 dead field. 신규는 생성 시 true 고정 (모바일 가시성 기본 노출)
+ * - `PublicFlag__c`: SF 에서 사실상 미사용 dead field. 신규는 레거시 기본값 정합으로 false 고정 (조회 필터엔 미사용)
  * - 부서/지점: before-insert 자동 주입 동일. 수정 시 OwnerId 변경 미지원 → 부서/지점 불변
  * - 삭제: soft delete (`isDeleted = true`)
  */
@@ -44,7 +43,6 @@ class AdminInspectionThemeService(
     private val employeeRepository: EmployeeRepository,
     private val userRepository: UserRepository,
     private val uploadFileRepository: UploadFileRepository,
-    private val publicUrlResolver: PublicUrlResolver,
 ) {
 
     companion object {
@@ -237,7 +235,4 @@ class AdminInspectionThemeService(
         val next = inspectionThemeRepository.findMaxThemeNumberSequence() + 1
         return THEME_NUMBER_PREFIX + next.toString().padStart(THEME_NUMBER_DIGITS, '0')
     }
-
-    internal fun composeS3Url(key: String): String =
-        publicUrlResolver.resolve(key)!!
 }

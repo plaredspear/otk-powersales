@@ -4,7 +4,7 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.PublicUrlResolver
+import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.inspection.entity.InspectionTheme
@@ -30,12 +30,14 @@ class AdminSiteActivityServiceTest {
     private val siteActivityRepository: SiteActivityRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk()
     private val policyEvaluator: SharingRulePolicyEvaluator = mockk()
+    // 사진 조회는 presigned URL 발급 — 본 테스트는 사진 없는 케이스라 호출 없음.
+    private val storageService: StorageService = mockk()
 
     private val service = AdminSiteActivityService(
         siteActivityRepository = siteActivityRepository,
         uploadFileRepository = uploadFileRepository,
         policyEvaluator = policyEvaluator,
-        publicUrlResolver = PublicUrlResolver(prefix = "")
+        storageService = storageService
     )
 
     private val allowAllScope = DataScope(branchCodes = emptyList(), isAllBranches = true)

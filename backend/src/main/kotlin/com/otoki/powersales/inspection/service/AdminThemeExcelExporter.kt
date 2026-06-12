@@ -1,15 +1,21 @@
 package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.common.repository.UploadFileRepository
+import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
 import java.io.ByteArrayOutputStream
 import java.time.format.DateTimeFormatter
+import org.apache.poi.ss.usermodel.ClientAnchor
+import org.apache.poi.ss.usermodel.CreationHelper
 import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.IndexedColors
+import org.apache.poi.ss.usermodel.Workbook
+import org.apache.poi.xssf.usermodel.XSSFDrawing
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -26,10 +32,11 @@ class AdminThemeExcelExporter(
     private val inspectionThemeRepository: InspectionThemeRepository,
     private val siteActivityRepository: SiteActivityRepository,
     private val uploadFileRepository: UploadFileRepository,
-    private val themeService: AdminInspectionThemeService,
+    private val fileStorageService: FileStorageService,
 ) {
 
     companion object {
+        private val log = LoggerFactory.getLogger(AdminThemeExcelExporter::class.java)
         private val DATE_FMT = DateTimeFormatter.ofPattern("yyyy/MM/dd")
         private val HEADERS = listOf(
             "현장활동번호", "제품구분", "현장유형", "소속", "직위", "사번", "직원",
@@ -37,6 +44,12 @@ class AdminThemeExcelExporter(
             "설명", "경쟁사명", "경쟁사상품명", "경쟁사 상품 시식여부", "경쟁사 활동내용",
             "경쟁사 상품 가격", "행사 시 판매수량", "점검날짜", "이미지1", "이미지2",
         )
+
+        // 이미지 컬럼 인덱스(이미지1/이미지2) 및 임베드 표시용 셀 크기.
+        private const val IMG_COL_1 = 21
+        private const val IMG_COL_2 = 22
+        private const val IMG_COL_WIDTH = 18 * 256 // 약 140px
+        private const val IMG_ROW_HEIGHT_PT = 90f
     }
 
     fun export(themeId: Long): ExcelResult {
@@ -76,10 +89,17 @@ class AdminThemeExcelExporter(
                 }
             }
 
+            // 이미지 컬럼 폭 + 임베드용 drawing 준비. 사진은 private/ 저장이라 presigned URL 은 만료되므로
+            // URL 문자열 대신 이미지 바이트를 직접 셀에 임베드한다.
+            sheet.setColumnWidth(IMG_COL_1, IMG_COL_WIDTH)
+            sheet.setColumnWidth(IMG_COL_2, IMG_COL_WIDTH)
+            val drawing = sheet.createDrawingPatriarch()
+            val anchorHelper = wb.creationHelper
+
             // 데이터행
             activities.forEachIndexed { idx, sa ->
-                val row = sheet.createRow(idx + 2)
-                val images = imageUrls(sa)
+                val rowIdx = idx + 2
+                val row = sheet.createRow(rowIdx)
                 val values = listOf(
                     sa.name,
                     sa.productType,
@@ -102,10 +122,17 @@ class AdminThemeExcelExporter(
                     sa.competitorProudctPrice?.toPlainString(),
                     sa.salesQuantity?.toPlainString(),
                     sa.activityDate?.toString(),
-                    images.getOrNull(0),
-                    images.getOrNull(1),
                 )
                 values.forEachIndexed { i, v -> row.createCell(i).setCellValue(v ?: "") }
+
+                // 이미지1/이미지2 — 바이트 임베드 (최대 2장)
+                val keys = photoKeys(sa)
+                if (keys.isNotEmpty()) {
+                    row.heightInPoints = IMG_ROW_HEIGHT_PT
+                    keys.forEachIndexed { i, key ->
+                        embedPhoto(wb, drawing, anchorHelper, key, IMG_COL_1 + i, rowIdx)
+                    }
+                }
             }
 
             ByteArrayOutputStream().use { out ->
@@ -118,13 +145,48 @@ class AdminThemeExcelExporter(
         return ExcelResult(bytes = bytes, filename = filename)
     }
 
-    private fun imageUrls(sa: SiteActivity): List<String> =
+    /** 현장점검 첨부 사진 uniqueKey 목록 (생성순, 최대 2장). */
+    private fun photoKeys(sa: SiteActivity): List<String> =
         uploadFileRepository
             .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SITE_ACTIVITY, sa.id)
             .filter { !it.uniqueKey.isNullOrBlank() }
             .sortedBy { it.createdAt }
             .take(2)
-            .map { themeService.composeS3Url(it.uniqueKey!!) }
+            .map { it.uniqueKey!! }
+
+    /**
+     * private/ 객체 바이트를 내려받아 셀(1칸)에 이미지로 임베드한다. 개별 사진 다운로드 실패는
+     * export 전체를 막지 않고 로그 후 건너뛴다.
+     */
+    private fun embedPhoto(
+        wb: XSSFWorkbook,
+        drawing: XSSFDrawing,
+        helper: CreationHelper,
+        uniqueKey: String,
+        col: Int,
+        rowIdx: Int,
+    ) {
+        val bytes = try {
+            fileStorageService.downloadSiteActivityPhoto(uniqueKey)
+        } catch (e: Exception) {
+            log.warn("현장활동 엑셀 이미지 임베드 실패 — key={}, cause={}", uniqueKey, e.message)
+            return
+        }
+        val pictureType = if (uniqueKey.lowercase().endsWith(".png")) {
+            Workbook.PICTURE_TYPE_PNG
+        } else {
+            Workbook.PICTURE_TYPE_JPEG
+        }
+        val pictureIdx = wb.addPicture(bytes, pictureType)
+        val anchor = helper.createClientAnchor().apply {
+            anchorType = ClientAnchor.AnchorType.MOVE_AND_RESIZE
+            setCol1(col)
+            row1 = rowIdx
+            setCol2(col + 1)
+            row2 = rowIdx + 1
+        }
+        drawing.createPicture(anchor, pictureIdx)
+    }
 
     data class ExcelResult(
         val bytes: ByteArray,
