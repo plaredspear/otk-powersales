@@ -21,6 +21,10 @@ class PromotionEmployeeRepositoryCustomImpl(
         return queryFactory
             .selectFrom(promotionEmployee)
             .join(promotionEmployee.promotion, promotion)
+            // parentPolicyPredicate 의 owner/hierarchy path (promotion.ownerUser.*) 가 implicit
+            // inner join 을 만들지 않도록 명시적 leftJoin. OR 합성이라 부모 ownerUser=null row 도
+            // 다른 절로 통과해야 한다 (PromotionRepositoryCustomImpl 동일 패턴).
+            .leftJoin(promotion.ownerUser)
             .where(parentPolicyPredicate)
             .fetch()
     }
