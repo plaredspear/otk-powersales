@@ -16,7 +16,7 @@ import '../widgets/promotion/promotion_employee_list.dart';
 ///
 /// 레거시 Heroku `promotion/event/view.jsp` 정합 — 상단 헤더(`[행사유형] 행사명` + 기간)
 /// 아래 "매출" / "행사 정보" 두 탭 구성.
-/// - 매출 탭: 진행율(날짜 경과율) + 목표·달성 금액(달성률) + 내 일별 매출.
+/// - 매출 탭: 기간 경과율(날짜 경과율) + 목표·달성 금액(달성률) + 내 일별 매출.
 /// - 행사 정보 탭: 행사번호~기타상품 기본 정보 + 배정 조원 목록(모바일 확장).
 class PromotionDetailPage extends ConsumerStatefulWidget {
   final int promotionId;
@@ -203,14 +203,25 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
     );
   }
 
-  /// 진행율 = 날짜 경과율. 레거시 view.jsp: `round(100 - 남은일수/전체일수 * 100)`.
+  /// 기간 경과율 = 날짜 경과율. 레거시 view.jsp: `round(100 - 남은일수/전체일수 * 100)`.
   /// 프로그레스 바 표시 안정성을 위해 0~100 범위로 클램프.
   Widget _buildProgressSection(PromotionDetail detail) {
     final percent = _progressPercent(detail);
+    final remaining = _remainingLabel(detail);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader(Icons.show_chart, '진행율'),
+        _sectionHeader(
+          Icons.show_chart,
+          '기간 경과율',
+          trailing: remaining == null
+              ? null
+              : Text(
+                  remaining,
+                  style: AppTypography.bodyMedium
+                      .copyWith(color: AppColors.textSecondary),
+                ),
+        ),
         const SizedBox(height: AppSpacing.md),
         ClipRRect(
           borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
@@ -531,12 +542,16 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
 
   // ─── 공통 위젯 ──────────────────────────────────────────────
 
-  Widget _sectionHeader(IconData icon, String title) {
+  Widget _sectionHeader(IconData icon, String title, {Widget? trailing}) {
     return Row(
       children: [
         Icon(icon, size: 18, color: AppColors.secondary),
         const SizedBox(width: AppSpacing.xs),
         Text(title, style: AppTypography.headlineSmall),
+        if (trailing != null) ...[
+          const Spacer(),
+          trailing,
+        ],
       ],
     );
   }
@@ -590,6 +605,23 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
   int _ceilDays(DateTime a, DateTime b) {
     final ms = a.difference(b).inMilliseconds.abs();
     return (ms / Duration.millisecondsPerDay).ceil();
+  }
+
+  /// 기간 경과율 헤더 우측 라벨. 경과율 바와 경계를 맞춰
+  /// 종료(`now >= end`)/시작 전(`now < start`)/진행 중(남은 일수)을 구분.
+  String? _remainingLabel(PromotionDetail detail) {
+    final start = DateTime.tryParse(detail.startDate);
+    final end = DateTime.tryParse(detail.endDate);
+    if (start == null || end == null) return null;
+
+    final now = DateTime.now();
+    if (!now.isBefore(end)) return '종료';
+    if (now.isBefore(start)) return '시작 전';
+
+    final today = DateTime(now.year, now.month, now.day);
+    final endDay = DateTime(end.year, end.month, end.day);
+    final days = endDay.difference(today).inDays;
+    return days <= 0 ? '오늘 종료' : '$days일 남음';
   }
 
   /// 행사 기간(start~end) 전체 날짜 행 구성. 각 날짜의 조원 실적 합계를 매핑
