@@ -149,7 +149,7 @@ class _ClaimFieldLabel extends StatelessWidget {
         text: label,
         style: TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: enabled ? ClaimFormColors.label : ClaimFormColors.labelDisabled,
         ),
         children: [

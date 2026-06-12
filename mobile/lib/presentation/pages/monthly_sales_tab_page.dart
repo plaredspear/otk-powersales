@@ -276,7 +276,7 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
                     Text(targetLabel,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600)),
+                            fontSize: 15, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
                     Text('${_man(targetAmount)} 만원',
                         style: const TextStyle(
@@ -302,7 +302,7 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
                     Text(actualLabel,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
-                            fontSize: 15, fontWeight: FontWeight.w600)),
+                            fontSize: 15, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 6),
                     Text('${_man(actualAmount)} 만원',
                         style: const TextStyle(

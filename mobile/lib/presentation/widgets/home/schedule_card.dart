@@ -289,7 +289,7 @@ class ScheduleCard extends StatelessWidget {
                 color: schedule.isCommuteRegistered
                     ? AppColors.success
                     : AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

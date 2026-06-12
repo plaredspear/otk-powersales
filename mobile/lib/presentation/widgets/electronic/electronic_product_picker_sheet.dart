@@ -218,7 +218,7 @@ class _ProductRow extends StatelessWidget {
                   Text(
                     product.productName,
                     style: AppTypography.bodyLarge
-                        .copyWith(fontWeight: FontWeight.w600),
+                        .copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   ...details.map(

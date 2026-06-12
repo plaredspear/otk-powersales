@@ -113,7 +113,7 @@ class _AssignmentRow extends StatelessWidget {
                   Text(
                     assignment.promotionNumber,
                     style: AppTypography.bodyLarge
-                        .copyWith(fontWeight: FontWeight.w600),
+                        .copyWith(fontWeight: FontWeight.w700),
                   ),
                   if (subtitleParts.isNotEmpty) ...[
                     const SizedBox(height: AppSpacing.xs),
@@ -154,7 +154,7 @@ class _ClosedBadge extends StatelessWidget {
         '등록완료',
         style: AppTypography.labelMedium.copyWith(
           color: AppColors.textSecondary,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

@@ -76,7 +76,7 @@ class MyScheduleCalendarPage extends ConsumerWidget {
                 Text(
                   '${state.currentYear}년 ${state.currentMonth}월',
                   style: AppTypography.headlineSmall.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
 

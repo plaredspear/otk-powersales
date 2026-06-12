@@ -131,7 +131,7 @@ class ProductExpirationDeleteCard extends StatelessWidget {
         dDayText,
         style: AppTypography.labelSmall.copyWith(
           color: color,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

@@ -60,7 +60,7 @@ class EducationPostItem extends StatelessWidget {
               post.title,
               style: AppTypography.bodyLarge.copyWith(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

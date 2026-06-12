@@ -93,8 +93,8 @@ class OrderRequestSortBottomSheet extends StatelessWidget {
                               ? AppColors.otokiBlue
                               : AppColors.textPrimary,
                           fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                              ? FontWeight.w700
+                              : FontWeight.w300,
                         ),
                       ),
                     ),

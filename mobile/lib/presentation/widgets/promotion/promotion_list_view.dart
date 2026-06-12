@@ -282,11 +282,11 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
         children: [
           Text('내 행사 현황 ',
               style: AppTypography.bodyLarge
-                  .copyWith(fontWeight: FontWeight.w600)),
+                  .copyWith(fontWeight: FontWeight.w700)),
           Text(
             '(${state.totalElements})',
             style: AppTypography.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: AppColors.otokiRed,
             ),
           ),

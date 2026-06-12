@@ -47,7 +47,7 @@ class SafetyCheckRequiredBanner extends StatelessWidget {
                   '안전점검을 먼저 완료해 주세요',
                   style: TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
                 ),

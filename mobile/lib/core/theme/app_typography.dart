@@ -32,45 +32,48 @@ abstract final class AppTypography {
     color: AppColors.textPrimary,
   );
 
-  /// 섹션 제목 (18sp, SemiBold)
+  /// 섹션 제목 (18sp, Bold)
   /// 사용: "당월 매출 실적", "전년 대비 동월 실적"
+  /// OtokiSans 미보유 w600 → 보유 weight Bold(700)로 고정
   static const TextStyle headlineMedium = TextStyle(
     fontSize: 18,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     height: 1.35,
     color: AppColors.textPrimary,
   );
 
-  /// 카드 제목, 날짜 (16sp, SemiBold)
+  /// 카드 제목, 날짜 (16sp, Bold)
   /// 사용: "마감합계 실적", "2025년 12월"
+  /// OtokiSans 미보유 w600 → 보유 weight Bold(700)로 고정
   static const TextStyle headlineSmall = TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w700,
     height: 1.35,
     color: AppColors.textPrimary,
   );
 
   // ─── Body ────────────────────────────────────────────────
-  /// 본문 텍스트 (16sp, Regular)
+  /// 본문 텍스트 (16sp, Light)
+  /// OtokiSans 미보유 w400 → 보유 weight Light(300)로 고정
   static const TextStyle bodyLarge = TextStyle(
     fontSize: 16,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w300,
     height: 1.5,
     color: AppColors.textPrimary,
   );
 
-  /// 일반 본문, 리스트 항목 (14sp, Regular)
+  /// 일반 본문, 리스트 항목 (14sp, Light)
   static const TextStyle bodyMedium = TextStyle(
     fontSize: 14,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w300,
     height: 1.5,
     color: AppColors.textPrimary,
   );
 
-  /// 날짜, 부가 설명 (12sp, Regular)
+  /// 날짜, 부가 설명 (12sp, Light)
   static const TextStyle bodySmall = TextStyle(
     fontSize: 12,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w300,
     height: 1.4,
     color: AppColors.textSecondary,
   );
@@ -155,11 +158,12 @@ abstract final class AppTypography {
     color: AppColors.textPrimary,
   );
 
-  /// 공지 작성일 (14/400)
+  /// 공지 작성일 (14/300)
+  /// OtokiSans 미보유 w400 → 보유 weight Light(300)로 고정
   static const TextStyle legacyCaption = TextStyle(
     fontFamily: legacyFontFamily,
     fontSize: 14,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w300,
     height: 1.4,
     letterSpacing: -0.25,
     color: AppColors.legacyTextMute,

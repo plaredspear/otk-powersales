@@ -67,7 +67,7 @@ class EducationCategoryCard extends StatelessWidget {
                   color: AppColors.legacyTextSub,
                   fontSize: 16,
                   height: 18 / 16,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w300,
                   letterSpacing: -0.8,
                 ),
                 textAlign: TextAlign.center,

@@ -132,7 +132,7 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
             Text(
               '제품',
               style: TextStyle(
-                  fontSize: 10, fontWeight: FontWeight.w600, height: 1.1),
+                  fontSize: 10, fontWeight: FontWeight.w700, height: 1.1),
             ),
           ],
         ),

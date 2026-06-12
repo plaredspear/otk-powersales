@@ -78,7 +78,7 @@ class LeaderScheduleCalendarGrid extends StatelessWidget {
                     child: Text(
                       e.value,
                       style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: color,
                       ),
                     ),

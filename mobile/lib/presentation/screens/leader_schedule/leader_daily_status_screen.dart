@@ -731,7 +731,7 @@ class _DateSelector extends StatelessWidget {
                   Text(
                     label,
                     style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -1000,7 +1000,7 @@ class _JumpLink extends StatelessWidget {
           label,
           style: AppTypography.bodyMedium.copyWith(
             color: AppColors.secondary,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -1590,7 +1590,7 @@ class _RegisterAccountRow extends StatelessWidget {
                 Text(
                   row.accountName,
                   style: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -1610,7 +1610,7 @@ class _RegisterAccountRow extends StatelessWidget {
             done ? '등록 완료' : '미등록',
             style: AppTypography.bodySmall.copyWith(
               color: done ? AppColors.success : AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1736,7 +1736,7 @@ class _WorkerCard extends StatelessWidget {
                     Text(
                       '${worker.employeeName} (${worker.employeeCode})',
                       style: AppTypography.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -1848,7 +1848,7 @@ class _ChangeButton extends StatelessWidget {
           '변경불가',
           style: AppTypography.labelSmall.copyWith(
             color: AppColors.textSecondary,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       );
@@ -1870,7 +1870,7 @@ class _ChangeButton extends StatelessWidget {
           '변경',
           style: AppTypography.labelSmall.copyWith(
             color: AppColors.secondary,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -1899,7 +1899,7 @@ class _AttendanceBadge extends StatelessWidget {
         attended ? '등록완료' : '미등록',
         style: AppTypography.labelSmall.copyWith(
           color: color,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -1927,7 +1927,7 @@ class _AnnualLeaveCard extends StatelessWidget {
       child: Text(
         '${employee.employeeName} (${employee.employeeCode})',
         style: AppTypography.bodyLarge.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
       ),

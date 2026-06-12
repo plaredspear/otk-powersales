@@ -344,7 +344,7 @@ class _FemaleStaffRow extends StatelessWidget {
               child: Text(
                 '${member.name} (${member.employeeCode})',
                 style: AppTypography.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
               ),

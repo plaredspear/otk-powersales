@@ -73,7 +73,7 @@ class _HubButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
       ),
     );

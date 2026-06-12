@@ -110,7 +110,7 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
     final children = <Widget>[
       Text(
         title,
-        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+        style: AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
       ),
       const SizedBox(height: AppSpacing.sm),
     ];
@@ -251,7 +251,7 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
           Text(
             '첨부 사진',
             style:
-                AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w600),
+                AppTypography.bodySmall.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AppSpacing.sm),
           ...groups,
@@ -267,7 +267,7 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
         Text(
           label,
           style: AppTypography.bodySmall.copyWith(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: AppColors.textSecondary,
           ),
         ),

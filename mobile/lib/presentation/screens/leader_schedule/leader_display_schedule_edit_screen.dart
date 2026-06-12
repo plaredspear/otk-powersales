@@ -320,7 +320,7 @@ class _LeaderDisplayScheduleEditScreenState
         padding: const EdgeInsets.only(bottom: AppSpacing.xs),
         child: Text(t,
             style: AppTypography.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
       );
 
   Widget _boxed(Widget child) => Container(

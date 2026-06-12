@@ -168,7 +168,7 @@ class _ProductExpirationRegisterPageState
                       '등록',
                       style: TextStyle(
                         fontSize: 17,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: enabled
                             ? AppColors.textPrimary
                             : AppColors.textTertiary,

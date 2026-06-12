@@ -145,7 +145,7 @@ class DeliveryInfoPopup extends StatelessWidget {
             value,
             style: AppTypography.bodyMedium.copyWith(
               color: valueColor ?? AppColors.textPrimary,
-              fontWeight: valueColor != null ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: valueColor != null ? FontWeight.w700 : FontWeight.normal,
             ),
           ),
         ),

@@ -68,7 +68,7 @@ class PrimaryButton extends StatelessWidget {
                 text,
                 style: AppTypography.labelLarge.copyWith(
                   fontSize: fontSize,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: _isEnabled ? AppColors.white : AppColors.textTertiary,
                 ),
               ),

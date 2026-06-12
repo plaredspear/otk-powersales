@@ -38,7 +38,7 @@ class OrderRequestStatusBadge extends StatelessWidget {
         status.displayName,
         style: AppTypography.labelMedium.copyWith(
           color: status.color,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

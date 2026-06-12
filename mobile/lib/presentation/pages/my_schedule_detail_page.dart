@@ -227,7 +227,7 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
               Text(
                 '${info.memberName} (${info.employeeCode})',
                 style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -337,7 +337,7 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
               Text(
                 '${info.memberName} (${info.reportProgress.workType})',
                 style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
