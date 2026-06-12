@@ -105,7 +105,7 @@ class ErrorView extends StatelessWidget {
             message,
             style: const TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: Colors.black87,
             ),
             textAlign: TextAlign.center,

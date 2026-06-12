@@ -456,7 +456,7 @@ class _BottomBarButton extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 17,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: textColor,
             ),
           ),

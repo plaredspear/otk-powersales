@@ -1,5 +1,6 @@
 import '../entities/inspection_list_item.dart';
 import '../entities/inspection_detail.dart';
+import '../entities/inspection_draft.dart';
 import '../entities/inspection_form.dart';
 import '../entities/inspection_theme.dart';
 import '../entities/inspection_field_type.dart';
@@ -36,4 +37,19 @@ abstract class InspectionRepository {
   ///
   /// Returns: 현장 유형 코드 목록
   Future<List<InspectionFieldType>> getFieldTypes();
+
+  /// 임시저장 조회
+  ///
+  /// Returns: 사원 본인의 임시저장 (없으면 null)
+  Future<InspectionDraft?> getDraft();
+
+  /// 임시저장 (검증 없이 현재 폼 상태를 upsert)
+  ///
+  /// [form]: 등록 폼 데이터
+  /// [accountName]/[productName]: prefill 표시용 이름
+  Future<void> saveDraft(
+    InspectionRegisterForm form, {
+    String? accountName,
+    String? productName,
+  });
 }

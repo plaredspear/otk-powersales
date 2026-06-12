@@ -100,7 +100,7 @@ class _CategoryOption extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 color: selected ? kSuggestionLabelColor : const Color(0xFF555555),
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w300,
               ),
             ),
           ],

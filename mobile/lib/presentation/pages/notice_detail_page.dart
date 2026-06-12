@@ -120,7 +120,7 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
                 color: detail.category == NoticeCategory.company
                     ? AppColors.primary
                     : AppColors.white,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

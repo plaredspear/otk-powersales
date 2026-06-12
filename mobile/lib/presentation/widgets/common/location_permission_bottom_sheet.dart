@@ -96,7 +96,7 @@ class LocationPermissionBottomSheet extends StatelessWidget {
                 openSettings ? '설정으로 이동' : '권한 허용하기',
                 style: const TextStyle(
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),

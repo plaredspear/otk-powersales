@@ -232,7 +232,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 '비밀번호 변경',
                 style: AppTypography.labelLarge.copyWith(
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
       ),

@@ -241,7 +241,7 @@ class PosSalesScreen extends ConsumerWidget {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: const Text('매출 조회',
-            style: TextStyle(fontWeight: FontWeight.w600)),
+            style: TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }

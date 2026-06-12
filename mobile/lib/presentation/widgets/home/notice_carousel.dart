@@ -48,9 +48,12 @@ class NoticeCarousel extends StatelessWidget {
       height: AppSpacing.homeNoticeCardHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        // 카드 높이가 뷰포트와 같아 기본 클리핑 시 하단 그림자가 잘린다.
+        // 클리핑을 꺼 위/아래 간격으로 그림자가 그려지게 한다(가로 오버플로우는 화면 밖).
+        clipBehavior: Clip.none,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.homeGutter),
         itemCount: notices.length + 1,
-        separatorBuilder: (_, __) =>
+        separatorBuilder: (_, _) =>
             const SizedBox(width: AppSpacing.homeNoticeCardGap),
         itemBuilder: (context, index) {
           if (index == notices.length) {

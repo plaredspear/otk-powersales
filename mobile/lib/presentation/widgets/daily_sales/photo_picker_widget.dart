@@ -34,7 +34,7 @@ class PhotoPickerWidget extends StatelessWidget {
           '사진 첨부',
           style: TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 12),

@@ -5,7 +5,7 @@ import '../common/synced_text_field.dart';
 /// 현장 점검 등록 - 자사 활동 정보 폼
 ///
 /// 포함 필드:
-/// - 설명 (선택)
+/// - 설명 (필수): 레거시 fieldChk 정합 — 자사 점검 시 설명 필수
 /// - 제품 선택 (필수): 바코드 스캔 또는 수동 선택
 class InspectionOwnForm extends StatelessWidget {
   /// 선택된 제품명
@@ -46,18 +46,37 @@ class InspectionOwnForm extends StatelessWidget {
           ),
         ),
 
-        // 설명 필드 (선택)
+        // 설명 필드 (필수) — 레거시 정합: 자사 설명 필수
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: SyncedTextField(
-            value: description ?? '',
-            onChanged: onDescriptionChanged,
-            decoration: const InputDecoration(
-              labelText: '설명',
-              hintText: '예: 냉장고 앞 본매대',
-              border: OutlineInputBorder(),
-            ),
-            maxLines: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: const TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '설명',
+                      style: TextStyle(fontSize: 16, color: Colors.black87),
+                    ),
+                    TextSpan(
+                      text: ' *',
+                      style: TextStyle(fontSize: 16, color: Colors.red),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              SyncedTextField(
+                value: description ?? '',
+                onChanged: onDescriptionChanged,
+                decoration: const InputDecoration(
+                  hintText: '예: 냉장고 앞 본매대',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
           ),
         ),
 

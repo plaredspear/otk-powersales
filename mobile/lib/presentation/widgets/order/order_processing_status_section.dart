@@ -150,7 +150,7 @@ class OrderProcessingStatusSection extends StatelessWidget {
               item.deliveryStatus.displayName,
               style: AppTypography.bodyMedium.copyWith(
                 color: _getStatusColor(item.deliveryStatus),
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
               textAlign: TextAlign.right,
             ),

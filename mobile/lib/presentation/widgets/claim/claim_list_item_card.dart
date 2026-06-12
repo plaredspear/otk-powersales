@@ -67,7 +67,7 @@ class ClaimListItemCard extends StatelessWidget {
           child: Text(
             title,
             style: AppTypography.bodySmall.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

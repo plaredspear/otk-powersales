@@ -1,6 +1,6 @@
-import 'dart:io';
-
+import '../../domain/entities/inspection_form.dart';
 import '../models/inspection_detail_model.dart';
+import '../models/inspection_draft_model.dart';
 import '../models/inspection_field_type_model.dart';
 import '../models/inspection_list_item_model.dart';
 import '../models/inspection_register_request.dart';
@@ -48,4 +48,21 @@ abstract class InspectionRemoteDataSource {
   ///
   /// 현장 유형 코드 목록을 조회합니다.
   Future<List<InspectionFieldTypeModel>> getFieldTypes();
+
+  /// GET /api/v1/mobile/inspections/draft
+  ///
+  /// 사원 본인의 임시저장을 조회합니다. 없으면 null.
+  /// 사진은 임시 파일로 내려받아 채워 반환합니다.
+  Future<InspectionDraftModel?> getDraft();
+
+  /// POST /api/v1/mobile/inspections/draft (multipart/form-data)
+  ///
+  /// 현재 폼 상태를 검증 없이 임시저장(upsert)합니다.
+  ///
+  /// [form] 등록 폼 데이터, [accountName]/[productName] 은 prefill 표시용 이름.
+  Future<void> saveDraft(
+    InspectionRegisterForm form, {
+    String? accountName,
+    String? productName,
+  });
 }

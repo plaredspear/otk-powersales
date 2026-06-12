@@ -88,7 +88,7 @@ class _EducationIntro extends StatelessWidget {
     color: AppColors.textPrimary,
     fontSize: 16,
     height: 1.6,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w300,
     letterSpacing: -0.5,
   );
 

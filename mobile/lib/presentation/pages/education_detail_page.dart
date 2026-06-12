@@ -97,7 +97,7 @@ class EducationDetailPage extends ConsumerWidget {
                     detail.categoryName,
                     style: AppTypography.labelSmall.copyWith(
                       color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -143,7 +143,7 @@ class EducationDetailPage extends ConsumerWidget {
                     '첨부 문서',
                     style: AppTypography.labelMedium.copyWith(
                       color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),

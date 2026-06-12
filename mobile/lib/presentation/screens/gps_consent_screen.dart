@@ -139,7 +139,7 @@ class _GpsConsentScreenState extends ConsumerState<GpsConsentScreen> {
     return Text(
       '개인정보, 위치정보의 수집 및\n이용에 대한 동의서',
       style: AppTypography.headlineSmall.copyWith(
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
       ),
       textAlign: TextAlign.center,
     );
@@ -201,7 +201,7 @@ class _GpsConsentScreenState extends ConsumerState<GpsConsentScreen> {
                   '동의',
                   style: AppTypography.labelLarge.copyWith(
                     fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
         ),

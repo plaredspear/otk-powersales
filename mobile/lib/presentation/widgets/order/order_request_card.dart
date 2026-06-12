@@ -124,7 +124,7 @@ class OrderRequestCard extends StatelessWidget {
             value,
             style: isHighlighted
                 ? AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   )
                 : AppTypography.bodySmall.copyWith(

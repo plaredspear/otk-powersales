@@ -56,6 +56,22 @@ class EmployeeInfo(
     @Column(name = "last_agreement_number", length = 80)
     var lastAgreementNumber: String? = null,
 
+    // --- 사용자별 "현재 사용 중인 앱 버전" 스냅샷 (백엔드 전용, HC sync 대상 아님) ---
+    // 로그인/토큰 리프레시 때 클라이언트가 보고한 값으로 덮어쓴다(현재값만 유지, 이력 X).
+    // 웹 관리자(사원 상세 > 앱 설정)에서 사용 버전 분포 파악 용도.
+
+    @Column(name = "app_version_name", length = 40)
+    var appVersionName: String? = null,
+
+    @Column(name = "app_version_code")
+    var appVersionCode: Long? = null,
+
+    @Column(name = "app_platform", length = 20)
+    var appPlatform: String? = null,
+
+    @Column(name = "app_version_seen_at")
+    var appVersionSeenAt: LocalDateTime? = null,
+
     /**
      * Heroku 원본 생성/수정 시각.
      *

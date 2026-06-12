@@ -73,7 +73,7 @@ class AttendanceCompletePage extends ConsumerWidget {
                 result.accountName,
                 style: const TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.otokiBlue,
                 ),
                 textAlign: TextAlign.center,
@@ -92,7 +92,7 @@ class AttendanceCompletePage extends ConsumerWidget {
                   workTypeLabel,
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -153,7 +153,7 @@ class AttendanceCompletePage extends ConsumerWidget {
                         '모든 거래처 등록 완료!',
                         style: TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.success,
                         ),
                       ),

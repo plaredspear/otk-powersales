@@ -440,7 +440,7 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
           Text(
             _formatSalesAmount(row.amount),
             style: AppTypography.bodyMedium
-                .copyWith(fontWeight: FontWeight.w600),
+                .copyWith(fontWeight: FontWeight.w700),
           ),
         ],
       ),
@@ -489,7 +489,7 @@ class _PromotionDetailPageState extends ConsumerState<PromotionDetailPage>
         '마감',
         style: AppTypography.labelMedium.copyWith(
           color: AppColors.textSecondary,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

@@ -108,7 +108,7 @@ class _ProductExpirationAddProductSheetState
               labelColor: AppColors.otokiBlue,
               unselectedLabelColor: AppColors.textSecondary,
               labelStyle: AppTypography.bodyLarge
-                  .copyWith(fontWeight: FontWeight.w600),
+                  .copyWith(fontWeight: FontWeight.w700),
               unselectedLabelStyle: AppTypography.bodyLarge,
               indicatorColor: AppColors.otokiBlue,
               indicatorWeight: AppSpacing.tabIndicatorWeight,
@@ -323,7 +323,7 @@ class _ProductRow extends StatelessWidget {
                   Text(
                     product.productName,
                     style: AppTypography.bodyLarge
-                        .copyWith(fontWeight: FontWeight.w600),
+                        .copyWith(fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   ...details.map(
@@ -654,7 +654,7 @@ class _SearchButton extends StatelessWidget {
             '검색',
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),

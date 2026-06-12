@@ -17,7 +17,7 @@ class PromotionAmountText extends StatelessWidget {
       style: style ??
           AppTypography.bodySmall.copyWith(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
     );
   }

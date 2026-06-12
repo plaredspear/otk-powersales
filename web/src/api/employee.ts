@@ -105,6 +105,11 @@ export interface EmployeeDetail {
   lockingFlag: boolean | null;
   professionalPromotionTeam: PPTTeamType | null;
   agreementFlag: boolean | null;
+  // 사용자가 마지막 로그인/리프레시 때 보고한 현재 사용 앱 버전 (미보고 시 null)
+  appVersionName: string | null;
+  appVersionCode: number | null;
+  appPlatform: string | null;
+  appVersionSeenAt: string | null;
 
   // 근무 정보
   crmWorkType: string | null;

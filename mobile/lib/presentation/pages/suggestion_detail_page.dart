@@ -74,7 +74,7 @@ class SuggestionDetailPage extends ConsumerWidget {
                     color: detail.isLogisticsClaim
                         ? AppColors.white
                         : AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -126,7 +126,7 @@ class SuggestionDetailPage extends ConsumerWidget {
             '내용',
             style: AppTypography.labelMedium.copyWith(
               color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
@@ -151,7 +151,7 @@ class SuggestionDetailPage extends ConsumerWidget {
               '첨부 사진',
               style: AppTypography.labelMedium.copyWith(
                 color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),

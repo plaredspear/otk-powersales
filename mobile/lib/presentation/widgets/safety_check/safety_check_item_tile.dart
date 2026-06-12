@@ -117,7 +117,7 @@ class SafetyCheckAccordionTile extends StatelessWidget {
                         selectedAnswer!,
                         style: const TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.primary,
                         ),
                       ),
@@ -182,7 +182,7 @@ class SafetyCheckAccordionTile extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: isSelected
-                                        ? FontWeight.w600
+                                        ? FontWeight.w700
                                         : FontWeight.normal,
                                     color: isSelected
                                         ? AppColors.primary

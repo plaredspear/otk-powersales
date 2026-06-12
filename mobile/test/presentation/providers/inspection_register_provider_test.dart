@@ -1,13 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/domain/entities/inspection_draft.dart';
 import 'package:mobile/domain/entities/inspection_field_type.dart';
 import 'package:mobile/domain/entities/inspection_form.dart';
 import 'package:mobile/domain/entities/inspection_list_item.dart';
 import 'package:mobile/domain/entities/inspection_theme.dart';
 import 'package:mobile/domain/usecases/get_field_types_usecase.dart';
+import 'package:mobile/domain/usecases/get_inspection_draft_usecase.dart';
 import 'package:mobile/domain/usecases/get_themes_usecase.dart';
 import 'package:mobile/domain/usecases/register_inspection_usecase.dart';
+import 'package:mobile/domain/usecases/save_inspection_draft_usecase.dart';
 import 'package:mobile/presentation/providers/inspection_register_provider.dart';
 
 // Mock classes
@@ -58,6 +61,26 @@ class MockRegisterInspectionUseCase implements RegisterInspectionUseCase {
   }
 }
 
+class MockGetInspectionDraftUseCase implements GetInspectionDraftUseCase {
+  InspectionDraft? result;
+
+  @override
+  Future<InspectionDraft?> call() async => result;
+}
+
+class MockSaveInspectionDraftUseCase implements SaveInspectionDraftUseCase {
+  InspectionRegisterForm? savedForm;
+
+  @override
+  Future<void> call(
+    InspectionRegisterForm form, {
+    String? accountName,
+    String? productName,
+  }) async {
+    savedForm = form;
+  }
+}
+
 void main() {
   group('InspectionRegisterNotifier', () {
     late InspectionRegisterNotifier notifier;
@@ -69,6 +92,8 @@ void main() {
         getThemes: MockGetThemesUseCase(),
         getFieldTypes: MockGetFieldTypesUseCase(),
         registerInspection: mockRegisterUseCase,
+        getDraft: MockGetInspectionDraftUseCase(),
+        saveDraft: MockSaveInspectionDraftUseCase(),
       );
     });
 
@@ -333,8 +358,10 @@ void main() {
       // Given
       await notifier.initialize();
       notifier.selectTheme(notifier.state.themes.first);
+      notifier.updateInspectionDate(DateTime(2020, 8, 15)); // 테마 기간(8월) 내
       notifier.selectAccount(100, '이마트 죽전점');
       notifier.selectFieldType(notifier.state.fieldTypes.first);
+      notifier.updateDescription('본매대 점검'); // 자사 설명 필수(레거시 정합)
       notifier.selectProduct('P001', '진라면');
       notifier.addPhoto(File('test.jpg'));
 
@@ -351,8 +378,10 @@ void main() {
       mockRegisterUseCase.shouldFail = true;
       await notifier.initialize();
       notifier.selectTheme(notifier.state.themes.first);
+      notifier.updateInspectionDate(DateTime(2020, 8, 15)); // 테마 기간(8월) 내
       notifier.selectAccount(100, '이마트 죽전점');
       notifier.selectFieldType(notifier.state.fieldTypes.first);
+      notifier.updateDescription('본매대 점검'); // 자사 설명 필수(레거시 정합)
       notifier.selectProduct('P001', '진라면');
       notifier.addPhoto(File('test.jpg'));
 

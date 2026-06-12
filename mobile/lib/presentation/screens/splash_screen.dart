@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -38,7 +40,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
     // 권장 업데이트 → 안내 후 계속 진행
     if (result != null && result.updateAvailable) {
-      await _showOptionalUpdateDialog(result);
+      final didChooseUpdate = await _showOptionalUpdateDialog(result);
+      if (didChooseUpdate) {
+        // OTA 설치 요청 후, 실행 중에는 설치가 진행되지 않음을 안내.
+        // (권장 업데이트는 강제 종료하지 않고 사용자가 직접 종료하도록 둔다)
+        await _openDownload(result.downloadUrl);
+        await _showInstallGuide();
+      }
     }
 
     if (!mounted) return;
@@ -70,7 +78,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           ),
           actions: [
             FilledButton(
-              onPressed: () => _openDownload(result.downloadUrl),
+              onPressed: () async {
+                // OTA 설치 요청 후, 설치를 시작하려면 앱이 종료돼야 하므로
+                // 안내 다이얼로그를 띄우고 사용자가 직접 종료하게 한다.
+                await _openDownload(result.downloadUrl);
+                await _showInstallGuideAndExit();
+              },
               child: const Text('업데이트하기'),
             ),
           ],
@@ -79,9 +92,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     );
   }
 
-  Future<void> _showOptionalUpdateDialog(AppVersionResult result) async {
-    if (!mounted) return;
-    await showDialog<void>(
+  /// 권장 업데이트 다이얼로그. 사용자가 '업데이트'를 선택했으면 true 반환.
+  Future<bool> _showOptionalUpdateDialog(AppVersionResult result) async {
+    if (!mounted) return false;
+    final didChoose = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('업데이트 안내'),
@@ -92,17 +106,66 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('나중에'),
           ),
           FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              _openDownload(result.downloadUrl);
-            },
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('업데이트'),
           ),
         ],
+      ),
+    );
+    return didChoose ?? false;
+  }
+
+  /// 권장 업데이트용 설치 안내(앱 종료는 사용자 선택).
+  Future<void> _showInstallGuide() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('업데이트 진행 안내'),
+        content: const Text(
+          '업데이트가 시작됩니다.\n'
+          '설치를 완료하려면 앱을 완전히 종료한 뒤 잠시 기다려 주세요.\n'
+          '설치가 끝나면 앱을 다시 실행해 주세요.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 강제 업데이트용 설치 안내 + 앱 종료.
+  ///
+  /// iOS는 대상 앱이 실행 중이면 OTA 설치를 시작하지 않으므로,
+  /// 사용자가 '앱 종료'를 누르면 즉시 프로세스를 종료해 설치가 진행되게 한다.
+  Future<void> _showInstallGuideAndExit() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: const Text('업데이트 진행'),
+          content: const Text(
+            '업데이트가 시작됩니다.\n'
+            '아래 "앱 종료"를 누르면 앱이 종료되고 설치가 진행됩니다.\n'
+            '설치가 끝나면 앱을 다시 실행해 주세요.',
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => exit(0),
+              child: const Text('앱 종료'),
+            ),
+          ],
+        ),
       ),
     );
   }

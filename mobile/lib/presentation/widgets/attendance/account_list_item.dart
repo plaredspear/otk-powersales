@@ -114,7 +114,7 @@ class AccountListItem extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: isSelected
-                                ? FontWeight.w600
+                                ? FontWeight.w700
                                 : FontWeight.w500,
                             color: AppColors.textPrimary,
                           ),

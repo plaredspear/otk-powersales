@@ -165,7 +165,7 @@ class _RangeCalendarDialogState extends State<_RangeCalendarDialog> {
         ),
         Text(
           '${_focusedMonth.year}년 ${_focusedMonth.month}월',
-          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w700),
         ),
         IconButton(
           onPressed: () => _changeMonth(1),
@@ -187,7 +187,7 @@ class _RangeCalendarDialogState extends State<_RangeCalendarDialog> {
                 color: i == 0
                     ? AppColors.otokiRed
                     : (i == 6 ? AppColors.otokiBlue : AppColors.textSecondary),
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -256,7 +256,7 @@ class _RangeCalendarDialogState extends State<_RangeCalendarDialog> {
           '${day.day}',
           style: AppTypography.bodyMedium.copyWith(
             color: textColor,
-            fontWeight: isEndpoint ? FontWeight.w700 : FontWeight.w400,
+            fontWeight: isEndpoint ? FontWeight.w700 : FontWeight.w300,
             decoration: isDisabledInMonth ? TextDecoration.lineThrough : null,
             decorationColor: AppColors.textTertiary,
           ),

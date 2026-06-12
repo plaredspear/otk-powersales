@@ -323,6 +323,19 @@ class Employee(
     val gpsYnDate: LocalDateTime?
         get() = employeeInfo?.gpsYnDate
 
+    // 사용자별 "현재 사용 중인 앱 버전" 스냅샷 (read-only 노출 — 갱신은 recordAppVersion 으로만).
+    val appVersionName: String?
+        get() = employeeInfo?.appVersionName
+
+    val appVersionCode: Long?
+        get() = employeeInfo?.appVersionCode
+
+    val appPlatform: String?
+        get() = employeeInfo?.appPlatform
+
+    val appVersionSeenAt: LocalDateTime?
+        get() = employeeInfo?.appVersionSeenAt
+
     private fun ensureEmployeeInfo(): EmployeeInfo {
         if (employeeInfo == null) {
             // 사번 미보유 사원은 인증/디바이스 정보 대상이 아니므로 EmployeeInfo 를 가질 수 없다.
@@ -368,6 +381,21 @@ class Employee(
 
     fun resetDevice() {
         this.deviceUuid = null
+    }
+
+    /**
+     * 클라이언트가 보고한 "현재 사용 중인 앱 버전" 스냅샷 갱신 (로그인/토큰 리프레시 시점).
+     *
+     * 현재값만 유지하며 이력은 남기지 않는다. 3개 식별 필드가 모두 null 이면(구버전 클라이언트
+     * 미보고) 기존 값을 보존하기 위해 아무 것도 갱신하지 않는다.
+     */
+    fun recordAppVersion(versionName: String?, versionCode: Long?, platform: String?, seenAt: LocalDateTime) {
+        if (versionName == null && versionCode == null && platform == null) return
+        val info = ensureEmployeeInfo()
+        info.appVersionName = versionName
+        info.appVersionCode = versionCode
+        info.appPlatform = platform
+        info.appVersionSeenAt = seenAt
     }
 
     /**

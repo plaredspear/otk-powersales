@@ -14,15 +14,21 @@ class InspectionThemeRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : InspectionThemeRepositoryCustom {
 
-    override fun findActiveThemesByDate(targetDate: LocalDate): List<InspectionTheme> {
+    override fun findActiveThemesByDate(targetDate: LocalDate, costCenterCode: String?): List<InspectionTheme> {
+        // 레거시(fieldTalkMapper.selectTheme) 정합:
+        // - 오늘이 기간(startDate~endDate) 내인 테마만
+        // - branch_code IN (공통 화이트리스트 + 사원 코스트센터)  ← 지점 스코프 제한
+        // - publicFlag 는 필터 아님(레거시는 publicflag__c 를 조회만 하고 WHERE 에 미사용)
+        // - 정렬은 생성일(createddate) 오름차순
+        val branchCodes = COMMON_BRANCH_CODES + listOfNotNull(costCenterCode)
         return queryFactory
             .selectFrom(inspectionTheme)
             .where(
-                inspectionTheme.publicFlag.eq(true),
                 inspectionTheme.startDate.loe(targetDate),
-                inspectionTheme.endDate.goe(targetDate)
+                inspectionTheme.endDate.goe(targetDate),
+                inspectionTheme.branchCode.`in`(branchCodes)
             )
-            .orderBy(inspectionTheme.name.asc())
+            .orderBy(inspectionTheme.createdAt.asc())
             .fetch()
     }
 
@@ -101,5 +107,17 @@ class InspectionThemeRepositoryCustomImpl(
 
     companion object {
         const val THEME_NUMBER_PREFIX = "TM"
+
+        /**
+         * 레거시 fieldTalkMapper.selectTheme 의 branchcode__c IN 하드코딩 화이트리스트.
+         * 전사/공통 테마를 모든 사원이 볼 수 있게 하는 지점(코스트센터) 코드 목록.
+         * 의미를 추적할 마스터가 레거시 소스에 없는 잔재이나, 신규 branch_code 가 동일 SF
+         * Theme__c.BranchCode__c 에서 마이그레이션되므로 값은 그대로 유효하다.
+         */
+        private val COMMON_BRANCH_CODES = listOf(
+            "3473", "4888", "4889", "5642", "5643", "5644", "5645", "5646", "5647",
+            "5648", "5649", "5074", "5351", "5066", "1837", "3227", "3228", "3229",
+            "3230", "3231", "3232", "3233", "3234", "3235", "3236", "3472"
+        )
     }
 }

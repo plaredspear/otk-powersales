@@ -17,6 +17,7 @@ import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.enums.InspectionFieldType
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
+import com.otoki.powersales.inspection.repository.SiteActivityDraftRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -46,7 +47,8 @@ class SiteActivityService(
     private val productRepository: com.otoki.powersales.product.repository.ProductRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val fileStorageService: FileStorageService,
-    private val publicUrlResolver: PublicUrlResolver
+    private val publicUrlResolver: PublicUrlResolver,
+    private val siteActivityDraftRepository: SiteActivityDraftRepository
 ) {
 
     companion object {
@@ -160,16 +162,23 @@ class SiteActivityService(
             )
         }
 
+        // 정식 등록 성공 시 해당 사원의 임시저장 row 삭제 (레거시 tempFieldChkProc 후처리 동등)
+        siteActivityDraftRepository.findByEmployeeId(employeeId)?.let { siteActivityDraftRepository.delete(it) }
+
         return InspectionListItem.from(saved)
     }
 
     /**
-     * 오늘 기준 유효 기간(시작 ≤ 오늘 ≤ 종료) 테마 목록.
+     * 현장점검 등록용 활성 테마 목록(레거시 fieldChk selectTheme 정합).
+     * 오늘이 기간 내이고, branch_code 가 공통 화이트리스트이거나 사원 코스트센터와 일치하는 테마.
+     * 코스트센터는 URL 파라미터가 아닌 인증 사원에서 도출(레거시 URL 조작 취약점 제거).
      */
-    fun getThemes(): List<ThemeResponse> =
-        inspectionThemeRepository
-            .findActiveThemesByDate(LocalDate.now())
+    fun getThemes(employeeId: Long): List<ThemeResponse> {
+        val costCenterCode = employeeRepository.findById(employeeId).orElse(null)?.costCenterCode
+        return inspectionThemeRepository
+            .findActiveThemesByDate(LocalDate.now(), costCenterCode)
             .map { ThemeResponse.from(it) }
+    }
 
     /**
      * 현장유형 코드 목록 (SF Category picklist 고정값).

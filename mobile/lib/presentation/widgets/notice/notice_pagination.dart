@@ -96,7 +96,7 @@ class NoticePagination extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
                 children: [
                   TextSpan(

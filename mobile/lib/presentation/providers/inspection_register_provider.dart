@@ -3,13 +3,16 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/entities/inspection_draft.dart';
 import '../../domain/entities/inspection_field_type.dart';
 import '../../domain/entities/inspection_form.dart';
 import '../../domain/entities/inspection_list_item.dart';
 import '../../domain/entities/inspection_theme.dart';
 import '../../domain/usecases/get_field_types_usecase.dart';
+import '../../domain/usecases/get_inspection_draft_usecase.dart';
 import '../../domain/usecases/get_themes_usecase.dart';
 import '../../domain/usecases/register_inspection_usecase.dart';
+import '../../domain/usecases/save_inspection_draft_usecase.dart';
 import 'inspection_list_provider.dart';
 import 'inspection_register_state.dart';
 
@@ -19,19 +22,27 @@ class InspectionRegisterNotifier
   final GetThemesUseCase _getThemes;
   final GetFieldTypesUseCase _getFieldTypes;
   final RegisterInspectionUseCase _registerInspection;
+  final GetInspectionDraftUseCase _getDraft;
+  final SaveInspectionDraftUseCase _saveDraft;
 
   InspectionRegisterNotifier({
     required GetThemesUseCase getThemes,
     required GetFieldTypesUseCase getFieldTypes,
     required RegisterInspectionUseCase registerInspection,
+    required GetInspectionDraftUseCase getDraft,
+    required SaveInspectionDraftUseCase saveDraft,
   })  : _getThemes = getThemes,
         _getFieldTypes = getFieldTypes,
         _registerInspection = registerInspection,
+        _getDraft = getDraft,
+        _saveDraft = saveDraft,
         super(InspectionRegisterState.initial());
 
-  /// 초기화: 테마, 현장 유형 로드.
+  /// 초기화: 테마, 현장 유형 로드. 이어서 임시저장(있으면)을 조회해 반환한다.
   /// 거래처는 [AccountSelectorSheet] 가 열릴 때 자체 로드하므로 여기서 받지 않는다.
-  Future<void> initialize() async {
+  ///
+  /// Returns: 사원 본인의 임시저장 (없거나 조회 실패 시 null). 화면은 이 값으로 "이어서 작성?" 을 묻는다.
+  Future<InspectionDraft?> initialize() async {
     state = state.toLoading();
 
     try {
@@ -42,9 +53,68 @@ class InspectionRegisterNotifier
         themes: themes,
         fieldTypes: fieldTypes,
       );
+
+      // 임시저장 조회는 실패해도 등록 화면 자체는 정상 동작해야 하므로 별도 try 로 감싼다.
+      try {
+        return await _getDraft.call();
+      } catch (_) {
+        return null;
+      }
     } catch (e) {
       state = state.toError(extractErrorMessage(e));
+      return null;
     }
+  }
+
+  /// 현재 폼 상태를 검증 없이 임시저장한다. 성공 여부 반환.
+  Future<bool> saveDraft() async {
+    if (state.form == null) return false;
+    try {
+      await _saveDraft.call(
+        state.form!,
+        accountName: state.accountName,
+        productName: state.selectedProductName,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 임시저장 값을 폼에 복원한다(이어서 작성).
+  void applyDraft(InspectionDraft draft) {
+    final base = state.form;
+    if (base == null) return;
+
+    final category = draft.category == InspectionCategory.COMPETITOR.toJson()
+        ? InspectionCategory.COMPETITOR
+        : InspectionCategory.OWN;
+    final inspectionDate = draft.inspectionDate != null
+        ? (DateTime.tryParse(draft.inspectionDate!) ?? base.inspectionDate)
+        : base.inspectionDate;
+
+    final form = InspectionRegisterForm(
+      themeId: draft.themeId ?? 0,
+      category: category,
+      accountId: draft.accountId ?? 0,
+      inspectionDate: inspectionDate,
+      fieldTypeCode: draft.fieldTypeCode ?? '',
+      description: draft.description,
+      productCode: draft.productCode,
+      competitorName: draft.competitorName,
+      competitorActivity: draft.competitorActivity,
+      competitorTasting: draft.competitorTasting,
+      competitorProductName: draft.competitorProductName,
+      competitorProductPrice: draft.competitorProductPrice,
+      competitorSalesQuantity: draft.competitorSalesQuantity,
+      photos: draft.photos,
+    );
+
+    state = state.copyWith(
+      form: form,
+      accountName: draft.accountName,
+      selectedProductName: draft.productName,
+    );
   }
 
   /// 테마 선택
@@ -67,7 +137,10 @@ class InspectionRegisterNotifier
       inspectionDate: state.form!.inspectionDate,
       fieldTypeCode: state.form!.fieldTypeCode,
       photos: state.form!.photos,
-      // 자사/경쟁사 필드는 초기화됨
+      // 자사/경쟁사 필드는 초기화됨.
+      // 레거시 정합: 경쟁사 전환 시 시식 여부는 기본 '예'(Y) 로 선택된 상태.
+      competitorTasting:
+          category == InspectionCategory.COMPETITOR ? true : null,
     );
 
     state = state.copyWith(
@@ -249,6 +322,18 @@ final registerInspectionUseCaseProvider =
   return RegisterInspectionUseCase(ref.watch(inspectionRepositoryProvider));
 });
 
+/// GetInspectionDraft UseCase Provider
+final getInspectionDraftUseCaseProvider =
+    Provider<GetInspectionDraftUseCase>((ref) {
+  return GetInspectionDraftUseCase(ref.watch(inspectionRepositoryProvider));
+});
+
+/// SaveInspectionDraft UseCase Provider
+final saveInspectionDraftUseCaseProvider =
+    Provider<SaveInspectionDraftUseCase>((ref) {
+  return SaveInspectionDraftUseCase(ref.watch(inspectionRepositoryProvider));
+});
+
 /// InspectionRegisterProvider
 final inspectionRegisterProvider = StateNotifierProvider<
     InspectionRegisterNotifier, InspectionRegisterState>((ref) {
@@ -256,5 +341,7 @@ final inspectionRegisterProvider = StateNotifierProvider<
     getThemes: ref.watch(getThemesUseCaseProvider),
     getFieldTypes: ref.watch(getFieldTypesUseCaseProvider),
     registerInspection: ref.watch(registerInspectionUseCaseProvider),
+    getDraft: ref.watch(getInspectionDraftUseCaseProvider),
+    saveDraft: ref.watch(saveInspectionDraftUseCaseProvider),
   );
 });

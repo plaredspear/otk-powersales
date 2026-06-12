@@ -99,7 +99,7 @@ class _ActionButton extends StatelessWidget {
                 label,
                 style: AppTypography.labelLarge.copyWith(
                   color: textColor,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],

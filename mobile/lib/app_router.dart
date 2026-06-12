@@ -276,7 +276,7 @@ class AppRouter {
                 '페이지를 찾을 수 없습니다',
                 style: TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: Colors.grey[700],
                 ),
               ),

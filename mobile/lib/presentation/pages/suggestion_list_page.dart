@@ -179,7 +179,7 @@ class _SuggestionCard extends StatelessWidget {
                 item.title,
                 style: AppTypography.bodyLarge.copyWith(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -223,7 +223,7 @@ class _CategoryBadge extends StatelessWidget {
         item.categoryName,
         style: AppTypography.labelSmall.copyWith(
           color: fgColor,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

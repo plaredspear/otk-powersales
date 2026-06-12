@@ -142,7 +142,7 @@ class _ProductInputFormState extends State<ProductInputForm> {
               widget.type == ProductType.main ? '대표제품' : '기타제품',
               style: const TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 16),

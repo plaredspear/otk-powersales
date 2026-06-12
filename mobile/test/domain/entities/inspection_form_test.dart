@@ -174,6 +174,7 @@ void main() {
           accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
+          description: '자사 설명',
           productCode: '12345678',
           photos: [createMockFile('/path/to/photo1.jpg')],
         );
@@ -198,7 +199,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('테마를 선택해주세요'));
+        expect(result.errors, contains('테마를 선택하세요.'));
       });
 
       test('accountId가 0 이하면 검증 실패', () {
@@ -215,7 +216,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('거래처를 선택해주세요'));
+        expect(result.errors, contains('거래처를 선택하세요.'));
       });
 
       test('fieldTypeCode가 비어있으면 검증 실패', () {
@@ -232,7 +233,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('현장 유형을 선택해주세요'));
+        expect(result.errors, contains('현장 유형을 선택하세요.'));
       });
 
       test('사진이 없으면 검증 실패', () {
@@ -249,7 +250,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('사진을 1장 이상 첨부해주세요'));
+        expect(result.errors, contains('사진을 첨부해 주세요.'));
       });
 
       test('사진이 3장 이상이면 검증 실패', () {
@@ -280,6 +281,7 @@ void main() {
           accountId: 3001,
           inspectionDate: DateTime(2020, 8, 19),
           fieldTypeCode: 'FT01',
+          description: '자사 설명',
           productCode: '12345678',
           photos: [
             createMockFile('/path/to/photo1.jpg'),
@@ -307,7 +309,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('제품을 선택해주세요'));
+        expect(result.errors, contains('제품을 선택하세요.'));
       });
 
       test('자사 점검에서 productCode가 빈 문자열이면 검증 실패', () {
@@ -324,7 +326,24 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('제품을 선택해주세요'));
+        expect(result.errors, contains('제품을 선택하세요.'));
+      });
+
+      test('자사 점검에서 description이 없으면 검증 실패 (레거시 정합)', () {
+        final form = InspectionRegisterForm(
+          themeId: 10,
+          category: InspectionCategory.OWN,
+          accountId: 3001,
+          inspectionDate: DateTime(2020, 8, 19),
+          fieldTypeCode: 'FT01',
+          productCode: '12345678',
+          photos: [createMockFile('/path/to/photo1.jpg')],
+        );
+
+        final result = form.validate();
+
+        expect(result.isValid, false);
+        expect(result.errors, contains('설명을 입력하세요.'));
       });
 
       test('자사 점검에서 모든 필수 항목이 유효하면 검증 통과', () {
@@ -362,7 +381,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('경쟁사명을 입력해주세요'));
+        expect(result.errors, contains('경쟁사명을 입력하세요.'));
       });
 
       test('경쟁사 점검에서 competitorActivity가 없으면 검증 실패', () {
@@ -380,7 +399,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('경쟁사 활동 내용을 입력해주세요'));
+        expect(result.errors, contains('경쟁사 활동 내용을 입력하세요.'));
       });
 
       test('경쟁사 점검에서 competitorTasting이 null이면 검증 실패', () {
@@ -440,7 +459,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('경쟁사 상품명을 입력해주세요'));
+        expect(result.errors, contains('경쟁사 품목을 입력하세요.'));
       });
 
       test('시식=예일 때 competitorProductPrice가 없으면 검증 실패', () {
@@ -461,7 +480,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('제품 가격을 입력해주세요'));
+        expect(result.errors, contains('품목 가격을 입력하세요.'));
       });
 
       test('시식=예일 때 competitorProductPrice가 음수면 검증 실패', () {
@@ -504,7 +523,7 @@ void main() {
         final result = form.validate();
 
         expect(result.isValid, false);
-        expect(result.errors, contains('판매 수량을 입력해주세요'));
+        expect(result.errors, contains('판매 수량을 입력하세요.'));
       });
 
       test('시식=예일 때 competitorSalesQuantity가 음수면 검증 실패', () {
@@ -568,6 +587,46 @@ void main() {
 
         expect(result.isValid, false);
         expect(result.errors.length, greaterThan(1));
+      });
+    });
+
+    group('유효성 검증 테스트 - 점검일 ≤ 테마 종료일 (레거시 정합)', () {
+      InspectionRegisterForm ownFormWithDate(DateTime date) {
+        return InspectionRegisterForm(
+          themeId: 10,
+          category: InspectionCategory.OWN,
+          accountId: 3001,
+          inspectionDate: date,
+          fieldTypeCode: 'FT01',
+          description: '자사 설명',
+          productCode: '12345678',
+          photos: [createMockFile('/path/to/photo1.jpg')],
+        );
+      }
+
+      test('점검일이 테마 종료일을 넘으면 검증 실패', () {
+        final form = ownFormWithDate(DateTime(2020, 8, 20));
+
+        final result = form.validate(themeEndDate: DateTime(2020, 8, 19));
+
+        expect(result.isValid, false);
+        expect(result.errors, contains('적용일은 종료일까지 가능합니다.'));
+      });
+
+      test('점검일이 테마 종료일과 같으면 통과', () {
+        final form = ownFormWithDate(DateTime(2020, 8, 19));
+
+        final result = form.validate(themeEndDate: DateTime(2020, 8, 19));
+
+        expect(result.isValid, true);
+      });
+
+      test('themeEndDate를 전달하지 않으면 날짜 상한 검증을 생략한다', () {
+        final form = ownFormWithDate(DateTime(2030, 1, 1));
+
+        final result = form.validate();
+
+        expect(result.isValid, true);
       });
     });
 

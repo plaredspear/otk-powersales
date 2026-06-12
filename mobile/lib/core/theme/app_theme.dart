@@ -45,6 +45,7 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
+      fontFamily: AppTypography.fontFamily,
       textTheme: AppTypography.textTheme,
 
       // ─── Scaffold ──────────────────────────────────────
@@ -70,7 +71,7 @@ abstract final class AppTheme {
         labelColor: AppColors.textPrimary,
         unselectedLabelColor: AppColors.textSecondary,
         labelStyle: AppTypography.labelMedium.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
         unselectedLabelStyle: AppTypography.labelMedium,
         indicatorColor: AppColors.secondary,

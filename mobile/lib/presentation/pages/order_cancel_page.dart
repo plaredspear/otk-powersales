@@ -184,7 +184,7 @@ class OrderCancelPage extends ConsumerWidget {
               '전체 (${state.cancellableItems.length})',
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

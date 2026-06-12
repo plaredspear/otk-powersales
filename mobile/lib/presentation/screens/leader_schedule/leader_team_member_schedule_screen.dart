@@ -347,7 +347,7 @@ class _MonthNavigator extends StatelessWidget {
           Text(
             '$year년 $month월',
             style: AppTypography.headlineSmall.copyWith(
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
           Row(

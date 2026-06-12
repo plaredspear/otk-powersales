@@ -223,7 +223,7 @@ class _InfoTable extends StatelessWidget {
                         entries[i].label,
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),

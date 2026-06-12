@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../core/services/app_version_fields.dart';
 import '../models/change_password_request.dart';
 import '../models/login_response_model.dart';
 import '../models/auth_token_model.dart';
@@ -24,6 +25,8 @@ class AuthApiDataSource implements AuthRemoteDataSource {
         'employeeCode': employeeCode,
         'password': password,
         'deviceId': deviceId,
+        // 현재 사용 중인 앱 버전 보고 (서버가 사용자별 현재 버전 기록).
+        ...await appVersionFields(),
       },
     );
     return LoginResponseModel.fromJson(
@@ -37,6 +40,8 @@ class AuthApiDataSource implements AuthRemoteDataSource {
       '/api/v1/mobile/auth/refresh',
       data: {
         'refreshToken': refreshToken,
+        // 현재 사용 중인 앱 버전 보고 (서버가 사용자별 현재 버전 기록).
+        ...await appVersionFields(),
       },
     );
     return AuthTokenModel.fromJson(

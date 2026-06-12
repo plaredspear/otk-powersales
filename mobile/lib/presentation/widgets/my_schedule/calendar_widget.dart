@@ -109,7 +109,7 @@ class CalendarWidget extends StatelessWidget {
                   child: Text(
                     weekday,
                     style: AppTypography.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: weekday == '일'
                           ? AppColors.otokiRed
                           : weekday == '토'
@@ -243,7 +243,7 @@ class CalendarWidget extends StatelessWidget {
               Text(
                 '연차: ${annualLeaveCount}일',
                 style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -259,7 +259,7 @@ class CalendarWidget extends StatelessWidget {
               Text(
                 '대휴: ${substituteHolidayCount}일',
                 style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
               ),

@@ -446,7 +446,7 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
                 Text(
                   product.productName,
                   style: AppTypography.bodyMedium
-                      .copyWith(fontWeight: FontWeight.w600),
+                      .copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: AppSpacing.xxs),
                 Text(

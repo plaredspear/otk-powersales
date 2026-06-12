@@ -61,7 +61,7 @@ class PromotionEmployeeList extends StatelessWidget {
               Text(
                 emp.employeeName ?? '-',
                 style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
