@@ -16,8 +16,11 @@ vi.mock('@/hooks/admin/useNaverGeocodeTest', () => ({
 }));
 
 const testClaimRegistMock = vi.fn();
+const testLogisticsClaimRegistMock = vi.fn();
 vi.mock('@/api/claims', () => ({
   testClaimRegist: (...args: unknown[]) => testClaimRegistMock(...args),
+  testLogisticsClaimRegist: (...args: unknown[]) =>
+    testLogisticsClaimRegistMock(...args),
 }));
 
 const fetchIntegrationInfoMock = vi.fn();
@@ -69,6 +72,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
   beforeEach(() => {
     mutateAsyncMock.mockReset();
     testClaimRegistMock.mockReset();
+    testLogisticsClaimRegistMock.mockReset();
     fetchIntegrationInfoMock.mockReset();
     fetchIntegrationInfoMock.mockResolvedValue({ items: INTEGRATION_INFO_ITEMS });
     mutationState.isPending = false;
@@ -78,6 +82,9 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     renderPage();
     expect(screen.getByRole('tab', { name: 'Naver Geocode' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'SF 클레임 등록' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('tab', { name: 'SF 물류 클레임 등록' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '여신 한도 조회' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '주문 등록' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '전문행사조 마스터' })).toBeInTheDocument();
@@ -93,6 +100,39 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('empcode (SFID 아님)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'SF 전송' })).toBeInTheDocument();
+  });
+
+  it('H4b - SF 물류 클레임 등록 탭 전환 시 입력 폼과 payload 미리보기 버튼이 노출', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: 'SF 물류 클레임 등록' }));
+
+    expect(
+      await screen.findByPlaceholderText('product.product_code'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'payload 미리보기' }),
+    ).toBeInTheDocument();
+    // SF 미전송 안내가 노출됨
+    expect(
+      screen.getByText(/payload 미리보기 전용/),
+    ).toBeInTheDocument();
+  });
+
+  it('H4c - SF 물류 클레임 등록 필수값 미입력 제출 시 API 호출 안 됨 (검증 차단)', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: 'SF 물류 클레임 등록' }));
+
+    // 필수값 미입력 상태로 바로 제출 → Form 검증에 막혀 API 미호출
+    await user.click(
+      await screen.findByRole('button', { name: 'payload 미리보기' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('거래처 SAP 코드는 필수입니다')).toBeInTheDocument();
+    });
+    expect(testLogisticsClaimRegistMock).not.toHaveBeenCalled();
   });
 
   it('H5 - 각 탭에 외부 시스템 연동 정보(endpoint/method/인증)가 노출', async () => {

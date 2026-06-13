@@ -1698,6 +1698,72 @@
         },
         "type" : "object"
       },
+      "AdminLogisticsClaimRegistTestRequest" : {
+        "properties" : {
+          "carNumber" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "claimDate" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "claimType" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "description" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "maxLength" : 250,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "claimDate", "claimType", "description", "employeeCode", "productCode", "sapAccountCode", "title" ],
+        "type" : "object"
+      },
+      "AdminLogisticsClaimRegistTestResponse" : {
+        "properties" : {
+          "note" : {
+            "type" : "string"
+          },
+          "rawResponse" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestPayload" : {
+            "type" : "string"
+          },
+          "resultCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "AdminProductExpirationBatchDeleteRequest" : {
         "properties" : {
           "ids" : {
@@ -3344,6 +3410,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminEmployeeRegisterResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminLogisticsClaimRegistTestResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminLogisticsClaimRegistTestResponse"
             }, {
               "type" : "null"
             } ]
@@ -17738,7 +17833,7 @@
     },
     "/api/v1/admin/claim-regist/test" : {
       "post" : {
-        "operationId" : "test_1",
+        "operationId" : "test_2",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -20239,6 +20334,33 @@
           }
         },
         "tags" : [ "admin-inspection-controller" ]
+      }
+    },
+    "/api/v1/admin/logistics-claim-regist/test" : {
+      "post" : {
+        "operationId" : "test_1",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminLogisticsClaimRegistTestRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminLogisticsClaimRegistTestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-logistics-claim-regist-test-controller" ]
       }
     },
     "/api/v1/admin/naver-geocode/test" : {
