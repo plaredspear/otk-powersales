@@ -1,0 +1,56 @@
+package com.otoki.powersales.domain.support.notice.exception
+
+import com.otoki.powersales.common.exception.BusinessException
+
+import org.springframework.http.HttpStatus
+
+/**
+ * 유효하지 않은 공지사항 카테고리
+ */
+class InvalidNoticeCategoryException : BusinessException(
+    errorCode = "INVALID_CATEGORY",
+    message = "유효하지 않은 분류입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 유효하지 않은 공지사항 공개범위
+ */
+class InvalidNoticeScopeException : BusinessException(
+    errorCode = "INVALID_SCOPE",
+    message = "유효하지 않은 공개범위입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 공지사항 게시물을 찾을 수 없음
+ */
+class NoticePostNotFoundException : BusinessException(
+    errorCode = "NOTICE_NOT_FOUND",
+    message = "공지사항을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
+/**
+ * 유효하지 않은 공지사항 ID
+ */
+class InvalidNoticeIdException : BusinessException(
+    errorCode = "INVALID_PARAMETER",
+    message = "유효하지 않은 요청입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+class BranchRequiredException : BusinessException(
+    errorCode = "BRANCH_REQUIRED",
+    message = "지점공지는 지점 정보가 필요합니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 유효하지 않은 첨부 이미지 ID — imageId 미존재 또는 parent 불일치
+ */
+class InvalidImageIdException : BusinessException(
+    errorCode = "INVALID_IMAGE_ID",
+    message = "유효하지 않은 이미지 ID입니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)

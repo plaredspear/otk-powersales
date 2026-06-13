@@ -2,23 +2,23 @@ package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.common.test.AdminControllerTestSupport
-import com.otoki.powersales.notice.dto.request.NoticeCreateRequest
-import com.otoki.powersales.notice.dto.request.NoticeUpdateRequest
-import com.otoki.powersales.notice.dto.response.BranchOption
-import com.otoki.powersales.notice.dto.response.CategoryOption
-import com.otoki.powersales.notice.dto.response.NoticeFormMetaResponse
-import com.otoki.powersales.notice.dto.response.ScopeOption
-import com.otoki.powersales.notice.dto.response.NoticeMutationResponse
-import com.otoki.powersales.notice.dto.response.NoticePostDetailResponse
-import com.otoki.powersales.notice.dto.response.NoticeImageResponse
-import com.otoki.powersales.notice.dto.response.NoticePostListResponse
-import com.otoki.powersales.notice.dto.response.NoticePostSummaryResponse
-import com.otoki.powersales.notice.exception.BranchRequiredException
-import com.otoki.powersales.notice.exception.InvalidImageIdException
-import com.otoki.powersales.notice.exception.InvalidNoticeCategoryException
-import com.otoki.powersales.notice.exception.NoticePostNotFoundException
+import com.otoki.powersales.domain.support.notice.dto.request.NoticeCreateRequest
+import com.otoki.powersales.domain.support.notice.dto.request.NoticeUpdateRequest
+import com.otoki.powersales.domain.support.notice.dto.response.BranchOption
+import com.otoki.powersales.domain.support.notice.dto.response.CategoryOption
+import com.otoki.powersales.domain.support.notice.dto.response.NoticeFormMetaResponse
+import com.otoki.powersales.domain.support.notice.dto.response.ScopeOption
+import com.otoki.powersales.domain.support.notice.dto.response.NoticeMutationResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticePostDetailResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticeImageResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticePostListResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticePostSummaryResponse
+import com.otoki.powersales.domain.support.notice.exception.BranchRequiredException
+import com.otoki.powersales.domain.support.notice.exception.InvalidImageIdException
+import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeCategoryException
+import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundException
 import org.springframework.mock.web.MockMultipartFile
-import com.otoki.powersales.notice.service.NoticeService
+import com.otoki.powersales.domain.support.notice.service.NoticeService
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -36,6 +36,7 @@ import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminNoticeController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -66,7 +67,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                         branch = null,
                         department = "판매전략실",
                         authorName = "판매전략실",
-                        createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00")
+                        createdAt = LocalDateTime.parse("2026-03-04T10:00:00")
                     )
                 ),
                 totalCount = 1,
@@ -136,7 +137,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 content = "<p>본문</p>",
                 branch = null,
                 branchCode = null,
-                createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00"),
+                createdAt = LocalDateTime.parse("2026-03-04T10:00:00"),
                 images = emptyList()
             )
             every { noticeService.getNoticeDetail(1L) } returns response
@@ -170,7 +171,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 content = "<p>내용</p>",
                 branch = null,
                 branchCode = null,
-                createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00")
+                createdAt = LocalDateTime.parse("2026-03-04T10:00:00")
             )
             every { noticeService.createNotice(any(), eq(1L)) } returns mutationResponse
 
@@ -249,7 +250,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 content = "<p>수정 내용</p>",
                 branch = null,
                 branchCode = null,
-                createdAt = java.time.LocalDateTime.parse("2026-03-04T10:00:00")
+                createdAt = LocalDateTime.parse("2026-03-04T10:00:00")
             )
             every { noticeService.updateNotice(eq(10L), any()) } returns mutationResponse
 

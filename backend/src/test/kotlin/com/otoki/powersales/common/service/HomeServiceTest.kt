@@ -8,7 +8,7 @@ import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.notice.repository.NoticeRepository
+import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission

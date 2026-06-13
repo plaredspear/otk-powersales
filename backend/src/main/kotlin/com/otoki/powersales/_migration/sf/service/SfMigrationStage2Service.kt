@@ -1,7 +1,7 @@
 package com.otoki.powersales._migration.sf.service
 
 import com.otoki.powersales.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS
-import com.otoki.powersales.notice.service.NoticeImagePlaceholder
+import com.otoki.powersales.domain.support.notice.service.NoticeImagePlaceholder
 import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.dto.SubstepResult
 import jakarta.persistence.EntityManager
@@ -172,7 +172,7 @@ class SfMigrationStage2Service(
      *   공지 본문 인라인 이미지는 레거시에서 SF rtaImage 서블릿 URL (`...rtaImage?eid=...&refid=0EM...`) 로 본문
      *   HTML 에 박혀 있어 SF org 세션 인증에 묶인다. 신규 시스템은 이미지를 private S3 + presigned URL 로만
      *   조회하는데 presigned 는 만료되므로 본문에 완성 URL 을 박을 수 없다. 따라서 본문에는 만료 없는
-     *   placeholder 만 영구 저장하고, 조회 시점에 [com.otoki.powersales.notice.service.NoticeService.getNoticeDetail]
+     *   placeholder 만 영구 저장하고, 조회 시점에 [com.otoki.powersales.domain.support.notice.service.NoticeService.getNoticeDetail]
      *   가 data-refid 로 presigned URL 을 rewrite 한다.
      *
      * 처리:
