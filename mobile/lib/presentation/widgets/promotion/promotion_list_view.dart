@@ -21,7 +21,9 @@ import 'promotion_card.dart';
 ///
 /// 레거시(heroku `promotion/event/list.jsp`) 정합:
 /// - 거래처 전체 드롭다운 + 기간 + 검색 버튼 (버튼 트리거 검색)
-/// - 권한 분기: 여사원(member)은 단일 날짜, 조장/지점장(leader)은 기간 범위 + 행사명 검색어
+/// - 권한 분기: 여사원(member)은 단일 날짜, 조장(leader)은 기간 범위 + 행사명 검색어.
+///   레거시 list.jsp:9-11 의 조건이 `eq member`/`eq leader` 정확 일치이므로
+///   지점장/부서장은 조장형이 아닌 여사원형(단일 날짜) 필터로 떨어진다.
 /// - "내 행사 현황 (N)" 카운트 헤더
 class PromotionListView extends ConsumerStatefulWidget {
   const PromotionListView({super.key});
@@ -51,14 +53,15 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     super.dispose();
   }
 
-  /// 현재 사용자가 조장/지점장(leader) 권한인지 여부.
+  /// 현재 사용자가 조장(leader) 권한인지 여부.
   ///
   /// 레거시는 `appauthority__c` 가 `조장`(group_leader) 이면 기간 범위 + 행사명 검색,
-  /// `여사원`(group_member) 이면 단일 날짜 + 검색 버튼만 노출한다.
-  /// 모바일 도메인 role 은 `여사원→USER`, `조장→LEADER`, `지점장→ADMIN` 로 번역된다.
+  /// `여사원`(group_member) 이면 단일 날짜 + 검색 버튼만 노출한다(list.jsp:9-11 정확 일치).
+  /// 지점장/부서장은 두 조건 어디에도 해당하지 않아 여사원형 필터로 폴백한다.
+  /// 모바일 도메인 role 은 `여사원→USER`, `조장→LEADER`, `지점장→ADMIN`, `부서장→USER` 로 번역된다.
   bool get _isLeader {
     final role = ref.read(authProvider).user?.role;
-    return role == 'LEADER' || role == 'ADMIN';
+    return role == 'LEADER';
   }
 
   void _onScroll() {

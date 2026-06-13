@@ -123,10 +123,11 @@ abstract final class MenuConstants {
     ),
   ];
 
-  /// 조장/지점장 전용: "여사원 관리" 메뉴 그룹
+  /// 조장 전용: "여사원 관리" 메뉴 그룹
   ///
-  /// FullMenuDrawer에서 user.role이 LEADER 또는 ADMIN일 때
-  /// "거래처" 그룹 다음 위치에 삽입한다.
+  /// FullMenuDrawer에서 user.role이 LEADER(조장)일 때만
+  /// "거래처" 그룹 다음 위치에 삽입한다. 레거시 GNB(gnb.jsp) nav7 조건이
+  /// `eq '조장'` 정확 일치이므로 지점장/부서장에게는 노출하지 않는다.
   ///
   /// 레거시 Heroku GNB "여사원 관리" 그룹 정합(gnb.jsp): 항목은 "여사원"(/employee/main)
   /// 과 "일정 / 등록"(/employee/mgnSchedule) 2개뿐이다. "일정 / 등록"은 월간 캘린더

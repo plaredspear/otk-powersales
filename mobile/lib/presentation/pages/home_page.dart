@@ -305,8 +305,10 @@ class _HomePageState extends ConsumerState<HomePage>
 
   /// 등록 버튼 탭 핸들러: 조장이면 바로 출근등록, 그 외 안전점검 상태 확인 후 분기
   Future<void> _handleRegisterTap(String userRole) async {
-    // 조장(LEADER)/지점장(ADMIN)은 안전점검 없이 바로 출근등록
-    if (userRole == 'LEADER' || userRole == 'ADMIN') {
+    // 조장(LEADER)만 안전점검 없이 바로 출근등록.
+    // 레거시 home.jsp 는 조장만 safetyCheck 미세팅(바로 출근)이고, 지점장/부서장은
+    // else 분기에서 safetyCheck 가 세팅되어 여사원과 동일하게 안전점검을 선행한다.
+    if (userRole == 'LEADER') {
       await AppRouter.navigateTo(context, AppRouter.attendance);
       return;
     }
@@ -337,7 +339,9 @@ class _HomePageState extends ConsumerState<HomePage>
 
   /// 빠른 메뉴 탭 핸들러
   void _handleQuickMenuTap(QuickMenuItem item, String userRole) {
-    final isLeaderOrAdmin = userRole == 'LEADER' || userRole == 'ADMIN';
+    // 레거시 home.jsp JS 의 행사매출 차단 조건이 `== '조장'` 정확 일치이므로,
+    // 조장(LEADER)만 차단하고 지점장/부서장은 여사원과 동일하게 등록을 허용한다.
+    final isLeader = userRole == 'LEADER';
 
     if (item.label == '활동 등록') {
       ActivityRegistrationPopup.show(
@@ -345,7 +349,7 @@ class _HomePageState extends ConsumerState<HomePage>
         onMenuTap: _handleActivityMenuTap,
       );
     } else if (item.label == '행사매출\n등록') {
-      if (isLeaderOrAdmin) {
+      if (isLeader) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('행사 담당자만 행사매출을 등록할 수 있습니다.'),
