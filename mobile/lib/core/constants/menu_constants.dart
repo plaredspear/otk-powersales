@@ -50,9 +50,22 @@ abstract final class MenuConstants {
       icon: Icons.monetization_on,
       iconAsset: 'assets/images/icon_nav4.png',
       label: '매출 현황',
+      // 레거시(promotion/event/list.jsp + month/list.jsp)는 행사 매출/월 매출이
+      // 상단 tab_menu로 묶인 하나의 "매출 현황" 화면이다. 두 항목 모두 통합 2탭
+      // 화면(/sales-status)으로 보내되 각자 해당 탭으로 진입한다.
       items: [
-        MenuItem(id: 'event-sales', label: '행사 매출', route: '/promotions'),
-        MenuItem(id: 'monthly-sales', label: '월 매출', route: '/monthly-sales'),
+        MenuItem(
+          id: 'event-sales',
+          label: '행사 매출',
+          route: '/sales-status',
+          arguments: 0, // 행사 매출 탭
+        ),
+        MenuItem(
+          id: 'monthly-sales',
+          label: '월 매출',
+          route: '/sales-status',
+          arguments: 1, // 월 매출 탭
+        ),
       ],
     ),
     // 5. 현장톡
