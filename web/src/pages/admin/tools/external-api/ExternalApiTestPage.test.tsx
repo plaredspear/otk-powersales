@@ -129,9 +129,13 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
       await screen.findByRole('button', { name: 'payload 미리보기' }),
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('거래처 SAP 코드는 필수입니다')).toBeInTheDocument();
-    });
+    // antd Form 의 비동기 validation 메시지는 전체 스위트 병렬 실행 시 렌더 지연이
+    // findByText 기본 1초를 넘길 수 있어 timeout 을 5초로 명시해 대기한다.
+    expect(
+      await screen.findByText('거래처 SAP 코드는 필수입니다', undefined, {
+        timeout: 5000,
+      }),
+    ).toBeInTheDocument();
     expect(testLogisticsClaimRegistMock).not.toHaveBeenCalled();
   });
 
