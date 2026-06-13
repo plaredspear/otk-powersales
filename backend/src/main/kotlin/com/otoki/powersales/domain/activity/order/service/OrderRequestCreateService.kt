@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.order.entity.OrderRequest
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.activity.order.exception.OrderAccountForbiddenException
+import com.otoki.powersales.domain.activity.order.exception.OrderDeadlinePassedException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidRequestException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidUnitException
 import com.otoki.powersales.domain.activity.order.exception.OrderLoanExceededException
@@ -16,6 +17,7 @@ import com.otoki.powersales.domain.activity.order.sap.client.InventoryInfo
 import com.otoki.powersales.domain.activity.order.sap.client.SapInventorySearchClient
 import com.otoki.powersales.domain.activity.order.sap.client.SapLoanInquiryClient
 import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
+import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -52,6 +54,7 @@ class OrderRequestCreateService(
     private val loanInquiryClient: SapLoanInquiryClient,
     private val orderRequestRegisterSender: OrderRequestRegisterSender,
     private val orderDraftService: OrderDraftService,
+    private val orderDeadlineCalculator: OrderDeadlineCalculator,
     private val entityManager: EntityManager,
 ) {
 
@@ -139,6 +142,10 @@ class OrderRequestCreateService(
     private fun validateRequest(request: OrderRequestCreateRequest) {
         if (request.deliveryDate.isBefore(LocalDate.now())) {
             throw OrderInvalidRequestException("납기일은 오늘 이후여야 합니다")
+        }
+        // server-side 마감 가드 (레거시 reqOrder dateConfirm 동등) — 모바일 검증 우회 직접 호출 차단.
+        if (!orderDeadlineCalculator.isWithinDeadline(request.deliveryDate)) {
+            throw OrderDeadlinePassedException()
         }
         val lineNumbers = request.lines.map { it.lineNumber }
         if (lineNumbers.distinct().size != lineNumbers.size) {

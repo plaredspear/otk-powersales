@@ -132,3 +132,16 @@ class OrderInvalidRequestException(detail: String) : BusinessException(
     message = detail,
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+/**
+ * 주문 등록 마감 시각 초과 (server-side 마감 가드).
+ *
+ * 레거시 `OrderController.java:485-498` (reqOrder `dateConfirm`) 동등 — 마감 시각
+ * `(납기일 - 1일) 13:50 KST` 을 넘긴 등록 시도. 레거시는 Heroku 사전 차단(`RESULT_CODE='DE'`)으로만
+ * 막았으나, 모바일 검증 우회 직접 호출에 대비해 backend 가 server-side 로 재검증한다.
+ */
+class OrderDeadlinePassedException : BusinessException(
+    errorCode = "ORD_DEADLINE_PASSED",
+    message = "마감시간이 지났습니다. 납기일이 내일인 경우 1시50분까지 주문이 가능합니다.",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

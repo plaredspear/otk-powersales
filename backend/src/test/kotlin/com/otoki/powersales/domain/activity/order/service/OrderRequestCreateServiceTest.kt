@@ -11,6 +11,7 @@ import com.otoki.powersales.domain.activity.order.service.OrderDraftService
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.activity.order.exception.OrderAccountForbiddenException
+import com.otoki.powersales.domain.activity.order.exception.OrderDeadlinePassedException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidRequestException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidUnitException
 import com.otoki.powersales.domain.activity.order.exception.OrderLoanExceededException
@@ -21,6 +22,7 @@ import com.otoki.powersales.domain.activity.order.sap.client.InventoryInfo
 import com.otoki.powersales.domain.activity.order.sap.client.SapInventorySearchClient
 import com.otoki.powersales.domain.activity.order.sap.client.SapLoanInquiryClient
 import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
+import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.domain.activity.order.service.OrderRequestCreateService
 import com.otoki.powersales.external.sap.outbox.SapOutbox
 import io.mockk.every
@@ -51,6 +53,7 @@ class OrderRequestCreateServiceTest {
     private val loanInquiryClient: SapLoanInquiryClient = mockk()
     private val orderRequestRegisterSender: OrderRequestRegisterSender = mockk()
     private val orderDraftService: OrderDraftService = mockk()
+    private val orderDeadlineCalculator = OrderDeadlineCalculator()
     private val entityManager: EntityManager = mockk()
     private val nativeQuery: Query = mockk()
     private val service = OrderRequestCreateService(
@@ -62,6 +65,7 @@ class OrderRequestCreateServiceTest {
         loanInquiryClient,
         orderRequestRegisterSender,
         orderDraftService,
+        orderDeadlineCalculator,
         entityManager,
     )
 
@@ -201,6 +205,19 @@ class OrderRequestCreateServiceTest {
             )
             assertThatThrownBy { service.create(userId, request) }
                 .isInstanceOf(OrderInvalidRequestException::class.java)
+        }
+
+        @Test
+        @DisplayName("마감 시각 초과 (납기일=오늘) → ORD_DEADLINE_PASSED")
+        fun deadlinePassed() {
+            // 납기일이 오늘이면 (now + 1일) 이 (오늘 13:50) 보다 항상 미래 → 마감 후.
+            // "오늘 이후" 검증은 통과하지만 server-side 마감 가드에 걸린다.
+            val request = baseRequest(
+                deliveryDate = LocalDate.now(),
+                lines = listOf(line()),
+            )
+            assertThatThrownBy { service.create(userId, request) }
+                .isInstanceOf(OrderDeadlinePassedException::class.java)
         }
 
         @Test
