@@ -8,7 +8,6 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/throttled_tap_mixin.dart';
 import '../../../domain/entities/leader_daily_status.dart';
 import '../../providers/leader_schedule_provider.dart';
-import 'leader_display_schedule_edit_screen.dart';
 import '../../widgets/common/error_view.dart';
 import '../../widgets/common/loading_indicator.dart';
 
@@ -244,8 +243,9 @@ class _LeaderDailyStatusScreenState
     );
   }
 
-  /// 등록 탭 공통 빌더 (전체/단일 공유) — 등록 전 필터 + 사람별 밴드 + 거래처별 등록 상태.
-  /// 레거시 mngDaily `#commute` 영역 동등. 대리출근 등록 버튼은 레거시에서 정지(주석)라 미노출.
+  /// 등록 탭 공통 빌더 (전체/단일 공유) — 등록 가능 배너 + 등록 전 필터 + 사람별 밴드 + 거래처별 등록 상태.
+  /// 레거시 mngDaily `#commute` 영역 동등. 등록 버튼은 항상 노출하되 조건(당일·17시 전) 미충족 시
+  /// 비활성 + 탭하면 사유 안내(A안 — 레거시 alert 동등), 탭 상단에 등록 가능 여부 배너 노출(B안).
   Widget _buildRegisterTab(
     LeaderDailyStatusState state,
     List<_GroupedWorker> displayGroups,
@@ -255,10 +255,8 @@ class _LeaderDailyStatusScreenState
 
     // 대리등록 가능 조건: 조회 날짜가 오늘 + 17시 이전 (레거시 mngDaily 동일).
     final now = DateTime.now();
-    final sel = state.selectedDate;
-    final isToday =
-        sel.year == now.year && sel.month == now.month && sel.day == now.day;
-    final canRegister = isToday && now.hour < 17;
+    final eligibility = _proxyEligibility(state.selectedDate, now);
+    final canRegister = eligibility.canRegister;
 
     final sections = <Widget>[];
     void addGroups(List<_GroupedWorker> groups, String category) {
@@ -267,14 +265,18 @@ class _LeaderDailyStatusScreenState
             ? g.rows.where((r) => !r.attended).toList()
             : g.rows;
         if (rows.isEmpty) continue;
-        // 한 곳이라도 미등록인 사람에게만 등록 버튼 노출 (레거시 c 규칙).
+        // 미등록 1곳 이상이면 등록 버튼 노출. 조건(당일·17시 전) 미충족 시에도
+        // 버튼은 노출하되 비활성 + 탭 시 사유 안내(A안 — 레거시 alert 동등).
         final hasUnregistered = g.rows.any((r) => !r.attended);
         sections.add(_RegisterPersonBand(
           name: g.employeeName,
           category: category,
-          onRegister: (canRegister && hasUnregistered)
-              ? () => _openProxyRegisterSheet(g)
-              : null,
+          enabled: canRegister,
+          onRegister: !hasUnregistered
+              ? null
+              : (canRegister
+                  ? () => _openProxyRegisterSheet(g)
+                  : () => _showProxyBlockedReason(eligibility)),
         ));
         for (final r in rows) {
           sections.add(_RegisterAccountRow(row: r));
@@ -290,6 +292,8 @@ class _LeaderDailyStatusScreenState
 
     return Column(
       children: [
+        // B안: 현재 대리출근 등록 가능 여부/사유 안내 배너.
+        _RegisterEligibilityBanner(eligibility: eligibility, now: now),
         _UnregisteredFilterBar(
           value: _registerUnregisteredOnly,
           onChanged: (v) => setState(() => _registerUnregisteredOnly = v),
@@ -323,6 +327,16 @@ class _LeaderDailyStatusScreenState
               ),
         ),
       ],
+    );
+  }
+
+  /// 대리출근 불가 사유 안내 (A안 — 레거시 mngDaily alert 동등).
+  /// 날짜≠오늘 / 17시 이후일 때 비활성 등록 버튼 탭 시 SnackBar 로 사유 노출.
+  void _showProxyBlockedReason(_ProxyEligibility eligibility) {
+    final reason = eligibility.reason;
+    if (reason == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(reason)),
     );
   }
 
@@ -436,41 +450,6 @@ class _LeaderDailyStatusScreenState
     });
   }
 
-  /// 진열 일정 변경 — 해당 거래처 master 편집 화면 진입 (레거시 scheduleChange 진열 변경/삭제).
-  void _openDisplayEdit(LeaderDailyWorker row, String employeeName) {
-    final masterId = row.displayWorkScheduleId;
-    if (masterId == null) return;
-    throttledTapAsync(() async {
-      await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => LeaderDisplayScheduleEditScreen(
-            displayWorkScheduleId: masterId,
-            employeeName: employeeName,
-            initialDate: ref.read(leaderDailyStatusProvider).selectedDate,
-          ),
-        ),
-      );
-      // 성공 시 notifier 가 이미 재조회. (취소 시 변동 없음)
-    });
-  }
-
-  /// 진열 일정 추가 — 해당 여사원의 새 진열 master 생성 화면 진입.
-  void _openDisplayAdd(_GroupedWorker group) {
-    final employeeId = group.rows.first.employeeId;
-    if (employeeId == null) return;
-    throttledTapAsync(() async {
-      await Navigator.of(context).push<bool>(
-        MaterialPageRoute(
-          builder: (_) => LeaderDisplayScheduleEditScreen(
-            targetEmployeeId: employeeId,
-            employeeName: group.employeeName,
-            initialDate: ref.read(leaderDailyStatusProvider).selectedDate,
-          ),
-        ),
-      );
-    });
-  }
-
   /// 최초 로드 중/실패 시 표시 위젯, 데이터 보유 시 null.
   Widget? _loadingOrError(LeaderDailyStatusState state) {
     if (state.isLoading && state.data == null) {
@@ -539,8 +518,6 @@ class _LeaderDailyStatusScreenState
             _WorkerCard(
               worker: g,
               isEvent: false,
-              onDisplayRowTap: (r) => _openDisplayEdit(r, g.employeeName),
-              onDisplayAdd: () => _openDisplayAdd(g),
             ),
           for (final g in eventGroups)
             _WorkerCard(
@@ -632,12 +609,8 @@ class _LeaderDailyStatusScreenState
         .map((g) => _WorkerCard(
               worker: g,
               isEvent: isEvent,
-              // 행사 + 미출근(변경 가능)일 때만 변경 흐름 진입.
+              // 행사 + 미출근(변경 가능)일 때만 변경 흐름 진입. 진열은 조회 전용(레거시 정합).
               onChange: (isEvent && !g.attended) ? () => _openEventChangeFlow(g) : null,
-              // 진열: 거래처 row 탭 → master 편집, 카드 하단 진열 추가.
-              onDisplayRowTap:
-                  isEvent ? null : (r) => _openDisplayEdit(r, g.employeeName),
-              onDisplayAdd: isEvent ? null : () => _openDisplayAdd(g),
             ))
         .toList();
   }
@@ -1076,22 +1049,104 @@ class _UnregisteredFilterBar extends StatelessWidget {
   }
 }
 
+/// 대리출근 등록 가능 여부 (레거시 mngDaily 가드: 당일 + 17시 이전).
+enum _ProxyEligibility { ok, notToday, afterCutoff }
+
+/// 선택 날짜·현재 시각으로 대리출근 가능 여부 판정 (레거시 mngDaily `btn-add-sch` 동등).
+_ProxyEligibility _proxyEligibility(DateTime selectedDate, DateTime now) {
+  final isToday = selectedDate.year == now.year &&
+      selectedDate.month == now.month &&
+      selectedDate.day == now.day;
+  if (!isToday) return _ProxyEligibility.notToday;
+  if (now.hour >= 17) return _ProxyEligibility.afterCutoff;
+  return _ProxyEligibility.ok;
+}
+
+extension _ProxyEligibilityX on _ProxyEligibility {
+  bool get canRegister => this == _ProxyEligibility.ok;
+
+  /// 불가 사유 (레거시 alert 문구 정합). ok 면 null.
+  String? get reason {
+    switch (this) {
+      case _ProxyEligibility.ok:
+        return null;
+      case _ProxyEligibility.notToday:
+        return '당일 일정만 대리출근 등록할 수 있습니다.';
+      case _ProxyEligibility.afterCutoff:
+        return '오후 5시 이후에는 대리출근 등록할 수 없습니다.';
+    }
+  }
+}
+
+/// 등록 탭 상단 안내 배너 (B안) — 현재 대리출근 등록 가능 여부/사유를 한 줄로 표시.
+/// 가능: 네이비 + "오늘 HH:mm · 17:00까지 등록 가능", 불가: 주황 + 사유.
+class _RegisterEligibilityBanner extends StatelessWidget {
+  final _ProxyEligibility eligibility;
+  final DateTime now;
+
+  const _RegisterEligibilityBanner({
+    required this.eligibility,
+    required this.now,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = eligibility.canRegister;
+    final color = ok ? AppColors.secondary : AppColors.warning;
+    final icon = ok ? Icons.check_circle_outline : Icons.info_outline;
+    final text = ok
+        ? '오늘 ${DateFormat('HH:mm').format(now)} · 17:00까지 대리출근 등록 가능'
+        : (eligibility.reason ?? '');
+
+    return Container(
+      width: double.infinity,
+      color: color.withValues(alpha: 0.08),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTypography.bodySmall.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// 등록 탭 사람별 밴드 — "이름 (진열/행사)" + (조건부) 등록 버튼 (레거시 list_title + 등록).
 class _RegisterPersonBand extends StatelessWidget {
   final String name;
   final String category;
 
-  /// 대리출근 등록 콜백. null 이면 버튼 미노출(레거시: 미등록 1곳 이상 + 당일 17시 전).
+  /// 등록 가능(활성) 여부. false 면 회색 비활성 스타일(탭 시 사유 안내).
+  final bool enabled;
+
+  /// 등록 버튼 탭 콜백. null 이면 버튼 미노출(미등록 0곳).
+  /// 비활성(enabled=false)이어도 탭은 가능 — 사유 안내용(A안).
   final VoidCallback? onRegister;
 
   const _RegisterPersonBand({
     required this.name,
     required this.category,
+    this.enabled = true,
     this.onRegister,
   });
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = enabled ? AppColors.secondary : AppColors.border;
+    final textColor = enabled ? AppColors.secondary : AppColors.textSecondary;
     return Container(
       width: double.infinity,
       color: AppColors.surface,
@@ -1122,12 +1177,12 @@ class _RegisterPersonBand extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                  border: Border.all(color: AppColors.secondary),
+                  border: Border.all(color: borderColor),
                 ),
                 child: Text(
                   '등록',
                   style: AppTypography.labelSmall.copyWith(
-                    color: AppColors.secondary,
+                    color: textColor,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1686,9 +1741,8 @@ class _SectionEmpty extends StatelessWidget {
 /// 여사원 1명 카드 — 이름(사번) + 담당 거래처 N줄(거래처명 | 진열/상시/순회).
 ///
 /// 우측 표시는 레거시 mngDaily 정합:
-/// - 진열([isEvent]=false): 출근 상태 배지(등록완료/미등록).
-/// - 행사([isEvent]=true): 변경/변경불가 버튼. 행사 일정변경(mutation)은 보류라 `변경`은
-///   안내만 노출(레거시 promotionScheduleChange 이동 자리).
+/// - 진열([isEvent]=false): 출근 상태 배지(등록완료/미등록). 레거시처럼 변경/추가 진입점 없음(조회 전용).
+/// - 행사([isEvent]=true): 변경/변경불가 버튼(출근 후 변경불가).
 class _WorkerCard extends StatelessWidget {
   final _GroupedWorker worker;
   final bool isEvent;
@@ -1696,18 +1750,10 @@ class _WorkerCard extends StatelessWidget {
   /// 행사 변경 흐름 진입 콜백 (행사 카드·미출근일 때만 전달).
   final VoidCallback? onChange;
 
-  /// 진열 거래처 row 탭 → 해당 master 편집 (진열 카드에서만 전달).
-  final ValueChanged<LeaderDailyWorker>? onDisplayRowTap;
-
-  /// 진열 추가 진입 (진열 카드에서만 전달).
-  final VoidCallback? onDisplayAdd;
-
   const _WorkerCard({
     required this.worker,
     required this.isEvent,
     this.onChange,
-    this.onDisplayRowTap,
-    this.onDisplayAdd,
   });
 
   @override
@@ -1741,14 +1787,8 @@ class _WorkerCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    // 담당 거래처별 1줄: "거래처명 | 진열/상시/순회"
-                    // 진열은 탭 시 master 편집(변경/삭제) 진입.
-                    ...worker.rows.map((r) => _RowLine(
-                          row: r,
-                          onTap: (!isEvent && onDisplayRowTap != null)
-                              ? () => onDisplayRowTap!(r)
-                              : null,
-                        )),
+                    // 담당 거래처별 1줄: "거래처명 | 진열/상시/순회" (조회 전용).
+                    ...worker.rows.map((r) => _RowLine(row: r)),
                   ],
                 ),
               ),
@@ -1760,64 +1800,30 @@ class _WorkerCard extends StatelessWidget {
                 _AttendanceBadge(attended: worker.attended),
             ],
           ),
-          // 진열 추가 (레거시 scheduleChange 진열 추가).
-          if (!isEvent && onDisplayAdd != null)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: onDisplayAdd,
-                icon: const Icon(Icons.add, size: 16, color: AppColors.secondary),
-                label: Text(
-                  '진열 추가',
-                  style: AppTypography.labelSmall.copyWith(
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
 }
 
-/// 카드 내 거래처 1줄 — 진열은 탭 가능(편집), 그 외 텍스트.
+/// 카드 내 거래처 1줄 — "거래처명 | 진열/상시/순회" 텍스트 (조회 전용).
 class _RowLine extends StatelessWidget {
   final LeaderDailyWorker row;
-  final VoidCallback? onTap;
 
-  const _RowLine({required this.row, this.onTap});
+  const _RowLine({required this.row});
 
   @override
   Widget build(BuildContext context) {
     final text = row.workCategoryLabel.isEmpty
         ? row.accountName
         : '${row.accountName} | ${row.workCategoryLabel}';
-    final content = Padding(
+    return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              text,
-              style: AppTypography.bodyMedium
-                  .copyWith(color: AppColors.textPrimary),
-            ),
-          ),
-          if (onTap != null)
-            const Icon(Icons.edit_outlined,
-                size: 15, color: AppColors.textSecondary),
-        ],
+      child: Text(
+        text,
+        style: AppTypography.bodyMedium.copyWith(color: AppColors.textPrimary),
       ),
     );
-    if (onTap == null) return content;
-    return InkWell(onTap: onTap, child: content);
   }
 }
 

@@ -2,13 +2,10 @@ package com.otoki.powersales.schedule.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.schedule.dto.request.LeaderDisplayScheduleCreateRequest
-import com.otoki.powersales.schedule.dto.request.LeaderDisplayScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.request.LeaderEventScheduleChangeRequest
 import com.otoki.powersales.schedule.dto.request.LeaderProxyAttendanceRequest
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
-import com.otoki.powersales.schedule.dto.response.LeaderDisplayScheduleResponse
 import com.otoki.powersales.schedule.dto.response.LeaderEventScheduleChangeResponse
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderDailyStatusResponse
@@ -37,8 +34,7 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/api/v1/mobile/leader")
 class LeaderScheduleController(
-    private val leaderScheduleService: LeaderScheduleService,
-    private val leaderDisplayScheduleService: com.otoki.powersales.schedule.service.LeaderDisplayScheduleService
+    private val leaderScheduleService: LeaderScheduleService
 ) {
 
     /**
@@ -97,61 +93,6 @@ class LeaderScheduleController(
     ): ResponseEntity<ApiResponse<Unit>> {
         leaderScheduleService.deleteEventAssignment(principal.userId, scheduleId)
         return ResponseEntity.ok(ApiResponse.success(Unit, "행사 일정이 삭제되었습니다"))
-    }
-
-    /**
-     * 조장 진열 일정(마스터) 상세 조회 — 편집 시트 선조회용
-     * GET /api/v1/mobile/leader/display-schedule/{displayWorkScheduleId}
-     */
-    @GetMapping("/display-schedule/{displayWorkScheduleId}")
-    fun getDisplaySchedule(
-        @AuthenticationPrincipal principal: UserPrincipal,
-        @PathVariable displayWorkScheduleId: Long
-    ): ResponseEntity<ApiResponse<LeaderDisplayScheduleResponse>> {
-        val response = leaderDisplayScheduleService.getDisplaySchedule(principal.userId, displayWorkScheduleId)
-        return ResponseEntity.ok(ApiResponse.success(response, "진열 일정 조회 성공"))
-    }
-
-    /**
-     * 조장 진열 일정(마스터) 추가 (레거시 `scheduleChange` 진열 추가)
-     * POST /api/v1/mobile/leader/display-schedule
-     */
-    @PostMapping("/display-schedule")
-    fun createDisplaySchedule(
-        @AuthenticationPrincipal principal: UserPrincipal,
-        @Valid @RequestBody request: LeaderDisplayScheduleCreateRequest
-    ): ResponseEntity<ApiResponse<LeaderDisplayScheduleResponse>> {
-        val response = leaderDisplayScheduleService.createDisplaySchedule(principal.userId, request)
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response, "진열 일정이 등록되었습니다"))
-    }
-
-    /**
-     * 조장 진열 일정(마스터) 변경 — 거래처/근무유형/기간 (레거시 `scheduleChange` 진열 변경)
-     * PUT /api/v1/mobile/leader/display-schedule/{displayWorkScheduleId}
-     */
-    @PutMapping("/display-schedule/{displayWorkScheduleId}")
-    fun updateDisplaySchedule(
-        @AuthenticationPrincipal principal: UserPrincipal,
-        @PathVariable displayWorkScheduleId: Long,
-        @Valid @RequestBody request: LeaderDisplayScheduleUpdateRequest
-    ): ResponseEntity<ApiResponse<LeaderDisplayScheduleResponse>> {
-        val response =
-            leaderDisplayScheduleService.updateDisplaySchedule(principal.userId, displayWorkScheduleId, request)
-        return ResponseEntity.ok(ApiResponse.success(response, "진열 일정이 변경되었습니다"))
-    }
-
-    /**
-     * 조장 진열 일정(마스터) 삭제 (레거시 `scheduleChange` 진열 삭제)
-     * DELETE /api/v1/mobile/leader/display-schedule/{displayWorkScheduleId}
-     */
-    @DeleteMapping("/display-schedule/{displayWorkScheduleId}")
-    fun deleteDisplaySchedule(
-        @AuthenticationPrincipal principal: UserPrincipal,
-        @PathVariable displayWorkScheduleId: Long
-    ): ResponseEntity<ApiResponse<Unit>> {
-        leaderDisplayScheduleService.deleteDisplaySchedule(principal.userId, displayWorkScheduleId)
-        return ResponseEntity.ok(ApiResponse.success(Unit, "진열 일정이 삭제되었습니다"))
     }
 
     /**

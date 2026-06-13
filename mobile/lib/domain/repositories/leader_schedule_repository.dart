@@ -1,6 +1,5 @@
 import '../entities/leader_account.dart';
 import '../entities/leader_daily_status.dart';
-import '../entities/leader_display_schedule.dart';
 import '../entities/leader_monthly_schedule.dart';
 import '../entities/leader_schedule_created.dart';
 import '../entities/leader_team_member.dart';
@@ -37,34 +36,6 @@ abstract class LeaderScheduleRepository {
 
   /// 조장 행사 일정 삭제 — 행사 배정 해제 (레거시 scheduleChangePromo D).
   Future<void> deleteEventAssignment(int scheduleId);
-
-  /// 진열 일정(마스터) 상세 조회 — 편집 화면 선조회용.
-  Future<LeaderDisplaySchedule> getDisplaySchedule(int displayWorkScheduleId);
-
-  /// 진열 일정(마스터) 추가 (레거시 scheduleChange 진열 추가).
-  Future<void> createDisplaySchedule({
-    required int targetEmployeeId,
-    required int accountId,
-    required DateTime startDate,
-    DateTime? endDate,
-    required String typeOfWork3,
-    required String typeOfWork4,
-    required String typeOfWork5,
-  });
-
-  /// 진열 일정(마스터) 변경 (레거시 scheduleChange 진열 변경).
-  Future<void> updateDisplaySchedule({
-    required int displayWorkScheduleId,
-    required int accountId,
-    required DateTime startDate,
-    DateTime? endDate,
-    required String typeOfWork3,
-    required String typeOfWork4,
-    required String typeOfWork5,
-  });
-
-  /// 진열 일정(마스터) 삭제.
-  Future<void> deleteDisplaySchedule(int displayWorkScheduleId);
 
   /// 조장 본인 거래처 목록 조회. [keyword] 부분 일치 검색 (선택).
   Future<List<LeaderAccount>> getAccounts({String? keyword});
