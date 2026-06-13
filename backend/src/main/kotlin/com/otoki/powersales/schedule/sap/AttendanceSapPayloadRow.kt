@@ -1,5 +1,8 @@
 package com.otoki.powersales.schedule.sap
 
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.schedule.enums.SecondWorkType
 import java.time.LocalDate
 
@@ -14,8 +17,8 @@ data class AttendanceSapPayloadRow(
     val workingDate: LocalDate,
     val employeeCode: String,
     val accountExternalKey: String?,
-    val workingCategory1: String?,
-    val workingCategory2: String?,
-    val workingCategory3: String?,
+    val workingCategory1: WorkingCategory1?,
+    val workingCategory2: WorkingCategory2?,
+    val workingCategory3: WorkingCategory3?,
     val secondWorkType: SecondWorkType?
 )

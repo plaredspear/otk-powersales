@@ -1,5 +1,8 @@
 package com.otoki.powersales.schedule.sap
 
+import com.otoki.powersales.common.enums.WorkingCategory1
+import com.otoki.powersales.common.enums.WorkingCategory2
+import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.schedule.enums.SecondWorkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -20,9 +23,9 @@ class AttendancePayloadFactoryTest {
             workingDate = today,
             employeeCode = "100123",
             accountExternalKey = "ACC001",
-            workingCategory1 = "근무",
-            workingCategory2 = "행사",
-            workingCategory3 = "정상",
+            workingCategory1 = WorkingCategory1.DISPLAY,
+            workingCategory2 = WorkingCategory2.DEDICATED,
+            workingCategory3 = WorkingCategory3.FIXED,
             secondWorkType = null
         )
 
@@ -34,9 +37,9 @@ class AttendancePayloadFactoryTest {
         assertThat(item.EmployeeCode).isEqualTo("100123")
         assertThat(item.SAPAccountCode).isEqualTo("ACC001")
         assertThat(item.WorkDate).isEqualTo("20260504")
-        assertThat(item.WorkingCategory1).isEqualTo("근무")
-        assertThat(item.WorkingCategory2).isEqualTo("행사")
-        assertThat(item.WorkingCategory3).isEqualTo("정상")
+        assertThat(item.WorkingCategory1).isEqualTo("진열")
+        assertThat(item.WorkingCategory2).isEqualTo("전담")
+        assertThat(item.WorkingCategory3).isEqualTo("고정")
         assertThat(item.WorkingCategory4).isNull()
     }
 
@@ -76,7 +79,7 @@ class AttendancePayloadFactoryTest {
         workingDate = today,
         employeeCode = "EMP001",
         accountExternalKey = "ACC001",
-        workingCategory1 = "근무",
+        workingCategory1 = WorkingCategory1.DISPLAY,
         workingCategory2 = null,
         workingCategory3 = null,
         secondWorkType = null

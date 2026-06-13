@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.service
 
+import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.sap.AttendancePayloadFactory
@@ -83,7 +84,7 @@ class AttendanceBatchServiceTest {
                 workingDate = today,
                 employeeCode = "EMP$idx",
                 accountExternalKey = "ACC$idx",
-                workingCategory1 = "근무",
+                workingCategory1 = WorkingCategory1.DISPLAY,
                 workingCategory2 = null,
                 workingCategory3 = null,
                 secondWorkType = null

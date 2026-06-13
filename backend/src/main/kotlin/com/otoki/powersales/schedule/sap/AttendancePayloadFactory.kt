@@ -29,9 +29,9 @@ class AttendancePayloadFactory {
             EmployeeCode = row.employeeCode,
             SAPAccountCode = row.accountExternalKey,
             WorkDate = row.workingDate.format(DATE_FORMATTER),
-            WorkingCategory1 = row.workingCategory1,
-            WorkingCategory2 = row.workingCategory2,
-            WorkingCategory3 = row.workingCategory3,
+            WorkingCategory1 = row.workingCategory1?.displayName,
+            WorkingCategory2 = row.workingCategory2?.displayName,
+            WorkingCategory3 = row.workingCategory3?.displayName,
             WorkingCategory4 = if (isYesterdayCorrection) row.secondWorkType?.displayName else null
         )
     }
