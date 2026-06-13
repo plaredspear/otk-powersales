@@ -1,10 +1,12 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.entity.AccountType
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.AccountType
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
+import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
+import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.schedule.dto.response.Suitability
 import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.schedule.dto.response.TeamMemberScheduleSearchResult
@@ -28,7 +30,7 @@ class AdminSalesComparisonServiceTest {
     private val teamMemberScheduleSearchService: TeamMemberScheduleSearchService = mockk()
     private val accountRepository: AccountRepository = mockk()
     private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository = mockk()
-    private val accountCategoryMasterRepository: com.otoki.powersales.account.repository.AccountCategoryMasterRepository = mockk()
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository = mockk()
 
     private val service = AdminSalesComparisonService(
         teamMemberScheduleSearchService,
@@ -95,7 +97,7 @@ class AdminSalesComparisonServiceTest {
         boundary: BigDecimal,
         accountCategoryCode: String
     ): EmployeeInputCriteriaMaster {
-        val cm = com.otoki.powersales.account.entity.AccountCategoryMaster(
+        val cm = AccountCategoryMaster(
             accountCode = accountCategoryCode,
             name = accountCategoryCode
         )
@@ -114,7 +116,7 @@ class AdminSalesComparisonServiceTest {
 
     /** AccountCategoryMaster — SF categoryMap (name → accountCode) 시드. 기본: 대형마트(3대)→01, 체인→02. */
     private fun categoryMaster(name: String, code: String) =
-        com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = code, name = name)
+        AccountCategoryMaster(accountCode = code, name = name)
 
     @BeforeEach
     fun setup() {
@@ -166,8 +168,8 @@ class AdminSalesComparisonServiceTest {
 
         @Test
         fun `useSearch=true 항목을 accountCode 정렬로 반환`() {
-            val cm1 = com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = "01", name = "대형마트")
-            val cm2 = com.otoki.powersales.account.entity.AccountCategoryMaster(accountCode = "02", name = "체인")
+            val cm1 = AccountCategoryMaster(accountCode = "01", name = "대형마트")
+            val cm2 = AccountCategoryMaster(accountCode = "02", name = "체인")
             every { accountCategoryMasterRepository.findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(eq(true)) } returns listOf(cm1, cm2)
 
             val result = service.getSearchCategories()

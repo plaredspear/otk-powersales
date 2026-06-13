@@ -3,6 +3,7 @@ package com.otoki.powersales.order.entity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.order.enums.OrderRequestStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -122,7 +123,7 @@ class OrderRequestProductSFAnnotationTest {
         }
 
         private fun newProduct(): OrderRequestProduct {
-            val account = com.otoki.powersales.account.entity.Account(id = 1, name = "ACC")
+            val account = Account(id = 1, name = "ACC")
             val employee = com.otoki.powersales.employee.entity.Employee(
                 id = 1L,
                 employeeCode = "E001",

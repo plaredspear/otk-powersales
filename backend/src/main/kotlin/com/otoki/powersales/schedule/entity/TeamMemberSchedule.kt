@@ -16,7 +16,7 @@ import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.promotion.entity.PromotionEmployee
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*

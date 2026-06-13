@@ -2,8 +2,8 @@ package com.otoki.powersales.sales.service
 
 import com.otoki.pos.repository.LivePosSalesDailyRepository
 import com.otoki.pos.repository.PosSalesRow
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.common.exception.BusinessException
 import io.mockk.every
 import io.mockk.mockk

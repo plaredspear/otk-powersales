@@ -1,11 +1,10 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.account.service.AccountUpsertService
-import com.otoki.powersales.account.service.dto.AccountUpsertCommand
-import com.otoki.powersales.account.service.dto.AccountUpsertFailedRow
-import com.otoki.powersales.account.service.dto.AccountUpsertResult
+import com.otoki.powersales.domain.foundation.account.service.AccountUpsertService
+import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertCommand
+import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertFailedRow
+import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertResult
 import com.otoki.powersales.external.sap.inbound.dto.account.ClientMasterRequestItem
-import com.otoki.powersales.external.sap.inbound.service.SapClientMasterService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

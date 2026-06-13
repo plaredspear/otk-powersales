@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
  *
  * 페이로드 키는 SAP 호환을 위해 PascalCase 로 유지한다 (`@JsonProperty` 명시 바인딩).
  * 페이로드 36 키 중 `SAPAccountCode` / `Name` 은 entity 생성자에 전달되며, 나머지는
- * [com.otoki.powersales.account.service.dto.AccountUpsertCommand] 를 거쳐
- * [com.otoki.powersales.account.service.AccountUpsertMapper] 가 entity mutable 필드에 적재한다.
+ * [com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertCommand] 를 거쳐
+ * [com.otoki.powersales.domain.foundation.account.service.AccountUpsertMapper] 가 entity mutable 필드에 적재한다.
  * 일부 필드(`AccountStatusCode` / `SalesDeptCode` / `DivisionCode`) 는 spec #602 (sf-annotate-account)
  * 가 SF 정합 목적으로 entity 컬럼을 도입했고, spec #646 이 SAP 인바운드 매핑(Org 매칭 결과 적재)을 추가했다.
  * spec #649 (account-business-number-source-realign) 은 `BusinessLicenseNumber` 가 SF Sic 매핑 컬럼

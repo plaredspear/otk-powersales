@@ -1,6 +1,6 @@
 package com.otoki.powersales.claim.entity
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.claim.entity.converter.ClaimChannelConverter
 import com.otoki.powersales.claim.entity.converter.ClaimStatusConverter
 import com.otoki.powersales.claim.entity.converter.ClaimType1Converter

@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.entity.AccountType
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule

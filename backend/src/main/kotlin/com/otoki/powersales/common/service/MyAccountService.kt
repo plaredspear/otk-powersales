@@ -5,7 +5,7 @@ import com.otoki.powersales.common.dto.response.MyAccountInfo
 import com.otoki.powersales.common.dto.response.MyAccountListResponse
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.AccountInvalidParameterException
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepositoryCustom
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepositoryCustom
 import com.otoki.powersales.employee.repository.EmployeeRepository

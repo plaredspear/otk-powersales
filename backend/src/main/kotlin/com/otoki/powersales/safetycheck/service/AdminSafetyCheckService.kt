@@ -11,9 +11,9 @@ import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import jakarta.annotation.PostConstruct
 import org.springframework.stereotype.Service

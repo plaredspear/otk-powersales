@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee

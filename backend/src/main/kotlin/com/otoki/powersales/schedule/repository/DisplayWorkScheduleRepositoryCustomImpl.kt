@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule

@@ -1,7 +1,7 @@
 package com.otoki.powersales.inspection.service
 
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.employee.entity.Employee

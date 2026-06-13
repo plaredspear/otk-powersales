@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.policy
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

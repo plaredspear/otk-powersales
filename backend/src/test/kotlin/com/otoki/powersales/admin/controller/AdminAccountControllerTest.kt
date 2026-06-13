@@ -1,21 +1,21 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.account.dto.request.AdminAccountCreateRequest
-import com.otoki.powersales.account.dto.request.AdminAccountUpdateRequest
-import com.otoki.powersales.account.dto.response.AccountDetailResponse
-import com.otoki.powersales.account.dto.response.AccountListItem
-import com.otoki.powersales.account.dto.response.AccountListResponse
-import com.otoki.powersales.account.dto.response.AdminAccountCreateResponse
-import com.otoki.powersales.account.dto.response.AdminAccountUpdateResponse
-import com.otoki.powersales.account.exception.AccountDeleteBlockedSapSyncedException
-import com.otoki.powersales.account.exception.AccountNameDuplicateException
-import com.otoki.powersales.account.exception.AccountNamePrefixRequiredException
-import com.otoki.powersales.account.exception.AccountNamePrefixRequiredForUpdateException
-import com.otoki.powersales.account.exception.AccountNotFoundException
-import com.otoki.powersales.account.service.AccountCreateService
-import com.otoki.powersales.account.service.AccountDeleteService
-import com.otoki.powersales.account.service.AccountUpdateService
-import com.otoki.powersales.account.service.AdminAccountService
+import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountCreateRequest
+import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountUpdateRequest
+import com.otoki.powersales.domain.foundation.account.dto.response.AccountDetailResponse
+import com.otoki.powersales.domain.foundation.account.dto.response.AccountListItem
+import com.otoki.powersales.domain.foundation.account.dto.response.AccountListResponse
+import com.otoki.powersales.domain.foundation.account.dto.response.AdminAccountCreateResponse
+import com.otoki.powersales.domain.foundation.account.dto.response.AdminAccountUpdateResponse
+import com.otoki.powersales.domain.foundation.account.exception.AccountDeleteBlockedSapSyncedException
+import com.otoki.powersales.domain.foundation.account.exception.AccountNameDuplicateException
+import com.otoki.powersales.domain.foundation.account.exception.AccountNamePrefixRequiredException
+import com.otoki.powersales.domain.foundation.account.exception.AccountNamePrefixRequiredForUpdateException
+import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
+import com.otoki.powersales.domain.foundation.account.service.AccountCreateService
+import com.otoki.powersales.domain.foundation.account.service.AccountDeleteService
+import com.otoki.powersales.domain.foundation.account.service.AccountUpdateService
+import com.otoki.powersales.domain.foundation.account.service.AdminAccountService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
@@ -38,6 +38,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -137,7 +138,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 상세 조회 (200 OK + 기본 정보 + 거래처코드)")
         fun getAccountDetail_success() {
             val response = AccountDetailResponse.from(
-                com.otoki.powersales.account.entity.Account(
+                Account(
                     id = 7,
                     name = "GS25 역삼점",
                     externalKey = "AC001234",

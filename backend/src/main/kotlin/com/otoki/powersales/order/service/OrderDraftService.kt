@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.service
 
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.draft.entity.TmpOrder
 import com.otoki.powersales.draft.entity.TmpOrderProduct
 import com.otoki.powersales.draft.repository.TmpOrderRepository

@@ -3,6 +3,7 @@ package com.otoki.powersales.order.entity
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
@@ -99,5 +100,5 @@ class ErpOrder(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
-    var account: com.otoki.powersales.account.entity.Account? = null,
+    var account: Account? = null,
 ) : BaseEntity()

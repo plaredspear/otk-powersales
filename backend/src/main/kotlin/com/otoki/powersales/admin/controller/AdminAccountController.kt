@@ -2,16 +2,16 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.account.dto.request.AdminAccountCreateRequest
-import com.otoki.powersales.account.dto.request.AdminAccountUpdateRequest
-import com.otoki.powersales.account.dto.response.AccountDetailResponse
-import com.otoki.powersales.account.dto.response.AccountListResponse
-import com.otoki.powersales.account.dto.response.AdminAccountCreateResponse
-import com.otoki.powersales.account.dto.response.AdminAccountUpdateResponse
-import com.otoki.powersales.account.service.AccountCreateService
-import com.otoki.powersales.account.service.AccountDeleteService
-import com.otoki.powersales.account.service.AccountUpdateService
-import com.otoki.powersales.account.service.AdminAccountService
+import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountCreateRequest
+import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountUpdateRequest
+import com.otoki.powersales.domain.foundation.account.dto.response.AccountDetailResponse
+import com.otoki.powersales.domain.foundation.account.dto.response.AccountListResponse
+import com.otoki.powersales.domain.foundation.account.dto.response.AdminAccountCreateResponse
+import com.otoki.powersales.domain.foundation.account.dto.response.AdminAccountUpdateResponse
+import com.otoki.powersales.domain.foundation.account.service.AccountCreateService
+import com.otoki.powersales.domain.foundation.account.service.AccountDeleteService
+import com.otoki.powersales.domain.foundation.account.service.AccountUpdateService
+import com.otoki.powersales.domain.foundation.account.service.AdminAccountService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.common.dto.ApiResponse

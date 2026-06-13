@@ -1,6 +1,6 @@
 package com.otoki.powersales.sales.service
 
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.sales.dto.request.MonthlySalesRequest
 import com.otoki.powersales.sales.dto.response.MonthlySalesResponse
 import com.otoki.powersales.sales.entity.SalesProgressRateMaster

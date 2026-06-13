@@ -1,6 +1,6 @@
 package com.otoki.powersales.auth.sharing.service
 
-import com.otoki.powersales.account.entity.QAccount
+import com.otoki.powersales.domain.foundation.account.entity.QAccount
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
 import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule

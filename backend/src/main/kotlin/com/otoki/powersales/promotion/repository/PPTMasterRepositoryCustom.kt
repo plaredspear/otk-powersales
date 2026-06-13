@@ -1,5 +1,6 @@
 package com.otoki.powersales.promotion.repository
 
+import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import org.springframework.data.domain.Page
@@ -56,5 +57,5 @@ data class PPTMasterSearchResult(
     val employeeAppLoginActive: Boolean?,
     val employeeEndDate: java.time.LocalDate?,
     // SF 거래처유형(AccountType__c = Account.Type)
-    val accountType: com.otoki.powersales.account.entity.AccountType?
+    val accountType: AccountType?
 )

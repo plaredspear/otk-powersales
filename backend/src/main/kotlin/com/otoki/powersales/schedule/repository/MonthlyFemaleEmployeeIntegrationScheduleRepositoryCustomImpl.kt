@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.account.entity.AccountType
-import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.domain.foundation.account.entity.AccountType
+import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule.Companion.monthlyFemaleEmployeeIntegrationSchedule
 import com.querydsl.core.BooleanBuilder

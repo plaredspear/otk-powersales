@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
@@ -12,7 +12,6 @@ import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

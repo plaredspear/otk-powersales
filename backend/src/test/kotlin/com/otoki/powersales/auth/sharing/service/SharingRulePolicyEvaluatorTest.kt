@@ -214,7 +214,7 @@ class SharingRulePolicyEvaluatorTest {
     @DisplayName("buildConditionPredicate — SF sharing rule criteria operator 평가")
     inner class ConditionOperator {
 
-        private val accountPath = com.otoki.powersales.account.entity.QAccount.account
+        private val accountPath = com.otoki.powersales.domain.foundation.account.entity.QAccount.account
 
         @Test
         @DisplayName("equals + 콤마 다중값 → IN 으로 작동 (SF X5832 BranchCode__c 3844,5832)")
@@ -377,7 +377,7 @@ class SharingRulePolicyEvaluatorTest {
     @Nested
     @DisplayName("hasProperty — Q-class entity path field 사전 검증")
     inner class HasProperty {
-        private val accountPath = com.otoki.powersales.account.entity.QAccount.account
+        private val accountPath = com.otoki.powersales.domain.foundation.account.entity.QAccount.account
 
         @Test
         @DisplayName("Account 에 ownerUser 있음 (운영 표준 owner 명명) → true")
@@ -407,7 +407,7 @@ class SharingRulePolicyEvaluatorTest {
     @Nested
     @DisplayName("Account owner / hierarchy / legacy branch predicate — 운영 표준 ownerUser 매핑")
     inner class AccountOwnerMapping {
-        private val accountPath = com.otoki.powersales.account.entity.QAccount.account
+        private val accountPath = com.otoki.powersales.domain.foundation.account.entity.QAccount.account
 
         @Test
         @DisplayName("Account ownerPredicate → ownerUser.id = userId 평가")

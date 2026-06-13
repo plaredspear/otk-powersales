@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.sap.AttendanceSapPayloadRow
@@ -89,7 +90,7 @@ interface TeamMemberScheduleRepositoryCustom {
      * 레거시 드롭다운이 `keyvalue` 검색 + `LIMIT/OFFSET` 페이지네이션을 쓰던 것과 동일하게,
      * 전사 일정 거래처 전체(수천 건)를 한 번에 반환하지 않도록 DB 레벨에서 필터·제한한다.
      */
-    fun findDistinctScheduledAccounts(keyword: String?, limit: Int): List<com.otoki.powersales.account.entity.Account>
+    fun findDistinctScheduledAccounts(keyword: String?, limit: Int): List<Account>
 
     /**
      * 팀장(teamLeader) 기준 거래처 ID (중복 제거).

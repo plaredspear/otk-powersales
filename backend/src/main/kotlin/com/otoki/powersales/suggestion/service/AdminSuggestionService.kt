@@ -1,6 +1,6 @@
 package com.otoki.powersales.suggestion.service
 
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.common.entity.UploadFile
@@ -32,7 +32,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**

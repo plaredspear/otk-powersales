@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.service
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import com.otoki.powersales.external.sap.outbound.sender.SapOrderRequestDetailLine

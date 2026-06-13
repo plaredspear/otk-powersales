@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.account.entity.AccountType
+import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.enums.SecondWorkType

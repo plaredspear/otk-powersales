@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.entity
 
-import com.otoki.powersales.account.entity.AccountCategoryMaster
+import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject

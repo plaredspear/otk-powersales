@@ -1,7 +1,7 @@
 package com.otoki.powersales.sales.service
 
 import com.otoki.pos.repository.LivePosSalesDailyRepository
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.common.exception.BusinessException
 import com.otoki.powersales.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.sales.dto.response.PosSalesResponse
@@ -28,7 +28,7 @@ import java.time.format.DateTimeFormatter
  *
  * ## 데이터 source (신규)
  * POS DB `public.live_pos_sales_dh` ([com.otoki.pos.entity.LivePosSalesDaily]) 직 SELECT.
- * 거래처 코드는 [com.otoki.powersales.account.entity.Account.externalKey] 에 레거시 패딩
+ * 거래처 코드는 [com.otoki.powersales.domain.foundation.account.entity.Account.externalKey] 에 레거시 패딩
  * `"000" + accountCode` ([CUST_CD_PREFIX]) 를 적용해 `CUST_CD` 키로 사용.
  *
  * ## 기간 산출

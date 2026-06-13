@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.entity.AccountType
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.util.TimeZones
 import com.otoki.powersales.employee.entity.Employee

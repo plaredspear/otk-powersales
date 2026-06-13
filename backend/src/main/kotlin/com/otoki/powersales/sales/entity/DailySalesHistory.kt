@@ -1,6 +1,6 @@
 package com.otoki.powersales.sales.entity
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.common.salesforce.HCColumn

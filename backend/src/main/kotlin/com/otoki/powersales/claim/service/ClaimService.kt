@@ -1,6 +1,6 @@
 package com.otoki.powersales.claim.service
 
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.ClaimCreateRequest
 import com.otoki.powersales.claim.dto.response.ClaimCreateResponse
 import com.otoki.powersales.claim.entity.Claim

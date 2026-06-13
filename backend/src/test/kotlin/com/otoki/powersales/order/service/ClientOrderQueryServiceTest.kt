@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.service
 
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.order.enums.DeliveryStatus
@@ -17,7 +17,6 @@ import com.otoki.powersales.order.repository.ErpOrderRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName

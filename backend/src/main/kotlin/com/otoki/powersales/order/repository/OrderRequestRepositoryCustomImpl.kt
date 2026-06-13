@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.repository
 
-import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.entity.QOrderRequest.Companion.orderRequest

@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.account.entity.QAccountCategoryMaster.Companion.accountCategoryMaster
+import com.otoki.powersales.domain.foundation.account.entity.QAccountCategoryMaster.Companion.accountCategoryMaster
 import com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.schedule.entity.QEmployeeInputCriteriaMaster.Companion.employeeInputCriteriaMaster
 import com.otoki.powersales.schedule.enums.TypeOfWork1

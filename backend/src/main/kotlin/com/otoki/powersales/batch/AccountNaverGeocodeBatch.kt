@@ -1,6 +1,6 @@
 package com.otoki.powersales.batch
 
-import com.otoki.powersales.account.service.AccountNaverGeocodeService
+import com.otoki.powersales.domain.foundation.account.service.AccountNaverGeocodeService
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory

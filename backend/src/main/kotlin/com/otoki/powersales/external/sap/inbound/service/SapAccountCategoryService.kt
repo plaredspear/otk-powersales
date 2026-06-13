@@ -1,7 +1,7 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.account.service.AccountCategoryUpsertService
-import com.otoki.powersales.account.service.dto.AccountCategoryUpsertCommand
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryUpsertService
+import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertCommand
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAccepted
 import com.otoki.powersales.external.sap.inbound.dto.account.AccountCategoryRequestItem
 import com.otoki.powersales.external.sap.inbound.dto.account.AccountMasterDetail

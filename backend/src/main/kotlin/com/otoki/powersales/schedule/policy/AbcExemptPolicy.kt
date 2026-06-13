@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.policy
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 
 /**
  * 출근등록 GPS 거리 검증 면제 정책 평가자 (Spec #586).

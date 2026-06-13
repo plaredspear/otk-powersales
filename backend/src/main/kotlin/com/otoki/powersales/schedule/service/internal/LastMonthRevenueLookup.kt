@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.service.internal
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
 import org.springframework.stereotype.Component
 import java.math.BigDecimal

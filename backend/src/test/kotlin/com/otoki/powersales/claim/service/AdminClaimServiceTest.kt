@@ -3,7 +3,7 @@ package com.otoki.powersales.claim.service
 import com.otoki.powersales.claim.entity.*
 import com.otoki.powersales.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.claim.repository.AdminClaimRepository
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.claim.enums.ClaimDateType
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1

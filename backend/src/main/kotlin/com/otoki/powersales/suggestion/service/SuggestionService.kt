@@ -1,12 +1,13 @@
 package com.otoki.powersales.suggestion.service
 
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.StorageConstants
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.service.OrgCostCenterMatchService
 import com.otoki.powersales.product.entity.Product
@@ -19,7 +20,6 @@ import com.otoki.powersales.suggestion.dto.response.SuggestionCreateResponse
 import com.otoki.powersales.suggestion.dto.response.SuggestionListItem
 import com.otoki.powersales.suggestion.dto.response.SuggestionResponse
 import com.otoki.powersales.suggestion.entity.Suggestion
-import com.otoki.powersales.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.suggestion.entity.SuggestionStatus
 import com.otoki.powersales.suggestion.exception.InvalidSuggestionIdException
 import com.otoki.powersales.suggestion.exception.InvalidSuggestionPhotoIdException
@@ -297,7 +297,7 @@ class SuggestionService(
      * Spec #830 P1-B §2.3 — `AdminSuggestionService` 가 동일 분기 로직 재사용.
      */
     internal fun computeWerkCenters(
-        account: com.otoki.powersales.account.entity.Account?,
+        account: Account?,
         product: Product?
     ): Pair<String?, String?> {
         if (account == null) return null to null

@@ -1,6 +1,6 @@
 package com.otoki.powersales.sales.repository
 
-import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.sales.entity.SalesProgressRateMaster
 import com.otoki.powersales.sales.entity.QSalesProgressRateMaster.Companion.salesProgressRateMaster
 import com.querydsl.core.BooleanBuilder

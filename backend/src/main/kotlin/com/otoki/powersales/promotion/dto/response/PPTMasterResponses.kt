@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.dto.response
 
-import com.otoki.powersales.account.entity.AccountType
+import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType

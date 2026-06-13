@@ -3,7 +3,7 @@ package com.otoki.powersales.promotion.entity
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.promotion.entity.converter.PromotionTypeConverter

@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.service
 
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.order.dto.request.OrderRequestCreateRequest
 import com.otoki.powersales.order.dto.response.OrderRequestCreateResponse

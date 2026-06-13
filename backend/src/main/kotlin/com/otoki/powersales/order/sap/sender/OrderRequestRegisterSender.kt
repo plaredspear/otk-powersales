@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.sap.sender
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct

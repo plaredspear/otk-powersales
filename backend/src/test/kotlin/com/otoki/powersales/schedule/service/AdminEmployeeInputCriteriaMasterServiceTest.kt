@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.account.entity.AccountCategoryMaster
-import com.otoki.powersales.account.repository.AccountCategoryMasterRepository
+import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
+import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.schedule.dto.request.EmployeeInputCriteriaMasterCreateRequest
 import com.otoki.powersales.schedule.dto.request.EmployeeInputCriteriaMasterUpdateRequest
 import com.otoki.powersales.schedule.entity.EmployeeInputCriteriaMaster

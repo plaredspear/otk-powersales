@@ -1,10 +1,9 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.account.service.AccountCategoryUpsertService
-import com.otoki.powersales.account.service.dto.AccountCategoryUpsertCommand
-import com.otoki.powersales.account.service.dto.AccountCategoryUpsertFailedRow
-import com.otoki.powersales.account.service.dto.AccountCategoryUpsertResult
-import com.otoki.powersales.external.sap.inbound.service.SapAccountCategoryService
+import com.otoki.powersales.domain.foundation.account.service.AccountCategoryUpsertService
+import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertCommand
+import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertFailedRow
+import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertResult
 import com.otoki.powersales.external.sap.inbound.dto.account.AccountCategoryRequestItem
 import io.mockk.every
 import io.mockk.mockk

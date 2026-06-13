@@ -3,8 +3,8 @@ package com.otoki.powersales.sales.service
 import com.otoki.pos.repository.ElectronicSalesCustomerRow
 import com.otoki.pos.repository.ElectronicSalesRow
 import com.otoki.pos.repository.LiveTotSalesDailyRepository
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.sales.dto.request.ElectronicSalesDashboardListRequest

@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.dto.response
 
-import com.otoki.powersales.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.Account
 
 /**
  * 내 거래처 목록 응답 DTO

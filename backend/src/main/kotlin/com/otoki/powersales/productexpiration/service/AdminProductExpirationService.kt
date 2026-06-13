@@ -1,6 +1,6 @@
 package com.otoki.powersales.productexpiration.service
 
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest

@@ -1,8 +1,9 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
@@ -300,7 +301,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     override fun findDistinctScheduledAccounts(
         keyword: String?,
         limit: Int
-    ): List<com.otoki.powersales.account.entity.Account> {
+    ): List<Account> {
         // JOIN + DISTINCT 는 LIMIT 가 무용지물(전체 176만 TMS 스캔 → 70여 컬럼 DISTINCT/SORT 후에야 절단).
         // account 를 name 순으로 훑으며 EXISTS 세미조인으로 TMS 를 account_id 로 probe(LIMIT 즉시 단락) —
         // V207 idx_team_member_schedule_account_id_working_date (account_id 선두) 인덱스가 probe 를 가속.

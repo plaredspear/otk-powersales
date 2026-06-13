@@ -1,7 +1,7 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.promotion.dto.request.PPTMasterBulkItem
 import com.otoki.powersales.promotion.dto.request.PPTMasterBulkValidateRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest

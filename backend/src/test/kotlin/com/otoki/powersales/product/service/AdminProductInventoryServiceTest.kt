@@ -1,7 +1,7 @@
 package com.otoki.powersales.product.service
 
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.order.sap.client.InventoryInfo
 import com.otoki.powersales.order.sap.client.SapInventorySearchClient
 import com.otoki.powersales.product.dto.request.InventorySearchRequest

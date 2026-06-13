@@ -1,7 +1,7 @@
 package com.otoki.powersales.sales.sfsync
 
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.sales.entity.SalesProgressRateMaster
 import com.otoki.powersales.sales.repository.SalesProgressRateMasterRepository
 import io.mockk.every

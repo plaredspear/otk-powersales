@@ -2,8 +2,8 @@ package com.otoki.powersales.sales.materialize
 
 import com.otoki.orora.entity.OroraDailySalesHistory
 import com.otoki.orora.repository.OroraDailySalesHistoryRepository
-import com.otoki.powersales.account.entity.Account
-import com.otoki.powersales.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.sales.entity.DailySalesHistory
 import com.otoki.powersales.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.sales.enums.SalesMonth
