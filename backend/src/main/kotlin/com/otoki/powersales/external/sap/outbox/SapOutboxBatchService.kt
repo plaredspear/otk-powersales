@@ -16,7 +16,7 @@ import tools.jackson.databind.ObjectMapper
 import kotlin.collections.get
 
 /**
- * 도메인 무관 범용 SAP outbound 송신 처리 (Spec #592). batch 진입점은 [com.otoki.powersales.batch.SapOutboxBatch].
+ * 도메인 무관 범용 SAP outbound 송신 처리 (Spec #592). batch 진입점은 [com.otoki.powersales.platform.batch.SapOutboxBatch].
  *
  * 각 row 의 `interface_id` 로 [SapInterfaceRegistry] 에서 endpoint 조회 후
  * `payload` 그대로 SAP REST Adapter 로 송신. 응답 본문 검증은 [SapResponseHtmlGuard] + `resultCode` 파싱.

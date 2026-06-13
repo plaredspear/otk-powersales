@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
-import com.otoki.powersales.batch.ScheduledJobCatalog
+import com.otoki.powersales.platform.batch.ScheduledJobCatalog
 import com.otoki.powersales.common.jobrun.ScheduledJobRun
 import com.otoki.powersales.common.jobrun.ScheduledJobRunRepository
 import com.otoki.powersales.sales.materialize.OroraSalesMaterializeFacade

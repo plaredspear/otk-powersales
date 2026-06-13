@@ -1,4 +1,4 @@
-package com.otoki.powersales.batch
+package com.otoki.powersales.platform.batch
 
 /**
  * 운영 환경에 등록된 `@Scheduled` 잡의 정적 카탈로그.

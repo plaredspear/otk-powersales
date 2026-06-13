@@ -1,5 +1,21 @@
 package com.otoki.powersales.batch
 
+import com.otoki.powersales.platform.batch.AccountNaverGeocodeBatch
+import com.otoki.powersales.platform.batch.AgreementWordCycleBatch
+import com.otoki.powersales.platform.batch.AttendanceSapOutboundBatch
+import com.otoki.powersales.platform.batch.DisplayMasterLastMonthRevenueBatch
+import com.otoki.powersales.platform.batch.DisplayMasterSapOutboundBatch
+import com.otoki.powersales.platform.batch.MfeisThisMonthRevenueBatch
+import com.otoki.powersales.platform.batch.OroraDailySalesMaterializeBatch
+import com.otoki.powersales.platform.batch.OroraMonthlySalesMaterializeBatch
+import com.otoki.powersales.platform.batch.PPTMasterExpireBatch
+import com.otoki.powersales.platform.batch.PPTMasterSapOutboundBatch
+import com.otoki.powersales.platform.batch.PPTMasterSyncBatch
+import com.otoki.powersales.platform.batch.PostponedAppointmentBatch
+import com.otoki.powersales.platform.batch.SalesProgressRateMasterSyncBatch
+import com.otoki.powersales.platform.batch.SapOutboxBatch
+import com.otoki.powersales.platform.batch.ScheduledJobCatalog
+import com.otoki.powersales.platform.batch.ScheduledJobRunCleanupBatch
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

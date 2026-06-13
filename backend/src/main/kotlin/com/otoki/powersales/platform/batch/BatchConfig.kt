@@ -1,4 +1,4 @@
-package com.otoki.powersales.batch
+package com.otoki.powersales.platform.batch
 
 import org.springframework.context.annotation.Configuration
 

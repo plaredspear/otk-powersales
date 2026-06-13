@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 /**
- * `scheduled_job_run` 테이블 보존 정책 처리 (스펙 #548 §4.6). batch 진입점은 [com.otoki.powersales.batch.ScheduledJobRunCleanupBatch].
+ * `scheduled_job_run` 테이블 보존 정책 처리 (스펙 #548 §4.6). batch 진입점은 [com.otoki.powersales.platform.batch.ScheduledJobRunCleanupBatch].
  *
  * - 90일 초과 row 를 단일 bulk DELETE 로 정리.
  */

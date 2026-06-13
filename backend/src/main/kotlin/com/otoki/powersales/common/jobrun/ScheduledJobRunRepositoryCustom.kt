@@ -35,7 +35,7 @@ interface ScheduledJobRunRepositoryCustom {
 
     /**
      * 테이블에 실제 등장한 distinct jobName 목록 (가나다순).
-     * UI 필터 드롭다운에서 [com.otoki.powersales.batch.ScheduledJobCatalog] 와 union 하여 사용한다.
+     * UI 필터 드롭다운에서 [com.otoki.powersales.platform.batch.ScheduledJobCatalog] 와 union 하여 사용한다.
      */
     fun findDistinctJobNames(): List<String>
 }

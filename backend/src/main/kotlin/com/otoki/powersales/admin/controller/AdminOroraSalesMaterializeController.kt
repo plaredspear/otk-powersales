@@ -3,8 +3,8 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.auth.permission.PermissionResource
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.batch.OroraDailySalesMaterializeBatch
-import com.otoki.powersales.batch.OroraMonthlySalesMaterializeBatch
+import com.otoki.powersales.platform.batch.OroraDailySalesMaterializeBatch
+import com.otoki.powersales.platform.batch.OroraMonthlySalesMaterializeBatch
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.sales.dto.request.OroraSalesMaterializeRequest
