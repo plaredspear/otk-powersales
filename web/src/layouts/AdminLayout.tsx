@@ -64,6 +64,7 @@ export default function AdminLayout() {
     <BreadcrumbProvider>
       <ProLayout
         title="판매여사원관리시스템"
+        logo="/favicon.svg"
         route={filteredMenuRoute}
         location={{ pathname: location.pathname }}
         fixSiderbar
