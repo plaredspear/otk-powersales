@@ -92,8 +92,9 @@ class MyAccountSearchBar extends StatelessWidget {
           ElevatedButton(
             onPressed: onSearch,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.otokiBlue,
-              foregroundColor: AppColors.white,
+              backgroundColor: AppColors.legacyYellow,
+              foregroundColor: AppColors.onPrimary,
+              elevation: 0,
               minimumSize: const Size(0, 40),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -102,7 +103,10 @@ class MyAccountSearchBar extends StatelessWidget {
                 horizontal: AppSpacing.lg,
               ),
             ),
-            child: const Text('검색'),
+            child: const Text(
+              '검색',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),

@@ -129,6 +129,18 @@ abstract final class AppColors {
   /// 검색바 placeholder, 비활성 텍스트 (레거시 #CCC)
   static const Color legacyPlaceholder = Color(0xFFCCCCCC);
 
+  /// 안전점검 헤더(KV) 배경 (레거시 checkList.jsp #9BC73A)
+  static const Color legacyKvGreen = Color(0xFF9BC73A);
+
+  /// 안전점검 선택 행·하단 버튼 블루 (레거시 checkList.jsp #006DB2)
+  static const Color legacyCheckBlue = Color(0xFF006DB2);
+
+  /// 안전점검 체크박스 채움 블루 (레거시 c_toggle:checked #0175FF)
+  static const Color legacyCheckActive = Color(0xFF0175FF);
+
+  /// 안전점검 체크리스트 행 배경 (레거시 #F4F4F4)
+  static const Color legacyCheckRow = Color(0xFFF4F4F4);
+
   /// 홈 본문 배경 그라데이션 시작 (레거시 #F7F7F7)
   static const Color homeBgGradientStart = Color(0xFFF7F7F7);
 

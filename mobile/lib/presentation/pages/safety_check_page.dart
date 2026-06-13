@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
@@ -36,26 +37,57 @@ class _SafetyCheckPageState extends ConsumerState<SafetyCheckPage> {
       }
     });
 
-    return Scaffold(
-      appBar: _buildAppBar(),
-      body: _buildBody(state),
-      bottomNavigationBar: _buildBottomBar(state),
+    // 상태바 영역은 흰색 유지, 그 아래 올리브그린 띠(KV 헤더)만 배치
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _buildHeaderBand(),
+              Expanded(child: _buildBody(state)),
+            ],
+          ),
+        ),
+        bottomNavigationBar: _buildBottomBar(state),
+      ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => Navigator.of(context).pop(),
+  /// 레거시(checkList.jsp) KV 헤더: 올리브그린 띠 + 오뚜기 엠블럼 + 좌측 타이틀(#333)
+  Widget _buildHeaderBand() {
+    return Container(
+      width: double.infinity,
+      color: AppColors.legacyKvGreen,
+      padding: const EdgeInsets.fromLTRB(4, 12, 16, 12),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            color: AppColors.legacyTextSub,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          Image.asset(
+            'assets/images/otoki_emblem.png',
+            height: 40,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              '판매여사원 매장 일일 안전점검\n체크리스트 [출근시 작성]',
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.3,
+                fontWeight: FontWeight.w700,
+                color: AppColors.legacyTextSub,
+              ),
+            ),
+          ),
+        ],
       ),
-      title: const Text(
-        '판매여사원 매장 일일 안전점검\n체크리스트 [출근시 작성]',
-        style: TextStyle(fontSize: 15, height: 1.3),
-        textAlign: TextAlign.center,
-      ),
-      centerTitle: true,
-      toolbarHeight: 64,
     );
   }
 
@@ -130,15 +162,19 @@ class _SafetyCheckPageState extends ConsumerState<SafetyCheckPage> {
         ),
       ),
       child: SafeArea(
+        // 레거시 wrapper_buttons: 취소(35%)·제출(65%) 모두 #006DB2 흰 글씨
         child: Row(
           children: [
             Expanded(
-              child: OutlinedButton(
+              flex: 35,
+              child: ElevatedButton(
                 onPressed:
                     state.isSubmitting ? null : () => Navigator.of(context).pop(),
-                style: OutlinedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: const BorderSide(color: AppColors.divider),
+                  backgroundColor: AppColors.legacyCheckBlue,
+                  foregroundColor: AppColors.white,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -147,24 +183,25 @@ class _SafetyCheckPageState extends ConsumerState<SafetyCheckPage> {
                   '취소',
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              flex: 2,
+              flex: 65,
               child: ElevatedButton(
                 onPressed: isEnabled
                     ? () => ref.read(safetyCheckProvider.notifier).submit()
                     : null,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
+                  backgroundColor: AppColors.legacyCheckBlue,
+                  foregroundColor: AppColors.white,
                   disabledBackgroundColor: AppColors.surfaceVariant,
                   disabledForegroundColor: AppColors.textTertiary,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

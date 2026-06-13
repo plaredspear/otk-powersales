@@ -80,13 +80,15 @@ class SafetyCheckCategorySection extends StatelessWidget {
         if (isRadio) _buildRadioGuideText() else _buildCheckboxGuideText(),
         // 항목 목록
         if (isRadio)
-          ...category.items.map(
-            (item) => SafetyCheckAccordionTile(
-              item: item,
-              selectedAnswer: equipmentAnswers[item.seqNum],
+          // 레거시(checkList.jsp): 항목 번호는 DB seqNum이 아니라 루프 1-based 순번
+          ...category.items.asMap().entries.map(
+            (entry) => SafetyCheckAccordionTile(
+              item: entry.value,
+              displayNumber: entry.key + 1,
+              selectedAnswer: equipmentAnswers[entry.value.seqNum],
               options: category.options ?? ['예', '해당없음'],
-              isExpanded: expandedItemIndex == item.seqNum,
-              onTap: () => onToggleExpand?.call(item.seqNum),
+              isExpanded: expandedItemIndex == entry.value.seqNum,
+              onTap: () => onToggleExpand?.call(entry.value.seqNum),
               onSelect: (seqNum, answer) {
                 onRadioSelect?.call(seqNum, answer);
               },
@@ -140,13 +142,32 @@ class SafetyCheckCategorySection extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               TextSpan(text: '합시다!\n\n'),
+              TextSpan(text: '1. '),
               TextSpan(
-                text:
-                    '1. 오늘 안전예방 장비 착용을 했는지 체크바랍니다. (아래 9개 항목 모두 체크하세요!)\n\n',
+                text: '오늘 안전예방 장비 착용',
+                style: TextStyle(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-              TextSpan(text: '★ 지급받은 장비에 한하여 착용점검 바랍니다. '),
+              TextSpan(text: '을 했는지 체크바랍니다. '),
               TextSpan(
-                text: '(지급장비에 문제가 있으면 판매조장에게 문의바랍니다.)',
+                text: '(아래 9개 항목 모두 체크하세요!)',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              TextSpan(text: '\n\n★ '),
+              TextSpan(
+                text: '지급받은 장비에 한하여 착용점검',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              TextSpan(
+                text: ' 바랍니다. (지급장비에 문제가 있으면 판매조장에게 문의바랍니다.)',
               ),
             ],
           ),
@@ -161,19 +182,59 @@ class SafetyCheckCategorySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '2. 매장 근무시, 아래 안전사고 예방사항을 준수하겠습니다. (내용을 읽고 각 사항을 체크)',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+              children: [
+                TextSpan(text: '2. 매장 근무시, 아래 '),
+                TextSpan(
+                  text: '안전사고 예방사항을 준수',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(text: '하겠습니다. (내용을 읽고 각 사항을 체크)'),
+              ],
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            '★ 위험요소를 파악하고 준수사항에 대하여 항상 주의 부탁드립니다.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textTertiary,
+          RichText(
+            text: const TextSpan(
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textTertiary,
+                height: 1.5,
+              ),
+              children: [
+                TextSpan(text: '★ '),
+                TextSpan(
+                  text: '위험요소',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(
+                  text: '를 파악하고 ',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                TextSpan(
+                  text: '준수사항',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(
+                  text: '에 대하여 항상 주의 부탁드립니다.',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ],
             ),
           ),
         ],
