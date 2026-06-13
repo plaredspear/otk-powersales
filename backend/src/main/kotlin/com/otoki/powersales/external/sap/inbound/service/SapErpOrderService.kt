@@ -5,9 +5,9 @@ import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderDetail
 import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderFailure
 import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderItemDetail
 import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderRequestItem
-import com.otoki.powersales.order.service.ErpOrderUpsertService
-import com.otoki.powersales.order.service.dto.ErpOrderLineCommand
-import com.otoki.powersales.order.service.dto.ErpOrderUpsertCommand
+import com.otoki.powersales.domain.activity.order.service.ErpOrderUpsertService
+import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderLineCommand
+import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderUpsertCommand
 import org.springframework.stereotype.Service
 
 /**

@@ -1,9 +1,8 @@
 package com.otoki.powersales.external.sap.outbound.sender
 
-import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender
-import com.otoki.powersales.order.exception.LoanSapErrorException
-import com.otoki.powersales.order.exception.LoanSapHtmlResponseException
-import com.otoki.powersales.order.exception.LoanSapUnavailableException
+import com.otoki.powersales.domain.activity.order.exception.LoanSapErrorException
+import com.otoki.powersales.domain.activity.order.exception.LoanSapHtmlResponseException
+import com.otoki.powersales.domain.activity.order.exception.LoanSapUnavailableException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

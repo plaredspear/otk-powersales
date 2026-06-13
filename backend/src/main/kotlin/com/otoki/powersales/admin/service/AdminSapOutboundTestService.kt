@@ -9,11 +9,12 @@ import com.otoki.powersales.admin.dto.request.PPTMasterTestRequest
 import com.otoki.powersales.admin.dto.response.SapOutboundTestPreviewResponse
 import com.otoki.powersales.admin.dto.response.SapOutboundTestSendResponse
 import com.otoki.powersales.common.exception.BusinessException
-import com.otoki.powersales.order.entity.OrderRequestProduct
-import com.otoki.powersales.order.repository.OrderRequestProductRepository
-import com.otoki.powersales.order.repository.OrderRequestRepository
-import com.otoki.powersales.order.sap.OrderRequestCancelPayloadFactory
-import com.otoki.powersales.order.sap.sender.OrderRequestRegisterSender
+import com.otoki.powersales.domain.activity.order.entity.OrderRequest
+import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
+import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
+import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
+import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.promotion.sap.PPTMasterPayloadFactory
 import com.otoki.powersales.external.sap.SapConstants
@@ -159,7 +160,7 @@ class AdminSapOutboundTestService(
 
     private fun loadCancelTarget(
         req: OrderRequestCancelTestRequest,
-    ): Pair<com.otoki.powersales.order.entity.OrderRequest, List<OrderRequestProduct>> {
+    ): Pair<OrderRequest, List<OrderRequestProduct>> {
         val orderRequest = orderRequestRepository.findById(req.orderRequestId).orElseThrow {
             BusinessException(
                 errorCode = "ORDER_REQUEST_NOT_FOUND",
@@ -227,7 +228,7 @@ class AdminSapOutboundTestService(
 
     private fun loadRegisterTarget(
         req: OrderRequestRegisterTestRequest,
-    ): Pair<com.otoki.powersales.order.entity.OrderRequest, List<OrderRequestProduct>> {
+    ): Pair<OrderRequest, List<OrderRequestProduct>> {
         val orderRequest = orderRequestRepository.findById(req.orderRequestId).orElseThrow {
             BusinessException(
                 errorCode = "ORDER_REQUEST_NOT_FOUND",

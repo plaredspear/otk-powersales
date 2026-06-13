@@ -6,7 +6,7 @@ import com.otoki.powersales.domain.foundation.product.dto.response.InventorySear
 import com.otoki.powersales.domain.foundation.product.dto.response.InventorySearchResultItem
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
-import com.otoki.powersales.order.sap.client.SapInventorySearchClient
+import com.otoki.powersales.domain.activity.order.sap.client.SapInventorySearchClient
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal

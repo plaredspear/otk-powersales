@@ -2,14 +2,13 @@ package com.otoki.powersales.domain.foundation.product.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.order.sap.client.InventoryInfo
-import com.otoki.powersales.order.sap.client.SapInventorySearchClient
+import com.otoki.powersales.domain.activity.order.sap.client.InventoryInfo
+import com.otoki.powersales.domain.activity.order.sap.client.SapInventorySearchClient
 import com.otoki.powersales.domain.foundation.product.dto.request.InventorySearchRequest
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
 import com.otoki.powersales.domain.foundation.product.enums.StorageCondition
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchParameterException
-import com.otoki.powersales.domain.foundation.product.service.AdminProductInventoryService
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import io.mockk.every
 import io.mockk.mockk

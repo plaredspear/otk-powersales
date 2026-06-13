@@ -1,7 +1,6 @@
 package com.otoki.powersales.external.sap.outbound.sender
 
-import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
-import com.otoki.powersales.order.exception.OrderCancelSapFailedException
+import com.otoki.powersales.domain.activity.order.exception.OrderCancelSapFailedException
 import org.assertj.core.api.Assertions.assertThatCode
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach

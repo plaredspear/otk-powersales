@@ -2,10 +2,10 @@ package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.LoanInquiryTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
-import com.otoki.powersales.order.repository.OrderRequestProductRepository
-import com.otoki.powersales.order.repository.OrderRequestRepository
-import com.otoki.powersales.order.sap.OrderRequestCancelPayloadFactory
-import com.otoki.powersales.order.sap.sender.OrderRequestRegisterSender
+import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
+import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
+import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.promotion.sap.PPTMasterPayloadFactory
 import com.otoki.powersales.external.sap.SapConstants

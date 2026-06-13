@@ -2,7 +2,7 @@ package com.otoki.powersales.external.sap.outbound.sender
 
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbound.guard.SapResponseHtmlGuard
-import com.otoki.powersales.order.exception.OrderCancelSapFailedException
+import com.otoki.powersales.domain.activity.order.exception.OrderCancelSapFailedException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component

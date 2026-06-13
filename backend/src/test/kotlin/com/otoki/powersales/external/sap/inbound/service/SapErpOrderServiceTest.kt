@@ -1,10 +1,9 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.external.sap.inbound.service.SapErpOrderService
-import com.otoki.powersales.order.service.ErpOrderUpsertService
-import com.otoki.powersales.order.service.dto.ErpOrderUpsertCommand
-import com.otoki.powersales.order.service.dto.ErpOrderUpsertFailedRow
-import com.otoki.powersales.order.service.dto.ErpOrderUpsertResult
+import com.otoki.powersales.domain.activity.order.service.ErpOrderUpsertService
+import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderUpsertCommand
+import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderUpsertFailedRow
+import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderUpsertResult
 import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderItemDetail
 import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderRequestItem
 import io.mockk.every
