@@ -45,8 +45,8 @@ class JwtAuthenticationEntryPointTest {
             val body = objectMapper.readTree(response.contentAsString)
             assertThat(body.get("success").asBoolean()).isFalse()
             assertThat(body.get("data").isNull).isTrue()
-            assertThat(body.get("error").get("code").asText()).isEqualTo("TOKEN_EXPIRED")
-            assertThat(body.get("error").get("message").asText()).isEqualTo("토큰이 만료되었습니다")
+            assertThat(body.get("error").get("code").asString()).isEqualTo("TOKEN_EXPIRED")
+            assertThat(body.get("error").get("message").asString()).isEqualTo("토큰이 만료되었습니다")
         }
 
         @Test
@@ -63,8 +63,8 @@ class JwtAuthenticationEntryPointTest {
 
             val body = objectMapper.readTree(response.contentAsString)
             assertThat(body.get("success").asBoolean()).isFalse()
-            assertThat(body.get("error").get("code").asText()).isEqualTo("UNAUTHORIZED")
-            assertThat(body.get("error").get("message").asText()).isEqualTo("인증이 필요합니다")
+            assertThat(body.get("error").get("code").asString()).isEqualTo("UNAUTHORIZED")
+            assertThat(body.get("error").get("message").asString()).isEqualTo("인증이 필요합니다")
         }
 
         @Test
@@ -78,7 +78,7 @@ class JwtAuthenticationEntryPointTest {
             // Then
             assertThat(response.status).isEqualTo(401)
             val body = objectMapper.readTree(response.contentAsString)
-            assertThat(body.get("error").get("code").asText()).isEqualTo("UNAUTHORIZED")
+            assertThat(body.get("error").get("code").asString()).isEqualTo("UNAUTHORIZED")
         }
 
         @Test

@@ -49,9 +49,8 @@ class SapOutboundRestClientConfig(
 
         val builder = RestClient.builder()
             .requestFactory(factory)
-            .messageConverters { converters ->
-                converters.removeIf { it is JacksonJsonHttpMessageConverter }
-                converters.add(0, jsonConverter)
+            .configureMessageConverters { configurer ->
+                configurer.withJsonConverter(jsonConverter)
             }
             .defaultHeader("Content-Type", "${MediaType.APPLICATION_JSON_VALUE}; charset=UTF-8")
 

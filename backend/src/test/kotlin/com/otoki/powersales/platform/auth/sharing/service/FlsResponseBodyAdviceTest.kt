@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -83,7 +83,7 @@ class FlsResponseBodyAdviceTest {
         val method = PlainController::class.java.getMethod("getPlain")
         val handler = HandlerMethod(PlainController(), method)
         val param = handler.returnType
-        assertThat(advice.supports(param, MappingJackson2HttpMessageConverter::class.java))
+        assertThat(advice.supports(param, JacksonJsonHttpMessageConverter::class.java))
             .isFalse
     }
 
@@ -93,7 +93,7 @@ class FlsResponseBodyAdviceTest {
         val method = FilteredController::class.java.getMethod("getAccount")
         val handler = HandlerMethod(FilteredController(), method)
         val param = handler.returnType
-        assertThat(advice.supports(param, MappingJackson2HttpMessageConverter::class.java))
+        assertThat(advice.supports(param, JacksonJsonHttpMessageConverter::class.java))
             .isTrue
     }
 
@@ -107,7 +107,7 @@ class FlsResponseBodyAdviceTest {
 
         val result = advice.beforeBodyWrite(
             body, handler.returnType, MediaType.APPLICATION_JSON,
-            MappingJackson2HttpMessageConverter::class.java,
+            JacksonJsonHttpMessageConverter::class.java,
             mockk<ServerHttpRequest>(relaxed = true),
             mockk<ServerHttpResponse>(relaxed = true),
         )
@@ -139,7 +139,7 @@ class FlsResponseBodyAdviceTest {
 
         val result = advice.beforeBodyWrite(
             body, handler.returnType, MediaType.APPLICATION_JSON,
-            MappingJackson2HttpMessageConverter::class.java,
+            JacksonJsonHttpMessageConverter::class.java,
             mockk(relaxed = true), mockk(relaxed = true),
         )
 
@@ -169,7 +169,7 @@ class FlsResponseBodyAdviceTest {
 
         val result = advice.beforeBodyWrite(
             body, handler.returnType, MediaType.APPLICATION_JSON,
-            MappingJackson2HttpMessageConverter::class.java,
+            JacksonJsonHttpMessageConverter::class.java,
             mockk(relaxed = true), mockk(relaxed = true),
         )
 
