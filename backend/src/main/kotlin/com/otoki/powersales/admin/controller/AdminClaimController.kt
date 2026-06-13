@@ -2,16 +2,16 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.claim.dto.request.AdminClaimCreateRequest
-import com.otoki.powersales.claim.dto.response.AdminClaimCreateResponse
-import com.otoki.powersales.claim.dto.response.AdminClaimDetailResponse
-import com.otoki.powersales.claim.dto.response.AdminClaimListResponse
-import com.otoki.powersales.claim.dto.response.ClaimPeriodReportResponse
-import com.otoki.powersales.claim.service.AdminClaimCreateService
-import com.otoki.powersales.claim.service.AdminClaimPeriodReportService
-import com.otoki.powersales.claim.service.AdminClaimResendService
-import com.otoki.powersales.claim.service.AdminClaimService
-import com.otoki.powersales.claim.service.ClaimPeriodReportType
+import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimCreateRequest
+import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimCreateResponse
+import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimDetailResponse
+import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimListResponse
+import com.otoki.powersales.domain.activity.claim.dto.response.ClaimPeriodReportResponse
+import com.otoki.powersales.domain.activity.claim.service.AdminClaimCreateService
+import com.otoki.powersales.domain.activity.claim.service.AdminClaimPeriodReportService
+import com.otoki.powersales.domain.activity.claim.service.AdminClaimResendService
+import com.otoki.powersales.domain.activity.claim.service.AdminClaimService
+import com.otoki.powersales.domain.activity.claim.service.ClaimPeriodReportType
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat

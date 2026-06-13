@@ -14,7 +14,7 @@ import java.time.LocalDate
  *
  * 사원이 현장점검을 작성하다가 임시저장한 입력값을 보관한다.
  * 레거시 `salesforce2.tmp_onsite` 대응. 정식 등록(현장점검 생성) 성공 시 이 draft 는 삭제된다.
- * 사원(employee) 1건당 draft 1건(unique). [com.otoki.powersales.claim.entity.ClaimDraft] 패턴 정합.
+ * 사원(employee) 1건당 draft 1건(unique). [com.otoki.powersales.domain.activity.claim.entity.ClaimDraft] 패턴 정합.
  *
  * SF 와 동기화되지 않는 로컬 전용 테이블이므로 [com.otoki.powersales.common.salesforce.SFObject] 어노테이션을 두지 않는다.
  *
