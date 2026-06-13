@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.external.sap.outbound.config.SapOutboundProperties
-import com.otoki.powersales.sf.outbound.SfOutboundProperties
+import com.otoki.powersales.external.sf.outbound.SfOutboundProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

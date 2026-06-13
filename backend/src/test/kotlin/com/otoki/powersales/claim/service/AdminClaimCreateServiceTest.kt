@@ -4,7 +4,6 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.claim.entity.Claim
-import com.otoki.powersales.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.claim.enums.ClaimChannel
 import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
@@ -22,8 +21,8 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.entity.Product
 import com.otoki.powersales.product.repository.ProductRepository
 import com.otoki.powersales.promotion.exception.AccountNotFoundException
-import com.otoki.powersales.sf.outbound.SfApiResponse
-import com.otoki.powersales.sf.outbound.SfOutboundClient
+import com.otoki.powersales.external.sf.outbound.SfApiResponse
+import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

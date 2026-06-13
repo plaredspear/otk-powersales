@@ -4,13 +4,12 @@ import com.otoki.powersales.account.repository.AccountRepository
 import com.otoki.powersales.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.claim.repository.ClaimRepository
-import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.product.repository.ProductRepository
-import com.otoki.powersales.sf.outbound.SfApiResponse
-import com.otoki.powersales.sf.outbound.SfOutboundClient
+import com.otoki.powersales.external.sf.outbound.SfApiResponse
+import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
