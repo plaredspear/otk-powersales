@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.batch
 
-import com.otoki.powersales.agreement.service.AgreementWordCycleService
+import com.otoki.powersales.domain.support.agreement.service.AgreementWordCycleService
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory

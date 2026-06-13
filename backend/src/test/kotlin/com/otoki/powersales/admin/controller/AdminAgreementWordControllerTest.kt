@@ -1,10 +1,9 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateRequest
-import com.otoki.powersales.agreement.dto.response.AdminAgreementWordActiveResponse
-import com.otoki.powersales.agreement.dto.response.AdminAgreementWordCreateResponse
-import com.otoki.powersales.agreement.service.AdminAgreementWordService
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.domain.support.agreement.dto.request.AdminAgreementWordCreateRequest
+import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordActiveResponse
+import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordCreateResponse
+import com.otoki.powersales.domain.support.agreement.service.AdminAgreementWordService
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -25,6 +24,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import tools.jackson.databind.ObjectMapper
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminAgreementWordController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -60,7 +60,7 @@ class AdminAgreementWordControllerTest : AdminControllerTestSupport() {
                 afterActiveDate = futureDate,
                 active = false,
                 activeDate = null,
-                createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
+                createdAt = LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
             every { adminAgreementWordService.createAgreementWord(any()) } returns response
 
@@ -109,7 +109,7 @@ class AdminAgreementWordControllerTest : AdminControllerTestSupport() {
                 afterActiveDate = futureDate,
                 active = false,
                 activeDate = null,
-                createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
+                createdAt = LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
             every { adminAgreementWordService.createAgreementWord(any()) } returns response
 
@@ -132,7 +132,7 @@ class AdminAgreementWordControllerTest : AdminControllerTestSupport() {
                 afterActiveDate = futureDate,
                 active = false,
                 activeDate = null,
-                createdAt = java.time.LocalDateTime.of(2026, 5, 11, 14, 23, 51)
+                createdAt = LocalDateTime.of(2026, 5, 11, 14, 23, 51)
             )
             every { adminAgreementWordService.createAgreementWord(any()) } returns response
 

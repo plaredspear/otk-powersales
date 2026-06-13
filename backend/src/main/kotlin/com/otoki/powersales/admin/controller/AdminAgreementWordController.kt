@@ -2,10 +2,10 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateRequest
-import com.otoki.powersales.agreement.dto.response.AdminAgreementWordActiveResponse
-import com.otoki.powersales.agreement.dto.response.AdminAgreementWordCreateResponse
-import com.otoki.powersales.agreement.service.AdminAgreementWordService
+import com.otoki.powersales.domain.support.agreement.dto.request.AdminAgreementWordCreateRequest
+import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordActiveResponse
+import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordCreateResponse
+import com.otoki.powersales.domain.support.agreement.service.AdminAgreementWordService
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import jakarta.validation.Valid

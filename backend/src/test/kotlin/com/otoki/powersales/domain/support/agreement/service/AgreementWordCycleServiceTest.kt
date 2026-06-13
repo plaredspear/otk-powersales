@@ -1,11 +1,14 @@
-package com.otoki.powersales.agreement.service
+package com.otoki.powersales.domain.support.agreement.service
 
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.common.repository.AgreementWordRepository
+import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.domain.support.agreement.service.AgreementWordCycleService
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -30,7 +33,7 @@ class AgreementWordCycleServiceTest {
         employeeRepository,
     )
 
-    private val today: LocalDate = LocalDate.now(com.otoki.powersales.common.util.TimeZones.SEOUL_ZONE)
+    private val today: LocalDate = LocalDate.now(TimeZones.SEOUL_ZONE)
 
     @Nested
     @DisplayName("runCycle - 분기 처리")
@@ -142,7 +145,7 @@ class AgreementWordCycleServiceTest {
             every { employeeRepository.resetAgreementFlagForActiveConsents() } throws
                 RuntimeException("DB connection lost")
 
-            org.assertj.core.api.Assertions.assertThatThrownBy { service.runCycle() }
+            Assertions.assertThatThrownBy { service.runCycle() }
                 .isInstanceOf(RuntimeException::class.java)
                 .hasMessageContaining("DB connection lost")
         }

@@ -1,4 +1,4 @@
-package com.otoki.powersales.agreement.dto.response
+package com.otoki.powersales.domain.support.agreement.dto.response
 
 import com.otoki.powersales.common.entity.AgreementWord
 import java.time.LocalDate

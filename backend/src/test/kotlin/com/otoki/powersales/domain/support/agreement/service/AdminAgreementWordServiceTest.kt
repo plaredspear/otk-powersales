@@ -1,8 +1,9 @@
-package com.otoki.powersales.agreement.service
+package com.otoki.powersales.domain.support.agreement.service
 
-import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateRequest
+import com.otoki.powersales.domain.support.agreement.dto.request.AdminAgreementWordCreateRequest
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.common.repository.AgreementWordRepository
+import com.otoki.powersales.domain.support.agreement.service.AdminAgreementWordService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

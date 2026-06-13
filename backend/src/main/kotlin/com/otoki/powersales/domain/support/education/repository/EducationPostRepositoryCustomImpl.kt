@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.support.education.repository
 
 import com.otoki.powersales.domain.support.education.entity.EducationPost
-import com.otoki.powersales.education.entity.QEducationPost.Companion.educationPost
+import com.otoki.powersales.domain.support.education.entity.QEducationPost.Companion.educationPost
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page

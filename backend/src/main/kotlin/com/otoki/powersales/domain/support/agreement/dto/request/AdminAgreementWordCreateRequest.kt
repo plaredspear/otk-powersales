@@ -1,4 +1,4 @@
-package com.otoki.powersales.agreement.dto.request
+package com.otoki.powersales.domain.support.agreement.dto.request
 
 import jakarta.validation.constraints.AssertFalse
 import jakarta.validation.constraints.Future

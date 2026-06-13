@@ -1,8 +1,8 @@
-package com.otoki.powersales.agreement.service
+package com.otoki.powersales.domain.support.agreement.service
 
-import com.otoki.powersales.agreement.dto.request.AdminAgreementWordCreateRequest
-import com.otoki.powersales.agreement.dto.response.AdminAgreementWordActiveResponse
-import com.otoki.powersales.agreement.dto.response.AdminAgreementWordCreateResponse
+import com.otoki.powersales.domain.support.agreement.dto.request.AdminAgreementWordCreateRequest
+import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordActiveResponse
+import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordCreateResponse
 import com.otoki.powersales.common.entity.AgreementWord
 import com.otoki.powersales.common.repository.AgreementWordRepository
 import org.springframework.stereotype.Service
@@ -53,7 +53,7 @@ class AdminAgreementWordService(
             isDeleted = false
         )
         val saved = agreementWordRepository.save(entity)
-        return AdminAgreementWordCreateResponse.from(saved)
+        return AdminAgreementWordCreateResponse.Companion.from(saved)
     }
 
     /**
@@ -62,7 +62,7 @@ class AdminAgreementWordService(
     @Transactional(readOnly = true)
     fun getActiveAgreementWord(): AdminAgreementWordActiveResponse? {
         return agreementWordRepository.findFirstByActiveTrueAndIsDeletedFalse()
-            .map { AdminAgreementWordActiveResponse.from(it) }
+            .map { AdminAgreementWordActiveResponse.Companion.from(it) }
             .orElse(null)
     }
 }
