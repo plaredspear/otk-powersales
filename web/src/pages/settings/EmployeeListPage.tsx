@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
+import { Alert, Button, Input, Select, Space, Tag, Tooltip, message } from 'antd';
+import { CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useEmployees } from '@/hooks/employee/useEmployees';
@@ -45,6 +46,14 @@ export default function EmployeeListPage() {
   // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
   const goToDetail = (id: number) =>
     navigate(`/employee/${id}`, { state: { listSearch: location.search } });
+  const handleCopyEmployeeCode = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      message.success('사번을 복사했습니다');
+    } catch {
+      message.error('복사에 실패했습니다');
+    }
+  };
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
   const { page, setPage, filters, setFilter } = useListQueryParams({
     defaultFilters: { status: '', costCenterCode: '', keyword: '', role: '' },
@@ -70,34 +79,31 @@ export default function EmployeeListPage() {
     {
       title: '사번',
       dataIndex: 'employeeCode',
-      width: 100,
+      width: 120,
       render: (val: string, record: Employee) => (
-        <a
-          onClick={(e) => {
-            e.preventDefault();
-            goToDetail(record.id);
-          }}
-          href={`/employee/${record.id}`}
-        >
-          {val}
-        </a>
+        <Space size={4}>
+          <a
+            onClick={(e) => {
+              e.preventDefault();
+              goToDetail(record.id);
+            }}
+            href={`/employee/${record.id}`}
+          >
+            {val}
+          </a>
+          <Tooltip title="사번 복사">
+            <CopyOutlined
+              style={{ color: '#1677ff', cursor: 'pointer' }}
+              onClick={() => handleCopyEmployeeCode(val)}
+            />
+          </Tooltip>
+        </Space>
       ),
     },
     {
       title: '이름',
       dataIndex: 'name',
       width: 120,
-      render: (val: string, record: Employee) => (
-        <a
-          onClick={(e) => {
-            e.preventDefault();
-            goToDetail(record.id);
-          }}
-          href={`/employee/${record.id}`}
-        >
-          {val}
-        </a>
-      ),
     },
     { title: '성별', dataIndex: 'gender', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
     {
