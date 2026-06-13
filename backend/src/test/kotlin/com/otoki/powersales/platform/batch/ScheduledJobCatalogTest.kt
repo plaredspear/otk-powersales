@@ -1,4 +1,4 @@
-package com.otoki.powersales.batch
+package com.otoki.powersales.platform.batch
 
 import com.otoki.powersales.platform.batch.AccountNaverGeocodeBatch
 import com.otoki.powersales.platform.batch.AgreementWordCycleBatch
