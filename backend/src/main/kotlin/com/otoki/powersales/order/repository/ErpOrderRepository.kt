@@ -24,7 +24,7 @@ interface ErpOrderRepository : JpaRepository<ErpOrder, Long> {
         """
         SELECT o FROM ErpOrder o
         WHERE o.account.id = :accountId
-          AND (:deliveryDate IS NULL OR o.deliveryRequestDate = :deliveryDate)
+          AND (CAST(:deliveryDate AS date) IS NULL OR o.deliveryRequestDate = :deliveryDate)
           AND (o.isDeleted IS NULL OR o.isDeleted = false)
         """
     )
