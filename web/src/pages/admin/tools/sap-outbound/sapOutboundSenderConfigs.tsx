@@ -160,8 +160,8 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   },
   {
     kind: 'attendance',
-    title: '일반 출근 batch (TeamMemberSchedule)',
-    tabLabel: '일반 출근',
+    title: '근태 SAP전송 batch (TeamMemberSchedule)',
+    tabLabel: '근태 SAP전송',
     description:
       '특정 날짜의 출근 페이지 1건 (page-size 행) 을 SAP 으로 송신. sap_outbound_log 적재됨.',
     triggerTag: 'BATCH',
