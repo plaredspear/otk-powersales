@@ -16,7 +16,6 @@ import com.otoki.powersales.schedule.exception.LeaderScheduleNotLeaderException
 import com.otoki.powersales.schedule.exception.LeaderScheduleNotTeamMemberException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeInactiveException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
-import com.otoki.powersales.schedule.service.LeaderDisplayScheduleService
 import com.otoki.powersales.schedule.service.LeaderScheduleService
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -44,9 +43,6 @@ class LeaderScheduleControllerTest : MobileControllerTestSupport() {
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     @MockkBean private lateinit var leaderScheduleService: LeaderScheduleService
-
-    // 컨트롤러 생성자 의존성 — 본 테스트는 호출하지 않지만 @WebMvcTest 컨텍스트 로드에 필요.
-    @MockkBean private lateinit var leaderDisplayScheduleService: LeaderDisplayScheduleService
 
     private val leaderId = 4001L
 

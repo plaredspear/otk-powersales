@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 
-import '../../domain/entities/leader_display_schedule.dart';
 import '../../domain/entities/leader_monthly_schedule.dart';
 import '../models/leader_account_model.dart';
 import '../models/leader_daily_status_model.dart';
@@ -89,91 +88,6 @@ class LeaderScheduleApiDataSource {
 
   String _formatDate(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-
-  /// 진열 일정(마스터) 상세 조회 — 편집 시트 선조회용.
-  Future<LeaderDisplaySchedule> getDisplaySchedule(int displayWorkScheduleId) async {
-    final response = await _dio
-        .get('/api/v1/mobile/leader/display-schedule/$displayWorkScheduleId');
-    return _displayScheduleFromJson(
-      response.data['data'] as Map<String, dynamic>,
-    );
-  }
-
-  /// 진열 일정(마스터) 추가.
-  Future<LeaderDisplaySchedule> createDisplaySchedule({
-    required int targetEmployeeId,
-    required int accountId,
-    required DateTime startDate,
-    DateTime? endDate,
-    required String typeOfWork3,
-    required String typeOfWork4,
-    required String typeOfWork5,
-  }) async {
-    final response = await _dio.post(
-      '/api/v1/mobile/leader/display-schedule',
-      data: {
-        'targetEmployeeId': targetEmployeeId,
-        'accountId': accountId,
-        'startDate': _formatDate(startDate),
-        'endDate': endDate == null ? null : _formatDate(endDate),
-        'typeOfWork3': typeOfWork3,
-        'typeOfWork4': typeOfWork4,
-        'typeOfWork5': typeOfWork5,
-      },
-    );
-    return _displayScheduleFromJson(
-      response.data['data'] as Map<String, dynamic>,
-    );
-  }
-
-  /// 진열 일정(마스터) 변경 — 거래처/근무유형/기간.
-  Future<LeaderDisplaySchedule> updateDisplaySchedule({
-    required int displayWorkScheduleId,
-    required int accountId,
-    required DateTime startDate,
-    DateTime? endDate,
-    required String typeOfWork3,
-    required String typeOfWork4,
-    required String typeOfWork5,
-  }) async {
-    final response = await _dio.put(
-      '/api/v1/mobile/leader/display-schedule/$displayWorkScheduleId',
-      data: {
-        'accountId': accountId,
-        'startDate': _formatDate(startDate),
-        'endDate': endDate == null ? null : _formatDate(endDate),
-        'typeOfWork3': typeOfWork3,
-        'typeOfWork4': typeOfWork4,
-        'typeOfWork5': typeOfWork5,
-      },
-    );
-    return _displayScheduleFromJson(
-      response.data['data'] as Map<String, dynamic>,
-    );
-  }
-
-  /// 진열 일정(마스터) 삭제.
-  Future<void> deleteDisplaySchedule(int displayWorkScheduleId) async {
-    await _dio
-        .delete('/api/v1/mobile/leader/display-schedule/$displayWorkScheduleId');
-  }
-
-  LeaderDisplaySchedule _displayScheduleFromJson(Map<String, dynamic> json) {
-    DateTime? parseDate(dynamic v) =>
-        (v is String && v.isNotEmpty) ? DateTime.tryParse(v) : null;
-    return LeaderDisplaySchedule(
-      displayWorkScheduleId: json['displayWorkScheduleId'] as int,
-      employeeId: json['employeeId'] as int?,
-      employeeName: json['employeeName'] as String?,
-      accountId: json['accountId'] as int?,
-      accountName: json['accountName'] as String?,
-      startDate: parseDate(json['startDate']),
-      endDate: parseDate(json['endDate']),
-      typeOfWork3: json['typeOfWork3'] as String?,
-      typeOfWork4: json['typeOfWork4'] as String?,
-      typeOfWork5: json['typeOfWork5'] as String?,
-    );
-  }
 
   /// 여사원 월간 일정 캘린더 (레거시 mgnSchedule). [employeeId] null 이면 "여사원 전체".
   Future<LeaderMonthlyCalendar> getMonthlyCalendar({
