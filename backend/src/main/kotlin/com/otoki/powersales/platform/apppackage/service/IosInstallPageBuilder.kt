@@ -1,6 +1,8 @@
-package com.otoki.powersales.apppackage.service
+package com.otoki.powersales.platform.apppackage.service
 
 import org.springframework.stereotype.Component
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 /**
  * iOS OTA 설치 안내 HTML 페이지 빌더.
@@ -80,7 +82,7 @@ class IosInstallPageBuilder {
     }
 
     private fun urlEncode(raw: String): String =
-        java.net.URLEncoder.encode(raw, java.nio.charset.StandardCharsets.UTF_8)
+        URLEncoder.encode(raw, StandardCharsets.UTF_8)
 
     private fun escapeHtml(raw: String): String = raw
         .replace("&", "&amp;")

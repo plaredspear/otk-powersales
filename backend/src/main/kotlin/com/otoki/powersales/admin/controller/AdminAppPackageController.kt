@@ -1,12 +1,12 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.apppackage.dto.AppPackageDetailDto
-import com.otoki.powersales.apppackage.dto.AppPackageDistributionUrlsDto
-import com.otoki.powersales.apppackage.dto.AppPackageForceUpdateRequest
-import com.otoki.powersales.apppackage.dto.AppPackageListItemDto
-import com.otoki.powersales.apppackage.dto.AppPackageReleaseNoteUpdateRequest
-import com.otoki.powersales.apppackage.entity.AppPlatform
-import com.otoki.powersales.apppackage.service.AdminAppPackageService
+import com.otoki.powersales.platform.apppackage.dto.AppPackageDetailDto
+import com.otoki.powersales.platform.apppackage.dto.AppPackageDistributionUrlsDto
+import com.otoki.powersales.platform.apppackage.dto.AppPackageForceUpdateRequest
+import com.otoki.powersales.platform.apppackage.dto.AppPackageListItemDto
+import com.otoki.powersales.platform.apppackage.dto.AppPackageReleaseNoteUpdateRequest
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.service.AdminAppPackageService
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.auth.permission.SfSystemPermission

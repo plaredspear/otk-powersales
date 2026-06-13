@@ -1,20 +1,20 @@
-package com.otoki.powersales.apppackage.service
+package com.otoki.powersales.platform.apppackage.service
 
-import com.otoki.powersales.apppackage.dto.AppPackageDetailDto
-import com.otoki.powersales.apppackage.dto.AppPackageListItemDto
-import com.otoki.powersales.apppackage.entity.AppPackage
-import com.otoki.powersales.apppackage.entity.AppPlatform
-import com.otoki.powersales.apppackage.exception.AppPackageBundleIdentifierRequiredException
-import com.otoki.powersales.apppackage.exception.AppPackageCannotDeleteLatestException
-import com.otoki.powersales.apppackage.exception.AppPackageDuplicateVersionException
-import com.otoki.powersales.apppackage.exception.AppPackageFileRequiredException
-import com.otoki.powersales.apppackage.exception.AppPackageInvalidExtensionException
-import com.otoki.powersales.apppackage.exception.AppPackageNotFoundException
-import com.otoki.powersales.apppackage.exception.AppPackageVersionRequiredException
-import com.otoki.powersales.apppackage.repository.AppPackageRepository
+import com.otoki.powersales.platform.apppackage.dto.AppPackageDetailDto
+import com.otoki.powersales.platform.apppackage.dto.AppPackageListItemDto
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.repository.AppPackageRepository
 import com.otoki.powersales.common.config.DomainProperties
 import com.otoki.powersales.common.storage.StorageConstants
 import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.platform.apppackage.entity.AppPackage
+import com.otoki.powersales.platform.apppackage.exception.AppPackageBundleIdentifierRequiredException
+import com.otoki.powersales.platform.apppackage.exception.AppPackageCannotDeleteLatestException
+import com.otoki.powersales.platform.apppackage.exception.AppPackageDuplicateVersionException
+import com.otoki.powersales.platform.apppackage.exception.AppPackageFileRequiredException
+import com.otoki.powersales.platform.apppackage.exception.AppPackageInvalidExtensionException
+import com.otoki.powersales.platform.apppackage.exception.AppPackageNotFoundException
+import com.otoki.powersales.platform.apppackage.exception.AppPackageVersionRequiredException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -38,13 +38,13 @@ class AdminAppPackageService(
         } else {
             appPackageRepository.findAll(pageable)
         }
-        return page.map { AppPackageListItemDto.from(it) }
+        return page.map { AppPackageListItemDto.Companion.from(it) }
     }
 
     fun getDetail(id: Long): AppPackageDetailDto {
         val entity = appPackageRepository.findById(id).orElseThrow { AppPackageNotFoundException() }
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
-        return AppPackageDetailDto.from(
+        return AppPackageDetailDto.Companion.from(
             entity,
             url,
             StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS,
@@ -172,7 +172,7 @@ class AdminAppPackageService(
         )
         val url = storageService.getPresignedUrl(saved.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
         appVersionMetaProvider.evict(platform)
-        return AppPackageDetailDto.from(saved, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        return AppPackageDetailDto.Companion.from(saved, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     /**
@@ -187,7 +187,7 @@ class AdminAppPackageService(
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
         appVersionMetaProvider.evict(entity.platform)
-        return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        return AppPackageDetailDto.Companion.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     @Transactional
@@ -197,7 +197,7 @@ class AdminAppPackageService(
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
         appVersionMetaProvider.evict(entity.platform)
-        return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        return AppPackageDetailDto.Companion.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     @Transactional
@@ -207,7 +207,7 @@ class AdminAppPackageService(
         appPackageRepository.save(entity)
         val url = storageService.getPresignedUrl(entity.fileUniqueKey, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
         appVersionMetaProvider.evict(entity.platform)
-        return AppPackageDetailDto.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
+        return AppPackageDetailDto.Companion.from(entity, url, StorageConstants.APP_PACKAGE_PRESIGN_TTL_SECONDS)
     }
 
     @Transactional

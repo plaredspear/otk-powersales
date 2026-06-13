@@ -1,4 +1,4 @@
-package com.otoki.powersales.apppackage.service
+package com.otoki.powersales.platform.apppackage.service
 
 import com.dd.plist.NSDictionary
 import com.dd.plist.PropertyListParser

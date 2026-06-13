@@ -1,4 +1,4 @@
-package com.otoki.powersales.apppackage.entity
+package com.otoki.powersales.platform.apppackage.entity
 
 /**
  * 모바일 앱 패키지 배포 플랫폼.

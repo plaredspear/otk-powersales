@@ -1,23 +1,23 @@
-package com.otoki.powersales.apppackage.service
+package com.otoki.powersales.platform.apppackage.service
 
-import com.otoki.powersales.apppackage.entity.AppPackage
-import com.otoki.powersales.apppackage.entity.AppPlatform
-import com.otoki.powersales.apppackage.repository.AppPackageRepository
 import com.otoki.powersales.common.config.CacheConfig
 import com.otoki.powersales.common.config.DomainProperties
 import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.platform.apppackage.entity.AppPackage
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.repository.AppPackageRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
 import org.springframework.transaction.support.TransactionSynchronization
 import org.springframework.transaction.support.TransactionSynchronizationManager
-import java.util.Optional
+import java.util.*
 
 /**
  * 버전 체크 메타 캐싱(provider) + 무효화(evict) 단위 테스트.

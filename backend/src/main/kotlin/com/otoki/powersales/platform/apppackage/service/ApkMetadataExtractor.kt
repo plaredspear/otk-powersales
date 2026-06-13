@@ -1,4 +1,4 @@
-package com.otoki.powersales.apppackage.service
+package com.otoki.powersales.platform.apppackage.service
 
 import net.dongliu.apk.parser.ByteArrayApkFile
 import org.springframework.stereotype.Component

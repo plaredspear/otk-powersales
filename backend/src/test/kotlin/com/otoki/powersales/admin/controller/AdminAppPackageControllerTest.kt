@@ -1,9 +1,9 @@
 package com.otoki.powersales.admin.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.apppackage.dto.AppPackageDetailDto
-import com.otoki.powersales.apppackage.entity.AppPlatform
-import com.otoki.powersales.apppackage.service.AdminAppPackageService
+import com.otoki.powersales.platform.apppackage.dto.AppPackageDetailDto
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.service.AdminAppPackageService
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import io.mockk.every
 import io.mockk.verify

@@ -1,7 +1,7 @@
-package com.otoki.powersales.apppackage.repository
+package com.otoki.powersales.platform.apppackage.repository
 
-import com.otoki.powersales.apppackage.entity.AppPackage
-import com.otoki.powersales.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.entity.AppPackage
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository

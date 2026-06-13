@@ -1,4 +1,4 @@
-package com.otoki.powersales.apppackage.dto
+package com.otoki.powersales.platform.apppackage.dto
 
 /**
  * 버전 체크의 캐시 대상 메타 — 플랫폼별 최신 버전 정보 + 강제 업데이트 경계.

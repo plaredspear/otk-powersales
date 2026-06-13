@@ -1,29 +1,24 @@
-package com.otoki.powersales.apppackage.service
+package com.otoki.powersales.platform.apppackage.service
 
-import com.otoki.powersales.apppackage.entity.AppPackage
-import com.otoki.powersales.apppackage.entity.AppPlatform
-import com.otoki.powersales.apppackage.exception.AppPackageBundleIdentifierRequiredException
-import com.otoki.powersales.apppackage.exception.AppPackageCannotDeleteLatestException
-import com.otoki.powersales.apppackage.exception.AppPackageDuplicateVersionException
-import com.otoki.powersales.apppackage.exception.AppPackageFileRequiredException
-import com.otoki.powersales.apppackage.exception.AppPackageInvalidExtensionException
-import com.otoki.powersales.apppackage.exception.AppPackageNotFoundException
-import com.otoki.powersales.apppackage.repository.AppPackageRepository
 import com.otoki.powersales.common.config.DomainProperties
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadResult
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
-import io.mockk.verifyOrder
+import com.otoki.powersales.platform.apppackage.entity.AppPackage
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.exception.*
+import com.otoki.powersales.platform.apppackage.repository.AppPackageRepository
+import io.mockk.*
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.cache.CacheManager
 import org.springframework.mock.web.MockMultipartFile
-import java.util.Optional
+import java.io.ByteArrayOutputStream
+import java.util.*
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @DisplayName("AppPackage 서비스 테스트")
 class AppPackageServiceTest {
@@ -41,7 +36,7 @@ class AppPackageServiceTest {
     // 실제 provider 를 repository mock 위에 둔다 — @Cacheable 은 단위 테스트에서 미적용(프록시 부재)이라
     // 매 호출 loadMeta 본문(repository mocking)이 그대로 실행되어 기존 검증 흐름이 유지된다.
     // cacheManager 는 relaxed mock — evict 의 getCache(...) 가 null 반환해도 안전(NPE-safe).
-    private val cacheManager = mockk<org.springframework.cache.CacheManager>(relaxed = true)
+    private val cacheManager = mockk<CacheManager>(relaxed = true)
     private val appVersionMetaProvider = AppVersionMetaProvider(repository, cacheManager)
 
     private val adminService =
@@ -75,9 +70,9 @@ class AppPackageServiceTest {
 <key>CFBundleShortVersionString</key><string>$shortVersion</string>
 <key>CFBundleVersion</key><string>$bundleVersion</string>
 </dict></plist>"""
-        val baos = java.io.ByteArrayOutputStream()
-        java.util.zip.ZipOutputStream(baos).use { zos ->
-            zos.putNextEntry(java.util.zip.ZipEntry("Payload/Runner.app/Info.plist"))
+        val baos = ByteArrayOutputStream()
+        ZipOutputStream(baos).use { zos ->
+            zos.putNextEntry(ZipEntry("Payload/Runner.app/Info.plist"))
             zos.write(plist.toByteArray())
             zos.closeEntry()
         }

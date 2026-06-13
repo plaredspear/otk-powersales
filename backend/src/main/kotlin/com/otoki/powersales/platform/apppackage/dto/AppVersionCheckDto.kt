@@ -1,6 +1,6 @@
-package com.otoki.powersales.apppackage.dto
+package com.otoki.powersales.platform.apppackage.dto
 
-import com.otoki.powersales.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
 
 /**
  * 모바일 버전 체크 응답.

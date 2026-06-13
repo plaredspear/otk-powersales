@@ -1,14 +1,14 @@
-package com.otoki.powersales.apppackage.service
+package com.otoki.powersales.platform.apppackage.service
 
-import com.otoki.powersales.apppackage.dto.AppPackageDownloadUrlDto
-import com.otoki.powersales.apppackage.dto.AppVersionCheckDto
-import com.otoki.powersales.apppackage.dto.AppVersionMeta
-import com.otoki.powersales.apppackage.entity.AppPackage
-import com.otoki.powersales.apppackage.entity.AppPlatform
-import com.otoki.powersales.apppackage.exception.AppPackageNotFoundException
-import com.otoki.powersales.apppackage.repository.AppPackageRepository
+import com.otoki.powersales.platform.apppackage.dto.AppPackageDownloadUrlDto
+import com.otoki.powersales.platform.apppackage.dto.AppVersionCheckDto
+import com.otoki.powersales.platform.apppackage.dto.AppVersionMeta
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.repository.AppPackageRepository
 import com.otoki.powersales.common.storage.StorageConstants
 import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.platform.apppackage.entity.AppPackage
+import com.otoki.powersales.platform.apppackage.exception.AppPackageNotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URLEncoder

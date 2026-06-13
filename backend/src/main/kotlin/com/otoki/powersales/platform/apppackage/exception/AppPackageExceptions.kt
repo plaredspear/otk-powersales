@@ -1,4 +1,4 @@
-package com.otoki.powersales.apppackage.exception
+package com.otoki.powersales.platform.apppackage.exception
 
 import com.otoki.powersales.common.exception.BusinessException
 import org.springframework.http.HttpStatus

@@ -1,7 +1,7 @@
-package com.otoki.powersales.apppackage.dto
+package com.otoki.powersales.platform.apppackage.dto
 
-import com.otoki.powersales.apppackage.entity.AppPackage
-import com.otoki.powersales.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.entity.AppPackage
 import java.time.LocalDateTime
 
 /** 앱 패키지 목록 항목 (파일 다운로드 URL 미포함 — 목록은 발급 비용 회피). */

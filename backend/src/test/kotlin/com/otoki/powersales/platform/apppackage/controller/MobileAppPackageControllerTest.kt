@@ -1,11 +1,11 @@
-package com.otoki.powersales.apppackage.controller
+package com.otoki.powersales.platform.apppackage.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.apppackage.dto.AppPackageDownloadUrlDto
-import com.otoki.powersales.apppackage.dto.AppVersionCheckDto
-import com.otoki.powersales.apppackage.entity.AppPlatform
-import com.otoki.powersales.apppackage.service.MobileAppPackageService
 import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.apppackage.dto.AppPackageDownloadUrlDto
+import com.otoki.powersales.platform.apppackage.dto.AppVersionCheckDto
+import com.otoki.powersales.platform.apppackage.entity.AppPlatform
+import com.otoki.powersales.platform.apppackage.service.MobileAppPackageService
 import io.mockk.every
 import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
@@ -15,10 +15,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 
 @WebMvcTest(MobileAppPackageController::class)
 @AutoConfigureMockMvc(addFilters = false)

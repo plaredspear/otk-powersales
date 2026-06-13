@@ -1,4 +1,4 @@
-package com.otoki.powersales.apppackage.entity
+package com.otoki.powersales.platform.apppackage.entity
 
 import com.otoki.powersales.common.entity.BaseEntity
 import jakarta.persistence.Column
