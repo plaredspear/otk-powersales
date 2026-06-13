@@ -9,7 +9,7 @@ import '../../core/theme/app_typography.dart';
 import '../../domain/entities/my_account.dart';
 import '../providers/client_order_list_provider.dart';
 import '../providers/my_accounts_provider.dart';
-import '../providers/promotion_list_provider.dart';
+import 'sales_status_page.dart';
 import '../widgets/my_accounts/my_account_card.dart';
 import '../widgets/my_accounts/my_account_search_bar.dart';
 import '../widgets/my_accounts/account_count_header.dart';
@@ -116,16 +116,17 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
   /// 매출 현황: 매출 현황 화면(행사 매출 + 월 매출 탭)으로 진입.
   ///
   /// 레거시처럼 행사 매출 탭이 기본이며, 선택한 거래처를 행사 매출에 사전 지정한다
-  /// (진입 시 [PromotionListView]가 자동 조회). 월 매출 탭은 레거시 동작대로
-  /// 거래처를 전달하지 않아 재선택이 필요하다.
+  /// (진입 시 [SalesStatusPage]가 거래처 필터를 설정하고 자동 조회). 월 매출 탭은
+  /// 레거시 동작대로 거래처를 전달하지 않아 재선택이 필요하다.
   void _openSalesPromotions(MyAccount account) {
-    ref
-        .read(promotionListProvider.notifier)
-        .updateAccount(account.accountId, account.accountName);
     AppRouter.navigateTo(
       context,
       AppRouter.salesStatus,
-      arguments: 0, // 행사 매출 탭
+      arguments: SalesStatusArgs(
+        initialTabIndex: 0, // 행사 매출 탭
+        presetAccountId: account.accountId,
+        presetAccountName: account.accountName,
+      ),
     );
   }
 

@@ -229,8 +229,17 @@ class AppRouter {
         salesOverview: (context) => const SalesOverviewScreen(),
         monthlySales: (context) => const MonthlySalesPage(),
         salesStatus: (context) {
-          final initialTabIndex =
-              ModalRoute.of(context)?.settings.arguments as int?;
+          final args = ModalRoute.of(context)?.settings.arguments;
+          // 내 거래처 팝업: 거래처 사전 지정 (SalesStatusArgs)
+          if (args is SalesStatusArgs) {
+            return SalesStatusPage(
+              initialTabIndex: args.initialTabIndex,
+              presetAccountId: args.presetAccountId,
+              presetAccountName: args.presetAccountName,
+            );
+          }
+          // 드로어: 탭 인덱스만 전달 → 거래처 전체로 초기화
+          final initialTabIndex = args as int?;
           return SalesStatusPage(initialTabIndex: initialTabIndex ?? 0);
         },
         safetyCheck: (context) => const SafetyCheckPage(),

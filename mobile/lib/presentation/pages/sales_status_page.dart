@@ -1,10 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
+import '../providers/promotion_list_provider.dart';
 import 'monthly_sales_tab_page.dart';
 import '../widgets/promotion/promotion_list_view.dart';
+
+/// [SalesStatusPage] 라우트 인자.
+///
+/// 드로어 진입은 거래처 미지정(행사 매출 = 거래처 전체)이고,
+/// 내 거래처 팝업 진입은 특정 거래처를 사전 지정한다.
+class SalesStatusArgs {
+  /// 초기 선택 탭 인덱스 (0: 행사 매출, 1: 월 매출).
+  final int initialTabIndex;
+
+  /// 행사 매출 탭에 사전 지정할 거래처 ID (null = 거래처 전체).
+  final int? presetAccountId;
+
+  /// 행사 매출 탭에 사전 지정할 거래처명.
+  final String? presetAccountName;
+
+  const SalesStatusArgs({
+    this.initialTabIndex = 0,
+    this.presetAccountId,
+    this.presetAccountName,
+  });
+}
 
 /// 매출 현황 페이지.
 ///
@@ -13,17 +36,31 @@ import '../widgets/promotion/promotion_list_view.dart';
 /// `account/list.jsp`의 `매출 현황` 링크(`/sales/eventList`)는 행사 매출 탭으로 진입한다.
 /// 탭 전환 시 거래처(selectCode)는 전달되지 않으므로, 월 매출 탭은 거래처를 다시 선택한다
 /// (레거시 month/list.jsp 동작 그대로 — [MonthlySalesTabPage]가 자체 거래처 선택을 제공).
-class SalesStatusPage extends StatefulWidget {
+///
+/// 행사 매출 탭의 거래처 필터는 진입 시 [SalesStatusArgs]에 따라 설정/초기화한다:
+/// 드로어 진입은 거래처 전체(null), 내 거래처 팝업 진입은 해당 거래처.
+class SalesStatusPage extends ConsumerStatefulWidget {
   /// 초기 선택 탭 인덱스 (0: 행사 매출, 1: 월 매출).
   final int initialTabIndex;
 
-  const SalesStatusPage({super.key, this.initialTabIndex = 0});
+  /// 행사 매출 탭에 사전 지정할 거래처 ID (null = 거래처 전체).
+  final int? presetAccountId;
+
+  /// 행사 매출 탭에 사전 지정할 거래처명.
+  final String? presetAccountName;
+
+  const SalesStatusPage({
+    super.key,
+    this.initialTabIndex = 0,
+    this.presetAccountId,
+    this.presetAccountName,
+  });
 
   @override
-  State<SalesStatusPage> createState() => _SalesStatusPageState();
+  ConsumerState<SalesStatusPage> createState() => _SalesStatusPageState();
 }
 
-class _SalesStatusPageState extends State<SalesStatusPage>
+class _SalesStatusPageState extends ConsumerState<SalesStatusPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -35,6 +72,15 @@ class _SalesStatusPageState extends State<SalesStatusPage>
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
+
+    // 행사 매출 거래처 필터를 진입 출처에 맞게 설정/초기화한다.
+    // (자식 PromotionListView 의 initialize 검색보다 먼저 실행되도록 부모에서 등록)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(promotionListProvider.notifier).updateAccount(
+            widget.presetAccountId,
+            widget.presetAccountName,
+          );
+    });
   }
 
   @override
@@ -67,7 +113,7 @@ class _SalesStatusPageState extends State<SalesStatusPage>
       body: TabBarView(
         controller: _tabController,
         children: const [
-          // 행사 매출 (레거시 sales/eventList) — 진입 전 거래처가 사전 지정될 수 있음
+          // 행사 매출 (레거시 sales/eventList) — 거래처는 위에서 사전 지정/초기화됨
           PromotionListView(),
           // 월 매출 (레거시 sales/monthList) — 거래처 재선택 필요
           MonthlySalesTabPage(),
