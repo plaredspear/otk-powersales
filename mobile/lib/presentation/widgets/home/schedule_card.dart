@@ -12,9 +12,11 @@ import '../../../domain/entities/schedule.dart';
 /// - 일정 있음: 오늘 스케줄 목록 (근무유형 배지, 매장명, 출근 상태)
 /// - 출근 카운트 배지: "✓ X/N" 형태로 출근 현황 표시
 ///
-/// 조장(LEADER)/지점장(ADMIN) 뷰 (레거시 home.jsp 정합):
+/// 조장(LEADER) 뷰 (레거시 home.jsp 정합):
 /// - 날짜 → "N명 중, M명 등록 완료" → 풀폭 "일정 관리" navy 버튼
 /// - 팀원 목록/등록 버튼 미표시 (팀원 상세는 "일정 관리" 진입 후 페이지에서 확인)
+/// - 레거시 home.jsp:509 근태영역 조건이 `eq '조장'` 정확 일치이므로 지점장(ADMIN)·
+///   부서장(USER)은 조장뷰가 아닌 본인 일정 뷰로 떨어진다.
 class ScheduleCard extends StatelessWidget {
   /// 오늘 일정 목록
   final List<Schedule> schedules;
@@ -51,8 +53,8 @@ class ScheduleCard extends StatelessWidget {
     this.onScheduleManageTap,
   });
 
-  /// 조장/지점장 뷰 여부
-  bool get _isLeaderView => userRole == 'LEADER' || userRole == 'ADMIN';
+  /// 조장 뷰 여부 (레거시 `eq '조장'` 정확 일치 — 지점장/부서장 제외)
+  bool get _isLeaderView => userRole == 'LEADER';
 
   @override
   Widget build(BuildContext context) {
