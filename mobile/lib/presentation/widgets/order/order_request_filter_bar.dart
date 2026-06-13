@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_request.dart';
 import '../../../domain/repositories/my_account_repository.dart';
 import '../account/account_selector_field.dart';
 import '../common/range_calendar_picker.dart';
+import '../common/single_select_sheet.dart';
 import 'order_filter_styles.dart';
 
 /// 주문 필터 바 위젯
@@ -105,41 +105,59 @@ class OrderRequestFilterBar extends StatelessWidget {
     );
   }
 
+  /// 상태 선택 트리거 — 탭하면 거래처 선택과 동일한 바텀시트를 띄운다.
   Widget _buildStatusDropdown(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: selectedStatus,
-          isExpanded: true,
-          icon: const Icon(
-            Icons.arrow_drop_down,
-            size: 22,
-            color: AppColors.textSecondary,
-          ),
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textPrimary,
-          ),
-          hint: Text('상태 전체', style: OrderFilterStyles.valueText),
-          items: [
-            DropdownMenuItem<String?>(
-              value: null,
-              child: Text('상태 전체', style: OrderFilterStyles.valueText),
-            ),
-            ...OrderRequestStatus.values.map((status) {
-              return DropdownMenuItem<String?>(
-                value: status.code,
-                child: Text(
-                  status.displayName,
-                  style: OrderFilterStyles.valueText,
+    final matches = selectedStatus == null
+        ? const <OrderRequestStatus>[]
+        : OrderRequestStatus.values
+              .where((s) => s.code == selectedStatus)
+              .toList();
+    final selected = matches.isEmpty ? null : matches.first;
+    final label = selected?.displayName ?? '상태 전체';
+    final hasSelection = selected != null;
+
+    return InkWell(
+      onTap: () => _selectStatus(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: OrderFilterStyles.valueText.copyWith(
+                  color: hasSelection
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
                 ),
-              );
-            }),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(
+              Icons.arrow_drop_down,
+              size: 22,
+              color: AppColors.textSecondary,
+            ),
           ],
-          onChanged: onStatusChanged,
         ),
       ),
     );
+  }
+
+  Future<void> _selectStatus(BuildContext context) async {
+    final result = await SingleSelectSheet.show<String?>(
+      context,
+      title: '상태 선택',
+      selectedValue: selectedStatus,
+      options: [
+        const SingleSelectOption(value: null, label: '상태 전체'),
+        ...OrderRequestStatus.values.map(
+          (s) => SingleSelectOption(value: s.code, label: s.displayName),
+        ),
+      ],
+    );
+    if (result == null) return;
+    onStatusChanged(result.value);
   }
 
   Widget _buildDateRangeSelector(BuildContext context) {
