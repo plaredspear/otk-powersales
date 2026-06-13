@@ -86,7 +86,7 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
   ///
   /// 레거시(heroku `account/list.jsp`의 `popData`) 정합:
   /// - 주문서 현황 → `/order/list?type=client&selectCode=...` (거래처별 주문 탭)
-  /// - 매출 현황   → `/sales/eventList?selectCode=...` (행사 매출)
+  /// - 매출 현황   → `/sales/eventList?selectCode=...` (매출 현황: 행사 매출 탭 진입)
   /// 두 경우 모두 선택한 거래처를 미리 지정한 뒤 진입한다.
   void _onAccountTap(MyAccount account) {
     AccountDetailPopup.show(
@@ -113,12 +113,20 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
     );
   }
 
-  /// 매출 현황: 행사 매출 화면으로 진입 (거래처 사전 지정, 진입 시 자동 조회).
+  /// 매출 현황: 매출 현황 화면(행사 매출 + 월 매출 탭)으로 진입.
+  ///
+  /// 레거시처럼 행사 매출 탭이 기본이며, 선택한 거래처를 행사 매출에 사전 지정한다
+  /// (진입 시 [PromotionListView]가 자동 조회). 월 매출 탭은 레거시 동작대로
+  /// 거래처를 전달하지 않아 재선택이 필요하다.
   void _openSalesPromotions(MyAccount account) {
     ref
         .read(promotionListProvider.notifier)
         .updateAccount(account.accountId, account.accountName);
-    AppRouter.navigateTo(context, AppRouter.promotionList);
+    AppRouter.navigateTo(
+      context,
+      AppRouter.salesStatus,
+      arguments: 0, // 행사 매출 탭
+    );
   }
 
   @override
