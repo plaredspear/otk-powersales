@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
-import com.otoki.powersales.sap.outbound.sender.DisplayMasterSapSender
+import com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.sap.DisplayMasterPayloadFactory

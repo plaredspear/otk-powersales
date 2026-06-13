@@ -20,7 +20,7 @@ import java.time.format.DateTimeParseException
  * 제품 마스터 UPSERT 도메인 서비스.
  *
  * ## 레거시 매핑
- * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.sap.inbound.service.SapProductMasterService]
+ * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapProductMasterService]
  * - origin spec: #559 (SAP 제품 마스터 인바운드) + #575 (레거시 필드 보존) — 어댑터/도메인 분리: #635 P1-B
  *
  * ## 레거시 동작 요약

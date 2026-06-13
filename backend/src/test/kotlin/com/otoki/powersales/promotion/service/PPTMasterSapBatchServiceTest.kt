@@ -5,7 +5,7 @@ import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.promotion.sap.PPTMasterPayloadFactory
 import com.otoki.powersales.promotion.sap.PPTMasterSapPayload
-import com.otoki.powersales.sap.outbound.sender.PPTMasterSapSender
+import com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

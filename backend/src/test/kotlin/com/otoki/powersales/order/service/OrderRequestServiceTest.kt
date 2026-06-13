@@ -2,6 +2,8 @@ package com.otoki.powersales.order.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
+import com.otoki.powersales.external.sap.outbound.sender.SapOrderRequestDetailLine
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.exception.InvalidDateRangeException
@@ -28,7 +30,7 @@ class OrderRequestServiceTest {
 
     private val orderRequestRepository: OrderRequestRepository = mockk()
     private val orderRequestProductRepository: com.otoki.powersales.order.repository.OrderRequestProductRepository = mockk()
-    private val orderRequestDetailSapSender: com.otoki.powersales.sap.outbound.sender.OrderRequestDetailSapSender = mockk()
+    private val orderRequestDetailSapSender: OrderRequestDetailSapSender = mockk()
     private val orderRequestDetailMapper = com.otoki.powersales.order.service.OrderRequestDetailMapper()
 
     private val fixedClock: Clock = Clock.fixed(
@@ -455,8 +457,8 @@ class OrderRequestServiceTest {
         productCode: String,
         sapOrderNumber: String,
         completeTime: String,
-    ): com.otoki.powersales.sap.outbound.sender.SapOrderRequestDetailLine =
-        com.otoki.powersales.sap.outbound.sender.SapOrderRequestDetailLine(
+    ): SapOrderRequestDetailLine =
+        SapOrderRequestDetailLine(
             lineNumber = "00001",
             productCode = productCode,
             productName = "name",

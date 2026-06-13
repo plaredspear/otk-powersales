@@ -21,7 +21,7 @@ import org.springframework.context.ApplicationEventPublisher
  * Spec #579 — EmployeeUpsertService 가 origin=MANUAL 직원을 보호하는지 검증.
  *
  * 어댑터 ↔ 도메인 분리(#635 P2-B) 후 보호 로직은 도메인 서비스로 이전. 어댑터 측 audit 트리거 검증은
- * [com.otoki.powersales.sap.inbound.service.SapEmployeeMasterServiceTest] 의 `manualOriginProtected_extraAudit` 케이스 참조.
+ * [com.otoki.powersales.external.sap.inbound.service.SapEmployeeMasterServiceTest] 의 `manualOriginProtected_extraAudit` 케이스 참조.
  */
 @DisplayName("EmployeeUpsertService - MANUAL 보호 테스트")
 class EmployeeUpsertServiceManualOriginTest {

@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.dto.response
 
-import com.otoki.powersales.sap.outbound.sender.LoanInquirySapResult
+import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySapResult
 import java.math.BigDecimal
 import java.time.OffsetDateTime
 

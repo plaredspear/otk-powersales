@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.exception
 
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.sap.inbound.dto.SapResultWrapper
+import com.otoki.powersales.external.sap.inbound.dto.SapResultWrapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

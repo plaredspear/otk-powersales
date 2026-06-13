@@ -21,7 +21,7 @@ import java.time.format.DateTimeParseException
  * 직원 마스터 UPSERT 도메인 서비스.
  *
  * ## 레거시 매핑
- * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.sap.inbound.service.SapEmployeeMasterService]
+ * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapEmployeeMasterService]
  * - origin spec: #557 (SAP 직원 마스터 인바운드) + #579 (origin=MANUAL 보호) — 어댑터/도메인 분리: #635 P2-B
  *
  * ## 레거시 동작 요약

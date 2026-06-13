@@ -16,7 +16,7 @@ import java.time.format.DateTimeParseException
  * 인사발령 INSERT 도메인 서비스.
  *
  * ## 레거시 매핑
- * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.sap.inbound.service.SapAppointmentService]
+ * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapAppointmentService]
  * - origin spec: #562 (SAP 인사발령 인바운드) — 어댑터/도메인 분리: #635 P2-B
  *
  * ## 레거시 동작 요약

@@ -1,6 +1,5 @@
 package com.otoki.powersales.order.service
 
-import com.otoki.powersales.common.util.TimeZones
 import com.otoki.powersales.order.dto.response.OrderHistoryGroupResponse
 import com.otoki.powersales.order.dto.response.OrderHistoryProductResponse
 import com.otoki.powersales.order.dto.response.OrderRequestDetailResponse
@@ -15,7 +14,7 @@ import com.otoki.powersales.order.exception.OrderDateRangeTooWideException
 import com.otoki.powersales.order.exception.OrderNotFoundException
 import com.otoki.powersales.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.order.repository.OrderRequestRepository
-import com.otoki.powersales.sap.outbound.sender.OrderRequestDetailSapSender
+import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import org.slf4j.LoggerFactory
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service

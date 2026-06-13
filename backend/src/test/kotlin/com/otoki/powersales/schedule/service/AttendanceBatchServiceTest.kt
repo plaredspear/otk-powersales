@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.sap.outbound.sender.AttendanceSapSender
+import com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.sap.AttendancePayloadFactory
 import com.otoki.powersales.schedule.sap.AttendanceSapPayload

@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.dto.response
 
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
+import com.otoki.powersales.external.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.enums.AttendType

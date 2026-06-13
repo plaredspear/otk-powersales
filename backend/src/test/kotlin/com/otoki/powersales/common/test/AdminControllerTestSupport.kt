@@ -8,7 +8,7 @@ import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditService
+import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired

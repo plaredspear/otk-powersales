@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional
  * 시스템 공통 코드 마스터 UPSERT 도메인 서비스.
  *
  * ## 레거시 매핑
- * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.sap.inbound.service.SapSystemCodeMasterService]
+ * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapSystemCodeMasterService]
  * - origin spec: #559 (SAP 제품 마스터 인바운드) — 어댑터/도메인 분리: #635 P1-B
  *
  * ## 레거시 동작 요약

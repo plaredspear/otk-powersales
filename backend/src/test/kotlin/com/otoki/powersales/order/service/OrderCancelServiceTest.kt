@@ -18,7 +18,7 @@ import com.otoki.powersales.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.order.repository.OrderRequestRepository
 import com.otoki.powersales.order.sap.OrderRequestCancelPayloadFactory
 import com.otoki.powersales.order.util.OrderDeadlineCalculator
-import com.otoki.powersales.sap.outbound.sender.OrderRequestCancelSender
+import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

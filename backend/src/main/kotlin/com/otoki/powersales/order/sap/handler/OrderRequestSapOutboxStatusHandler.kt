@@ -2,9 +2,9 @@ package com.otoki.powersales.order.sap.handler
 
 import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.repository.OrderRequestRepository
-import com.otoki.powersales.sap.SapConstants
-import com.otoki.powersales.sap.outbox.SapOutbox
-import com.otoki.powersales.sap.outbox.SapOutboxStatusHandler
+import com.otoki.powersales.external.sap.SapConstants
+import com.otoki.powersales.external.sap.outbox.SapOutbox
+import com.otoki.powersales.external.sap.outbox.SapOutboxStatusHandler
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation

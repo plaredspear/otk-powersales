@@ -1,7 +1,7 @@
 package com.otoki.powersales.batch
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.sap.outbox.SapOutboxBatchService
+import com.otoki.powersales.external.sap.outbox.SapOutboxBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled

@@ -4,7 +4,7 @@ import com.otoki.powersales.auth.exception.NewPasswordPolicyViolationException
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.dto.ErrorDetail
 import com.otoki.powersales.promotion.exception.BatchValidationException
-import com.otoki.powersales.sap.inbound.dto.SapResultWrapper
+import com.otoki.powersales.external.sap.inbound.dto.SapResultWrapper
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity

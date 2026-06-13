@@ -6,13 +6,12 @@ import com.otoki.powersales.order.enums.DeliveryStatus
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
 import com.otoki.powersales.order.enums.OrderRequestStatus
-import com.otoki.powersales.sap.outbound.sender.SapOrderRequestDetailLine
+import com.otoki.powersales.external.sap.outbound.sender.SapOrderRequestDetailLine
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 @DisplayName("OrderRequestDetailMapper 테스트 (#595 P1-B)")
 class OrderRequestDetailMapperTest {

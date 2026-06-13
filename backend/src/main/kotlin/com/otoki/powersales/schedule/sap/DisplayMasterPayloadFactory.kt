@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.sap
 
-import com.otoki.powersales.sap.SapConstants
+import com.otoki.powersales.external.sap.SapConstants
 import org.springframework.stereotype.Component
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

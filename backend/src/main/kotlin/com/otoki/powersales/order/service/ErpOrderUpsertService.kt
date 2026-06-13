@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter
  * ERP 주문 UPSERT 도메인 서비스 (헤더 + 라인 다단 saveAll).
  *
  * ## 레거시 매핑
- * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.sap.inbound.service.SapErpOrderService]
+ * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapErpOrderService]
  * - origin spec: #561 (SAP ERP 주문 인바운드) — 어댑터/도메인 분리: #635 P3-B
  *
  * ## 레거시 동작 요약

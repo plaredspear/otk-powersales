@@ -8,13 +8,14 @@ import com.otoki.powersales.order.sap.OrderRequestCancelPayloadFactory
 import com.otoki.powersales.order.sap.sender.OrderRequestRegisterSender
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.promotion.sap.PPTMasterPayloadFactory
-import com.otoki.powersales.sap.SapConstants
-import com.otoki.powersales.sap.outbound.sender.AttendanceSapSender
-import com.otoki.powersales.sap.outbound.sender.DisplayMasterSapSender
-import com.otoki.powersales.sap.outbound.sender.LoanInquirySender
-import com.otoki.powersales.sap.outbound.sender.LoanInquirySapResult
-import com.otoki.powersales.sap.outbound.sender.OrderRequestCancelSender
-import com.otoki.powersales.sap.outbound.sender.OrderRequestDetailSapSender
+import com.otoki.powersales.external.sap.SapConstants
+import com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender
+import com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender
+import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender
+import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySapResult
+import com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender
+import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
+import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.sap.AttendancePayloadFactory
@@ -41,7 +42,7 @@ class AdminSapOutboundTestServiceTest {
     private val displayMasterSapSender: DisplayMasterSapSender = mockk()
     private val displayMasterPayloadFactory: DisplayMasterPayloadFactory = mockk()
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk()
-    private val pptMasterSapSender: com.otoki.powersales.sap.outbound.sender.PPTMasterSapSender = mockk()
+    private val pptMasterSapSender: PPTMasterSapSender = mockk()
     private val pptMasterPayloadFactory: PPTMasterPayloadFactory = mockk()
     private val pptMasterRepository: PPTMasterRepository = mockk()
     private val orderRequestRepository: OrderRequestRepository = mockk()

@@ -2,8 +2,8 @@ package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.response.ExternalApiIntegrationInfo
 import com.otoki.powersales.admin.dto.response.ExternalApiIntegrationInfoResponse
-import com.otoki.powersales.sap.SapConstants
-import com.otoki.powersales.sap.outbound.config.SapOutboundProperties
+import com.otoki.powersales.external.sap.SapConstants
+import com.otoki.powersales.external.sap.outbound.config.SapOutboundProperties
 import com.otoki.powersales.sf.outbound.SfOutboundProperties
 import org.springframework.stereotype.Service
 

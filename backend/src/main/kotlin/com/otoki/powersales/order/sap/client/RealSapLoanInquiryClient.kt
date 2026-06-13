@@ -1,6 +1,6 @@
 package com.otoki.powersales.order.sap.client
 
-import com.otoki.powersales.sap.outbound.sender.LoanInquirySender
+import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import java.math.BigDecimal

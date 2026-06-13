@@ -1,7 +1,7 @@
 package com.otoki.powersales.order.service
 
 import com.otoki.powersales.order.dto.response.LoanInquiryResponse
-import com.otoki.powersales.sap.outbound.sender.LoanInquirySender
+import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

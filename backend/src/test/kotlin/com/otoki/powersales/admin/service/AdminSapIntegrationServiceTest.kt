@@ -6,13 +6,13 @@ import com.otoki.powersales.admin.sap.OutboundTriggerType
 import com.otoki.powersales.admin.sap.SapInboundCatalog
 import com.otoki.powersales.admin.sap.SapOutboundCatalog
 import com.otoki.powersales.common.exception.BusinessException
-import com.otoki.powersales.sap.SapConstants
-import com.otoki.powersales.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.sap.auth.audit.SapInboundAuditRepository
-import com.otoki.powersales.sap.outbound.entity.SapOutboundLog
-import com.otoki.powersales.sap.outbound.repository.SapOutboundLogRepository
-import com.otoki.powersales.sap.outbox.SapOutbox
-import com.otoki.powersales.sap.outbox.SapOutboxRepository
+import com.otoki.powersales.external.sap.SapConstants
+import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
+import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditRepository
+import com.otoki.powersales.external.sap.outbound.entity.SapOutboundLog
+import com.otoki.powersales.external.sap.outbound.repository.SapOutboundLogRepository
+import com.otoki.powersales.external.sap.outbox.SapOutbox
+import com.otoki.powersales.external.sap.outbox.SapOutboxRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
+import java.time.LocalDateTime
 import java.util.Optional
 
 @DisplayName("AdminSapIntegrationService 테스트")
@@ -181,7 +182,7 @@ class AdminSapIntegrationServiceTest {
                 receivedCount = 10,
                 previousCount = 9,
                 reason = null,
-                createdAt = java.time.LocalDateTime.of(2026, 5, 18, 0, 0),
+                createdAt = LocalDateTime.of(2026, 5, 18, 0, 0),
             )
             every {
                 inboundAuditRepository.search(any(), any(), any(), any(), any(), any())
@@ -214,7 +215,7 @@ class AdminSapIntegrationServiceTest {
                 receivedCount = null,
                 previousCount = null,
                 reason = "IP not allowed",
-                createdAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 14, 0),
+                createdAt = LocalDateTime.of(2026, 5, 18, 3, 14, 0),
             )
             every { inboundAuditRepository.findById(42L) } returns Optional.of(audit)
 
@@ -256,8 +257,8 @@ class AdminSapIntegrationServiceTest {
                 attemptCount = 1,
                 durationMs = 1234L,
                 errorDetail = null,
-                requestedAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 0, 0),
-                completedAt = java.time.LocalDateTime.of(2026, 5, 18, 3, 0, 1),
+                requestedAt = LocalDateTime.of(2026, 5, 18, 3, 0, 0),
+                completedAt = LocalDateTime.of(2026, 5, 18, 3, 0, 1),
             )
             every {
                 outboundLogRepository.search(any(), any(), any(), any(), any())
@@ -319,7 +320,7 @@ class AdminSapIntegrationServiceTest {
                 retryCount = 0,
                 lastError = null,
                 sentAt = null,
-            ).apply { createdAt = java.time.LocalDateTime.of(2026, 5, 18, 2, 45, 11) }
+            ).apply { createdAt = LocalDateTime.of(2026, 5, 18, 2, 45, 11) }
             every { outboxRepository.pagePendingOrRetry(any()) } returns PageImpl(listOf(pending))
 
             val result = service.searchOutboxPending(1, 20)

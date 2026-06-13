@@ -2,7 +2,7 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.sap.outbound.sender.DisplayMasterSapSender
+import com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.enums.TypeOfWork3

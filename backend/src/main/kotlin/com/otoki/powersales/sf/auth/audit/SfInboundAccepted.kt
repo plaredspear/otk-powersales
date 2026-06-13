@@ -15,7 +15,7 @@ package com.otoki.powersales.sf.auth.audit
  * - `{failure}` → 결과의 `failureCount` (throw 시 `received`)
  * - `{chunks}` → 결과가 chunked 인 경우 `chunkCount`
  *
- * SAP 측 동등 어노테이션 [com.otoki.powersales.sap.auth.audit.SapInboundAccepted] 와는 다른 marker —
+ * SAP 측 동등 어노테이션 [com.otoki.powersales.external.sap.auth.audit.SapInboundAccepted] 와는 다른 marker —
  * Aspect / Audit 시스템이 외부 시스템별 격리되어 있다 (Spec #774).
  */
 @Target(AnnotationTarget.FUNCTION)

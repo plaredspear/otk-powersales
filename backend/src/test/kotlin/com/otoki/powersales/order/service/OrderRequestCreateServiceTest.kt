@@ -20,7 +20,7 @@ import com.otoki.powersales.order.sap.client.InventoryInfo
 import com.otoki.powersales.order.sap.client.SapInventorySearchClient
 import com.otoki.powersales.order.sap.client.SapLoanInquiryClient
 import com.otoki.powersales.order.sap.sender.OrderRequestRegisterSender
-import com.otoki.powersales.sap.outbox.SapOutbox
+import com.otoki.powersales.external.sap.outbox.SapOutbox
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

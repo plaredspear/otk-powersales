@@ -2,8 +2,7 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.sap.inbound.dto.attendance.ScheduleConversionSummary
-import com.otoki.powersales.sap.inbound.service.AttendInfoToScheduleConverter
+import com.otoki.powersales.external.sap.inbound.service.AttendInfoToScheduleConverter
 import com.otoki.powersales.schedule.dto.request.AdminAttendInfoCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminAttendInfoSearchRequest
 import com.otoki.powersales.schedule.dto.request.AdminAttendInfoUpdateRequest

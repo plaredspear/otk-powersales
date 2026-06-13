@@ -5,10 +5,10 @@ import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.entity.OrderRequestProduct
-import com.otoki.powersales.sap.SapConstants
-import com.otoki.powersales.sap.outbox.SapInterfaceRegistry
-import com.otoki.powersales.sap.outbox.SapOutbox
-import com.otoki.powersales.sap.outbox.SapOutboxRepository
+import com.otoki.powersales.external.sap.SapConstants
+import com.otoki.powersales.external.sap.outbox.SapInterfaceRegistry
+import com.otoki.powersales.external.sap.outbox.SapOutbox
+import com.otoki.powersales.external.sap.outbox.SapOutboxRepository
 import jakarta.annotation.PostConstruct
 import org.springframework.stereotype.Component
 import java.time.format.DateTimeFormatter
@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
 /**
  * 주문 등록 SAP outbound sender (Spec #592).
  *
- * **직접 SAP 호출 안 함** — `sap_outbox` 적재만 책임. 실제 송신은 [com.otoki.powersales.sap.outbox.SapOutboxBatchService] 가 수행.
+ * **직접 SAP 호출 안 함** — `sap_outbox` 적재만 책임. 실제 송신은 [com.otoki.powersales.external.sap.outbox.SapOutboxBatchService] 가 수행.
  *
  * 페이로드 형식: 레거시 `IF_REST_SAP_OrderRequestRegist` 동등 (spec.md §2.3).
  *

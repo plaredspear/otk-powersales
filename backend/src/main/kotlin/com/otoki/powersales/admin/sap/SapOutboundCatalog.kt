@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.sap
 
-import com.otoki.powersales.sap.SapConstants
+import com.otoki.powersales.external.sap.SapConstants
 
 /**
  * SAP 아웃바운드 호출 트리거 분류.
@@ -38,21 +38,21 @@ object SapOutboundCatalog {
             interfaceId = SapConstants.SAP_INTERFACE_ATTENDANCE,
             koreanName = "일반 출근 일일 batch",
             triggerType = OutboundTriggerType.BATCH,
-            senderClass = "com.otoki.powersales.sap.outbound.sender.AttendanceSapSender",
+            senderClass = "com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender",
             description = "매일 새벽 attendance 페이지 단위 SAP REST Adapter POST.",
         ),
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER,
             koreanName = "진열 마스터 일일 batch",
             triggerType = OutboundTriggerType.BATCH,
-            senderClass = "com.otoki.powersales.sap.outbound.sender.DisplayMasterSapSender",
+            senderClass = "com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender",
             description = "매일 새벽 진열사원 일정 마스터 페이지 단위 SAP REST Adapter POST.",
         ),
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_PPT_MASTER,
             koreanName = "전문행사조 마스터 hourly batch",
             triggerType = OutboundTriggerType.BATCH,
-            senderClass = "com.otoki.powersales.sap.outbound.sender.PPTMasterSapSender",
+            senderClass = "com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender",
             description = "매시 정각 전문행사조 마스터 SAP 송신 (#765).",
         ),
         SapOutboundCatalogItem(
@@ -66,21 +66,21 @@ object SapOutboundCatalog {
             interfaceId = SapConstants.SAP_INTERFACE_ORDER_REQUEST_DETAIL,
             koreanName = "주문요청 상세 조회",
             triggerType = OutboundTriggerType.REALTIME,
-            senderClass = "com.otoki.powersales.sap.outbound.sender.OrderRequestDetailSapSender",
+            senderClass = "com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender",
             description = "본인 주문요청 상세 동기 callout.",
         ),
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_ORDER_REQUEST_CANCEL,
             koreanName = "주문 취소",
             triggerType = OutboundTriggerType.REALTIME,
-            senderClass = "com.otoki.powersales.sap.outbound.sender.OrderRequestCancelSender",
+            senderClass = "com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender",
             description = "사용자 주문 취소 시 SAP 동기 callout.",
         ),
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_LOAN_INQUIRY,
             koreanName = "거래처 여신 한도 조회",
             triggerType = OutboundTriggerType.REALTIME,
-            senderClass = "com.otoki.powersales.sap.outbound.sender.LoanInquirySender",
+            senderClass = "com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender",
             description = "거래처 여신 한도 동기 조회.",
         ),
     )

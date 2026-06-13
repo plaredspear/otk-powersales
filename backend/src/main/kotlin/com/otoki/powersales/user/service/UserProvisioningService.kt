@@ -28,7 +28,7 @@ import org.springframework.transaction.event.TransactionalEventListener
  * 3. 임시 비밀번호: `{employeeCode}{birthDate MMdd}`, birthDate 부재 시 `0000`
  * 4. `passwordChangeRequired = true` (Web 최초 로그인 시 강제 변경)
  * 5. `profileId`: 시점에 알 수 있는 `UserRole` 시드값 기준 매핑.
- *    운영 경로는 발령 후처리에서 [com.otoki.powersales.sap.inbound.service.AppointmentUserProfileUpdater]
+ *    운영 경로는 발령 후처리에서 [com.otoki.powersales.external.sap.inbound.service.AppointmentUserProfileUpdater]
  *    가 `EmployeeProfileResolver.resolveProfileId` 로 재산출하여 정정한다 (SF 분기 동등).
  *
  * ## 호출 경로

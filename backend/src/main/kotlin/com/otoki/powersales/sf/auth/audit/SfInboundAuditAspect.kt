@@ -16,7 +16,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 /**
  * `@SfInboundAccepted` 부착 메서드의 `REQUEST_ACCEPTED` audit 기록을 공통화한 around advice.
  *
- * SAP 측 [com.otoki.powersales.sap.auth.audit.SapInboundAuditAspect] 와 격리된 별도 인스턴스 —
+ * SAP 측 [com.otoki.powersales.external.sap.auth.audit.SapInboundAuditAspect] 와 격리된 별도 인스턴스 —
  * SF 인바운드만 처리한다 (Spec #774).
  *
  * 동작 시나리오:

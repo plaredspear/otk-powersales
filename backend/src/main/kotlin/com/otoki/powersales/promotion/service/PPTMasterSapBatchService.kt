@@ -3,7 +3,7 @@ package com.otoki.powersales.promotion.service
 import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.promotion.sap.PPTMasterPayloadFactory
-import com.otoki.powersales.sap.outbound.sender.PPTMasterSapSender
+import com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service

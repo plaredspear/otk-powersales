@@ -15,7 +15,7 @@ import java.time.format.DateTimeParseException
  * 출근 정보 INSERT 도메인 서비스 (단일 청크 단위).
  *
  * ## 레거시 매핑
- * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.sap.inbound.service.SapAttendInfoService]
+ * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapAttendInfoService]
  * - origin spec: #562 (SAP 출근 정보 인바운드) — 어댑터/도메인 분리: #635 P2-B
  *
  * ## 레거시 동작 요약
@@ -30,7 +30,7 @@ import java.time.format.DateTimeParseException
  *
  * ## 신규 차이 — 동등 (생략)
  *
- * 트랜잭션 경계는 어댑터의 [com.otoki.powersales.sap.inbound.service.ChunkedUpsertHelper] (`REQUIRES_NEW`) 가 청크 단위로 부여한다.
+ * 트랜잭션 경계는 어댑터의 [com.otoki.powersales.external.sap.inbound.service.ChunkedUpsertHelper] (`REQUIRES_NEW`) 가 청크 단위로 부여한다.
  * 도메인 서비스 자체에는 `@Transactional` 을 부착하지 않는다.
  *
  * `sap.*` 패키지 의존 0건 — `ChunkedUpsertHelper` / `AttendInfoToScheduleConverter` / audit 침투 금지.
