@@ -7,7 +7,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/entities/my_account.dart';
+import '../providers/client_order_list_provider.dart';
 import '../providers/my_accounts_provider.dart';
+import 'sales_status_page.dart';
 import '../widgets/my_accounts/my_account_card.dart';
 import '../widgets/my_accounts/my_account_search_bar.dart';
 import '../widgets/my_accounts/account_count_header.dart';
@@ -81,28 +83,50 @@ class _MyAccountsPageState extends ConsumerState<MyAccountsPage> {
   }
 
   /// 거래처 카드 탭 (상세 팝업)
+  ///
+  /// 레거시(heroku `account/list.jsp`의 `popData`) 정합:
+  /// - 주문서 현황 → `/order/list?type=client&selectCode=...` (거래처별 주문 탭)
+  /// - 매출 현황   → `/sales/eventList?selectCode=...` (매출 현황: 행사 매출 탭 진입)
+  /// 두 경우 모두 선택한 거래처를 미리 지정한 뒤 진입한다.
   void _onAccountTap(MyAccount account) {
     AccountDetailPopup.show(
       context,
       account: account,
-      onOrderStatusTap: () {
-        // 주문서 현황 - 미구현 시 안내
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('준비 중입니다'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      },
-      onSalesStatusTap: () {
-        // 매출 현황 - 미구현 시 안내
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('준비 중입니다'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      },
+      onOrderStatusTap: () => _openClientOrders(account),
+      onSalesStatusTap: () => _openSalesPromotions(account),
+    );
+  }
+
+  /// 주문서 현황: 거래처별 주문 탭으로 진입 (거래처 + 오늘 납기일 사전 지정 후 조회).
+  void _openClientOrders(MyAccount account) {
+    final notifier = ref.read(clientOrderListProvider.notifier);
+    final now = DateTime.now();
+    final todayStr =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    notifier.selectAccount(account.accountId, account.accountName);
+    notifier.updateDeliveryDate(todayStr);
+    notifier.searchOrders();
+    AppRouter.navigateTo(
+      context,
+      AppRouter.orderList,
+      arguments: 1, // 거래처별 주문 탭
+    );
+  }
+
+  /// 매출 현황: 매출 현황 화면(행사 매출 + 월 매출 탭)으로 진입.
+  ///
+  /// 레거시처럼 행사 매출 탭이 기본이며, 선택한 거래처를 행사 매출에 사전 지정한다
+  /// (진입 시 [SalesStatusPage]가 거래처 필터를 설정하고 자동 조회). 월 매출 탭은
+  /// 레거시 동작대로 거래처를 전달하지 않아 재선택이 필요하다.
+  void _openSalesPromotions(MyAccount account) {
+    AppRouter.navigateTo(
+      context,
+      AppRouter.salesStatus,
+      arguments: SalesStatusArgs(
+        initialTabIndex: 0, // 행사 매출 탭
+        presetAccountId: account.accountId,
+        presetAccountName: account.accountName,
+      ),
     );
   }
 

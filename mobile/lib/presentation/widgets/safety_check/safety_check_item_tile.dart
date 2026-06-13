@@ -18,38 +18,48 @@ class SafetyCheckCheckboxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => onToggle(item.seqNum),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 24,
-              height: 24,
-              child: Checkbox(
-                value: isChecked,
-                onChanged: (_) => onToggle(item.seqNum),
-                activeColor: AppColors.primary,
-                checkColor: AppColors.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
+    // 레거시 box_chklist: 행 배경 #f4f4f4, 체크 시 행 전체 #006DB2 + 흰 글씨
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
+      child: InkWell(
+        onTap: () => onToggle(item.seqNum),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 44),
+          color: isChecked ? AppColors.legacyCheckBlue : AppColors.legacyCheckRow,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: isChecked ? AppColors.legacyCheckActive : AppColors.white,
+                  border: Border.all(
+                    color: isChecked
+                        ? AppColors.legacyCheckActive
+                        : AppColors.legacyTextMute,
+                  ),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: isChecked
+                    ? const Icon(Icons.check, size: 15, color: AppColors.white)
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  item.contents,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.3,
+                    color: isChecked ? AppColors.white : AppColors.textPrimary,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                item.contents,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: isChecked
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -59,6 +69,9 @@ class SafetyCheckCheckboxTile extends StatelessWidget {
 /// 안전점검 아코디언 항목 위젯 (섹션 1: 장비 착용)
 class SafetyCheckAccordionTile extends StatelessWidget {
   final SafetyCheckItem item;
+
+  /// 화면 표시용 1-based 순번 (DB seqNum 아님, 레거시 정합)
+  final int displayNumber;
   final String? selectedAnswer;
   final List<String> options;
   final bool isExpanded;
@@ -68,6 +81,7 @@ class SafetyCheckAccordionTile extends StatelessWidget {
   const SafetyCheckAccordionTile({
     super.key,
     required this.item,
+    required this.displayNumber,
     required this.selectedAnswer,
     required this.options,
     required this.isExpanded,
@@ -84,7 +98,7 @@ class SafetyCheckAccordionTile extends StatelessWidget {
           color: AppColors.card,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isExpanded ? AppColors.primary : AppColors.border,
+            color: isExpanded ? AppColors.legacyCheckBlue : AppColors.border,
           ),
         ),
         child: Column(
@@ -102,12 +116,10 @@ class SafetyCheckAccordionTile extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '${item.seqNum}) ${item.contents}',
-                        style: TextStyle(
+                        '$displayNumber) ${item.contents}',
+                        style: const TextStyle(
                           fontSize: 14,
-                          color: selectedAnswer != null
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -118,7 +130,7 @@ class SafetyCheckAccordionTile extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: AppColors.legacyCheckBlue,
                         ),
                       ),
                     ],
@@ -151,13 +163,13 @@ class SafetyCheckAccordionTile extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppColors.primary.withValues(alpha: 0.1)
+                                  ? AppColors.legacyCheckBlue
                                   : AppColors.surfaceVariant
                                       .withValues(alpha: 0.3),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? AppColors.legacyCheckBlue
                                     : AppColors.border,
                               ),
                             ),
@@ -172,7 +184,7 @@ class SafetyCheckAccordionTile extends StatelessWidget {
                                       onSelect(item.seqNum, value);
                                     }
                                   },
-                                  activeColor: AppColors.primary,
+                                  activeColor: AppColors.white,
                                   materialTapTargetSize:
                                       MaterialTapTargetSize.shrinkWrap,
                                   visualDensity: VisualDensity.compact,
@@ -185,7 +197,7 @@ class SafetyCheckAccordionTile extends StatelessWidget {
                                         ? FontWeight.w700
                                         : FontWeight.normal,
                                     color: isSelected
-                                        ? AppColors.primary
+                                        ? AppColors.white
                                         : AppColors.textSecondary,
                                   ),
                                 ),

@@ -37,6 +37,7 @@ import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/pages/profile_page.dart';
 import 'presentation/pages/promotion_list_page.dart';
 import 'presentation/pages/monthly_sales_page.dart';
+import 'presentation/pages/sales_status_page.dart';
 import 'presentation/screens/electronic_sales_screen.dart';
 import 'presentation/pages/promotion_detail_page.dart';
 import 'presentation/pages/promotion_daily_sales_page.dart';
@@ -98,6 +99,7 @@ class AppRouter {
   static const String noticeDetail = '/notices/detail';
   static const String salesOverview = '/sales-overview';
   static const String monthlySales = '/monthly-sales';
+  static const String salesStatus = '/sales-status'; // 레거시 매출 현황(행사 매출 + 월 매출 탭)
   static const String safetyCheck = '/safety-check';
   static const String promotionList = '/promotions';
   static const String promotionDetail = '/promotions/detail';
@@ -226,6 +228,20 @@ class AppRouter {
         },
         salesOverview: (context) => const SalesOverviewScreen(),
         monthlySales: (context) => const MonthlySalesPage(),
+        salesStatus: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          // 내 거래처 팝업: 거래처 사전 지정 (SalesStatusArgs)
+          if (args is SalesStatusArgs) {
+            return SalesStatusPage(
+              initialTabIndex: args.initialTabIndex,
+              presetAccountId: args.presetAccountId,
+              presetAccountName: args.presetAccountName,
+            );
+          }
+          // 드로어: 탭 인덱스만 전달 → 거래처 전체로 초기화
+          final initialTabIndex = args as int?;
+          return SalesStatusPage(initialTabIndex: initialTabIndex ?? 0);
+        },
         safetyCheck: (context) => const SafetyCheckPage(),
         promotionList: (context) => const PromotionListPage(),
         promotionDetail: (context) {

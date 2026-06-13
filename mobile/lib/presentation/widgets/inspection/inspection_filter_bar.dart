@@ -7,6 +7,7 @@ import '../../../domain/entities/inspection_list_item.dart';
 import '../../../domain/repositories/my_account_repository.dart';
 import '../account/account_selector_field.dart';
 import '../common/date_range_filter_field.dart';
+import '../common/single_select_sheet.dart';
 
 /// 현장점검 검색 필터 바
 ///
@@ -105,52 +106,72 @@ class InspectionFilterBar extends StatelessWidget {
     );
   }
 
+  /// 분류 선택 항목 ("분류 전체" + 자사/경쟁사).
+  static const List<SingleSelectOption<InspectionCategory?>> _categoryOptions = [
+    SingleSelectOption(value: null, label: '분류 전체'),
+    SingleSelectOption(value: InspectionCategory.OWN, label: '자사'),
+    SingleSelectOption(value: InspectionCategory.COMPETITOR, label: '경쟁사'),
+  ];
+
+  String _categoryLabel() => _categoryOptions
+      .firstWhere((o) => o.value == selectedCategory)
+      .label;
+
+  /// 분류 선택 트리거 — 탭하면 거래처 선택과 동일한 바텀시트를 띄운다.
   Widget _buildCategoryDropdown() {
+    final hasSelection = selectedCategory != null;
+    final label = _categoryLabel();
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: AppSpacing.inputBorderRadius,
         border: Border.all(color: AppColors.border),
       ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<InspectionCategory?>(
-          value: selectedCategory,
-          isExpanded: true,
-          hint: Text(
-            '분류 전체',
-            style: AppTypography.bodyMedium
-                .copyWith(color: AppColors.textSecondary),
+      child: Builder(
+        builder: (context) => InkWell(
+          onTap: () => _selectCategory(context),
+          borderRadius: AppSpacing.inputBorderRadius,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: hasSelection
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_drop_down,
+                  size: 22,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
           ),
-          items: [
-            DropdownMenuItem<InspectionCategory?>(
-              value: null,
-              child: Text(
-                '분류 전체',
-                style: AppTypography.bodyMedium,
-              ),
-            ),
-            DropdownMenuItem<InspectionCategory?>(
-              value: InspectionCategory.OWN,
-              child: Text(
-                '자사',
-                style: AppTypography.bodyMedium,
-              ),
-            ),
-            DropdownMenuItem<InspectionCategory?>(
-              value: InspectionCategory.COMPETITOR,
-              child: Text(
-                '경쟁사',
-                style: AppTypography.bodyMedium,
-              ),
-            ),
-          ],
-          onChanged: (value) {
-            onCategoryChanged(value);
-          },
         ),
       ),
     );
+  }
+
+  Future<void> _selectCategory(BuildContext context) async {
+    final result = await SingleSelectSheet.show<InspectionCategory?>(
+      context,
+      title: '분류 선택',
+      selectedValue: selectedCategory,
+      options: _categoryOptions,
+    );
+    if (result == null) return;
+    onCategoryChanged(result.value);
   }
 
   Widget _buildDateRange(BuildContext context) {

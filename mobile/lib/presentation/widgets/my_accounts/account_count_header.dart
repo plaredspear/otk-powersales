@@ -18,15 +18,30 @@ class AccountCountHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    // 레거시(list.jsp): "거래처 (N)" — (N)만 빨강 #DC2C34, 하단 구분선
+    return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      child: Text(
-        '거래처 ($count)',
-        style: AppTypography.headlineSmall.copyWith(
-          color: AppColors.textPrimary,
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.divider, width: 1),
+        ),
+      ),
+      child: Text.rich(
+        TextSpan(
+          style: AppTypography.headlineSmall.copyWith(
+            color: AppColors.textPrimary,
+          ),
+          children: [
+            const TextSpan(text: '거래처 '),
+            TextSpan(
+              text: '($count)',
+              style: const TextStyle(color: AppColors.legacyDanger),
+            ),
+          ],
         ),
       ),
     );
