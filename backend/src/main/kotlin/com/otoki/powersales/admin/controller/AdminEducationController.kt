@@ -4,11 +4,11 @@ import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.education.dto.response.AdminEducationListResponse
-import com.otoki.powersales.education.dto.response.EducationCategoryResponse
-import com.otoki.powersales.education.dto.response.EducationMutationResponse
-import com.otoki.powersales.education.dto.response.EducationPostDetailResponse
-import com.otoki.powersales.education.service.EducationService
+import com.otoki.powersales.domain.support.education.dto.response.AdminEducationListResponse
+import com.otoki.powersales.domain.support.education.dto.response.EducationCategoryResponse
+import com.otoki.powersales.domain.support.education.dto.response.EducationMutationResponse
+import com.otoki.powersales.domain.support.education.dto.response.EducationPostDetailResponse
+import com.otoki.powersales.domain.support.education.service.EducationService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

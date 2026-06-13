@@ -1,12 +1,11 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.common.test.AdminControllerTestSupport
-import com.otoki.powersales.education.dto.response.*
-import com.otoki.powersales.education.exception.EducationPostNotFoundException
-import com.otoki.powersales.education.exception.FileLimitExceededException
-import com.otoki.powersales.education.exception.InvalidEducationCategoryException
-import com.otoki.powersales.education.exception.InvalidEducationParameterException
-import com.otoki.powersales.education.service.EducationService
+import com.otoki.powersales.domain.support.education.exception.EducationPostNotFoundException
+import com.otoki.powersales.domain.support.education.exception.FileLimitExceededException
+import com.otoki.powersales.domain.support.education.exception.InvalidEducationCategoryException
+import com.otoki.powersales.domain.support.education.exception.InvalidEducationParameterException
+import com.otoki.powersales.domain.support.education.service.EducationService
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -20,9 +19,17 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.mock.web.MockMultipartFile
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.support.education.dto.response.AdminEducationListResponse
+import com.otoki.powersales.domain.support.education.dto.response.AdminEducationPostSummary
+import com.otoki.powersales.domain.support.education.dto.response.AttachmentInfo
+import com.otoki.powersales.domain.support.education.dto.response.EducationAttachmentResponse
+import com.otoki.powersales.domain.support.education.dto.response.EducationCategoryResponse
+import com.otoki.powersales.domain.support.education.dto.response.EducationMutationResponse
+import com.otoki.powersales.domain.support.education.dto.response.EducationPostDetailResponse
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminEducationController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -46,7 +53,7 @@ class AdminEducationControllerTest : AdminControllerTestSupport() {
                         eduTitle = "3월 신제품 교육",
                         eduCode = "c00004",
                         eduCodeNm = "신제품소개",
-                        instDate = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
+                        instDate = LocalDateTime.parse("2026-03-09T10:00:00"),
                         attachmentCount = 3
                     )
                 ),
@@ -108,7 +115,7 @@ class AdminEducationControllerTest : AdminControllerTestSupport() {
                 categoryName = "신제품소개",
                 title = "3월 신제품 교육",
                 content = "<p>내용</p>",
-                createdAt = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
+                createdAt = LocalDateTime.parse("2026-03-09T10:00:00"),
                 attachments = listOf(
                     EducationAttachmentResponse(
                         id = "abc123",
@@ -152,7 +159,7 @@ class AdminEducationControllerTest : AdminControllerTestSupport() {
                 eduCode = "c00001",
                 eduCodeNm = "시식매뉴얼",
                 employeeId = 1L,
-                instDate = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
+                instDate = LocalDateTime.parse("2026-03-09T10:00:00"),
                 updDate = null,
                 attachments = emptyList()
             )
@@ -182,7 +189,7 @@ class AdminEducationControllerTest : AdminControllerTestSupport() {
                 eduCode = "c00004",
                 eduCodeNm = "신제품소개",
                 employeeId = 1L,
-                instDate = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
+                instDate = LocalDateTime.parse("2026-03-09T10:00:00"),
                 updDate = null,
                 attachments = listOf(
                     AttachmentInfo(fileKey = "uuid.pdf", fileType = "f00003", fileOriginalName = "test.pdf")
@@ -238,8 +245,8 @@ class AdminEducationControllerTest : AdminControllerTestSupport() {
                 eduCode = "c00001",
                 eduCodeNm = "시식매뉴얼",
                 employeeId = 1L,
-                instDate = java.time.LocalDateTime.parse("2026-03-09T10:00:00"),
-                updDate = java.time.LocalDateTime.parse("2026-03-09T14:00:00"),
+                instDate = LocalDateTime.parse("2026-03-09T10:00:00"),
+                updDate = LocalDateTime.parse("2026-03-09T14:00:00"),
                 attachments = emptyList()
             )
 

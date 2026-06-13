@@ -1,0 +1,76 @@
+package com.otoki.powersales.domain.support.education.controller
+
+import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.domain.support.education.controller.EducationController
+import com.otoki.powersales.domain.support.education.exception.EducationPostNotFoundException
+import com.otoki.powersales.domain.support.education.exception.InvalidEducationCategoryException
+import com.otoki.powersales.domain.support.education.service.EducationService
+import io.mockk.every
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+
+@WebMvcTest(EducationController::class)
+@AutoConfigureMockMvc(addFilters = false)
+@DisplayName("EducationController 테스트")
+class EducationControllerTest : MobileControllerTestSupport() {
+
+    @MockkBean
+    private lateinit var educationService: EducationService
+
+    @Nested
+    @DisplayName("GET /api/v1/mobile/education/posts - 목록 조회")
+    inner class GetPostsTests {
+
+        @Test
+        @DisplayName("category 파라미터 누락 시 400 Bad Request 반환")
+        fun getPosts_missingCategory() {
+            mockMvc.perform(
+                get("/api/v1/mobile/education/posts")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isBadRequest)
+        }
+
+        @Test
+        @DisplayName("유효하지 않은 category로 요청 시 400 Bad Request 반환")
+        fun getPosts_invalidCategory() {
+            every { educationService.getPosts("INVALID", null, 1, 10) } throws InvalidEducationCategoryException()
+
+            mockMvc.perform(
+                get("/api/v1/mobile/education/posts")
+                    .param("category", "INVALID")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isBadRequest)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INVALID_CATEGORY"))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/mobile/education/posts/{postId} - 상세 조회")
+    inner class GetPostDetailTests {
+
+        @Test
+        @DisplayName("존재하지 않는 게시물 조회 시 404 Not Found 반환")
+        fun getPostDetail_notFound() {
+            every { educationService.getPostDetail("NONEXIST") } throws EducationPostNotFoundException()
+
+            mockMvc.perform(
+                get("/api/v1/mobile/education/posts/NONEXIST")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("POST_NOT_FOUND"))
+        }
+    }
+}
