@@ -1,7 +1,7 @@
 package com.otoki.powersales.savedsearch.service
 
-import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.auth.permission.SfPermissionResolver
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.SfPermissionResolver
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.savedsearch.dto.request.SavedSearchCreateRequest
 import com.otoki.powersales.savedsearch.dto.request.SavedSearchUpdateRequest

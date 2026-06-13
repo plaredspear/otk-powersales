@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
 import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
 import com.otoki.powersales.leave.dto.response.HolidayMasterResponse

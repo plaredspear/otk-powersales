@@ -1,8 +1,8 @@
 package com.otoki.powersales.common.config
 
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
-import com.otoki.powersales.auth.repository.ProfileRepository
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository

@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.security
 
 import tools.jackson.databind.json.JsonMapper
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import io.mockk.Called
 import io.mockk.mockk
 import io.mockk.verify

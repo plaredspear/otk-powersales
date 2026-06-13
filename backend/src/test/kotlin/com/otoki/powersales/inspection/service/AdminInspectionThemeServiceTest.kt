@@ -1,6 +1,6 @@
 package com.otoki.powersales.inspection.service
 
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository

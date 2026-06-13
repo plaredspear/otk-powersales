@@ -2,13 +2,15 @@ package com.otoki.powersales.productexpiration.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.ProductNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.platform.auth.entity.Profile
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest
@@ -41,7 +43,7 @@ class AdminProductExpirationServiceTest {
     private val productExpirationRepository: ProductExpirationRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val userRepository: com.otoki.powersales.user.repository.UserRepository = mockk(relaxed = true)
-    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
+    private val profileRepository: ProfileRepository = mockk(relaxed = true)
     private val accountRepository: AccountRepository = mockk()
     private val productRepository: ProductRepository = mockk()
 
@@ -56,7 +58,7 @@ class AdminProductExpirationServiceTest {
 
     init {
         // relaxed mockk 의 generic 추론 실패로 Object→Profile/User cast 실패 방지.
-        every { profileRepository.findById(any()) } returns Optional.empty<com.otoki.powersales.auth.entity.Profile>()
+        every { profileRepository.findById(any()) } returns Optional.empty<Profile>()
         every { userRepository.findByEmployeeCode(any()) } returns null
     }
 

@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.promotion.dto.request.PPTMasterBulkValidateRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
@@ -10,7 +10,7 @@ import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.promotion.service.AdminPPTConfirmedReportService
 import com.otoki.powersales.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpHeaders

@@ -1,7 +1,7 @@
 package com.otoki.powersales.savedsearch.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.savedsearch.dto.request.SavedSearchCreateRequest
 import com.otoki.powersales.savedsearch.dto.request.SavedSearchUpdateRequest
 import com.otoki.powersales.savedsearch.dto.response.SavedSearchResponse

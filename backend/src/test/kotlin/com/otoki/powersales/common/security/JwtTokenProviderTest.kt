@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.security
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

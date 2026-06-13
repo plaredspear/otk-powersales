@@ -3,7 +3,7 @@ package com.otoki.powersales.promotion.service
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.promotion.entity.QPromotion.Companion.promotion as qPromotion
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -14,11 +14,11 @@ import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionProductRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper
 import org.springframework.data.domain.PageRequest

@@ -1,14 +1,15 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.auth.entity.Profile
-import com.otoki.powersales.auth.sharing.repository.SharingPolicyQueryRepository
-import com.otoki.powersales.auth.sharing.service.GroupMembershipEvaluator
-import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
-import com.otoki.powersales.auth.sharing.service.ProfileFlagsEvaluator
-import com.otoki.powersales.auth.sharing.service.RecordTypePermissionEvaluator
-import com.otoki.powersales.auth.sharing.service.UserRoleHierarchyTraversal
+import com.otoki.powersales.platform.auth.entity.Profile
+import com.otoki.powersales.platform.auth.sharing.repository.SharingPolicyQueryRepository
+import com.otoki.powersales.platform.auth.sharing.service.GroupMembershipEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.PermissionSetEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.ProfileFlagsEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.RecordTypePermissionEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.UserRoleHierarchyTraversal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
@@ -25,7 +26,7 @@ class AdminDataScopeServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
+    private val profileRepository: ProfileRepository = mockk(relaxed = true)
     private val userRoleHierarchyTraversal: UserRoleHierarchyTraversal = mockk(relaxed = true)
     private val groupMembershipEvaluator: GroupMembershipEvaluator = mockk(relaxed = true)
     private val profileFlagsEvaluator: ProfileFlagsEvaluator = mockk(relaxed = true)

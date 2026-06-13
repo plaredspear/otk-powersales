@@ -2,8 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.response.BatchUpdatePromotionEmployeeResponse
@@ -13,7 +13,7 @@ import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
 import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
 import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

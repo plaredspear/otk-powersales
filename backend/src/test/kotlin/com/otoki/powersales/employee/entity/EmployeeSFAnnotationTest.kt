@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils

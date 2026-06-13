@@ -2,7 +2,7 @@ package com.otoki.powersales.promotion.service
 
 import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster

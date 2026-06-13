@@ -2,7 +2,6 @@ package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
-import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.every

@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayApproveRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
@@ -11,7 +11,7 @@ import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
 import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus

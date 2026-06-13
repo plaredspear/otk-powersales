@@ -3,11 +3,10 @@ package com.otoki.powersales.domain.sales.service
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
 import com.otoki.powersales.domain.sales.exception.SalesProgressRateMasterNotFoundException
 import com.otoki.powersales.domain.sales.repository.SalesProgressRateMasterRepository
-import com.otoki.powersales.domain.sales.service.AdminSalesProgressRateMasterService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

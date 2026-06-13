@@ -1,8 +1,8 @@
 package com.otoki.powersales.common.controller
 
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.auth.service.AuthService
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.service.AuthService
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.Runs

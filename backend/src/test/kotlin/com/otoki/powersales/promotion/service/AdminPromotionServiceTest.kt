@@ -4,7 +4,7 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -21,7 +21,8 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper
 import org.assertj.core.api.Assertions.assertThat
@@ -52,7 +53,7 @@ class AdminPromotionServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper = mockk(relaxUnitFun = true)
-    private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
+    private val policyEvaluator: SharingRulePolicyEvaluator =
         mockk(relaxed = true)
 
     private val adminPromotionService: AdminPromotionService = AdminPromotionService(

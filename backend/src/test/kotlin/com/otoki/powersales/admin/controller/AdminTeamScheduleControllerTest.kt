@@ -4,7 +4,7 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory2
 import com.otoki.powersales.common.enums.WorkingType
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest

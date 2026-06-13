@@ -1,11 +1,11 @@
 package com.otoki.powersales.admin.security
 
-import com.otoki.powersales.auth.permission.AdminPermissionCache
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionEvaluator
-import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionEvaluator
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

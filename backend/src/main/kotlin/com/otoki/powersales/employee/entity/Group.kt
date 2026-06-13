@@ -3,7 +3,7 @@ package com.otoki.powersales.employee.entity
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.auth.entity.UserRole
+import com.otoki.powersales.platform.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.converter.GroupTypeConverter
 import com.otoki.powersales.employee.enums.GroupType
 import com.otoki.powersales.user.entity.User

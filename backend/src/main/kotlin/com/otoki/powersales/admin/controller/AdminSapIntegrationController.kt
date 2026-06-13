@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.auth.permission.SfSystemPermission
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.AdminSapInboundAuditQuery
 import com.otoki.powersales.admin.dto.request.AdminSapOutboundLogQuery
 import com.otoki.powersales.admin.dto.response.SapInboundAuditDetail

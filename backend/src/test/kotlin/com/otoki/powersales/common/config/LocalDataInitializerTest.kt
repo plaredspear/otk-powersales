@@ -1,9 +1,10 @@
 package com.otoki.powersales.common.config
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.service.UserProvisioningService
 import io.mockk.*
 import jakarta.persistence.EntityManager
@@ -26,7 +27,7 @@ class LocalDataInitializerTest {
 
     private val userProvisioningService: UserProvisioningService = mockk(relaxed = true)
 
-    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
+    private val profileRepository: ProfileRepository = mockk(relaxed = true)
 
     private val passwordEncoder: PasswordEncoder = mockk(relaxed = true)
 

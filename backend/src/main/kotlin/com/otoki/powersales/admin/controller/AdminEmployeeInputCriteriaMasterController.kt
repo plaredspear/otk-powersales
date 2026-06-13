@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.request.EmployeeInputCriteriaMasterBulkConfirmRequest

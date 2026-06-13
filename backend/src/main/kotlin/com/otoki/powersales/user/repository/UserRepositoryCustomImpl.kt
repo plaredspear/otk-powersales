@@ -1,6 +1,6 @@
 package com.otoki.powersales.user.repository
 
-import com.otoki.powersales.auth.sharing.entity.QPermissionSetAssignment.Companion.permissionSetAssignment
+import com.otoki.powersales.platform.auth.sharing.entity.QPermissionSetAssignment.Companion.permissionSetAssignment
 import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.otoki.powersales.user.entity.User
 import com.querydsl.core.BooleanBuilder

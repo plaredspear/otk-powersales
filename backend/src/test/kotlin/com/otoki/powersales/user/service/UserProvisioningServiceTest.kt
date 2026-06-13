@@ -1,8 +1,9 @@
 package com.otoki.powersales.user.service
 
-import com.otoki.powersales.auth.entity.Profile
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.platform.auth.entity.Profile
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
@@ -21,7 +22,7 @@ class UserProvisioningServiceTest {
 
     private val userRepository: UserRepository = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
-    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk()
+    private val profileRepository: ProfileRepository = mockk()
 
     private val service = UserProvisioningService(
         userRepository,

@@ -1,13 +1,13 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.AdminUserDetailResponse
 import com.otoki.powersales.admin.dto.AdminUserListResponse
 import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
 import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
 import com.otoki.powersales.admin.service.AdminUserService
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse

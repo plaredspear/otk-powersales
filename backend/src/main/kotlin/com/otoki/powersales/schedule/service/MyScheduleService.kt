@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.schedule.dto.response.*
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.enums.WorkingType
 // import com.otoki.powersales.schedule.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository

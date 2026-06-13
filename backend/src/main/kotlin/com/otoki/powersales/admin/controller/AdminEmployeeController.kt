@@ -1,9 +1,9 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionInspectionService
-import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.auth.permission.SfSystemPermission
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionInspectionService
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.employee.dto.request.AdminEmployeeManualRegisterRequest
@@ -20,7 +20,7 @@ import com.otoki.powersales.employee.service.AdminEmployeeUpdateService
 import com.otoki.powersales.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.schedule.service.EmployeeWorkHistoryService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

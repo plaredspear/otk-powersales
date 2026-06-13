@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.exception
 
-import com.otoki.powersales.auth.exception.NewPasswordPolicyViolationException
+import com.otoki.powersales.platform.auth.exception.NewPasswordPolicyViolationException
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.dto.ErrorDetail
 import com.otoki.powersales.promotion.exception.BatchValidationException

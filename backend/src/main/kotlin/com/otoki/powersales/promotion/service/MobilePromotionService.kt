@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.promotion.exception.PromotionForbiddenException
 import com.otoki.powersales.promotion.exception.PromotionInvalidParameterException

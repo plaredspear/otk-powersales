@@ -4,7 +4,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory5
 import com.otoki.powersales.employee.entity.Employee

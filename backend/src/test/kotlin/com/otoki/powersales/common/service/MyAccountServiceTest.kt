@@ -1,9 +1,9 @@
 package com.otoki.powersales.common.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.AccountInvalidParameterException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepositoryCustom

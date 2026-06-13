@@ -1,7 +1,7 @@
 package com.otoki.powersales.user.service
 
-import com.otoki.powersales.auth.permission.SystemAdminProfilePolicy
-import com.otoki.powersales.auth.repository.ProfileRepository
+import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeeCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository

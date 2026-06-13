@@ -1,6 +1,6 @@
 package com.otoki.powersales.common.entity
 
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.security.UserPrincipal
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.EntityManager

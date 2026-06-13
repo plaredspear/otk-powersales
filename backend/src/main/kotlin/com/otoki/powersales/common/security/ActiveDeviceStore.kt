@@ -11,7 +11,7 @@ import java.time.Duration
  * 활성 단말(active device) 캐시 + 검증.
  *
  * 단말 바인딩 모델(관리자 초기화)에서 "현재 로그인 허용된 기기"를 매 요청마다 확인해,
- * 관리자가 [com.otoki.powersales.auth.service.AuthService.resetDevice] 로 단말을 회수하면
+ * 관리자가 [com.otoki.powersales.platform.auth.service.AuthService.resetDevice] 로 단말을 회수하면
  * 기존 기기의 access token 을 즉시 무효화한다 (단말 교체 시 기존 기기 로그인 제한).
  *
  * 소스 오브 트루스는 DB `employee_info.device_uuid` 이며, Redis 는 성능용 read-through 캐시다.

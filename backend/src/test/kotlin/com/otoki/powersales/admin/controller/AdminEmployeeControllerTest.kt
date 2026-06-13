@@ -3,8 +3,8 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.permission.SfPermissionInspectionService
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.permission.SfPermissionInspectionService
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.employee.dto.response.EmployeeListResponse

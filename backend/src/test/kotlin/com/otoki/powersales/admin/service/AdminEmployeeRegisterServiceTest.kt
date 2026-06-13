@@ -6,8 +6,8 @@ import com.otoki.powersales.admin.exception.AdminPasswordPolicyViolationExceptio
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.repository.EmployeeRepository

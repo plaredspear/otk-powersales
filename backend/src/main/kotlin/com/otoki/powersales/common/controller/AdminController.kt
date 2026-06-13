@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.controller
 
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.service.AuthService
+import com.otoki.powersales.platform.auth.service.AuthService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 

@@ -1,6 +1,7 @@
 package com.otoki.powersales._migration.sf.stage1
 
 import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -38,7 +39,7 @@ import java.util.concurrent.Executors
 class Stage1CopyController(
     private val service: Stage1S3CopyService,
     private val progress: Stage1CopyProgress,
-    private val adminPermissionCache: com.otoki.powersales.auth.permission.AdminPermissionCache,
+    private val adminPermissionCache: AdminPermissionCache,
     private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
     private val branchCodeExpander: com.otoki.powersales.organization.branchmapping.BranchCodeExpander,
     // 운영 S3 bucket (EB 콘솔 환경 속성 S3_BUCKET). Stage1 CSV 도 동일 bucket 사용 — UI 프리필.

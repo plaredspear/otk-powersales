@@ -1,6 +1,6 @@
 package com.otoki.powersales.productexpiration.service
 
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.productexpiration.dto.request.ProductExpirationBatchDeleteRequest
 import com.otoki.powersales.productexpiration.dto.request.ProductExpirationCreateRequest
@@ -16,7 +16,6 @@ import com.otoki.powersales.productexpiration.repository.ProductExpirationReposi
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit
 

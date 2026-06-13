@@ -1,8 +1,8 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.admin.security.AdminDataScopeCache
-import com.otoki.powersales.auth.permission.AdminPermissionCache
+import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository

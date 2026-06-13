@@ -2,7 +2,7 @@ package com.otoki.powersales.admin.security
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.service.AdminDataScopeService
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.config.CacheConfig
 import io.mockk.every
 import io.mockk.mockk

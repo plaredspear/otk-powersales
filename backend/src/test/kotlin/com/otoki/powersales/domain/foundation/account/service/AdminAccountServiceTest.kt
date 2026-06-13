@@ -4,8 +4,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
-import com.otoki.powersales.domain.foundation.account.service.AdminAccountService
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.EntityPathBase
 import com.querydsl.core.types.dsl.Expressions

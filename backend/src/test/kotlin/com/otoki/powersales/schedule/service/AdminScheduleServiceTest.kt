@@ -1,13 +1,13 @@
 package com.otoki.powersales.schedule.service
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import tools.jackson.databind.json.JsonMapper
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.RowPreview
 import com.otoki.powersales.schedule.exception.*
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.employee.entity.Employee
@@ -17,6 +17,8 @@ import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.schedule.service.internal.LastMonthRevenueLookup
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.enums.SecondWorkType
@@ -71,7 +73,7 @@ class AdminScheduleServiceTest {
 
     private val userRepository: UserRepository = mockk(relaxUnitFun = true)
 
-    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk(relaxed = true)
+    private val profileRepository: ProfileRepository = mockk(relaxed = true)
 
     private val redisTemplate: RedisTemplate<String, String> = mockk(relaxUnitFun = true)
 
@@ -83,7 +85,7 @@ class AdminScheduleServiceTest {
 
     private val branchCodeExpander: BranchCodeExpander = mockk(relaxUnitFun = true)
 
-    private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
+    private val policyEvaluator: SharingRulePolicyEvaluator =
         mockk(relaxed = true)
 
     private val adminScheduleService = AdminScheduleService(

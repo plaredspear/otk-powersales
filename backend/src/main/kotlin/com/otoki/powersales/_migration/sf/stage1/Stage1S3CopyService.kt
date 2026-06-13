@@ -363,7 +363,7 @@ class Stage1S3CopyService(
 
     /**
      * entity 별 적재 후 후처리. 현재는 Profile 만 — SF Admin Profile (SOQL Name='System Administrator' 또는 'Admin')
-     * row 를 운영 alias '시스템 관리자' 로 정합 ([com.otoki.powersales.auth.permission.SystemAdminProfilePolicy] 한글 SoT).
+     * row 를 운영 alias '시스템 관리자' 로 정합 ([com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy] 한글 SoT).
      *
      * ## '시스템 관리자' 병합 (sfid=NULL seed row 흡수)
      * 과거 LocalDataInitializer.seedProfiles() 가 local→dev DB 연결 시 '시스템 관리자' 를 sfid=NULL 로 선 INSERT 한

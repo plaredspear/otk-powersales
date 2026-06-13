@@ -79,7 +79,7 @@ interface DisplayWorkScheduleRepositoryCustom {
 
     /**
      * @param policyPredicate SF `DisplayWorkScheduleMaster__c` 가시 범위 Predicate
-     *        ([com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator] 산출 —
+     *        ([com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator] 산출 —
      *        OWD Private → owner / role hierarchy / sharing rule(CostCenterCode 코드쌍 + CreatedById) /
      *        legacy branch OR 합성). 검색 필터와 AND 합성.
      *

@@ -1,9 +1,9 @@
 package com.otoki.powersales.schedule.service
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule as qDisplayWorkSchedule
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
@@ -15,12 +15,13 @@ import com.otoki.powersales.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.schedule.exception.*
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.BusinessException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.SchedulePreset
 import com.otoki.powersales.schedule.enums.SecondWorkType
@@ -62,7 +63,7 @@ class AdminScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val lastMonthRevenueLookup: LastMonthRevenueLookup,
     private val userRepository: UserRepository,
-    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository,
+    private val profileRepository: ProfileRepository,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper,
     private val branchCodeExpander: BranchCodeExpander,

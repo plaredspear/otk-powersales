@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.userrole
 
-import com.otoki.powersales.auth.entity.UserRole
-import com.otoki.powersales.auth.repository.UserRoleRepository
+import com.otoki.powersales.platform.auth.entity.UserRole
+import com.otoki.powersales.platform.auth.repository.UserRoleRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat

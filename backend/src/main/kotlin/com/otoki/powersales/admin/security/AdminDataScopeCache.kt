@@ -2,7 +2,7 @@ package com.otoki.powersales.admin.security
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.service.AdminDataScopeService
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.config.CacheConfig
 import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Service
@@ -21,7 +21,7 @@ import java.util.concurrent.Callable
  *
  * ## Caffeine → Redis 전환
  *
- * 이전 구현은 `Caffeine.newBuilder()` 자체 in-memory 인스턴스였다. [com.otoki.powersales.auth.permission.AdminPermissionCache]
+ * 이전 구현은 `Caffeine.newBuilder()` 자체 in-memory 인스턴스였다. [com.otoki.powersales.platform.auth.permission.AdminPermissionCache]
  * 와 동일하게 멀티 인스턴스 환경에서 invalidate 가 단일 JVM 만 비워 DataScope stale → 조회 범위 오판
  * (권한 어긋남) 을 유발했다. Spring [CacheManager] (dev/prod = RedisCacheManager) 공유 캐시로 전환.
  * local/test 는 `@Primary NoOpCacheManager` 라 항상 miss → 매번 resolve (무캐시, stale 없음).
@@ -36,7 +36,7 @@ import java.util.concurrent.Callable
  * ## 캐시 무효화 책임
  *
  * DataScope 의 입력 (profile / permissionSet / userRole / group 멤버십 / sharingRule) 이 바뀌면
- * [com.otoki.powersales.auth.permission.AdminPermissionCache.invalidate] 와 함께 본 캐시도
+ * [com.otoki.powersales.platform.auth.permission.AdminPermissionCache.invalidate] 와 함께 본 캐시도
  * `invalidate(userId)` 호출 필요. 현재 `AdminPermissionAssignmentService` 와 `AppointmentUserProfileUpdater`
  * 에서 동시 호출.
  */

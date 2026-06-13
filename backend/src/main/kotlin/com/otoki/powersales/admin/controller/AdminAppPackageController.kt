@@ -7,10 +7,10 @@ import com.otoki.powersales.platform.apppackage.dto.AppPackageListItemDto
 import com.otoki.powersales.platform.apppackage.dto.AppPackageReleaseNoteUpdateRequest
 import com.otoki.powersales.platform.apppackage.entity.AppPlatform
 import com.otoki.powersales.platform.apppackage.service.AdminAppPackageService
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.auth.permission.SfSystemPermission
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.SfSystemPermission
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest

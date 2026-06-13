@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
 import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest
@@ -11,7 +11,7 @@ import com.otoki.powersales.productexpiration.dto.response.AdminProductExpiratio
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
 import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus

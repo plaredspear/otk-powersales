@@ -1,14 +1,14 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.repository.ProfileRepository
-import com.otoki.powersales.auth.sharing.repository.SharingPolicyQueryRepository
-import com.otoki.powersales.auth.sharing.service.GroupMembershipEvaluator
-import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
-import com.otoki.powersales.auth.sharing.service.ProfileFlagsEvaluator
-import com.otoki.powersales.auth.sharing.service.RecordTypePermissionEvaluator
-import com.otoki.powersales.auth.sharing.service.UserRoleHierarchyTraversal
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
+import com.otoki.powersales.platform.auth.sharing.repository.SharingPolicyQueryRepository
+import com.otoki.powersales.platform.auth.sharing.service.GroupMembershipEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.PermissionSetEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.ProfileFlagsEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.RecordTypePermissionEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.UserRoleHierarchyTraversal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.repository.UserRepository

@@ -2,7 +2,7 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeePlacementCheckItem
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeePlacementCheckResponse
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule

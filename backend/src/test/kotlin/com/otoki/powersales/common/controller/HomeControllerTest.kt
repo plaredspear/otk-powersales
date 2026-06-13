@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.controller
 
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.dto.response.HomeResponse
 import com.otoki.powersales.common.service.HomeService
 import com.otoki.powersales.common.test.MobileControllerTestSupport

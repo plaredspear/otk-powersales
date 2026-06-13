@@ -1,7 +1,7 @@
 package com.otoki.powersales.promotion.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.MobileControllerTestSupport
 import com.otoki.powersales.promotion.dto.response.MobilePromotionDetailResponse
 import com.otoki.powersales.promotion.dto.response.MobilePromotionEmployeeItem

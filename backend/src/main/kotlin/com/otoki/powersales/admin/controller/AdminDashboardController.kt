@@ -4,7 +4,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.service.AdminDashboardService
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.schedule.service.AdminTeamScheduleService

@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.activity.claim.service
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.activity.claim.dto.response.ClaimDetailResponse
 import com.otoki.powersales.domain.activity.claim.dto.response.ClaimFormDataResponse
 import com.otoki.powersales.domain.activity.claim.dto.response.ClaimListItemResponse

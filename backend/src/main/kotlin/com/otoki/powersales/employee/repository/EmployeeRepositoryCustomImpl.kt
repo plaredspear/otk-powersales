@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.repository
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.otoki.powersales.employee.entity.Employee

@@ -1,9 +1,10 @@
 package com.otoki.powersales.user.service
 
-import com.otoki.powersales.auth.entity.Profile
+import com.otoki.powersales.platform.auth.entity.Profile
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -14,7 +15,7 @@ import org.junit.jupiter.api.Test
 class EmployeeProfileResolverTest {
 
     private val organizationRepository: OrganizationRepository = mockk()
-    private val profileRepository: com.otoki.powersales.auth.repository.ProfileRepository = mockk()
+    private val profileRepository: ProfileRepository = mockk()
 
     private val resolver = EmployeeProfileResolver(
         organizationRepository,

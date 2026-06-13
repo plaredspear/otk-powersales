@@ -1,7 +1,7 @@
 package com.otoki.powersales.common.repository
 
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

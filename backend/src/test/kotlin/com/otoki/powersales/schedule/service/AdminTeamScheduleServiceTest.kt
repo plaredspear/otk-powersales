@@ -4,7 +4,7 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory2
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.exception.*
@@ -17,6 +17,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -78,7 +79,7 @@ class AdminTeamScheduleServiceTest {
 
     // 인증된 현재 사용자 = WebUserPrincipal. fixture 는 분기에 영향 안 주는 케이스용 더미.
     // 권한/cost center 분기 케이스는 각 test 가 createEmployee(...) → principalOf(..) 로 변환해 직접 전달.
-    private val currentEmployeeFixture: com.otoki.powersales.auth.web.WebUserPrincipal
+    private val currentEmployeeFixture: WebUserPrincipal
         get() = principalOf(createEmployee(id = 10L, role = null))
 
     /** Employee fixture 를 service 시그니처가 요구하는 WebUserPrincipal 로 변환. */
@@ -86,8 +87,8 @@ class AdminTeamScheduleServiceTest {
         employee: Employee,
         profileName: String = "9. Staff",
         isSalesSupport: Boolean = false,
-    ): com.otoki.powersales.auth.web.WebUserPrincipal =
-        com.otoki.powersales.auth.web.WebUserPrincipal(
+    ): WebUserPrincipal =
+        WebUserPrincipal(
             userId = employee.id * 10,
             usernameValue = employee.employeeCode!!,
             employeeCode = employee.employeeCode,

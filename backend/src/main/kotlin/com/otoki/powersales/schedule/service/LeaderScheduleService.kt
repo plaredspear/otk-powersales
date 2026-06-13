@@ -6,8 +6,8 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory2
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmploymentStatus
 import com.otoki.powersales.employee.repository.EmployeeRepository

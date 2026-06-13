@@ -16,9 +16,9 @@ import com.otoki.powersales.admin.permission.dto.PermissionSetSummary
 import com.otoki.powersales.admin.permission.dto.ProfileDetail
 import com.otoki.powersales.admin.permission.dto.ProfileFlagsSummary
 import com.otoki.powersales.admin.permission.dto.ProfileSummary
-import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.platform.auth.permission.EntitySfNameRegistry
 import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -44,7 +44,7 @@ class AdminPermissionControllerTest : AdminControllerTestSupport() {
     private lateinit var profileFlagsMutationService: AdminProfileFlagsMutationService
 
     @MockkBean
-    private lateinit var entitySfNameRegistry: com.otoki.powersales.auth.permission.EntitySfNameRegistry
+    private lateinit var entitySfNameRegistry: EntitySfNameRegistry
 
     @BeforeEach
     fun setUpPrincipal() {

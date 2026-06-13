@@ -10,9 +10,9 @@ import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.enums.TypeOfWork3
 import com.otoki.powersales.schedule.enums.TypeOfWork5
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest

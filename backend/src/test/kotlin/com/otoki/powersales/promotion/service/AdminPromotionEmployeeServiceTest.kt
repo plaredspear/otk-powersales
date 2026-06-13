@@ -4,7 +4,7 @@ import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.common.enums.WorkingCategory3
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeItem
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.domain.foundation.product.entity.Product
@@ -17,6 +17,8 @@ import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -38,11 +40,11 @@ class AdminPromotionEmployeeServiceTest {
     private val promotionRepository: PromotionRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
-    private val policyEvaluator: com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator =
+    private val policyEvaluator: SharingRulePolicyEvaluator =
         mockk(relaxed = true)
     private val teamMemberScheduleCascadeHelper: com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper =
         mockk(relaxUnitFun = true)
-    private val principal: com.otoki.powersales.auth.web.WebUserPrincipal = mockk(relaxed = true)
+    private val principal: WebUserPrincipal = mockk(relaxed = true)
 
     private val service: AdminPromotionEmployeeService = AdminPromotionEmployeeService(
         promotionEmployeeRepository = promotionEmployeeRepository,

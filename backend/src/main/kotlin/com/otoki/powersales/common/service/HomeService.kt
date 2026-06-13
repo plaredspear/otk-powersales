@@ -3,8 +3,8 @@ package com.otoki.powersales.common.service
 import com.otoki.powersales.common.dto.response.HomeResponse
 import com.otoki.powersales.common.enums.WorkingCategory1
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository

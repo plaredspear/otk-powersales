@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.request.ScheduleBatchConfirmRequest
@@ -21,7 +21,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.schedule.service.AdminScheduleService
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Sort

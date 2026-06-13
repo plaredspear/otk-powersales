@@ -17,9 +17,9 @@ import com.otoki.powersales.promotion.exception.*
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper

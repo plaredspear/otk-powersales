@@ -11,17 +11,17 @@ import com.otoki.powersales.admin.permission.exception.PermissionSetNameInvalidE
 import com.otoki.powersales.admin.permission.exception.PermissionSetNotFoundException
 import com.otoki.powersales.admin.permission.exception.SfOriginDeleteBlockedException
 import com.otoki.powersales.admin.security.AdminDataScopeCache
-import com.otoki.powersales.auth.permission.AdminPermissionCache
-import com.otoki.powersales.auth.permission.EntitySfNameRegistry
-import com.otoki.powersales.auth.sharing.entity.PermissionSet
-import com.otoki.powersales.auth.sharing.entity.PermissionSetAssignment
-import com.otoki.powersales.auth.sharing.entity.PermissionSetChangeLog
-import com.otoki.powersales.auth.sharing.entity.PermissionSetChangeLogEventType
-import com.otoki.powersales.auth.sharing.entity.PermissionSetFlags
-import com.otoki.powersales.auth.sharing.repository.PermissionSetAssignmentRepository
-import com.otoki.powersales.auth.sharing.repository.PermissionSetChangeLogRepository
-import com.otoki.powersales.auth.sharing.repository.PermissionSetFlagsRepository
-import com.otoki.powersales.auth.sharing.repository.PermissionSetRepository
+import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
+import com.otoki.powersales.platform.auth.permission.EntitySfNameRegistry
+import com.otoki.powersales.platform.auth.sharing.entity.PermissionSet
+import com.otoki.powersales.platform.auth.sharing.entity.PermissionSetAssignment
+import com.otoki.powersales.platform.auth.sharing.entity.PermissionSetChangeLog
+import com.otoki.powersales.platform.auth.sharing.entity.PermissionSetChangeLogEventType
+import com.otoki.powersales.platform.auth.sharing.entity.PermissionSetFlags
+import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetAssignmentRepository
+import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetChangeLogRepository
+import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetFlagsRepository
+import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetRepository
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
 import io.mockk.just
@@ -364,10 +364,10 @@ class AdminPermissionSetMutationServiceTest {
     @Test
     @DisplayName("listChangeLog - changedAt desc 정렬 + changedByName 채움")
     fun listChangeLogReturnsResponses() {
-        val log1 = com.otoki.powersales.auth.sharing.entity.PermissionSetChangeLog(
+        val log1 = PermissionSetChangeLog(
             id = 12,
             permissionSetId = 90,
-            eventType = com.otoki.powersales.auth.sharing.entity.PermissionSetChangeLogEventType.UPDATE_FLAGS,
+            eventType = PermissionSetChangeLogEventType.UPDATE_FLAGS,
             beforeSnapshot = """{"viewAllData":false}""",
             afterSnapshot = """{"viewAllData":true}""",
             changedById = 100,

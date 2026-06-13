@@ -1,13 +1,12 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.admin.security.AdminDataScopeCache
-import com.otoki.powersales.auth.permission.AdminPermissionCache
+import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
 import com.otoki.powersales.common.entity.SystemCodeMaster
 import com.otoki.powersales.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.external.sap.inbound.service.AppointmentUserProfileUpdater
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.schedule.entity.Appointment

@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.support.notice.service
 
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.entity.UploadFile
 import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.service.FileStorageService

@@ -4,10 +4,10 @@ import com.otoki.powersales.admin.permission.dto.AssignmentBatchRequest
 import com.otoki.powersales.admin.permission.dto.AssignmentBatchResult
 import com.otoki.powersales.admin.permission.dto.AssignmentCreateRequest
 import com.otoki.powersales.admin.permission.dto.AssignmentResponse
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
-import com.otoki.powersales.auth.permission.SfSystemPermission
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.SfSystemPermission
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

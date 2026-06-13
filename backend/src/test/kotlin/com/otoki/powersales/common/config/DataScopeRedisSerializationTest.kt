@@ -1,9 +1,9 @@
 package com.otoki.powersales.common.config
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.sharing.dto.PermissionSetSnapshot
-import com.otoki.powersales.auth.sharing.dto.ProfileFlagsSnapshot
-import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
+import com.otoki.powersales.platform.auth.sharing.dto.PermissionSetSnapshot
+import com.otoki.powersales.platform.auth.sharing.dto.ProfileFlagsSnapshot
+import com.otoki.powersales.platform.auth.sharing.dto.SharingRuleSnapshot
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
 import org.assertj.core.api.Assertions.assertThat
@@ -125,7 +125,7 @@ class DataScopeRedisSerializationTest {
     /**
      * `admin-permission:v1` 캐시가 저장하는 평탄화 권한 key set (`Set<String>`) round-trip 검증.
      *
-     * [com.otoki.powersales.auth.permission.SfPermissionResolver.resolveForUser] 가
+     * [com.otoki.powersales.platform.auth.permission.SfPermissionResolver.resolveForUser] 가
      * `mutableSetOf<String>()` (런타임 `LinkedHashSet`) 을 반환하므로 그 실 타입으로 재현.
      * 여사원 일정관리 화면이 요구하는 두 권한 key 가 round-trip 후에도 보존되는지 확인.
      */

@@ -12,7 +12,7 @@ import java.time.LocalDate
  *
  * admin 권한 검색 — 7종 필터 + 페이징 + soft-delete 제외 + created_at DESC.
  *
- * `policyPredicate` 는 [com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator]
+ * `policyPredicate` 는 [com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator]
  * 가 산출한 SF 가시 범위 Predicate (owner / role hierarchy 합성 — `DKRetail__Proposal__c` 대상
  * sharing rule 은 SF 운영 0건). 검색 필터와 AND 합성.
  */

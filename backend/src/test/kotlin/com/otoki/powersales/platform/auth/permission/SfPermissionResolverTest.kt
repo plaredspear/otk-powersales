@@ -1,0 +1,257 @@
+package com.otoki.powersales.platform.auth.permission
+
+import com.otoki.powersales.platform.auth.entity.Profile
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
+import com.otoki.powersales.platform.auth.sharing.entity.PermissionSetAssignment
+import com.otoki.powersales.platform.auth.sharing.entity.PermissionSetFlags
+import com.otoki.powersales.platform.auth.sharing.entity.ProfileFlags
+import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetAssignmentRepository
+import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetFlagsRepository
+import com.otoki.powersales.platform.auth.permission.EntitySfNameRegistry
+import com.otoki.powersales.platform.auth.sharing.repository.ProfileFlagsRepository
+import com.otoki.powersales.platform.auth.permission.SfPermissionResolver
+import com.otoki.powersales.user.entity.User
+import io.mockk.every
+import io.mockk.mockk
+import java.util.Optional
+import org.assertj.core.api.Assertions.assertThat
+import io.mockk.verify
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+import tools.jackson.databind.json.JsonMapper
+
+@DisplayName("SfPermissionResolver")
+class SfPermissionResolverTest {
+
+    private val profileFlagsRepository: ProfileFlagsRepository = mockk()
+    private val assignmentRepository: PermissionSetAssignmentRepository = mockk()
+    private val permissionSetFlagsRepository: PermissionSetFlagsRepository = mockk()
+    private val profileRepository: ProfileRepository = mockk()
+    private val entitySfNameRegistry: EntitySfNameRegistry = mockk()
+    private val objectMapper = JsonMapper.builder().build()
+
+    private val resolver = SfPermissionResolver(
+        profileFlagsRepository = profileFlagsRepository,
+        permissionSetAssignmentRepository = assignmentRepository,
+        permissionSetFlagsRepository = permissionSetFlagsRepository,
+        profileRepository = profileRepository,
+        entitySfNameRegistry = entitySfNameRegistry,
+        objectMapper = objectMapper,
+    )
+
+    @Test
+    @DisplayName("Profile 의 object_permissions 평탄화 — SF 정합 직책 자동권한")
+    fun profileObjectPermissionsParsed() {
+        val user = userWithProfile(profileId = 1L)
+        val profileFlags = ProfileFlags(
+            profileId = 1L,
+            objectPermissions = """{"MonthlySalesHistory__c": {"allowRead": true}}""",
+        )
+        every { profileFlagsRepository.findByProfileId(1L) } returns profileFlags
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+        every { entitySfNameRegistry.toEntityTableName("MonthlySalesHistory__c") } returns "monthly_sales_history"
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("monthly_sales_history:R")
+    }
+
+    @Test
+    @DisplayName("Profile 의 custom_permissions 평탄화")
+    fun profileCustomPermissionsParsed() {
+        val user = userWithProfile(profileId = 1L)
+        val profileFlags = ProfileFlags(
+            profileId = 1L,
+            customPermissions = """{"dashboard": {"allowRead": true}}""",
+        )
+        every { profileFlagsRepository.findByProfileId(1L) } returns profileFlags
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("dashboard:R")
+    }
+
+    @Test
+    @DisplayName("custom_permissions JSON — 가상 자원 권한 키 산출 (spec #808)")
+    fun customPermissionsParsed() {
+        val user = userWithProfile(profileId = null)
+        every { profileFlagsRepository.findByProfileId(any()) } returns null
+
+        val flags = permissionSetFlagsOf(
+            id = 100,
+            customPermissions = """{"dashboard": {"allowRead": true, "allowEdit": false}}""",
+        )
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns listOf(
+            assignmentOf(permissionSetFlagsId = 100),
+        )
+        every { permissionSetFlagsRepository.findAllById(listOf(100L)) } returns listOf(flags)
+        every { entitySfNameRegistry.allResources() } returns emptySet()
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("dashboard:R")
+        assertThat(result).doesNotContain("dashboard:E")
+    }
+
+    @Test
+    @DisplayName("MODIFY_ALL_DATA 비트 — 모든 자원 (entity + custom) 으로 펼침 (spec #808)")
+    fun modifyAllDataExpandsAcrossAllResources() {
+        val user = userWithProfile(profileId = 1L)
+        val profileFlags = profileFlagsOf(profileId = 1L, modifyAllData = true)
+        every { profileFlagsRepository.findByProfileId(1L) } returns profileFlags
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+        every { entitySfNameRegistry.allResources() } returns setOf("employee", "education_post", "dashboard")
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("SYSTEM:MODIFY_ALL_DATA")
+        assertThat(result).contains("employee:R", "employee:C", "employee:E", "employee:D")
+        assertThat(result).contains("education_post:R", "education_post:C", "education_post:E", "education_post:D")
+        assertThat(result).contains("dashboard:R", "dashboard:C", "dashboard:E", "dashboard:D")
+    }
+
+    @Test
+    @DisplayName("VIEW_ALL_DATA 비트 — 모든 자원의 READ 키만 펼침")
+    fun viewAllDataExpandsReadOnly() {
+        val user = userWithProfile(profileId = 1L)
+        val profileFlags = profileFlagsOf(profileId = 1L, viewAllData = true)
+        every { profileFlagsRepository.findByProfileId(1L) } returns profileFlags
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+        every { entitySfNameRegistry.allResources() } returns setOf("employee", "dashboard")
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("SYSTEM:VIEW_ALL_DATA")
+        assertThat(result).contains("employee:R", "dashboard:R")
+        assertThat(result).doesNotContain("employee:E", "dashboard:D")
+    }
+
+    @Test
+    @DisplayName("시스템 관리자 — profile_flags 행이 없어도 전체 자원 CRUD 자동 펼침")
+    fun systemAdminExpandsAllResourcesWithoutProfileFlags() {
+        val user = userWithProfile(profileId = 31L, profileName = "시스템 관리자")
+        // 운영에서 발생한 상황 재현 — SF 표준 Profile 이라 profile_flags 행 부재
+        every { profileFlagsRepository.findByProfileId(31L) } returns null
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+        every { entitySfNameRegistry.allResources() } returns setOf("employee", "dashboard", "account")
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("SYSTEM:VIEW_ALL_DATA", "SYSTEM:MODIFY_ALL_DATA")
+        assertThat(result).contains("employee:R", "employee:C", "employee:E", "employee:D")
+        assertThat(result).contains("dashboard:R", "dashboard:C", "dashboard:E", "dashboard:D")
+        assertThat(result).contains("account:R", "account:C", "account:E", "account:D")
+    }
+
+    @Test
+    @DisplayName("비 시스템 관리자 — profile_flags 없으면 권한 펼침 없음")
+    fun nonSystemAdminWithoutFlagsHasNoExpansion() {
+        val user = userWithProfile(profileId = 4L, profileName = "4.지점장")
+        every { profileFlagsRepository.findByProfileId(4L) } returns null
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns emptyList()
+        every { entitySfNameRegistry.allResources() } returns setOf("employee", "dashboard")
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).doesNotContain("SYSTEM:VIEW_ALL_DATA", "SYSTEM:MODIFY_ALL_DATA")
+        assertThat(result).doesNotContain("employee:R", "dashboard:R")
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    @DisplayName("custom_permissions JSON 깨짐 — 무시 + 다른 권한 산출 정상")
+    fun corruptedCustomPermissionsJsonIgnored() {
+        val user = userWithProfile(profileId = null)
+        every { profileFlagsRepository.findByProfileId(any()) } returns null
+
+        val flags = permissionSetFlagsOf(
+            id = 200,
+            customPermissions = "not-a-valid-json{{",
+            objectPermissions = """{"Account": {"allowRead": true}}""",
+        )
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns listOf(
+            assignmentOf(permissionSetFlagsId = 200),
+        )
+        every { permissionSetFlagsRepository.findAllById(listOf(200L)) } returns listOf(flags)
+        every { entitySfNameRegistry.toEntityTableName("Account") } returns "account"
+        every { entitySfNameRegistry.allResources() } returns emptySet()
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("account:R")
+    }
+
+    @Test
+    @DisplayName("PermissionSetFlags 조회는 assignment 일람 만큼 N+1 이 아니라 findAllById 1회 호출")
+    fun permissionSetFlagsLoadedInSingleBatch() {
+        val user = userWithProfile(profileId = null)
+        every { profileFlagsRepository.findByProfileId(any()) } returns null
+
+        val flags100 = permissionSetFlagsOf(id = 100, customPermissions = """{"a": {"allowRead": true}}""")
+        val flags200 = permissionSetFlagsOf(id = 200, customPermissions = """{"b": {"allowRead": true}}""")
+        val flags300 = permissionSetFlagsOf(id = 300, customPermissions = """{"c": {"allowRead": true}}""")
+        every { assignmentRepository.findAllByAssigneeUserIdAndIsActiveTrue(99L) } returns listOf(
+            assignmentOf(permissionSetFlagsId = 100),
+            assignmentOf(permissionSetFlagsId = 200),
+            assignmentOf(permissionSetFlagsId = 300),
+        )
+        every { permissionSetFlagsRepository.findAllById(listOf(100L, 200L, 300L)) } returns listOf(flags100, flags200, flags300)
+        every { entitySfNameRegistry.allResources() } returns emptySet()
+
+        val result = resolver.resolveForUser(user)
+
+        assertThat(result).contains("a:R", "b:R", "c:R")
+        verify(exactly = 1) { permissionSetFlagsRepository.findAllById(listOf(100L, 200L, 300L)) }
+        verify(exactly = 0) { permissionSetFlagsRepository.findById(any()) }
+    }
+
+    private fun userWithProfile(profileId: Long?, profileName: String = "5.영업사원"): User {
+        val mock = mockk<User>()
+        every { mock.id } returns 99L
+        every { mock.profileId } returns profileId
+        if (profileId != null) {
+            val profile = Profile(id = profileId, name = profileName)
+            every { profileRepository.findById(profileId) } returns Optional.of(profile)
+        }
+        return mock
+    }
+
+    private fun profileFlagsOf(
+        profileId: Long,
+        viewAllData: Boolean = false,
+        modifyAllData: Boolean = false,
+    ): ProfileFlags {
+        return ProfileFlags(
+            profileId = profileId,
+            permissionsViewAllData = viewAllData,
+            permissionsModifyAllData = modifyAllData,
+        )
+    }
+
+    private fun permissionSetFlagsOf(
+        id: Long,
+        objectPermissions: String? = null,
+        customPermissions: String? = null,
+    ): PermissionSetFlags {
+        return PermissionSetFlags(
+            id = id,
+            permissionSetSfid = "0PS3z00000A${id}",
+            permissionSetName = "PS_$id",
+            objectPermissions = objectPermissions,
+            customPermissions = customPermissions,
+        )
+    }
+
+    private fun assignmentOf(permissionSetFlagsId: Long): PermissionSetAssignment {
+        return PermissionSetAssignment(
+            id = 1L,
+            sfid = null,
+            assigneeUserSfid = "005000000000001",
+            assigneeUserId = 99L,
+            permissionSetSfid = "0PS3z00000A${permissionSetFlagsId}",
+            permissionSetFlagsId = permissionSetFlagsId,
+            isActive = true,
+        )
+    }
+}

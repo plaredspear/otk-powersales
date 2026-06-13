@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.foundation.product.entity
 
-import com.otoki.powersales.auth.sharing.entity.RecordType
+import com.otoki.powersales.platform.auth.sharing.entity.RecordType
 import com.otoki.powersales.common.entity.BaseEntity
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject

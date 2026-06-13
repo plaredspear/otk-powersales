@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.activity.claim.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
@@ -19,7 +19,6 @@ import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.domain.activity.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.domain.activity.claim.entity.sfpicklist.RequestType
-import com.otoki.powersales.domain.activity.claim.service.ClaimQueryService
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.entity.Product

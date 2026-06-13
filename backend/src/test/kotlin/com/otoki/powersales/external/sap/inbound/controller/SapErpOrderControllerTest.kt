@@ -3,8 +3,8 @@ package com.otoki.powersales.external.sap.inbound.controller
 import com.otoki.powersales.common.security.GpsConsentFilter
 import com.otoki.powersales.common.security.JwtAuthenticationFilter
 import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.auth.sharing.service.FlsService
-import com.otoki.powersales.auth.sharing.service.PermissionSetEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.FlsService
+import com.otoki.powersales.platform.auth.sharing.service.PermissionSetEvaluator
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderDetail
@@ -28,8 +28,6 @@ import org.springframework.security.core.context.SecurityContextHolder
 import io.mockk.every
 import io.mockk.verify
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.external.sap.inbound.controller.SapErpOrderController
-import com.otoki.powersales.external.sap.inbound.controller.SapInboundExceptionHandler
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath

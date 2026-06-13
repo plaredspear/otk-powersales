@@ -4,7 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.test.AdminControllerTestSupport
 import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest

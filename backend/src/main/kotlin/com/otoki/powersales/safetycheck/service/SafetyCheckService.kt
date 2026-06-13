@@ -1,6 +1,6 @@
 package com.otoki.powersales.safetycheck.service
 
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.safetycheck.dto.request.SafetyCheckSubmitRequest
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckSubmitResponse

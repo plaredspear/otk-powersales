@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.dto
 
-import com.otoki.powersales.auth.sharing.dto.PermissionSetSnapshot
-import com.otoki.powersales.auth.sharing.dto.ProfileFlagsSnapshot
-import com.otoki.powersales.auth.sharing.dto.SharingRuleSnapshot
+import com.otoki.powersales.platform.auth.sharing.dto.PermissionSetSnapshot
+import com.otoki.powersales.platform.auth.sharing.dto.ProfileFlagsSnapshot
+import com.otoki.powersales.platform.auth.sharing.dto.SharingRuleSnapshot
 
 /**
  * 관리자 데이터 조회 범위.

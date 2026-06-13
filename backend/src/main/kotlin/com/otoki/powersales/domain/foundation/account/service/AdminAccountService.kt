@@ -7,7 +7,7 @@ import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.querydsl.core.BooleanBuilder
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort

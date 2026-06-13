@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.auth.permission.RequiresSfPermission
-import com.otoki.powersales.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
+import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleMassDeleteRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleSearchRequest
@@ -10,7 +10,7 @@ import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.service.AdminTeamScheduleService
 import com.otoki.powersales.common.dto.response.BranchResponse
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

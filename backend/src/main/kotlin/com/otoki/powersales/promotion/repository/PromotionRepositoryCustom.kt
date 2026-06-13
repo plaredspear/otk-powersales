@@ -13,7 +13,7 @@ interface PromotionRepositoryCustom {
     /**
      * SF 가시 범위 정책 적용 admin 행사 목록.
      *
-     * `policyPredicate` 는 [com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator]
+     * `policyPredicate` 는 [com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator]
      * 가 산출한 `DKRetail__Promotion__c` 가시 범위 Predicate (OWD Private → owner / role hierarchy /
      * sharing rule / legacy branch OR 합성). 검색 필터와 AND 합성.
      *

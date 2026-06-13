@@ -1,6 +1,6 @@
 package com.otoki.powersales.safetycheck.service
 
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus

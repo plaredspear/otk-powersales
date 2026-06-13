@@ -1,6 +1,6 @@
 package com.otoki.powersales.productexpiration.service
 
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.productexpiration.dto.request.ProductExpirationBatchDeleteRequest

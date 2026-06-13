@@ -2,7 +2,7 @@ package com.otoki.powersales.employee.service
 
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.admin.exception.SapOriginEmployeeNotEditableException
-import com.otoki.powersales.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin

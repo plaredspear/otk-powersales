@@ -8,9 +8,8 @@ import com.otoki.powersales.domain.foundation.account.exception.AccountNamePrefi
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
 import com.otoki.powersales.domain.foundation.account.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.auth.entity.AppAuthority
-import com.otoki.powersales.auth.web.WebUserPrincipal
-import com.otoki.powersales.domain.foundation.account.service.AccountUpdateService
+import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.every

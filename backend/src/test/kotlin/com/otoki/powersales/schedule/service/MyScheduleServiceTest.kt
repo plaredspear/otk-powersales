@@ -2,7 +2,7 @@ package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.schedule.entity.*
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.enums.WorkingType
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository

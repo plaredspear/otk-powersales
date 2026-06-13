@@ -13,7 +13,7 @@ interface AccountRepositoryCustom {
      * 본 spec 의 단일화 정책 — `searchForAdmin` (legacy branchCodes 필터) + 1차
      * `findAllAccessibleByPolicy(Predicate): List` (sharing policy 만) 의 2 메서드를 본 메서드로 통합.
      *
-     * Service layer 가 [com.otoki.powersales.auth.sharing.service.SharingRulePolicyEvaluator.buildPredicate]
+     * Service layer 가 [com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator.buildPredicate]
      * 결과를 [policyPredicate] 로 전달. Repository 는 Service 의존을 갖지 않음.
      *
      * @param policyPredicate SharingRulePolicyEvaluator 가 합성한 sharing policy Predicate
