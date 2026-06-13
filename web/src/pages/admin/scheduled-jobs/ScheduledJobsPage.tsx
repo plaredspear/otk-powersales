@@ -4,13 +4,10 @@ import {
   App,
   Button,
   Card,
-  Col,
   DatePicker,
   Popconfirm,
-  Row,
   Select,
   Space,
-  Statistic,
   Tabs,
   Tag,
   Typography,
@@ -414,52 +411,20 @@ export default function ScheduledJobsPage() {
         backend `@Scheduled` 배치의 실행 상태를 조회합니다. 요약 카드는 최근 24시간 윈도우 기준입니다.
       </Text>
 
-      <Row gutter={16} style={{ marginTop: 16 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="총 실행"
-              value={summaryQuery.data?.totalCount ?? 0}
-              loading={summaryQuery.isLoading}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="SUCCESS"
-              value={summaryQuery.data?.successCount ?? 0}
-              valueStyle={{ color: '#52c41a' }}
-              loading={summaryQuery.isLoading}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="FAILURE"
-              value={summaryQuery.data?.failureCount ?? 0}
-              valueStyle={{ color: '#ff4d4f' }}
-              loading={summaryQuery.isLoading}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="RUNNING"
-              value={summaryQuery.data?.runningCount ?? 0}
-              valueStyle={{ color: '#1677ff' }}
-              loading={summaryQuery.isLoading}
-            />
-          </Card>
-        </Col>
-      </Row>
-      {summaryQuery.data && (
-        <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-          윈도우: {formatDateTime(summaryQuery.data.windowFrom)} ~ {formatDateTime(summaryQuery.data.windowTo)}
-        </Text>
-      )}
+      <Space size="small" wrap style={{ marginTop: 16 }}>
+        <Text type="secondary">총 실행 {summaryQuery.data?.totalCount ?? 0}</Text>
+        <Text type="secondary">·</Text>
+        <Text style={{ color: '#52c41a' }}>SUCCESS {summaryQuery.data?.successCount ?? 0}</Text>
+        <Text type="secondary">·</Text>
+        <Text style={{ color: '#ff4d4f' }}>FAILURE {summaryQuery.data?.failureCount ?? 0}</Text>
+        <Text type="secondary">·</Text>
+        <Text style={{ color: '#1677ff' }}>RUNNING {summaryQuery.data?.runningCount ?? 0}</Text>
+        {summaryQuery.data && (
+          <Text type="secondary">
+            (윈도우: {formatDateTime(summaryQuery.data.windowFrom)} ~ {formatDateTime(summaryQuery.data.windowTo)})
+          </Text>
+        )}
+      </Space>
 
       <Tabs
         tabPosition="left"
