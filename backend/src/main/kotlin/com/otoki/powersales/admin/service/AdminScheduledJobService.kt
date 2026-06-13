@@ -9,7 +9,7 @@ import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
 import com.otoki.powersales.platform.batch.ScheduledJobCatalog
 import com.otoki.powersales.common.jobrun.ScheduledJobRun
 import com.otoki.powersales.common.jobrun.ScheduledJobRunRepository
-import com.otoki.powersales.sales.materialize.OroraSalesMaterializeFacade
+import com.otoki.powersales.domain.sales.materialize.OroraSalesMaterializeFacade
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

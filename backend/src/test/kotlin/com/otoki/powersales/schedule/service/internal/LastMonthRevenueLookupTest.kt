@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.service.internal
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
-import com.otoki.powersales.sales.service.MonthlySalesRow
+import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
+import com.otoki.powersales.domain.sales.service.MonthlySalesRow
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

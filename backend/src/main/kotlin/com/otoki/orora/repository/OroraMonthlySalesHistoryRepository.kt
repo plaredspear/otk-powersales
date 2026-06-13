@@ -33,7 +33,7 @@ import org.springframework.data.repository.Repository
  * `@EnableJpaRepositories` scope 에 의해 ORORA EMF/TM 에 bind 됨. local/test 에서는 호출 site 가
  * 없어 connection acquire 자체가 발생하지 않으며, dev/prod VPN 장애 시에는 호출 site 만
  * `CannotCreateTransactionException` 으로 실패하고 메인 기능은 무영향. 호출 site 의 graceful
- * fallback 책임은 [com.otoki.powersales.sales.service.OroraMonthlySalesHistoryQueryGateway] 가 부담.
+ * fallback 책임은 [com.otoki.powersales.domain.sales.service.OroraMonthlySalesHistoryQueryGateway] 가 부담.
  */
 interface OroraMonthlySalesHistoryRepository : Repository<OroraMonthlySalesHistory, OroraMonthlySalesHistoryId> {
 

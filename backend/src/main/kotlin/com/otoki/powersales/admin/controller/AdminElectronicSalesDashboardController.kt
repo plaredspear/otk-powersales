@@ -6,11 +6,11 @@ import com.otoki.powersales.auth.permission.PermissionResource
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.sales.dto.request.ElectronicSalesDashboardListRequest
-import com.otoki.powersales.sales.dto.response.ElectronicSalesDashboardDetailResponse
-import com.otoki.powersales.sales.dto.response.ElectronicSalesDashboardListResponse
-import com.otoki.powersales.sales.service.ElectronicSalesAdminQueryService
-import com.otoki.powersales.sales.service.ElectronicSalesDashboardExcelExporter
+import com.otoki.powersales.domain.sales.dto.request.ElectronicSalesDashboardListRequest
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardDetailResponse
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListResponse
+import com.otoki.powersales.domain.sales.service.ElectronicSalesAdminQueryService
+import com.otoki.powersales.domain.sales.service.ElectronicSalesDashboardExcelExporter
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity

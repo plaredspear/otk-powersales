@@ -7,10 +7,10 @@ import com.otoki.powersales.platform.batch.OroraDailySalesMaterializeBatch
 import com.otoki.powersales.platform.batch.OroraMonthlySalesMaterializeBatch
 import com.otoki.powersales.common.dto.ApiResponse
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.sales.dto.request.OroraSalesMaterializeRequest
-import com.otoki.powersales.sales.materialize.OroraDailyMaterializeResult
-import com.otoki.powersales.sales.materialize.OroraMonthlyMaterializeResult
-import com.otoki.powersales.sales.materialize.OroraSalesMaterializeFacade
+import com.otoki.powersales.domain.sales.dto.request.OroraSalesMaterializeRequest
+import com.otoki.powersales.domain.sales.materialize.OroraDailyMaterializeResult
+import com.otoki.powersales.domain.sales.materialize.OroraMonthlyMaterializeResult
+import com.otoki.powersales.domain.sales.materialize.OroraSalesMaterializeFacade
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity

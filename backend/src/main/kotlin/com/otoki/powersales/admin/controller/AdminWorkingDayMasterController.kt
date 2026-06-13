@@ -4,8 +4,8 @@ import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.sales.dto.response.WorkingDayMasterListResponse
-import com.otoki.powersales.sales.service.AdminWorkingDayMasterService
+import com.otoki.powersales.domain.sales.dto.response.WorkingDayMasterListResponse
+import com.otoki.powersales.domain.sales.service.AdminWorkingDayMasterService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping

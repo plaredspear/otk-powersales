@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.batch
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.sales.materialize.OroraSalesMaterializeFacade
+import com.otoki.powersales.domain.sales.materialize.OroraSalesMaterializeFacade
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component

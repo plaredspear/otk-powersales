@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service.internal
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
+import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -16,7 +16,7 @@ import java.time.LocalDate
  * (= formula `ABCClosingSumAmount__c + ShipClosingSumAmount__c`) 동등. 신규 시스템은 SF 와 동일하게
  * RDS `MonthlySalesHistory` (`MonthlySalesHistory__c` 복제 적재) 의
  * `(abc1+abc2+abc3+abc4) + (ship1+ship2+ship3+ship4)` 합산
- * ([com.otoki.powersales.sales.service.MonthlySalesRow.closingAmountSum]) 으로 동등 산출.
+ * ([com.otoki.powersales.domain.sales.service.MonthlySalesRow.closingAmountSum]) 으로 동등 산출.
  *
  * SF batch / Trigger 의 fallback 정합: row 부재 시 `0` ([UpdateLastMonthRevenueBatch.cls:56-60],
  * [DisplayWorkScheduleMasterTriggerHandler.setLastMonthRevenue:288-292]).

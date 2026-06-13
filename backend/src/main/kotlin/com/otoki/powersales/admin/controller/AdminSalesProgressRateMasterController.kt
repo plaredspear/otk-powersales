@@ -5,9 +5,9 @@ import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.sales.dto.response.SalesProgressRateMasterDetailResponse
-import com.otoki.powersales.sales.dto.response.SalesProgressRateMasterListResponse
-import com.otoki.powersales.sales.service.AdminSalesProgressRateMasterService
+import com.otoki.powersales.domain.sales.dto.response.SalesProgressRateMasterDetailResponse
+import com.otoki.powersales.domain.sales.dto.response.SalesProgressRateMasterListResponse
+import com.otoki.powersales.domain.sales.service.AdminSalesProgressRateMasterService
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Size

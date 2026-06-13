@@ -4,11 +4,11 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.common.test.AdminControllerTestSupport
-import com.otoki.powersales.sales.dto.response.ElectronicSalesDashboardDetailResponse
-import com.otoki.powersales.sales.dto.response.ElectronicSalesDashboardListItem
-import com.otoki.powersales.sales.dto.response.ElectronicSalesDashboardListResponse
-import com.otoki.powersales.sales.service.ElectronicSalesAdminQueryService
-import com.otoki.powersales.sales.service.ElectronicSalesDashboardExcelExporter
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardDetailResponse
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListItem
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListResponse
+import com.otoki.powersales.domain.sales.service.ElectronicSalesAdminQueryService
+import com.otoki.powersales.domain.sales.service.ElectronicSalesDashboardExcelExporter
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.BeforeEach

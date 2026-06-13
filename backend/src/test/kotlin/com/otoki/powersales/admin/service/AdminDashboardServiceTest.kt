@@ -7,7 +7,7 @@ import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.sales.service.MonthlySalesAdminQueryService
+import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat

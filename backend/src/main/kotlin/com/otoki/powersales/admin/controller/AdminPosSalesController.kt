@@ -4,9 +4,9 @@ import com.otoki.powersales.auth.permission.PermissionResource
 import com.otoki.powersales.auth.permission.RequiresSfPermission
 import com.otoki.powersales.auth.permission.SfPermissionOperation
 import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.sales.dto.request.PosSalesRequest
-import com.otoki.powersales.sales.dto.response.PosSalesResponse
-import com.otoki.powersales.sales.service.PosSalesService
+import com.otoki.powersales.domain.sales.dto.request.PosSalesRequest
+import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
+import com.otoki.powersales.domain.sales.service.PosSalesService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

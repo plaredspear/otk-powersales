@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
-import com.otoki.powersales.sales.service.MonthlySalesHistoryQueryGateway
-import com.otoki.powersales.sales.service.MonthlySalesRow
+import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
+import com.otoki.powersales.domain.sales.service.MonthlySalesRow
 import com.querydsl.jpa.impl.JPAQueryFactory
 import io.mockk.every
 import io.mockk.mockk

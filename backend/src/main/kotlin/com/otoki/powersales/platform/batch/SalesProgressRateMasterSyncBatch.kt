@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.batch
 
 import com.otoki.powersales.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.sales.sfsync.SalesProgressRateMasterSyncService
+import com.otoki.powersales.domain.sales.sfsync.SalesProgressRateMasterSyncService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
