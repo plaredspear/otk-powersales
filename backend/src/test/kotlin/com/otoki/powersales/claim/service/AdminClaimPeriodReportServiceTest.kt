@@ -9,7 +9,7 @@ import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.claim.repository.AdminClaimRepository
 import com.otoki.powersales.common.util.TimeZones
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

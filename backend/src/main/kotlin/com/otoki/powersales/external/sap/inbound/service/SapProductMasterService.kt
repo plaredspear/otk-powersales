@@ -4,8 +4,8 @@ import com.otoki.powersales.external.sap.auth.audit.SapInboundAccepted
 import com.otoki.powersales.external.sap.inbound.dto.product.FailureItem
 import com.otoki.powersales.external.sap.inbound.dto.product.ProductMasterDetail
 import com.otoki.powersales.external.sap.inbound.dto.product.ProductMasterRequestItem
-import com.otoki.powersales.product.service.ProductUpsertService
-import com.otoki.powersales.product.service.dto.ProductUpsertCommand
+import com.otoki.powersales.domain.foundation.product.service.ProductUpsertService
+import com.otoki.powersales.domain.foundation.product.service.dto.ProductUpsertCommand
 import org.springframework.stereotype.Service
 
 /**

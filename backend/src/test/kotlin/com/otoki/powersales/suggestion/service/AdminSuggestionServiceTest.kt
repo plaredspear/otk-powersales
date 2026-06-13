@@ -11,7 +11,7 @@ import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.service.OrgCostCenterMatchService
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionCreateRequest
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionFilter
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionUpdateRequest

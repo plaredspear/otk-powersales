@@ -11,8 +11,8 @@ import com.otoki.powersales.order.dto.request.OrderDraftLineRequest
 import com.otoki.powersales.order.dto.request.OrderDraftRequest
 import com.otoki.powersales.order.exception.OrderDraftAccountForbiddenException
 import com.otoki.powersales.order.exception.OrderDraftInvalidRequestException
-import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

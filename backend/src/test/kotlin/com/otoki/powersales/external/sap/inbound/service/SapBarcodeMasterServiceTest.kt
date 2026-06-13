@@ -1,11 +1,10 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.product.service.ProductBarcodeUpsertService
-import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertCommand
-import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertFailedRow
-import com.otoki.powersales.product.service.dto.ProductBarcodeUpsertResult
+import com.otoki.powersales.domain.foundation.product.service.ProductBarcodeUpsertService
+import com.otoki.powersales.domain.foundation.product.service.dto.ProductBarcodeUpsertCommand
+import com.otoki.powersales.domain.foundation.product.service.dto.ProductBarcodeUpsertFailedRow
+import com.otoki.powersales.domain.foundation.product.service.dto.ProductBarcodeUpsertResult
 import com.otoki.powersales.external.sap.inbound.dto.product.BarcodeMasterRequestItem
-import com.otoki.powersales.external.sap.inbound.service.SapBarcodeMasterService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

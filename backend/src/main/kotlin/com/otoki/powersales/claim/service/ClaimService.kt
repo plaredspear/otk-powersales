@@ -34,7 +34,7 @@ import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileKbnTypes
 import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.promotion.exception.AccountNotFoundException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service

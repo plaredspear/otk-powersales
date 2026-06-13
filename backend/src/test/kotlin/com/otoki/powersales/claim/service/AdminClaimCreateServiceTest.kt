@@ -18,8 +18,8 @@ import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.promotion.exception.AccountNotFoundException
 import com.otoki.powersales.external.sf.outbound.SfApiResponse
 import com.otoki.powersales.external.sf.outbound.SfOutboundClient

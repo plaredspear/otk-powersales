@@ -7,7 +7,7 @@ import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeIt
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.dto.request.BatchUpdatePromotionEmployeeRequest
 import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
-import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.foundation.account.entity.Account

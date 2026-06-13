@@ -21,7 +21,6 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import kotlin.collections.plusAssign
 
 /**
  * SAP 출근 정보 인바운드 어댑터. (Spec #562 + #553 / 어댑터-도메인 분리: #635 P2-B / audit AOP 통합: #639)

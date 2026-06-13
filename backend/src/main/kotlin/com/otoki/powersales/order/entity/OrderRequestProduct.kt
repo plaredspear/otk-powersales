@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import jakarta.persistence.EntityListeners
 
 /**
@@ -192,7 +193,7 @@ class OrderRequestProduct(
     // -- Spec #746 R-2 (DKRetail__ProductId__c FK 신설) --
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
-    var product: com.otoki.powersales.product.entity.Product? = null,
+    var product: Product? = null,
 ) : BaseEntity() {
 
     /**

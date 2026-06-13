@@ -5,7 +5,7 @@ import com.otoki.powersales.promotion.entity.QPromotion.Companion.promotion
 import com.otoki.powersales.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
 import com.otoki.powersales.promotion.enums.PromotionType
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
-import com.otoki.powersales.product.entity.QProduct.Companion.product
+import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.Expressions

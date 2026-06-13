@@ -1,6 +1,7 @@
 package com.otoki.powersales.order.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import com.otoki.powersales.external.sap.outbound.sender.SapOrderRequestDetailLine
@@ -446,7 +447,7 @@ class OrderRequestServiceTest {
             amount = BigDecimal.ZERO,
             piecesPerBox = piecesPerBox,
             orderRequest = orderRequest,
-            product = com.otoki.powersales.product.entity.Product(
+            product = Product(
                 id = 1L,
                 productCode = productCode,
                 name = productName,

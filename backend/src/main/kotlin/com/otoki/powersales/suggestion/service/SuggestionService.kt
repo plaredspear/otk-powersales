@@ -10,9 +10,9 @@ import com.otoki.powersales.common.storage.UploadFileParentTypes
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.service.OrgCostCenterMatchService
-import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.enums.StorageCondition
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.enums.StorageCondition
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.suggestion.dto.request.SuggestionCreateRequest
 import com.otoki.powersales.suggestion.dto.request.SuggestionUpdateRequest
 import com.otoki.powersales.suggestion.dto.response.SuggestionAttachment

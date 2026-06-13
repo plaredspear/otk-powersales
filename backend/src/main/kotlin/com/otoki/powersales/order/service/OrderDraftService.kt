@@ -11,7 +11,7 @@ import com.otoki.powersales.order.dto.response.OrderDraftLineResponse
 import com.otoki.powersales.order.dto.response.OrderDraftSaveResponse
 import com.otoki.powersales.order.exception.OrderDraftAccountForbiddenException
 import com.otoki.powersales.order.exception.OrderDraftInvalidRequestException
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

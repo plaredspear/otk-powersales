@@ -16,7 +16,7 @@ import com.otoki.powersales.promotion.repository.PromotionProductRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository
 import com.otoki.powersales.auth.entity.AppAuthority
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.auth.web.WebUserPrincipal
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository

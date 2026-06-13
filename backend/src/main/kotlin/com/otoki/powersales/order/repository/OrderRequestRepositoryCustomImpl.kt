@@ -5,7 +5,7 @@ import com.otoki.powersales.order.entity.OrderRequest
 import com.otoki.powersales.order.enums.OrderRequestStatus
 import com.otoki.powersales.order.entity.QOrderRequest.Companion.orderRequest
 import com.otoki.powersales.order.entity.QOrderRequestProduct.Companion.orderRequestProduct
-import com.otoki.powersales.product.entity.QProduct.Companion.product
+import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Order
 import com.querydsl.core.types.OrderSpecifier

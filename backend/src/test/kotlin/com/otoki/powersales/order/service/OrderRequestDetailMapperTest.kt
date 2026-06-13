@@ -1,6 +1,7 @@
 package com.otoki.powersales.order.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.order.enums.DeliveryStatus
 import com.otoki.powersales.order.entity.OrderRequest
@@ -337,7 +338,7 @@ class OrderRequestDetailMapperTest {
             employee = employee,
             account = account,
         )
-        val productEntity = com.otoki.powersales.product.entity.Product(
+        val productEntity = Product(
             id = 1L,
             productCode = productCode,
             name = productName,

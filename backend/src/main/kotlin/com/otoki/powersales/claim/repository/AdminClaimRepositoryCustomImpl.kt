@@ -6,7 +6,7 @@ import com.otoki.powersales.claim.enums.ClaimStatus
 import com.otoki.powersales.claim.enums.ClaimType1
 import com.otoki.powersales.claim.entity.QClaim.Companion.claim
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
-import com.otoki.powersales.product.entity.QProduct.Companion.product
+import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory

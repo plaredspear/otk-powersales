@@ -16,7 +16,7 @@ import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.inspection.repository.SiteActivityDraftRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

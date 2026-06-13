@@ -14,7 +14,7 @@ import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.enums.InspectionFieldType
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import java.math.BigDecimal
 import java.time.LocalDate
 import org.springframework.stereotype.Service

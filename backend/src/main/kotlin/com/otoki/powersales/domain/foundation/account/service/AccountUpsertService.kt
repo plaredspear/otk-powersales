@@ -12,7 +12,6 @@ import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import kotlin.collections.plusAssign
 
 /**
  * 거래처 UPSERT 도메인 서비스.

@@ -7,7 +7,7 @@ import com.otoki.powersales.inspection.entity.QInspectionTheme.Companion.inspect
 import com.otoki.powersales.inspection.entity.QSiteActivity.Companion.siteActivity
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.enums.InspectionCategory
-import com.otoki.powersales.product.entity.QProduct.Companion.product
+import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate

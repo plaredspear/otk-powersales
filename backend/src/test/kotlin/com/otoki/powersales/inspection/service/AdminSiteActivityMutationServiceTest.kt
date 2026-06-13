@@ -12,8 +12,8 @@ import com.otoki.powersales.inspection.entity.InspectionTheme
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository
-import com.otoki.powersales.product.entity.Product
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

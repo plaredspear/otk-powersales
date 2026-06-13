@@ -11,6 +11,7 @@ import com.otoki.powersales.claim.enums.ClaimType2
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import jakarta.persistence.Column
 import jakarta.persistence.Convert
 import jakarta.persistence.JoinColumn
@@ -238,7 +239,7 @@ class ClaimSFAnnotationTest {
                 "ownerGroup" to ("owner_group_id" to com.otoki.powersales.employee.entity.Group::class.java),
                 "createdBy" to ("created_by_id" to com.otoki.powersales.user.entity.User::class.java),
                 "lastModifiedBy" to ("last_modified_by_id" to com.otoki.powersales.user.entity.User::class.java),
-                "product" to ("product_id" to com.otoki.powersales.product.entity.Product::class.java)
+                "product" to ("product_id" to Product::class.java)
             ).forEach { (fieldName, expected) ->
                 val (expectedColumn, expectedType) = expected
                 val field = Claim::class.java.getDeclaredField(fieldName)

@@ -7,6 +7,7 @@ import com.otoki.powersales.common.service.FileStorageService
 import com.otoki.powersales.common.storage.StorageConstants
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.request.InspectionRegisterRequest
 import com.otoki.powersales.inspection.dto.response.InspectionDetailResponse
@@ -45,7 +46,7 @@ class SiteActivityService(
     private val inspectionThemeRepository: InspectionThemeRepository,
     private val accountRepository: AccountRepository,
     private val employeeRepository: EmployeeRepository,
-    private val productRepository: com.otoki.powersales.product.repository.ProductRepository,
+    private val productRepository: ProductRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val fileStorageService: FileStorageService,
     private val storageService: StorageService,

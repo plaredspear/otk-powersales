@@ -5,7 +5,7 @@ import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.entity.Group
-import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.promotion.entity.converter.PromotionTypeConverter
 import com.otoki.powersales.promotion.entity.converter.StandLocationConverter
 import com.otoki.powersales.promotion.enums.PromotionType

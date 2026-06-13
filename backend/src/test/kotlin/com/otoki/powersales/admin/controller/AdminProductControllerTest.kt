@@ -2,24 +2,24 @@ package com.otoki.powersales.admin.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.otoki.powersales.product.dto.response.ProductListResponse
-import com.otoki.powersales.product.dto.response.ProductListItem
-import com.otoki.powersales.product.dto.response.CategoryTree
-import com.otoki.powersales.product.dto.response.Category2Node
-import com.otoki.powersales.product.dto.response.ProductDetail
-import com.otoki.powersales.product.dto.response.InventorySearchResponse
-import com.otoki.powersales.product.dto.response.InventorySearchResultItem
-import com.otoki.powersales.product.dto.request.InventorySearchRequest
-import com.otoki.powersales.product.dto.request.ProductExportRequest
+import com.otoki.powersales.domain.foundation.product.dto.response.ProductListResponse
+import com.otoki.powersales.domain.foundation.product.dto.response.ProductListItem
+import com.otoki.powersales.domain.foundation.product.dto.response.CategoryTree
+import com.otoki.powersales.domain.foundation.product.dto.response.Category2Node
+import com.otoki.powersales.domain.foundation.product.dto.response.ProductDetail
+import com.otoki.powersales.domain.foundation.product.dto.response.InventorySearchResponse
+import com.otoki.powersales.domain.foundation.product.dto.response.InventorySearchResultItem
+import com.otoki.powersales.domain.foundation.product.dto.request.InventorySearchRequest
+import com.otoki.powersales.domain.foundation.product.dto.request.ProductExportRequest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import java.time.LocalDate
 import com.otoki.powersales.common.test.AdminControllerTestSupport
-import com.otoki.powersales.product.service.AdminProductExportService
-import com.otoki.powersales.product.service.AdminProductInventoryService
-import com.otoki.powersales.product.service.AdminProductService
+import com.otoki.powersales.domain.foundation.product.service.AdminProductExportService
+import com.otoki.powersales.domain.foundation.product.service.AdminProductInventoryService
+import com.otoki.powersales.domain.foundation.product.service.AdminProductService
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -30,6 +30,8 @@ import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
+import java.time.temporal.ChronoUnit
 
 @WebMvcTest(AdminProductController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -56,12 +58,12 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
                         category1 = "면류",
                         category2 = "라면",
                         category3 = "봉지면",
-                        standardUnitPrice = java.math.BigDecimal("850.00"),
+                        standardUnitPrice = BigDecimal("850.00"),
                         unit = "EA",
                         storageCondition = "실온",
                         productStatus = "판매중",
                         launchDate = "2020-01-15",
-                        superTax = java.math.BigDecimal("85"),
+                        superTax = BigDecimal("85"),
                         shelfLife = "12",
                         shelfLifeUnit = "월",
                         tasteGift = "1",
@@ -168,7 +170,7 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
                 categoryCode1 = null, categoryCode2 = null, categoryCode3 = null,
                 unit = "EA", orderingUnit = null,
                 conversionQuantity = null, boxReceivingQuantity = null,
-                standardUnitPrice = java.math.BigDecimal("5000"),
+                standardUnitPrice = BigDecimal("5000"),
                 superTax = null, launchDate = "2020-01-15",
                 storageCondition = "실온", productStatus = "-", productType = null,
                 shelfLife = "12", shelfLifeUnit = "월",
@@ -203,19 +205,19 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
             val request = InventorySearchRequest(
                 accountId = 1,
                 productCodes = listOf("P001", "P002"),
-                deliveryRequestDate = LocalDate.now().plus(1, java.time.temporal.ChronoUnit.DAYS)
+                deliveryRequestDate = LocalDate.now().plus(1, ChronoUnit.DAYS)
             )
             val response = InventorySearchResponse(
                 results = listOf(
                     InventorySearchResultItem(
                         productCode = "P001", productName = "꿀배청", unit = "EA",
                         conversionQuantity = 1, supplyLimitQuantity = 100,
-                        unitPrice = java.math.BigDecimal("5000"), message = null
+                        unitPrice = BigDecimal("5000"), message = null
                     ),
                     InventorySearchResultItem(
                         productCode = "P002", productName = "카레", unit = "EA",
                         conversionQuantity = 1, supplyLimitQuantity = 200,
-                        unitPrice = java.math.BigDecimal("3000"), message = null
+                        unitPrice = BigDecimal("3000"), message = null
                     )
                 )
             )

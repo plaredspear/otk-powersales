@@ -13,7 +13,7 @@ import com.otoki.powersales.common.repository.UploadFileRepository
 import com.otoki.powersales.common.storage.StorageConstants
 import com.otoki.powersales.common.storage.StorageService
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

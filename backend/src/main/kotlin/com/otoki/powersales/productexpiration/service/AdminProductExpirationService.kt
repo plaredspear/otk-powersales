@@ -14,7 +14,7 @@ import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.common.exception.ProductNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.productexpiration.entity.ProductExpiration
 import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
 import com.otoki.powersales.productexpiration.exception.ProductExpirationAccountNotFoundException

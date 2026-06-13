@@ -7,7 +7,6 @@ import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategor
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertResult
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import kotlin.collections.plusAssign
 
 /**
  * 거래처 카테고리 마스터 UPSERT 도메인 서비스.
