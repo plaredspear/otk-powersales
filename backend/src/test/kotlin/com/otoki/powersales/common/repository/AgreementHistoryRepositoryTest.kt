@@ -2,7 +2,7 @@ package com.otoki.powersales.common.repository
 
 import com.otoki.powersales.common.config.QueryDslConfig
 import com.otoki.powersales.common.entity.AgreementHistory
-import com.otoki.powersales.common.entity.AgreementWord
+import com.otoki.powersales.domain.support.agreement.entity.AgreementWord
 import com.otoki.powersales.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

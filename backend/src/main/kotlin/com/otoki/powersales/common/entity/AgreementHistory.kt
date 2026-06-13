@@ -9,7 +9,7 @@ import jakarta.persistence.*
 import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.domain.support.agreement.entity.AgreementWord
 
 /**
  * 동의이력 Entity
@@ -110,4 +110,4 @@ class AgreementHistory(
     @JoinColumn(name = "last_modified_by_id")
     var lastModifiedBy: User? = null,
 
-) : BaseEntity()
+    ) : BaseEntity()

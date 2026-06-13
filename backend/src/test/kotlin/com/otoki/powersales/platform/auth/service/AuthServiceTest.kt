@@ -7,11 +7,11 @@ import com.otoki.powersales.platform.auth.dto.request.LoginRequest
 import com.otoki.powersales.platform.auth.dto.request.RefreshTokenRequest
 import com.otoki.powersales.platform.auth.dto.request.VerifyPasswordRequest
 import com.otoki.powersales.common.entity.AgreementHistory
-import com.otoki.powersales.common.entity.AgreementWord
+import com.otoki.powersales.domain.support.agreement.entity.AgreementWord
 import com.otoki.powersales.common.entity.LoginHistory
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.common.repository.AgreementHistoryRepository
-import com.otoki.powersales.common.repository.AgreementWordRepository
+import com.otoki.powersales.domain.support.agreement.repository.AgreementWordRepository
 import com.otoki.powersales.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.policy.PasswordPolicyValidator
@@ -29,7 +29,6 @@ import com.otoki.powersales.platform.auth.exception.InvalidTokenException
 import com.otoki.powersales.platform.auth.exception.NewPasswordPolicyViolationException
 import com.otoki.powersales.platform.auth.exception.TermsNotFoundException
 import com.otoki.powersales.platform.auth.exception.TokenReuseDetectedException
-import com.otoki.powersales.platform.auth.service.AuthService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

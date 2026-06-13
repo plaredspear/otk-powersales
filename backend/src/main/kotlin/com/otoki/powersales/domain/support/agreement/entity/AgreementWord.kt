@@ -1,24 +1,34 @@
-package com.otoki.powersales.common.entity
+package com.otoki.powersales.domain.support.agreement.entity
 
+import com.otoki.powersales.common.entity.AuditedEntity
+import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EntityListeners
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.Table
+import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.LastModifiedBy
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
-import org.springframework.data.annotation.CreatedBy
-import org.springframework.data.annotation.LastModifiedBy
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
 
 /**
  * 동의문구 Entity (Salesforce `AgreementWord__c`) — Spec #707 + sf-meta-diff 후속 (OwnerId polymorphic + audit FK User 전환).
  *
  * - OwnerId (`[Group, User]` polymorphic) 는 spec #755 패턴: `owner_sfid` sync buffer +
  *   `owner_user_id` (User FK) + `owner_group_id` (Group FK) + XOR CHECK 제약.
- * - audit (CreatedById / LastModifiedById) FK 는 SF `referenceTo = [User]` 정합 — `User` entity 참조 (spec #757).
+ * - audit (CreatedById / LastModifiedById) FK 는 SF `referenceTo = [com.otoki.powersales.user.entity.User]` 정합 — `User` entity 참조 (spec #757).
  */
 @EntityListeners(OwnerUserDefaultListener::class)
 @Entity

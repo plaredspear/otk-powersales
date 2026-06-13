@@ -1,9 +1,9 @@
-package com.otoki.powersales.common.entity
+package com.otoki.powersales.domain.support.agreement.entity
 
 import com.otoki.powersales.common.salesforce.SFField
 import com.otoki.powersales.common.salesforce.SFObject
 import com.otoki.powersales.common.salesforce.SFSchemaUtils
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -24,15 +24,15 @@ class AgreementWordSFAnnotationTest {
         @DisplayName("@SFObject 값은 'AgreementWord__c'")
         fun sfObjectValue() {
             val annotation = AgreementWord::class.java.getAnnotation(SFObject::class.java)
-            assertThat(annotation).isNotNull
-            assertThat(annotation.value).isEqualTo("AgreementWord__c")
+            Assertions.assertThat(annotation).isNotNull
+            Assertions.assertThat(annotation.value).isEqualTo("AgreementWord__c")
         }
 
         @Test
         @DisplayName("매핑 키 수 = 11")
         fun mappingKeySize() {
             val mapping = SFSchemaUtils.getSFMapping(AgreementWord::class.java)
-            assertThat(mapping).hasSize(11)
+            Assertions.assertThat(mapping).hasSize(11)
         }
     }
 
@@ -44,14 +44,14 @@ class AgreementWordSFAnnotationTest {
         @DisplayName("PK(id) 필드에 @SFField 미부착")
         fun idHasNoSfField() {
             val field = AgreementWord::class.java.getDeclaredField("id")
-            assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
+            Assertions.assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()
         }
 
         @Test
         @DisplayName("매핑 values 에 agreement_word_id 미등장")
         fun mappingValuesExcludePk() {
             val mapping = SFSchemaUtils.getSFMapping(AgreementWord::class.java)
-            assertThat(mapping.values).doesNotContain("agreement_word_id")
+            Assertions.assertThat(mapping.values).doesNotContain("agreement_word_id")
         }
     }
 
@@ -64,27 +64,27 @@ class AgreementWordSFAnnotationTest {
         @Test
         @DisplayName("기존 5개 SF API Name → 컬럼명 1:1")
         fun existingMappingValues() {
-            assertThat(mapping["Name"]).isEqualTo("name")
-            assertThat(mapping["Contents__c"]).isEqualTo("contents")
-            assertThat(mapping["Active__c"]).isEqualTo("active")
-            assertThat(mapping["ActiveDate__c"]).isEqualTo("active_date")
-            assertThat(mapping["AfterActiveDate__c"]).isEqualTo("after_active_date")
+            Assertions.assertThat(mapping["Name"]).isEqualTo("name")
+            Assertions.assertThat(mapping["Contents__c"]).isEqualTo("contents")
+            Assertions.assertThat(mapping["Active__c"]).isEqualTo("active")
+            Assertions.assertThat(mapping["ActiveDate__c"]).isEqualTo("active_date")
+            Assertions.assertThat(mapping["AfterActiveDate__c"]).isEqualTo("after_active_date")
         }
 
         @Test
         @DisplayName("Spec #707 신규 5개 — IsDeleted, CreatedDate, OwnerId, CreatedById, LastModifiedById")
         fun newMappingValues() {
-            assertThat(mapping["IsDeleted"]).isEqualTo("is_deleted")
-            assertThat(mapping["CreatedDate"]).isEqualTo("created_at")
-            assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
-            assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
-            assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
+            Assertions.assertThat(mapping["IsDeleted"]).isEqualTo("is_deleted")
+            Assertions.assertThat(mapping["CreatedDate"]).isEqualTo("created_at")
+            Assertions.assertThat(mapping["OwnerId"]).isEqualTo("owner_sfid")
+            Assertions.assertThat(mapping["CreatedById"]).isEqualTo("created_by_sfid")
+            Assertions.assertThat(mapping["LastModifiedById"]).isEqualTo("last_modified_by_sfid")
         }
 
         @Test
         @DisplayName("sf-meta-diff Q1 — LastModifiedDate → updated_at")
         fun lastModifiedDateMapping() {
-            assertThat(mapping["LastModifiedDate"]).isEqualTo("updated_at")
+            Assertions.assertThat(mapping["LastModifiedDate"]).isEqualTo("updated_at")
         }
     }
 }

@@ -1,6 +1,6 @@
-package com.otoki.powersales.common.repository
+package com.otoki.powersales.domain.support.agreement.repository
 
-import com.otoki.powersales.common.entity.AgreementWord
+import com.otoki.powersales.domain.support.agreement.entity.AgreementWord
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.Optional
 

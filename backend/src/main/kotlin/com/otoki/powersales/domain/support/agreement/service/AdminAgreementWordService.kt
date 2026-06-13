@@ -3,8 +3,8 @@ package com.otoki.powersales.domain.support.agreement.service
 import com.otoki.powersales.domain.support.agreement.dto.request.AdminAgreementWordCreateRequest
 import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordActiveResponse
 import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordCreateResponse
-import com.otoki.powersales.common.entity.AgreementWord
-import com.otoki.powersales.common.repository.AgreementWordRepository
+import com.otoki.powersales.domain.support.agreement.entity.AgreementWord
+import com.otoki.powersales.domain.support.agreement.repository.AgreementWordRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
