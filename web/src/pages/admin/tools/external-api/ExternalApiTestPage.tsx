@@ -39,9 +39,9 @@ const API_DESCRIPTIONS: Record<string, string> = {
   'order-request-detail':
     '주문 번호(order_request_number)로 해당 주문 1건의 상세 라인(품목·수량·금액 등)을 SAP 에서 동기 조회합니다. 호출 즉시 실제 SAP 로 요청이 나가며, 조회 전용이라 DB 상태 변경 없이 응답만 확인합니다.',
   'order-request-cancel':
-    'orderRequestId 와 취소 대상 orderProductIds 로 SAP 에 주문 취소를 송신합니다. orderProductIds 를 비우면 아직 취소되지 않은 라인 전체가 대상이 됩니다. 호출 즉시 실제 SAP 로 취소 요청이 전송되지만, 본 테스트는 송신만 수행하며 신규 시스템의 주문 상태는 바꾸지 않습니다.',
+    'orderRequestId 와 취소 대상 orderProductIds 로 SAP 에 주문 요청 취소를 송신합니다. orderProductIds 를 비우면 아직 취소되지 않은 라인 전체가 대상이 됩니다. 호출 즉시 실제 SAP 로 취소 요청이 전송되지만, 본 테스트는 송신만 수행하며 신규 시스템의 주문 상태는 바꾸지 않습니다.',
   'order-request-register':
-    'orderRequestId 로 주문 등록 요청을 sap_outbox 큐에 INSERT 만 합니다. 본 호출 시점에는 SAP 로 직접 송신하지 않으며, 트랜잭셔널 아웃박스 패턴에 따라 SapOutboxWorker 배치가 곧 큐를 폴링하여 실제 SAP 송신을 비동기로 수행합니다. 실송신 시 sap_outbox 행이 새로 적재됩니다.',
+    'orderRequestId 로 주문 요청 등록을 sap_outbox 큐에 INSERT 만 합니다. 본 호출 시점에는 SAP 로 직접 송신하지 않으며, 트랜잭셔널 아웃박스 패턴에 따라 SapOutboxWorker 배치가 곧 큐를 폴링하여 실제 SAP 송신을 비동기로 수행합니다. 실송신 시 sap_outbox 행이 새로 적재됩니다.',
   attendance:
     '지정한 날짜의 일반 출근(여사원 일정, TeamMemberSchedule) 데이터 중 한 페이지(page-size 행)를 SAP 으로 송신합니다. 매일 도는 근태 SAP 전송 배치(attendance-sap-batch)의 페이지 단위 처리를 수동으로 1페이지만 재현하는 도구이며, 실송신 시 sap_outbound_log 에 적재됩니다.',
   'display-master':

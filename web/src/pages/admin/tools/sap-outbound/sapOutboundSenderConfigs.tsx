@@ -88,8 +88,8 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   },
   {
     kind: 'order-request-cancel',
-    title: '주문 취소 (OrderChange)',
-    tabLabel: '주문 취소',
+    title: '주문 요청 취소 (OrderChange)',
+    tabLabel: '주문 요청 취소',
     description:
       'orderRequestId + orderProductIds 로 SAP 취소 송신. 송신만 수행 — DB 상태 변경은 발생하지 않습니다.',
     triggerTag: 'REALTIME',
@@ -130,8 +130,8 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   },
   {
     kind: 'order-request-register',
-    title: '주문 등록 (OrderRequestRegist) — Outbox',
-    tabLabel: '주문 등록',
+    title: '주문 요청 등록 (OrderRequestRegist) — Outbox',
+    tabLabel: '주문 요청 등록',
     description:
       'orderRequestId 로 sap_outbox 큐에 적재만 수행. 실제 SAP 호출은 SapOutboxWorker 가 비동기로 진행.',
     triggerTag: 'OUTBOX',

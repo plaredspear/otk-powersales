@@ -86,7 +86,7 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
       screen.getByRole('tab', { name: 'SF 물류 클레임 등록' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '여신 한도 조회' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '주문 등록' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: '주문 요청 등록' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '전문행사조 마스터' })).toBeInTheDocument();
   });
 
