@@ -43,6 +43,10 @@ class SuggestionRepositoryCustomImpl(
             .leftJoin(suggestion.employee, employee).fetchJoin()
             .leftJoin(suggestion.account, account).fetchJoin()
             .leftJoin(suggestion.product, product).fetchJoin()
+            // policyPredicate 의 owner/hierarchy 절이 ownerUser 를 참조하므로 명시 leftJoin 으로
+            // 선언해 암묵 INNER JOIN 을 차단한다. 누락 시 owner_user_id NULL 행이 OR 의 다른
+            // 절(cost_center_code 등)로 통과해야 함에도 전부 누락된다.
+            .leftJoin(suggestion.ownerUser, user)
             .where(where)
             .orderBy(suggestion.createdAt.desc())
             .offset(pageable.offset)
@@ -55,6 +59,7 @@ class SuggestionRepositoryCustomImpl(
             .leftJoin(suggestion.employee, employee)
             .leftJoin(suggestion.account, account)
             .leftJoin(suggestion.product, product)
+            .leftJoin(suggestion.ownerUser, user)
             .where(where)
 
         return PageableExecutionUtils.getPage(content, pageable) {
@@ -71,6 +76,7 @@ class SuggestionRepositoryCustomImpl(
         return queryFactory
             .selectOne()
             .from(suggestion)
+            .leftJoin(suggestion.ownerUser, user)
             .where(where)
             .fetchFirst() != null
     }

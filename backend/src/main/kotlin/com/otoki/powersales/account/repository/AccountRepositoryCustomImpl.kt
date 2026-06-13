@@ -2,6 +2,7 @@ package com.otoki.powersales.account.repository
 
 import com.otoki.powersales.account.entity.Account
 import com.otoki.powersales.account.entity.QAccount.Companion.account
+import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -49,6 +50,10 @@ class AccountRepositoryCustomImpl(
 
         val content = queryFactory
             .selectFrom(account)
+            // policyPredicate 의 owner/hierarchy 절이 ownerUser 를 참조하므로 명시 leftJoin 으로
+            // 선언해 암묵 INNER JOIN 을 차단한다. 누락 시 owner_user_id NULL 행이 OR 의 다른
+            // 절(cost_center_code 등)로 통과해야 함에도 전부 누락된다.
+            .leftJoin(account.ownerUser, user)
             .where(builder)
             .orderBy(account.name.asc())
             .offset(pageable.offset)
@@ -58,6 +63,7 @@ class AccountRepositoryCustomImpl(
         val countQuery = queryFactory
             .select(account.count())
             .from(account)
+            .leftJoin(account.ownerUser, user)
             .where(builder)
 
         return PageableExecutionUtils.getPage(content, pageable) {
@@ -68,6 +74,7 @@ class AccountRepositoryCustomImpl(
     override fun findAccessibleByPolicyAndId(policyPredicate: Predicate, id: Long): Account? {
         return queryFactory
             .selectFrom(account)
+            .leftJoin(account.ownerUser, user)
             .where(
                 notDeleted(),
                 policyPredicate,

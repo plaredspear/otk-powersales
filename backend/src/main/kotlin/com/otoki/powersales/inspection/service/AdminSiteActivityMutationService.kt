@@ -82,6 +82,7 @@ class AdminSiteActivityMutationService(
         }
 
         val activity = SiteActivity(
+            name = generateName(),
             activityDate = activityDate,
             category = fieldType.displayName,
             productType = category.storedValue,
@@ -230,6 +231,12 @@ class AdminSiteActivityMutationService(
         ).also { it.createdAt = existing.createdAt }
         siteActivityRepository.save(deleted)
     }
+
+    /**
+     * SF Name AutoNumber(`SA{00000000}`) 채번 — prefix SA + 8자리 zero-pad.
+     * sequence nextval (race-free). 레거시 SF 가 SObject 생성 시 자동 발행하던 Name 동등.
+     */
+    private fun generateName(): String = "SA" + "%08d".format(siteActivityRepository.getNextNameSeq())
 
     private fun booleanToSampleTastFlag(value: Boolean?): String? =
         when (value) {
