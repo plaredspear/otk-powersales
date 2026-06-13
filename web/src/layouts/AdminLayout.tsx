@@ -1,6 +1,6 @@
 import './AdminLayout.css';
 import { useMemo, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
 import { Dropdown, Typography, type MenuProps } from 'antd';
 import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
@@ -98,9 +98,15 @@ export default function AdminLayout() {
           },
         }}
         onMenuHeaderClick={() => navigate('/')}
-        menuItemRender={(item, dom) => (
-          <a onClick={() => item.path && navigate(item.path)}>{dom}</a>
-        )}
+        menuItemRender={(item, dom) =>
+          item.path ? (
+            // Link 는 href 부여 + Cmd/Ctrl/middle-click 분기를 내장하므로
+            // 일반 클릭은 SPA navigate, modifier 클릭은 새 탭/창으로 동작한다.
+            <Link to={item.path}>{dom}</Link>
+          ) : (
+            <span>{dom}</span>
+          )
+        }
         headerRender={false}
         style={{ minHeight: '100vh' }}
         contentStyle={{ margin: 0, padding: 0 }}
