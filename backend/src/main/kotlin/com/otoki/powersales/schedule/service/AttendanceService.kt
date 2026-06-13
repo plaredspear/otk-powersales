@@ -19,8 +19,8 @@ import com.otoki.powersales.schedule.enums.AttendanceType
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.*
-import com.otoki.powersales.orora.OroraApiService
-import com.otoki.powersales.orora.OroraWorkReportRequest
+import com.otoki.powersales.schedule.attendance.AttendanceRegistrar
+import com.otoki.powersales.schedule.attendance.AttendanceRegisterRequest
 import com.otoki.powersales.schedule.policy.AbcExemptPolicy
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
@@ -43,7 +43,7 @@ class AttendanceService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
-    private val ororaApiService: OroraApiService,
+    private val attendanceRegistrar: AttendanceRegistrar,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
     private val attendanceProperties: AttendanceProperties,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
@@ -241,12 +241,12 @@ class AttendanceService(
             )
         }
 
-        // 5. SafetyCheckSubmission 조회 + OroraWorkReportRequest 구성 + 전송
+        // 5. SafetyCheckSubmission 조회 + 출근 등록 요청 구성 + 등록
         val safetyCheckSubmission = safetyCheckSubmissionRepository
             .findByEmployeeIdAndWorkingDate(employee.id, today)
             .orElse(null)
 
-        val request = OroraWorkReportRequest(
+        val request = AttendanceRegisterRequest(
             scheduleId = teamMemberSchedule.id,
             equipment1 = safetyCheckSubmission?.equipment1,
             equipment2 = safetyCheckSubmission?.equipment2,
@@ -265,7 +265,7 @@ class AttendanceService(
             precautionCount = safetyCheckSubmission?.precautionCheckCount,
             traversalFlag = safetyCheckSubmission?.traversalFlag
         )
-        ororaApiService.sendWorkReport(request)
+        attendanceRegistrar.register(request)
 
         // 6. 후속 처리: SafetyCheckSubmission.completeWorkYn = 'Y' + TMS 안전점검 데이터 반영
         if (safetyCheckSubmission != null) {
@@ -397,12 +397,12 @@ class AttendanceService(
 
         // GPS 거리 검증 없음 (대리등록)
 
-        // 안전점검 데이터 기반 Orora WorkReport 전송 (본인 등록과 동일 경로)
+        // 안전점검 데이터 기반 출근 등록 (본인 등록과 동일 경로)
         val safetyCheckSubmission = safetyCheckSubmissionRepository
             .findByEmployeeIdAndWorkingDate(targetEmployee.id, today)
             .orElse(null)
 
-        val request = OroraWorkReportRequest(
+        val request = AttendanceRegisterRequest(
             scheduleId = teamMemberSchedule.id,
             equipment1 = safetyCheckSubmission?.equipment1,
             equipment2 = safetyCheckSubmission?.equipment2,
@@ -421,7 +421,7 @@ class AttendanceService(
             precautionCount = safetyCheckSubmission?.precautionCheckCount,
             traversalFlag = safetyCheckSubmission?.traversalFlag
         )
-        ororaApiService.sendWorkReport(request)
+        attendanceRegistrar.register(request)
 
         // 후속 처리: completeWorkYn='Y' + TMS 안전점검 데이터 반영 (본인 등록과 동일)
         if (safetyCheckSubmission != null) {

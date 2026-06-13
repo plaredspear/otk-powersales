@@ -104,9 +104,10 @@ jwt:
   expiration: ${JWT_EXPIRATION:3600000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
-orora:
-  mock:
-    enabled: ${ORORA_MOCK_ENABLED:true}
+attendance:
+  registrar:
+    mock:
+      enabled: ${ATTENDANCE_REGISTRAR_MOCK_ENABLED:true}
 
 # ---------------------------------------------------------------------------
 # SAP 인바운드 인증

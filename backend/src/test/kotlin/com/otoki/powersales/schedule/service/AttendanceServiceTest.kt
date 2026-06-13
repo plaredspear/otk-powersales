@@ -37,8 +37,8 @@ import com.otoki.powersales.schedule.exception.DistanceExceededException
 import com.otoki.powersales.schedule.exception.InvalidCoordsException
 import com.otoki.powersales.schedule.exception.SafetyCheckRequiredException
 import com.otoki.powersales.schedule.exception.TeamMemberScheduleNotFoundException
-import com.otoki.powersales.orora.OroraApiService
-import com.otoki.powersales.orora.OroraWorkReportResult
+import com.otoki.powersales.schedule.attendance.AttendanceRegistrar
+import com.otoki.powersales.schedule.attendance.AttendanceRegisterResult
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -65,7 +65,7 @@ class AttendanceServiceTest {
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk()
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository = mockk(relaxUnitFun = true)
-    private val ororaApiService: OroraApiService = mockk()
+    private val attendanceRegistrar: AttendanceRegistrar = mockk()
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService = mockk(relaxUnitFun = true)
     private val clock: Clock = mockk()
     private val attendanceProperties: AttendanceProperties = spyk(AttendanceProperties(gpsThresholdMeters = 500))
@@ -76,7 +76,7 @@ class AttendanceServiceTest {
         teamMemberScheduleRepository,
         displayWorkScheduleRepository,
         safetyCheckSubmissionRepository,
-        ororaApiService,
+        attendanceRegistrar,
         adminMonthlyIntegrationService,
         attendanceProperties,
         teamMemberScheduleOwnerResolver,
@@ -754,7 +754,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -832,7 +832,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // 5km 떨어진 좌표 사용 (면제이므로 성공해야 함)
@@ -871,7 +871,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // 10km 떨어진 좌표 사용 (면제이므로 성공해야 함)
@@ -910,7 +910,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When — 좌표 누락이지만 면제 코드이므로 ATT_ACCOUNT_COORDS_MISSING 미발생
@@ -942,7 +942,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -973,7 +973,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1133,7 +1133,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1163,7 +1163,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1200,7 +1200,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(targetTeamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns allTeamMemberSchedules
 
             // When
@@ -1319,7 +1319,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1482,7 +1482,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1559,7 +1559,7 @@ class AttendanceServiceTest {
                 }
             } andThen newTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
 
             // When
@@ -1619,7 +1619,7 @@ class AttendanceServiceTest {
             every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
             every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns existingTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(existingTms)
 
             // When
@@ -1770,7 +1770,7 @@ class AttendanceServiceTest {
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), AppAuthority.LEADER) } returns emptyList()
             every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
 
             // When
@@ -1867,7 +1867,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(tms)
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(tms)
 
             // When
@@ -1911,7 +1911,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { teamMemberScheduleRepository.findById(eventScheduleId) } returns Optional.of(tms)
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(tms)
 
             // When
@@ -2068,7 +2068,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
@@ -2120,7 +2120,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -2165,7 +2165,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
@@ -2224,7 +2224,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { ororaApiService.sendWorkReport(any()) } returns OroraWorkReportResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
             every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 

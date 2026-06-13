@@ -1,9 +1,9 @@
-package com.otoki.powersales.orora
+package com.otoki.powersales.schedule.attendance
 
 /**
- * Orora API 출근보고 요청 데이터 (안전점검 데이터 포함)
+ * 출근 등록 요청 데이터 (안전점검 데이터 포함)
  */
-data class OroraWorkReportRequest(
+data class AttendanceRegisterRequest(
     val scheduleId: Long,
     val reason: String? = null,
     val equipment1: String? = null,
