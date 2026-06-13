@@ -229,3 +229,60 @@ export async function testClaimRegist(
   }
   return res.data.data;
 }
+
+/**
+ * SF 물류 클레임 등록(ProposalRegist) 전송 테스트 입력 (개발자 도구 — 외부 API 테스트).
+ *
+ * 모바일 물류 클레임 등록 정보 정합 — SF 전송 API 정보 미확보 단계라 payload(apiMap) 미리보기 전용.
+ * 사진은 최대 2장 (모바일 물류 클레임 등록과 동일).
+ */
+export interface LogisticsClaimRegistTestInput {
+  sapAccountCode: string;
+  productCode: string;
+  employeeCode: string;
+  claimType: string;
+  claimDate: string;
+  title: string;
+  description: string;
+  carNumber?: string;
+  photo1?: File;
+  photo2?: File;
+}
+
+export interface LogisticsClaimRegistTestResult {
+  success: boolean;
+  resultCode: string | null;
+  resultMsg: string | null;
+  rawResponse: string | null;
+  /** SF ProposalRegist 로 전송될 apiMap JSON (Input 클래스 key 셋 정합). */
+  requestPayload: string;
+  /** 현재 단계 안내 문구 (SF 전송 미구현 — 미리보기 전용). */
+  note: string;
+}
+
+export async function testLogisticsClaimRegist(
+  input: LogisticsClaimRegistTestInput,
+): Promise<LogisticsClaimRegistTestResult> {
+  const form = new FormData();
+  appendIfDefined(form, 'sapAccountCode', input.sapAccountCode);
+  appendIfDefined(form, 'productCode', input.productCode);
+  appendIfDefined(form, 'employeeCode', input.employeeCode);
+  appendIfDefined(form, 'claimType', input.claimType);
+  appendIfDefined(form, 'claimDate', input.claimDate);
+  appendIfDefined(form, 'title', input.title);
+  appendIfDefined(form, 'description', input.description);
+  appendIfDefined(form, 'carNumber', input.carNumber);
+  appendIfDefined(form, 'photo1', input.photo1);
+  appendIfDefined(form, 'photo2', input.photo2);
+
+  const res = await client.post<ApiResponse<LogisticsClaimRegistTestResult>>(
+    '/api/v1/admin/logistics-claim-regist/test',
+    form,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || 'SF 물류 클레임 등록 전송 테스트에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}
