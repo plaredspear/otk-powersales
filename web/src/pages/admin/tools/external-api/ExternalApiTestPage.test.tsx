@@ -70,15 +70,17 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     mutationState.isPending = false;
   });
 
-  it('H1 - 페이지 진입 시 비-SAP 외부 API 탭과 SAP 연동 안내 탭이 노출 (개별 SAP 탭 없음)', () => {
+  it('H1 - 페이지 진입 시 비-SAP 외부 API 탭만 노출 (SAP 탭 없음)', () => {
     renderPage();
     expect(screen.getByRole('tab', { name: 'Naver Geocode' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'SF 클레임 등록' })).toBeInTheDocument();
     expect(
       screen.getByRole('tab', { name: 'SF 물류 클레임 등록' }),
     ).toBeInTheDocument();
-    // SAP 테스트는 SAP 연동 페이지로 일원화 — 본 페이지에는 안내 탭만 있고 개별 SAP 탭 없음
-    expect(screen.getByRole('tab', { name: 'SAP 연동' })).toBeInTheDocument();
+    // SAP 테스트는 SAP 연동 페이지로 일원화 — 본 페이지에는 SAP 관련 탭이 없음
+    expect(
+      screen.queryByRole('tab', { name: 'SAP 연동' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('tab', { name: '여신 한도 조회' }),
     ).not.toBeInTheDocument();
@@ -181,22 +183,6 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
     const pre = await screen.findByTestId('naver-geocode-raw-response');
     expect(pre).toHaveTextContent('"status": "OK"');
     expect(pre).toHaveTextContent('"x": "127.0584"');
-  });
-
-  it('H3 - SAP 연동 탭 전환 시 SAP 연동 페이지로 유도하는 안내와 링크가 노출', async () => {
-    renderPage();
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('tab', { name: 'SAP 연동' }));
-
-    expect(
-      await screen.findByText(/SAP 연동 테스트는 'SAP 연동' 페이지로 이동했습니다/),
-    ).toBeInTheDocument();
-    const link = screen.getByRole('link', { name: 'SAP 연동' });
-    expect(link).toHaveAttribute('href', '/admin/tools/sap-integration');
-    // 개별 SAP 송신 폼(미리보기/실송신)은 더 이상 본 페이지에 없음
-    expect(
-      screen.queryByRole('button', { name: '실송신' }),
-    ).not.toBeInTheDocument();
   });
 
   it('E1 - 주소 blank 시 "변환" 버튼이 disabled', () => {

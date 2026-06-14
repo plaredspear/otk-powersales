@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Alert, Space, Tabs, Typography } from 'antd';
 import type { TabsProps } from 'antd';
-import { Link } from 'react-router-dom';
 import NaverGeocodeTab from './NaverGeocodeTab';
 import ClaimRegistTab from './ClaimRegistTab';
 import LogisticsClaimRegistTab from './LogisticsClaimRegistTab';
@@ -107,28 +106,6 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           description="SF 전송 API 정보가 확보되기 전 단계로, 입력 정보로 구성한 전송 payload(apiMap) 미리보기만 제공합니다. 실제 SF 호출은 추후 추가됩니다. SYSTEM_ADMIN 권한 필요."
         />
         <LogisticsClaimRegistTab />
-      </Space>
-    ),
-  },
-  {
-    key: 'sap-integration-redirect',
-    label: 'SAP 연동',
-    children: (
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-        <Alert
-          type="info"
-          showIcon
-          message="SAP 연동 테스트는 'SAP 연동' 페이지로 이동했습니다."
-          description={
-            <span>
-              SAP outbound 인터페이스의 테스트 송신(미리보기/실송신)은{' '}
-              <Link to="/admin/tools/sap-integration">SAP 연동</Link> 페이지의
-              "테스트" 탭으로 일원화되었습니다. 실송신 후 호출 로그와 Outbox 대기
-              큐도 같은 페이지의 "호출 이력" / "대기 중 (Outbox)" 탭에서 함께
-              확인할 수 있습니다.
-            </span>
-          }
-        />
       </Space>
     ),
   },
