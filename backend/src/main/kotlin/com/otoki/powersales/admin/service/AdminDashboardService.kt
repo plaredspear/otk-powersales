@@ -13,7 +13,7 @@ import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
 import com.otoki.powersales.admin.dto.response.WorkTypeCount
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
@@ -241,7 +241,7 @@ class AdminDashboardService(
     }
 
     /** 연령대별 인원 수 — 만나이 정수 10세 단위 버킷. birthDate null/파싱불가는 "미상". */
-    private fun buildAgeGroups(employees: List<Employee>, asOf: LocalDate): List<AgeGroupCount> {
+    private fun buildAgeGroups(employees: List<DashboardEmployeeProjection>, asOf: LocalDate): List<AgeGroupCount> {
         return employees
             .groupBy { ageGroupLabel(calculateAge(it.birthDate, asOf)) }
             .map { (ageGroup, group) -> AgeGroupCount(ageGroup = ageGroup, count = group.size) }
@@ -290,9 +290,10 @@ class AdminDashboardService(
         return scope.branchCodes
     }
 
-    private fun findEmployees(effectiveCodes: List<String>): List<Employee> {
-        return if (effectiveCodes.isEmpty()) employeeRepository.findAll()
-        else employeeRepository.findByCostCenterCodeIn(effectiveCodes)
+    private fun findEmployees(effectiveCodes: List<String>): List<DashboardEmployeeProjection> {
+        // 기본현황은 jobCode/status/birthDate 만 쓰므로 projection 으로 적재 (entity 전 컬럼 회피).
+        return if (effectiveCodes.isEmpty()) employeeRepository.findProjectedBy()
+        else employeeRepository.findProjectedByCostCenterCodeIn(effectiveCodes)
     }
 
     companion object {

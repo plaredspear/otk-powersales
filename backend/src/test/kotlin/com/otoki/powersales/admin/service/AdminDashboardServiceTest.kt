@@ -3,7 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
@@ -54,18 +54,20 @@ class AdminDashboardServiceTest {
         status: String? = "재직",
         jobCode: String? = null,
         birthDate: String? = null,
-    ): Employee = Employee(
-        employeeCode = "E${empSeq++}",
-        name = "사원$empSeq",
-        status = status,
-        jobCode = jobCode,
-        birthDate = birthDate,
-    )
+    ): DashboardEmployeeProjection {
+        empSeq++
+        val s = status; val j = jobCode; val b = birthDate
+        return object : DashboardEmployeeProjection {
+            override val status = s
+            override val jobCode = j
+            override val birthDate = b
+        }
+    }
 
     private fun stubEmpty() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findAll() } returns emptyList()
-        every { employeeRepository.findByCostCenterCodeIn(any()) } returns emptyList()
+        every { employeeRepository.findProjectedBy() } returns emptyList()
+        every { employeeRepository.findProjectedByCostCenterCodeIn(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
     }
@@ -83,7 +85,7 @@ class AdminDashboardServiceTest {
         // 거래처유형별 차트는 전월(마감) 기준 → previousYm rows 로 반환
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
-        every { employeeRepository.findAll() } returns emptyList()
+        every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
 
@@ -106,7 +108,7 @@ class AdminDashboardServiceTest {
         )
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
-        every { employeeRepository.findAll() } returns emptyList()
+        every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
 
@@ -127,7 +129,7 @@ class AdminDashboardServiceTest {
         )
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
-        every { employeeRepository.findAll() } returns emptyList()
+        every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
 
@@ -148,7 +150,7 @@ class AdminDashboardServiceTest {
         val acc = account(1, AccountType.SUPER)
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns
             listOf(mfeis(acc = acc))
-        every { employeeRepository.findAll() } returns emptyList()
+        every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(actualAmount = 800L, lastYearAmount = 760L)
 
@@ -180,7 +182,7 @@ class AdminDashboardServiceTest {
     @DisplayName("T7 연령 버킷팅 — birthDate 1995-03-01 기준 2026-05 만 31세 -> 30대")
     fun ageGroupBucketing() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findAll() } returns listOf(employee(birthDate = "1995-03-01"))
+        every { employeeRepository.findProjectedBy() } returns listOf(employee(birthDate = "1995-03-01"))
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
 
@@ -194,7 +196,7 @@ class AdminDashboardServiceTest {
     @DisplayName("T8 연령 birthDate null -> 미상 버킷")
     fun ageGroupUnknown() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findAll() } returns listOf(employee(birthDate = null))
+        every { employeeRepository.findProjectedBy() } returns listOf(employee(birthDate = null))
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
 
@@ -207,7 +209,7 @@ class AdminDashboardServiceTest {
     @DisplayName("T9 재직/휴직 분류 — 재직 3 / 휴직 1")
     fun activeOnLeave() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findAll() } returns listOf(
+        every { employeeRepository.findProjectedBy() } returns listOf(
             employee(status = "재직"), employee(status = "재직"), employee(status = "재직"),
             employee(status = "휴직"),
         )
@@ -224,7 +226,7 @@ class AdminDashboardServiceTest {
     @DisplayName("D6 판촉/OSC — 판촉직 2 / OSC직·레이디직 합산 2")
     fun promotionOscByJobCode() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findAll() } returns listOf(
+        every { employeeRepository.findProjectedBy() } returns listOf(
             employee(jobCode = "판촉직"), employee(jobCode = "판촉직"),
             employee(jobCode = "OSC직"), employee(jobCode = "레이디직"),
             employee(jobCode = "기타"),
