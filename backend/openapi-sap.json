@@ -616,7 +616,7 @@
         },
         "type" : "object"
       },
-      "OrganizeMasterDetail" : {
+      "OrganizationMasterDetail" : {
         "properties" : {
           "failureCount" : {
             "format" : "int32",
@@ -635,11 +635,11 @@
         },
         "type" : "object"
       },
-      "OrganizeMasterRequest" : {
+      "OrganizationMasterRequest" : {
         "properties" : {
           "reqItemList" : {
             "items" : {
-              "$ref" : "#/components/schemas/OrganizeMasterRequestItem"
+              "$ref" : "#/components/schemas/OrganizationMasterRequestItem"
             },
             "type" : [ "array", "null" ]
           }
@@ -647,7 +647,7 @@
         "required" : [ "reqItemList" ],
         "type" : "object"
       },
-      "OrganizeMasterRequestItem" : {
+      "OrganizationMasterRequestItem" : {
         "properties" : {
           "CC_CD2" : {
             "type" : "string"
@@ -863,13 +863,13 @@
         },
         "type" : "object"
       },
-      "SapResultWrapperOrganizeMasterDetail" : {
+      "SapResultWrapperOrganizationMasterDetail" : {
         "properties" : {
           "RESULT_CODE" : {
             "type" : "string"
           },
           "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/OrganizeMasterDetail"
+            "$ref" : "#/components/schemas/OrganizationMasterDetail"
           },
           "RESULT_MSG" : {
             "type" : "string"
@@ -1250,7 +1250,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/OrganizeMasterRequest"
+                "$ref" : "#/components/schemas/OrganizationMasterRequest"
               }
             }
           },
@@ -1261,7 +1261,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperOrganizeMasterDetail"
+                  "$ref" : "#/components/schemas/SapResultWrapperOrganizationMasterDetail"
                 }
               }
             },
@@ -1269,7 +1269,7 @@
           }
         },
         "summary" : "조직 마스터 적재 (DELETE→INSERT)",
-        "tags" : [ "sap-organize-master-controller" ]
+        "tags" : [ "sap-organization-master-controller" ]
       }
     },
     "/api/v1/sap/product" : {

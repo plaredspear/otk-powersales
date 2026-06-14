@@ -16737,6 +16737,81 @@
         },
         "type" : "object"
       },
+      "OrganizationMasterDetail" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FailureItem"
+            },
+            "type" : "array"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "OrganizationMasterRequest" : {
+        "properties" : {
+          "reqItemList" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OrganizationMasterRequestItem"
+            },
+            "type" : [ "array", "null" ]
+          }
+        },
+        "required" : [ "reqItemList" ],
+        "type" : "object"
+      },
+      "OrganizationMasterRequestItem" : {
+        "properties" : {
+          "CC_CD2" : {
+            "type" : "string"
+          },
+          "CC_CD3" : {
+            "type" : "string"
+          },
+          "CC_CD4" : {
+            "type" : "string"
+          },
+          "CC_CD5" : {
+            "type" : "string"
+          },
+          "ORG_CD2" : {
+            "type" : "string"
+          },
+          "ORG_CD3" : {
+            "type" : "string"
+          },
+          "ORG_CD4" : {
+            "type" : "string"
+          },
+          "ORG_CD5" : {
+            "type" : "string"
+          },
+          "ORG_NM2" : {
+            "type" : "string"
+          },
+          "ORG_NM3" : {
+            "type" : "string"
+          },
+          "ORG_NM4" : {
+            "type" : "string"
+          },
+          "ORG_NM5" : {
+            "type" : "string"
+          },
+          "allNull" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "OrganizationResponse" : {
         "properties" : {
           "costCenterLevel2" : {
@@ -16782,81 +16857,6 @@
           },
           "orgNameLevel5" : {
             "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "OrganizeMasterDetail" : {
-        "properties" : {
-          "failureCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "failures" : {
-            "items" : {
-              "$ref" : "#/components/schemas/FailureItem"
-            },
-            "type" : "array"
-          },
-          "successCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
-      "OrganizeMasterRequest" : {
-        "properties" : {
-          "reqItemList" : {
-            "items" : {
-              "$ref" : "#/components/schemas/OrganizeMasterRequestItem"
-            },
-            "type" : [ "array", "null" ]
-          }
-        },
-        "required" : [ "reqItemList" ],
-        "type" : "object"
-      },
-      "OrganizeMasterRequestItem" : {
-        "properties" : {
-          "CC_CD2" : {
-            "type" : "string"
-          },
-          "CC_CD3" : {
-            "type" : "string"
-          },
-          "CC_CD4" : {
-            "type" : "string"
-          },
-          "CC_CD5" : {
-            "type" : "string"
-          },
-          "ORG_CD2" : {
-            "type" : "string"
-          },
-          "ORG_CD3" : {
-            "type" : "string"
-          },
-          "ORG_CD4" : {
-            "type" : "string"
-          },
-          "ORG_CD5" : {
-            "type" : "string"
-          },
-          "ORG_NM2" : {
-            "type" : "string"
-          },
-          "ORG_NM3" : {
-            "type" : "string"
-          },
-          "ORG_NM4" : {
-            "type" : "string"
-          },
-          "ORG_NM5" : {
-            "type" : "string"
-          },
-          "allNull" : {
-            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -20982,13 +20982,13 @@
         },
         "type" : "object"
       },
-      "SapResultWrapperOrganizeMasterDetail" : {
+      "SapResultWrapperOrganizationMasterDetail" : {
         "properties" : {
           "RESULT_CODE" : {
             "type" : "string"
           },
           "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/OrganizeMasterDetail"
+            "$ref" : "#/components/schemas/OrganizationMasterDetail"
           },
           "RESULT_MSG" : {
             "type" : "string"
@@ -36831,7 +36831,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/OrganizeMasterRequest"
+                "$ref" : "#/components/schemas/OrganizationMasterRequest"
               }
             }
           },
@@ -36842,7 +36842,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SapResultWrapperOrganizeMasterDetail"
+                  "$ref" : "#/components/schemas/SapResultWrapperOrganizationMasterDetail"
                 }
               }
             },
@@ -36850,7 +36850,7 @@
           }
         },
         "summary" : "조직 마스터 적재 (DELETE→INSERT)",
-        "tags" : [ "sap-organize-master-controller" ]
+        "tags" : [ "sap-organization-master-controller" ]
       }
     },
     "/api/v1/sap/product" : {
