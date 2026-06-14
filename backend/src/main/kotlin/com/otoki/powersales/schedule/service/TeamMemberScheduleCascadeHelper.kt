@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Component

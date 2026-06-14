@@ -1,6 +1,6 @@
 package com.otoki.powersales.suggestion.repository
 
-import com.otoki.powersales.common.config.QueryDslConfig
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.suggestion.entity.Suggestion
 import com.otoki.powersales.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.suggestion.entity.SuggestionStatus
@@ -14,7 +14,6 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
-import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 
 @DataJpaTest

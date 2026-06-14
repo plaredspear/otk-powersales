@@ -3,7 +3,7 @@ package com.otoki.powersales.platform.apppackage.controller
 import com.otoki.powersales.platform.apppackage.dto.AppPackageDownloadUrlDto
 import com.otoki.powersales.platform.apppackage.dto.AppVersionCheckDto
 import com.otoki.powersales.platform.apppackage.entity.AppPlatform
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.apppackage.service.MobileAppPackageService
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpHeaders

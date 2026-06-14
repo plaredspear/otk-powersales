@@ -2,7 +2,7 @@ package com.otoki.powersales.domain.support.agreement.service
 
 import com.otoki.powersales.domain.support.agreement.entity.AgreementWord
 import com.otoki.powersales.domain.support.agreement.repository.AgreementWordRepository
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.every
 import io.mockk.mockk

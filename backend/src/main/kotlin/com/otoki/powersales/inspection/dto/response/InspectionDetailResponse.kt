@@ -1,6 +1,6 @@
 package com.otoki.powersales.inspection.dto.response
 
-import com.otoki.powersales.common.entity.UploadFile
+import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.enums.InspectionCategory
 import com.otoki.powersales.inspection.enums.InspectionFieldType

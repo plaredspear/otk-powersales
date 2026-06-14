@@ -1,8 +1,6 @@
 package com.otoki.powersales.platform.auth.sharing.entity
 
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.platform.auth.sharing.entity.PermissionSet
-import com.otoki.powersales.platform.auth.sharing.entity.PermissionSetAssignment
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import jakarta.persistence.Table
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

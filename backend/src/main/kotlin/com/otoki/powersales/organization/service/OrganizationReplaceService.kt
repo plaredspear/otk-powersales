@@ -1,6 +1,6 @@
 package com.otoki.powersales.organization.service
 
-import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.organization.service.dto.OrganizationReplaceCommand

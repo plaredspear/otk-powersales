@@ -9,10 +9,10 @@ import com.otoki.powersales.domain.activity.claim.exception.ClaimNotFoundExcepti
 import com.otoki.powersales.domain.activity.claim.exception.InvalidDateFormatException
 import com.otoki.powersales.domain.activity.claim.exception.InvalidDateRangeException
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
-import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.StorageConstants
-import com.otoki.powersales.common.storage.StorageService
-import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service

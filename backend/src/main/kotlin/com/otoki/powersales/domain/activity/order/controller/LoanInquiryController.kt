@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.activity.order.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.activity.order.dto.response.LoanInquiryResponse
 import com.otoki.powersales.domain.activity.order.service.LoanInquiryService
 import org.springframework.http.ResponseEntity

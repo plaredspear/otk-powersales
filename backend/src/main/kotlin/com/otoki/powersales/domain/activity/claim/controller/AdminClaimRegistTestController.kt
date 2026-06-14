@@ -7,7 +7,7 @@ import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimRegistTestResponse
 import com.otoki.powersales.domain.activity.claim.service.AdminClaimRegistTestService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

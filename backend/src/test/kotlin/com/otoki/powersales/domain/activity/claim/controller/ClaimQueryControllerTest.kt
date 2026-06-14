@@ -8,9 +8,8 @@ import com.otoki.powersales.domain.activity.claim.exception.InvalidDateFormatExc
 import com.otoki.powersales.domain.activity.claim.exception.InvalidDateRangeException
 import com.otoki.powersales.domain.activity.claim.service.ClaimDraftService
 import com.otoki.powersales.domain.activity.claim.service.ClaimQueryService
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.domain.activity.claim.controller.ClaimQueryController
 import io.mockk.every
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

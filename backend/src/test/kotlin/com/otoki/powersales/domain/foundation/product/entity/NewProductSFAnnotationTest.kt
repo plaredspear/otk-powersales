@@ -1,9 +1,8 @@
 package com.otoki.powersales.domain.foundation.product.entity
 
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.common.salesforce.SFSchemaUtils
-import com.otoki.powersales.domain.foundation.product.entity.NewProduct
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.domain.foundation.product.enums.Initiator
 import com.otoki.powersales.domain.foundation.product.enums.ManagementType
 import com.otoki.powersales.domain.foundation.product.enums.NewProductStatus

@@ -1,6 +1,6 @@
 package com.otoki.powersales.external.sf.inbound.controller
 
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.external.sf.auth.controller.SfTokenController
 import com.otoki.powersales.external.sf.inbound.dto.SfResultWrapper
 import com.otoki.powersales.external.sf.inbound.health.SfInboundHealthController

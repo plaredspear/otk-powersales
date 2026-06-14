@@ -4,10 +4,8 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.StorageService
-import com.otoki.powersales.domain.activity.claim.service.AdminClaimCreateService
-import com.otoki.powersales.domain.activity.claim.service.AdminClaimRegistTestService
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.external.sf.outbound.SfApiResponse

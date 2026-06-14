@@ -2,10 +2,10 @@ package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
-import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.StorageConstants
-import com.otoki.powersales.common.storage.StorageService
-import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityDetailResponse
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityFilter
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityListItem

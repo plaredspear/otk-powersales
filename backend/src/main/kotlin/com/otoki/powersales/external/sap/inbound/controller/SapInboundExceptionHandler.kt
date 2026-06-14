@@ -1,6 +1,6 @@
 package com.otoki.powersales.external.sap.inbound.controller
 
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
@@ -29,7 +29,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
  *
  * `assignableTypes` 로 SAP 인바운드 컨트롤러에만 적용되도록 제한하며, 응답 포맷은
  * [SapResultWrapper] (`RESULT_CODE` / `RESULT_MSG`) 로 통일한다.
- * 기존 모바일/관리자 API 의 [com.otoki.powersales.common.dto.ApiResponse] 응답에는 영향이 없다.
+ * 기존 모바일/관리자 API 의 [com.otoki.powersales.platform.common.dto.ApiResponse] 응답에는 영향이 없다.
  */
 @RestControllerAdvice(
     assignableTypes = [

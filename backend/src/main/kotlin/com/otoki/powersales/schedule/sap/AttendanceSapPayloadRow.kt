@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.sap
 
-import com.otoki.powersales.common.enums.WorkingCategory1
-import com.otoki.powersales.common.enums.WorkingCategory2
-import com.otoki.powersales.common.enums.WorkingCategory3
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingCategory2
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.schedule.enums.SecondWorkType
 import java.time.LocalDate
 

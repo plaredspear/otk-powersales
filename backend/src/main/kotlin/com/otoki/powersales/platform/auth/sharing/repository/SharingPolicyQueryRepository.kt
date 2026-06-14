@@ -4,7 +4,7 @@ import com.otoki.powersales.platform.auth.sharing.dto.SharingRuleSnapshot
 import com.otoki.powersales.platform.auth.sharing.entity.QSharingRule.Companion.sharingRule
 import com.otoki.powersales.platform.auth.sharing.entity.QSharingRuleCondition.Companion.sharingRuleCondition
 import com.otoki.powersales.platform.auth.sharing.entity.QSharingRuleTarget.Companion.sharingRuleTarget
-import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.user.repository.UserRepository
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory

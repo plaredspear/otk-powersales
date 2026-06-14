@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.service
 
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule

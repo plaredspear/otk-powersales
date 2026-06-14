@@ -1,6 +1,6 @@
 package com.otoki.powersales.inspection.repository
 
-import com.otoki.powersales.common.config.QueryDslConfig
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityFilter
 import com.otoki.powersales.inspection.entity.QSiteActivity.Companion.siteActivity
 import com.otoki.powersales.inspection.entity.SiteActivity

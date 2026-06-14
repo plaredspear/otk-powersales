@@ -1,9 +1,9 @@
 package com.otoki.powersales.domain.sales.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*

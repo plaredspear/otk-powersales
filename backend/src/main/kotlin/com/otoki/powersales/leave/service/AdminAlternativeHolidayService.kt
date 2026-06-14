@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.service
 
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayApproveRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
 import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest

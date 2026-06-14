@@ -5,7 +5,7 @@ import com.otoki.powersales.domain.activity.claim.dto.response.ClaimPeriodReport
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
 import com.otoki.powersales.domain.activity.claim.repository.AdminClaimRepository
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.util.TimeZones
 import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.IndexedColors

@@ -1,8 +1,8 @@
 package com.otoki.powersales.domain.activity.order.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.Column
@@ -20,7 +20,7 @@ import java.math.BigDecimal
 import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import jakarta.persistence.EntityListeners
 

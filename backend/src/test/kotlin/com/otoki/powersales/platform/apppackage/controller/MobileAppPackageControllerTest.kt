@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.apppackage.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.platform.apppackage.dto.AppPackageDownloadUrlDto
 import com.otoki.powersales.platform.apppackage.dto.AppVersionCheckDto
 import com.otoki.powersales.platform.apppackage.entity.AppPlatform

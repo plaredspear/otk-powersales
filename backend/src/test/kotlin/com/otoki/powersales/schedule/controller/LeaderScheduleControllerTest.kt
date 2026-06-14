@@ -2,7 +2,7 @@ package com.otoki.powersales.schedule.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.auth.entity.AppAuthority
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.schedule.dto.response.LeaderScheduleCreateResponse

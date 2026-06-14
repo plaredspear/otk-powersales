@@ -2,7 +2,7 @@ package com.otoki.powersales.domain.sales.sfsync
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
 import com.otoki.powersales.domain.sales.repository.SalesProgressRateMasterRepository
 import org.slf4j.LoggerFactory

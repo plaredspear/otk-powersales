@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.auth.permission
 
-import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.user.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager

@@ -5,7 +5,7 @@ import com.otoki.powersales.admin.service.ExternalApiIntegrationInfoService
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController

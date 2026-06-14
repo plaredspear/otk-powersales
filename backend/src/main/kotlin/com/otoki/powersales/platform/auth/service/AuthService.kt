@@ -1,25 +1,24 @@
 package com.otoki.powersales.platform.auth.service
 
-import com.otoki.powersales.common.config.UuidCheckProperties
+import com.otoki.powersales.platform.common.config.UuidCheckProperties
 import com.otoki.powersales.platform.auth.dto.request.ChangePasswordRequest
-import com.otoki.powersales.common.dto.request.GpsConsentRequest
+import com.otoki.powersales.platform.common.dto.request.GpsConsentRequest
 import com.otoki.powersales.platform.auth.dto.request.LoginRequest
 import com.otoki.powersales.platform.auth.dto.request.RefreshTokenRequest
 import com.otoki.powersales.platform.auth.dto.request.VerifyPasswordRequest
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.policy.PasswordPolicyValidator
-import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.common.entity.AgreementHistory
-import com.otoki.powersales.common.entity.LoginHistory
+import com.otoki.powersales.platform.common.entity.AgreementHistory
+import com.otoki.powersales.platform.common.entity.LoginHistory
 import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.common.repository.AgreementHistoryRepository
+import com.otoki.powersales.platform.common.repository.AgreementHistoryRepository
 import com.otoki.powersales.domain.support.agreement.repository.AgreementWordRepository
-import com.otoki.powersales.common.repository.LoginHistoryRepository
+import com.otoki.powersales.platform.common.repository.LoginHistoryRepository
 import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.common.security.ActiveDeviceStore
-import com.otoki.powersales.common.security.JwtTokenProvider
-import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.security.ActiveDeviceStore
+import com.otoki.powersales.platform.common.security.JwtTokenProvider
+import com.otoki.powersales.platform.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.platform.auth.dto.response.ChangePasswordResponse
 import com.otoki.powersales.platform.auth.dto.response.LoginResponse
 import com.otoki.powersales.platform.auth.dto.response.TokenInfo
@@ -34,6 +33,9 @@ import com.otoki.powersales.platform.auth.exception.InvalidCurrentPasswordExcept
 import com.otoki.powersales.platform.auth.exception.InvalidTokenException
 import com.otoki.powersales.platform.auth.exception.TermsNotFoundException
 import com.otoki.powersales.platform.auth.exception.TokenReuseDetectedException
+import com.otoki.powersales.platform.common.dto.response.GpsConsentRecordResponse
+import com.otoki.powersales.platform.common.dto.response.GpsConsentStatusResponse
+import com.otoki.powersales.platform.common.dto.response.GpsConsentTermsResponse
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -158,7 +160,7 @@ class AuthService(
      * 토큰에 각인할 단말 식별자 — 매 요청 단말 재검증 대상이면 현재 바인딩 단말(device_uuid), 아니면 null.
      *
      * null 반환(검증 비활성 / 예외 사번) 시 access token 에 device_id 클레임이 빠지고,
-     * [com.otoki.powersales.common.security.JwtAuthenticationFilter] 가 단말 검증을 건너뛴다.
+     * [com.otoki.powersales.platform.common.security.JwtAuthenticationFilter] 가 단말 검증을 건너뛴다.
      */
     private fun activeDeviceIdFor(employee: Employee): String? {
         if (!uuidCheckProperties.enabled) return null

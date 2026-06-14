@@ -7,8 +7,8 @@ import com.otoki.powersales.domain.activity.claim.dto.response.ClaimDraftRespons
 import com.otoki.powersales.domain.activity.claim.service.ClaimDraftService
 import com.otoki.powersales.domain.activity.claim.service.ClaimService
 import com.otoki.powersales.domain.activity.claim.service.ClaimUpdateRequest
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

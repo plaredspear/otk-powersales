@@ -7,7 +7,7 @@ import java.time.Duration
 /**
  * Web Refresh Token Redis 메타데이터 저장소 (Spec #760).
  *
- * Mobile [com.otoki.powersales.common.security.JwtTokenProvider] 와 분리된 키 prefix(`web_refresh:`)
+ * Mobile [com.otoki.powersales.platform.common.security.JwtTokenProvider] 와 분리된 키 prefix(`web_refresh:`)
  * 사용 — 동일 userId 가 Mobile/Web 동시 사용 시 token rotation 이 서로 영향 주지 않도록 격리.
  *
  * - `web_refresh:<tokenId>` → token 메타 JSON (userId, familyId, issuedAt, expiresAt)

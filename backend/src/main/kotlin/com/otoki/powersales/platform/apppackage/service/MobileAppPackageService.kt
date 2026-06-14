@@ -5,8 +5,8 @@ import com.otoki.powersales.platform.apppackage.dto.AppVersionCheckDto
 import com.otoki.powersales.platform.apppackage.dto.AppVersionMeta
 import com.otoki.powersales.platform.apppackage.entity.AppPlatform
 import com.otoki.powersales.platform.apppackage.repository.AppPackageRepository
-import com.otoki.powersales.common.storage.StorageConstants
-import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.apppackage.entity.AppPackage
 import com.otoki.powersales.platform.apppackage.exception.AppPackageNotFoundException
 import org.springframework.stereotype.Service

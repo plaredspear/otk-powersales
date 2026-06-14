@@ -1,6 +1,6 @@
 package com.otoki.powersales._migration.heroku.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales._migration.heroku.service.HerokuFkResolveProgress
 import com.otoki.powersales._migration.heroku.service.HerokuFkResolveService
 import org.slf4j.LoggerFactory

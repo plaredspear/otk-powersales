@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.promotion.sap.PPTMasterPayloadFactory
 import com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender

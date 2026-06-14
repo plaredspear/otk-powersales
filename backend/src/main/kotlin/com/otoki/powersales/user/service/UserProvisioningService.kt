@@ -35,7 +35,7 @@ import org.springframework.transaction.event.TransactionalEventListener
  * - SAP 인바운드: [com.otoki.powersales.employee.service.EmployeeUpsertService] 가
  *   Employee INSERT 후 [EmployeeCreatedEvent] 발행 → 본 서비스의
  *   [handleEmployeeCreated] 가 `AFTER_COMMIT + @Async` 로 수신.
- * - 로컬 시드: [com.otoki.powersales.common.config.LocalDataInitializer] 가
+ * - 로컬 시드: [com.otoki.powersales.platform.common.config.LocalDataInitializer] 가
  *   [provisionForSeed] 를 동기 호출 (시드는 트랜잭션 분리 의미 없음).
  */
 @Service

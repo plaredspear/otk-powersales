@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.sales.repository
 
-import com.otoki.powersales.common.config.QueryDslConfig
-import com.otoki.powersales.domain.sales.repository.WorkingDayMasterRepository
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.domain.sales.entity.WorkingDayMaster
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

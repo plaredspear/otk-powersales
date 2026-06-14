@@ -4,10 +4,10 @@ import com.otoki.powersales.domain.activity.claim.dto.request.ClaimDraftRequest
 import com.otoki.powersales.domain.activity.claim.dto.response.ClaimDraftResponse
 import com.otoki.powersales.domain.activity.claim.entity.ClaimDraft
 import com.otoki.powersales.domain.activity.claim.repository.ClaimDraftRepository
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.StorageConstants
-import com.otoki.powersales.common.storage.StorageService
-import com.otoki.powersales.common.storage.UploadFileKbnTypes
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadFileKbnTypes
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile

@@ -16,7 +16,7 @@ import com.otoki.powersales.admin.permission.dto.PermissionSetSummary
 import com.otoki.powersales.admin.permission.dto.ProfileDetail
 import com.otoki.powersales.admin.permission.dto.ProfileFlagsSummary
 import com.otoki.powersales.admin.permission.dto.ProfileSummary
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.platform.auth.permission.EntitySfNameRegistry
 import io.mockk.every

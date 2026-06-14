@@ -14,8 +14,8 @@ import java.time.LocalDate
  *
  * ## 권위 출처
  * - **DB**: POS PostgreSQL `public.live_pos_sales_dh` (read-only)
- * - **DataSource**: `posDataSource` ([com.otoki.powersales.common.integration.pos.config.PosDataSourceConfig])
- * - **EntityManagerFactory**: `posEntityManagerFactory` ([com.otoki.powersales.common.integration.pos.config.PosJpaConfig])
+ * - **DataSource**: `posDataSource` ([com.otoki.powersales.platform.common.integration.pos.config.PosDataSourceConfig])
+ * - **EntityManagerFactory**: `posEntityManagerFactory` ([com.otoki.powersales.platform.common.integration.pos.config.PosJpaConfig])
  *
  * ## 레거시 동등
  * 레거시 Heroku `PosMapper.xml`(datasource=`pos`) 의 `selectPosData`/`posSumAmount` 가 조회하던

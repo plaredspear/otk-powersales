@@ -1,6 +1,6 @@
 package com.otoki.powersales.external.sap.outbox
 
-import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.external.sap.outbound.guard.SapResponseHtmlGuard
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier

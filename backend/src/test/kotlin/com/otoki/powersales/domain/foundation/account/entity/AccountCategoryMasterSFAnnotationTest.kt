@@ -1,9 +1,8 @@
 package com.otoki.powersales.domain.foundation.account.entity
 
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.common.salesforce.SFSchemaUtils
-import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.Column

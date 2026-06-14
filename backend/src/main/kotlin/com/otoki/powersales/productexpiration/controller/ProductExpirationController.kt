@@ -1,7 +1,7 @@
 package com.otoki.powersales.productexpiration.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.productexpiration.dto.request.ProductExpirationBatchDeleteRequest
 import com.otoki.powersales.productexpiration.dto.request.ProductExpirationCreateRequest
 import com.otoki.powersales.productexpiration.dto.request.ProductExpirationUpdateRequest

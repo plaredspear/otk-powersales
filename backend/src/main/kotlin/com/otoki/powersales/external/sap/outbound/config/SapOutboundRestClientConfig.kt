@@ -1,6 +1,6 @@
 package com.otoki.powersales.external.sap.outbound.config
 
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.util.TimeZones
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

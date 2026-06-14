@@ -9,7 +9,7 @@ import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardDetai
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardListItem
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardListResponse
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardSummaryResponse
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

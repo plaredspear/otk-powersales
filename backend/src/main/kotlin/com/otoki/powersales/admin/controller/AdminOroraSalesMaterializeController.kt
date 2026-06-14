@@ -5,8 +5,8 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.batch.OroraDailySalesMaterializeBatch
 import com.otoki.powersales.platform.batch.OroraMonthlySalesMaterializeBatch
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.jobrun.ScheduledJobRunner
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.domain.sales.dto.request.OroraSalesMaterializeRequest
 import com.otoki.powersales.domain.sales.materialize.OroraDailyMaterializeResult
 import com.otoki.powersales.domain.sales.materialize.OroraMonthlyMaterializeResult

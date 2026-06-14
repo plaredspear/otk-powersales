@@ -14,7 +14,7 @@ import com.otoki.powersales.domain.foundation.account.service.AccountUpdateServi
 import com.otoki.powersales.domain.foundation.account.service.AdminAccountService
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max

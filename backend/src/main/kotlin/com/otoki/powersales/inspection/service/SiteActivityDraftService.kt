@@ -1,8 +1,8 @@
 package com.otoki.powersales.inspection.service
 
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.StorageConstants
-import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.inspection.dto.request.SiteActivityDraftRequest
 import com.otoki.powersales.inspection.dto.response.SiteActivityDraftResponse
 import com.otoki.powersales.inspection.entity.SiteActivityDraft

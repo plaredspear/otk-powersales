@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.common.config.QueryDslConfig
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

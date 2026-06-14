@@ -2,9 +2,8 @@ package com.otoki.powersales.domain.foundation.account.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.common.naver.NaverGeocodeClient
-import com.otoki.powersales.common.naver.NaverGeocodeResponse
-import com.otoki.powersales.domain.foundation.account.service.AccountNaverGeocodeService
+import com.otoki.powersales.platform.common.naver.NaverGeocodeClient
+import com.otoki.powersales.platform.common.naver.NaverGeocodeResponse
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

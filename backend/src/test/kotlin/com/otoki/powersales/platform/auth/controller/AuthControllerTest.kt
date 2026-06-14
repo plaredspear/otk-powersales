@@ -2,7 +2,6 @@ package com.otoki.powersales.platform.auth.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.auth.dto.request.LoginRequest
-import com.otoki.powersales.common.dto.response.*
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.auth.exception.InvalidCredentialsException
 import com.otoki.powersales.platform.auth.exception.InvalidCurrentPasswordException
@@ -10,17 +9,19 @@ import com.otoki.powersales.platform.auth.exception.InvalidTokenException
 import com.otoki.powersales.platform.auth.exception.NewPasswordPolicyViolationException
 import com.otoki.powersales.platform.auth.exception.TermsNotFoundException
 import com.otoki.powersales.platform.auth.exception.TokenReuseDetectedException
-import com.otoki.powersales.common.security.PasswordChangeRequiredFilter
-import com.otoki.powersales.common.security.UserPrincipal
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.security.PasswordChangeRequiredFilter
+import com.otoki.powersales.platform.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.platform.auth.service.AuthService
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.platform.auth.controller.AuthController
 import com.otoki.powersales.platform.auth.dto.response.ChangePasswordResponse
 import com.otoki.powersales.platform.auth.dto.response.LoginResponse
 import com.otoki.powersales.platform.auth.dto.response.TokenInfo
 import com.otoki.powersales.platform.auth.dto.response.TokenResponse
 import com.otoki.powersales.platform.auth.dto.response.UserInfo
+import com.otoki.powersales.platform.common.dto.response.GpsConsentRecordResponse
+import com.otoki.powersales.platform.common.dto.response.GpsConsentStatusResponse
+import com.otoki.powersales.platform.common.dto.response.GpsConsentTermsResponse
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -409,7 +410,9 @@ class AuthControllerTest : MobileControllerTestSupport() {
     @Test
     @DisplayName("GPS 동의 상태 조회 - 동의 필요 / 불필요 (boolean passthrough)")
     fun gpsConsentStatus_passthrough() {
-        every { authService.getGpsConsentStatus(1L) } returns GpsConsentStatusResponse(requiresGpsConsent = true) andThen GpsConsentStatusResponse(requiresGpsConsent = false)
+        every { authService.getGpsConsentStatus(1L) } returns GpsConsentStatusResponse(requiresGpsConsent = true) andThen GpsConsentStatusResponse(
+            requiresGpsConsent = false
+        )
 
         mockMvc.perform(get("/api/v1/mobile/auth/gps-consent/status"))
             .andExpect(status().isOk)

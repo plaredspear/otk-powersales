@@ -8,7 +8,7 @@ import com.otoki.powersales.platform.auth.web.dto.WebImpersonationStartRequest
 import com.otoki.powersales.platform.auth.web.dto.WebImpersonationStartResponse
 import com.otoki.powersales.platform.auth.web.dto.WebImpersonationStopResponse
 import com.otoki.powersales.platform.auth.web.service.WebImpersonationService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

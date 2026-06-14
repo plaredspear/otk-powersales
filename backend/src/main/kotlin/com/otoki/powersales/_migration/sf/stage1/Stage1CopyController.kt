@@ -1,6 +1,6 @@
 package com.otoki.powersales._migration.sf.stage1
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory

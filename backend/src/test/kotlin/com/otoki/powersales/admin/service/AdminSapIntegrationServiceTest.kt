@@ -5,7 +5,7 @@ import com.otoki.powersales.admin.dto.request.AdminSapOutboundLogQuery
 import com.otoki.powersales.admin.sap.OutboundTriggerType
 import com.otoki.powersales.admin.sap.SapInboundCatalog
 import com.otoki.powersales.admin.sap.SapOutboundCatalog
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditRepository

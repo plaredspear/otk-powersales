@@ -2,7 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.foundation.product.dto.request.InventorySearchRequest
 import com.otoki.powersales.domain.foundation.product.dto.request.ProductExportRequest
 import com.otoki.powersales.domain.foundation.product.dto.response.CategoryTree

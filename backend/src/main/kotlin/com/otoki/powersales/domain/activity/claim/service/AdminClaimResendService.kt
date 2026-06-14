@@ -6,9 +6,9 @@ import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.activity.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.domain.activity.claim.exception.ClaimNotResendableException
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
-import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.UploadFileKbnTypes
-import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.storage.UploadFileKbnTypes
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate

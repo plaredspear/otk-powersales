@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.auth.web
 
-import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.platform.common.security.JwtTokenProvider
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.Jwts

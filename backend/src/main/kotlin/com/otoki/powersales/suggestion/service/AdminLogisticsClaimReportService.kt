@@ -1,6 +1,6 @@
 package com.otoki.powersales.suggestion.service
 
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.suggestion.dto.response.LogisticsClaimReportItem
 import com.otoki.powersales.suggestion.dto.response.LogisticsClaimReportResponse
 import com.otoki.powersales.suggestion.entity.Suggestion

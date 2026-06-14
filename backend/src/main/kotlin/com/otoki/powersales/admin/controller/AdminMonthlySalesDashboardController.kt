@@ -5,7 +5,7 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.sales.dto.request.MonthlySalesDashboardListRequest
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardDetailResponse
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardListResponse

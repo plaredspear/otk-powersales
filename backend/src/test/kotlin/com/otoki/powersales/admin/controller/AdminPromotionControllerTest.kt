@@ -4,7 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.promotion.service.AdminPromotionService

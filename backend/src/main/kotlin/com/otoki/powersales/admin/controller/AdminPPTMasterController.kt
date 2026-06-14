@@ -9,7 +9,7 @@ import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.promotion.dto.response.*
 import com.otoki.powersales.promotion.service.AdminPPTConfirmedReportService
 import com.otoki.powersales.promotion.service.AdminPPTMasterService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest

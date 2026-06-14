@@ -5,7 +5,7 @@ import com.otoki.powersales.admin.security.WebAdminContextFilter
 import com.otoki.powersales.platform.auth.web.WebJwtAuthenticationFilter
 import com.otoki.powersales.platform.auth.web.WebJwtService
 import com.otoki.powersales.platform.auth.web.WebRefreshTokenStore
-import com.otoki.powersales.common.security.JwtAuthenticationEntryPoint
+import com.otoki.powersales.platform.common.security.JwtAuthenticationEntryPoint
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
 import com.otoki.powersales.platform.auth.permission.SfPermissionEvaluator
 import org.springframework.beans.factory.annotation.Value
@@ -28,7 +28,7 @@ import tools.jackson.databind.ObjectMapper
  * - 인증 실패: 기존 [JwtAuthenticationEntryPoint] 재사용 (401 JSON 응답)
  * - STATELESS 세션 (JWT)
  *
- * Order=1 — Mobile [com.otoki.powersales.common.config.SecurityConfig] (Order=2) 보다 먼저 매칭.
+ * Order=1 — Mobile [com.otoki.powersales.platform.common.config.SecurityConfig] (Order=2) 보다 먼저 매칭.
  * 본 chain 의 securityMatcher 가 admin 경로로 한정되어 있어 Mobile chain 과 경로 충돌 없음.
  *
  * Web 인증 인프라(`WebJwtService` / `WebJwtAuthenticationFilter` / `WebRefreshTokenStore`) 는 본 config

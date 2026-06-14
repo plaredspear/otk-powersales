@@ -1,9 +1,7 @@
 package com.otoki.powersales.platform.auth.sharing.service
 
 import com.otoki.powersales.platform.auth.sharing.event.UserRoleChangedEvent
-import com.otoki.powersales.common.config.CacheConfig
-import com.otoki.powersales.platform.auth.sharing.service.UserRoleHierarchyEventHandler
-import com.otoki.powersales.platform.auth.sharing.service.UserRoleHierarchyTraversal
+import com.otoki.powersales.platform.common.config.CacheConfig
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

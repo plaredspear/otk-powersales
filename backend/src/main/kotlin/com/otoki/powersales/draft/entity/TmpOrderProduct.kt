@@ -1,13 +1,13 @@
 package com.otoki.powersales.draft.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HerokuOnly
+import com.otoki.powersales.platform.common.salesforce.HCColumn
+import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.math.BigDecimal
 import java.time.LocalDateTime
-import com.otoki.powersales.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.AuditedEntity
 
 /**
  * 임시저장 주문 라인 — Heroku 호환 + 신규 #596 컬럼 보강.

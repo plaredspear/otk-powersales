@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.domain.support.notice.dto.response.BranchOption

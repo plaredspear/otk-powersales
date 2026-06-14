@@ -12,7 +12,7 @@ import com.otoki.powersales.domain.activity.claim.service.AdminClaimPeriodReport
 import com.otoki.powersales.domain.activity.claim.service.AdminClaimResendService
 import com.otoki.powersales.domain.activity.claim.service.AdminClaimService
 import com.otoki.powersales.domain.activity.claim.service.ClaimPeriodReportType
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpHeaders

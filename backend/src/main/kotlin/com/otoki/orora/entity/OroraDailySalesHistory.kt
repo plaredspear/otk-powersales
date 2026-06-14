@@ -13,8 +13,8 @@ import java.math.BigDecimal
  *
  * ## 권위 출처
  * - **DB**: ORORA MSSQL `ECRM_MULCUST_MH_V` view (read-only)
- * - **DataSource**: `ororaDataSource` ([com.otoki.powersales.common.integration.orora.config.OroraDataSourceConfig], Spec #695)
- * - **EntityManagerFactory**: `ororaEntityManagerFactory` ([com.otoki.powersales.common.integration.orora.config.OroraJpaConfig])
+ * - **DataSource**: `ororaDataSource` ([com.otoki.powersales.platform.common.integration.orora.config.OroraDataSourceConfig], Spec #695)
+ * - **EntityManagerFactory**: `ororaEntityManagerFactory` ([com.otoki.powersales.platform.common.integration.orora.config.OroraJpaConfig])
  * - **활성 환경**: dev / prod 만 (VPC Peering 한정)
  *
  * ## 클래스명이 `Orora` 접두사인 이유

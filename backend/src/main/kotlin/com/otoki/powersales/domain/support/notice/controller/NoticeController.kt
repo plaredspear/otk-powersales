@@ -1,9 +1,9 @@
 package com.otoki.powersales.domain.support.notice.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostListResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.domain.support.notice.service.NoticeService
 import org.springframework.http.ResponseEntity

@@ -1,8 +1,8 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.common.entity.AuditedEntity
-import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HerokuOnly
+import com.otoki.powersales.platform.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.salesforce.HCColumn
+import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate

@@ -1,13 +1,12 @@
 package com.otoki.powersales.domain.foundation.product.controller
 
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductCategoryGroup
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductDto
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchTypeException
 import com.otoki.powersales.domain.foundation.product.service.ProductService
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.domain.foundation.product.controller.ProductController
 import io.mockk.every
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

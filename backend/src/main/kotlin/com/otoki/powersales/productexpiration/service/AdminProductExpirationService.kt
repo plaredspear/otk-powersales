@@ -12,7 +12,7 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.common.exception.ProductNotFoundException
+import com.otoki.powersales.platform.common.exception.ProductNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.productexpiration.entity.ProductExpiration

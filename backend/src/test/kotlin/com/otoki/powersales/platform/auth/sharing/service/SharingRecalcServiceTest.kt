@@ -2,8 +2,7 @@ package com.otoki.powersales.platform.auth.sharing.service
 
 import com.otoki.powersales.platform.auth.sharing.entity.SharingRecalcLog
 import com.otoki.powersales.platform.auth.sharing.repository.SharingRecalcLogRepository
-import com.otoki.powersales.common.config.CacheConfig
-import com.otoki.powersales.platform.auth.sharing.service.SharingRecalcService
+import com.otoki.powersales.platform.common.config.CacheConfig
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

@@ -3,9 +3,9 @@ package com.otoki.powersales.inspection.service
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
-import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.StorageService
-import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.inspection.entity.InspectionTheme
 import com.otoki.powersales.inspection.entity.SiteActivity

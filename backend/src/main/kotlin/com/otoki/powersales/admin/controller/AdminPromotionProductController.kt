@@ -5,7 +5,7 @@ import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest
 import com.otoki.powersales.promotion.dto.response.PromotionPosProductResponse
 import com.otoki.powersales.promotion.service.AdminPromotionService

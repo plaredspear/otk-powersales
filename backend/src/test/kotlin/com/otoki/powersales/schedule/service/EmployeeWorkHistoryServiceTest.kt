@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
@@ -14,7 +14,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import java.time.LocalDate
 import java.util.Optional

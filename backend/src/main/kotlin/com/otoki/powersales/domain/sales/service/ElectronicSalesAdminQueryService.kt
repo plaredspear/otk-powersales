@@ -5,7 +5,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.sales.dto.request.ElectronicSalesDashboardListRequest
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardDetailResponse
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListItem

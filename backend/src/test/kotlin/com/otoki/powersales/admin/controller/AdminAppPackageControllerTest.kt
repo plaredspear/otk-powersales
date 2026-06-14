@@ -4,7 +4,7 @@ import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.platform.apppackage.dto.AppPackageDetailDto
 import com.otoki.powersales.platform.apppackage.entity.AppPlatform
 import com.otoki.powersales.platform.apppackage.service.AdminAppPackageService
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.DisplayName

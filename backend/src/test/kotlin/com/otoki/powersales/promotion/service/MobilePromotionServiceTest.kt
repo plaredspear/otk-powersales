@@ -1,7 +1,7 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.common.enums.WorkingCategory3
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
+import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee

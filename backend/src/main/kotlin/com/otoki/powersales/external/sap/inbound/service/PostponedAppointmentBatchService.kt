@@ -1,6 +1,6 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.AppointmentRepository
 import org.slf4j.LoggerFactory

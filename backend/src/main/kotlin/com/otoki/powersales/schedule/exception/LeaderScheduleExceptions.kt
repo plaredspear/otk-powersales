@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.exception
 
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 
 // ===== 입력 검증 (HTTP 400) =====

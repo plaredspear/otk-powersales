@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.common.enums.WorkingCategory3
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
+import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.schedule.exception.LeaderScheduleCategory3ConflictException
 import com.otoki.powersales.schedule.exception.LeaderScheduleCategory3LimitExceededException
 import com.otoki.powersales.schedule.exception.LeaderScheduleDuplicateLeaveException

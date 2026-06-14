@@ -15,9 +15,8 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
-import com.otoki.powersales.common.config.QueryDslConfig
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.domain.foundation.product.enums.StorageCondition
-import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)

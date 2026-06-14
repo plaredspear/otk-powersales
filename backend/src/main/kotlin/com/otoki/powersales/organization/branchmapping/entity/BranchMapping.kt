@@ -1,6 +1,6 @@
 package com.otoki.powersales.organization.branchmapping.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.entity.BaseEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id

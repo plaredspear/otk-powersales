@@ -1,6 +1,6 @@
 package com.otoki.powersales.external.sap.integration.converter
 
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.util.TimeZones
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter

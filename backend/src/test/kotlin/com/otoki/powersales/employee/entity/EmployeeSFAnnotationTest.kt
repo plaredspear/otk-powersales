@@ -1,9 +1,9 @@
 package com.otoki.powersales.employee.entity
 
 import com.otoki.powersales.platform.auth.entity.AppAuthority
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.employee.entity.converter.CrmWorkTypeConverter
 import com.otoki.powersales.employee.entity.converter.GenderConverter
 import com.otoki.powersales.employee.enums.CrmWorkType

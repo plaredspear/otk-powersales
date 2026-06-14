@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
 import com.otoki.powersales.admin.service.AdminScheduledJobService
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import io.mockk.every
@@ -21,7 +21,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminScheduledJobController::class)
 @AutoConfigureMockMvc(addFilters = false)

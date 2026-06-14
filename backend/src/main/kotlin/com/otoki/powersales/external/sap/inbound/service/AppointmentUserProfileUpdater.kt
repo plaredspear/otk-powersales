@@ -7,7 +7,7 @@ import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
-import com.otoki.powersales.common.repository.SystemCodeMasterRepository
+import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.user.service.EmployeeProfileResolver
 import com.otoki.powersales.user.service.UserRoleResolver

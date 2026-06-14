@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.activity.order.controller
 
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.domain.activity.order.dto.response.CancelledLineResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderCancelResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderHistoryGroupResponse
@@ -26,7 +26,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import io.mockk.every
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.domain.activity.order.controller.OrderRequestController
 import com.otoki.powersales.domain.activity.order.dto.response.OrderProcessingStatusResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderedItemResponse

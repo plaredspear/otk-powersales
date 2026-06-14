@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.support.education.service
 
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.support.education.dto.response.AdminEducationListResponse
 import com.otoki.powersales.domain.support.education.dto.response.AdminEducationPostSummary
 import com.otoki.powersales.domain.support.education.dto.response.AttachmentInfo

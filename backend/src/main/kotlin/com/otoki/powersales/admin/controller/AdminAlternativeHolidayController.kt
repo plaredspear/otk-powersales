@@ -10,7 +10,7 @@ import com.otoki.powersales.leave.dto.response.AlternativeHolidayCreateResponse
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
 import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat

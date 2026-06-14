@@ -1,7 +1,7 @@
 package com.otoki.powersales.productexpiration.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.productexpiration.dto.response.ProductExpirationBatchDeleteResponse
 import com.otoki.powersales.productexpiration.dto.response.ProductExpirationItemResponse
 import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException

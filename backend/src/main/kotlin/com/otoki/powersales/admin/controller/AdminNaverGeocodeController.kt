@@ -6,7 +6,7 @@ import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.NaverGeocodeTestRequest
 import com.otoki.powersales.admin.dto.response.NaverGeocodeTestResponse
 import com.otoki.powersales.admin.service.AdminNaverGeocodeService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity

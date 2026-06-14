@@ -1,9 +1,9 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.common.enums.WorkingCategory1
-import com.otoki.powersales.common.enums.WorkingCategory2
-import com.otoki.powersales.common.enums.WorkingCategory3
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingCategory2
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
+import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
@@ -18,6 +18,7 @@ import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -272,8 +273,8 @@ class AdminTeamScheduleServiceTest {
         fun getBranches_systemAdmin() {
             val admin = createEmployee(id = 10L, role = null, costCenterCode = "9999")
             val branches = listOf(
-                com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"),
-                com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
+                BranchResponse("5460", "강남유통지점"),
+                BranchResponse("5457", "강북유통지점")
             )
             every { organizationRepository.findAllTeamScheduleBranches() } returns branches
 
@@ -288,7 +289,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("ALL_BRANCHES Role (영업지원실) - 전사 분기 (CVS 미포함)")
         fun getBranches_allBranchesRole() {
             val supporter = createEmployee(id = 10L, role = null, costCenterCode = "3475")
-            val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"))
+            val branches = listOf(BranchResponse("5460", "강남유통지점"))
             every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches
 
             val result = service.getBranches(principalOf(supporter, isSalesSupport = true))
@@ -303,7 +304,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("일반 영업담당 Role (조장) - 본인 costCenterCode 기준 분기")
         fun getBranches_scopedRole() {
             val leader = createEmployee(id = 10L, role = AppAuthority.LEADER, costCenterCode = "5457")
-            val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점"))
+            val branches = listOf(BranchResponse("5457", "강북유통지점"))
             every { organizationRepository.findTeamScheduleBranches("5457", false) } returns branches
 
             val result = service.getBranches(principalOf(leader))
@@ -324,7 +325,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("단일지점 사용자 - branches 1건 + accounts 자동 채움")
         fun getForm_singleBranch_includesAccounts() {
             val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "5457", role = AppAuthority.LEADER)
-            val branch = com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
+            val branch = BranchResponse("5457", "강북유통지점")
             val member = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = AppAuthority.WOMAN)
             val account = createAccount(id = 1, sfid = "ACC_001", name = "이마트 강북점", branchCode = "5457")
 
@@ -352,8 +353,8 @@ class AdminTeamScheduleServiceTest {
         fun getForm_multiBranch_accountsEmpty() {
             val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "3475", role = null)
             val branches = listOf(
-                com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"),
-                com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
+                BranchResponse("5460", "강남유통지점"),
+                BranchResponse("5457", "강북유통지점")
             )
 
             every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches
@@ -371,8 +372,8 @@ class AdminTeamScheduleServiceTest {
         fun getForm_multiBranch_withBranchCode() {
             val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "3475", role = null)
             val branches = listOf(
-                com.otoki.powersales.common.dto.response.BranchResponse("5460", "강남유통지점"),
-                com.otoki.powersales.common.dto.response.BranchResponse("5457", "강북유통지점")
+                BranchResponse("5460", "강남유통지점"),
+                BranchResponse("5457", "강북유통지점")
             )
             val account = createAccount(id = 2001, sfid = "ACC_2001", name = "이마트 강남점", branchCode = "5460")
 
@@ -392,7 +393,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("accounts 이름 가나다순 정렬 - 입력 순서와 무관하게 name asc 반환")
         fun getForm_accountsSortedByName() {
             val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "1234", role = AppAuthority.LEADER)
-            val branch = com.otoki.powersales.common.dto.response.BranchResponse("1234", "강북유통지점")
+            val branch = BranchResponse("1234", "강북유통지점")
             val homeplus = createAccount(id = 1, sfid = "ACC_001", name = "홈플러스 역삼점", branchCode = "1234")
             val emart = createAccount(id = 2, sfid = "ACC_002", name = "이마트 강남점", branchCode = "1234")
             val gs = createAccount(id = 3, sfid = "ACC_003", name = "GS25 강남점", branchCode = "1234")
@@ -412,7 +413,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("BranchMapping 1:N 확장 - cvs전략 '5694' → {5691,5692,5693,5694} 모두 조회")
         fun getForm_branchMappingExpansion() {
             val supporter = createEmployee(id = 10L, employeeCode = "20100001", costCenterCode = "3475", role = null)
-            val branches = listOf(com.otoki.powersales.common.dto.response.BranchResponse("5694", "CVS전략"))
+            val branches = listOf(BranchResponse("5694", "CVS전략"))
             val expandedCodes = setOf("5691", "5692", "5693", "5694")
 
             every { organizationRepository.findTeamScheduleBranches(null, true) } returns branches

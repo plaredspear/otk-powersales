@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.activity.order.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.domain.activity.order.dto.response.ClientOrderDetailResponse
 import com.otoki.powersales.domain.activity.order.dto.response.ClientOrderItemResponse
 import com.otoki.powersales.domain.activity.order.dto.response.ClientOrderSummaryResponse

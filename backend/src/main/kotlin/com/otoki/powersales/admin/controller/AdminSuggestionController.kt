@@ -4,8 +4,8 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionCreateRequest
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionDetailResponse
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionListResponse

@@ -1,8 +1,8 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.converter.CrmWorkTypeConverter
 import com.otoki.powersales.employee.entity.converter.GenderConverter
 import jakarta.persistence.*
@@ -17,7 +17,7 @@ import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeam
 import com.otoki.powersales.user.entity.User
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 
 /**
  * 사원 Entity

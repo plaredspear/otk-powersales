@@ -13,8 +13,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
-import com.otoki.powersales.common.config.QueryDslConfig
-import com.otoki.powersales.domain.foundation.product.repository.FavoriteProductRepository
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 
 /**
  * FavoriteProduct V1 리매핑 테스트

@@ -1,7 +1,7 @@
 package com.otoki.powersales._migration.sf.controller
 
 import com.otoki.powersales.platform.auth.sharing.service.UserRoleHierarchyTraversal
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales._migration.sf.dto.SfFkResolveProgressResponse
 import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.dto.SubstepResult
@@ -90,7 +90,7 @@ class SfMigrationStage2Controller(
     /**
      * UploadFile polymorphic parent resolve — record_sfid (SF Id text) → parent_id (Long FK).
      *
-     * fk substep 직후 1회 호출. 매핑 표는 [com.otoki.powersales.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS].
+     * fk substep 직후 1회 호출. 매핑 표는 [com.otoki.powersales.platform.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS].
      */
     @PostMapping("/api/v1/admin/sf-migration/stage2/upload-file-polymorphic-parent")
     fun runUploadFilePolymorphicParent(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {

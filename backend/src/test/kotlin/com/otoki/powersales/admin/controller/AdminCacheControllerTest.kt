@@ -2,7 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.service.AdminCacheService
 import com.otoki.powersales.platform.auth.entity.AppAuthority
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.verify

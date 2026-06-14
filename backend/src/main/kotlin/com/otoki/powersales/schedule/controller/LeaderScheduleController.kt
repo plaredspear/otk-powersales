@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.schedule.dto.request.LeaderEventScheduleChangeRequest
 import com.otoki.powersales.schedule.dto.request.LeaderProxyAttendanceRequest
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest

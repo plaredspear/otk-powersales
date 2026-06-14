@@ -1,6 +1,6 @@
 package com.otoki.powersales.organization.repository
 
-import com.otoki.powersales.common.dto.response.BranchResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
 

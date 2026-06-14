@@ -2,7 +2,7 @@ package com.otoki.powersales.domain.sales.service
 
 import com.otoki.pos.repository.LivePosSalesDailyRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
 import org.slf4j.LoggerFactory

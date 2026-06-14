@@ -1,8 +1,8 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.NaverGeocodeTestRequest
-import com.otoki.powersales.common.naver.NaverApiException
-import com.otoki.powersales.common.naver.NaverGeocodeClient
+import com.otoki.powersales.platform.common.naver.NaverApiException
+import com.otoki.powersales.platform.common.naver.NaverGeocodeClient
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat

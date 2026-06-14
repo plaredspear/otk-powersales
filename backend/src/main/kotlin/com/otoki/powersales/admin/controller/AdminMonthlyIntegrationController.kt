@@ -5,7 +5,7 @@ import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.schedule.dto.response.CategoryScheduleResponse
 import com.otoki.powersales.schedule.dto.response.MonthlyIntegrationScheduleResponse
 import com.otoki.powersales.schedule.service.AdminMonthlyIntegrationService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity

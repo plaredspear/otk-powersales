@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckRpaItem
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckRpaResponse
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule

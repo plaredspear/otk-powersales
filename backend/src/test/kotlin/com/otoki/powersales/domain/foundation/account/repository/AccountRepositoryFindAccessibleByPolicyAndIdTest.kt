@@ -2,8 +2,7 @@ package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
-import com.otoki.powersales.common.config.QueryDslConfig
-import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.querydsl.core.types.dsl.Expressions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

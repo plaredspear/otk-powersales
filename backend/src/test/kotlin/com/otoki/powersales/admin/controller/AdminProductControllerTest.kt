@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import java.time.LocalDate
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.foundation.product.service.AdminProductExportService
 import com.otoki.powersales.domain.foundation.product.service.AdminProductInventoryService
 import com.otoki.powersales.domain.foundation.product.service.AdminProductService

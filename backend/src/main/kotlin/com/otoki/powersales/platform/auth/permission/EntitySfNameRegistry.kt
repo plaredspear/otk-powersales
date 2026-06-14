@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.auth.permission
 
-import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Table
 import org.slf4j.LoggerFactory

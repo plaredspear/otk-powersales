@@ -26,7 +26,7 @@ import org.springframework.data.repository.Repository
  *   `YYYYMMDD` 8자 원본 문자열이라 `YYYYMM` prefix 매칭으로 한 달치를 조회한다.
  *
  * ## 활성 환경
- * 모든 환경. [com.otoki.powersales.common.integration.orora.config.OroraJpaConfig] 의
+ * 모든 환경. [com.otoki.powersales.platform.common.integration.orora.config.OroraJpaConfig] 의
  * `@EnableJpaRepositories` scope 에 의해 ORORA EMF/TM 에 bind 됨. local/test 에서는 호출 site 가
  * 없어 connection acquire 자체가 발생하지 않으며, dev/prod VPN 장애 시에는 호출 site 만
  * `CannotCreateTransactionException` 으로 실패하고 메인 기능은 무영향.

@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.dto.response.AccountListResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.AccountListResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.schedule.dto.request.AttendanceRegisterRequest
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusResponse

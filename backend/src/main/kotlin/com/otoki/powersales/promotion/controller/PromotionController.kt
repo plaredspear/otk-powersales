@@ -1,7 +1,7 @@
 package com.otoki.powersales.promotion.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.promotion.dto.response.MobilePromotionDetailResponse
 import com.otoki.powersales.promotion.dto.response.MobilePromotionListResponse
 import com.otoki.powersales.promotion.dto.response.MyPromotionAssignmentItem

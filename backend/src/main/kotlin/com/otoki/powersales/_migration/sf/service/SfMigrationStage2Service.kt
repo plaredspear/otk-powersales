@@ -1,6 +1,6 @@
 package com.otoki.powersales._migration.sf.service
 
-import com.otoki.powersales.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS
+import com.otoki.powersales.platform.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS
 import com.otoki.powersales.domain.support.notice.service.NoticeImagePlaceholder
 import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.dto.SubstepResult

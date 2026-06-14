@@ -1,8 +1,8 @@
 package com.otoki.powersales.external.sap.inbound.controller
 
-import com.otoki.powersales.common.security.GpsConsentFilter
-import com.otoki.powersales.common.security.JwtAuthenticationFilter
-import com.otoki.powersales.common.security.JwtTokenProvider
+import com.otoki.powersales.platform.common.security.GpsConsentFilter
+import com.otoki.powersales.platform.common.security.JwtAuthenticationFilter
+import com.otoki.powersales.platform.common.security.JwtTokenProvider
 import com.otoki.powersales.platform.auth.sharing.service.FlsService
 import com.otoki.powersales.platform.auth.sharing.service.PermissionSetEvaluator
 import com.otoki.powersales.user.repository.UserRepository

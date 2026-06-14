@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.activity.order.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.domain.activity.order.dto.response.ClientOrderDetailResponse
 import com.otoki.powersales.domain.activity.order.dto.response.ClientOrderSummaryResponse
 import com.otoki.powersales.domain.activity.order.service.ClientOrderQueryService

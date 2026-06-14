@@ -1,7 +1,7 @@
 package com.otoki.powersales.safetycheck.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
 import com.otoki.powersales.safetycheck.dto.response.MemberStatus
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse

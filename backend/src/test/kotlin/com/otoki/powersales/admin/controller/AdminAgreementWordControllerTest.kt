@@ -4,7 +4,7 @@ import com.otoki.powersales.domain.support.agreement.dto.request.AdminAgreementW
 import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordActiveResponse
 import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordCreateResponse
 import com.otoki.powersales.domain.support.agreement.service.AdminAgreementWordService
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

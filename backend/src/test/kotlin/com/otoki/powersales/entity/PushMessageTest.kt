@@ -9,8 +9,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
-import com.otoki.powersales.common.config.QueryDslConfig
-import com.otoki.powersales.common.entity.PushMessage
+import com.otoki.powersales.platform.common.config.QueryDslConfig
+import com.otoki.powersales.platform.common.entity.PushMessage
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 

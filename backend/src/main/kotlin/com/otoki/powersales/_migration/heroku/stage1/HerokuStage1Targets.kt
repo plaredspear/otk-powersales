@@ -1,9 +1,9 @@
 package com.otoki.powersales._migration.heroku.stage1
 
-import com.otoki.powersales.common.entity.EmployeeAdmin
-import com.otoki.powersales.common.entity.LoginHistory
-import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HerokuOnly
+import com.otoki.powersales.platform.common.entity.EmployeeAdmin
+import com.otoki.powersales.platform.common.entity.LoginHistory
+import com.otoki.powersales.platform.common.salesforce.HCColumn
+import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import com.otoki.powersales.draft.entity.TmpClaim
 import com.otoki.powersales.draft.entity.TmpClaimCode
 import com.otoki.powersales.draft.entity.TmpOnsite

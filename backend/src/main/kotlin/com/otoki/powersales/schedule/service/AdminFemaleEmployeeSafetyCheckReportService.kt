@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.common.util.TimeZones
+import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckReportItem
 import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckReportResponse
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule

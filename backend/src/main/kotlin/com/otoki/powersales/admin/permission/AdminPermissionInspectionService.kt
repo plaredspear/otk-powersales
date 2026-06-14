@@ -21,7 +21,7 @@ import com.otoki.powersales.admin.permission.dto.ProfileSummary
 import com.otoki.powersales.platform.auth.permission.EntitySfNameRegistry
 import com.otoki.powersales.platform.auth.permission.SfPermissionResolver
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
-import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.platform.common.config.CacheConfig
 import org.springframework.cache.annotation.Cacheable
 import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetAssignmentRepository
 import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetFlagsRepository

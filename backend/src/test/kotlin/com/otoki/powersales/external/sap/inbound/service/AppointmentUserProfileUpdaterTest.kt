@@ -3,8 +3,8 @@ package com.otoki.powersales.external.sap.inbound.service
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
-import com.otoki.powersales.common.entity.SystemCodeMaster
-import com.otoki.powersales.common.repository.SystemCodeMasterRepository
+import com.otoki.powersales.platform.common.entity.SystemCodeMaster
+import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository

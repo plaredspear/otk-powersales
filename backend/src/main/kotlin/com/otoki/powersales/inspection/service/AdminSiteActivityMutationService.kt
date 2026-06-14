@@ -1,10 +1,10 @@
 package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.common.entity.UploadFile
-import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.entity.UploadFile
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.AdminCreateSiteActivityRequest
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityMutationResponse
@@ -30,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile
  *
  * ## 신규 차이
  * - mobile 등록([SiteActivityService.register])이 로그인 사원 본인 기준인 반면, admin 은 점검 사원(`employeeId`)을
- *   관리자가 명시 지정 (다른 사원 대신 보정 입력). owner 는 [com.otoki.powersales.common.entity.OwnerUserDefaultListener]
+ *   관리자가 명시 지정 (다른 사원 대신 보정 입력). owner 는 [com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener]
  *   가 등록자(관리자) 로 자동 세팅.
  * - parent(SiteActivity) + child(UploadFile N건) 단일 `@Transactional`.
  */

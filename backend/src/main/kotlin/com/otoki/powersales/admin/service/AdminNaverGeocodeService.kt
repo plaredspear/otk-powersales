@@ -2,8 +2,8 @@ package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.NaverGeocodeTestRequest
 import com.otoki.powersales.admin.dto.response.NaverGeocodeTestResponse
-import com.otoki.powersales.common.naver.NaverApiException
-import com.otoki.powersales.common.naver.NaverGeocodeClient
+import com.otoki.powersales.platform.common.naver.NaverApiException
+import com.otoki.powersales.platform.common.naver.NaverGeocodeClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 

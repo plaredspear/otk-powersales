@@ -19,7 +19,7 @@ import com.otoki.powersales.employee.service.AdminEmployeeService
 import com.otoki.powersales.employee.service.AdminEmployeeUpdateService
 import com.otoki.powersales.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.schedule.service.EmployeeWorkHistoryService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity

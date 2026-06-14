@@ -1,7 +1,7 @@
 package com.otoki.powersales.inspection.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.inspection.dto.request.InspectionRegisterRequest
 import com.otoki.powersales.inspection.dto.request.SiteActivityDraftRequest
 import com.otoki.powersales.inspection.dto.response.InspectionDetailResponse

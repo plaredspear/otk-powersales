@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.entity.BaseEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -16,7 +16,7 @@ import java.math.BigDecimal
  * 레거시 `salesforce2.tmp_promotion` 대응. 최종 마감 시 [com.otoki.powersales.promotion.entity.PromotionEmployee]
  * 본 row 에 값이 반영되고 이 draft 는 삭제된다. PromotionEmployee 1건당 draft 1건(unique).
  *
- * SF 와 동기화되지 않는 로컬 전용 테이블이므로 [com.otoki.powersales.common.salesforce.SFObject] 어노테이션을 두지 않는다.
+ * SF 와 동기화되지 않는 로컬 전용 테이블이므로 [com.otoki.powersales.platform.common.salesforce.SFObject] 어노테이션을 두지 않는다.
  */
 @Entity
 @Table(name = "daily_sales_draft")

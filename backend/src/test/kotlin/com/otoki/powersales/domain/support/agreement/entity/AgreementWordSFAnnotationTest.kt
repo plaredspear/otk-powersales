@@ -1,8 +1,8 @@
 package com.otoki.powersales.domain.support.agreement.entity
 
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

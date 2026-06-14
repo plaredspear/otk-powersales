@@ -1,10 +1,9 @@
 package com.otoki.powersales.domain.support.notice.repository
 
-import com.otoki.powersales.common.config.QueryDslConfig
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.domain.support.notice.entity.Notice
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
-import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

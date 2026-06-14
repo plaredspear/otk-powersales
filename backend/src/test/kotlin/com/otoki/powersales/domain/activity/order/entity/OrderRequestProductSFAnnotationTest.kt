@@ -1,9 +1,9 @@
 package com.otoki.powersales.domain.activity.order.entity
 
 import com.otoki.powersales.platform.auth.entity.AppAuthority
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.employee.entity.Employee

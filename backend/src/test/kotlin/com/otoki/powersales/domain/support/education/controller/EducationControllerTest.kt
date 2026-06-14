@@ -1,8 +1,7 @@
 package com.otoki.powersales.domain.support.education.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.common.test.MobileControllerTestSupport
-import com.otoki.powersales.domain.support.education.controller.EducationController
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.domain.support.education.exception.EducationPostNotFoundException
 import com.otoki.powersales.domain.support.education.exception.InvalidEducationCategoryException
 import com.otoki.powersales.domain.support.education.service.EducationService

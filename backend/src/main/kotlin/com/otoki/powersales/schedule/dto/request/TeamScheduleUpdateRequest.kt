@@ -1,9 +1,9 @@
 package com.otoki.powersales.schedule.dto.request
 
-import com.otoki.powersales.common.enums.WorkingCategory1
-import com.otoki.powersales.common.enums.WorkingCategory2
-import com.otoki.powersales.common.enums.WorkingCategory3
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingCategory2
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
+import com.otoki.powersales.platform.common.enums.WorkingType
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 

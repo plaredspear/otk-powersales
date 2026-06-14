@@ -1,9 +1,9 @@
 package com.otoki.powersales.schedule.entity
 
 import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
-import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork1Converter
 import com.otoki.powersales.schedule.enums.TypeOfWork1
@@ -14,7 +14,7 @@ import java.math.RoundingMode
 import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 
 /**
  * 여사원 투입 기준 마스터 Entity (EmployeeInputCriteriaMaster__c).

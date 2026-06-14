@@ -12,11 +12,9 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
-import com.otoki.powersales.common.config.QueryDslConfig
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.domain.support.education.entity.EducationPost
 import com.otoki.powersales.domain.support.education.entity.EducationPostAttachment
-import com.otoki.powersales.domain.support.education.repository.EducationPostAttachmentRepository
-import com.otoki.powersales.domain.support.education.repository.EducationPostRepository
 import java.time.LocalDateTime
 
 @DataJpaTest

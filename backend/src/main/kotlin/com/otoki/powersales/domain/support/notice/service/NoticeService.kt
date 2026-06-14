@@ -1,12 +1,12 @@
 package com.otoki.powersales.domain.support.notice.service
 
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.common.entity.UploadFile
-import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.StorageConstants
-import com.otoki.powersales.common.storage.StorageService
-import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.entity.UploadFile
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.domain.support.notice.dto.response.BranchOption

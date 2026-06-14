@@ -1,8 +1,8 @@
 package com.otoki.powersales.platform.apppackage.service
 
-import com.otoki.powersales.common.config.DomainProperties
-import com.otoki.powersales.common.storage.StorageService
-import com.otoki.powersales.common.storage.UploadResult
+import com.otoki.powersales.platform.common.config.DomainProperties
+import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadResult
 import com.otoki.powersales.platform.apppackage.entity.AppPackage
 import com.otoki.powersales.platform.apppackage.entity.AppPlatform
 import com.otoki.powersales.platform.apppackage.exception.*

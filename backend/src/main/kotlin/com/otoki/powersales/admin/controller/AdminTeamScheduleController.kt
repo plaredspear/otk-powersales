@@ -8,8 +8,8 @@ import com.otoki.powersales.schedule.dto.request.TeamScheduleSearchRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.service.AdminTeamScheduleService
-import com.otoki.powersales.common.dto.response.BranchResponse
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

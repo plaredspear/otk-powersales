@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.schedule.dto.response.*
 import com.otoki.powersales.schedule.service.AdminMonthlyIntegrationService
 import com.otoki.powersales.schedule.service.InvalidParameterException

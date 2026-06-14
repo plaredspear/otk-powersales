@@ -3,7 +3,7 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.sales.dto.response.WorkingDayMasterListResponse
 import com.otoki.powersales.domain.sales.service.AdminWorkingDayMasterService
 import org.springframework.http.ResponseEntity

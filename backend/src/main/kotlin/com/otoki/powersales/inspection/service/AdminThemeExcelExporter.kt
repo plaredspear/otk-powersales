@@ -1,8 +1,8 @@
 package com.otoki.powersales.inspection.service
 
-import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.inspection.repository.SiteActivityRepository

@@ -1,7 +1,7 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.common.service.SystemCodeMasterUpsertService
-import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertCommand
+import com.otoki.powersales.platform.common.service.SystemCodeMasterUpsertService
+import com.otoki.powersales.platform.common.service.dto.SystemCodeMasterUpsertCommand
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAccepted
 import com.otoki.powersales.external.sap.inbound.dto.product.FailureItem
 import com.otoki.powersales.external.sap.inbound.dto.product.ProductMasterDetail

@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.controller
 
 import com.otoki.powersales.schedule.dto.response.*
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.schedule.service.MyScheduleService
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every

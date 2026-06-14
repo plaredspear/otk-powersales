@@ -6,9 +6,9 @@ import com.otoki.powersales.domain.foundation.account.entity.converter.FreezerTy
 import com.otoki.powersales.domain.foundation.account.entity.converter.IndustryConverter
 import com.otoki.powersales.domain.foundation.account.entity.converter.OwnershipConverter
 import com.otoki.powersales.domain.foundation.account.entity.converter.RatingConverter
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
@@ -16,7 +16,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 
 /**
  * 거래처 마스터 Entity

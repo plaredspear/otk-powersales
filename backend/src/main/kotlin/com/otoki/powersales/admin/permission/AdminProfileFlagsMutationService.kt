@@ -11,7 +11,7 @@ import com.otoki.powersales.platform.auth.permission.EntitySfNameRegistry
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.platform.auth.sharing.entity.ProfileFlags
 import com.otoki.powersales.platform.auth.sharing.repository.ProfileFlagsRepository
-import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.platform.common.config.CacheConfig
 import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.CacheEvict

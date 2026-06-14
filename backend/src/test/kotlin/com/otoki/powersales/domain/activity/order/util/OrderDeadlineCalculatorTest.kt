@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.order.util
 
-import com.otoki.powersales.common.util.TimeZones
-import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
+import com.otoki.powersales.platform.common.util.TimeZones
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

@@ -1,9 +1,9 @@
 package com.otoki.powersales.domain.support.education.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.support.education.dto.response.EducationPostDetailResponse
 import com.otoki.powersales.domain.support.education.dto.response.EducationPostListResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.domain.support.education.service.EducationService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

@@ -1,11 +1,11 @@
 package com.otoki.powersales.domain.foundation.product.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.foundation.product.dto.response.OrderProductDto
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductCategoryGroup
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductDetail
 import com.otoki.powersales.domain.foundation.product.dto.response.ProductDto
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.domain.foundation.product.service.ProductService
 import org.springframework.data.domain.Page
 import org.springframework.http.ResponseEntity

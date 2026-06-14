@@ -1,8 +1,8 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.StorageConstants
-import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.promotion.dto.request.DailySalesCloseRequest
 import com.otoki.powersales.promotion.dto.request.DailySalesDraftRequest
 import com.otoki.powersales.promotion.dto.response.DailySalesFormResponse

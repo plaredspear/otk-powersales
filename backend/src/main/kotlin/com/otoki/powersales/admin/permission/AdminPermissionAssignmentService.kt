@@ -17,7 +17,7 @@ import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.platform.auth.sharing.entity.PermissionSetAssignment
 import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetAssignmentRepository
 import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetFlagsRepository
-import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.user.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.CacheEvict

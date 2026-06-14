@@ -13,7 +13,7 @@ import com.otoki.powersales.admin.dto.response.SapOutboundLogDetail
 import com.otoki.powersales.admin.dto.response.SapOutboundLogListResponse
 import com.otoki.powersales.admin.dto.response.SapOutboxPendingListResponse
 import com.otoki.powersales.admin.service.AdminSapIntegrationService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

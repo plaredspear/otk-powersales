@@ -1,6 +1,6 @@
 package com.otoki.powersales.leave.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.leave.service.HolidayMasterService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping

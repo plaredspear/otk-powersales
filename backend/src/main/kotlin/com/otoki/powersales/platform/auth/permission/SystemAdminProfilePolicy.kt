@@ -12,7 +12,7 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
  * Profile row 자체의 SoT 는 **SF Profile 마이그레이션** (Stage1 Profile 적재) — 본 object 는 backend 코드의
  * 한글 상수 정렬을 위한 lookup key 만 보유한다. dev/prod 환경에서는 SF 의 운영 Profile row 가 sfid 와 함께
  * profile 테이블에 적재되어 있어야 하며 (Stage1 + post-copy hook 의 SF Admin → '시스템 관리자' rename 포함),
- * local 환경에서는 [com.otoki.powersales.common.config.LocalDataInitializer] 가 부족분 Profile row 를 자체 시드한다.
+ * local 환경에서는 [com.otoki.powersales.platform.common.config.LocalDataInitializer] 가 부족분 Profile row 를 자체 시드한다.
  */
 object SystemAdminProfilePolicy {
 

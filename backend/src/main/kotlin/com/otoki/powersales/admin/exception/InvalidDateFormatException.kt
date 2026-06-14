@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.exception
 
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 
 class InvalidDateFormatException : BusinessException(

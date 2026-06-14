@@ -1,8 +1,8 @@
 package com.otoki.powersales.employee.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.platform.auth.entity.UserRole
 import com.otoki.powersales.employee.entity.converter.GroupTypeConverter
 import com.otoki.powersales.employee.enums.GroupType
@@ -19,7 +19,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import jakarta.persistence.EntityListeners
 
 /**

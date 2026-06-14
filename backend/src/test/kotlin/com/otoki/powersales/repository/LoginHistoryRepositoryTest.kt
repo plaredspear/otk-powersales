@@ -1,6 +1,6 @@
 package com.otoki.powersales.repository
 
-import com.otoki.powersales.common.entity.LoginHistory
+import com.otoki.powersales.platform.common.entity.LoginHistory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -12,8 +12,8 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
-import com.otoki.powersales.common.config.QueryDslConfig
-import com.otoki.powersales.common.repository.LoginHistoryRepository
+import com.otoki.powersales.platform.common.config.QueryDslConfig
+import com.otoki.powersales.platform.common.repository.LoginHistoryRepository
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)

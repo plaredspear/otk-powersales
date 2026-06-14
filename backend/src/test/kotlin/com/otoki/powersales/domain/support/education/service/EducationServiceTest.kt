@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.support.education.service
 
-import com.otoki.powersales.common.service.FileStorageService
+import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.domain.support.education.entity.EducationCode
 import com.otoki.powersales.domain.support.education.entity.EducationPost
 import com.otoki.powersales.domain.support.education.entity.EducationPostAttachment
@@ -13,7 +13,6 @@ import com.otoki.powersales.domain.support.education.exception.InvalidFileKeyExc
 import com.otoki.powersales.domain.support.education.repository.EducationCodeRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostAttachmentRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostRepository
-import com.otoki.powersales.domain.support.education.service.EducationService
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import io.mockk.Runs

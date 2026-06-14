@@ -3,7 +3,7 @@ package com.otoki.powersales.platform.apppackage.service
 import com.otoki.powersales.platform.apppackage.dto.AppVersionMeta
 import com.otoki.powersales.platform.apppackage.entity.AppPlatform
 import com.otoki.powersales.platform.apppackage.repository.AppPackageRepository
-import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.platform.common.config.CacheConfig
 import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable

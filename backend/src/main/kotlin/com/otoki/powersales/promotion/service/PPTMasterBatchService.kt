@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.service
 
-import com.otoki.powersales.common.jobrun.ScheduledJobRunContext
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.employee.repository.EmployeeRepository
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import org.springframework.stereotype.Service

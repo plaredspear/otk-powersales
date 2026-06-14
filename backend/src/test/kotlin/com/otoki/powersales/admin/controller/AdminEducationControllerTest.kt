@@ -1,6 +1,6 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.support.education.exception.EducationPostNotFoundException
 import com.otoki.powersales.domain.support.education.exception.FileLimitExceededException
 import com.otoki.powersales.domain.support.education.exception.InvalidEducationCategoryException

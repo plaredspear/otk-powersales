@@ -10,7 +10,7 @@ import com.otoki.powersales.productexpiration.dto.response.AdminProductExpiratio
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
 import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
 import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest

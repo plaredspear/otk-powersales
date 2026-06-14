@@ -1,16 +1,16 @@
 package com.otoki.powersales.promotion.entity
 
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.enums.WorkingCategory1
-import com.otoki.powersales.common.enums.WorkingCategory2
-import com.otoki.powersales.common.enums.WorkingCategory3
-import com.otoki.powersales.common.enums.WorkingType
-import com.otoki.powersales.common.entity.converter.WorkingCategory1Converter
-import com.otoki.powersales.common.entity.converter.WorkingCategory2Converter
-import com.otoki.powersales.common.entity.converter.WorkingCategory3Converter
-import com.otoki.powersales.common.entity.converter.WorkingTypeConverter
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingCategory2
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
+import com.otoki.powersales.platform.common.enums.WorkingType
+import com.otoki.powersales.platform.common.entity.converter.WorkingCategory1Converter
+import com.otoki.powersales.platform.common.entity.converter.WorkingCategory2Converter
+import com.otoki.powersales.platform.common.entity.converter.WorkingCategory3Converter
+import com.otoki.powersales.platform.common.entity.converter.WorkingTypeConverter
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*

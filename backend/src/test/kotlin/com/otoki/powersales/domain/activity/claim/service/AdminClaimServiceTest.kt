@@ -7,12 +7,11 @@ import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType2
-import com.otoki.powersales.common.entity.UploadFile
-import com.otoki.powersales.common.repository.UploadFileRepository
-import com.otoki.powersales.common.storage.StorageConstants
-import com.otoki.powersales.common.storage.StorageService
+import com.otoki.powersales.platform.common.entity.UploadFile
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.domain.activity.claim.entity.Claim
-import com.otoki.powersales.domain.activity.claim.service.AdminClaimService
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import io.mockk.every

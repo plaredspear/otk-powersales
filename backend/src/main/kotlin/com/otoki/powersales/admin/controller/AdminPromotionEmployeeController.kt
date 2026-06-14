@@ -12,7 +12,7 @@ import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailRespon
 import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
 import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
 import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

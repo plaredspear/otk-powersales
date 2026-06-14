@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.batch
 
-import com.otoki.powersales.common.jobrun.ScheduledJobRunCleanupService
-import com.otoki.powersales.common.jobrun.ScheduledJobRunner
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunCleanupService
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Profile

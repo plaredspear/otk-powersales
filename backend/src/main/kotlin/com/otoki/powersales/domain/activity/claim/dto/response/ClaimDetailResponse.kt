@@ -1,8 +1,8 @@
 package com.otoki.powersales.domain.activity.claim.dto.response
 
 import com.otoki.powersales.domain.activity.claim.entity.Claim
-import com.otoki.powersales.common.entity.UploadFile
-import com.otoki.powersales.common.storage.UploadFileKbnTypes
+import com.otoki.powersales.platform.common.entity.UploadFile
+import com.otoki.powersales.platform.common.storage.UploadFileKbnTypes
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.math.BigDecimal

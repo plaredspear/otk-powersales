@@ -5,8 +5,7 @@ import com.otoki.pos.repository.ElectronicSalesProductRow
 import com.otoki.pos.repository.LiveTotSalesDailyRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.common.exception.BusinessException
-import com.otoki.powersales.domain.sales.service.ElectronicSalesService
+import com.otoki.powersales.platform.common.exception.BusinessException
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

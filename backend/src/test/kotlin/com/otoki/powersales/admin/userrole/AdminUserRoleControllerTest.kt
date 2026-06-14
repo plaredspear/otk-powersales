@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.userrole
 
 import com.otoki.powersales.admin.userrole.dto.UserRoleNode
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.BeforeEach

@@ -1,18 +1,20 @@
 package com.otoki.powersales.platform.auth.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.dto.request.ChangePasswordRequest
-import com.otoki.powersales.common.dto.request.GpsConsentRequest
+import com.otoki.powersales.platform.common.dto.request.GpsConsentRequest
 import com.otoki.powersales.platform.auth.dto.request.LoginRequest
 import com.otoki.powersales.platform.auth.dto.request.RefreshTokenRequest
 import com.otoki.powersales.platform.auth.dto.request.VerifyPasswordRequest
-import com.otoki.powersales.common.dto.response.*
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.platform.auth.service.AuthService
 import com.otoki.powersales.platform.auth.dto.response.ChangePasswordResponse
 import com.otoki.powersales.platform.auth.dto.response.LoginResponse
 import com.otoki.powersales.platform.auth.dto.response.TokenResponse
 import com.otoki.powersales.platform.auth.dto.response.UserInfo
+import com.otoki.powersales.platform.common.dto.response.GpsConsentRecordResponse
+import com.otoki.powersales.platform.common.dto.response.GpsConsentStatusResponse
+import com.otoki.powersales.platform.common.dto.response.GpsConsentTermsResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity

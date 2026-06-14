@@ -3,8 +3,8 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.request.NaverGeocodeTestRequest
 import com.otoki.powersales.admin.dto.response.NaverGeocodeTestResponse
 import com.otoki.powersales.admin.service.AdminNaverGeocodeService
-import com.otoki.powersales.common.naver.NaverApiException
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.naver.NaverApiException
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

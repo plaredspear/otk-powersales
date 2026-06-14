@@ -14,7 +14,7 @@ import com.otoki.powersales.admin.dto.response.SapOutboxPendingListResponse
 import com.otoki.powersales.admin.dto.response.SapOutboxPendingRow
 import com.otoki.powersales.admin.sap.SapInboundCatalog
 import com.otoki.powersales.admin.sap.SapOutboundCatalog
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditRepository
 import com.otoki.powersales.external.sap.outbound.entity.SapOutboundLog

@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.sales.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.sales.dto.request.ElectronicSalesRequest
 import com.otoki.powersales.domain.sales.dto.request.LogisticsSalesRequest
 import com.otoki.powersales.domain.sales.dto.request.MonthlySalesRequest

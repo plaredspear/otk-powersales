@@ -5,8 +5,8 @@ import com.otoki.powersales.domain.activity.claim.dto.response.ClaimFormResponse
 import com.otoki.powersales.domain.activity.claim.dto.response.ClaimListItemResponse
 import com.otoki.powersales.domain.activity.claim.service.ClaimDraftService
 import com.otoki.powersales.domain.activity.claim.service.ClaimQueryService
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*

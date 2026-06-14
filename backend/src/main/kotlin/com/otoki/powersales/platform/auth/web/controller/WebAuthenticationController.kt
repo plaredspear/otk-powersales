@@ -8,7 +8,7 @@ import com.otoki.powersales.platform.auth.web.dto.WebLoginResponse
 import com.otoki.powersales.platform.auth.web.dto.WebRefreshTokenRequest
 import com.otoki.powersales.platform.auth.web.dto.WebTokenResponse
 import com.otoki.powersales.platform.auth.web.service.WebAuthenticationService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

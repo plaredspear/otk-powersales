@@ -9,13 +9,12 @@ import com.otoki.powersales.admin.dto.response.SapInboundCatalogItemDto
 import com.otoki.powersales.admin.dto.response.SapOutboundCatalogItemDto
 import com.otoki.powersales.admin.dto.response.SapOutboundLogDetail
 import com.otoki.powersales.admin.dto.response.SapOutboundLogListResponse
-import com.otoki.powersales.admin.dto.response.SapOutboundLogRow
 import com.otoki.powersales.admin.dto.response.SapOutboxPendingListResponse
 import com.otoki.powersales.admin.dto.response.SapOutboxPendingRow
 import com.otoki.powersales.admin.sap.OutboundTriggerType
 import com.otoki.powersales.admin.service.AdminSapIntegrationService
-import com.otoki.powersales.common.exception.BusinessException
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.exception.BusinessException
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import io.mockk.slot
@@ -28,7 +27,6 @@ import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 
 @WebMvcTest(AdminSapIntegrationController::class)
 @AutoConfigureMockMvc(addFilters = false)

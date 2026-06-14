@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.common.exception.BusinessException
+import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.sales.dto.response.LogisticsSalesResponse
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service

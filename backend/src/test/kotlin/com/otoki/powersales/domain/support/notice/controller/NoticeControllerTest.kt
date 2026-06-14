@@ -1,8 +1,7 @@
 package com.otoki.powersales.domain.support.notice.controller
 
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.common.test.MobileControllerTestSupport
-import com.otoki.powersales.domain.support.notice.controller.NoticeController
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeImageResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostListResponse

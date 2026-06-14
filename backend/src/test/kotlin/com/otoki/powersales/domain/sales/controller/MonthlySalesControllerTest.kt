@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.sales.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesResponse
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
@@ -10,7 +10,6 @@ import com.otoki.powersales.domain.sales.service.LogisticsSalesService
 import com.otoki.powersales.domain.sales.service.MonthlySalesService
 import com.otoki.powersales.domain.sales.service.PosSalesService
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.domain.sales.controller.MonthlySalesController
 import io.mockk.every
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

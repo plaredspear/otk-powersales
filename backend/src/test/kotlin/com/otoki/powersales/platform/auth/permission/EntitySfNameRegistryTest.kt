@@ -1,8 +1,6 @@
 package com.otoki.powersales.platform.auth.permission
 
-import com.otoki.powersales.common.salesforce.SFObject
-import com.otoki.powersales.platform.auth.permission.EntitySfNameRegistry
-import com.otoki.powersales.platform.auth.permission.PermissionResource
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import io.mockk.every
 import io.mockk.mockk
 import jakarta.persistence.EntityManager

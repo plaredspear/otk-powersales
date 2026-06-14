@@ -2,7 +2,7 @@ package com.otoki.powersales.platform.auth.sharing.service
 
 import com.otoki.powersales.platform.auth.sharing.entity.SharingRecalcLog
 import com.otoki.powersales.platform.auth.sharing.repository.SharingRecalcLogRepository
-import com.otoki.powersales.common.config.CacheConfig
+import com.otoki.powersales.platform.common.config.CacheConfig
 import org.slf4j.LoggerFactory
 import org.springframework.cache.CacheManager
 import org.springframework.stereotype.Service

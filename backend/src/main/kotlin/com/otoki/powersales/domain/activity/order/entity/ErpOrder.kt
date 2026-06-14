@@ -1,8 +1,8 @@
 package com.otoki.powersales.domain.activity.order.entity
 
-import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*

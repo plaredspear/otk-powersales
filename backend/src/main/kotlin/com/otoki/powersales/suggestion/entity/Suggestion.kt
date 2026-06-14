@@ -1,9 +1,9 @@
 package com.otoki.powersales.suggestion.entity
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.common.entity.BaseEntity
-import com.otoki.powersales.common.salesforce.SFField
-import com.otoki.powersales.common.salesforce.SFObject
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.salesforce.SFField
+import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.entity.Group
 import com.otoki.powersales.domain.foundation.product.entity.Product
@@ -16,7 +16,7 @@ import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
-import com.otoki.powersales.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 
 /**
  * 제안 Entity — Salesforce `DKRetail__Proposal__c` (제안사항) 매핑.

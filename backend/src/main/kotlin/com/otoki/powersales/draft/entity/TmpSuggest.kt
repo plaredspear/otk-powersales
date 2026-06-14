@@ -1,13 +1,13 @@
 package com.otoki.powersales.draft.entity
 
-import com.otoki.powersales.common.salesforce.HCColumn
-import com.otoki.powersales.common.salesforce.HerokuOnly
+import com.otoki.powersales.platform.common.salesforce.HCColumn
+import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
-import com.otoki.powersales.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.AuditedEntity
 @Entity
 @Table(name = "tmp_suggest")
 @HerokuOnly("tmp_suggest")

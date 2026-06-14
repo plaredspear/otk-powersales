@@ -1,8 +1,8 @@
 package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
-import com.otoki.powersales.common.enums.WorkingCategory1
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.employee.entity.QEmployee.Companion.employee

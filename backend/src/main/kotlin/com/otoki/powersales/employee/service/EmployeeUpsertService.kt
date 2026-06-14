@@ -1,6 +1,6 @@
 package com.otoki.powersales.employee.service
 
-import com.otoki.powersales.common.repository.SystemCodeMasterRepository
+import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.employee.entity.Employee
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import com.otoki.powersales.employee.enums.Gender

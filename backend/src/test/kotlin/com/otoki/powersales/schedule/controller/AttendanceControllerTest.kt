@@ -1,9 +1,9 @@
 package com.otoki.powersales.schedule.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.common.dto.response.AccountInfo
-import com.otoki.powersales.common.dto.response.AccountListResponse
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.dto.response.AccountInfo
+import com.otoki.powersales.platform.common.dto.response.AccountListResponse
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusItem
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusResponse

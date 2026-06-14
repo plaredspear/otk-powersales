@@ -1,10 +1,9 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.common.service.SystemCodeMasterUpsertService
-import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertCommand
-import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertFailedRow
-import com.otoki.powersales.common.service.dto.SystemCodeMasterUpsertResult
-import com.otoki.powersales.external.sap.inbound.service.SapSystemCodeMasterService
+import com.otoki.powersales.platform.common.service.SystemCodeMasterUpsertService
+import com.otoki.powersales.platform.common.service.dto.SystemCodeMasterUpsertCommand
+import com.otoki.powersales.platform.common.service.dto.SystemCodeMasterUpsertFailedRow
+import com.otoki.powersales.platform.common.service.dto.SystemCodeMasterUpsertResult
 import com.otoki.powersales.external.sap.inbound.dto.product.SystemCodeMasterRequestItem
 import io.mockk.every
 import io.mockk.mockk

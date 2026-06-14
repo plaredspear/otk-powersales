@@ -1,12 +1,12 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.common.enums.WorkingCategory1
-import com.otoki.powersales.common.enums.WorkingCategory2
-import com.otoki.powersales.common.enums.WorkingType
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingCategory2
+import com.otoki.powersales.platform.common.enums.WorkingType
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.auth.entity.AppAuthority
-import com.otoki.powersales.common.dto.response.BranchResponse
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleMassDeleteRequest
 import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest

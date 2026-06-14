@@ -6,7 +6,7 @@ import com.otoki.powersales.admin.dto.AdminEmployeeRegisterResponse
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.admin.exception.EmployeeCodeDuplicatedException
 import com.otoki.powersales.admin.service.AdminEmployeeRegisterService
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.employee.enums.EmployeeOrigin
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

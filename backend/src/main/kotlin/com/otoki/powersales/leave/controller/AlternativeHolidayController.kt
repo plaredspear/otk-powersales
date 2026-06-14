@@ -1,7 +1,7 @@
 package com.otoki.powersales.leave.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.leave.dto.AlternativeHolidayCreateResponse
 import com.otoki.powersales.leave.dto.AlternativeHolidayListItemResponse
 import com.otoki.powersales.leave.dto.AlternativeHolidayRequest

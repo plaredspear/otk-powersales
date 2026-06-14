@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.permission.dto.AssignmentResponse
 import com.otoki.powersales.admin.permission.exception.AssignmentAlreadyExistsException
 import com.otoki.powersales.admin.permission.exception.CannotRevokeSelfException
 import com.otoki.powersales.admin.permission.exception.LastAdminGuardException
-import com.otoki.powersales.common.test.AdminControllerTestSupport
+import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import io.mockk.every
 import io.mockk.just
 import io.mockk.runs

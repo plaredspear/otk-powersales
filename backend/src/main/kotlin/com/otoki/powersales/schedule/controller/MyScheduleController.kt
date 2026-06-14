@@ -1,9 +1,9 @@
 package com.otoki.powersales.schedule.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.schedule.dto.response.DailyScheduleResponse
 import com.otoki.powersales.schedule.dto.response.MonthlyScheduleResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.schedule.service.MyScheduleService
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

@@ -1,7 +1,7 @@
 package com.otoki.powersales.suggestion.controller
 
-import com.otoki.powersales.common.dto.ApiResponse
-import com.otoki.powersales.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.suggestion.dto.request.SuggestionCreateRequest
 import com.otoki.powersales.suggestion.dto.request.SuggestionUpdateRequest
 import com.otoki.powersales.suggestion.dto.response.SuggestionCreateResponse

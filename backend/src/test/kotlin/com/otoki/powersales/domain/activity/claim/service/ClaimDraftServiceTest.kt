@@ -3,9 +3,8 @@ package com.otoki.powersales.domain.activity.claim.service
 import com.otoki.powersales.domain.activity.claim.dto.request.ClaimDraftRequest
 import com.otoki.powersales.domain.activity.claim.entity.ClaimDraft
 import com.otoki.powersales.domain.activity.claim.repository.ClaimDraftRepository
-import com.otoki.powersales.common.service.FileStorageService
-import com.otoki.powersales.common.storage.StorageService
-import com.otoki.powersales.domain.activity.claim.service.ClaimDraftService
+import com.otoki.powersales.platform.common.service.FileStorageService
+import com.otoki.powersales.platform.common.storage.StorageService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

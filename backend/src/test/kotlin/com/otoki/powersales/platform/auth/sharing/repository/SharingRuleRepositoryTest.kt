@@ -3,10 +3,7 @@ package com.otoki.powersales.platform.auth.sharing.repository
 import com.otoki.powersales.platform.auth.sharing.entity.SharingRule
 import com.otoki.powersales.platform.auth.sharing.entity.SharingRuleCondition
 import com.otoki.powersales.platform.auth.sharing.entity.SharingRuleTarget
-import com.otoki.powersales.common.config.QueryDslConfig
-import com.otoki.powersales.platform.auth.sharing.repository.SharingRuleConditionRepository
-import com.otoki.powersales.platform.auth.sharing.repository.SharingRuleRepository
-import com.otoki.powersales.platform.auth.sharing.repository.SharingRuleTargetRepository
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName

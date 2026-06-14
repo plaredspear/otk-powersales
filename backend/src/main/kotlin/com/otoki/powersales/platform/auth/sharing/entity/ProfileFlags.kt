@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.auth.sharing.entity
 
-import com.otoki.powersales.common.salesforce.SFMeta
-import com.otoki.powersales.common.salesforce.SFMetaSource
+import com.otoki.powersales.platform.common.salesforce.SFMeta
+import com.otoki.powersales.platform.common.salesforce.SFMetaSource
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

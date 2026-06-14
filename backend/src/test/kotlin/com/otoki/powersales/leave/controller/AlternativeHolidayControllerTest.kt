@@ -1,7 +1,7 @@
 package com.otoki.powersales.leave.controller
 
 import tools.jackson.databind.ObjectMapper
-import com.otoki.powersales.common.test.MobileControllerTestSupport
+import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.leave.dto.AlternativeHolidayCreateResponse
 import com.otoki.powersales.leave.dto.AlternativeHolidayListItemResponse
 import com.otoki.powersales.leave.dto.AlternativeHolidayRequest

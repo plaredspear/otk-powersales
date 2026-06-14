@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.order.repository
 
-import com.otoki.powersales.common.config.QueryDslConfig
-import com.otoki.powersales.domain.activity.order.repository.ErpOrderRepository
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.activity.order.entity.ErpOrder
 import org.assertj.core.api.Assertions.assertThat

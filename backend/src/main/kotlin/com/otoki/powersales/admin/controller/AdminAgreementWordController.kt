@@ -6,7 +6,7 @@ import com.otoki.powersales.domain.support.agreement.dto.request.AdminAgreementW
 import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordActiveResponse
 import com.otoki.powersales.domain.support.agreement.dto.response.AdminAgreementWordCreateResponse
 import com.otoki.powersales.domain.support.agreement.service.AdminAgreementWordService
-import com.otoki.powersales.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
