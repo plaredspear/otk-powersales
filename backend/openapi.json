@@ -2000,6 +2000,27 @@
         "required" : [ "alarmDate", "expirationDate" ],
         "type" : "object"
       },
+      "AdminSalesProgressRateMasterSyncTestResponse" : {
+        "properties" : {
+          "fetched" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "inserted" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "skipped" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "updated" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "AdminScheduleCreateRequest" : {
         "properties" : {
           "accountCode" : {
@@ -3671,6 +3692,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminProductExpirationSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminSalesProgressRateMasterSyncTestResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminSalesProgressRateMasterSyncTestResponse"
             }, {
               "type" : "null"
             } ]
@@ -24437,7 +24487,7 @@
     },
     "/api/v1/admin/claim-regist/test" : {
       "post" : {
-        "operationId" : "test_2",
+        "operationId" : "test_3",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -26942,7 +26992,7 @@
     },
     "/api/v1/admin/logistics-claim-regist/test" : {
       "post" : {
-        "operationId" : "test_1",
+        "operationId" : "test_2",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -26969,7 +27019,7 @@
     },
     "/api/v1/admin/naver-geocode/test" : {
       "post" : {
-        "operationId" : "test",
+        "operationId" : "test_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -29548,6 +29598,24 @@
           }
         },
         "tags" : [ "admin-safety-check-controller" ]
+      }
+    },
+    "/api/v1/admin/sales-progress-rate-master/sync/test" : {
+      "post" : {
+        "operationId" : "test",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminSalesProgressRateMasterSyncTestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sales-progress-rate-master-sync-test-controller" ]
       }
     },
     "/api/v1/admin/sales-progress-rate-masters" : {
