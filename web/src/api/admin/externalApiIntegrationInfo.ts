@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import client from '@/api/client';
 import type { ApiResponse } from '../types';
 
@@ -30,4 +31,22 @@ export async function fetchExternalApiIntegrationInfo(): Promise<ExternalApiInte
     throw new Error(res.data.message || '외부 API 연동 정보 조회에 실패했습니다');
   }
   return res.data.data;
+}
+
+/**
+ * 외부 API 연동 정보를 `apiKey` 1건으로 조회하는 hook.
+ *
+ * 전체 목록은 한 번만 조회하고 캐시(staleTime 무한)하며, `apiKey` 로 해당 항목만 골라
+ * 반환한다. 여러 화면(외부 API 테스트 탭, SAP 카탈로그 상세)이 동일 캐시를 공유한다.
+ */
+export function useExternalApiIntegrationInfo(apiKey: string) {
+  const query = useQuery({
+    queryKey: ['external-api-integration-info'],
+    queryFn: fetchExternalApiIntegrationInfo,
+    staleTime: Infinity,
+  });
+  return {
+    ...query,
+    info: query.data?.items.find((i) => i.key === apiKey),
+  };
 }

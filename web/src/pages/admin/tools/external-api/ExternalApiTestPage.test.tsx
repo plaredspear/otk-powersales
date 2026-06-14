@@ -23,11 +23,6 @@ vi.mock('@/api/claims', () => ({
     testLogisticsClaimRegistMock(...args),
 }));
 
-const fetchIntegrationInfoMock = vi.fn();
-vi.mock('@/api/admin/externalApiIntegrationInfo', () => ({
-  fetchExternalApiIntegrationInfo: () => fetchIntegrationInfoMock(),
-}));
-
 const INTEGRATION_INFO_ITEMS = [
   {
     key: 'naver-geocode',
@@ -46,6 +41,16 @@ const INTEGRATION_INFO_ITEMS = [
     note: 'Content-Type: application/json',
   },
 ];
+
+const fetchIntegrationInfoMock = vi.fn();
+vi.mock('@/api/admin/externalApiIntegrationInfo', () => ({
+  fetchExternalApiIntegrationInfo: () => fetchIntegrationInfoMock(),
+  useExternalApiIntegrationInfo: (apiKey: string) => ({
+    info: INTEGRATION_INFO_ITEMS.find((i) => i.key === apiKey),
+    isLoading: false,
+    isError: false,
+  }),
+}));
 
 function renderPage() {
   const client = new QueryClient({

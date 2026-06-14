@@ -1,7 +1,5 @@
 import { Alert, Descriptions, Skeleton, Tag, Typography } from 'antd';
-import { useQuery } from '@tanstack/react-query';
-import { fetchExternalApiIntegrationInfo } from '@/api/admin/externalApiIntegrationInfo';
-import type { ExternalApiIntegrationInfo } from '@/api/admin/externalApiIntegrationInfo';
+import { useExternalApiIntegrationInfo } from '@/api/admin/externalApiIntegrationInfo';
 
 const { Text } = Typography;
 
@@ -20,16 +18,12 @@ const METHOD_COLOR: Record<string, string> = {
  * 표시하며, 전체 목록은 한 번만 조회하고 캐시한다(staleTime 무한).
  */
 export default function IntegrationInfoDescriptions({ apiKey }: { apiKey: string }) {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['external-api-integration-info'],
-    queryFn: fetchExternalApiIntegrationInfo,
-    staleTime: Infinity,
-  });
+  const { info, isLoading, isError } = useExternalApiIntegrationInfo(apiKey);
 
   if (isLoading) {
     return <Skeleton active paragraph={{ rows: 2 }} />;
   }
-  if (isError || !data) {
+  if (isError) {
     return (
       <Alert
         type="error"
@@ -40,9 +34,6 @@ export default function IntegrationInfoDescriptions({ apiKey }: { apiKey: string
     );
   }
 
-  const info: ExternalApiIntegrationInfo | undefined = data.items.find(
-    (i) => i.key === apiKey,
-  );
   if (!info) {
     return (
       <Alert
