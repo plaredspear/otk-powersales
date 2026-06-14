@@ -85,6 +85,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             content: Text('세션이 만료되어 로그아웃되었습니다. 다시 로그인해 주세요.'),
           ),
         );
+      case LogoutReason.inactivityTimeout:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('장시간 미사용으로 로그아웃되었습니다. 다시 로그인해 주세요.'),
+          ),
+        );
     }
   }
 
