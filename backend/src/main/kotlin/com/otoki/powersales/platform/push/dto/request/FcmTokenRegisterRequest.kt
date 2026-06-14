@@ -1,4 +1,4 @@
-package com.otoki.powersales.push.dto.request
+package com.otoki.powersales.platform.push.dto.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size

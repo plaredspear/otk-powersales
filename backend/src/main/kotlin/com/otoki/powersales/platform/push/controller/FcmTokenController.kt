@@ -1,9 +1,9 @@
-package com.otoki.powersales.push.controller
+package com.otoki.powersales.platform.push.controller
 
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
-import com.otoki.powersales.push.dto.request.FcmTokenRegisterRequest
-import com.otoki.powersales.push.service.FcmTokenService
+import com.otoki.powersales.platform.push.dto.request.FcmTokenRegisterRequest
+import com.otoki.powersales.platform.push.service.FcmTokenService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

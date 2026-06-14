@@ -1,4 +1,4 @@
-package com.otoki.powersales.push.service
+package com.otoki.powersales.platform.push.service
 
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.employee.repository.EmployeeRepository
