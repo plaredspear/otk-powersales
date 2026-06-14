@@ -1,4 +1,4 @@
-package com.otoki.powersales.productexpiration.exception
+package com.otoki.powersales.domain.activity.productexpiration.exception
 
 import com.otoki.powersales.platform.common.exception.BusinessException
 import org.springframework.http.HttpStatus

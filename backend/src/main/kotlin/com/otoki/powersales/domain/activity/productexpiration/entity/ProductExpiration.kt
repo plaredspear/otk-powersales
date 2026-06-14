@@ -1,4 +1,4 @@
-package com.otoki.powersales.productexpiration.entity
+package com.otoki.powersales.domain.activity.productexpiration.entity
 
 import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly

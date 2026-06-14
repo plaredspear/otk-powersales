@@ -1,14 +1,15 @@
-package com.otoki.powersales.productexpiration.controller
+package com.otoki.powersales.domain.activity.productexpiration.controller
 
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.productexpiration.controller.ProductExpirationController
 import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
-import com.otoki.powersales.productexpiration.dto.response.ProductExpirationBatchDeleteResponse
-import com.otoki.powersales.productexpiration.dto.response.ProductExpirationItemResponse
-import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
-import com.otoki.powersales.productexpiration.exception.InvalidProductExpirationDateRangeException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
-import com.otoki.powersales.productexpiration.service.ProductExpirationService
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.ProductExpirationBatchDeleteResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.ProductExpirationItemResponse
+import com.otoki.powersales.domain.activity.productexpiration.exception.InvalidAlertDateException
+import com.otoki.powersales.domain.activity.productexpiration.exception.InvalidProductExpirationDateRangeException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationForbiddenException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationNotFoundException
+import com.otoki.powersales.domain.activity.productexpiration.service.ProductExpirationService
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just

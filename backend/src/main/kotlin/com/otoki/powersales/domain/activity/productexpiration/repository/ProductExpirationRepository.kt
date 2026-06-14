@@ -1,6 +1,6 @@
-package com.otoki.powersales.productexpiration.repository
+package com.otoki.powersales.domain.activity.productexpiration.repository
 
-import com.otoki.powersales.productexpiration.entity.ProductExpiration
+import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import java.time.LocalDate

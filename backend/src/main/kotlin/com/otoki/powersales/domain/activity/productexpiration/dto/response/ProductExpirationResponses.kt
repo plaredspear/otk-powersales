@@ -1,6 +1,6 @@
-package com.otoki.powersales.productexpiration.dto.response
+package com.otoki.powersales.domain.activity.productexpiration.dto.response
 
-import com.otoki.powersales.productexpiration.entity.ProductExpiration
+import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 

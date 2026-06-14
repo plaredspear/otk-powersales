@@ -1,4 +1,4 @@
-package com.otoki.powersales.productexpiration.service
+package com.otoki.powersales.domain.activity.productexpiration.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
@@ -11,16 +11,18 @@ import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.platform.auth.entity.Profile
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
-import com.otoki.powersales.productexpiration.entity.ProductExpiration
-import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationAccountNotFoundException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
-import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationCreateRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationUpdateRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
+import com.otoki.powersales.domain.activity.productexpiration.exception.InvalidAlertDateException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationAccountNotFoundException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationForbiddenException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationNotFoundException
+import com.otoki.powersales.domain.activity.productexpiration.service.AdminProductExpirationService
+import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
+import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -42,7 +44,7 @@ class AdminProductExpirationServiceTest {
 
     private val productExpirationRepository: ProductExpirationRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
-    private val userRepository: com.otoki.powersales.user.repository.UserRepository = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
     private val profileRepository: ProfileRepository = mockk(relaxed = true)
     private val accountRepository: AccountRepository = mockk()
     private val productRepository: ProductRepository = mockk()

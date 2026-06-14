@@ -1,4 +1,4 @@
-package com.otoki.powersales.productexpiration.dto.request
+package com.otoki.powersales.domain.activity.productexpiration.dto.request
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty

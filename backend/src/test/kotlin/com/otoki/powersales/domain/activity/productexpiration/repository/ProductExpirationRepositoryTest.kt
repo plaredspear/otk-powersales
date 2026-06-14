@@ -1,6 +1,7 @@
-package com.otoki.powersales.productexpiration.repository
+package com.otoki.powersales.domain.activity.productexpiration.repository
 
-import com.otoki.powersales.productexpiration.entity.ProductExpiration
+import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
+import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -14,6 +15,8 @@ import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.platform.common.config.QueryDslConfig
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 /**
  * ProductExpiration V1 리매핑 테스트
@@ -57,8 +60,8 @@ class ProductExpirationRepositoryTest {
                 alarmDate = LocalDate.of(2026, 5, 25),
                 description = "테스트 설명"
             ).apply {
-                createdAt = java.time.LocalDateTime.of(2026, 2, 23, 10, 0)
-                updatedAt = java.time.LocalDateTime.of(2026, 2, 23, 10, 0)
+                createdAt = LocalDateTime.of(2026, 2, 23, 10, 0)
+                updatedAt = LocalDateTime.of(2026, 2, 23, 10, 0)
             }
 
             // When
@@ -149,7 +152,7 @@ class ProductExpirationRepositoryTest {
         fun count_excludesDifferentDate() {
             // Given
             val today = LocalDate.now()
-            val yesterday = today.minus(1, java.time.temporal.ChronoUnit.DAYS)
+            val yesterday = today.minus(1, ChronoUnit.DAYS)
             val employeeId = 100L
 
             testEntityManager.persistAndFlush(

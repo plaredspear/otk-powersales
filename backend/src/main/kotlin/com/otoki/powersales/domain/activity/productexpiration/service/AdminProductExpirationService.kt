@@ -1,13 +1,19 @@
-package com.otoki.powersales.productexpiration.service
+package com.otoki.powersales.domain.activity.productexpiration.service
 
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationCreateRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationUpdateRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationListResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
+import com.otoki.powersales.domain.activity.productexpiration.exception.InvalidAlertDateException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationAccountNotFoundException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationForbiddenException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationNotFoundException
+import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.repository.UserRepository
@@ -15,12 +21,6 @@ import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.exception.ProductNotFoundException
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
-import com.otoki.powersales.productexpiration.entity.ProductExpiration
-import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationAccountNotFoundException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
-import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -53,7 +53,7 @@ class AdminProductExpirationService(
             fromDate, toDate, employeeKeyword, accountKeyword, status, today, pageable, employeeIds
         )
 
-        val content = page.content.map { AdminProductExpirationResponse.Companion.from(it, today) }
+        val content = page.content.map { AdminProductExpirationResponse.from(it, today) }
         return AdminProductExpirationListResponse(
             content = content,
             page = page.number,
@@ -66,7 +66,7 @@ class AdminProductExpirationService(
     fun getDetail(userId: Long, id: Int): AdminProductExpirationResponse {
         val entity = findById(id)
         validateScope(entity, resolveEmployeeScope(userId))
-        return AdminProductExpirationResponse.Companion.from(entity)
+        return AdminProductExpirationResponse.from(entity)
     }
 
     @Transactional
@@ -123,7 +123,7 @@ class AdminProductExpirationService(
         }
 
         entity.update(expirationDate, alarmDate, request.description)
-        return AdminProductExpirationResponse.Companion.from(entity)
+        return AdminProductExpirationResponse.from(entity)
     }
 
     @Transactional

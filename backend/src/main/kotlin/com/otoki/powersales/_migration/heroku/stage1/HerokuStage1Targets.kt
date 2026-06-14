@@ -17,7 +17,7 @@ import com.otoki.powersales.domain.support.education.entity.EducationPostAttachm
 import com.otoki.powersales.domain.support.education.entity.EducationViewHistory
 import com.otoki.powersales.domain.org.employee.entity.EmployeeInfo
 import com.otoki.powersales.domain.foundation.product.entity.FavoriteProduct
-import com.otoki.powersales.productexpiration.entity.ProductExpiration
+import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
 import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
 import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
 import jakarta.persistence.Column

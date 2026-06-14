@@ -1,13 +1,13 @@
-package com.otoki.powersales.productexpiration.controller
+package com.otoki.powersales.domain.activity.productexpiration.controller
 
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.ProductExpirationBatchDeleteRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.ProductExpirationCreateRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.ProductExpirationUpdateRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.ProductExpirationBatchDeleteResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.ProductExpirationItemResponse
+import com.otoki.powersales.domain.activity.productexpiration.service.ProductExpirationService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
-import com.otoki.powersales.productexpiration.dto.request.ProductExpirationBatchDeleteRequest
-import com.otoki.powersales.productexpiration.dto.request.ProductExpirationCreateRequest
-import com.otoki.powersales.productexpiration.dto.request.ProductExpirationUpdateRequest
-import com.otoki.powersales.productexpiration.dto.response.ProductExpirationBatchDeleteResponse
-import com.otoki.powersales.productexpiration.dto.response.ProductExpirationItemResponse
-import com.otoki.powersales.productexpiration.service.ProductExpirationService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

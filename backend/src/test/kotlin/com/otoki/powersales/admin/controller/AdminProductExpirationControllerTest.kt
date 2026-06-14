@@ -3,14 +3,14 @@ package com.otoki.powersales.admin.controller
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
-import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
-import com.otoki.powersales.productexpiration.exception.InvalidAlertDateException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationForbiddenException
-import com.otoki.powersales.productexpiration.exception.ProductExpirationNotFoundException
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationListResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.domain.activity.productexpiration.service.AdminProductExpirationService
+import com.otoki.powersales.domain.activity.productexpiration.exception.InvalidAlertDateException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationForbiddenException
+import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationNotFoundException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -29,6 +29,7 @@ import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminProductExpirationController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -58,8 +59,8 @@ class AdminProductExpirationControllerTest : AdminControllerTestSupport() {
         dDay = 26,
         status = "NORMAL",
         description = "테스트 설명",
-        createdAt = java.time.LocalDateTime.of(2026, 4, 1, 10, 0, 0),
-        updatedAt = java.time.LocalDateTime.of(2026, 4, 1, 10, 0, 0)
+        createdAt = LocalDateTime.of(2026, 4, 1, 10, 0, 0),
+        updatedAt = LocalDateTime.of(2026, 4, 1, 10, 0, 0)
     )
 
     @Nested

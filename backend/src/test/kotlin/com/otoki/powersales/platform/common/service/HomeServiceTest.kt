@@ -20,7 +20,7 @@ import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.schedule.enums.TypeOfWork3
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
+import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
 import com.otoki.powersales.schedule.entity.AttendanceLog
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

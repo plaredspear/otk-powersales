@@ -2,14 +2,14 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationCreateRequest
-import com.otoki.powersales.productexpiration.dto.request.AdminProductExpirationUpdateRequest
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationListResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationResponse
-import com.otoki.powersales.productexpiration.dto.response.AdminProductExpirationSummaryResponse
-import com.otoki.powersales.productexpiration.service.AdminProductExpirationService
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationBatchDeleteRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationCreateRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.request.AdminProductExpirationUpdateRequest
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationBatchDeleteResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationListResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationResponse
+import com.otoki.powersales.domain.activity.productexpiration.dto.response.AdminProductExpirationSummaryResponse
+import com.otoki.powersales.domain.activity.productexpiration.service.AdminProductExpirationService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid

@@ -1,10 +1,10 @@
-package com.otoki.powersales.productexpiration.service
+package com.otoki.powersales.domain.activity.productexpiration.service
 
 /* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
  * ProductExpiration Entity가 V1 스키마로 리매핑되어 user.id, productName, alertSent 등
  * V2 전용 필드가 제거됨. 기존 스케줄 로직이 해당 필드를 참조하므로 주석 처리.
 
-import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
+import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
