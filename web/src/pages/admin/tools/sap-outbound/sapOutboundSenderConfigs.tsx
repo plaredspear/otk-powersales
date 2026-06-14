@@ -43,7 +43,7 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
         <Form.Item
           label="externalKey (account.external_key)"
           required
-          help="SF Account.ExternalKey__c ≡ SAP 거래처 코드"
+          help="Account.externalKey ≡ SAP 거래처 코드"
         >
           <Input
             placeholder="예: 1032619"
