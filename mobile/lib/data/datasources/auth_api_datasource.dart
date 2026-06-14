@@ -58,7 +58,16 @@ class AuthApiDataSource implements AuthRemoteDataSource {
 
   @override
   Future<UserModel> getMe() async {
-    final response = await _dio.get('/api/v1/mobile/auth/me');
+    // getMe 는 시작 시 자동 로그인(tryAutoLogin)에서만 호출된다. 여기서 401 이 나도
+    // 인터셉터가 _forceLogout(세션 재생성 + "세션 만료" 안내)을 하면 안 된다 — 자동
+    // 로그인 실패는 호출측이 조용히 로그인 화면으로 전환한다. 매 실행마다 만료된
+    // 세션으로 자동 로그인을 재시도하며 "세션 만료" 안내가 반복되는 것을 막는다.
+    final response = await _dio.get(
+      '/api/v1/mobile/auth/me',
+      options: Options(
+        extra: {AuthInterceptor.skipAuthLogoutExtraKey: true},
+      ),
+    );
     return UserModel.fromJson(
       response.data['data'] as Map<String, dynamic>,
     );
