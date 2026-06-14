@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.push.service
 
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

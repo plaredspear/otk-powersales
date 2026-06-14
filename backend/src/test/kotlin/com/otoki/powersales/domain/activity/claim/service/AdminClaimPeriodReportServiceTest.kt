@@ -8,7 +8,7 @@ import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType2
 import com.otoki.powersales.domain.activity.claim.repository.AdminClaimRepository
 import com.otoki.powersales.platform.common.util.TimeZones
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import io.mockk.every
 import io.mockk.mockk

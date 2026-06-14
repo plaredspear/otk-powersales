@@ -11,7 +11,7 @@ import com.otoki.powersales.platform.common.entity.converter.WorkingCategory1Con
 import com.otoki.powersales.platform.common.entity.converter.WorkingCategory2Converter
 import com.otoki.powersales.platform.common.entity.converter.WorkingCategory3Converter
 import com.otoki.powersales.platform.common.entity.converter.WorkingTypeConverter
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal

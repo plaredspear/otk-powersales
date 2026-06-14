@@ -3,8 +3,8 @@ package com.otoki.powersales.schedule.service
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.schedule.entity.AttendanceLog
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule

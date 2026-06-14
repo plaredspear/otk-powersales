@@ -32,7 +32,7 @@ import org.springframework.transaction.event.TransactionalEventListener
  *    가 `EmployeeProfileResolver.resolveProfileId` 로 재산출하여 정정한다 (SF 분기 동등).
  *
  * ## 호출 경로
- * - SAP 인바운드: [com.otoki.powersales.employee.service.EmployeeUpsertService] 가
+ * - SAP 인바운드: [com.otoki.powersales.domain.org.employee.service.EmployeeUpsertService] 가
  *   Employee INSERT 후 [EmployeeCreatedEvent] 발행 → 본 서비스의
  *   [handleEmployeeCreated] 가 `AFTER_COMMIT + @Async` 로 수신.
  * - 로컬 시드: [com.otoki.powersales.platform.common.config.LocalDataInitializer] 가

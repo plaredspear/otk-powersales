@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.dto.response
 
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 
 /**
  * 조장의 본인 팀원 목록 응답 DTO (Spec #554 P1-B §3.5.1).

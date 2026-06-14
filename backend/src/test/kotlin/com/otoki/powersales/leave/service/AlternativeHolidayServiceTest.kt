@@ -5,8 +5,8 @@ import com.otoki.powersales.leave.exception.AltHolidayConfirmDateIsHolidayExcept
 import com.otoki.powersales.leave.exception.AltHolidayDuplicateException
 import com.otoki.powersales.leave.exception.EmployeeNotFoundException
 import com.otoki.powersales.leave.repository.AlternativeHolidayRepository
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.leave.enums.AltHolidayStatus
 import io.mockk.every
 import io.mockk.mockk

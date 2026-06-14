@@ -8,9 +8,9 @@ import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
 import com.otoki.powersales.admin.util.AdminPasswordPolicyValidator
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.enums.EmployeeOrigin
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.crypto.password.PasswordEncoder

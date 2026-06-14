@@ -20,7 +20,7 @@ import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegiste
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

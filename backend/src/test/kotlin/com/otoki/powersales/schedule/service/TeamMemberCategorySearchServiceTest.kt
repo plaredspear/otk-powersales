@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.querydsl.jpa.impl.JPAQueryFactory

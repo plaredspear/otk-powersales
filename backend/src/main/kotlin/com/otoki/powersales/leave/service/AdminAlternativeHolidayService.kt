@@ -8,7 +8,7 @@ import com.otoki.powersales.leave.dto.response.AlternativeHolidayApproveResponse
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayCreateResponse
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
 import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.leave.entity.AlternativeHoliday
 import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.leave.exception.AltHolidayInvalidStatusException

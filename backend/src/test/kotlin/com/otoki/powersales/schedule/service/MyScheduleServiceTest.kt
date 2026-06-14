@@ -1,12 +1,12 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.schedule.entity.*
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

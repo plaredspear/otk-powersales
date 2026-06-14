@@ -8,9 +8,8 @@ import com.otoki.powersales.domain.foundation.account.exception.AccountNamePrefi
 import com.otoki.powersales.domain.foundation.account.exception.EmployeeCodeBlankException
 import com.otoki.powersales.domain.foundation.account.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.domain.foundation.account.service.AccountCreateService
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import io.mockk.CapturingSlot

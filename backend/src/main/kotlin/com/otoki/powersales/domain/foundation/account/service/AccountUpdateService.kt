@@ -11,7 +11,7 @@ import com.otoki.powersales.domain.foundation.account.exception.EmployeeNotFound
 import com.otoki.powersales.domain.foundation.account.policy.AccountNamePrefix
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

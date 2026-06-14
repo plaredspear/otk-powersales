@@ -6,16 +6,16 @@ import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.permission.SfPermissionInspectionService
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.employee.dto.response.EmployeeListItem
-import com.otoki.powersales.employee.dto.response.EmployeeListResponse
-import com.otoki.powersales.employee.dto.response.ResetDeviceResponse
-import com.otoki.powersales.employee.dto.response.ResetPasswordResponse
-import com.otoki.powersales.employee.exception.EmployeeLoginInactiveException
-import com.otoki.powersales.employee.exception.EmployeeNotFoundException
-import com.otoki.powersales.employee.service.AdminEmployeeCredentialService
-import com.otoki.powersales.employee.service.AdminEmployeeManualRegisterService
-import com.otoki.powersales.employee.service.AdminEmployeeService
-import com.otoki.powersales.employee.service.AdminEmployeeUpdateService
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
+import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
+import com.otoki.powersales.domain.org.employee.exception.EmployeeLoginInactiveException
+import com.otoki.powersales.domain.org.employee.exception.EmployeeNotFoundException
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeManualRegisterService
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeUpdateService
 import com.otoki.powersales.schedule.service.EmployeeWorkHistoryService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -34,6 +34,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminEmployeeController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -178,7 +179,7 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
                 employeeCode = "100123",
                 name = "홍길동",
                 previousDeviceBound = true,
-                resetAt = java.time.LocalDateTime.of(2026, 5, 4, 14, 30, 0)
+                resetAt = LocalDateTime.of(2026, 5, 4, 14, 30, 0)
             )
             every { adminEmployeeCredentialService.resetDevice(eq(12345L)) } returns response
 
@@ -219,7 +220,7 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
                 name = "홍길동",
                 temporaryPasswordIssued = true,
                 passwordChangeRequired = true,
-                resetAt = java.time.LocalDateTime.of(2026, 5, 4, 14, 30, 0)
+                resetAt = LocalDateTime.of(2026, 5, 4, 14, 30, 0)
             )
             every { adminEmployeeCredentialService.resetPassword(eq(12345L)) } returns response
 

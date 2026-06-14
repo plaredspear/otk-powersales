@@ -1,7 +1,7 @@
 package com.otoki.powersales.inspection.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
-import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityFilter
 import com.otoki.powersales.inspection.entity.QInspectionTheme.Companion.inspectionTheme
 import com.otoki.powersales.inspection.entity.QSiteActivity.Companion.siteActivity

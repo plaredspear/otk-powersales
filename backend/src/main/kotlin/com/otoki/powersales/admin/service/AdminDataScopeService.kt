@@ -9,8 +9,8 @@ import com.otoki.powersales.platform.auth.sharing.service.ProfileFlagsEvaluator
 import com.otoki.powersales.platform.auth.sharing.service.RecordTypePermissionEvaluator
 import com.otoki.powersales.platform.auth.sharing.service.UserRoleHierarchyTraversal
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service

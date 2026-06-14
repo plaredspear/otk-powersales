@@ -1,6 +1,6 @@
 package com.otoki.powersales.schedule.repository
 
-import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.schedule.dto.request.AdminAttendInfoSearchRequest
 import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.entity.QAttendInfo.Companion.attendInfo

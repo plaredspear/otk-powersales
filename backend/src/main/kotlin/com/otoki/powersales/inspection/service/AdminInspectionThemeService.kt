@@ -2,7 +2,7 @@ package com.otoki.powersales.inspection.service
 
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.AdminThemeDetailResponse
 import com.otoki.powersales.inspection.dto.admin.AdminThemeListItem
 import com.otoki.powersales.inspection.dto.admin.AdminThemeListResponse

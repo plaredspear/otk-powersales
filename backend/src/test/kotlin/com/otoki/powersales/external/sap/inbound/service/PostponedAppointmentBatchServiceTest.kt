@@ -1,9 +1,7 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.external.sap.inbound.service.AppointmentUserProfileUpdater
-import com.otoki.powersales.external.sap.inbound.service.PostponedAppointmentBatchService
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.schedule.repository.AppointmentRepository
 import io.mockk.every

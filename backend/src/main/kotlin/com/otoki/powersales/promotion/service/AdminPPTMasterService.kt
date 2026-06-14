@@ -16,8 +16,8 @@ import com.otoki.powersales.promotion.dto.response.PPTMasterHistoryResponse
 import com.otoki.powersales.promotion.dto.response.PPTMasterListResponse
 import com.otoki.powersales.promotion.dto.response.PPTMasterResponse
 import com.otoki.powersales.platform.auth.entity.AppAuthority
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType

@@ -6,7 +6,7 @@ import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvalu
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.inspection.entity.InspectionTheme
 import com.otoki.powersales.inspection.entity.SiteActivity
 import com.otoki.powersales.inspection.enums.InspectionCategory

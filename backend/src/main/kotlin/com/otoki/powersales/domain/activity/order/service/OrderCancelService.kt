@@ -13,7 +13,7 @@ import com.otoki.powersales.domain.activity.order.repository.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service

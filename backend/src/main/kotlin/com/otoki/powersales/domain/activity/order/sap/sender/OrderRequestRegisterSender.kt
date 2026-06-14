@@ -4,7 +4,7 @@ import com.otoki.powersales.domain.activity.order.entity.OrderRequest
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbox.SapInterfaceRegistry
 import com.otoki.powersales.external.sap.outbox.SapOutbox

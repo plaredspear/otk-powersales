@@ -1,5 +1,6 @@
 package com.otoki.powersales.inspection.entity
 
+import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
@@ -148,7 +149,7 @@ class InspectionThemeSFAnnotationTest {
         @DisplayName("ownerGroup FK (@ManyToOne + @JoinColumn(\"owner_group_id\") → Group) — V199 SF polymorphic 정합")
         fun ownerGroupFk() {
             val field = InspectionTheme::class.java.getDeclaredField("ownerGroup")
-            assertThat(field.type).isEqualTo(com.otoki.powersales.employee.entity.Group::class.java)
+            assertThat(field.type).isEqualTo(Group::class.java)
             assertThat(field.isAnnotationPresent(jakarta.persistence.ManyToOne::class.java)).isTrue()
             assertThat(field.getAnnotation(jakarta.persistence.JoinColumn::class.java).name).isEqualTo("owner_group_id")
             assertThat(field.isAnnotationPresent(SFField::class.java)).isFalse()

@@ -5,8 +5,8 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.domain.activity.draft.entity.TmpOrder
 import com.otoki.powersales.domain.activity.draft.entity.TmpOrderProduct
 import com.otoki.powersales.domain.activity.draft.repository.TmpOrderRepository
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.order.dto.request.OrderDraftLineRequest
 import com.otoki.powersales.domain.activity.order.dto.request.OrderDraftRequest
 import com.otoki.powersales.domain.activity.order.exception.OrderDraftAccountForbiddenException

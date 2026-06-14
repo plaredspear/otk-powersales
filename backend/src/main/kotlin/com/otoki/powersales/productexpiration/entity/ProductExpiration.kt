@@ -3,7 +3,7 @@ package com.otoki.powersales.productexpiration.entity
 import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate

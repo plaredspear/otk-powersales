@@ -10,11 +10,11 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.policy.PasswordPolicyValidator
 import com.otoki.powersales.platform.common.entity.AgreementHistory
 import com.otoki.powersales.platform.common.entity.LoginHistory
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.common.repository.AgreementHistoryRepository
 import com.otoki.powersales.domain.support.agreement.repository.AgreementWordRepository
 import com.otoki.powersales.platform.common.repository.LoginHistoryRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.common.security.ActiveDeviceStore
 import com.otoki.powersales.platform.common.security.JwtTokenProvider
 import com.otoki.powersales.platform.common.security.UserPrincipal

@@ -3,8 +3,8 @@ package com.otoki.powersales.leave.entity
 import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.leave.entity.converter.AltHolidayStatusConverter
 import com.otoki.powersales.leave.enums.AltHolidayStatus
 import com.otoki.powersales.user.entity.User

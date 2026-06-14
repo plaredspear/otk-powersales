@@ -4,7 +4,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.domain.sales.entity.converter.SalesMonthConverter
 import com.otoki.powersales.domain.sales.entity.converter.SalesYearConverter
 import com.otoki.powersales.domain.sales.enums.SalesMonth

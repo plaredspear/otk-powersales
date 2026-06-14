@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.dto.response.EmployeeWorkHistoryItem
 import com.otoki.powersales.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository

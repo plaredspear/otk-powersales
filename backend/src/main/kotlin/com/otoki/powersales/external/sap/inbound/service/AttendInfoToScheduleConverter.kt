@@ -1,7 +1,7 @@
 package com.otoki.powersales.external.sap.inbound.service
 
 import com.otoki.powersales.platform.common.enums.WorkingType
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.external.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.schedule.entity.AttendInfo
 import com.otoki.powersales.schedule.enums.AttendType

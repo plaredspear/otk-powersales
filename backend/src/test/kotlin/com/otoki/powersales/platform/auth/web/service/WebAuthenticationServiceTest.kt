@@ -16,9 +16,8 @@ import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.auth.web.dto.WebChangePasswordRequest
 import com.otoki.powersales.platform.auth.web.dto.WebLoginRequest
 import com.otoki.powersales.platform.auth.web.dto.WebRefreshTokenRequest
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
-import com.otoki.powersales.platform.auth.web.service.WebAuthenticationService
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every

@@ -4,7 +4,7 @@ import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMast
 import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.schedule.entity.converter.TypeOfWork1Converter
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import com.otoki.powersales.user.entity.User

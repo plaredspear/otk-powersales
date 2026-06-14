@@ -1,9 +1,8 @@
 package com.otoki.powersales.domain.activity.order.service
 
-import com.otoki.powersales.domain.activity.order.service.OrderRequestDetailMapper
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.product.entity.Product
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct

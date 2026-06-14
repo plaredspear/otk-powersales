@@ -5,8 +5,8 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertCommand
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertFailedRow
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertResult
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository

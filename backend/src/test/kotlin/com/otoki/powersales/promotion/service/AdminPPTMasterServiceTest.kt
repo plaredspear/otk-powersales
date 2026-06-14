@@ -12,9 +12,9 @@ import com.otoki.powersales.promotion.repository.PPTHistoryRepository
 import com.otoki.powersales.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.promotion.repository.PPTMasterSearchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
 import io.mockk.mockk

@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.TypeOfWork1
 import org.assertj.core.api.Assertions.assertThat

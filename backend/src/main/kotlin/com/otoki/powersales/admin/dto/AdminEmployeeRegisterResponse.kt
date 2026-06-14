@@ -1,7 +1,7 @@
 package com.otoki.powersales.admin.dto
 
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.enums.EmployeeOrigin
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
 import java.time.LocalDateTime
 
 /**

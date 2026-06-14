@@ -4,7 +4,7 @@ import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetAssignmentRepository
 import com.otoki.powersales.platform.auth.sharing.repository.PermissionSetFlagsRepository
 import com.otoki.powersales.platform.auth.sharing.repository.ProfileFlagsRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

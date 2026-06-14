@@ -1,9 +1,8 @@
 package com.otoki.powersales.platform.push.service
 
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
-import com.otoki.powersales.platform.push.service.FcmTokenService
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat

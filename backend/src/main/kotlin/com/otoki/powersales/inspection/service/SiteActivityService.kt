@@ -8,7 +8,7 @@ import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.request.InspectionRegisterRequest
 import com.otoki.powersales.inspection.dto.response.InspectionDetailResponse
 import com.otoki.powersales.inspection.dto.response.InspectionFieldTypeResponse

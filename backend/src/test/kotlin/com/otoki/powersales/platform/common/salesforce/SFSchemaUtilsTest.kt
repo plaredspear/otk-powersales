@@ -2,8 +2,7 @@ package com.otoki.powersales.platform.common.salesforce
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.product.entity.Product
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import org.assertj.core.api.Assertions.assertThat

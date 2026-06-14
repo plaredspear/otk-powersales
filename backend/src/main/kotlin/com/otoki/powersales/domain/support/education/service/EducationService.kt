@@ -23,7 +23,7 @@ import com.otoki.powersales.domain.support.education.repository.EducationCodeRep
 import com.otoki.powersales.domain.support.education.repository.EducationPostAttachmentRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostRepository
 // import com.otoki.powersales.education.repository.EducationPostImageRepository  // Phase2: PG 대응 테이블 없음
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

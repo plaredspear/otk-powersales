@@ -1,8 +1,9 @@
 package com.otoki.powersales.promotion.service
 
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.powersales.promotion.entity.Promotion
 import com.otoki.powersales.promotion.entity.PromotionEmployee
@@ -54,7 +55,7 @@ class PromotionSchedulesUpsertHelper(
         val scheduleDates = employees.mapNotNull { it.scheduleDate }.distinct()
         val peIds = employees.map { it.id }
 
-        val userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee> = if (employeeIds.isNotEmpty()) {
+        val userByIdMap: Map<Long, Employee> = if (employeeIds.isNotEmpty()) {
             employeeRepository.findAllById(employeeIds).associateBy { it.id }
         } else emptyMap()
 
@@ -130,13 +131,13 @@ class PromotionSchedulesUpsertHelper(
         )
     }
 
-    private fun resolveEmployeeName(employeeId: Long, userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>): String {
+    private fun resolveEmployeeName(employeeId: Long, userByIdMap: Map<Long, Employee>): String {
         return userByIdMap[employeeId]?.name ?: employeeId.toString()
     }
 
     private fun validateRequiredValues(
         employees: List<PromotionEmployee>,
-        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
+        userByIdMap: Map<Long, Employee>
     ) {
         for (pe in employees) {
             val missingFields = mutableListOf<String>()
@@ -158,7 +159,7 @@ class PromotionSchedulesUpsertHelper(
     private fun validateDateRange(
         employees: List<PromotionEmployee>,
         promotion: Promotion,
-        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
+        userByIdMap: Map<Long, Employee>
     ) {
         for (pe in employees) {
             val scheduleDate = pe.scheduleDate!!
@@ -175,7 +176,7 @@ class PromotionSchedulesUpsertHelper(
         employees: List<PromotionEmployee>,
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         currentPeIds: List<Long>,
-        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
+        userByIdMap: Map<Long, Employee>
     ) {
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployee?.id == null || it.promotionEmployee?.id !in currentPeIds }
 
@@ -230,7 +231,7 @@ class PromotionSchedulesUpsertHelper(
         employees: List<PromotionEmployee>,
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         currentPeIds: List<Long>,
-        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
+        userByIdMap: Map<Long, Employee>
     ) {
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployee?.id == null || it.promotionEmployee?.id !in currentPeIds }
 
@@ -264,7 +265,7 @@ class PromotionSchedulesUpsertHelper(
         existingTeamMemberSchedules: List<TeamMemberSchedule>,
         promotion: Promotion,
         currentPeIds: List<Long>,
-        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
+        userByIdMap: Map<Long, Employee>
     ) {
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployee?.id == null || it.promotionEmployee?.id !in currentPeIds }
 
@@ -283,7 +284,7 @@ class PromotionSchedulesUpsertHelper(
 
     private fun validateEmployeeStatus(
         employees: List<PromotionEmployee>,
-        userByIdMap: Map<Long, com.otoki.powersales.employee.entity.Employee>
+        userByIdMap: Map<Long, Employee>
     ) {
         for (pe in employees) {
             val employee = pe.employeeId?.let { userByIdMap[it] } ?: continue

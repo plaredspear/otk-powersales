@@ -6,7 +6,7 @@ import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredExcep
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageService
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.external.sf.outbound.SfApiResponse
 import com.otoki.powersales.external.sf.outbound.SfOutboundClient

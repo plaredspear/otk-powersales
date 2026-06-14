@@ -2,7 +2,7 @@ package com.otoki.powersales.schedule.entity
 
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
-import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.JoinColumn
 import org.assertj.core.api.Assertions.assertThat

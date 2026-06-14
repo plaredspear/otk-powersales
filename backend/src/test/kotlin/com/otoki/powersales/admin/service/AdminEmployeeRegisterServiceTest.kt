@@ -8,9 +8,9 @@ import com.otoki.powersales.admin.exception.InvalidEmployeeCodeFormatException
 import com.otoki.powersales.admin.exception.PasswordConfirmMismatchException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.enums.EmployeeOrigin
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

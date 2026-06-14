@@ -13,8 +13,8 @@ import com.otoki.powersales.domain.support.education.exception.InvalidFileKeyExc
 import com.otoki.powersales.domain.support.education.repository.EducationCodeRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostAttachmentRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostRepository
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just

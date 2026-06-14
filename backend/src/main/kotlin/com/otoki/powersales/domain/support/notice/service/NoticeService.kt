@@ -28,7 +28,7 @@ import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeIdExcep
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeScopeException
 import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service

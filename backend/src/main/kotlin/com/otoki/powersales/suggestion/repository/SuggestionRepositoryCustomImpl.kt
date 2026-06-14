@@ -1,7 +1,7 @@
 package com.otoki.powersales.suggestion.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
-import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionFilter
 import com.otoki.powersales.suggestion.entity.QSuggestion.Companion.suggestion

@@ -6,7 +6,7 @@ import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

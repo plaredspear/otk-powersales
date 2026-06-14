@@ -4,8 +4,8 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.AdminCreateSiteActivityRequest
 import com.otoki.powersales.inspection.dto.admin.AdminUpdateSiteActivityRequest
 import com.otoki.powersales.inspection.entity.InspectionTheme

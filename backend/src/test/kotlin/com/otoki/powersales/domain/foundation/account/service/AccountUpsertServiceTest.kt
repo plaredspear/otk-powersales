@@ -3,10 +3,8 @@ package com.otoki.powersales.domain.foundation.account.service
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertCommand
-import com.otoki.powersales.domain.foundation.account.service.AccountUpsertMapper
-import com.otoki.powersales.domain.foundation.account.service.AccountUpsertService
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.organization.entity.Organization
 import com.otoki.powersales.organization.repository.OrganizationRepository
 import com.otoki.powersales.user.entity.User

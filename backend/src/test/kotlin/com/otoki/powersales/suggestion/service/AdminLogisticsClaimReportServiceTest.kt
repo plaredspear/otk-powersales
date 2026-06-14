@@ -2,7 +2,7 @@ package com.otoki.powersales.suggestion.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.platform.common.util.TimeZones
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.suggestion.entity.Suggestion
 import com.otoki.powersales.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.suggestion.entity.SuggestionStatus

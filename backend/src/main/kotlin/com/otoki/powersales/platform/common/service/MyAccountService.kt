@@ -8,7 +8,7 @@ import com.otoki.powersales.platform.common.exception.AccountInvalidParameterExc
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepositoryCustom
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepositoryCustom
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

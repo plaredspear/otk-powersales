@@ -2,9 +2,8 @@ package com.otoki.powersales.platform.auth.web
 
 import com.otoki.powersales.platform.auth.entity.Profile
 import com.otoki.powersales.platform.auth.permission.SfPermissionResolver
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
-import com.otoki.powersales.platform.auth.web.WebUserDetailsService
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every

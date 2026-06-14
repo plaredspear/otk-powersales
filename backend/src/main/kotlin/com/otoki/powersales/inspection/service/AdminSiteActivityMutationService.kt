@@ -5,7 +5,7 @@ import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.inspection.dto.admin.AdminCreateSiteActivityRequest
 import com.otoki.powersales.inspection.dto.admin.AdminSiteActivityMutationResponse
 import com.otoki.powersales.inspection.dto.admin.AdminUpdateSiteActivityRequest

@@ -5,12 +5,11 @@ import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory2
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.platform.auth.entity.AppAuthority
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.platform.common.service.HomeService
 import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository

@@ -3,8 +3,7 @@ package com.otoki.powersales.platform.common.entity
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
-import com.otoki.powersales.employee.entity.Group
-import com.otoki.powersales.platform.common.entity.AgreementHistory
+import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

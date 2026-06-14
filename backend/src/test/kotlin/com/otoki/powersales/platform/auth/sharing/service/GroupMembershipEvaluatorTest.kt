@@ -1,9 +1,7 @@
 package com.otoki.powersales.platform.auth.sharing.service
 
-import com.otoki.powersales.employee.entity.Group
-import com.otoki.powersales.employee.repository.GroupRepository
-import com.otoki.powersales.platform.auth.sharing.service.GroupMembershipEvaluator
-import com.otoki.powersales.platform.auth.sharing.service.UserRoleHierarchyTraversal
+import com.otoki.powersales.domain.org.employee.entity.Group
+import com.otoki.powersales.domain.org.employee.repository.GroupRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

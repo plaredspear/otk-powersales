@@ -2,8 +2,8 @@ package com.otoki.powersales.domain.activity.order.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
 import com.otoki.powersales.domain.activity.order.entity.ErpOrder
 import com.otoki.powersales.domain.activity.order.entity.ErpOrderProduct
@@ -14,7 +14,6 @@ import com.otoki.powersales.domain.activity.order.exception.InvalidSapOrderNumbe
 import com.otoki.powersales.domain.activity.order.exception.SapOrderNotFoundException
 import com.otoki.powersales.domain.activity.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.domain.activity.order.repository.ErpOrderRepository
-import com.otoki.powersales.domain.activity.order.service.ClientOrderQueryService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

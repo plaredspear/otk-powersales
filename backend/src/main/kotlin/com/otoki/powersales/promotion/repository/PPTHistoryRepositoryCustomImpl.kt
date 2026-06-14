@@ -1,6 +1,6 @@
 package com.otoki.powersales.promotion.repository
 
-import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.promotion.entity.QProfessionalPromotionTeamHistory.Companion.professionalPromotionTeamHistory
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType

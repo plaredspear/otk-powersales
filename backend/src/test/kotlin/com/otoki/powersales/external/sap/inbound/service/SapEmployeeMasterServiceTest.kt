@@ -1,14 +1,13 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.employee.service.EmployeeUpsertService
-import com.otoki.powersales.employee.service.dto.EmployeeUpsertCommand
-import com.otoki.powersales.employee.service.dto.EmployeeUpsertFailedRow
-import com.otoki.powersales.employee.service.dto.EmployeeUpsertResult
+import com.otoki.powersales.domain.org.employee.service.EmployeeUpsertService
+import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertCommand
+import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertFailedRow
+import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertResult
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.external.sap.inbound.dto.employee.EmployeeMasterRequestItem
-import com.otoki.powersales.external.sap.inbound.service.SapEmployeeMasterService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

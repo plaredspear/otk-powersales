@@ -2,12 +2,11 @@ package com.otoki.powersales.domain.activity.order.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreateLine
 import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreateRequest
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
-import com.otoki.powersales.domain.activity.order.service.OrderDraftService
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.activity.order.exception.OrderAccountForbiddenException
@@ -23,7 +22,6 @@ import com.otoki.powersales.domain.activity.order.sap.client.SapInventorySearchC
 import com.otoki.powersales.domain.activity.order.sap.client.SapLoanInquiryClient
 import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
-import com.otoki.powersales.domain.activity.order.service.OrderRequestCreateService
 import com.otoki.powersales.external.sap.outbox.SapOutbox
 import io.mockk.every
 import io.mockk.mockk

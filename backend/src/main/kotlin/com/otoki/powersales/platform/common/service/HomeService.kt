@@ -2,7 +2,7 @@ package com.otoki.powersales.platform.common.service
 
 import com.otoki.powersales.platform.common.dto.response.HomeResponse
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
@@ -13,7 +13,7 @@ import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.productexpiration.repository.ProductExpirationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

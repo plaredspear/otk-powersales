@@ -6,8 +6,8 @@ import com.otoki.powersales.platform.common.enums.PushMessageBranch
 import com.otoki.powersales.platform.common.enums.PushMessageBranchCode
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDateTime

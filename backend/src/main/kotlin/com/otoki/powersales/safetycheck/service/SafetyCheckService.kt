@@ -10,7 +10,7 @@ import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
 import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
 import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

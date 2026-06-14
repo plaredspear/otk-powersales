@@ -10,7 +10,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.domain.activity.draft.entity.TmpOrder
 import com.otoki.powersales.domain.activity.draft.entity.TmpOrderProduct
 import com.otoki.powersales.domain.activity.draft.repository.TmpOrderRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

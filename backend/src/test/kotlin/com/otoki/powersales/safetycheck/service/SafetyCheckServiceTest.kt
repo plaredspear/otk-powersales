@@ -1,8 +1,8 @@
 package com.otoki.powersales.safetycheck.service
 
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.safetycheck.dto.request.SafetyCheckSubmitRequest
 import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
 import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission

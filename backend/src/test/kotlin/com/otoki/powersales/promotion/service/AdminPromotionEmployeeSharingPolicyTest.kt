@@ -2,7 +2,7 @@ package com.otoki.powersales.promotion.service
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.promotion.entity.PromotionEmployee
 import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.promotion.repository.PromotionRepository

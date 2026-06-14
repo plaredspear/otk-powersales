@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.auth.sharing.service
 
-import com.otoki.powersales.employee.repository.GroupRepository
+import com.otoki.powersales.domain.org.employee.repository.GroupRepository
 import org.slf4j.LoggerFactory
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service

@@ -9,6 +9,7 @@ import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.platform.common.util.GeoUtils
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.config.AttendanceProperties
@@ -25,7 +26,7 @@ import com.otoki.powersales.schedule.policy.AbcExemptPolicy
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.util.AccountCoordinateParser
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -348,7 +349,7 @@ class AttendanceService(
      */
     @Transactional
     fun registerProxy(
-        targetEmployee: com.otoki.powersales.employee.entity.Employee,
+        targetEmployee: Employee,
         scheduleId: Long?,
         displayWorkScheduleId: Long?,
     ): AttendanceRegisterResponse {
@@ -536,7 +537,7 @@ class AttendanceService(
      */
     private fun resolveByDisplayWorkSchedule(
         displayWorkScheduleId: Long,
-        employee: com.otoki.powersales.employee.entity.Employee,
+        employee: Employee,
         today: LocalDate
     ): ResolveResult {
         // step 1: 마스터 존재 (ATT_DISPLAY_SCHEDULE_NOT_FOUND)
@@ -610,7 +611,7 @@ class AttendanceService(
      */
     private fun resolveByEventSchedule(
         eventScheduleId: Long,
-        employee: com.otoki.powersales.employee.entity.Employee,
+        employee: Employee,
         today: LocalDate
     ): ResolveResult {
         // step 1: TMS 존재 + is_deleted=false (ATT_EVENT_SCHEDULE_NOT_FOUND)
@@ -648,7 +649,7 @@ class AttendanceService(
     /**
      * 사원의 조직코드 기반 조장 조회
      */
-    private fun findTeamLeader(costCenterCode: String?): com.otoki.powersales.employee.entity.Employee? {
+    private fun findTeamLeader(costCenterCode: String?): Employee? {
         if (costCenterCode.isNullOrBlank()) return null
         val leaders = employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
             listOf(costCenterCode), AppAuthority.LEADER

@@ -20,7 +20,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper
 import org.springframework.stereotype.Service

@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.auth.dto.response
 
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 
 /**
  * 로그인 응답 DTO

@@ -5,8 +5,8 @@ import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.schedule.dto.response.DailySummaryDto
-import com.otoki.powersales.employee.entity.QEmployee.Companion.employee
-import com.otoki.powersales.employee.entity.QEmployeeInfo.Companion.employeeInfo
+import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.domain.org.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.otoki.powersales.schedule.enums.AttendanceType
 import com.otoki.powersales.schedule.entity.QAttendanceLog.Companion.attendanceLog
 import com.otoki.powersales.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule

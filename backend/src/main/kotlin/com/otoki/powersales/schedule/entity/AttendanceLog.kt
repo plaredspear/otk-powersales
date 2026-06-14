@@ -4,8 +4,8 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.entity.Group
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.schedule.entity.converter.SecondWorkTypeConverter
 import com.otoki.powersales.schedule.enums.AttendanceType
 import com.otoki.powersales.schedule.enums.SecondWorkType

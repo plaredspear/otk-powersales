@@ -20,8 +20,8 @@ import com.otoki.powersales.platform.auth.web.dto.WebLoginResponse
 import com.otoki.powersales.platform.auth.web.dto.WebRefreshTokenRequest
 import com.otoki.powersales.platform.auth.web.dto.WebTokenResponse
 import com.otoki.powersales.platform.auth.web.dto.WebUserSummary
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository

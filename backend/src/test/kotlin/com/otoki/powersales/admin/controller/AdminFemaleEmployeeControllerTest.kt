@@ -6,9 +6,9 @@ import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.employee.dto.response.EmployeeListItem
-import com.otoki.powersales.employee.dto.response.EmployeeListResponse
-import com.otoki.powersales.employee.service.AdminEmployeeService
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach

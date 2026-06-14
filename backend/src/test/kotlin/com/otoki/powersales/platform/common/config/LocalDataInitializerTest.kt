@@ -1,11 +1,10 @@
 package com.otoki.powersales.platform.common.config
 
 import com.otoki.powersales.platform.auth.entity.AppAuthority
-import com.otoki.powersales.employee.entity.Employee
-import com.otoki.powersales.employee.enums.EmployeeOrigin
-import com.otoki.powersales.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
-import com.otoki.powersales.platform.common.config.LocalDataInitializer
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.user.service.UserProvisioningService
 import io.mockk.*

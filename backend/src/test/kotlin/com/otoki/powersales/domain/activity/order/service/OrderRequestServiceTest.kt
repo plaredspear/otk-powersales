@@ -1,9 +1,8 @@
 package com.otoki.powersales.domain.activity.order.service
 
-import com.otoki.powersales.domain.activity.order.service.OrderRequestDetailMapper
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.product.entity.Product
-import com.otoki.powersales.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import com.otoki.powersales.external.sap.outbound.sender.SapOrderRequestDetailLine
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
@@ -17,7 +16,6 @@ import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundExcepti
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderHistoryRow
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
-import com.otoki.powersales.domain.activity.order.service.OrderRequestService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
