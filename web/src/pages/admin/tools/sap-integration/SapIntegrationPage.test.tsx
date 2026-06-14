@@ -51,8 +51,8 @@ const inboundCatalog = [
     endpointPath: '/api/v1/sap/organization',
     koreanName: '조직 마스터 수신',
     requiredScope: 'sap.org.write',
-    targetEntity: 'OrganizeMaster',
-    controllerClass: 'SapOrganizationController',
+    targetEntity: 'Organization',
+    controllerClass: 'SapOrganizationMasterController',
     description: '조직 마스터를 수신한다.',
   },
   {
@@ -139,7 +139,7 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
 
     expect(await screen.findByText('/api/v1/sap/organization')).toBeInTheDocument();
     expect(screen.getByText('sap.org.write')).toBeInTheDocument();
-    expect(screen.getByText('OrganizeMaster')).toBeInTheDocument();
+    expect(screen.getByText('Organization')).toBeInTheDocument();
     // 호출 이력이 해당 endpoint 로 고정되어 인라인 렌더
     expect(
       screen.getByText('inbound-audits:/api/v1/sap/organization'),

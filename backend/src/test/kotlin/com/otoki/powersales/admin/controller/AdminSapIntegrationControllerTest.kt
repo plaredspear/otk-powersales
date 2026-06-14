@@ -44,7 +44,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
                     koreanName = "조직 마스터 수신",
                     requiredScope = "sap.org.write",
                     targetEntity = "Organization",
-                    controllerClass = "SapOrganizeMasterController",
+                    controllerClass = "SapOrganizationMasterController",
                     description = "조직 마스터 UPSERT.",
                 )
             )

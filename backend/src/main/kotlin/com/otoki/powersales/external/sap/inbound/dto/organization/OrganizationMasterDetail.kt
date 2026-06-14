@@ -1,4 +1,4 @@
-package com.otoki.powersales.external.sap.inbound.dto.organize
+package com.otoki.powersales.external.sap.inbound.dto.organization
 
 import com.otoki.powersales.external.sap.inbound.dto.SapInboundUpsertResult
 import tools.jackson.databind.PropertyNamingStrategies
@@ -14,7 +14,7 @@ import tools.jackson.databind.annotation.JsonNaming
  * SAP 호환 보존을 위해 RESULT_DETAIL 내부 키는 SnakeCase 로 직렬화된다 (Spec #580 P1-B).
  */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
-data class OrganizeMasterDetail(
+data class OrganizationMasterDetail(
     override val successCount: Int,
     override val failureCount: Int,
     val failures: List<FailureItem>

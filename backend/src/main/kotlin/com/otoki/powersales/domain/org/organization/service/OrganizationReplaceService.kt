@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional
  * 조직 마스터 REPLACE_ALL 도메인 서비스 (파괴적 전체 교체).
  *
  * ## 레거시 매핑
- * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapOrganizeMasterService]
+ * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapOrganizationMasterService]
  * - origin spec: #556 (SAP 조직 마스터 인바운드) — 어댑터/도메인 분리: #635 P3-B
  *
  * ## 레거시 동작 요약

@@ -3,7 +3,7 @@ package com.otoki.powersales.external.sap.inbound.service
 import com.otoki.powersales.domain.org.organization.service.OrganizationReplaceService
 import com.otoki.powersales.domain.org.organization.service.dto.OrganizationReplaceCommand
 import com.otoki.powersales.domain.org.organization.service.dto.OrganizationReplaceResult
-import com.otoki.powersales.external.sap.inbound.dto.organize.OrganizeMasterRequestItem
+import com.otoki.powersales.external.sap.inbound.dto.organization.OrganizationMasterRequestItem
 import com.otoki.powersales.external.sap.inbound.exception.SapInvalidPayloadException
 import io.mockk.every
 import io.mockk.mockk
@@ -15,13 +15,13 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-@DisplayName("SapOrganizeMasterService 어댑터 테스트")
-class SapOrganizeMasterServiceTest {
+@DisplayName("SapOrganizationMasterService 어댑터 테스트")
+class SapOrganizationMasterServiceTest {
 
     private val organizationReplaceService: OrganizationReplaceService = mockk()
-    private val service = SapOrganizeMasterService(organizationReplaceService)
+    private val service = SapOrganizationMasterService(organizationReplaceService)
 
-    private fun item(suffix: String): OrganizeMasterRequestItem = OrganizeMasterRequestItem(
+    private fun item(suffix: String): OrganizationMasterRequestItem = OrganizationMasterRequestItem(
         ccCd2 = "10$suffix", orgCd2 = "100$suffix", orgNm2 = "본사",
         ccCd3 = "11$suffix", orgCd3 = "110$suffix", orgNm3 = "사업부",
         ccCd4 = "12$suffix", orgCd4 = "120$suffix", orgNm4 = "팀",
@@ -33,7 +33,7 @@ class SapOrganizeMasterServiceTest {
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 결과 (replacedCount=N) → OrganizeMasterDetail (successCount=N, failureCount=0, failures=empty)")
+        @DisplayName("happy: 도메인 결과 (replacedCount=N) → OrganizationMasterDetail (successCount=N, failureCount=0, failures=empty)")
         fun happy_domainResultMapped() {
             every { organizationReplaceService.replaceAll(any()) } returns
                 OrganizationReplaceResult(replacedCount = 3)
@@ -48,7 +48,7 @@ class SapOrganizeMasterServiceTest {
         @Test
         @DisplayName("페이로드 검증 실패 (행 전체 null) - SapInvalidPayloadException, 도메인 호출 없음")
         fun validation_allNullRow_throwsAndNoDomainCall() {
-            val items = listOf(item("1"), OrganizeMasterRequestItem(), item("3"))
+            val items = listOf(item("1"), OrganizationMasterRequestItem(), item("3"))
 
             assertThatThrownBy { service.replaceAll(items) }
                 .isInstanceOf(SapInvalidPayloadException::class.java)
@@ -69,7 +69,7 @@ class SapOrganizeMasterServiceTest {
         }
 
         @Test
-        @DisplayName("DTO 매핑: OrganizeMasterRequestItem → OrganizationReplaceCommand 12 필드")
+        @DisplayName("DTO 매핑: OrganizationMasterRequestItem → OrganizationReplaceCommand 12 필드")
         fun dtoMapping_itemToCommand() {
             every { organizationReplaceService.replaceAll(any()) } returns
                 OrganizationReplaceResult(replacedCount = 1)

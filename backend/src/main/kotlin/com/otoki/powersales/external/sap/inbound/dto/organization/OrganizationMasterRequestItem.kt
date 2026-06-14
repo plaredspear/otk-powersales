@@ -1,4 +1,4 @@
-package com.otoki.powersales.external.sap.inbound.dto.organize
+package com.otoki.powersales.external.sap.inbound.dto.organization
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.otoki.powersales.domain.org.organization.entity.Organization
@@ -7,7 +7,7 @@ import com.otoki.powersales.domain.org.organization.entity.Organization
  * SAP 조직 마스터 행 DTO. 페이로드 키는 SAP 호환을 위해 PascalCase / UPPER_CASE 로 유지한다.
  * 12 필드는 모두 nullable 이며, 모든 필드가 null 인 행은 검증에서 거부된다.
  */
-data class OrganizeMasterRequestItem(
+data class OrganizationMasterRequestItem(
     @JsonProperty("CC_CD2") val ccCd2: String? = null,
     @JsonProperty("ORG_CD2") val orgCd2: String? = null,
     @JsonProperty("ORG_NM2") val orgNm2: String? = null,

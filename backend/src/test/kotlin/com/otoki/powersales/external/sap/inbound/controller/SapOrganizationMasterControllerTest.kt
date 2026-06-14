@@ -7,9 +7,9 @@ import com.otoki.powersales.platform.auth.sharing.service.FlsService
 import com.otoki.powersales.platform.auth.sharing.service.PermissionSetEvaluator
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
-import com.otoki.powersales.external.sap.inbound.dto.organize.OrganizeMasterDetail
+import com.otoki.powersales.external.sap.inbound.dto.organization.OrganizationMasterDetail
 import com.otoki.powersales.external.sap.inbound.exception.SapInvalidPayloadException
-import com.otoki.powersales.external.sap.inbound.service.SapOrganizeMasterService
+import com.otoki.powersales.external.sap.inbound.service.SapOrganizationMasterService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -25,17 +25,17 @@ import io.mockk.every
 import io.mockk.slot
 import io.mockk.verify
 import com.ninjasquad.springmockk.MockkBean
-import com.otoki.powersales.external.sap.inbound.dto.organize.OrganizeMasterRequestItem
+import com.otoki.powersales.external.sap.inbound.dto.organization.OrganizationMasterRequestItem
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import tools.jackson.databind.ObjectMapper
 
-@WebMvcTest(SapOrganizeMasterController::class)
+@WebMvcTest(SapOrganizationMasterController::class)
 @AutoConfigureMockMvc(addFilters = false)
-@DisplayName("SapOrganizeMasterController 테스트")
-class SapOrganizeMasterControllerTest {
+@DisplayName("SapOrganizationMasterController 테스트")
+class SapOrganizationMasterControllerTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
@@ -44,7 +44,7 @@ class SapOrganizeMasterControllerTest {
     private lateinit var objectMapper: ObjectMapper
 
     @MockkBean
-    private lateinit var sapOrganizeMasterService: SapOrganizeMasterService
+    private lateinit var sapOrganizationMasterService: SapOrganizationMasterService
 
     @MockkBean
     private lateinit var jwtTokenProvider: JwtTokenProvider
@@ -107,9 +107,9 @@ class SapOrganizeMasterControllerTest {
         @Test
         @DisplayName("성공 - 200 + RESULT_CODE=200 + RESULT_DETAIL.success_count")
         fun replace_success() {
-            val captor = slot<List<OrganizeMasterRequestItem>>()
-            every { sapOrganizeMasterService.replaceAll(capture(captor)) } returns
-                OrganizeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
+            val captor = slot<List<OrganizationMasterRequestItem>>()
+            every { sapOrganizationMasterService.replaceAll(capture(captor)) } returns
+                OrganizationMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             mockMvc.perform(
                 post("/api/v1/sap/organization")
@@ -130,9 +130,9 @@ class SapOrganizeMasterControllerTest {
         @Test
         @DisplayName("성공 - PascalCase 키가 정확히 매핑됨")
         fun replace_pascalCaseKeysMapped() {
-            val captor = slot<List<OrganizeMasterRequestItem>>()
-            every { sapOrganizeMasterService.replaceAll(capture(captor)) } returns
-                OrganizeMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
+            val captor = slot<List<OrganizationMasterRequestItem>>()
+            every { sapOrganizationMasterService.replaceAll(capture(captor)) } returns
+                OrganizationMasterDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
             mockMvc.perform(
                 post("/api/v1/sap/organization")
@@ -150,7 +150,7 @@ class SapOrganizeMasterControllerTest {
         @Test
         @DisplayName("실패 - 서비스가 INVALID_PAYLOAD 예외를 던지면 422 + RESULT_CODE=INVALID_PAYLOAD")
         fun replace_invalidPayload() {
-            every { sapOrganizeMasterService.replaceAll(any()) } throws
+            every { sapOrganizationMasterService.replaceAll(any()) } throws
                 SapInvalidPayloadException("필수 필드 누락 (line 2)")
 
             mockMvc.perform(
@@ -176,7 +176,7 @@ class SapOrganizeMasterControllerTest {
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.RESULT_CODE").value("INVALID_PAYLOAD"))
 
-            verify(exactly = 0) { sapOrganizeMasterService.replaceAll(any()) }
+            verify(exactly = 0) { sapOrganizationMasterService.replaceAll(any()) }
         }
     }
 }

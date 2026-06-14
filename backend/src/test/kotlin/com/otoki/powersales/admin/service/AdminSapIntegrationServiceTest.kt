@@ -62,7 +62,7 @@ class AdminSapIntegrationServiceTest {
 
             assertThat(first.endpointPath).isEqualTo("/api/v1/sap/organization")
             assertThat(first.requiredScope).isEqualTo("sap.org.write")
-            assertThat(first.controllerClass).isEqualTo("SapOrganizeMasterController")
+            assertThat(first.controllerClass).isEqualTo("SapOrganizationMasterController")
         }
     }
 

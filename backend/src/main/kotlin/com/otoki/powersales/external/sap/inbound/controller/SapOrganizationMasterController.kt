@@ -1,10 +1,10 @@
 package com.otoki.powersales.external.sap.inbound.controller
 
 import com.otoki.powersales.external.sap.inbound.dto.SapResultWrapper
-import com.otoki.powersales.external.sap.inbound.dto.organize.OrganizeMasterDetail
-import com.otoki.powersales.external.sap.inbound.dto.organize.OrganizeMasterRequest
+import com.otoki.powersales.external.sap.inbound.dto.organization.OrganizationMasterDetail
+import com.otoki.powersales.external.sap.inbound.dto.organization.OrganizationMasterRequest
 import com.otoki.powersales.external.sap.inbound.exception.SapInvalidPayloadException
-import com.otoki.powersales.external.sap.inbound.service.SapOrganizeMasterService
+import com.otoki.powersales.external.sap.inbound.service.SapOrganizationMasterService
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/api/v1/sap")
-class SapOrganizeMasterController(
-    private val sapOrganizeMasterService: SapOrganizeMasterService
+class SapOrganizationMasterController(
+    private val sapOrganizationMasterService: SapOrganizationMasterService
 ) {
 
     @Operation(
@@ -43,11 +43,11 @@ class SapOrganizeMasterController(
     @PostMapping("/organization")
     @PreAuthorize("hasAuthority('SCOPE_sap.org.write')")
     fun replaceOrganizations(
-        @Valid @RequestBody request: OrganizeMasterRequest
-    ): ResponseEntity<SapResultWrapper<OrganizeMasterDetail>> {
+        @Valid @RequestBody request: OrganizationMasterRequest
+    ): ResponseEntity<SapResultWrapper<OrganizationMasterDetail>> {
         val items = request.reqItemList
             ?: throw SapInvalidPayloadException("req_item_list 는 필수입니다")
-        val detail = sapOrganizeMasterService.replaceAll(items)
+        val detail = sapOrganizationMasterService.replaceAll(items)
         return ResponseEntity.ok(SapResultWrapper.Companion.ok(detail))
     }
 }
