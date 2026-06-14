@@ -40,8 +40,10 @@ import java.time.format.DateTimeFormatter
  * - 환산인원: SF `MonthlyFemaleEmployeeIntegrationSchedule__c.ConvertedHeadcount__c`(Number 18,4) SUM 정합 — scale=4.
  * - 거래처유형별 투입현황 차트는 SF 와 동일하게 **전월(마감) 고정**(결정 D2). 그 외는 yearMonth 토글.
  * - 판촉/OSC 구분: `Employee.jobCode`("판촉직" / "OSC직"·"레이디직") — 레거시 `EmployeeTriggerHandler.cls:47` 정합(결정 D6).
- * - 매출현황 탭(salesSummary): 신규에 매출 목표 데이터 부재 → ORORA 실적 + 기준진도율(달력일) + 전년 비교만(결정 D7).
+ * - 매출현황 탭(salesSummary): 신규에 매출 목표 데이터 부재 → 실적 + 기준진도율(달력일) + 전년 비교만(결정 D7).
  *   목표 대비 진도율(targetAmount/progressRate/channelSales)은 0/빈 리스트.
+ *   실적 source 는 RDS `MonthlySalesHistory` ([MonthlySalesAdminQueryService] 경유) — 외부 ORORA view 직접 호출 아님.
+ *   (ORORA view 는 RDS 적재 배치에서만 읽고, 화면/집계는 항상 RDS 적재본을 본다.)
  */
 @Service
 @Transactional(readOnly = true)
@@ -62,24 +64,33 @@ class AdminDashboardService(
         val effectiveCodes = resolveScope(scope, branchCode)
         val branchName = branchCode
 
+        // 당월 MFEIS 는 세 섹션(매출/투입/기본)이 공유 — 1회만 조회해 재사용 (중복 trip 제거).
+        // 전월 MFEIS 는 투입현황(D2: 전월 마감 고정)에서만 쓰여 해당 빌더가 자체 조회한다.
+        val rows = mfeisRepository.findDeploymentDashboardRows(
+            ym.year.toString(), ym.monthValue.toString(), effectiveCodes,
+        )
+
         return DashboardResponse(
-            salesSummary = buildSalesSummary(ym, branchName, effectiveCodes),
-            staffDeployment = buildStaffDeployment(ym, previousYm, branchName, effectiveCodes),
-            basicStats = buildBasicStats(ym, branchName, effectiveCodes),
+            salesSummary = buildSalesSummary(ym, branchName, rows),
+            staffDeployment = buildStaffDeployment(ym, previousYm, branchName, effectiveCodes, rows),
+            basicStats = buildBasicStats(ym, branchName, effectiveCodes, rows),
         )
     }
 
     // ------------------- 매출현황 (D7: 실적 + 기준진도율) -------------------
 
+    /**
+     * 매출현황 — 투입 거래처의 당월/전년 마감실적 합산 (D7).
+     *
+     * 매출 실적은 RDS `MonthlySalesHistory` ([MonthlySalesAdminQueryService.sumInvestedAccountSales]
+     * 경유) 에서 조회한다 — 외부 ORORA view 직접 호출이 아니다.
+     */
     private fun buildSalesSummary(
         ym: YearMonth,
         branchName: String?,
-        effectiveCodes: List<String>,
+        rows: List<MonthlyFemaleEmployeeIntegrationSchedule>,
     ): SalesSummary {
-        // 투입 거래처 = 해당 월 MFEIS 에 등장하는 거래처(account)
-        val rows = mfeisRepository.findDeploymentDashboardRows(
-            ym.year.toString(), ym.monthValue.toString(), effectiveCodes,
-        )
+        // 투입 거래처 = 해당 월 MFEIS 에 등장하는 거래처(account) — rows 는 getDashboard 에서 1회 조회분
         val accounts = rows.mapNotNull { it.account }.distinctBy { it.id }
         val sales = monthlySalesAdminQueryService.sumInvestedAccountSales(accounts, ym.year, ym.monthValue)
 
@@ -121,11 +132,9 @@ class AdminDashboardService(
         previousYm: YearMonth,
         branchName: String?,
         effectiveCodes: List<String>,
+        rows: List<MonthlyFemaleEmployeeIntegrationSchedule>,
     ): StaffDeployment {
-        val rows = mfeisRepository.findDeploymentDashboardRows(
-            ym.year.toString(), ym.monthValue.toString(), effectiveCodes,
-        )
-        // 거래처유형별 투입현황 차트는 SF 와 동일하게 전월(마감) 고정 (결정 D2)
+        // 당월 rows 는 getDashboard 에서 1회 조회분을 공유. 전월(마감)만 자체 조회 (결정 D2)
         val previousRows = mfeisRepository.findDeploymentDashboardRows(
             previousYm.year.toString(), previousYm.monthValue.toString(), effectiveCodes,
         )
@@ -202,6 +211,7 @@ class AdminDashboardService(
         ym: YearMonth,
         branchName: String?,
         effectiveCodes: List<String>,
+        mfeisRows: List<MonthlyFemaleEmployeeIntegrationSchedule>,
     ): BasicStats {
         val employees = findEmployees(effectiveCodes)
         val asOf = ym.atEndOfMonth()
@@ -214,10 +224,7 @@ class AdminDashboardService(
         val active = employees.count { it.status == STATUS_ACTIVE }
         val onLeave = employees.count { it.status == STATUS_ON_LEAVE }
 
-        // 근무형태별 고정/격고/순회 — MFEIS 당월 근무형태 기준 인원 수
-        val mfeisRows = mfeisRepository.findDeploymentDashboardRows(
-            ym.year.toString(), ym.monthValue.toString(), effectiveCodes,
-        )
+        // 근무형태별 고정/격고/순회 — MFEIS 당월 근무형태 기준 인원 수 (getDashboard 1회 조회분 공유)
         val byWc3 = mfeisRows.groupBy { it.workingCategory3 }
 
         return BasicStats(

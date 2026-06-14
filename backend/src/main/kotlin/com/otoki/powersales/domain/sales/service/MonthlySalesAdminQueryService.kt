@@ -22,8 +22,11 @@ import kotlin.collections.get
  *
  * ## 데이터 source
  * RDS `MonthlySalesHistory` (SF `MonthlySalesHistory__c` 복제 적재) 100% 의존
- * ([MonthlySalesHistoryQueryGateway] 경유). SF 레거시도 화면 조회가 ORORA 직접이 아닌
- * `MonthlySalesHistory__c` SObject 를 읽은 것과 동등.
+ * ([MonthlySalesHistoryQueryGateway] 경유 — 메인 RDS DataSource).
+ * 외부 ORORA view (`OroraMonthlySalesHistoryQueryGateway`) 는 본 화면 조회 경로에서 호출하지 않는다.
+ * ORORA view 는 RDS 로의 복제 적재 배치 (`OroraMonthlySalesChunkProcessor`) 에서만 읽으며, 화면/집계는
+ * 항상 RDS 적재본을 본다. SF 레거시도 화면 조회가 ORORA 직접이 아닌 `MonthlySalesHistory__c`
+ * SObject 를 읽은 것과 동등.
  * 목표 (`thisMonthTarget`) / 확정 상태 (`isConfirmed`) 는 폐기 — 응답 호환성 유지를 위해
  * `targetAmount = null`, `achievementRate = null`, `isConfirmed = false` 로 고정.
  *
@@ -467,7 +470,9 @@ class MonthlySalesAdminQueryService(
     /**
      * 여사원 투입 거래처의 마감실적 합산 — 투입현황 대시보드 매출현황 탭 (Spec 850, 결정 D7).
      *
-     * 입력 account 집합의 당월/전년 동월 `ShipClosing` 마감실적을 RDS 1 trip 으로 일괄 합산.
+     * 입력 account 집합의 당월/전년 동월 `ShipClosing` 마감실적을 RDS `MonthlySalesHistory`
+     * ([MonthlySalesHistoryQueryGateway]) 1 trip 으로 일괄 합산 — 외부 ORORA view 직접 호출 아님.
+     * RDS 조회 키는 (`sap_account_code`, `sales_year`, `sales_month`) 복합 인덱스로 가속된다.
      * 목표(target)/진도율은 신규 시스템 데이터 부재로 제외 — 실적 + 전년 비교만 산출 (D7).
      * row 부재 (미적재) 시 0 반환.
      * 부수 효과: 없음 (조회 전용).
