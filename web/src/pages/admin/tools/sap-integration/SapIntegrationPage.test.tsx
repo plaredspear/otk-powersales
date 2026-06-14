@@ -24,6 +24,18 @@ vi.mock('../sap-outbound/SapOutboundOutboxTab', () => ({
 vi.mock('../sap-outbound/SapOutboundTestTab', () => ({
   default: () => <div data-testid="outbound-test-tab">outbound-test</div>,
 }));
+// Outbound 카탈로그 상세에 인라인되는 연동 정보표/테스트 송신 카드도 stub —
+// 본 테스트는 탭 구조와 각 API 상세에 해당 섹션이 인라인됨을 검증한다.
+vi.mock('../external-api/IntegrationInfoDescriptions', () => ({
+  default: ({ apiKey }: { apiKey: string }) => (
+    <div data-testid="integration-info">integration-info:{apiKey}</div>
+  ),
+}));
+vi.mock('../sap-outbound/SapOutboundSenderCard', () => ({
+  default: ({ config }: { config: { kind: string } }) => (
+    <div data-testid="sender-card">sender-card:{config.kind}</div>
+  ),
+}));
 
 const inboundCatalog = [
   {
@@ -125,13 +137,16 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     ).toBeInTheDocument();
   });
 
-  it('H5 - Outbound API 탭 클릭 시 Interface ID/트리거 + 그 API 로 고정된 호출 이력이 인라인 표시', async () => {
+  it('H5 - Outbound API 탭 클릭 시 Interface ID/트리거 + 연동 정보 + 테스트 송신 + 호출 이력이 인라인 표시', async () => {
     renderPage();
     const user = userEvent.setup();
     await user.click(screen.getByRole('tab', { name: '전문행사조 마스터' }));
 
     expect(await screen.findByText('SD03300')).toBeInTheDocument();
-    expect(screen.getByText('BATCH')).toBeInTheDocument();
+    // 연동 정보표가 해당 인터페이스의 kind 로 인라인 렌더 (SD03300 → ppt-master)
+    expect(screen.getByText('integration-info:ppt-master')).toBeInTheDocument();
+    // 테스트 송신 카드가 해당 인터페이스로 인라인 렌더
+    expect(screen.getByText('sender-card:ppt-master')).toBeInTheDocument();
     // 호출 이력이 해당 interfaceId 로 고정되어 인라인 렌더
     expect(screen.getByText('outbound-logs:SD03300')).toBeInTheDocument();
   });
