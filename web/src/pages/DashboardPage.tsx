@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Card, Col, Row, Spin, Statistic, Tabs } from 'antd';
+import { Alert, Card, Col, Empty, Row, Spin, Statistic, Tabs } from 'antd';
 import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import { useAuthStore } from '@/stores/authStore';
+import { SYSTEM_ADMIN_PROFILE_NAME } from '@/hooks/usePermission';
 import {
   fetchDashboard,
   type AccountTypeCount,
@@ -107,12 +109,22 @@ export default function DashboardPage() {
     yearMonth: toYearMonth(today.getFullYear(), today.getMonth() + 1),
   });
 
+  // 시스템 관리자(전사 권한)는 마운트 시 전사 자동 조회를 막고, 지점/전체를 명시 선택해 조회를 눌렀을
+  // 때만 실행한다 (무거운 전사 집계의 의도치 않은 자동 트리거 방지). 비-시스템관리자는 권한 스코프가
+  // 이미 제한적이라 기존대로 마운트 자동 조회.
+  const isSystemAdmin = useAuthStore(
+    (state) => state.user?.profileName === SYSTEM_ADMIN_PROFILE_NAME,
+  );
+  const [hasSearched, setHasSearched] = useState(false);
+
   const dashboardQuery = useQuery({
     queryKey: ['adminDashboard', queryParams],
     queryFn: () => fetchDashboard(queryParams.yearMonth, queryParams.branchCode),
+    enabled: !isSystemAdmin || hasSearched,
   });
 
   const handleSearch = () => {
+    setHasSearched(true);
     setQueryParams({
       yearMonth: toYearMonth(year, month),
       // 대시보드는 단일 지점 또는 전체(권한 스코프). 단일 선택 시에만 branchCode 전달.
@@ -273,17 +285,24 @@ export default function DashboardPage() {
         />
       )}
 
-      <Spin spinning={dashboardQuery.isLoading}>
-        <Tabs
-          style={{ marginTop: 16 }}
-          defaultActiveKey="sales"
-          items={[
-            { key: 'sales', label: '매출현황', children: salesTab },
-            { key: 'deployment', label: '여사원 투입현황', children: deploymentTab },
-            { key: 'basic', label: '기본 현황', children: basicTab },
-          ]}
+      {isSystemAdmin && !hasSearched ? (
+        <Empty
+          style={{ marginTop: 64 }}
+          description="지점 또는 전체를 선택한 뒤 조회를 눌러주세요."
         />
-      </Spin>
+      ) : (
+        <Spin spinning={dashboardQuery.isLoading}>
+          <Tabs
+            style={{ marginTop: 16 }}
+            defaultActiveKey="sales"
+            items={[
+              { key: 'sales', label: '매출현황', children: salesTab },
+              { key: 'deployment', label: '여사원 투입현황', children: deploymentTab },
+              { key: 'basic', label: '기본 현황', children: basicTab },
+            ]}
+          />
+        </Spin>
+      )}
     </div>
   );
 }
