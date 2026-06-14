@@ -43,7 +43,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
                     endpointPath = "/api/v1/sap/organization",
                     koreanName = "조직 마스터 수신",
                     requiredScope = "sap.org.write",
-                    targetEntity = "OrganizeMaster",
+                    targetEntity = "Organization",
                     controllerClass = "SapOrganizeMasterController",
                     description = "조직 마스터 UPSERT.",
                 )
@@ -54,7 +54,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data[0].endpointPath").value("/api/v1/sap/organization"))
             .andExpect(jsonPath("$.data[0].requiredScope").value("sap.org.write"))
-            .andExpect(jsonPath("$.data[0].targetEntity").value("OrganizeMaster"))
+            .andExpect(jsonPath("$.data[0].targetEntity").value("Organization"))
     }
 
     @Test

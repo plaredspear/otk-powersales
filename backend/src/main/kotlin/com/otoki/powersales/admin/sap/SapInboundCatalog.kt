@@ -26,7 +26,7 @@ object SapInboundCatalog {
             endpointPath = "/api/v1/sap/organization",
             koreanName = "조직 마스터 수신",
             requiredScope = "sap.org.write",
-            targetEntity = "OrganizeMaster",
+            targetEntity = "Organization",
             controllerClass = "SapOrganizeMasterController",
             description = "조직 마스터 전량 UPSERT. 변동량 임계 초과 시 SANITY_CHECK_FAILED (422) 거절.",
         ),
