@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../core/services/app_version_fields.dart';
+import 'auth_interceptor.dart';
 import '../models/change_password_request.dart';
 import '../models/login_response_model.dart';
 import '../models/auth_token_model.dart';
@@ -43,6 +44,12 @@ class AuthApiDataSource implements AuthRemoteDataSource {
         // 현재 사용 중인 앱 버전 보고 (서버가 사용자별 현재 버전 기록).
         ...await appVersionFields(),
       },
+      // 명시적 자동 로그인의 refresh 실패는 호출측(tryAutoLogin)이 단독 처리한다.
+      // 인터셉터가 401 을 가로채 _forceLogout(세션 재생성)하면 로그인 화면이 두 번
+      // 쌓이므로, 이 요청은 인터셉터의 강제 로그아웃 대상에서 제외한다.
+      options: Options(
+        extra: {AuthInterceptor.skipAuthLogoutExtraKey: true},
+      ),
     );
     return AuthTokenModel.fromJson(
       response.data['data'] as Map<String, dynamic>,

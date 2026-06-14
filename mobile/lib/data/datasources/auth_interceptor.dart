@@ -27,6 +27,13 @@ class AuthInterceptor extends Interceptor {
   /// 401 → 토큰 갱신 후 재시도된 요청 표식 (무한 루프 방지)
   static const String _retriedKey = '__auth_retried__';
 
+  /// 명시적 자동 로그인(auth_provider.tryAutoLogin)의 refresh 요청 표식.
+  ///
+  /// 이 표식이 붙은 요청의 401 은 인터셉터가 가로채 _forceLogout(세션 재생성)하지
+  /// 않고 그대로 호출측에 전파한다. 호출측이 토큰 정리 + 로그인 전환을 단독으로
+  /// 수행하므로, 인터셉터까지 로그인 전환을 일으키면 로그인 화면이 두 번 쌓인다.
+  static const String skipAuthLogoutExtraKey = '__skip_auth_logout__';
+
   AuthInterceptor({
     required AuthLocalDataSource localDataSource,
     required Dio dio,
@@ -70,6 +77,13 @@ class AuthInterceptor extends Interceptor {
     // 로그인 화면 재진입(슬라이드 전환)이 발생한다. 로그인 화면이 직접 에러를
     // 표시하도록 그대로 전달한다. (login 은 토큰 갱신/강제 로그아웃 대상이 아님)
     if (err.requestOptions.path.contains('/auth/login')) {
+      return handler.next(err);
+    }
+
+    // 명시적 자동 로그인의 refresh 401 은 호출측(tryAutoLogin)이 토큰 정리 + 로그인
+    // 전환을 직접 수행한다. 인터셉터가 추가로 _forceLogout(세션 재생성)까지 하면
+    // 호출측의 로그인 전환과 겹쳐 로그인 화면이 두 번 쌓인다 — 그대로 전파한다.
+    if (err.requestOptions.extra[skipAuthLogoutExtraKey] == true) {
       return handler.next(err);
     }
 
