@@ -269,6 +269,94 @@ class EmployeeUpsertServiceTest {
     }
 
     @Nested
+    @DisplayName("LockingFlag 예외 (SF lockingFlagException 동등 — 판촉/레이디/OSC 여사원·조장 보호)")
+    inner class LockingFlagException {
+
+        private fun protectedExisting(
+            employeeCode: String = "100123",
+            jobCode: String? = "판촉직",
+            role: String? = "여사원",
+            status: String? = "재직"
+        ): Employee {
+            val emp = Employee(employeeCode = employeeCode, name = "현장사원")
+            emp.jobCode = jobCode
+            emp.role = role
+            emp.status = status
+            return emp
+        }
+
+        @Test
+        @DisplayName("판촉직 + 여사원 + 재직 + LockingFlag=Y → 보호 복원 (appLoginActive=true, lockingFlag=false)")
+        fun lockingException_protectsFieldWorker() {
+            val existing = protectedExisting()
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            // status="재직" 은 H10010 매칭 비어 있어 raw 보존되므로 entity.status="재직" 유지.
+            service.upsert(listOf(command(employeeCode = "100123", status = "재직", lockingFlag = "Y")))
+
+            val saved = savedSlot.captured.single()
+            assertThat(saved.appLoginActive).isTrue
+            assertThat(saved.lockingFlag).isFalse
+        }
+
+        @Test
+        @DisplayName("OSC직 + 조장 + LockingFlag=Y → 보호 복원")
+        fun lockingException_oscLeader() {
+            val existing = protectedExisting(jobCode = "OSC직", role = "조장")
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(employeeCode = "100123", status = "재직", lockingFlag = "Y")))
+
+            assertThat(savedSlot.captured.single().appLoginActive).isTrue
+        }
+
+        @Test
+        @DisplayName("판촉직 + 여사원 + 퇴직 + LockingFlag=Y → 보호 미적용 (퇴직 제외 조건)")
+        fun lockingException_retiredNotProtected() {
+            val existing = protectedExisting(status = "퇴직")
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(employeeCode = "100123", status = "퇴직", lockingFlag = "Y")))
+
+            val saved = savedSlot.captured.single()
+            assertThat(saved.appLoginActive).isFalse
+            assertThat(saved.lockingFlag).isTrue
+        }
+
+        @Test
+        @DisplayName("사무직(보호 대상 jobCode 아님) + LockingFlag=Y → 보호 미적용")
+        fun lockingException_nonFieldJobNotProtected() {
+            val existing = protectedExisting(jobCode = "사무직", role = "여사원")
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(employeeCode = "100123", status = "재직", lockingFlag = "Y")))
+
+            assertThat(savedSlot.captured.single().appLoginActive).isFalse
+        }
+
+        @Test
+        @DisplayName("판촉직이나 권한이 지점장 → 보호 미적용 (여사원/조장 아님)")
+        fun lockingException_branchManagerNotProtected() {
+            val existing = protectedExisting(role = "지점장")
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(employeeCode = "100123", status = "재직", lockingFlag = "Y")))
+
+            assertThat(savedSlot.captured.single().appLoginActive).isFalse
+        }
+    }
+
+    @Nested
     @DisplayName("upsert - Spec #579 origin=MANUAL 보호")
     inner class ManualOriginProtection {
 

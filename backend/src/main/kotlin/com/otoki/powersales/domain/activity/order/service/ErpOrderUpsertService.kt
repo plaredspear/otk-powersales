@@ -179,6 +179,17 @@ class ErpOrderUpsertService(
         entity.releaseAmount = parseAmountLong(line.releaseAmount)
     }
 
+    /**
+     * 라인 externalKey 도출 — `SAPOrderNumber(선행 0 한 자리 제거) + LineNumber`.
+     *
+     * 레거시 의도적 deviation (유지보수 우선): SF `IF_REST_SAP_ClientOrderReceive` 는 키 말미에
+     * `ShippingVehicle`(배송 차량번호) 도 조건부로 붙였다(non-blank 시). 그 결과 동일 (주문번호+라인번호)
+     * 라도 차량번호가 달라지면 별개 row 로 insert 되어 같은 주문 라인이 여러 레코드로 쪼개지는
+     * 부작용이 있었다(레거시 분석상 orphan/중복 라인 발생 경로). 신규는 ShippingVehicle 을 키에서
+     * 제외해 (주문번호+라인번호) 단일 키로 upsert 하므로, 차량 변경은 같은 라인의 갱신으로 수렴한다.
+     * ShippingVehicle 값 자체는 [applyLineFields] 에서 컬럼에 보존된다 (키에서만 뺀 것).
+     * 선행 0 제거는 한 자리만 — 레거시 `substring(1)` 동작 그대로 (0이 2개면 1개만 제거).
+     */
     private fun computeExternalKey(line: ErpOrderLineCommand): String? {
         val orderNumber = line.sapOrderNumber?.takeIf { it.isNotBlank() } ?: return null
         val lineNumber = line.lineNumber?.takeIf { it.isNotBlank() } ?: return null

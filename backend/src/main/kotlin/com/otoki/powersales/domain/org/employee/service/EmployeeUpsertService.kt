@@ -110,6 +110,7 @@ class EmployeeUpsertService(
                     cache[employeeCode] = it
                     newEmployees += it
                 }
+                applyLockingFlagException(entity)
                 toSave += entity
             } catch (ex: IllegalArgumentException) {
                 failures += EmployeeUpsertFailedRow(command.employeeCode, ex.message ?: "INVALID")
@@ -181,7 +182,34 @@ class EmployeeUpsertService(
         entity.status = status
         entity.birthDate = birthDate
         entity.costCenterCode = command.orgCode
+        // SAP LockingFlag raw 반영 (Y → 잠금). appLoginActive 는 그 역(Y → false).
+        // 판촉/레이디/OSC 여사원·조장 보호는 applyLockingFlagException 이 이후 단계에서 덮어쓴다.
+        entity.lockingFlag = command.lockingFlag == "Y"
         entity.appLoginActive = appLoginActive
+    }
+
+    /**
+     * SF EmployeeTrigger.lockingFlagException() 동등 — 판촉/레이디/OSC 여사원·조장 계정 잠금 보호.
+     *
+     * 레거시 조건 (`EmployeeTriggerHandler.lockingFlagException`, beforeInsert/beforeUpdate):
+     *   `(JobCode ∈ {판촉직,레이디직,OSC직}) AND (Status != 퇴직) AND (AppAuthority ∈ {여사원,조장})`
+     * → `LockingFlag=false`, `APPLoginActive=true` 로 강제 복원.
+     *
+     * 즉 SAP 가 LockingFlag='Y'(잠금) 로 보내도 현장 여사원/조장(판촉직군) 의 앱 로그인은 막지 않는다.
+     * 미적용 시 SAP 데이터 오류로 현장 인력 계정이 의도치 않게 잠긴다. lockingFlag 컬럼은 SAP raw 값을
+     * 보존하지 않고 보호 결과(false)를 반영한다 — 레거시가 LockingFlag__c 자체를 덮어쓰는 것과 동일.
+     *
+     * 판정 기준은 적용 완료된 entity (라벨 변환된 jobCode/status + 발령으로 채워진 role) — 레거시가
+     * upsert 최종 레코드 기준으로 trigger 평가하는 것과 정합.
+     */
+    private fun applyLockingFlagException(entity: Employee) {
+        val protected = entity.jobCode in PROTECTED_JOB_CODES &&
+            entity.status != STATUS_RETIRED &&
+            entity.role in PROTECTED_APP_AUTHORITIES
+        if (protected) {
+            entity.lockingFlag = false
+            entity.appLoginActive = true
+        }
     }
 
     private fun parseDate(value: String?, fieldName: String): LocalDate? {
@@ -206,5 +234,12 @@ class EmployeeUpsertService(
         private const val OTOKI_COMPANY_CODE = "1000"
         private const val EMPTY_DATE = "00000000"
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+
+        // SF EmployeeTrigger.lockingFlagException 보호 대상. jobCode 는 H10060 라벨 변환 후 한글값.
+        // (2024-01-02 레이디직 → OSC직 명칭 변경, 하위호환으로 레이디직 유지)
+        private val PROTECTED_JOB_CODES = setOf("판촉직", "레이디직", "OSC직")
+        // role 은 AppAuthority picklist 한글 raw value (여사원 / 조장).
+        private val PROTECTED_APP_AUTHORITIES = setOf("여사원", "조장")
+        private const val STATUS_RETIRED = "퇴직"
     }
 }

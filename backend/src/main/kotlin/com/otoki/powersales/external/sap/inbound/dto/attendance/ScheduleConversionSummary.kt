@@ -15,7 +15,9 @@ data class ScheduleConversionSummary(
     val skippedEmployeeNotFound: Int,
     val skippedJobFilter: Int,
     val skippedAttendTypeFilter: Int,
-    val skippedIdempotent: Int
+    val skippedIdempotent: Int,
+    // 휴직/퇴직 사원 연차 스케줄 차단 건수 (SF TeamMemberScheduleTriggerHandler addError 동등).
+    val skippedRetiredOrLeave: Int = 0
 ) {
     operator fun plus(other: ScheduleConversionSummary): ScheduleConversionSummary =
         ScheduleConversionSummary(
@@ -24,7 +26,8 @@ data class ScheduleConversionSummary(
             skippedEmployeeNotFound = skippedEmployeeNotFound + other.skippedEmployeeNotFound,
             skippedJobFilter = skippedJobFilter + other.skippedJobFilter,
             skippedAttendTypeFilter = skippedAttendTypeFilter + other.skippedAttendTypeFilter,
-            skippedIdempotent = skippedIdempotent + other.skippedIdempotent
+            skippedIdempotent = skippedIdempotent + other.skippedIdempotent,
+            skippedRetiredOrLeave = skippedRetiredOrLeave + other.skippedRetiredOrLeave
         )
 
     fun toReason(): String =
@@ -32,9 +35,10 @@ data class ScheduleConversionSummary(
             "skipped_employee_not_found=$skippedEmployeeNotFound " +
             "skipped_job_filter=$skippedJobFilter " +
             "skipped_attend_type=$skippedAttendTypeFilter " +
-            "skipped_idempotent=$skippedIdempotent"
+            "skipped_idempotent=$skippedIdempotent " +
+            "skipped_retired_or_leave=$skippedRetiredOrLeave"
 
     companion object {
-        val ZERO: ScheduleConversionSummary = ScheduleConversionSummary(0, 0, 0, 0, 0, 0)
+        val ZERO: ScheduleConversionSummary = ScheduleConversionSummary(0, 0, 0, 0, 0, 0, 0)
     }
 }

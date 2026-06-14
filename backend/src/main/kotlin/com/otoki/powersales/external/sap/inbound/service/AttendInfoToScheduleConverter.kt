@@ -72,6 +72,7 @@ class AttendInfoToScheduleConverter(
         var skippedEmpNotFound = 0
         var skippedJob = 0
         var skippedIdempotent = 0
+        var skippedRetiredOrLeave = 0
 
         targets.forEach { record ->
             val employee = employeeMap[record.employeeCode]
@@ -93,6 +94,12 @@ class AttendInfoToScheduleConverter(
                 STATUS_NEW -> {
                     if (employee.jobCode !in TARGET_JOB_CODES) {
                         skippedJob++
+                        return@forEach
+                    }
+                    // SF TeamMemberScheduleTriggerHandler 퇴직/휴직 사원 스케줄 차단 동등
+                    // (레거시는 addError 로 등록 거절 — 배치 경로인 신규는 행 skip + 카운트).
+                    if (employee.status in BLOCKED_STATUSES) {
+                        skippedRetiredOrLeave++
                         return@forEach
                     }
                     val toSave = mutableListOf<TeamMemberSchedule>()
@@ -137,7 +144,8 @@ class AttendInfoToScheduleConverter(
             skippedEmployeeNotFound = skippedEmpNotFound,
             skippedJobFilter = skippedJob,
             skippedAttendTypeFilter = skippedAttendType,
-            skippedIdempotent = skippedIdempotent
+            skippedIdempotent = skippedIdempotent,
+            skippedRetiredOrLeave = skippedRetiredOrLeave
         )
     }
 
@@ -153,6 +161,8 @@ class AttendInfoToScheduleConverter(
         private val STATUS_TARGETS = setOf(STATUS_NEW, STATUS_DELETE)
         private val ANNUAL_LEAVE_TYPE = WorkingType.ANNUAL_LEAVE
         private val TARGET_JOB_CODES = setOf("판촉직", "레이디직", "OSC직")
+        // 연차 스케줄 등록 차단 status (Employee.status 는 H10010 라벨 변환값). 레거시는 퇴직·휴직 모두 차단.
+        private val BLOCKED_STATUSES = setOf("퇴직", "휴직")
         private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 }

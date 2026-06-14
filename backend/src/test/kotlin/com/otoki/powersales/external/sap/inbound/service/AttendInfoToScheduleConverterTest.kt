@@ -53,12 +53,16 @@ class AttendInfoToScheduleConverterTest {
     private fun employee(
         id: Long = 1L,
         employeeCode: String = "100123",
-        jobCode: String? = "판촉직"
+        jobCode: String? = "판촉직",
+        status: String? = "재직"
     ): Employee = Employee(
         id = id,
         employeeCode = employeeCode,
         name = "테스트사원"
-    ).apply { this.jobCode = jobCode }
+    ).apply {
+        this.jobCode = jobCode
+        this.status = status
+    }
 
     @Nested
     @DisplayName("convert - Happy Path")
@@ -236,6 +240,54 @@ class AttendInfoToScheduleConverterTest {
             assertThat(result.skippedJobFilter).isEqualTo(1)
             assertThat(result.convertedScheduleCount).isEqualTo(0)
             verify(exactly = 0) { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) }
+        }
+
+        @Test
+        @DisplayName("퇴직 사원 (Status='N') - skipped_retired_or_leave 증가, 스케줄 미생성")
+        fun retiredEmployee_blocked() {
+            val emp = employee(jobCode = "판촉직", status = "퇴직")
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+
+            val result = converter.convert(listOf(attendInfo(status = "N")))
+
+            assertThat(result.skippedRetiredOrLeave).isEqualTo(1)
+            assertThat(result.convertedScheduleCount).isEqualTo(0)
+            verify(exactly = 0) { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) }
+        }
+
+        @Test
+        @DisplayName("휴직 사원 (Status='N') - skipped_retired_or_leave 증가, 스케줄 미생성")
+        fun onLeaveEmployee_blocked() {
+            val emp = employee(jobCode = "판촉직", status = "휴직")
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+
+            val result = converter.convert(listOf(attendInfo(status = "N")))
+
+            assertThat(result.skippedRetiredOrLeave).isEqualTo(1)
+            assertThat(result.convertedScheduleCount).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("퇴직 사원이라도 Status='Y'(취소) 는 삭제 진행 (레거시 — 차단은 등록 경로만)")
+        fun retiredEmployee_statusY_stillDeletes() {
+            val emp = employee(jobCode = "판촉직", status = "퇴직")
+            val existing = listOf(
+                TeamMemberSchedule().apply {
+                    workingDate = LocalDate.of(2026, 4, 27); workingType = WorkingType.ANNUAL_LEAVE; this.employee = emp
+                }
+            )
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
+            every {
+                teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
+                    eq(emp), any(), any(), eq(WorkingType.ANNUAL_LEAVE)
+                )
+            } returns existing
+            every { teamMemberScheduleRepository.deleteAll(existing) } returns Unit
+
+            val result = converter.convert(listOf(attendInfo(status = "Y")))
+
+            assertThat(result.deletedScheduleCount).isEqualTo(1)
+            assertThat(result.skippedRetiredOrLeave).isEqualTo(0)
         }
 
         @Test
