@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Card, DatePicker, Space, Statistic, Tag, Typography } from 'antd';
+import { useMemo, useState } from 'react';
+import { Calendar, Card, DatePicker, Segmented, Space, Statistic, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -8,6 +8,8 @@ import { useWorkingDayMasters } from '@/hooks/workingDayMaster/useWorkingDayMast
 import type { WorkingDayMasterListItem } from '@/api/workingDayMaster';
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+type ViewType = 'calendar' | 'list';
 
 /** ISO 일자 문자열을 "YYYY-MM-DD (요일)" 로 표기. */
 function formatWorkingDate(iso: string | null): string {
@@ -18,9 +20,19 @@ function formatWorkingDate(iso: string | null): string {
 
 export default function WorkingDayMastersPage() {
   const [month, setMonth] = useState<Dayjs>(dayjs());
+  const [view, setView] = useState<ViewType>('calendar');
   const year = month.year();
   const monthNum = month.month() + 1;
   const { data, isLoading, isFetching, refetch } = useWorkingDayMasters(year, monthNum);
+
+  // 캘린더 셀에서 일자별 영업일 정보를 O(1) 로 찾기 위한 맵. (key: YYYY-MM-DD)
+  const itemByDate = useMemo(() => {
+    const map = new Map<string, WorkingDayMasterListItem>();
+    for (const item of data?.content ?? []) {
+      if (item.workingDate) map.set(dayjs(item.workingDate).format('YYYY-MM-DD'), item);
+    }
+    return map;
+  }, [data?.content]);
 
   const columns: ColumnsType<WorkingDayMasterListItem> = [
     {
@@ -57,8 +69,20 @@ export default function WorkingDayMastersPage() {
     },
   ];
 
+  // 캘린더 날짜 셀 렌더. 현재 선택한 월에 속한 날짜만 영업일/휴일 태그를 표시한다.
+  const renderCalendarCell = (date: Dayjs) => {
+    if (date.month() !== month.month() || date.year() !== month.year()) return null;
+    const item = itemByDate.get(date.format('YYYY-MM-DD'));
+    if (!item) return null;
+    return (
+      <div style={{ textAlign: 'center' }}>
+        {item.isWorkingDay ? <Tag color="blue">영업일</Tag> : <Tag>휴일</Tag>}
+      </div>
+    );
+  };
+
   return (
-    <Card title="영업일 마스터">
+    <Card title="영업일관리마스터">
       <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
         운영이 관리하는 영업일 달력입니다. <Tag color="blue">영업일</Tag> 인 날짜가 월 매출 기준 진도율
         계산의 영업일 수에 반영됩니다. (조회 전용)
@@ -75,6 +99,14 @@ export default function WorkingDayMastersPage() {
         }}
       >
         <Space size="middle">
+          <Segmented<ViewType>
+            value={view}
+            onChange={setView}
+            options={[
+              { label: '캘린더', value: 'calendar' },
+              { label: '목록', value: 'list' },
+            ]}
+          />
           <DatePicker
             picker="month"
             value={month}
@@ -90,13 +122,27 @@ export default function WorkingDayMastersPage() {
         </Space>
       </div>
 
-      <ResizableTable<WorkingDayMasterListItem>
-        rowKey="id"
-        loading={isLoading}
-        columns={columns}
-        dataSource={data?.content ?? []}
-        pagination={false}
-      />
+      {view === 'calendar' ? (
+        <Calendar
+          value={month}
+          // 패널 내부 이동(월 변경/날짜 선택)을 외부 month 상태와 동기화.
+          onPanelChange={(v) => setMonth(v)}
+          onSelect={(v, info) => {
+            if (info.source === 'date' && v.month() !== month.month()) setMonth(v);
+          }}
+          // 내부 연/월 셀렉터는 숨기고 상단 DatePicker 로 월을 제어한다.
+          headerRender={() => null}
+          cellRender={(current, info) => (info.type === 'date' ? renderCalendarCell(current) : null)}
+        />
+      ) : (
+        <ResizableTable<WorkingDayMasterListItem>
+          rowKey="id"
+          loading={isLoading}
+          columns={columns}
+          dataSource={data?.content ?? []}
+          pagination={false}
+        />
+      )}
     </Card>
   );
 }
