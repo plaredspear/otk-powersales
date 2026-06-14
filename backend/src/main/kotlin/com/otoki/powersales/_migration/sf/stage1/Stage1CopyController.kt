@@ -41,7 +41,7 @@ class Stage1CopyController(
     private val progress: Stage1CopyProgress,
     private val adminPermissionCache: AdminPermissionCache,
     private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
-    private val branchCodeExpander: com.otoki.powersales.organization.branchmapping.BranchCodeExpander,
+    private val branchCodeExpander: com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander,
     // 운영 S3 bucket (EB 콘솔 환경 속성 S3_BUCKET). Stage1 CSV 도 동일 bucket 사용 — UI 프리필.
     @Value("\${app.aws.s3.bucket:}") private val configuredS3Bucket: String,
 ) {

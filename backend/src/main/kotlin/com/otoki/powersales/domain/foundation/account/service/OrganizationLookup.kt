@@ -1,8 +1,8 @@
 package com.otoki.powersales.domain.foundation.account.service
 
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertCommand
-import com.otoki.powersales.organization.entity.Organization
-import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.org.organization.entity.Organization
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 
 /**
  * [Organization] 폴백 lookup.

@@ -13,8 +13,8 @@ import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
-import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

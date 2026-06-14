@@ -1,7 +1,7 @@
 package com.otoki.powersales.schedule.service
 
-import com.otoki.powersales.organization.branchmapping.BranchCodeExpander
-import com.otoki.powersales.organization.entity.QOrganization.Companion.organization
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.domain.org.organization.entity.QOrganization.Companion.organization
 import com.otoki.powersales.schedule.dto.response.TeamMemberCategoryResultItem
 import com.otoki.powersales.schedule.dto.response.TeamMemberCategorySearchResult
 import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule

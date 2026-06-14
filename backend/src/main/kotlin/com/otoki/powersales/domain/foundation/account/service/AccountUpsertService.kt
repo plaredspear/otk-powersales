@@ -7,7 +7,7 @@ import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertF
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service

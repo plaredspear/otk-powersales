@@ -5,8 +5,8 @@ import com.otoki.powersales.external.sap.auth.sanity.SapDestructiveEndpoint
 import com.otoki.powersales.external.sap.inbound.dto.organize.OrganizeMasterDetail
 import com.otoki.powersales.external.sap.inbound.dto.organize.OrganizeMasterRequestItem
 import com.otoki.powersales.external.sap.inbound.exception.SapInvalidPayloadException
-import com.otoki.powersales.organization.service.OrganizationReplaceService
-import com.otoki.powersales.organization.service.dto.OrganizationReplaceCommand
+import com.otoki.powersales.domain.org.organization.service.OrganizationReplaceService
+import com.otoki.powersales.domain.org.organization.service.dto.OrganizationReplaceCommand
 import org.springframework.stereotype.Service
 
 /**
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service
  * - 페이로드 형식 검증 ([validateItems]) — 행 전체 null 거부
  * - SAP 페이로드 [OrganizeMasterRequestItem] → 도메인 커맨드 [OrganizationReplaceCommand] 매핑
  * - 도메인 서비스 [OrganizationReplaceService.replaceAll] 호출 (파괴적 전체 교체)
- * - 도메인 결과 [com.otoki.powersales.organization.service.dto.OrganizationReplaceResult] → SAP 응답 [OrganizeMasterDetail] 매핑
+ * - 도메인 결과 [com.otoki.powersales.domain.org.organization.service.dto.OrganizationReplaceResult] → SAP 응답 [OrganizeMasterDetail] 매핑
  * - `@SapDestructiveEndpoint(threshold = 20)` AOP 어노테이션 잔류 — sanity check (받은 건수 0 / ±20% 변동) 는 본 어댑터 메서드 진입 전 처리
  * - `@SapInboundAccepted` annotation — `REQUEST_ACCEPTED` audit (reason="success={N} failure=0") 은 [com.otoki.powersales.external.sap.auth.audit.SapInboundAuditAspect]
  *   가 처리 (#639). sanity aspect 가 별도로 기록하는 reason 미포함 `REQUEST_ACCEPTED` 와 공존하며,

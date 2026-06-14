@@ -4,8 +4,8 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.organization.dto.response.OrganizationResponse
-import com.otoki.powersales.organization.service.AdminOrganizationService
+import com.otoki.powersales.domain.org.organization.dto.response.OrganizationResponse
+import com.otoki.powersales.domain.org.organization.service.AdminOrganizationService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

@@ -63,7 +63,7 @@ import java.time.Duration
  * ## TTL 정책
  *
  * Organization 캐시군 — 24h. SAP daily sync 가 새벽 시간대 1회 적재되며, 적재 직후
- * [com.otoki.powersales.organization.service.OrganizationReplaceService.replaceAll] 의
+ * [com.otoki.powersales.domain.org.organization.service.OrganizationReplaceService.replaceAll] 의
  * `@CacheEvict` 가 즉시 무효화한다. 24h TTL 은 evict 누락 / 다른 경로 적재 / 수동 수정 케이스의
  * fallback (다음날 자동 회복) 안전장치.
  *

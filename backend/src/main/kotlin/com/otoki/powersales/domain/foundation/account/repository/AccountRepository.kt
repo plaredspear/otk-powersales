@@ -31,7 +31,7 @@ interface AccountRepository : JpaRepository<Account, Long>, AccountRepositoryCus
     /**
      * 지점 코드 IN + 거래처 그룹으로 거래처 조회 (여사원 일정관리).
      *
-     * SF 정합: 호출처에서 [com.otoki.powersales.organization.branchmapping.BranchCodeExpander.expand]
+     * SF 정합: 호출처에서 [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander.expand]
      * 로 BranchMapping 1:N 확장된 코드 집합을 전달. SF `Util.getIncludedBranchCode` 와 동등.
      */
     fun findByBranchCodeInAndAccountGroupIn(branchCodes: Collection<String>, accountGroups: List<String>): List<Account>

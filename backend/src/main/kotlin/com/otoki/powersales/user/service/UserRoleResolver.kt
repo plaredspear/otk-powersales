@@ -1,7 +1,7 @@
 package com.otoki.powersales.user.service
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import org.springframework.stereotype.Service
 
 /**

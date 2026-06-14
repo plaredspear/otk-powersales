@@ -8,7 +8,7 @@ import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.organization.service.OrgCostCenterMatchService
+import com.otoki.powersales.domain.org.organization.service.OrgCostCenterMatchService
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.suggestion.dto.admin.AdminSuggestionCreateRequest

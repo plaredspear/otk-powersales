@@ -1,11 +1,10 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.organization.service.OrganizationReplaceService
-import com.otoki.powersales.organization.service.dto.OrganizationReplaceCommand
-import com.otoki.powersales.organization.service.dto.OrganizationReplaceResult
+import com.otoki.powersales.domain.org.organization.service.OrganizationReplaceService
+import com.otoki.powersales.domain.org.organization.service.dto.OrganizationReplaceCommand
+import com.otoki.powersales.domain.org.organization.service.dto.OrganizationReplaceResult
 import com.otoki.powersales.external.sap.inbound.dto.organize.OrganizeMasterRequestItem
 import com.otoki.powersales.external.sap.inbound.exception.SapInvalidPayloadException
-import com.otoki.powersales.external.sap.inbound.service.SapOrganizeMasterService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

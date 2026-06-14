@@ -16,8 +16,8 @@ import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeCategor
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
-import com.otoki.powersales.organization.entity.Organization
-import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.org.organization.entity.Organization
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just

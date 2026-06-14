@@ -5,8 +5,7 @@ import com.otoki.powersales.platform.auth.sharing.dto.PermissionSetSnapshot
 import com.otoki.powersales.platform.auth.sharing.dto.ProfileFlagsSnapshot
 import com.otoki.powersales.platform.auth.sharing.dto.SharingRuleSnapshot
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
-import com.otoki.powersales.organization.repository.dto.OrganizationCacheDto
-import com.otoki.powersales.platform.common.config.CacheConfig
+import com.otoki.powersales.domain.org.organization.repository.dto.OrganizationCacheDto
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

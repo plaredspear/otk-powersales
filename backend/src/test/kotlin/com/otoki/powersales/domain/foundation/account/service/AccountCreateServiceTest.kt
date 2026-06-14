@@ -10,8 +10,8 @@ import com.otoki.powersales.domain.foundation.account.exception.EmployeeNotFound
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.organization.entity.Organization
-import com.otoki.powersales.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.org.organization.entity.Organization
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
