@@ -1,4 +1,4 @@
-package com.otoki.powersales.draft.entity
+package com.otoki.powersales.domain.activity.draft.entity
 
 import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly

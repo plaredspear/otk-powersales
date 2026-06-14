@@ -1,6 +1,6 @@
-package com.otoki.powersales.draft.repository
+package com.otoki.powersales.domain.activity.draft.repository
 
-import com.otoki.powersales.draft.entity.TmpOrder
+import com.otoki.powersales.domain.activity.draft.entity.TmpOrder
 
 interface TmpOrderRepositoryCustom {
 

@@ -1,7 +1,7 @@
-package com.otoki.powersales.draft.repository
+package com.otoki.powersales.domain.activity.draft.repository
 
-import com.otoki.powersales.draft.entity.QTmpOrder.Companion.tmpOrder
-import com.otoki.powersales.draft.entity.TmpOrder
+import com.otoki.powersales.domain.activity.draft.entity.TmpOrder
+import com.otoki.powersales.domain.activity.draft.entity.QTmpOrder.Companion.tmpOrder
 import com.querydsl.jpa.impl.JPAQueryFactory
 import jakarta.persistence.LockModeType
 
