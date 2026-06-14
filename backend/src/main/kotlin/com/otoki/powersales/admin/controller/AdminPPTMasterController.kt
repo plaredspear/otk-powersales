@@ -1,14 +1,20 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.domain.activity.promotion.dto.response.BulkConfirmResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.BulkValidationResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.ConfirmByIdsResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTConfirmedReportResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryListResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterListResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterResponse
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.promotion.dto.request.PPTMasterBulkValidateRequest
-import com.otoki.powersales.promotion.dto.request.PPTMasterConfirmByIdsRequest
-import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
-import com.otoki.powersales.promotion.dto.request.PPTMasterUpdateRequest
-import com.otoki.powersales.promotion.dto.response.*
-import com.otoki.powersales.promotion.service.AdminPPTConfirmedReportService
-import com.otoki.powersales.promotion.service.AdminPPTMasterService
+import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterBulkValidateRequest
+import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterConfirmByIdsRequest
+import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterCreateRequest
+import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterUpdateRequest
+import com.otoki.powersales.domain.activity.promotion.service.AdminPPTConfirmedReportService
+import com.otoki.powersales.domain.activity.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid

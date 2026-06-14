@@ -34,7 +34,7 @@ class ClaimQueryController(
      * 이어쓰기용 임시저장(없으면 null)을 한 번에 내려준다.
      * GET /api/v1/mobile/claims/form — literal path 가 `/{claimId}` 패턴보다 우선 매칭된다.
      *
-     * 일매출 마감 폼([com.otoki.powersales.promotion.controller.MobileDailySalesController.getForm])
+     * 일매출 마감 폼([com.otoki.powersales.domain.activity.promotion.controller.MobileDailySalesController.getForm])
      * 의 "진입 1콜 + draft 동봉" 컨벤션과 정합.
      */
     @GetMapping("/form")

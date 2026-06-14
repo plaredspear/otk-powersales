@@ -32,7 +32,7 @@ import com.otoki.powersales.platform.common.storage.UploadFileKbnTypes
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
-import com.otoki.powersales.promotion.exception.AccountNotFoundException
+import com.otoki.powersales.domain.activity.promotion.exception.AccountNotFoundException
 import com.otoki.powersales.external.sf.outbound.SfApiResponse
 import com.otoki.powersales.external.sf.outbound.SfOAuthFailedException
 import com.otoki.powersales.external.sf.outbound.SfOutboundClient

@@ -15,7 +15,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
-import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -115,7 +115,7 @@ class AdminTeamScheduleService(
      *
      * SF `ProfessionalPromotionTeamMaster__c.ProfessionalPromotionTeam__c` picklist 5값을
      * [ProfessionalPromotionTeamType] enum 으로 보유 중이라 enum displayName 을 그대로 반환한다.
-     * SF 와의 동기는 [com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter]
+     * SF 와의 동기는 [com.otoki.powersales.domain.activity.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter]
      * 가 fail-fast 로 강제 — 신규 picklist 가 추가되면 SF inbound 적재 시점에 즉시 노출되므로 enum 갱신 누락은 사실상 차단.
      */
     private fun getProfessionalPromotionTeams(): List<String> {

@@ -2,13 +2,12 @@ package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.promotion.dto.request.PPTMasterCreateRequest
-import com.otoki.powersales.promotion.dto.response.*
-import com.otoki.powersales.promotion.service.AdminPPTConfirmedReportService
-import com.otoki.powersales.promotion.service.AdminPPTMasterService
-import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
-import com.otoki.powersales.promotion.exception.PPTMasterDuplicateException
-import com.otoki.powersales.promotion.exception.PPTMasterNotFoundException
+import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterCreateRequest
+import com.otoki.powersales.domain.activity.promotion.service.AdminPPTConfirmedReportService
+import com.otoki.powersales.domain.activity.promotion.service.AdminPPTMasterService
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterDuplicateException
+import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterNotFoundException
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -20,9 +19,17 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.promotion.dto.response.BulkConfirmResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.BulkValidationResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.BulkValidationResultItem
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryListResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterListResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterResponse
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminPPTMasterController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -52,8 +59,8 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
         employeeAppLoginActive = true,
         employeeEndDate = null,
         accountType = null,
-        createdAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0),
-        updatedAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0)
+        createdAt = LocalDateTime.of(2026, 3, 22, 9, 0),
+        updatedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
     )
 
     @Nested
@@ -245,7 +252,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                         id = 1L, name = "PH0000001", employeeId = 1L, employeeName = "홍길동",
                         employeeCode = "12345678", orgName = "서울지점",
                         oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
-                        changedAt = java.time.LocalDateTime.of(2026, 3, 22, 9, 0)
+                        changedAt = LocalDateTime.of(2026, 3, 22, 9, 0)
                     )
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
@@ -276,7 +283,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                         employeeCode = "EMP005", orgName = "서울지점",
                         oldValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         newValue = ProfessionalPromotionTeamType.CURRY_PROMOTION,
-                        changedAt = java.time.LocalDateTime.of(2026, 5, 18, 14, 30)
+                        changedAt = LocalDateTime.of(2026, 5, 18, 14, 30)
                     )
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
@@ -325,7 +332,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                         id = 99L, name = "PH0000099", employeeId = 999L,
                         employeeName = null, employeeCode = null, orgName = null,
                         oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
-                        changedAt = java.time.LocalDateTime.of(2026, 5, 18, 14, 30)
+                        changedAt = LocalDateTime.of(2026, 5, 18, 14, 30)
                     )
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20

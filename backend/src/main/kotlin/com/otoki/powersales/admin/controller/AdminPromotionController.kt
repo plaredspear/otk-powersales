@@ -2,17 +2,17 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
-import com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest
-import com.otoki.powersales.promotion.dto.response.PromotionDetailResponse
-import com.otoki.powersales.promotion.dto.response.PromotionFormMetaResponse
-import com.otoki.powersales.promotion.dto.response.PromotionListResponse
-import com.otoki.powersales.promotion.dto.response.PromotionPosProductResponse
-import com.otoki.powersales.promotion.dto.response.PromotionTargetActualReportResponse
+import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionCreateRequest
+import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionPosProductRequest
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionDetailResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFormMetaResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionPosProductResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportResponse
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.promotion.service.AdminPromotionService
-import com.otoki.powersales.promotion.service.AdminPromotionTargetActualReportService
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionTargetActualReportService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid

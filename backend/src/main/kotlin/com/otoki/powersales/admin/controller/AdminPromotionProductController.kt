@@ -6,9 +6,9 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
-import com.otoki.powersales.promotion.dto.request.PromotionPosProductRequest
-import com.otoki.powersales.promotion.dto.response.PromotionPosProductResponse
-import com.otoki.powersales.promotion.service.AdminPromotionService
+import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionPosProductRequest
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionPosProductResponse
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

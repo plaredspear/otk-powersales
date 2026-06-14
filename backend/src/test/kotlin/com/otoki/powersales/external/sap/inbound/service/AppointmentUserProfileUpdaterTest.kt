@@ -8,7 +8,7 @@ import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepositor
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
-import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.schedule.entity.Appointment
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository

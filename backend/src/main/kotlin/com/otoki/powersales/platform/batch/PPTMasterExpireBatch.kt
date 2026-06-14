@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.batch
 
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.promotion.service.PPTMasterBatchService
+import com.otoki.powersales.domain.activity.promotion.service.PPTMasterBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled

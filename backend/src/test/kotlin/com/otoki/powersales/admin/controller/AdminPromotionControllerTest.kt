@@ -5,11 +5,9 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.promotion.dto.request.PromotionCreateRequest
-import com.otoki.powersales.promotion.dto.response.*
-import com.otoki.powersales.promotion.service.AdminPromotionService
-import com.otoki.powersales.promotion.service.AdminPromotionTargetActualReportService
-import com.otoki.powersales.promotion.exception.*
+import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionCreateRequest
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionTargetActualReportService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -25,10 +23,22 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionDetailResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFormMetaResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListItem
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTypeOption
+import com.otoki.powersales.domain.activity.promotion.dto.response.StandLocationOption
+import com.otoki.powersales.domain.activity.promotion.exception.AccountNotFoundException
+import com.otoki.powersales.domain.activity.promotion.exception.InvalidDateRangeException
+import com.otoki.powersales.domain.activity.promotion.exception.InvalidStandLocationException
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionForbiddenException
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminPromotionController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -110,7 +120,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
                         createdById = 42L,
                         createdByName = "홍길동",
                         isDeleted = false,
-                        createdAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0)
+                        createdAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0)
                     )
                 ),
                 page = 0, size = 20, totalElements = 1, totalPages = 1
@@ -384,8 +394,8 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         isDeleted = false,
         createdById = 10L,
         createdByName = "홍길동",
-        createdAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0),
-        updatedAt = java.time.LocalDateTime.of(2026, 3, 8, 10, 0, 0),
+        createdAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
+        updatedAt = LocalDateTime.of(2026, 3, 8, 10, 0, 0),
         remark = remark
     )
 

@@ -5,13 +5,13 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.promotion.dto.request.PromotionEmployeeRequest
-import com.otoki.powersales.promotion.dto.response.PromotionEmployeeDetailResponse
-import com.otoki.powersales.promotion.dto.response.PromotionEmployeeListResponse
-import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
-import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
-import com.otoki.powersales.promotion.exception.PromotionEmployeeNotFoundException
-import com.otoki.powersales.promotion.exception.PromotionNotFoundException
+import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionEmployeeRequest
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionEmployeeDetailResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionEmployeeListResponse
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionConfirmService
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionEmployeeService
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionEmployeeNotFoundException
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
 import java.math.BigDecimal
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminPromotionEmployeeController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -293,8 +294,8 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         otherSalesAmount = null,
         otherSalesQuantity = null,
         s3ImageUniqueKey = null,
-        createdAt = java.time.LocalDateTime.of(2026, 3, 10, 10, 0, 0),
-        updatedAt = java.time.LocalDateTime.of(2026, 3, 10, 10, 0, 0)
+        createdAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0),
+        updatedAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0)
     )
 
     private fun createRequest() = PromotionEmployeeRequest(

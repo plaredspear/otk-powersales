@@ -5,7 +5,7 @@ package com.otoki.powersales.domain.activity.claim.dto.response
  *
  * 화면 진입 시 한 번의 호출로 폼 렌더링에 필요한 정적 메타데이터([metadata])와
  * 이어쓰기용 임시저장([draft], 없으면 null)을 함께 내려준다.
- * 일매출 마감 폼([com.otoki.powersales.promotion.dto.response.DailySalesFormResponse]) 의
+ * 일매출 마감 폼([com.otoki.powersales.domain.activity.promotion.dto.response.DailySalesFormResponse]) 의
  * "진입 1콜 + draft prefill 동봉" 컨벤션과 정합한다.
  *
  * 레거시(otg_PowerSales)는 SSR 진입 시점에 임시저장 유무를 즉시 확인해 "이어서 작성?"

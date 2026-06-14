@@ -1,5 +1,6 @@
 package com.otoki.powersales.schedule.service
 
+import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
@@ -11,9 +12,9 @@ import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.promotion.exception.PromotionNotFoundException
-import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
-import com.otoki.powersales.promotion.service.PromotionSchedulesUpsertHelper
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
+import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper
 import com.otoki.powersales.schedule.dto.request.LeaderEventScheduleChangeRequest
 import com.otoki.powersales.schedule.dto.request.LeaderProxyAttendanceRequest
 import com.otoki.powersales.schedule.dto.request.LeaderScheduleCreateRequest
@@ -289,7 +290,7 @@ class LeaderScheduleService(
     private fun resolveEventAssignment(
         scheduleId: Long,
         registrant: Employee
-    ): Pair<TeamMemberSchedule, com.otoki.powersales.promotion.entity.PromotionEmployee> {
+    ): Pair<TeamMemberSchedule, PromotionEmployee> {
         val schedule = teamMemberScheduleRepository.findById(scheduleId)
             .orElseThrow { LeaderEventScheduleNotFoundException() }
 

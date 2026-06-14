@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.org.employee.dto.request
 
 import com.otoki.powersales.domain.org.employee.enums.CrmWorkType
-import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size

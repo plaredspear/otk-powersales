@@ -27,8 +27,8 @@ import com.otoki.powersales.schedule.exception.LeaderScheduleNotTeamMemberExcept
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeInactiveException
 import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
-import com.otoki.powersales.promotion.repository.PromotionEmployeeRepository
-import com.otoki.powersales.promotion.service.PromotionSchedulesUpsertHelper
+import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper
 import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat

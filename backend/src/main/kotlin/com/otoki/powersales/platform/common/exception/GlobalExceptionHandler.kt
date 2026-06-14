@@ -3,7 +3,7 @@ package com.otoki.powersales.platform.common.exception
 import com.otoki.powersales.platform.auth.exception.NewPasswordPolicyViolationException
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.dto.ErrorDetail
-import com.otoki.powersales.promotion.exception.BatchValidationException
+import com.otoki.powersales.domain.activity.promotion.exception.BatchValidationException
 import com.otoki.powersales.external.sap.inbound.dto.SapResultWrapper
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType

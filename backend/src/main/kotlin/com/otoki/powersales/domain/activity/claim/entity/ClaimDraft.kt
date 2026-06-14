@@ -15,7 +15,7 @@ import java.time.LocalDate
  *
  * 사원이 클레임을 작성하다가 임시저장한 입력값을 보관한다.
  * 레거시 `salesforce2.tmp_claim` 대응. 정식 등록(클레임 생성) 성공 시 이 draft 는 삭제된다.
- * 사원(employee) 1건당 draft 1건(unique). [com.otoki.powersales.promotion.entity.DailySalesDraft] 패턴 정합.
+ * 사원(employee) 1건당 draft 1건(unique). [com.otoki.powersales.domain.activity.promotion.entity.DailySalesDraft] 패턴 정합.
  *
  * SF 와 동기화되지 않는 로컬 전용 테이블이므로 [com.otoki.powersales.platform.common.salesforce.SFObject] 어노테이션을 두지 않는다.
  *

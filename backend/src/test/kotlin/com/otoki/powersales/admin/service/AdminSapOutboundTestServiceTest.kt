@@ -6,8 +6,8 @@ import com.otoki.powersales.domain.activity.order.repository.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
 import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
-import com.otoki.powersales.promotion.repository.PPTMasterRepository
-import com.otoki.powersales.promotion.sap.PPTMasterPayloadFactory
+import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
+import com.otoki.powersales.domain.activity.promotion.sap.PPTMasterPayloadFactory
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender
 import com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender

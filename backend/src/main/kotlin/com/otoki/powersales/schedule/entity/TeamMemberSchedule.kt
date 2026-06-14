@@ -15,7 +15,7 @@ import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.domain.org.leave.entity.AlternativeHoliday
-import com.otoki.powersales.promotion.entity.PromotionEmployee
+import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.user.entity.User

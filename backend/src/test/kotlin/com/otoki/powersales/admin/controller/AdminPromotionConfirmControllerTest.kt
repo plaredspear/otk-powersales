@@ -1,10 +1,9 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.promotion.dto.response.PromotionConfirmResponse
-import com.otoki.powersales.promotion.service.AdminPromotionConfirmService
-import com.otoki.powersales.promotion.service.AdminPromotionEmployeeService
-import com.otoki.powersales.promotion.exception.*
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionConfirmResponse
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionConfirmService
+import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionEmployeeService
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -15,6 +14,15 @@ import io.mockk.every
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.promotion.exception.DateOutOfRangeException
+import com.otoki.powersales.domain.activity.promotion.exception.DuplicateScheduleException
+import com.otoki.powersales.domain.activity.promotion.exception.EmployeeOnLeaveException
+import com.otoki.powersales.domain.activity.promotion.exception.EmployeeResignedException
+import com.otoki.powersales.domain.activity.promotion.exception.LeaveConflictException
+import com.otoki.powersales.domain.activity.promotion.exception.NoEmployeesException
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
+import com.otoki.powersales.domain.activity.promotion.exception.ValuesRequiredException
+import com.otoki.powersales.domain.activity.promotion.exception.WorkType3LimitExceededException
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status

@@ -12,8 +12,8 @@ import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import com.otoki.powersales.promotion.enums.ProfessionalPromotionTeamType
-import com.otoki.powersales.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.activity.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import com.otoki.powersales.user.entity.User
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
