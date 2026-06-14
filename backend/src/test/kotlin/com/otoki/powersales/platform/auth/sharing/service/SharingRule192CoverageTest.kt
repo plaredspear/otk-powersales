@@ -4,8 +4,8 @@ import com.otoki.powersales.domain.foundation.account.entity.QAccount
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.platform.auth.sharing.dto.SharingRuleSnapshot
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
-import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule
-import com.otoki.powersales.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.QDisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.EntityPathBase
 import com.querydsl.jpa.HQLTemplates

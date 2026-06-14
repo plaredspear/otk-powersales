@@ -7,7 +7,7 @@ import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
-import com.otoki.powersales.schedule.service.AdminTeamScheduleService
+import com.otoki.powersales.domain.activity.schedule.service.AdminTeamScheduleService
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
 
 import org.springframework.http.ResponseEntity

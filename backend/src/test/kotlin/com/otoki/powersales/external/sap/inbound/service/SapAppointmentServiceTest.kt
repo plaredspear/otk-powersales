@@ -1,13 +1,11 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.external.sap.inbound.service.AppointmentUserProfileUpdater
-import com.otoki.powersales.external.sap.inbound.service.SapAppointmentService
 import com.otoki.powersales.external.sap.inbound.dto.appointment.AppointmentRequestItem
-import com.otoki.powersales.schedule.entity.Appointment
-import com.otoki.powersales.schedule.service.AppointmentInsertService
-import com.otoki.powersales.schedule.service.dto.AppointmentInsertCommand
-import com.otoki.powersales.schedule.service.dto.AppointmentInsertFailedRow
-import com.otoki.powersales.schedule.service.dto.AppointmentInsertResult
+import com.otoki.powersales.domain.activity.schedule.entity.Appointment
+import com.otoki.powersales.domain.activity.schedule.service.AppointmentInsertService
+import com.otoki.powersales.domain.activity.schedule.service.dto.AppointmentInsertCommand
+import com.otoki.powersales.domain.activity.schedule.service.dto.AppointmentInsertFailedRow
+import com.otoki.powersales.domain.activity.schedule.service.dto.AppointmentInsertResult
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

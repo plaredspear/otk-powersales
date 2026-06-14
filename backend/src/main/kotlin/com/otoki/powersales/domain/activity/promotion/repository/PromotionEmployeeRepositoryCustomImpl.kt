@@ -6,7 +6,7 @@ import com.otoki.powersales.domain.activity.promotion.entity.QPromotionEmployee.
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
-import com.otoki.powersales.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory
 import java.time.LocalDate

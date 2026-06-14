@@ -4,8 +4,8 @@ import com.otoki.powersales.external.sap.auth.audit.SapInboundAccepted
 import com.otoki.powersales.external.sap.inbound.dto.appointment.AppointmentDetail
 import com.otoki.powersales.external.sap.inbound.dto.appointment.AppointmentRequestItem
 import com.otoki.powersales.external.sap.inbound.dto.sales.FailureItem
-import com.otoki.powersales.schedule.service.AppointmentInsertService
-import com.otoki.powersales.schedule.service.dto.AppointmentInsertCommand
+import com.otoki.powersales.domain.activity.schedule.service.AppointmentInsertService
+import com.otoki.powersales.domain.activity.schedule.service.dto.AppointmentInsertCommand
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 

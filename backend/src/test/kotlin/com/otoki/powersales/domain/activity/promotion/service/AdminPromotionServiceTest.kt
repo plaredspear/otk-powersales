@@ -36,8 +36,8 @@ import com.otoki.powersales.domain.activity.promotion.exception.PromotionForbidd
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionInvalidParameterException
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionProductNotFoundException
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import io.mockk.every

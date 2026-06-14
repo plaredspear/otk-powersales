@@ -2,7 +2,7 @@ package com.otoki.powersales.external.sap.inbound.service
 
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.schedule.repository.AppointmentRepository
+import com.otoki.powersales.domain.activity.schedule.repository.AppointmentRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

@@ -5,8 +5,8 @@ import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.dto.ApiResponse
-import com.otoki.powersales.schedule.dto.response.MonthlyInputAdequacyResponse
-import com.otoki.powersales.schedule.service.AdminMonthlyInputAdequacyService
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyInputAdequacyResponse
+import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyInputAdequacyService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity

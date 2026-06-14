@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.batch
 
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.schedule.service.MfeisThisMonthRevenueBatchService
+import com.otoki.powersales.domain.activity.schedule.service.MfeisThisMonthRevenueBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component

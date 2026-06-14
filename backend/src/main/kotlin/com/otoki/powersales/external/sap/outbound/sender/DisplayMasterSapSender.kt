@@ -3,7 +3,7 @@ package com.otoki.powersales.external.sap.outbound.sender
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbound.guard.SapResponseHtmlGuard
 import com.otoki.powersales.external.sap.outbound.service.SapOutboundLogService
-import com.otoki.powersales.schedule.sap.DisplayMasterSapPayload
+import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterSapPayload
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component

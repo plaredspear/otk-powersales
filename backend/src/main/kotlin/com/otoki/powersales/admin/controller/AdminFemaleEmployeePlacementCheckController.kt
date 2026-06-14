@@ -5,17 +5,18 @@ import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.common.dto.ApiResponse
-import com.otoki.powersales.schedule.dto.response.FemaleEmployeePlacementCheckResponse
-import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckReportResponse
-import com.otoki.powersales.schedule.dto.response.FemaleEmployeeSafetyCheckRpaResponse
-import com.otoki.powersales.schedule.dto.response.FemaleEmployeeWorkHistoryResponse
-import com.otoki.powersales.schedule.dto.response.ConvertedHeadcountReportResult
-import com.otoki.powersales.schedule.service.AdminConvertedHeadcountReportService
-import com.otoki.powersales.schedule.service.AdminFemaleEmployeePlacementCheckService
-import com.otoki.powersales.schedule.service.AdminFemaleEmployeeSafetyCheckReportService
-import com.otoki.powersales.schedule.service.AdminFemaleEmployeeSafetyCheckRpaService
-import com.otoki.powersales.schedule.service.AdminFemaleEmployeeWorkHistoryService
-import com.otoki.powersales.schedule.service.ConvertedHeadcountReportVariant
+import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeePlacementCheckResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckReportResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckRpaResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeWorkHistoryResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.ConvertedHeadcountReportResult
+import com.otoki.powersales.domain.activity.schedule.service.AdminConvertedHeadcountReportService
+import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeePlacementCheckService
+import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeeSafetyCheckReportService
+import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeeSafetyCheckRpaService
+import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeeWorkHistoryService
+import com.otoki.powersales.domain.activity.schedule.service.ConvertedHeadcountReportVariant
+import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -205,7 +206,7 @@ class AdminFemaleEmployeePlacementCheckController(
         try {
             ConvertedHeadcountReportVariant.valueOf(variant)
         } catch (_: IllegalArgumentException) {
-            throw com.otoki.powersales.schedule.service.InvalidParameterException("지원하지 않는 보고서 variant 입니다: $variant")
+            throw InvalidParameterException("지원하지 않는 보고서 variant 입니다: $variant")
         }
 
     /** date 파라미터 (ISO_LOCAL_DATE) 파싱. null/blank → null (서비스에서 어제로 처리). 형식 오류 → 400. */
@@ -214,7 +215,7 @@ class AdminFemaleEmployeePlacementCheckController(
         return try {
             LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE)
         } catch (_: DateTimeParseException) {
-            throw com.otoki.powersales.schedule.service.InvalidParameterException("date 형식이 올바르지 않습니다 (yyyy-MM-dd)")
+            throw InvalidParameterException("date 형식이 올바르지 않습니다 (yyyy-MM-dd)")
         }
     }
 }

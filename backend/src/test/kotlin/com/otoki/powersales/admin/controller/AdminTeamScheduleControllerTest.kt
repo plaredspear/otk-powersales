@@ -7,12 +7,10 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
-import com.otoki.powersales.schedule.dto.request.TeamScheduleMassDeleteRequest
-import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
-import com.otoki.powersales.schedule.dto.response.*
-import com.otoki.powersales.schedule.exception.*
-import com.otoki.powersales.schedule.service.AdminTeamScheduleService
+import com.otoki.powersales.domain.activity.schedule.dto.request.TeamScheduleCreateRequest
+import com.otoki.powersales.domain.activity.schedule.dto.request.TeamScheduleMassDeleteRequest
+import com.otoki.powersales.domain.activity.schedule.dto.request.TeamScheduleUpdateRequest
+import com.otoki.powersales.domain.activity.schedule.service.AdminTeamScheduleService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -28,6 +26,21 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.schedule.dto.response.DailySummaryDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyScheduleWithSummaryDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleAccountDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleCreateResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleFormDto
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleConflictException
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleDeleteForbiddenException
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleDisplayMasterLinkException
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleEmployeeOnLeaveException
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleMassDeleteRowLimitExceededException
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleNotFoundException
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleNotFoundPartialException
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleWorkReportDeleteException
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 
@@ -411,9 +424,12 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
         @JvmStatic
         fun massDeleteExceptionCases(): List<Arguments> = listOf(
             Arguments.of("rowLimit -> 400 ROW_LIMIT_EXCEEDED", TeamScheduleMassDeleteRowLimitExceededException(), 400, "ROW_LIMIT_EXCEEDED"),
-            Arguments.of("notFoundPartial -> 404 TEAM_SCHEDULE_NOT_FOUND_PARTIAL", TeamScheduleNotFoundPartialException(listOf(99L)), 404, "TEAM_SCHEDULE_NOT_FOUND_PARTIAL"),
-            Arguments.of("workReportDelete -> 409 WORK_REPORT_DELETE_CONSTRAINT (Q5 옵션 1 전체 rollback)", TeamScheduleWorkReportDeleteException(), 409, "WORK_REPORT_DELETE_CONSTRAINT"),
-            Arguments.of("displayMasterLink -> 409 DISPLAY_MASTER_LINK_CONSTRAINT", TeamScheduleDisplayMasterLinkException(), 409, "DISPLAY_MASTER_LINK_CONSTRAINT"),
+            Arguments.of("notFoundPartial -> 404 TEAM_SCHEDULE_NOT_FOUND_PARTIAL",
+                TeamScheduleNotFoundPartialException(listOf(99L)), 404, "TEAM_SCHEDULE_NOT_FOUND_PARTIAL"),
+            Arguments.of("workReportDelete -> 409 WORK_REPORT_DELETE_CONSTRAINT (Q5 옵션 1 전체 rollback)",
+                TeamScheduleWorkReportDeleteException(), 409, "WORK_REPORT_DELETE_CONSTRAINT"),
+            Arguments.of("displayMasterLink -> 409 DISPLAY_MASTER_LINK_CONSTRAINT",
+                TeamScheduleDisplayMasterLinkException(), 409, "DISPLAY_MASTER_LINK_CONSTRAINT"),
             Arguments.of("branchManager -> 403 FORBIDDEN", TeamScheduleDeleteForbiddenException(), 403, "FORBIDDEN"),
         )
     }

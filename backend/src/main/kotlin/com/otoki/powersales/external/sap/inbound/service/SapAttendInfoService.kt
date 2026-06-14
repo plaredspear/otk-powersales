@@ -11,9 +11,9 @@ import com.otoki.powersales.external.sap.inbound.dto.attendance.ScheduleConversi
 import com.otoki.powersales.external.sap.inbound.dto.sales.ChunkResult
 import com.otoki.powersales.external.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.external.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.schedule.entity.AttendInfo
-import com.otoki.powersales.schedule.service.AttendInfoInsertService
-import com.otoki.powersales.schedule.service.dto.AttendInfoInsertCommand
+import com.otoki.powersales.domain.activity.schedule.entity.AttendInfo
+import com.otoki.powersales.domain.activity.schedule.service.AttendInfoInsertService
+import com.otoki.powersales.domain.activity.schedule.service.dto.AttendInfoInsertCommand
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value

@@ -3,10 +3,10 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.common.dto.ApiResponse
-import com.otoki.powersales.schedule.dto.request.AdminAttendanceLogSearchRequest
-import com.otoki.powersales.schedule.dto.response.AdminAttendanceLogDetailResponse
-import com.otoki.powersales.schedule.dto.response.AdminAttendanceLogListItemResponse
-import com.otoki.powersales.schedule.service.AdminAttendanceLogService
+import com.otoki.powersales.domain.activity.schedule.dto.request.AdminAttendanceLogSearchRequest
+import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendanceLogDetailResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendanceLogListItemResponse
+import com.otoki.powersales.domain.activity.schedule.service.AdminAttendanceLogService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.ResponseEntity

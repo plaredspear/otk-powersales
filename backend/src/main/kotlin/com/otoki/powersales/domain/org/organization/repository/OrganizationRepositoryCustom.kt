@@ -16,7 +16,7 @@ interface OrganizationRepositoryCustom {
      * 조직마스터 페이지 가시 범위 조회 — SF `CurrentUserBranchNameList.getOrgList()` (L32) 정합.
      *
      * [searchForAdmin] 의 `branchCodes` 는 `CostCenterLevel*`(cc_cd*) 컬럼 매칭(cost-center 시맨틱,
-     * [com.otoki.powersales.schedule.service.AdminMonthlyIntegrationService] 가 사용)인 반면, 조직마스터
+     * [com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService] 가 사용)인 반면, 조직마스터
      * 화면의 가시 범위는 사용자 HR 코드를 `OrgCodeLevel*`(org_cd*) 에 매칭하고 `OrgNameLevel3 IN
      * (Retail사업부/제1사업부/CVS사업부)` 사업부 제약을 건다 — SF getOrgList 와 동일 차원. 두 시맨틱이
      * 다른 컬럼이므로 별도 메서드로 분리 (cost-center 경로 mutate 금지).

@@ -1,7 +1,7 @@
 package com.otoki.powersales.platform.batch
 
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
-import com.otoki.powersales.schedule.service.DisplayMasterLastMonthRevenueBatchService
+import com.otoki.powersales.domain.activity.schedule.service.DisplayMasterLastMonthRevenueBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component

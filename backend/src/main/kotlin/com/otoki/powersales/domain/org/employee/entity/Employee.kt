@@ -18,7 +18,7 @@ import com.otoki.powersales.user.entity.User
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
-import com.otoki.powersales.schedule.entity.Appointment
+import com.otoki.powersales.domain.activity.schedule.entity.Appointment
 import java.math.BigDecimal
 
 /**

@@ -1,13 +1,16 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyScheduleWithSummaryDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleCreateResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleFormDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamScheduleMassDeleteResponse
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.schedule.dto.request.TeamScheduleCreateRequest
-import com.otoki.powersales.schedule.dto.request.TeamScheduleMassDeleteRequest
-import com.otoki.powersales.schedule.dto.request.TeamScheduleSearchRequest
-import com.otoki.powersales.schedule.dto.request.TeamScheduleUpdateRequest
-import com.otoki.powersales.schedule.dto.response.*
-import com.otoki.powersales.schedule.service.AdminTeamScheduleService
+import com.otoki.powersales.domain.activity.schedule.dto.request.TeamScheduleCreateRequest
+import com.otoki.powersales.domain.activity.schedule.dto.request.TeamScheduleMassDeleteRequest
+import com.otoki.powersales.domain.activity.schedule.dto.request.TeamScheduleSearchRequest
+import com.otoki.powersales.domain.activity.schedule.dto.request.TeamScheduleUpdateRequest
+import com.otoki.powersales.domain.activity.schedule.service.AdminTeamScheduleService
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal

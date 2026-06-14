@@ -1,9 +1,8 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.schedule.dto.response.*
-import com.otoki.powersales.schedule.service.AdminMonthlyIntegrationService
-import com.otoki.powersales.schedule.service.InvalidParameterException
+import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
+import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterException
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -11,6 +10,10 @@ import io.mockk.every
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.schedule.dto.response.CategoryScheduleItem
+import com.otoki.powersales.domain.activity.schedule.dto.response.CategoryScheduleResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleItem
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleResponse
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.math.BigDecimal

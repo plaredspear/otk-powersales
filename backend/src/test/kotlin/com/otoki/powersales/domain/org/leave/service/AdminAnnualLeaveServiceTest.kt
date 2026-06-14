@@ -3,8 +3,8 @@ package com.otoki.powersales.domain.org.leave.service
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat

@@ -3,11 +3,11 @@ package com.otoki.powersales.external.sap.inbound.service
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.external.sap.inbound.dto.attendance.ScheduleConversionSummary
-import com.otoki.powersales.schedule.entity.AttendInfo
-import com.otoki.powersales.schedule.enums.AttendType
-import com.otoki.powersales.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.schedule.service.TeamMemberScheduleOwnerResolver
+import com.otoki.powersales.domain.activity.schedule.entity.AttendInfo
+import com.otoki.powersales.domain.activity.schedule.enums.AttendType
+import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleOwnerResolver
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation

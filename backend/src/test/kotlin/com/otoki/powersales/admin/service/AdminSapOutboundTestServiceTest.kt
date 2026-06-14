@@ -16,10 +16,10 @@ import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySapResult
 import com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
-import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.schedule.sap.AttendancePayloadFactory
-import com.otoki.powersales.schedule.sap.DisplayMasterPayloadFactory
+import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.sap.AttendancePayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterPayloadFactory
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

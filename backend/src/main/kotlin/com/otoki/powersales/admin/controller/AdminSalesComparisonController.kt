@@ -5,11 +5,11 @@ import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.dto.ApiResponse
-import com.otoki.powersales.schedule.dto.response.SalesComparisonDetailResponse
-import com.otoki.powersales.schedule.dto.response.SalesComparisonMiddleResponse
-import com.otoki.powersales.schedule.dto.response.SalesComparisonSummaryResponse
-import com.otoki.powersales.schedule.dto.response.SearchAccountCategoryItem
-import com.otoki.powersales.schedule.service.AdminSalesComparisonService
+import com.otoki.powersales.domain.activity.schedule.dto.response.SalesComparisonDetailResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.SalesComparisonMiddleResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.SalesComparisonSummaryResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.SearchAccountCategoryItem
+import com.otoki.powersales.domain.activity.schedule.service.AdminSalesComparisonService
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity

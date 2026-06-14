@@ -15,8 +15,8 @@ import com.otoki.powersales.admin.dto.response.WorkTypeCount
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
-import com.otoki.powersales.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

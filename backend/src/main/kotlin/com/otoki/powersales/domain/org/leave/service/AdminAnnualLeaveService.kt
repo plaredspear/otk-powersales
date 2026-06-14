@@ -3,7 +3,7 @@ package com.otoki.powersales.domain.org.leave.service
 import com.otoki.powersales.domain.org.leave.dto.response.AnnualLeaveDayDto
 import com.otoki.powersales.domain.org.leave.dto.response.EmployeeAnnualLeaveDto
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.YearMonth

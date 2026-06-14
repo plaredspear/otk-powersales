@@ -29,7 +29,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable

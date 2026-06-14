@@ -25,12 +25,14 @@ import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender
-import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.schedule.sap.AttendancePayloadFactory
-import com.otoki.powersales.schedule.sap.DisplayMasterPayloadFactory
-import com.otoki.powersales.schedule.sap.DisplayMasterSapPayloadRow
-import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.sap.AttendancePayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayload
+import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterPayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterSapPayload
+import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterSapPayloadRow
+import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -274,7 +276,7 @@ class AdminSapOutboundTestService(
     }
 
     private fun buildAttendancePayload(req: BatchDateTestRequest):
-            Pair<com.otoki.powersales.schedule.sap.AttendanceSapPayload, String> {
+            Pair<AttendanceSapPayload, String> {
         val today = req.targetDate
         val yesterday = today.minusDays(1)
         val size = req.pageSize ?: ATTENDANCE_DEFAULT_PAGE_SIZE
@@ -313,7 +315,7 @@ class AdminSapOutboundTestService(
     }
 
     private fun buildDisplayMasterPayload(req: BatchDateTestRequest):
-            Pair<com.otoki.powersales.schedule.sap.DisplayMasterSapPayload, String> {
+            Pair<DisplayMasterSapPayload, String> {
         val today = req.targetDate
         val size = req.pageSize ?: DISPLAY_DEFAULT_PAGE_SIZE
         val entities = displayWorkScheduleRepository.findValidForDisplayMasterSapPaged(

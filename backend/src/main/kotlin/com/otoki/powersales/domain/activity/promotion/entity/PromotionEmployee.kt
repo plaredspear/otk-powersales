@@ -12,7 +12,7 @@ import com.otoki.powersales.platform.common.entity.converter.WorkingCategory2Con
 import com.otoki.powersales.platform.common.entity.converter.WorkingCategory3Converter
 import com.otoki.powersales.platform.common.entity.converter.WorkingTypeConverter
 import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal

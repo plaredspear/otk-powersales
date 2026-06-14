@@ -4,8 +4,8 @@ import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
-import com.otoki.powersales.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime

@@ -1,20 +1,17 @@
 package com.otoki.powersales.external.sap.inbound.service
 
-import com.otoki.powersales.external.sap.inbound.service.ChunkedUpsertHelper
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditEventType
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.external.sap.inbound.dto.attendance.AttendInfoRequestItem
 import com.otoki.powersales.external.sap.inbound.dto.attendance.ScheduleConversionSummary
 import com.otoki.powersales.external.sap.inbound.dto.sales.ChunkResult
-import com.otoki.powersales.external.sap.inbound.service.AttendInfoToScheduleConverter
-import com.otoki.powersales.external.sap.inbound.service.SapAttendInfoService
 import com.otoki.powersales.external.sap.inbound.exception.SapPayloadTooLargeException
-import com.otoki.powersales.schedule.entity.AttendInfo
-import com.otoki.powersales.schedule.service.AttendInfoInsertService
-import com.otoki.powersales.schedule.service.dto.AttendInfoInsertCommand
-import com.otoki.powersales.schedule.service.dto.AttendInfoInsertFailedRow
-import com.otoki.powersales.schedule.service.dto.AttendInfoInsertResult
+import com.otoki.powersales.domain.activity.schedule.entity.AttendInfo
+import com.otoki.powersales.domain.activity.schedule.service.AttendInfoInsertService
+import com.otoki.powersales.domain.activity.schedule.service.dto.AttendInfoInsertCommand
+import com.otoki.powersales.domain.activity.schedule.service.dto.AttendInfoInsertFailedRow
+import com.otoki.powersales.domain.activity.schedule.service.dto.AttendInfoInsertResult
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot

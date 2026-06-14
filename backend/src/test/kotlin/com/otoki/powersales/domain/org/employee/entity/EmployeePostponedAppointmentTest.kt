@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.org.employee.entity
 
-import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.schedule.entity.Appointment
+import com.otoki.powersales.domain.activity.schedule.entity.Appointment
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import org.assertj.core.api.Assertions.assertThat

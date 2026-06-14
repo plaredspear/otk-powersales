@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.auth.sharing.service
 
-import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.QDisplayWorkSchedule
 import com.otoki.powersales.platform.auth.sharing.dto.SharingRuleSnapshot
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.querydsl.core.types.dsl.BooleanExpression

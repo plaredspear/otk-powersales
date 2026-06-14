@@ -6,15 +6,13 @@ import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.schedule.dto.request.AdminScheduleCreateRequest
-import com.otoki.powersales.schedule.dto.request.AdminScheduleUpdateRequest
-import com.otoki.powersales.schedule.dto.request.ScheduleConfirmRequest
-import com.otoki.powersales.schedule.dto.response.*
-import com.otoki.powersales.schedule.enums.SchedulePreset
-import com.otoki.powersales.schedule.exception.*
-import com.otoki.powersales.schedule.service.AdminScheduleService
-import com.otoki.powersales.schedule.service.MissingCostCenterException
-import com.otoki.powersales.schedule.service.OrganizationNotFoundException
+import com.otoki.powersales.domain.activity.schedule.dto.request.AdminScheduleCreateRequest
+import com.otoki.powersales.domain.activity.schedule.dto.request.AdminScheduleUpdateRequest
+import com.otoki.powersales.domain.activity.schedule.dto.request.ScheduleConfirmRequest
+import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
+import com.otoki.powersales.domain.activity.schedule.service.AdminScheduleService
+import com.otoki.powersales.domain.activity.schedule.service.MissingCostCenterException
+import com.otoki.powersales.domain.activity.schedule.service.OrganizationNotFoundException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -30,6 +28,25 @@ import org.springframework.data.domain.Sort
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.schedule.dto.response.RowError
+import com.otoki.powersales.domain.activity.schedule.dto.response.RowPreview
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchConfirmResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchDeleteFailure
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchDeleteResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleConfirmResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleCreateResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleDetailDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListItemDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUploadResultDto
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteForbiddenException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterConfirmException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEmptyFileException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleHasValidationErrorsException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleInvalidFileTypeException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleNotFoundException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleRowLimitExceededException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleUploadNotFoundException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleValidationException
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDate
@@ -375,7 +392,9 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = LocalDate.of(2026, 12, 31)
             )
-            every { adminScheduleService.updateSchedule(any(), eq(1L), eq(999L), any()) } throws ScheduleNotFoundException("존재하지 않거나 삭제된 스케줄입니다")
+            every { adminScheduleService.updateSchedule(any(), eq(1L), eq(999L), any()) } throws ScheduleNotFoundException(
+                "존재하지 않거나 삭제된 스케줄입니다"
+            )
 
             mockMvc.perform(
                 put("/api/v1/admin/schedule/999")

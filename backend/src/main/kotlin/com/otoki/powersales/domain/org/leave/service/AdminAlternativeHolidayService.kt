@@ -16,9 +16,9 @@ import com.otoki.powersales.domain.org.leave.exception.AltHolidayNotFoundExcepti
 import com.otoki.powersales.domain.org.leave.exception.ChangeReasonRequiredException
 import com.otoki.powersales.domain.org.leave.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.leave.repository.AlternativeHolidayRepository
-import com.otoki.powersales.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.schedule.service.TeamMemberScheduleOwnerResolver
+import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleOwnerResolver
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate

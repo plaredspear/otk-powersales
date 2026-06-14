@@ -6,8 +6,8 @@ import com.otoki.powersales.platform.common.dto.response.MyAccountListResponse
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.exception.AccountInvalidParameterException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepositoryCustom
-import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepositoryCustom
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepositoryCustom
+import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepositoryCustom
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

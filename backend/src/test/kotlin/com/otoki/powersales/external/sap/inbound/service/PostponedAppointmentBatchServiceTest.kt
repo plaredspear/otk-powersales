@@ -2,8 +2,8 @@ package com.otoki.powersales.external.sap.inbound.service
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.schedule.entity.Appointment
-import com.otoki.powersales.schedule.repository.AppointmentRepository
+import com.otoki.powersales.domain.activity.schedule.entity.Appointment
+import com.otoki.powersales.domain.activity.schedule.repository.AppointmentRepository
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk

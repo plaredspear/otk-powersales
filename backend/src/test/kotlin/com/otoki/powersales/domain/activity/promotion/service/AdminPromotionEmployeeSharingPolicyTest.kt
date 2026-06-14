@@ -6,8 +6,8 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionRepository
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.schedule.service.TeamMemberScheduleCascadeHelper
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.EntityPathBase
 import io.mockk.every

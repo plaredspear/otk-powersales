@@ -3,7 +3,7 @@ package com.otoki.powersales.external.sap.inbound.service
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
-import com.otoki.powersales.schedule.entity.Appointment
+import com.otoki.powersales.domain.activity.schedule.entity.Appointment
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository

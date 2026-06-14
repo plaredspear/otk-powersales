@@ -16,7 +16,7 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialS
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeUpdateService
-import com.otoki.powersales.schedule.service.EmployeeWorkHistoryService
+import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested

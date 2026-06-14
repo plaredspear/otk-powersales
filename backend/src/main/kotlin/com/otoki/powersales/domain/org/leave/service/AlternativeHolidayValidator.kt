@@ -5,7 +5,7 @@ import com.otoki.powersales.domain.org.leave.exception.*
 import com.otoki.powersales.domain.org.leave.repository.AlternativeHolidayRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.leave.enums.AltHolidayStatus
-import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import org.springframework.stereotype.Component
 import java.time.DayOfWeek
 import java.time.LocalDate

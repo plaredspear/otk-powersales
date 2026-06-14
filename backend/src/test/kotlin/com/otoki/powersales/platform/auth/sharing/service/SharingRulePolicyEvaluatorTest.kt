@@ -7,7 +7,7 @@ import com.otoki.powersales.platform.auth.sharing.dto.ProfileFlagsSnapshot
 import com.otoki.powersales.platform.auth.sharing.dto.SharingRuleSnapshot
 import com.otoki.powersales.platform.auth.sharing.service.SObjectSettingProvider
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
-import com.otoki.powersales.schedule.entity.QDisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.QDisplayWorkSchedule
 import com.querydsl.core.types.dsl.EntityPathBase
 import io.mockk.every
 import io.mockk.mockk
