@@ -101,20 +101,6 @@ export const menuRoute: MenuRoute = {
         { path: '/sales/monthly', name: '월 매출(물류배부)', entity: 'monthly_sales_history', operation: 'READ' },
         { path: '/sales/electronic', name: '월 매출(전산실적)', entity: 'monthly_sales_history', operation: 'READ' },
         { path: '/sales/pos', name: 'POS매출', entity: 'monthly_sales_history', operation: 'READ' },
-        {
-          path: '/sales-progress-rate-masters',
-          name: '거래처목표등록마스터',
-          entity: 'sales_progress_rate_master',
-          operation: 'READ',
-          subRoutes: [
-            {
-              path: '/sales-progress-rate-masters/:id',
-              name: '거래처목표등록마스터 상세',
-              entity: 'sales_progress_rate_master',
-              operation: 'READ',
-            },
-          ],
-        },
       ],
     },
     {
@@ -364,6 +350,20 @@ export const menuRoute: MenuRoute = {
           name: '진열사원 투입기준 마스터',
           entity: 'employee_input_criteria_master',
           operation: 'READ',
+        },
+        {
+          path: '/sales-progress-rate-masters',
+          name: '거래처목표등록마스터',
+          entity: 'sales_progress_rate_master',
+          operation: 'READ',
+          subRoutes: [
+            {
+              path: '/sales-progress-rate-masters/:id',
+              name: '거래처목표등록마스터 상세',
+              entity: 'sales_progress_rate_master',
+              operation: 'READ',
+            },
+          ],
         },
       ],
     },
