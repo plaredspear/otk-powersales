@@ -3,6 +3,7 @@ import { Alert, Space, Tabs, Typography } from 'antd';
 import type { TabsProps } from 'antd';
 import NaverGeocodeTab from './NaverGeocodeTab';
 import ClaimRegistTab from './ClaimRegistTab';
+import ClaimStatusUpdateTab from './ClaimStatusUpdateTab';
 import LogisticsClaimRegistTab from './LogisticsClaimRegistTab';
 import IntegrationInfoDescriptions from './IntegrationInfoDescriptions';
 
@@ -32,6 +33,8 @@ const API_DESCRIPTIONS: Record<string, string> = {
     '입력한 도로명/지번 주소를 Naver Cloud Platform 의 Maps Geocode API 로 전송하여 위도·경도 좌표로 변환합니다. backend 가 받은 응답을 가공 없이 raw JSON 그대로 노출하므로 좌표 변환 정확도와 API 키 동작을 직접 확인할 수 있습니다. 거래처 좌표 보강 배치(account-naver-geocode-batch)가 내부적으로 호출하는 것과 동일한 경로입니다. 조회 전용이라 DB 변경은 발생하지 않습니다.',
   'claim-regist':
     '입력한 파라미터로 클레임 등록 apiMap 을 구성하여 Salesforce Apex REST `/services/apexrest/mobile/ClaimRegist` 로 직접 POST 합니다. 레거시 Heroku FieldTalkController 가 클레임 등록 시 호출하던 것과 동일한 SF endpoint 이며, 운영 클레임 등록(dual-write)과 달리 본 테스트는 신규 DB(claim 테이블)에는 저장하지 않고 SF 로만 전송합니다. SF 가 돌려준 RESULT_CODE/RESULT_MSG 와 전송 payload 미리보기를 그대로 노출합니다. 이미지 3종은 모두 선택이며, 미첨부 시 빈 Buffer 로 전송됩니다.',
+  'claim-status-update':
+    'SF 에 등록된 클레임의 처리 상태(접수/처리중/완료/반려 등)를 업데이트하는 전송 테스트 탭입니다. UI 레이아웃은 "SF 클레임 등록" 탭과 동일한 형태로 구성되어 있으며, 상세 파라미터 계약과 실제 SF 전송 로직은 추후 반영될 예정입니다. 현재 단계에서는 폼 레이아웃만 제공하며 백엔드/SF 호출은 수행하지 않습니다.',
   'logistics-claim-regist':
     '모바일 물류 클레임 등록(제안하기 > 물류 클레임) 입력 정보를 토대로 Salesforce Apex REST `IF_REST_MOBILE_ProposalRegist` 전송 payload(apiMap) 미리보기를 구성합니다. SF 전송 API 정보가 아직 확보되지 않은 단계라 실제 SF POST 는 수행하지 않고, 레거시 Input 클래스 key 셋(Category/ProductCode/accountCode/EmployeeCode/Title/Description/CarNumber/claimList/logclaimDate/S3Image* 등) 정합의 apiMap 을 JSON 으로만 노출합니다. 추후 SF endpoint/계약 정보를 받으면 실제 전송 호출을 추가할 예정입니다. 사진은 최대 2장이며 모두 선택입니다.',
 };
@@ -87,6 +90,25 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           description="'SF 전송' 버튼은 현재 환경의 SF Apex REST 로 호출이 전송되어 SF 에 클레임 row 가 생성됩니다 (테스트 잡데이터 주의). 신규 DB(claim 테이블)에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
         />
         <ClaimRegistTab />
+      </Space>
+    ),
+  },
+  {
+    key: 'claim-status-update',
+    label: 'SF 클레임 상태 업데이트',
+    children: (
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <ApiDescriptionAlert
+          apiKey="claim-status-update"
+          title="SF 클레임 상태 업데이트 — 상태 변경 전송"
+        />
+        <Alert
+          type="info"
+          showIcon
+          message="이 탭은 아직 SF 로 전송하지 않습니다 (UI 레이아웃 전용)."
+          description="상세 파라미터 계약과 실제 SF 전송 로직은 추후 반영될 예정입니다. 현재는 'SF 클레임 등록' 탭과 동일한 형태의 폼 레이아웃만 제공합니다. SYSTEM_ADMIN 권한 필요."
+        />
+        <ClaimStatusUpdateTab />
       </Space>
     ),
   },
