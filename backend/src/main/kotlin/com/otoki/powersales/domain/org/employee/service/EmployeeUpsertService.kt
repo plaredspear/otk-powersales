@@ -171,6 +171,8 @@ class EmployeeUpsertService(
         entity.name = name
         entity.gender = gender
         entity.homePhone = command.homePhone
+        // SF EmployeeTrigger.upsertPhoneNumber() 동등 — HomePhone → Phone 무조건 복사 (조건 없음).
+        entity.phone = command.homePhone
         entity.workPhone = command.workPhone
         entity.workEmail = command.workEmail
         entity.email = command.email

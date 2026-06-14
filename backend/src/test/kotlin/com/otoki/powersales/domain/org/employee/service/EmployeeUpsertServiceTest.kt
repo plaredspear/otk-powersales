@@ -124,6 +124,20 @@ class EmployeeUpsertServiceTest {
             assertThat(saved).isSameAs(existing)
             assertThat(saved.name).isEqualTo("새이름")
             assertThat(saved.homePhone).isEqualTo("new-phone")
+            // SF EmployeeTrigger.upsertPhoneNumber() 동등 — HomePhone → Phone 무조건 복사.
+            assertThat(saved.phone).isEqualTo("new-phone")
+        }
+
+        @Test
+        @DisplayName("phone 미러링 - HomePhone 값이 Phone 으로 무조건 복사 (SF upsertPhoneNumber 동등)")
+        fun upsert_mirrorsHomePhoneToPhone() {
+            every { employeeRepository.findByEmployeeCodeIn(any<List<String>>()) } returns emptyList()
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(homePhone = "010-1234-5678")))
+
+            assertThat(savedSlot.captured.single().phone).isEqualTo("010-1234-5678")
         }
 
         @Test
