@@ -2,8 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
-import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckStatusResponse
+import com.otoki.powersales.domain.activity.safetycheck.service.AdminSafetyCheckService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.admin.exception.InvalidDateFormatException
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal

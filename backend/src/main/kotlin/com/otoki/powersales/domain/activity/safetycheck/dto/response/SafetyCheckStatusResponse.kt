@@ -1,6 +1,5 @@
-package com.otoki.powersales.safetycheck.dto.response
+package com.otoki.powersales.domain.activity.safetycheck.dto.response
 
-import java.time.LocalDate
 import java.time.LocalDateTime
 
 data class SafetyCheckStatusResponse(

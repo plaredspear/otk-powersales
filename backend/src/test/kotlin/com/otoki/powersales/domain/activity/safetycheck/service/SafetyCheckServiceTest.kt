@@ -1,15 +1,16 @@
-package com.otoki.powersales.safetycheck.service
+package com.otoki.powersales.domain.activity.safetycheck.service
 
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.safetycheck.dto.request.SafetyCheckSubmitRequest
-import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
-import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
-import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
-import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
-import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
-import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.powersales.domain.activity.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckItem
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.domain.activity.safetycheck.exception.AlreadySubmittedException
+import com.otoki.powersales.domain.activity.safetycheck.exception.RequiredItemsMissingException
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckItemRepository
+import com.otoki.powersales.domain.activity.safetycheck.service.SafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.Optional
 
 @DisplayName("SafetyCheckService 테스트")
@@ -82,7 +84,7 @@ class SafetyCheckServiceTest {
         @Test
         @DisplayName("오늘 제출 있음 - completed=true, submittedAt 반환")
         fun getTodayStatus_completed() {
-            val completeTime = LocalDateTime.now().minus(2, java.time.temporal.ChronoUnit.HOURS)
+            val completeTime = LocalDateTime.now().minus(2, ChronoUnit.HOURS)
             val submission = createSubmission(completeTime = completeTime)
             every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
             every { submissionRepository.findByEmployeeIdAndWorkingDate(userId, LocalDate.now()) } returns
@@ -256,8 +258,8 @@ class SafetyCheckServiceTest {
             )
         }
         return SafetyCheckSubmitRequest(
-            startTime = java.time.LocalDateTime.of(2026, 3, 15, 9, 0, 0),
-            completeTime = java.time.LocalDateTime.of(2026, 3, 15, 9, 2, 30),
+            startTime = LocalDateTime.of(2026, 3, 15, 9, 0, 0),
+            completeTime = LocalDateTime.of(2026, 3, 15, 9, 2, 30),
             equipments = equipments,
             precautions = precautions
         )

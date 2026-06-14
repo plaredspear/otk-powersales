@@ -1,4 +1,4 @@
-package com.otoki.powersales.safetycheck.exception
+package com.otoki.powersales.domain.activity.safetycheck.exception
 
 import com.otoki.powersales.platform.common.exception.BusinessException
 

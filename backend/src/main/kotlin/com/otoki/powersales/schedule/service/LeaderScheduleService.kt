@@ -33,7 +33,7 @@ import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.enums.TypeOfWork5
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
-import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.exception.LeaderScheduleAccountRequiredException
 import com.otoki.powersales.schedule.exception.LeaderScheduleInvalidWorkCategory2Exception
 import com.otoki.powersales.schedule.exception.LeaderScheduleInvalidWorkingTypeException

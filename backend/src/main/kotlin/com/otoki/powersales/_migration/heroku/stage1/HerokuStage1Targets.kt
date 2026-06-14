@@ -18,8 +18,8 @@ import com.otoki.powersales.domain.support.education.entity.EducationViewHistory
 import com.otoki.powersales.domain.org.employee.entity.EmployeeInfo
 import com.otoki.powersales.domain.foundation.product.entity.FavoriteProduct
 import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
-import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
-import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckItem
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
 import jakarta.persistence.Column
 import jakarta.persistence.Table
 import kotlin.reflect.KClass

@@ -1,4 +1,4 @@
-package com.otoki.powersales.safetycheck.dto.response
+package com.otoki.powersales.domain.activity.safetycheck.dto.response
 
 import java.time.LocalDateTime
 

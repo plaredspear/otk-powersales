@@ -1,4 +1,4 @@
-package com.otoki.powersales.safetycheck.service
+package com.otoki.powersales.domain.activity.safetycheck.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
@@ -6,10 +6,11 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.safetycheck.entity.SafetyCheckItem
-import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
-import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
-import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckItem
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckItemRepository
+import com.otoki.powersales.domain.activity.safetycheck.service.AdminSafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.exception.TeamScheduleEmployeeNotFoundException
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.Optional
 
 @DisplayName("AdminSafetyCheckService 테스트")
@@ -391,7 +393,7 @@ class AdminSafetyCheckServiceTest {
             displayWorkScheduleId = 1L,
             employeeId = employeeId,
             workingDate = workingDate,
-            completeTime = java.time.LocalDateTime.of(2026, 3, 17, 9, 15, 30),
+            completeTime = LocalDateTime.of(2026, 3, 17, 9, 15, 30),
             yesCheckCount = 7,
             noCheckCount = 2,
             equipment1 = "예",

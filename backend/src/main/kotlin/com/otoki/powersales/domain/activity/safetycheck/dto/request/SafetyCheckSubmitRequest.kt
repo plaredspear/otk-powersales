@@ -1,4 +1,4 @@
-package com.otoki.powersales.safetycheck.dto.request
+package com.otoki.powersales.domain.activity.safetycheck.dto.request
 
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotEmpty

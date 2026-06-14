@@ -1,15 +1,15 @@
-package com.otoki.powersales.safetycheck.controller
+package com.otoki.powersales.domain.activity.safetycheck.controller
 
 import com.otoki.powersales.admin.exception.InvalidDateFormatException
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
-import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckStatusResponse
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckTodayResponse
+import com.otoki.powersales.domain.activity.safetycheck.service.AdminSafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.service.SafetyCheckService
 import com.otoki.powersales.platform.common.dto.ApiResponse
-import com.otoki.powersales.safetycheck.dto.request.SafetyCheckSubmitRequest
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckSubmitResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
-import com.otoki.powersales.safetycheck.service.SafetyCheckService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal

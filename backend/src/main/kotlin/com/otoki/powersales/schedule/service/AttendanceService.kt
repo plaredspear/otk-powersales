@@ -11,7 +11,7 @@ import com.otoki.powersales.platform.common.util.GeoUtils
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.config.AttendanceProperties
 import com.otoki.powersales.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.schedule.dto.response.AttendanceStatusItem

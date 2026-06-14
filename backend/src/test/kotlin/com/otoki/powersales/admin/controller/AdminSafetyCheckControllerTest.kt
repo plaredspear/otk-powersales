@@ -2,10 +2,10 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
-import com.otoki.powersales.safetycheck.dto.response.MemberStatus
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
-import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.EquipmentStatus
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.MemberStatus
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckStatusResponse
+import com.otoki.powersales.domain.activity.safetycheck.service.AdminSafetyCheckService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -17,6 +17,7 @@ import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDateTime
 
 @WebMvcTest(AdminSafetyCheckController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -50,8 +51,8 @@ class AdminSafetyCheckControllerTest : AdminControllerTestSupport() {
                         accountCode = "1234567890",
                         accountName = "이마트 강남점",
                         submitted = true,
-                        submittedAt = java.time.LocalDateTime.of(2026, 3, 17, 9, 15, 30),
-                        startTime = java.time.LocalDateTime.of(2026, 3, 17, 9, 10, 0),
+                        submittedAt = LocalDateTime.of(2026, 3, 17, 9, 15, 30),
+                        startTime = LocalDateTime.of(2026, 3, 17, 9, 10, 0),
                         equipments = listOf(
                             EquipmentStatus(1, "손목보호대 착용", "예"),
                             EquipmentStatus(2, "숨수건 소지", "예")

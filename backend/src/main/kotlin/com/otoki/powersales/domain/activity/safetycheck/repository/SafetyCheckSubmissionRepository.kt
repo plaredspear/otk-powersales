@@ -1,6 +1,6 @@
-package com.otoki.powersales.safetycheck.repository
+package com.otoki.powersales.domain.activity.safetycheck.repository
 
-import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 import java.util.Optional

@@ -7,8 +7,8 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
-import com.otoki.powersales.safetycheck.service.SafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.powersales.domain.activity.safetycheck.service.SafetyCheckService
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository

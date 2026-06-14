@@ -1,17 +1,18 @@
-package com.otoki.powersales.safetycheck.controller
+package com.otoki.powersales.domain.activity.safetycheck.controller
 
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.domain.activity.safetycheck.controller.SafetyCheckController
 import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
-import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
-import com.otoki.powersales.safetycheck.dto.response.MemberStatus
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckSubmitResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
-import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
-import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
-import com.otoki.powersales.safetycheck.service.AdminSafetyCheckService
-import com.otoki.powersales.safetycheck.service.SafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.EquipmentStatus
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.MemberStatus
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckStatusResponse
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckTodayResponse
+import com.otoki.powersales.domain.activity.safetycheck.exception.AlreadySubmittedException
+import com.otoki.powersales.domain.activity.safetycheck.exception.RequiredItemsMissingException
+import com.otoki.powersales.domain.activity.safetycheck.service.AdminSafetyCheckService
+import com.otoki.powersales.domain.activity.safetycheck.service.SafetyCheckService
 import io.mockk.every
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -26,6 +27,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDateTime
 
 @WebMvcTest(SafetyCheckController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -89,7 +91,7 @@ class SafetyCheckControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("정상 제출 - 200 OK")
         fun submit_success() {
-            val submittedAt = java.time.LocalDateTime.of(2026, 3, 15, 9, 2, 30)
+            val submittedAt = LocalDateTime.of(2026, 3, 15, 9, 2, 30)
             val mockResponse = SafetyCheckSubmitResponse(
                 submittedAt = submittedAt,
                 safetyCheckCompleted = true
@@ -148,7 +150,7 @@ class SafetyCheckControllerTest : MobileControllerTestSupport() {
         }
 
         @ParameterizedTest(name = "{0}")
-        @MethodSource("com.otoki.powersales.safetycheck.controller.SafetyCheckControllerTest#submitExceptions")
+        @MethodSource("com.otoki.powersales.domain.activity.safetycheck.controller.SafetyCheckControllerTest#submitExceptions")
         @DisplayName("실패 - 예외 → ErrorCode 매핑")
         fun submit_exceptions(
             @Suppress("UNUSED_PARAMETER") name: String,
@@ -198,8 +200,8 @@ class SafetyCheckControllerTest : MobileControllerTestSupport() {
                         accountCode = "1234567890",
                         accountName = "이마트 강남점",
                         submitted = true,
-                        submittedAt = java.time.LocalDateTime.of(2026, 3, 21, 8, 30, 0),
-                        startTime = java.time.LocalDateTime.of(2026, 3, 21, 8, 25, 0),
+                        submittedAt = LocalDateTime.of(2026, 3, 21, 8, 30, 0),
+                        startTime = LocalDateTime.of(2026, 3, 21, 8, 25, 0),
                         equipments = listOf(
                             EquipmentStatus(1, "손목보호대 착용", "예"),
                             EquipmentStatus(2, "숨수건 소지", "예")
@@ -273,7 +275,7 @@ class SafetyCheckControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("오늘 완료 - 200 OK, completed=true")
         fun getTodayStatus_completed() {
-            val submittedAt = java.time.LocalDateTime.of(2026, 3, 15, 9, 2, 30)
+            val submittedAt = LocalDateTime.of(2026, 3, 15, 9, 2, 30)
             val mockResponse = SafetyCheckTodayResponse(
                 completed = true,
                 submittedAt = submittedAt

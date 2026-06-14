@@ -4,7 +4,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.enums.WorkingType
-import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.schedule.entity.AttendanceLog
 import com.otoki.powersales.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.schedule.enums.TypeOfWork1
@@ -29,7 +29,7 @@ import com.otoki.powersales.schedule.exception.LeaderScheduleTargetEmployeeNotFo
 import com.otoki.powersales.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper
-import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

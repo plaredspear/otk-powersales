@@ -1,4 +1,4 @@
-package com.otoki.powersales.safetycheck.entity
+package com.otoki.powersales.domain.activity.safetycheck.entity
 
 import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.HCColumn

@@ -1,15 +1,15 @@
-package com.otoki.powersales.safetycheck.service
+package com.otoki.powersales.domain.activity.safetycheck.service
 
+import com.otoki.powersales.domain.activity.safetycheck.dto.request.SafetyCheckSubmitRequest
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckItemsResponse
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckSubmitResponse
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckTodayResponse
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.domain.activity.safetycheck.exception.AlreadySubmittedException
+import com.otoki.powersales.domain.activity.safetycheck.exception.RequiredItemsMissingException
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckItemRepository
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
-import com.otoki.powersales.safetycheck.dto.request.SafetyCheckSubmitRequest
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckItemsResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckSubmitResponse
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckTodayResponse
-import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
-import com.otoki.powersales.safetycheck.exception.AlreadySubmittedException
-import com.otoki.powersales.safetycheck.exception.RequiredItemsMissingException
-import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
-import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

@@ -1,14 +1,14 @@
-package com.otoki.powersales.safetycheck.service
+package com.otoki.powersales.domain.activity.safetycheck.service
 
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.EquipmentStatus
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.MemberStatus
+import com.otoki.powersales.domain.activity.safetycheck.dto.response.SafetyCheckStatusResponse
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckItemRepository
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.enums.WorkingType
-import com.otoki.powersales.safetycheck.dto.response.EquipmentStatus
-import com.otoki.powersales.safetycheck.dto.response.MemberStatus
-import com.otoki.powersales.safetycheck.dto.response.SafetyCheckStatusResponse
 import com.otoki.powersales.schedule.exception.TeamScheduleEmployeeNotFoundException
-import com.otoki.powersales.safetycheck.entity.SafetyCheckSubmission
-import com.otoki.powersales.safetycheck.repository.SafetyCheckItemRepository
-import com.otoki.powersales.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
