@@ -96,3 +96,31 @@ export async function fetchSalesProgressRateMaster(
   }
   return res.data.data;
 }
+
+/** SF 거래처목표등록마스터 동기화 수동 실행 결과 (upsert 통계). */
+export interface SalesProgressRateMasterSyncResult {
+  /** SF 에서 가져온 row 수. */
+  fetched: number;
+  /** INSERT 된 row 수. */
+  inserted: number;
+  /** UPDATE 된 row 수. */
+  updated: number;
+  /** ExternalKey 산출 불가로 건너뛴 row 수. */
+  skipped: number;
+}
+
+/**
+ * SF 거래처목표등록마스터 동기화 배치를 즉시 1회 실행한다 (개발자 도구 — 외부 API 테스트).
+ *
+ * 주기 배치와 동일한 SF fetch → ExternalKey upsert 경로를 호출하며, 호출 즉시 실제 DB 에
+ * upsert 가 반영된다. SF fetch 통신부가 미구현(TODO)인 동안에는 fetched=0 의 no-op 으로 동작한다.
+ */
+export async function triggerSalesProgressRateMasterSync(): Promise<SalesProgressRateMasterSyncResult> {
+  const res = await client.post<ApiResponse<SalesProgressRateMasterSyncResult>>(
+    '/api/v1/admin/sales-progress-rate-master/sync/test',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '거래처목표등록마스터 동기화 실행에 실패했습니다');
+  }
+  return res.data.data;
+}

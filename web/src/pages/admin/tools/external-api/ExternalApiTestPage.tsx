@@ -6,6 +6,7 @@ import ClaimRegistTab from './ClaimRegistTab';
 import ClaimStatusUpdateTab from './ClaimStatusUpdateTab';
 import LogisticsClaimRegistTab from './LogisticsClaimRegistTab';
 import LogisticsClaimStatusUpdateTab from './LogisticsClaimStatusUpdateTab';
+import SalesProgressRateMasterSyncTab from './SalesProgressRateMasterSyncTab';
 import IntegrationInfoDescriptions from './IntegrationInfoDescriptions';
 
 const { Title, Text } = Typography;
@@ -38,6 +39,8 @@ const API_DESCRIPTIONS: Record<string, string> = {
     'SF 에 등록된 클레임의 처리 상태(접수/처리중/완료/반려 등)를 업데이트하는 전송 테스트 탭입니다. UI 레이아웃은 "SF 클레임 등록" 탭과 동일한 형태로 구성되어 있으며, 상세 파라미터 계약과 실제 SF 전송 로직은 추후 반영될 예정입니다. 현재 단계에서는 폼 레이아웃만 제공하며 백엔드/SF 호출은 수행하지 않습니다.',
   'logistics-claim-status-update':
     'SF 에 등록된 물류 클레임(제안)의 처리 상태(접수/처리중/완료/반려 등)를 업데이트하는 전송 테스트 탭입니다. UI 레이아웃은 "SF 클레임 상태 업데이트" 탭과 동일한 형태로 구성되어 있으며, 상세 파라미터 계약과 실제 SF 전송 로직은 추후 반영될 예정입니다. 현재 단계에서는 폼 레이아웃만 제공하며 백엔드/SF 호출은 수행하지 않습니다.',
+  'sales-progress-rate-master-sync':
+    '거래처목표등록마스터(SalesProgressRateMaster__c)를 Salesforce 에서 조회하여 신규 DB 로 갱신하는 주기 동기화 배치(매시 정각)를 즉시 1회 수동 실행합니다. 배치와 동일하게 ExternalKey(연+월+거래처코드) 기준으로 upsert 하며(없으면 INSERT, 있으면 목표/실적/진도율/지점 컬럼 UPDATE), 삭제는 반영하지 않습니다. 실행 즉시 실제 DB 에 반영되며 조회/추가/갱신/건너뜀 통계를 표시합니다. SF fetch 통신부가 아직 미구현(TODO)인 동안에는 조회 0건의 no-op 으로 동작합니다.',
   'logistics-claim-regist':
     '모바일 물류 클레임 등록(제안하기 > 물류 클레임) 입력 정보를 토대로 Salesforce Apex REST `IF_REST_MOBILE_ProposalRegist` 전송 payload(apiMap) 미리보기를 구성합니다. SF 전송 API 정보가 아직 확보되지 않은 단계라 실제 SF POST 는 수행하지 않고, 레거시 Input 클래스 key 셋(Category/ProductCode/accountCode/EmployeeCode/Title/Description/CarNumber/claimList/logclaimDate/S3Image* 등) 정합의 apiMap 을 JSON 으로만 노출합니다. 추후 SF endpoint/계약 정보를 받으면 실제 전송 호출을 추가할 예정입니다. 사진은 최대 2장이며 모두 선택입니다.',
 };
@@ -150,6 +153,25 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           description="상세 파라미터 계약과 실제 SF 전송 로직은 추후 반영될 예정입니다. 현재는 'SF 클레임 상태 업데이트' 탭과 동일한 형태의 폼 레이아웃만 제공합니다. SYSTEM_ADMIN 권한 필요."
         />
         <LogisticsClaimStatusUpdateTab />
+      </Space>
+    ),
+  },
+  {
+    key: 'sales-progress-rate-master-sync',
+    label: 'SF 거래처목표등록마스터 동기화',
+    children: (
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <ApiDescriptionAlert
+          apiKey="sales-progress-rate-master-sync"
+          title="SF 거래처목표등록마스터 동기화 — SF 조회 후 DB 갱신"
+        />
+        <Alert
+          type="warning"
+          showIcon
+          message="이 탭은 실제 DB 에 동기화 결과를 반영합니다."
+          description="'지금 동기화 실행' 버튼은 주기 배치와 동일한 SF 조회 → ExternalKey upsert 경로를 즉시 실행하여 신규 DB(sales_progress_rate_master)에 반영합니다. SF fetch 통신부가 아직 미구현(TODO)인 동안에는 조회 0건의 no-op 으로 동작합니다. SYSTEM_ADMIN 권한 필요."
+        />
+        <SalesProgressRateMasterSyncTab />
       </Space>
     ),
   },
