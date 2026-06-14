@@ -1,19 +1,18 @@
-package com.otoki.powersales.repository
+package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import org.assertj.core.api.Assertions.assertThat
+import com.otoki.powersales.platform.common.config.QueryDslConfig
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
-import com.otoki.powersales.platform.common.config.QueryDslConfig
 
 /**
  * AccountRepository 테스트
@@ -58,12 +57,12 @@ class AccountRepositoryTest {
             val result = accountRepository.findById(saved.id)
 
             // Then
-            assertThat(result).isPresent
-            assertThat(result.get().name).isEqualTo("이마트 부산점")
-            assertThat(result.get().phone).isEqualTo("051-1234-5678")
-            assertThat(result.get().address1).isEqualTo("부산시 해운대구")
-            assertThat(result.get().representative).isEqualTo("홍길동")
-            assertThat(result.get().externalKey).isEqualTo("EXT-00101")
+            Assertions.assertThat(result).isPresent
+            Assertions.assertThat(result.get().name).isEqualTo("이마트 부산점")
+            Assertions.assertThat(result.get().phone).isEqualTo("051-1234-5678")
+            Assertions.assertThat(result.get().address1).isEqualTo("부산시 해운대구")
+            Assertions.assertThat(result.get().representative).isEqualTo("홍길동")
+            Assertions.assertThat(result.get().externalKey).isEqualTo("EXT-00101")
         }
     }
 
@@ -86,9 +85,9 @@ class AccountRepositoryTest {
             val result = accountRepository.findByExternalKey("EXT-00101")
 
             // Then
-            assertThat(result).isNotNull
-            assertThat(result!!.externalKey).isEqualTo("EXT-00101")
-            assertThat(result.name).isEqualTo("이마트 부산점")
+            Assertions.assertThat(result).isNotNull
+            Assertions.assertThat(result!!.externalKey).isEqualTo("EXT-00101")
+            Assertions.assertThat(result.name).isEqualTo("이마트 부산점")
         }
 
         @Test
@@ -103,7 +102,7 @@ class AccountRepositoryTest {
             val result = accountRepository.findByExternalKey("EXT-99999")
 
             // Then
-            assertThat(result).isNull()
+            Assertions.assertThat(result).isNull()
         }
 
         @Test
@@ -122,9 +121,9 @@ class AccountRepositoryTest {
             val result2 = accountRepository.findByExternalKey("EXT-00101")
 
             // Then
-            assertThat(result1).isNotNull
-            assertThat(result2).isNotNull
-            assertThat(result1!!.id).isEqualTo(result2!!.id)
+            Assertions.assertThat(result1).isNotNull
+            Assertions.assertThat(result2).isNotNull
+            Assertions.assertThat(result1!!.id).isEqualTo(result2!!.id)
         }
     }
 
@@ -148,12 +147,12 @@ class AccountRepositoryTest {
             val result = accountRepository.findByIdIn(listOf(saved1.id, saved2.id))
 
             // Then
-            assertThat(result).hasSize(2)
-            assertThat(result.map { it.name }).containsExactlyInAnyOrder(
+            Assertions.assertThat(result).hasSize(2)
+            Assertions.assertThat(result.map { it.name }).containsExactlyInAnyOrder(
                 "이마트 부산점",
                 "홈플러스 서면점"
             )
-            assertThat(result.map { it.id }).containsExactlyInAnyOrder(saved1.id, saved2.id)
+            Assertions.assertThat(result.map { it.id }).containsExactlyInAnyOrder(saved1.id, saved2.id)
         }
 
         @Test
@@ -168,7 +167,7 @@ class AccountRepositoryTest {
             val result = accountRepository.findByIdIn(emptyList())
 
             // Then
-            assertThat(result).isEmpty()
+            Assertions.assertThat(result).isEmpty()
         }
 
         @Test
@@ -185,8 +184,8 @@ class AccountRepositoryTest {
             val result = accountRepository.findByIdIn(listOf(saved1.id, saved2.id, 999, 888))
 
             // Then
-            assertThat(result).hasSize(2)
-            assertThat(result.map { it.id }).containsExactlyInAnyOrder(saved1.id, saved2.id)
+            Assertions.assertThat(result).hasSize(2)
+            Assertions.assertThat(result.map { it.id }).containsExactlyInAnyOrder(saved1.id, saved2.id)
         }
 
         @Test
@@ -201,8 +200,8 @@ class AccountRepositoryTest {
             val result = accountRepository.findByIdIn(listOf(saved.id))
 
             // Then
-            assertThat(result).hasSize(1)
-            assertThat(result[0].name).isEqualTo("이마트 부산점")
+            Assertions.assertThat(result).hasSize(1)
+            Assertions.assertThat(result[0].name).isEqualTo("이마트 부산점")
         }
 
         @Test
@@ -221,8 +220,8 @@ class AccountRepositoryTest {
             val result = accountRepository.findByIdIn(listOf(saved1.id, saved2.id, saved3.id))
 
             // Then
-            assertThat(result).hasSize(3)
-            assertThat(result.map { it.name }).containsExactlyInAnyOrder(
+            Assertions.assertThat(result).hasSize(3)
+            Assertions.assertThat(result.map { it.name }).containsExactlyInAnyOrder(
                 "이마트 부산점",
                 "홈플러스 서면점",
                 "롯데마트 해운대점"
@@ -257,8 +256,8 @@ class AccountRepositoryTest {
             val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
 
             // Then — (1) (2) (7) 만 매칭 (3건)
-            assertThat(result).hasSize(3)
-            assertThat(result.map { it.externalKey }).containsExactlyInAnyOrder("EXT-1", "EXT-2", "EXT-7")
+            Assertions.assertThat(result).hasSize(3)
+            Assertions.assertThat(result.map { it.externalKey }).containsExactlyInAnyOrder("EXT-1", "EXT-2", "EXT-7")
         }
 
         @Test
@@ -273,7 +272,7 @@ class AccountRepositoryTest {
             val result = accountRepository.findCoordinatesMissingAccounts(limit = 3)
 
             // Then
-            assertThat(result).hasSize(3)
+            Assertions.assertThat(result).hasSize(3)
         }
 
         @Test
@@ -286,7 +285,7 @@ class AccountRepositoryTest {
             val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
 
             // Then
-            assertThat(result).isEmpty()
+            Assertions.assertThat(result).isEmpty()
         }
     }
 

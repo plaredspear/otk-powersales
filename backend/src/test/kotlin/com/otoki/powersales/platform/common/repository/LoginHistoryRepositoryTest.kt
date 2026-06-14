@@ -1,19 +1,19 @@
-package com.otoki.powersales.repository
+package com.otoki.powersales.platform.common.repository
 
+import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.platform.common.entity.LoginHistory
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
-import com.otoki.powersales.platform.common.config.QueryDslConfig
-import com.otoki.powersales.platform.common.repository.LoginHistoryRepository
+import java.time.LocalDateTime
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -41,7 +41,7 @@ class LoginHistoryRepositoryTest {
         @DisplayName("LoginHistory 저장 및 surrogate PK로 조회 - 저장 후 ID로 재조회 -> 일치")
         fun saveAndFindById() {
             // Given
-            val now = java.time.LocalDateTime.of(2026, 2, 24, 10, 0, 0)
+            val now = LocalDateTime.of(2026, 2, 24, 10, 0, 0)
             val history = LoginHistory(empCode = "E001", instDate = now)
             val saved = testEntityManager.persistAndFlush(history)
             testEntityManager.clear()
@@ -50,9 +50,9 @@ class LoginHistoryRepositoryTest {
             val result = loginHistoryRepository.findById(saved.id)
 
             // Then
-            assertThat(result).isPresent
-            assertThat(result.get().empCode).isEqualTo("E001")
-            assertThat(result.get().instDate).isEqualTo(now)
+            Assertions.assertThat(result).isPresent
+            Assertions.assertThat(result.get().empCode).isEqualTo("E001")
+            Assertions.assertThat(result.get().instDate).isEqualTo(now)
         }
 
         @Test
@@ -62,14 +62,14 @@ class LoginHistoryRepositoryTest {
             val result = loginHistoryRepository.findById(9999L)
 
             // Then
-            assertThat(result).isEmpty
+            Assertions.assertThat(result).isEmpty
         }
 
         @Test
         @DisplayName("동일 사번 다중 로그인 이력 저장 - PK 충돌 없이 각각 별도 행으로 저장")
         fun saveMultipleForSameEmployee() {
             // Given
-            val now = java.time.LocalDateTime.of(2026, 2, 24, 10, 0, 0)
+            val now = LocalDateTime.of(2026, 2, 24, 10, 0, 0)
             val history1 = LoginHistory(empCode = "E001", instDate = now)
             val history2 = LoginHistory(empCode = "E001", instDate = now)
             testEntityManager.persistAndFlush(history1)
@@ -80,8 +80,8 @@ class LoginHistoryRepositoryTest {
             val result = loginHistoryRepository.findAll()
 
             // Then
-            assertThat(result).hasSize(2)
-            assertThat(result.map { it.id }.distinct()).hasSize(2)
+            Assertions.assertThat(result).hasSize(2)
+            Assertions.assertThat(result.map { it.id }.distinct()).hasSize(2)
         }
     }
 }
