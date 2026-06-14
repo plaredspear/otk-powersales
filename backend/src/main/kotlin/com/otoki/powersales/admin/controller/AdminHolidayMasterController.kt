@@ -2,10 +2,10 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
-import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
-import com.otoki.powersales.leave.dto.response.HolidayMasterResponse
-import com.otoki.powersales.leave.service.AdminHolidayMasterService
+import com.otoki.powersales.domain.org.leave.dto.request.HolidayMasterCreateRequest
+import com.otoki.powersales.domain.org.leave.dto.request.HolidayMasterUpdateRequest
+import com.otoki.powersales.domain.org.leave.dto.response.HolidayMasterResponse
+import com.otoki.powersales.domain.org.leave.service.AdminHolidayMasterService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus

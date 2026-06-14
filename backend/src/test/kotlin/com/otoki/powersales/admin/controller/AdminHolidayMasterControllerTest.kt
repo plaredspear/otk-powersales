@@ -2,13 +2,13 @@ package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.leave.dto.request.HolidayMasterCreateRequest
-import com.otoki.powersales.leave.dto.request.HolidayMasterUpdateRequest
-import com.otoki.powersales.leave.dto.response.HolidayMasterResponse
-import com.otoki.powersales.leave.service.AdminHolidayMasterService
-import com.otoki.powersales.leave.exception.HolidayDateDuplicateException
-import com.otoki.powersales.leave.exception.HolidayNotFoundException
-import com.otoki.powersales.leave.exception.InvalidHolidayTypeException
+import com.otoki.powersales.domain.org.leave.dto.request.HolidayMasterCreateRequest
+import com.otoki.powersales.domain.org.leave.dto.request.HolidayMasterUpdateRequest
+import com.otoki.powersales.domain.org.leave.dto.response.HolidayMasterResponse
+import com.otoki.powersales.domain.org.leave.service.AdminHolidayMasterService
+import com.otoki.powersales.domain.org.leave.exception.HolidayDateDuplicateException
+import com.otoki.powersales.domain.org.leave.exception.HolidayNotFoundException
+import com.otoki.powersales.domain.org.leave.exception.InvalidHolidayTypeException
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test

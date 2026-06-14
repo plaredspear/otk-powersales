@@ -2,8 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.leave.dto.response.EmployeeAnnualLeaveDto
-import com.otoki.powersales.leave.service.AdminAnnualLeaveService
+import com.otoki.powersales.domain.org.leave.dto.response.EmployeeAnnualLeaveDto
+import com.otoki.powersales.domain.org.leave.service.AdminAnnualLeaveService
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import org.springframework.http.ResponseEntity

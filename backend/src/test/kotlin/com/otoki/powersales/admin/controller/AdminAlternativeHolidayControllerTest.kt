@@ -2,15 +2,15 @@ package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.leave.dto.request.AlternativeHolidayCreateRequest
-import com.otoki.powersales.leave.dto.request.AlternativeHolidayRejectRequest
-import com.otoki.powersales.leave.dto.response.AlternativeHolidayApproveResponse
-import com.otoki.powersales.leave.dto.response.AlternativeHolidayCreateResponse
-import com.otoki.powersales.leave.dto.response.AlternativeHolidayListItem
-import com.otoki.powersales.leave.dto.response.AlternativeHolidayRejectResponse
-import com.otoki.powersales.leave.service.AdminAlternativeHolidayService
-import com.otoki.powersales.leave.exception.*
-import com.otoki.powersales.leave.enums.AltHolidayStatus
+import com.otoki.powersales.domain.org.leave.dto.request.AlternativeHolidayCreateRequest
+import com.otoki.powersales.domain.org.leave.dto.request.AlternativeHolidayRejectRequest
+import com.otoki.powersales.domain.org.leave.dto.response.AlternativeHolidayApproveResponse
+import com.otoki.powersales.domain.org.leave.dto.response.AlternativeHolidayCreateResponse
+import com.otoki.powersales.domain.org.leave.dto.response.AlternativeHolidayListItem
+import com.otoki.powersales.domain.org.leave.dto.response.AlternativeHolidayRejectResponse
+import com.otoki.powersales.domain.org.leave.service.AdminAlternativeHolidayService
+import com.otoki.powersales.domain.org.leave.exception.*
+import com.otoki.powersales.domain.org.leave.enums.AltHolidayStatus
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
