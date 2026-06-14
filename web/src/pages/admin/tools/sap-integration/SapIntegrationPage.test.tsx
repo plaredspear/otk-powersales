@@ -151,9 +151,8 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('tab', { name: '전문행사조 마스터' }));
 
-    // 카탈로그 고유 메타(트리거/Sender Class)와 외부 연동 정보가 하나의 표로 통합 표시
+    // 카탈로그 고유 메타(트리거)와 외부 연동 정보가 하나의 표로 통합 표시
     expect(await screen.findByText('BATCH')).toBeInTheDocument();
-    expect(screen.getByText('com.otoki.PptMasterSender')).toBeInTheDocument();
     // 외부 연동 정보가 해당 인터페이스의 kind 로 같은 표에 인라인 렌더 (SD03300 → ppt-master)
     expect(screen.getByText('external-system:ppt-master')).toBeInTheDocument();
     expect(screen.getByText('https://sap.example.com/ppt-master')).toBeInTheDocument();
