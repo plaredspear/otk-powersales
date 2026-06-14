@@ -172,10 +172,9 @@ class Product(
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
-    // --- Spec #575: SAP 인바운드 레거시 필드 2개 보존 ---
-
-    @Column(name = "product_barcode", length = 50)
-    var productBarcode: String? = null,
+    // --- Spec #575: SAP 인바운드 레거시 필드 보존 ---
+    // product_barcode 컬럼(productBarcode)은 제거됨: SAP ProductBarcode 수신값은 barcode(DKRetail__Barcode__c)
+    // 로 적재하도록 전환(레거시 IF_REST_SAP_ProductMasterSend 동등) + 읽기 사용처/SF 메타 필드 부재로 dead 였음.
 
     @SFField("Pallet__c")
     @Column(name = "pallet", precision = 18, scale = 4)

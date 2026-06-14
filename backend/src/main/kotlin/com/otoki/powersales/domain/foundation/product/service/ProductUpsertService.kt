@@ -172,8 +172,10 @@ class ProductUpsertService(
         product.boxReceivingQuantity = boxQty?.let { BigDecimal.valueOf(it) }
         product.superTax = BigDecimal.valueOf(superTax ?: 0.0)
         product.launchDate = launchDate
-        // Spec #575
-        product.productBarcode = command.productBarcode
+        // Spec #575: SAP ProductBarcode 수신값.
+        // 레거시 IF_REST_SAP_ProductMasterSend 는 ProductBarcode → DKRetail__Barcode__c 단일 적재.
+        // 신규도 동일하게 DKRetail__Barcode__c 매핑 컬럼(barcode, #613)에 적재 — admin 제품 상세 barcode 노출 정합.
+        product.barcode = command.productBarcode
         product.pallet = pallet?.let { BigDecimal.valueOf(it) }
     }
 

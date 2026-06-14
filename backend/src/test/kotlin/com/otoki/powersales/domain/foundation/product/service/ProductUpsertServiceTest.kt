@@ -133,7 +133,7 @@ class ProductUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("Spec #575 - ProductBarcode + Pallet 정상 매핑")
+        @DisplayName("Spec #575 - ProductBarcode → barcode(DKRetail__Barcode__c) + Pallet 정상 매핑")
         fun upsert_legacyFieldsMapped() {
             every { productRepository.findByProductCodeIn(listOf("100100")) } returns emptyList()
             val savedSlot = stubSaveAllCapture()
@@ -141,7 +141,8 @@ class ProductUpsertServiceTest {
             service.upsert(listOf(command(productBarcode = "8801007123456", pallet = "100")))
 
             val saved = savedSlot.captured.single()
-            assertThat(saved.productBarcode).isEqualTo("8801007123456")
+            // 레거시 ProductBarcode → DKRetail__Barcode__c 적재 동등 (admin 제품 상세 barcode 노출 정합).
+            assertThat(saved.barcode).isEqualTo("8801007123456")
             assertThat(saved.pallet).isEqualByComparingTo(BigDecimal("100"))
         }
 
