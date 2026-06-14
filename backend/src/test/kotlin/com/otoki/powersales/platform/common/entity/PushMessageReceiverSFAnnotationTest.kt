@@ -2,7 +2,7 @@ package com.otoki.powersales.platform.common.entity
 
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
-import com.otoki.powersales.platform.common.entity.PushMessageReceiver
+import com.otoki.powersales.platform.push.entity.PushMessageReceiver
 import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName

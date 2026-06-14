@@ -1,4 +1,4 @@
-package com.otoki.powersales.platform.common.entity
+package com.otoki.powersales.platform.push.entity
 
 import com.otoki.powersales.platform.common.entity.converter.PushMessageBranchCodeConverter
 import com.otoki.powersales.platform.common.entity.converter.PushMessageBranchConverter
@@ -8,6 +8,8 @@ import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.entity.Group
+import com.otoki.powersales.platform.common.entity.BaseEntity
+import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.time.LocalDateTime

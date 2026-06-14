@@ -1,8 +1,9 @@
-package com.otoki.powersales.platform.common.entity
+package com.otoki.powersales.platform.push.entity
 
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.platform.common.entity.AuditedEntity
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate

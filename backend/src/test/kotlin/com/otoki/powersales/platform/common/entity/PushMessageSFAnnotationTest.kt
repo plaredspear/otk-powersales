@@ -4,7 +4,7 @@ import com.otoki.powersales.platform.common.enums.PushMessageBranch
 import com.otoki.powersales.platform.common.enums.PushMessageBranchCode
 import com.otoki.powersales.platform.common.salesforce.SFField
 import com.otoki.powersales.platform.common.salesforce.SFObject
-import com.otoki.powersales.platform.common.entity.PushMessage
+import com.otoki.powersales.platform.push.entity.PushMessage
 import com.otoki.powersales.platform.common.salesforce.SFSchemaUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
