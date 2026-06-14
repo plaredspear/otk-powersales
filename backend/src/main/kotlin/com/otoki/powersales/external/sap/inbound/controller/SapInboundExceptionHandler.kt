@@ -59,6 +59,10 @@ class SapInboundExceptionHandler(
         return json(HttpStatus.BAD_REQUEST, SapResultWrapper(SapResultWrapper.Companion.CODE_INVALID_PAYLOAD, msg))
     }
 
+    // 역직렬화 실패(깨진 JSON / 타입 불일치 등) → 400 + CODE_INVALID_PAYLOAD.
+    // 미정의(unknown) 필드는 여기로 오지 않는다 — 전역 lenient 정책상 무시되고 처리가 계속된다.
+    // (정책 단일 출처: JacksonConfig 의 "미정의 JSON 필드 정책 — lenient 유지" 주석. 레거시
+    //  JSON.deserializeStrict 의 unknown-field 전체 실패와는 의도적으로 다르게 채택함.)
     @ExceptionHandler(HttpMessageNotReadableException::class)
     fun handleUnreadable(): ResponseEntity<SapResultWrapper<Nothing>> {
         return json(HttpStatus.BAD_REQUEST,
