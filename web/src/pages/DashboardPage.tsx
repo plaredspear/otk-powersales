@@ -261,6 +261,15 @@ export default function DashboardPage() {
     );
   }, [data]);
 
+  // 시스템 관리자가 아직 조회하지 않은 상태 — 탭 헤더는 노출하되 각 탭 콘텐츠는 조회 안내로 채운다.
+  const beforeSearch = isSystemAdmin && !hasSearched;
+  const searchPrompt = (
+    <Empty
+      style={{ marginTop: 48 }}
+      description="지점 또는 전체를 선택한 뒤 조회를 눌러주세요."
+    />
+  );
+
   return (
     <div style={{ padding: 24 }}>
       <PeriodBranchFilterBar
@@ -285,24 +294,17 @@ export default function DashboardPage() {
         />
       )}
 
-      {isSystemAdmin && !hasSearched ? (
-        <Empty
-          style={{ marginTop: 64 }}
-          description="지점 또는 전체를 선택한 뒤 조회를 눌러주세요."
+      <Spin spinning={dashboardQuery.isLoading}>
+        <Tabs
+          style={{ marginTop: 16 }}
+          defaultActiveKey="sales"
+          items={[
+            { key: 'sales', label: '매출현황', children: beforeSearch ? searchPrompt : salesTab },
+            { key: 'deployment', label: '여사원 투입현황', children: beforeSearch ? searchPrompt : deploymentTab },
+            { key: 'basic', label: '기본 현황', children: beforeSearch ? searchPrompt : basicTab },
+          ]}
         />
-      ) : (
-        <Spin spinning={dashboardQuery.isLoading}>
-          <Tabs
-            style={{ marginTop: 16 }}
-            defaultActiveKey="sales"
-            items={[
-              { key: 'sales', label: '매출현황', children: salesTab },
-              { key: 'deployment', label: '여사원 투입현황', children: deploymentTab },
-              { key: 'basic', label: '기본 현황', children: basicTab },
-            ]}
-          />
-        </Spin>
-      )}
+      </Spin>
     </div>
   );
 }
