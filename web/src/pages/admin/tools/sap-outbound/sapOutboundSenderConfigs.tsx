@@ -14,8 +14,9 @@ import { type SapOutboundTestKind } from '@/api/admin/sapOutboundTest';
 export type SenderCardConfig = {
   kind: SapOutboundTestKind;
   /**
-   * SAP outbound 카탈로그(`SapOutboundCatalogItem.interfaceId`)와 매칭되는 인터페이스 ID.
-   * 카탈로그 상세 탭에서 `item.interfaceId` 로 본 설정을 역조회해 메타/송신 폼을 렌더링한다.
+   * SAP outbound 카탈로그(`SapOutboundCatalogItem.interfaceId`)와 매칭되는 SAP service path
+   * (`SDxxxxx`). backend `SapConstants.SAP_INTERFACE_*` 와 동일 값을 가지며, 카탈로그 상세
+   * 탭에서 `item.interfaceId` 로 본 설정을 역조회해 메타/송신 폼을 렌더링한다.
    * 카탈로그 interfaceId 와 테스트 API 의 kind 는 별도 네임스페이스라 본 필드로 연결한다.
    */
   interfaceId: string;
@@ -41,7 +42,7 @@ export const TRIGGER_TAG_COLOR: Record<SenderCardConfig['triggerTag'], string> =
 export const SENDER_CONFIGS: SenderCardConfig[] = [
   {
     kind: 'loan-inquiry',
-    interfaceId: 'LoanInquiry',
+    interfaceId: 'SD03040',
     title: '거래처 여신 한도 조회 (LoanInquiry)',
     tabLabel: '여신 한도 조회',
     description: '거래처 1건의 여신 한도를 SAP 에서 동기 조회합니다. 실제 SAP 호출 발생.',
@@ -69,7 +70,7 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   },
   {
     kind: 'order-request-detail',
-    interfaceId: 'OrderRequestDetail',
+    interfaceId: 'SD03052',
     title: '주문요청 상세 조회 (OrderRequestDetail)',
     tabLabel: '주문요청 상세 조회',
     description: '주문 번호(RequestNumber) 1건의 SAP 상세 라인을 동기 조회합니다.',
@@ -97,7 +98,7 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   },
   {
     kind: 'order-request-cancel',
-    interfaceId: 'OrderChange',
+    interfaceId: 'SD03051',
     title: '주문 요청 취소 (OrderChange)',
     tabLabel: '주문 요청 취소',
     description:
@@ -140,7 +141,7 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   },
   {
     kind: 'order-request-register',
-    interfaceId: 'IF_REST_SAP_OrderRequestRegist',
+    interfaceId: 'SD03050',
     title: '주문 요청 등록 (OrderRequestRegist) — Outbox',
     tabLabel: '주문 요청 등록',
     description:
@@ -171,7 +172,7 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   },
   {
     kind: 'attendance',
-    interfaceId: 'TeamMemberSchedule',
+    interfaceId: 'SD03130',
     title: '근태 SAP전송 batch (TeamMemberSchedule)',
     tabLabel: '근태 SAP전송',
     description:
@@ -182,7 +183,7 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   },
   {
     kind: 'display-master',
-    interfaceId: 'TeamMemberMasterSchedule',
+    interfaceId: 'SD03131',
     title: '진열 마스터 batch (TeamMemberMasterSchedule)',
     tabLabel: '진열 마스터',
     description:

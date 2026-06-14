@@ -41,7 +41,7 @@ class OrderRequestCancelSenderTest {
     @Test
     @DisplayName("성공 — resultCode='S' 시 정상 반환")
     fun success() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderChange"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03051"))
             .andExpect(method(HttpMethod.POST))
             .andRespond(
                 withSuccess(
@@ -57,7 +57,7 @@ class OrderRequestCancelSenderTest {
     @Test
     @DisplayName("실패 — resultCode='E' 시 ORD_CANCEL_SAP_FAILED")
     fun resultCodeE() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderChange"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03051"))
             .andRespond(
                 withSuccess(
                     """{"resultCode":"E","resutlMsg":"이미 취소된 주문"}""",
@@ -73,7 +73,7 @@ class OrderRequestCancelSenderTest {
     @Test
     @DisplayName("실패 — HTML 응답 → ORD_CANCEL_SAP_FAILED")
     fun htmlResponse() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderChange"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03051"))
             .andRespond(
                 withSuccess(
                     "<html><body>503 Service Unavailable</body></html>",
@@ -88,7 +88,7 @@ class OrderRequestCancelSenderTest {
     @Test
     @DisplayName("실패 — SAP 5xx → ORD_CANCEL_SAP_FAILED")
     fun serverError() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderChange"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03051"))
             .andRespond(withServerError())
 
         assertThatThrownBy { sender.send(payload) }
