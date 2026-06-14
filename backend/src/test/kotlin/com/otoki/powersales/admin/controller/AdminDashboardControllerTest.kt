@@ -89,7 +89,8 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 200 OK + 응답 스키마 키 모두 존재")
         fun getDashboard_success_schemaKeysExist() {
-            every { adminDashboardService.getDashboard(any(), any(), any()) } returns emptyDashboardResponse("2026-03")
+            every { adminTeamScheduleService.getBranches(any()) } returns emptyList()
+            every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-03")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
@@ -135,7 +136,8 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - yearMonth 미입력 시 응답의 year_month가 YYYY-MM 패턴")
         fun getDashboard_success_noYearMonth() {
-            every { adminDashboardService.getDashboard(any(), any(), any()) } returns emptyDashboardResponse("2026-05")
+            every { adminTeamScheduleService.getBranches(any()) } returns emptyList()
+            every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")

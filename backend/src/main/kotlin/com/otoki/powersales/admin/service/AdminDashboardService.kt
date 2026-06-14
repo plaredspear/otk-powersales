@@ -58,11 +58,18 @@ class AdminDashboardService(
      *
      * 거래처유형별 투입현황은 전월(마감) 고정(D2). 매출현황은 실적+기준진도율만(D7).
      */
-    fun getDashboard(scope: DataScope, yearMonth: String?, branchCode: String?): DashboardResponse {
+    fun getDashboard(
+        scope: DataScope,
+        yearMonth: String?,
+        branchCode: String?,
+        branchNamesByCode: Map<String, String> = emptyMap(),
+    ): DashboardResponse {
         val ym = yearMonth?.let { YearMonth.parse(it, YEAR_MONTH_FORMATTER) } ?: YearMonth.now()
         val previousYm = ym.minusMonths(1)
         val effectiveCodes = resolveScope(scope, branchCode)
-        val branchName = branchCode
+        // 조회 조건(지점)을 화면에 노출하기 위한 라벨 — 코드가 아니라 실제 지점명.
+        // 단일 지점이면 그 지점명, 복수면 "OO 외 N", effectiveCodes 가 비면(전사 권한 전체) "전체".
+        val branchName = resolveBranchLabel(effectiveCodes, branchNamesByCode)
 
         // 당월 MFEIS 는 세 섹션(매출/투입/기본)이 공유 — 1회만 조회해 재사용 (중복 trip 제거).
         // 전월 MFEIS 는 투입현황(D2: 전월 마감 고정)에서만 쓰여 해당 빌더가 자체 조회한다.
@@ -277,6 +284,23 @@ class AdminDashboardService(
      *
      * isAllBranches 면 빈 목록(전사) 반환 — repository 가 빈 목록을 전체로 해석.
      */
+    /**
+     * 조회 조건 라벨 — effectiveCodes(실제 조회 지점) 를 지점명으로 변환해 응답 branchName 에 노출.
+     *
+     * - 빈 목록(전사 권한 전체 조회): "전체"
+     * - 단일 지점: 그 지점명 (맵 부재 시 코드 fallback)
+     * - 복수 지점: "OO 외 N개" (사용자가 어느 범위인지 인지하도록)
+     */
+    private fun resolveBranchLabel(
+        effectiveCodes: List<String>,
+        branchNamesByCode: Map<String, String>,
+    ): String? {
+        if (effectiveCodes.isEmpty()) return BRANCH_LABEL_ALL
+        val names = effectiveCodes.map { branchNamesByCode[it] ?: it }
+        return if (names.size == 1) names.first()
+        else "${names.first()} 외 ${names.size - 1}개"
+    }
+
     private fun resolveScope(scope: DataScope, branchCode: String?): List<String> {
         if (scope.isAllBranches) {
             return branchCode?.let { listOf(it) } ?: emptyList()
@@ -299,6 +323,8 @@ class AdminDashboardService(
     companion object {
         private val YEAR_MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM")
         private const val HEADCOUNT_SCALE = 4
+
+        private const val BRANCH_LABEL_ALL = "전체"
 
         private const val ACCOUNT_TYPE_UNKNOWN = "미상"
         private const val WORK_TYPE_UNKNOWN = "미상"

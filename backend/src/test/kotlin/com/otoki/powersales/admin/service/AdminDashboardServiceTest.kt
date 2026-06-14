@@ -265,4 +265,40 @@ class AdminDashboardServiceTest {
         assertThat(result.salesSummary.yearMonth).isEqualTo(expected)
         assertThat(result.staffDeployment.yearMonth).isEqualTo(expected)
     }
+
+    @Test
+    @DisplayName("T12 조장(지점 제한) 미선택 조회 — branchName 에 본인 지점명 반영")
+    fun branchLabelForLeaderScope() {
+        stubEmpty()
+        val leaderScope = DataScope(branchCodes = listOf("1000"), isAllBranches = false)
+
+        val result = service.getDashboard(leaderScope, "2026-05", null, mapOf("1000" to "서울1지점"))
+
+        assertThat(result.salesSummary.branchName).isEqualTo("서울1지점")
+        assertThat(result.staffDeployment.branchName).isEqualTo("서울1지점")
+        assertThat(result.basicStats.branchName).isEqualTo("서울1지점")
+    }
+
+    @Test
+    @DisplayName("T13 전사 권한 전체 조회 — branchName '전체'")
+    fun branchLabelForAllBranches() {
+        stubEmpty()
+
+        val result = service.getDashboard(allScope, "2026-05", null, mapOf("1000" to "서울1지점"))
+
+        assertThat(result.salesSummary.branchName).isEqualTo("전체")
+    }
+
+    @Test
+    @DisplayName("T14 복수 지점 권한 미선택 조회 — 'OO 외 N개' 라벨")
+    fun branchLabelForMultipleBranches() {
+        stubEmpty()
+        val multiScope = DataScope(branchCodes = listOf("1000", "2000"), isAllBranches = false)
+
+        val result = service.getDashboard(
+            multiScope, "2026-05", null, mapOf("1000" to "서울1지점", "2000" to "부산지점"),
+        )
+
+        assertThat(result.salesSummary.branchName).isEqualTo("서울1지점 외 1개")
+    }
 }

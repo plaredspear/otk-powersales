@@ -32,6 +32,7 @@ class AdminDashboardController(
     @GetMapping
     fun getDashboard(
         @CurrentDataScope scope: DataScope,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) yearMonth: String?,
         @RequestParam(required = false) branchCode: String?
     ): ResponseEntity<ApiResponse<DashboardResponse>> {
@@ -39,7 +40,11 @@ class AdminDashboardController(
             throw InvalidYearMonthException()
         }
 
-        val response = adminDashboardService.getDashboard(scope, yearMonth, branchCode)
+        // 조회 조건(지점) 라벨을 응답에 채우기 위한 코드→지점명 맵 — branches 셀렉터와 동일 산출 로직 재사용.
+        val branchNamesByCode = adminTeamScheduleService.getBranches(principal)
+            .associate { it.branchCode to it.branchName }
+
+        val response = adminDashboardService.getDashboard(scope, yearMonth, branchCode, branchNamesByCode)
         return ResponseEntity.ok(ApiResponse.success(response, "대시보드 조회 성공"))
     }
 
