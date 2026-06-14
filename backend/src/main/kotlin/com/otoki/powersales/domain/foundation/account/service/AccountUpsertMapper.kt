@@ -42,8 +42,39 @@ class AccountUpsertMapper {
         matchedOrg: Organization?,
         matchedUser: User?
     ) {
+        // 주소(address1/address2) 변경 감지를 위해 갱신 전 값을 캡처한다 (applyMutableFields 가 덮어쓰기 전).
+        val prevAddress1 = account.address1
+        val prevAddress2 = account.address2
+
         account.name = name
         applyMutableFields(account, command, matchedOrg, matchedUser)
+
+        invalidateCoordinatesIfAddressChanged(account, prevAddress1, prevAddress2)
+    }
+
+    /**
+     * 주소 변경 시 좌표 무효화 — 레거시 AccountTriggerHandler.setLatLongNull() 동등 복원.
+     *
+     * 레거시는 ClientMasterReceiver bypass 경로의 beforeUpdate 트리거에서
+     * `oldAcc.Address1__c != acc.Address1__c || oldAcc.Address2__c != acc.Address2__c` 일 때
+     * Latitude__c / Longitude__c 를 null 로 초기화하고, 이후 좌표 보강 배치(Naver Geocode)가
+     * null 좌표 거래처를 재취득한다. 신규는 SF Trigger 가 없으므로 본 매퍼가 동일 책임을 진다.
+     *
+     * 신규 생성(newAccount) 경로에는 적용하지 않는다 — 신규 거래처는 좌표가 애초에 null 이라
+     * 보강 후보(latitude/longitude IS NULL)로 자연 진입한다 (레거시 beforeInsert 도 호출 안 함).
+     *
+     * 미적용 시: 거래처 주소가 바뀌어도 기존 좌표가 잔존해 보강 배치 후보에서 영구 제외되어
+     * 지도 위치가 옛 주소에 고정되는 비동등이 발생한다.
+     */
+    private fun invalidateCoordinatesIfAddressChanged(
+        account: Account,
+        prevAddress1: String?,
+        prevAddress2: String?
+    ) {
+        if (prevAddress1 != account.address1 || prevAddress2 != account.address2) {
+            account.latitude = null
+            account.longitude = null
+        }
     }
 
     private fun applyMutableFields(

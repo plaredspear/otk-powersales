@@ -68,7 +68,9 @@ class AccountUpsertServiceTest {
         consignmentAcc: String? = null,
         werk1: String? = null,
         werk2: String? = null,
-        werk3: String? = null
+        werk3: String? = null,
+        address1: String? = null,
+        address2: String? = null
     ): AccountUpsertCommand = AccountUpsertCommand(
         externalKey = externalKey,
         name = name,
@@ -85,8 +87,8 @@ class AccountUpsertServiceTest {
         businessLicenseNumber = businessLicenseNumber,
         representative = null,
         zipcode = null,
-        address1 = null,
-        address2 = null,
+        address1 = address1,
+        address2 = address2,
         divisionCode = divisionCode,
         divisionName = divisionName,
         salesDeptCode = salesDeptCode,
@@ -641,6 +643,83 @@ class AccountUpsertServiceTest {
             assertThat(saved).hasSize(2)
             assertThat(saved.first { it.externalKey == "A" }.ownerUser).isSameAs(matchedUser)
             assertThat(saved.first { it.externalKey == "C" }.ownerUser).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("주소 변경 시 좌표 무효화 (레거시 setLatLongNull 동등)")
+    inner class CoordinateInvalidation {
+
+        private fun existingWithCoords(
+            address1: String? = "서울시 강남구 옛주소",
+            address2: String? = "101동"
+        ): Account {
+            val acc = Account(externalKey = "1032619", name = "기존이름")
+            acc.address1 = address1
+            acc.address2 = address2
+            acc.latitude = "37.5"
+            acc.longitude = "127.0"
+            return acc
+        }
+
+        @Test
+        @DisplayName("Address1 변경 - latitude/longitude null 초기화")
+        fun update_address1Changed_clearsCoords() {
+            val existing = existingWithCoords()
+            every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns listOf(existing)
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(address1 = "서울시 강남구 새주소", address2 = "101동")))
+
+            val saved = savedSlot.captured.single()
+            assertThat(saved).isSameAs(existing)
+            assertThat(saved.latitude).isNull()
+            assertThat(saved.longitude).isNull()
+        }
+
+        @Test
+        @DisplayName("Address2 만 변경 - latitude/longitude null 초기화")
+        fun update_address2Changed_clearsCoords() {
+            val existing = existingWithCoords()
+            every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns listOf(existing)
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(address1 = "서울시 강남구 옛주소", address2 = "202동")))
+
+            val saved = savedSlot.captured.single()
+            assertThat(saved.latitude).isNull()
+            assertThat(saved.longitude).isNull()
+        }
+
+        @Test
+        @DisplayName("주소 동일 - 좌표 유지 (재취득 불필요)")
+        fun update_addressUnchanged_keepsCoords() {
+            val existing = existingWithCoords()
+            every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns listOf(existing)
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(address1 = "서울시 강남구 옛주소", address2 = "101동")))
+
+            val saved = savedSlot.captured.single()
+            assertThat(saved.latitude).isEqualTo("37.5")
+            assertThat(saved.longitude).isEqualTo("127.0")
+        }
+
+        @Test
+        @DisplayName("신규 거래처 - 좌표는 애초에 null (무효화 로직 무관)")
+        fun insertNew_coordsNull() {
+            every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns emptyList()
+            every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(listOf(command(address1 = "서울시 강남구 새주소")))
+
+            val saved = savedSlot.captured.single()
+            assertThat(saved.latitude).isNull()
+            assertThat(saved.longitude).isNull()
         }
     }
 }
