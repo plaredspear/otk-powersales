@@ -137,12 +137,14 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     ).toBeInTheDocument();
   });
 
-  it('H5 - Outbound API 탭 클릭 시 Interface ID/트리거 + 연동 정보 + 테스트 송신 + 호출 이력이 인라인 표시', async () => {
+  it('H5 - Outbound API 탭 클릭 시 트리거/Sender + 연동 정보 + 테스트 송신 + 호출 이력이 인라인 표시', async () => {
     renderPage();
     const user = userEvent.setup();
     await user.click(screen.getByRole('tab', { name: '전문행사조 마스터' }));
 
-    expect(await screen.findByText('SD03300')).toBeInTheDocument();
+    // 카탈로그 고유 메타(트리거/Sender Class)가 연동 정보 카드에 인라인 표시
+    expect(await screen.findByText('BATCH')).toBeInTheDocument();
+    expect(screen.getByText('com.otoki.PptMasterSender')).toBeInTheDocument();
     // 연동 정보표가 해당 인터페이스의 kind 로 인라인 렌더 (SD03300 → ppt-master)
     expect(screen.getByText('integration-info:ppt-master')).toBeInTheDocument();
     // 테스트 송신 카드가 해당 인터페이스로 인라인 렌더

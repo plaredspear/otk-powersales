@@ -19,13 +19,13 @@ const TRIGGER_TAG_COLOR: Record<OutboundTriggerType, string> = {
 /**
  * SAP Outbound API 1건의 상세 카드.
  *
- * 카탈로그 항목 하나(인터페이스 ID/한글명/트리거 유형/sender 클래스/설명)를 키-값 표로 표시하고,
- * 이어서 해당 Interface 의 연동 정보(endpoint/method/인증) + 테스트 송신(미리보기/실송신) +
- * 호출 이력을 인라인으로 보여준다.
+ * 카탈로그 항목의 고유 메타(트리거/Sender Class/설명)와 연동 정보(endpoint/method/인증)를
+ * 하나의 "연동 정보" 섹션으로 통합해 표시하고, 이어서 테스트 송신(미리보기/실송신) + 호출
+ * 이력을 인라인으로 보여준다.
  * 통합 페이지에서 아웃바운드 API 마다 개별 탭으로 나누어 본 컴포넌트를 렌더링한다.
  *
- * 테스트 송신 폼은 `item.interfaceId` 로 `SENDER_CONFIGS` 를 역조회해 렌더링한다. 매칭되는
- * 설정이 없으면(테스트 미지원 인터페이스) 송신 섹션은 생략한다.
+ * 연동 정보 표 / 테스트 송신 폼은 `item.interfaceId` 로 `SENDER_CONFIGS` 를 역조회해
+ * 렌더링한다. 매칭되는 설정이 없으면(테스트 미지원 인터페이스) 송신 섹션은 생략한다.
  */
 export default function SapOutboundCatalogDetail({
   item,
@@ -36,12 +36,11 @@ export default function SapOutboundCatalogDetail({
 
   return (
     <>
-      <Card>
+      <Title level={5} style={{ marginBottom: 16 }}>
+        연동 정보
+      </Title>
+      <Card style={{ marginBottom: 16 }}>
         <Descriptions column={1} bordered size="middle">
-          <Descriptions.Item label="한글명">{item.koreanName}</Descriptions.Item>
-          <Descriptions.Item label="Interface ID">
-            <code>{item.interfaceId}</code>
-          </Descriptions.Item>
           <Descriptions.Item label="트리거">
             <Tag color={TRIGGER_TAG_COLOR[item.triggerType]}>{item.triggerType}</Tag>
           </Descriptions.Item>
@@ -51,19 +50,13 @@ export default function SapOutboundCatalogDetail({
           <Descriptions.Item label="설명">{item.description}</Descriptions.Item>
         </Descriptions>
       </Card>
-
-      <Divider />
-
-      <Title level={5} style={{ marginBottom: 16 }}>
-        연동 정보
-      </Title>
       {senderConfig ? (
         <IntegrationInfoDescriptions apiKey={senderConfig.kind} />
       ) : (
         <Alert
           type="info"
           showIcon
-          message="이 인터페이스의 연동 정보 / 테스트 송신은 제공되지 않습니다."
+          message="이 인터페이스의 외부 연동 정보 / 테스트 송신은 제공되지 않습니다."
         />
       )}
 
