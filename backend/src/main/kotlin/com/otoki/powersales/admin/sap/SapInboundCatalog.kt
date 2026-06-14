@@ -4,7 +4,7 @@ package com.otoki.powersales.admin.sap
  * SAP 인바운드 endpoint 운영 카탈로그 SoT.
  *
  * 운영자가 admin 화면에서 "현재 등록된 SAP 인바운드 endpoint 가 무엇인지" 를 일람할 수 있도록
- * 9개 endpoint 의 path / scope / 적재 entity / 컨트롤러 / 한글명 / 운영 설명을 코드 상수로 보유한다.
+ * 각 endpoint 의 path / scope / 적재 entity / 컨트롤러 / 한글명 / 운영 설명을 코드 상수로 보유한다.
  *
  * 신규 inbound endpoint 추가 시 본 object 의 [ITEMS] 리스트에 1행 추가.
  *
@@ -44,7 +44,23 @@ object SapInboundCatalog {
             requiredScope = "sap.product.write",
             targetEntity = "Product",
             controllerClass = "SapProductMasterController",
-            description = "제품 마스터 + 제품 바코드 + 시스템 코드 UPSERT.",
+            description = "제품 마스터 ProductCode 기준 UPSERT. (레거시 IF_REST_SAP_ProductMasterSend)",
+        ),
+        SapInboundCatalogItem(
+            endpointPath = "/api/v1/sap/product-barcode",
+            koreanName = "제품 바코드 수신",
+            requiredScope = "sap.product.write",
+            targetEntity = "ProductBarcode",
+            controllerClass = "SapProductMasterController",
+            description = "제품 바코드 마스터 (ProductCode + ProductUnit + ProductSequence) 복합키 UPSERT. (레거시 IF_REST_SAP_BarcodeMaster)",
+        ),
+        SapInboundCatalogItem(
+            endpointPath = "/api/v1/sap/system-code",
+            koreanName = "시스템 공통 코드 수신",
+            requiredScope = "sap.product.write",
+            targetEntity = "SystemCodeMaster",
+            controllerClass = "SapProductMasterController",
+            description = "시스템 공통 코드 마스터 (CompanyCode + GroupCode + DetailCode) 복합키 UPSERT. (레거시 IF_REST_SAP_SystemCodeMaster)",
         ),
         SapInboundCatalogItem(
             endpointPath = "/api/v1/sap/account",
@@ -52,7 +68,15 @@ object SapInboundCatalog {
             requiredScope = "sap.account.write",
             targetEntity = "Account",
             controllerClass = "SapAccountMasterController",
-            description = "거래처 마스터 + 거래처 카테고리 UPSERT.",
+            description = "거래처 마스터 UPSERT. (레거시 ClientMasterReceive)",
+        ),
+        SapInboundCatalogItem(
+            endpointPath = "/api/v1/sap/account-category",
+            koreanName = "거래처 카테고리 마스터 수신",
+            requiredScope = "sap.account.write",
+            targetEntity = "AccountCategoryMaster",
+            controllerClass = "SapAccountMasterController",
+            description = "거래처 카테고리(등급) 마스터 AccountCode 기준 UPSERT. (레거시 IF_REST_SAP_AccountMaster)",
         ),
         SapInboundCatalogItem(
             endpointPath = "/api/v1/sap/erp-order",
