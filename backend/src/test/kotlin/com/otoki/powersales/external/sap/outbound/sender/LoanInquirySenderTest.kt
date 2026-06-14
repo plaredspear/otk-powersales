@@ -36,7 +36,7 @@ class LoanInquirySenderTest {
     @Test
     @DisplayName("성공 — resultCode='S' + result 필드 매핑")
     fun success() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/LoanInquiry"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03040"))
             .andExpect(method(HttpMethod.POST))
             .andRespond(
                 withSuccess(
@@ -56,7 +56,7 @@ class LoanInquirySenderTest {
     @Test
     @DisplayName("resultCode != 'S' → LOAN_SAP_ERROR + resutlMsg 패스스루")
     fun sapError() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/LoanInquiry"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03040"))
             .andRespond(
                 withSuccess(
                     """{"resultCode":"E","resutlMsg":"거래처 미존재"}""",
@@ -72,7 +72,7 @@ class LoanInquirySenderTest {
     @Test
     @DisplayName("HTML 응답 본문 → LOAN_SAP_HTML_RESPONSE")
     fun htmlResponse() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/LoanInquiry"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03040"))
             .andRespond(
                 withSuccess(
                     "<html><body>503 Service Unavailable</body></html>",
@@ -87,7 +87,7 @@ class LoanInquirySenderTest {
     @Test
     @DisplayName("SAP 5xx → LOAN_SAP_UNAVAILABLE")
     fun serverError() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/LoanInquiry"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03040"))
             .andRespond(withServerError())
 
         assertThatThrownBy { sender.inquire("EK001") }

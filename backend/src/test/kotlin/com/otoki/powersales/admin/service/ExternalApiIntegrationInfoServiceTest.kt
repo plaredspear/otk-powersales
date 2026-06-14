@@ -45,7 +45,7 @@ class ExternalApiIntegrationInfoServiceTest {
         val items = service().getIntegrationInfo().items
         val loan = items.first { it.key == "loan-inquiry" }
 
-        assertThat(loan.endpoint).isEqualTo("https://sap.example.com/rest/LoanInquiry")
+        assertThat(loan.endpoint).isEqualTo("https://sap.example.com/rest/SD03040")
         assertThat(loan.httpMethod).isEqualTo("POST")
         assertThat(loan.authType).contains("Basic")
         // SAP 7개 모두 포함

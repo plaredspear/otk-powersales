@@ -47,7 +47,7 @@ class OrderRequestDetailSapSenderTest {
             ]}
         """.trimIndent()
 
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderRequestDetail"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03052"))
             .andExpect(method(HttpMethod.POST))
             .andRespond(withSuccess(body, MediaType.APPLICATION_JSON))
 
@@ -67,7 +67,7 @@ class OrderRequestDetailSapSenderTest {
     @Test
     @DisplayName("resultCode != 'S' → null (호출 측이 빈 결과로 처리)")
     fun sapError() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderRequestDetail"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03052"))
             .andRespond(
                 withSuccess(
                     """{"resultCode":"E","resutlMsg":"존재하지 않음","result":[]}""",
@@ -83,7 +83,7 @@ class OrderRequestDetailSapSenderTest {
     @Test
     @DisplayName("HTML 응답 → null (HTML 가드 — 단순 try-catch fallback)")
     fun htmlResponse() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderRequestDetail"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03052"))
             .andRespond(
                 withSuccess(
                     "<html><body>503 Service Unavailable</body></html>",
@@ -99,7 +99,7 @@ class OrderRequestDetailSapSenderTest {
     @Test
     @DisplayName("SAP 5xx → null (단순 try-catch fallback)")
     fun serverError() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderRequestDetail"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03052"))
             .andRespond(withServerError())
 
         val result = sender.fetchDetail("OR-0001234")
@@ -110,7 +110,7 @@ class OrderRequestDetailSapSenderTest {
     @Test
     @DisplayName("JSON 파싱 실패 → null")
     fun parseFailure() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderRequestDetail"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03052"))
             .andRespond(withSuccess("not-json-content", MediaType.APPLICATION_JSON))
 
         val result = sender.fetchDetail("OR-0001234")
@@ -121,7 +121,7 @@ class OrderRequestDetailSapSenderTest {
     @Test
     @DisplayName("정상 응답 + result[] 빈 배열 → emptyList()")
     fun emptyResultArray() {
-        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/OrderRequestDetail"))
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03052"))
             .andRespond(
                 withSuccess(
                     """{"resultCode":"S","resutlMsg":"OK","result":[]}""",

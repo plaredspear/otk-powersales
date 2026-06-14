@@ -54,9 +54,6 @@ export default function SapOutboundCatalogDetail({
         <Descriptions.Item label="트리거">
           <Tag color={TRIGGER_TAG_COLOR[item.triggerType]}>{item.triggerType}</Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="Sender Class">
-          <code>{item.senderClass}</code>
-        </Descriptions.Item>
         <Descriptions.Item label="설명">{item.description}</Descriptions.Item>
         {senderConfig && info && (
           <>

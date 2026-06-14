@@ -164,14 +164,14 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
         every { adminSapIntegrationService.outboundCatalog() } returns
             listOf(
                 SapOutboundCatalogItemDto(
-                    interfaceId = "TeamMemberSchedule",
+                    interfaceId = "SD03130",
                     koreanName = "일반 출근 일일 batch",
                     triggerType = OutboundTriggerType.BATCH,
                     senderClass = "com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender",
                     description = "매일 새벽 attendance 송신.",
                 ),
                 SapOutboundCatalogItemDto(
-                    interfaceId = "IF_REST_SAP_OrderRequestRegist",
+                    interfaceId = "SD03050",
                     koreanName = "주문 등록 (Outbox)",
                     triggerType = OutboundTriggerType.OUTBOX,
                     senderClass = "com.otoki.powersales.order.sap.sender.OrderRequestRegisterSender",
@@ -181,7 +181,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
 
         mockMvc.perform(get("/api/v1/admin/sap-integration/outbound/catalog"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data[0].interfaceId").value("TeamMemberSchedule"))
+            .andExpect(jsonPath("$.data[0].interfaceId").value("SD03130"))
             .andExpect(jsonPath("$.data[0].triggerType").value("BATCH"))
             .andExpect(jsonPath("$.data[1].triggerType").value("OUTBOX"))
     }
@@ -193,7 +193,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
 
         mockMvc.perform(
             get("/api/v1/admin/sap-integration/outbound/logs")
-                .param("interfaceId", "TeamMemberSchedule")
+                .param("interfaceId", "SD03130")
                 .param("resultCode", "FAIL")
                 .param("from", "2026-05-17T00:00:00Z")
                 .param("to", "2026-05-18T00:00:00Z")
@@ -203,7 +203,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
         val captor = slot<AdminSapOutboundLogQuery>()
         verify { adminSapIntegrationService.searchOutboundLogs(capture(captor)) }
         val q = captor.captured
-        assert(q.interfaceId == "TeamMemberSchedule")
+        assert(q.interfaceId == "SD03130")
         assert(q.resultCode == "FAIL")
         assert(q.from == java.time.LocalDateTime.of(2026, 5, 17, 0, 0, 0))
         assert(q.to == java.time.LocalDateTime.of(2026, 5, 18, 0, 0, 0))
@@ -214,8 +214,8 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
     fun outboundLogDetail_ok() {
         every { adminSapIntegrationService.getOutboundLogDetail(eq(67890L)) } returns SapOutboundLogDetail(
                 id = 67890L,
-                interfaceId = "LoanInquiry",
-                endpointPath = "/sap/rest/loan",
+                interfaceId = "SD03040",
+                endpointPath = "/sap/rest/SD03040",
                 requestCount = 1,
                 httpStatus = 504,
                 resultCode = "FAIL",
@@ -244,7 +244,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
                         id = 5001L,
                         domainType = "ORDER_REQUEST_REGISTER",
                         aggregateId = 9012L,
-                        interfaceId = "IF_REST_SAP_OrderRequestRegist",
+                        interfaceId = "SD03050",
                         status = "RETRY",
                         retryCount = 2,
                         lastError = "Connection timeout after 30s",

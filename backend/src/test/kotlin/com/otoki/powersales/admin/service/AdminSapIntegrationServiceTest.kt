@@ -248,8 +248,8 @@ class AdminSapIntegrationServiceTest {
         fun allFiltersNull() {
             val log = SapOutboundLog(
                 id = 100L,
-                interfaceId = "TeamMemberSchedule",
-                endpointPath = "/sap/rest/attendance",
+                interfaceId = "SD03130",
+                endpointPath = "/sap/rest/SD03130",
                 requestCount = 50,
                 httpStatus = 200,
                 resultCode = "SUCCESS",
@@ -267,7 +267,7 @@ class AdminSapIntegrationServiceTest {
             val result = service.searchOutboundLogs(AdminSapOutboundLogQuery())
 
             assertThat(result.items).hasSize(1)
-            assertThat(result.items[0].interfaceId).isEqualTo("TeamMemberSchedule")
+            assertThat(result.items[0].interfaceId).isEqualTo("SD03130")
             assertThat(result.items[0].durationMs).isEqualTo(1234L)
         }
 
