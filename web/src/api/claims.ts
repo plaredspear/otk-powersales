@@ -231,6 +231,42 @@ export async function testClaimRegist(
 }
 
 /**
+ * SF IF_SendClaimToPWS 클레임 마스터 조회 테스트 입력 (개발자 도구 — 외부 API 테스트).
+ *
+ * SF → PWS 방향 조회. 요청 body 는 기준 일자(MOD_DT) 하나뿐이며, SF 가 해당 일자 기준으로
+ * 변경된 클레임 마스터 목록을 응답한다.
+ */
+export interface ClaimMasterSyncTestInput {
+  /** 조회 기준 일자 (YYYYMMDD, 예: '20260410'). SF Request Body 의 MOD_DT. */
+  modDt: string;
+}
+
+export interface ClaimMasterSyncTestResult {
+  success: boolean;
+  resultCode: string | null;
+  resultMsg: string | null;
+  /** SF 응답 본문(raw JSON). 클레임 마스터 목록이 이 안에 담겨 온다. */
+  rawResponse: string | null;
+  /** SF 로 전송한 요청 body JSON ({ "MOD_DT": "..." }). */
+  requestPayload: string;
+}
+
+export async function testClaimMasterSync(
+  input: ClaimMasterSyncTestInput,
+): Promise<ClaimMasterSyncTestResult> {
+  const res = await client.post<ApiResponse<ClaimMasterSyncTestResult>>(
+    '/api/v1/admin/claim-master-sync/test',
+    input,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || 'SF 클레임 마스터 조회 테스트에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}
+
+/**
  * SF 물류 클레임 등록(ProposalRegist) 전송 테스트 입력 (개발자 도구 — 외부 API 테스트).
  *
  * 모바일 물류 클레임 등록 정보 정합 — SF 전송 API 정보 미확보 단계라 payload(apiMap) 미리보기 전용.

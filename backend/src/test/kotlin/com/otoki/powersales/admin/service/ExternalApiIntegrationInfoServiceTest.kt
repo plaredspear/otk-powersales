@@ -40,6 +40,19 @@ class ExternalApiIntegrationInfoServiceTest {
     }
 
     @Test
+    @DisplayName("SF IF_SendClaimToPWS(클레임 마스터 조회) — key=claim-status-update, /IF_SendClaimToPWS, POST")
+    fun claimMasterSyncInfo() {
+        val info = service().getIntegrationInfo().items.first { it.key == "claim-status-update" }
+
+        assertThat(info.externalSystem).contains("Salesforce")
+        assertThat(info.endpoint)
+            .isEqualTo("https://ottogi.my.salesforce.com/services/apexrest/mobile/IF_SendClaimToPWS")
+        assertThat(info.httpMethod).isEqualTo("POST")
+        assertThat(info.authType).contains("OAuth2", "Bearer")
+        assertThat(info.note).contains("MOD_DT")
+    }
+
+    @Test
     @DisplayName("SAP 인터페이스 7개 — endpoint = baseUrl + /{interfaceId}, POST, Basic")
     fun sapInfos() {
         val items = service().getIntegrationInfo().items

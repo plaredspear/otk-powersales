@@ -27,6 +27,7 @@ class ExternalApiIntegrationInfoService(
         val items = buildList {
             add(naverGeocode())
             add(claimRegist())
+            add(claimMasterSync())
             addAll(sapInterfaces())
         }
         return ExternalApiIntegrationInfoResponse(items)
@@ -48,6 +49,17 @@ class ExternalApiIntegrationInfoService(
         httpMethod = "POST",
         authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
         note = "Content-Type: application/json. 401 시 토큰 재발급 후 1회 재시도. 환경변수 prefix: sf.outbound.*",
+    )
+
+    // key 는 web 탭 식별자("SF 클레임 상태 업데이트" 탭 = claim-status-update)에 의도적으로 맞춘다.
+    // 백엔드 endpoint/DTO/서비스는 인터페이스 실체에 맞춰 claim-master-sync 계열로 명명하여 두 갈래로 갈린다.
+    private fun claimMasterSync() = ExternalApiIntegrationInfo(
+        key = "claim-status-update",
+        externalSystem = "Salesforce (Apex REST)",
+        endpoint = joinUrl(sfOutboundProperties.apexBaseUrl, "/IF_SendClaimToPWS"),
+        httpMethod = "POST",
+        authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
+        note = "Content-Type: application/json. Request body: { MOD_DT } (YYYYMMDD). SF → PWS 클레임 마스터 조회. 환경변수 prefix: sf.outbound.*",
     )
 
     private fun sapInterfaces(): List<ExternalApiIntegrationInfo> {

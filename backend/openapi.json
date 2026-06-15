@@ -1345,6 +1345,37 @@
         },
         "type" : "object"
       },
+      "AdminClaimMasterSyncTestRequest" : {
+        "properties" : {
+          "modDt" : {
+            "minLength" : 1,
+            "pattern" : "\\d{8}",
+            "type" : "string"
+          }
+        },
+        "required" : [ "modDt" ],
+        "type" : "object"
+      },
+      "AdminClaimMasterSyncTestResponse" : {
+        "properties" : {
+          "rawResponse" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestPayload" : {
+            "type" : "string"
+          },
+          "resultCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "AdminClaimRegistTestResponse" : {
         "properties" : {
           "rawResponse" : {
@@ -3460,6 +3491,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminClaimListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminClaimMasterSyncTestResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminClaimMasterSyncTestResponse"
             }, {
               "type" : "null"
             } ]
@@ -24515,6 +24575,34 @@
           }
         },
         "tags" : [ "admin-cache-controller" ]
+      }
+    },
+    "/api/v1/admin/claim-master-sync/test" : {
+      "post" : {
+        "operationId" : "test_4",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminClaimMasterSyncTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminClaimMasterSyncTestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-claim-master-sync-test-controller" ]
       }
     },
     "/api/v1/admin/claim-regist/test" : {
