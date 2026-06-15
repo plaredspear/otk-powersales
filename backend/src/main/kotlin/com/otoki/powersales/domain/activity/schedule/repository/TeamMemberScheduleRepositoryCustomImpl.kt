@@ -9,7 +9,6 @@ import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
-import com.otoki.powersales.domain.org.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.otoki.powersales.domain.activity.schedule.entity.QAttendanceLog.Companion.attendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.otoki.powersales.user.entity.QUser.Companion.user
@@ -120,7 +119,10 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         return queryFactory
             .selectFrom(teamMemberSchedule)
             .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
-            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            // employee.employeeInfo(공유 PK @MapsId @OneToOne) fetch join 제거:
+            // root 가 TMS 라 한 사원이 한 달치 다행으로 반복 + readOnly tx 에서 loadedState 미보관 →
+            // 2번째 행부터 EntityInitializer.updateInitializedEntityInstance 가 NPE(loadedState null).
+            // 호출부(getMonthlySchedule/AdminTeamScheduleService)는 employeeInfo 를 읽지 않아 안전하게 제거.
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
                 teamMemberSchedule.employee.id.`in`(employeeIds),
@@ -140,7 +142,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         return queryFactory
             .selectFrom(teamMemberSchedule)
             .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
-            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            // employee.employeeInfo fetch join 제거 (findMonthlyByEmployeeIds 와 동일 사유 — loadedState NPE 회피)
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
                 teamMemberSchedule.account.id.`in`(accountIds),
