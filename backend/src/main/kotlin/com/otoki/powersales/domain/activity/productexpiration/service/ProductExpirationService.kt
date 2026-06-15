@@ -120,13 +120,13 @@ class ProductExpirationService(
         val employeeId = getUserId(userId)
             ?: throw EmployeeNotFoundException()
 
-        val items = productExpirationRepository.findBySeqInAndEmployeeId(request.ids, employeeId)
+        val items = productExpirationRepository.findByProductExpirationIdInAndEmployeeId(request.ids, employeeId)
 
         if (items.size != request.ids.size) {
-            val foundSeqs = items.map { it.seq }.toSet()
-            val missingSeqs = request.ids.filter { it !in foundSeqs }
+            val foundIds = items.map { it.productExpirationId }.toSet()
+            val missingIds = request.ids.filter { it !in foundIds }
 
-            val allExisting = productExpirationRepository.findAllById(missingSeqs)
+            val allExisting = productExpirationRepository.findAllById(missingIds)
             if (allExisting.isNotEmpty()) {
                 throw ProductExpirationForbiddenException()
             }

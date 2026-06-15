@@ -22,7 +22,7 @@ data class ProductExpirationItemResponse(
         fun from(entity: ProductExpiration, today: LocalDate): ProductExpirationItemResponse {
             val dDay = ChronoUnit.DAYS.between(today, entity.expirationDate).toInt()
             return ProductExpirationItemResponse(
-                seq = entity.seq,
+                seq = entity.productExpirationId,
                 productCode = entity.productCode ?: "",
                 productName = entity.productName ?: "",
                 accountCode = entity.accountCode ?: "",
