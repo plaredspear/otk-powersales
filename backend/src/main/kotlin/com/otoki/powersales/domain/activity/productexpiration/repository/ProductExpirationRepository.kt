@@ -18,5 +18,5 @@ interface ProductExpirationRepository : JpaRepository<ProductExpiration, Int>, P
         employeeId: Long, accountCode: String, fromDate: LocalDate, toDate: LocalDate
     ): List<ProductExpiration>
 
-    fun findBySeqInAndEmployeeId(seqs: List<Int>, employeeId: Long): List<ProductExpiration>
+    fun findByProductExpirationIdInAndEmployeeId(ids: List<Int>, employeeId: Long): List<ProductExpiration>
 }

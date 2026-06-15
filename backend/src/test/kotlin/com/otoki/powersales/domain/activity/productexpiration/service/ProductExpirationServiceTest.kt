@@ -61,6 +61,7 @@ class ProductExpirationServiceTest {
 
     private fun createProductExpiration(
         seq: Int = 1,
+        productExpirationId: Int = seq,
         employeeId: Long = userId,
         accountCode: String = "1025172",
         accountName: String = "(유)경산식품",
@@ -72,6 +73,7 @@ class ProductExpirationServiceTest {
     ): ProductExpiration {
         return ProductExpiration(
             seq = seq,
+            productExpirationId = productExpirationId,
             employeeId = employeeId,
             accountCode = accountCode,
             accountName = accountName,
@@ -385,7 +387,7 @@ class ProductExpirationServiceTest {
                 createProductExpiration(seq = 3)
             )
             every {
-                productExpirationRepository.findBySeqInAndEmployeeId(listOf(1, 2, 3), userId)
+                productExpirationRepository.findByProductExpirationIdInAndEmployeeId(listOf(1, 2, 3), userId)
             } returns items
             every { productExpirationRepository.deleteAll(items) } just Runs
 
@@ -401,7 +403,7 @@ class ProductExpirationServiceTest {
             stubUser()
             val myItem = createProductExpiration(seq = 1)
             every {
-                productExpirationRepository.findBySeqInAndEmployeeId(listOf(1, 2), userId)
+                productExpirationRepository.findByProductExpirationIdInAndEmployeeId(listOf(1, 2), userId)
             } returns listOf(myItem)
             every { productExpirationRepository.findAllById(listOf(2)) } returns
                 listOf(createProductExpiration(seq = 2, employeeId = 999L))
