@@ -126,18 +126,28 @@ class MyScheduleService(
         // 해당 날짜의 거래처 일정 목록 조회
         val schedules = displayWorkScheduleRepository.findByEmployeeAndStartDate(employee.id, date)
 
-        // 거래처 목록 매핑 (등록 여부 - Attendance 비활성화로 항상 false)
+        // 출근 등록 완료된 거래처 id 집합
+        // 레거시 myDaily.jsp: displayworkschedulemaster ⨝ teammemberschedule(같은 거래처·날짜)의
+        //   commutelogid__c 유무로 등록 완료 판정. 신규는 TeamMemberSchedule.attendanceLog(백링크)로 대응.
+        //   (attendance_log_id는 nullable LAZY FK → null/proxy 판별에 추가 쿼리 없음)
+        val registeredAccountIds = memberSchedules
+            .filter { it.attendanceLog != null }
+            .mapNotNull { it.account?.id }
+            .toSet()
+
+        // 거래처 목록 매핑
         // 레거시 myDaily.jsp: 거래처명 | typeOfWork1 / typeOfWork5 / typeOfWork3
         //   workingcategory1 ← typeOfWork1(진열), workingcategory2 ← typeOfWork5(전담 등),
         //   workingcategory3 ← typeOfWork3(고정/격고/순회)
         val accountItems = schedules.map { schedule ->
+            val accountId = schedule.account?.id
             DisplayWorkScheduleItemDto(
-                accountId = schedule.account?.id ?: 0L,
+                accountId = accountId ?: 0L,
                 accountName = schedule.account?.name ?: "",
                 workType1 = schedule.typeOfWork1?.displayName ?: "",
                 workType2 = schedule.typeOfWork5?.displayName ?: "",
                 workType3 = schedule.typeOfWork3?.displayName ?: "",
-                isRegistered = false  // Phase2: attendance 비활성화
+                isRegistered = accountId != null && accountId in registeredAccountIds
             )
         }
 

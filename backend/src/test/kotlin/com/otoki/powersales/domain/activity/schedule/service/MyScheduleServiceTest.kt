@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
+import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -302,6 +303,43 @@ class MyScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 출근 등록(attendanceLog) 완료 거래처는 isRegistered=true, completed 반영")
+        fun getDailySchedule_registeredAccount_reflectsCompleted() {
+            // Given
+            val userId = 1L
+            val date = LocalDate.of(2020, 8, 4)
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val registeredAccount = Account(id = 10L, name = "등록완료거래처")
+            val pendingAccount = Account(id = 20L, name = "미등록거래처")
+            val mockSchedules = listOf(
+                createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, account = registeredAccount, startDate = date),
+                createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, account = pendingAccount, startDate = date)
+            )
+            // 거래처 10만 출근 등록(attendanceLog) 완료
+            val mockMemberSchedules = listOf(
+                createMockMemberSchedule(
+                    workingDate = date,
+                    workingType = WorkingType.WORK,
+                    account = registeredAccount,
+                    attendanceLog = AttendanceLog(id = 100L)
+                )
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns mockMemberSchedules
+            every { displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date) } returns mockSchedules
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then
+            assertThat(result.reportProgress.total).isEqualTo(2)
+            assertThat(result.reportProgress.completed).isEqualTo(1)
+            assertThat(result.accounts.first { it.accountId == 10L }.isRegistered).isTrue()
+            assertThat(result.accounts.first { it.accountId == 20L }.isRegistered).isFalse()
+        }
+
+        @Test
         @DisplayName("성공 - 일정 없음")
         fun getDailySchedule_noSchedule_success() {
             // Given
@@ -400,12 +438,16 @@ class MyScheduleServiceTest {
     private fun createMockMemberSchedule(
         employeeCode: String = "20030117",
         workingDate: LocalDate = LocalDate.now(),
-        workingType: WorkingType = WorkingType.WORK
+        workingType: WorkingType = WorkingType.WORK,
+        account: Account? = null,
+        attendanceLog: AttendanceLog? = null
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
             employee = Employee(id = 1L, employeeCode = employeeCode, name = "테스트"),
             workingDate = workingDate,
-            workingType = workingType
+            workingType = workingType,
+            account = account,
+            attendanceLog = attendanceLog
         )
     }
 
