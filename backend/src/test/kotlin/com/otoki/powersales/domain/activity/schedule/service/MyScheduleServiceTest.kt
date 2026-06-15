@@ -9,6 +9,9 @@ import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkSched
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
+import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
+import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.activity.schedule.service.MyScheduleService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -260,7 +263,13 @@ class MyScheduleServiceTest {
             val date = LocalDate.of(2020, 8, 4)
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
             val mockSchedules = listOf(
-                createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, startDate = date),
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork3 = TypeOfWork3.ROTATION,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = Account(id = 10L, name = "(주)이마트트레이더스명지점"),
+                    startDate = date
+                ),
                 createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, startDate = date),
                 createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, startDate = date)
             )
@@ -283,6 +292,13 @@ class MyScheduleServiceTest {
             assertThat(result.reportProgress.workType).isEqualTo("진열")
             assertThat(result.accounts).hasSize(3)
             assertThat(result.accounts.all { !it.isRegistered }).isTrue()
+            // 레거시 myDaily.jsp 정합: 거래처명 + typeOfWork1/typeOfWork5/typeOfWork3
+            val first = result.accounts.first()
+            assertThat(first.accountId).isEqualTo(10L)
+            assertThat(first.accountName).isEqualTo("(주)이마트트레이더스명지점")
+            assertThat(first.workType1).isEqualTo("진열")
+            assertThat(first.workType2).isEqualTo("상시")
+            assertThat(first.workType3).isEqualTo("순회")
         }
 
         @Test
@@ -396,11 +412,17 @@ class MyScheduleServiceTest {
     private fun createMockSchedule(
         id: Long = 0,
         typeOfWork1: TypeOfWork1? = TypeOfWork1.DISPLAY,
+        typeOfWork3: TypeOfWork3? = null,
+        typeOfWork5: TypeOfWork5? = null,
+        account: Account? = null,
         startDate: LocalDate = LocalDate.now()
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(
             id = id,
             typeOfWork1 = typeOfWork1,
+            typeOfWork3 = typeOfWork3,
+            typeOfWork5 = typeOfWork5,
+            account = account,
             startDate = startDate
         )
     }

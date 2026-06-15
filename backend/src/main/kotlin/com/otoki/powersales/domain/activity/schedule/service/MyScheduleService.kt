@@ -127,14 +127,16 @@ class MyScheduleService(
         val schedules = displayWorkScheduleRepository.findByEmployeeAndStartDate(employee.id, date)
 
         // 거래처 목록 매핑 (등록 여부 - Attendance 비활성화로 항상 false)
-        // Note: V1 리매핑으로 storeId(Long)→account(String sfid) 변경, DTO는 Long 유지 → 0L 대체
+        // 레거시 myDaily.jsp: 거래처명 | typeOfWork1 / typeOfWork5 / typeOfWork3
+        //   workingcategory1 ← typeOfWork1(진열), workingcategory2 ← typeOfWork5(전담 등),
+        //   workingcategory3 ← typeOfWork3(고정/격고/순회)
         val accountItems = schedules.map { schedule ->
             DisplayWorkScheduleItemDto(
-                accountId = 0L,  // V1: account(String sfid)로 변경됨, DTO Long 타입 유지
-                accountName = "",  // V1에서 accountName 삭제됨
+                accountId = schedule.account?.id ?: 0L,
+                accountName = schedule.account?.name ?: "",
                 workType1 = schedule.typeOfWork1?.displayName ?: "",
-                workType2 = "",
-                workType3 = "",
+                workType2 = schedule.typeOfWork5?.displayName ?: "",
+                workType3 = schedule.typeOfWork3?.displayName ?: "",
                 isRegistered = false  // Phase2: attendance 비활성화
             )
         }
