@@ -21,7 +21,7 @@ class PPTMasterRepositoryCustomImpl(
         employeeName: String?,
         employeeCode: String?,
         teamType: ProfessionalPromotionTeamType?,
-        branchCode: String?,
+        branchCodeFilter: List<String>?,
         validOnly: Boolean,
         today: LocalDate,
         pageable: Pageable
@@ -40,8 +40,9 @@ class PPTMasterRepositoryCustomImpl(
             builder.and(professionalPromotionTeamMaster.teamType.eq(teamType))
         }
 
-        if (!branchCode.isNullOrBlank()) {
-            builder.and(professionalPromotionTeamMaster.branchCode.eq(branchCode))
+        // 지점 스코프 — 데이터의 branch_code 컬럼(빈값)이 아니라 사원 소속 지점(costCenterCode) 기준.
+        if (!branchCodeFilter.isNullOrEmpty()) {
+            builder.and(employee.costCenterCode.`in`(branchCodeFilter))
         }
 
         if (validOnly) {

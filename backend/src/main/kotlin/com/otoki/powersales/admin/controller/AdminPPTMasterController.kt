@@ -7,6 +7,8 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.PPTConfirmedR
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryListResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterListResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterResponse
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterBulkValidateRequest
@@ -39,6 +41,7 @@ class AdminPPTMasterController(
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getMasters(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) employeeName: String?,
@@ -48,7 +51,7 @@ class AdminPPTMasterController(
         @RequestParam(defaultValue = "true") validOnly: Boolean
     ): ResponseEntity<ApiResponse<PPTMasterListResponse>> {
         val response = adminPPTMasterService.getMasters(
-            employeeName, employeeCode, teamType, branchCode, validOnly,
+            scope, employeeName, employeeCode, teamType, branchCode, validOnly,
             PageRequest.of(page, size)
         )
         return ResponseEntity.ok(ApiResponse.success(response))
@@ -122,6 +125,7 @@ class AdminPPTMasterController(
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun exportMasters(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) employeeName: String?,
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) teamType: String?,
@@ -129,7 +133,7 @@ class AdminPPTMasterController(
         @RequestParam(defaultValue = "true") validOnly: Boolean
     ): ResponseEntity<ByteArray> {
         val bytes = adminPPTMasterService.exportToExcel(
-            employeeName, employeeCode, teamType, branchCode, validOnly
+            scope, employeeName, employeeCode, teamType, branchCode, validOnly
         )
         val filename = "전문행사조마스터_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.xlsx"
         return ResponseEntity.ok()

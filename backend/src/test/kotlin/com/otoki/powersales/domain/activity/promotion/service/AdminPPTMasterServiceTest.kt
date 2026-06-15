@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.promotion.service
 
+import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.platform.auth.entity.AppAuthority
@@ -85,6 +86,10 @@ class AdminPPTMasterServiceTest {
     ): Account {
         return Account(id = id, externalKey = externalKey, name = name)
     }
+
+    /** 전사 권한 DataScope (지점 스코프 필터 없음) — 기존 전사 조회 테스트 동작 보존용. */
+    private fun allBranchesScope(): DataScope =
+        DataScope(branchCodes = emptyList(), isAllBranches = true)
 
     private fun createMaster(
         id: Long = 1L,
@@ -446,10 +451,42 @@ class AdminPPTMasterServiceTest {
                 pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val result = service.getMasters(null, null, null, null, true, PageRequest.of(0, 20))
+            val result = service.getMasters(allBranchesScope(), null, null, null, null, true, PageRequest.of(0, 20))
 
             assertThat(result.content).hasSize(1)
             assertThat(result.totalElements).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("지점 스코프 - 본인 지점 권한 -> employee.costCenterCode IN 필터로 조회")
+        fun getMasters_branchScoped() {
+            val page = PageImpl(emptyList<PPTMasterSearchResult>(), PageRequest.of(0, 20), 0)
+            every {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+            } returns page
+
+            // 본인 지점 "3233" 단일 권한 (전사 아님)
+            val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
+            service.getMasters(scope, null, null, null, null, true, PageRequest.of(0, 20))
+
+            // branchCodeFilter 인자(4번째)에 본인 지점 코드가 전달되어야 한다
+            verify {
+                pptMasterRepository.searchMasters(any(), any(), any(), listOf("3233"), any(), any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("지점 스코프 - 권한 밖 지점 요청(NoAccess) -> 쿼리 없이 빈 목록")
+        fun getMasters_noAccess() {
+            // 본인 지점은 "3233" 인데 "9999" 지점 요청 -> NoAccess
+            val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
+            val result = service.getMasters(scope, null, null, null, "9999", true, PageRequest.of(0, 20))
+
+            assertThat(result.content).isEmpty()
+            assertThat(result.totalElements).isEqualTo(0)
+            verify(exactly = 0) {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+            }
         }
     }
 
@@ -564,12 +601,24 @@ class AdminPPTMasterServiceTest {
                 pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val bytes = service.exportToExcel(null, null, null, null, true)
+            val bytes = service.exportToExcel(allBranchesScope(), null, null, null, null, true)
 
             // xlsx 파일 시그니처 (PK\x03\x04 — ZIP 형식) 확인
             assertThat(bytes).isNotEmpty
             assertThat(bytes[0]).isEqualTo(0x50.toByte()) // 'P'
             assertThat(bytes[1]).isEqualTo(0x4B.toByte()) // 'K'
+        }
+
+        @Test
+        @DisplayName("지점 스코프 - 권한 밖 지점 요청(NoAccess) -> 쿼리 없이 헤더만 빈 xlsx")
+        fun exportToExcel_noAccess() {
+            val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
+            val bytes = service.exportToExcel(scope, null, null, null, "9999", true)
+
+            assertThat(bytes).isNotEmpty // 헤더 행만 있는 빈 엑셀
+            verify(exactly = 0) {
+                pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
+            }
         }
 
         @Test
@@ -580,7 +629,7 @@ class AdminPPTMasterServiceTest {
                 pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val bytes = service.exportToExcel(null, null, null, null, true)
+            val bytes = service.exportToExcel(allBranchesScope(), null, null, null, null, true)
 
             assertThat(bytes).isNotEmpty
         }

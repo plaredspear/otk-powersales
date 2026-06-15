@@ -22,6 +22,8 @@ import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterDuplica
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterEmployeeNotFoundException
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterInvalidDateRangeException
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterNotFoundException
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.promotion.repository.PPTHistoryRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
@@ -54,6 +56,7 @@ class AdminPPTMasterService(
     }
 
     fun getMasters(
+        scope: DataScope,
         employeeName: String?,
         employeeCode: String?,
         teamType: String?,
@@ -61,9 +64,16 @@ class AdminPPTMasterService(
         validOnly: Boolean,
         pageable: Pageable
     ): PPTMasterListResponse {
+        // 지점 스코프 — 여사원 현황/일정 화면과 동일하게 본인 소속 지점만 노출 (전사 권한은 전체).
+        // 데이터의 branch_code 컬럼은 비어 있으므로 사원 소속 지점(costCenterCode) 기준으로 평가한다.
+        val branchCodeFilter = when (val result = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> return emptyMasterList(pageable)
+        }
         val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
         val page = pptMasterRepository.searchMasters(
-            employeeName, employeeCode, teamTypeEnum, branchCode, validOnly, LocalDate.now(), pageable
+            employeeName, employeeCode, teamTypeEnum, branchCodeFilter, validOnly, LocalDate.now(), pageable
         )
         return PPTMasterListResponse(
             content = page.content.map { PPTMasterResponse.from(it) },
@@ -73,6 +83,15 @@ class AdminPPTMasterService(
             size = page.size
         )
     }
+
+    private fun emptyMasterList(pageable: Pageable): PPTMasterListResponse =
+        PPTMasterListResponse(
+            content = emptyList(),
+            totalElements = 0,
+            totalPages = 0,
+            number = pageable.pageNumber,
+            size = pageable.pageSize
+        )
 
     fun getMaster(id: Long): PPTMasterResponse {
         val master = findMasterById(id)
@@ -262,17 +281,31 @@ class AdminPPTMasterService(
      * 레거시 차이: ExcelIO 패키지 내부 로직 미공개로 컬럼 구성 / 정렬 / 헤더 스타일은 신규 자체 결정.
      */
     fun exportToExcel(
+        scope: DataScope,
         employeeName: String?,
         employeeCode: String?,
         teamType: String?,
         branchCode: String?,
         validOnly: Boolean
     ): ByteArray {
-        val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
-        val page = pptMasterRepository.searchMasters(
-            employeeName, employeeCode, teamTypeEnum, branchCode, validOnly,
-            LocalDate.now(), PageRequest.of(0, EXPORT_MAX_ROWS)
-        )
+        // 엑셀 다운로드도 목록 화면과 동일한 지점 가시 범위로 제한 (사원 소속 지점 기준).
+        // NoAccess(권한 밖 지점 요청)는 쿼리를 생략하고 헤더만 있는 빈 엑셀을 반환한다 —
+        // branchCodeFilter 를 빈 리스트로 두면 repository 가 필터를 생략해 전사가 노출되므로 분기로 차단.
+        val scopeResult = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })
+        val rows = if (scopeResult is EffectiveBranchResult.NoAccess) {
+            emptyList()
+        } else {
+            val branchCodeFilter = when (scopeResult) {
+                is EffectiveBranchResult.All -> null
+                is EffectiveBranchResult.Filtered -> scopeResult.codes
+                is EffectiveBranchResult.NoAccess -> emptyList() // unreachable
+            }
+            val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
+            pptMasterRepository.searchMasters(
+                employeeName, employeeCode, teamTypeEnum, branchCodeFilter, validOnly,
+                LocalDate.now(), PageRequest.of(0, EXPORT_MAX_ROWS)
+            ).content
+        }
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("전문행사조마스터")
@@ -281,7 +314,7 @@ class AdminPPTMasterService(
         val headers = listOf("사번", "사원명", "거래처코드", "거래처명", "전문행사조", "시작일", "종료일", "확정", "지점코드")
         headers.forEachIndexed { i, h -> headerRow.createCell(i).setCellValue(h) }
 
-        page.content.forEachIndexed { index, result ->
+        rows.forEachIndexed { index, result ->
             val m = result.master
             val row = sheet.createRow(index + 1)
             row.createCell(0).setCellValue(result.employeeCode ?: "")

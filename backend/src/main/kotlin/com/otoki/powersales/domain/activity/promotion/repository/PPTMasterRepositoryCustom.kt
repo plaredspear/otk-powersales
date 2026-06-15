@@ -9,11 +9,17 @@ import java.time.LocalDate
 
 interface PPTMasterRepositoryCustom {
 
+    /**
+     * @param branchCodeFilter 사원(`employee`) 소속 지점(costCenterCode) 스코프 필터.
+     *   `null` 이면 전사(필터 없음), 비어있지 않으면 해당 지점들로 제한.
+     *   전문행사조 데이터의 `branch_code` 컬럼은 SF `CostCenterCode__c`(dead field) 출처라 비어 있으므로,
+     *   지점 가시성은 사원 조인 후 `employee.costCenterCode` 기준으로 평가한다.
+     */
     fun searchMasters(
         employeeName: String?,
         employeeCode: String?,
         teamType: ProfessionalPromotionTeamType?,
-        branchCode: String?,
+        branchCodeFilter: List<String>?,
         validOnly: Boolean,
         today: LocalDate,
         pageable: Pageable

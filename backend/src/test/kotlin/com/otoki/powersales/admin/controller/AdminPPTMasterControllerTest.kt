@@ -1,6 +1,9 @@
 package com.otoki.powersales.admin.controller
 
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTConfirmedReportService
@@ -14,7 +17,9 @@ import org.junit.jupiter.api.Test
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.MediaType
@@ -39,6 +44,18 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
     @Autowired private lateinit var objectMapper: ObjectMapper
     @MockkBean private lateinit var adminPPTMasterService: AdminPPTMasterService
     @MockkBean private lateinit var pptConfirmedReportService: AdminPPTConfirmedReportService
+
+    @MockkBean
+    private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
+
+    @BeforeEach
+    fun stubArgumentResolver() {
+        every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
+            val parameter = firstArg<MethodParameter>()
+            parameter.hasParameterAnnotation(CurrentDataScope::class.java)
+        }
+        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
+    }
 
     private fun createResponse(): PPTMasterResponse = PPTMasterResponse(
         id = 1L,
@@ -74,7 +91,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 content = listOf(createResponse()),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            every { adminPPTMasterService.getMasters(any(), any(), any(), any(), any(), any()) } returns listResponse
+            every { adminPPTMasterService.getMasters(any(), any(), any(), any(), any(), any(), any()) } returns listResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-masters"))
                 .andExpect(status().isOk)
