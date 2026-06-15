@@ -21,9 +21,14 @@ interface PromotionEmployeeRepositoryCustom {
 
     fun findMaxScheduleDateByPromotionId(promotionId: Long): LocalDate?
 
-    fun sumTargetAmountByPromotionId(promotionId: Long): Long
-
-    fun sumActualAmountByPromotionId(promotionId: Long): Long
+    /**
+     * 다수 행사마스터의 목표/실적금액 일괄 집계 — SF rollup 재현 (단건 상세도 1건 리스트로 재사용).
+     * - 목표금액 = SUM(조원 `dailyTargetCount * basePrice`) = SF `DKRetail__TargetAmount__c` 동등.
+     * - 실적금액 = SUM(조원 `primaryProductAmount + otherSalesAmount`) = SF `ActualAmount__c`(총실적 rollup) 동등.
+     * entity 저장 컬럼 target_amount/actual_amount 및 Promotion 의 dk*Amount 동기화 스칼라는 stale 이므로 미사용.
+     * 반환: promotionId -> Pair(목표금액 합, 실적금액 합). 조원이 없는 promotionId 는 맵에 미포함.
+     */
+    fun sumTargetActualAmountByPromotionIds(promotionIds: Collection<Long>): Map<Long, Pair<Long, Long>>
 
     fun findMinScheduleDateByPromotionIdAndEmployeeId(promotionId: Long, employeeId: Long): LocalDate?
 

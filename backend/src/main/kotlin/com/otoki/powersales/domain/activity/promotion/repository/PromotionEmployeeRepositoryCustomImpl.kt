@@ -8,7 +8,9 @@ import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
 import com.otoki.powersales.domain.activity.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.dsl.NumberExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
+import java.math.BigDecimal
 import java.time.LocalDate
 
 class PromotionEmployeeRepositoryCustomImpl(
@@ -56,20 +58,36 @@ class PromotionEmployeeRepositoryCustomImpl(
             .fetchOne()
     }
 
-    override fun sumTargetAmountByPromotionId(promotionId: Long): Long {
-        return queryFactory
-            .select(promotionEmployee.targetAmount.sumAggregate().coalesce(0L))
-            .from(promotionEmployee)
-            .where(promotionEmployee.promotionId.eq(promotionId))
-            .fetchOne() ?: 0L
-    }
+    // 조원 목표금액 파생식 SUM = SUM(COALESCE(daily_target_count,0) * COALESCE(base_price,0)).
+    private val dailyTargetAmountSum: NumberExpression<BigDecimal> =
+        promotionEmployee.dailyTargetCount.coalesce(BigDecimal.ZERO)
+            .multiply(promotionEmployee.basePrice.coalesce(BigDecimal.ZERO))
+            .sumAggregate()
 
-    override fun sumActualAmountByPromotionId(promotionId: Long): Long {
+    // 조원 실적금액(총 실적) 파생식 SUM = SUM(COALESCE(primary_product_amount,0) + COALESCE(other_sales_amount,0)).
+    private val dailyActualAmountSum: NumberExpression<BigDecimal> =
+        promotionEmployee.primaryProductAmount.coalesce(BigDecimal.ZERO)
+            .add(promotionEmployee.otherSalesAmount.coalesce(BigDecimal.ZERO))
+            .sumAggregate()
+
+    override fun sumTargetActualAmountByPromotionIds(promotionIds: Collection<Long>): Map<Long, Pair<Long, Long>> {
+        if (promotionIds.isEmpty()) return emptyMap()
         return queryFactory
-            .select(promotionEmployee.actualAmount.sumAggregate().coalesce(0L))
+            .select(
+                promotionEmployee.promotionId,
+                dailyTargetAmountSum,
+                dailyActualAmountSum,
+            )
             .from(promotionEmployee)
-            .where(promotionEmployee.promotionId.eq(promotionId))
-            .fetchOne() ?: 0L
+            .where(promotionEmployee.promotionId.`in`(promotionIds))
+            .groupBy(promotionEmployee.promotionId)
+            .fetch()
+            .associate { tuple ->
+                val pid = tuple.get(promotionEmployee.promotionId)!!
+                val target = tuple.get(dailyTargetAmountSum)?.toLong() ?: 0L
+                val actual = tuple.get(dailyActualAmountSum)?.toLong() ?: 0L
+                pid to (target to actual)
+            }
     }
 
     override fun findMinScheduleDateByPromotionIdAndEmployeeId(promotionId: Long, employeeId: Long): LocalDate? {
