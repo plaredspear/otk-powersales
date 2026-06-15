@@ -356,10 +356,15 @@ class _SearchTextField extends StatelessWidget {
         onSubmitted: onSubmitted,
         decoration: InputDecoration(
           hintText: hint,
-          border: InputBorder.none,
           isDense: true,
           hintStyle: AppTypography.bodyMedium
               .copyWith(color: AppColors.textTertiary),
+          // 전역 inputDecorationTheme 의 회색 채움/포커스 테두리를 끄고
+          // 레거시처럼 보더리스 라인 인풋으로 통일한다(주변 드롭다운 행과 일관).
+          filled: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
         ),
       ),
     );
