@@ -134,16 +134,21 @@ class AuthService(
     }
 
     /**
-     * 단말기 바인딩 검증
-     * 1. 바인딩 비활성화 → 검증 스킵
-     * 2. 예외 사번 → 검증 스킵
-     * 3. DB deviceUuid == NULL → 최초 등록
-     * 4. 일치 → 정상
-     * 5. 불일치 → DEVICE_MISMATCH 에러
+     * 단말기 바인딩 검증 + 현재 단말 기록
+     * 1. 바인딩 비활성화(enabled=false) → 검증/기록 모두 스킵
+     * 2. DB deviceUuid == NULL → 최초 등록(기록)
+     * 3. 일치 → 정상(no-op)
+     * 4. 불일치 + 예외(면제) 사번 → 강제(차단) 면제하되 현재 단말로 갱신(기록)
+     * 5. 불일치 + 일반 사번 → DEVICE_MISMATCH 에러
+     *
+     * 면제 사번도 device_uuid 를 현재 단말로 갱신한다(기록용). 단 [activeDeviceIdFor] 가
+     * 면제 시 null 을 반환하므로 토큰엔 device_id 가 빠지고 매 요청 단말 재검증은 그대로 면제된다.
      */
     private fun validateDeviceBinding(employee: Employee, deviceId: String) {
         if (!uuidCheckProperties.enabled) return
-        if (uuidCheckProperties.isExcluded(employee.employeeCode ?: error("로그인 사원의 사번이 null - 비정상"))) return
+
+        val excluded =
+            uuidCheckProperties.isExcluded(employee.employeeCode ?: error("로그인 사원의 사번이 null - 비정상"))
 
         if (employee.deviceUuid == null) {
             employee.bindDevice(deviceId)
@@ -152,6 +157,12 @@ class AuthService(
         }
 
         if (employee.deviceUuid != deviceId) {
+            // 면제 사번: 단말 강제(차단)는 면제하되, 현재 단말로 갱신해 최신 상태 유지
+            if (excluded) {
+                employee.bindDevice(deviceId)
+                employeeRepository.save(employee)
+                return
+            }
             throw DeviceMismatchException()
         }
     }
