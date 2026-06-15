@@ -37,7 +37,7 @@ scripts/sf-data-migration/
 | **Stage 2-A** | sfid → FK id (audit / 도메인 / polymorphic owner_group) | backend admin API `POST /api/v1/admin/sf-migration/stage2/fk` | substep 단위 |
 | **Stage 2-A2** | Natural-key FK resolve — developer_name / name / sfid 컬럼 기반 join (spec #800, 9 mapping) | `POST /api/v1/admin/sf-migration/stage2/fk-natural-key` | substep 단위 |
 | **Stage 2-A3** | UploadFile polymorphic parent — record_id (SF Id text) → parent_id (Long FK) | `POST /api/v1/admin/sf-migration/stage2/upload-file-polymorphic-parent` | substep 단위 |
-| **Stage 2-B** | derived 캐시 동기화 — Employee.cost_center_code → User.cost_center_code (spec #807 이후 picklist→enum 변환 폐기. SF AppAuthority picklist value 가 곧 저장값) | `POST /api/v1/admin/sf-migration/stage2/picklist` | substep 단위 |
+| **Stage 2-B** | derived 캐시 동기화 — Employee.cost_center_code → User.cost_center_code + ProfessionalPromotionTeamMaster.branch_code (SF `CostCenterCode__c` dead field 라 사원 cost_center_code 로 백필. spec #807 이후 picklist→enum 변환 폐기. SF AppAuthority picklist value 가 곧 저장값) | `POST /api/v1/admin/sf-migration/stage2/picklist` | substep 단위 |
 | **Stage 2-C** | BCrypt password hash (사번 평문 → hash) | `POST /api/v1/admin/sf-migration/stage2/password` | substep 단위 |
 | **Stage 2-D** | UserRole hierarchy snapshot 재계산 (depth / all_subordinate_ids / ancestor_path) | `POST /api/v1/admin/sf-migration/stage2/user-role-hierarchy` | substep 단위 |
 | **Reset**     | DB 초기화. ① 전체 TRUNCATE (`db-reset.sh` truncate, flyway 보존) — 진짜 처음부터 ② SF 산출물만 삭제 (`reset-dev.main.kts`, sfid IS NOT NULL row) | `db-reset.sh` / `reset-dev.main.kts` (운영 가드) | 단일 |
@@ -62,6 +62,7 @@ backend 의 `@SFObject` 어노테이션이 붙은 모든 entity + Permission sta
 | 전 entity | (전체) | `POST /stage2/fk` — `*_sfid` 컬럼 자동 스캔 + FK id 채움 |
 | `Employee` | `DKRetail__Employee__c` | Stage 1 raw 적재 (spec #807 이후 role / ppt picklist → enum 변환 폐기 — SF picklist value 가 곧 저장값) |
 | `User` | `User` | `POST /stage2/picklist` — User.cost_center_code 동기화 (Employee.cost_center_code → User, employee_code 조인) / `POST /stage2/password` — BCrypt |
+| `ProfessionalPromotionTeamMaster` | `ProfessionalPromotionTeamMaster__c` | `POST /stage2/picklist` — branch_code 동기화 (Employee.cost_center_code → PPTMaster, employee_id 조인). SF `CostCenterCode__c`(라벨 "조직유형") 가 운영 dead field 라 사원 소속 지점으로 백필 (신규 등록 로직과 동일 출처). 멱등 — branch_code IS NULL 한정 |
 | `PermissionSetAssignment` | `PermissionSetAssignment` | Stage 1 SOQL 정규 적재 (spec #798) + `POST /stage2/fk` (assignee_user / permission_set FK). 과거 `stage2/permission` → user_permission 경로는 spec #801 로 폐기 |
 | `SharingRule` | (XML 메타) | `POST /stage2/fk` (sharing_rule_condition / sharing_rule_target 의 sharing_rule FK + target polymorphic) — spec #790 |
 | `SharingRuleCondition` | (XML 메타) | (위 동일) — spec #790 |

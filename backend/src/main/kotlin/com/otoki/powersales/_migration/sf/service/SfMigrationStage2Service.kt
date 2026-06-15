@@ -64,6 +64,7 @@ class SfMigrationStage2Service(
     fun runPicklistMapping(): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
         results += runUserCostCenterCodeSync().results
+        results += runPptMasterBranchCodeSync().results
 
         return SfMigrationStage2Response(
             substep = "picklist",
@@ -96,6 +97,43 @@ class SfMigrationStage2Service(
         return singleResultResponse(
             substep = "picklist.user_cost_center_code",
             label = "User.cost_center_code (sync from Employee)",
+            rows = rows,
+        )
+    }
+
+    /**
+     * Stage 2-B (professional_promotion_team_master.branch_code) —
+     * Employee.cost_center_code → ProfessionalPromotionTeamMaster.branch_code derived 동기화.
+     *
+     * branch_code 는 SF `CostCenterCode__c`(라벨 "조직유형") 에 매핑되어 있으나, 해당 SF 필드는
+     * 운영에서 한 번도 채워지지 않은 dead field (extract 전 행 빈값) 라 SF 적재분의 branch_code 가
+     * 전부 NULL 이다. 신규 등록 로직(AdminPPTMasterService.createMaster)은 사원의 cost_center_code 로
+     * branch_code 를 채우므로, 마이그레이션 적재분도 동일 출처(employee_id → Employee.cost_center_code)
+     * 로 동기화해 정합을 맞춘다.
+     *
+     * 상관 서브쿼리 형태 — H2 / PostgreSQL 양쪽 모두 표준 SQL 로 동작.
+     * 멱등: branch_code IS NULL 한정이라 이미 채워진 row (신규 등록분 포함) 는 건드리지 않는다.
+     */
+    @Transactional
+    fun runPptMasterBranchCodeSync(): SfMigrationStage2Response {
+        val rows = em.createNativeQuery(
+            """
+            UPDATE powersales.professional_promotion_team_master ppt
+            SET branch_code = (
+                SELECT e.cost_center_code FROM powersales.employee e
+                WHERE e.employee_id = ppt.employee_id
+            )
+            WHERE ppt.branch_code IS NULL
+              AND EXISTS (
+                SELECT 1 FROM powersales.employee e
+                WHERE e.employee_id = ppt.employee_id
+                  AND e.cost_center_code IS NOT NULL
+              )
+            """.trimIndent()
+        ).executeUpdate()
+        return singleResultResponse(
+            substep = "picklist.ppt_master_branch_code",
+            label = "ProfessionalPromotionTeamMaster.branch_code (sync from Employee)",
             rows = rows,
         )
     }

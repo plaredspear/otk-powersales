@@ -149,6 +149,7 @@ class SfMigrationStage2Controller(
     ): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = when (column) {
             "user_cost_center_code" -> service.runUserCostCenterCodeSync()
+            "ppt_master_branch_code" -> service.runPptMasterBranchCodeSync()
             else -> return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ApiResponse.success(
                     SfMigrationStage2Response(
