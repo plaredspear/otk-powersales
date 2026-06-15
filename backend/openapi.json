@@ -1788,6 +1788,37 @@
         },
         "type" : "object"
       },
+      "AdminLogisticsClaimMasterSyncTestRequest" : {
+        "properties" : {
+          "modDt" : {
+            "minLength" : 1,
+            "pattern" : "\\d{8}",
+            "type" : "string"
+          }
+        },
+        "required" : [ "modDt" ],
+        "type" : "object"
+      },
+      "AdminLogisticsClaimMasterSyncTestResponse" : {
+        "properties" : {
+          "rawResponse" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestPayload" : {
+            "type" : "string"
+          },
+          "resultCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "AdminLogisticsClaimRegistTestRequest" : {
         "properties" : {
           "carNumber" : {
@@ -3607,6 +3638,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminEmployeeRegisterResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminLogisticsClaimMasterSyncTestResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminLogisticsClaimMasterSyncTestResponse"
             }, {
               "type" : "null"
             } ]
@@ -24579,7 +24639,7 @@
     },
     "/api/v1/admin/claim-master-sync/test" : {
       "post" : {
-        "operationId" : "test_4",
+        "operationId" : "test_5",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -24607,7 +24667,7 @@
     },
     "/api/v1/admin/claim-regist/test" : {
       "post" : {
-        "operationId" : "test_3",
+        "operationId" : "test_4",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -27170,6 +27230,34 @@
           }
         },
         "tags" : [ "admin-inspection-controller" ]
+      }
+    },
+    "/api/v1/admin/logistics-claim-master-sync/test" : {
+      "post" : {
+        "operationId" : "test_3",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminLogisticsClaimMasterSyncTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminLogisticsClaimMasterSyncTestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-logistics-claim-master-sync-test-controller" ]
       }
     },
     "/api/v1/admin/logistics-claim-regist/test" : {
