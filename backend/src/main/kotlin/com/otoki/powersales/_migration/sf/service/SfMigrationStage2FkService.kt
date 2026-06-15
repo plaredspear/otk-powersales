@@ -2,8 +2,10 @@ package com.otoki.powersales._migration.sf.service
 
 import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.dto.SubstepResult
+import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
+import jakarta.persistence.Table
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
@@ -142,7 +144,16 @@ class SfMigrationStage2FkService(
         val sfidColumns = listSfidColumns()
         val byTable = sfidColumns.groupBy({ it.first }, { it.second })
 
+        // `@HerokuOnly` 전용 테이블은 SF FK Resolve 대상에서 제외 (HEROKU_TABLES_WITH_SF_SFID 예외).
+        // SF FK Resolve 가 `*_sfid` 컬럼을 무차별 스캔하므로 Heroku 전용 테이블이 끌려오는데, 그 값이
+        // SF Id 가 아니거나 SF substep 이 건드려선 안 되는 테이블을 막는다.
+        val excludedHerokuTables = herokuOnlyTablesExcludedFromSfFkResolve()
+
         return byTable.mapNotNull { (tableName, cols) ->
+            if (tableName in excludedHerokuTables) {
+                log.info("[fk] {} — @HerokuOnly 전용 테이블, SF FK Resolve 제외", tableName)
+                return@mapNotNull null
+            }
             val pkColumn = findPkColumn(tableName)
             if (pkColumn == null) {
                 errors.add("[$tableName] PK 컬럼 발견 실패 — chunk 페이징 불가, skip")
@@ -461,4 +472,20 @@ class SfMigrationStage2FkService(
     }
 
     private fun quoteIdent(name: String): String = if (name == "user" || name == "group") "\"$name\"" else name
+
+    /**
+     * JPA metamodel 을 스캔해 `@HerokuOnly` 엔티티의 물리 테이블명을 모으고, SF FK Resolve 가
+     * 예외적으로 처리해야 하는 [HEROKU_TABLES_WITH_SF_SFID] 는 제외해 "SF substep 에서 건드리면
+     * 안 되는 Heroku 전용 테이블" 집합을 반환한다.
+     *
+     * 신규 `@HerokuOnly` 테이블이 추가돼도 자동으로 제외되며, 그 값이 SF Id 라 처리가 필요하면
+     * HEROKU_TABLES_WITH_SF_SFID 에만 등록하면 된다.
+     */
+    private fun herokuOnlyTablesExcludedFromSfFkResolve(): Set<String> {
+        return em.metamodel.entities
+            .mapNotNull { it.javaType.getAnnotation(HerokuOnly::class.java)?.let { _ -> it.javaType } }
+            .mapNotNull { it.getAnnotation(Table::class.java)?.name?.takeIf { n -> n.isNotBlank() } }
+            .filterNot { it in HEROKU_TABLES_WITH_SF_SFID }
+            .toSet()
+    }
 }

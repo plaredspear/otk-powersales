@@ -278,6 +278,28 @@ internal val SKIP_FK_PREFIXES: Set<String> = setOf(
 )
 
 /**
+ * `@HerokuOnly` 테이블이지만 `_sfid` 컬럼 값이 실제 SF Salesforce Id 라서 SF Stage 2 FK Resolve 가
+ * 처리하는 것이 **의도된** 테이블 (예외 허용 화이트리스트).
+ *
+ * SF FK Resolve 는 powersales schema 의 모든 `*_sfid` 컬럼을 무차별 스캔하므로
+ * ([SfMigrationStage2FkService.listSfidColumns]), `@HerokuOnly` 테이블도 끌려온다. 기본 정책은
+ * "Heroku 전용 테이블은 SF FK Resolve 에서 제외" 이며 ([SfMigrationStage2FkService] 가 런타임에
+ * `@HerokuOnly` 엔티티를 스캔해 제외), 그 값이 진짜 SF Id 라 SF substep 이 처리해야 하는 테이블만
+ * 여기에 명시 등록해 예외 허용한다.
+ *
+ * - safety_check_submission : employee/display_work_schedule/team_member_schedule sfid 모두 SF Id
+ *   (Heroku safetycheck__workschedule__member 가 SF Id 를 외부키 텍스트로 보관 — Heroku 분석 확인)
+ * - product_expiration      : employee_sfid 가 SF Employee Id
+ *
+ * 운영 가드: 신규 `@HerokuOnly` 테이블에 `_sfid` 컬럼이 생기면, 그 값이 SF Id 인지 판정해
+ * SF Id 면 여기에 등록 (아니면 자동 제외되어 SF substep 이 건드리지 않음).
+ */
+internal val HEROKU_TABLES_WITH_SF_SFID: Set<String> = setOf(
+    "safety_check_submission",
+    "product_expiration",
+)
+
+/**
  * 같은 prefix 라도 source 테이블에 따라 ref 대상이 갈리는 override 표.
  *
  * `manager_sfid` 는 두 테이블이 서로 다른 entity 를 self/cross reference:

@@ -11,15 +11,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
-@Table(
-    name = "safety_check_submission",
-    uniqueConstraints = [
-        UniqueConstraint(
-            name = "uq_safety_check_employee_date_schedule",
-            columnNames = ["employee_id", "working_date", "display_work_schedule_id"]
-        )
-    ]
-)
+// 레거시 Heroku 원본(safetycheck__workschedule__member)에 PK/unique 제약이 없어 같은 직원·날짜·
+// 일정 복수 안전점검 row 를 허용했으므로, 신규에서도 unique 제약을 두지 않는다 (제약 제거:
+// V202606151000__drop_safety_check_submission_unique.sql). 중복 방지가 필요하면 앱 레벨에서 처리.
+@Table(name = "safety_check_submission")
 @HerokuOnly("safetycheck__workschedule__member")
 class SafetyCheckSubmission(
 
