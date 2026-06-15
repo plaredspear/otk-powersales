@@ -21,13 +21,26 @@ const KEY_BASE = ['admin', 'sf-migration'] as const;
 const PROGRESS_KEY = [...KEY_BASE, 'fk-progress'] as const;
 const TABLES_KEY = [...KEY_BASE, 'fk-tables'] as const;
 
+/**
+ * 실행 시작 직후 ~ 백그라운드 스레드가 progress.begin() 으로 status 를 RUNNING 으로 올리기 전까지의
+ * 짧은 윈도우 동안에도 polling 을 유지하기 위한 grace 시간 (ms). 백엔드는 비동기 실행을 예약하고
+ * 즉시 (아직 IDLE/이전상태일 수 있는) progress 를 반환하므로, 이 윈도우 안에서는 status 가 아직
+ * RUNNING 이 아니어도 refetch 를 이어가 첫 RUNNING 상태를 놓치지 않는다.
+ */
+const POLL_GRACE_MS = 5000;
+
+// 마지막 시작 요청 시각 (모듈 스코프) — refetchInterval grace 윈도우 판정용.
+let recentStartAt = 0;
+
 export function useFkResolveProgress(options?: { enabled?: boolean }) {
   return useQuery<FkResolveProgress>({
     queryKey: PROGRESS_KEY,
     queryFn: getFkResolveProgress,
     refetchInterval: (query) => {
       const data = query.state.data;
-      return data && data.status === 'RUNNING' ? 1000 : false;
+      if (data && data.status === 'RUNNING') return 1000;
+      const recentlyKicked = recentStartAt > 0 && Date.now() - recentStartAt < POLL_GRACE_MS;
+      return recentlyKicked ? 1000 : false;
     },
     enabled: options?.enabled ?? true,
   });
@@ -49,6 +62,9 @@ export function useStartFkResolve() {
     mutationFn: startFkResolve,
     onSuccess: (data) => {
       queryClient.setQueryData(PROGRESS_KEY, data);
+      // grace 윈도우를 열어 polling 을 강제로 켜고, 즉시 한 번 더 조회해 RUNNING 전이를 따라잡는다.
+      recentStartAt = Date.now();
+      void queryClient.invalidateQueries({ queryKey: PROGRESS_KEY });
     },
   });
 }
