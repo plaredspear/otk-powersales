@@ -27986,6 +27986,13 @@
         "operationId" : "getMasters",
         "parameters" : [ {
           "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -28224,6 +28231,13 @@
       "get" : {
         "operationId" : "exportMasters",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "query",
           "name" : "employeeName",
           "required" : false,
