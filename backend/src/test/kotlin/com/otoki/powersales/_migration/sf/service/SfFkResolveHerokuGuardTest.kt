@@ -64,6 +64,29 @@ class SfFkResolveHerokuGuardTest {
     }
 
     @Test
+    @DisplayName("Heroku sfid 테이블은 SF 목록에서 제외되고 Heroku 목록에 노출 (UI 소속 분리)")
+    fun herokuSfidTablesSplitFromSfList() {
+        // listResolvableTables (SF 페이지) 와 listHerokuSfidResolvableTables (Heroku 페이지) 는
+        // buildPlansByTable 키를 HEROKU_TABLES_WITH_SF_SFID 기준으로 정확히 보완 분할한다.
+        // 서비스의 filterNot/filter 분기 술어가 allowlist 와 동일 집합인지를 고정해, 한쪽 분기만
+        // 바뀌어 양 페이지에 동시 노출/동시 누락되는 회귀를 막는다.
+        val planKeys = setOf(
+            "employee", "account", "product",
+            "safety_check_submission", "product_expiration",
+        )
+        val sfList = planKeys.filterNot { it in HEROKU_TABLES_WITH_SF_SFID }
+        val herokuList = planKeys.filter { it in HEROKU_TABLES_WITH_SF_SFID }
+
+        assertThat(sfList).doesNotContain("safety_check_submission", "product_expiration")
+        assertThat(herokuList)
+            .containsExactlyInAnyOrder("safety_check_submission", "product_expiration")
+        // 두 목록은 교집합이 없고 (한 테이블이 양쪽에 동시에 뜨지 않음)
+        assertThat(sfList.intersect(herokuList.toSet())).isEmpty()
+        // 합치면 원본 plan 키 전체 (어느 테이블도 누락되지 않음)
+        assertThat((sfList + herokuList).toSet()).isEqualTo(planKeys)
+    }
+
+    @Test
     @DisplayName("_sfid 컬럼을 가진 @HerokuOnly 테이블은 모두 명시 판정됨 (allowlist 등록 또는 제외)")
     fun everyHerokuTableWithSfidIsClassified() {
         val candidates = herokuOnlyEntities()

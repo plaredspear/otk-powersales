@@ -1,5 +1,6 @@
 import client from '@/api/client';
 import type { ApiResponse } from '../types';
+import type { FkResolveProgress } from './sfMigration';
 
 /**
  * Heroku 데이터 마이그레이션 Stage 2 admin API (1회성 cut-over 도구).
@@ -70,6 +71,55 @@ export async function getHerokuFkResolveProgress(): Promise<HerokuFkResolveProgr
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || 'FK Resolve 진행 상태 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * sfid FK Resolve (Heroku 전용 sfid 테이블 — safety_check_submission / product_expiration).
+ *
+ * `@HerokuOnly` 이지만 `_sfid` 값이 진짜 SF Id 라, sfid resolve 엔진(SF Stage 2)을 재사용한다.
+ * 따라서 진행 상태 타입은 SF 의 `FkResolveProgress` (chunk 단위 진행 포함) 를 그대로 공유한다.
+ * SF FK Resolve 와 동일한 progress 빈을 공유하므로, SF 페이지/본 페이지 중 한쪽이 실행 중이면
+ * 다른 쪽도 RUNNING 으로 보이고 중복 실행이 차단된다.
+ */
+
+/**
+ * Heroku sfid FK Resolve 대상 테이블 목록 (단일 실행 드롭다운용). 정렬된 테이블명 배열.
+ */
+export async function getHerokuSfidFkResolvableTables(): Promise<string[]> {
+  const res = await client.get<ApiResponse<string[]>>(
+    '/api/v1/admin/heroku-migration/stage2/sfid-fk/tables',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'sfid FK Resolve 테이블 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * Heroku sfid FK Resolve 실행. `tableName` 미지정 시 Heroku sfid 대상 전체, 지정 시 1개만 처리.
+ */
+export async function startHerokuSfidFkResolve(
+  tableName?: string,
+): Promise<FkResolveProgress> {
+  const res = await client.post<ApiResponse<FkResolveProgress>>(
+    '/api/v1/admin/heroku-migration/stage2/sfid-fk',
+    undefined,
+    tableName ? { params: { tableName } } : undefined,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'sfid FK Resolve 실행 요청에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function getHerokuSfidFkResolveProgress(): Promise<FkResolveProgress> {
+  const res = await client.get<ApiResponse<FkResolveProgress>>(
+    '/api/v1/admin/heroku-migration/stage2/sfid-fk/progress',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'sfid FK Resolve 진행 상태 조회에 실패했습니다');
   }
   return res.data.data;
 }

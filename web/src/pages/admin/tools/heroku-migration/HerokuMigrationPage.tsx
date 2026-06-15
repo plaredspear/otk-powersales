@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Alert,
   Button,
@@ -5,6 +6,7 @@ import {
   Descriptions,
   Empty,
   Progress,
+  Select,
   Space,
   Statistic,
   Tag,
@@ -14,7 +16,10 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
   useHerokuFkResolveProgress,
+  useHerokuSfidFkResolvableTables,
+  useHerokuSfidFkResolveProgress,
   useStartHerokuFkResolve,
+  useStartHerokuSfidFkResolve,
 } from '@/hooks/admin/useHerokuMigration';
 import type {
   HerokuFkResolveProgress,
@@ -22,6 +27,10 @@ import type {
   HerokuFkTableResult,
   HerokuFkUnmatched,
 } from '@/api/admin/herokuMigration';
+import type {
+  FkResolveProgress,
+  FkResolveTableResult,
+} from '@/api/admin/sfMigration';
 import ResizableTable from '@/components/common/ResizableTable';
 
 const { Title, Paragraph, Text } = Typography;
@@ -54,6 +63,204 @@ function formatDuration(start: string | null, end: string | null): string {
 function overallPercent(p: HerokuFkResolveProgress): number {
   if (p.totalTables === 0) return 0;
   return Math.min(100, Math.round((p.completedTables / p.totalTables) * 100));
+}
+
+function sfidOverallPercent(p: FkResolveProgress): number {
+  if (p.totalTables === 0) return 0;
+  return Math.min(100, Math.round((p.completedTables / p.totalTables) * 100));
+}
+
+function sfidCurrentTablePercent(p: FkResolveProgress): number {
+  if (p.currentTableTotalChunks === 0) return 0;
+  return Math.min(
+    100,
+    Math.round((p.currentTableChunk / p.currentTableTotalChunks) * 100),
+  );
+}
+
+const sfidTableColumns: ColumnsType<FkResolveTableResult> = [
+  { title: '테이블', dataIndex: 'label', key: 'label', ellipsis: true },
+  {
+    title: '적용 row 수',
+    dataIndex: 'rowsAffected',
+    key: 'rowsAffected',
+    width: 160,
+    align: 'right',
+    render: (v: number) => v.toLocaleString(),
+  },
+];
+
+/**
+ * Heroku 전용 sfid 테이블 (safety_check_submission / product_expiration) 의 FK Resolve 섹션.
+ *
+ * 실행 엔진은 SF Stage 2 를 재사용하므로 진행 상태 타입은 SF 의 chunk 단위 progress 를 공유한다.
+ */
+function HerokuSfidFkResolveCard() {
+  const progressQuery = useHerokuSfidFkResolveProgress();
+  const tablesQuery = useHerokuSfidFkResolvableTables();
+  const startMutation = useStartHerokuSfidFkResolve();
+  const [selectedTable, setSelectedTable] = useState<string | undefined>(undefined);
+
+  const progress = progressQuery.data;
+  const isRunning = progress?.status === 'RUNNING';
+  const statusTag = progress
+    ? (STATUS_TAG[progress.status] ?? UNKNOWN_STATUS_TAG)
+    : STATUS_TAG.IDLE;
+
+  return (
+    <Card title="sfid FK Resolve (Heroku 전용 sfid 테이블)" style={{ marginTop: 24 }}>
+      <Paragraph type="secondary">
+        <Text code>safety_check_submission</Text> / <Text code>product_expiration</Text> 은{' '}
+        Heroku 전용 테이블이지만 <Text code>*_sfid</Text> 값이 실제 SF Id 라, sfid resolve
+        엔진(SF Stage 2)을 재사용해 FK id 컬럼을 채운다. <Text strong>SF 데이터 마이그레이션
+        (employee / display_work_schedule / team_member_schedule) 선행 적재 후</Text> 실행하세요.
+        SF Migration 페이지의 FK Resolve 와 동일한 진행 상태를 공유하므로, 한쪽이 실행 중이면 중복
+        실행이 차단됩니다.
+      </Paragraph>
+
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Space size="middle" wrap>
+          <Tag color={statusTag.color} style={{ fontSize: 14, padding: '4px 12px' }}>
+            상태: {statusTag.label}
+          </Tag>
+          <Button
+            type="primary"
+            loading={startMutation.isPending && !selectedTable}
+            disabled={isRunning}
+            onClick={() => startMutation.mutate(undefined)}
+          >
+            {isRunning ? '진행 중…' : '전체 실행'}
+          </Button>
+          <Select
+            style={{ minWidth: 280 }}
+            placeholder="테이블 선택 (단일 실행)"
+            allowClear
+            showSearch
+            value={selectedTable}
+            onChange={(v) => setSelectedTable(v)}
+            loading={tablesQuery.isLoading}
+            options={(tablesQuery.data ?? []).map((t) => ({ label: t, value: t }))}
+            disabled={isRunning}
+          />
+          <Button
+            loading={startMutation.isPending && !!selectedTable}
+            disabled={isRunning || !selectedTable}
+            onClick={() => startMutation.mutate(selectedTable)}
+          >
+            선택 테이블만 실행
+          </Button>
+          <Button
+            onClick={() => progressQuery.refetch()}
+            disabled={progressQuery.isFetching}
+          >
+            새로 고침
+          </Button>
+        </Space>
+
+        {startMutation.isError && (
+          <Alert
+            type="error"
+            showIcon
+            message="실행 요청 실패"
+            description={(startMutation.error as Error)?.message ?? 'unknown'}
+            closable
+            onClose={() => startMutation.reset()}
+          />
+        )}
+      </Space>
+
+      {progress && (
+        <>
+          <Descriptions
+            column={{ xs: 1, sm: 2, md: 3 }}
+            bordered
+            size="small"
+            style={{ marginTop: 16 }}
+          >
+            <Descriptions.Item label="시작">
+              {formatDateTime(progress.startedAt)}
+            </Descriptions.Item>
+            <Descriptions.Item label="종료">
+              {formatDateTime(progress.finishedAt)}
+            </Descriptions.Item>
+            <Descriptions.Item label="경과">
+              {formatDuration(progress.startedAt, progress.finishedAt)}
+            </Descriptions.Item>
+          </Descriptions>
+
+          <Space size="large" style={{ marginTop: 16 }} wrap>
+            <Statistic
+              title="처리 테이블"
+              value={`${progress.completedTables} / ${progress.totalTables}`}
+            />
+            <Statistic
+              title="누적 적용 row"
+              value={progress.totalRowsAffected.toLocaleString()}
+            />
+          </Space>
+
+          <div style={{ marginTop: 16 }}>
+            <Text>전체 진행률 ({progress.completedTables}/{progress.totalTables} 테이블)</Text>
+            <Progress
+              percent={sfidOverallPercent(progress)}
+              status={
+                progress.status === 'FAILED'
+                  ? 'exception'
+                  : progress.status === 'COMPLETED'
+                  ? 'success'
+                  : progress.status === 'COMPLETED_WITH_WARNINGS'
+                  ? 'normal'
+                  : 'active'
+              }
+            />
+          </div>
+
+          {progress.currentTable && (
+            <div style={{ marginTop: 8 }}>
+              <Text>
+                현재 테이블: <Text code>{progress.currentTable}</Text>
+                {' '}
+                ({progress.currentTableChunk}/{progress.currentTableTotalChunks} chunks)
+              </Text>
+              <Progress
+                percent={sfidCurrentTablePercent(progress)}
+                status={isRunning ? 'active' : 'normal'}
+              />
+            </div>
+          )}
+
+          {progress.errors.length > 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginTop: 16 }}
+              message={`경고 / 오류 ${progress.errors.length}건`}
+              description={
+                <ul style={{ paddingLeft: 16, margin: 0 }}>
+                  {progress.errors.map((e, idx) => (
+                    <li key={idx}>
+                      <Text type="secondary">{e}</Text>
+                    </li>
+                  ))}
+                </ul>
+              }
+            />
+          )}
+
+          <div style={{ marginTop: 16 }}>
+            <ResizableTable<FkResolveTableResult>
+              size="small"
+              rowKey="label"
+              columns={sfidTableColumns}
+              dataSource={progress.tableResults}
+              pagination={false}
+              locale={{ emptyText: '아직 완료된 테이블 없음' }}
+            />
+          </div>
+        </>
+      )}
+    </Card>
+  );
 }
 
 const tableColumns: ColumnsType<HerokuFkTableResult> = [
@@ -128,7 +335,9 @@ export default function HerokuMigrationPage() {
       <Title level={3}>Heroku Migration — Stage 2 FK Resolve</Title>
       <Paragraph type="secondary">
         Stage 1 적재 완료 + SF 데이터 마이그레이션(employee/account/product) 선행 적재 후
-        실행하세요. 패턴 A(자연키→serial id) + 패턴 B(부모 FK) 를 일괄 처리합니다.
+        실행하세요. 패턴 A(자연키→serial id) + 패턴 B(부모 FK) 를 일괄 처리합니다. 하단의{' '}
+        <Text strong>sfid FK Resolve</Text> 섹션은 Heroku 전용이지만 sfid 값이 SF Id 인 테이블
+        (<Text code>safety_check_submission</Text> 등) 을 별도로 처리합니다.
       </Paragraph>
 
       <Card style={{ marginBottom: 16 }}>
@@ -260,6 +469,8 @@ export default function HerokuMigrationPage() {
           )}
         </>
       )}
+
+      <HerokuSfidFkResolveCard />
     </div>
   );
 }

@@ -33,44 +33,75 @@ class SfMigrationStage2FkService(
     private val chunkSize = 100_000L
 
     /**
-     * 처리 가능한 테이블 목록 (web 드롭다운용). buildPlansByTable 의 키 집합과 동일한 도출 로직을
-     * 거치되, errors 는 버리고 테이블명만 정렬해 반환한다.
+     * 처리 가능한 테이블 목록 (SF Migration 페이지 드롭다운용). buildPlansByTable 의 키 집합과 동일한
+     * 도출 로직을 거치되, errors 는 버리고 테이블명만 정렬해 반환한다.
+     *
+     * [HEROKU_TABLES_WITH_SF_SFID] (Heroku 전용이나 sfid 가 SF Id 인 테이블) 는 SF 페이지가 아니라
+     * Heroku Migration 페이지에 노출하므로 ([listHerokuSfidResolvableTables]) 여기서는 제외한다.
+     * (실행 엔진 [runFkResolve] 자체는 두 테이블을 동일하게 처리 — UI 소속만 분리.)
      */
     fun listResolvableTables(): List<String> {
         val throwaway = mutableListOf<String>()
-        return buildPlansByTable(throwaway).keys.sorted()
+        return buildPlansByTable(throwaway).keys
+            .filterNot { it in HEROKU_TABLES_WITH_SF_SFID }
+            .sorted()
+    }
+
+    /**
+     * Heroku Migration 페이지의 sfid FK Resolve 드롭다운용 목록.
+     *
+     * [HEROKU_TABLES_WITH_SF_SFID] (safety_check_submission / product_expiration 등 — `@HerokuOnly`
+     * 이지만 `_sfid` 값이 진짜 SF Id) 중 실제 처리 계획이 도출된 테이블만 정렬해 반환한다.
+     * 실행은 SF 와 동일하게 [runFkResolve] (targetTable) 를 재사용한다.
+     */
+    fun listHerokuSfidResolvableTables(): List<String> {
+        val throwaway = mutableListOf<String>()
+        return buildPlansByTable(throwaway).keys
+            .filter { it in HEROKU_TABLES_WITH_SF_SFID }
+            .sorted()
     }
 
     /**
      * @param targetTable null 이면 전체 테이블, 지정 시 해당 테이블 1개만 처리.
      *   처리 가능한 테이블 집합 밖이면 IllegalArgumentException.
      */
-    fun runFkResolve(targetTable: String? = null): SfMigrationStage2Response {
+    fun runFkResolve(targetTable: String? = null): SfMigrationStage2Response =
+        runFkResolveForTables(targetTable?.let { setOf(it) })
+
+    /**
+     * 여러 테이블을 한 progress 안에서 일괄 처리.
+     *
+     * @param targetTables null 이면 전체 테이블, 비어있지 않은 집합이면 그 테이블들만 한 progress 로 처리.
+     *   Heroku sfid 페이지 ([HEROKU_TABLES_WITH_SF_SFID]) 가 전체-실행 시 진행 상태를 한 묶음으로
+     *   보이게 하기 위함 (테이블마다 progress.begin 으로 리셋되는 것 회피). 처리 가능 집합 밖이면 throw.
+     */
+    fun runFkResolveForTables(targetTables: Set<String>? = null): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
         val errors = mutableListOf<String>()
 
         // 1. 테이블 단위 groupBy (sfid 컬럼 + FK spec 도출).
         val allPlans = buildPlansByTable(errors)
-        val plansByTable = if (targetTable == null) {
+        val plansByTable = if (targetTables == null) {
             allPlans
         } else {
-            val plan = allPlans[targetTable]
-                ?: throw IllegalArgumentException(
-                    "처리 가능한 테이블이 아닙니다: $targetTable (대상: ${allPlans.keys.sorted()})",
+            targetTables.associateWith { t ->
+                allPlans[t] ?: throw IllegalArgumentException(
+                    "처리 가능한 테이블이 아닙니다: $t (대상: ${allPlans.keys.sorted()})",
                 )
-            mapOf(targetTable to plan)
+            }
         }
-        // 단일 테이블 실행 시 buildPlansByTable 가 다른 테이블에 대해 남긴 도출 경고는 무의미하므로
-        // 해당 테이블 접두(`[tableName]`) 경고만 남긴다.
-        if (targetTable != null) {
-            val kept = errors.filter { it.startsWith("[$targetTable]") }
+        // 부분 실행 시 buildPlansByTable 가 대상 외 테이블에 대해 남긴 도출 경고는 무의미하므로
+        // 대상 테이블 접두(`[tableName]`) 경고만 남긴다.
+        if (targetTables != null) {
+            val prefixes = targetTables.map { "[$it]" }
+            val kept = errors.filter { e -> prefixes.any { e.startsWith(it) } }
             errors.clear()
             errors.addAll(kept)
         }
         log.info(
             "[fk] start — {} tables to resolve{}",
             plansByTable.size,
-            if (targetTable != null) " (single: $targetTable)" else "",
+            if (targetTables != null) " (subset: ${targetTables.sorted()})" else "",
         )
         progress.begin(totalTables = plansByTable.size)
         errors.forEach { progress.addError(it) }
