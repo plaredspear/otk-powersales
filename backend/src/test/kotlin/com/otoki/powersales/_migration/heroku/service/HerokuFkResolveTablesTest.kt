@@ -71,6 +71,22 @@ class HerokuFkResolveTablesTest {
         }
 
         @Test
+        @DisplayName("tmp_onsite.theme_code 는 inspection_theme.name 매칭 (SF Theme.Name AutoNumber)")
+        fun themeNameMatch() {
+            val themeFk = HerokuFkResolveTables.NATURAL_KEY_FK
+                .single { it.fkColumn == "inspection_theme_id" }
+            assertThat(themeFk.sourceTable).isEqualTo("tmp_onsite")
+            assertThat(themeFk.sourceColumn).isEqualTo("theme_code")
+            assertThat(themeFk.refTable).isEqualTo("inspection_theme")
+            // theme_code 값 = SF Theme__c.Name (AutoNumber) → inspection_theme.name 자연 키 조인.
+            // sfid 가 아니므로 sfid 패턴(패턴 C) 이 아니라 패턴 A 로 처리.
+            assertThat(themeFk.refKeyColumn)
+                .withFailMessage("themecode 는 SF Id 가 아니라 Theme.Name 이므로 name 컬럼 매칭")
+                .isEqualTo("name")
+            assertThat(themeFk.refIdColumn).isEqualTo("inspection_theme_id")
+        }
+
+        @Test
         @DisplayName("EmployeeInfo 는 패턴 A 목록에 없음 (Stage1 적재 시점 PK resolve)")
         fun employeeInfoExcluded() {
             assertThat(HerokuFkResolveTables.NATURAL_KEY_FK.map { it.sourceTable })

@@ -91,6 +91,28 @@ object HerokuFkResolveTables {
     )
 
     /**
+     * theme FK — tmp_onsite.theme_code → inspection_theme.name → inspection_theme_id.
+     *
+     * 레거시 tmp_onsite.tmp_themecode 는 SF Theme__c.Name (AutoNumber `TM00000123`) 을 보관한다
+     * (Heroku→SF 왕복 검증: FieldTalkController 가 themeCd → SF ThemeName 으로 보내고 SF 가
+     * `Theme__c where Name = :ThemeName` 으로 매칭). 신규 inspection_theme 은 `@SFObject("Theme__c")`
+     * 이며 name (`@SFField("Name")`) 컬럼에 같은 Theme.Name 이 적재된다.
+     *
+     * 주의: inspection_theme.name 은 unique 제약이 없으나 (sfid 만 unique), Theme.Name 이 SF
+     * AutoNumber 라 운영상 사실상 고유. 다건 매칭 시 LEFT JOIN UPDATE 가 임의 1건을 채운다
+     * (레거시 SF 도 `limit 1` 사용 — 동일 의미).
+     */
+    private fun themeFk(sourceTable: String, sourceColumn: String = "theme_code") = NaturalKeyFk(
+        sourceTable = sourceTable,
+        sourceColumn = sourceColumn,
+        fkColumn = "inspection_theme_id",
+        refTable = "inspection_theme",
+        refKeyColumn = "name",
+        refIdColumn = "inspection_theme_id",
+        naturalKey = sourceColumn,
+    )
+
+    /**
      * 패턴 A 매핑 — 적재 순서(P1-B §4) 기준 정렬. EmployeeInfo 는 Stage1 적재 시점에 PK resolve 가
      * 끝나므로 (P1-B §6) 본 목록에 없다.
      */
@@ -113,10 +135,11 @@ object HerokuFkResolveTables {
         employeeFk("tmp_suggest"),
         accountFk("tmp_suggest"),
         productFk("tmp_suggest"),
-        // tmp_onsite — account 키 컬럼명이 sap_account_code
+        // tmp_onsite — account 키 컬럼명이 sap_account_code, theme_code → inspection_theme.name
         employeeFk("tmp_onsite"),
         accountFk("tmp_onsite", "sap_account_code"),
         productFk("tmp_onsite"),
+        themeFk("tmp_onsite"),
         // tmp_promotion — product 키 컬럼명이 promotion_product_code
         employeeFk("tmp_promotion"),
         productFk("tmp_promotion", "promotion_product_code"),
