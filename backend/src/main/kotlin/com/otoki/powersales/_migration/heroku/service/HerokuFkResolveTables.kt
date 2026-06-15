@@ -143,6 +143,13 @@ object HerokuFkResolveTables {
         // tmp_promotion — product 키 컬럼명이 promotion_product_code
         employeeFk("tmp_promotion"),
         productFk("tmp_promotion", "promotion_product_code"),
+        // product_expiration — account_code = SAP거래처코드(account.external_key),
+        // product_code = 제품코드(product.product_code). employee 는 employee_sfid 로 패턴 C(SF
+        // 엔진) 가 이미 resolve 하므로 여기 추가하지 않는다 (중복 처리 회피).
+        // 레거시 expirationdate__mng 등록 시 거래처 선택 팝업이 externalkey__c(SAP거래처코드)를,
+        // 상품 선택이 dkretail__productcode__c(제품코드)를 hidden 으로 채워 저장 (otg_PowerSales 검증).
+        accountFk("product_expiration"),
+        productFk("product_expiration"),
     )
 
     /**

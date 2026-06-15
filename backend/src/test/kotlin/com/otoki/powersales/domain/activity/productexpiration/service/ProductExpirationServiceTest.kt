@@ -13,6 +13,10 @@ import com.otoki.powersales.domain.activity.productexpiration.exception.ProductE
 import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.powersales.domain.activity.productexpiration.service.ProductExpirationService
 import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -30,14 +34,26 @@ class ProductExpirationServiceTest {
 
     private val productExpirationRepository: ProductExpirationRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
+    private val accountRepository: AccountRepository = mockk()
+    private val productRepository: ProductRepository = mockk()
 
     private val productExpirationService = ProductExpirationService(
         productExpirationRepository,
         employeeRepository,
+        accountRepository,
+        productRepository,
     )
 
     private val userId = 1L
     private val employeeCodeVal = "20030117"
+
+    /** create 시 FK 조회 stub — 기본은 매칭 성공 (account_id/product_id 채워짐). */
+    private fun stubFkLookup(accountId: Long? = 10L, productId: Long? = 20L) {
+        every { accountRepository.findByExternalKey(any()) } returns
+            accountId?.let { Account(id = it) }
+        every { productRepository.findByProductCode(any()) } returns
+            productId?.let { Product(id = it) }
+    }
 
     private fun createEmployee(id: Long = userId, sfid: String? = "EMP_SFID_001"): Employee {
         return Employee(id = id, sfid = sfid, employeeCode = employeeCodeVal, name = "테스트사원")
@@ -168,9 +184,10 @@ class ProductExpirationServiceTest {
     inner class CreateProductExpirationTests {
 
         @Test
-        @DisplayName("정상 등록 - 유효한 요청 -> ProductExpiration 생성 반환")
+        @DisplayName("정상 등록 - 유효한 요청 -> ProductExpiration 생성 + FK(account_id/product_id) 채움")
         fun create_success() {
             stubUser()
+            stubFkLookup(accountId = 10L, productId = 20L)
             val request = ProductExpirationCreateRequest(
                 accountCode = "1025172",
                 accountName = "(유)경산식품",
@@ -180,7 +197,8 @@ class ProductExpirationServiceTest {
                 alarmDate = "2026-03-09",
                 description = "테스트"
             )
-            every { productExpirationRepository.save(any<ProductExpiration>()) } answers {
+            val savedSlot = mutableListOf<ProductExpiration>()
+            every { productExpirationRepository.save(capture(savedSlot)) } answers {
                 firstArg<ProductExpiration>()
             }
 
@@ -188,6 +206,35 @@ class ProductExpirationServiceTest {
 
             assertThat(result.productCode).isEqualTo("30310009")
             assertThat(result.accountCode).isEqualTo("1025172")
+            // 코드 → 신규 account/product 조회로 FK 가 채워졌는지 검증.
+            assertThat(savedSlot.single().accountId).isEqualTo(10L)
+            assertThat(savedSlot.single().productId).isEqualTo(20L)
+        }
+
+        @Test
+        @DisplayName("코드 미매칭 - account/product 부재 -> 저장 허용 + FK NULL (등록 차단 안 함)")
+        fun create_fkUnmatched_savesWithNullFk() {
+            stubUser()
+            stubFkLookup(accountId = null, productId = null)
+            val request = ProductExpirationCreateRequest(
+                accountCode = "UNKNOWN_ACC",
+                accountName = "미등록거래처",
+                productCode = "UNKNOWN_PRD",
+                productName = "미등록상품",
+                expirationDate = "2026-03-10",
+                alarmDate = "2026-03-09"
+            )
+            val savedSlot = mutableListOf<ProductExpiration>()
+            every { productExpirationRepository.save(capture(savedSlot)) } answers {
+                firstArg<ProductExpiration>()
+            }
+
+            val result = productExpirationService.createProductExpiration(userId, request)
+
+            // 매칭 실패해도 등록은 성공하고 코드/명 텍스트는 보존, FK 만 NULL.
+            assertThat(result.accountCode).isEqualTo("UNKNOWN_ACC")
+            assertThat(savedSlot.single().accountId).isNull()
+            assertThat(savedSlot.single().productId).isNull()
         }
 
         @Test

@@ -11,6 +11,8 @@ import com.otoki.powersales.domain.activity.productexpiration.exception.InvalidP
 import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationForbiddenException
 import com.otoki.powersales.domain.activity.productexpiration.exception.ProductExpirationNotFoundException
 import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
+import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.stereotype.Service
@@ -23,7 +25,9 @@ import java.time.temporal.ChronoUnit
 @Transactional(readOnly = true)
 class ProductExpirationService(
     private val productExpirationRepository: ProductExpirationRepository,
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    private val accountRepository: AccountRepository,
+    private val productRepository: ProductRepository
 ) {
 
     fun getProductExpirationList(
@@ -61,10 +65,18 @@ class ProductExpirationService(
             throw InvalidAlertDateException()
         }
 
+        // FK 기반 등록 — 거래처 코드(SAP거래처코드=account.external_key) / 제품 코드(product.product_code)
+        // 로 신규 account/product 를 조회해 FK 를 채운다. 매칭되는 entity 가 없으면 FK 는 NULL 로 두고
+        // 코드/명 텍스트만 저장 (레거시 동작과 호환 — 등록 자체는 차단하지 않음).
+        val accountId = accountRepository.findByExternalKey(request.accountCode)?.id
+        val productId = productRepository.findByProductCode(request.productCode)?.id
+
         val productExpiration = ProductExpiration(
             employeeId = employeeId,
+            accountId = accountId,
             accountCode = request.accountCode,
             accountName = request.accountName,
+            productId = productId,
             productCode = request.productCode,
             productName = request.productName,
             expirationDate = expirationDate,
