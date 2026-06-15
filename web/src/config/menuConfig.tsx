@@ -345,6 +345,7 @@ export const menuRoute: MenuRoute = {
         { path: '/settings/organizations', name: '조직마스터' },
         { path: '/settings/holiday-masters', name: '공휴일 관리' },
         { path: '/admin/working-day-masters', name: '영업일관리마스터', entity: 'working_day_master', operation: 'READ' },
+        { path: '/settings/alternative-holidays', name: '대체휴무' },
         {
           path: '/settings/employee-input-criteria-masters',
           name: '진열사원 투입기준 마스터',

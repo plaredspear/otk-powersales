@@ -199,6 +199,7 @@ export const router = createBrowserRouter(
             { path: '/education/:id', element: <LazyWrapper><EducationDetailPage /></LazyWrapper> },
             { path: '/education/:id/edit', element: <LazyWrapper><EducationFormPage /></LazyWrapper> },
             { path: '/alternative-holidays', element: <LazyWrapper><AlternativeHolidayPage /></LazyWrapper> },
+            { path: '/settings/alternative-holidays', element: <LazyWrapper><AlternativeHolidayPage /></LazyWrapper> },
             { path: '/settings/organizations', element: <LazyWrapper><OrganizationPage /></LazyWrapper> },
             { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },
             { path: '/settings/employee-input-criteria-masters', element: <LazyWrapper><EmployeeInputCriteriaMasterListPage /></LazyWrapper> },
