@@ -238,6 +238,7 @@
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				AA726C440EEDA92132608AB5 /* [CP] Copy Pods Resources */,
+				FCAA000000000000000FCA01 /* Firebase config (flavor plist) */,
 			);
 			buildRules = (
 			);
@@ -315,6 +316,21 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		FCAA000000000000000FCA01 /* Firebase config (flavor plist) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Firebase config (flavor plist)";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "case \"${CONFIGURATION}\" in\n  *-dev) FLAVOR=\"dev\" ;;\n  *) FLAVOR=\"prod\" ;;\nesac\nSRC=\"${PROJECT_DIR}/config/${FLAVOR}/GoogleService-Info.plist\"\nDST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\nif [ ! -f \"${SRC}\" ]; then\n  echo \"error: Firebase plist not found: ${SRC}\" >&2\n  exit 1\nfi\necho \"Using Firebase config: ${SRC}\"\ncp -f \"${SRC}\" \"${DST}\"\n";
+		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;

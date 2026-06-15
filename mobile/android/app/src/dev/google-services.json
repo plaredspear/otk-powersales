@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "989804094425",
+    "project_id": "otoki-powersales",
+    "storage_bucket": "otoki-powersales.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:989804094425:android:5a56217ced02c675a2efc8",
+        "android_client_info": {
+          "package_name": "com.otoki.pwrs.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDei8tbekB51KwmdRyBwsG7on9s80Qddjg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:989804094425:android:15cd90cb1e736a22a2efc8",
+        "android_client_info": {
+          "package_name": "com.otoki.pwrs.mobile.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDei8tbekB51KwmdRyBwsG7on9s80Qddjg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
