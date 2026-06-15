@@ -38,22 +38,24 @@ class CalendarWidget extends StatelessWidget {
 
   /// 해당 날짜가 근무일인지 확인
   bool _isWorkDay(DateTime date) {
-    return workDays.any((workDay) =>
-        workDay.hasWork &&
-        workDay.date.year == date.year &&
-        workDay.date.month == date.month &&
-        workDay.date.day == date.day);
+    return workDays.any(
+      (workDay) =>
+          workDay.hasWork &&
+          workDay.date.year == date.year &&
+          workDay.date.month == date.month &&
+          workDay.date.day == date.day,
+    );
   }
 
   /// 해당 날짜의 근무유형 조회
   String? _getWorkingType(DateTime date) {
     final day = workDays.cast<MonthlyScheduleDay?>().firstWhere(
-          (workDay) =>
-              workDay!.date.year == date.year &&
-              workDay.date.month == date.month &&
-              workDay.date.day == date.day,
-          orElse: () => null,
-        );
+      (workDay) =>
+          workDay!.date.year == date.year &&
+          workDay.date.month == date.month &&
+          workDay.date.day == date.day,
+      orElse: () => null,
+    );
     return day?.workingType;
   }
 
@@ -113,8 +115,8 @@ class CalendarWidget extends StatelessWidget {
                       color: weekday == '일'
                           ? AppColors.otokiRed
                           : weekday == '토'
-                              ? AppColors.secondary
-                              : AppColors.textPrimary,
+                          ? AppColors.secondary
+                          : AppColors.textPrimary,
                     ),
                   ),
                 ),
@@ -169,13 +171,14 @@ class CalendarWidget extends StatelessWidget {
                         Text(
                           '${date.day}',
                           style: AppTypography.bodyMedium.copyWith(
-                            fontWeight:
-                                isToday ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isToday
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             color: isSunday
                                 ? AppColors.otokiRed
                                 : isSaturday
-                                    ? AppColors.secondary
-                                    : AppColors.textPrimary,
+                                ? AppColors.secondary
+                                : AppColors.textPrimary,
                           ),
                         ),
 
@@ -227,43 +230,48 @@ class CalendarWidget extends StatelessWidget {
           ),
         ),
 
-        // 연차/대휴 건수 요약
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: AppColors.divider, width: 1),
+        // 연차/대휴 건수 요약 (iOS 홈 인디케이터에 가리지 않도록 하단 SafeArea 적용)
+        SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
             ),
-          ),
-          child: Row(
-            children: [
-              Text(
-                '연차: ${annualLeaveCount}일',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: AppColors.divider, width: 1),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: Text(
-                  '|',
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '연차: ${annualLeaveCount}일',
                   style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textTertiary,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-              ),
-              Text(
-                '대휴: ${substituteHolidayCount}일',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                  ),
+                  child: Text(
+                    '|',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                Text(
+                  '대휴: ${substituteHolidayCount}일',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
