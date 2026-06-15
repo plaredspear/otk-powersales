@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  getFkResolvableTables,
   getFkResolveProgress,
   runNaturalKeyFkResolve,
   runNoticeRtaPlaceholder,
@@ -18,6 +19,7 @@ import {
 
 const KEY_BASE = ['admin', 'sf-migration'] as const;
 const PROGRESS_KEY = [...KEY_BASE, 'fk-progress'] as const;
+const TABLES_KEY = [...KEY_BASE, 'fk-tables'] as const;
 
 export function useFkResolveProgress(options?: { enabled?: boolean }) {
   return useQuery<FkResolveProgress>({
@@ -31,9 +33,19 @@ export function useFkResolveProgress(options?: { enabled?: boolean }) {
   });
 }
 
+export function useFkResolvableTables() {
+  return useQuery<string[]>({
+    queryKey: TABLES_KEY,
+    queryFn: getFkResolvableTables,
+  });
+}
+
+/**
+ * FK Resolve 실행 mutation. `mutate(tableName?)` — 미지정 시 전체, 지정 시 해당 테이블 1개.
+ */
 export function useStartFkResolve() {
   const queryClient = useQueryClient();
-  return useMutation<FkResolveProgress>({
+  return useMutation<FkResolveProgress, Error, string | undefined>({
     mutationFn: startFkResolve,
     onSuccess: (data) => {
       queryClient.setQueryData(PROGRESS_KEY, data);

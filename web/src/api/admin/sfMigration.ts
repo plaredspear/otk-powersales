@@ -34,12 +34,33 @@ export interface FkResolveProgress {
   errors: string[];
 }
 
-export async function startFkResolve(): Promise<FkResolveProgress> {
+/**
+ * FK Resolve 실행. `tableName` 미지정 시 전체 테이블, 지정 시 해당 테이블 1개만 처리.
+ * 단일/전체 모두 동일한 비동기 + progress 메커니즘을 공유한다.
+ */
+export async function startFkResolve(
+  tableName?: string,
+): Promise<FkResolveProgress> {
   const res = await client.post<ApiResponse<FkResolveProgress>>(
     '/api/v1/admin/sf-migration/stage2/fk',
+    undefined,
+    tableName ? { params: { tableName } } : undefined,
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || 'FK Resolve 실행 요청에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 처리 가능한 테이블 목록 (단일 테이블 선택 드롭다운용). 정렬된 테이블명 배열.
+ */
+export async function getFkResolvableTables(): Promise<string[]> {
+  const res = await client.get<ApiResponse<string[]>>(
+    '/api/v1/admin/sf-migration/stage2/fk/tables',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'FK Resolve 테이블 목록 조회에 실패했습니다');
   }
   return res.data.data;
 }

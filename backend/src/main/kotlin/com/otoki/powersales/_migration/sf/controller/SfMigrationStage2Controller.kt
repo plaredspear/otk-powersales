@@ -48,15 +48,22 @@ class SfMigrationStage2Controller(
         Thread(r, "sf-fk-resolve").apply { isDaemon = true }
     }
 
+    /**
+     * @param tableName null/미지정 시 전체 테이블, 지정 시 해당 테이블 1개만 처리.
+     *   처리 가능한 테이블 목록은 `GET .../stage2/fk/tables` 로 조회.
+     *   단일 테이블도 동일한 single-thread executor + progress 메커니즘을 공유한다.
+     */
     @PostMapping("/api/v1/admin/sf-migration/stage2/fk")
-    fun runFkResolve(): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
+    fun runFkResolve(
+        @RequestParam(name = "tableName", required = false) tableName: String?,
+    ): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
         if (fkProgress.status == SfFkResolveProgress.Status.RUNNING) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.success(fkProgress.toResponse()))
         }
         fkExecutor.submit {
             try {
-                fkService.runFkResolve()
+                fkService.runFkResolve(tableName?.takeIf { it.isNotBlank() })
                 // FK resolve 가 permission_set_assignment.user_id 등 권한 FK 를 채운 직후 — stale
                 // 권한 캐시 무효화 (마이그레이션 직후 권한 어긋남 방지).
                 adminPermissionCache.invalidateAll()
@@ -71,6 +78,14 @@ class SfMigrationStage2Controller(
     @GetMapping("/api/v1/admin/sf-migration/stage2/fk/progress")
     fun getFkProgress(): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
         return ResponseEntity.ok(ApiResponse.success(fkProgress.toResponse()))
+    }
+
+    /**
+     * 처리 가능한 테이블 목록 (web 드롭다운에서 단일 테이블 선택용). 정렬된 테이블명 배열.
+     */
+    @GetMapping("/api/v1/admin/sf-migration/stage2/fk/tables")
+    fun getFkResolvableTables(): ResponseEntity<ApiResponse<List<String>>> {
+        return ResponseEntity.ok(ApiResponse.success(fkService.listResolvableTables()))
     }
 
     /**

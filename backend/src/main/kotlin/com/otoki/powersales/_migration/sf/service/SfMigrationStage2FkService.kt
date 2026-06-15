@@ -30,13 +30,46 @@ class SfMigrationStage2FkService(
     private val schemaName = "powersales"
     private val chunkSize = 100_000L
 
-    fun runFkResolve(): SfMigrationStage2Response {
+    /**
+     * 처리 가능한 테이블 목록 (web 드롭다운용). buildPlansByTable 의 키 집합과 동일한 도출 로직을
+     * 거치되, errors 는 버리고 테이블명만 정렬해 반환한다.
+     */
+    fun listResolvableTables(): List<String> {
+        val throwaway = mutableListOf<String>()
+        return buildPlansByTable(throwaway).keys.sorted()
+    }
+
+    /**
+     * @param targetTable null 이면 전체 테이블, 지정 시 해당 테이블 1개만 처리.
+     *   처리 가능한 테이블 집합 밖이면 IllegalArgumentException.
+     */
+    fun runFkResolve(targetTable: String? = null): SfMigrationStage2Response {
         val results = mutableListOf<SubstepResult>()
         val errors = mutableListOf<String>()
 
         // 1. 테이블 단위 groupBy (sfid 컬럼 + FK spec 도출).
-        val plansByTable = buildPlansByTable(errors)
-        log.info("[fk] start — {} tables to resolve", plansByTable.size)
+        val allPlans = buildPlansByTable(errors)
+        val plansByTable = if (targetTable == null) {
+            allPlans
+        } else {
+            val plan = allPlans[targetTable]
+                ?: throw IllegalArgumentException(
+                    "처리 가능한 테이블이 아닙니다: $targetTable (대상: ${allPlans.keys.sorted()})",
+                )
+            mapOf(targetTable to plan)
+        }
+        // 단일 테이블 실행 시 buildPlansByTable 가 다른 테이블에 대해 남긴 도출 경고는 무의미하므로
+        // 해당 테이블 접두(`[tableName]`) 경고만 남긴다.
+        if (targetTable != null) {
+            val kept = errors.filter { it.startsWith("[$targetTable]") }
+            errors.clear()
+            errors.addAll(kept)
+        }
+        log.info(
+            "[fk] start — {} tables to resolve{}",
+            plansByTable.size,
+            if (targetTable != null) " (single: $targetTable)" else "",
+        )
         progress.begin(totalTables = plansByTable.size)
         errors.forEach { progress.addError(it) }
 

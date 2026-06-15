@@ -7,6 +7,7 @@ import {
   Empty,
   Progress,
   Radio,
+  Select,
   Space,
   Statistic,
   Tag,
@@ -15,6 +16,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
+  useFkResolvableTables,
   useFkResolveProgress,
   useRunNaturalKeyFkResolve,
   useRunNoticeRtaPlaceholder,
@@ -76,7 +78,11 @@ function currentTablePercent(p: FkResolveProgress): number {
 
 export default function SfMigrationPage() {
   const progressQuery = useFkResolveProgress();
+  const tablesQuery = useFkResolvableTables();
   const startMutation = useStartFkResolve();
+
+  // 단일 테이블 실행용 선택값 (미선택 시 undefined → '전체 실행' 만 가능).
+  const [selectedTable, setSelectedTable] = useState<string | undefined>(undefined);
   const runPicklistColumnMutation = useRunPicklistColumn();
   const runNaturalKeyFkMutation = useRunNaturalKeyFkResolve();
   const runUploadFileParentMutation = useRunUploadFilePolymorphicParent();
@@ -138,6 +144,8 @@ export default function SfMigrationPage() {
       <Paragraph type="secondary">
         SF 데이터 마이그레이션 Stage 2-A (FK Resolve) 를 실행하고 진행 상태를 1초 간격으로 확인한다.
         본 작업은 1회성 cut-over 도구이며, ErpOrderProduct 등 대용량 테이블 처리 시간이 길어질 수 있다.
+        전체 실행 외에, 특정 테이블만 골라 단일 실행할 수 있다 (대용량 테이블 재처리 / 부분 재시도용).
+        단일/전체 실행 모두 동일한 진행 상태 추적을 공유하며, 실행 중에는 중복 실행이 차단된다.
       </Paragraph>
 
       <Card style={{ marginBottom: 16 }}>
@@ -148,11 +156,29 @@ export default function SfMigrationPage() {
             </Tag>
             <Button
               type="primary"
-              loading={startMutation.isPending}
+              loading={startMutation.isPending && !selectedTable}
               disabled={isRunning}
-              onClick={() => startMutation.mutate()}
+              onClick={() => startMutation.mutate(undefined)}
             >
-              {isRunning ? '진행 중…' : 'FK Resolve 실행'}
+              {isRunning ? '진행 중…' : '전체 실행'}
+            </Button>
+            <Select
+              style={{ minWidth: 280 }}
+              placeholder="테이블 선택 (단일 실행)"
+              allowClear
+              showSearch
+              value={selectedTable}
+              onChange={(v) => setSelectedTable(v)}
+              loading={tablesQuery.isLoading}
+              options={(tablesQuery.data ?? []).map((t) => ({ label: t, value: t }))}
+              disabled={isRunning}
+            />
+            <Button
+              loading={startMutation.isPending && !!selectedTable}
+              disabled={isRunning || !selectedTable}
+              onClick={() => startMutation.mutate(selectedTable)}
+            >
+              선택 테이블만 실행
             </Button>
             <Button
               onClick={() => progressQuery.refetch()}

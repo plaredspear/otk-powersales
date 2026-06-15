@@ -6699,6 +6699,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListString" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListSuggestionAttachment" : {
         "properties" : {
           "data" : {
@@ -32481,6 +32509,14 @@
     "/api/v1/admin/sf-migration/stage2/fk" : {
       "post" : {
         "operationId" : "runFkResolve",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "tableName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
@@ -32523,6 +32559,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseSfFkResolveProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/fk/tables" : {
+      "get" : {
+        "operationId" : "getFkResolvableTables",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListString"
                 }
               }
             },
