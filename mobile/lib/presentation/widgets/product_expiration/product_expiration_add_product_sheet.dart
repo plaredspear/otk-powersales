@@ -248,6 +248,7 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
           child: _ProductResultList(
             state: state,
             onSelect: widget.onSelect,
+            onLoadMore: notifier.loadNextPage,
           ),
         ),
       ],
@@ -255,14 +256,47 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
   }
 }
 
-class _ProductResultList extends StatelessWidget {
+class _ProductResultList extends StatefulWidget {
   final ProductAddState state;
   final ValueChanged<ProductAddItem> onSelect;
+  final VoidCallback onLoadMore;
 
-  const _ProductResultList({required this.state, required this.onSelect});
+  const _ProductResultList({
+    required this.state,
+    required this.onSelect,
+    required this.onLoadMore,
+  });
+
+  @override
+  State<_ProductResultList> createState() => _ProductResultListState();
+}
+
+class _ProductResultListState extends State<_ProductResultList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // 하단 200px 이내 도달 시 다음 페이지 로드 (provider 가 중복/말단 가드).
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      widget.onLoadMore();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -278,14 +312,24 @@ class _ProductResultList extends StatelessWidget {
         message: '검색 결과가 없습니다',
       );
     }
+    final items = state.searchResults;
     return ListView.separated(
-      itemCount: state.searchResults.length,
+      controller: _scrollController,
+      itemCount: items.length + (state.isLoadingMore ? 1 : 0),
       separatorBuilder: (_, _) =>
           const Divider(height: 1, color: AppColors.divider),
-      itemBuilder: (context, index) => _ProductRow(
-        product: state.searchResults[index],
-        onSelect: onSelect,
-      ),
+      itemBuilder: (context, index) {
+        if (index >= items.length) {
+          return const Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return _ProductRow(
+          product: items[index],
+          onSelect: widget.onSelect,
+        );
+      },
     );
   }
 }
