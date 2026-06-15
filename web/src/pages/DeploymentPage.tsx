@@ -638,7 +638,7 @@ export default function DeploymentPage() {
                 {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
                 {detailQuery.data && (
                   <ResizableTable
-                    rowKey={(r) => `${r.accountId}-${r.employeeCode}`}
+                    rowKey={(r, i) => `${r.accountId}-${r.employeeCode}-${i}`}
                     size="small"
                     columns={detailColumns}
                     dataSource={detailQuery.data.items}
@@ -663,7 +663,7 @@ export default function DeploymentPage() {
             {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
             {detailQuery.data && (
               <ResizableTable
-                rowKey={(r) => `${r.accountId}-${r.employeeCode}`}
+                rowKey={(r, i) => `${r.accountId}-${r.employeeCode}-${i}`}
                 size="small"
                 columns={detailColumns}
                 dataSource={detailQuery.data.items}
