@@ -2,9 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- FCM/APNs: 푸시 알림 환경. 배포(Release) 시 'production' 으로 변경.
-	     Xcode > Runner Target > Signing & Capabilities 에서 Push Notifications
-	     capability 를 추가하고, 이 파일이 CODE_SIGN_ENTITLEMENTS 로 연결되어야 함. -->
 	<key>aps-environment</key>
 	<string>development</string>
 </dict>
