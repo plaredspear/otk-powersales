@@ -200,7 +200,7 @@ class ProductControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("중분류→소분류 트리 조회 성공 - 200 OK")
         fun getCategories_returnsOk() {
-            every { productService.getOrderableCategories() } returns listOf(
+            every { productService.getProductCategories() } returns listOf(
                 ProductCategoryGroup(middle = "라면", subs = listOf("가정", "업소")),
                 ProductCategoryGroup(middle = "스낵", subs = listOf("가정"))
             )

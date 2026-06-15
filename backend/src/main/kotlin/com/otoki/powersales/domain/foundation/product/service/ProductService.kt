@@ -30,6 +30,9 @@ class ProductService(
 
         private val NUMERIC_PATTERN = Regex("^\\d+$")
         private val VALID_SEARCH_TYPES = setOf("text", "barcode")
+
+        /** 소분류(category3) 드롭다운 노출 값 — 레거시 `chgSmall` 의 하드코딩 필터('가정'/'업소')와 정합. */
+        private val DROPDOWN_SUB_CATEGORIES = setOf("가정", "업소")
     }
 
     /**
@@ -140,15 +143,23 @@ class ProductService(
     }
 
     /**
-     * 모바일 제품추가 팝업 중분류→소분류 드롭다운 소스 조회.
+     * 모바일 제품추가 팝업 중분류→소분류 드롭다운 소스 조회 — 레거시 `selectMiddleProduct`/`chgSmall` 정합.
+     *
+     * - 중분류(category2): 발주가능 필터 없이 전 제품에서 노출. 소분류가 없거나 '가정'/'업소' 가 아닌
+     *   중분류도 그대로 노출한다(레거시 `selectMiddleProduct` 무필터 동등 — 선택 시 0건이 될 수 있음).
+     * - 소분류(category3): 레거시 `chgSmall` 의 하드코딩 필터와 동일하게 '가정'/'업소' 만 노출한다.
+     * - 중분류/소분류 모두 가나다순으로 정렬한다.
      */
-    fun getOrderableCategories(): List<ProductCategoryGroup> {
-        return productRepository.findOrderableCategories()
+    fun getProductCategories(): List<ProductCategoryGroup> {
+        return productRepository.findCategoryGroups()
             .groupBy { it.category2 }
             .map { (middle, rows) ->
                 ProductCategoryGroup(
                     middle = middle,
-                    subs = rows.map { it.category3 }.distinct().sorted()
+                    subs = rows.mapNotNull { it.category3 }
+                        .filter { it in DROPDOWN_SUB_CATEGORIES }
+                        .distinct()
+                        .sorted()
                 )
             }
             .sortedBy { it.middle }

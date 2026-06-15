@@ -109,7 +109,7 @@ class ProductController(
     fun getProductCategories(
         @AuthenticationPrincipal principal: UserPrincipal
     ): ResponseEntity<ApiResponse<List<ProductCategoryGroup>>> {
-        val result = productService.getOrderableCategories()
+        val result = productService.getProductCategories()
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 

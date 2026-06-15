@@ -6,7 +6,7 @@ import com.otoki.powersales.domain.foundation.product.enums.StorageCondition
 import java.math.BigDecimal
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchParameterException
 import com.otoki.powersales.domain.foundation.product.exception.InvalidSearchTypeException
-import com.otoki.powersales.domain.foundation.product.repository.OrderableCategoryRow
+import com.otoki.powersales.domain.foundation.product.repository.CategoryGroupRow
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductSearchRow
 import com.otoki.powersales.domain.foundation.product.service.ProductService
@@ -269,20 +269,20 @@ class ProductServiceTest {
     }
 
     @Nested
-    @DisplayName("카테고리 조회 (getOrderableCategories)")
+    @DisplayName("카테고리 조회 (getProductCategories)")
     inner class Categories {
 
         @Test
         @DisplayName("중분류로 그룹핑, 소분류 중복제거/정렬, 중분류 정렬")
         fun categories_groupedSortedDeduped() {
-            every { productRepository.findOrderableCategories() } returns listOf(
-                OrderableCategoryRow("스낵", "가정"),
-                OrderableCategoryRow("라면", "업소"),
-                OrderableCategoryRow("라면", "가정"),
-                OrderableCategoryRow("라면", "가정"),
+            every { productRepository.findCategoryGroups() } returns listOf(
+                CategoryGroupRow("스낵", "가정"),
+                CategoryGroupRow("라면", "업소"),
+                CategoryGroupRow("라면", "가정"),
+                CategoryGroupRow("라면", "가정"),
             )
 
-            val result = productService.getOrderableCategories()
+            val result = productService.getProductCategories()
 
             assertThat(result).hasSize(2)
             // 중분류 정렬 (라면 < 스낵)
@@ -291,6 +291,27 @@ class ProductServiceTest {
             assertThat(result[0].subs).containsExactly("가정", "업소")
             assertThat(result[1].middle).isEqualTo("스낵")
             assertThat(result[1].subs).containsExactly("가정")
+        }
+
+        @Test
+        @DisplayName("중분류는 무필터 노출, 소분류는 '가정'/'업소' 만 노출 (레거시 selectMiddleProduct/chgSmall 정합)")
+        fun categories_keepsAllMiddlesButFiltersSubs() {
+            every { productRepository.findCategoryGroups() } returns listOf(
+                CategoryGroupRow("원료", null),    // 소분류 없음
+                CategoryGroupRow("원료", "원물"),  // '가정'/'업소' 아님 → 소분류 제외
+                CategoryGroupRow("라면", "가정"),
+                CategoryGroupRow("라면", "기타"),  // '가정'/'업소' 아님 → 소분류 제외
+            )
+
+            val result = productService.getProductCategories()
+
+            assertThat(result).hasSize(2)
+            assertThat(result[0].middle).isEqualTo("라면")
+            // 소분류는 '가정'/'업소' 만 ('기타' 제외)
+            assertThat(result[0].subs).containsExactly("가정")
+            // 소분류가 모두 제외돼도 중분류 자체는 노출(레거시 selectMiddleProduct 무필터 동등)
+            assertThat(result[1].middle).isEqualTo("원료")
+            assertThat(result[1].subs).isEmpty()
         }
     }
 

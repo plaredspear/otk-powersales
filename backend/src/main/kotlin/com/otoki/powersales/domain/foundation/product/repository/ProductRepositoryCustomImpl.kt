@@ -215,22 +215,26 @@ class ProductRepositoryCustomImpl(
         return pagedSearch(where, pageable)
     }
 
-    override fun findOrderableCategories(): List<OrderableCategoryRow> {
+    /**
+     * 중분류/소분류 드롭다운 소스 — 레거시 `selectMiddleProduct`/`selectSmallProduct` 정합.
+     *
+     * 레거시 셀렉트는 발주가능(가정/업소·바코드·활성) 필터 없이 `category2 IS NOT NULL` /
+     * `category3 IS NOT NULL` 만으로 distinct 조회하므로(선택 시 0건이 되는 중분류도 노출),
+     * 여기서도 orderableProductFilter() 를 적용하지 않는다.
+     * category3 가 없는(소분류 미지정) 제품만 가진 중분류도 중분류 목록에는 포함되도록 category3 는 nullable 로 둔다.
+     */
+    override fun findCategoryGroups(): List<CategoryGroupRow> {
         val results = queryFactory
             .select(product.productCategory2, product.productCategory3)
             .from(product)
-            .where(
-                orderableProductFilter(),
-                product.productCategory2.isNotNull,
-            )
+            .where(product.productCategory2.isNotNull)
             .distinct()
             .orderBy(product.productCategory2.asc(), product.productCategory3.asc())
             .fetch()
 
         return results.mapNotNull { tuple ->
             val c2 = tuple.get(product.productCategory2) ?: return@mapNotNull null
-            val c3 = tuple.get(product.productCategory3) ?: return@mapNotNull null
-            OrderableCategoryRow(category2 = c2, category3 = c3)
+            CategoryGroupRow(category2 = c2, category3 = tuple.get(product.productCategory3))
         }
     }
 

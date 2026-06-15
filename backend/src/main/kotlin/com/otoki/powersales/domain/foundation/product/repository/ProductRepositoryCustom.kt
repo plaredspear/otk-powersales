@@ -54,9 +54,12 @@ interface ProductRepositoryCustom {
 
     /**
      * 모바일 제품추가 팝업의 중분류(category2)→소분류(category3) 드롭다운 소스.
-     * orderable 필터를 통과하는 제품의 (category2, category3) distinct 조합만 반환한다.
+     *
+     * 레거시 `selectMiddleProduct`/`selectSmallProduct` 정합 — 발주가능(가정/업소·바코드·활성) 필터 없이
+     * product 테이블의 `category2 IS NOT NULL` distinct (category2, category3) 조합을 반환한다.
+     * (제품 목록 검색은 별도로 orderable 필터를 유지하므로, 드롭다운의 일부 중분류는 선택 시 0건이 될 수 있다 — 레거시 동등.)
      */
-    fun findOrderableCategories(): List<OrderableCategoryRow>
+    fun findCategoryGroups(): List<CategoryGroupRow>
 }
 
 data class CategoryRow(
@@ -65,10 +68,10 @@ data class CategoryRow(
     val category3: String
 )
 
-/** 모바일 제품추가 드롭다운용 중분류(category2)/소분류(category3) 조합. */
-data class OrderableCategoryRow(
+/** 모바일 제품추가 드롭다운용 중분류(category2)/소분류(category3) 조합. 소분류 미지정 제품은 category3=null. */
+data class CategoryGroupRow(
     val category2: String,
-    val category3: String
+    val category3: String?
 )
 
 /**
