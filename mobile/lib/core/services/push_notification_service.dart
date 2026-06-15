@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -44,9 +45,24 @@ class PushNotificationService {
   Stream<String> get onTokenRefresh => _messaging.onTokenRefresh;
 
   /// 현재 디바이스의 FCM 토큰을 반환한다. 미초기화/미설정 시 null.
+  ///
+  /// iOS 는 APNS 토큰이 먼저 세팅돼야 FCM 토큰이 발급된다. 앱 첫 실행 직후엔
+  /// APNS 토큰이 (스위즐링으로) 비동기 도착하므로, 도착할 때까지 짧게 재시도한 뒤
+  /// FCM 토큰을 조회한다. 미도착 시 null (등록은 onTokenRefresh 가 이어받음).
   Future<String?> getToken() async {
     if (!isAvailable) return null;
     try {
+      if (Platform.isIOS) {
+        var apns = await _messaging.getAPNSToken();
+        for (var i = 0; i < 10 && apns == null; i++) {
+          await Future.delayed(const Duration(seconds: 1));
+          apns = await _messaging.getAPNSToken();
+        }
+        if (apns == null) {
+          _logger.w('APNS 토큰 미수신 — FCM 토큰 발급 불가(푸시 권한/프로파일/네트워크 확인)');
+          return null;
+        }
+      }
       return await _messaging.getToken();
     } catch (e) {
       _logger.w('FCM 토큰 조회 실패: $e');

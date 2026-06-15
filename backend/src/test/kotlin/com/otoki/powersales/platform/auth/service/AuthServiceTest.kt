@@ -848,8 +848,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("예외 사번 로그인 - excluded-employee-codes에 포함된 사번은 device_id 불일치여도 로그인 성공")
-    fun login_excludedEmployee_skipsValidation() {
+    @DisplayName("예외 사번 로그인 - device_id 불일치여도 로그인 성공 + 현재 단말로 device_uuid 갱신")
+    fun login_excludedEmployee_skipsValidationButRecordsDevice() {
         // Given
         val employee = createTestEmployee(id = 1L, employeeCode = "20010585", deviceUuid = "device-abc-123")
         val request = LoginRequest("20010585", "password123", deviceId = "device-xyz-789")
@@ -858,6 +858,8 @@ class AuthServiceTest {
         every { passwordEncoder.matches("password123", "encoded_password") } returns true
         every { uuidCheckProperties.enabled } returns true
         every { uuidCheckProperties.isExcluded("20010585") } returns true
+        val empSlot = slot<Employee>()
+        every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
         every { jwtTokenProvider.createAccessToken(1L, any<String>(), false, any(), any()) } returns "token"
         every { jwtTokenProvider.createRefreshToken(1L, any(), any()) } returns "refresh"
         every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
@@ -866,8 +868,9 @@ class AuthServiceTest {
         // When
         val response = authService.login(request)
 
-        // Then
+        // Then: 면제라 차단되지 않고 로그인 성공 + device_uuid 는 현재 단말로 갱신
         assertThat(response.token.accessToken).isEqualTo("token")
+        assertThat(empSlot.captured.deviceUuid).isEqualTo("device-xyz-789")
     }
 
     // ========== Login Authority Tests ==========
