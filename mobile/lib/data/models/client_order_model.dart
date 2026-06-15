@@ -23,7 +23,7 @@ class ClientOrderModel {
       sapOrderNumber: json['sapOrderNumber'] as String,
       clientId: json['clientId'] as int,
       clientName: json['clientName'] as String,
-      totalAmount: json['totalAmount'] as int,
+      totalAmount: (json['totalAmount'] as num).toInt(),
     );
   }
 
@@ -192,8 +192,8 @@ class ClientOrderDetailModel {
       clientDeadlineTime: data['clientDeadlineTime'] as String?,
       orderDate: data['orderDate'] as String?,
       deliveryDate: data['deliveryDate'] as String?,
-      totalApprovedAmount: data['totalApprovedAmount'] as int?,
-      orderedItemCount: data['orderedItemCount'] as int,
+      totalApprovedAmount: (data['totalApprovedAmount'] as num?)?.toInt(),
+      orderedItemCount: (data['orderedItemCount'] as num).toInt(),
       orderedItems: itemsJson
           .map((e) =>
               ClientOrderItemModel.fromJson(e as Map<String, dynamic>))

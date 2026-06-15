@@ -35,7 +35,7 @@ class OrderRequestModel {
       clientName: json['clientName'] as String,
       orderDate: json['orderDate'] as String,
       deliveryDate: json['deliveryDate'] as String,
-      totalAmount: json['totalAmount'] as int,
+      totalAmount: (json['totalAmount'] as num).toInt(),
       orderRequestStatus: json['orderRequestStatus'] as String,
       isClosed: json['isClosed'] as bool,
     );

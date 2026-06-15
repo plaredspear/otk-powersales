@@ -22,7 +22,7 @@ class OrderedItemModel {
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
       totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
-      totalQuantityPieces: json['totalQuantityPieces'] as int,
+      totalQuantityPieces: (json['totalQuantityPieces'] as num).toInt(),
       isCancelled: json['isCancelled'] as bool,
     );
   }
@@ -180,7 +180,7 @@ class RejectedItemModel {
     return RejectedItemModel(
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
-      orderQuantityBoxes: json['orderQuantityBoxes'] as int,
+      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toInt(),
       rejectionReason: json['rejectionReason'] as String,
     );
   }
@@ -263,11 +263,11 @@ class OrderRequestDetailModel {
       clientDeadlineTime: data['clientDeadlineTime'] as String?,
       orderDate: data['orderDate'] as String,
       deliveryDate: data['deliveryDate'] as String,
-      totalAmount: data['totalAmount'] as int,
-      totalApprovedAmount: data['totalApprovedAmount'] as int?,
+      totalAmount: (data['totalAmount'] as num).toInt(),
+      totalApprovedAmount: (data['totalApprovedAmount'] as num?)?.toInt(),
       orderRequestStatus: data['orderRequestStatus'] as String,
       isClosed: data['isClosed'] as bool,
-      orderedItemCount: data['orderedItemCount'] as int,
+      orderedItemCount: (data['orderedItemCount'] as num).toInt(),
       orderedItems: orderedItemsJson
           .map((e) => OrderedItemModel.fromJson(e as Map<String, dynamic>))
           .toList(),
