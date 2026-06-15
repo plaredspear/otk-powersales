@@ -193,7 +193,6 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
                 hint: '소분류 전체',
                 value: state.selectedSub,
                 items: subs,
-                enabled: state.selectedMiddle != null && subs.isNotEmpty,
                 onChanged: notifier.selectSub,
               ),
             ),
@@ -553,7 +552,6 @@ class _FilterField extends StatelessWidget {
   final String? searchHint;
   final String? value;
   final List<String> items;
-  final bool enabled;
   final ValueChanged<String?> onChanged;
 
   const _FilterField({
@@ -563,7 +561,6 @@ class _FilterField extends StatelessWidget {
     required this.items,
     required this.onChanged,
     this.searchHint,
-    this.enabled = true,
   });
 
   Future<void> _open(BuildContext context) async {
@@ -584,7 +581,7 @@ class _FilterField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: enabled ? () => _open(context) : null,
+      onTap: () => _open(context),
       child: Container(
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -595,15 +592,13 @@ class _FilterField extends StatelessWidget {
               child: Text(
                 value ?? hint,
                 overflow: TextOverflow.ellipsis,
-                style: AppTypography.bodyLarge.copyWith(
-                  color:
-                      enabled ? AppColors.textPrimary : AppColors.textTertiary,
-                ),
+                style: AppTypography.bodyLarge
+                    .copyWith(color: AppColors.textPrimary),
               ),
             ),
-            Icon(
+            const Icon(
               Icons.keyboard_arrow_down,
-              color: enabled ? AppColors.textSecondary : AppColors.textTertiary,
+              color: AppColors.textSecondary,
             ),
           ],
         ),
