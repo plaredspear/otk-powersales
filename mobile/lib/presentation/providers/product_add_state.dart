@@ -98,6 +98,25 @@ class ProductAddState {
   /// 검색 실행 여부 (검색 전/후 빈 상태 메시지 구분).
   final bool hasSearched;
 
+  /// 검색 총 건수 (레거시 totalCnt — "제품 (N)" 표시값).
+  final int totalCount;
+
+  /// 현재 로드된 페이지 번호 (0부터).
+  final int currentPage;
+
+  /// 마지막 페이지 여부 (무한 스크롤 종료 판단).
+  final bool isLastPage;
+
+  /// 다음 페이지 로딩 중 여부 (하단 로더 표시).
+  final bool isLoadingMore;
+
+  /// 적용된 검색 조건 스냅샷 — loadNextPage 가 동일 조건으로 다음 페이지를 조회한다.
+  /// '' 는 미적용(전체)을 의미한다(검색 후 드롭다운만 바뀌어도 페이지 조건이 흔들리지 않게 분리).
+  final String appliedName;
+  final String appliedBarcode;
+  final String appliedMiddle;
+  final String appliedSub;
+
   /// 주문이력 그룹.
   final List<OrderHistoryDateGroup> orderHistoryGroups;
 
@@ -122,6 +141,14 @@ class ProductAddState {
     this.selectedSub,
     this.searchResults = const [],
     this.hasSearched = false,
+    this.totalCount = 0,
+    this.currentPage = 0,
+    this.isLastPage = false,
+    this.isLoadingMore = false,
+    this.appliedName = '',
+    this.appliedBarcode = '',
+    this.appliedMiddle = '',
+    this.appliedSub = '',
     this.orderHistoryGroups = const [],
     required this.historyFrom,
     required this.historyTo,
@@ -146,8 +173,8 @@ class ProductAddState {
     return match.isEmpty ? const [] : match.first.subs;
   }
 
-  /// 검색 결과 건수.
-  int get resultCount => searchResults.length;
+  /// 검색 총 건수 (레거시 totalCnt — 로드된 건수가 아니라 전체 매칭 건수).
+  int get resultCount => totalCount;
 
   ProductAddState copyWith({
     List<ProductCategory>? categories,
@@ -157,6 +184,14 @@ class ProductAddState {
     bool clearSub = false,
     List<ProductAddItem>? searchResults,
     bool? hasSearched,
+    int? totalCount,
+    int? currentPage,
+    bool? isLastPage,
+    bool? isLoadingMore,
+    String? appliedName,
+    String? appliedBarcode,
+    String? appliedMiddle,
+    String? appliedSub,
     List<OrderHistoryDateGroup>? orderHistoryGroups,
     DateTime? historyFrom,
     DateTime? historyTo,
@@ -171,6 +206,14 @@ class ProductAddState {
       selectedSub: clearSub ? null : (selectedSub ?? this.selectedSub),
       searchResults: searchResults ?? this.searchResults,
       hasSearched: hasSearched ?? this.hasSearched,
+      totalCount: totalCount ?? this.totalCount,
+      currentPage: currentPage ?? this.currentPage,
+      isLastPage: isLastPage ?? this.isLastPage,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      appliedName: appliedName ?? this.appliedName,
+      appliedBarcode: appliedBarcode ?? this.appliedBarcode,
+      appliedMiddle: appliedMiddle ?? this.appliedMiddle,
+      appliedSub: appliedSub ?? this.appliedSub,
       orderHistoryGroups: orderHistoryGroups ?? this.orderHistoryGroups,
       historyFrom: historyFrom ?? this.historyFrom,
       historyTo: historyTo ?? this.historyTo,

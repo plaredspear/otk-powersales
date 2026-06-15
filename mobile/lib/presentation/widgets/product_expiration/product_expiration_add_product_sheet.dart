@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/product_add_provider.dart';
 import '../../providers/product_add_state.dart';
+import '../common/single_select_sheet.dart';
 
 /// 제품 선택 결과
 class ProductSelection {
@@ -176,8 +177,10 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
         Row(
           children: [
             Expanded(
-              child: _FilterDropdown(
+              child: _FilterField(
+                title: '중분류 선택',
                 hint: '중분류 전체',
+                searchHint: '분류 검색',
                 value: state.selectedMiddle,
                 items: middles,
                 onChanged: notifier.selectMiddle,
@@ -185,11 +188,11 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
             ),
             Container(width: 1, height: 52, color: AppColors.divider),
             Expanded(
-              child: _FilterDropdown(
+              child: _FilterField(
+                title: '소분류 선택',
                 hint: '소분류 전체',
                 value: state.selectedSub,
                 items: subs,
-                enabled: state.selectedMiddle != null && subs.isNotEmpty,
                 onChanged: notifier.selectSub,
               ),
             ),
@@ -245,6 +248,7 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
           child: _ProductResultList(
             state: state,
             onSelect: widget.onSelect,
+            onLoadMore: notifier.loadNextPage,
           ),
         ),
       ],
@@ -252,14 +256,47 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
   }
 }
 
-class _ProductResultList extends StatelessWidget {
+class _ProductResultList extends StatefulWidget {
   final ProductAddState state;
   final ValueChanged<ProductAddItem> onSelect;
+  final VoidCallback onLoadMore;
 
-  const _ProductResultList({required this.state, required this.onSelect});
+  const _ProductResultList({
+    required this.state,
+    required this.onSelect,
+    required this.onLoadMore,
+  });
+
+  @override
+  State<_ProductResultList> createState() => _ProductResultListState();
+}
+
+class _ProductResultListState extends State<_ProductResultList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // 하단 200px 이내 도달 시 다음 페이지 로드 (provider 가 중복/말단 가드).
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      widget.onLoadMore();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     if (state.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -275,14 +312,24 @@ class _ProductResultList extends StatelessWidget {
         message: '검색 결과가 없습니다',
       );
     }
+    final items = state.searchResults;
     return ListView.separated(
-      itemCount: state.searchResults.length,
+      controller: _scrollController,
+      itemCount: items.length + (state.isLoadingMore ? 1 : 0),
       separatorBuilder: (_, _) =>
           const Divider(height: 1, color: AppColors.divider),
-      itemBuilder: (context, index) => _ProductRow(
-        product: state.searchResults[index],
-        onSelect: onSelect,
-      ),
+      itemBuilder: (context, index) {
+        if (index >= items.length) {
+          return const Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return _ProductRow(
+          product: items[index],
+          onSelect: widget.onSelect,
+        );
+      },
     );
   }
 }
@@ -539,52 +586,65 @@ class _OrderHistoryList extends StatelessWidget {
 // 공용 위젯
 // ─────────────────────────────────────────────────────────────────────
 
-/// 레거시 필터 드롭다운 (하단 보더 + 셰브론).
-class _FilterDropdown extends StatelessWidget {
+/// 레거시 필터 — 탭하면 바텀시트(SingleSelectSheet)로 단일 선택 (하단 보더 + 셰브론).
+///
+/// 중분류는 항목이 수십 개라 네이티브 드롭다운 오버레이 대신 바텀시트로 표시한다.
+/// 첫 항목에 "전체"(value=null) sentinel 을 두어 필터 해제를 지원한다.
+class _FilterField extends StatelessWidget {
+  final String title;
   final String hint;
+  final String? searchHint;
   final String? value;
   final List<String> items;
-  final bool enabled;
   final ValueChanged<String?> onChanged;
 
-  const _FilterDropdown({
+  const _FilterField({
+    required this.title,
     required this.hint,
     required this.value,
     required this.items,
     required this.onChanged,
-    this.enabled = true,
+    this.searchHint,
   });
+
+  Future<void> _open(BuildContext context) async {
+    final result = await SingleSelectSheet.show<String?>(
+      context,
+      title: title,
+      selectedValue: value,
+      searchHint: searchHint,
+      options: [
+        SingleSelectOption<String?>(value: null, label: hint),
+        ...items.map((e) => SingleSelectOption<String?>(value: e, label: e)),
+      ],
+    );
+    if (result == null) return;
+    onChanged(result.value);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      alignment: Alignment.center,
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: value,
-          isExpanded: true,
-          icon: Icon(
-            Icons.keyboard_arrow_down,
-            color: enabled ? AppColors.textSecondary : AppColors.textTertiary,
-          ),
-          hint: Text(
-            hint,
-            style: AppTypography.bodyLarge
-                .copyWith(color: AppColors.textPrimary),
-          ),
-          style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
-          items: [
-            DropdownMenuItem<String?>(value: null, child: Text(hint)),
-            ...items.map(
-              (e) => DropdownMenuItem<String?>(
-                value: e,
-                child: Text(e, overflow: TextOverflow.ellipsis),
+    return InkWell(
+      onTap: () => _open(context),
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        alignment: Alignment.center,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                value ?? hint,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyLarge
+                    .copyWith(color: AppColors.textPrimary),
               ),
             ),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              color: AppColors.textSecondary,
+            ),
           ],
-          onChanged: enabled ? onChanged : null,
         ),
       ),
     );
@@ -624,7 +684,12 @@ class _SearchTextField extends StatelessWidget {
           hintText: hint,
           hintStyle: AppTypography.bodyLarge
               .copyWith(color: AppColors.legacyPlaceholder),
+          // 전역 inputDecorationTheme 의 회색 채움/포커스 테두리를 끄고
+          // 레거시처럼 보더리스 라인 인풋으로 통일한다(주변 드롭다운 행과 일관).
+          filled: false,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
         ),
       ),
     );
