@@ -44,3 +44,14 @@ class AppPackageVersionRequiredException(field: String) : BusinessException(
     message = "$field 값이 필요합니다. 패키지에서 자동 추출되지 않았으므로 직접 입력하세요",
     httpStatus = HttpStatus.BAD_REQUEST,
 )
+
+/**
+ * 서버 환경(stage) 과 업로드된 패키지의 빌드 환경(개발/운영)이 어긋날 때.
+ * 식별자(applicationId / bundleIdentifier)의 `.dev` 접미사 유무로 판별한다.
+ * 운영 서버에 개발 패키지를, 개발 서버에 운영 패키지를 올리는 사고를 차단한다.
+ */
+class AppPackageEnvironmentMismatchException(serverStage: String, packageEnv: String) : BusinessException(
+    errorCode = "APP_PACKAGE_ENVIRONMENT_MISMATCH",
+    message = "서버 환경($serverStage)과 패키지 환경($packageEnv)이 일치하지 않아 등록할 수 없습니다",
+    httpStatus = HttpStatus.BAD_REQUEST,
+)

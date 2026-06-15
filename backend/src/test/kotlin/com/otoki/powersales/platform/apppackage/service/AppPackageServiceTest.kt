@@ -42,7 +42,7 @@ class AppPackageServiceTest {
     private val adminService =
         AdminAppPackageService(
             repository, storageService, ipaMetadataExtractor, apkMetadataExtractor, domainProperties,
-            appVersionMetaProvider,
+            appVersionMetaProvider, stage = "local",
         )
     private val mobileService =
         MobileAppPackageService(

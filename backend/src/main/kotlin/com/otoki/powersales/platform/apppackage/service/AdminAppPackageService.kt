@@ -9,12 +9,14 @@ import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.apppackage.entity.AppPackage
 import com.otoki.powersales.platform.apppackage.exception.AppPackageBundleIdentifierRequiredException
+import com.otoki.powersales.platform.apppackage.exception.AppPackageEnvironmentMismatchException
 import com.otoki.powersales.platform.apppackage.exception.AppPackageCannotDeleteLatestException
 import com.otoki.powersales.platform.apppackage.exception.AppPackageDuplicateVersionException
 import com.otoki.powersales.platform.apppackage.exception.AppPackageFileRequiredException
 import com.otoki.powersales.platform.apppackage.exception.AppPackageInvalidExtensionException
 import com.otoki.powersales.platform.apppackage.exception.AppPackageNotFoundException
 import com.otoki.powersales.platform.apppackage.exception.AppPackageVersionRequiredException
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -30,6 +32,7 @@ class AdminAppPackageService(
     private val apkMetadataExtractor: ApkMetadataExtractor,
     private val domainProperties: DomainProperties,
     private val appVersionMetaProvider: AppVersionMetaProvider,
+    @Value("\${app.stage:local}") private val stage: String,
 ) {
 
     fun list(platform: AppPlatform?, pageable: Pageable): Page<AppPackageListItemDto> {
@@ -144,6 +147,8 @@ class AdminAppPackageService(
                 ?: throw AppPackageVersionRequiredException("versionCode")
         }
 
+        validateEnvironment(bundleIdentifier)
+
         if (appPackageRepository.existsByPlatformAndVersionCode(platform, resolvedVersionCode)) {
             throw AppPackageDuplicateVersionException(resolvedVersionCode)
         }
@@ -224,8 +229,35 @@ class AdminAppPackageService(
         if (!filename.lowercase().endsWith(expected)) throw AppPackageInvalidExtensionException(expected)
     }
 
+    /**
+     * 서버 stage 와 패키지 빌드 환경(개발/운영)이 일치하는지 검증한다.
+     * mobile 빌드는 개발 패키지에만 식별자 `.dev` 접미사를 붙인다
+     * (개발 com.otoki.pwrs.mobile.dev / 운영 com.otoki.pwrs.mobile).
+     *
+     * - prod 서버: 개발(.dev) 패키지 등록 거부
+     * - dev  서버: 운영(접미사 없음) 패키지 등록 거부
+     * - local 서버: 검증하지 않음 (로컬 개발 편의)
+     *
+     * 식별자를 추출하지 못한 경우(Android 손상/비APK fallback)는 판별 근거가 없어 통과시킨다
+     * (확장자 검증은 [validateExtension] 가 이미 수행).
+     */
+    private fun validateEnvironment(identifier: String?) {
+        if (identifier == null) return
+        val isDevPackage = identifier.endsWith(DEV_IDENTIFIER_SUFFIX)
+        when (stage.lowercase()) {
+            "prod" -> if (isDevPackage) throw AppPackageEnvironmentMismatchException(stage, "개발")
+            "dev" -> if (!isDevPackage) throw AppPackageEnvironmentMismatchException(stage, "운영")
+            else -> Unit // local 등: 검증하지 않음
+        }
+    }
+
     private fun resolveContentType(platform: AppPlatform): String = when (platform) {
         AppPlatform.ANDROID -> "application/vnd.android.package-archive"
         AppPlatform.IOS -> "application/octet-stream"
+    }
+
+    companion object {
+        /** mobile 빌드가 개발 패키지 식별자(applicationId / bundleIdentifier)에 붙이는 접미사. */
+        private const val DEV_IDENTIFIER_SUFFIX = ".dev"
     }
 }

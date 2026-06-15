@@ -137,7 +137,7 @@ class AppVersionMetaCacheTest {
             DomainProperties(api = "dev-powersalesapi.otoki.com", admin = "dev-admin.otoki.com")
         private val adminService = AdminAppPackageService(
             repository, storageService, IpaMetadataExtractor(), mockk(relaxed = true),
-            domainProperties, provider,
+            domainProperties, provider, stage = "local",
         )
 
         init {
