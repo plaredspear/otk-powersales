@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
 
 /// 일정 거래처 아이템 위젯
 ///
-/// 거래처명과 근무 유형(3종)을 표시하며,
-/// 등록 탭에서는 등록 상태도 함께 표시합니다.
+/// 레거시 myDaily.jsp 정합: 한 줄에 `거래처명 | 근무유형1/근무유형2/근무유형3`.
+/// - 거래처명 + 카테고리: 15px / weight 400 / #666 (legacyTextMute)
+/// - 구분자 `|`: #CCC (legacyPlaceholder), 좌우 5px 여백
+/// 등록 탭에서는 우측 상단에 등록 상태 텍스트(완료=초록 / 전=회색)를 표시합니다.
 class ScheduleAccountItem extends StatelessWidget {
   /// 거래처명
   final String accountName;
@@ -38,58 +38,52 @@ class ScheduleAccountItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 레거시: ${c1}/${c2}/${c3} (빈 값은 그대로 슬래시만 노출)
+    final categories = '$workType1/$workType2/$workType3';
+
+    const baseStyle = TextStyle(
+      fontSize: 15,
+      fontWeight: FontWeight.w400,
+      color: AppColors.legacyTextMute,
+      height: 1.2,
+    );
+
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.md,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 거래처 정보
+          // 거래처명 | 카테고리 (한 줄)
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 거래처명
-                Text(
-                  accountName,
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
+            child: Text.rich(
+              TextSpan(
+                style: baseStyle,
+                children: [
+                  TextSpan(text: accountName),
+                  const TextSpan(
+                    text: '  |  ',
+                    style: TextStyle(color: AppColors.legacyPlaceholder),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                // 근무 유형
-                Text(
-                  '$workType1 / $workType2 / $workType3',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+                  TextSpan(text: categories),
+                ],
+              ),
             ),
           ),
 
-          // 등록 상태 표시 (등록 탭에서만)
-          if (showRegistrationStatus && isRegistered != null)
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 4,
-                  backgroundColor: isRegistered!
-                      ? AppColors.success
-                      : AppColors.otokiYellow,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Text(
-                  isRegistered! ? '등록 완료' : '등록 전',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: isRegistered!
-                        ? AppColors.success
-                        : AppColors.textSecondary,
-                  ),
-                ),
-              ],
+          // 등록 상태 (등록 탭에서만)
+          if (showRegistrationStatus && isRegistered != null) ...[
+            const SizedBox(width: 8),
+            Text(
+              isRegistered! ? '등록 완료' : '등록 전',
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.2,
+                color: isRegistered!
+                    ? AppColors.legacyRegisteredGreen
+                    : AppColors.legacyRegisteredGray,
+              ),
             ),
+          ],
         ],
       ),
     );

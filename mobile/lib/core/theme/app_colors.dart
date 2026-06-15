@@ -114,7 +114,7 @@ abstract final class AppColors {
   /// 스케줄 카드 등록 버튼 활성 (레거시 #0B3F8C)
   static const Color legacyNavy = Color(0xFF0B3F8C);
 
-  /// 스케줄 카드 등록 완료 상태 (레거시 #7C91A7)
+  /// 내일정 등록탭 조원 배너 배경 (레거시 myDaily.jsp .list_title #7C91A7)
   static const Color legacySlate = Color(0xFF7C91A7);
 
   /// 유통기한 카운트 강조, NEW 배지 배경 (레거시 #DC2C34)
@@ -146,4 +146,13 @@ abstract final class AppColors {
 
   /// 홈 본문 배경 그라데이션 끝 (레거시 #FFFFFF)
   static const Color homeBgGradientEnd = Color(0xFFFFFFFF);
+
+  /// 내일정 상세 보고완료 카운터 행 배경 (레거시 myDaily.jsp .text_info #F7F7F7)
+  static const Color legacyCounterBg = Color(0xFFF7F7F7);
+
+  /// 내일정 등록 완료 텍스트 (레거시 myDaily.jsp .color_green #00B52A)
+  static const Color legacyRegisteredGreen = Color(0xFF00B52A);
+
+  /// 내일정 등록 전 텍스트 (레거시 myDaily.jsp .color_gray #999)
+  static const Color legacyRegisteredGray = Color(0xFF999999);
 }

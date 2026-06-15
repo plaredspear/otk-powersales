@@ -5,6 +5,7 @@ import '../../app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../domain/entities/daily_schedule_info.dart';
 import '../providers/my_schedule_provider.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/my_schedule/schedule_account_item.dart';
@@ -79,8 +80,14 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
                   Tab(text: '일정'),
                   Tab(text: '등록'),
                 ],
-                labelColor: AppColors.otokiBlue,
-                unselectedLabelColor: AppColors.textTertiary,
+                // 레거시 .tab_menu: 활성/비활성 모두 검정 글씨, 활성은 파란 밑줄만 구분
+                labelColor: AppColors.black,
+                unselectedLabelColor: AppColors.black,
+                labelStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                unselectedLabelStyle: const TextStyle(fontSize: 16),
                 indicatorColor: AppColors.otokiBlue,
                 indicatorWeight: AppSpacing.tabIndicatorWeight,
               ),
@@ -137,44 +144,91 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
     final message =
         isSubstituteHoliday ? '대휴가 예정된 날입니다' : '연차가 예정된 날입니다';
 
-    return Center(
-      child: Column(
-        children: [
-          // 날짜 헤더
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              border: Border(
-                bottom: BorderSide(color: AppColors.divider),
-              ),
-            ),
+    return Column(
+      children: [
+        // 날짜 헤더 (일정/등록 탭과 동일한 레거시 18px/800 정합)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+          child: Align(
+            alignment: Alignment.centerLeft,
             child: Text(
               info.date,
-              style: AppTypography.headlineSmall,
-            ),
-          ),
-          // 아이콘 + 메시지
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 64, color: color),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    message,
-                    style: AppTypography.bodyLarge.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.black,
+                height: 1.1,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+        // 아이콘 + 메시지
+        Expanded(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 64, color: color),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  message,
+                  style: AppTypography.bodyLarge.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 날짜 헤더 + 보고완료 카운터 (레거시 myDaily.jsp .schedule_top 정합)
+  Widget _buildDateHeader(DailyScheduleInfo info) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 날짜 (레거시 .date_wrap h2: 18px / weight 800)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+          child: Text(
+            info.date,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.black,
+              height: 1.1,
+            ),
+          ),
+        ),
+        // 보고완료 카운터 (레거시 .text_info: bg #F7F7F7, 중앙, 완료수=빨강)
+        Container(
+          width: double.infinity,
+          height: 50,
+          alignment: Alignment.center,
+          color: AppColors.legacyCounterBg,
+          child: Text.rich(
+            TextSpan(
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppColors.black,
+                height: 1.2,
+              ),
+              children: [
+                TextSpan(
+                  text: '${info.reportProgress.completed}',
+                  style: const TextStyle(color: AppColors.legacyDanger),
+                ),
+                TextSpan(
+                  text:
+                      ' / ${info.reportProgress.total} 보고 완료 (${info.reportProgress.workType})',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -189,59 +243,33 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
     return Column(
       children: [
         // 날짜 및 보고 진행 정보
+        _buildDateHeader(info),
+
+        // 조원명 헤더 (레거시 .board_list02 li p strong: 16px bold, 하단 구분선)
         Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: const BoxDecoration(
+            color: AppColors.background,
             border: Border(
               bottom: BorderSide(color: AppColors.divider),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                info.date,
-                style: AppTypography.headlineSmall,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                '${info.reportProgress.completed} / ${info.reportProgress.total} 보고 완료 (${info.reportProgress.workType})',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // 조원명 헤더
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
-          ),
-          color: AppColors.surface,
-          child: Row(
-            children: [
-              Text(
-                '${info.memberName} (${info.employeeCode})',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // 거래처 목록
-        Expanded(
-          child: ListView.separated(
-            itemCount: info.accounts.length,
-            separatorBuilder: (context, index) => Divider(
-              height: 1,
-              color: AppColors.divider,
+          child: Text(
+            '${info.memberName} (${info.employeeCode})',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.black,
             ),
+          ),
+        ),
+
+        // 거래처 목록 (레거시: 행 사이 구분선 없이 6px 간격으로 나열)
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            itemCount: info.accounts.length,
             itemBuilder: (context, index) {
               final account = info.accounts[index];
               return ScheduleAccountItem(
@@ -268,31 +296,7 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
     return Column(
       children: [
         // 날짜 및 보고 진행 정보
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            border: Border(
-              bottom: BorderSide(color: AppColors.divider),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                info.date,
-                style: AppTypography.headlineSmall,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                '${info.reportProgress.completed} / ${info.reportProgress.total} 보고 완료 (${info.reportProgress.workType})',
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _buildDateHeader(info),
 
         // 등록 전 필터
         Container(
@@ -325,22 +329,17 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
           ),
         ),
 
-        // 조원명 헤더 (노란색 배경)
+        // 조원명 배너 (레거시 .list_title: bg #7C91A7 slate, 흰 글씨 15px)
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
-          ),
-          color: AppColors.otokiYellow.withOpacity(0.3),
-          child: Row(
-            children: [
-              Text(
-                '${info.memberName} (${info.reportProgress.workType})',
-                style: AppTypography.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          color: AppColors.legacySlate,
+          child: Text(
+            '${info.memberName} (${info.reportProgress.workType})',
+            style: const TextStyle(
+              fontSize: 15,
+              color: AppColors.white,
+            ),
           ),
         ),
 
@@ -357,12 +356,9 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
                     ),
                   ),
                 )
-              : ListView.separated(
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   itemCount: state.filteredAccounts.length,
-                  separatorBuilder: (context, index) => Divider(
-                    height: 1,
-                    color: AppColors.divider,
-                  ),
                   itemBuilder: (context, index) {
                     final account = state.filteredAccounts[index];
                     return ScheduleAccountItem(
