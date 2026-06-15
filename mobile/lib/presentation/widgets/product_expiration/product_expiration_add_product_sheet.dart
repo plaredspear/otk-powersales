@@ -7,6 +7,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../providers/product_add_provider.dart';
 import '../../providers/product_add_state.dart';
+import '../common/single_select_sheet.dart';
 
 /// 제품 선택 결과
 class ProductSelection {
@@ -176,8 +177,10 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
         Row(
           children: [
             Expanded(
-              child: _FilterDropdown(
+              child: _FilterField(
+                title: '중분류 선택',
                 hint: '중분류 전체',
+                searchHint: '분류 검색',
                 value: state.selectedMiddle,
                 items: middles,
                 onChanged: notifier.selectMiddle,
@@ -185,7 +188,8 @@ class _ProductSearchTabState extends ConsumerState<_ProductSearchTab> {
             ),
             Container(width: 1, height: 52, color: AppColors.divider),
             Expanded(
-              child: _FilterDropdown(
+              child: _FilterField(
+                title: '소분류 선택',
                 hint: '소분류 전체',
                 value: state.selectedSub,
                 items: subs,
@@ -539,52 +543,69 @@ class _OrderHistoryList extends StatelessWidget {
 // 공용 위젯
 // ─────────────────────────────────────────────────────────────────────
 
-/// 레거시 필터 드롭다운 (하단 보더 + 셰브론).
-class _FilterDropdown extends StatelessWidget {
+/// 레거시 필터 — 탭하면 바텀시트(SingleSelectSheet)로 단일 선택 (하단 보더 + 셰브론).
+///
+/// 중분류는 항목이 수십 개라 네이티브 드롭다운 오버레이 대신 바텀시트로 표시한다.
+/// 첫 항목에 "전체"(value=null) sentinel 을 두어 필터 해제를 지원한다.
+class _FilterField extends StatelessWidget {
+  final String title;
   final String hint;
+  final String? searchHint;
   final String? value;
   final List<String> items;
   final bool enabled;
   final ValueChanged<String?> onChanged;
 
-  const _FilterDropdown({
+  const _FilterField({
+    required this.title,
     required this.hint,
     required this.value,
     required this.items,
     required this.onChanged,
+    this.searchHint,
     this.enabled = true,
   });
 
+  Future<void> _open(BuildContext context) async {
+    final result = await SingleSelectSheet.show<String?>(
+      context,
+      title: title,
+      selectedValue: value,
+      searchHint: searchHint,
+      options: [
+        SingleSelectOption<String?>(value: null, label: hint),
+        ...items.map((e) => SingleSelectOption<String?>(value: e, label: e)),
+      ],
+    );
+    if (result == null) return;
+    onChanged(result.value);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      alignment: Alignment.center,
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String?>(
-          value: value,
-          isExpanded: true,
-          icon: Icon(
-            Icons.keyboard_arrow_down,
-            color: enabled ? AppColors.textSecondary : AppColors.textTertiary,
-          ),
-          hint: Text(
-            hint,
-            style: AppTypography.bodyLarge
-                .copyWith(color: AppColors.textPrimary),
-          ),
-          style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
-          items: [
-            DropdownMenuItem<String?>(value: null, child: Text(hint)),
-            ...items.map(
-              (e) => DropdownMenuItem<String?>(
-                value: e,
-                child: Text(e, overflow: TextOverflow.ellipsis),
+    return InkWell(
+      onTap: enabled ? () => _open(context) : null,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        alignment: Alignment.center,
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                value ?? hint,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.bodyLarge.copyWith(
+                  color:
+                      enabled ? AppColors.textPrimary : AppColors.textTertiary,
+                ),
               ),
             ),
+            Icon(
+              Icons.keyboard_arrow_down,
+              color: enabled ? AppColors.textSecondary : AppColors.textTertiary,
+            ),
           ],
-          onChanged: enabled ? onChanged : null,
         ),
       ),
     );
