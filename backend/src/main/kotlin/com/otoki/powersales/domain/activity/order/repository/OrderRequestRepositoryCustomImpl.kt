@@ -40,7 +40,7 @@ class OrderRequestRepositoryCustomImpl(
             .selectFrom(orderRequest)
             .leftJoin(orderRequest.account, account).fetchJoin()
             .where(where)
-            .orderBy(buildOrderSpecifier(sortBy, sortDir))
+            .orderBy(*buildOrderSpecifiers(sortBy, sortDir))
             .limit(limit.toLong())
             .fetch()
     }
@@ -75,7 +75,7 @@ class OrderRequestRepositoryCustomImpl(
             }
     }
 
-    private fun buildOrderSpecifier(sortBy: String, sortDir: String): OrderSpecifier<*> {
+    private fun buildOrderSpecifiers(sortBy: String, sortDir: String): Array<OrderSpecifier<*>> {
         val direction = if (sortDir.equals("ASC", ignoreCase = true)) Order.ASC else Order.DESC
         val target: ComparableExpressionBase<*> = when (sortBy) {
             "orderDate" -> orderRequest.orderDate
@@ -83,6 +83,11 @@ class OrderRequestRepositoryCustomImpl(
             "totalAmount" -> orderRequest.totalAmount
             else -> orderRequest.orderDate
         }
-        return OrderSpecifier(direction, target)
+        // 동률(같은 납기일·같은 주문일 등) 시 순서가 비결정적이 되지 않도록 id 를 보조 정렬 키로 사용한다.
+        // id 는 생성 순서와 일치하므로 "최신/최근" 의도에 맞게 항상 DESC 로 고정한다.
+        return arrayOf(
+            OrderSpecifier(direction, target),
+            OrderSpecifier(Order.DESC, orderRequest.id),
+        )
     }
 }
