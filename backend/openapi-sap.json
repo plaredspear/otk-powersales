@@ -916,6 +916,10 @@
           "skippedJobFilter" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "skippedRetiredOrLeave" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
