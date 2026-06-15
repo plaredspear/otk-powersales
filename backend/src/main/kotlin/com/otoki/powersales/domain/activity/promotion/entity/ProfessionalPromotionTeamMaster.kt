@@ -34,7 +34,7 @@ class ProfessionalPromotionTeamMaster(
     var name: String? = null,
 
     @Column(name = "employee_id")
-    val employeeId: Long? = null,
+    var employeeId: Long? = null,
 
     @Column(name = "account_id")
     var accountId: Long? = null,
@@ -119,12 +119,20 @@ class ProfessionalPromotionTeamMaster(
         startDate: LocalDate,
         endDate: LocalDate?,
         isConfirmed: Boolean,
-        accountId: Long? = null
+        accountId: Long? = null,
+        employeeId: Long? = null,
+        branchCode: String? = null,
     ) {
         this.teamType = teamType
         this.startDate = startDate
         this.endDate = endDate
         this.isConfirmed = isConfirmed
         if (accountId != null) this.accountId = accountId
+        // 사원 변경 시 employee_id + branch_code(소속 지점) 동반 갱신 —
+        // SF BranchName__c(FullName__r.OrgName) formula 자동 재계산 동등.
+        if (employeeId != null) {
+            this.employeeId = employeeId
+            this.branchCode = branchCode
+        }
     }
 }

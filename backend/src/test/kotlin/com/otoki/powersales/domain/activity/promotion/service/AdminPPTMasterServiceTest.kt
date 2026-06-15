@@ -68,10 +68,11 @@ class AdminPPTMasterServiceTest {
         id: Long = 1L,
         employeeCode: String = "12345678",
         name: String = "홍길동",
-        professionalPromotionTeam: ProfessionalPromotionTeamType? = null
+        professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
+        costCenterCode: String = "1100"
     ): Employee {
         val emp = Employee(id = id, employeeCode = employeeCode, name = name)
-        emp.costCenterCode = "1100"
+        emp.costCenterCode = costCenterCode
         emp.orgName = "서울지점"
         emp.status = "재직"
         emp.role = AppAuthority.WOMAN
@@ -331,6 +332,35 @@ class AdminPPTMasterServiceTest {
 
             assertThat(master.accountId).isEqualTo(2)
             assertThat(result.accountCode).isEqualTo("SAP002")
+        }
+
+        @Test
+        @DisplayName("성공 - 사원 변경 -> employee_id + branch_code 가 새 사원 소속 지점으로 재계산 (SF BranchName__c formula 동등)")
+        fun updateMaster_changeEmployee_recalculatesBranchCode() {
+            // 기존 마스터: 사원 1L (지점 1100)
+            val master = createMaster(employeeId = 1L)
+            // 새 사원 2L (지점 7700)
+            val newEmployee = createEmployee(id = 2L, employeeCode = "87654321", name = "김영희", costCenterCode = "7700")
+            val request = PPTMasterUpdateRequest(
+                employeeId = 2L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+                startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
+            )
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { employeeRepository.findById(2L) } returns Optional.of(newEmployee)
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(2L) } returns emptyList()
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
+
+            service.updateMaster(1L, request)
+
+            // 사원 변경 반영 + branch_code 가 새 사원의 cost_center_code 로 재계산
+            assertThat(master.employeeId).isEqualTo(2L)
+            assertThat(master.branchCode).isEqualTo("7700")
         }
 
         @Test

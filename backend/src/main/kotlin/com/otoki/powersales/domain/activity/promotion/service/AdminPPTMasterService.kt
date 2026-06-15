@@ -180,10 +180,13 @@ class AdminPPTMasterService(
 
         master.update(
             request.teamType,
-             request.startDate,
-             request.endDate,
-             request.isConfirmed,
+            request.startDate,
+            request.endDate,
+            request.isConfirmed,
             request.accountId,
+            // 사원 변경 시 branch_code 를 새 사원의 소속 지점으로 재계산 (SF BranchName__c formula 동등).
+            employeeId = request.employeeId,
+            branchCode = employee.costCenterCode,
         )
 
         pptMasterRepository.save(master)
