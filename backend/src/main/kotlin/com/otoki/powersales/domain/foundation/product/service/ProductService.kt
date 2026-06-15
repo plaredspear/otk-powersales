@@ -84,7 +84,7 @@ class ProductService(
      * 제품명/바코드/중분류/소분류 조합으로 검색하며 모든 조건은 선택적이다.
      * 모든 조건이 비어 있으면 orderable 제품 전체를 페이지로 반환한다(레거시 빈 검색 동작).
      *
-     * @param productName 제품명(부분일치, 제품코드 포함)
+     * @param productName 제품명(부분일치) — 레거시 `selectProduct` 와 동일하게 name 컬럼만 매칭
      * @param barcode 제품바코드(부분일치)
      * @param category2 중분류
      * @param category3 소분류

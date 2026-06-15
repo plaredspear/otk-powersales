@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.
 import com.otoki.powersales.domain.foundation.product.entity.QProductBarcode.Companion.productBarcode
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Expression
+import com.querydsl.core.types.OrderSpecifier
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -65,15 +66,22 @@ class ProductRepositoryCustomImpl(
     /**
      * 제품 + 단위 매칭 바코드를 단일 쿼리로 조회하는 공통 페이지 실행기.
      * count 는 EXISTS 기반 [where] 로 제품 단위(distinct)로 집계되어 본문 행 수와 일치한다.
+     *
+     * [orderBy] 기본값은 제품명/제품코드 정렬이며, 레거시 정렬이 다른 검색(예: 제품추가 팝업
+     * `selectProduct` 의 `ORDER BY categorycode3, productcode`)은 호출부에서 정렬을 넘긴다.
      */
-    private fun pagedSearch(where: BooleanExpression, pageable: Pageable): Page<ProductSearchRow> {
+    private fun pagedSearch(
+        where: BooleanExpression,
+        pageable: Pageable,
+        orderBy: Array<OrderSpecifier<*>> = arrayOf(product.name.asc(), product.productCode.asc()),
+    ): Page<ProductSearchRow> {
         val matchedBarcode = unitMatchedBarcode()
 
         val rows = queryFactory
             .select(product, matchedBarcode)
             .from(product)
             .where(where)
-            .orderBy(product.name.asc(), product.productCode.asc())
+            .orderBy(*orderBy)
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
@@ -183,11 +191,10 @@ class ProductRepositoryCustomImpl(
         var where = orderableProductFilter()
 
         if (!productName.isNullOrBlank()) {
+            // 레거시 `selectProduct` 의 제품명 검색은 `a.name LIKE` 단일 컬럼(제품코드 미포함).
+            // 대소문자 무시를 위해 양쪽을 lower 처리한다(한글은 영향 없음).
             val pattern = "%${productName.lowercase()}%"
-            where = where.and(
-                product.name.lower().like(pattern)
-                    .or(product.productCode.lower().like(pattern))
-            )
+            where = where.and(product.name.lower().like(pattern))
         }
 
         if (!barcode.isNullOrBlank()) {
@@ -212,7 +219,12 @@ class ProductRepositoryCustomImpl(
             where = where.and(product.productCategory3.eq(category3))
         }
 
-        return pagedSearch(where, pageable)
+        // 레거시 `selectProduct` 정렬: `ORDER BY categorycode3, productcode`.
+        return pagedSearch(
+            where,
+            pageable,
+            orderBy = arrayOf(product.categoryCode3.asc(), product.productCode.asc()),
+        )
     }
 
     /**
