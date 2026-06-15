@@ -95,6 +95,8 @@ class AdminPromotionServiceTest {
         } answers { firstArg<PromotionProduct>() }
         // SF 가시 범위 — 단건 검증(validateDataScope) 기본 통과. forbidden 케이스는 개별 override.
         every { promotionRepository.existsVisibleById(any(), any()) } returns true
+        // 행사 목표/실적금액 = 조원 파생값 SUM (SF rollup 재현). 기본 빈 맵(0 처리), 합산 검증 케이스에서 override.
+        every { promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(any()) } returns emptyMap()
     }
 
     @Nested
@@ -197,6 +199,32 @@ class AdminPromotionServiceTest {
                 )
             }
         }
+
+        @Test
+        @DisplayName("실적/목표금액 - 조원 파생값 SUM 일괄 집계로 반환 (stale 스칼라 무시)")
+        fun getPromotions_amountsFromEmployeeRollup() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val promotion = createPromotion(promotionType = PromotionType.SAMPLING).apply {
+                account = createAccount()
+                dkActualAmount = 19431.0   // stale — 무시되어야 함
+                dkTargetAmount = 1.0       // stale — 무시되어야 함
+            }
+            val pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending())
+            every { promotionRepository.searchForAdmin(
+                policyPredicate = any(), keyword = null, promotionType = null,
+                startDate = null, endDate = null, ownerOnly = false, currentUserId = any(), pageable = pageable
+            ) } returns PageImpl(listOf(promotion), pageable, 1)
+            every { promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(listOf(1L)) } returns
+                mapOf(1L to (2077400L to 2009770L))
+
+            val result = adminPromotionService.getPromotions(scope = scope,
+                keyword = null, promotionType = null,
+                startDate = null, endDate = null, ownerOnly = false, page = 0, size = 20
+            )
+
+            assertThat(result.content[0].targetAmount).isEqualTo(2077400.0)
+            assertThat(result.content[0].actualAmount).isEqualTo(2009770.0)
+        }
     }
 
     @Nested
@@ -265,6 +293,27 @@ class AdminPromotionServiceTest {
 
             assertThatThrownBy { adminPromotionService.getPromotion(scope, 1L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("실적/목표금액 - 조원 파생값 SUM 반환 (stale dkActualAmount/dkTargetAmount 무시)")
+        fun getPromotion_amountsFromEmployeeRollup() {
+            // SF rollup DKRetail__ActualAmount__c / TargetAmount__c 동기화 스칼라가 stale 인 상황 재현.
+            val promotion = createPromotion(promotionType = PromotionType.SAMPLING).apply {
+                account = createAccount()
+                primaryProduct = createProduct()
+                dkActualAmount = 19431.0   // stale — 무시되어야 함
+                dkTargetAmount = 1.0       // stale — 무시되어야 함
+            }
+            every { promotionRepository.findByIdWithRelations(1L) } returns promotion
+            // 조원 파생값 합산 (그리드 "총 실적" 합 = 2,009,770 / 목표금액 합 = 2,077,400)
+            every { promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(listOf(1L)) } returns
+                mapOf(1L to (2077400L to 2009770L))
+
+            val result = adminPromotionService.getPromotion(scope, 1L)
+
+            assertThat(result.actualAmount).isEqualTo(2009770L)
+            assertThat(result.targetAmount).isEqualTo(2077400L)
         }
     }
 

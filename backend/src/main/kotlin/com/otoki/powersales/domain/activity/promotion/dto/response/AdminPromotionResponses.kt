@@ -42,7 +42,10 @@ data class PromotionListItem(
             accountName: String?,
             accountCode: String?,
             primaryProductName: String?,
-            primaryProductCode: String?
+            primaryProductCode: String?,
+            // 조원 파생값 SUM (SF rollup DKRetail__TargetAmount__c / ActualAmount__c 재현).
+            targetAmount: Long,
+            actualAmount: Long
         ): PromotionListItem {
             val productTypeName = promotion.productType
             // SF formula DKRetail__PromotionName__c = TEXT(DKRetail__ProductType__c) + '(' + DKRetail__PrimaryProductId__r.Name + ')'
@@ -65,9 +68,10 @@ data class PromotionListItem(
                 category1 = promotion.category1,
                 isClosed = promotion.isClosed,
                 costCenterCode = promotion.costCenterCode,
-                // SF rollup DKRetail__TargetAmount__c / DKRetail__ActualAmount__c 동기화 스칼라 컬럼.
-                targetAmount = promotion.dkTargetAmount,
-                actualAmount = promotion.dkActualAmount,
+                // SF rollup DKRetail__TargetAmount__c / ActualAmount__c = 조원 파생값 SUM 재현.
+                // (동기화 스칼라 dkTargetAmount/dkActualAmount 는 갱신 로직 없어 stale 이므로 미사용.)
+                targetAmount = targetAmount.toDouble(),
+                actualAmount = actualAmount.toDouble(),
                 // 작성자 = SF CreatedBy 동등 (createdBy 는 searchForAdmin 에서 fetchJoin — N+1 없음).
                 // id 는 목록의 작성자 → 사용자 상세(/users/:id) 링크용 (web 에서 user READ 권한 보유 시에만 링크).
                 createdById = promotion.createdBy?.id,
@@ -117,7 +121,10 @@ data class PromotionDetailResponse(
             accountName: String?,
             accountCode: String?,
             primaryProductName: String?,
-            primaryProductCode: String?
+            primaryProductCode: String?,
+            // 조원 파생값 SUM (SF rollup DKRetail__TargetAmount__c / ActualAmount__c 재현).
+            targetAmount: Long,
+            actualAmount: Long
         ): PromotionDetailResponse {
             val productTypeName = promotion.productType
             // SF formula DKRetail__PromotionName__c = TEXT(DKRetail__ProductType__c) + '(' + DKRetail__PrimaryProductId__r.Name + ')'
@@ -143,8 +150,10 @@ data class PromotionDetailResponse(
                 costCenterCode = promotion.costCenterCode,
                 productType = productTypeName,
                 category1 = promotion.category1,
-                targetAmount = promotion.dkTargetAmount?.toLong(),
-                actualAmount = promotion.dkActualAmount?.toLong(),
+                // SF rollup DKRetail__TargetAmount__c / ActualAmount__c = 조원 파생값 SUM 재현.
+                // (동기화 스칼라 dkTargetAmount/dkActualAmount 는 갱신 로직 없어 stale 이므로 미사용.)
+                targetAmount = targetAmount,
+                actualAmount = actualAmount,
                 isClosed = promotion.isClosed,
                 isDeleted = promotion.isDeleted,
                 createdById = promotion.createdBy?.id,

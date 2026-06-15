@@ -109,14 +109,22 @@ class AdminPromotionService(
             pageable = pageable
         )
 
+        // 목록 목표/실적금액 = 조원 파생값 SUM (SF rollup 재현). promotionId 일괄 집계로 N+1 회피.
+        val amountMap = promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(
+            promotionPage.content.map { it.id }
+        )
+
         return PromotionListResponse(
             content = promotionPage.content.map { promotion ->
+                val amounts = amountMap[promotion.id]
                 PromotionListItem.from(
                     promotion = promotion,
                     accountName = promotion.account?.name,
                     accountCode = promotion.account?.externalKey,
                     primaryProductName = promotion.primaryProduct?.name,
-                    primaryProductCode = promotion.primaryProduct?.productCode
+                    primaryProductCode = promotion.primaryProduct?.productCode,
+                    targetAmount = amounts?.first ?: 0L,
+                    actualAmount = amounts?.second ?: 0L
                 )
             },
             page = page,
@@ -132,12 +140,16 @@ class AdminPromotionService(
         val promotion = findActivePromotion(id)
         validateDataScope(scope, promotion)
 
+        // 목표/실적금액 = 조원 파생값 SUM (SF rollup 재현). 두 값 1쿼리 집계.
+        val amounts = promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(listOf(id))[id]
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = promotion.account?.name,
             accountCode = promotion.account?.externalKey,
             primaryProductName = promotion.primaryProduct?.name,
-            primaryProductCode = promotion.primaryProduct?.productCode
+            primaryProductCode = promotion.primaryProduct?.productCode,
+            targetAmount = amounts?.first ?: 0L,
+            actualAmount = amounts?.second ?: 0L
         )
     }
 
@@ -285,7 +297,10 @@ class AdminPromotionService(
             accountName = account.name,
             accountCode = account.externalKey,
             primaryProductName = product.name,
-            primaryProductCode = product.productCode
+            primaryProductCode = product.productCode,
+            // 신규 생성 직후 — 조원 미존재이므로 합계 0.
+            targetAmount = 0L,
+            actualAmount = 0L
         )
     }
 
@@ -359,12 +374,16 @@ class AdminPromotionService(
             upsertPromotionProduct(promotion.id, request.primaryProductId)
         }
 
+        // 목표/실적금액 = 조원 파생값 SUM (SF rollup 재현). 행사마스터만 수정이므로 기존 조원 합산. 두 값 1쿼리 집계.
+        val amounts = promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(listOf(promotion.id))[promotion.id]
         return PromotionDetailResponse.from(
             promotion = promotion,
             accountName = account?.name,
             accountCode = account?.externalKey,
             primaryProductName = product.name,
-            primaryProductCode = product.productCode
+            primaryProductCode = product.productCode,
+            targetAmount = amounts?.first ?: 0L,
+            actualAmount = amounts?.second ?: 0L
         )
     }
 
