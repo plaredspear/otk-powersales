@@ -19836,6 +19836,68 @@
         "tags" : [ "heroku-migration-stage-2-controller" ]
       }
     },
+    "/api/v1/admin/heroku-migration/stage2/sfid-fk" : {
+      "post" : {
+        "operationId" : "runSfidFkResolve",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "tableName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfFkResolveProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "heroku-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/heroku-migration/stage2/sfid-fk/progress" : {
+      "get" : {
+        "operationId" : "getSfidFkProgress",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfFkResolveProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "heroku-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/heroku-migration/stage2/sfid-fk/tables" : {
+      "get" : {
+        "operationId" : "getSfidFkResolvableTables",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListString"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "heroku-migration-stage-2-controller" ]
+      }
+    },
     "/api/v1/admin/holiday-masters" : {
       "get" : {
         "operationId" : "getHolidayMasters",
