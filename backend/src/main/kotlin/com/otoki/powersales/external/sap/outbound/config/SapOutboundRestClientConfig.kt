@@ -1,5 +1,8 @@
 package com.otoki.powersales.external.sap.outbound.config
 
+import com.otoki.powersales.external.common.outboundlog.ExternalApiLogInterceptor
+import com.otoki.powersales.external.common.outboundlog.ExternalApiTarget
+import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
 import com.otoki.powersales.platform.common.util.TimeZones
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -17,7 +20,8 @@ import java.util.TimeZone
 @Configuration
 @EnableConfigurationProperties(SapOutboundProperties::class)
 class SapOutboundRestClientConfig(
-    private val properties: SapOutboundProperties
+    private val properties: SapOutboundProperties,
+    private val externalApiLogService: ExternalApiLogService
 ) {
 
     /**
@@ -49,6 +53,7 @@ class SapOutboundRestClientConfig(
 
         val builder = RestClient.builder()
             .requestFactory(factory)
+            .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.SAP, externalApiLogService))
             .configureMessageConverters { configurer ->
                 configurer.withJsonConverter(jsonConverter)
             }

@@ -1,5 +1,8 @@
 package com.otoki.powersales.platform.common.naver
 
+import com.otoki.powersales.external.common.outboundlog.ExternalApiLogInterceptor
+import com.otoki.powersales.external.common.outboundlog.ExternalApiTarget
+import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
@@ -28,7 +31,8 @@ import java.time.Duration
 @Component
 class NaverGeocodeClient(
     @Value("\${app.naver.geocode.client-id:}") private val clientId: String,
-    @Value("\${app.naver.geocode.client-secret:}") private val clientSecret: String
+    @Value("\${app.naver.geocode.client-secret:}") private val clientSecret: String,
+    externalApiLogService: ExternalApiLogService
 ) {
 
     private val log = LoggerFactory.getLogger(NaverGeocodeClient::class.java)
@@ -40,6 +44,7 @@ class NaverGeocodeClient(
         }
         RestClient.builder()
             .requestFactory(factory)
+            .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.NAVER, externalApiLogService))
             .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
             .build()
     }

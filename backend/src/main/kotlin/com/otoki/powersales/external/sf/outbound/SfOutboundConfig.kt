@@ -1,5 +1,8 @@
 package com.otoki.powersales.external.sf.outbound
 
+import com.otoki.powersales.external.common.outboundlog.ExternalApiLogInterceptor
+import com.otoki.powersales.external.common.outboundlog.ExternalApiTarget
+import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -20,13 +23,14 @@ import java.time.Duration
 class SfOutboundConfig {
 
     @Bean(name = ["sfOutboundRestClient"])
-    fun sfOutboundRestClient(): RestClient {
+    fun sfOutboundRestClient(externalApiLogService: ExternalApiLogService): RestClient {
         val factory = SimpleClientHttpRequestFactory().apply {
             setConnectTimeout(Duration.ofSeconds(5))
             setReadTimeout(Duration.ofSeconds(30))
         }
         return RestClient.builder()
             .requestFactory(factory)
+            .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.SF, externalApiLogService))
             .build()
     }
 }
