@@ -3,31 +3,38 @@ package com.otoki.powersales.domain.sales.sfsync
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * SF 거래처목표등록마스터 동기화 수동 실행 테스트 API (개발자 도구 — 외부 API 테스트).
+ * SF `IF_salesprogresssend` 거래처목표등록마스터 조회 테스트 API (개발자 도구 — 외부 API 테스트).
  *
- * 주기 배치([com.otoki.powersales.platform.batch.SalesProgressRateMasterSyncBatch]) 와 동일한
- * SF fetch → ExternalKey 기준 upsert 경로를 즉시 1회 실행하고 upsert 통계를 반환한다.
- * 운영 배치를 기다리지 않고 SF→DB 동기화를 검증하기 위한 용도이며, 호출 즉시 실제 DB 에
- * upsert 가 반영된다. SF fetch 통신부가 아직 미구현(TODO)이라 현재는 no-op(fetched=0)으로 동작한다.
+ * SF → PWS 방향의 거래처 목표 마스터 조회. 요청 body `MOD_DT`(기준 일자) 로 SF Apex REST
+ * `/IF_salesprogresssend` 로 POST 하면 SF 가 해당 일자 기준 변경 거래처목표등록마스터 목록을 응답한다.
+ * 신규 DB 저장 없이 SF 응답 원형만 반환한다 (클레임 마스터 조회 테스트와 동일 성격).
  * 다른 외부 API 테스트와 동일하게 SYSTEM(`MODIFY_ALL_DATA`) 권한 필요.
  */
 @RestController
 class AdminSalesProgressRateMasterSyncTestController(
-    private val syncService: SalesProgressRateMasterSyncService,
+    private val service: AdminSalesProgressRateMasterSyncTestService,
 ) {
 
     @PostMapping("/api/v1/admin/sales-progress-rate-master/sync/test")
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
-    fun test(): ResponseEntity<ApiResponse<AdminSalesProgressRateMasterSyncTestResponse>> {
-        val result = syncService.sync()
-        return ResponseEntity.ok(
-            ApiResponse.success(AdminSalesProgressRateMasterSyncTestResponse.from(result)),
+    fun test(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @Valid @RequestBody request: AdminSalesProgressRateMasterSyncTestRequest,
+    ): ResponseEntity<ApiResponse<AdminSalesProgressRateMasterSyncTestResponse>> {
+        val response = service.test(
+            userId = principal.requireEmployeeId(),
+            request = request,
         )
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 }
