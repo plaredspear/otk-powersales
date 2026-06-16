@@ -13,12 +13,19 @@ enum LogoutReason {
   inactivityTimeout,
 }
 
-/// 계정 전환(로그아웃) 시 앱 전역 상태를 초기화하기 위한 신호 컨트롤러.
+/// 계정 전환(로그인/로그아웃) 시 앱 전역 상태를 초기화하기 위한 신호 컨트롤러.
 ///
-/// 로그아웃/강제 로그아웃 시 [requestReset] 을 호출하면 루트 위젯([AppBootstrap])이
-/// 루트 `ProviderScope` 를 새 인스턴스로 교체한다. 그 결과 모든 Provider(주문·공지·
-/// 매출·거래처·안전점검 등 도메인 캐시 포함)가 폐기되어, 다음 사용자가 이전 사용자의
-/// 잔여 데이터를 보게 되는 문제를 원천 차단한다.
+/// 로그아웃 시 [requestReset], 로그인 성공 시 [requestReauthenticatedReset] 을
+/// 호출하면 루트 위젯([AppBootstrap])이 루트 `ProviderScope` 를 새 인스턴스로
+/// 교체한다. 그 결과 모든 Provider(주문·공지·매출·거래처·안전점검 등 도메인 캐시
+/// 포함)가 폐기되어, 다음 사용자가 이전 사용자의 잔여 데이터를 보게 되는 문제를
+/// 원천 차단한다.
+///
+/// 두 리셋의 차이는 **재생성 후 시작 지점**뿐이다:
+/// - 로그아웃([requestReset]) → 로그인 화면에서 시작([startAuthenticated] = false).
+/// - 로그인([requestReauthenticatedReset]) → 저장된 토큰으로 세션을 복원해 인증된
+///   홈에서 시작([startAuthenticated] = true). 로그인 경로도 항상 fresh scope 에서
+///   출발하게 되어, 진입 경로와 무관하게 이전 세션 잔여 데이터가 남지 않는다.
 ///
 /// 개별 Provider 를 일일이 `invalidate` 하지 않으므로, 새 도메인 Provider 가
 /// 추가되어도 누락 없이 항상 초기화된다.
@@ -28,16 +35,32 @@ class SessionResetController {
   static final SessionResetController instance = SessionResetController._();
 
   /// 리셋 세대(generation). 값이 바뀔 때마다 루트가 `ProviderScope` 의 key 를 갱신한다.
-  /// 값이 0 보다 크면 "로그아웃으로 재생성된 세션"을 의미한다.
+  /// 값이 0 보다 크면 "리셋으로 재생성된 세션"을 의미한다.
   final ValueNotifier<int> generation = ValueNotifier<int>(0);
 
   /// 직전 강제 로그아웃 사유. 로그인 화면이 [consumeReason] 으로 1회 소비해 안내한다.
   /// 사용자가 직접 로그아웃한 경우는 null(무표시).
   LogoutReason? _reason;
 
+  /// 직전 리셋이 "로그인 성공(인증된 홈에서 시작)" 인지 여부.
+  /// 루트([AppBootstrap])가 재생성 시점에 읽어 시작 지점을 결정한다.
+  bool _startAuthenticated = false;
+
+  /// 직전 리셋이 인증 복원(로그인)용인지 — true 면 재생성 후 인증된 홈에서 시작한다.
+  bool get startAuthenticated => _startAuthenticated;
+
   /// 전역 상태 초기화 요청(로그아웃 직후 호출). [reason] 전달 시 로그인 화면에서 안내한다.
   void requestReset({LogoutReason? reason}) {
     _reason = reason;
+    _startAuthenticated = false;
+    generation.value++;
+  }
+
+  /// 로그인 성공 직후 호출 — 도메인 캐시를 모두 폐기하되, 재생성된 세션은 저장된
+  /// 토큰으로 세션을 복원해 **인증된 홈**에서 시작한다(로그인 화면으로 떨어지지 않음).
+  void requestReauthenticatedReset() {
+    _reason = null;
+    _startAuthenticated = true;
     generation.value++;
   }
 

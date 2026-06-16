@@ -185,6 +185,34 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// 저장된 access token 으로 세션을 복원한다(로그인 성공 후 ProviderScope 재생성 직후 호출).
+  ///
+  /// [tryAutoLogin] 과 달리 자동 로그인 설정 여부와 무관하게 동작한다 — 사용자가 방금
+  /// 의도적으로 로그인했으므로, 자동 로그인 OFF 라도 그 세션은 복원해야 한다. refresh
+  /// 토큰 회전 없이 방금 저장된 access token 으로 `/me` 만 조회해 인증을 완료한다.
+  /// 복원 실패 시 조용히 로그인 화면으로 떨어진다(getMe 는 401 에도 강제 로그아웃하지 않음).
+  Future<void> restoreSession() async {
+    try {
+      final accessToken = await _localDataSource.getAccessToken();
+      if (!mounted) return;
+      if (accessToken == null || accessToken.isEmpty) {
+        state = state.toUnauthenticated();
+        return;
+      }
+
+      state = state.toLoading();
+      final user = await _repository.getMe();
+      if (!mounted) return;
+      state = state.toAuthenticated(user);
+      _registerFcmToken();
+    } catch (e) {
+      // 백그라운드 전환 등 요청 취소는 인증 실패가 아니므로 토큰 유지.
+      if (isRequestCancelled(e)) return;
+      if (!mounted) return;
+      state = state.toUnauthenticated();
+    }
+  }
+
   /// 로그인 수행
   ///
   /// [employeeCode]: 사번
@@ -256,9 +284,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
           isInitialized: true,
         );
       } else {
-        // 모든 조건 통과 → 인증 완료
-        state = state.toAuthenticated(result.user);
-        _registerFcmToken();
+        // 모든 조건 통과 → 인증 완료.
+        // 로그아웃과 동일하게 루트 ProviderScope 를 재생성해 이전 세션의 도메인 캐시를
+        // 모두 폐기한다(진입 경로와 무관하게 stale 데이터 차단). 재생성된 세션은 방금
+        // 저장한 토큰으로 [restoreSession] 을 통해 인증된 홈에서 시작한다. 이 notifier 는
+        // 곧 폐기되므로 여기서 state 를 갱신하지 않는다(새 scope 가 인증을 재수립).
+        SessionResetController.instance.requestReauthenticatedReset();
       }
     } on ArgumentError catch (e) {
       state = state.toError(e.message as String);

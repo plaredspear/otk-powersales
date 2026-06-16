@@ -75,19 +75,33 @@ class _AppBootstrapState extends State<AppBootstrap> {
   @override
   Widget build(BuildContext context) {
     final generation = _generation.value;
+    // 재생성 사유가 로그인(인증 복원)인지 로그아웃(로그인 화면)인지 구분한다.
+    final startAuthenticated =
+        generation > 0 && SessionResetController.instance.startAuthenticated;
     return ProviderScope(
       // key 가 바뀌면 ProviderScope 전체가 재생성되어 모든 Provider 가 폐기된다.
       key: ValueKey<int>(generation),
-      child: OtokiApp(startAtLogin: generation > 0),
+      child: OtokiApp(
+        startAtLogin: generation > 0 && !startAuthenticated,
+        startAuthenticated: startAuthenticated,
+      ),
     );
   }
 }
 
 class OtokiApp extends ConsumerStatefulWidget {
-  const OtokiApp({super.key, this.startAtLogin = false});
+  const OtokiApp({
+    super.key,
+    this.startAtLogin = false,
+    this.startAuthenticated = false,
+  });
 
   /// 로그아웃 재생성 세션 여부. true 면 스플래시 대신 로그인 화면에서 시작한다.
   final bool startAtLogin;
+
+  /// 로그인 성공 재생성 세션 여부. true 면 스플래시/자동로그인 게이트를 건너뛰고
+  /// 저장된 토큰으로 [AuthNotifier.restoreSession] 을 호출해 인증된 홈에서 시작한다.
+  final bool startAuthenticated;
 
   @override
   ConsumerState<OtokiApp> createState() => _OtokiAppState();
@@ -129,6 +143,16 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
           AppRouter.login,
           (route) => false,
         );
+      });
+    } else if (widget.startAuthenticated) {
+      // 로그인 성공으로 재생성된 세션 — 스플래시/자동로그인 게이트를 건너뛰고 저장된
+      // 토큰으로 세션을 복원한다. 복원이 인증 완료로 전이하면 authState 리스너가 홈으로
+      // 전환하고, 실패하면 로그인 화면으로 떨어진다. 직전 화면은 로그인이므로 시작 라우트를
+      // login 으로 맞춰 인증 완료 시 홈으로의 전환이 정상 발화하게 한다.
+      _lastAuthRoute = AppRouter.login;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(authProvider.notifier).restoreSession();
       });
     }
     WidgetsBinding.instance.addObserver(this);
@@ -306,8 +330,11 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
       title: '오뚜기 임직원 영업관리',
       theme: AppTheme.light,
       navigatorKey: navigatorKey,
-      initialRoute:
-          widget.startAtLogin ? AppRouter.login : AppRouter.initialRoute,
+      // 리셋 재생성 세션(로그아웃/로그인)은 스플래시/버전 게이트를 건너뛰고 로그인에서
+      // 출발한다. 로그인 복원 세션은 restoreSession 이 인증 완료 후 홈으로 전환한다.
+      initialRoute: (widget.startAtLogin || widget.startAuthenticated)
+          ? AppRouter.login
+          : AppRouter.initialRoute,
       routes: AppRouter.routes,
       onUnknownRoute: AppRouter.onUnknownRoute,
       debugShowCheckedModeBanner: false,
