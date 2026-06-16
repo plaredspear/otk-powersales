@@ -75,6 +75,11 @@ object ScheduledJobCatalog {
             description = "거래처목표등록마스터 SF fetch → upsert sync (기본 1시간 주기)",
         ),
         Entry(
+            jobName = StaffReviewSyncBatch.JOB_NAME,
+            cron = StaffReviewSyncBatch.CRON,
+            description = "사원평가 마스터 SF fetch → upsert sync (기본 매일 03시)",
+        ),
+        Entry(
             jobName = SapOutboxBatch.JOB_NAME,
             cron = "\${app.sap.outbox.cron:*/30 * * * * *}",
             description = "SAP outbox 메시지 worker (기본 30초 주기)",

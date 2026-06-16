@@ -50,95 +50,95 @@ class StaffReview(
 
     // -- 사원 식별 / 캐시 --
 
-    @Column(name = "employee_id")
+    @Column(name = "employee_id", insertable = false, updatable = false)
     val employeeId: Long? = null,
 
     @SFField("DKRetail_EmployeeId__c")
     @Column(name = "employee_sfid", length = 18)
-    val employeeSfid: String? = null,
+    var employeeSfid: String? = null,
 
     @SFField("EmployeeName__c")
     @Column(name = "employee_name", length = 1300)
-    val employeeName: String? = null,
+    var employeeName: String? = null,
 
     @SFField("EmployeeNumber__c")
     @Column(name = "employee_code", length = 1300)
-    val employeeCode: String? = null,
+    var employeeCode: String? = null,
 
     @SFField("Branch__c")
     @Column(name = "branch", length = 1300)
-    val branch: String? = null,
+    var branch: String? = null,
 
     @SFField("BranchReviews__c")
     @Column(name = "branch_review_sfid", length = 18)
-    val branchReviewSfid: String? = null,
+    var branchReviewSfid: String? = null,
 
     @SFField("CostCenterCode__c")
     @Column(name = "cost_center_code", length = 1300)
-    val costCenterCode: String? = null,
+    var costCenterCode: String? = null,
 
     @SFField("EmployeeTotalScore__c")
     @Column(name = "employee_total_score")
-    val employeeTotalScore: Double? = null,
+    var employeeTotalScore: Double? = null,
 
     // -- 점수 항목 --
 
     @SFField("Attendance__c")
     @Column(name = "attendance_score")
-    val attendanceScore: Double? = null,
+    var attendanceScore: Double? = null,
 
     @SFField("InstructionsDefault__c")
     @Column(name = "instruction_disobedience_score")
-    val instructionDisobedienceScore: Double? = null,
+    var instructionDisobedienceScore: Double? = null,
 
     @SFField("Priority_EventItemManage__c")
     @Column(name = "priority_item_event_score")
-    val priorityItemEventScore: Double? = null,
+    var priorityItemEventScore: Double? = null,
 
     @SFField("DisplayManageEventGoals__c")
     @Column(name = "display_event_goal_score")
-    val displayEventGoalScore: Double? = null,
+    var displayEventGoalScore: Double? = null,
 
     @SFField("BusinessPartnerTies__c")
     @Column(name = "account_partnership_score")
-    val accountPartnershipScore: Double? = null,
+    var accountPartnershipScore: Double? = null,
 
     @SFField("ClothesSatellite__c")
     @Column(name = "clothes_hygiene_score")
-    val clothesHygieneScore: Double? = null,
+    var clothesHygieneScore: Double? = null,
 
     @SFField("ProductManageCallment__c")
     @Column(name = "product_manage_callment_score")
-    val productManageCallmentScore: Double? = null,
+    var productManageCallmentScore: Double? = null,
 
     @SFField("EducationalEvaluation__c")
     @Column(name = "education_evaluation_score")
-    val educationEvaluationScore: Double? = null,
+    var educationEvaluationScore: Double? = null,
 
     // -- 근무유형 / 직무 / 시점 --
 
     @SFField("DKRetail_WorkingCategory1__c")
     @Convert(converter = WorkingCategory1Converter::class)
     @Column(name = "working_category1", length = 255)
-    val workingCategory1: WorkingCategory1? = null,
+    var workingCategory1: WorkingCategory1? = null,
 
     @SFField("DKRetail_WorkingCategory2__c")
     @Convert(converter = WorkingCategory2Converter::class)
     @Column(name = "working_category2", length = 255)
-    val workingCategory2: WorkingCategory2? = null,
+    var workingCategory2: WorkingCategory2? = null,
 
     @SFField("DKRetail_WorkingCategory3__c")
     @Convert(converter = WorkingCategory3Converter::class)
     @Column(name = "working_category3", length = 255)
-    val workingCategory3: WorkingCategory3? = null,
+    var workingCategory3: WorkingCategory3? = null,
 
     @SFField("JobCode__c")
     @Column(name = "job_code", length = 20)
-    val jobCode: String? = null,
+    var jobCode: String? = null,
 
     @SFField("FirstDayofMonth__c")
     @Column(name = "first_day_of_month")
-    val firstDayOfMonth: LocalDate? = null,
+    var firstDayOfMonth: LocalDate? = null,
 
     // -- 구분 / 입사일 / 직위 --
 
@@ -174,8 +174,8 @@ class StaffReview(
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id", insertable = false, updatable = false)
-    val employee: Employee? = null,
+    @JoinColumn(name = "employee_id")
+    var employee: Employee? = null,
 
     @CreatedBy
     @ManyToOne(fetch = FetchType.LAZY)

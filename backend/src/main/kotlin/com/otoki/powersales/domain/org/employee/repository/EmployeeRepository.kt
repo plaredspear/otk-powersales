@@ -74,6 +74,11 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByEmployeeCodeIn(employeeCodes: List<String>): List<Employee>
 
     /**
+     * SF Id(sfid) 목록으로 일괄 조회 — SF fetch sync 의 사원 FK resolve 용.
+     */
+    fun findBySfidIn(sfids: Collection<String>): List<Employee>
+
+    /**
      * 조직(costCenterCode) + 역할(role)로 사원 조회 (여사원 일정관리)
      */
     fun findByCostCenterCodeAndRole(costCenterCode: String, role: String): List<Employee>

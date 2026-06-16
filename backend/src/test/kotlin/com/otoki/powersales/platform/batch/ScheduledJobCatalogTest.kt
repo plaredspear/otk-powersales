@@ -13,6 +13,7 @@ import com.otoki.powersales.platform.batch.PPTMasterSapOutboundBatch
 import com.otoki.powersales.platform.batch.PPTMasterSyncBatch
 import com.otoki.powersales.platform.batch.PostponedAppointmentBatch
 import com.otoki.powersales.platform.batch.SalesProgressRateMasterSyncBatch
+import com.otoki.powersales.platform.batch.StaffReviewSyncBatch
 import com.otoki.powersales.platform.batch.SapOutboxBatch
 import com.otoki.powersales.platform.batch.ScheduledJobCatalog
 import com.otoki.powersales.platform.batch.ScheduledJobRunCleanupBatch
@@ -24,7 +25,7 @@ import org.junit.jupiter.api.Test
 class ScheduledJobCatalogTest {
 
     @Test
-    @DisplayName("카탈로그의 15개 jobName 이 각 *Batch.JOB_NAME 상수와 1:1 일치한다")
+    @DisplayName("카탈로그의 16개 jobName 이 각 *Batch.JOB_NAME 상수와 1:1 일치한다")
     fun jobNames_alignWithBatchConstants() {
         val expected = setOf(
             AgreementWordCycleBatch.JOB_NAME,
@@ -38,6 +39,7 @@ class ScheduledJobCatalogTest {
             PPTMasterSyncBatch.JOB_NAME,
             PostponedAppointmentBatch.JOB_NAME,
             SalesProgressRateMasterSyncBatch.JOB_NAME,
+            StaffReviewSyncBatch.JOB_NAME,
             SapOutboxBatch.JOB_NAME,
             ScheduledJobRunCleanupBatch.JOB_NAME,
             OroraDailySalesMaterializeBatch.JOB_NAME,
@@ -45,7 +47,7 @@ class ScheduledJobCatalogTest {
         )
 
         assertThat(ScheduledJobCatalog.JOB_NAMES.toSet()).isEqualTo(expected)
-        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(15)
+        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(16)
         assertThat(ScheduledJobCatalog.ENTRIES.map { it.jobName }).doesNotHaveDuplicates()
     }
 
