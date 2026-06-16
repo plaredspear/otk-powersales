@@ -144,6 +144,9 @@ export function ScheduleEditModal({
       title={readOnly ? '일정 상세' : '일정 수정'}
       open={open}
       onCancel={onClose}
+      // 일정 목록 모달(DayScheduleListModal, 기본 z-index 1050) 위에서 열리므로
+      // 더 높은 z-index 로 상세 모달이 항상 앞에 표시되도록 한다.
+      zIndex={1100}
       destroyOnHidden
       footer={
         readOnly ? (
