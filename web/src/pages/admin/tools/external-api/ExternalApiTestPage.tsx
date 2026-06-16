@@ -40,7 +40,7 @@ const API_DESCRIPTIONS: Record<string, string> = {
   'logistics-claim-status-update':
     '기준 일자(MOD_DT, YYYYMMDD) 하나를 Salesforce Apex REST `/services/apexrest/mobile/IF_SendLogisticsClaimToPWS` 로 POST 하면, SF 가 해당 일자 기준으로 변경된 물류 클레임(제안) 마스터 목록(제안명/거래처/조치상태/물류센터 등 21개 필드)을 응답하는 SF → PWS 방향의 조회 인터페이스입니다("알라딘 물류클레임 마스터 API" 문서 정합). 클레임 등록과 동일한 OAuth2(Bearer) + 401 재시도 경로로 호출하며, SF 응답을 결과 테이블 + raw JSON 그대로 노출합니다. 조회 전용이라 신규 DB 에는 저장하지 않습니다.',
   'sales-progress-rate-master-sync':
-    '거래처목표등록마스터(SalesProgressRateMaster__c)를 Salesforce 에서 조회하여 신규 DB 로 갱신하는 주기 동기화 배치(매시 정각)를 즉시 1회 수동 실행합니다. 배치와 동일하게 ExternalKey(연+월+거래처코드) 기준으로 upsert 하며(없으면 INSERT, 있으면 목표/실적/진도율/지점 컬럼 UPDATE), 삭제는 반영하지 않습니다. 실행 즉시 실제 DB 에 반영되며 조회/추가/갱신/건너뜀 통계를 표시합니다. SF fetch 통신부가 아직 미구현(TODO)인 동안에는 조회 0건의 no-op 으로 동작합니다.',
+    '기준 일자(MOD_DT, YYYYMMDD) 하나를 Salesforce Apex REST `/services/apexrest/mobile/IF_salesprogresssend` 로 POST 하면, SF 가 해당 일자 기준으로 변경된 거래처목표등록마스터 목록(거래처코드/영업률/FO·FR·RM·RT 목표금액/목표 연월/합계/진행률 등 15개 필드)을 응답하는 SF → PWS 방향의 조회 인터페이스입니다("알라딘 거래처목표 마스터 API" 문서 정합). 클레임 등록과 동일한 OAuth2(Bearer) + 401 재시도 경로로 호출하며, SF 응답을 결과 테이블 + raw JSON 그대로 노출합니다. 조회 전용이라 신규 DB 에는 저장하지 않습니다.',
   'logistics-claim-regist':
     '모바일 물류 클레임 등록(제안하기 > 물류 클레임) 입력 정보를 토대로 Salesforce Apex REST `IF_REST_MOBILE_ProposalRegist` 전송 payload(apiMap) 미리보기를 구성합니다. SF 전송 API 정보가 아직 확보되지 않은 단계라 실제 SF POST 는 수행하지 않고, 레거시 Input 클래스 key 셋(Category/ProductCode/accountCode/EmployeeCode/Title/Description/CarNumber/claimList/logclaimDate/S3Image* 등) 정합의 apiMap 을 JSON 으로만 노출합니다. 추후 SF endpoint/계약 정보를 받으면 실제 전송 호출을 추가할 예정입니다. 사진은 최대 2장이며 모두 선택입니다.',
 };
@@ -165,13 +165,14 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <ApiDescriptionAlert
           apiKey="sales-progress-rate-master-sync"
-          title="SF 거래처목표등록마스터 동기화 — SF 조회 후 DB 갱신"
+          title="SF IF_salesprogresssend — 거래처목표등록마스터 조회"
         />
+        <IntegrationInfoDescriptions apiKey="sales-progress-rate-master-sync" />
         <Alert
-          type="warning"
+          type="info"
           showIcon
-          message="이 탭은 실제 DB 에 동기화 결과를 반영합니다."
-          description="'지금 동기화 실행' 버튼은 주기 배치와 동일한 SF 조회 → ExternalKey upsert 경로를 즉시 실행하여 신규 DB(sales_progress_rate_master)에 반영합니다. SF fetch 통신부가 아직 미구현(TODO)인 동안에는 조회 0건의 no-op 으로 동작합니다. SYSTEM_ADMIN 권한 필요."
+          message="이 탭은 SF 에서 거래처목표등록마스터를 조회합니다 (조회 전용 — DB 변경 없음)."
+          description="'SF 조회' 버튼은 입력한 기준 일자(MOD_DT)로 SF Apex REST IF_salesprogresssend 로 호출하여 변경 거래처목표등록마스터 목록을 받아옵니다. 신규 DB 에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
         />
         <SalesProgressRateMasterSyncTab />
       </Space>

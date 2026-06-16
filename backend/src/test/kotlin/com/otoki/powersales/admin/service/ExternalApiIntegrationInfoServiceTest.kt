@@ -66,6 +66,19 @@ class ExternalApiIntegrationInfoServiceTest {
     }
 
     @Test
+    @DisplayName("SF IF_salesprogresssend(거래처목표등록마스터 조회) — key=sales-progress-rate-master-sync, /IF_salesprogresssend, POST")
+    fun salesProgressRateMasterSyncInfo() {
+        val info = service().getIntegrationInfo().items.first { it.key == "sales-progress-rate-master-sync" }
+
+        assertThat(info.externalSystem).contains("Salesforce")
+        assertThat(info.endpoint)
+            .isEqualTo("https://ottogi.my.salesforce.com/services/apexrest/mobile/IF_salesprogresssend")
+        assertThat(info.httpMethod).isEqualTo("POST")
+        assertThat(info.authType).contains("OAuth2", "Bearer")
+        assertThat(info.note).contains("MOD_DT")
+    }
+
+    @Test
     @DisplayName("SAP 인터페이스 7개 — endpoint = baseUrl + /{interfaceId}, POST, Basic")
     fun sapInfos() {
         val items = service().getIntegrationInfo().items

@@ -8,6 +8,8 @@ import com.otoki.powersales.domain.sales.repository.SalesProgressRateMasterRepos
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlin.collections.iterator
 
 /**
@@ -25,11 +27,11 @@ import kotlin.collections.iterator
  * ([SalesProgressRateMasterFetchDto])에 포함하지 않는다 — 이들은 SF→RDS 마이그레이션(Stage1) 권위이며
  * 주기 sync 의 책임 밖이다.
  *
- * ## 충돌 처리 (FetchClient 구현 전 TODO)
+ * ## 충돌 처리
  * `external_key` 는 unique 제약. 동일 사이클 내 중복은 [LinkedHashMap] dedupe 로 방어하나, 본 sync 와
  * 다른 적재 경로(Stage1 / admin)가 동시에 같은 ExternalKey 를 INSERT 하면 `saveAll` commit 시
- * `DataIntegrityViolationException` 으로 **해당 트랜잭션 전량 롤백**된다. FetchClient 가 실데이터를
- * 반환하기 전에 건별 격리(개별 트랜잭션) 또는 `ON CONFLICT` upsert 전략을 확정할 것.
+ * `DataIntegrityViolationException` 으로 **해당 트랜잭션 전량 롤백**된다. 동시 적재 경로가 추가되면
+ * 건별 격리(개별 트랜잭션) 또는 `ON CONFLICT` upsert 전략을 검토할 것.
  */
 @Service
 class SalesProgressRateMasterSyncService(
@@ -40,10 +42,17 @@ class SalesProgressRateMasterSyncService(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    /** SF fetch → upsert 전체 경로 (배치 진입점). */
+    /**
+     * SF fetch → upsert 전체 경로 (배치 진입점).
+     *
+     * @param modDt SF 조회 기준 일자 (YYYYMMDD). 미지정 시 오늘 — 주기 배치가 당일 변경분을 가져온다.
+     */
     @Transactional
-    fun sync(context: ScheduledJobRunContext? = null): SyncResult {
-        val fetched = fetchClient.fetch()
+    fun sync(
+        context: ScheduledJobRunContext? = null,
+        modDt: String = LocalDate.now().format(MOD_DT_FORMAT),
+    ): SyncResult {
+        val fetched = fetchClient.fetch(modDt)
         return syncRecords(fetched, context)
     }
 
@@ -200,4 +209,9 @@ class SalesProgressRateMasterSyncService(
         val updated: Int,
         val skipped: Int,
     )
+
+    companion object {
+        /** SF Request Body MOD_DT 형식 (YYYYMMDD). */
+        private val MOD_DT_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    }
 }

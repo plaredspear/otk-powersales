@@ -2003,23 +2003,33 @@
         "required" : [ "alarmDate", "expirationDate" ],
         "type" : "object"
       },
+      "AdminSalesProgressRateMasterSyncTestRequest" : {
+        "properties" : {
+          "modDt" : {
+            "minLength" : 1,
+            "pattern" : "\\d{8}",
+            "type" : "string"
+          }
+        },
+        "required" : [ "modDt" ],
+        "type" : "object"
+      },
       "AdminSalesProgressRateMasterSyncTestResponse" : {
         "properties" : {
-          "fetched" : {
-            "format" : "int32",
-            "type" : "integer"
+          "rawResponse" : {
+            "type" : [ "string", "null" ]
           },
-          "inserted" : {
-            "format" : "int32",
-            "type" : "integer"
+          "requestPayload" : {
+            "type" : "string"
           },
-          "skipped" : {
-            "format" : "int32",
-            "type" : "integer"
+          "resultCode" : {
+            "type" : [ "string", "null" ]
           },
-          "updated" : {
-            "format" : "int32",
-            "type" : "integer"
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -23283,6 +23293,16 @@
     "/api/v1/admin/sales-progress-rate-master/sync/test" : {
       "post" : {
         "operationId" : "test",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminSalesProgressRateMasterSyncTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {
