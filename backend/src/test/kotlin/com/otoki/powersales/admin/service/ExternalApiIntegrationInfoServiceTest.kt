@@ -79,6 +79,19 @@ class ExternalApiIntegrationInfoServiceTest {
     }
 
     @Test
+    @DisplayName("SF IF_SendStaffReviewToPWS(사원평가 마스터 조회) — key=staff-review-sync, /IF_SendStaffReviewToPWS, POST")
+    fun staffReviewSyncInfo() {
+        val info = service().getIntegrationInfo().items.first { it.key == "staff-review-sync" }
+
+        assertThat(info.externalSystem).contains("Salesforce")
+        assertThat(info.endpoint)
+            .isEqualTo("https://ottogi.my.salesforce.com/services/apexrest/mobile/IF_SendStaffReviewToPWS")
+        assertThat(info.httpMethod).isEqualTo("POST")
+        assertThat(info.authType).contains("OAuth2", "Bearer")
+        assertThat(info.note).contains("MOD_DT")
+    }
+
+    @Test
     @DisplayName("SAP 인터페이스 7개 — endpoint = baseUrl + /{interfaceId}, POST, Basic")
     fun sapInfos() {
         val items = service().getIntegrationInfo().items

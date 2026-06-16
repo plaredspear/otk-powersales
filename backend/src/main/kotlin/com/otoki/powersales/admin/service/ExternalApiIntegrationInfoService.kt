@@ -30,6 +30,7 @@ class ExternalApiIntegrationInfoService(
             add(claimMasterSync())
             add(logisticsClaimMasterSync())
             add(salesProgressRateMasterSync())
+            add(staffReviewSync())
             addAll(sapInterfaces())
         }
         return ExternalApiIntegrationInfoResponse(items)
@@ -83,6 +84,16 @@ class ExternalApiIntegrationInfoService(
         httpMethod = "POST",
         authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
         note = "Content-Type: application/json. Request body: { MOD_DT } (YYYYMMDD). SF → PWS 거래처목표등록마스터 조회. 환경변수 prefix: sf.outbound.*",
+    )
+
+    // key 는 web 탭 식별자("SF 사원평가 마스터 동기화" 탭 = staff-review-sync)에 맞춘다.
+    private fun staffReviewSync() = ExternalApiIntegrationInfo(
+        key = "staff-review-sync",
+        externalSystem = "Salesforce (Apex REST)",
+        endpoint = joinUrl(sfOutboundProperties.apexBaseUrl, "/IF_SendStaffReviewToPWS"),
+        httpMethod = "POST",
+        authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
+        note = "Content-Type: application/json. Request body: { MOD_DT } (YYYYMMDD). SF → PWS 사원평가 마스터 조회. 환경변수 prefix: sf.outbound.*",
     )
 
     private fun sapInterfaces(): List<ExternalApiIntegrationInfo> {
