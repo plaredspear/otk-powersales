@@ -21494,6 +21494,13 @@
         "operationId" : "getAllHistory",
         "parameters" : [ {
           "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
