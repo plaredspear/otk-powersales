@@ -142,6 +142,32 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/admin/employees/lookup - 행사사원 lookup")
+    inner class LookupEmployees {
+
+        @Test
+        @DisplayName("본인 지점 스코프(applyBranchScope=true) 적용 — SF OWD=Private + with sharing 정합")
+        fun lookup_appliesBranchScope() {
+            val response = EmployeeListResponse(content = emptyList(), page = 0, size = 20, totalElements = 0, totalPages = 0)
+            every {
+                adminEmployeeService.getEmployees(
+                    any(), any(), any(), any(), any(), any(), any(), applyBranchScope = eq(true)
+                )
+            } returns response
+
+            mockMvc.perform(get("/api/v1/admin/employees/lookup"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+
+            verify(exactly = 1) {
+                adminEmployeeService.getEmployees(
+                    any(), any(), any(), any(), any(), any(), any(), applyBranchScope = eq(true)
+                )
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/v1/admin/employees/lookup-for-schedule - 진열사원 스케줄 사원 lookup")
     inner class LookupForSchedule {
 
