@@ -74,8 +74,11 @@ class AdminEmployeeController(
      * SF 의 lookup search 는 Employee FLS/object access 와 무관하게 화면 권한 (Promotion CRUD) 으로
      * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [EmployeeListResponse] 재사용.
      *
-     * 사원 후보는 전사 검색 — SF 행사 사원 그리드 (`RelatedListDataGridController.getLookupCandidates`)
-     * 가 `Name Like + Status='재직'` 만 적용하고 지점 필터를 두지 않으므로 지점 스코프 미적용.
+     * 사원 후보는 본인 지점 스코프 — SF 행사 사원 그리드 (`RelatedListDataGridController.getLookupCandidates`)
+     * SOQL 의 WHERE 절은 `Name Like + Status='재직'` 만 두지만, `with sharing` 클래스 + `DKRetail__Employee__c`
+     * OWD=Private 조합으로 실행 사용자의 Record Visibility (지점 단위 Owner/Role Hierarchy) 가 암묵 적용되어
+     * 실제로는 본인 지점 사원만 노출된다. 신규 시스템에는 SF Sharing 메커니즘이 없으므로 동등성 복원을 위해
+     * `applyBranchScope = true` 로 사원 소속 지점 (costCenterCode) 스코프를 명시 적용한다.
      *
      * 검색 범위는 재직 사원 한정 — 레거시 SF SOQL (`DKRetail__Status__c = '재직'`) 이 서버에서 항상
      * 강제하던 조건을 동일하게 서버에서 고정한다 (호출 측 status 파라미터에 의존하지 않음).
@@ -96,7 +99,8 @@ class AdminEmployeeController(
             keyword = keyword,
             role = null,
             page = page,
-            size = size
+            size = size,
+            applyBranchScope = true
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
