@@ -4,7 +4,6 @@ import {
   Alert,
   Button,
   Descriptions,
-  Input,
   Modal,
   Space,
   Spin,
@@ -44,7 +43,6 @@ export default function UserDetailPage() {
   const [resetOpen, setResetOpen] = useState(false);
   const [activeOpen, setActiveOpen] = useState(false);
   const [impersonateOpen, setImpersonateOpen] = useState(false);
-  const [impersonateReason, setImpersonateReason] = useState('');
 
   useEffect(() => {
     setDynamicTitle(user?.name ?? user?.username ?? null);
@@ -80,7 +78,6 @@ export default function UserDetailPage() {
     try {
       await impersonateMutation.mutateAsync({
         targetUserId: user.id,
-        reason: impersonateReason.trim() || undefined,
       });
       // navigate 는 훅 onSuccess 가 담당. 모달 닫기 책임은 페이지 (다른 모달과 패턴 통일).
       setImpersonateOpen(false);
@@ -258,7 +255,6 @@ export default function UserDetailPage() {
         cancelText="취소"
         confirmLoading={impersonateMutation.isPending}
         destroyOnHidden
-        afterClose={() => setImpersonateReason('')}
       >
         <Paragraph>
           <Text strong>{user.name ?? user.username}</Text> 계정으로 대행 로그인합니다. 대행 중에는 해당
@@ -269,13 +265,6 @@ export default function UserDetailPage() {
           <br />
           <Text strong>이름:</Text> {user.name ?? '-'}
         </Paragraph>
-        <Input.TextArea
-          placeholder="대행 사유 (선택, 최대 500자)"
-          maxLength={500}
-          rows={2}
-          value={impersonateReason}
-          onChange={(e) => setImpersonateReason(e.target.value)}
-        />
       </Modal>
     </div>
   );
