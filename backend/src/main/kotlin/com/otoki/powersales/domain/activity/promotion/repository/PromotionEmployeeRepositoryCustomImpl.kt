@@ -17,6 +17,11 @@ class PromotionEmployeeRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory,
 ) : PromotionEmployeeRepositoryCustom {
 
+    // 행사사원 soft-delete(IsDeleted) 제외 — SF 정합 (모든 조회에서 IsDeleted=true row 자동 제외).
+    // is_deleted 는 nullable(SF migration row 정합)이라 NULL 도 미삭제로 통과시킨다.
+    private val notDeleted: Predicate =
+        promotionEmployee.isDeleted.isNull.or(promotionEmployee.isDeleted.isFalse)
+
     override fun findAllAccessibleByParentPolicy(parentPolicyPredicate: Predicate): List<PromotionEmployee> {
         // ControlledByParent — 자식 PromotionEmployee 의 가시성은 부모 Promotion 의 정책 결과 흡수.
         // Service layer 가 SharingRulePolicyEvaluator.buildPredicate(scope, "DKRetail__Promotion__c", QPromotion) 호출.
@@ -27,7 +32,7 @@ class PromotionEmployeeRepositoryCustomImpl(
             // inner join 을 만들지 않도록 명시적 leftJoin. OR 합성이라 부모 ownerUser=null row 도
             // 다른 절로 통과해야 한다 (PromotionRepositoryCustomImpl 동일 패턴).
             .leftJoin(promotion.ownerUser)
-            .where(parentPolicyPredicate)
+            .where(parentPolicyPredicate, notDeleted)
             .fetch()
     }
 
@@ -37,7 +42,7 @@ class PromotionEmployeeRepositoryCustomImpl(
             .leftJoin(promotionEmployee.employee, employee).fetchJoin()
             // 전문행사조(투입당시) 값 = teamMemberSchedule.professionalPromotionTeam (SF ScheduleId__r.ProfessionalPromotionTeam__c 동등)
             .leftJoin(promotionEmployee.teamMemberSchedule, teamMemberSchedule).fetchJoin()
-            .where(promotionEmployee.promotionId.eq(promotionId))
+            .where(promotionEmployee.promotionId.eq(promotionId), notDeleted)
             .orderBy(promotionEmployee.scheduleDate.asc())
             .fetch()
     }
@@ -46,7 +51,7 @@ class PromotionEmployeeRepositoryCustomImpl(
         return queryFactory
             .select(promotionEmployee.scheduleDate.min())
             .from(promotionEmployee)
-            .where(promotionEmployee.promotionId.eq(promotionId))
+            .where(promotionEmployee.promotionId.eq(promotionId), notDeleted)
             .fetchOne()
     }
 
@@ -54,7 +59,7 @@ class PromotionEmployeeRepositoryCustomImpl(
         return queryFactory
             .select(promotionEmployee.scheduleDate.max())
             .from(promotionEmployee)
-            .where(promotionEmployee.promotionId.eq(promotionId))
+            .where(promotionEmployee.promotionId.eq(promotionId), notDeleted)
             .fetchOne()
     }
 
@@ -79,7 +84,7 @@ class PromotionEmployeeRepositoryCustomImpl(
                 dailyActualAmountSum,
             )
             .from(promotionEmployee)
-            .where(promotionEmployee.promotionId.`in`(promotionIds))
+            .where(promotionEmployee.promotionId.`in`(promotionIds), notDeleted)
             .groupBy(promotionEmployee.promotionId)
             .fetch()
             .associate { tuple ->
@@ -96,7 +101,8 @@ class PromotionEmployeeRepositoryCustomImpl(
             .from(promotionEmployee)
             .where(
                 promotionEmployee.promotionId.eq(promotionId),
-                promotionEmployee.employeeId.eq(employeeId)
+                promotionEmployee.employeeId.eq(employeeId),
+                notDeleted
             )
             .fetchOne()
     }
@@ -112,8 +118,7 @@ class PromotionEmployeeRepositoryCustomImpl(
             .leftJoin(promotionEmployee.teamMemberSchedule, teamMemberSchedule).fetchJoin()
             .where(
                 promotionEmployee.scheduleDate.between(startDate, endDate),
-                // soft-delete 제외
-                promotionEmployee.isDeleted.isNull.or(promotionEmployee.isDeleted.isFalse),
+                notDeleted, // soft-delete 제외
                 // 전사 — SF scope=organization (영업지원실용)
             )
             // Summary 그룹 재현 — 행사명(promotion.Name = promotionNumber) 그룹 + 그룹 내 일자 오름차순
@@ -129,7 +134,7 @@ class PromotionEmployeeRepositoryCustomImpl(
             .where(
                 promotionEmployee.employeeId.eq(employeeId),
                 promotionEmployee.scheduleDate.eq(date),
-                promotionEmployee.isDeleted.isNull.or(promotionEmployee.isDeleted.isFalse),
+                notDeleted,
                 promotion.isDeleted.isFalse,
             )
             .orderBy(promotion.promotionNumber.asc())
