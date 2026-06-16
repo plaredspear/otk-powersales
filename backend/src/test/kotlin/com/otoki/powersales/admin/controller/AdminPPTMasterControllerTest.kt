@@ -305,7 +305,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any()) } returns historyResponse
+            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any(), any()) } returns historyResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-histories"))
                 .andExpect(status().isOk)
@@ -325,7 +325,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 content = emptyList(), totalElements = 0, totalPages = 0, number = 0, size = 20
             )
             every { adminPPTMasterService.getAllHistory(
-                eq("홍"), eq("EMP001"), eq("라면세일조"),
+                any(), eq("홍"), eq("EMP001"), eq("라면세일조"),
                 eq(LocalDate.of(2026, 5, 1)), eq(LocalDate.of(2026, 5, 31)), any()
             ) } returns historyResponse
 
@@ -354,7 +354,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any()) } returns historyResponse
+            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any(), any()) } returns historyResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-histories"))
                 .andExpect(status().isOk)

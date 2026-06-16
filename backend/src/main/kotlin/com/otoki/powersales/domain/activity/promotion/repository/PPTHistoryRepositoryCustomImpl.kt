@@ -23,6 +23,7 @@ class PPTHistoryRepositoryCustomImpl(
         teamType: ProfessionalPromotionTeamType?,
         changedAtFrom: LocalDate?,
         changedAtTo: LocalDate?,
+        branchCodeFilter: List<String>?,
         pageable: Pageable
     ): Page<ProfessionalPromotionTeamHistory> {
         val builder = BooleanBuilder()
@@ -51,9 +52,15 @@ class PPTHistoryRepositoryCustomImpl(
             builder.and(
                 professionalPromotionTeamHistory.changedAt.loe(
                     changedAtTo.atTime(LocalTime.MAX)
-                        
+
                 )
             )
+        }
+
+        // 지점 스코프 — 데이터의 branch_code 컬럼(빈값)이 아니라 사원 소속 지점(costCenterCode) 기준.
+        // 전문행사조 마스터 조회와 동일 정책.
+        if (!branchCodeFilter.isNullOrEmpty()) {
+            builder.and(employee.costCenterCode.`in`(branchCodeFilter))
         }
 
         builder.and(isNotDeleted())

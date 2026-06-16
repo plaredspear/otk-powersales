@@ -14,6 +14,7 @@ interface PPTHistoryRepositoryCustom {
         teamType: ProfessionalPromotionTeamType?,
         changedAtFrom: LocalDate?,
         changedAtTo: LocalDate?,
+        branchCodeFilter: List<String>?,
         pageable: Pageable
     ): Page<ProfessionalPromotionTeamHistory>
 }

@@ -93,6 +93,15 @@ class AdminPPTMasterService(
             size = pageable.pageSize
         )
 
+    private fun emptyHistoryList(pageable: Pageable): PPTMasterHistoryListResponse =
+        PPTMasterHistoryListResponse(
+            content = emptyList(),
+            totalElements = 0,
+            totalPages = 0,
+            number = pageable.pageNumber,
+            size = pageable.pageSize
+        )
+
     fun getMaster(id: Long): PPTMasterResponse {
         val master = findMasterById(id)
         val employee = master.employeeId?.let { employeeRepository.findById(it).orElse(null) }
@@ -248,6 +257,7 @@ class AdminPPTMasterService(
     }
 
     fun getAllHistory(
+        scope: DataScope,
         employeeName: String?,
         employeeCode: String?,
         teamType: String?,
@@ -255,9 +265,16 @@ class AdminPPTMasterService(
         changedAtTo: LocalDate?,
         pageable: Pageable
     ): PPTMasterHistoryListResponse {
+        // 지점 스코프 — 전문행사조 마스터 조회와 동일하게 본인 소속 지점만 노출 (전사 권한은 전체).
+        // 데이터의 branch_code 컬럼은 비어 있으므로 사원 소속 지점(costCenterCode) 기준으로 평가한다.
+        val branchCodeFilter = when (val result = scope.effectiveBranchCodes(null)) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> return emptyHistoryList(pageable)
+        }
         val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
         val page = pptHistoryRepository.searchHistories(
-            employeeName, employeeCode, teamTypeEnum, changedAtFrom, changedAtTo, pageable
+            employeeName, employeeCode, teamTypeEnum, changedAtFrom, changedAtTo, branchCodeFilter, pageable
         )
 
         return PPTMasterHistoryListResponse(

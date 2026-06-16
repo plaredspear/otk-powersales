@@ -852,10 +852,10 @@ class AdminPPTMasterServiceTest {
             val page = PageImpl(listOf(history), PageRequest.of(0, 20), 1)
 
             every {
-                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any())
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val result = service.getAllHistory(null, null, null, null, null, PageRequest.of(0, 20))
+            val result = service.getAllHistory(allBranchesScope(), null, null, null, null, null, PageRequest.of(0, 20))
 
             assertThat(result.content).hasSize(1)
             val row = result.content[0]
@@ -872,16 +872,16 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - teamType 표시명 → enum 변환하여 repository 호출")
         fun getAllHistory_teamTypeDisplayName_converted() {
             every {
-                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any())
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
-            service.getAllHistory(null, null, "라면세일조", null, null, PageRequest.of(0, 20))
+            service.getAllHistory(allBranchesScope(), null, null, "라면세일조", null, null, PageRequest.of(0, 20))
 
             verify {
                 pptHistoryRepository.searchHistories(
                     any(), any(),
                     ProfessionalPromotionTeamType.RAMEN_SALE,
-                    any(), any(), any()
+                    any(), any(), any(), any()
                 )
             }
         }
@@ -890,15 +890,15 @@ class AdminPPTMasterServiceTest {
         @DisplayName("성공 - 잘못된 teamType 문자열 → null 변환 (예외 없음)")
         fun getAllHistory_invalidTeamType_nullConverted() {
             every {
-                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any())
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
-            service.getAllHistory(null, null, "잘못된값", null, null, PageRequest.of(0, 20))
+            service.getAllHistory(allBranchesScope(), null, null, "잘못된값", null, null, PageRequest.of(0, 20))
 
             verify {
                 pptHistoryRepository.searchHistories(
                     any(), any(), null,
-                    any(), any(), any()
+                    any(), any(), any(), any()
                 )
             }
         }
@@ -915,14 +915,45 @@ class AdminPPTMasterServiceTest {
             val page = PageImpl(listOf(history), PageRequest.of(0, 20), 1)
 
             every {
-                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any())
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val result = service.getAllHistory(null, null, null, null, null, PageRequest.of(0, 20))
+            val result = service.getAllHistory(allBranchesScope(), null, null, null, null, null, PageRequest.of(0, 20))
 
             assertThat(result.content[0].employeeName).isNull()
             assertThat(result.content[0].employeeCode).isNull()
             assertThat(result.content[0].orgName).isNull()
+        }
+
+        @Test
+        @DisplayName("지점 스코프 - 본인 지점 권한 -> employee.costCenterCode IN 필터로 조회")
+        fun getAllHistory_branchScoped() {
+            every {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
+
+            // 본인 지점 "3233" 단일 권한 (전사 아님)
+            val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
+            service.getAllHistory(scope, null, null, null, null, null, PageRequest.of(0, 20))
+
+            // branchCodeFilter 인자(6번째)에 본인 지점 코드가 전달되어야 한다
+            verify {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), listOf("3233"), any())
+            }
+        }
+
+        @Test
+        @DisplayName("지점 스코프 - 접근 가능 지점 없음(NoAccess) -> 쿼리 없이 빈 목록")
+        fun getAllHistory_noAccess() {
+            // 권한 지점 목록이 비어 전사도 아님 -> NoAccess
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+            val result = service.getAllHistory(scope, null, null, null, null, null, PageRequest.of(0, 20))
+
+            assertThat(result.content).isEmpty()
+            assertThat(result.totalElements).isEqualTo(0)
+            verify(exactly = 0) {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
+            }
         }
     }
 

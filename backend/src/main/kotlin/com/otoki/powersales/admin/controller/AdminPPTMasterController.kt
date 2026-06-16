@@ -201,6 +201,7 @@ class AdminPPTMasterController(
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getAllHistory(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) employeeName: String?,
@@ -210,7 +211,7 @@ class AdminPPTMasterController(
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtTo: LocalDate?
     ): ResponseEntity<ApiResponse<PPTMasterHistoryListResponse>> {
         val response = adminPPTMasterService.getAllHistory(
-            employeeName, employeeCode, teamType, changedAtFrom, changedAtTo,
+            scope, employeeName, employeeCode, teamType, changedAtFrom, changedAtTo,
             PageRequest.of(page, size)
         )
         return ResponseEntity.ok(ApiResponse.success(response))
