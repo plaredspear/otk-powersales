@@ -242,6 +242,7 @@ export default function SchedulePage() {
         onClose={() => setDayListModalOpen(false)}
         date={dayListModalDate}
         schedules={schedules}
+        summary={summaries.find((s) => s.date === dayListModalDate)}
         onScheduleClick={handleScheduleClickFromList}
       />
 

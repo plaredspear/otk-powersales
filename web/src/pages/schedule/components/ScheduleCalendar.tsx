@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import type { DailySummary, TeamSchedule } from '@/api/team-schedule';
 import { DaySummaryBanner } from './DaySummaryBanner';
 import { ScheduleEventCard } from './ScheduleEventCard';
+import { getEventColor } from './scheduleEventColor';
 
 export type CalendarView = 'dayGridMonth' | 'listMonth';
 
@@ -30,13 +31,6 @@ interface ScheduleCalendarProps {
   onDateClick: (date: string) => void;
   onEventClick: (schedule: TeamSchedule) => void;
   isLoading: boolean;
-}
-
-function getEventColor(schedule: TeamSchedule): string {
-  if (schedule.workingType === '연차' || schedule.workingType === '대휴') return '#495E62';
-  if (schedule.workingCategory1 === '행사') return '#F392BC';
-  if (schedule.workingCategory1 === '진열') return '#4E8BBF';
-  return '#4E8BBF';
 }
 
 export function ScheduleCalendar({
@@ -195,11 +189,13 @@ export function ScheduleCalendar({
 
   // "+N 개" 링크 클릭 시 FullCalendar 기본 popover(z-index 9999) 대신 날짜 클릭과 동일하게
   // DayScheduleListModal 을 띄운다. popover 는 z-index 가 antd Modal 보다 높아, popover 안에서
-  // 일정 상세 모달을 열면 상세가 popover 뒤로 가려지는 문제가 있었다. void 를 반환해 기본
-  // popover 동작을 억제한다.
+  // 일정 상세 모달을 열면 상세가 popover 뒤로 가려지는 문제가 있었다.
+  // FullCalendar 내부 분기는 `!moreLinkClick || moreLinkClick === 'popover'` 로, 핸들러가
+  // undefined(void) 를 반환하면 popover 가 그대로 열린다. 빈 문자열을 반환해 popover 를 막는다.
   const handleMoreLinkClick = useCallback(
     (arg: MoreLinkArg) => {
       onDateClick(dayjs(arg.date).format('YYYY-MM-DD'));
+      return '';
     },
     [onDateClick],
   );
