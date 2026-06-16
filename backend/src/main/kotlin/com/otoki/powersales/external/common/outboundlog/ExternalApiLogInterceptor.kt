@@ -90,6 +90,7 @@ class ExternalApiLogInterceptor(
         try {
             logService.log(
                 targetSystem = target,
+                endpointKey = ExternalApiEndpointKeyResolver.resolve(target, uri),
                 httpMethod = method,
                 uri = uri,
                 httpStatus = httpStatus,

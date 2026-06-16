@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Space, Tabs, Typography } from 'antd';
+import { Alert, Divider, Space, Tabs, Typography } from 'antd';
 import type { TabsProps } from 'antd';
 import NaverGeocodeTab from './NaverGeocodeTab';
 import ClaimRegistTab from './ClaimRegistTab';
@@ -9,6 +9,7 @@ import LogisticsClaimStatusUpdateTab from './LogisticsClaimStatusUpdateTab';
 import SalesProgressRateMasterSyncTab from './SalesProgressRateMasterSyncTab';
 import StaffReviewSyncTab from './StaffReviewSyncTab';
 import IntegrationInfoDescriptions from './IntegrationInfoDescriptions';
+import ExternalApiLogsTab from './ExternalApiLogsTab';
 
 const { Title, Text } = Typography;
 
@@ -22,12 +23,13 @@ const { Title, Text } = Typography;
  * Naver Geocode + SF 클레임/물류 클레임 등록이 각각 개별 탭이 되며, 각 탭에서
  * 폼 입력 → 미리보기 → 실송신까지 직접 수행할 수 있다.
  *
- * SAP outbound 인터페이스의 테스트 송신과 호출 이력 조회는 본 페이지가 아니라 "SAP 연동"
- * 페이지(`/admin/tools/sap-integration`)로 일원화되어 있다. SAP 테스트는 그곳의 "테스트"
- * 탭에서 수행하고, 실송신 결과 로그는 같은 페이지의 "호출 이력" / "대기 중 (Outbox)" 탭에서
- * 확인한다.
+ * SAP outbound 인터페이스의 테스트 송신과 SAP 전용 상세 로그(interface_id/재시도/Outbox)는 본
+ * 페이지가 아니라 "SAP 연동" 페이지(`/admin/tools/sap-integration`)로 일원화되어 있다.
+ * 단, 마지막 "호출 이력" 탭은 SAP 를 포함한 전 외부 시스템(SAP/SF/Naver)의 outbound HTTP 호출
+ * 공통 로그(`external_api_log`)를 endpoint key 기준으로 통합 조회한다. 각 비-SAP 탭 하단에는
+ * 동일 로그를 그 탭의 endpoint key 로 고정 조회하는 "이 API 의 최근 호출 이력" 인라인 섹션이 붙는다.
  * 새 외부(비-SAP) API 가 추가되면 본 탭 배열에 항목 1개를 추가하고 `API_DESCRIPTIONS` 에
- * 자연어 설명을 함께 등록한다.
+ * 자연어 설명을 함께 등록하며, backend `ExternalApiEndpointKeyResolver` 에 endpoint key 매핑을 추가한다.
  */
 
 /** 탭 key → 해당 외부 API 가 어떤 외부 시스템과 무슨 처리를 수행하는지에 대한 자연어 설명. */
@@ -67,6 +69,23 @@ function ApiDescriptionAlert({
   );
 }
 
+/**
+ * 탭 하단 "이 API 의 최근 호출 이력" 인라인 섹션.
+ *
+ * [endpointKey] 로 고정 조회해 해당 탭에서 방금 수행한 외부 호출의 결과/소요시간을 바로 확인한다.
+ * 전체 외부 호출 이력은 "호출 이력" 탭에서 전 시스템·전 endpoint 필터로 조회한다.
+ */
+function InlineCallHistory({ endpointKey }: { endpointKey: string }) {
+  return (
+    <>
+      <Divider orientation="left" style={{ marginTop: 8 }}>
+        <Text type="secondary">이 API 의 최근 호출 이력</Text>
+      </Divider>
+      <ExternalApiLogsTab lockedEndpointKey={endpointKey} />
+    </>
+  );
+}
+
 const TAB_ITEMS: NonNullable<TabsProps['items']> = [
   {
     key: 'naver-geocode',
@@ -79,6 +98,7 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
         />
         <IntegrationInfoDescriptions apiKey="naver-geocode" />
         <NaverGeocodeTab />
+        <InlineCallHistory endpointKey="naver-geocode" />
       </Space>
     ),
   },
@@ -99,6 +119,7 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           description="'SF 전송' 버튼은 현재 환경의 SF Apex REST 로 호출이 전송되어 SF 에 클레임 row 가 생성됩니다 (테스트 잡데이터 주의). 신규 DB(claim 테이블)에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
         />
         <ClaimRegistTab />
+        <InlineCallHistory endpointKey="claim-regist" />
       </Space>
     ),
   },
@@ -119,6 +140,7 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           description="'SF 조회' 버튼은 입력한 기준 일자(MOD_DT)로 SF Apex REST IF_SendClaimToPWS 로 호출하여 변경 클레임 마스터 목록을 받아옵니다. 신규 DB 에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
         />
         <ClaimStatusUpdateTab />
+        <InlineCallHistory endpointKey="claim-status-update" />
       </Space>
     ),
   },
@@ -158,6 +180,7 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           description="'SF 조회' 버튼은 입력한 기준 일자(MOD_DT)로 SF Apex REST IF_SendLogisticsClaimToPWS 로 호출하여 변경 물류 클레임 마스터 목록을 받아옵니다. 신규 DB 에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
         />
         <LogisticsClaimStatusUpdateTab />
+        <InlineCallHistory endpointKey="logistics-claim-status-update" />
       </Space>
     ),
   },
@@ -178,6 +201,7 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           description="'SF 조회' 버튼은 입력한 기준 일자(MOD_DT)로 SF Apex REST IF_salesprogresssend 로 호출하여 변경 거래처목표등록마스터 목록을 받아옵니다. 신규 DB 에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
         />
         <SalesProgressRateMasterSyncTab />
+        <InlineCallHistory endpointKey="sales-progress-rate-master-sync" />
       </Space>
     ),
   },
@@ -198,6 +222,22 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           description="'SF 조회' 버튼은 입력한 기준 일자(MOD_DT)로 SF Apex REST IF_SendStaffReviewToPWS 로 호출하여 변경 사원평가 마스터 목록을 받아옵니다. 신규 DB 에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
         />
         <StaffReviewSyncTab />
+        <InlineCallHistory endpointKey="staff-review-sync" />
+      </Space>
+    ),
+  },
+  {
+    key: 'call-history',
+    label: '호출 이력',
+    children: (
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Alert
+          type="info"
+          showIcon
+          message="외부 API 호출 이력 (SAP / SF / Naver 통합)"
+          description="backend 가 외부 시스템으로 보낸 모든 outbound HTTP 호출(SAP/SF/Naver)의 공통 로그입니다. 시스템·endpoint key·성공 여부·기간으로 필터하며, 행 클릭 시 URI/HTTP 상태/소요시간/에러 상세를 확인할 수 있습니다. 각 API 탭 하단의 '이 API 의 최근 호출 이력'과 동일한 데이터를 전체 범위로 조회합니다. SYSTEM_ADMIN 권한 필요."
+        />
+        <ExternalApiLogsTab />
       </Space>
     ),
   },

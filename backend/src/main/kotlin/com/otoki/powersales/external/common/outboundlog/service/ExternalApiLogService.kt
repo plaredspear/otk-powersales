@@ -21,6 +21,7 @@ class ExternalApiLogService(
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun log(
         targetSystem: String,
+        endpointKey: String?,
         httpMethod: String,
         uri: String,
         httpStatus: Int?,
@@ -32,6 +33,7 @@ class ExternalApiLogService(
     ): ExternalApiLog {
         val entity = ExternalApiLog(
             targetSystem = targetSystem,
+            endpointKey = endpointKey,
             httpMethod = httpMethod,
             uri = uri.take(MAX_URI_LENGTH),
             httpStatus = httpStatus,

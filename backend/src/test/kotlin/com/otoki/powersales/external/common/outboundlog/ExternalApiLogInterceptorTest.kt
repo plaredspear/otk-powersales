@@ -46,6 +46,7 @@ class ExternalApiLogInterceptorTest {
             .andRespond(withSuccess("""{"resultCode":"S"}""", MediaType.APPLICATION_JSON))
 
         val targetSlot = slot<String>()
+        val endpointKeySlot = slot<String?>()
         val methodSlot = slot<String>()
         val uriSlot = slot<String>()
         val statusSlot = slot<Int?>()
@@ -53,6 +54,7 @@ class ExternalApiLogInterceptorTest {
         every {
             logService.log(
                 targetSystem = capture(targetSlot),
+                endpointKey = captureNullable(endpointKeySlot),
                 httpMethod = capture(methodSlot),
                 uri = capture(uriSlot),
                 httpStatus = captureNullable(statusSlot),
@@ -73,12 +75,14 @@ class ExternalApiLogInterceptorTest {
         // 인터셉터가 본문 스트림을 소비하지 않아 다운스트림이 정상 파싱
         assertThat(body).isEqualTo("""{"resultCode":"S"}""")
 
-        verify(exactly = 1) { logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         assertThat(targetSlot.captured).isEqualTo(ExternalApiTarget.SAP)
         assertThat(methodSlot.captured).isEqualTo("POST")
         assertThat(uriSlot.captured).isEqualTo("http://api-mock/SD03040")
         assertThat(statusSlot.captured).isEqualTo(200)
         assertThat(successSlot.captured).isTrue()
+        // resolver 가 SAP interfaceId SD03040 → loan-inquiry 탭 key 로 분류
+        assertThat(endpointKeySlot.captured).isEqualTo("loan-inquiry")
     }
 
     @Test
@@ -92,6 +96,7 @@ class ExternalApiLogInterceptorTest {
         every {
             logService.log(
                 targetSystem = any(),
+                endpointKey = any(),
                 httpMethod = any(),
                 uri = any(),
                 httpStatus = captureNullable(statusSlot),
@@ -115,7 +120,7 @@ class ExternalApiLogInterceptorTest {
     @DisplayName("로그 적재 실패는 실제 호출을 막지 않음 (best-effort)")
     fun loggingFailureDoesNotBreakCall() {
         every {
-            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any())
+            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } throws RuntimeException("DB down")
 
         server.expect(ExpectedCount.once(), requestTo("http://api-mock/ok"))

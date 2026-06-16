@@ -4921,6 +4921,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseExternalApiLogDetail" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ExternalApiLogDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseExternalApiLogListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ExternalApiLogListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseFemaleEmployeePlacementCheckResponse" : {
         "properties" : {
           "data" : {
@@ -10235,6 +10293,112 @@
               "$ref" : "#/components/schemas/ExternalApiIntegrationInfo"
             },
             "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "ExternalApiLogDetail" : {
+        "properties" : {
+          "completedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "durationMs" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "endpointKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "errorDetail" : {
+            "type" : [ "string", "null" ]
+          },
+          "httpMethod" : {
+            "type" : "string"
+          },
+          "httpStatus" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "targetSystem" : {
+            "type" : "string"
+          },
+          "uri" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ExternalApiLogListResponse" : {
+        "properties" : {
+          "currentPage" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ExternalApiLogRow"
+            },
+            "type" : "array"
+          },
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ExternalApiLogRow" : {
+        "properties" : {
+          "completedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "durationMs" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "endpointKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "httpMethod" : {
+            "type" : "string"
+          },
+          "httpStatus" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requestedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "targetSystem" : {
+            "type" : "string"
+          },
+          "uri" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -19468,6 +19632,132 @@
           }
         },
         "tags" : [ "external-api-integration-info-controller" ]
+      }
+    },
+    "/api/v1/admin/external-api/log-keys" : {
+      "get" : {
+        "operationId" : "getLogKeys",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListString"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-external-api-log-controller" ]
+      }
+    },
+    "/api/v1/admin/external-api/logs" : {
+      "get" : {
+        "operationId" : "searchLogs",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "targetSystem",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endpointKey",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "success",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "httpMethod",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 1,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseExternalApiLogListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-external-api-log-controller" ]
+      }
+    },
+    "/api/v1/admin/external-api/logs/{id}" : {
+      "get" : {
+        "operationId" : "getLogDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseExternalApiLogDetail"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-external-api-log-controller" ]
       }
     },
     "/api/v1/admin/female-employee-schedule/events" : {

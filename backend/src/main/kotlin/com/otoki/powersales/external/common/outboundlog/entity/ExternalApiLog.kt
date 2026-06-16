@@ -31,6 +31,15 @@ class ExternalApiLog(
     @Column(name = "target_system", nullable = false, length = 20)
     val targetSystem: String,
 
+    /**
+     * 호출 종류 식별 key — uri 를 [ExternalApiEndpointKeyResolver] 로 해석한 값.
+     *
+     * web "외부 API 테스트" 페이지의 탭 key 와 1:1 일치하여, 각 탭이 자기 호출 이력만 정확히 조회한다.
+     * resolver 가 분류하지 못한 호출은 null (전체 조회로만 노출).
+     */
+    @Column(name = "endpoint_key", length = 50)
+    val endpointKey: String? = null,
+
     @Column(name = "http_method", nullable = false, length = 10)
     val httpMethod: String,
 
