@@ -2327,6 +2327,37 @@
         },
         "type" : "object"
       },
+      "AdminStaffReviewSyncTestRequest" : {
+        "properties" : {
+          "modDt" : {
+            "minLength" : 1,
+            "pattern" : "\\d{8}",
+            "type" : "string"
+          }
+        },
+        "required" : [ "modDt" ],
+        "type" : "object"
+      },
+      "AdminStaffReviewSyncTestResponse" : {
+        "properties" : {
+          "rawResponse" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestPayload" : {
+            "type" : "string"
+          },
+          "resultCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "resultMsg" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "AdminSuggestionCreateRequest" : {
         "properties" : {
           "accountId" : {
@@ -3938,6 +3969,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminSiteActivityMutationResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminStaffReviewSyncTestResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminStaffReviewSyncTestResponse"
             }, {
               "type" : "null"
             } ]
@@ -24649,7 +24709,7 @@
     },
     "/api/v1/admin/claim-master-sync/test" : {
       "post" : {
-        "operationId" : "test_5",
+        "operationId" : "test_6",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -24677,7 +24737,7 @@
     },
     "/api/v1/admin/claim-regist/test" : {
       "post" : {
-        "operationId" : "test_4",
+        "operationId" : "test_5",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -27244,7 +27304,7 @@
     },
     "/api/v1/admin/logistics-claim-master-sync/test" : {
       "post" : {
-        "operationId" : "test_3",
+        "operationId" : "test_4",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -27272,7 +27332,7 @@
     },
     "/api/v1/admin/logistics-claim-regist/test" : {
       "post" : {
-        "operationId" : "test_2",
+        "operationId" : "test_3",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -27299,7 +27359,7 @@
     },
     "/api/v1/admin/naver-geocode/test" : {
       "post" : {
-        "operationId" : "test_1",
+        "operationId" : "test_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -29903,7 +29963,7 @@
     },
     "/api/v1/admin/sales-progress-rate-master/sync/test" : {
       "post" : {
-        "operationId" : "test",
+        "operationId" : "test_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -33078,6 +33138,34 @@
           }
         },
         "tags" : [ "sharing-recalc-admin-controller" ]
+      }
+    },
+    "/api/v1/admin/staff-review/sync/test" : {
+      "post" : {
+        "operationId" : "test",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminStaffReviewSyncTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminStaffReviewSyncTestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-staff-review-sync-test-controller" ]
       }
     },
     "/api/v1/admin/suggestions" : {
