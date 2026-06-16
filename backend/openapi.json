@@ -15821,6 +15821,10 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
+          "ambientTargetAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "branchCode" : {
             "type" : [ "string", "null" ]
           },
@@ -15831,6 +15835,10 @@
             "type" : "boolean"
           },
           "frozenRefrigeratedAchievedAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "frozenRefrigeratedTargetAmount" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
@@ -15846,7 +15854,15 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
+          "noodleTargetAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "oilFatAchievedAmount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "oilFatTargetAmount" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },

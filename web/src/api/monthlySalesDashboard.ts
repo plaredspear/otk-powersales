@@ -35,9 +35,13 @@ export interface MonthlySalesDashboardListItem {
   targetAmount: number | null;
   totalAchievedAmount: number | null;
   achievementRate: number | null;
+  ambientTargetAmount: number | null;
   ambientAchievedAmount: number | null;
+  noodleTargetAmount: number | null;
   noodleAchievedAmount: number | null;
+  frozenRefrigeratedTargetAmount: number | null;
   frozenRefrigeratedAchievedAmount: number | null;
+  oilFatTargetAmount: number | null;
   oilFatAchievedAmount: number | null;
   lastYearAchievedAmount: number | null;
   lastYearComparisonRatio: number | null;

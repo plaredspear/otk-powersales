@@ -23,4 +23,12 @@ interface SalesProgressRateMasterRepository :
      * soft-delete(`isDeleted == true`) 필터도 호출 측에서 수행 (`isDeleted` nullable).
      */
     fun findByAccountIdAndTargetYear(accountId: Long, targetYear: String): List<SalesProgressRateMaster>
+
+    /**
+     * 거래처 N건(account FK) + 목표연도(`"YYYY"`) 목표 행 일괄 조회 — 월매출 대시보드 명세/요약 목표 source.
+     *
+     * 거래처별 단건 조회([findByAccountIdAndTargetYear]) 의 N+1 회피용 batch. `targetMonth` 월 일치 +
+     * soft-delete 필터는 호출 측에서 수행.
+     */
+    fun findByAccountIdInAndTargetYear(accountIds: Collection<Long>, targetYear: String): List<SalesProgressRateMaster>
 }

@@ -79,8 +79,10 @@ class AdminMonthlySalesDashboardControllerTest : AdminControllerTestSupport() {
                     sapAccountCode = "SAP1", branchCode = "1000", branchName = "서울지점",
                     salesYear = 2026, salesMonth = 5,
                     targetAmount = 1_000_000L, totalAchievedAmount = 800_000L, achievementRate = 80.0,
-                    ambientAchievedAmount = 200_000L, noodleAchievedAmount = 200_000L,
-                    frozenRefrigeratedAchievedAmount = 200_000L, oilFatAchievedAmount = 200_000L,
+                    ambientTargetAmount = 250_000L, ambientAchievedAmount = 200_000L,
+                    noodleTargetAmount = 250_000L, noodleAchievedAmount = 200_000L,
+                    frozenRefrigeratedTargetAmount = 250_000L, frozenRefrigeratedAchievedAmount = 200_000L,
+                    oilFatTargetAmount = 250_000L, oilFatAchievedAmount = 200_000L,
                     lastYearAchievedAmount = 700_000L, lastYearComparisonRatio = 114.3,
                     isConfirmed = true,
                 )

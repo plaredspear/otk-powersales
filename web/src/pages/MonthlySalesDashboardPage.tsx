@@ -149,10 +149,34 @@ export default function MonthlySalesDashboardPage() {
           return <span style={{ color, fontWeight: 600 }}>{formatPct(v)}</span>;
         },
       },
-      { title: '상온', dataIndex: 'ambientAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
-      { title: '라면', dataIndex: 'noodleAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
-      { title: '냉동', dataIndex: 'frozenRefrigeratedAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
-      { title: '유지', dataIndex: 'oilFatAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+      {
+        title: '상온',
+        children: [
+          { title: '목표', dataIndex: 'ambientTargetAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+          { title: '실적', dataIndex: 'ambientAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+        ],
+      },
+      {
+        title: '라면',
+        children: [
+          { title: '목표', dataIndex: 'noodleTargetAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+          { title: '실적', dataIndex: 'noodleAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+        ],
+      },
+      {
+        title: '냉동/냉장',
+        children: [
+          { title: '목표', dataIndex: 'frozenRefrigeratedTargetAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+          { title: '실적', dataIndex: 'frozenRefrigeratedAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+        ],
+      },
+      {
+        title: '유지류',
+        children: [
+          { title: '목표', dataIndex: 'oilFatTargetAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+          { title: '실적', dataIndex: 'oilFatAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+        ],
+      },
       { title: '전년 동월', dataIndex: 'lastYearAchievedAmount', width: 130, align: 'right', render: (v) => formatWon(v) },
       {
         title: '전년 대비',

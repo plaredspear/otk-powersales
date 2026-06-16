@@ -31,9 +31,10 @@ import kotlin.collections.get
  * SObject 를 읽은 것과 동등.
  * 실적(마감 합계)은 모바일 「월 매출」과 동일하게 `ClosingAmountSum`(ABC합 + Ship합)을 쓰며, RDS row 조인
  * 키는 `account_id` FK (sap_account_code 텍스트 컬럼은 적재품질 의존이라 미사용 — [MonthlySalesHistoryQueryGateway.findBySalesDatesByAccountId]).
- * 단건 상세([getDetail])의 목표/달성률은 `SalesProgressRateMaster` 기반으로 모바일 정합 복원.
- * 단, 상단 요약([getSummary])·거래처별 명세([getList])의 목표/확정 상태는 폐기 유지 —
- * `totalTargetAmount = 0`, 명세 `targetAmount = null`, `achievementRate = null`, `isConfirmed = false`.
+ * 목표/달성률은 단건 상세([getDetail])·상단 요약([getSummary])·거래처별 명세([getList]) 전부
+ * `SalesProgressRateMaster`(연·월 1행) 기반으로 모바일 「월 매출」 정합. 명세는 합계 목표 + 카테고리 4종
+ * (상온/라면/냉동냉장/유지) 목표를 함께 반환한다 (모바일 categorySales 정합).
+ * 단, 확정 상태(`isConfirmed`)는 신규 시스템 미재현이라 폐기 유지 (`false`).
  *
  * ## 동작 요약
  * 권한 범위 거래처 N건의 마감실적을 합산 + 거래처별 명세 + 단건 상세 형태로 반환.
@@ -53,8 +54,8 @@ class MonthlySalesAdminQueryService(
     /**
      * 상단 KPI + 최근 6개월 월별 추이 조회.
      *
-     * 권한 범위 거래처의 당월 마감실적 합산 + 전년 동월 비교 + 기준 진도율 (영업일 기반) 산출.
-     * 목표 / 진도율은 폐기 — `totalTargetAmount = 0`, `overallAchievementRate = 0.0`.
+     * 권한 범위 거래처의 당월 마감실적 합산 + 목표 합산 + 달성률 + 전년 동월 비교 + 기준 진도율 (영업일 기반) 산출.
+     * 목표는 거래처별 `SalesProgressRateMaster`(연·월 1행) 합계의 총합, 달성률 = `round(실적/목표×100)` (목표 0 이면 0.0).
      * 월별 추이 6개월은 (조회 기준 월) 부터 5개월 이전까지 + 같은 기간의 전년 동월 매출.
      *
      * @throws AdminForbiddenException 권한 범위와 입력 costCenterCodes 의 교집합이 비어있을 때
@@ -103,12 +104,16 @@ class MonthlySalesAdminQueryService(
         val lastYearRatio = if (totalLastYearAchieved == null || totalLastYearAchieved == 0L) null
         else (totalAchieved.toDouble() / totalLastYearAchieved.toDouble()) * 100.0
 
+        // 목표 합계 — 거래처별 (연, 월) SalesProgressRateMaster 1행의 합계를 총합 (미등록 거래처는 0)
+        val targetByAccountId = findTargetMap(accountIds, year, month)
+        val totalTarget = targetByAccountId.values.sumOf { targetSumOf(it) }
+
         return MonthlySalesDashboardSummaryResponse(
             salesYear = year,
             salesMonth = month,
-            totalTargetAmount = 0L,
+            totalTargetAmount = totalTarget,
             totalAchievedAmount = totalAchieved,
-            overallAchievementRate = 0.0,
+            overallAchievementRate = rate(totalAchieved, totalTarget),
             referenceAchievementRate = referenceAchievementRate(year, month, LocalDate.now()),
             totalLastYearAchievedAmount = totalLastYearAchieved,
             lastYearComparisonRatio = lastYearRatio,
@@ -250,6 +255,9 @@ class MonthlySalesAdminQueryService(
             .findBySalesDatesByAccountId(listOf(currentSalesDate, lastYearSalesDate), accountIds)
             .associateBy { it.accountId to it.salesDate }
 
+        // 목표 — 거래처 N건의 (연, 월) SalesProgressRateMaster 1행 일괄 조회 (account_id 별 batch, N+1 회피)
+        val targetByAccountId = findTargetMap(accountIds, request.year, request.month)
+
         return accounts.map { account ->
             val currentOro = oroByKey[account.id to currentSalesDate]
             val lastYearOro = oroByKey[account.id to lastYearSalesDate]
@@ -259,6 +267,9 @@ class MonthlySalesAdminQueryService(
             val lastYearRatio = if (lastYearAchieved > 0)
                 (achieved.toDouble() / lastYearAchieved.toDouble()) * 100.0 else null
 
+            val target = targetByAccountId[account.id]
+            val targetSum = target?.let { targetSumOf(it) } ?: 0L
+
             MonthlySalesDashboardListItem(
                 accountId = account.id,
                 accountName = account.name,
@@ -267,12 +278,16 @@ class MonthlySalesAdminQueryService(
                 branchName = account.branchName,
                 salesYear = request.year,
                 salesMonth = request.month,
-                targetAmount = null,
+                targetAmount = targetSum,
                 totalAchievedAmount = achieved,
-                achievementRate = null,
+                achievementRate = rate(achieved, targetSum),
+                ambientTargetAmount = target?.let { categoryTarget(it, SalesCategory.AMBIENT) } ?: 0L,
                 ambientAchievedAmount = categoryAchieved(currentOro, SalesCategory.AMBIENT),
+                noodleTargetAmount = target?.let { categoryTarget(it, SalesCategory.NOODLE) } ?: 0L,
                 noodleAchievedAmount = categoryAchieved(currentOro, SalesCategory.NOODLE),
+                frozenRefrigeratedTargetAmount = target?.let { categoryTarget(it, SalesCategory.FROZEN_REFRIGERATED) } ?: 0L,
                 frozenRefrigeratedAchievedAmount = categoryAchieved(currentOro, SalesCategory.FROZEN_REFRIGERATED),
+                oilFatTargetAmount = target?.let { categoryTarget(it, SalesCategory.OIL_FAT) } ?: 0L,
                 oilFatAchievedAmount = categoryAchieved(currentOro, SalesCategory.OIL_FAT),
                 lastYearAchievedAmount = lastYearAchieved,
                 lastYearComparisonRatio = lastYearRatio,
@@ -326,15 +341,22 @@ class MonthlySalesAdminQueryService(
         val oroByKey = monthlySalesHistoryGateway.findBySalesDatesByAccountId(allSalesDates, accountIds)
             .groupBy { it.salesDate }
 
+        // 목표 — 추이 6개월에 걸친 연도들의 목표 행을 연도별 1 trip 으로 일괄 조회 후 (연·월) 합산
+        val targetYears = keys.map { (y, _) -> y }.distinct()
+        val targetsByYear = targetYears.associateWith { y -> findTargets(accountIds, y) }
+
         return keys.map { (y, m) ->
             val currentSalesDate = toSalesDate(y, m)
             val lastYearSalesDate = toSalesDate(y - 1, m)
             val currentOroRows = oroByKey[currentSalesDate].orEmpty()
             val lastYearOroRows = oroByKey[lastYearSalesDate].orEmpty()
+            val targetSum = targetsByYear[y].orEmpty()
+                .filter { it.targetMonth?.trim()?.toIntOrNull() == m }
+                .sumOf { targetSumOf(it) }
             MonthlySalesDashboardSummaryResponse.MonthlyTrendPoint(
                 salesYear = y,
                 salesMonth = m,
-                targetAmount = 0L,
+                targetAmount = targetSum,
                 achievedAmount = currentOroRows.sumOf { closingSum(it) },
                 lastYearAchievedAmount = if (lastYearOroRows.isEmpty()) null
                 else lastYearOroRows.sumOf { closingSum(it) },
@@ -438,6 +460,27 @@ class MonthlySalesAdminQueryService(
             .asSequence()
             .filter { it.isDeleted != true }
             .firstOrNull { it.targetMonth?.trim()?.toIntOrNull() == month }
+
+    /**
+     * 거래처 N건 + 해당 연도의 목표 행 일괄 조회 (soft-delete 제외). [findTarget] 의 batch 판 —
+     * 월 매칭/그룹핑은 호출 측이 수행. account FK 미연결 행은 제외.
+     */
+    private fun findTargets(accountIds: List<Long>, year: Int): List<SalesProgressRateMaster> {
+        if (accountIds.isEmpty()) return emptyList()
+        return salesProgressRateMasterRepository
+            .findByAccountIdInAndTargetYear(accountIds, year.toString())
+            .filter { it.isDeleted != true && it.account?.id != null }
+    }
+
+    /**
+     * 거래처 N건의 (연, 월) 목표 행 일괄 조회 → accountId 키 map.
+     * 동일 거래처에 (연, 월) 행이 복수면 첫 행 채택 (단건 [findTarget] 의 firstOrNull 정합).
+     */
+    private fun findTargetMap(accountIds: List<Long>, year: Int, month: Int): Map<Long, SalesProgressRateMaster> =
+        findTargets(accountIds, year)
+            .filter { it.targetMonth?.trim()?.toIntOrNull() == month }
+            .groupBy { it.account!!.id }
+            .mapValues { (_, rows) -> rows.first() }
 
     /** 카테고리별 목표 — SF `RT/RM/FR/FO TargetAmount__c` 정합. */
     private fun categoryTarget(target: SalesProgressRateMaster, category: SalesCategory): Long {

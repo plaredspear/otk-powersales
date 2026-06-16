@@ -24,9 +24,13 @@ class MonthlySalesDashboardExcelExporterTest {
         targetAmount = 1_000_000L,
         totalAchievedAmount = 800_000L,
         achievementRate = 80.0,
+        ambientTargetAmount = 250_000L,
         ambientAchievedAmount = 200_000L,
+        noodleTargetAmount = 250_000L,
         noodleAchievedAmount = 200_000L,
+        frozenRefrigeratedTargetAmount = 250_000L,
         frozenRefrigeratedAchievedAmount = 200_000L,
+        oilFatTargetAmount = 250_000L,
         oilFatAchievedAmount = 200_000L,
         lastYearAchievedAmount = 700_000L,
         lastYearComparisonRatio = 114.3,
@@ -55,9 +59,9 @@ class MonthlySalesDashboardExcelExporterTest {
             val wb = WorkbookFactory.create(input)
             val sheet = wb.getSheetAt(0)
             assertThat(sheet.lastRowNum).isEqualTo(3) // 헤더 1 + 데이터 3 = 마지막 인덱스 3
-            // 마감 컬럼은 마지막 (인덱스 15 — 거래처 SFID 컬럼 제거 후)
-            assertThat(sheet.getRow(1).getCell(15).stringCellValue).isEqualTo("마감")
-            assertThat(sheet.getRow(2).getCell(15).stringCellValue).isEqualTo("미마감")
+            // 마감 컬럼은 마지막 (인덱스 19 — 카테고리 4종 목표/실적 쌍 배치 후)
+            assertThat(sheet.getRow(1).getCell(19).stringCellValue).isEqualTo("마감")
+            assertThat(sheet.getRow(2).getCell(19).stringCellValue).isEqualTo("미마감")
             wb.close()
         }
     }

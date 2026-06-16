@@ -13,7 +13,7 @@ import java.io.ByteArrayOutputStream
  * 월매출 대시보드 명세 엑셀 export.
  *
  * `MonthlySalesAdminQueryService.getListForExport` 의 산출물을 Apache POI 워크북으로 변환.
- * 시트 1개 (월매출조회), 헤더 1행 + 데이터 N행. 컬럼은 화면 컬럼 12개 + 카테고리 4종 목표 / 달성률 8개 추가 (총 20 컬럼).
+ * 시트 1개 (월매출조회), 헤더 1행 + 데이터 N행. 카테고리 4종(상온/라면/냉동냉장/유지)은 목표/실적 쌍으로 배치.
  */
 @Component
 class MonthlySalesDashboardExcelExporter {
@@ -32,7 +32,10 @@ class MonthlySalesDashboardExcelExporter {
             "거래처명", "SAP코드", "지점코드", "지점명",
             "매출연도", "매출월",
             "목표", "실적", "진도율(%)",
-            "상온 실적", "라면 실적", "냉동냉장 실적", "유지 실적",
+            "상온 목표", "상온 실적",
+            "라면 목표", "라면 실적",
+            "냉동냉장 목표", "냉동냉장 실적",
+            "유지 목표", "유지 실적",
             "전년 동월 실적", "전년 대비(%)", "마감"
         )
 
@@ -56,9 +59,13 @@ class MonthlySalesDashboardExcelExporter {
             row.createCell(col++).setCellValue(item.targetAmount?.toDouble() ?: 0.0)
             row.createCell(col++).setCellValue(item.totalAchievedAmount?.toDouble() ?: 0.0)
             row.createCell(col++).setCellValue(item.achievementRate ?: 0.0)
+            row.createCell(col++).setCellValue(item.ambientTargetAmount?.toDouble() ?: 0.0)
             row.createCell(col++).setCellValue(item.ambientAchievedAmount?.toDouble() ?: 0.0)
+            row.createCell(col++).setCellValue(item.noodleTargetAmount?.toDouble() ?: 0.0)
             row.createCell(col++).setCellValue(item.noodleAchievedAmount?.toDouble() ?: 0.0)
+            row.createCell(col++).setCellValue(item.frozenRefrigeratedTargetAmount?.toDouble() ?: 0.0)
             row.createCell(col++).setCellValue(item.frozenRefrigeratedAchievedAmount?.toDouble() ?: 0.0)
+            row.createCell(col++).setCellValue(item.oilFatTargetAmount?.toDouble() ?: 0.0)
             row.createCell(col++).setCellValue(item.oilFatAchievedAmount?.toDouble() ?: 0.0)
             row.createCell(col++).setCellValue(item.lastYearAchievedAmount?.toDouble() ?: 0.0)
             row.createCell(col++).setCellValue(item.lastYearComparisonRatio ?: 0.0)
