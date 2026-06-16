@@ -190,12 +190,16 @@ export function ScheduleCalendar({
   // "+N 개" 링크 클릭 시 FullCalendar 기본 popover(z-index 9999) 대신 날짜 클릭과 동일하게
   // DayScheduleListModal 을 띄운다. popover 는 z-index 가 antd Modal 보다 높아, popover 안에서
   // 일정 상세 모달을 열면 상세가 popover 뒤로 가려지는 문제가 있었다.
-  // FullCalendar 내부 분기는 `!moreLinkClick || moreLinkClick === 'popover'` 로, 핸들러가
-  // undefined(void) 를 반환하면 popover 가 그대로 열린다. 빈 문자열을 반환해 popover 를 막는다.
+  // FullCalendar 내부 분기(MoreLinkContainer.handleClick)는
+  //   if (!moreLinkClick || moreLinkClick === 'popover') { popover 열기 }
+  //   else if (typeof moreLinkClick === 'string')        { zoomTo(date, moreLinkClick) }
+  // 빈 문자열('')은 falsy 라 `!moreLinkClick` 이 참이 되어 popover 가 그대로 열린다(모달 2개).
+  // 등록되지 않은 view 이름('none')을 반환하면 zoomTo 가 spec 을 못 찾아 같은 달 내 날짜만
+  // 이동(화면 변화 없음)하고 popover 는 열지 않는다 — FullCalendar 6.x 에서 popover 차단 패턴.
   const handleMoreLinkClick = useCallback(
     (arg: MoreLinkArg) => {
       onDateClick(dayjs(arg.date).format('YYYY-MM-DD'));
-      return '';
+      return 'none';
     },
     [onDateClick],
   );
