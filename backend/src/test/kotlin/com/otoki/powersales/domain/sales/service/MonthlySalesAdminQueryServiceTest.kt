@@ -3,9 +3,8 @@ package com.otoki.powersales.domain.sales.service
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
-import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
-import com.otoki.powersales.domain.sales.service.MonthlySalesRow
+import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
+import com.otoki.powersales.domain.sales.repository.SalesProgressRateMasterRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -18,7 +17,12 @@ class MonthlySalesAdminQueryServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
-    private val service = MonthlySalesAdminQueryService(accountRepository, monthlySalesHistoryGateway)
+    private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository = mockk()
+    private val service = MonthlySalesAdminQueryService(
+        accountRepository,
+        monthlySalesHistoryGateway,
+        salesProgressRateMasterRepository,
+    )
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
@@ -30,61 +34,85 @@ class MonthlySalesAdminQueryServiceTest {
         every { this@mockk.branchName } returns "지점"
     }
 
+    /** 실적 row — `account_id` FK 조인 키. closingAmountSum = ABC합 + Ship합 (모바일 「월 매출」 정합). */
     private fun row(
-        sapCode: String,
+        accountId: Long,
         salesDate: String,
+        abc1: Long = 0L,
         ship1: Long = 0L,
         ship2: Long = 0L,
         ship3: Long = 0L,
         ship4: Long = 0L,
     ) = MonthlySalesRow(
-        sapAccountCode = sapCode,
+        sapAccountCode = "",
         salesDate = salesDate,
-        closingAmountSum = BigDecimal(ship1 + ship2 + ship3 + ship4),
-        abcClosingAmount1 = null,
+        closingAmountSum = BigDecimal(abc1 + ship1 + ship2 + ship3 + ship4),
+        accountId = accountId,
+        abcClosingAmount1 = BigDecimal(abc1),
         shipClosingAmount1 = BigDecimal(ship1),
         shipClosingAmount2 = BigDecimal(ship2),
         shipClosingAmount3 = BigDecimal(ship3),
         shipClosingAmount4 = BigDecimal(ship4),
     )
 
+    private fun target(month: Int, rt: Double = 0.0, rm: Double = 0.0, fr: Double = 0.0, fo: Double = 0.0): SalesProgressRateMaster =
+        mockk {
+            every { rtTargetAmount } returns rt
+            every { rmTargetAmount } returns rm
+            every { frTargetAmount } returns fr
+            every { foTargetAmount } returns fo
+            every { targetMonth } returns month.toString()
+            every { isDeleted } returns false
+        }
+
     @Test
-    @DisplayName("getDetail — Ship 4종 합산 = totalAchievedAmount + target/rate 폐기 (0/0.0)")
-    fun detailSumsShipFourCategories() {
+    @DisplayName("getDetail — ClosingAmountSum(ABC+Ship) = achievedAmount, account_id FK 로 조인")
+    fun detailSumsClosingAmount() {
         val acc = account(1, "S001")
         every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
-        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
-            row("S001", "202604", ship1 = 100, ship2 = 200, ship3 = 300, ship4 = 400),
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
+            row(accountId = 1, salesDate = "202604", abc1 = 500, ship1 = 100, ship2 = 200, ship3 = 100, ship4 = 100),
         )
+        every { salesProgressRateMasterRepository.findByAccountIdAndTargetYear(1, "2026") } returns emptyList()
 
         val result = service.getDetail(allBranchesScope, customerId = 1, year = 2026, month = 4)
 
         assertThat(result.achievedAmount).isEqualTo(1000L)
+        // 목표 미등록 → 0 / 달성률 0
         assertThat(result.targetAmount).isEqualTo(0L)
         assertThat(result.achievementRate).isEqualTo(0.0)
     }
 
     @Test
-    @DisplayName("getDetail — RDS row 부재 → achievedAmount = 0")
-    fun detailReturnsZeroWhenNoOroraRow() {
+    @DisplayName("getDetail — SalesProgressRateMaster 목표 = targetAmount + 달성률 round(실적/목표×100)")
+    fun detailRestoresTargetFromProgressRateMaster() {
         val acc = account(1, "S001")
         every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
-        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns emptyList()
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns listOf(
+            row(accountId = 1, salesDate = "202604", ship1 = 1000),
+        )
+        every { salesProgressRateMasterRepository.findByAccountIdAndTargetYear(1, "2026") } returns listOf(
+            target(month = 4, rt = 2000.0),
+        )
 
         val result = service.getDetail(allBranchesScope, customerId = 1, year = 2026, month = 4)
 
-        assertThat(result.achievedAmount).isEqualTo(0L)
+        assertThat(result.achievedAmount).isEqualTo(1000L)
+        assertThat(result.targetAmount).isEqualTo(2000L)
+        assertThat(result.achievementRate).isEqualTo(50.0)
     }
 
     @Test
-    @DisplayName("getDetail — Account.externalKey null → gateway 호출 시 빈 리스트 전달")
-    fun detailHandlesNullExternalKey() {
-        val acc = account(1, externalKey = null)
+    @DisplayName("getDetail — RDS row 부재 → achievedAmount = 0")
+    fun detailReturnsZeroWhenNoRow() {
+        val acc = account(1, "S001")
         every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(acc)
-        every { monthlySalesHistoryGateway.findBySalesDates(any(), emptyList()) } returns emptyList()
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdAndTargetYear(1, "2026") } returns emptyList()
 
         val result = service.getDetail(allBranchesScope, customerId = 1, year = 2026, month = 4)
 
         assertThat(result.achievedAmount).isEqualTo(0L)
+        assertThat(result.targetAmount).isEqualTo(0L)
     }
 }

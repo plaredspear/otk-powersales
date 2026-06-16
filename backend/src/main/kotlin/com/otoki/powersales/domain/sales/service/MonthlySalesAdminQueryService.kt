@@ -9,6 +9,8 @@ import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardDetai
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardListItem
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardListResponse
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardSummaryResponse
+import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
+import com.otoki.powersales.domain.sales.repository.SalesProgressRateMasterRepository
 import com.otoki.powersales.platform.common.exception.BusinessException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -27,8 +29,11 @@ import kotlin.collections.get
  * ORORA view 는 RDS 로의 복제 적재 배치 (`OroraMonthlySalesChunkProcessor`) 에서만 읽으며, 화면/집계는
  * 항상 RDS 적재본을 본다. SF 레거시도 화면 조회가 ORORA 직접이 아닌 `MonthlySalesHistory__c`
  * SObject 를 읽은 것과 동등.
- * 목표 (`thisMonthTarget`) / 확정 상태 (`isConfirmed`) 는 폐기 — 응답 호환성 유지를 위해
- * `targetAmount = null`, `achievementRate = null`, `isConfirmed = false` 로 고정.
+ * 실적(마감 합계)은 모바일 「월 매출」과 동일하게 `ClosingAmountSum`(ABC합 + Ship합)을 쓰며, RDS row 조인
+ * 키는 `account_id` FK (sap_account_code 텍스트 컬럼은 적재품질 의존이라 미사용 — [MonthlySalesHistoryQueryGateway.findBySalesDatesByAccountId]).
+ * 단건 상세([getDetail])의 목표/달성률은 `SalesProgressRateMaster` 기반으로 모바일 정합 복원.
+ * 단, 상단 요약([getSummary])·거래처별 명세([getList])의 목표/확정 상태는 폐기 유지 —
+ * `totalTargetAmount = 0`, 명세 `targetAmount = null`, `achievementRate = null`, `isConfirmed = false`.
  *
  * ## 동작 요약
  * 권한 범위 거래처 N건의 마감실적을 합산 + 거래처별 명세 + 단건 상세 형태로 반환.
@@ -42,6 +47,7 @@ import kotlin.collections.get
 class MonthlySalesAdminQueryService(
     private val accountRepository: AccountRepository,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
+    private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository,
 ) {
 
     /**
@@ -80,19 +86,19 @@ class MonthlySalesAdminQueryService(
             )
         }
 
-        // RDS fetch — 당월 + 전년 동월 일괄 1 trip
-        val accountSapCodes = accounts.mapNotNull { it.externalKey }
+        // RDS fetch — 당월 + 전년 동월 일괄 1 trip (account_id FK 조인 — sap_account_code 적재품질 무관, 모바일 정합)
+        val accountIds = accounts.map { it.id }
         val currentSalesDate = toSalesDate(year, month)
         val lastYearSalesDate = toSalesDate(year - 1, month)
         val oroByKey = monthlySalesHistoryGateway
-            .findBySalesDates(listOf(currentSalesDate, lastYearSalesDate), accountSapCodes)
-            .associateBy { it.sapAccountCode to it.salesDate }
+            .findBySalesDatesByAccountId(listOf(currentSalesDate, lastYearSalesDate), accountIds)
+            .associateBy { it.accountId to it.salesDate }
 
         val totalAchieved = accounts.sumOf { acc ->
-            shipClosingSum(oroByKey[acc.externalKey to currentSalesDate])
+            closingSum(oroByKey[acc.id to currentSalesDate])
         }
         val totalLastYearAchieved = accounts
-            .sumOf { acc -> shipClosingSum(oroByKey[acc.externalKey to lastYearSalesDate]) }
+            .sumOf { acc -> closingSum(oroByKey[acc.id to lastYearSalesDate]) }
             .takeIf { it > 0L }
         val lastYearRatio = if (totalLastYearAchieved == null || totalLastYearAchieved == 0L) null
         else (totalAchieved.toDouble() / totalLastYearAchieved.toDouble()) * 100.0
@@ -153,7 +159,9 @@ class MonthlySalesAdminQueryService(
 
     /**
      * 단건 거래처 상세 조회 — 모바일 동등 6 영역 (진도율 바 / 목표·실적 / 카테고리 4종 / 전년 동월 / 전년 평균).
-     * 목표 / 진도율은 폐기.
+     * 목표 / 실적 / 달성률은 모바일 「월 매출」([MonthlySalesService.getMonthlySales]) 정합:
+     * 실적 = `ClosingAmountSum`(ABC합 + Ship합), 목표 = `SalesProgressRateMaster`(연·월 1행) 합계,
+     * 달성률 = `round(실적/목표×100)`. 조인 키는 `account_id` FK (sap_account_code 텍스트 컬럼 미사용).
      *
      * @throws AdminForbiddenException 거래처가 권한 범위 밖일 때
      */
@@ -167,29 +175,32 @@ class MonthlySalesAdminQueryService(
             )
         if (!scope.validateAccess(account.branchCode)) throw AdminForbiddenException()
 
-        // RDS fetch — 당월 + 전년 + 1~조회월 누적 일괄 1 trip
-        val accountSap = account.externalKey?.let { listOf(it) } ?: emptyList()
+        // RDS fetch — 당월 + 전년 + 1~조회월 누적 일괄 1 trip (account_id FK 조인 — 모바일 정합)
         val months = (1..month).toList()
         val currentSalesDate = toSalesDate(year, month)
         val lastYearSalesDate = toSalesDate(year - 1, month)
         val currentRangeSalesDates = months.map { toSalesDate(year, it) }
         val previousRangeSalesDates = months.map { toSalesDate(year - 1, it) }
         val oroByKey = monthlySalesHistoryGateway
-            .findBySalesDates(
+            .findBySalesDatesByAccountId(
                 (currentRangeSalesDates + previousRangeSalesDates).distinct(),
-                accountSap,
+                listOf(account.id),
             )
-            .associateBy { it.sapAccountCode to it.salesDate }
-        val currentOro = oroByKey[account.externalKey to currentSalesDate]
-        val lastYearOro = oroByKey[account.externalKey to lastYearSalesDate]
+            .associateBy { it.accountId to it.salesDate }
+        val currentOro = oroByKey[account.id to currentSalesDate]
+        val lastYearOro = oroByKey[account.id to lastYearSalesDate]
 
-        val achieved = shipClosingSum(currentOro)
+        val achieved = closingSum(currentOro)
+
+        // 목표 — 조회 거래처의 (연, 월) 1행 (SalesProgressRateMaster). 미등록 시 0.
+        val target = findTarget(account.id, year, month)
+        val targetSum = target?.let { targetSumOf(it) } ?: 0L
 
         val today = LocalDate.now()
         val isPastMonth = year < today.year || (year == today.year && month < today.monthValue)
-        val categorySales = if (isPastMonth) buildCategorySales(currentOro) else emptyList()
+        val categorySales = if (isPastMonth) buildCategorySales(currentOro, target) else emptyList()
 
-        val lastYearAchieved = shipClosingSum(lastYearOro)
+        val lastYearAchieved = closingSum(lastYearOro)
         val yearComparison = MonthlySalesDashboardDetailResponse.YearComparisonInfo(
             currentYear = achieved / MILLION,
             previousYear = lastYearAchieved / MILLION,
@@ -197,9 +208,9 @@ class MonthlySalesAdminQueryService(
 
         // 1월~조회월 누적 평균 (백만원 단위 절사) — RDS row 기반
         val currentAvg = if (months.isEmpty()) 0L
-        else currentRangeSalesDates.sumOf { sd -> shipClosingSum(oroByKey[account.externalKey to sd]) } / months.size
+        else currentRangeSalesDates.sumOf { sd -> closingSum(oroByKey[account.id to sd]) } / months.size
         val previousAvg = if (months.isEmpty()) 0L
-        else previousRangeSalesDates.sumOf { sd -> shipClosingSum(oroByKey[account.externalKey to sd]) } / months.size
+        else previousRangeSalesDates.sumOf { sd -> closingSum(oroByKey[account.id to sd]) } / months.size
         val monthlyAverage = MonthlySalesDashboardDetailResponse.MonthlyAverageInfo(
             currentYearAverage = currentAvg / MILLION,
             previousYearAverage = previousAvg / MILLION,
@@ -212,9 +223,9 @@ class MonthlySalesAdminQueryService(
             customerName = account.name,
             salesYear = year,
             salesMonth = month,
-            targetAmount = 0L,
+            targetAmount = targetSum,
             achievedAmount = achieved,
-            achievementRate = 0.0,
+            achievementRate = rate(achieved, targetSum),
             referenceAchievementRate = referenceAchievementRate(year, month, LocalDate.now()),
             categorySales = categorySales,
             yearComparison = yearComparison,
@@ -231,20 +242,20 @@ class MonthlySalesAdminQueryService(
             }
         if (accounts.isEmpty()) return emptyList()
 
-        // RDS fetch — 당월 + 전년 동월 일괄 1 trip
+        // RDS fetch — 당월 + 전년 동월 일괄 1 trip (account_id FK 조인, 모바일 정합)
         val currentSalesDate = toSalesDate(request.year, request.month)
         val lastYearSalesDate = toSalesDate(request.year - 1, request.month)
-        val accountSapCodes = accounts.mapNotNull { it.externalKey }
+        val accountIds = accounts.map { it.id }
         val oroByKey = monthlySalesHistoryGateway
-            .findBySalesDates(listOf(currentSalesDate, lastYearSalesDate), accountSapCodes)
-            .associateBy { it.sapAccountCode to it.salesDate }
+            .findBySalesDatesByAccountId(listOf(currentSalesDate, lastYearSalesDate), accountIds)
+            .associateBy { it.accountId to it.salesDate }
 
         return accounts.map { account ->
-            val currentOro = oroByKey[account.externalKey to currentSalesDate]
-            val lastYearOro = oroByKey[account.externalKey to lastYearSalesDate]
+            val currentOro = oroByKey[account.id to currentSalesDate]
+            val lastYearOro = oroByKey[account.id to lastYearSalesDate]
 
-            val achieved = shipClosingSum(currentOro)
-            val lastYearAchieved = shipClosingSum(lastYearOro)
+            val achieved = closingSum(currentOro)
+            val lastYearAchieved = closingSum(lastYearOro)
             val lastYearRatio = if (lastYearAchieved > 0)
                 (achieved.toDouble() / lastYearAchieved.toDouble()) * 100.0 else null
 
@@ -310,9 +321,9 @@ class MonthlySalesAdminQueryService(
         val lastYearKeys = keys.map { (y, m) -> (y - 1) to m }
 
         // RDS fetch — 12개월 (현재 6 + 전년 6) 일괄 1 trip
-        val accountSapCodes = accounts.mapNotNull { it.externalKey }
+        val accountIds = accounts.map { it.id }
         val allSalesDates = (keys + lastYearKeys).map { (y, m) -> toSalesDate(y, m) }.distinct()
-        val oroByKey = monthlySalesHistoryGateway.findBySalesDates(allSalesDates, accountSapCodes)
+        val oroByKey = monthlySalesHistoryGateway.findBySalesDatesByAccountId(allSalesDates, accountIds)
             .groupBy { it.salesDate }
 
         return keys.map { (y, m) ->
@@ -324,9 +335,9 @@ class MonthlySalesAdminQueryService(
                 salesYear = y,
                 salesMonth = m,
                 targetAmount = 0L,
-                achievedAmount = currentOroRows.sumOf { shipClosingSum(it) },
+                achievedAmount = currentOroRows.sumOf { closingSum(it) },
                 lastYearAchievedAmount = if (lastYearOroRows.isEmpty()) null
-                else lastYearOroRows.sumOf { shipClosingSum(it) },
+                else lastYearOroRows.sumOf { closingSum(it) },
             )
         }
     }
@@ -353,14 +364,17 @@ class MonthlySalesAdminQueryService(
 
     private fun buildCategorySales(
         oroRow: MonthlySalesRow?,
+        target: SalesProgressRateMaster?,
     ): List<MonthlySalesDashboardDetailResponse.CategorySalesInfo> {
         if (oroRow == null) return emptyList()
         return SalesCategory.entries.map { category ->
+            val achievedAmount = categoryAchieved(oroRow, category)
+            val targetAmount = target?.let { categoryTarget(it, category) } ?: 0L
             MonthlySalesDashboardDetailResponse.CategorySalesInfo(
                 category = category.name,
-                targetAmount = 0L,
-                achievedAmount = categoryAchieved(oroRow, category),
-                achievementRate = 0.0,
+                targetAmount = targetAmount,
+                achievedAmount = achievedAmount,
+                achievementRate = rate(achievedAmount, targetAmount),
             )
         }
     }
@@ -390,10 +404,20 @@ class MonthlySalesAdminQueryService(
     }
 
     /**
+     * RDS row 의 마감 합계 실적 — SF `ClosingAmountSum__c` (ABC합 + Ship합) 동등.
+     * 게이트웨이([MonthlySalesHistoryQueryGateway])가 원본 합계 컬럼을 더해 산출한 [MonthlySalesRow.closingAmountSum]
+     * 을 그대로 사용 (개별 카테고리 재합산과 달리 물류매출 누락 없음). row 부재 시 0.
+     * 모바일 「월 매출」([MonthlySalesService]) "마감 합계 실적" 정합.
+     */
+    private fun closingSum(oro: MonthlySalesRow?): Long =
+        oro?.closingAmountSum?.toLong() ?: 0L
+
+    /**
      * RDS row 의 카테고리 4종 `ShipClosingAmount` 합산 — 물류 배부 채널 누적 마감실적.
      *
-     * SF Apex `IF_REST_MOBILE_MonthlySalesHistory.cls` 응답의 `ShipClosingSumAmount` 동등.
-     * row 가 부재 시 0 반환.
+     * SF Apex `IF_REST_MOBILE_MonthlySalesHistory.cls` 응답의 `ShipClosingSumAmount` 동등. row 부재 시 0.
+     * [sumInvestedAccountSales] (여사원 투입현황 매출현황 탭, Spec 850 D7) 전용 — 월매출 대시보드는 ABC+Ship
+     * 합계([closingSum]) 사용.
      */
     private fun shipClosingSum(oro: MonthlySalesRow?): Long {
         if (oro == null) return 0L
@@ -402,6 +426,40 @@ class MonthlySalesAdminQueryService(
             oro.shipClosingAmount3, oro.shipClosingAmount4,
         ).sumOf { it.toLong() }
     }
+
+    /**
+     * 조회 거래처의 (연, 월) 목표 1행 — RDS `SalesProgressRateMaster` (SF `SalesProgressRateMaster__c` 복제).
+     * `targetYear` 는 `"YYYY"` 문자열, `targetMonth` 는 SF 적재 포맷(zero-pad 비보장) 이라 정수 파싱 후
+     * 월 일치로 매칭. soft-delete row 제외. (모바일 [MonthlySalesService.getMonthlySales] 의 findTarget 정합)
+     */
+    private fun findTarget(accountId: Long, year: Int, month: Int): SalesProgressRateMaster? =
+        salesProgressRateMasterRepository
+            .findByAccountIdAndTargetYear(accountId, year.toString())
+            .asSequence()
+            .filter { it.isDeleted != true }
+            .firstOrNull { it.targetMonth?.trim()?.toIntOrNull() == month }
+
+    /** 카테고리별 목표 — SF `RT/RM/FR/FO TargetAmount__c` 정합. */
+    private fun categoryTarget(target: SalesProgressRateMaster, category: SalesCategory): Long {
+        val amount = when (category) {
+            SalesCategory.AMBIENT -> target.rtTargetAmount
+            SalesCategory.NOODLE -> target.rmTargetAmount
+            SalesCategory.FROZEN_REFRIGERATED -> target.frTargetAmount
+            SalesCategory.OIL_FAT -> target.foTargetAmount
+        }
+        return amount?.toLong() ?: 0L
+    }
+
+    /** 목표 합계 — SF `TargetSum__c` (= RT + FR + RM + FO) 동등. */
+    private fun targetSumOf(target: SalesProgressRateMaster): Long =
+        ((target.rtTargetAmount ?: 0.0) +
+            (target.frTargetAmount ?: 0.0) +
+            (target.rmTargetAmount ?: 0.0) +
+            (target.foTargetAmount ?: 0.0)).toLong()
+
+    /** 달성률 — `round(실적 / 목표 × 100)`. 목표 0 이면 0 (NaN/Infinity 방지, 레거시 정합). */
+    private fun rate(achieved: Long, target: Long): Double =
+        if (target <= 0L) 0.0 else Math.round(achieved.toDouble() / target * 100).toDouble()
 
     /**
      * 영업일 기반 기준 진도율 — 평일 (월~금) 기준 1일~오늘 / 1일~월말.
