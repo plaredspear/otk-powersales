@@ -1,28 +1,77 @@
 package com.otoki.powersales.domain.sales.sfsync
 
+import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import tools.jackson.core.type.TypeReference
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 
 /**
- * [SalesProgressRateMasterFetchClient] 운영 구현 — **SF 통신부는 미구현 (TODO)**.
+ * [SalesProgressRateMasterFetchClient] 운영 구현 — SF Apex REST `/IF_salesprogresssend` 호출.
  *
- * 현재는 빈 리스트를 반환하여 sync 배치가 no-op 으로 안전하게 동작한다. SF endpoint/인증이
- * 확정되면 아래 TODO 를 채운다. upsert 로직([SalesProgressRateMasterSyncService])은 이 client 가
- * 반환하는 DTO 리스트에만 의존하므로, client 완성 전에도 upsert 경로는 독립적으로 검증 가능하다.
+ * 처리:
+ *  1. `{ "MOD_DT": modDt }` 를 [SfOutboundClient.callApi] 로 POST (클레임 등록과 동일한 OAuth/401 재시도 경로).
+ *  2. 응답 rawBody(JSON)에서 거래처목표 레코드 배열을 추출 — 최상위 배열 또는 `data/list/result` 등
+ *     흔한 wrapper key 를 순서대로 탐색 (SF 응답 wrapper 형식이 확정 전이므로 후보 탐색).
+ *  3. 각 레코드를 [SalesProgressRateMasterSfRecord] 로 역직렬화 후 [SalesProgressRateMasterFetchDto] 로 변환.
+ *
+ * 호출 실패(OAuth/HTTP/파싱 예외)는 빈 리스트로 흡수하여 sync 배치를 깨뜨리지 않는다 (다음 사이클 재시도).
  */
 @Component
-class SalesProgressRateMasterFetchClientImpl : SalesProgressRateMasterFetchClient {
+class SalesProgressRateMasterFetchClientImpl(
+    private val sfOutboundClient: SfOutboundClient,
+    private val objectMapper: ObjectMapper,
+) : SalesProgressRateMasterFetchClient {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun fetch(): List<SalesProgressRateMasterFetchDto> {
-        // TODO(SF-fetch): SF `SalesProgressRateMaster__c` 변경분 fetch 구현.
-        //   - endpoint: SF Apex REST 또는 Query API URL (예: sf.outbound.apex-base-url + suffix)
-        //   - 인증: SfOAuthTokenManager.getAccessToken() Bearer 헤더 (SfOutboundClientImpl 패턴 참조)
-        //   - 조회 조건: SF 측이 LastModifiedDate 기준 변경분을 응답 (증분 파라미터 전달 여부는 API 확정 후)
-        //   - 페이지네이션: SF nextRecordsUrl 처리 (대량 응답 대비)
-        //   - 매핑: SF 응답 JSON → SalesProgressRateMasterFetchDto (필드명: TargetYear__c 등)
-        log.warn("[sales-progress-sync] SF fetch client 미구현 — 빈 리스트 반환 (no-op)")
-        return emptyList()
+    override fun fetch(modDt: String): List<SalesProgressRateMasterFetchDto> {
+        val apiMap = mapOf<String, Any?>("MOD_DT" to modDt)
+        val raw = try {
+            val response = sfOutboundClient.callApi(SF_ENDPOINT, apiMap)
+            response.rawBody
+        } catch (e: Exception) {
+            log.warn("[sales-progress-sync] SF fetch 호출 실패 — 빈 리스트 반환. modDt={} error={}", modDt, e.message)
+            return emptyList()
+        }
+
+        return parseRecords(raw).map { it.toFetchDto() }
+    }
+
+    /** rawBody JSON 에서 거래처목표 레코드 배열을 추출. 형식 불명/파싱 실패 시 빈 리스트. */
+    private fun parseRecords(raw: String?): List<SalesProgressRateMasterSfRecord> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return try {
+            val root = objectMapper.readTree(raw)
+            val arrayNode = extractArrayNode(root) ?: run {
+                log.warn("[sales-progress-sync] SF 응답에서 레코드 배열을 찾지 못함 — 빈 리스트. body 앞부분={}", raw.take(200))
+                return emptyList()
+            }
+            objectMapper.convertValue(arrayNode, object : TypeReference<List<SalesProgressRateMasterSfRecord>>() {})
+        } catch (e: Exception) {
+            log.warn("[sales-progress-sync] SF 응답 파싱 실패 — 빈 리스트. error={} body 앞부분={}", e.message, raw.take(200))
+            emptyList()
+        }
+    }
+
+    /** 최상위가 배열이면 그대로, 객체면 흔한 wrapper key 를 순서대로 탐색. */
+    private fun extractArrayNode(root: JsonNode): JsonNode? {
+        if (root.isArray) return root
+        if (root.isObject) {
+            for (key in WRAPPER_KEYS) {
+                val child = root.get(key)
+                if (child != null && child.isArray) return child
+            }
+        }
+        return null
+    }
+
+    companion object {
+        /** SF Apex REST suffix (apex base URL 뒤에 붙는다). */
+        const val SF_ENDPOINT = "/IF_salesprogresssend"
+
+        /** SF 응답 wrapper key 후보 (web extractRows 와 동일 순서). */
+        private val WRAPPER_KEYS = listOf("data", "DATA", "list", "LIST", "result", "RESULT", "items")
     }
 }

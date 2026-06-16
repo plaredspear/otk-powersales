@@ -56,7 +56,7 @@ class SalesProgressRateMasterSyncServiceTest {
             rt = 100.0, fr = 200.0, rm = 300.0, fo = 400.0,
             current = 500.0, previous = 450.0, businessRate = 60.0,
         )
-        every { fetchClient.fetch() } returns listOf(dto)
+        every { fetchClient.fetch(any()) } returns listOf(dto)
 
         val result = service.sync()
 
