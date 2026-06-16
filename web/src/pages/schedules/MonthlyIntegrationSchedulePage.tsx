@@ -166,6 +166,11 @@ export default function MonthlyIntegrationSchedulePage() {
         exportLoading={exportMutation.isPending}
         searchLoading={isLoading}
         hideExport={isMobile}
+        extraActions={
+          queryParams != null && !isMobile ? (
+            <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          ) : undefined
+        }
       />
 
       {isError && (
@@ -175,12 +180,6 @@ export default function MonthlyIntegrationSchedulePage() {
           description={error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다'}
           style={{ marginBottom: 16 }}
         />
-      )}
-
-      {queryParams != null && !isMobile && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-        </div>
       )}
 
       {isLoading ? (

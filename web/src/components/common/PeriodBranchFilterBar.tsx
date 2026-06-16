@@ -56,8 +56,17 @@ export default function PeriodBranchFilterBar({
   };
 
   return (
-    <div style={{ marginBottom: 16 }}>
-      <Space wrap align="start">
+    <div
+      style={{
+        marginBottom: 16,
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        gap: 8,
+      }}
+    >
+      <Space wrap align="end">
         <Space direction="vertical" size={4}>
           <span>년도:</span>
           <InputNumber
@@ -117,30 +126,28 @@ export default function PeriodBranchFilterBar({
           />
         </Space>
       </Space>
-      <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <Space>
-          {extraActions}
+      <Space>
+        {extraActions}
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          onClick={onSearch}
+          disabled={selectedCodes.length === 0}
+          loading={searchLoading}
+        >
+          조회
+        </Button>
+        {!hideExport && (
           <Button
-            type="primary"
-            icon={<SearchOutlined />}
-            onClick={onSearch}
-            disabled={selectedCodes.length === 0}
-            loading={searchLoading}
+            icon={<DownloadOutlined />}
+            onClick={onExport}
+            disabled={exportDisabled}
+            loading={exportLoading}
           >
-            조회
+            엑셀 다운로드
           </Button>
-          {!hideExport && (
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={onExport}
-              disabled={exportDisabled}
-              loading={exportLoading}
-            >
-              엑셀 다운로드
-            </Button>
-          )}
-        </Space>
-      </div>
+        )}
+      </Space>
     </div>
   );
 }

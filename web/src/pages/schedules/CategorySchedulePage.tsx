@@ -120,6 +120,11 @@ export default function CategorySchedulePage() {
         exportDisabled={!data || data.items.length === 0}
         exportLoading={exportMutation.isPending}
         searchLoading={isLoading}
+        extraActions={
+          queryParams != null ? (
+            <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          ) : undefined
+        }
       />
 
       {isError && (
@@ -129,12 +134,6 @@ export default function CategorySchedulePage() {
           description={error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다'}
           style={{ marginBottom: 16 }}
         />
-      )}
-
-      {queryParams != null && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-        </div>
       )}
 
       {isLoading ? (
