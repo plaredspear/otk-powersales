@@ -23,3 +23,23 @@ String extractErrorMessage(dynamic e) {
   }
   return e.toString().replaceFirst('Exception: ', '');
 }
+
+/// API 에러 응답에서 에러 코드(`error.code`)를 추출합니다.
+///
+/// DioException 의 서버 응답에서 `error.code` 를 반환하고,
+/// 없으면 null 을 반환합니다.
+String? extractErrorCode(dynamic e) {
+  if (e is DioException) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final error = data['error'];
+      if (error is Map<String, dynamic>) {
+        final code = error['code'];
+        if (code is String && code.isNotEmpty) {
+          return code;
+        }
+      }
+    }
+  }
+  return null;
+}

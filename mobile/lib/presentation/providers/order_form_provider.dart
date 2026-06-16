@@ -248,13 +248,21 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   }
 
   String _mapLoanInquiryError(Object error) {
-    final message = extractErrorMessage(error).toLowerCase();
-    if (message.contains('html') ||
-        message.contains('unavailable') ||
-        message.contains('연결')) {
-      return 'SAP 시스템 연결에 실패했습니다.';
+    final code = extractErrorCode(error);
+    switch (code) {
+      // SAP 비즈니스 오류 — SAP 가 내려준 원본 사유 메시지를 그대로 노출
+      case 'LOAN_SAP_ERROR':
+        final message = extractErrorMessage(error);
+        return message.isNotEmpty
+            ? message
+            : '여신 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+      // SAP 연결/응답 형식 등 기술적 오류 — 일반 메시지
+      case 'LOAN_SAP_UNAVAILABLE':
+      case 'LOAN_SAP_HTML_RESPONSE':
+        return 'SAP 시스템 연결에 실패했습니다.';
+      default:
+        return '여신 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
     }
-    return '여신 조회 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
   }
 
   /// 납기일 설정
