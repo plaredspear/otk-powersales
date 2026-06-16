@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { Alert, Card, Radio, Space, Tag, Tooltip } from 'antd';
 import { type SapOutboundTestKind } from '@/api/admin/sapOutboundTest';
 import SapOutboundSenderCard from './SapOutboundSenderCard';
-import { SENDER_CONFIGS, TRIGGER_TAG_COLOR } from './sapOutboundSenderConfigs';
+import {
+  SENDER_CONFIGS,
+  TRIGGER_SEND_EFFECT,
+  TRIGGER_TAG_COLOR,
+} from './sapOutboundSenderConfigs';
 
 /**
  * SAP Outbound 전용 페이지의 '테스트 송신' 탭.
@@ -23,7 +27,14 @@ export default function SapOutboundTestTab() {
         showIcon
         style={{ marginBottom: 16 }}
         message="이 페이지는 실제 SAP 시스템으로 송신을 트리거합니다."
-        description="SYSTEM_ADMIN 권한 필요. '실송신' 버튼은 현재 환경의 SAP REST Adapter 로 호출이 전송됩니다 (sap_outbound_log / sap_outbox 적재됨). 페이로드 형식 확인만 필요하면 '미리보기' 만 사용하세요."
+        description={
+          <>
+            SYSTEM_ADMIN 권한 필요. '실송신' 버튼은 현재 환경의 SAP REST Adapter 로 호출이
+            전송됩니다. 선택된 <Tag color={TRIGGER_TAG_COLOR[config.triggerTag]}>{config.triggerTag}</Tag>{' '}
+            인터페이스는 {TRIGGER_SEND_EFFECT[config.triggerTag]} 페이로드 형식 확인만 필요하면
+            '미리보기' 만 사용하세요.
+          </>
+        }
       />
 
       <Card size="small" style={{ marginBottom: 16 }}>

@@ -39,6 +39,21 @@ export const TRIGGER_TAG_COLOR: Record<SenderCardConfig['triggerTag'], string> =
   OUTBOX: 'purple',
 };
 
+/**
+ * 트리거 분류별 '실송신' 시 흔적이 남는 위치 안내.
+ *
+ * backend `OutboundTriggerType` 별 실제 적재 대상과 일치시킨다.
+ * - REALTIME: 동기 호출 후 응답만 반환 — sap_outbox / sap_outbound_log 어디에도 적재하지 않는다
+ *   (호출 메타는 external_api_log 에만 1건 남는다).
+ * - OUTBOX: sap_outbox 큐에 INSERT, 비동기 워커가 이후 송신.
+ * - BATCH: sap_outbound_log 에 송신 결과 적재.
+ */
+export const TRIGGER_SEND_EFFECT: Record<SenderCardConfig['triggerTag'], string> = {
+  REALTIME: '동기 호출 후 응답만 반환 — sap_outbox / sap_outbound_log 에 적재하지 않습니다.',
+  OUTBOX: 'sap_outbox 큐에 INSERT 후 SapOutboxWorker 가 비동기 송신합니다.',
+  BATCH: 'sap_outbound_log 에 송신 결과가 적재됩니다.',
+};
+
 export const SENDER_CONFIGS: SenderCardConfig[] = [
   {
     kind: 'loan-inquiry',

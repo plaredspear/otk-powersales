@@ -17,6 +17,7 @@ import {
   type SapOutboundTestSendResponse,
 } from '@/api/admin/sapOutboundTest';
 import {
+  TRIGGER_SEND_EFFECT,
   TRIGGER_TAG_COLOR,
   type SenderCardConfig,
 } from './sapOutboundSenderConfigs';
@@ -219,8 +220,7 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
           <Tag color={TRIGGER_TAG_COLOR[config.triggerTag]}>{config.triggerTag}</Tag>
         </Paragraph>
         <Paragraph type="warning">
-          실송신은 <Text code>sap_outbound_log</Text> / <Text code>sap_outbox</Text> 에 흔적을 남기며,
-          SAP 측 운영 데이터에도 영향을 줄 수 있습니다.
+          {TRIGGER_SEND_EFFECT[config.triggerTag]} SAP 측 운영 데이터에도 영향을 줄 수 있습니다.
         </Paragraph>
       </Modal>
     </div>
