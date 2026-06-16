@@ -1,71 +1,33 @@
 import { Modal, Empty } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
-import type { TeamSchedule } from '@/api/team-schedule';
-import ResizableTable from '@/components/common/ResizableTable';
+import type { DailySummary, TeamSchedule } from '@/api/team-schedule';
+import { DaySummaryBanner } from './DaySummaryBanner';
+import { ScheduleEventCard } from './ScheduleEventCard';
+import { getEventColor } from './scheduleEventColor';
 
 interface DayScheduleListModalProps {
   open: boolean;
   onClose: () => void;
   date: string;
   schedules: TeamSchedule[];
+  summary: DailySummary | undefined;
   onScheduleClick: (schedule: TeamSchedule) => void;
 }
 
-const columns: ColumnsType<TeamSchedule> = [
-  {
-    title: '사원명',
-    width: 140,
-    render: (_, record) => `${record.employeeName}(${record.employeeCode})`,
-  },
-  {
-    title: '근무형태',
-    dataIndex: 'workingType',
-    width: 80,
-  },
-  {
-    title: '유형1',
-    dataIndex: 'workingCategory1',
-    width: 80,
-    render: (v: string | null) => v ?? '-',
-  },
-  {
-    title: '유형2',
-    dataIndex: 'workingCategory2',
-    width: 80,
-    render: (v: string | null) => v ?? '-',
-  },
-  {
-    title: '유형3',
-    dataIndex: 'workingCategory3',
-    width: 80,
-    render: (v: string | null) => v ?? '-',
-  },
-  {
-    title: '거래처',
-    dataIndex: 'accountName',
-    render: (v: string | null) => v ?? '-',
-  },
-  {
-    title: '출근',
-    width: 60,
-    render: (_, record) => {
-      if (record.workingType !== '근무') return '-';
-      return record.isClockIn ? (
-        <span style={{ color: '#52c41a', fontWeight: 600 }}>O</span>
-      ) : (
-        <span style={{ color: '#ff4d4f', fontWeight: 600 }}>X</span>
-      );
-    },
-  },
-];
-
+/**
+ * "+N 개" / 날짜 셀 클릭 시 뜨는 해당일 전체 일정 목록 모달.
+ *
+ * FullCalendar 내장 popover 와 동일한 디자인(상단 요약 배너 + 색깔 칩 리스트)을 antd Modal 로
+ * 재현한다. popover 는 z-index(9999)가 antd Modal 보다 높아 상세 모달을 가려, popover 대신
+ * 이 모달로 통일했다(ScheduleCalendar.moreLinkClick). 근무 일정 클릭 시 상세 모달을 연다.
+ */
 export function DayScheduleListModal({
   open,
   onClose,
   date,
   schedules,
+  summary,
   onScheduleClick,
 }: DayScheduleListModalProps) {
   const title = date
@@ -88,26 +50,33 @@ export function DayScheduleListModal({
       zIndex={1050}
       destroyOnHidden
     >
+      {/* 상단 요약 배너 — 캘린더 popover 와 동일하게 진열/행사 + 연차 칩 표시 */}
+      <DaySummaryBanner summary={summary} ready />
       {daySchedules.length === 0 ? (
-        <Empty description="등록된 일정이 없습니다" />
+        <Empty description="등록된 일정이 없습니다" style={{ marginTop: 12 }} />
       ) : (
-        <ResizableTable<TeamSchedule>
-          columns={columns}
-          dataSource={daySchedules}
-          rowKey="id"
-          pagination={false}
-          size="small"
-          onRow={(record) => ({
-            onClick: () => {
-              if (record.workingType === '근무') {
-                onScheduleClick(record);
-              }
-            },
-            style: {
-              cursor: record.workingType === '근무' ? 'pointer' : 'default',
-            },
+        <div style={{ marginTop: 4, maxHeight: '60vh', overflowY: 'auto' }}>
+          {daySchedules.map((schedule) => {
+            const color = getEventColor(schedule);
+            const isWork = schedule.workingType === '근무';
+            return (
+              <div
+                key={schedule.id}
+                onClick={() => {
+                  if (isWork) onScheduleClick(schedule);
+                }}
+                style={{
+                  background: color,
+                  borderRadius: 2,
+                  marginBottom: 2,
+                  cursor: isWork ? 'pointer' : 'default',
+                }}
+              >
+                <ScheduleEventCard schedule={schedule} variant="month" />
+              </div>
+            );
           })}
-        />
+        </div>
       )}
     </Modal>
   );
