@@ -81,6 +81,11 @@ export function DayScheduleListModal({
       onCancel={onClose}
       footer={null}
       width={800}
+      // 일정 상세 모달(ScheduleEditModal, zIndex=1200)이 이 목록 위에서 열리므로
+      // 목록 모달은 더 낮은 z-index 로 고정해 상세 모달이 항상 앞에 오도록 한다.
+      // (명시하지 않으면 antd 가 나중에 열린 이 모달에 더 높은 자동 z-index 를 부여해
+      //  상세 모달을 가려버린다.)
+      zIndex={1050}
       destroyOnHidden
     >
       {daySchedules.length === 0 ? (
