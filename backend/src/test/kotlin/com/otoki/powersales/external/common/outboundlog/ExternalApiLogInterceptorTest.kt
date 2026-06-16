@@ -12,35 +12,40 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.ExpectedCount
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.method
 import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
 import org.springframework.test.web.client.response.MockRestResponseCreators.withServerError
+import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
 import org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess
 import org.springframework.web.client.RestClient
 
 @DisplayName("ExternalApiLogInterceptor 테스트")
 class ExternalApiLogInterceptorTest {
 
-    private lateinit var server: MockRestServiceServer
-    private lateinit var restClient: RestClient
     private lateinit var logService: ExternalApiLogService
 
     @BeforeEach
     fun setUp() {
         logService = mockk(relaxed = true)
+    }
+
+    /** captureBody 설정에 맞춰 인터셉터를 단 RestClient + 바인딩된 MockRestServiceServer 를 만든다. */
+    private fun buildClient(captureBody: Boolean): Pair<RestClient, MockRestServiceServer> {
         val builder = RestClient.builder()
             .baseUrl("http://api-mock")
-            .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.SAP, logService))
-        server = MockRestServiceServer.bindTo(builder).build()
-        restClient = builder.build()
+            .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.SAP, logService, captureBody))
+        val server = MockRestServiceServer.bindTo(builder).build()
+        return builder.build() to server
     }
 
     @Test
     @DisplayName("2xx 응답 — success=true 로 1건 적재 + 본문은 그대로 다운스트림에 전달")
     fun success() {
+        val (restClient, server) = buildClient(captureBody = false)
         server.expect(ExpectedCount.once(), requestTo("http://api-mock/SD03040"))
             .andExpect(method(HttpMethod.POST))
             .andRespond(withSuccess("""{"resultCode":"S"}""", MediaType.APPLICATION_JSON))
@@ -62,7 +67,9 @@ class ExternalApiLogInterceptorTest {
                 durationMs = any(),
                 errorDetail = any(),
                 requestedAt = any(),
-                completedAt = any()
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = any()
             )
         } returns mockk<ExternalApiLog>()
 
@@ -75,7 +82,9 @@ class ExternalApiLogInterceptorTest {
         // 인터셉터가 본문 스트림을 소비하지 않아 다운스트림이 정상 파싱
         assertThat(body).isEqualTo("""{"resultCode":"S"}""")
 
-        verify(exactly = 1) { logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) {
+            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
         assertThat(targetSlot.captured).isEqualTo(ExternalApiTarget.SAP)
         assertThat(methodSlot.captured).isEqualTo("POST")
         assertThat(uriSlot.captured).isEqualTo("http://api-mock/SD03040")
@@ -88,6 +97,7 @@ class ExternalApiLogInterceptorTest {
     @Test
     @DisplayName("5xx 응답 — success=false + httpStatus=500 으로 적재")
     fun serverError() {
+        val (restClient, server) = buildClient(captureBody = false)
         server.expect(ExpectedCount.once(), requestTo("http://api-mock/x"))
             .andRespond(withServerError())
 
@@ -104,7 +114,9 @@ class ExternalApiLogInterceptorTest {
                 durationMs = any(),
                 errorDetail = any(),
                 requestedAt = any(),
-                completedAt = any()
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = any()
             )
         } returns mockk<ExternalApiLog>()
 
@@ -117,10 +129,152 @@ class ExternalApiLogInterceptorTest {
     }
 
     @Test
+    @DisplayName("4xx(401) 에러 응답에도 호출 이력 1건이 success=false 로 적재된다")
+    fun clientError401IsRecorded() {
+        val (restClient, server) = buildClient(captureBody = false)
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/SD03040"))
+            .andRespond(withStatus(HttpStatus.UNAUTHORIZED).body("Unauthorized"))
+
+        val statusSlot = slot<Int?>()
+        val successSlot = slot<Boolean>()
+        val errorDetailSlot = slot<String?>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = captureNullable(statusSlot),
+                success = capture(successSlot),
+                durationMs = any(),
+                errorDetail = captureNullable(errorDetailSlot),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = any()
+            )
+        } returns mockk<ExternalApiLog>()
+
+        assertThatThrownBy {
+            restClient.post().uri("/SD03040").body(mapOf("k" to "v")).retrieve().body(String::class.java)
+        }.isInstanceOf(Exception::class.java)
+
+        verify(exactly = 1) {
+            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
+        assertThat(statusSlot.captured).isEqualTo(401)
+        assertThat(successSlot.captured).isFalse()
+        assertThat(errorDetailSlot.captured).isEqualTo("HTTP 401")
+    }
+
+    @Test
+    @DisplayName("captureBody=true — 성공 응답의 요청/응답 본문이 적재되고 다운스트림도 정상 파싱")
+    fun captureBodyOnSuccess() {
+        val (restClient, server) = buildClient(captureBody = true)
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/SD03040"))
+            .andRespond(withSuccess("""{"resultCode":"S"}""", MediaType.APPLICATION_JSON))
+
+        val requestBodySlot = slot<String?>()
+        val responseBodySlot = slot<String?>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = any(),
+                success = any(),
+                durationMs = any(),
+                errorDetail = any(),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = captureNullable(requestBodySlot),
+                responseBody = captureNullable(responseBodySlot)
+            )
+        } returns mockk<ExternalApiLog>()
+
+        val body = restClient.post()
+            .uri("/SD03040")
+            .body(mapOf("k" to "v"))
+            .retrieve()
+            .body(String::class.java)
+
+        // 본문을 buffering 으로 읽은 뒤에도 다운스트림이 동일 본문을 정상 수신
+        assertThat(body).isEqualTo("""{"resultCode":"S"}""")
+        assertThat(requestBodySlot.captured).isEqualTo("""{"k":"v"}""")
+        assertThat(responseBodySlot.captured).isEqualTo("""{"resultCode":"S"}""")
+    }
+
+    @Test
+    @DisplayName("captureBody=true — 401 에러 응답 본문도 적재된다")
+    fun captureBodyOnError() {
+        val (restClient, server) = buildClient(captureBody = true)
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/SD03040"))
+            .andRespond(withStatus(HttpStatus.UNAUTHORIZED).body("SAP auth failed"))
+
+        val responseBodySlot = slot<String?>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = any(),
+                success = any(),
+                durationMs = any(),
+                errorDetail = any(),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = captureNullable(responseBodySlot)
+            )
+        } returns mockk<ExternalApiLog>()
+
+        assertThatThrownBy {
+            restClient.post().uri("/SD03040").body(mapOf("k" to "v")).retrieve().body(String::class.java)
+        }.isInstanceOf(Exception::class.java)
+
+        assertThat(responseBodySlot.captured).isEqualTo("SAP auth failed")
+    }
+
+    @Test
+    @DisplayName("captureBody=false — 본문은 적재하지 않는다 (request/response body null)")
+    fun noBodyCaptureWhenDisabled() {
+        val (restClient, server) = buildClient(captureBody = false)
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/SD03040"))
+            .andRespond(withSuccess("""{"resultCode":"S"}""", MediaType.APPLICATION_JSON))
+
+        val requestBodySlot = slot<String?>()
+        val responseBodySlot = slot<String?>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = any(),
+                success = any(),
+                durationMs = any(),
+                errorDetail = any(),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = captureNullable(requestBodySlot),
+                responseBody = captureNullable(responseBodySlot)
+            )
+        } returns mockk<ExternalApiLog>()
+
+        restClient.post().uri("/SD03040").body(mapOf("k" to "v")).retrieve().body(String::class.java)
+
+        assertThat(requestBodySlot.captured).isNull()
+        assertThat(responseBodySlot.captured).isNull()
+    }
+
+    @Test
     @DisplayName("로그 적재 실패는 실제 호출을 막지 않음 (best-effort)")
     fun loggingFailureDoesNotBreakCall() {
+        val (restClient, server) = buildClient(captureBody = false)
         every {
-            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } throws RuntimeException("DB down")
 
         server.expect(ExpectedCount.once(), requestTo("http://api-mock/ok"))

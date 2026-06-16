@@ -85,6 +85,8 @@ class AdminExternalApiLogService(
         success = success,
         durationMs = durationMs,
         errorDetail = errorDetail,
+        requestBody = requestBody,
+        responseBody = responseBody,
         requestedAt = requestedAt,
         completedAt = completedAt,
     )

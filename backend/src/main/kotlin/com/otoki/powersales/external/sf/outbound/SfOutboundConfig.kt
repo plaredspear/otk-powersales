@@ -1,5 +1,6 @@
 package com.otoki.powersales.external.sf.outbound
 
+import com.otoki.powersales.external.common.outboundlog.ExternalApiLogBodyCapture
 import com.otoki.powersales.external.common.outboundlog.ExternalApiLogInterceptor
 import com.otoki.powersales.external.common.outboundlog.ExternalApiTarget
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
@@ -23,14 +24,19 @@ import java.time.Duration
 class SfOutboundConfig {
 
     @Bean(name = ["sfOutboundRestClient"])
-    fun sfOutboundRestClient(externalApiLogService: ExternalApiLogService): RestClient {
+    fun sfOutboundRestClient(
+        externalApiLogService: ExternalApiLogService,
+        bodyCapture: ExternalApiLogBodyCapture
+    ): RestClient {
         val factory = SimpleClientHttpRequestFactory().apply {
             setConnectTimeout(Duration.ofSeconds(5))
             setReadTimeout(Duration.ofSeconds(30))
         }
         return RestClient.builder()
             .requestFactory(factory)
-            .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.SF, externalApiLogService))
+            .requestInterceptor(
+                ExternalApiLogInterceptor(ExternalApiTarget.SF, externalApiLogService, bodyCapture.enabled)
+            )
             .build()
     }
 }

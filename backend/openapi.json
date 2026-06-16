@@ -14021,9 +14021,15 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "requestBody" : {
+            "type" : [ "string", "null" ]
+          },
           "requestedAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "responseBody" : {
+            "type" : [ "string", "null" ]
           },
           "success" : {
             "type" : "boolean"

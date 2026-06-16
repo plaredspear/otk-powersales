@@ -29,7 +29,9 @@ class ExternalApiLogService(
         durationMs: Long,
         errorDetail: String?,
         requestedAt: LocalDateTime,
-        completedAt: LocalDateTime
+        completedAt: LocalDateTime,
+        requestBody: String? = null,
+        responseBody: String? = null
     ): ExternalApiLog {
         val entity = ExternalApiLog(
             targetSystem = targetSystem,
@@ -40,6 +42,8 @@ class ExternalApiLogService(
             success = success,
             durationMs = durationMs,
             errorDetail = errorDetail?.take(MAX_ERROR_DETAIL_LENGTH),
+            requestBody = requestBody?.take(MAX_BODY_LENGTH),
+            responseBody = responseBody?.take(MAX_BODY_LENGTH),
             requestedAt = requestedAt,
             completedAt = completedAt
         )
@@ -49,5 +53,6 @@ class ExternalApiLogService(
     companion object {
         private const val MAX_URI_LENGTH = 1000
         private const val MAX_ERROR_DETAIL_LENGTH = 4000
+        private const val MAX_BODY_LENGTH = 10000
     }
 }

@@ -1,5 +1,6 @@
 package com.otoki.powersales.external.sap.outbound.config
 
+import com.otoki.powersales.external.common.outboundlog.ExternalApiLogBodyCapture
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
 import io.mockk.every
 import io.mockk.mockk
@@ -31,10 +32,14 @@ class SapOutboundRestClientConfigTest {
 
     private fun newConfig(): SapOutboundRestClientConfig {
         val logService = mockk<ExternalApiLogService>(relaxed = true)
-        every { logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } answers {
+        every {
+            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } answers {
             mockk(relaxed = true)
         }
-        return SapOutboundRestClientConfig(SapOutboundProperties(), logService)
+        val bodyCapture = mockk<ExternalApiLogBodyCapture>()
+        every { bodyCapture.enabled } returns false
+        return SapOutboundRestClientConfig(SapOutboundProperties(), logService, bodyCapture)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.otoki.powersales.external.sap.outbound.config
 
+import com.otoki.powersales.external.common.outboundlog.ExternalApiLogBodyCapture
 import com.otoki.powersales.external.common.outboundlog.ExternalApiLogInterceptor
 import com.otoki.powersales.external.common.outboundlog.ExternalApiTarget
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
@@ -21,7 +22,8 @@ import java.util.TimeZone
 @EnableConfigurationProperties(SapOutboundProperties::class)
 class SapOutboundRestClientConfig(
     private val properties: SapOutboundProperties,
-    private val externalApiLogService: ExternalApiLogService
+    private val externalApiLogService: ExternalApiLogService,
+    private val bodyCapture: ExternalApiLogBodyCapture
 ) {
 
     /**
@@ -63,7 +65,9 @@ class SapOutboundRestClientConfig(
 
         val builder = RestClient.builder()
             .requestFactory(factory)
-            .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.SAP, externalApiLogService))
+            .requestInterceptor(
+                ExternalApiLogInterceptor(ExternalApiTarget.SAP, externalApiLogService, bodyCapture.enabled)
+            )
             .configureMessageConverters { configurer ->
                 // 기본 converter 체인을 등록(registerDefaults)한 뒤 JSON 슬롯만 SAP 전용 KST mapper
                 // converter 로 교체한다. registerDefaults() 없이 withJsonConverter() 만 호출하면

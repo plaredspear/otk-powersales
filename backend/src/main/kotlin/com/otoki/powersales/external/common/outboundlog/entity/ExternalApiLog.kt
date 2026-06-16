@@ -62,6 +62,20 @@ class ExternalApiLog(
     @Column(name = "error_detail", columnDefinition = "TEXT")
     val errorDetail: String? = null,
 
+    /**
+     * 요청 본문 — local / dev profile 에서만 적재 (최대 10000자 절단). 그 외 환경/캡처 불가 시 null.
+     * 운영(prod)은 PII/용량 보호를 위해 기록하지 않는다.
+     */
+    @Column(name = "request_body", columnDefinition = "TEXT")
+    val requestBody: String? = null,
+
+    /**
+     * 응답 본문 — local / dev profile 에서만 적재 (최대 10000자 절단). 그 외 환경/캡처 불가 시 null.
+     * 에러 응답(4xx/5xx)의 본문도 동일하게 기록한다.
+     */
+    @Column(name = "response_body", columnDefinition = "TEXT")
+    val responseBody: String? = null,
+
     @Column(name = "requested_at", nullable = false)
     val requestedAt: LocalDateTime,
 

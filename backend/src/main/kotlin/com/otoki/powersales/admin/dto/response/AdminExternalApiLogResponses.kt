@@ -30,6 +30,10 @@ data class ExternalApiLogDetail(
     val success: Boolean,
     val durationMs: Long,
     val errorDetail: String?,
+    /** 요청 본문 — local / dev 환경에서만 적재 (그 외 null). */
+    val requestBody: String?,
+    /** 응답 본문 — local / dev 환경에서만 적재 (그 외 null). 에러 응답 본문 포함. */
+    val responseBody: String?,
     val requestedAt: LocalDateTime,
     val completedAt: LocalDateTime,
 )

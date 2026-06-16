@@ -1,5 +1,6 @@
 package com.otoki.powersales.platform.common.naver
 
+import com.otoki.powersales.external.common.outboundlog.ExternalApiLogBodyCapture
 import com.otoki.powersales.external.common.outboundlog.ExternalApiLogInterceptor
 import com.otoki.powersales.external.common.outboundlog.ExternalApiTarget
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
@@ -32,7 +33,8 @@ import java.time.Duration
 class NaverGeocodeClient(
     @Value("\${app.naver.geocode.client-id:}") private val clientId: String,
     @Value("\${app.naver.geocode.client-secret:}") private val clientSecret: String,
-    externalApiLogService: ExternalApiLogService
+    externalApiLogService: ExternalApiLogService,
+    bodyCapture: ExternalApiLogBodyCapture
 ) {
 
     private val log = LoggerFactory.getLogger(NaverGeocodeClient::class.java)
@@ -44,7 +46,9 @@ class NaverGeocodeClient(
         }
         RestClient.builder()
             .requestFactory(factory)
-            .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.NAVER, externalApiLogService))
+            .requestInterceptor(
+                ExternalApiLogInterceptor(ExternalApiTarget.NAVER, externalApiLogService, bodyCapture.enabled)
+            )
             .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
             .build()
     }
