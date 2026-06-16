@@ -44,6 +44,16 @@ class SapOutboundRestClientConfig(
 
     @Bean(name = ["sapOutboundRestClient"])
     fun sapOutboundRestClient(sapOutboundObjectMapper: JsonMapper): RestClient {
+        return restClientBuilder(sapOutboundObjectMapper).build()
+    }
+
+    /**
+     * SAP outbound RestClient 의 converter / interceptor / 인증 헤더 구성을 한곳에 모은 builder.
+     *
+     * Bean 생성과 테스트(MockRestServiceServer bind)가 동일한 converter 체인을 공유하도록 별도 메서드로
+     * 분리한다 — converter 구성 회귀는 빌드된 RestClient 가 아니라 builder 단계에서만 검증 가능하다.
+     */
+    internal fun restClientBuilder(sapOutboundObjectMapper: JsonMapper): RestClient.Builder {
         val factory = SimpleClientHttpRequestFactory().apply {
             setConnectTimeout(Duration.ofMillis(properties.connectTimeoutMs.toLong()))
             setReadTimeout(Duration.ofMillis(properties.readTimeoutMs.toLong()))
@@ -55,6 +65,13 @@ class SapOutboundRestClientConfig(
             .requestFactory(factory)
             .requestInterceptor(ExternalApiLogInterceptor(ExternalApiTarget.SAP, externalApiLogService))
             .configureMessageConverters { configurer ->
+                // 기본 converter 체인을 등록(registerDefaults)한 뒤 JSON 슬롯만 SAP 전용 KST mapper
+                // converter 로 교체한다. registerDefaults() 없이 withJsonConverter() 만 호출하면
+                // 기본 체인이 비어 JSON 외 converter 가 모두 사라지고, RestClient body writer 의
+                // converter 후보 탐색에서 `mapOf` 단일 엔트리가 `java.util.Collections$SingletonMap`
+                // 으로 떨어지는 페이로드(SD03040 등)가 `No HttpMessageConverter for ... SingletonMap`
+                // 으로 직렬화 실패한다.
+                configurer.registerDefaults()
                 configurer.withJsonConverter(jsonConverter)
             }
             .defaultHeader("Content-Type", "${MediaType.APPLICATION_JSON_VALUE}; charset=UTF-8")
@@ -69,6 +86,6 @@ class SapOutboundRestClientConfig(
             builder.defaultHeader("Authorization", "Basic $token")
         }
 
-        return builder.build()
+        return builder
     }
 }
