@@ -4,7 +4,7 @@ import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import listPlugin from '@fullcalendar/list';
-import type { DayCellContentArg, EventContentArg, EventInput } from '@fullcalendar/core';
+import type { DayCellContentArg, EventContentArg, EventInput, MoreLinkArg } from '@fullcalendar/core';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import type { DailySummary, TeamSchedule } from '@/api/team-schedule';
@@ -193,6 +193,17 @@ export function ScheduleCalendar({
     [scheduleMap, onEventClick],
   );
 
+  // "+N 개" 링크 클릭 시 FullCalendar 기본 popover(z-index 9999) 대신 날짜 클릭과 동일하게
+  // DayScheduleListModal 을 띄운다. popover 는 z-index 가 antd Modal 보다 높아, popover 안에서
+  // 일정 상세 모달을 열면 상세가 popover 뒤로 가려지는 문제가 있었다. void 를 반환해 기본
+  // popover 동작을 억제한다.
+  const handleMoreLinkClick = useCallback(
+    (arg: MoreLinkArg) => {
+      onDateClick(dayjs(arg.date).format('YYYY-MM-DD'));
+    },
+    [onDateClick],
+  );
+
   return (
     <div
       style={{
@@ -286,6 +297,7 @@ export function ScheduleCalendar({
           height="auto"
           dayMaxEventRows={3}
           moreLinkText={(num) => `+${num} 개`}
+          moreLinkClick={handleMoreLinkClick}
           events={events}
           eventOrder="sortOrder"
           dayCellContent={renderDayCellContent}
