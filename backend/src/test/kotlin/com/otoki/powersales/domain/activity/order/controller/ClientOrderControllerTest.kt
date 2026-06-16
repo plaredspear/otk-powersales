@@ -7,7 +7,6 @@ import com.otoki.powersales.domain.activity.order.dto.response.ClientOrderItemRe
 import com.otoki.powersales.domain.activity.order.dto.response.ClientOrderSummaryResponse
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
 import com.otoki.powersales.domain.activity.order.exception.ClientNotFoundException
-import com.otoki.powersales.domain.activity.order.exception.ClientOrderForbiddenException
 import com.otoki.powersales.domain.activity.order.exception.InvalidSapOrderNumberException
 import com.otoki.powersales.domain.activity.order.exception.SapOrderNotFoundException
 import com.otoki.powersales.domain.activity.order.service.ClientOrderQueryService
@@ -123,7 +122,7 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                     )
                 )
             )
-            every { clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)) } returns response
+            every { clientOrderQueryService.getClientOrderDetail(eq(sapOrderNumber)) } returns response
 
             mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber))
                 .andExpect(status().isOk)
@@ -141,7 +140,7 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("실패 - 형식 오류 시 400 ORD_INVALID_SAP_NUMBER")
         fun invalidFormat() {
-            every { clientOrderQueryService.getClientOrderDetail(eq(1L), eq("abc")) } throws InvalidSapOrderNumberException()
+            every { clientOrderQueryService.getClientOrderDetail(eq("abc")) } throws InvalidSapOrderNumberException()
 
             mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", "abc"))
                 .andExpect(status().isBadRequest)
@@ -150,19 +149,9 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
         }
 
         @Test
-        @DisplayName("실패 - 권한 없음 시 403 ORD_FORBIDDEN")
-        fun forbidden() {
-            every { clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)) } throws ClientOrderForbiddenException()
-
-            mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber))
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("ORD_FORBIDDEN"))
-        }
-
-        @Test
         @DisplayName("실패 - SAP 주문번호 미존재 시 404 ORD_SAP_NOT_FOUND")
         fun notFound() {
-            every { clientOrderQueryService.getClientOrderDetail(eq(1L), eq(sapOrderNumber)) } throws SapOrderNotFoundException()
+            every { clientOrderQueryService.getClientOrderDetail(eq(sapOrderNumber)) } throws SapOrderNotFoundException()
 
             mockMvc.perform(get("/api/v1/mobile/client-orders/{sapOrderNumber}", sapOrderNumber))
                 .andExpect(status().isNotFound)

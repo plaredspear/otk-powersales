@@ -18,19 +18,19 @@ interface ErpOrderRepository : JpaRepository<ErpOrder, Long> {
      * 레거시 Heroku `OrderController#clientlistapi` → SF `ClientOrderSearch` 와 동등.
      * 거래처(account) 단위로 조회하며 담당자(employee) 필터는 적용하지 않는다
      * (특정 거래처에 대한 모든 출하 주문 = 내 주문 + 타 영업사원 주문 포함).
-     * `deliveryDate` 가 null 이면 납기일 제한 없이 전체 조회한다.
+     * 레거시(`DeliveryRequestDate__c =: 단일 날짜`) 와 동등하게 납기일 단일 날짜로 등호 조회한다.
      */
     @Query(
         """
         SELECT o FROM ErpOrder o
         WHERE o.account.id = :accountId
-          AND (CAST(:deliveryDate AS date) IS NULL OR o.deliveryRequestDate = :deliveryDate)
+          AND o.deliveryRequestDate = :deliveryDate
           AND (o.isDeleted IS NULL OR o.isDeleted = false)
         """
     )
     fun findClientOrders(
         @Param("accountId") accountId: Long,
-        @Param("deliveryDate") deliveryDate: LocalDate?,
+        @Param("deliveryDate") deliveryDate: LocalDate,
         pageable: Pageable
     ): Page<ErpOrder>
 }

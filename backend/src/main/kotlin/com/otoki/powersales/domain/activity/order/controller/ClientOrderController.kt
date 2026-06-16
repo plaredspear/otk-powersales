@@ -51,7 +51,7 @@ class ClientOrderController(
         @AuthenticationPrincipal principal: UserPrincipal,
         @PathVariable sapOrderNumber: String
     ): ResponseEntity<ApiResponse<ClientOrderDetailResponse>> {
-        val response = clientOrderQueryService.getClientOrderDetail(principal.userId, sapOrderNumber)
+        val response = clientOrderQueryService.getClientOrderDetail(sapOrderNumber)
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
 }

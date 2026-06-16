@@ -2,13 +2,10 @@ package com.otoki.powersales.domain.activity.order.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
 import com.otoki.powersales.domain.activity.order.entity.ErpOrder
 import com.otoki.powersales.domain.activity.order.entity.ErpOrderProduct
 import com.otoki.powersales.domain.activity.order.exception.ClientNotFoundException
-import com.otoki.powersales.domain.activity.order.exception.ClientOrderForbiddenException
 import com.otoki.powersales.domain.activity.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.domain.activity.order.exception.InvalidSapOrderNumberException
 import com.otoki.powersales.domain.activity.order.exception.SapOrderNotFoundException
@@ -26,21 +23,23 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import java.math.BigDecimal
+import java.time.Clock
 import java.time.LocalDate
-import java.util.Optional
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 @DisplayName("ClientOrderQueryService 테스트 (#593)")
 class ClientOrderQueryServiceTest {
 
     private val erpOrderRepository: ErpOrderRepository = mockk()
     private val erpOrderProductRepository: ErpOrderProductRepository = mockk()
-    private val employeeRepository: EmployeeRepository = mockk()
     private val accountRepository: AccountRepository = mockk()
+    private val today = LocalDate.of(2026, 5, 6)
+    private val clock = Clock.fixed(today.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneId.of("UTC"))
     private val service =
-        ClientOrderQueryService(erpOrderRepository, erpOrderProductRepository, employeeRepository, accountRepository)
+        ClientOrderQueryService(erpOrderRepository, erpOrderProductRepository, accountRepository, clock)
 
     private val sapOrderNumber = "0300011396"
-    private val userId = 1L
     private val employeeCode = "20030117"
 
     @Nested
@@ -56,10 +55,9 @@ class ClientOrderQueryServiceTest {
                 createProduct(lineNumber = "20", deliveryStatus = "배송 완료", productCode = "P002", productName = "예시2", shippingQuantityBox = BigDecimal("10"), unit = "BOX"),
             )
             every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
-            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
             every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
 
-            val result = service.getClientOrderDetail(userId, sapOrderNumber)
+            val result = service.getClientOrderDetail(sapOrderNumber)
 
             assertThat(result.sapOrderNumber).isEqualTo(sapOrderNumber)
             assertThat(result.sapAccountCode).isEqualTo("0001234567")
@@ -81,10 +79,9 @@ class ClientOrderQueryServiceTest {
         fun emptyLines() {
             val order = createOrder(employeeCode = employeeCode)
             every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
-            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
             every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
 
-            val result = service.getClientOrderDetail(userId, sapOrderNumber)
+            val result = service.getClientOrderDetail(sapOrderNumber)
 
             assertThat(result.orderedItems).isEmpty()
             assertThat(result.orderedItemCount).isEqualTo(0)
@@ -96,10 +93,9 @@ class ClientOrderQueryServiceTest {
             val order = createOrder(employeeCode = employeeCode)
             val products = listOf(createProduct(lineNumber = "10", deliveryStatus = "알수없음"))
             every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
-            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
             every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
 
-            val result = service.getClientOrderDetail(userId, sapOrderNumber)
+            val result = service.getClientOrderDetail(sapOrderNumber)
 
             assertThat(result.orderedItems[0].deliveryStatus).isEqualTo(DeliveryStatus.PENDING)
         }
@@ -112,14 +108,14 @@ class ClientOrderQueryServiceTest {
         @Test
         @DisplayName("실패 - 형식 오류 (영문) → InvalidSapOrderNumberException")
         fun invalidFormatAlpha() {
-            assertThatThrownBy { service.getClientOrderDetail(userId, "abc123") }
+            assertThatThrownBy { service.getClientOrderDetail("abc123") }
                 .isInstanceOf(InvalidSapOrderNumberException::class.java)
         }
 
         @Test
         @DisplayName("실패 - 형식 오류 (빈 문자) → InvalidSapOrderNumberException")
         fun invalidFormatEmpty() {
-            assertThatThrownBy { service.getClientOrderDetail(userId, "") }
+            assertThatThrownBy { service.getClientOrderDetail("") }
                 .isInstanceOf(InvalidSapOrderNumberException::class.java)
         }
 
@@ -128,41 +124,20 @@ class ClientOrderQueryServiceTest {
         fun notFound() {
             every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns null
 
-            assertThatThrownBy { service.getClientOrderDetail(userId, sapOrderNumber) }
+            assertThatThrownBy { service.getClientOrderDetail(sapOrderNumber) }
                 .isInstanceOf(SapOrderNotFoundException::class.java)
         }
 
         @Test
-        @DisplayName("실패 - employee_code 불일치 → ClientOrderForbiddenException")
-        fun forbiddenMismatch() {
+        @DisplayName("정상 - 담당자 불일치(타 사원 주문)여도 조회 가능 (레거시 정합, 권한 게이트 없음)")
+        fun otherEmployeeOrderAccessible() {
             val order = createOrder(employeeCode = "OTHER_CODE")
             every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
-            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
 
-            assertThatThrownBy { service.getClientOrderDetail(userId, sapOrderNumber) }
-                .isInstanceOf(ClientOrderForbiddenException::class.java)
-        }
+            val result = service.getClientOrderDetail(sapOrderNumber)
 
-        @Test
-        @DisplayName("실패 - employee_code 가 null → ClientOrderForbiddenException")
-        fun forbiddenNullCode() {
-            val order = createOrder(employeeCode = null)
-            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
-            every { employeeRepository.findById(userId) } returns Optional.of(createEmployee())
-
-            assertThatThrownBy { service.getClientOrderDetail(userId, sapOrderNumber) }
-                .isInstanceOf(ClientOrderForbiddenException::class.java)
-        }
-
-        @Test
-        @DisplayName("실패 - 사용자 미존재 → ClientOrderForbiddenException")
-        fun forbiddenUserMissing() {
-            val order = createOrder(employeeCode = employeeCode)
-            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
-            every { employeeRepository.findById(userId) } returns Optional.empty()
-
-            assertThatThrownBy { service.getClientOrderDetail(userId, sapOrderNumber) }
-                .isInstanceOf(ClientOrderForbiddenException::class.java)
+            assertThat(result.sapOrderNumber).isEqualTo(sapOrderNumber)
         }
     }
 
@@ -222,7 +197,7 @@ class ClientOrderQueryServiceTest {
             val pageableSlot = slot<Pageable>()
             every { accountRepository.existsById(clientId) } returns true
             every {
-                erpOrderRepository.findClientOrders(clientId, null, capture(pageableSlot))
+                erpOrderRepository.findClientOrders(clientId, today, capture(pageableSlot))
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
             service.getClientOrders(clientId, null, null, null)
@@ -231,6 +206,20 @@ class ClientOrderQueryServiceTest {
             assertThat(pageableSlot.captured.pageSize).isEqualTo(20)
             val order = pageableSlot.captured.sort.getOrderFor("deliveryRequestDate")
             assertThat(order?.isDescending).isTrue()
+        }
+
+        @Test
+        @DisplayName("정상 - 납기일 미지정 시 오늘로 기본 적용 (레거시 단일 날짜 정합, 전체 조회 아님)")
+        fun defaultsToTodayWhenNull() {
+            val deliveryDateSlot = slot<LocalDate>()
+            every { accountRepository.existsById(clientId) } returns true
+            every {
+                erpOrderRepository.findClientOrders(eq(clientId), capture(deliveryDateSlot), any())
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
+
+            service.getClientOrders(clientId, null, null, null)
+
+            assertThat(deliveryDateSlot.captured).isEqualTo(today)
         }
 
         @Test
@@ -256,8 +245,6 @@ class ClientOrderQueryServiceTest {
                 .isInstanceOf(InvalidOrderParameterException::class.java)
         }
     }
-
-    private fun createEmployee(): Employee = Employee(id = userId, employeeCode = employeeCode, name = "Test")
 
     private fun createOrder(employeeCode: String?): ErpOrder = ErpOrder(
         sapOrderNumber = sapOrderNumber,

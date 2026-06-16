@@ -20,9 +20,8 @@ import java.time.LocalDate
 /**
  * ErpOrderRepository 테스트 (#593).
  *
- * `findClientOrders` 의 `deliveryDate` nullable 파라미터 경로를 회귀 보호한다.
- * 레거시 버그: `(:deliveryDate IS NULL OR ...)` 패턴이 PostgreSQL 에서
- * `could not determine data type of parameter` 로 실패 → `CAST(:deliveryDate AS date)` 로 수정.
+ * `findClientOrders` 는 레거시 SF `ClientOrderSearch`(`DeliveryRequestDate__c =: 단일 날짜`) 와 동등하게
+ * 납기일 단일 날짜 등호로 조회한다 — 납기일 일치 주문만 반환하고 납기일 null 주문은 제외한다.
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
@@ -49,22 +48,20 @@ class ErpOrderRepositoryTest {
     }
 
     @Test
-    @DisplayName("findClientOrders - deliveryDate=null 이면 납기일 제한 없이 전체 조회한다")
-    fun findClientOrders_nullDeliveryDate_returnsAll() {
-        val result = erpOrderRepository.findClientOrders(account.id, null, pageable)
-
-        assertThat(result.totalElements).isEqualTo(3)
-        assertThat(result.content.map { it.sapOrderNumber })
-            .containsExactlyInAnyOrder("0300000001", "0300000002", "0300000003")
-    }
-
-    @Test
-    @DisplayName("findClientOrders - deliveryDate 지정 시 해당 납기일 주문만 조회한다")
-    fun findClientOrders_withDeliveryDate_filters() {
+    @DisplayName("findClientOrders - 지정 납기일 주문만 조회하고 납기일 null 주문은 제외한다")
+    fun findClientOrders_singleDate_filters() {
         val result = erpOrderRepository.findClientOrders(account.id, LocalDate.of(2026, 6, 11), pageable)
 
         assertThat(result.totalElements).isEqualTo(1)
         assertThat(result.content.single().sapOrderNumber).isEqualTo("0300000002")
+    }
+
+    @Test
+    @DisplayName("findClientOrders - 일치하는 납기일 주문이 없으면 빈 결과 (null 납기일 포함 미반환)")
+    fun findClientOrders_noMatch_returnsEmpty() {
+        val result = erpOrderRepository.findClientOrders(account.id, LocalDate.of(2026, 6, 12), pageable)
+
+        assertThat(result.totalElements).isEqualTo(0)
     }
 
     @Test
@@ -77,9 +74,10 @@ class ErpOrderRepositoryTest {
         testEntityManager.persistAndFlush(deleted)
         testEntityManager.clear()
 
-        val result = erpOrderRepository.findClientOrders(account.id, null, pageable)
+        val result = erpOrderRepository.findClientOrders(account.id, LocalDate.of(2026, 6, 10), pageable)
 
-        assertThat(result.content.map { it.sapOrderNumber }).doesNotContain("0300000099")
+        assertThat(result.content.map { it.sapOrderNumber })
+            .containsExactly("0300000001")
     }
 
     private fun persistOrder(sapOrderNumber: String, deliveryRequestDate: LocalDate?) {

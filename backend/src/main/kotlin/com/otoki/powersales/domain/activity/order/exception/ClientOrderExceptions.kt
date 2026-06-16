@@ -23,15 +23,6 @@ class ForbiddenClientAccessException : BusinessException(
 )
 
 /**
- * 거래처 출하 상세 조회 권한 게이트 위반 (주문의 employee_code 가 JWT 사번과 불일치)
- */
-class ClientOrderForbiddenException : BusinessException(
-    errorCode = "ORD_FORBIDDEN",
-    message = "주문에 접근 권한이 없습니다",
-    httpStatus = HttpStatus.FORBIDDEN
-)
-
-/**
  * SAP 주문번호 형식 오류 — 숫자 1~20자가 아닌 입력
  */
 class InvalidSapOrderNumberException : BusinessException(
