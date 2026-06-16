@@ -229,8 +229,6 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
     "erp_order" to ("erp_order" to "erp_order_id"),
     "push_message" to ("push_message" to "push_message_id"),
     "display_work_schedule" to ("display_work_schedule" to "display_work_schedule_id"),
-    "hq_review" to ("hq_review" to "hq_review_id"),
-    "branch_review" to ("branch_review" to "branch_review_id"),
     "monthly_female_employee_integration_schedule" to (
         "monthly_female_employee_integration_schedule" to "monthly_female_employee_integration_schedule_id"
     ),
@@ -264,6 +262,10 @@ internal val FK_PREFIX_MAPPING: Map<String, Pair<String, String>> = mapOf(
  *                  를 가리키는 polymorphic. 단일 (refTable, refIdColumn) 로 표현 불가 →
  *                  일반 FK substep 에서 제외하고, SfMigrationStage2Service.runUploadFilePolymorphicParent()
  *                  가 (parent_type, record_sfid) → parent_id 로 전용 처리.
+ * - branch_review : staff_review.branch_review_sfid (SF StaffReview__c.BranchReviews__c) 의 prefix.
+ *                  BranchReview 도메인은 V164 에서 DROP 되고 미복원 (StaffReview 만 복원) — branch_review
+ *                  테이블 / staff_review.branch_review_id FK 컬럼이 모두 부재. SF buffer 컬럼으로만 보존하고
+ *                  FK Resolve 에서 제외 (등록 시 ref table / id 컬럼 부재로 buildPlansByTable error).
  *
  * 비고: product_code 는 과거 "code 기반 lookup(sfid 아님)" 으로 오분류돼 여기 있었으나,
  *      SF NewProduct__c.Product_Code__c describe = reference/18 → DKRetail__Product__c
@@ -275,6 +277,7 @@ internal val SKIP_FK_PREFIXES: Set<String> = setOf(
     "user_or_group",
     "target",
     "record",
+    "branch_review",
 )
 
 /**

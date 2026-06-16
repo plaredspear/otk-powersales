@@ -91,6 +91,10 @@ class SfFkResolveInventoryTest {
         // upload_file.record_sfid: parent_type 분기 polymorphic (claim/notice/proposal/site_activity).
         // 일반 substep 제외 ("record" ∈ SKIP_FK_PREFIXES) → runUploadFilePolymorphicParent() 전용 처리.
         "record_sfid" to Expectation(FkResolutionKind.SKIP, null),
+        // staff_review.branch_review_sfid: SF StaffReview__c.BranchReviews__c buffer. BranchReview 도메인
+        // 미복원 (V164 DROP) → branch_review 테이블 / staff_review.branch_review_id 모두 부재.
+        // "branch_review" ∈ SKIP_FK_PREFIXES → buffer 컬럼으로만 보존, FK Resolve 제외.
+        "branch_review_sfid" to Expectation(FkResolutionKind.SKIP, null),
 
         // permission_set_sfid: SKIP_FK_PREFIXES 에 없어 sfid prefix 경로상 AUTO_INFERRED (ref permission_set).
         // 실제 해소는 NaturalKey FK Service 가 permission_set_assignment.permission_set_sfid →
@@ -100,12 +104,13 @@ class SfFkResolveInventoryTest {
     )
 
     @Test
-    @DisplayName("인벤토리 크기 = 41 (backend entity 의 @Column(name=..._sfid) 전수)")
+    @DisplayName("인벤토리 크기 = 42 (backend entity 의 @Column(name=..._sfid) 전수)")
     fun inventorySizeTripwire() {
         // 신규 *_sfid 컬럼 추가 시 이 숫자가 어긋나 사람이 EXPECTED 를 갱신하도록 강제.
-        // 갱신 명령은 클래스 KDoc 참조. 41 = 권위 목록 (sfid 단독 PK 컬럼은 제외).
-        // record_sfid (upload_file polymorphic SKIP) + last_monthly_sales_history_sfid (기존 누락분) 반영.
-        assertThat(expected).hasSize(41)
+        // 갱신 명령은 클래스 KDoc 참조. 42 = 권위 목록 (sfid 단독 PK 컬럼은 제외).
+        // record_sfid (upload_file polymorphic SKIP) + last_monthly_sales_history_sfid (기존 누락분)
+        // + branch_review_sfid (StaffReview 복원 — BranchReview 미복원 buffer, SKIP) 반영.
+        assertThat(expected).hasSize(42)
     }
 
     @Test

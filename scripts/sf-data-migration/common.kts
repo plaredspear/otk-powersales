@@ -189,6 +189,46 @@ val EMPLOYEE_METADATA = EntityMetadata(
     rawColumnsAsString = listOf("role", "professional_promotion_team")
 )
 
+val STAFF_REVIEW_METADATA = EntityMetadata(
+    targetName = "StaffReview",
+    sObjectName = "StaffReview__c",
+    tableName = "staff_review",
+    pkColumn = "staff_review_id",
+    conflictKey = "sfid",
+    fields = listOf(
+        FieldMapping("Id", "sfid", nullable = false),
+        FieldMapping("Name", "name"),
+        FieldMapping("DKRetail_EmployeeId__c", "employee_sfid"),
+        FieldMapping("EmployeeName__c", "employee_name"),
+        FieldMapping("EmployeeNumber__c", "employee_code"),
+        FieldMapping("Branch__c", "branch"),
+        FieldMapping("BranchReviews__c", "branch_review_sfid"),
+        FieldMapping("CostCenterCode__c", "cost_center_code"),
+        FieldMapping("EmployeeTotalScore__c", "employee_total_score", isString = false),
+        FieldMapping("Attendance__c", "attendance_score", isString = false),
+        FieldMapping("InstructionsDefault__c", "instruction_disobedience_score", isString = false),
+        FieldMapping("Priority_EventItemManage__c", "priority_item_event_score", isString = false),
+        FieldMapping("DisplayManageEventGoals__c", "display_event_goal_score", isString = false),
+        FieldMapping("BusinessPartnerTies__c", "account_partnership_score", isString = false),
+        FieldMapping("ClothesSatellite__c", "clothes_hygiene_score", isString = false),
+        FieldMapping("ProductManageCallment__c", "product_manage_callment_score", isString = false),
+        FieldMapping("EducationalEvaluation__c", "education_evaluation_score", isString = false),
+        FieldMapping("DKRetail_WorkingCategory1__c", "working_category1"),
+        FieldMapping("DKRetail_WorkingCategory2__c", "working_category2"),
+        FieldMapping("DKRetail_WorkingCategory3__c", "working_category3"),
+        FieldMapping("JobCode__c", "job_code"),
+        FieldMapping("FirstDayofMonth__c", "first_day_of_month", isString = false),
+        FieldMapping("EmployeeType__c", "employee_type"),
+        FieldMapping("EntryDate__c", "entry_date", isString = false),
+        FieldMapping("Jikwee__c", "jikwee"),
+        FieldMapping("IsDeleted", "is_deleted", isString = false),
+        FieldMapping("CreatedById", "created_by_sfid"),
+        FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+        FieldMapping("CreatedDate", "created_at", nullable = false, isString = false),
+        FieldMapping("LastModifiedDate", "updated_at", nullable = false, isString = false)
+    )
+)
+
 val USER_METADATA = EntityMetadata(
     targetName = "User",
     sObjectName = "User",
@@ -1811,6 +1851,7 @@ val TARGET_SPECS: Map<String, TargetSpec> = mapOf(
     "Promotion"    to TargetSpec(PROMOTION_METADATA, "DKRetail__Promotion__c", "promotions.csv", "promotion/entity/Promotion"),
     "Group"        to TargetSpec(GROUP_METADATA, "Group", "groups.csv", "employee/entity/Group"),
     "Employee"     to TargetSpec(EMPLOYEE_METADATA, "DKRetail__Employee__c", "employees.csv", "employee/entity/Employee"),
+    "StaffReview"  to TargetSpec(STAFF_REVIEW_METADATA, "StaffReview__c", "staff_reviews.csv", "domain/org/employee/entity/StaffReview"),
     "User"         to TargetSpec(USER_METADATA, "User", "users.csv", "user/entity/User"),
     "Notice"       to TargetSpec(NOTICE_METADATA, "DKRetail__Notice__c", "notices.csv", "notice/entity/Notice"),
     // PermissionSetAssignment 은 SF SObject 와 backend 의 staging table 1:1 매핑 (자체 entity 없음) → verify 면제
@@ -1864,6 +1905,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
     "Group",
     "Employee",
     "User",
+    "StaffReview",
     "Notice",
     "AccountCategoryMaster",
     "AgreementHistory",
@@ -1905,7 +1947,7 @@ val TARGET_DEPENDENCY_ORDER = listOf(
 
 val SUPPORTED_TARGETS = setOf(
     "Organization", "Account", "Product", "Promotion", "Group",
-    "Employee", "User", "Notice", "Permission", "AccountCategoryMaster",
+    "Employee", "StaffReview", "User", "Notice", "Permission", "AccountCategoryMaster",
     "AgreementHistory", "AgreementWord", "AlternativeHoliday", "Appointment", "AttendanceLog",
     "AttendInfo", "Claim", "DisplayWorkSchedule", "EmployeeInputCriteriaMaster",
     "ErpOrder", "ErpOrderProduct", "HolidayMaster", "WorkingDayMaster", "InspectionTheme", "SiteActivity",
