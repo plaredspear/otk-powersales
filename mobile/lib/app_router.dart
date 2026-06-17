@@ -36,6 +36,7 @@ import 'presentation/pages/verify_password_page.dart';
 import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/pages/profile_page.dart';
+import 'presentation/pages/staff_evaluation_page.dart';
 import 'presentation/pages/promotion_list_page.dart';
 import 'presentation/pages/monthly_sales_page.dart';
 import 'presentation/pages/sales_status_page.dart';
@@ -113,6 +114,7 @@ class AppRouter {
   static const String leaderSchedule = '/leader/schedule'; // 레거시 /employee/mgnSchedule: 조장 — 일정/등록(월간 캘린더 → 일별현황)
   static const String appInfo = '/app-info'; // 앱 정보 / 오픈소스 라이선스
   static const String profile = '/profile'; // 내 정보(프로필)
+  static const String staffEvaluation = '/staff-evaluation'; // 레거시 /employee/evaluationList: 여사원 평가조회
 
   /// 라우트 맵
   static Map<String, WidgetBuilder> get routes => {
@@ -266,6 +268,7 @@ class AppRouter {
         leaderSchedule: (context) => const LeaderTeamMemberScheduleScreen(), // 레거시 /employee/mgnSchedule: 일정/등록(월간 캘린더)
         appInfo: (context) => const AppInfoPage(),
         profile: (context) => const ProfilePage(), // 내 정보(프로필)
+        staffEvaluation: (context) => const StaffEvaluationPage(), // 레거시 /employee/evaluationList: 여사원 평가조회
         myScheduleCalendar: (context) => const MyScheduleCalendarPage(), // F56: 일정 캘린더
         myScheduleDetail: (context) {
           // F56: 일정 상세
