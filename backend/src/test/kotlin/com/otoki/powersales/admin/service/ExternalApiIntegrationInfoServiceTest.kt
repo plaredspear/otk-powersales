@@ -16,8 +16,6 @@ class ExternalApiIntegrationInfoServiceTest {
                 tokenUrl = "https://login.salesforce.com/services/oauth2/token",
                 clientId = "CID",
                 clientSecret = "SECRET-XYZ",
-                username = "interface@otg.com",
-                password = "SUPER-SECRET-PW",
             ),
         ),
         sap: SapOutboundProperties = SapOutboundProperties(
