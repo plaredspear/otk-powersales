@@ -2,9 +2,7 @@ import '../models/client_order_model.dart';
 import '../models/order_cancel_model.dart';
 import '../models/order_request_detail_model.dart';
 import '../models/order_request_model.dart';
-import '../models/order_draft_model.dart';
 import '../models/product_for_order_model.dart';
-import '../models/validation_result_model.dart';
 
 /// 주문요청 목록 응답 모델 (클라이언트 슬라이스 패턴).
 ///
@@ -74,11 +72,9 @@ abstract class OrderRequestRemoteDataSource {
   });
 
   // ─── 주문서 작성 관련 API (F22) ─────────────────────────────
-
-  /// GET /api/v1/mobile/accounts/{accountId}/credit
-  ///
-  /// 거래처 여신 잔액을 조회합니다.
-  Future<int> getCreditBalance({required int clientId});
+  //
+  // NOTE: 여신/임시저장/검증/제출/수정/바코드는 신규 OrderFormRemoteDataSource
+  // (#592/#594/#596) 로 대체되어 제거됨. 즐겨찾기/검색만 유지.
 
   /// GET /api/v1/mobile/products/favorites
   ///
@@ -92,43 +88,6 @@ abstract class OrderRequestRemoteDataSource {
     required String query,
     String? categoryMid,
     String? categorySub,
-  });
-
-  /// GET /api/v1/mobile/products/barcode/{barcode}
-  ///
-  /// 바코드로 제품을 조회합니다.
-  Future<ProductForOrderModel> getProductByBarcode({required String barcode});
-
-  /// POST /api/v1/mobile/me/orders/draft
-  ///
-  /// 주문서를 임시저장합니다 (서버 동기화).
-  Future<void> saveDraftOrder({required OrderDraftModel draft});
-
-  /// GET /api/v1/mobile/me/orders/draft
-  ///
-  /// 서버에 임시저장된 주문서를 조회합니다.
-  Future<OrderDraftModel?> loadDraftOrder();
-
-  /// POST /api/v1/mobile/me/orders/validate
-  ///
-  /// 주문서 유효성을 검증합니다.
-  Future<ValidationResultModel> validateOrder({
-    required OrderDraftModel draft,
-  });
-
-  /// POST /api/v1/mobile/me/orders
-  ///
-  /// 주문서를 전송합니다 (승인요청).
-  Future<OrderSubmitResultModel> submitOrder({
-    required OrderDraftModel draft,
-  });
-
-  /// PUT /api/v1/mobile/me/orders/{orderId}
-  ///
-  /// 기존 주문서를 수정합니다.
-  Future<OrderSubmitResultModel> updateOrder({
-    required int orderId,
-    required OrderDraftModel draft,
   });
 
   /// POST /api/v1/mobile/products/{productId}/favorite

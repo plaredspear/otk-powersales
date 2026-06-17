@@ -3,9 +3,7 @@ import 'package:dio/dio.dart';
 import '../models/client_order_model.dart';
 import '../models/order_cancel_model.dart';
 import '../models/order_request_detail_model.dart';
-import '../models/order_draft_model.dart';
 import '../models/product_for_order_model.dart';
-import '../models/validation_result_model.dart';
 import 'order_request_remote_datasource.dart';
 
 /// 주문 API 데이터소스 구현체
@@ -110,11 +108,6 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   }
 
   @override
-  Future<int> getCreditBalance({required int clientId}) {
-    throw UnimplementedError('별도 스펙에서 구현');
-  }
-
-  @override
   Future<List<ProductForOrderModel>> getFavoriteProducts() {
     throw UnimplementedError('별도 스펙에서 구현');
   }
@@ -148,43 +141,6 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
         .map((raw) =>
             ProductForOrderModel.fromJson(raw as Map<String, dynamic>))
         .toList();
-  }
-
-  @override
-  Future<ProductForOrderModel> getProductByBarcode({required String barcode}) {
-    throw UnimplementedError('별도 스펙에서 구현');
-  }
-
-  @override
-  Future<void> saveDraftOrder({required OrderDraftModel draft}) {
-    throw UnimplementedError('별도 스펙에서 구현');
-  }
-
-  @override
-  Future<OrderDraftModel?> loadDraftOrder() {
-    throw UnimplementedError('별도 스펙에서 구현');
-  }
-
-  @override
-  Future<ValidationResultModel> validateOrder({
-    required OrderDraftModel draft,
-  }) {
-    throw UnimplementedError('별도 스펙에서 구현');
-  }
-
-  @override
-  Future<OrderSubmitResultModel> submitOrder({
-    required OrderDraftModel draft,
-  }) {
-    throw UnimplementedError('별도 스펙에서 구현');
-  }
-
-  @override
-  Future<OrderSubmitResultModel> updateOrder({
-    required int orderId,
-    required OrderDraftModel draft,
-  }) {
-    throw UnimplementedError('별도 스펙에서 구현');
   }
 
   @override

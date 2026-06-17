@@ -1,30 +1,21 @@
 import '../../domain/entities/client_order.dart';
-import '../../domain/entities/order_request.dart';
 import '../../domain/entities/order_cancel.dart';
 import '../../domain/entities/order_detail.dart';
-import '../../domain/entities/order_draft.dart';
 import '../../domain/entities/product_for_order.dart';
-import '../../domain/entities/validation_error.dart';
 import '../../domain/repositories/order_request_repository.dart';
-import '../datasources/order_request_local_datasource.dart';
 import '../datasources/order_request_remote_datasource.dart';
 import '../models/order_cancel_model.dart';
-import '../models/order_draft_model.dart';
 
 /// 주문 Repository 구현체
 ///
-/// OrderRequestRemoteDataSource를 사용하여 API를 호출하고,
-/// OrderRequestLocalDataSource를 사용하여 로컬 임시저장을 관리합니다.
+/// OrderRequestRemoteDataSource를 사용하여 API를 호출하고
 /// 응답 데이터를 도메인 엔티티로 변환합니다.
 class OrderRequestRepositoryImpl implements OrderRequestRepository {
   final OrderRequestRemoteDataSource _remoteDataSource;
-  final OrderRequestLocalDataSource _localDataSource;
 
   OrderRequestRepositoryImpl({
     required OrderRequestRemoteDataSource remoteDataSource,
-    required OrderRequestLocalDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource;
+  }) : _remoteDataSource = remoteDataSource;
 
   @override
   Future<OrderRequestListResult> getMyOrderRequests({
@@ -81,11 +72,7 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
   }
 
   // ─── 주문서 작성 관련 메서드 (F22) ─────────────────────────────
-
-  @override
-  Future<int> getCreditBalance({required int clientId}) async {
-    return await _remoteDataSource.getCreditBalance(clientId: clientId);
-  }
+  // 여신/임시저장/검증/제출/수정/바코드는 신규 OrderFormRepository 경로로 대체되어 제거됨.
 
   @override
   Future<List<ProductForOrder>> getFavoriteProducts() async {
@@ -105,68 +92,6 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
       categorySub: categorySub,
     );
     return models.map((model) => model.toEntity()).toList();
-  }
-
-  @override
-  Future<ProductForOrder> getProductByBarcode({
-    required String barcode,
-  }) async {
-    final model =
-        await _remoteDataSource.getProductByBarcode(barcode: barcode);
-    return model.toEntity();
-  }
-
-  @override
-  Future<void> saveDraftOrder({required OrderDraft orderDraft}) async {
-    final model = OrderDraftModel.fromEntity(orderDraft);
-    // 로컬에 임시저장 (Hive)
-    await _localDataSource.saveDraft(model.toJson());
-  }
-
-  @override
-  Future<OrderDraft?> loadDraftOrder() async {
-    // 로컬에서 임시저장 불러오기
-    final json = await _localDataSource.loadDraft();
-    if (json == null) return null;
-
-    final model = OrderDraftModel.fromJson(json);
-    return model.toEntity();
-  }
-
-  @override
-  Future<void> deleteDraftOrder() async {
-    await _localDataSource.deleteDraft();
-  }
-
-  @override
-  Future<ValidationResult> validateOrder({
-    required OrderDraft orderDraft,
-  }) async {
-    final model = OrderDraftModel.fromEntity(orderDraft);
-    final response = await _remoteDataSource.validateOrder(draft: model);
-    return response.toEntity();
-  }
-
-  @override
-  Future<OrderSubmitResult> submitOrder({
-    required OrderDraft orderDraft,
-  }) async {
-    final model = OrderDraftModel.fromEntity(orderDraft);
-    final response = await _remoteDataSource.submitOrder(draft: model);
-    return response.toEntity();
-  }
-
-  @override
-  Future<OrderSubmitResult> updateOrder({
-    required int orderId,
-    required OrderDraft orderDraft,
-  }) async {
-    final model = OrderDraftModel.fromEntity(orderDraft);
-    final response = await _remoteDataSource.updateOrder(
-      orderId: orderId,
-      draft: model,
-    );
-    return response.toEntity();
   }
 
   @override

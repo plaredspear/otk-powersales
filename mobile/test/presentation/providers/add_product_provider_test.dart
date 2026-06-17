@@ -1,11 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/client_order.dart';
-import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
-import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
-import 'package:mobile/domain/entities/validation_error.dart';
 import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/domain/usecases/add_to_favorites_usecase.dart';
 import 'package:mobile/domain/usecases/get_favorite_products_usecase.dart';
@@ -679,42 +676,6 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
   }) async =>
       throw UnimplementedError();
 
-  @override
-  Future<ProductForOrder> getProductByBarcode({required String barcode}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<int> getCreditBalance({required int clientId}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<OrderDraft?> loadDraftOrder() async => throw UnimplementedError();
-
-  @override
-  Future<void> saveDraftOrder({required OrderDraft orderDraft}) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<void> deleteDraftOrder() async => throw UnimplementedError();
-
-  @override
-  Future<ValidationResult> validateOrder({
-    required OrderDraft orderDraft,
-  }) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<OrderSubmitResult> submitOrder({
-    required OrderDraft orderDraft,
-  }) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<OrderSubmitResult> updateOrder({
-    required int orderId,
-    required OrderDraft orderDraft,
-  }) async =>
-      throw UnimplementedError();
 }
 
 // --- Test Helper Functions ---

@@ -2,9 +2,7 @@ import '../entities/client_order.dart';
 import '../entities/order_request.dart';
 import '../entities/order_cancel.dart';
 import '../entities/order_detail.dart';
-import '../entities/order_draft.dart';
 import '../entities/product_for_order.dart';
-import '../entities/validation_error.dart';
 
 /// 본인 주문요청 목록 조회 결과 값 객체 (클라이언트 슬라이스 패턴).
 ///
@@ -98,12 +96,10 @@ abstract class OrderRequestRepository {
   });
 
   // ─── 주문서 작성 관련 메서드 (F22) ─────────────────────────────
-
-  /// 거래처 여신 잔액 조회
-  ///
-  /// [clientId]: 거래처 ID
-  /// Returns: 여신 잔액 (원)
-  Future<int> getCreditBalance({required int clientId});
+  //
+  // NOTE: 거래처 여신/임시저장/검증/제출/수정/바코드는 신규 OrderFormRepository
+  // (#592/#594/#596) 경로로 대체되어 제거됨. 여기에는 add_product 화면이 사용하는
+  // 즐겨찾기/검색만 남는다. 즐겨찾기 백엔드는 Spec 77 리매핑 대기로 미구현 상태.
 
   /// 즐겨찾기 제품 목록 조회
   ///
@@ -120,47 +116,6 @@ abstract class OrderRequestRepository {
     required String query,
     String? categoryMid,
     String? categorySub,
-  });
-
-  /// 바코드로 제품 조회
-  ///
-  /// [barcode]: 바코드 문자열
-  /// Returns: 해당 바코드의 제품 정보
-  Future<ProductForOrder> getProductByBarcode({required String barcode});
-
-  /// 주문서 임시저장 (로컬)
-  ///
-  /// [orderDraft]: 저장할 주문서 초안
-  Future<void> saveDraftOrder({required OrderDraft orderDraft});
-
-  /// 임시저장 주문서 불러오기
-  ///
-  /// Returns: 임시저장된 주문서 초안 (없으면 null)
-  Future<OrderDraft?> loadDraftOrder();
-
-  /// 임시저장 주문서 삭제
-  Future<void> deleteDraftOrder();
-
-  /// 주문서 유효성 검증
-  ///
-  /// [orderDraft]: 검증할 주문서 초안
-  /// Returns: 유효성 검증 결과
-  Future<ValidationResult> validateOrder({required OrderDraft orderDraft});
-
-  /// 주문서 전송 (승인요청)
-  ///
-  /// [orderDraft]: 전송할 주문서 초안
-  /// Returns: 전송 결과 (주문 ID, 요청번호, 상태)
-  Future<OrderSubmitResult> submitOrder({required OrderDraft orderDraft});
-
-  /// 주문서 수정
-  ///
-  /// [orderId]: 수정할 주문 ID
-  /// [orderDraft]: 수정된 주문서 초안
-  /// Returns: 수정 결과 (주문 ID, 요청번호, 상태)
-  Future<OrderSubmitResult> updateOrder({
-    required int orderId,
-    required OrderDraft orderDraft,
   });
 
   /// 즐겨찾기 추가

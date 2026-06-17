@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/dio_provider.dart';
 import '../../core/utils/error_utils.dart';
 import '../../data/datasources/order_request_api_datasource.dart';
-import '../../data/datasources/order_request_local_datasource.dart';
 import '../../data/repositories/order_request_repository_impl.dart';
 import '../../domain/entities/order_request.dart';
 import '../../domain/repositories/order_request_repository.dart';
@@ -16,10 +15,8 @@ import 'order_request_list_state.dart';
 final orderRequestRepositoryProvider = Provider<OrderRequestRepository>((ref) {
   final dio = ref.watch(dioProvider);
   final remoteDataSource = OrderRequestApiDataSource(dio);
-  final localDataSource = OrderRequestLocalDataSource();
   return OrderRequestRepositoryImpl(
     remoteDataSource: remoteDataSource,
-    localDataSource: localDataSource,
   );
 });
 

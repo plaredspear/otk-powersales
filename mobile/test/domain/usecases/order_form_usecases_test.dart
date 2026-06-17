@@ -1,70 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
 import '../../helpers/fake_order_request_repository.dart';
-import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
-import 'package:mobile/domain/entities/validation_error.dart';
 import 'package:mobile/domain/usecases/add_to_favorites_usecase.dart';
-import 'package:mobile/domain/usecases/delete_draft_order_usecase.dart';
-import 'package:mobile/domain/usecases/get_credit_balance_usecase.dart';
 import 'package:mobile/domain/usecases/get_favorite_products_usecase.dart';
-import 'package:mobile/domain/usecases/get_product_by_barcode_usecase.dart';
-import 'package:mobile/domain/usecases/load_draft_order_usecase.dart';
 import 'package:mobile/domain/usecases/remove_from_favorites_usecase.dart';
-import 'package:mobile/domain/usecases/save_draft_order_usecase.dart';
 import 'package:mobile/domain/usecases/search_products_for_order_usecase.dart';
-import 'package:mobile/domain/usecases/update_order_usecase.dart';
+
+// NOTE: 여신/임시저장/검증/제출/수정/바코드 usecase 는 신규 OrderFormRepository
+// (#592/#594/#596) 경로로 대체되어 제거됨. 여기에는 add_product 화면이 사용하는
+// 즐겨찾기/검색 usecase 만 남는다.
 
 void main() {
   late FakeOrderRequestRepository repository;
-  late GetCreditBalance getCreditBalance;
   late GetFavoriteProducts getFavoriteProducts;
   late SearchProductsForOrder searchProductsForOrder;
-  late GetProductByBarcode getProductByBarcode;
-  late SaveDraftOrder saveDraftOrder;
-  late LoadDraftOrder loadDraftOrder;
-  late DeleteDraftOrder deleteDraftOrder;
-  late UpdateOrder updateOrder;
   late AddToFavorites addToFavorites;
   late RemoveFromFavorites removeFromFavorites;
 
   setUp(() {
     repository = FakeOrderRequestRepository();
-    getCreditBalance = GetCreditBalance(repository);
     getFavoriteProducts = GetFavoriteProducts(repository);
     searchProductsForOrder = SearchProductsForOrder(repository);
-    getProductByBarcode = GetProductByBarcode(repository);
-    saveDraftOrder = SaveDraftOrder(repository);
-    loadDraftOrder = LoadDraftOrder(repository);
-    deleteDraftOrder = DeleteDraftOrder(repository);
-    updateOrder = UpdateOrder(repository);
     addToFavorites = AddToFavorites(repository);
     removeFromFavorites = RemoveFromFavorites(repository);
-  });
-
-  group('GetCreditBalance UseCase', () {
-    test('정상 조회', () async {
-      // Given: 존재하는 거래처 ID
-      const clientId = 1;
-
-      // When: 여신 잔액 조회
-      final balance = await getCreditBalance(clientId: clientId);
-
-      // Then: 여신 잔액 반환
-      expect(balance, isA<int>());
-      expect(balance, greaterThan(0));
-      expect(balance, 100000000); // Mock data: clientId 1 = 100000000
-    });
-
-    test('존재하지 않는 거래처 예외', () async {
-      // Given: 존재하지 않는 거래처 ID
-      const clientId = 999;
-
-      // When & Then: 예외 발생
-      expect(
-        () => getCreditBalance(clientId: clientId),
-        throwsException,
-      );
-    });
   });
 
   group('GetFavoriteProducts UseCase', () {
@@ -116,199 +74,6 @@ void main() {
 
       // Then: 빈 리스트 반환
       expect(products, isEmpty);
-    });
-  });
-
-  group('GetProductByBarcode UseCase', () {
-    test('바코드 조회 성공', () async {
-      // Given: 유효한 바코드
-      const barcode = '8801045123456';
-
-      // When: 바코드로 제품 조회
-      final product = await getProductByBarcode(barcode: barcode);
-
-      // Then: 제품 정보 반환
-      expect(product, isA<ProductForOrder>());
-      expect(product.barcode, barcode);
-      expect(product.productCode, '01101123');
-    });
-
-    test('빈 바코드 시 ArgumentError', () async {
-      // Given: 빈 바코드
-      const barcode = '';
-
-      // When & Then: ArgumentError 발생
-      expect(
-        () => getProductByBarcode(barcode: barcode),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
-
-    test('공백만 있는 바코드 시 ArgumentError', () async {
-      // Given: 공백만 있는 바코드
-      const barcode = '   ';
-
-      // When & Then: ArgumentError 발생
-      expect(
-        () => getProductByBarcode(barcode: barcode),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
-
-    test('존재하지 않는 바코드 시 예외', () async {
-      // Given: 존재하지 않는 바코드
-      const barcode = '9999999999999';
-
-      // When & Then: Exception 발생
-      expect(
-        () => getProductByBarcode(barcode: barcode),
-        throwsException,
-      );
-    });
-  });
-
-  group('SaveDraftOrder + LoadDraftOrder UseCase', () {
-    test('저장 후 불러오기', () async {
-      // Given: 저장할 주문서
-      final draft = OrderDraft(
-        clientId: 1,
-        clientName: '천사푸드',
-        deliveryDate: DateTime(2026, 2, 15),
-        items: const [
-          OrderDraftItem(
-            productCode: '01101123',
-            productName: '갈릭 아이올리소스 240g',
-            quantityBoxes: 5,
-            quantityPieces: 0,
-            unitPrice: 3500,
-            boxSize: 20,
-            totalPrice: 350000,
-          ),
-        ],
-        totalAmount: 350000,
-        isDraft: false,
-        lastModified: DateTime(2026, 2, 10),
-      );
-
-      // When: 임시저장
-      await saveDraftOrder(orderDraft: draft);
-      final loaded = await loadDraftOrder();
-
-      // Then: 저장된 데이터 불러오기 성공
-      expect(loaded, isNotNull);
-      expect(loaded?.clientId, draft.clientId);
-      expect(loaded?.clientName, draft.clientName);
-      expect(loaded?.deliveryDate, draft.deliveryDate);
-      expect(loaded?.items.length, draft.items.length);
-      expect(loaded?.totalAmount, draft.totalAmount);
-      expect(loaded?.isDraft, true); // SaveDraftOrder가 자동으로 true로 설정
-    });
-
-    test('저장하지 않았을 때 null 반환', () async {
-      // Given: 아무것도 저장하지 않은 상태
-      // When: 불러오기
-      final loaded = await loadDraftOrder();
-
-      // Then: null 반환
-      expect(loaded, isNull);
-    });
-  });
-
-  group('DeleteDraftOrder UseCase', () {
-    test('삭제 후 null 반환', () async {
-      // Given: 임시저장된 주문서가 있는 상태
-      final draft = OrderDraft(
-        clientId: 1,
-        clientName: '천사푸드',
-        deliveryDate: DateTime(2026, 2, 15),
-        items: const [
-          OrderDraftItem(
-            productCode: '01101123',
-            productName: '갈릭 아이올리소스 240g',
-            quantityBoxes: 5,
-            quantityPieces: 0,
-            unitPrice: 3500,
-            boxSize: 20,
-            totalPrice: 350000,
-          ),
-        ],
-        totalAmount: 350000,
-        isDraft: true,
-        lastModified: DateTime(2026, 2, 10),
-      );
-      await saveDraftOrder(orderDraft: draft);
-
-      // When: 임시저장 삭제
-      await deleteDraftOrder();
-      final loaded = await loadDraftOrder();
-
-      // Then: null 반환
-      expect(loaded, isNull);
-    });
-  });
-
-  group('UpdateOrder UseCase', () {
-    test('수정 성공', () async {
-      // Given: 수정할 주문 ID와 주문서
-      const orderId = 3; // Mock data에 존재하는 주문
-      final draft = OrderDraft(
-        clientId: 3,
-        clientName: '대한식품유통',
-        deliveryDate: DateTime(2026, 2, 20),
-        items: const [
-          OrderDraftItem(
-            productCode: '01101123',
-            productName: '갈릭 아이올리소스 240g',
-            quantityBoxes: 10,
-            quantityPieces: 0,
-            unitPrice: 3500,
-            boxSize: 20,
-            totalPrice: 700000,
-          ),
-        ],
-        totalAmount: 700000,
-        isDraft: false,
-        lastModified: DateTime(2026, 2, 10),
-      );
-
-      // When: 주문서 수정
-      final result = await updateOrder(orderId: orderId, orderDraft: draft);
-
-      // Then: 수정 결과 반환
-      expect(result, isA<OrderSubmitResult>());
-      expect(result.orderId, orderId);
-      expect(result.orderRequestNumber, isNotEmpty);
-      expect(result.status, 'PENDING');
-    });
-
-    test('존재하지 않는 주문 예외', () async {
-      // Given: 존재하지 않는 주문 ID
-      const orderId = 999;
-      final draft = OrderDraft(
-        clientId: 1,
-        clientName: '천사푸드',
-        deliveryDate: DateTime(2026, 2, 15),
-        items: const [
-          OrderDraftItem(
-            productCode: '01101123',
-            productName: '갈릭 아이올리소스 240g',
-            quantityBoxes: 5,
-            quantityPieces: 0,
-            unitPrice: 3500,
-            boxSize: 20,
-            totalPrice: 350000,
-          ),
-        ],
-        totalAmount: 350000,
-        isDraft: false,
-        lastModified: DateTime(2026, 2, 10),
-      );
-
-      // When & Then: 예외 발생
-      expect(
-        () => updateOrder(orderId: orderId, orderDraft: draft),
-        throwsException,
-      );
     });
   });
 

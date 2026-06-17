@@ -3,9 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/client_order.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
-import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
-import 'package:mobile/domain/entities/validation_error.dart';
 import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/presentation/providers/client_order_list_provider.dart';
 import 'package:mobile/presentation/providers/order_request_list_provider.dart';
@@ -365,11 +363,6 @@ class _ErrorOrderRepository implements OrderRequestRepository {
   }
 
   @override
-  Future<int> getCreditBalance({required int clientId}) {
-    throw UnimplementedError();
-  }
-
-  @override
   Future<List<ProductForOrder>> getFavoriteProducts() {
     throw UnimplementedError();
   }
@@ -379,44 +372,6 @@ class _ErrorOrderRepository implements OrderRequestRepository {
     required String query,
     String? categoryMid,
     String? categorySub,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<ProductForOrder> getProductByBarcode({required String barcode}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> saveDraftOrder({required OrderDraft orderDraft}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<OrderDraft?> loadDraftOrder() {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> deleteDraftOrder() {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<ValidationResult> validateOrder({required OrderDraft orderDraft}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<OrderSubmitResult> submitOrder({required OrderDraft orderDraft}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<OrderSubmitResult> updateOrder({
-    required int orderId,
-    required OrderDraft orderDraft,
   }) {
     throw UnimplementedError();
   }

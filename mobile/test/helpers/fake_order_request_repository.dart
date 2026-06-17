@@ -4,9 +4,7 @@ import 'package:mobile/domain/entities/client_order.dart';
 import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
-import 'package:mobile/domain/entities/order_draft.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
-import 'package:mobile/domain/entities/validation_error.dart';
 import 'package:mobile/domain/repositories/order_request_repository.dart';
 
 /// 테스트용 주문 Fake Repository
@@ -583,10 +581,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     );
   }
 
-  // --- 주문서 작성 관련 Mock 구현 (F22) ---
-
-  /// Mock 임시저장 데이터
-  OrderDraft? _savedDraft;
+  // --- 즐겨찾기/검색 관련 Mock 구현 ---
 
   /// Mock 즐겨찾기 제품 코드 목록
   final Set<String> _favoriteProductCodes = {
@@ -721,28 +716,6 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     ),
   ];
 
-  /// Mock 여신 잔액 데이터
-  static final Map<int, int> _mockCreditBalances = {
-    1: 100000000,
-    2: 50000000,
-    3: 75000000,
-    4: 30000000,
-    5: 120000000,
-    6: 85000000,
-    7: 45000000,
-    8: 60000000,
-  };
-
-  @override
-  Future<int> getCreditBalance({required int clientId}) async {
-    await _simulateDelay();
-    final balance = _mockCreditBalances[clientId];
-    if (balance == null) {
-      throw Exception('STORE_NOT_FOUND');
-    }
-    return balance;
-  }
-
   @override
   Future<List<ProductForOrder>> getFavoriteProducts() async {
     await _simulateDelay();
@@ -777,98 +750,6 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
         .map((p) => p.copyWith(
             isFavorite: _favoriteProductCodes.contains(p.productCode)))
         .toList();
-  }
-
-  @override
-  Future<ProductForOrder> getProductByBarcode({required String barcode}) async {
-    await _simulateDelay();
-    final product = _mockProducts.firstWhere(
-      (p) => p.barcode == barcode,
-      orElse: () => throw Exception('PRODUCT_NOT_FOUND'),
-    );
-    return product.copyWith(
-        isFavorite: _favoriteProductCodes.contains(product.productCode));
-  }
-
-  @override
-  Future<void> saveDraftOrder({required OrderDraft orderDraft}) async {
-    await _simulateDelay();
-    _savedDraft = orderDraft;
-  }
-
-  @override
-  Future<OrderDraft?> loadDraftOrder() async {
-    await _simulateDelay();
-    return _savedDraft;
-  }
-
-  @override
-  Future<void> deleteDraftOrder() async {
-    await _simulateDelay();
-    _savedDraft = null;
-  }
-
-  @override
-  Future<ValidationResult> validateOrder({
-    required OrderDraft orderDraft,
-  }) async {
-    await _simulateDelay();
-
-    // Mock: 모든 제품의 유효성을 통과시킴
-    // 특정 제품코드 '23010011'은 최소수량 미달로 실패하도록 시뮬레이션
-    final errors = <String, ValidationError>{};
-
-    for (final item in orderDraft.items) {
-      if (item.productCode == '23010011' && item.quantityBoxes < 5) {
-        errors[item.productCode] = const ValidationError(
-          errorType: ValidationErrorType.minOrderQuantity,
-          message: '최소 주문 수량은 5박스입니다',
-          minOrderQuantity: 5,
-          supplyQuantity: 100,
-          dcQuantity: 10,
-        );
-      }
-    }
-
-    return ValidationResult(
-      isValid: errors.isEmpty,
-      errors: errors,
-    );
-  }
-
-  @override
-  Future<OrderSubmitResult> submitOrder({
-    required OrderDraft orderDraft,
-  }) async {
-    await _simulateDelay();
-
-    // Mock: 주문서 전송 성공
-    final newId = _mockOrders.length + 1;
-    return OrderSubmitResult(
-      orderId: newId,
-      orderRequestNumber: 'OP${(50 + newId).toString().padLeft(8, '0')}',
-      status: 'PENDING',
-    );
-  }
-
-  @override
-  Future<OrderSubmitResult> updateOrder({
-    required int orderId,
-    required OrderDraft orderDraft,
-  }) async {
-    await _simulateDelay();
-
-    // 주문 존재 확인
-    _mockOrders.firstWhere(
-      (o) => o.id == orderId,
-      orElse: () => throw Exception('ORDER_NOT_FOUND'),
-    );
-
-    return OrderSubmitResult(
-      orderId: orderId,
-      orderRequestNumber: 'OP${(50 + orderId).toString().padLeft(8, '0')}',
-      status: 'PENDING',
-    );
   }
 
   @override
