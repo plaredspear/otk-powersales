@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /** 여사원 근무내역 1행 (15컬럼) — SF Report `new_report_nEX` 이식 (Spec #840). */
@@ -52,30 +53,11 @@ export async function exportWorkHistory(
   year: number,
   month: number,
 ): Promise<void> {
-  const res = await client.get(`${BASE}/export`, {
-    params: { employeeCode, year, month },
-    responseType: 'blob',
-  });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `여사원근무내역_${employeeCode}_${year}${String(month).padStart(2, '0')}.xlsx`;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await downloadExcel(
+    `${BASE}/export`,
+    `여사원근무내역_${employeeCode}_${year}${String(month).padStart(2, '0')}.xlsx`,
+    {
+      params: { employeeCode, year, month },
+    },
+  );
 }

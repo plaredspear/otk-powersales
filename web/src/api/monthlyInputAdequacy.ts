@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 export interface MonthlyInputAdequacyItem {
@@ -41,39 +42,17 @@ export async function fetchMatrix(
   return res.data.data;
 }
 
+/** 월별 진열사원 투입적정성 매트릭스 엑셀 다운로드. */
 export async function exportMatrix(
   year: number,
   costCenterCodes: string[],
   workingCategory3?: string,
 ): Promise<void> {
-  const res = await client.get(`${BASE}/export`, {
+  await downloadExcel(`${BASE}/export`, `${year}년도_월별투입적정성.xlsx`, {
     params: {
       year,
       costCenterCodes: costCenterCodes.join(','),
       ...(workingCategory3 ? { workingCategory3 } : {}),
     },
-    responseType: 'blob',
   });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `${year}년도_월별투입적정성.xlsx`;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

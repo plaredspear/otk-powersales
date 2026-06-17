@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 
@@ -69,34 +70,17 @@ export async function fetchMonthlyIntegrationSchedule(
   return res.data.data;
 }
 
+/** 여사원 통합일정 엑셀 다운로드. */
 export async function fetchMonthlyIntegrationExport(
   year: number,
   month: number,
   costCenterCodes: string[],
 ): Promise<void> {
-  const res = await client.get('/api/v1/admin/schedules/monthly-integration/export', {
-    params: { year, month, costCenterCodes: costCenterCodes.join(',') },
-    responseType: 'blob',
-  });
-
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `${year}년${month}월_여사원_통합일정.xlsx`;
-  if (contentDisposition) {
-    const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-    if (match) filename = decodeURIComponent(match[1]);
-  }
-
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await downloadExcel(
+    '/api/v1/admin/schedules/monthly-integration/export',
+    `${year}년${month}월_여사원_통합일정.xlsx`,
+    { params: { year, month, costCenterCodes: costCenterCodes.join(',') } },
+  );
 }
 
 export async function fetchCategorySchedule(
@@ -114,32 +98,15 @@ export async function fetchCategorySchedule(
   return res.data.data;
 }
 
+/** 근무형태별 여사원인원현황 엑셀 다운로드. */
 export async function fetchCategoryExport(
   year: number,
   month: number,
   costCenterCodes: string[],
 ): Promise<void> {
-  const res = await client.get('/api/v1/admin/schedules/monthly-integration/category/export', {
-    params: { year, month, costCenterCodes: costCenterCodes.join(',') },
-    responseType: 'blob',
-  });
-
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `${year}년${month}월_근무형태별_인원현황.xlsx`;
-  if (contentDisposition) {
-    const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-    if (match) filename = decodeURIComponent(match[1]);
-  }
-
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await downloadExcel(
+    '/api/v1/admin/schedules/monthly-integration/category/export',
+    `${year}년${month}월_근무형태별_인원현황.xlsx`,
+    { params: { year, month, costCenterCodes: costCenterCodes.join(',') } },
+  );
 }

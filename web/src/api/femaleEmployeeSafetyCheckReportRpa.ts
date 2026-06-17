@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /** 판매여사원 일일 안전점검 현황 (RPA용) 1행 (24컬럼) — SF Report new_report_xdB 이식 (Spec #842). */
@@ -54,30 +55,7 @@ export async function fetchSafetyCheckReportRpa(
 
 /** 일일 안전점검 현황 (RPA) 엑셀 다운로드. */
 export async function exportSafetyCheckReportRpa(date: string): Promise<void> {
-  const res = await client.get(`${BASE}/export`, {
+  await downloadExcel(`${BASE}/export`, `판매여사원안전점검RPA_${date}.xlsx`, {
     params: { date },
-    responseType: 'blob',
   });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `판매여사원안전점검RPA_${date}.xlsx`;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

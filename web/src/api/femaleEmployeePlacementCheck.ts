@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /** 여사원 배치 점검 1행 (21컬럼) — SF Report `new_report_4Ic` 이식 (Spec #839). */
@@ -61,34 +62,11 @@ export async function exportPlacementCheck(
   month: number,
   costCenterCodes: string[],
 ): Promise<void> {
-  const res = await client.get(`${BASE}/export`, {
+  await downloadExcel(`${BASE}/export`, `여사원배치점검_${year}${String(month).padStart(2, '0')}.xlsx`, {
     params: {
       year,
       month,
       ...(costCenterCodes.length > 0 ? { costCenterCodes: costCenterCodes.join(',') } : {}),
     },
-    responseType: 'blob',
   });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `여사원배치점검_${year}${String(month).padStart(2, '0')}.xlsx`;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

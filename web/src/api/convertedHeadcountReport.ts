@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /**
@@ -75,30 +76,7 @@ export async function exportConvertedHeadcountReport(
   year: string,
   month: string,
 ): Promise<void> {
-  const res = await client.get(`${BASE}/${variant}/export`, {
+  await downloadExcel(`${BASE}/${variant}/export`, `거래처유형별환산인원_${year}-${month}.xlsx`, {
     params: { year, month },
-    responseType: 'blob',
   });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `거래처유형별환산인원_${year}-${month}.xlsx`;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

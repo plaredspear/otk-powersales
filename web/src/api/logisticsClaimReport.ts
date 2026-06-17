@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /** 물류 클레임 보고서 기간 프리셋. */
@@ -63,30 +64,7 @@ export async function exportLogisticsClaimReport(
   startDate?: string,
   endDate?: string,
 ): Promise<void> {
-  const res = await client.get(`${BASE}/export`, {
+  await downloadExcel(`${BASE}/export`, `물류클레임보고서_${period}.xlsx`, {
     params: { period, startDate, endDate },
-    responseType: 'blob',
   });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = `물류클레임보고서_${period}.xlsx`;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /** 전문행사조 확정 인원 1행 (6컬럼) — SF Report new_report_swJ 이식 (Spec #846). */
@@ -30,27 +31,5 @@ export async function fetchPptConfirmedReport(): Promise<PptConfirmedReportRespo
 
 /** 전문행사조 확정 인원 엑셀 다운로드. */
 export async function exportPptConfirmedReport(): Promise<void> {
-  const res = await client.get(`${BASE}/export`, { responseType: 'blob' });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = '전문행사조확정인원.xlsx';
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  await downloadExcel(`${BASE}/export`, '전문행사조확정인원.xlsx');
 }

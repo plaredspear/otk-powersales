@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /** 기간별 클레임 보고서 대상 분류 — PACKAGING(포장불량만)/ALL(모든 클레임). */
@@ -64,31 +65,8 @@ export async function exportClaimPeriodReport(
   endDate: string,
   type: ClaimPeriodReportType,
 ): Promise<void> {
-  const res = await client.get(`${BASE}/export`, {
-    params: { startDate, endDate, type },
-    responseType: 'blob',
-  });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
   const typeLabel = type === 'ALL' ? '모든클레임' : '포장불량';
-  let filename = `기간별클레임_${typeLabel}_${startDate}_${endDate}.xlsx`;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  await downloadExcel(`${BASE}/export`, `기간별클레임_${typeLabel}_${startDate}_${endDate}.xlsx`, {
+    params: { startDate, endDate, type },
   });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
