@@ -6,8 +6,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.CategorySchedu
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleResponse
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
 import com.otoki.powersales.platform.common.dto.ApiResponse
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -39,14 +38,7 @@ class AdminMonthlyIntegrationController(
         @RequestParam costCenterCodes: List<String>
     ): ResponseEntity<ByteArray> {
         val result = adminMonthlyIntegrationService.exportMonthlyIntegration(year, month, costCenterCodes)
-
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${result.filename}\"")
-
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     @GetMapping("/category")
@@ -68,13 +60,6 @@ class AdminMonthlyIntegrationController(
         @RequestParam costCenterCodes: List<String>
     ): ResponseEntity<ByteArray> {
         val result = adminMonthlyIntegrationService.exportCategorySchedule(year, month, costCenterCodes)
-
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${result.filename}\"")
-
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 }

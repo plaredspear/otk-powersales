@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
 import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterException
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -96,7 +97,7 @@ class AdminMonthlyIntegrationControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 엑셀 파일 반환")
         fun success() {
-            val excelResult = AdminMonthlyIntegrationService.ExcelResult(
+            val excelResult = ExcelResult(
                 bytes = byteArrayOf(0x50, 0x4B), // dummy xlsx header
                 filename = "2026년3월_여사원 통합일정 조회_20260322_120000.xlsx"
             )

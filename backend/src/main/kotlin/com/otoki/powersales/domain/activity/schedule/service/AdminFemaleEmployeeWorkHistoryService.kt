@@ -5,14 +5,11 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployee
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
-import org.apache.poi.ss.usermodel.FillPatternType
-import org.apache.poi.ss.usermodel.HorizontalAlignment
-import org.apache.poi.ss.usermodel.IndexedColors
-import org.apache.poi.xssf.usermodel.XSSFColor
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
+import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.ByteArrayOutputStream
 import java.time.LocalDate
 import java.time.Period
 import java.time.YearMonth
@@ -80,7 +77,7 @@ class AdminFemaleEmployeeWorkHistoryService(
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("여사원근무내역")
-        val headerStyle = createHeaderStyle(workbook)
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
 
         val headers = listOf(
             "일정명", "성명", "사번", "나이", "근무일자",
@@ -116,7 +113,7 @@ class AdminFemaleEmployeeWorkHistoryService(
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
-        val bytes = workbookToBytes(workbook)
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
         val filename = "여사원근무내역_%s_%04d%02d.xlsx".format(employeeCode.trim(), year, month)
         return ExcelResult(bytes, filename)
     }
@@ -173,38 +170,6 @@ class AdminFemaleEmployeeWorkHistoryService(
         if (month !in 1..12) {
             throw InvalidParameterException("month는 1~12 범위여야 합니다")
         }
-    }
-
-    private fun createHeaderStyle(workbook: XSSFWorkbook) = workbook.createCellStyle().apply {
-        setFillForegroundColor(XSSFColor(byteArrayOf(0x1E, 0x2F, 0x97.toByte()), null))
-        fillPattern = FillPatternType.SOLID_FOREGROUND
-        alignment = HorizontalAlignment.CENTER
-        setFont(workbook.createFont().apply {
-            bold = true
-            color = IndexedColors.WHITE.index
-        })
-    }
-
-    private fun workbookToBytes(workbook: XSSFWorkbook): ByteArray {
-        return ByteArrayOutputStream().use { out ->
-            workbook.write(out)
-            workbook.close()
-            out.toByteArray()
-        }
-    }
-
-    data class ExcelResult(
-        val bytes: ByteArray,
-        val filename: String,
-    ) {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            other as ExcelResult
-            return bytes.contentEquals(other.bytes) && filename == other.filename
-        }
-
-        override fun hashCode(): Int = bytes.contentHashCode() * 31 + filename.hashCode()
     }
 
     companion object {

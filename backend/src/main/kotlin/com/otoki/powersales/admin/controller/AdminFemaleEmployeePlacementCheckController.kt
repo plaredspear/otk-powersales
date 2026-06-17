@@ -17,19 +17,16 @@ import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployee
 import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeeWorkHistoryService
 import com.otoki.powersales.domain.activity.schedule.service.ConvertedHeadcountReportVariant
 import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterException
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 /**
  * 여사원 배치 점검 현황 (영업지원실용) — Spec #839.
@@ -71,13 +68,7 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
     ): ResponseEntity<ByteArray> {
         val result = service.exportPlacementCheck(scope, year, month, costCenterCodes)
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     /** 개인별(사번) 월간 근무내역 조회 (Spec #840). */
@@ -103,13 +94,7 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam month: Int,
     ): ResponseEntity<ByteArray> {
         val result = workHistoryService.exportWorkHistory(scope, employeeCode, year, month)
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     /** 일일 안전점검 현황 조회 (Spec #841). date 미지정 시 어제. */
@@ -131,13 +116,7 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam(required = false) date: String?,
     ): ResponseEntity<ByteArray> {
         val result = safetyCheckReportService.exportReport(scope, parseDate(date))
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     /** 일일 안전점검 현황 (RPA용) 조회 (Spec #842). 전사 고정 — DataScope 미적용. date 미지정 시 어제. */
@@ -157,13 +136,7 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam(required = false) date: String?,
     ): ResponseEntity<ByteArray> {
         val result = safetyCheckRpaService.exportReport(parseDate(date))
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     /**
@@ -192,13 +165,7 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam month: String,
     ): ResponseEntity<ByteArray> {
         val result = convertedHeadcountReportService.exportReport(parseVariant(variant), year, month)
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     /** variant 코드 → enum. 미지원 값 → 400. */

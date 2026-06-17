@@ -22,16 +22,13 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
-import org.apache.poi.ss.usermodel.FillPatternType
-import org.apache.poi.ss.usermodel.HorizontalAlignment
-import org.apache.poi.ss.usermodel.IndexedColors
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
+import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.ss.util.CellRangeAddress
-import org.apache.poi.xssf.usermodel.XSSFColor
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDateTime
@@ -105,7 +102,7 @@ class AdminMonthlyIntegrationService(
             "총 투입횟수", "총 환산근무일수", "총 환산인원", "ABC마감실적"
         )
 
-        val headerStyle = createHeaderStyle(workbook)
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
         val intStyle = workbook.createCellStyle().apply {
             dataFormat = workbook.createDataFormat().getFormat("#,##0")
         }
@@ -155,11 +152,7 @@ class AdminMonthlyIntegrationService(
 
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
-        val bytes = ByteArrayOutputStream().use { out ->
-            workbook.write(out)
-            workbook.close()
-            out.toByteArray()
-        }
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
 
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val filename = "${year}년${month}월_여사원 통합일정 조회_${timestamp}.xlsx"
@@ -171,7 +164,7 @@ class AdminMonthlyIntegrationService(
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("근무형태별 여사원인원현황")
 
-        val headerStyle = createHeaderStyle(workbook)
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
         val decimal1Style = workbook.createCellStyle().apply {
             dataFormat = workbook.createDataFormat().getFormat("#,##0.0")
         }
@@ -233,11 +226,7 @@ class AdminMonthlyIntegrationService(
 
         header2Labels.indices.forEach { sheet.autoSizeColumn(it) }
 
-        val bytes = ByteArrayOutputStream().use { out ->
-            workbook.write(out)
-            workbook.close()
-            out.toByteArray()
-        }
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
 
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val filename = "${year}년${month}월_근무형태별_인원현황_${timestamp}.xlsx"
@@ -708,20 +697,6 @@ class AdminMonthlyIntegrationService(
         return result
     }
 
-    private fun createHeaderStyle(workbook: XSSFWorkbook) = workbook.createCellStyle().apply {
-        setFillForegroundColor(XSSFColor(byteArrayOf(0x1E, 0x2F, 0x97.toByte()), null))
-        fillPattern = FillPatternType.SOLID_FOREGROUND
-        alignment = HorizontalAlignment.CENTER
-        setFont(workbook.createFont().apply {
-            bold = true
-            color = IndexedColors.WHITE.index
-        })
-    }
-
-    data class ExcelResult(
-        val bytes: ByteArray,
-        val filename: String
-    )
 }
 
 class InvalidParameterException(detail: String) : BusinessException(
