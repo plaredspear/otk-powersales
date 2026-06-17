@@ -8,32 +8,16 @@ import org.springframework.stereotype.Repository
 /**
  * 즐겨찾기 제품 Repository
  *
- * V1 스키마 리매핑 후: 기존 쿼리 메서드는 @ManyToOne 기반 경로 참조로
- * Entity 변경에 의해 컴파일 오류 발생 → 전체 주석 처리.
- * Service 비활성 상태이므로 호출부 없음.
+ * V1 스키마(`product_favorites`, 복합키 `(employeecode, productcode)`) 기준.
+ * 레거시 `productFavoriteMapper.xml` 정합 — 사번(empcode__c) + 제품코드 단위로 조회/존재확인/삭제한다.
  */
 @Repository
-interface FavoriteProductRepository : JpaRepository<FavoriteProduct, ProductFavoriteId>
+interface FavoriteProductRepository : JpaRepository<FavoriteProduct, ProductFavoriteId> {
 
-/* --- 주석 처리: V1 리매핑으로 경로 변경된 기존 쿼리 메서드 ---
+    /** 사번 기준 즐겨찾기 목록 — 최근 추가순(레거시 목록 정렬 정합). */
+    fun findByEmployeeCodeOrderByCreatedAtDesc(employeeCode: String): List<FavoriteProduct>
 
-    // findByUserIdWithProduct: f.user.id, JOIN FETCH f.product, f.createdAt 참조
-    @Query(
-        "SELECT f FROM FavoriteProduct f " +
-        "JOIN FETCH f.product " +
-        "WHERE f.user.id = :userId " +
-        "ORDER BY f.createdAt DESC",
-        countQuery = "SELECT COUNT(f) FROM FavoriteProduct f WHERE f.user.id = :userId"
-    )
-    fun findByUserIdWithProduct(
-        @Param("userId") userId: Long,
-        pageable: Pageable
-    ): Page<FavoriteProduct>
+    fun existsByEmployeeCodeAndProductCode(employeeCode: String, productCode: String): Boolean
 
-    // existsByUserIdAndProductCode: userId → employeeCode 변경
-    fun existsByUserIdAndProductCode(userId: Long, productCode: String): Boolean
-
-    // findByUserIdAndProductCode: userId → employeeCode 변경
-    fun findByUserIdAndProductCode(userId: Long, productCode: String): FavoriteProduct?
-
---- */
+    fun findByEmployeeCodeAndProductCode(employeeCode: String, productCode: String): FavoriteProduct?
+}

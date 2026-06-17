@@ -1,89 +1,89 @@
 package com.otoki.powersales.domain.foundation.product.service
 
-/* --- 전체 주석 처리: V1 Entity 리매핑 (Spec 77) ---
- * FavoriteProduct Entity가 V1 스키마로 리매핑되어 @ManyToOne 관계(user, product)가
- * raw String 컬럼으로 변환됨. 기존 비즈니스 로직이 V2 Entity 구조를 직접 참조하므로
- * 컴파일 오류 발생 → 전체 주석 처리.
-
-import com.otoki.powersales.product.dto.response.FavoriteProductResponse
-import com.otoki.powersales.product.entity.FavoriteProduct
-import com.otoki.powersales.exception.AlreadyFavoritedException
-import com.otoki.powersales.exception.FavoriteNotFoundException
-import com.otoki.powersales.order.exception.InvalidOrderParameterException
-import com.otoki.powersales.exception.ProductNotFoundException
-import com.otoki.powersales.product.repository.FavoriteProductRepository
-import com.otoki.powersales.product.repository.ProductRepository
-import com.otoki.powersales.employee.repository.EmployeeRepository
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.PageRequest
+import com.otoki.powersales.domain.foundation.product.dto.response.OrderProductDto
+import com.otoki.powersales.domain.foundation.product.entity.FavoriteProduct
+import com.otoki.powersales.domain.foundation.product.repository.FavoriteProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.common.exception.AlreadyFavoritedException
+import com.otoki.powersales.platform.common.exception.FavoriteNotFoundException
+import com.otoki.powersales.platform.common.exception.ProductNotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+/**
+ * 즐겨찾기 제품 Service (레거시 `ProductFavoriteService` 정합).
+ *
+ * 즐겨찾기는 **사번(empcode__c) + 제품코드** 단위로 저장된다(레거시 `product_favorites`).
+ * 인증 주체는 내부 `userId`(employee_id) 이므로 [resolveEmployeeCode] 로 사번을 해석한 뒤 사용한다.
+ *
+ * 조회 응답은 주문 작성 화면(`add_product` 즐겨찾기 탭)이 그대로 소비하도록
+ * 검색과 동일한 [OrderProductDto] 형태(`isFavorite = true`)로 내려준다.
+ */
 @Service
 @Transactional(readOnly = true)
 class FavoriteProductService(
     private val favoriteProductRepository: FavoriteProductRepository,
     private val productRepository: ProductRepository,
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
 ) {
 
-    companion object {
-        private const val DEFAULT_PAGE_SIZE = 20
-        private const val MAX_PAGE_SIZE = 100
+    /** 내 즐겨찾기 제품 목록 — 최근 추가순. 삭제/단종으로 제품 마스터에 없는 코드는 제외한다. */
+    fun getMyFavoriteProducts(userId: Long): List<OrderProductDto> {
+        val employeeCode = resolveEmployeeCode(userId)
+        val favorites = favoriteProductRepository.findByEmployeeCodeOrderByCreatedAtDesc(employeeCode)
+        if (favorites.isEmpty()) return emptyList()
+
+        val productsByCode = productRepository
+            .findByProductCodeIn(favorites.map { it.productCode })
+            .associateBy { it.productCode }
+
+        return favorites.mapNotNull { favorite ->
+            productsByCode[favorite.productCode]?.let { product ->
+                OrderProductDto.from(product).copy(isFavorite = true)
+            }
+        }
     }
 
-    fun getMyFavoriteProducts(
-        userId: Long,
-        page: Int?,
-        size: Int?
-    ): Page<FavoriteProductResponse> {
-        val resolvedPage = page ?: 0
-        val resolvedSize = size ?: DEFAULT_PAGE_SIZE
-
-        validatePagination(resolvedPage, resolvedSize)
-
-        val pageable = PageRequest.of(resolvedPage, resolvedSize)
-        val favoritePage = favoriteProductRepository.findByUserIdWithProduct(userId, pageable)
-
-        return favoritePage.map { FavoriteProductResponse.from(it) }
+    /**
+     * 내 즐겨찾기 제품코드 집합 — 검색 결과의 즐겨찾기 표시(`isFavorite`)용.
+     *
+     * 레거시 `productMapper.xml` 의 `product_favorites` 서브쿼리(검색 행마다 즐겨찾기 여부 표시)와 정합.
+     */
+    fun getFavoriteProductCodes(userId: Long): Set<String> {
+        val employeeCode = resolveEmployeeCode(userId)
+        return favoriteProductRepository.findByEmployeeCodeOrderByCreatedAtDesc(employeeCode)
+            .mapTo(mutableSetOf()) { it.productCode }
     }
 
     @Transactional
     fun addFavoriteProduct(userId: Long, productCode: String) {
-        val product = productRepository.findByProductCode(productCode)
+        val employeeCode = resolveEmployeeCode(userId)
+        productRepository.findByProductCode(productCode)
             ?: throw ProductNotFoundException(productCode)
 
-        if (favoriteProductRepository.existsByUserIdAndProductCode(userId, productCode)) {
+        if (favoriteProductRepository.existsByEmployeeCodeAndProductCode(employeeCode, productCode)) {
             throw AlreadyFavoritedException()
         }
 
-        val employee = employeeRepository.findById(userId)
-            .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다") }
-
-        val favorite = FavoriteProduct(
-            user = employee,
-            product = product,
-            productCode = productCode
+        favoriteProductRepository.save(
+            FavoriteProduct(employeeCode = employeeCode, productCode = productCode)
         )
-        favoriteProductRepository.save(favorite)
     }
 
     @Transactional
     fun removeFavoriteProduct(userId: Long, productCode: String) {
-        val favorite = favoriteProductRepository.findByUserIdAndProductCode(userId, productCode)
+        val employeeCode = resolveEmployeeCode(userId)
+        val favorite = favoriteProductRepository.findByEmployeeCodeAndProductCode(employeeCode, productCode)
             ?: throw FavoriteNotFoundException()
-
         favoriteProductRepository.delete(favorite)
     }
 
-    private fun validatePagination(page: Int, size: Int) {
-        if (page < 0) {
-            throw InvalidOrderParameterException("페이지 번호는 0 이상이어야 합니다")
-        }
-        if (size < 1 || size > MAX_PAGE_SIZE) {
-            throw InvalidOrderParameterException("페이지 크기는 1~${MAX_PAGE_SIZE} 범위여야 합니다")
-        }
+    /** 인증 주체(employee_id) → 사번(empcode__c). 사번 미보유 사원은 즐겨찾기 대상이 아니므로 비정상으로 간주. */
+    private fun resolveEmployeeCode(userId: Long): String {
+        val employee = employeeRepository.findById(userId)
+            .orElseThrow { IllegalStateException("사용자를 찾을 수 없습니다: $userId") }
+        return employee.employeeCode
+            ?: throw IllegalStateException("즐겨찾기 요청 사원의 사번이 null - 비정상: $userId")
     }
 }
-
---- */
