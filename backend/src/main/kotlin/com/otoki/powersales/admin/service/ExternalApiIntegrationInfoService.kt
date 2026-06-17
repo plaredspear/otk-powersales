@@ -50,7 +50,7 @@ class ExternalApiIntegrationInfoService(
         externalSystem = "Salesforce (Apex REST)",
         endpoint = joinUrl(sfOutboundProperties.apexBaseUrl, "/ClaimRegist"),
         httpMethod = "POST",
-        authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
+        authType = "OAuth2 Client Credentials (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
         note = "Content-Type: application/json. 401 시 토큰 재발급 후 1회 재시도. 환경변수 prefix: sf.outbound.*",
     )
 
@@ -61,7 +61,7 @@ class ExternalApiIntegrationInfoService(
         externalSystem = "Salesforce (Apex REST)",
         endpoint = joinUrl(sfOutboundProperties.apexBaseUrl, "/IF_SendClaimToPWS"),
         httpMethod = "POST",
-        authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
+        authType = "OAuth2 Client Credentials (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
         note = "Content-Type: application/json. Request body: { MOD_DT } (YYYYMMDD). SF → PWS 클레임 마스터 조회. 환경변수 prefix: sf.outbound.*",
     )
 
@@ -72,7 +72,7 @@ class ExternalApiIntegrationInfoService(
         externalSystem = "Salesforce (Apex REST)",
         endpoint = joinUrl(sfOutboundProperties.apexBaseUrl, "/IF_SendLogisticsClaimToPWS"),
         httpMethod = "POST",
-        authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
+        authType = "OAuth2 Client Credentials (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
         note = "Content-Type: application/json. Request body: { MOD_DT } (YYYYMMDD). SF → PWS 물류 클레임 마스터 조회. 환경변수 prefix: sf.outbound.*",
     )
 
@@ -82,7 +82,7 @@ class ExternalApiIntegrationInfoService(
         externalSystem = "Salesforce (Apex REST)",
         endpoint = joinUrl(sfOutboundProperties.apexBaseUrl, "/IF_salesprogresssend"),
         httpMethod = "POST",
-        authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
+        authType = "OAuth2 Client Credentials (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
         note = "Content-Type: application/json. Request body: { MOD_DT } (YYYYMMDD). SF → PWS 거래처목표등록마스터 조회. 환경변수 prefix: sf.outbound.*",
     )
 
@@ -92,7 +92,7 @@ class ExternalApiIntegrationInfoService(
         externalSystem = "Salesforce (Apex REST)",
         endpoint = joinUrl(sfOutboundProperties.apexBaseUrl, "/IF_SendStaffReviewToPWS"),
         httpMethod = "POST",
-        authType = "OAuth2 Password Grant (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
+        authType = "OAuth2 Client Credentials (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
         note = "Content-Type: application/json. Request body: { MOD_DT } (YYYYMMDD). SF → PWS 사원평가 마스터 조회. 환경변수 prefix: sf.outbound.*",
     )
 

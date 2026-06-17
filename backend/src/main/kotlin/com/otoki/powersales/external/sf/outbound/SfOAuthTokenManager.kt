@@ -11,10 +11,10 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.collections.get
 
 /**
- * SF OAuth 2.0 password grant 토큰 캐시 (Spec #829).
+ * SF OAuth 2.0 client_credentials grant 토큰 캐시.
  *
  * - `getAccessToken()` 가 in-memory `AtomicReference<TokenSnapshot>` 에 캐시된 토큰을 반환.
- * - 캐시가 비어 있으면 token endpoint 에 password grant 요청 후 응답을 캐싱.
+ * - 캐시가 비어 있으면 token endpoint 에 client_credentials grant 요청 후 응답을 캐싱.
  * - 401 응답 시 `invalidateToken()` 호출 후 재요청 (1회). 재요청도 실패하면 호출자 (SfOutboundClient) 가
  *   [SfOAuthFailedException] 을 발생시킨다.
  *
@@ -55,11 +55,9 @@ class SfOAuthTokenManager(
             throw SfOAuthFailedException("token URL 미설정 — sf.outbound.oauth.token-url 환경변수 확인")
         }
         val form = LinkedMultiValueMap<String, String>().apply {
-            add("grant_type", "password")
+            add("grant_type", "client_credentials")
             add("client_id", properties.oauth.clientId)
             add("client_secret", properties.oauth.clientSecret)
-            add("username", properties.oauth.username)
-            add("password", properties.oauth.password)
         }
 
         val response: Map<*, *>? = try {

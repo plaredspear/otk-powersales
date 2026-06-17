@@ -175,8 +175,6 @@ sf:
       token-url: ${SF_OAUTH_TOKEN_URL:}
       client-id: ${SF_OAUTH_CLIENT_ID:}
       client-secret: ${SF_OAUTH_CLIENT_SECRET:}
-      username: ${SF_OAUTH_USERNAME:}
-      password: ${SF_OAUTH_PASSWORD:}
 
 springdoc:
   swagger-ui:

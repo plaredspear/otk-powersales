@@ -23,8 +23,6 @@ class SfOAuthTokenManagerTest {
             tokenUrl = "https://login.example.com/services/oauth2/token",
             clientId = "cid",
             clientSecret = "secret",
-            username = "user",
-            password = "pass",
         ),
     )
 
