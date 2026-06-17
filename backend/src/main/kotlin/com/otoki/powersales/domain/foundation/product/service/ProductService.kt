@@ -19,7 +19,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class ProductService(
-    private val productRepository: ProductRepository
+    private val productRepository: ProductRepository,
+    private val favoriteProductService: FavoriteProductService
 ) {
 
     companion object {
@@ -120,13 +121,15 @@ class ProductService(
      * @param query 검색어 (제품명/제품코드/바코드)
      * @param categoryMid 중분류(category2, 선택)
      * @param categorySub 소분류(category3, 선택)
+     * @param userId 인증 사용자 — 검색 행별 즐겨찾기 여부(`isFavorite`) 표시에 사용(레거시 `product_favorites` 서브쿼리 정합)
      */
     fun searchProductsForOrder(
         query: String,
         categoryMid: String?,
         categorySub: String?,
         page: Int,
-        size: Int
+        size: Int,
+        userId: Long
     ): Page<OrderProductDto> {
         validateTextQuery(query)
         validatePagination(page, size)
@@ -139,7 +142,11 @@ class ProductService(
             pageable = pageable
         )
 
-        return rowPage.map { OrderProductDto.Companion.from(it.product, it.barcode) }
+        val favoriteCodes = favoriteProductService.getFavoriteProductCodes(userId)
+        return rowPage.map { row ->
+            val dto = OrderProductDto.Companion.from(row.product, row.barcode)
+            if (dto.productCode in favoriteCodes) dto.copy(isFavorite = true) else dto
+        }
     }
 
     /**

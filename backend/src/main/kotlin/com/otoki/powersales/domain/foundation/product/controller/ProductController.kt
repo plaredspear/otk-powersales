@@ -95,7 +95,7 @@ class ProductController(
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<Page<OrderProductDto>>> {
-        val result = productService.searchProductsForOrder(query, categoryMid, categorySub, page, size)
+        val result = productService.searchProductsForOrder(query, categoryMid, categorySub, page, size, principal.userId)
         return ResponseEntity.ok(ApiResponse.success(result, "조회 성공"))
     }
 

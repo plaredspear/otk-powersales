@@ -25,9 +25,11 @@ import org.springframework.data.domain.PageRequest
 class ProductServiceTest {
 
     private val productRepository: ProductRepository = mockk()
+    private val favoriteProductService: FavoriteProductService = mockk()
 
     private val productService = ProductService(
         productRepository,
+        favoriteProductService,
     )
 
     @Nested
@@ -331,8 +333,9 @@ class ProductServiceTest {
             )
             val page = rowPage(products, PageRequest.of(0, 30), 1)
             every { productRepository.searchForOrder("열라면", null, null, any()) } returns page
+            every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
 
-            val result = productService.searchProductsForOrder("열라면", null, null, 0, 30)
+            val result = productService.searchProductsForOrder("열라면", null, null, 0, 30, 1L)
 
             assertThat(result.content).hasSize(1)
             val dto = result.content[0]
@@ -340,7 +343,26 @@ class ProductServiceTest {
             assertThat(dto.boxSize).isEqualTo(30)
             assertThat(dto.productType).isNull()
             assertThat(dto.tasteGiftType).isNull()
+            assertThat(dto.isFavorite).isFalse()
             verify { productRepository.searchForOrder("열라면", null, null, any()) }
+        }
+
+        @Test
+        @DisplayName("즐겨찾기한 제품은 isFavorite=true 로 표시 (레거시 product_favorites 서브쿼리 정합)")
+        fun searchProductsForOrder_marksFavorite() {
+            val products = listOf(
+                createTestProduct("18110014", "열라면_용기105G", "18110014", "8801045570716"),
+                createTestProduct("18110007", "열라면_용기115G", "18110007", "8801045570723")
+            )
+            val page = rowPage(products, PageRequest.of(0, 30), 2)
+            every { productRepository.searchForOrder(any(), any(), any(), any()) } returns page
+            every { favoriteProductService.getFavoriteProductCodes(7L) } returns setOf("18110007")
+
+            val result = productService.searchProductsForOrder("열라면", null, null, 0, 30, 7L)
+
+            assertThat(result.content).hasSize(2)
+            assertThat(result.content.single { it.productCode == "18110014" }.isFavorite).isFalse()
+            assertThat(result.content.single { it.productCode == "18110007" }.isFavorite).isTrue()
         }
 
         @Test
@@ -354,8 +376,9 @@ class ProductServiceTest {
             )
             every { productRepository.searchForOrder(any(), any(), any(), any()) } returns
                 rowPage(products, PageRequest.of(0, 30), 1)
+            every { favoriteProductService.getFavoriteProductCodes(any()) } returns emptySet()
 
-            val result = productService.searchProductsForOrder("전용", null, null, 0, 30)
+            val result = productService.searchProductsForOrder("전용", null, null, 0, 30, 1L)
 
             assertThat(result.content[0].productType).isEqualTo("EXCLUSIVE")
         }
@@ -371,8 +394,9 @@ class ProductServiceTest {
             )
             every { productRepository.searchForOrder(any(), any(), any(), any()) } returns
                 rowPage(products, PageRequest.of(0, 30), 1)
+            every { favoriteProductService.getFavoriteProductCodes(any()) } returns emptySet()
 
-            val result = productService.searchProductsForOrder("시식", null, null, 0, 30)
+            val result = productService.searchProductsForOrder("시식", null, null, 0, 30, 1L)
 
             assertThat(result.content[0].tasteGiftType).isEqualTo("TASTING_GIFT")
         }
@@ -381,7 +405,7 @@ class ProductServiceTest {
         @DisplayName("빈 검색어 - INVALID_PARAMETER 예외")
         fun searchProductsForOrder_blankQuery_throws() {
             assertThatThrownBy {
-                productService.searchProductsForOrder("   ", null, null, 0, 30)
+                productService.searchProductsForOrder("   ", null, null, 0, 30, 1L)
             }.isInstanceOf(InvalidSearchParameterException::class.java)
         }
     }
