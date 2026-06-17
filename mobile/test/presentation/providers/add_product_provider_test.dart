@@ -675,7 +675,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
   @override
   Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
-    required List<String> productCodes,
+    required List<int> orderProductIds,
   }) async =>
       throw UnimplementedError();
 

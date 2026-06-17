@@ -200,7 +200,7 @@ class _ErrorOrderRepository implements OrderRequestRepository {
   @override
   Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
-    required List<String> productCodes,
+    required List<int> orderProductIds,
   }) {
     throw UnimplementedError();
   }

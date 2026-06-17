@@ -35,6 +35,12 @@ enum DeliveryStatus {
 ///
 /// 주문 상세의 제품 목록에 표시되는 개별 제품 정보입니다.
 class OrderedItem {
+  /// 주문 라인 PK (`OrderRequestProduct.id`).
+  ///
+  /// 주문 취소 API(`POST .../cancel`)의 `orderProductIds` 식별자로 사용됩니다.
+  /// 동일 제품코드가 복수 라인으로 존재할 수 있으므로 취소 선택은 이 PK 기준입니다.
+  final int orderProductId;
+
   /// 제품 코드 (예: 01101123)
   final String productCode;
 
@@ -51,6 +57,7 @@ class OrderedItem {
   final bool isCancelled;
 
   const OrderedItem({
+    required this.orderProductId,
     required this.productCode,
     required this.productName,
     required this.totalQuantityBoxes,
@@ -59,6 +66,7 @@ class OrderedItem {
   });
 
   OrderedItem copyWith({
+    int? orderProductId,
     String? productCode,
     String? productName,
     double? totalQuantityBoxes,
@@ -66,6 +74,7 @@ class OrderedItem {
     bool? isCancelled,
   }) {
     return OrderedItem(
+      orderProductId: orderProductId ?? this.orderProductId,
       productCode: productCode ?? this.productCode,
       productName: productName ?? this.productName,
       totalQuantityBoxes: totalQuantityBoxes ?? this.totalQuantityBoxes,
@@ -76,6 +85,7 @@ class OrderedItem {
 
   Map<String, dynamic> toJson() {
     return {
+      'orderProductId': orderProductId,
       'productCode': productCode,
       'productName': productName,
       'totalQuantityBoxes': totalQuantityBoxes,
@@ -86,6 +96,7 @@ class OrderedItem {
 
   factory OrderedItem.fromJson(Map<String, dynamic> json) {
     return OrderedItem(
+      orderProductId: (json['orderProductId'] as num).toInt(),
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
       totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
@@ -98,6 +109,7 @@ class OrderedItem {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is OrderedItem &&
+        other.orderProductId == orderProductId &&
         other.productCode == productCode &&
         other.productName == productName &&
         other.totalQuantityBoxes == totalQuantityBoxes &&
@@ -108,6 +120,7 @@ class OrderedItem {
   @override
   int get hashCode {
     return Object.hash(
+      orderProductId,
       productCode,
       productName,
       totalQuantityBoxes,
@@ -118,7 +131,8 @@ class OrderedItem {
 
   @override
   String toString() {
-    return 'OrderedItem(productCode: $productCode, productName: $productName, '
+    return 'OrderedItem(orderProductId: $orderProductId, '
+        'productCode: $productCode, productName: $productName, '
         'totalQuantityBoxes: $totalQuantityBoxes, '
         'totalQuantityPieces: $totalQuantityPieces, '
         'isCancelled: $isCancelled)';

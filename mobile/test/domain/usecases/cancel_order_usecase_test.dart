@@ -16,21 +16,23 @@ class _MockOrderRepository implements OrderRequestRepository {
 
   // Capture call parameters
   int? lastOrderId;
-  List<String>? lastProductCodes;
+  List<int>? lastOrderProductIds;
 
   // Return value
   OrderCancelResult resultToReturn = const OrderCancelResult(
-    cancelledCount: 0,
-    cancelledProductCodes: [],
+    orderRequestId: 0,
+    orderRequestNumber: '',
+    orderRequestStatus: 'CANCELED',
+    cancelledLines: [],
   );
 
   @override
   Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
-    required List<String> productCodes,
+    required List<int> orderProductIds,
   }) async {
     lastOrderId = orderId;
-    lastProductCodes = productCodes;
+    lastOrderProductIds = orderProductIds;
     cancelOrderCalled = true;
 
     if (errorToThrow != null) {
@@ -151,55 +153,63 @@ void main() {
     useCase = CancelOrderUseCase(mockRepository);
   });
 
+  OrderCancelResult buildResult(List<int> ids) => OrderCancelResult(
+        orderRequestId: 1,
+        orderRequestNumber: 'OP20260301',
+        orderRequestStatus: 'CANCELED',
+        cancelledLines: [
+          for (final id in ids)
+            CancelledLine(
+              orderProductId: id,
+              lineNumber: 1,
+              productCode: '$id',
+            ),
+        ],
+      );
+
   group('CancelOrderUseCase', () {
-    test('should call repository with correct orderId and productCodes',
+    test('should call repository with correct orderId and orderProductIds',
         () async {
       // Arrange
       const testOrderId = 3;
-      const testProductCodes = ['01101123', '01101222'];
-      mockRepository.resultToReturn = const OrderCancelResult(
-        cancelledCount: 2,
-        cancelledProductCodes: testProductCodes,
-      );
+      const testOrderProductIds = [101, 102];
+      mockRepository.resultToReturn = buildResult(testOrderProductIds);
 
       // Act
       await useCase.call(
         orderId: testOrderId,
-        productCodes: testProductCodes,
+        orderProductIds: testOrderProductIds,
       );
 
       // Assert
       expect(mockRepository.cancelOrderCalled, isTrue);
       expect(mockRepository.lastOrderId, equals(testOrderId));
-      expect(mockRepository.lastProductCodes, equals(testProductCodes));
+      expect(mockRepository.lastOrderProductIds, equals(testOrderProductIds));
     });
 
     test('should return OrderCancelResult from repository', () async {
       // Arrange
-      const expectedResult = OrderCancelResult(
-        cancelledCount: 2,
-        cancelledProductCodes: ['01101123', '01101222'],
-      );
+      final expectedResult = buildResult([101, 102]);
       mockRepository.resultToReturn = expectedResult;
 
       // Act
       final result = await useCase.call(
         orderId: 1,
-        productCodes: ['01101123', '01101222'],
+        orderProductIds: [101, 102],
       );
 
       // Assert
       expect(result, equals(expectedResult));
       expect(result.cancelledCount, 2);
-      expect(result.cancelledProductCodes.length, 2);
+      expect(result.cancelledLines.length, 2);
     });
 
-    test('should throw ArgumentError when productCodes is empty', () async {
+    test('should throw ArgumentError when orderProductIds is empty', () async {
       // Act & Assert
       expect(
         () async => await useCase.call(
           orderId: 1,
-          productCodes: [],
+          orderProductIds: [],
         ),
         throwsA(isA<ArgumentError>()),
       );
@@ -217,84 +227,75 @@ void main() {
       expect(
         () async => await useCase.call(
           orderId: 999,
-          productCodes: ['01101123'],
+          orderProductIds: [101],
         ),
         throwsA(equals(testException)),
       );
     });
 
-    test('should propagate ORDER_ALREADY_CLOSED error', () async {
+    test('should propagate ORD_CANCEL_INVALID_STATUS error', () async {
       // Arrange
-      final testException = Exception('ORDER_ALREADY_CLOSED');
+      final testException = Exception('ORD_CANCEL_INVALID_STATUS');
       mockRepository.errorToThrow = testException;
 
       // Act & Assert
       expect(
         () async => await useCase.call(
           orderId: 1,
-          productCodes: ['01101123'],
+          orderProductIds: [101],
         ),
         throwsA(equals(testException)),
       );
     });
 
-    test('should propagate ALREADY_CANCELLED error', () async {
+    test('should propagate ORD_CANCEL_LINE_NOT_FOUND error', () async {
       // Arrange
-      final testException = Exception('ALREADY_CANCELLED');
+      final testException = Exception('ORD_CANCEL_LINE_NOT_FOUND');
       mockRepository.errorToThrow = testException;
 
       // Act & Assert
       expect(
         () async => await useCase.call(
           orderId: 3,
-          productCodes: ['01101123'],
+          orderProductIds: [999],
         ),
         throwsA(equals(testException)),
       );
     });
 
-    test('should handle single product cancellation', () async {
+    test('should handle single line cancellation', () async {
       // Arrange
-      const expectedResult = OrderCancelResult(
-        cancelledCount: 1,
-        cancelledProductCodes: ['01101123'],
-      );
+      final expectedResult = buildResult([101]);
       mockRepository.resultToReturn = expectedResult;
 
       // Act
       final result = await useCase.call(
         orderId: 1,
-        productCodes: ['01101123'],
+        orderProductIds: [101],
       );
 
       // Assert
       expect(result.cancelledCount, 1);
-      expect(result.cancelledProductCodes, ['01101123']);
+      expect(result.cancelledLines.single.orderProductId, 101);
     });
 
     test('should handle multiple consecutive calls', () async {
       // Arrange
-      mockRepository.resultToReturn = const OrderCancelResult(
-        cancelledCount: 1,
-        cancelledProductCodes: ['01101123'],
-      );
+      mockRepository.resultToReturn = buildResult([101]);
 
       // Act & Assert - first call
-      await useCase.call(orderId: 1, productCodes: ['01101123']);
+      await useCase.call(orderId: 1, orderProductIds: [101]);
       expect(mockRepository.lastOrderId, 1);
-      expect(mockRepository.lastProductCodes, ['01101123']);
+      expect(mockRepository.lastOrderProductIds, [101]);
 
       // Act & Assert - second call
-      mockRepository.resultToReturn = const OrderCancelResult(
-        cancelledCount: 2,
-        cancelledProductCodes: ['01101222', '01101333'],
-      );
+      mockRepository.resultToReturn = buildResult([102, 103]);
       final result = await useCase.call(
         orderId: 2,
-        productCodes: ['01101222', '01101333'],
+        orderProductIds: [102, 103],
       );
       expect(mockRepository.lastOrderId, 2);
-      expect(mockRepository.lastProductCodes, ['01101222', '01101333']);
+      expect(mockRepository.lastOrderProductIds, [102, 103]);
       expect(result.cancelledCount, 2);
     });
   });

@@ -3,6 +3,7 @@ import '../../domain/entities/order_detail.dart';
 
 /// 주문한 제품 API 모델 (DTO)
 class OrderedItemModel {
+  final int orderProductId;
   final String productCode;
   final String productName;
   final double totalQuantityBoxes;
@@ -10,6 +11,7 @@ class OrderedItemModel {
   final bool isCancelled;
 
   const OrderedItemModel({
+    required this.orderProductId,
     required this.productCode,
     required this.productName,
     required this.totalQuantityBoxes,
@@ -19,6 +21,7 @@ class OrderedItemModel {
 
   factory OrderedItemModel.fromJson(Map<String, dynamic> json) {
     return OrderedItemModel(
+      orderProductId: (json['orderProductId'] as num).toInt(),
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
       totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
@@ -29,6 +32,7 @@ class OrderedItemModel {
 
   Map<String, dynamic> toJson() {
     return {
+      'orderProductId': orderProductId,
       'productCode': productCode,
       'productName': productName,
       'totalQuantityBoxes': totalQuantityBoxes,
@@ -39,6 +43,7 @@ class OrderedItemModel {
 
   OrderedItem toEntity() {
     return OrderedItem(
+      orderProductId: orderProductId,
       productCode: productCode,
       productName: productName,
       totalQuantityBoxes: totalQuantityBoxes,
@@ -49,6 +54,7 @@ class OrderedItemModel {
 
   factory OrderedItemModel.fromEntity(OrderedItem entity) {
     return OrderedItemModel(
+      orderProductId: entity.orderProductId,
       productCode: entity.productCode,
       productName: entity.productName,
       totalQuantityBoxes: entity.totalQuantityBoxes,

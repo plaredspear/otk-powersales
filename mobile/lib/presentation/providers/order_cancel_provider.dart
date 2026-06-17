@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/error_utils.dart';
 import '../../domain/entities/order_detail.dart';
 import '../../domain/usecases/cancel_order_usecase.dart';
 import 'order_cancel_state.dart';
@@ -31,28 +32,28 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
           allItems: allItems,
         ));
 
-  /// 개별 제품 선택/해제 토글
-  void toggleProduct(String productCode) {
-    final newSet = Set<String>.from(state.selectedProductCodes);
-    if (newSet.contains(productCode)) {
-      newSet.remove(productCode);
+  /// 개별 제품(라인) 선택/해제 토글
+  void toggleProduct(int orderProductId) {
+    final newSet = Set<int>.from(state.selectedOrderProductIds);
+    if (newSet.contains(orderProductId)) {
+      newSet.remove(orderProductId);
     } else {
-      newSet.add(productCode);
+      newSet.add(orderProductId);
     }
-    state = state.copyWith(selectedProductCodes: newSet);
+    state = state.copyWith(selectedOrderProductIds: newSet);
   }
 
   /// 전체 선택/해제 토글
   void toggleSelectAll() {
     if (state.isAllSelected) {
       // 전체 해제
-      state = state.copyWith(selectedProductCodes: {});
+      state = state.copyWith(selectedOrderProductIds: {});
     } else {
       // 전체 선택
-      final allCodes = state.cancellableItems
-          .map((item) => item.productCode)
+      final allIds = state.cancellableItems
+          .map((item) => item.orderProductId)
           .toSet();
-      state = state.copyWith(selectedProductCodes: allCodes);
+      state = state.copyWith(selectedOrderProductIds: allIds);
     }
   }
 
@@ -68,7 +69,7 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
     try {
       await _cancelOrder.call(
         orderId: state.orderId,
-        productCodes: state.selectedProductCodes.toList(),
+        orderProductIds: state.selectedOrderProductIds.toList(),
       );
       state = state.toSuccess();
       return true;
@@ -85,35 +86,64 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
   }
 
   /// 에러 메시지 파싱
+  ///
+  /// 실서버 응답(DioException)은 `error.code`(Spec #597) 를 우선 매핑하고,
+  /// 매핑이 없으면 서버가 내려준 한글 메시지를 그대로 사용한다.
+  /// 도메인 레벨 예외 등은 메시지 문자열 매칭으로 보강한다.
   String _parseErrorMessage(Object error) {
-    final message = error.toString().replaceFirst('Exception: ', '');
+    final code = extractErrorCode(error);
+    final mapped = code == null ? null : _messageForCode(code);
+    if (mapped != null) return mapped;
 
-    if (message.contains('ALREADY_CANCELLED')) {
+    // DioException 인데 매핑된 코드가 없으면 서버 메시지 우선
+    final serverMessage = extractErrorMessage(error);
+    final codeMatched = _messageForCode(serverMessage);
+    if (codeMatched != null) return codeMatched;
+
+    return serverMessage;
+  }
+
+  /// 백엔드 errorCode / 메시지 문자열 → 사용자 메시지
+  String? _messageForCode(String value) {
+    // 주문 취소(Spec #597) 전용 코드
+    if (value.contains('ORD_CANCEL_DEADLINE_PASSED')) {
+      return '주문 취소 마감 시각이 지났습니다';
+    }
+    if (value.contains('ORD_CANCEL_INVALID_STATUS')) {
+      return '취소할 수 없는 주문 상태입니다';
+    }
+    if (value.contains('ORD_CANCEL_LINE_NOT_FOUND')) {
+      return '취소할 수 없는 제품이 포함되어 있습니다';
+    }
+    if (value.contains('ORD_CANCEL_SAP_FAILED')) {
+      return '주문 취소 전송에 실패했습니다. 잠시 후 다시 시도해주세요';
+    }
+    // 공통 / 레거시 코드
+    if (value.contains('ALREADY_CANCELLED')) {
       return '이미 취소된 제품이 포함되어 있습니다';
     }
-    if (message.contains('ORDER_ALREADY_CLOSED')) {
+    if (value.contains('ORDER_ALREADY_CLOSED')) {
       return '마감된 주문은 취소할 수 없습니다';
     }
-    if (message.contains('ORDER_NOT_FOUND')) {
+    if (value.contains('ORDER_NOT_FOUND')) {
       return '주문을 찾을 수 없습니다';
     }
-    if (message.contains('INVALID_PARAMETER')) {
+    if (value.contains('INVALID_PARAMETER')) {
       return '취소할 제품을 선택해주세요';
     }
-    if (message.contains('UNAUTHORIZED')) {
+    if (value.contains('UNAUTHORIZED')) {
       return '인증이 만료되었습니다. 다시 로그인해주세요';
     }
-    if (message.contains('FORBIDDEN')) {
+    if (value.contains('FORBIDDEN')) {
       return '접근 권한이 없습니다';
     }
-    if (message.contains('SERVER_ERROR') || message.contains('500')) {
+    if (value.contains('SERVER_ERROR') || value.contains('500')) {
       return '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요';
     }
-    if (message.contains('네트워크') || message.contains('Network')) {
+    if (value.contains('네트워크') || value.contains('Network')) {
       return '네트워크 연결을 확인해주세요';
     }
-
-    return message;
+    return null;
   }
 }
 

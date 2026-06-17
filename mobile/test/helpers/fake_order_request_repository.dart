@@ -421,6 +421,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
           orderId == 4 && index == 0 || orderId == 9 && index < 2;
 
       return OrderedItem(
+        orderProductId: orderId * 1000 + index,
         productCode: product.$1,
         productName: product.$2,
         totalQuantityBoxes: boxes,
@@ -538,7 +539,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
   @override
   Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
-    required List<String> productCodes,
+    required List<int> orderProductIds,
   }) async {
     await _simulateDelay();
 
@@ -553,23 +554,32 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
       throw Exception('ORDER_ALREADY_CLOSED');
     }
 
-    // 제품코드 유효성 확인
+    // 라인 PK 유효성 확인
     final orderedItems = _getMockOrderedItems(orderId);
-    final validCodes = orderedItems
-        .where((item) => !item.isCancelled)
-        .map((item) => item.productCode)
-        .toSet();
+    final validById = {
+      for (final item in orderedItems.where((item) => !item.isCancelled))
+        item.orderProductId: item,
+    };
 
-    for (final code in productCodes) {
-      if (!validCodes.contains(code)) {
-        throw Exception('ALREADY_CANCELLED');
+    final cancelledLines = <CancelledLine>[];
+    for (final id in orderProductIds) {
+      final item = validById[id];
+      if (item == null) {
+        throw Exception('ORD_CANCEL_LINE_NOT_FOUND');
       }
+      cancelledLines.add(CancelledLine(
+        orderProductId: item.orderProductId,
+        lineNumber: cancelledLines.length + 1,
+        productCode: item.productCode,
+      ));
     }
 
     // Mock: 취소 성공 시뮬레이션
     return OrderCancelResult(
-      cancelledCount: productCodes.length,
-      cancelledProductCodes: productCodes,
+      orderRequestId: orderId,
+      orderRequestNumber: order.orderRequestNumber,
+      orderRequestStatus: 'CANCELED',
+      cancelledLines: cancelledLines,
     );
   }
 

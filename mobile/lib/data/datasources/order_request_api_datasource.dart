@@ -98,8 +98,15 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   Future<OrderCancelResponseModel> cancelOrderRequest({
     required int orderId,
     required OrderCancelRequestModel request,
-  }) {
-    throw UnimplementedError('별도 스펙에서 구현');
+  }) async {
+    final response = await _dio.post(
+      '/api/v1/mobile/me/order-requests/$orderId/cancel',
+      data: request.toJson(),
+    );
+
+    return OrderCancelResponseModel.fromJson(
+      response.data as Map<String, dynamic>,
+    );
   }
 
   @override

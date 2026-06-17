@@ -22,6 +22,7 @@ void main() {
           'orderedItemCount': 1,
           'orderedItems': <dynamic>[
             {
+              'orderProductId': 101,
               'productCode': '1000023',
               'productName': '진라면 매운맛',
               'totalQuantityBoxes': 10.0,

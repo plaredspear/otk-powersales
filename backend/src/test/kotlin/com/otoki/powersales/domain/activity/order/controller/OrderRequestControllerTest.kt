@@ -135,6 +135,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                 orderedItemCount = 1,
                 orderedItems = listOf(
                     OrderedItemResponse(
+                        orderProductId = 101L,
                         productCode = "1000023",
                         productName = "진라면 매운맛",
                         totalQuantityBoxes = BigDecimal("10"),

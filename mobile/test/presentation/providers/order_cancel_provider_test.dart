@@ -16,6 +16,7 @@ import 'package:mobile/presentation/providers/order_request_list_provider.dart';
 // --- Test Data ---
 
 final _item1 = OrderedItem(
+  orderProductId: 101,
   productCode: '01101123',
   productName: '갈릭 아이올리소스 240g',
   totalQuantityBoxes: 5,
@@ -24,6 +25,7 @@ final _item1 = OrderedItem(
 );
 
 final _item2 = OrderedItem(
+  orderProductId: 102,
   productCode: '01101456',
   productName: '토마토 케첩 500g',
   totalQuantityBoxes: 10,
@@ -32,6 +34,7 @@ final _item2 = OrderedItem(
 );
 
 final _cancelledItem = OrderedItem(
+  orderProductId: 103,
   productCode: '01101789',
   productName: '마요네즈 300g',
   totalQuantityBoxes: 3,
@@ -46,23 +49,31 @@ class _MockOrderRepository implements OrderRequestRepository {
   Exception? errorToThrow;
   int cancelCallCount = 0;
   int? lastOrderId;
-  List<String>? lastProductCodes;
+  List<int>? lastOrderProductIds;
 
   @override
   Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
-    required List<String> productCodes,
+    required List<int> orderProductIds,
   }) async {
     cancelCallCount++;
     lastOrderId = orderId;
-    lastProductCodes = productCodes;
+    lastOrderProductIds = orderProductIds;
 
     if (errorToThrow != null) throw errorToThrow!;
 
     return cancelResult ??
         OrderCancelResult(
-          cancelledCount: productCodes.length,
-          cancelledProductCodes: productCodes,
+          orderRequestId: orderId,
+          orderRequestNumber: 'OP$orderId',
+          orderRequestStatus: 'CANCELED',
+          cancelledLines: orderProductIds
+              .map((id) => CancelledLine(
+                    orderProductId: id,
+                    lineNumber: 1,
+                    productCode: '$id',
+                  ))
+              .toList(),
         );
   }
 
@@ -204,7 +215,7 @@ void main() {
 
       expect(state.orderId, 1);
       expect(state.cancellableItems.length, 2);
-      expect(state.selectedProductCodes, isEmpty);
+      expect(state.selectedOrderProductIds, isEmpty);
       expect(state.isCancelling, false);
       expect(state.cancelSuccess, false);
       expect(state.errorMessage, isNull);
@@ -213,32 +224,32 @@ void main() {
     test('toggleProduct selects an unselected product', () {
       final notifier = container.read(orderCancelProvider(params).notifier);
 
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final state = container.read(orderCancelProvider(params));
-      expect(state.selectedProductCodes, {'01101123'});
+      expect(state.selectedOrderProductIds, {101});
       expect(state.selectedCount, 1);
     });
 
     test('toggleProduct deselects a selected product', () {
       final notifier = container.read(orderCancelProvider(params).notifier);
 
-      notifier.toggleProduct('01101123');
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
+      notifier.toggleProduct(101);
 
       final state = container.read(orderCancelProvider(params));
-      expect(state.selectedProductCodes, isEmpty);
+      expect(state.selectedOrderProductIds, isEmpty);
       expect(state.selectedCount, 0);
     });
 
     test('toggleProduct can select multiple products', () {
       final notifier = container.read(orderCancelProvider(params).notifier);
 
-      notifier.toggleProduct('01101123');
-      notifier.toggleProduct('01101456');
+      notifier.toggleProduct(101);
+      notifier.toggleProduct(102);
 
       final state = container.read(orderCancelProvider(params));
-      expect(state.selectedProductCodes, {'01101123', '01101456'});
+      expect(state.selectedOrderProductIds, {101, 102});
       expect(state.selectedCount, 2);
       expect(state.isAllSelected, true);
     });
@@ -249,7 +260,7 @@ void main() {
       notifier.toggleSelectAll();
 
       final state = container.read(orderCancelProvider(params));
-      expect(state.selectedProductCodes, {'01101123', '01101456'});
+      expect(state.selectedOrderProductIds, {101, 102});
       expect(state.isAllSelected, true);
     });
 
@@ -260,18 +271,18 @@ void main() {
       notifier.toggleSelectAll(); // Deselect all
 
       final state = container.read(orderCancelProvider(params));
-      expect(state.selectedProductCodes, isEmpty);
+      expect(state.selectedOrderProductIds, isEmpty);
       expect(state.isAllSelected, false);
     });
 
     test('toggleSelectAll selects all when partially selected', () {
       final notifier = container.read(orderCancelProvider(params).notifier);
 
-      notifier.toggleProduct('01101123'); // Select one
+      notifier.toggleProduct(101); // Select one
       notifier.toggleSelectAll(); // Should select all
 
       final state = container.read(orderCancelProvider(params));
-      expect(state.selectedProductCodes, {'01101123', '01101456'});
+      expect(state.selectedOrderProductIds, {101, 102});
       expect(state.isAllSelected, true);
     });
 
@@ -288,7 +299,7 @@ void main() {
     test('cancelOrderRequest succeeds with selected products', () async {
       final notifier = container.read(orderCancelProvider(params).notifier);
 
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
       final result = await notifier.cancelOrderRequest();
 
       final state = container.read(orderCancelProvider(params));
@@ -297,14 +308,14 @@ void main() {
       expect(state.isCancelling, false);
       expect(state.errorMessage, isNull);
       expect(mockRepository.lastOrderId, 1);
-      expect(mockRepository.lastProductCodes, ['01101123']);
+      expect(mockRepository.lastOrderProductIds, [101]);
     });
 
     test('cancelOrderRequest handles ALREADY_CANCELLED error', () async {
       mockRepository.errorToThrow = Exception('ALREADY_CANCELLED');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -319,7 +330,7 @@ void main() {
       mockRepository.errorToThrow = Exception('ORDER_ALREADY_CLOSED');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -332,7 +343,7 @@ void main() {
       mockRepository.errorToThrow = Exception('ORDER_NOT_FOUND');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -345,7 +356,7 @@ void main() {
       mockRepository.errorToThrow = Exception('INVALID_PARAMETER');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -358,7 +369,7 @@ void main() {
       mockRepository.errorToThrow = Exception('UNAUTHORIZED');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -371,7 +382,7 @@ void main() {
       mockRepository.errorToThrow = Exception('FORBIDDEN');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -384,7 +395,7 @@ void main() {
       mockRepository.errorToThrow = Exception('SERVER_ERROR');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -397,7 +408,7 @@ void main() {
       mockRepository.errorToThrow = Exception('네트워크 연결 오류');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -410,7 +421,7 @@ void main() {
       mockRepository.errorToThrow = Exception('Unknown error');
 
       final notifier = container.read(orderCancelProvider(params).notifier);
-      notifier.toggleProduct('01101123');
+      notifier.toggleProduct(101);
 
       final result = await notifier.cancelOrderRequest();
 
@@ -454,8 +465,8 @@ void main() {
       expect(mockRepository.cancelCallCount, 1);
       expect(mockRepository.lastOrderId, 1);
       expect(
-        mockRepository.lastProductCodes!.toSet(),
-        {'01101123', '01101456'},
+        mockRepository.lastOrderProductIds!.toSet(),
+        {101, 102},
       );
     });
   });

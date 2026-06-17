@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/datasources/order_request_api_datasource.dart';
 import 'package:mobile/data/datasources/order_request_remote_datasource.dart';
+import 'package:mobile/data/models/order_cancel_model.dart';
 import 'package:mobile/data/models/order_request_detail_model.dart';
 
 void main() {
@@ -360,6 +361,7 @@ void main() {
                     'orderedItemCount': 1,
                     'orderedItems': [
                       {
+                        'orderProductId': 101,
                         'productCode': 'P001',
                         'productName': '진라면',
                         'totalQuantityBoxes': 10.0,
@@ -433,6 +435,127 @@ void main() {
 
         expect(
           () => dataSource.getOrderRequestDetail(orderId: 7),
+          throwsA(isA<DioException>()),
+        );
+      });
+    });
+
+    group('cancelOrderRequest', () {
+      test('정상 응답 시 OrderCancelResponseModel 반환 + 경로/바디 검증', () async {
+        String? capturedPath;
+        Object? capturedBody;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            capturedPath = options.path;
+            capturedBody = options.data;
+            handler.resolve(Response(
+              data: {
+                'success': true,
+                'data': {
+                  'orderRequestId': 7,
+                  'orderRequestNumber': 'OP20260301',
+                  'orderRequestStatus': 'CANCELED',
+                  'cancelledLines': [
+                    {
+                      'orderProductId': 101,
+                      'lineNumber': 1,
+                      'productCode': '01101123',
+                      'cancelledAt': '2026-06-17T10:00:00',
+                    },
+                    {
+                      'orderProductId': 102,
+                      'lineNumber': 2,
+                      'productCode': '01101456',
+                      'cancelledAt': '2026-06-17T10:00:00',
+                    },
+                  ],
+                },
+                'message': '주문이 취소되었습니다',
+              },
+              statusCode: 200,
+              requestOptions: options,
+            ));
+          },
+        ));
+
+        final result = await dataSource.cancelOrderRequest(
+          orderId: 7,
+          request: const OrderCancelRequestModel(orderProductIds: [101, 102]),
+        );
+
+        expect(capturedPath, '/api/v1/mobile/me/order-requests/7/cancel');
+        expect(capturedBody, {
+          'orderProductIds': [101, 102]
+        });
+        expect(result, isA<OrderCancelResponseModel>());
+        expect(result.orderRequestId, 7);
+        expect(result.orderRequestStatus, 'CANCELED');
+        expect(result.cancelledLines.length, 2);
+        expect(result.cancelledLines[0].orderProductId, 101);
+        expect(result.cancelledLines[0].productCode, '01101123');
+
+        final entity = result.toEntity();
+        expect(entity.cancelledCount, 2);
+      });
+
+      test('전체 취소 시 빈 배열 바디 전송', () async {
+        Object? capturedBody;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            capturedBody = options.data;
+            handler.resolve(Response(
+              data: {
+                'success': true,
+                'data': {
+                  'orderRequestId': 7,
+                  'orderRequestNumber': 'OP20260301',
+                  'orderRequestStatus': 'CANCELED',
+                  'cancelledLines': [],
+                },
+                'message': '주문이 취소되었습니다',
+              },
+              statusCode: 200,
+              requestOptions: options,
+            ));
+          },
+        ));
+
+        await dataSource.cancelOrderRequest(
+          orderId: 7,
+          request: const OrderCancelRequestModel(orderProductIds: []),
+        );
+
+        expect(capturedBody, {'orderProductIds': <int>[]});
+      });
+
+      test('서버 400 응답 시 DioException 발생', () async {
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.reject(DioException(
+              requestOptions: options,
+              response: Response(
+                data: {
+                  'success': false,
+                  'error': {
+                    'code': 'ORD_CANCEL_DEADLINE_PASSED',
+                    'message': '주문 취소 마감 시각이 지났습니다',
+                  },
+                },
+                statusCode: 400,
+                requestOptions: options,
+              ),
+              type: DioExceptionType.badResponse,
+            ));
+          },
+        ));
+
+        expect(
+          () => dataSource.cancelOrderRequest(
+            orderId: 7,
+            request: const OrderCancelRequestModel(orderProductIds: [101]),
+          ),
           throwsA(isA<DioException>()),
         );
       });

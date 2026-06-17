@@ -89,12 +89,12 @@ abstract class OrderRequestRepository {
   /// 주문 취소
   ///
   /// [orderId]: 취소할 주문 ID
-  /// [productCodes]: 취소할 제품코드 목록
+  /// [orderProductIds]: 취소할 주문 라인 PK 목록 (빈 배열이면 전체 취소)
   ///
-  /// Returns: 취소 결과 (취소된 제품 수, 취소된 제품코드 목록)
+  /// Returns: 취소 결과 (취소 후 주문 상태, 취소된 라인 목록)
   Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
-    required List<String> productCodes,
+    required List<int> orderProductIds,
   });
 
   // ─── 주문서 작성 관련 메서드 (F22) ─────────────────────────────

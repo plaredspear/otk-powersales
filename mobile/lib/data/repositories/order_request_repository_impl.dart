@@ -68,10 +68,10 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
   @override
   Future<OrderCancelResult> cancelOrderRequest({
     required int orderId,
-    required List<String> productCodes,
+    required List<int> orderProductIds,
   }) async {
     final requestModel = OrderCancelRequestModel(
-      productCodes: productCodes,
+      orderProductIds: orderProductIds,
     );
     final response = await _remoteDataSource.cancelOrderRequest(
       orderId: orderId,

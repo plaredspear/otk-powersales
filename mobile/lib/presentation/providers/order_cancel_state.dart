@@ -10,8 +10,8 @@ class OrderCancelState {
   /// 취소 가능한 제품 목록 (isCancelled=false인 제품만)
   final List<OrderedItem> cancellableItems;
 
-  /// 선택된 제품 코드 Set
-  final Set<String> selectedProductCodes;
+  /// 선택된 주문 라인 PK Set (`OrderRequestProduct.id`)
+  final Set<int> selectedOrderProductIds;
 
   /// 취소 API 호출 중 여부
   final bool isCancelling;
@@ -25,7 +25,7 @@ class OrderCancelState {
   const OrderCancelState({
     required this.orderId,
     this.cancellableItems = const [],
-    this.selectedProductCodes = const {},
+    this.selectedOrderProductIds = const {},
     this.isCancelling = false,
     this.errorMessage,
     this.cancelSuccess = false,
@@ -47,10 +47,10 @@ class OrderCancelState {
   /// 전체 선택 여부 (파생 상태)
   bool get isAllSelected =>
       cancellableItems.isNotEmpty &&
-      selectedProductCodes.length == cancellableItems.length;
+      selectedOrderProductIds.length == cancellableItems.length;
 
   /// 선택된 제품 수
-  int get selectedCount => selectedProductCodes.length;
+  int get selectedCount => selectedOrderProductIds.length;
 
   /// 취소 버튼 활성화 여부
   bool get canCancel => selectedCount > 0 && !isCancelling;
@@ -86,7 +86,7 @@ class OrderCancelState {
   OrderCancelState copyWith({
     int? orderId,
     List<OrderedItem>? cancellableItems,
-    Set<String>? selectedProductCodes,
+    Set<int>? selectedOrderProductIds,
     bool? isCancelling,
     String? errorMessage,
     bool? cancelSuccess,
@@ -95,7 +95,8 @@ class OrderCancelState {
     return OrderCancelState(
       orderId: orderId ?? this.orderId,
       cancellableItems: cancellableItems ?? this.cancellableItems,
-      selectedProductCodes: selectedProductCodes ?? this.selectedProductCodes,
+      selectedOrderProductIds:
+          selectedOrderProductIds ?? this.selectedOrderProductIds,
       isCancelling: isCancelling ?? this.isCancelling,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       cancelSuccess: cancelSuccess ?? this.cancelSuccess,

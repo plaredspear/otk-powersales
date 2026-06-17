@@ -124,14 +124,14 @@ class OrderCancelPage extends ConsumerWidget {
             itemBuilder: (context, index) {
               final item = state.cancellableItems[index];
               final isSelected =
-                  state.selectedProductCodes.contains(item.productCode);
+                  state.selectedOrderProductIds.contains(item.orderProductId);
               return CancelProductItem(
                 item: item,
                 isSelected: isSelected,
                 onToggle: () {
                   ref
                       .read(orderCancelProvider(params).notifier)
-                      .toggleProduct(item.productCode);
+                      .toggleProduct(item.orderProductId);
                 },
               );
             },

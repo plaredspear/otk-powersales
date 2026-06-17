@@ -166,6 +166,7 @@ void main() {
           orderRequestStatus: OrderRequestStatus.approved,
           orderedItems: [
             const OrderedItem(
+              orderProductId: 1,
               productCode: 'P001',
               productName: 'Product 1',
               totalQuantityBoxes: 5,
@@ -191,6 +192,7 @@ void main() {
           orderRequestStatus: OrderRequestStatus.approved,
           orderedItems: [
             const OrderedItem(
+              orderProductId: 1,
               productCode: 'P001',
               productName: 'Product 1',
               totalQuantityBoxes: 5,
