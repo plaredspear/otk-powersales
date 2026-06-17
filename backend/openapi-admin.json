@@ -16874,16 +16874,13 @@
       "WorkTypeStats" : {
         "properties" : {
           "alternating" : {
-            "format" : "int32",
-            "type" : "integer"
+            "type" : "number"
           },
           "fixed" : {
-            "format" : "int32",
-            "type" : "integer"
+            "type" : "number"
           },
           "visiting" : {
-            "format" : "int32",
-            "type" : "integer"
+            "type" : "number"
           }
         },
         "type" : "object"

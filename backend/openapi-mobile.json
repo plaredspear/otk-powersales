@@ -1214,6 +1214,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListOrderProductDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OrderProductDto"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListProductCategoryGroup" : {
         "properties" : {
           "data" : {
@@ -5287,6 +5315,10 @@
           "cancelled" : {
             "type" : "boolean"
           },
+          "orderProductId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "productCode" : {
             "type" : "string"
           },
@@ -8168,6 +8200,74 @@
         "tags" : [ "leader-schedule-controller" ]
       }
     },
+    "/api/v1/mobile/me/favorite-products" : {
+      "get" : {
+        "operationId" : "getMyFavoriteProducts",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListOrderProductDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "favorite-product-controller" ]
+      }
+    },
+    "/api/v1/mobile/me/favorite-products/{productCode}" : {
+      "delete" : {
+        "operationId" : "removeFavoriteProduct",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "productCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "favorite-product-controller" ]
+      },
+      "post" : {
+        "operationId" : "addFavoriteProduct",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "productCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "favorite-product-controller" ]
+      }
+    },
     "/api/v1/mobile/me/order-requests" : {
       "get" : {
         "operationId" : "getMyOrderRequests",
@@ -8328,6 +8428,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseOrderCancelResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "order-request-controller" ]
+      }
+    },
+    "/api/v1/mobile/me/order-requests/{orderRequestId}/resend" : {
+      "post" : {
+        "operationId" : "resendOrderRequest",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "orderRequestId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
                 }
               }
             },
