@@ -1,6 +1,5 @@
 package com.otoki.powersales.domain.sales.service
 
-import com.otoki.powersales.domain.sales.service.MonthlySalesDashboardExcelExporter
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardListItem
 import org.apache.poi.ss.usermodel.WorkbookFactory
 import org.assertj.core.api.Assertions.assertThat

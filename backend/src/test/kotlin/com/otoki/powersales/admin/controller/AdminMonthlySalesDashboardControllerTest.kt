@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardListR
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardSummaryResponse
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
 import com.otoki.powersales.domain.sales.service.MonthlySalesDashboardExcelExporter
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -108,7 +109,7 @@ class AdminMonthlySalesDashboardControllerTest : AdminControllerTestSupport() {
     @DisplayName("GET /list/export - 엑셀 헤더 Content-Disposition")
     fun listExport() {
         every { queryService.getListForExport(any(), any()) } returns emptyList()
-        every { excelExporter.export(any(), any(), any()) } returns MonthlySalesDashboardExcelExporter.ExcelResult(
+        every { excelExporter.export(any(), any(), any()) } returns ExcelResult(
                 bytes = byteArrayOf(1, 2, 3),
                 filename = "monthly-sales-2026-05.xlsx",
             )

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
 class PromotionListExcelExporter : BaseExcelExporter<PromotionListItem>() {
 
     override val sheetName = "행사마스터"
-    override val filename = "행사마스터.xlsx"
+    override val defaultFilename = "행사마스터.xlsx"
 
     // 목록 테이블 컬럼 정합 (행사번호 ~ 작성자).
     override val headers = listOf(

@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardLi
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListResponse
 import com.otoki.powersales.domain.sales.service.ElectronicSalesAdminQueryService
 import com.otoki.powersales.domain.sales.service.ElectronicSalesDashboardExcelExporter
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import org.junit.jupiter.api.BeforeEach
@@ -77,7 +78,7 @@ class AdminElectronicSalesDashboardControllerTest : AdminControllerTestSupport()
     @DisplayName("GET /list/export - 엑셀 헤더 Content-Disposition")
     fun listExport() {
         every { queryService.getListForExport(any(), any()) } returns emptyList()
-        every { excelExporter.export(any(), any(), any()) } returns ElectronicSalesDashboardExcelExporter.ExcelResult(
+        every { excelExporter.export(any(), any(), any()) } returns ExcelResult(
             bytes = byteArrayOf(1, 2, 3),
             filename = "electronic-sales-2026-05.xlsx",
         )

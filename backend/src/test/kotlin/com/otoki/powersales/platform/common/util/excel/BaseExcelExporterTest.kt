@@ -14,7 +14,7 @@ class BaseExcelExporterTest {
 
     private val exporter = object : BaseExcelExporter<Sample>() {
         override val sheetName = "샘플시트"
-        override val filename = "샘플.xlsx"
+        override val defaultFilename = "샘플.xlsx"
         override val headers = listOf("이름", "나이")
         override fun writeRow(row: Row, item: Sample) {
             row.createCell(0).setCellValue(item.name)
@@ -41,6 +41,17 @@ class BaseExcelExporterTest {
             assertThat(sheet.getRow(1).getCell(1).numericCellValue).isEqualTo(30.0)
             assertThat(sheet.getRow(2).getCell(0).stringCellValue).isEqualTo("김철수")
             assertThat(sheet.lastRowNum).isEqualTo(2) // 헤더 + 2행
+        }
+    }
+
+    @Test
+    @DisplayName("동적 파일명 오버로드 - 전달한 파일명으로 ExcelResult 생성")
+    fun export_withDynamicFilename() {
+        val result = exporter.export(listOf(Sample("홍길동", 30)), "샘플_2026-06.xlsx")
+
+        assertThat(result.filename).isEqualTo("샘플_2026-06.xlsx")
+        XSSFWorkbook(ByteArrayInputStream(result.bytes)).use { wb ->
+            assertThat(wb.getSheet("샘플시트").getRow(1).getCell(0).stringCellValue).isEqualTo("홍길동")
         }
     }
 

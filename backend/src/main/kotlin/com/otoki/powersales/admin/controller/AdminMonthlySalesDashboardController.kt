@@ -12,16 +12,13 @@ import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardListR
 import com.otoki.powersales.domain.sales.dto.response.MonthlySalesDashboardSummaryResponse
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
 import com.otoki.powersales.domain.sales.service.MonthlySalesDashboardExcelExporter
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @RestController
 @RequestMapping("/api/v1/admin/sales/monthly")
@@ -92,7 +89,7 @@ class AdminMonthlySalesDashboardController(
         )
         val items = queryService.getListForExport(scope, request)
         val excel = excelExporter.export(year, month, items)
-        return buildExcelResponse(excel)
+        return ExcelResponseUtils.build(excel)
     }
 
     /** 단건 거래처 상세 — 모바일 동등 6 영역. */
@@ -106,15 +103,5 @@ class AdminMonthlySalesDashboardController(
     ): ResponseEntity<ApiResponse<MonthlySalesDashboardDetailResponse>> {
         val response = queryService.getDetail(scope, customerId, year, month)
         return ResponseEntity.ok(ApiResponse.success(response))
-    }
-
-    private fun buildExcelResponse(result: MonthlySalesDashboardExcelExporter.ExcelResult): ResponseEntity<ByteArray> {
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
     }
 }

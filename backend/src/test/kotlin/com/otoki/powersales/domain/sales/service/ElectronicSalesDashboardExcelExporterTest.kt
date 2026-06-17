@@ -1,0 +1,63 @@
+package com.otoki.powersales.domain.sales.service
+
+import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListItem
+import org.apache.poi.ss.usermodel.WorkbookFactory
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+import java.io.ByteArrayInputStream
+
+@DisplayName("ElectronicSalesDashboardExcelExporter 테스트")
+class ElectronicSalesDashboardExcelExporterTest {
+
+    private val exporter = ElectronicSalesDashboardExcelExporter()
+
+    private fun item(id: Long, name: String) = ElectronicSalesDashboardListItem(
+        accountId = id,
+        accountName = name,
+        sapAccountCode = "SAP$id",
+        branchCode = "1000",
+        branchName = "서울지점",
+        salesYear = 2026,
+        salesMonth = 5,
+        salesAmount = 1_500_000L,
+        salesQuantity = 320L,
+    )
+
+    @Test
+    @DisplayName("빈 items → 헤더 1행만")
+    fun emptyExport() {
+        val result = exporter.export(2026, 5, emptyList())
+        assertThat(result.filename).isEqualTo("electronic-sales-2026-05.xlsx")
+        ByteArrayInputStream(result.bytes).use { input ->
+            val wb = WorkbookFactory.create(input)
+            val sheet = wb.getSheetAt(0)
+            assertThat(sheet.lastRowNum).isEqualTo(0) // 헤더 1행 (0-based)
+            wb.close()
+        }
+    }
+
+    @Test
+    @DisplayName("items N건 → 헤더 + N 행 + 셀값 매핑")
+    fun nonEmptyExport() {
+        val items = listOf(item(1, "거래처A"), item(2, "거래처B"))
+        val result = exporter.export(2026, 5, items)
+        ByteArrayInputStream(result.bytes).use { input ->
+            val wb = WorkbookFactory.create(input)
+            val sheet = wb.getSheetAt(0)
+            assertThat(sheet.lastRowNum).isEqualTo(2) // 헤더 1 + 데이터 2
+            assertThat(sheet.getRow(1).getCell(0).stringCellValue).isEqualTo("거래처A")
+            // 전산매출 금액(6) / 수량(7) 컬럼
+            assertThat(sheet.getRow(1).getCell(6).numericCellValue).isEqualTo(1_500_000.0)
+            assertThat(sheet.getRow(1).getCell(7).numericCellValue).isEqualTo(320.0)
+            wb.close()
+        }
+    }
+
+    @Test
+    @DisplayName("파일명 형식 — 한 자리 월 zero-pad")
+    fun filenameZeroPad() {
+        val result = exporter.export(2026, 3, emptyList())
+        assertThat(result.filename).isEqualTo("electronic-sales-2026-03.xlsx")
+    }
+}
