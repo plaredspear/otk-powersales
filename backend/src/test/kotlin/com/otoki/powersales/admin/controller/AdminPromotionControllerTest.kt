@@ -8,7 +8,7 @@ import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionTargetActualReportService
-import com.otoki.powersales.domain.activity.promotion.service.PromotionListExcelExporter
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -163,7 +163,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         fun exportPromotions_success() {
             every {
                 adminPromotionService.exportPromotions(any(), any(), any(), any(), any(), any())
-            } returns PromotionListExcelExporter.ExcelResult(
+            } returns ExcelResult(
                 bytes = byteArrayOf(0x50, 0x4B, 0x03, 0x04), // "PK.." (xlsx ZIP magic)
                 filename = "행사마스터.xlsx",
             )

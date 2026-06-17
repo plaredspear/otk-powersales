@@ -128,24 +128,19 @@ export async function fetchPromotions(params: PromotionListParams): Promise<Prom
 }
 
 /**
- * 행사마스터 목록 엑셀 다운로드 — 목록과 동일한 검색 조건(page/size 제외)으로 전량 추출.
- * 응답은 xlsx blob (서버가 attachment 헤더 부여).
+ * 행사마스터 목록 엑셀 다운로드 쿼리 파라미터 빌더 (page/size 제외, 목록과 동일 검색 조건).
+ * 실제 다운로드는 공통 `downloadExcel`/`useExcelDownload` 가 수행한다.
  */
-export async function exportPromotions(
+export function promotionExportParams(
   params: Omit<PromotionListParams, 'page' | 'size'>,
-): Promise<Blob> {
+): Record<string, string> {
   const queryParams: Record<string, string> = {};
   if (params.keyword) queryParams.keyword = params.keyword;
   if (params.promotionType) queryParams.promotionType = params.promotionType;
   if (params.startDate) queryParams.startDate = params.startDate;
   if (params.endDate) queryParams.endDate = params.endDate;
   if (params.ownerOnly) queryParams.ownerOnly = 'true';
-
-  const res = await client.get('/api/v1/admin/promotions/export', {
-    params: queryParams,
-    responseType: 'blob',
-  });
-  return res.data as Blob;
+  return queryParams;
 }
 
 export async function fetchPromotion(id: number): Promise<PromotionDetail> {

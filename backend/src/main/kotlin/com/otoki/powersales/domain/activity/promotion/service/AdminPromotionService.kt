@@ -32,6 +32,7 @@ import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmploy
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionProductRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionRepository
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.domain.activity.promotion.entity.QPromotion.Companion.promotion as qPromotion
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
@@ -138,7 +139,7 @@ class AdminPromotionService(
         startDate: String?,
         endDate: String?,
         ownerOnly: Boolean
-    ): PromotionListExcelExporter.ExcelResult {
+    ): ExcelResult {
         val policyPredicate = policyEvaluator.buildPredicate(
             scope = scope,
             sObjectName = "DKRetail__Promotion__c",

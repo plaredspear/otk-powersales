@@ -14,6 +14,7 @@ import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionTargetActualReportService
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
@@ -97,13 +98,7 @@ class AdminPromotionController(
             endDate = endDate,
             ownerOnly = ownerOnly
         )
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     @GetMapping
