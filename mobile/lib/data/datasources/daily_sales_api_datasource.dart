@@ -69,7 +69,6 @@ class DailySalesApiDataSource {
       if (value != null) fields[key] = value.toString();
     }
 
-    put('primarySalesPrice', input.primarySalesPrice);
     put('primarySalesQuantity', input.primarySalesQuantity);
     put('primaryProductAmount', input.primaryProductAmount);
     put('otherSalesQuantity', input.otherSalesQuantity);

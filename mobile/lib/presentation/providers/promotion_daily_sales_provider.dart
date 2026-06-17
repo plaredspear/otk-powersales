@@ -36,8 +36,7 @@ class PromotionDailySalesState {
   /// 로드된 폼(헤더 정보, editable, 기존 이미지 URL).
   final DailySalesForm? form;
 
-  // 대표상품
-  final int? mainPrice;
+  // 대표상품 (레거시: 판매단가 제거. 총 판매금액은 직접 입력값)
   final int? mainQuantity;
   final int? mainAmount;
 
@@ -55,7 +54,6 @@ class PromotionDailySalesState {
   const PromotionDailySalesState({
     this.isLoading = false,
     this.form,
-    this.mainPrice,
     this.mainQuantity,
     this.mainAmount,
     this.subName,
@@ -70,8 +68,7 @@ class PromotionDailySalesState {
 
   bool get isClosed => form?.isClosed ?? false;
 
-  bool get hasMainProduct =>
-      mainPrice != null && mainQuantity != null && mainAmount != null;
+  bool get hasMainProduct => mainQuantity != null && mainAmount != null;
 
   bool get hasSubProduct =>
       subName != null &&
@@ -92,7 +89,6 @@ class PromotionDailySalesState {
   PromotionDailySalesState copyWith({
     bool? isLoading,
     DailySalesForm? form,
-    Object? mainPrice = _undefined,
     Object? mainQuantity = _undefined,
     Object? mainAmount = _undefined,
     Object? subName = _undefined,
@@ -105,7 +101,6 @@ class PromotionDailySalesState {
     return PromotionDailySalesState(
       isLoading: isLoading ?? this.isLoading,
       form: form ?? this.form,
-      mainPrice: identical(mainPrice, _undefined) ? this.mainPrice : mainPrice as int?,
       mainQuantity:
           identical(mainQuantity, _undefined) ? this.mainQuantity : mainQuantity as int?,
       mainAmount:
@@ -147,7 +142,6 @@ class PromotionDailySalesNotifier
       state = PromotionDailySalesState(
         isLoading: false,
         form: form,
-        mainPrice: form.primarySalesPrice?.toInt(),
         mainQuantity: form.primarySalesQuantity?.toInt(),
         mainAmount: form.primaryProductAmount?.toInt(),
         subName: form.description,
@@ -162,16 +156,12 @@ class PromotionDailySalesNotifier
     }
   }
 
-  void updateMainProduct({int? price, int? quantity, int? amount}) {
-    // ProductInputForm 은 매 입력마다 풀 스냅샷(price/quantity/amount)을 전달한다.
-    // 금액은 항상 현재 단가·수량으로부터 재계산하여 단가/수량을 비웠을 때 옛 금액이
-    // 되살아나지 않도록 한다(상태 단일 소스 보장). 위젯이 넘긴 amount 는 사용하지 않는다.
-    final computedAmount =
-        (price != null && quantity != null) ? price * quantity : null;
+  void updateMainProduct({int? quantity, int? amount}) {
+    // 레거시와 동일하게 총 판매금액은 사용자 직접 입력값을 그대로 사용한다
+    // (단가×수량 자동 계산 없음). ProductInputForm 이 매 입력마다 풀 스냅샷을 전달한다.
     state = state.copyWith(
-      mainPrice: price,
       mainQuantity: quantity,
-      mainAmount: computedAmount,
+      mainAmount: amount,
       errorMessage: null,
     );
   }
@@ -195,7 +185,6 @@ class PromotionDailySalesNotifier
 
   DailySalesInput _buildInput() {
     return DailySalesInput(
-      primarySalesPrice: state.mainPrice,
       primarySalesQuantity: state.mainQuantity,
       primaryProductAmount: state.mainAmount,
       otherSalesQuantity: state.subQuantity,

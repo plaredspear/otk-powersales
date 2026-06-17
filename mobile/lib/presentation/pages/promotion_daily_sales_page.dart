@@ -189,24 +189,19 @@ class _PromotionDailySalesPageState
       children: [
         ProductInputForm(
           type: ProductType.main,
-          initialPrice: state.mainPrice,
-          initialQuantity: state.mainQuantity,
-          initialAmount: state.mainAmount,
-          onChanged: ({price, quantity, amount, code, name}) {
-            notifier.updateMainProduct(
-              price: price,
-              quantity: quantity,
-              amount: amount,
-            );
+          quantity: state.mainQuantity,
+          amount: state.mainAmount,
+          onChanged: ({name, quantity, amount}) {
+            notifier.updateMainProduct(quantity: quantity, amount: amount);
           },
         ),
         const SizedBox(height: AppSpacing.md),
         ProductInputForm(
           type: ProductType.sub,
-          initialName: state.subName,
-          initialQuantity: state.subQuantity,
-          initialAmount: state.subAmount,
-          onChanged: ({price, quantity, amount, code, name}) {
+          name: state.subName,
+          quantity: state.subQuantity,
+          amount: state.subAmount,
+          onChanged: ({name, quantity, amount}) {
             notifier.updateSubProduct(
               name: name,
               quantity: quantity,
@@ -234,12 +229,11 @@ class _PromotionDailySalesPageState
       children: [
         Text('일매출 내역', style: AppTypography.headlineSmall),
         const SizedBox(height: AppSpacing.md),
-        _row('대표상품 판매단가', _won(form.primarySalesPrice)),
-        _row('대표상품 판매수량', form.primarySalesQuantity?.toString() ?? '-'),
-        _row('대표상품 판매금액', _won(form.primaryProductAmount)),
-        _row('기타상품명', form.description ?? '-'),
-        _row('기타상품 판매수량', form.otherSalesQuantity?.toString() ?? '-'),
-        _row('기타상품 판매금액', _won(form.otherSalesAmount)),
+        _row('대표제품 판매수량', form.primarySalesQuantity?.toString() ?? '-'),
+        _row('대표제품 총 판매금액', _won(form.primaryProductAmount)),
+        _row('행사 대체 제품', form.description ?? '-'),
+        _row('기타제품 판매수량', form.otherSalesQuantity?.toString() ?? '-'),
+        _row('기타제품 총 판매금액', _won(form.otherSalesAmount)),
         if (form.imageUrl != null) ...[
           const SizedBox(height: AppSpacing.lg),
           _buildExistingImage(form.imageUrl!),

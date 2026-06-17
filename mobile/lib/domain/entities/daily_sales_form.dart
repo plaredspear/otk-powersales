@@ -64,8 +64,10 @@ class DailySalesCloseResult {
 }
 
 /// 일매출 마감/임시저장 입력값 (모바일 → 서버).
+///
+/// 레거시(Heroku) 마스터 개선안에 따라 대표제품 판매단가(primarySalesPrice)는
+/// 입력 대상에서 제외되었으며, 총 판매금액(primaryProductAmount)은 직접 입력값이다.
 class DailySalesInput {
-  final num? primarySalesPrice;
   final num? primarySalesQuantity;
   final num? primaryProductAmount;
   final num? otherSalesQuantity;
@@ -73,7 +75,6 @@ class DailySalesInput {
   final String? description;
 
   const DailySalesInput({
-    this.primarySalesPrice,
     this.primarySalesQuantity,
     this.primaryProductAmount,
     this.otherSalesQuantity,

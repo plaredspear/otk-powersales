@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../common/synced_text_field.dart';
+
 /// 제품 입력 폼 타입
 enum ProductType {
   /// 대표제품
@@ -10,124 +12,41 @@ enum ProductType {
   sub,
 }
 
-/// 일매출 등록 제품 입력 폼
+/// 일매출 마감 제품 입력 폼.
 ///
-/// 대표제품 또는 기타제품의 정보를 입력받습니다.
-class ProductInputForm extends StatefulWidget {
+/// 레거시(Heroku) 일 매출 등록 화면과 동일한 구성:
+/// - 대표제품: 판매수량 + 총 판매금액(사용자 직접 입력). 판매단가 필드는 없으며
+///   총 판매금액을 단가×수량으로 자동 계산하지 않는다(2024-01-29 마스터 개선안).
+/// - 기타제품: 행사 대체 제품(최대 30자) + 판매수량 + 총 판매금액.
+///
+/// 외부 상태(provider)를 단일 소스로 사용하는 stateless 폼이며, 입력은
+/// [SyncedTextField] 로 처리한다(인라인 컨트롤러 금지 컨벤션).
+class ProductInputForm extends StatelessWidget {
   /// 제품 타입
   final ProductType type;
 
-  /// 판매단가 초기값 (대표제품만)
-  final int? initialPrice;
+  /// 행사 대체 제품명 (기타제품만)
+  final String? name;
 
-  /// 판매수량 초기값
-  final int? initialQuantity;
+  /// 판매수량
+  final int? quantity;
 
-  /// 총 판매금액 초기값
-  final int? initialAmount;
+  /// 총 판매금액
+  final int? amount;
 
-  /// 기타제품 코드 초기값 (기타제품만)
-  final String? initialCode;
-
-  /// 기타제품명 초기값 (기타제품만)
-  final String? initialName;
-
-  /// 값 변경 콜백
-  final Function({
-    int? price,
-    int? quantity,
-    int? amount,
-    String? code,
-    String? name,
-  }) onChanged;
+  /// 값 변경 콜백 (변경된 필드 포함 풀 스냅샷 전달)
+  final void Function({String? name, int? quantity, int? amount}) onChanged;
 
   const ProductInputForm({
     super.key,
     required this.type,
-    this.initialPrice,
-    this.initialQuantity,
-    this.initialAmount,
-    this.initialCode,
-    this.initialName,
+    this.name,
+    this.quantity,
+    this.amount,
     required this.onChanged,
   });
 
-  @override
-  State<ProductInputForm> createState() => _ProductInputFormState();
-}
-
-class _ProductInputFormState extends State<ProductInputForm> {
-  late final TextEditingController _priceController;
-  late final TextEditingController _quantityController;
-  late final TextEditingController _amountController;
-  late final TextEditingController _codeController;
-  late final TextEditingController _nameController;
-
-  @override
-  void initState() {
-    super.initState();
-    _priceController = TextEditingController(
-      text: widget.initialPrice?.toString() ?? '',
-    );
-    _quantityController = TextEditingController(
-      text: widget.initialQuantity?.toString() ?? '',
-    );
-    _amountController = TextEditingController(
-      text: widget.initialAmount?.toString() ?? '',
-    );
-    _codeController = TextEditingController(
-      text: widget.initialCode ?? '',
-    );
-    _nameController = TextEditingController(
-      text: widget.initialName ?? '',
-    );
-
-    // 대표제품의 경우 단가/수량 변경 시 금액 자동 계산
-    if (widget.type == ProductType.main) {
-      _priceController.addListener(_calculateMainProductAmount);
-      _quantityController.addListener(_calculateMainProductAmount);
-    }
-  }
-
-  @override
-  void dispose() {
-    _priceController.dispose();
-    _quantityController.dispose();
-    _amountController.dispose();
-    _codeController.dispose();
-    _nameController.dispose();
-    super.dispose();
-  }
-
-  /// 대표제품 총 판매금액 자동 계산
-  void _calculateMainProductAmount() {
-    final price = int.tryParse(_priceController.text);
-    final quantity = int.tryParse(_quantityController.text);
-
-    if (price != null && quantity != null) {
-      final amount = price * quantity;
-      _amountController.text = amount.toString();
-      _notifyChanged();
-    }
-  }
-
-  /// 값 변경 알림
-  void _notifyChanged() {
-    if (widget.type == ProductType.main) {
-      widget.onChanged(
-        price: int.tryParse(_priceController.text),
-        quantity: int.tryParse(_quantityController.text),
-        amount: int.tryParse(_amountController.text),
-      );
-    } else {
-      widget.onChanged(
-        code: _codeController.text.isEmpty ? null : _codeController.text,
-        name: _nameController.text.isEmpty ? null : _nameController.text,
-        quantity: int.tryParse(_quantityController.text),
-        amount: int.tryParse(_amountController.text),
-      );
-    }
-  }
+  bool get _isMain => type == ProductType.main;
 
   @override
   Widget build(BuildContext context) {
@@ -139,93 +58,85 @@ class _ProductInputFormState extends State<ProductInputForm> {
           children: [
             // 제목
             Text(
-              widget.type == ProductType.main ? '대표제품' : '기타제품',
+              _isMain ? '대표제품' : '기타제품',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
             ),
+
+            // 기타제품 안내문 (레거시: "※ 대표제품 외 추가 또는 대체")
+            if (!_isMain) ...[
+              const SizedBox(height: 4),
+              Text(
+                '※ 대표제품 외 추가 또는 대체',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+            ],
             const SizedBox(height: 16),
 
-            // 대표제품 입력 필드
-            if (widget.type == ProductType.main) ...[
-              _buildTextField(
-                controller: _priceController,
-                label: '판매단가 (원)',
-                keyboardType: TextInputType.number,
-                onChanged: (_) => _notifyChanged(),
+            // 기타제품: 행사 대체 제품명 (최대 30자)
+            if (!_isMain) ...[
+              _buildField(
+                value: name ?? '',
+                label: '행사 대체 제품',
+                inputFormatters: [LengthLimitingTextInputFormatter(30)],
+                onChanged: (v) => onChanged(
+                  name: v.isEmpty ? null : v,
+                  quantity: quantity,
+                  amount: amount,
+                ),
               ),
               const SizedBox(height: 12),
-              _buildTextField(
-                controller: _quantityController,
-                label: '판매수량 (개)',
-                keyboardType: TextInputType.number,
-                onChanged: (_) => _notifyChanged(),
-              ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _amountController,
-                label: '총 판매금액 (원)',
-                keyboardType: TextInputType.number,
-                enabled: false,
-              ),
             ],
 
-            // 기타제품 입력 필드
-            if (widget.type == ProductType.sub) ...[
-              _buildTextField(
-                controller: _codeController,
-                label: '제품 코드',
-                onChanged: (_) => _notifyChanged(),
+            // 판매수량
+            _buildField(
+              value: quantity?.toString() ?? '',
+              label: '판매수량 (개)',
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (v) => onChanged(
+                name: name,
+                quantity: int.tryParse(v),
+                amount: amount,
               ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _nameController,
-                label: '제품명',
-                onChanged: (_) => _notifyChanged(),
+            ),
+            const SizedBox(height: 12),
+
+            // 총 판매금액 (사용자 직접 입력)
+            _buildField(
+              value: amount?.toString() ?? '',
+              label: '총 판매금액 (원)',
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (v) => onChanged(
+                name: name,
+                quantity: quantity,
+                amount: int.tryParse(v),
               ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _quantityController,
-                label: '판매수량 (개)',
-                keyboardType: TextInputType.number,
-                onChanged: (_) => _notifyChanged(),
-              ),
-              const SizedBox(height: 12),
-              _buildTextField(
-                controller: _amountController,
-                label: '총 판매금액 (원)',
-                keyboardType: TextInputType.number,
-                onChanged: (_) => _notifyChanged(),
-              ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  /// 텍스트 필드 위젯 빌더
-  Widget _buildTextField({
-    required TextEditingController controller,
+  Widget _buildField({
+    required String value,
     required String label,
     TextInputType? keyboardType,
-    bool enabled = true,
-    ValueChanged<String>? onChanged,
+    List<TextInputFormatter>? inputFormatters,
+    required ValueChanged<String> onChanged,
   }) {
-    return TextField(
-      controller: controller,
+    return SyncedTextField(
+      value: value,
       keyboardType: keyboardType,
-      enabled: enabled,
+      inputFormatters: inputFormatters,
       onChanged: onChanged,
-      inputFormatters: keyboardType == TextInputType.number
-          ? [FilteringTextInputFormatter.digitsOnly]
-          : null,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
-        filled: !enabled,
-        fillColor: enabled ? null : Colors.grey.shade100,
       ),
     );
   }
