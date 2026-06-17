@@ -87,11 +87,24 @@ class ClientOrderItemModel {
   final String deliveredQuantity;
   final String deliveryStatus;
 
+  /// 배송 정보 5필드 (배송중/배송완료 라인 탭 팝업용). 서버가 빈 값/`'000000'` sentinel 을
+  /// `null` 로 매핑한 결과를 그대로 수신한다.
+  final String? driverName;
+  final String? vehicle;
+  final String? driverPhone;
+  final String? scheduleTime;
+  final String? completeTime;
+
   const ClientOrderItemModel({
     required this.productCode,
     required this.productName,
     required this.deliveredQuantity,
     required this.deliveryStatus,
+    this.driverName,
+    this.vehicle,
+    this.driverPhone,
+    this.scheduleTime,
+    this.completeTime,
   });
 
   factory ClientOrderItemModel.fromJson(Map<String, dynamic> json) {
@@ -100,6 +113,11 @@ class ClientOrderItemModel {
       productName: json['productName'] as String,
       deliveredQuantity: json['deliveredQuantity'] as String,
       deliveryStatus: json['deliveryStatus'] as String,
+      driverName: json['driverName'] as String?,
+      vehicle: json['vehicle'] as String?,
+      driverPhone: json['driverPhone'] as String?,
+      scheduleTime: json['scheduleTime'] as String?,
+      completeTime: json['completeTime'] as String?,
     );
   }
 
@@ -109,6 +127,11 @@ class ClientOrderItemModel {
       'productName': productName,
       'deliveredQuantity': deliveredQuantity,
       'deliveryStatus': deliveryStatus,
+      'driverName': driverName,
+      'vehicle': vehicle,
+      'driverPhone': driverPhone,
+      'scheduleTime': scheduleTime,
+      'completeTime': completeTime,
     };
   }
 
@@ -118,6 +141,11 @@ class ClientOrderItemModel {
       productName: productName,
       deliveredQuantity: deliveredQuantity,
       deliveryStatus: DeliveryStatus.fromCode(deliveryStatus),
+      driverName: driverName,
+      vehicle: vehicle,
+      driverPhone: driverPhone,
+      scheduleTime: scheduleTime,
+      completeTime: completeTime,
     );
   }
 
@@ -127,6 +155,11 @@ class ClientOrderItemModel {
       productName: entity.productName,
       deliveredQuantity: entity.deliveredQuantity,
       deliveryStatus: entity.deliveryStatus.code,
+      driverName: entity.driverName,
+      vehicle: entity.vehicle,
+      driverPhone: entity.driverPhone,
+      scheduleTime: entity.scheduleTime,
+      completeTime: entity.completeTime,
     );
   }
 
@@ -137,13 +170,19 @@ class ClientOrderItemModel {
         other.productCode == productCode &&
         other.productName == productName &&
         other.deliveredQuantity == deliveredQuantity &&
-        other.deliveryStatus == deliveryStatus;
+        other.deliveryStatus == deliveryStatus &&
+        other.driverName == driverName &&
+        other.vehicle == vehicle &&
+        other.driverPhone == driverPhone &&
+        other.scheduleTime == scheduleTime &&
+        other.completeTime == completeTime;
   }
 
   @override
   int get hashCode {
     return Object.hash(productCode, productName, deliveredQuantity,
-        deliveryStatus);
+        deliveryStatus, driverName, vehicle, driverPhone, scheduleTime,
+        completeTime);
   }
 
   @override

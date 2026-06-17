@@ -101,11 +101,23 @@ class ClientOrderItem {
   /// 배송 상태
   final DeliveryStatus deliveryStatus;
 
+  /// 배송 정보 5필드 (배송중/배송완료 라인 탭 팝업용), 없으면 null
+  final String? driverName;
+  final String? vehicle;
+  final String? driverPhone;
+  final String? scheduleTime;
+  final String? completeTime;
+
   const ClientOrderItem({
     required this.productCode,
     required this.productName,
     required this.deliveredQuantity,
     required this.deliveryStatus,
+    this.driverName,
+    this.vehicle,
+    this.driverPhone,
+    this.scheduleTime,
+    this.completeTime,
   });
 
   ClientOrderItem copyWith({
@@ -113,12 +125,22 @@ class ClientOrderItem {
     String? productName,
     String? deliveredQuantity,
     DeliveryStatus? deliveryStatus,
+    String? driverName,
+    String? vehicle,
+    String? driverPhone,
+    String? scheduleTime,
+    String? completeTime,
   }) {
     return ClientOrderItem(
       productCode: productCode ?? this.productCode,
       productName: productName ?? this.productName,
       deliveredQuantity: deliveredQuantity ?? this.deliveredQuantity,
       deliveryStatus: deliveryStatus ?? this.deliveryStatus,
+      driverName: driverName ?? this.driverName,
+      vehicle: vehicle ?? this.vehicle,
+      driverPhone: driverPhone ?? this.driverPhone,
+      scheduleTime: scheduleTime ?? this.scheduleTime,
+      completeTime: completeTime ?? this.completeTime,
     );
   }
 
@@ -128,6 +150,11 @@ class ClientOrderItem {
       'productName': productName,
       'deliveredQuantity': deliveredQuantity,
       'deliveryStatus': deliveryStatus.code,
+      'driverName': driverName,
+      'vehicle': vehicle,
+      'driverPhone': driverPhone,
+      'scheduleTime': scheduleTime,
+      'completeTime': completeTime,
     };
   }
 
@@ -138,6 +165,11 @@ class ClientOrderItem {
       deliveredQuantity: json['deliveredQuantity'] as String,
       deliveryStatus:
           DeliveryStatus.fromCode(json['deliveryStatus'] as String),
+      driverName: json['driverName'] as String?,
+      vehicle: json['vehicle'] as String?,
+      driverPhone: json['driverPhone'] as String?,
+      scheduleTime: json['scheduleTime'] as String?,
+      completeTime: json['completeTime'] as String?,
     );
   }
 
@@ -148,7 +180,12 @@ class ClientOrderItem {
         other.productCode == productCode &&
         other.productName == productName &&
         other.deliveredQuantity == deliveredQuantity &&
-        other.deliveryStatus == deliveryStatus;
+        other.deliveryStatus == deliveryStatus &&
+        other.driverName == driverName &&
+        other.vehicle == vehicle &&
+        other.driverPhone == driverPhone &&
+        other.scheduleTime == scheduleTime &&
+        other.completeTime == completeTime;
   }
 
   @override
@@ -158,6 +195,11 @@ class ClientOrderItem {
       productName,
       deliveredQuantity,
       deliveryStatus,
+      driverName,
+      vehicle,
+      driverPhone,
+      scheduleTime,
+      completeTime,
     );
   }
 

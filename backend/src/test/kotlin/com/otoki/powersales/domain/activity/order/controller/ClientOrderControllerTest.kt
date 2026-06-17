@@ -118,7 +118,12 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                         productCode = "P001",
                         productName = "예시 상품",
                         deliveredQuantity = "10 BOX",
-                        deliveryStatus = DeliveryStatus.DELIVERED
+                        deliveryStatus = DeliveryStatus.DELIVERED,
+                        driverName = "김기사",
+                        vehicle = "12가3456",
+                        driverPhone = "010-1234-5678",
+                        scheduleTime = "09:00",
+                        completeTime = "11:30"
                     )
                 )
             )
@@ -135,6 +140,10 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.orderedItems[0].productCode").value("P001"))
                 .andExpect(jsonPath("$.data.orderedItems[0].deliveredQuantity").value("10 BOX"))
                 .andExpect(jsonPath("$.data.orderedItems[0].deliveryStatus").value("DELIVERED"))
+                .andExpect(jsonPath("$.data.orderedItems[0].driverName").value("김기사"))
+                .andExpect(jsonPath("$.data.orderedItems[0].vehicle").value("12가3456"))
+                .andExpect(jsonPath("$.data.orderedItems[0].scheduleTime").value("09:00"))
+                .andExpect(jsonPath("$.data.orderedItems[0].completeTime").value("11:30"))
         }
 
         @Test

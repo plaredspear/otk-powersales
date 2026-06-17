@@ -50,6 +50,11 @@ class _ClientOrderDetailPageState
       productName: item.productName,
       deliveredQuantity: item.deliveredQuantity,
       deliveryStatus: item.deliveryStatus,
+      driverName: item.driverName,
+      vehicle: item.vehicle,
+      driverPhone: item.driverPhone,
+      scheduleTime: item.scheduleTime,
+      completeTime: item.completeTime,
     );
 
     DeliveryInfoPopup.show(context, item: processingItem);

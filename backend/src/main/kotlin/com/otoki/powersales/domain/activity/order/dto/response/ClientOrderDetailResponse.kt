@@ -55,21 +55,46 @@ data class ClientOrderDetailResponse(
  *
  * `deliveredQuantity` 는 `shippingQuantityBox` + `unit` 조립한 표시 문자열 (예: `"10 BOX"`).
  * `deliveryStatus` 는 DB 한글 라벨을 [DeliveryStatus] enum 으로 변환한 영문 코드.
+ *
+ * 배송 5필드(기사명/차량/연락처/예정시간/완료시간) 는 배송중/배송완료 라인 탭 팝업용
+ * (레거시 `view.jsp:141-158`). 빈 값/`'000000'` sentinel 은 `null` 로 매핑하며,
+ * 시각은 F18 내 주문 상세(`OrderRequestDetailMapper`)와 동일하게 `HHmmss → HH:mm` 포맷.
  */
 data class ClientOrderItemResponse(
     val productCode: String?,
     val productName: String?,
     val deliveredQuantity: String,
-    val deliveryStatus: DeliveryStatus
+    val deliveryStatus: DeliveryStatus,
+    val driverName: String?,
+    val vehicle: String?,
+    val driverPhone: String?,
+    val scheduleTime: String?,
+    val completeTime: String?
 ) {
     companion object {
+        private const val ZERO_TIME: String = "000000"
+
         fun from(product: ErpOrderProduct): ClientOrderItemResponse {
             return ClientOrderItemResponse(
                 productCode = product.productCode,
                 productName = product.productName,
                 deliveredQuantity = formatDeliveredQuantity(product.shippingQuantityBox, product.unit),
-                deliveryStatus = DeliveryStatus.fromKoreanLabel(product.deliveryStatus)
+                deliveryStatus = DeliveryStatus.fromKoreanLabel(product.deliveryStatus),
+                driverName = nullIfBlank(product.shippingDriverName),
+                vehicle = nullIfBlank(product.shippingVehicle),
+                driverPhone = nullIfBlank(product.shippingDriverPhone),
+                scheduleTime = formatHHmm(product.shippingScheduleTime),
+                completeTime = formatHHmm(product.shippingCompleteTime)
             )
+        }
+
+        private fun nullIfBlank(s: String?): String? = if (s.isNullOrBlank()) null else s
+
+        /** SAP `HHmmss` → `HH:mm`. `'000000'` sentinel 또는 빈 값은 `null`. */
+        private fun formatHHmm(s: String?): String? {
+            if (s.isNullOrBlank() || s == ZERO_TIME) return null
+            if (s.length < 4) return s
+            return "${s.substring(0, 2)}:${s.substring(2, 4)}"
         }
 
         private fun formatDeliveredQuantity(quantityBox: BigDecimal?, unit: String?): String {
