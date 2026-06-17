@@ -8,7 +8,6 @@ import com.otoki.powersales.domain.activity.schedule.dto.request.AdminScheduleUp
 import com.otoki.powersales.domain.activity.schedule.dto.response.RowPreview
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.org.organization.entity.Organization
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
@@ -47,7 +46,7 @@ import com.otoki.powersales.domain.activity.schedule.service.MissingCostCenterEx
 import com.otoki.powersales.domain.activity.schedule.service.ScheduleExcelParser
 import com.otoki.powersales.domain.activity.schedule.service.ScheduleExportGenerator
 import com.otoki.powersales.domain.activity.schedule.service.ScheduleUploadValidator
-import com.otoki.powersales.domain.org.organization.repository.dto.OrganizationCacheDto
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -151,32 +150,77 @@ class AdminScheduleServiceTest {
     @DisplayName("generateTemplate - 양식 다운로드")
     inner class GenerateTemplateTests {
 
+        private val costCenterCode = "OC4001"
+
+        // SF 정합: 영업지원실/시스템관리자 = isAllBranches=true, 일반 사용자 = false.
+        private fun scope(isAllBranches: Boolean) =
+            DataScope(branchCodes = emptyList(), isAllBranches = isAllBranches)
+
         @Test
-        @DisplayName("정상 생성 - 사원이 있는 지점의 템플릿")
-        fun generateTemplate_success() {
+        @DisplayName("일반 사용자 - findTeamScheduleBranches(allBranches=false) 범위 여사원 조회")
+        fun generateTemplate_normalUser() {
             val userId = 1L
-            val costCenterCode = "1234"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
-            val employees = listOf(
-                createEmployee(employeeCode = "20030001", name = "홍길동", orgName = "A팀"),
-                createEmployee(employeeCode = "20030002", name = "김철수", orgName = "B팀")
+            // 본인 hrCode 가 OrgCode Level4 에 매칭되어 산하 leaf 2개 반환 (레거시 isAll==false 다지점 확장)
+            val branches = listOf(BranchResponse("OC5001", "A지점"), BranchResponse("OC5002", "B지점"))
+            val women = listOf(
+                createEmployee(employeeCode = "20030001", name = "홍여사", orgName = "A지점", costCenterCode = "OC5001"),
+                createEmployee(employeeCode = "20030002", name = "김여사", orgName = "B지점", costCenterCode = "OC5002"),
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCacheDto()
+            every { organizationRepository.findTeamScheduleBranches(costCenterCode, false) } returns branches
             every {
-                employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, AppAuthority.WOMAN, "재직"
+                employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+                    listOf("OC5001", "OC5002"), AppAuthority.WOMAN, "재직"
                 )
-} returns employees
-            every { templateGenerator.generate(employees) } returns ByteArray(100)
+            } returns women
+            every { templateGenerator.generate(women) } returns ByteArray(100)
 
-            val result = adminScheduleService.generateTemplate(userId)
+            val result = adminScheduleService.generateTemplate(scope(false), userId)
 
             assertThat(result.bytes).hasSize(100)
             assertThat(result.filename).startsWith("진열마스터Template(신규작성용)_")
-            assertThat(result.filename).doesNotContain("1234")
+            assertThat(result.filename).doesNotContain(costCenterCode)
             assertThat(result.filename).endsWith(".xlsx")
+            verify { organizationRepository.findTeamScheduleBranches(costCenterCode, false) }
+        }
+
+        @Test
+        @DisplayName("영업지원실 사용자 - findTeamScheduleBranches(allBranches=true) 범위 여사원 조회")
+        fun generateTemplate_salesSupport() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
+            // isAllBranches=true → 레거시 isAll==true (Retail/제1사업부/영업지원1·2팀) leaf 합집합
+            val branches = listOf(
+                BranchResponse("OC5101", "A지점"),
+                BranchResponse("OC5102", "B지점"),
+                BranchResponse("OC5103", "C지점"),
+            )
+            val women = listOf(
+                createEmployee(employeeCode = "20030001", name = "김여사", orgName = "A지점", costCenterCode = "OC5101"),
+                createEmployee(employeeCode = "20030002", name = "이여사", orgName = "B지점", costCenterCode = "OC5102"),
+                createEmployee(employeeCode = "20030003", name = "박여사", orgName = "C지점", costCenterCode = "OC5103"),
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { organizationRepository.findTeamScheduleBranches(costCenterCode, true) } returns branches
+            every {
+                employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+                    listOf("OC5101", "OC5102", "OC5103"), AppAuthority.WOMAN, "재직"
+                )
+            } returns women
+            every { templateGenerator.generate(women) } returns ByteArray(200)
+
+            val result = adminScheduleService.generateTemplate(scope(true), userId)
+
+            assertThat(result.bytes).hasSize(200)
+            verify { organizationRepository.findTeamScheduleBranches(costCenterCode, true) }
+            verify {
+                employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+                    listOf("OC5101", "OC5102", "OC5103"), AppAuthority.WOMAN, "재직"
+                )
+            }
         }
 
         @Test
@@ -184,7 +228,7 @@ class AdminScheduleServiceTest {
         fun generateTemplate_userNotFound() {
             every { employeeRepository.findById(999L) } returns Optional.empty()
 
-            assertThatThrownBy { adminScheduleService.generateTemplate(999L) }
+            assertThatThrownBy { adminScheduleService.generateTemplate(scope(false), 999L) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
         }
 
@@ -194,7 +238,7 @@ class AdminScheduleServiceTest {
             val employee = createEmployee(costCenterCode = null)
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
 
-            assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
+            assertThatThrownBy { adminScheduleService.generateTemplate(scope(false), 1L) }
                 .isInstanceOf(MissingCostCenterException::class.java)
         }
 
@@ -204,158 +248,47 @@ class AdminScheduleServiceTest {
             val employee = createEmployee(costCenterCode = "")
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
 
-            assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
+            assertThatThrownBy { adminScheduleService.generateTemplate(scope(false), 1L) }
                 .isInstanceOf(MissingCostCenterException::class.java)
         }
 
         @Test
-        @DisplayName("org 미매칭 - 예외 없이 본인 사업소 여사원으로 양식 생성")
-        fun generateTemplate_orgNotFound_fallbackToOwnBranch() {
+        @DisplayName("조회 범위 0건 - 예외 없이 빈 템플릿 반환 (org 미매칭 등)")
+        fun generateTemplate_noBranches_emptyTemplate() {
             val userId = 1L
-            val costCenterCode = "0000"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
-            val woman = createEmployee(employeeCode = "20030001", name = "김여사", orgName = "강복1지점", costCenterCode = costCenterCode)
+            // SF 정합 (CurrentUserBranchNameList.getOrgList): Org 매칭 0건이면 예외가 아니라 빈 결과.
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            // SF 정합 (CurrentUserBranchNameList.getOrgList): cascade Level5→4 모두 miss → null 이어도
-            // 예외가 아니라 영업지원실 false 로 간주, 본인 costCenterCode 여사원만 조회한다.
-            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns null
-            every {
-                employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, AppAuthority.WOMAN, "재직"
-                )
-            } returns listOf(woman)
-            every { templateGenerator.generate(listOf(woman)) } returns ByteArray(80)
+            every { organizationRepository.findTeamScheduleBranches(costCenterCode, false) } returns emptyList()
+            every { templateGenerator.generate(emptyList()) } returns ByteArray(50)
 
-            val result = adminScheduleService.generateTemplate(userId)
+            val result = adminScheduleService.generateTemplate(scope(false), userId)
 
-            assertThat(result.bytes).hasSize(80)
+            assertThat(result.bytes).hasSize(50)
             assertThat(result.filename).startsWith("진열마스터Template(신규작성용)_")
+            // 범위가 비면 사원 조회 자체를 하지 않는다 (레거시 빈 keySet → 빈 SOQL)
             verify(exactly = 0) {
                 employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(any(), any(), any())
             }
         }
 
         @Test
-        @DisplayName("소속 사원 0명 - 빈 템플릿 반환")
+        @DisplayName("범위는 있으나 여사원 0명 - 빈 템플릿 반환")
         fun generateTemplate_noEmployees() {
             val userId = 1L
-            val costCenterCode = "1234"
             val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
+            val branches = listOf(BranchResponse("OC5001", "A지점"))
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCacheDto()
-            every {
-                employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, AppAuthority.WOMAN, "재직"
-                )
-} returns emptyList()
-            every { templateGenerator.generate(emptyList()) } returns ByteArray(50)
-
-            val result = adminScheduleService.generateTemplate(userId)
-
-            assertThat(result.bytes).hasSize(50)
-            assertThat(result.filename).startsWith("진열마스터Template(신규작성용)_")
-        }
-
-        @Test
-        @DisplayName("영업지원실 사용자 - 다중 지점 여사원 조회")
-        fun generateTemplate_salesSupport_multiBranch() {
-            val userId = 1L
-            val costCenterCode = "1111"
-            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = null)
-            // cascade 결과 (DTO) — UC: SALES_SUPPORT 케이스에서 costCenterLevel3 를 expand 키로 사용
-            // SF 정합: orgCodeLevel3="3475" 영업지원실 분기 진입
-            val orgCache = orgCacheDto(costCenterLevel3 = "CC3", orgCodeLevel3 = "3475")
-            // findByCostCenterLevel3 결과는 Organization entity 리스트 (캐시 대상 아님)
-            val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
-            val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
-            val orgB = Organization(id = 3, costCenterLevel3 = "CC3", costCenterLevel5 = "3333")
-
-            val emp1 = createEmployee(employeeCode = "20030001", name = "김여사", orgName = "A지점", costCenterCode = "2222")
-            val emp2 = createEmployee(employeeCode = "20030002", name = "이여사", orgName = "A지점", costCenterCode = "2222")
-            val emp3 = createEmployee(employeeCode = "20030003", name = "박여사", orgName = "B지점", costCenterCode = "3333")
-
-            every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCache
-            every { organizationRepository.findByCostCenterLevel3("CC3") } returns listOf(org, orgA, orgB)
+            every { organizationRepository.findTeamScheduleBranches(costCenterCode, false) } returns branches
             every {
                 employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
-                    listOf("1111", "2222", "3333"), AppAuthority.WOMAN, "재직"
+                    listOf("OC5001"), AppAuthority.WOMAN, "재직"
                 )
-} returns listOf(emp1, emp2, emp3)
-            every { templateGenerator.generate(any()) } returns ByteArray(200)
-
-            val result = adminScheduleService.generateTemplate(userId)
-
-            assertThat(result.bytes).hasSize(200)
-            verify { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
-                listOf("1111", "2222", "3333"), AppAuthority.WOMAN, "재직"
-            ) }
-            verify(exactly = 0) { employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
-                any(), any(), any()
-            ) }
-        }
-
-        @Test
-        @DisplayName("조장 사용자 - 단일 지점 여사원 조회")
-        fun generateTemplate_leader_singleBranch() {
-            val userId = 1L
-            val costCenterCode = "1234"
-            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = AppAuthority.LEADER)
-            val employees = listOf(
-                createEmployee(employeeCode = "20030001", name = "홍길동", orgName = "A팀"),
-                createEmployee(employeeCode = "20030002", name = "김철수", orgName = "B팀")
-            )
-
-            every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCacheDto()
-            every {
-                employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
-                    costCenterCode, AppAuthority.WOMAN, "재직"
-                )
-} returns employees
-            every { templateGenerator.generate(employees) } returns ByteArray(100)
-
-            val result = adminScheduleService.generateTemplate(userId)
-
-            assertThat(result.bytes).hasSize(100)
-            verify(exactly = 0) { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
-                any(), any(), any()
-            ) }
-        }
-
-        @Test
-        @DisplayName("영업지원실이지만 코스트센터 없음 - MissingCostCenterException")
-        fun generateTemplate_salesSupport_missingCostCenter() {
-            val employee = createEmployee(costCenterCode = null, role = null)
-            every { employeeRepository.findById(1L) } returns Optional.of(employee)
-
-            assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
-                .isInstanceOf(MissingCostCenterException::class.java)
-        }
-
-        @Test
-        @DisplayName("영업지원실 - Level3 하위에 여사원 0명 - 빈 템플릿 반환")
-        fun generateTemplate_salesSupport_noEmployees() {
-            val userId = 1L
-            val costCenterCode = "1111"
-            val employee = createEmployee(id = userId, costCenterCode = costCenterCode, role = null)
-            // SF 정합: orgCodeLevel3="3475" 영업지원실 분기 진입
-            val orgCache = orgCacheDto(costCenterLevel3 = "CC3", orgCodeLevel3 = "3475")
-            val org = Organization(id = 1, costCenterLevel5 = costCenterCode, costCenterLevel3 = "CC3")
-            val orgA = Organization(id = 2, costCenterLevel3 = "CC3", costCenterLevel5 = "2222")
-
-            every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns orgCache
-            every { organizationRepository.findByCostCenterLevel3("CC3") } returns listOf(org, orgA)
-            every {
-                employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
-                    listOf("1111", "2222"), AppAuthority.WOMAN, "재직"
-                )
-} returns emptyList()
+            } returns emptyList()
             every { templateGenerator.generate(emptyList()) } returns ByteArray(50)
 
-            val result = adminScheduleService.generateTemplate(userId)
+            val result = adminScheduleService.generateTemplate(scope(false), userId)
 
             assertThat(result.bytes).hasSize(50)
         }
@@ -1890,21 +1823,6 @@ class AdminScheduleServiceTest {
             }) }
         }
     }
-
-    // cascade stub helper — generateTemplate 의 cascade hit 케이스. SALES_SUPPORT 분기에서만
-    // costCenterLevel3 가 필요, 나머지 케이스는 cascade 결과 non-null 확인만 의도.
-    private fun orgCacheDto(
-        costCenterLevel3: String? = null,
-        orgCodeLevel3: String? = null,
-        orgNameLevel3: String? = null,
-        orgNameLevel4: String? = null,
-    ): OrganizationCacheDto =
-        OrganizationCacheDto(
-            orgCodeLevel3 = orgCodeLevel3,
-            orgNameLevel3 = orgNameLevel3,
-            orgNameLevel4 = orgNameLevel4,
-            costCenterLevel3 = costCenterLevel3,
-        )
 
     private fun createSchedule(
         id: Long = 1L,

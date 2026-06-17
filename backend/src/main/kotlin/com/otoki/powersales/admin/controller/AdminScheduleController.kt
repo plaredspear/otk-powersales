@@ -151,9 +151,10 @@ class AdminScheduleController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/template")
     fun downloadTemplate(
-        @AuthenticationPrincipal principal: WebUserPrincipal
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
     ): ResponseEntity<ByteArray> {
-        val result = adminScheduleService.generateTemplate(principal.requireEmployeeId())
+        val result = adminScheduleService.generateTemplate(scope, principal.requireEmployeeId())
         return ExcelResponseUtils.build(result.bytes, result.filename)
     }
 

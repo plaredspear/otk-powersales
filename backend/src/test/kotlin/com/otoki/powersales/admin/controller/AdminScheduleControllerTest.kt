@@ -626,7 +626,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 bytes = ByteArray(100),
                 filename = "진열스케줄_양식_20260314120000.xlsx"
             )
-            every { adminScheduleService.generateTemplate(eq(1L)) } returns result
+            every { adminScheduleService.generateTemplate(any(), eq(1L)) } returns result
 
             mockMvc.perform(get("/api/v1/admin/schedule/template"))
                 .andExpect(status().isOk)
@@ -642,7 +642,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 사용자 미존재")
         fun downloadTemplate_userNotFound() {
-            every { adminScheduleService.generateTemplate(eq(1L)) } throws EmployeeNotFoundException()
+            every { adminScheduleService.generateTemplate(any(), eq(1L)) } throws EmployeeNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/schedule/template"))
                 .andExpect(status().isNotFound)
@@ -652,7 +652,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 소속 지점 미설정")
         fun downloadTemplate_missingCostCenter() {
-            every { adminScheduleService.generateTemplate(eq(1L)) } throws MissingCostCenterException()
+            every { adminScheduleService.generateTemplate(any(), eq(1L)) } throws MissingCostCenterException()
 
             mockMvc.perform(get("/api/v1/admin/schedule/template"))
                 .andExpect(status().isBadRequest)

@@ -32157,6 +32157,14 @@
     "/api/v1/admin/schedule/template" : {
       "get" : {
         "operationId" : "downloadTemplate",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {

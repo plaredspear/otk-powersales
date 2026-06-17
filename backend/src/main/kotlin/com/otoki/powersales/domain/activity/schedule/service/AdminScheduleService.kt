@@ -89,9 +89,6 @@ class AdminScheduleService(
         private const val MAX_FILE_SIZE = 5 * 1024 * 1024L // 5MB
         private const val MAX_ROWS = 500
 
-        /** SF 영업지원실 판별 기준 — Org.OrgCodeLevel3 (AppointmentTriggerHanlder.cls:328-331). */
-        private const val SALES_SUPPORT_LEVEL3 = "3475"
-
         /** SF 시스템 관리자 Profile.Name ([SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME] 와 동일 값). */
         private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
     }
@@ -110,7 +107,34 @@ class AdminScheduleService(
         return profile?.name == SYSTEM_ADMIN_PROFILE_NAME
     }
 
-    fun generateTemplate(userId: Long): TemplateResult {
+    /**
+     * UC 진열마스터 "양식(신규작성용)" Excel 다운로드 — 현재 사용자가 관할하는 지점들의 재직 여사원 명단이
+     * 미리 채워진 빈 양식을 생성한다.
+     *
+     * ## 레거시 매핑
+     * SF `DisplayWorkScheduleMasterTriggerHandler.getEmpList()` → `CurrentUserBranchNameList.getOrgList()/getBranchNames()`.
+     *
+     * ## 레거시 동작 요약
+     * - 입력: 인증 주체 `Employee.costCenterCode` (대행 시 대행 대상) + `DataScope`.
+     * - 영업지원실 판별: `scope.isAllBranches` (= `User.isSalesSupport` OR `ALL_BRANCHES_PROFILES`,
+     *   레거시 `isSalesSupportOffice` 의 `UserRole.Name LIKE '%영업지원%' OR == '영업본부'` 동등). 과거의
+     *   `org_cd3 == "3475"` 단독 휴리스틱(Profile 산출용 상수의 전용)을 폐기하고 인증 전반과 동일한
+     *   DataScope 경로로 판별 기준을 일원화.
+     * - 범위 산출: [OrganizationRepository.findTeamScheduleBranches] 가 레거시 `getOrgList()` 의
+     *   isAll==true (Retail/제1사업부/영업지원1·2팀 leaf 합집합) / isAll==false (본인 hrCode 가
+     *   OrgCode Level5/4/3/2 매칭되는 leaf + 사업부 게이트) 분기를 그대로 구현. 레거시에는 "전사 무필터"
+     *   경로가 없어 시스템 관리자도 isAllBranches 분기(4개 조직 한정)로 수렴 — 레거시 정합.
+     * - 사원 조회 키(`Employee.costCenterCode`)는 OrgCode 차원이므로 `BranchResponse.branchCode` 를 그대로
+     *   `IN` 절에 사용 (BranchMapping 확장은 거래처/일정 단계용이라 사원 명단에는 미적용 — 레거시 getEmpList 가
+     *   keySet 직접 사용하는 것과 정합).
+     * - org 매칭 0건은 fatal 이 아니다: 레거시 `getOrgList()` 가 빈 결과를 흘려 여사원 0명(빈 양식)이 된다.
+     *
+     * ## 신규 차이
+     * SF UserRole Object 미보존 → `findTeamScheduleBranches` 가 `Organization` OrgName/OrgCode 매칭으로
+     * 동등 산출. costCenterCode null/blank 는 명시적 [MissingCostCenterException] (레거시는 단건 SOQL no-row
+     * QueryException 으로 표출되던 경계).
+     */
+    fun generateTemplate(scope: DataScope, userId: Long): TemplateResult {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
@@ -119,24 +143,17 @@ class AdminScheduleService(
             throw MissingCostCenterException()
         }
 
-        // cost_center 컬럼 cascade (Level5 → Level4) — 정책은 OrganizationRepository 에 응집.
-        // SF 정합: org 미매칭은 fatal 이 아니다. 레거시 CurrentUserBranchNameList.getOrgList() 는
-        // Org 조회 0건 시 예외 없이 빈 결과로 흘려 영업지원실 false → 본인 사업소 여사원만 조회한다.
-        // 따라서 org 가 null 이면 영업지원실 분기를 타지 않고 본인 costCenterCode 여사원만 조회한다.
-        val org = organizationRepository.findFirstByCostCenterCascade(costCenterCode)
+        val branchCodes = organizationRepository
+            .findTeamScheduleBranches(costCenterCode, scope.isAllBranches)
+            .map { it.branchCode }
+            .distinct()
 
-        // SF 정합: 영업지원실 판별 = Org.OrgCodeLevel3 == "3475". org 미매칭 시 false 로 간주.
-        val costCenterLevel3 = org?.takeIf { it.orgCodeLevel3 == SALES_SUPPORT_LEVEL3 }?.costCenterLevel3
-        val employees = if (costCenterLevel3 != null) {
-            val costCenterCodes = organizationRepository.findByCostCenterLevel3(costCenterLevel3)
-                .mapNotNull { it.costCenterLevel5 }
-                .distinct()
-            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
-                costCenterCodes, AppAuthority.WOMAN, "재직"
-            )
+        // 레거시 getEmpList: WHERE CostCenterCode__c IN: keySet ... 키셋이 비면 여사원 0명 (빈 양식).
+        val employees = if (branchCodes.isEmpty()) {
+            emptyList()
         } else {
-            employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
-                costCenterCode, AppAuthority.WOMAN, "재직"
+            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(
+                branchCodes, AppAuthority.WOMAN, "재직"
             )
         }.sortedWith(compareBy({ it.orgName }, { it.employeeCode }))
 
