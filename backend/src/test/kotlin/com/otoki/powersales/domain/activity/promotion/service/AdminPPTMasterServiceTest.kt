@@ -1,6 +1,8 @@
 package com.otoki.powersales.domain.activity.promotion.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterBulkItem
+import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterBulkValidateRequest
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterConfirmByIdsRequest
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.platform.auth.entity.AppAuthority
@@ -23,6 +25,7 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -62,6 +65,8 @@ class AdminPPTMasterServiceTest {
             employeeRepository = employeeRepository,
             adminPPTMasterService = service,
         )
+        // 마스터 번호(name) 채번 시퀀스 — 별도 지정 없으면 1 반환 (PM0000001)
+        every { pptMasterRepository.getNextNameSeq() } returns 1L
     }
 
     private fun createEmployee(
@@ -166,6 +171,31 @@ class AdminPPTMasterServiceTest {
 
             assertThat(result.teamType).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
             verify(exactly = 0) { pptHistoryRepository.save(any()) }
+        }
+
+        @Test
+        @DisplayName("성공 - 마스터 번호(name) 채번 적용 (SF AutoNumber PM{0000000} 동등, PM + 7자리)")
+        fun createMaster_assignsMasterName() {
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+                startDate = LocalDate.of(2026, 4, 1), isConfirmed = false
+            )
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            every { pptMasterRepository.getNextNameSeq() } returns 921L
+            val saved = slot<ProfessionalPromotionTeamMaster>()
+            every { pptMasterRepository.save(capture(saved)) } answers { firstArg() }
+
+            val result = service.createMaster(request)
+
+            // 채번 쿼리 호출 + 저장 엔티티/응답에 PM0000921 set
+            verify { pptMasterRepository.getNextNameSeq() }
+            assertThat(saved.captured.name).isEqualTo("PM0000921")
+            assertThat(result.name).isEqualTo("PM0000921")
         }
 
         @Test
@@ -614,6 +644,42 @@ class AdminPPTMasterServiceTest {
 
             assertThat(response.confirmedCount).isEqualTo(1)
             assertThat(response.skippedCount).isEqualTo(1)
+        }
+    }
+
+    @Nested
+    @DisplayName("confirmBulk - 엑셀 일괄 등록 (UC)")
+    inner class ConfirmBulkTests {
+
+        @Test
+        @DisplayName("성공 - 일괄 등록 각 건에 마스터 번호(name) 채번 적용")
+        fun confirmBulk_assignsMasterName() {
+            val emp1 = createEmployee(id = 1L, employeeCode = "11111111")
+            val emp2 = createEmployee(id = 2L, employeeCode = "22222222")
+            val acc = createAccount(id = 1, externalKey = "SAP001")
+            val request = PPTMasterBulkValidateRequest(
+                items = listOf(
+                    PPTMasterBulkItem("11111111", "SAP001", ProfessionalPromotionTeamType.RAMEN_SALE, LocalDate.of(2026, 4, 1)),
+                    PPTMasterBulkItem("22222222", "SAP001", ProfessionalPromotionTeamType.RAMEN_SALE, LocalDate.of(2026, 4, 1))
+                )
+            )
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp1, emp2)
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(any()) } returns emptyList()
+            // 두 건 채번: PM0000921, PM0000922
+            every { pptMasterRepository.getNextNameSeq() } returnsMany listOf(921L, 922L)
+            val saved = mutableListOf<ProfessionalPromotionTeamMaster>()
+            every { pptMasterRepository.save(capture(saved)) } answers { firstArg() }
+
+            val response = service.confirmBulk(request)
+
+            assertThat(response.createdCount).isEqualTo(2)
+            // save 캡처분 중 신규 생성 2건의 name 확인 (autoTerminate 저장분은 없음)
+            val names = saved.mapNotNull { it.name }
+            assertThat(names).containsExactlyInAnyOrder("PM0000921", "PM0000922")
         }
     }
 

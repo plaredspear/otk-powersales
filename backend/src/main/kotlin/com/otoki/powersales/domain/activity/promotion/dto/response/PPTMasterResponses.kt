@@ -10,7 +10,7 @@ import java.time.LocalDateTime
 
 data class PPTMasterResponse(
     val id: Long,
-    // SF Name (AutoNumber PM{0000000}) — 마이그레이션 레코드만 보유, 신규 등록분은 null
+    // SF Name (AutoNumber PM{0000000}) — 신규 등록분은 채번(PM + 7자리), 마이그레이션 레코드는 SF 채번값 보유
     val name: String?,
     val employeeId: Long?,
     val employeeCode: String?,

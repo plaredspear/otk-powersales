@@ -133,6 +133,7 @@ class AdminPPTMasterService(
 
         val master = pptMasterRepository.save(
             ProfessionalPromotionTeamMaster(
+                name = generateMasterName(),
                 employeeId = request.employeeId,
                 accountId = request.accountId,
                 teamType = request.teamType,
@@ -444,6 +445,7 @@ class AdminPPTMasterService(
 
             pptMasterRepository.save(
                 ProfessionalPromotionTeamMaster(
+                    name = generateMasterName(),
                     employeeId = employee.id,
                     accountId = account.id,
                     teamType = item.teamType,
@@ -503,6 +505,15 @@ class AdminPPTMasterService(
     }
 
     // --- Private helpers ---
+
+    /**
+     * 전문행사조 마스터 번호(name) 채번 — SF AutoNumber(displayFormat PM{0000000}) 동등, PM + 7자리.
+     * 시퀀스 채번값이 7자리를 초과하면 자릿수를 넘겨 그대로 표기(SF AutoNumber 동작과 동일).
+     */
+    private fun generateMasterName(): String {
+        val seq = pptMasterRepository.getNextNameSeq()
+        return "PM" + String.format("%07d", seq)
+    }
 
     private fun findMasterById(id: Long): ProfessionalPromotionTeamMaster {
         return pptMasterRepository.findById(id).orElseThrow { PPTMasterNotFoundException() }
