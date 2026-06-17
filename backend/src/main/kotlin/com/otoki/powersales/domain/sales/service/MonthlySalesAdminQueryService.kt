@@ -578,7 +578,7 @@ class MonthlySalesAdminQueryService(
      * 미등록 거래처는 0. row 부재 (미적재) 시 실적/전년 0 반환.
      * 부수 효과: 없음 (조회 전용).
      */
-    fun sumInvestedAccountSales(accounts: List<Account>, year: Int, month: Int): InvestedAccountSales {
+    fun sumInvestedAccountSales(accounts: List<InvestedAccountRef>, year: Int, month: Int): InvestedAccountSales {
         val accountSapCodes = accounts.mapNotNull { it.externalKey }
         if (accountSapCodes.isEmpty()) {
             return InvestedAccountSales(
@@ -601,7 +601,7 @@ class MonthlySalesAdminQueryService(
         val hasLastYearData = accounts.any { oroByKey.containsKey(it.externalKey to lastYearSalesDate) }
 
         // 목표 합계 — 투입 거래처별 (연, 월) SalesProgressRateMaster 1행 합계의 총합 (미등록 거래처는 0).
-        val accountIds = accounts.mapNotNull { it.id }
+        val accountIds = accounts.map { it.id }
         val targetByAccountId = findTargetMap(accountIds, year, month)
         val target = targetByAccountId.values.sumOf { targetSumOf(it) }
 
@@ -610,6 +610,16 @@ class MonthlySalesAdminQueryService(
             hasActualData = hasActualData, hasLastYearData = hasLastYearData,
         )
     }
+
+    /**
+     * [sumInvestedAccountSales] 입력 — 투입 거래처 식별 최소 필드 (account 전 컬럼 적재 회피).
+     *
+     * id 는 목표(SalesProgressRateMaster) 조회 키, externalKey 는 RDS 마감실적(sap_account_code) 매칭 키.
+     */
+    data class InvestedAccountRef(
+        val id: Long,
+        val externalKey: String?,
+    )
 
     /**
      * 투입 거래처 매출 실적 합산 결과 (당월 실적/목표/전년 동월).

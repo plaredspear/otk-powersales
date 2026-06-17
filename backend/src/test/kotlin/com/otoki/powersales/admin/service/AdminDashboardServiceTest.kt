@@ -1,10 +1,9 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
-import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
@@ -32,22 +31,26 @@ class AdminDashboardServiceTest {
 
     // -- fixtures --
 
-    private fun account(id: Long, type: AccountType): Account =
-        Account(id = id, accountType = type, externalKey = "SAP$id")
+    /** 투입 거래처 식별 — (id, accountType) 쌍. externalKey 는 "SAP{id}" 규칙. */
+    private fun account(id: Long, type: AccountType): Pair<Long, AccountType> = id to type
 
     private fun mfeis(
         accountType: AccountType? = AccountType.SUPER,
         wc1: String? = "진열",
         wc3: String? = "고정",
         headcount: BigDecimal = BigDecimal.ONE,
-        acc: Account? = null,
-    ): MonthlyFemaleEmployeeIntegrationSchedule =
-        MonthlyFemaleEmployeeIntegrationSchedule(
+        acc: Pair<Long, AccountType>? = null,
+    ): DashboardDeploymentRow {
+        val resolved = acc ?: accountType?.let { account(1, it) }
+        return DashboardDeploymentRow(
+            convertedHeadcount = headcount,
             workingCategory1 = wc1,
             workingCategory3 = wc3,
-            convertedHeadcount = headcount,
-            account = acc ?: accountType?.let { account(1, it) },
+            accountId = resolved?.first,
+            accountExternalKey = resolved?.let { "SAP${it.first}" },
+            accountType = resolved?.second,
         )
+    }
 
     private var empSeq = 0
     private fun employee(

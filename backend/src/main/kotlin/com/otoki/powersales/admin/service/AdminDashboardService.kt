@@ -15,9 +15,10 @@ import com.otoki.powersales.admin.dto.response.WorkTypeCount
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
+import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService.InvestedAccountRef
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -96,10 +97,13 @@ class AdminDashboardService(
     private fun buildSalesSummary(
         ym: YearMonth,
         branchName: String?,
-        rows: List<MonthlyFemaleEmployeeIntegrationSchedule>,
+        rows: List<DashboardDeploymentRow>,
     ): SalesSummary {
-        // 투입 거래처 = 해당 월 MFEIS 에 등장하는 거래처(account) — rows 는 getDashboard 에서 1회 조회분
-        val accounts = rows.mapNotNull { it.account }.distinctBy { it.id }
+        // 투입 거래처 = 해당 월 MFEIS 에 등장하는 거래처(accountId 기준 distinct) — rows 는 getDashboard 에서 1회 조회분
+        val accounts = rows
+            .filter { it.accountId != null }
+            .distinctBy { it.accountId }
+            .map { InvestedAccountRef(id = it.accountId!!, externalKey = it.accountExternalKey) }
         val sales = monthlySalesAdminQueryService.sumInvestedAccountSales(accounts, ym.year, ym.monthValue)
 
         val lastYearRatio = if (sales.lastYearAmount == 0L) 0.0
@@ -146,7 +150,7 @@ class AdminDashboardService(
         previousYm: YearMonth,
         branchName: String?,
         effectiveCodes: List<String>,
-        rows: List<MonthlyFemaleEmployeeIntegrationSchedule>,
+        rows: List<DashboardDeploymentRow>,
     ): StaffDeployment {
         // 당월 rows 는 getDashboard 에서 1회 조회분을 공유. 전월(마감)만 자체 조회 (결정 D2)
         val previousRows = mfeisRepository.findDeploymentDashboardRows(
@@ -164,9 +168,9 @@ class AdminDashboardService(
     }
 
     /** 거래처유형(유통)별 환산인원 SUM — accountType displayName 기준 (결정 D1). */
-    private fun sumByAccountType(rows: List<MonthlyFemaleEmployeeIntegrationSchedule>): List<AccountTypeCount> {
+    private fun sumByAccountType(rows: List<DashboardDeploymentRow>): List<AccountTypeCount> {
         return rows
-            .groupBy { it.account?.accountType?.displayName ?: ACCOUNT_TYPE_UNKNOWN }
+            .groupBy { it.accountType?.displayName ?: ACCOUNT_TYPE_UNKNOWN }
             .map { (accountType, group) ->
                 AccountTypeCount(
                     accountType = accountType,
@@ -178,7 +182,7 @@ class AdminDashboardService(
     }
 
     /** 근무유형1(진열/행사)별 환산인원 SUM. */
-    private fun sumByWorkType(rows: List<MonthlyFemaleEmployeeIntegrationSchedule>): List<WorkTypeCount> {
+    private fun sumByWorkType(rows: List<DashboardDeploymentRow>): List<WorkTypeCount> {
         return rows
             .groupBy { it.workingCategory1 ?: WORK_TYPE_UNKNOWN }
             .map { (workType, group) ->
@@ -193,10 +197,10 @@ class AdminDashboardService(
 
     /** 유통 × 근무형태(고정/격고/순회)별 환산인원 SUM. */
     private fun sumByChannelAndWorkType(
-        rows: List<MonthlyFemaleEmployeeIntegrationSchedule>,
+        rows: List<DashboardDeploymentRow>,
     ): List<ChannelWorkTypeItem> {
         return rows
-            .groupBy { it.account?.accountType?.displayName ?: ACCOUNT_TYPE_UNKNOWN }
+            .groupBy { it.accountType?.displayName ?: ACCOUNT_TYPE_UNKNOWN }
             .map { (channelName, group) ->
                 val byWc3 = group.groupBy { it.workingCategory3 }
                 ChannelWorkTypeItem(
@@ -213,7 +217,7 @@ class AdminDashboardService(
     }
 
     /** 환산인원 SUM — SF scale=4 정합 (HALF_UP). */
-    private fun sumHeadcount(rows: List<MonthlyFemaleEmployeeIntegrationSchedule>): BigDecimal {
+    private fun sumHeadcount(rows: List<DashboardDeploymentRow>): BigDecimal {
         return rows
             .fold(BigDecimal.ZERO) { acc, row -> acc + (row.convertedHeadcount ?: BigDecimal.ZERO) }
             .setScale(HEADCOUNT_SCALE, RoundingMode.HALF_UP)
@@ -225,7 +229,7 @@ class AdminDashboardService(
         ym: YearMonth,
         branchName: String?,
         effectiveCodes: List<String>,
-        mfeisRows: List<MonthlyFemaleEmployeeIntegrationSchedule>,
+        mfeisRows: List<DashboardDeploymentRow>,
     ): BasicStats {
         val employees = findEmployees(effectiveCodes)
         val asOf = ym.atEndOfMonth()
