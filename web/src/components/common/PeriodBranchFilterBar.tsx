@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { useMemo } from 'react';
-import { Button, Checkbox, InputNumber, Select, Space } from 'antd';
+import { useEffect, useMemo } from 'react';
+import { Button, Checkbox, InputNumber, Select, Space, Tag } from 'antd';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
 
@@ -51,6 +51,16 @@ export default function PeriodBranchFilterBar({
   const allSelected = allCodes.length > 0 && selectedCodes.length === allCodes.length;
   const someSelected = selectedCodes.length > 0 && !allSelected;
 
+  // 본인 지점만 조회 권한이 있는 단일지점 사용자(지점 옵션 1개)는 선택지가 없으므로
+  // 본인 지점을 자동 선택하고 드롭다운을 비활성화한다. 빈 placeholder("지점 선택")가
+  // 떠 있어 "미선택"으로 오해하게 만드는 문제를 방지. 다중지점/전사 권한은 기존 선택 UI 유지.
+  const singleBranch = branches.length === 1;
+  useEffect(() => {
+    if (singleBranch && selectedCodes.length === 0) {
+      onCodesChange([branches[0].branchCode]);
+    }
+  }, [singleBranch, branches, selectedCodes.length, onCodesChange]);
+
   const handleToggleAll = () => {
     onCodesChange(allSelected ? [] : allCodes);
   };
@@ -67,6 +77,45 @@ export default function PeriodBranchFilterBar({
       }}
     >
       <Space wrap align="end">
+        <Space direction="vertical" size={4}>
+          <span>지점명:</span>
+          {singleBranch ? (
+            <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+              지점: {branches[0].branchName}
+            </Tag>
+          ) : (
+            <Select
+              mode="multiple"
+              value={selectedCodes}
+              onChange={(values) => onCodesChange(values as string[])}
+              options={branchOptions}
+              placeholder="지점 선택"
+              style={{ minWidth: 320, maxWidth: 520 }}
+              maxTagCount="responsive"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              filterOption={(input, option) =>
+                (option?.label ?? '').toString().includes(input)
+              }
+              popupRender={(menu) => (
+                <>
+                  <div style={{ padding: '4px 12px', borderBottom: '1px solid #f0f0f0' }}>
+                    <Checkbox
+                      checked={allSelected}
+                      indeterminate={someSelected}
+                      onChange={handleToggleAll}
+                    >
+                      전체 ({selectedCodes.length}/{allCodes.length})
+                    </Checkbox>
+                  </div>
+                  {menu}
+                </>
+              )}
+              notFoundContent="항목 없음"
+            />
+          )}
+        </Space>
         <Space direction="vertical" size={4}>
           <span>년도:</span>
           <InputNumber
@@ -92,39 +141,6 @@ export default function PeriodBranchFilterBar({
           </Space>
         )}
         {extraFilters}
-        <Space direction="vertical" size={4}>
-          <span>지점명:</span>
-          <Select
-            mode="multiple"
-            value={selectedCodes}
-            onChange={(values) => onCodesChange(values as string[])}
-            options={branchOptions}
-            placeholder="지점 선택"
-            style={{ minWidth: 320, maxWidth: 520 }}
-            maxTagCount="responsive"
-            allowClear
-            showSearch
-            optionFilterProp="label"
-            filterOption={(input, option) =>
-              (option?.label ?? '').toString().includes(input)
-            }
-            popupRender={(menu) => (
-              <>
-                <div style={{ padding: '4px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                  <Checkbox
-                    checked={allSelected}
-                    indeterminate={someSelected}
-                    onChange={handleToggleAll}
-                  >
-                    전체 ({selectedCodes.length}/{allCodes.length})
-                  </Checkbox>
-                </div>
-                {menu}
-              </>
-            )}
-            notFoundContent="항목 없음"
-          />
-        </Space>
       </Space>
       <Space>
         {extraActions}

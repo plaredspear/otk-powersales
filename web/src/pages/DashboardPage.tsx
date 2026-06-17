@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Card, Col, Empty, Row, Spin, Statistic, Tabs, Tag, Tooltip } from 'antd';
+import { Alert, Card, Col, Empty, Row, Spin, Statistic, Tabs, Tooltip } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
@@ -375,14 +375,6 @@ export default function DashboardPage() {
           description={(dashboardQuery.error as Error)?.message}
           style={{ marginTop: 16 }}
         />
-      )}
-
-      {!beforeSearch && data && (
-        <div style={{ marginTop: 12, color: 'rgba(0,0,0,0.65)' }}>
-          조회 조건:{' '}
-          <Tag color="blue">{data.salesSummary.yearMonth}</Tag>
-          <Tag color="geekblue">지점: {data.salesSummary.branchName ?? '전체'}</Tag>
-        </div>
       )}
 
       <Spin spinning={dashboardQuery.isLoading}>
