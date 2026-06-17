@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/services/fcm_token_registrar.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/theme/app_spacing.dart';
 import 'package:mobile/data/datasources/auth_local_datasource.dart';
 import 'package:mobile/domain/entities/attendance_summary.dart';
 import 'package:mobile/domain/entities/user.dart';
@@ -81,59 +82,66 @@ void main() {
           AppColors.homeBgGradientEnd);
     });
 
-    testWidgets('iPhone 14 (top:47, bottom:34) — 노란 헤더 = 47+116-55 = 108',
-        (tester) async {
-      await pumpHome(
-        tester,
-        padding: const EdgeInsets.only(top: 47, bottom: 34),
+    // 노란 헤더 영역 구조 검증 (commit bb48d9250 정합):
+    //   ColoredBox(legacyYellow) > Column [
+    //     SizedBox(height: topPadding)  ← SafeArea 상단 inset (디바이스별)
+    //     _buildAppBar() → SizedBox(height: 116-55 = 61)  ← Transform 제거 후 축소된 헤더
+    //     ScheduleCard ...
+    //     SizedBox(height: homeCardProfileGap = 14)
+    //   ]
+    // 과거 "단일 노란 Container 높이 = top+116-55" 가설은 ColoredBox 전환 +
+    // Transform 제거로 무효 → SafeArea inset + AppBar 축소 높이를 직접 검증한다.
+
+    /// 노란 ColoredBox(자식이 Column 인 헤더 영역)의 첫 자식 SizedBox
+    /// (=SafeArea 상단 inset) 높이를 찾는다.
+    double findTopInsetHeight(WidgetTester tester) {
+      final coloredBox = tester.widget<ColoredBox>(
+        find
+            .byWidgetPredicate(
+              (w) =>
+                  w is ColoredBox &&
+                  w.color == AppColors.legacyYellow &&
+                  w.child is Column,
+            )
+            .first,
       );
+      final column = coloredBox.child! as Column;
+      return (column.children.first as SizedBox).height!;
+    }
 
-      final containers = tester
-          .widgetList<Container>(find.byType(Container))
-          .where((c) =>
-              c.color == AppColors.legacyYellow &&
-              c.constraints != null &&
-              (c.constraints!.maxHeight - 108).abs() < 0.5)
-          .toList();
-      expect(containers, isNotEmpty,
-          reason: 'iPhone 14 노란 영역 높이 = 47 + 116 - 55 = 108');
-    });
+    /// AppBar 영역 SizedBox 높이 = 레거시 헤더(116) − 카드 겹침(55) = 61.
+    double expectedAppBarHeight() =>
+        AppSpacing.homeHeaderHeight - AppSpacing.homeCardOverlap;
 
-    testWidgets('iPhone SE (top:20, bottom:0) — 노란 헤더 = 20+116-55 = 81',
-        (tester) async {
-      await pumpHome(
-        tester,
-        padding: const EdgeInsets.only(top: 20, bottom: 0),
-      );
+    for (final device in const [
+      (name: 'iPhone 14', padding: EdgeInsets.only(top: 47, bottom: 34)),
+      (name: 'iPhone SE', padding: EdgeInsets.only(top: 20, bottom: 0)),
+      (name: 'Pixel', padding: EdgeInsets.only(top: 24, bottom: 48)),
+    ]) {
+      testWidgets(
+          '${device.name} — SafeArea 상단 inset(${device.padding.top.toInt()}) + '
+          'AppBar 축소 높이(61) 적용', (tester) async {
+        await pumpHome(tester, padding: device.padding);
 
-      final containers = tester
-          .widgetList<Container>(find.byType(Container))
-          .where((c) =>
-              c.color == AppColors.legacyYellow &&
-              c.constraints != null &&
-              (c.constraints!.maxHeight - 81).abs() < 0.5)
-          .toList();
-      expect(containers, isNotEmpty,
-          reason: 'iPhone SE 노란 영역 높이 = 20 + 116 - 55 = 81');
-    });
+        // ① SafeArea 상단 inset 이 디바이스 top padding 만큼 정확히 반영된다.
+        expect(
+          findTopInsetHeight(tester),
+          device.padding.top,
+          reason: '${device.name}: 노란 영역 상단 inset = ${device.padding.top}',
+        );
 
-    testWidgets('Pixel (top:24, bottom:48) — 노란 헤더 = 24+116-55 = 85',
-        (tester) async {
-      await pumpHome(
-        tester,
-        padding: const EdgeInsets.only(top: 24, bottom: 48),
-      );
-
-      final containers = tester
-          .widgetList<Container>(find.byType(Container))
-          .where((c) =>
-              c.color == AppColors.legacyYellow &&
-              c.constraints != null &&
-              (c.constraints!.maxHeight - 85).abs() < 0.5)
-          .toList();
-      expect(containers, isNotEmpty,
-          reason: 'Pixel 노란 영역 높이 = 24 + 116 - 55 = 85');
-    });
+        // ② AppBar 영역이 Transform 제거 후 116-55=61 로 축소됐다 (회귀 방지).
+        final appBarBox = tester.widget<SizedBox>(
+          find
+              .byWidgetPredicate((w) =>
+                  w is SizedBox &&
+                  w.height == expectedAppBarHeight() &&
+                  w.child is Padding)
+              .first,
+        );
+        expect(appBarBox.height, expectedAppBarHeight());
+      });
+    }
   });
 }
 
