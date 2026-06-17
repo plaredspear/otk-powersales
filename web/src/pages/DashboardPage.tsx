@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Card, Col, Empty, Row, Spin, Statistic, Tabs, Tag } from 'antd';
+import { Alert, Card, Col, Empty, Row, Spin, Statistic, Tabs, Tag, Tooltip } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
@@ -35,6 +36,30 @@ function formatHeadcount(v: number, decimals?: number): string {
 function cardExtra(total: number, decimals?: number) {
   return <span style={{ color: '#8c8c8c' }}>총 {formatHeadcount(total, decimals)}명 (단위: 명)</span>;
 }
+
+/** 차트 카드 제목 + 데이터 집계 기준 안내 툴팁(info 아이콘). */
+function cardTitle(title: string, desc: string) {
+  return (
+    <span>
+      {title}{' '}
+      <Tooltip title={desc}>
+        <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help', fontSize: 14 }} />
+      </Tooltip>
+    </span>
+  );
+}
+
+/** 기본 현황 각 그래프의 데이터 집계 기준 안내 문구 (기간/지점 조건은 제외). */
+const BASIC_CHART_INFO = {
+  staffType:
+    '사원 정보의 직군을 기준으로 집계합니다. 판촉직과 OSC직(구 레이디직 포함)으로 분류하며, 두 직군에 해당하지 않거나 직군이 없는 사원은 기타로 표시합니다.',
+  position:
+    '사원 정보의 재직 상태를 기준으로 집계합니다. 재직과 휴직으로 분류하며, 그 외 상태(퇴직 등)이거나 상태가 없는 사원은 기타로 표시합니다.',
+  ageGroup:
+    '사원 정보의 생년월일로 만 나이를 계산하여 10세 단위(20대·30대…)로 집계합니다. 생년월일이 없거나 확인할 수 없는 사원은 미상으로 표시합니다.',
+  workType:
+    '월별 여사원 통합일정의 근무형태(고정·격고·순회)별 환산인원을 합산하여 집계합니다. 인원 수가 아니라 근무 비율을 반영한 환산인원 합계이므로 소수로 표시될 수 있습니다.',
+} as const;
 
 /** 환산인원(소수) 막대 차트 옵션 — name/value 쌍 리스트. decimals 지정 시 라벨/툴팁을 해당 소수 자리수로 표시. */
 function headcountBarOption(
@@ -235,7 +260,7 @@ export default function DashboardPage() {
     return (
       <Row gutter={[16, 16]}>
         <Col span={12}>
-          <Card title="판촉직/OSC직 인원현황" extra={cardExtra(staffTypeTotal)}>
+          <Card title={cardTitle('판촉직/OSC직 인원현황', BASIC_CHART_INFO.staffType)} extra={cardExtra(staffTypeTotal)}>
             <ReactECharts
               option={donutOption([
                 { name: '판촉직', value: b.staffType.promotion },
@@ -248,7 +273,7 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="총원 (재직/휴직)" extra={cardExtra(positionTotal)}>
+          <Card title={cardTitle('총원 (재직/휴직)', BASIC_CHART_INFO.position)} extra={cardExtra(positionTotal)}>
             <ReactECharts
               option={donutOption([
                 { name: '재직', value: b.totalByPosition.active },
@@ -261,12 +286,12 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="연령별 현황" extra={cardExtra(ageTotal)}>
+          <Card title={cardTitle('연령별 현황', BASIC_CHART_INFO.ageGroup)} extra={cardExtra(ageTotal)}>
             <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="근무형태별 고정/격고/순회 인원현황 (환산인원)" extra={cardExtra(workTypeTotal, 1)}>
+          <Card title={cardTitle('근무형태별 고정/격고/순회 인원현황 (환산인원)', BASIC_CHART_INFO.workType)} extra={cardExtra(workTypeTotal, 1)}>
             <ReactECharts
               option={headcountBarOption(
                 [
