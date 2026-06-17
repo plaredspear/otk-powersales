@@ -10,15 +10,12 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.SalesCompariso
 import com.otoki.powersales.domain.activity.schedule.dto.response.SalesComparisonSummaryResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.SearchAccountCategoryItem
 import com.otoki.powersales.domain.activity.schedule.service.AdminSalesComparisonService
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @RestController
 @RequestMapping("/api/v1/admin/schedules/sales-comparison")
@@ -99,7 +96,7 @@ class AdminSalesComparisonController(
         @RequestParam(required = false) suitabilities: List<String>?,
         @RequestParam(required = false) categoryCodes: List<String>?,
         @RequestParam(required = false) workingCategory3: List<String>?
-    ): ResponseEntity<ByteArray> = buildExcelResponse(
+    ): ResponseEntity<ByteArray> = ExcelResponseUtils.build(
         adminSalesComparisonService.exportSummary(
             scope, year, month, costCenterCodes,
             toSummaryFilter(suitabilities, categoryCodes, workingCategory3)
@@ -115,7 +112,7 @@ class AdminSalesComparisonController(
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
         @RequestParam(required = false) accountIds: List<Long>?
-    ): ResponseEntity<ByteArray> = buildExcelResponse(
+    ): ResponseEntity<ByteArray> = ExcelResponseUtils.build(
         adminSalesComparisonService.exportMiddle(scope, year, month, costCenterCodes, accountIds ?: emptyList())
     )
 
@@ -130,7 +127,7 @@ class AdminSalesComparisonController(
         @RequestParam(required = false) accountIds: List<Long>?,
         @RequestParam(required = false) workingCategory1: String?,
         @RequestParam(required = false) workingCategory5: String?
-    ): ResponseEntity<ByteArray> = buildExcelResponse(
+    ): ResponseEntity<ByteArray> = ExcelResponseUtils.build(
         adminSalesComparisonService.exportDetail(
             scope, year, month, costCenterCodes,
             accountIds ?: emptyList(),
@@ -149,14 +146,4 @@ class AdminSalesComparisonController(
         categoryCodes = categoryCodes?.filter { it.isNotBlank() }?.toSet().orEmpty(),
         workingCategory3 = workingCategory3?.filter { it.isNotBlank() }?.toSet().orEmpty()
     )
-
-    private fun buildExcelResponse(result: AdminSalesComparisonService.ExcelResult): ResponseEntity<ByteArray> {
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
-    }
 }

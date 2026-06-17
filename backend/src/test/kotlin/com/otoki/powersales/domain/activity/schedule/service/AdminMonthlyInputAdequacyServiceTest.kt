@@ -291,4 +291,44 @@ class AdminMonthlyInputAdequacyServiceTest {
             assertThat(response.items.first().workingCategory3).isEqualTo("고정")
         }
     }
+
+    @Nested
+    @DisplayName("엑셀 export (exportMatrix)")
+    inner class ExportMatrixTest {
+
+        @Test
+        fun `매트릭스 export 결과는 xlsx 파일명 + 비어있지 않은 바이트`() {
+            val acc = account(1, "ACC001", "거래처A", AccountType.DISCOUNT_STORE)
+            val empItem = item(
+                accountCode = "ACC001",
+                accountName = "거래처A",
+                employeeCode = "E001",
+                employeeName = "홍길동",
+                workingCategory1 = "진열",
+                workingCategory3 = "고정",
+                workingCategory5 = "상시"
+            )
+            every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(1), any()) } returns listOf(suitability(acc, listOf(empItem)))
+            (2..12).forEach { m ->
+                every { adminSalesComparisonService.computeAccountSuitabilities(eq(2025), eq(m), any()) } returns emptyList()
+            }
+            every {
+                adminSalesComparisonService.judgeSuitability(
+                    workingCategory3 = any(),
+                    avgClosingAmount = any(),
+                    totalDisplayConverted = any(),
+                    fixedStandard = any(),
+                    fixedMin = any(),
+                    bifurcationStandard = any(),
+                    bifurcationMin = any()
+                )
+            } returns Suitability.FIT.displayName
+
+            val result = service.exportMatrix(allScope, year = 2025, costCenterCodes = listOf("CC001"), workingCategory3Filter = null)
+
+            assertThat(result.filename).endsWith(".xlsx")
+            assertThat(result.filename).contains("월별투입적정성")
+            assertThat(result.bytes).isNotEmpty()
+        }
+    }
 }

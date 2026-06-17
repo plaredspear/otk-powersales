@@ -20,14 +20,14 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.Suitability
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
+import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.ss.usermodel.FillPatternType
-import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.xssf.usermodel.XSSFColor
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.ByteArrayOutputStream
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDate
@@ -179,7 +179,7 @@ class AdminSalesComparisonService(
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("배치적합성_집계")
 
-        val headerStyle = createHeaderStyle(workbook)
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
         val intStyle = workbook.createCellStyle().apply {
             dataFormat = workbook.createDataFormat().getFormat("#,##0")
         }
@@ -228,7 +228,7 @@ class AdminSalesComparisonService(
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
-        val bytes = workbookToBytes(workbook)
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val filename = "${year}년${month}월_월평균_매출대비_여사원배치_현황_집계_${timestamp}.xlsx"
         return ExcelResult(bytes, filename)
@@ -248,7 +248,7 @@ class AdminSalesComparisonService(
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("배치적합성_중간집계")
 
-        val headerStyle = createHeaderStyle(workbook)
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
         val intStyle = workbook.createCellStyle().apply {
             dataFormat = workbook.createDataFormat().getFormat("#,##0")
         }
@@ -298,7 +298,7 @@ class AdminSalesComparisonService(
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
-        val bytes = workbookToBytes(workbook)
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val filename = "${year}년${month}월_월평균_매출대비_여사원배치_현황_중간집계_${timestamp}.xlsx"
         return ExcelResult(bytes, filename)
@@ -320,7 +320,7 @@ class AdminSalesComparisonService(
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("배치적합성_상세")
 
-        val headerStyle = createHeaderStyle(workbook)
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
         val intStyle = workbook.createCellStyle().apply {
             dataFormat = workbook.createDataFormat().getFormat("#,##0")
         }
@@ -381,7 +381,7 @@ class AdminSalesComparisonService(
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
-        val bytes = workbookToBytes(workbook)
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val filename = "${year}년${month}월_월평균_매출대비_여사원배치_현황_상세_${timestamp}.xlsx"
         return ExcelResult(bytes, filename)
@@ -826,24 +826,6 @@ class AdminSalesComparisonService(
         else -> XSSFColor(byteArrayOf(0xFF.toByte(), 0xFF.toByte(), 0xFF.toByte()), null)
     }
 
-    private fun createHeaderStyle(workbook: XSSFWorkbook) = workbook.createCellStyle().apply {
-        setFillForegroundColor(XSSFColor(byteArrayOf(0x1E, 0x2F, 0x97.toByte()), null))
-        fillPattern = FillPatternType.SOLID_FOREGROUND
-        alignment = HorizontalAlignment.CENTER
-        setFont(workbook.createFont().apply {
-            bold = true
-            color = IndexedColors.WHITE.index
-        })
-    }
-
-    private fun workbookToBytes(workbook: XSSFWorkbook): ByteArray {
-        return ByteArrayOutputStream().use { out ->
-            workbook.write(out)
-            workbook.close()
-            out.toByteArray()
-        }
-    }
-
     /**
      * 사용자 입력 costCenterCodes 를 권한 범위와 교집합으로 필터링.
      *
@@ -915,18 +897,4 @@ class AdminSalesComparisonService(
         val allEmployeeItems: List<MonthlyIntegrationScheduleItem>,
         val ediPos: String?
     )
-
-    data class ExcelResult(
-        val bytes: ByteArray,
-        val filename: String
-    ) {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            other as ExcelResult
-            return bytes.contentEquals(other.bytes) && filename == other.filename
-        }
-
-        override fun hashCode(): Int = bytes.contentHashCode() * 31 + filename.hashCode()
-    }
 }
