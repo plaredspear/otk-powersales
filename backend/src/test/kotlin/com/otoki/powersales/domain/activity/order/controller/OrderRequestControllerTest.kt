@@ -33,6 +33,12 @@ import com.otoki.powersales.domain.activity.order.dto.response.ProcessingItemRes
 import com.otoki.powersales.domain.activity.order.exception.ForbiddenOrderAccessException
 import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundException
 import com.otoki.powersales.domain.activity.order.service.OrderRequestCreateService
+import com.otoki.powersales.domain.activity.order.service.OrderRequestResendService
+import com.otoki.powersales.domain.activity.order.exception.InvalidOrderStatusException
+import com.otoki.powersales.domain.activity.order.exception.OrderAlreadyClosedException
+import io.mockk.Runs
+import io.mockk.just
+import io.mockk.verify
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -52,6 +58,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
     @MockkBean private lateinit var orderRequestService: OrderRequestService
     @MockkBean private lateinit var orderRequestCreateService: OrderRequestCreateService
     @MockkBean private lateinit var orderCancelService: OrderCancelService
+    @MockkBean private lateinit var orderRequestResendService: OrderRequestResendService
 
     @Nested
     @DisplayName("GET /api/v1/mobile/me/order-requests - 목록 조회")
@@ -260,6 +267,40 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
     }
 
     @Nested
+    @DisplayName("POST /api/v1/mobile/me/order-requests/{id}/resend - 주문 재전송 (F18)")
+    inner class ResendOrderRequestTests {
+
+        @Test
+        @DisplayName("성공 - 재전송 접수 → 200, 서비스 호출")
+        fun success() {
+            every { orderRequestResendService.resend(12345L, any()) } just Runs
+
+            mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/resend"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("주문이 재전송되었습니다"))
+
+            verify(exactly = 1) { orderRequestResendService.resend(12345L, any()) }
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.otoki.powersales.domain.activity.order.controller.OrderRequestControllerTest#resendExceptions")
+        @DisplayName("실패 - 예외 → ErrorCode 매핑")
+        fun resend_exceptions(
+            @Suppress("UNUSED_PARAMETER") name: String,
+            exception: Throwable,
+            expectedStatus: Int,
+            expectedCode: String,
+        ) {
+            every { orderRequestResendService.resend(any(), any()) } throws exception
+
+            mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/resend"))
+                .andExpect(status().`is`(expectedStatus))
+                .andExpect(jsonPath("$.error.code").value(expectedCode))
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/v1/mobile/me/order-requests/product-history - 거래처 주문이력")
     inner class GetAccountOrderHistoryTests {
 
@@ -359,6 +400,34 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                 OrderCancelSapFailedException("SAP error"),
                 502,
                 "ORD_CANCEL_SAP_FAILED",
+            ),
+        )
+
+        @JvmStatic
+        fun resendExceptions(): List<Arguments> = listOf(
+            Arguments.of(
+                "invalidStatus -> 400 INVALID_ORDER_STATUS",
+                InvalidOrderStatusException(),
+                400,
+                "INVALID_ORDER_STATUS",
+            ),
+            Arguments.of(
+                "alreadyClosed -> 400 ORDER_ALREADY_CLOSED",
+                OrderAlreadyClosedException("마감된 주문은 재전송할 수 없습니다"),
+                400,
+                "ORDER_ALREADY_CLOSED",
+            ),
+            Arguments.of(
+                "forbidden -> 403 FORBIDDEN",
+                ForbiddenOrderAccessException(),
+                403,
+                "FORBIDDEN",
+            ),
+            Arguments.of(
+                "notFound -> 404 ORDER_NOT_FOUND",
+                OrderNotFoundException(),
+                404,
+                "ORDER_NOT_FOUND",
             ),
         )
     }

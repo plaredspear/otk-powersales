@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.activity.order.exception.OrderAccountForbidde
 import com.otoki.powersales.domain.activity.order.exception.OrderLoanExceededException
 import com.otoki.powersales.domain.activity.order.service.OrderCancelService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestCreateService
+import com.otoki.powersales.domain.activity.order.service.OrderRequestResendService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestService
 import io.mockk.every
 import org.junit.jupiter.api.DisplayName
@@ -36,6 +37,7 @@ class OrderRequestCreatePostTest : MobileControllerTestSupport() {
     @MockkBean private lateinit var orderRequestService: OrderRequestService
     @MockkBean private lateinit var orderRequestCreateService: OrderRequestCreateService
     @MockkBean private lateinit var orderCancelService: OrderCancelService
+    @MockkBean private lateinit var orderRequestResendService: OrderRequestResendService
 
     @Test
     @DisplayName("성공 — 201 Created + 응답 검증")

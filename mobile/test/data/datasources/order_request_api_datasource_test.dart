@@ -561,11 +561,57 @@ void main() {
       });
     });
 
-    group('미구현 메서드', () {
-      test('resendOrderRequest는 UnimplementedError 발생', () {
+    group('resendOrderRequest', () {
+      test('정상 응답 시 POST 경로 검증 + 정상 완료', () async {
+        String? capturedPath;
+        String? capturedMethod;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            capturedPath = options.path;
+            capturedMethod = options.method;
+            handler.resolve(Response(
+              data: {
+                'success': true,
+                'data': null,
+                'message': '주문이 재전송되었습니다',
+              },
+              statusCode: 200,
+              requestOptions: options,
+            ));
+          },
+        ));
+
+        await dataSource.resendOrderRequest(orderId: 7);
+
+        expect(capturedPath, '/api/v1/mobile/me/order-requests/7/resend');
+        expect(capturedMethod, 'POST');
+      });
+
+      test('서버 400(INVALID_ORDER_STATUS) 응답 시 DioException 발생', () async {
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.reject(DioException(
+              requestOptions: options,
+              response: Response(
+                data: {
+                  'success': false,
+                  'error': {
+                    'code': 'INVALID_ORDER_STATUS',
+                    'message': '전송실패 상태의 주문만 재전송할 수 있습니다',
+                  },
+                },
+                statusCode: 400,
+                requestOptions: options,
+              ),
+              type: DioExceptionType.badResponse,
+            ));
+          },
+        ));
+
         expect(
-          () => dataSource.resendOrderRequest(orderId: 1),
-          throwsA(isA<UnimplementedError>()),
+          () => dataSource.resendOrderRequest(orderId: 7),
+          throwsA(isA<DioException>()),
         );
       });
     });

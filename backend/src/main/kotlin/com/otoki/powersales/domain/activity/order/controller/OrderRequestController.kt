@@ -11,6 +11,7 @@ import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestDetai
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.domain.activity.order.service.OrderCancelService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestCreateService
+import com.otoki.powersales.domain.activity.order.service.OrderRequestResendService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestService
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
@@ -33,6 +34,7 @@ class OrderRequestController(
     private val orderRequestService: OrderRequestService,
     private val orderRequestCreateService: OrderRequestCreateService,
     private val orderCancelService: OrderCancelService,
+    private val orderRequestResendService: OrderRequestResendService,
 ) {
 
     /**
@@ -113,6 +115,21 @@ class OrderRequestController(
         val orderProductIds = request?.orderProductIds.orEmpty()
         val response = orderCancelService.cancel(orderRequestId, principal.userId, orderProductIds)
         return ResponseEntity.ok(ApiResponse.success(response, "주문이 취소되었습니다"))
+    }
+
+    /**
+     * POST /api/v1/mobile/me/order-requests/{orderRequestId}/resend — 전송실패 주문 재전송 (Spec F18).
+     *
+     * `SEND_FAILED` 상태 + 마감 전인 본인 주문만 재전송 가능. 등록(#592)과 동일한 비동기 outbox 경로로
+     * 재적재하며, 워커 송신 결과에 따라 `APPROVED` / `SEND_FAILED` 로 다시 전이된다.
+     */
+    @PostMapping("/me/order-requests/{orderRequestId}/resend")
+    fun resendOrderRequest(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable orderRequestId: Long,
+    ): ResponseEntity<ApiResponse<Unit>> {
+        orderRequestResendService.resend(orderRequestId, principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "주문이 재전송되었습니다"))
     }
 
     /**

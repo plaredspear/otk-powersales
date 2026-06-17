@@ -88,8 +88,10 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   }
 
   @override
-  Future<void> resendOrderRequest({required int orderId}) {
-    throw UnimplementedError('별도 스펙에서 구현');
+  Future<void> resendOrderRequest({required int orderId}) async {
+    await _dio.post(
+      '/api/v1/mobile/me/order-requests/$orderId/resend',
+    );
   }
 
   @override
