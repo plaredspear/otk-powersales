@@ -3,11 +3,14 @@ import { Alert, Card, Col, Empty, Input, Row, Spin, Statistic, Tag, Typography, 
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
-  exportList as apiExportList,
+  EXPORT_LIST_PATH,
+  exportListParams,
   fetchList,
   fetchSummary,
   type MonthlySalesDashboardListItem,
 } from '@/api/monthlySalesDashboard';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import MonthlyTrendChart from '@/components/charts/MonthlyTrendChart';
 import MonthlySalesDashboardDetailModal from './MonthlySalesDashboardDetailModal';
@@ -82,19 +85,26 @@ export default function MonthlySalesDashboardPage() {
     });
   };
 
-  const handleExport = async () => {
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+
+  const handleExport = () => {
     if (!queryParams) return;
-    try {
-      await apiExportList({
-        year: queryParams.year,
-        month: queryParams.month,
-        costCenterCodes: queryParams.codes,
-        customerKeyword: queryParams.customerKeyword,
-        sort,
-      });
-    } catch (e) {
-      message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
-    }
+    const monthStr = String(queryParams.month).padStart(2, '0');
+    runExport(
+      EXPORT_LIST_PATH,
+      `monthly-sales-${queryParams.year}-${monthStr}.xlsx`,
+      {
+        params: exportListParams({
+          year: queryParams.year,
+          month: queryParams.month,
+          costCenterCodes: queryParams.codes,
+          customerKeyword: queryParams.customerKeyword,
+          sort,
+        }),
+        totalCount: list?.pageInfo.totalElements,
+        maxRows: EXCEL_EXPORT_MAX_ROWS,
+      },
+    );
   };
 
   const summary = summaryQuery.data;
@@ -208,6 +218,7 @@ export default function MonthlySalesDashboardPage() {
         onSearch={handleSearch}
         onExport={handleExport}
         exportDisabled={!list || list.items.length === 0}
+        exportLoading={exporting}
         searchLoading={summaryQuery.isLoading || listQuery.isLoading}
         extraFilters={
           <div>

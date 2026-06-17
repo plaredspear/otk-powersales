@@ -128,20 +128,11 @@ export async function deletePPTMaster(id: number): Promise<void> {
   await client.delete(`/api/v1/admin/ppt-masters/${id}`);
 }
 
-export async function downloadPPTMasterTemplate(): Promise<Blob> {
-  const res = await client.get('/api/v1/admin/ppt-masters/excel-template', {
-    responseType: 'blob',
-  });
-  return res.data as Blob;
-}
+/** 전문행사조 마스터 엑셀 템플릿 다운로드 경로. */
+export const PPT_MASTER_TEMPLATE_PATH = '/api/v1/admin/ppt-masters/excel-template';
 
-export async function exportPPTMasters(params: PPTMasterSearchParams): Promise<Blob> {
-  const res = await client.get('/api/v1/admin/ppt-masters/export', {
-    params,
-    responseType: 'blob',
-  });
-  return res.data as Blob;
-}
+/** 전문행사조 마스터 엑셀 다운로드 경로. */
+export const PPT_MASTER_EXPORT_PATH = '/api/v1/admin/ppt-masters/export';
 
 export async function validatePPTMasterBulk(
   items: PPTMasterBulkItem[],

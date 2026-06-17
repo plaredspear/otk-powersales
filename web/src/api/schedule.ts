@@ -181,61 +181,11 @@ export interface ScheduleCreateResult {
 
 // --- API functions ---
 
-export async function downloadScheduleTemplate(): Promise<void> {
-  const res = await client.get('/api/v1/admin/schedule/template', {
-    responseType: 'blob',
-  });
+/** 진열스케줄 양식 다운로드 경로. */
+export const SCHEDULE_TEMPLATE_PATH = '/api/v1/admin/schedule/template';
 
-  // Content-Disposition 헤더에서 파일명 추출
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = '진열스케줄_양식.xlsx';
-  if (contentDisposition) {
-    const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-    if (match) {
-      filename = decodeURIComponent(match[1]);
-    }
-  }
-
-  // Blob 다운로드
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-export async function exportSelectedSchedules(ids: number[]): Promise<void> {
-  const res = await client.post('/api/v1/admin/schedule/export', { ids }, {
-    responseType: 'blob',
-  });
-
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = '진열스케줄.xlsx';
-  if (contentDisposition) {
-    const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-    if (match) {
-      filename = decodeURIComponent(match[1]);
-    }
-  }
-
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
+/** 선택 진열스케줄 엑셀 다운로드 경로 (POST, body `{ ids }`). */
+export const SCHEDULE_EXPORT_PATH = '/api/v1/admin/schedule/export';
 
 export async function uploadScheduleExcel(file: File): Promise<ScheduleUploadResult> {
   const formData = new FormData();

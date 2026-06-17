@@ -21,12 +21,11 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.domain.activity.schedule.service.AdminScheduleService
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Sort
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
@@ -119,17 +118,7 @@ class AdminScheduleController(
         @Valid @RequestBody request: ScheduleExportRequest
     ): ResponseEntity<ByteArray> {
         val result = adminScheduleService.exportSchedules(scope, request.ids)
-
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        headers.setContentDispositionFormData("attachment", result.filename)
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${result.filename}\"")
-
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(result.bytes)
+        return ExcelResponseUtils.build(result.bytes, result.filename)
     }
 
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
@@ -165,17 +154,7 @@ class AdminScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ByteArray> {
         val result = adminScheduleService.generateTemplate(principal.requireEmployeeId())
-
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        headers.setContentDispositionFormData("attachment", result.filename)
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${result.filename}\"")
-
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(result.bytes)
+        return ExcelResponseUtils.build(result.bytes, result.filename)
     }
 
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.CREATE)

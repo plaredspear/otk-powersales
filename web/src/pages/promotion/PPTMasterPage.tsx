@@ -9,8 +9,10 @@ import {
   useDeletePPTMaster,
   useConfirmPPTMastersByIds,
 } from '@/hooks/promotion/usePPTMasters';
-import { downloadPPTMasterTemplate, exportPPTMasters } from '@/api/pptMaster';
+import { PPT_MASTER_TEMPLATE_PATH, PPT_MASTER_EXPORT_PATH } from '@/api/pptMaster';
 import type { PPTMaster } from '@/api/pptMaster';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import PPTMasterFormModal from './components/PPTMasterFormModal';
 import PPTMasterUploadModal from './components/PPTMasterUploadModal';
 import {
@@ -150,18 +152,11 @@ export default function PPTMasterPage() {
     }
   };
 
-  const handleDownloadTemplate = async () => {
-    try {
-      const blob = await downloadPPTMasterTemplate();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `전문행사조마스터_템플릿_${dayjs().format('YYYYMMDD')}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      message.error('템플릿 다운로드에 실패했습니다');
-    }
+  const { run: runTemplate, downloading: templateDownloading } = useExcelDownload();
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+
+  const handleDownloadTemplate = () => {
+    runTemplate(PPT_MASTER_TEMPLATE_PATH, `전문행사조마스터_템플릿_${dayjs().format('YYYYMMDD')}.xlsx`);
   };
 
   const handleConfirmSelected = async () => {
@@ -182,23 +177,17 @@ export default function PPTMasterPage() {
     }
   };
 
-  const handleExport = async () => {
-    try {
-      const blob = await exportPPTMasters({
-        employeeName: filters.employeeName || undefined,
-        employeeCode: filters.employeeCode || undefined,
-        teamType: filters.teamType || undefined,
+  const handleExport = () => {
+    runExport(PPT_MASTER_EXPORT_PATH, `전문행사조마스터_${dayjs().format('YYYYMMDD')}.xlsx`, {
+      params: {
+        ...(filters.employeeName ? { employeeName: filters.employeeName } : {}),
+        ...(filters.employeeCode ? { employeeCode: filters.employeeCode } : {}),
+        ...(filters.teamType ? { teamType: filters.teamType } : {}),
         validOnly,
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `전문행사조마스터_${dayjs().format('YYYYMMDD')}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      message.error('엑셀 다운로드에 실패했습니다');
-    }
+      },
+      totalCount: data?.totalElements,
+      maxRows: EXCEL_EXPORT_MAX_ROWS,
+    });
   };
 
   const columns: ColumnsType<PPTMaster> = [
@@ -371,10 +360,10 @@ export default function PPTMasterPage() {
           <Button icon={<PlusOutlined />} type="primary" onClick={handleAdd}>
             마스터 등록
           </Button>
-          <Button icon={<DownloadOutlined />} onClick={handleExport}>
+          <Button icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
             엑셀 다운로드
           </Button>
-          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate}>
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate} loading={templateDownloading}>
             엑셀 템플릿 다운로드
           </Button>
           <Button icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>

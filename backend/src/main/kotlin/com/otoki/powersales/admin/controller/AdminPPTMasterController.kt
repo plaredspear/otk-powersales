@@ -22,9 +22,7 @@ import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.format.annotation.DateTimeFormat
@@ -75,10 +73,7 @@ class AdminPPTMasterController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ByteArray> {
         val result = pptConfirmedReportService.exportReport()
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${result.filename}\"")
-            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-            .body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/{id}")
@@ -146,10 +141,7 @@ class AdminPPTMasterController(
     ): ResponseEntity<ByteArray> {
         val bytes = adminPPTMasterService.generateExcelTemplate()
         val filename = "전문행사조마스터_템플릿_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.xlsx"
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
-            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-            .body(bytes)
+        return ExcelResponseUtils.build(bytes, filename)
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/bulk")

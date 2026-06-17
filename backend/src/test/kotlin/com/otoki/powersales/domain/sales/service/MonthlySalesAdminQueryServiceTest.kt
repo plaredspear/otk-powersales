@@ -175,4 +175,18 @@ class MonthlySalesAdminQueryServiceTest {
         assertThat(result.totalAchievedAmount).isEqualTo(1000L)
         assertThat(result.overallAchievementRate).isEqualTo(50.0)
     }
+
+    @Test
+    @DisplayName("getListForExport — 결과가 EXPORT_MAX_ROWS(50000) 로 절단된다")
+    fun exportCapsAtMaxRows() {
+        val accounts = (1..50_001L).map { account(it, "S$it") }
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), any()) } returns emptyList()
+
+        val request = MonthlySalesDashboardListRequest(year = 2026, month = 4, costCenterCodes = listOf("B001"))
+        val result = service.getListForExport(allBranchesScope, request)
+
+        assertThat(result).hasSize(50_000)
+    }
 }

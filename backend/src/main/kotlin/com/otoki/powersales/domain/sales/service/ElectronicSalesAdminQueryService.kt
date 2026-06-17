@@ -85,7 +85,7 @@ class ElectronicSalesAdminQueryService(
     fun getListForExport(scope: DataScope, request: ElectronicSalesDashboardListRequest): List<ElectronicSalesDashboardListItem> {
         validateParams(request.year, request.month, request.costCenterCodes)
         val effectiveCodes = applyScope(scope, request.costCenterCodes)
-        return sortItems(buildListItems(effectiveCodes, request), request.sort)
+        return sortItems(buildListItems(effectiveCodes, request), request.sort).take(EXPORT_MAX_ROWS)
     }
 
     /**
@@ -272,5 +272,8 @@ class ElectronicSalesAdminQueryService(
 
         /** 레거시 `abcmain.jsp` 의 `CUST_CD = "000" + accountCode` 패딩 정합. */
         private const val CUST_CD_PREFIX = "000"
+
+        /** 엑셀 export 최대 행 수 — 초과분은 절단 (web 단 totalCount 경고와 정합). */
+        private const val EXPORT_MAX_ROWS = 50_000
     }
 }

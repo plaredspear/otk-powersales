@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 
 /**
@@ -230,63 +231,42 @@ export async function fetchDetail(
   return res.data.data;
 }
 
-async function downloadBlob(path: string, params: Record<string, unknown>, fallbackName: string): Promise<void> {
-  const res = await client.get(path, { params, responseType: 'blob' });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  let filename = fallbackName;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
+/** 집계 엑셀 다운로드. */
 export async function exportSummary(
   year: number,
   month: number,
   costCenterCodes: string[],
   filter?: SummaryFilter,
 ): Promise<void> {
-  await downloadBlob(
+  await downloadExcel(
     `${BASE}/summary/export`,
-    { year, month, costCenterCodes: costCenterCodes.join(','), ...summaryFilterParams(filter) },
     `${year}년${month}월_월평균_매출대비_여사원배치_현황_집계.xlsx`,
+    { params: { year, month, costCenterCodes: costCenterCodes.join(','), ...summaryFilterParams(filter) } },
   );
 }
 
+/** 중간집계 엑셀 다운로드. */
 export async function exportMiddle(
   year: number,
   month: number,
   costCenterCodes: string[],
   accountIds: number[],
 ): Promise<void> {
-  await downloadBlob(
+  await downloadExcel(
     `${BASE}/middle/export`,
-    {
-      year,
-      month,
-      costCenterCodes: costCenterCodes.join(','),
-      ...(accountIds.length > 0 ? { accountIds: accountIds.join(',') } : {}),
-    },
     `${year}년${month}월_월평균_매출대비_여사원배치_현황_중간집계.xlsx`,
+    {
+      params: {
+        year,
+        month,
+        costCenterCodes: costCenterCodes.join(','),
+        ...(accountIds.length > 0 ? { accountIds: accountIds.join(',') } : {}),
+      },
+    },
   );
 }
 
+/** 상세 엑셀 다운로드. */
 export async function exportDetail(
   year: number,
   month: number,
@@ -295,16 +275,18 @@ export async function exportDetail(
   workingCategory1?: string,
   workingCategory5?: string,
 ): Promise<void> {
-  await downloadBlob(
+  await downloadExcel(
     `${BASE}/detail/export`,
-    {
-      year,
-      month,
-      costCenterCodes: costCenterCodes.join(','),
-      ...(accountIds.length > 0 ? { accountIds: accountIds.join(',') } : {}),
-      ...(workingCategory1 ? { workingCategory1 } : {}),
-      ...(workingCategory5 ? { workingCategory5 } : {}),
-    },
     `${year}년${month}월_월평균_매출대비_여사원배치_현황_상세.xlsx`,
+    {
+      params: {
+        year,
+        month,
+        costCenterCodes: costCenterCodes.join(','),
+        ...(accountIds.length > 0 ? { accountIds: accountIds.join(',') } : {}),
+        ...(workingCategory1 ? { workingCategory1 } : {}),
+        ...(workingCategory5 ? { workingCategory5 } : {}),
+      },
+    },
   );
 }

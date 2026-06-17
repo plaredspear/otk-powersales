@@ -5,7 +5,8 @@ import type { ColumnsType } from 'antd/es/table';
 import * as XLSX from 'xlsx';
 import { useValidatePPTMasterBulk, useConfirmPPTMasterBulk } from '@/hooks/promotion/usePPTMasterBulk';
 import type { PPTMasterBulkItem, BulkValidationRow } from '@/api/pptMaster';
-import { downloadPPTMasterTemplate } from '@/api/pptMaster';
+import { PPT_MASTER_TEMPLATE_PATH } from '@/api/pptMaster';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import dayjs from 'dayjs';
 import ResizableTable from '@/components/common/ResizableTable';
 
@@ -119,18 +120,10 @@ export default function PPTMasterUploadModal({ open, onClose }: Props) {
     }
   };
 
-  const handleDownloadTemplate = async () => {
-    try {
-      const blob = await downloadPPTMasterTemplate();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `전문행사조마스터_템플릿_${dayjs().format('YYYYMMDD')}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      message.error('템플릿 다운로드에 실패했습니다');
-    }
+  const { run: runTemplate, downloading: templateDownloading } = useExcelDownload();
+
+  const handleDownloadTemplate = () => {
+    runTemplate(PPT_MASTER_TEMPLATE_PATH, `전문행사조마스터_템플릿_${dayjs().format('YYYYMMDD')}.xlsx`);
   };
 
   const validationMap = new Map(validationResults.map((r) => [r.row, r]));
@@ -172,7 +165,7 @@ export default function PPTMasterUploadModal({ open, onClose }: Props) {
       width={800}
       footer={
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Button onClick={handleDownloadTemplate}>엑셀 템플릿 다운로드</Button>
+          <Button onClick={handleDownloadTemplate} loading={templateDownloading}>엑셀 템플릿 다운로드</Button>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button onClick={handleClose}>취소</Button>
             <Button

@@ -159,48 +159,23 @@ export async function fetchList(
   return res.data.data;
 }
 
-/**
- * 거래처별 명세 엑셀 다운로드 — blob → anchor click.
- */
-export async function exportList(request: MonthlySalesDashboardListRequest): Promise<void> {
-  const res = await client.get(`${BASE}/list/export`, {
-    params: {
-      year: request.year,
-      month: request.month,
-      costCenterCodes: request.costCenterCodes.join(','),
-      ...(request.accountIds && request.accountIds.length > 0
-        ? { accountIds: request.accountIds.join(',') }
-        : {}),
-      ...(request.accountGroup ? { accountGroup: request.accountGroup } : {}),
-      ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
-      ...(request.sort ? { sort: request.sort } : {}),
-    },
-    responseType: 'blob',
-  });
-  const contentDisposition = res.headers['content-disposition'] as string | undefined;
-  const monthStr = String(request.month).padStart(2, '0');
-  let filename = `monthly-sales-${request.year}-${monthStr}.xlsx`;
-  if (contentDisposition) {
-    const utfMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/i);
-    if (utfMatch) {
-      filename = decodeURIComponent(utfMatch[1]);
-    } else {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = decodeURIComponent(match[1]);
-    }
-  }
-  const blob = new Blob([res.data], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+/** 거래처별 명세 엑셀 export 파라미터 (페이징 제외). */
+export function exportListParams(request: MonthlySalesDashboardListRequest): Record<string, string> {
+  return {
+    year: String(request.year),
+    month: String(request.month),
+    costCenterCodes: request.costCenterCodes.join(','),
+    ...(request.accountIds && request.accountIds.length > 0
+      ? { accountIds: request.accountIds.join(',') }
+      : {}),
+    ...(request.accountGroup ? { accountGroup: request.accountGroup } : {}),
+    ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
+    ...(request.sort ? { sort: request.sort } : {}),
+  };
 }
+
+/** 거래처별 명세 엑셀 다운로드 경로. */
+export const EXPORT_LIST_PATH = `${BASE}/list/export`;
 
 /**
  * 단건 거래처 상세 (모바일 동등 6 영역).

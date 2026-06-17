@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Space, Spin, Typography, message } from 'antd';
+import { Alert, Button, Space, Spin, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
   fetchScheduleList,
-  exportSelectedSchedules,
+  SCHEDULE_EXPORT_PATH,
   type ScheduleListItem,
 } from '@/api/schedule';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 
@@ -33,14 +34,12 @@ export default function ValidEmployeeConfirmedReportPage() {
 
   const handleSearch = () => setRequested(true);
 
-  const handleExport = async () => {
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+
+  const handleExport = () => {
     const ids = (query.data?.content ?? []).map((r) => r.id);
     if (ids.length === 0) return;
-    try {
-      await exportSelectedSchedules(ids);
-    } catch (e) {
-      message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
-    }
+    runExport(SCHEDULE_EXPORT_PATH, '진열스케줄.xlsx', { method: 'post', data: { ids } });
   };
 
   const columns: ColumnsType<ScheduleListItem> = useMemo(
@@ -76,7 +75,7 @@ export default function ValidEmployeeConfirmedReportPage() {
         {requested && (
           <RefreshButton onRefresh={() => query.refetch()} refreshing={query.isFetching} />
         )}
-        <Button onClick={handleExport} disabled={rows.length === 0}>
+        <Button onClick={handleExport} disabled={rows.length === 0} loading={exporting}>
           엑셀 다운로드
         </Button>
       </Space>

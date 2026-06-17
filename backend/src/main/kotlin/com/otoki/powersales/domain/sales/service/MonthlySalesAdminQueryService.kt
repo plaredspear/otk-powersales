@@ -159,7 +159,7 @@ class MonthlySalesAdminQueryService(
     fun getListForExport(scope: DataScope, request: MonthlySalesDashboardListRequest): List<MonthlySalesDashboardListItem> {
         validateParams(request.year, request.month, request.costCenterCodes)
         val effectiveCodes = applyScope(scope, request.costCenterCodes)
-        return sortItems(buildListItems(effectiveCodes, request), request.sort)
+        return sortItems(buildListItems(effectiveCodes, request), request.sort).take(EXPORT_MAX_ROWS)
     }
 
     /**
@@ -646,5 +646,8 @@ class MonthlySalesAdminQueryService(
 
     companion object {
         private const val MILLION = 1_000_000L
+
+        /** 엑셀 export 최대 행 수 — 초과분은 절단 (web 단 totalCount 경고와 정합). */
+        private const val EXPORT_MAX_ROWS = 50_000
     }
 }

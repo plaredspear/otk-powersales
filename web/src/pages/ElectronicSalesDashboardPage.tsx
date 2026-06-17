@@ -3,10 +3,13 @@ import { Alert, Empty, Input, Spin, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
-  exportList as apiExportList,
+  EXPORT_LIST_PATH,
+  exportListParams,
   fetchList,
   type ElectronicSalesDashboardListItem,
 } from '@/api/electronicSalesDashboard';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -72,22 +75,29 @@ export default function ElectronicSalesDashboardPage() {
     });
   };
 
-  const handleExport = async () => {
-    if (!queryParams) return;
-    try {
-      await apiExportList({
-        year: queryParams.year,
-        month: queryParams.month,
-        costCenterCodes: queryParams.codes,
-        customerKeyword: queryParams.customerKeyword,
-        sort,
-      });
-    } catch (e) {
-      message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
-    }
-  };
-
   const list = listQuery.data;
+
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+
+  const handleExport = () => {
+    if (!queryParams) return;
+    const monthStr = String(queryParams.month).padStart(2, '0');
+    runExport(
+      EXPORT_LIST_PATH,
+      `electronic-sales-${queryParams.year}-${monthStr}.xlsx`,
+      {
+        params: exportListParams({
+          year: queryParams.year,
+          month: queryParams.month,
+          costCenterCodes: queryParams.codes,
+          customerKeyword: queryParams.customerKeyword,
+          sort,
+        }),
+        totalCount: list?.pageInfo.totalElements,
+        maxRows: EXCEL_EXPORT_MAX_ROWS,
+      },
+    );
+  };
 
   const formatWon = (v: number | null | undefined) =>
     v == null ? '-' : `${v.toLocaleString()}원`;
@@ -141,6 +151,7 @@ export default function ElectronicSalesDashboardPage() {
         onSearch={handleSearch}
         onExport={handleExport}
         exportDisabled={!list || list.items.length === 0}
+        exportLoading={exporting}
         searchLoading={listQuery.isLoading}
         extraFilters={
           <div>

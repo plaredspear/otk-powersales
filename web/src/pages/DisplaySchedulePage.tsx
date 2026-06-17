@@ -25,8 +25,9 @@ import type { ColumnsType } from 'antd/es/table';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
-import { downloadScheduleTemplate, exportSelectedSchedules } from '@/api/schedule';
+import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, SchedulePreset } from '@/api/schedule';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -178,7 +179,8 @@ function buildListColumns(
 
 export default function DisplaySchedulePage() {
   const navigate = useNavigate();
-  const [downloading, setDownloading] = useState(false);
+  const { run: runTemplate, downloading } = useExcelDownload();
+  const { run: runExport, downloading: exporting } = useExcelDownload();
   const [uploadResult, setUploadResult] = useState<ScheduleUploadResult | null>(null);
   const uploadMutation = useScheduleUpload();
   const confirmMutation = useScheduleConfirm();
@@ -208,7 +210,6 @@ export default function DisplaySchedulePage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ScheduleListItem | null>(null);
-  const [exporting, setExporting] = useState(false);
   const modalOpen = createModalOpen || editTarget != null;
   const listColumns = buildListColumns((row) => setEditTarget(row), navigate);
 
@@ -224,16 +225,8 @@ export default function DisplaySchedulePage() {
   const batchUnconfirmMutation = useScheduleBatchUnconfirm();
   const batchDeleteMutation = useScheduleBatchDelete();
 
-  const handleDownload = async () => {
-    setDownloading(true);
-    try {
-      await downloadScheduleTemplate();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '양식 다운로드에 실패했습니다';
-      message.error(errorMessage);
-    } finally {
-      setDownloading(false);
-    }
+  const handleDownload = () => {
+    runTemplate(SCHEDULE_TEMPLATE_PATH, '진열스케줄_양식.xlsx');
   };
 
   const handleUpload: UploadProps['beforeUpload'] = (file) => {
@@ -349,17 +342,10 @@ export default function DisplaySchedulePage() {
     });
   };
 
-  const handleExportSelected = async () => {
+  const handleExportSelected = () => {
     const ids = selectedRowKeys as number[];
     if (ids.length === 0) return;
-    setExporting(true);
-    try {
-      await exportSelectedSchedules(ids);
-    } catch (err) {
-      message.error(err instanceof Error ? err.message : '다운로드에 실패했습니다');
-    } finally {
-      setExporting(false);
-    }
+    runExport(SCHEDULE_EXPORT_PATH, '진열스케줄.xlsx', { method: 'post', data: { ids } });
   };
 
   const handleBatchDelete = () => {

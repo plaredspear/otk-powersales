@@ -4,6 +4,12 @@ import type { AxiosError, AxiosRequestConfig } from 'axios';
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 /**
+ * 엑셀 export 서버 상한 — 백엔드 export 서비스의 `EXPORT_MAX_ROWS` 와 동일.
+ * 페이징형 export 호출처가 `useExcelDownload().run(..., { totalCount, maxRows })` 의 잘림 경고에 사용한다.
+ */
+export const EXCEL_EXPORT_MAX_ROWS = 50_000;
+
+/**
  * 응답 Content-Disposition 헤더에서 파일명 추출 (RFC 5987 `filename*=UTF-8''` 우선, quoted 형식 fallback).
  * 헤더가 없거나 파싱 실패 시 `fallbackName` 반환.
  */
