@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -81,6 +82,47 @@ class MyScheduleServiceTest {
             assertThat(result.workDays[3].hasWork).isTrue()
             assertThat(result.workDays[1].hasWork).isFalse()
             assertThat(result.annualLeaveCount).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("성공 - 행사(EVENT) 근무일이 진열에 없어도 hasWork 로 표시")
+        fun getMonthlySchedule_unionsEventDays() {
+            // Given
+            val userId = 1L
+            val year = 2020
+            val month = 8
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            // 진열: 8/4 만
+            every { displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+                eq(userId),
+                eq(LocalDate.of(2020, 8, 1)),
+                eq(LocalDate.of(2020, 8, 31))
+            ) } returns listOf(LocalDate.of(2020, 8, 4))
+            // TMS: 8/10 행사(EVENT) → union 대상, 8/15 진열(DISPLAY) → 진열 마스터에 없으면 미표시
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any(), any()
+            ) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = LocalDate.of(2020, 8, 10),
+                    workingCategory1 = WorkingCategory1.EVENT
+                ),
+                createMockMemberSchedule(
+                    workingDate = LocalDate.of(2020, 8, 15),
+                    workingCategory1 = WorkingCategory1.DISPLAY
+                )
+            )
+
+            // When
+            val result = myScheduleService.getMonthlySchedule(userId, year, month)
+
+            // Then — 진열(8/4) ∪ 행사(8/10) 만 hasWork
+            assertThat(result.workDays.filter { it.hasWork }.map { it.date })
+                .containsExactlyInAnyOrder("2020-08-04", "2020-08-10")
+            // 진열 카테고리 TMS(8/15)는 진열 마스터에 없으므로 마커 아님
+            assertThat(result.workDays[14].date).isEqualTo("2020-08-15")
+            assertThat(result.workDays[14].hasWork).isFalse()
         }
 
         @Test
@@ -440,14 +482,16 @@ class MyScheduleServiceTest {
         workingDate: LocalDate = LocalDate.now(),
         workingType: WorkingType = WorkingType.WORK,
         account: Account? = null,
-        attendanceLog: AttendanceLog? = null
+        attendanceLog: AttendanceLog? = null,
+        workingCategory1: WorkingCategory1? = null
     ): TeamMemberSchedule {
         return TeamMemberSchedule(
             employee = Employee(id = 1L, employeeCode = employeeCode, name = "테스트"),
             workingDate = workingDate,
             workingType = workingType,
             account = account,
-            attendanceLog = attendanceLog
+            attendanceLog = attendanceLog,
+            workingCategory1 = workingCategory1
         )
     }
 

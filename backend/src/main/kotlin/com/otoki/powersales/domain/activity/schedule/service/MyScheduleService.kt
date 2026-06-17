@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.WorkDayDto
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
 // import com.otoki.powersales.domain.activity.schedule.repository.AttendanceRepository  // Phase2: PG 대응 테이블 없음
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -63,18 +64,25 @@ class MyScheduleService(
             .groupBy { it.workingDate }
             .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType?.displayName }
 
+        // 행사 근무일 (레거시 selectHomeSchedulePromote: workingcategory1 = '행사').
+        // 진열 마스터에 없는 행사 전용 근무일도 캘린더 마커로 표시 (HomeService 와 동일 기준).
+        val eventDates = memberSchedules
+            .filter { it.workingCategory1 == WorkingCategory1.EVENT }
+            .mapNotNull { it.workingDate }
+            .toSet()
+
         // 연차/대휴 건수 카운트
         val annualLeaveCount = memberSchedules.count { it.workingType == WorkingType.ANNUAL_LEAVE }
         val substituteHolidayCount = memberSchedules.count { it.workingType == WorkingType.ALT_HOLIDAY }
 
-        // 해당 월의 모든 날짜에 대해 근무 여부 판정
+        // 해당 월의 모든 날짜에 대해 근무 여부 판정 (진열 ∪ 행사)
         val workDays = mutableListOf<WorkDayDto>()
         var currentDate = startDate
         while (!currentDate.isAfter(endDate)) {
             workDays.add(
                 WorkDayDto(
                     date = currentDate.toString(),
-                    hasWork = workDates.contains(currentDate),
+                    hasWork = workDates.contains(currentDate) || eventDates.contains(currentDate),
                     workingType = workingTypeByDate[currentDate]
                 )
             )
