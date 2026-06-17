@@ -56,7 +56,7 @@ function donutOption(items: { name: string; value: number }[]) {
     tooltip: {
       trigger: 'item',
       formatter: (p: { name: string; value: number; percent: number }) =>
-        `${p.name}<br/>${p.value.toLocaleString()}명 (${p.percent}%)`,
+        `${p.name}<br/>${p.value.toLocaleString()}명 (${p.percent.toFixed(1)}%)`,
     },
     legend: { orient: 'vertical', right: 0, top: 'middle' },
     series: [
@@ -65,7 +65,12 @@ function donutOption(items: { name: string; value: number }[]) {
         radius: ['40%', '70%'],
         center: ['40%', '50%'],
         avoidLabelOverlap: true,
-        label: { show: false },
+        label: {
+          show: true,
+          formatter: (p: { name: string; value: number; percent: number }) =>
+            `${p.name} ${p.value.toLocaleString()}명 (${p.percent.toFixed(1)}%)`,
+        },
+        labelLine: { show: true },
         data: items,
       },
     ],
@@ -146,22 +151,22 @@ export default function DashboardPage() {
         />
         <Row gutter={16}>
           <Col span={6}>
-            <Card>
+            <Card extra={<span style={{ color: '#8c8c8c' }}>(단위: 원)</span>}>
               <Statistic title="당월 실적" value={s.actualAmount} suffix="원" />
             </Card>
           </Col>
           <Col span={6}>
-            <Card>
+            <Card extra={<span style={{ color: '#8c8c8c' }}>(단위: %)</span>}>
               <Statistic title="기준 진도율" value={s.referenceProgressRate} precision={1} suffix="%" />
             </Card>
           </Col>
           <Col span={6}>
-            <Card>
+            <Card extra={<span style={{ color: '#8c8c8c' }}>(단위: 원)</span>}>
               <Statistic title="전년 동월 실적" value={s.lastYearAmount} suffix="원" />
             </Card>
           </Col>
           <Col span={6}>
-            <Card>
+            <Card extra={<span style={{ color: '#8c8c8c' }}>(단위: %)</span>}>
               <Statistic title="전년 대비" value={s.lastYearRatio} precision={1} suffix="%" />
             </Card>
           </Col>
@@ -179,22 +184,22 @@ export default function DashboardPage() {
     return (
       <Row gutter={[16, 16]}>
         <Col span={12}>
-          <Card title="거래처유형별 투입현황 (전월 마감, 환산인원)">
+          <Card title="거래처유형별 투입현황 (전월 마감, 환산인원)" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts option={headcountBarOption(accountTypeItems(sd.byAccountType), '#1677ff')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="근무형태 비중 (진열/행사, 환산인원)">
+          <Card title="근무형태 비중 (진열/행사, 환산인원)" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts option={headcountBarOption(workTypeItems(sd.byWorkType), '#52c41a')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="전월 근무형태 비중 (진열/행사, 환산인원)">
+          <Card title="전월 근무형태 비중 (진열/행사, 환산인원)" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts option={headcountBarOption(workTypeItems(sd.previousMonth.byWorkType), '#8c8c8c')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="유통별/근무형태별 여사원 현황 (고정/격고/순회, 환산인원)">
+          <Card title="유통별/근무형태별 여사원 현황 (고정/격고/순회, 환산인원)" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts option={channelWorkTypeOption(sd.byChannelAndWorkType)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
@@ -213,7 +218,7 @@ export default function DashboardPage() {
     return (
       <Row gutter={[16, 16]}>
         <Col span={12}>
-          <Card title="판촉직/OSC직 인원현황">
+          <Card title="판촉직/OSC직 인원현황" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts
               option={donutOption([
                 { name: '판촉직', value: b.staffType.promotion },
@@ -225,7 +230,7 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="총원 (재직/휴직)">
+          <Card title="총원 (재직/휴직)" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts
               option={donutOption([
                 { name: '재직', value: b.totalByPosition.active },
@@ -237,12 +242,12 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="연령별 현황">
+          <Card title="연령별 현황" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="근무형태별 고정/격고/순회 인원현황">
+          <Card title="근무형태별 고정/격고/순회 인원현황" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts
               option={headcountBarOption(
                 [
