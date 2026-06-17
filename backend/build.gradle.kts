@@ -86,6 +86,10 @@ dependencies {
 	// applicationId / versionName / versionCode 자동 추출
 	implementation("net.dongliu:apk-parser:2.6.10")
 
+	// Firebase Admin SDK — FCM HTTP v1 발송 (유통기한 만료 알림 배치). credential 은
+	// app.push.fcm.credential-json (Secrets Manager/env) 으로 주입하며, 미설정 시 발송은 no-op.
+	implementation("com.google.firebase:firebase-admin:9.4.3")
+
 	// JWT
 	implementation("io.jsonwebtoken:jjwt-api:0.12.6")
 	runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")

@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.productexpiration.repository
 
 import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
 import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -186,6 +187,64 @@ class ProductExpirationRepositoryTest {
 
             // Then
             assertThat(count).isEqualTo(1L)
+        }
+    }
+
+    @Nested
+    @DisplayName("findDistinctFcmTokensByAlarmDate - 알람 당일 담당 여사원 FCM 토큰(중복제거)")
+    inner class FindDistinctFcmTokensTests {
+
+        private fun persistEmployeeWithToken(employeeCode: String, token: String?): Employee {
+            val employee = Employee(
+                employeeCode = employeeCode,
+                name = "여사원-$employeeCode",
+                fcmToken = token,
+            )
+            return testEntityManager.persistAndFlush(employee)
+        }
+
+        @Test
+        @DisplayName("알람 당일 + 토큰 보유 여사원의 토큰을 중복제거하여 반환한다")
+        fun returnsDistinctTokensForTodayAlarm() {
+            val today = LocalDate.now()
+            val emp = persistEmployeeWithToken("E001", "tok-1")
+            // 같은 여사원이 같은 날 2건 등록 → DISTINCT 로 1개만
+            testEntityManager.persistAndFlush(
+                ProductExpiration(employeeId = emp.id, alarmDate = today, productCode = "P001")
+            )
+            testEntityManager.persistAndFlush(
+                ProductExpiration(employeeId = emp.id, alarmDate = today, productCode = "P002")
+            )
+            testEntityManager.clear()
+
+            val tokens = productExpirationRepository.findDistinctFcmTokensByAlarmDate(today)
+
+            assertThat(tokens).containsExactly("tok-1")
+        }
+
+        @Test
+        @DisplayName("토큰 미보유 여사원, 다른 날 알람은 제외한다")
+        fun excludesNullTokenAndOtherDate() {
+            val today = LocalDate.now()
+            val yesterday = today.minusDays(1)
+            val withToken = persistEmployeeWithToken("E001", "tok-1")
+            val noToken = persistEmployeeWithToken("E002", null)
+            val otherDay = persistEmployeeWithToken("E003", "tok-3")
+
+            testEntityManager.persistAndFlush(
+                ProductExpiration(employeeId = withToken.id, alarmDate = today, productCode = "P001")
+            )
+            testEntityManager.persistAndFlush(
+                ProductExpiration(employeeId = noToken.id, alarmDate = today, productCode = "P002")
+            )
+            testEntityManager.persistAndFlush(
+                ProductExpiration(employeeId = otherDay.id, alarmDate = yesterday, productCode = "P003")
+            )
+            testEntityManager.clear()
+
+            val tokens = productExpirationRepository.findDistinctFcmTokensByAlarmDate(today)
+
+            assertThat(tokens).containsExactly("tok-1")
         }
     }
 

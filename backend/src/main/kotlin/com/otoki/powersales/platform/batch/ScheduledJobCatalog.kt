@@ -109,6 +109,11 @@ object ScheduledJobCatalog {
             cron = "\${app.batch.jmart-coordinate.cron:0 30 3 * * *}",
             description = "J마트(이동매장) 요일별 좌표 보정 (기본 매일 03:30, 수=양구/금=원통) — legacy Batch_JMartLatLong 동등",
         ),
+        Entry(
+            jobName = ProductExpirationAlertBatch.JOB_NAME,
+            cron = "\${app.batch.product-expiration-alert.cron:0 0 0 * * *}",
+            description = "유통기한 만료 FCM 알림 발송 (기본 매일 00:00, alarm_date=당일 담당 여사원) — legacy OttogiSalesSchedule.alarm 동등",
+        ),
     )
 
     val JOB_NAMES: List<String> = ENTRIES.map { it.jobName }
