@@ -61,6 +61,25 @@ const BASIC_CHART_INFO = {
     '월별 여사원 통합일정의 근무형태(고정·격고·순회)별 환산인원을 합산하여 집계합니다.',
 } as const;
 
+/**
+ * 매출현황 각 지표의 집계 기준 안내 문구 (기간/지점 조건은 제외).
+ * 공통: "투입 거래처 = 해당 월 여사원 통합일정에 등장하는 거래처". 실적은 월 매출(물류배부) 마감 데이터 기준.
+ */
+const SALES_CHART_INFO = {
+  target:
+    '해당 월에 여사원이 투입된 거래처들의 매출 목표를 합산합니다. 목표는 거래처별 월 매출 목표(연·월 1행)를 기준으로 하며, 목표가 등록되지 않은 거래처는 0으로 계산합니다.',
+  actual:
+    '해당 월에 여사원이 투입된 거래처들의 당월 마감 실적(물류배부 기준)을 합산합니다. 반품·조정으로 음수가 나올 수 있으며, 실적 데이터가 아직 적재되지 않은 경우 "—"로 표시합니다.',
+  progress:
+    '당월 실적을 당월 목표로 나눈 비율(실적 ÷ 목표 × 100)입니다. 목표가 0이면 0%로 표시합니다. 기준 진도율보다 높으면 파란색, 낮으면 빨간색으로 표시됩니다.',
+  reference:
+    '해당 월의 달력일 경과 비율(경과 일수 ÷ 총 일수 × 100)입니다. 영업일이 아니라 달력일 기준이며, 지난 달은 100%, 다음 달은 0%로 표시됩니다.',
+  lastYear:
+    '해당 월에 여사원이 투입된 거래처들의 전년 동월 마감 실적(물류배부 기준)을 합산합니다. 반품·조정으로 음수가 나올 수 있으며, 전년 데이터가 없는 경우 "—"로 표시합니다.',
+  lastYearRatio:
+    '당월 실적을 전년 동월 실적으로 나눈 비율(당월 ÷ 전년 동월 × 100)입니다. 100%면 전년과 동일, 100%를 넘으면 증가입니다. 전년 데이터가 없는 경우 "—"로 표시합니다.',
+} as const;
+
 /** 여사원 투입현황 각 그래프의 데이터 집계 기준 안내 문구 (기간/지점 조건은 제외). */
 const DEPLOYMENT_CHART_INFO = {
   accountType:
@@ -205,36 +224,71 @@ export default function DashboardPage() {
   const salesTab = useMemo(() => {
     if (!data) return null;
     const s = data.salesSummary;
+    // 목표 달성률 색상 — 기준 진도율 대비 높으면 파랑, 낮으면 빨강, 같으면 중립.
+    // 목표 미등록(목표 0원) / 실적 미적재는 비교가 무의미하므로 중립 처리.
+    const progressColor =
+      s.targetAmount <= 0 || !s.hasActualData || s.progressRate === s.referenceProgressRate
+        ? undefined
+        : s.progressRate > s.referenceProgressRate
+          ? '#1677ff'
+          : '#ff4d4f';
     return (
       <>
-        <Alert
-          type="info"
-          message="매출 목표 데이터는 준비 중입니다. 현재는 실적 / 기준진도율 / 전년 대비만 표시됩니다."
-          style={{ marginBottom: 16 }}
-        />
-        <Row gutter={16}>
-          <Col span={6}>
-            <Card extra={<span style={{ color: '#8c8c8c' }}>(단위: 원)</span>}>
-              <Statistic title="당월 실적" value={s.actualAmount} suffix="원" />
+        <Row gutter={[16, 16]}>
+          <Col span={8}>
+            <Card>
+              <Statistic title={cardTitle('당월 목표', SALES_CHART_INFO.target)} value={s.targetAmount} suffix="원" />
             </Card>
           </Col>
-          <Col span={6}>
-            <Card extra={<span style={{ color: '#8c8c8c' }}>(단위: %)</span>}>
-              <Statistic title="기준 진도율" value={s.referenceProgressRate} precision={1} suffix="%" />
+          <Col span={8}>
+            <Card>
+              {s.hasActualData ? (
+                <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value={s.actualAmount} suffix="원" />
+              ) : (
+                <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value="—" />
+              )}
             </Card>
           </Col>
-          <Col span={6}>
-            <Card extra={<span style={{ color: '#8c8c8c' }}>(단위: 원)</span>}>
-              <Statistic title="전년 동월 실적" value={s.lastYearAmount} suffix="원" />
+          <Col span={8}>
+            <Card>
+              <Statistic
+                title={cardTitle('목표 달성률', SALES_CHART_INFO.progress)}
+                value={s.progressRate}
+                precision={1}
+                suffix="%"
+                valueStyle={progressColor ? { color: progressColor } : undefined}
+              />
             </Card>
           </Col>
-          <Col span={6}>
-            <Card extra={<span style={{ color: '#8c8c8c' }}>(단위: %)</span>}>
-              <Statistic title="전년 대비" value={s.lastYearRatio} precision={1} suffix="%" />
+          <Col span={8}>
+            <Card>
+              <Statistic title={cardTitle('기준 진도율', SALES_CHART_INFO.reference)} value={s.referenceProgressRate} precision={1} suffix="%" />
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              {s.hasLastYearData ? (
+                <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value={s.lastYearAmount} suffix="원" />
+              ) : (
+                <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value="—" />
+              )}
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card>
+              {s.hasLastYearData ? (
+                <Statistic title={cardTitle('전년동월 대비 성장률', SALES_CHART_INFO.lastYearRatio)} value={s.lastYearRatio} precision={1} suffix="%" />
+              ) : (
+                <Statistic title={cardTitle('전년동월 대비 성장률', SALES_CHART_INFO.lastYearRatio)} value="—" />
+              )}
             </Card>
           </Col>
         </Row>
-        <div style={{ marginTop: 16, textAlign: 'right' }}>
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ color: '#8c8c8c' }}>
+            <InfoCircleOutlined style={{ marginRight: 4 }} />
+            여사원 투입거래처 기준 매출현황
+          </span>
           <Link to="/sales/monthly">월 매출(물류배부) 보고서 보기 →</Link>
         </div>
       </>

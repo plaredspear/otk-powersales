@@ -26,6 +26,9 @@ export interface SalesSummary {
   lastYearAmount: number;
   lastYearRatio: number;
   channelSales: ChannelSalesItem[];
+  /** 매출 데이터 적재 여부 — 0원이 "미적재"인지 "실제 0"인지 구분. false 면 화면에서 "—" 표시. */
+  hasActualData: boolean;
+  hasLastYearData: boolean;
 }
 
 export interface AccountTypeCount {

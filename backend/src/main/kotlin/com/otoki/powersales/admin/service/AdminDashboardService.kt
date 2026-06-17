@@ -40,8 +40,9 @@ import java.time.format.DateTimeFormatter
  * - 환산인원: SF `MonthlyFemaleEmployeeIntegrationSchedule__c.ConvertedHeadcount__c`(Number 18,4) SUM 정합 — scale=4.
  * - 거래처유형별 투입현황 차트는 SF 와 동일하게 **전월(마감) 고정**(결정 D2). 그 외는 yearMonth 토글.
  * - 판촉/OSC 구분: `Employee.jobCode`("판촉직" / "OSC직"·"레이디직") — 레거시 `EmployeeTriggerHandler.cls:47` 정합(결정 D6).
- * - 매출현황 탭(salesSummary): 신규에 매출 목표 데이터 부재 → 실적 + 기준진도율(달력일) + 전년 비교만(결정 D7).
- *   목표 대비 진도율(targetAmount/progressRate/channelSales)은 0/빈 리스트.
+ * - 매출현황 탭(salesSummary): 투입 거래처 기준 실적 + 목표 + 달성률 + 기준진도율(달력일) + 전년 비교.
+ *   목표는 투입 거래처별 `SalesProgressRateMaster`(연·월 1행) 합계 총합, 달성률 = round(실적/목표×100).
+ *   유통별 목표/진도율(channelSales)은 데이터 부재로 빈 리스트.
  *   실적 source 는 RDS `MonthlySalesHistory` ([MonthlySalesAdminQueryService] 경유) — 외부 ORORA view 직접 호출 아님.
  *   (ORORA view 는 RDS 적재 배치에서만 읽고, 화면/집계는 항상 RDS 적재본을 본다.)
  */
@@ -104,16 +105,22 @@ class AdminDashboardService(
         val lastYearRatio = if (sales.lastYearAmount == 0L) 0.0
         else (sales.actualAmount.toDouble() / sales.lastYearAmount.toDouble()) * 100.0
 
+        // 달성률 = round(실적 / 목표 × 100). 목표 0(미등록) 이면 0.0 — 월 매출 요약([MonthlySalesAdminQueryService]) 정합.
+        val progressRate = if (sales.targetAmount <= 0L) 0.0
+        else Math.round(sales.actualAmount.toDouble() / sales.targetAmount * 100).toDouble()
+
         return SalesSummary(
             yearMonth = ym.format(YEAR_MONTH_FORMATTER),
             branchName = branchName,
-            targetAmount = 0L, // 후속 — 목표 데이터 부재 (D7)
+            targetAmount = sales.targetAmount,
             actualAmount = sales.actualAmount,
-            progressRate = 0.0, // 후속 — 목표 부재로 산출 불가 (D7)
+            progressRate = progressRate,
             referenceProgressRate = calendarReferenceProgressRate(ym, LocalDate.now()),
             lastYearAmount = sales.lastYearAmount,
             lastYearRatio = lastYearRatio,
-            channelSales = emptyList(), // 후속 — 유통별 목표/진도율 데이터 부재 (D7)
+            channelSales = emptyList(), // 후속 — 유통별 목표/진도율 데이터 부재
+            hasActualData = sales.hasActualData,
+            hasLastYearData = sales.hasLastYearData,
         )
     }
 

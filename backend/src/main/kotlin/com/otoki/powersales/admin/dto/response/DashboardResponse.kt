@@ -17,7 +17,10 @@ data class SalesSummary(
     val referenceProgressRate: Double,
     val lastYearAmount: Long,
     val lastYearRatio: Double,
-    val channelSales: List<ChannelSalesItem>
+    val channelSales: List<ChannelSalesItem>,
+    // 매출 데이터 적재 여부 — 0원이 "미적재"인지 "실제 0"인지 구분. false 면 화면에서 "—" 표시.
+    val hasActualData: Boolean,
+    val hasLastYearData: Boolean
 )
 
 data class ChannelSalesItem(

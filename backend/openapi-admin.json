@@ -14950,6 +14950,12 @@
             },
             "type" : "array"
           },
+          "hasActualData" : {
+            "type" : "boolean"
+          },
+          "hasLastYearData" : {
+            "type" : "boolean"
+          },
           "lastYearAmount" : {
             "format" : "int64",
             "type" : "integer"
@@ -16084,6 +16090,10 @@
       },
       "StaffTypeCount" : {
         "properties" : {
+          "etc" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "osc" : {
             "format" : "int32",
             "type" : "integer"
@@ -16564,6 +16574,10 @@
       "TotalByPosition" : {
         "properties" : {
           "active" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "etc" : {
             "format" : "int32",
             "type" : "integer"
           },

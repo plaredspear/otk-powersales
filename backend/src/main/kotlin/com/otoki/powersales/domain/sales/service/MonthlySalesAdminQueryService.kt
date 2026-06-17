@@ -574,14 +574,17 @@ class MonthlySalesAdminQueryService(
      * 입력 account 집합의 당월/전년 동월 `ShipClosing` 마감실적을 RDS `MonthlySalesHistory`
      * ([MonthlySalesHistoryQueryGateway]) 1 trip 으로 일괄 합산 — 외부 ORORA view 직접 호출 아님.
      * RDS 조회 키는 (`sap_account_code`, `sales_year`, `sales_month`) 복합 인덱스로 가속된다.
-     * 목표(target)/진도율은 신규 시스템 데이터 부재로 제외 — 실적 + 전년 비교만 산출 (D7).
-     * row 부재 (미적재) 시 0 반환.
+     * 목표(target)는 투입 거래처별 `SalesProgressRateMaster`(연·월 1행) 합계의 총합 — 상단 요약([getSummary]) 정합.
+     * 미등록 거래처는 0. row 부재 (미적재) 시 실적/전년 0 반환.
      * 부수 효과: 없음 (조회 전용).
      */
     fun sumInvestedAccountSales(accounts: List<Account>, year: Int, month: Int): InvestedAccountSales {
         val accountSapCodes = accounts.mapNotNull { it.externalKey }
         if (accountSapCodes.isEmpty()) {
-            return InvestedAccountSales(actualAmount = 0L, lastYearAmount = 0L)
+            return InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
         }
         val currentSalesDate = toSalesDate(year, month)
         val lastYearSalesDate = toSalesDate(year - 1, month)
@@ -591,13 +594,33 @@ class MonthlySalesAdminQueryService(
 
         val actual = accounts.sumOf { shipClosingSum(oroByKey[it.externalKey to currentSalesDate]) }
         val lastYear = accounts.sumOf { shipClosingSum(oroByKey[it.externalKey to lastYearSalesDate]) }
-        return InvestedAccountSales(actualAmount = actual, lastYearAmount = lastYear)
+
+        // 적재 데이터 존재 여부 — row 부재(미적재)와 실제 0/음수를 구분하기 위함.
+        // 투입 거래처 중 해당 월 RDS row 가 하나라도 있으면 데이터 존재로 본다.
+        val hasActualData = accounts.any { oroByKey.containsKey(it.externalKey to currentSalesDate) }
+        val hasLastYearData = accounts.any { oroByKey.containsKey(it.externalKey to lastYearSalesDate) }
+
+        // 목표 합계 — 투입 거래처별 (연, 월) SalesProgressRateMaster 1행 합계의 총합 (미등록 거래처는 0).
+        val accountIds = accounts.mapNotNull { it.id }
+        val targetByAccountId = findTargetMap(accountIds, year, month)
+        val target = targetByAccountId.values.sumOf { targetSumOf(it) }
+
+        return InvestedAccountSales(
+            actualAmount = actual, targetAmount = target, lastYearAmount = lastYear,
+            hasActualData = hasActualData, hasLastYearData = hasLastYearData,
+        )
     }
 
-    /** 투입 거래처 매출 실적 합산 결과 (당월/전년 동월). */
+    /**
+     * 투입 거래처 매출 실적 합산 결과 (당월 실적/목표/전년 동월).
+     * has*Data 는 RDS row 적재 여부 — 0원이 "미적재"인지 "실제 0"인지 구분하는 데 쓴다.
+     */
     data class InvestedAccountSales(
         val actualAmount: Long,
+        val targetAmount: Long,
         val lastYearAmount: Long,
+        val hasActualData: Boolean,
+        val hasLastYearData: Boolean,
     )
 
     /**

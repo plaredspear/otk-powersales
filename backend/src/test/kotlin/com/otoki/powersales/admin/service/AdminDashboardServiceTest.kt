@@ -69,7 +69,10 @@ class AdminDashboardServiceTest {
         every { employeeRepository.findProjectedBy() } returns emptyList()
         every { employeeRepository.findProjectedByCostCenterCodeIn(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
     }
 
     @Test
@@ -87,7 +90,10 @@ class AdminDashboardServiceTest {
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
         val byType = result.staffDeployment.byAccountType.associateBy { it.accountType }
@@ -110,7 +116,10 @@ class AdminDashboardServiceTest {
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
         val byWork = result.staffDeployment.byWorkType.associateBy { it.workType }
@@ -131,7 +140,10 @@ class AdminDashboardServiceTest {
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
         val superItem = result.staffDeployment.byChannelAndWorkType
@@ -156,7 +168,10 @@ class AdminDashboardServiceTest {
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
         val byWorkType = result.basicStats.byWorkType
@@ -174,16 +189,23 @@ class AdminDashboardServiceTest {
             listOf(mfeis(acc = acc))
         every { employeeRepository.findProjectedBy() } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(actualAmount = 800L, lastYearAmount = 760L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 800L, targetAmount = 1000L, lastYearAmount = 760L,
+                hasActualData = true, hasLastYearData = true,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
 
         assertThat(result.salesSummary.actualAmount).isEqualTo(800L)
         assertThat(result.salesSummary.lastYearAmount).isEqualTo(760L)
         assertThat(result.salesSummary.lastYearRatio).isCloseTo(105.26, org.assertj.core.data.Offset.offset(0.1))
-        // D7 — 목표/진도율/채널 후속
-        assertThat(result.salesSummary.targetAmount).isZero()
-        assertThat(result.salesSummary.progressRate).isZero()
+        // 목표 + 달성률 — round(800 / 1000 × 100) = 80.0
+        assertThat(result.salesSummary.targetAmount).isEqualTo(1000L)
+        assertThat(result.salesSummary.progressRate).isEqualTo(80.0)
+        // 데이터 적재 여부 플래그 전달
+        assertThat(result.salesSummary.hasActualData).isTrue()
+        assertThat(result.salesSummary.hasLastYearData).isTrue()
+        // 유통별 목표/진도율(channelSales)은 데이터 부재로 빈 리스트
         assertThat(result.salesSummary.channelSales).isEmpty()
     }
 
@@ -206,7 +228,10 @@ class AdminDashboardServiceTest {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns listOf(employee(birthDate = "1995-03-01"))
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
         val byAge = result.basicStats.byAgeGroup.associateBy { it.ageGroup }
@@ -220,7 +245,10 @@ class AdminDashboardServiceTest {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns listOf(employee(birthDate = null))
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
 
@@ -237,7 +265,10 @@ class AdminDashboardServiceTest {
             employee(status = "퇴직"), employee(status = null),
         )
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
 
@@ -256,7 +287,10 @@ class AdminDashboardServiceTest {
             employee(jobCode = "기타"),
         )
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false,
+            )
 
         val result = service.getDashboard(allScope, "2026-05", null)
 
