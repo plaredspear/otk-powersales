@@ -371,7 +371,7 @@ class _HomePageState extends ConsumerState<HomePage>
   /// 활동등록 팝업 메뉴 탭 핸들러
   void _handleActivityMenuTap(ActivityMenuItem item) {
     if (item.route != null) {
-      AppRouter.navigateTo(context, item.route!);
+      AppRouter.navigateTo(context, item.route!, arguments: item.arguments);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${item.label} 기능은 준비 중입니다')),

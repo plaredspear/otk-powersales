@@ -22,8 +22,16 @@ class SuggestionRepositoryImpl implements SuggestionRepository {
   }
 
   @override
-  Future<SuggestionListPage> getSuggestions({int page = 0, int size = 20}) async {
-    final pageModel = await _dataSource.getSuggestions(page: page, size: size);
+  Future<SuggestionListPage> getSuggestions({
+    int page = 0,
+    int size = 20,
+    String? category,
+  }) async {
+    final pageModel = await _dataSource.getSuggestions(
+      page: page,
+      size: size,
+      category: category,
+    );
     return SuggestionListPage(
       items: pageModel.content.map((m) => m.toEntity()).toList(),
       totalElements: pageModel.totalElements,

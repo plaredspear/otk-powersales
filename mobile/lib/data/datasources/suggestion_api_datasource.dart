@@ -41,10 +41,15 @@ class SuggestionApiDataSource implements SuggestionRemoteDataSource {
   Future<SuggestionListPageModel> getSuggestions({
     int page = 0,
     int size = 20,
+    String? category,
   }) async {
     final response = await _dio.get(
       '/api/v1/mobile/suggestions',
-      queryParameters: {'page': page, 'size': size},
+      queryParameters: {
+        'page': page,
+        'size': size,
+        'category': ?category,
+      },
     );
 
     return SuggestionListPageModel.fromJson(

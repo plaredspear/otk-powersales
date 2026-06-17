@@ -26,7 +26,11 @@ class _MockSuggestionRemoteDataSource implements SuggestionRemoteDataSource {
   }
 
   @override
-  Future<SuggestionListPageModel> getSuggestions({int page = 0, int size = 20}) {
+  Future<SuggestionListPageModel> getSuggestions({
+    int page = 0,
+    int size = 20,
+    String? category,
+  }) {
     throw UnimplementedError();
   }
 

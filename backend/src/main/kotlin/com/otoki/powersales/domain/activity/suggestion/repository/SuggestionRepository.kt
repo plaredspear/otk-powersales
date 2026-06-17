@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.suggestion.repository
 
 import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
+import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -20,6 +21,17 @@ interface SuggestionRepository : JpaRepository<Suggestion, Long>, SuggestionRepo
      */
     fun findByEmployeeIdAndIsDeletedFalseOrderByCreatedAtDesc(
         employeeId: Long,
+        pageable: Pageable
+    ): Page<Suggestion>
+
+    /**
+     * 본인 작성 목록 조회 — 분류 필터 (paged, soft-delete 제외, created_at DESC).
+     *
+     * 레거시 `logisticsclaimlist` (물류클레임 전용 조회) 대응 — category=LOGISTICS_CLAIM 으로 호출한다.
+     */
+    fun findByEmployeeIdAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(
+        employeeId: Long,
+        category: SuggestionCategory,
         pageable: Pageable
     ): Page<Suggestion>
 

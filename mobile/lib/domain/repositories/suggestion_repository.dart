@@ -32,7 +32,13 @@ abstract class SuggestionRepository {
       SuggestionRegisterForm form);
 
   /// 내 제안/물류클레임 목록 조회 (페이징)
-  Future<SuggestionListPage> getSuggestions({int page = 0, int size = 20});
+  ///
+  /// [category] 지정 시 해당 분류만 조회(예: LOGISTICS_CLAIM = 물류클레임 전용).
+  Future<SuggestionListPage> getSuggestions({
+    int page = 0,
+    int size = 20,
+    String? category,
+  });
 
   /// 제안/물류클레임 상세 조회
   Future<SuggestionDetail> getSuggestionDetail(int suggestionId);

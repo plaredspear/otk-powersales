@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionCr
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionListItem
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionResponse
 import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
+import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionStatus
 import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggestionIdException
 import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggestionPhotoIdException
@@ -197,11 +198,22 @@ class SuggestionService(
         return SuggestionResponse.from(suggestion, attachments)
     }
 
-    fun listMine(employeeId: Long, page: Int, size: Int): Page<SuggestionListItem> {
+    fun listMine(
+        employeeId: Long,
+        page: Int,
+        size: Int,
+        category: SuggestionCategory? = null
+    ): Page<SuggestionListItem> {
         val pageable: Pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-        return suggestionRepository
-            .findByEmployeeIdAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, pageable)
-            .map { SuggestionListItem.from(it) }
+        val result = if (category != null) {
+            // 레거시 logisticsclaimlist: 물류클레임 전용 조회 등 분류별 필터
+            suggestionRepository
+                .findByEmployeeIdAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, category, pageable)
+        } else {
+            suggestionRepository
+                .findByEmployeeIdAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, pageable)
+        }
+        return result.map { SuggestionListItem.from(it) }
     }
 
     @Transactional

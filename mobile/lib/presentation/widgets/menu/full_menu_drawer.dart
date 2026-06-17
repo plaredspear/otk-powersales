@@ -65,7 +65,8 @@ class FullMenuDrawer extends ConsumerWidget {
                     context,
                     onMenuTap: (item) {
                       if (item.route != null) {
-                        AppRouter.navigateTo(context, item.route!);
+                        AppRouter.navigateTo(context, item.route!,
+                            arguments: item.arguments);
                       }
                     },
                   );

@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionCr
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionDraftResponse
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionListItem
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionResponse
+import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.domain.activity.suggestion.service.SuggestionDraftService
 import com.otoki.powersales.domain.activity.suggestion.service.SuggestionService
 import com.otoki.powersales.platform.common.dto.ApiResponse
@@ -89,13 +90,18 @@ class SuggestionController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
+    /**
+     * 본인 제안/물류클레임 목록. category 미지정 시 전체, 지정 시 해당 분류만.
+     * 레거시 `logisticsclaimlist`(물류클레임 전용 조회) 진입은 category=LOGISTICS_CLAIM 으로 호출.
+     */
     @GetMapping
     fun listMine(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false, defaultValue = "0") page: Int,
-        @RequestParam(required = false, defaultValue = "20") size: Int
+        @RequestParam(required = false, defaultValue = "20") size: Int,
+        @RequestParam(required = false) category: SuggestionCategory?
     ): ResponseEntity<ApiResponse<Page<SuggestionListItem>>> {
-        val response = suggestionService.listMine(principal.userId, page, size)
+        val response = suggestionService.listMine(principal.userId, page, size, category)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

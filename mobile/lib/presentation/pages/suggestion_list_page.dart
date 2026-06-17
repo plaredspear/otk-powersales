@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
+import '../../domain/entities/suggestion_form.dart';
 import '../../domain/entities/suggestion_list_item.dart';
 import '../providers/suggestion_list_provider.dart';
 import '../widgets/common/error_view.dart';
@@ -14,10 +15,14 @@ import '../widgets/common/loading_indicator.dart';
 
 /// 내 제안/물류클레임 목록 화면
 ///
-/// 레거시 `fieldTalk/suggest/logisticsclaimlist.jsp` 대응(통합 목록 + 카테고리 배지).
+/// 레거시 `fieldTalk/suggest/logisticsclaimlist.jsp` 대응.
+/// [category] 지정 시 해당 분류만 조회(물류클레임 전용 진입 = LOGISTICS_CLAIM),
+/// 미지정 시 전체 제안/물류클레임을 카테고리 배지와 함께 표시한다.
 /// 백엔드 `GET /api/v1/mobile/suggestions` 를 소비한다.
 class SuggestionListPage extends ConsumerStatefulWidget {
-  const SuggestionListPage({super.key});
+  final SuggestionCategory? category;
+
+  const SuggestionListPage({super.key, this.category});
 
   @override
   ConsumerState<SuggestionListPage> createState() => _SuggestionListPageState();
@@ -32,7 +37,9 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
     super.initState();
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(suggestionListProvider.notifier).load();
+      ref
+          .read(suggestionListProvider.notifier)
+          .load(category: widget.category?.code);
     });
   }
 
@@ -57,6 +64,16 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
     });
   }
 
+  /// 물류클레임 전용 진입 여부
+  bool get _isClaimOnly =>
+      widget.category == SuggestionCategory.logisticsClaim;
+
+  String get _title => _isClaimOnly ? '내 물류클레임 조회' : '내 제안 / 물류클레임';
+
+  String get _emptyMessage => _isClaimOnly
+      ? '등록된 물류클레임이 없습니다'
+      : '등록된 제안/물류클레임이 없습니다';
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(suggestionListProvider);
@@ -64,7 +81,7 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('내 제안 / 물류클레임'),
+        title: Text(_title),
         backgroundColor: AppColors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -95,7 +112,7 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
               height: MediaQuery.of(context).size.height * 0.6,
               child: Center(
                 child: Text(
-                  '등록된 제안/물류클레임이 없습니다',
+                  _emptyMessage,
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),
