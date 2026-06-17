@@ -54,6 +54,9 @@ class SuggestionDetailModel {
   final String? receptionLogisticsCenter;
   final String? responsibleLogisticsCenter;
   final String? actionStatus;
+  final String? actionNum;
+  final String? actionManager;
+  final String? actionContent;
   final String? duplicateProposalNum;
   final String status;
   final String createdAt;
@@ -76,6 +79,9 @@ class SuggestionDetailModel {
     this.receptionLogisticsCenter,
     this.responsibleLogisticsCenter,
     this.actionStatus,
+    this.actionNum,
+    this.actionManager,
+    this.actionContent,
     this.duplicateProposalNum,
     required this.status,
     required this.createdAt,
@@ -100,6 +106,9 @@ class SuggestionDetailModel {
       receptionLogisticsCenter: json['receptionLogisticsCenter'] as String?,
       responsibleLogisticsCenter: json['responsibleLogisticsCenter'] as String?,
       actionStatus: json['actionStatus'] as String?,
+      actionNum: json['actionNum'] as String?,
+      actionManager: json['actionManager'] as String?,
+      actionContent: json['actionContent'] as String?,
       duplicateProposalNum: json['duplicateProposalNum'] as String?,
       status: json['status'] as String? ?? 'SUBMITTED',
       createdAt: json['createdAt'] as String? ?? '',
@@ -130,6 +139,9 @@ class SuggestionDetailModel {
       receptionLogisticsCenter: receptionLogisticsCenter,
       responsibleLogisticsCenter: responsibleLogisticsCenter,
       actionStatus: actionStatus,
+      actionNum: actionNum,
+      actionManager: actionManager,
+      actionContent: actionContent,
       duplicateProposalNum: duplicateProposalNum,
       status: status,
       attachments: attachments.map((m) => m.toEntity()).toList(),

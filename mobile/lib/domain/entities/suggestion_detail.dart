@@ -54,6 +54,11 @@ class SuggestionDetail {
 
   /// 조치상태 enum 이름 (UNCONFIRMED/IN_PROGRESS/COMPLETED/DUPLICATE_RECEPTION) — nullable
   final String? actionStatus;
+
+  /// OLS 조치사항 — 조치번호/조치 담당자/조치내용 (레거시 logisticsclaimview.jsp 45~66행)
+  final String? actionNum;
+  final String? actionManager;
+  final String? actionContent;
   final String? duplicateProposalNum;
 
   /// 제안 상태 enum 이름 (SUBMITTED/IN_REVIEW/ACCEPTED/REJECTED)
@@ -79,6 +84,9 @@ class SuggestionDetail {
     this.receptionLogisticsCenter,
     this.responsibleLogisticsCenter,
     this.actionStatus,
+    this.actionNum,
+    this.actionManager,
+    this.actionContent,
     this.duplicateProposalNum,
     required this.status,
     this.attachments = const [],
@@ -109,6 +117,9 @@ class SuggestionDetail {
   /// OLS 조치사항(물류클레임 조치 결과)이 하나라도 존재하는지
   bool get hasActionInfo =>
       (actionStatus != null && actionStatus!.isNotEmpty) ||
+      (actionNum != null && actionNum!.isNotEmpty) ||
+      (actionManager != null && actionManager!.isNotEmpty) ||
+      (actionContent != null && actionContent!.isNotEmpty) ||
       (logisticsResponsibility != null && logisticsResponsibility!.isNotEmpty) ||
       (claimTypeMeasures != null && claimTypeMeasures!.isNotEmpty) ||
       (responsibleLogisticsCenter != null &&
@@ -136,13 +147,16 @@ class SuggestionDetail {
         other.receptionLogisticsCenter == receptionLogisticsCenter &&
         other.responsibleLogisticsCenter == responsibleLogisticsCenter &&
         other.actionStatus == actionStatus &&
+        other.actionNum == actionNum &&
+        other.actionManager == actionManager &&
+        other.actionContent == actionContent &&
         other.duplicateProposalNum == duplicateProposalNum &&
         other.status == status &&
         _listEquals(other.attachments, attachments);
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
         id,
         proposalNumber,
         category,
@@ -160,10 +174,13 @@ class SuggestionDetail {
         receptionLogisticsCenter,
         responsibleLogisticsCenter,
         actionStatus,
+        actionNum,
+        actionManager,
+        actionContent,
         duplicateProposalNum,
         status,
         Object.hashAll(attachments),
-      );
+      ]);
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {

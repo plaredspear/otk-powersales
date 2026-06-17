@@ -210,8 +210,12 @@ class _ActionSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
+          if (detail.actionNum != null && detail.actionNum!.isNotEmpty)
+            _InfoRow(label: '조치번호', value: detail.actionNum!),
           if (detail.actionStatusLabel != null)
             _InfoRow(label: '조치상태', value: detail.actionStatusLabel!),
+          if (detail.actionManager != null && detail.actionManager!.isNotEmpty)
+            _InfoRow(label: '조치 담당자', value: detail.actionManager!),
           if (detail.logisticsResponsibility != null)
             _InfoRow(label: '물류책임', value: detail.logisticsResponsibility!),
           if (detail.claimTypeMeasures != null)
@@ -222,6 +226,8 @@ class _ActionSection extends StatelessWidget {
             _InfoRow(label: '접수물류센터', value: detail.receptionLogisticsCenter!),
           if (detail.duplicateProposalNum != null)
             _InfoRow(label: '중복 제안번호', value: detail.duplicateProposalNum!),
+          if (detail.actionContent != null && detail.actionContent!.isNotEmpty)
+            _InfoRow(label: '조치내용', value: detail.actionContent!),
         ],
       ),
     );
