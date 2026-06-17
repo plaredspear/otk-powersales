@@ -23,6 +23,7 @@ import com.otoki.powersales.domain.activity.claim.exception.InvalidDateFormatExc
 import com.otoki.powersales.domain.activity.claim.exception.InvalidDateTypeException
 import com.otoki.powersales.domain.activity.claim.exception.InvalidPurchaseMethodException
 import com.otoki.powersales.domain.activity.claim.exception.InvalidRequestTypeException
+import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.domain.activity.claim.exception.RequestTypeMaxExceededException
 import com.otoki.powersales.domain.activity.claim.repository.ClaimDraftRepository
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
@@ -98,6 +99,13 @@ class ClaimService(
 
         val purchaseMethod = resolvePurchaseMethod(request.purchaseMethodCode)
         val requestTypes = resolveRequestTypes(request.requestTypeCode)
+
+        // 영수증 조건부 필수 (Spec #829 / 레거시 write.jsp): 개인카드(B)·현금(C) 면 영수증 필수, 법인카드(A) 면제.
+        if ((purchaseMethod == PurchaseMethod.PERSONAL_CARD || purchaseMethod == PurchaseMethod.CASH) &&
+            receiptPhoto == null
+        ) {
+            throw ReceiptRequiredException()
+        }
 
         val claim = Claim(
             employee = employee,

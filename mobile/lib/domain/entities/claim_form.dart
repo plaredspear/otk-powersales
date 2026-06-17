@@ -99,6 +99,14 @@ class ClaimRegisterForm {
     if (defectQuantity <= 0) {
       errors.add('불량 수량을 입력해주세요 (1개 이상)');
     }
+    // 사진 필수 검증 (레거시 write.jsp:348/350 — claimImgIdx/partImgIdx==0 차단).
+    // 미첨부는 빈 경로 File 로 표현되므로 path 가 비었는지 확인한다.
+    if (defectPhoto.path.isEmpty) {
+      errors.add('불량 사진을 첨부해주세요');
+    }
+    if (labelPhoto.path.isEmpty) {
+      errors.add('일부인 사진을 첨부해주세요');
+    }
 
     // 조건부 필수 필드 검증 (구매 정보)
     if (hasPurchaseInfo) {
@@ -108,7 +116,11 @@ class ClaimRegisterForm {
       if (purchaseMethodName == null || purchaseMethodName!.isEmpty) {
         errors.add('구매 방법명이 비어있습니다');
       }
-      if (receiptPhoto == null) {
+      // 영수증은 개인카드(B)/현금(C) 만 필수, 법인카드(A) 는 면제
+      // (레거시 write.jsp 2024-02-22 정책 + 백엔드 ReceiptRequiredException 정합).
+      final requiresReceipt =
+          purchaseMethodCode == 'B' || purchaseMethodCode == 'C';
+      if (requiresReceipt && receiptPhoto == null) {
         errors.add('구매 영수증 사진을 첨부해주세요');
       }
     }

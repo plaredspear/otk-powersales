@@ -15,6 +15,7 @@ import com.otoki.powersales.domain.activity.claim.exception.ClaimPhotoNotFoundEx
 import com.otoki.powersales.domain.activity.claim.exception.ClaimTypeHierarchyMismatchException
 import com.otoki.powersales.domain.activity.claim.exception.InvalidClaimDateException
 import com.otoki.powersales.domain.activity.claim.exception.InvalidClaimType1Exception
+import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.domain.activity.claim.exception.RequestTypeMaxExceededException
 import com.otoki.powersales.domain.activity.claim.repository.ClaimDraftRepository
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
@@ -142,6 +143,34 @@ class ClaimServiceTest {
             assertThat(result.productCode).isEqualTo("P0001")
             assertThat(savedSlots).hasSize(2)
             assertThat(savedSlots.map { it.uploadKbn }).containsExactly("claim", "part")
+        }
+
+        @Test
+        @DisplayName("개인카드(B) + 영수증 미첨부 - ReceiptRequiredException")
+        fun rejectsPersonalCardWithoutReceipt() {
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { accountRepository.findById(1) } returns Optional.of(account)
+            every { productRepository.findByProductCode("P0001") } returns product
+
+            assertThatThrownBy {
+                claimService.createClaim(
+                    userId, validRequest(purchaseMethodCode = "B"),
+                    mockPhoto("d"), mockPhoto("l"), receiptPhoto = null
+                )
+            }.isInstanceOf(ReceiptRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("법인카드(A) + 영수증 미첨부 - 허용 (영수증 면제)")
+        fun allowsCorporateCardWithoutReceipt() {
+            stubCreateDeps()
+
+            claimService.createClaim(
+                userId, validRequest(purchaseMethodCode = "A"),
+                mockPhoto("d"), mockPhoto("l"), receiptPhoto = null
+            )
+
+            verify { claimRepository.save(any<Claim>()) }
         }
 
         @Test

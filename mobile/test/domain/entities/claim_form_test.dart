@@ -204,18 +204,44 @@ void main() {
         expect(form.validate(), contains('구매 방법명이 비어있습니다'));
       });
 
-      test('구매 금액 입력 시 영수증 사진이 없으면 유효하지 않다', () {
+      test('개인카드(B) 구매 시 영수증 사진이 없으면 유효하지 않다', () {
         // Given
         final form = createValidForm(
           purchaseAmount: 5000,
-          purchaseMethodCode: 'PM01',
-          purchaseMethodName: '대형마트',
+          purchaseMethodCode: 'B',
+          purchaseMethodName: '개인카드',
           receiptPhoto: null,
         );
 
         // Then
         expect(form.isValid, false);
         expect(form.validate(), contains('구매 영수증 사진을 첨부해주세요'));
+      });
+
+      test('현금(C) 구매 시 영수증 사진이 없으면 유효하지 않다', () {
+        // Given
+        final form = createValidForm(
+          purchaseAmount: 5000,
+          purchaseMethodCode: 'C',
+          purchaseMethodName: '현금',
+          receiptPhoto: null,
+        );
+
+        // Then
+        expect(form.validate(), contains('구매 영수증 사진을 첨부해주세요'));
+      });
+
+      test('법인카드(A) 구매 시 영수증 사진이 없어도 유효하다 (면제)', () {
+        // Given
+        final form = createValidForm(
+          purchaseAmount: 5000,
+          purchaseMethodCode: 'A',
+          purchaseMethodName: '법인카드',
+          receiptPhoto: null,
+        );
+
+        // Then — 법인카드는 영수증 면제 (레거시 write.jsp 정합)
+        expect(form.validate(), isNot(contains('구매 영수증 사진을 첨부해주세요')));
       });
 
       test('구매 금액이 0이면 조건부 필수 검증을 하지 않는다', () {
