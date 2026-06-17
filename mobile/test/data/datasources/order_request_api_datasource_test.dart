@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/datasources/order_request_api_datasource.dart';
 import 'package:mobile/data/datasources/order_request_remote_datasource.dart';
+import 'package:mobile/data/models/order_request_detail_model.dart';
 
 void main() {
   group('OrderRequestApiDataSource', () {
@@ -333,14 +334,111 @@ void main() {
       });
     });
 
-    group('미구현 메서드', () {
-      test('getOrderRequestDetail은 UnimplementedError 발생', () {
-        expect(
-          () => dataSource.getOrderRequestDetail(orderId: 1),
-          throwsA(isA<UnimplementedError>()),
-        );
+    group('getOrderRequestDetail', () {
+      test('정상 API 응답 시 OrderRequestDetailModel 반환', () async {
+        String? capturedPath;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (options.path == '/api/v1/mobile/me/order-requests/7') {
+              capturedPath = options.path;
+              handler.resolve(Response(
+                data: {
+                  'success': true,
+                  'data': {
+                    'id': 7,
+                    'orderRequestNumber': 'OP20260301',
+                    'clientId': 42,
+                    'clientName': '홈플러스 강남점',
+                    'clientDeadlineTime': '14:00',
+                    'orderDate': '2026-03-01',
+                    'deliveryDate': '2026-03-05',
+                    'totalAmount': 1500000,
+                    'totalApprovedAmount': 1400000,
+                    'orderRequestStatus': 'APPROVED',
+                    'isClosed': true,
+                    'orderedItemCount': 1,
+                    'orderedItems': [
+                      {
+                        'productCode': 'P001',
+                        'productName': '진라면',
+                        'totalQuantityBoxes': 10.0,
+                        'totalQuantityPieces': 320,
+                        'isCancelled': false,
+                      }
+                    ],
+                    'orderProcessingStatusList': [
+                      {
+                        'sapOrderNumber': 'SAP1234',
+                        'items': [
+                          {
+                            'productCode': 'P001',
+                            'productName': '진라면',
+                            'deliveredQuantity': '320',
+                            'deliveryStatus': 'DELIVERED',
+                            'driverName': '김기사',
+                            'vehicle': '12가3456',
+                            'driverPhone': '010-1234-5678',
+                            'scheduleTime': '09:00',
+                            'completeTime': '10:30',
+                          }
+                        ],
+                      }
+                    ],
+                    'rejectedItems': null,
+                  },
+                  'message': '조회 성공',
+                },
+                statusCode: 200,
+                requestOptions: options,
+              ));
+              return;
+            }
+            handler.reject(DioException(requestOptions: options));
+          },
+        ));
+
+        final result = await dataSource.getOrderRequestDetail(orderId: 7);
+
+        expect(capturedPath, '/api/v1/mobile/me/order-requests/7');
+        expect(result, isA<OrderRequestDetailModel>());
+        expect(result.id, 7);
+        expect(result.orderRequestNumber, 'OP20260301');
+        expect(result.clientName, '홈플러스 강남점');
+        expect(result.isClosed, true);
+        expect(result.totalApprovedAmount, 1400000);
+        expect(result.orderedItems.length, 1);
+        expect(result.orderedItems[0].productCode, 'P001');
+        expect(result.orderProcessingStatusList, isNotNull);
+        expect(result.orderProcessingStatusList!.length, 1);
+        expect(result.orderProcessingStatusList![0].sapOrderNumber, 'SAP1234');
+        expect(result.orderProcessingStatusList![0].items[0].driverName, '김기사');
+        expect(result.rejectedItems, isNull);
       });
 
+      test('서버 500 응답 시 DioException 발생', () async {
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.reject(DioException(
+              requestOptions: options,
+              response: Response(
+                data: {'message': 'Internal Server Error'},
+                statusCode: 500,
+                requestOptions: options,
+              ),
+              type: DioExceptionType.badResponse,
+            ));
+          },
+        ));
+
+        expect(
+          () => dataSource.getOrderRequestDetail(orderId: 7),
+          throwsA(isA<DioException>()),
+        );
+      });
+    });
+
+    group('미구현 메서드', () {
       test('resendOrderRequest는 UnimplementedError 발생', () {
         expect(
           () => dataSource.resendOrderRequest(orderId: 1),
