@@ -43,7 +43,8 @@ class AdminProductInventoryService(
 
         val sapResponse = sapInventorySearchClient.search(
             accountId = accountId.toLong(),
-            productCodes = productCodes
+            productCodes = productCodes,
+            deliveryDate = deliveryRequestDate
         )
 
         val results = productCodes.map { code ->

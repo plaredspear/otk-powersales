@@ -60,6 +60,11 @@ class SuggestionDetailModel {
   final String? duplicateProposalNum;
   final String status;
   final String createdAt;
+
+  /// '오뚜기 접수사원' (등록사원명/사번) — 물류클레임 상세에서 조장에게만 내려옴. 그 외 null.
+  final String? receptionEmployeeName;
+  final String? receptionEmployeeCode;
+
   final List<SuggestionAttachmentModel> attachments;
 
   const SuggestionDetailModel({
@@ -85,6 +90,8 @@ class SuggestionDetailModel {
     this.duplicateProposalNum,
     required this.status,
     required this.createdAt,
+    this.receptionEmployeeName,
+    this.receptionEmployeeCode,
     this.attachments = const [],
   });
 
@@ -112,6 +119,8 @@ class SuggestionDetailModel {
       duplicateProposalNum: json['duplicateProposalNum'] as String?,
       status: json['status'] as String? ?? 'SUBMITTED',
       createdAt: json['createdAt'] as String? ?? '',
+      receptionEmployeeName: json['receptionEmployeeName'] as String?,
+      receptionEmployeeCode: json['receptionEmployeeCode'] as String?,
       attachments: (json['attachments'] as List<dynamic>? ?? const [])
           .map((e) =>
               SuggestionAttachmentModel.fromJson(e as Map<String, dynamic>))
@@ -144,6 +153,8 @@ class SuggestionDetailModel {
       actionContent: actionContent,
       duplicateProposalNum: duplicateProposalNum,
       status: status,
+      receptionEmployeeName: receptionEmployeeName,
+      receptionEmployeeCode: receptionEmployeeCode,
       attachments: attachments.map((m) => m.toEntity()).toList(),
     );
   }

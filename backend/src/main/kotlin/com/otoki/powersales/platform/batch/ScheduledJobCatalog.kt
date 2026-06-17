@@ -99,6 +99,16 @@ object ScheduledJobCatalog {
             cron = "\${app.batch.orora.monthly.cron:0 0 5 3 * *}",
             description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매월 3일 05시, 전월분) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등. 수동 트리거로 특정 월 재적재 가능",
         ),
+        Entry(
+            jobName = ErpOrderRetentionBatch.JOB_NAME,
+            cron = "\${app.batch.erp-order-retention.cron:0 0 4 * * SUN}",
+            description = "6개월 경과 ERP 주문/라인 hard delete (기본 매주 일요일 04시) — legacy Batch_ERPOrderDel + Batch_ERPOrderProductDel 동등",
+        ),
+        Entry(
+            jobName = JMartCoordinateBatch.JOB_NAME,
+            cron = "\${app.batch.jmart-coordinate.cron:0 30 3 * * *}",
+            description = "J마트(이동매장) 요일별 좌표 보정 (기본 매일 03:30, 수=양구/금=원통) — legacy Batch_JMartLatLong 동등",
+        ),
     )
 
     val JOB_NAMES: List<String> = ENTRIES.map { it.jobName }

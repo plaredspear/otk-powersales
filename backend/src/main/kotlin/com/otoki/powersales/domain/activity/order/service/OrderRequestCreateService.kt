@@ -81,7 +81,7 @@ class OrderRequestCreateService(
 
         // 3. SAP InventorySearch
         val productCodes = request.lines.map { it.productCode }.distinct()
-        val inventoryMap = inventorySearchClient.search(request.accountId, productCodes)
+        val inventoryMap = inventorySearchClient.search(request.accountId, productCodes, request.deliveryDate)
         validateInventory(request, inventoryMap)
 
         // 4. 여신 검증

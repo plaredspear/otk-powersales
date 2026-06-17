@@ -64,6 +64,11 @@ class SuggestionDetail {
   /// 제안 상태 enum 이름 (SUBMITTED/IN_REVIEW/ACCEPTED/REJECTED)
   final String status;
 
+  /// '오뚜기 접수사원' (등록사원명/사번) — 물류클레임 상세에서 조장에게만 노출, 그 외 null
+  /// (레거시 logisticsclaimview 권한분기 동등)
+  final String? receptionEmployeeName;
+  final String? receptionEmployeeCode;
+
   final List<SuggestionAttachment> attachments;
 
   const SuggestionDetail({
@@ -89,10 +94,16 @@ class SuggestionDetail {
     this.actionContent,
     this.duplicateProposalNum,
     required this.status,
+    this.receptionEmployeeName,
+    this.receptionEmployeeCode,
     this.attachments = const [],
   });
 
   bool get isLogisticsClaim => category == SuggestionCategory.logisticsClaim;
+
+  /// '오뚜기 접수사원' 정보(이름)가 존재하는지 — 조장 권한으로 조회 시에만 채워진다.
+  bool get hasReceptionEmployee =>
+      receptionEmployeeName != null && receptionEmployeeName!.isNotEmpty;
 
   bool get hasAttachments => attachments.isNotEmpty;
 
@@ -152,6 +163,8 @@ class SuggestionDetail {
         other.actionContent == actionContent &&
         other.duplicateProposalNum == duplicateProposalNum &&
         other.status == status &&
+        other.receptionEmployeeName == receptionEmployeeName &&
+        other.receptionEmployeeCode == receptionEmployeeCode &&
         _listEquals(other.attachments, attachments);
   }
 
@@ -179,6 +192,8 @@ class SuggestionDetail {
         actionContent,
         duplicateProposalNum,
         status,
+        receptionEmployeeName,
+        receptionEmployeeCode,
         Object.hashAll(attachments),
       ]);
 }

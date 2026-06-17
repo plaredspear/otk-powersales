@@ -26,6 +26,7 @@ import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.service.OrgCostCenterMatchService
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.enums.StorageCondition
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
@@ -177,10 +178,24 @@ class SuggestionService(
         val suggestion = suggestionRepository.findByIdAndIsDeletedFalse(suggestionId)
             ?: throw SuggestionNotFoundException()
 
-        // 본인만 조회 허용 (관리자 정책은 별 endpoint)
-        if (suggestion.employee?.id != requesterEmployeeId) {
+        val requester = employeeRepository.findById(requesterEmployeeId).orElse(null)
+            ?: throw SuggestionAccessDeniedException()
+
+        // 접근 권한: 본인 OR (물류클레임 & 여사원 아님 & 같은 원가센터) — 목록 가시 범위와 일치(레거시 LogisticsClaimSearch 동등).
+        // 정규 제안(그 외 분류)은 본인만 허용(기존 정책 유지).
+        val isOwner = suggestion.employee?.id == requesterEmployeeId
+        val requesterOrgCostCenter = resolveOrgCostCenterCode(requester.costCenterCode)
+        val isSameCostCenterLogisticsClaim = suggestion.category == SuggestionCategory.LOGISTICS_CLAIM &&
+            requester.role != AppAuthority.WOMAN &&
+            requesterOrgCostCenter != null &&
+            requesterOrgCostCenter == suggestion.orgCostCenterCode
+        if (!isOwner && !isSameCostCenterLogisticsClaim) {
             throw SuggestionAccessDeniedException()
         }
+
+        // '오뚜기 접수사원'(등록사원 이름/사번) 은 물류클레임 상세에서 조장에게만 노출(레거시 logisticsclaimview 동등).
+        val showReceptionEmployee = suggestion.category == SuggestionCategory.LOGISTICS_CLAIM &&
+            requester.role == AppAuthority.LEADER
 
         val attachments = uploadFileRepository
             .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestion.id)
@@ -195,7 +210,7 @@ class SuggestionService(
                 )
             }
 
-        return SuggestionResponse.from(suggestion, attachments)
+        return SuggestionResponse.from(suggestion, attachments, showReceptionEmployee)
     }
 
     fun listMine(
@@ -205,16 +220,36 @@ class SuggestionService(
         category: SuggestionCategory? = null
     ): Page<SuggestionListItem> {
         val pageable: Pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-        val result = if (category != null) {
-            // 레거시 logisticsclaimlist: 물류클레임 전용 조회 등 분류별 필터
-            suggestionRepository
-                .findByEmployeeIdAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, category, pageable)
-        } else {
-            suggestionRepository
-                .findByEmployeeIdAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, pageable)
+        val requester = employeeRepository.findById(employeeId).orElse(null)
+            ?: throw SuggestionAccessDeniedException()
+
+        // 레거시 LogisticsClaimSearch 권한 분기: 여사원=본인분 / 그 외(조장·지점장)=같은 원가센터 전체.
+        // 물류클레임 분류에 한해 원가센터 전체조회 적용(정규 제안은 본인분 유지).
+        val requesterOrgCostCenter = resolveOrgCostCenterCode(requester.costCenterCode)
+        val useCostCenterScope = category == SuggestionCategory.LOGISTICS_CLAIM &&
+            requester.role != AppAuthority.WOMAN &&
+            requesterOrgCostCenter != null
+
+        val result = when {
+            useCostCenterScope ->
+                suggestionRepository.findByOrgCostCenterCodeAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(
+                    requesterOrgCostCenter!!, category!!, pageable
+                )
+            category != null ->
+                suggestionRepository
+                    .findByEmployeeIdAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, category, pageable)
+            else ->
+                suggestionRepository
+                    .findByEmployeeIdAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, pageable)
         }
         return result.map { SuggestionListItem.from(it) }
     }
+
+    /** 사원 costCenterCode → 등록 시 저장된 `org_cost_center_code` 와 동일 정규화 (없으면 null). */
+    private fun resolveOrgCostCenterCode(costCenterCode: String?): String? =
+        costCenterCode
+            ?.takeIf { it.isNotBlank() }
+            ?.let { orgCostCenterMatchService.findMatchingCostCenterCode(it).orElse(null) }
 
     @Transactional
     fun update(suggestionId: Long, requesterEmployeeId: Long, request: SuggestionUpdateRequest): SuggestionResponse {

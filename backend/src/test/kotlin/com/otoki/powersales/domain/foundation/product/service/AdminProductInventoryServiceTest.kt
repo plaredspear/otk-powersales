@@ -48,7 +48,7 @@ class AdminProductInventoryServiceTest {
             createProduct(productCode = "P001", name = "꿀배청 680G", unit = "EA"),
             createProduct(productCode = "P002", name = "카레 100G", unit = "EA")
         )
-        every { sapInventorySearchClient.search(1L, any()) } returns mapOf(
+        every { sapInventorySearchClient.search(1L, any(), any()) } returns mapOf(
             "P001" to InventoryInfo("P001", "SAP_P001", 1, 100, BigDecimal("1000")),
             "P002" to InventoryInfo("P002", "SAP_P002", 1, 200, BigDecimal("2000")),
         )
@@ -76,7 +76,7 @@ class AdminProductInventoryServiceTest {
         every { productRepository.findByProductCodeIn(listOf("P001")) } returns listOf(
             createProduct(productCode = "P001", name = "꿀배청")
         )
-        every { sapInventorySearchClient.search(1L, any()) } returns emptyMap()
+        every { sapInventorySearchClient.search(1L, any(), any()) } returns emptyMap()
 
         val response = service.searchInventory(request)
 

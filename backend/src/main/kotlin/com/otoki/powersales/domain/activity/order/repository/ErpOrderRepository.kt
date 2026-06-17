@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.order.entity.ErpOrder
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import java.time.LocalDate
@@ -11,6 +12,14 @@ import java.time.LocalDate
 interface ErpOrderRepository : JpaRepository<ErpOrder, Long> {
 
     fun findBySapOrderNumber(sapOrderNumber: String): ErpOrder?
+
+    /**
+     * 보관주기 경과 ERP 주문 헤더 hard delete (레거시 `Batch_ERPOrderDel` — `OrderDate__c < LAST_N_MONTHS:6`).
+     * `order_date` 가 NULL 인 행은 삭제 대상에서 제외(레거시 동등). 자식 라인 삭제 이후 호출해야 한다.
+     */
+    @Modifying
+    @Query("DELETE FROM ErpOrder o WHERE o.orderDate < :cutoff")
+    fun deleteByOrderDateBefore(@Param("cutoff") cutoff: LocalDate): Int
 
     /**
      * 거래처별 출하 주문 목록 조회 (Spec #593 — 거래처별 주문 탭).

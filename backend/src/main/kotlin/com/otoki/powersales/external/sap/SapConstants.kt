@@ -41,6 +41,9 @@ object SapConstants {
     /** 거래처 여신 한도 조회 SAP service path (Spec #594). 레거시 `IF_REST_SAP_LoanInquiry` (SD03040). */
     const val SAP_INTERFACE_LOAN_INQUIRY: String = "SD03040"
 
+    /** 실시간 재고/공급제한/환산수량 조회 SAP service path. 레거시 `IF_REST_SAP_InventorySearch` (SD03070). */
+    const val SAP_INTERFACE_INVENTORY_SEARCH: String = "SD03070"
+
     /** 본인 주문요청 상세 조회 SAP service path (Spec #595). 레거시 `IF_REST_SAP_OrderRequestDetail` (SD03052). */
     const val SAP_INTERFACE_ORDER_REQUEST_DETAIL: String = "SD03052"
 

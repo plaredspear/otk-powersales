@@ -20,7 +20,11 @@ class _MockSuggestionRepository implements SuggestionRepository {
   }
 
   @override
-  Future<SuggestionListPage> getSuggestions({int page = 0, int size = 20}) {
+  Future<SuggestionListPage> getSuggestions({
+    String? category,
+    int page = 0,
+    int size = 20,
+  }) {
     throw UnimplementedError();
   }
 

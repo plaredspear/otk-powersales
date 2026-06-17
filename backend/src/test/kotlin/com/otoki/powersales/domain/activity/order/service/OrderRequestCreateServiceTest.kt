@@ -121,7 +121,7 @@ class OrderRequestCreateServiceTest {
 
             assertThat(response.orderRequestId).isEqualTo(existing.id)
             assertThat(response.status).isEqualTo(OrderRequestStatus.APPROVED)
-            verify(exactly = 0) { inventorySearchClient.search(any(), any()) }
+            verify(exactly = 0) { inventorySearchClient.search(any(), any(), any()) }
             verify(exactly = 0) { loanInquiryClient.inquireCreditBalance(any()) }
             verify(exactly = 0) { orderRequestRepository.save(any<OrderRequest>()) }
             verify(exactly = 0) { orderRequestRegisterSender.enqueue(any(), any()) }
@@ -237,7 +237,7 @@ class OrderRequestCreateServiceTest {
     }
 
     private fun stubInventory(map: Map<String, InventoryInfo>) {
-        every { inventorySearchClient.search(eq(accountId), any()) } returns map
+        every { inventorySearchClient.search(eq(accountId), any(), any()) } returns map
     }
 
     private fun baseRequest(

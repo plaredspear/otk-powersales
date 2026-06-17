@@ -144,6 +144,12 @@ class SuggestionDetailPage extends ConsumerWidget {
             _ActionSection(detail: detail),
           ],
 
+          // 오뚜기 접수사원 (조장만 노출 — 레거시 logisticsclaimview 권한분기)
+          if (detail.hasReceptionEmployee) ...[
+            const SizedBox(height: AppSpacing.xl),
+            _ReceptionEmployeeSection(detail: detail),
+          ],
+
           // 첨부 사진
           if (detail.hasAttachments) ...[
             const SizedBox(height: AppSpacing.xl),
@@ -228,6 +234,44 @@ class _ActionSection extends StatelessWidget {
             _InfoRow(label: '중복 제안번호', value: detail.duplicateProposalNum!),
           if (detail.actionContent != null && detail.actionContent!.isNotEmpty)
             _InfoRow(label: '조치내용', value: detail.actionContent!),
+        ],
+      ),
+    );
+  }
+}
+
+/// '오뚜기 접수사원' 섹션 — 물류클레임 상세에서 조장에게만 노출 (레거시 logisticsclaimview 권한분기).
+/// 백엔드가 조장 권한일 때만 receptionEmployeeName/Code 를 채워 내려준다.
+class _ReceptionEmployeeSection extends StatelessWidget {
+  final SuggestionDetail detail;
+
+  const _ReceptionEmployeeSection({required this.detail});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.secondaryLight.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: AppColors.secondaryLight, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '오뚜기 접수사원',
+            style: AppTypography.labelMedium.copyWith(
+              color: AppColors.secondary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _InfoRow(label: '접수사원', value: detail.receptionEmployeeName!),
+          if (detail.receptionEmployeeCode != null &&
+              detail.receptionEmployeeCode!.isNotEmpty)
+            _InfoRow(label: '사번', value: detail.receptionEmployeeCode!),
         ],
       ),
     );

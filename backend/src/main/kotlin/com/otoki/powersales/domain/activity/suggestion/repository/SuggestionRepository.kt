@@ -41,6 +41,18 @@ interface SuggestionRepository : JpaRepository<Suggestion, Long>, SuggestionRepo
     fun findByIdAndIsDeletedFalse(id: Long): Suggestion?
 
     /**
+     * 원가센터 단위 분류 목록 조회 (paged, soft-delete 제외, created_at DESC).
+     *
+     * 레거시 `LogisticsClaimSearch` 의 조장/지점장(여사원 외) 권한 분기 — `CostCenterCode` 기준 전체 조회 대응.
+     * (`org_cost_center_code` 는 등록 시 `OrgCostCenterMatchService` 로 정규화된 값. 조회자도 동일 매핑으로 비교.)
+     */
+    fun findByOrgCostCenterCodeAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(
+        orgCostCenterCode: String,
+        category: SuggestionCategory,
+        pageable: Pageable
+    ): Page<Suggestion>
+
+    /**
      * `suggestion_proposal_number_seq` 의 다음 sequence 값 조회.
      *
      * PostgreSQL `nextval()` 은 원자성 보장 — race condition free.
