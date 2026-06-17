@@ -83,7 +83,9 @@ class MobileDailySalesService(
         val otherSalesAmount = request.otherSalesAmount ?: pe.otherSalesAmount
         val description = request.description ?: pe.description
 
-        val hasPrimary = primarySalesQuantity != null && primarySalesPrice != null
+        // 레거시(2024-01-29 마스터 개선안) 기준 대표상품 판정은 판매수량 + 총 판매금액 세트.
+        // 판매단가(primarySalesPrice)는 입력 대상에서 제외되어 검증에 사용하지 않는다.
+        val hasPrimary = primarySalesQuantity != null && primaryProductAmount != null
         val hasOther = otherSalesQuantity != null && otherSalesAmount != null
         if (!hasPrimary && !hasOther) throw DailySalesProductRequiredException()
 

@@ -8,7 +8,7 @@ import java.math.BigDecimal
  * 일매출 마감 입력 (multipart/form-data, @ModelAttribute).
  *
  * 사진은 컨트롤러에서 별도 [org.springframework.web.multipart.MultipartFile] 파라미터로 수신한다.
- * 모든 금액/수량 필드는 선택값이며, "대표상품(수량+단가) 또는 기타상품(수량+금액) 최소 하나" 규칙은 service 에서 검증.
+ * 모든 금액/수량 필드는 선택값이며, "대표상품(수량+총금액) 또는 기타상품(수량+금액) 최소 하나" 규칙은 service 에서 검증.
  * camelCase 키로 송신한다 (예: primarySalesQuantity).
  */
 data class DailySalesCloseRequest(
