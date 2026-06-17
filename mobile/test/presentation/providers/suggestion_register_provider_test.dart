@@ -1,9 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/domain/entities/suggestion_draft.dart';
 import 'package:mobile/domain/entities/suggestion_form.dart';
 import 'package:mobile/domain/entities/suggestion_result.dart';
+import 'package:mobile/domain/usecases/load_suggestion_draft_usecase.dart';
 import 'package:mobile/domain/usecases/register_suggestion_usecase.dart';
+import 'package:mobile/domain/usecases/save_suggestion_draft_usecase.dart';
 import 'package:mobile/presentation/providers/suggestion_register_provider.dart';
 
 // Mock UseCase
@@ -29,15 +32,46 @@ class MockRegisterSuggestionUseCase implements RegisterSuggestionUseCase {
   }
 }
 
+class MockSaveSuggestionDraftUseCase implements SaveSuggestionDraftUseCase {
+  bool shouldFail = false;
+  String? failureMessage;
+  SuggestionRegisterForm? capturedForm;
+
+  @override
+  Future<void> call(SuggestionRegisterForm? form) async {
+    capturedForm = form;
+    if (shouldFail) {
+      throw Exception(failureMessage ?? '임시저장 실패');
+    }
+  }
+}
+
+class MockLoadSuggestionDraftUseCase implements LoadSuggestionDraftUseCase {
+  SuggestionDraft? draft;
+  bool shouldFail = false;
+
+  @override
+  Future<SuggestionDraft?> call() async {
+    if (shouldFail) throw Exception('조회 실패');
+    return draft;
+  }
+}
+
 void main() {
   group('SuggestionRegisterNotifier', () {
     late SuggestionRegisterNotifier notifier;
     late MockRegisterSuggestionUseCase mockUseCase;
+    late MockSaveSuggestionDraftUseCase mockSaveDraft;
+    late MockLoadSuggestionDraftUseCase mockLoadDraft;
 
     setUp(() {
       mockUseCase = MockRegisterSuggestionUseCase();
+      mockSaveDraft = MockSaveSuggestionDraftUseCase();
+      mockLoadDraft = MockLoadSuggestionDraftUseCase();
       notifier = SuggestionRegisterNotifier(
         registerSuggestion: mockUseCase,
+        saveDraft: mockSaveDraft,
+        loadDraft: mockLoadDraft,
       );
     });
 
@@ -423,6 +457,115 @@ void main() {
         expect(notifier.state.form.claimType, '취급부주의 제품 파손');
         expect(notifier.state.form.claimDate, DateTime(2026, 5, 22));
         expect(notifier.state.form.carNumber, '12가1234');
+      });
+    });
+
+    group('임시저장 (draft)', () {
+      test('saveDraft 는 현재 폼을 usecase 로 전달하고 성공 시 true', () async {
+        // Given
+        notifier.changeCategory(SuggestionCategory.newProduct);
+        notifier.updateTitle('임시 제목');
+
+        // When
+        final ok = await notifier.saveDraft();
+
+        // Then
+        expect(ok, true);
+        expect(mockSaveDraft.capturedForm, isNotNull);
+        expect(mockSaveDraft.capturedForm!.title, '임시 제목');
+        expect(notifier.state.errorMessage, null);
+        expect(notifier.state.hasDraft, true);
+      });
+
+      test('saveDraft 실패 시 false 와 에러 메시지', () async {
+        // Given
+        mockSaveDraft.shouldFail = true;
+        mockSaveDraft.failureMessage = '서버 오류';
+
+        // When
+        final ok = await notifier.saveDraft();
+
+        // Then
+        expect(ok, false);
+        expect(notifier.state.errorMessage, '서버 오류');
+      });
+
+      test('loadDraftIfExists 는 draft 없으면 null 반환', () async {
+        // Given
+        mockLoadDraft.draft = null;
+
+        // When
+        final draft = await notifier.loadDraftIfExists();
+
+        // Then
+        expect(draft, null);
+        expect(notifier.state.hasDraft, false);
+      });
+
+      test('loadDraftIfExists 조회 실패는 null 로 흡수된다', () async {
+        // Given
+        mockLoadDraft.shouldFail = true;
+
+        // When
+        final draft = await notifier.loadDraftIfExists();
+
+        // Then
+        expect(draft, null);
+      });
+
+      test('applyDraft 는 물류 클레임 draft 를 폼에 prefill 한다', () {
+        // Given
+        final draft = SuggestionDraft(
+          category: 'LOGISTICS_CLAIM',
+          title: '물류 클레임 제목',
+          content: '상세 내용',
+          productCode: '12345678',
+          productName: '진라면',
+          accountId: 100,
+          accountName: '오뚜기 농협',
+          sapAccountCode: 'SAP-0001',
+          claimType: '취급부주의 제품 파손',
+          claimDate: DateTime(2026, 5, 22),
+          carNumber: '12가1234',
+          photos: [File('p0.jpg')],
+        );
+
+        // When
+        notifier.applyDraft(draft);
+
+        // Then
+        final form = notifier.state.form;
+        expect(form.category, SuggestionCategory.logisticsClaim);
+        expect(form.title, '물류 클레임 제목');
+        expect(form.content, '상세 내용');
+        expect(form.productCode, '12345678');
+        expect(form.accountId, 100);
+        expect(form.sapAccountCode, 'SAP-0001');
+        expect(form.claimType, '취급부주의 제품 파손');
+        expect(form.claimDate, DateTime(2026, 5, 22));
+        expect(form.carNumber, '12가1234');
+        expect(form.photos.length, 1);
+        expect(notifier.state.hasDraft, true);
+      });
+
+      test('applyDraft 는 신제품 draft 의 물류 전용 필드를 무시한다', () {
+        // Given — category 가 신제품이면 accountId 등은 채우지 않는다
+        final draft = SuggestionDraft(
+          category: 'NEW_PRODUCT',
+          title: '신제품 제목',
+          accountId: 100,
+          claimType: '취급부주의 제품 파손',
+        );
+
+        // When
+        notifier.applyDraft(draft);
+
+        // Then
+        final form = notifier.state.form;
+        expect(form.category, SuggestionCategory.newProduct);
+        expect(form.title, '신제품 제목');
+        expect(form.accountId, null);
+        expect(form.claimType, null);
       });
     });
   });

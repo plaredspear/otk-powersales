@@ -6,9 +6,13 @@ import '../../core/network/dio_provider.dart';
 import '../../data/datasources/suggestion_api_datasource.dart';
 import '../../data/datasources/suggestion_remote_datasource.dart';
 import '../../data/repositories/suggestion_repository_impl.dart';
+import '../../domain/entities/suggestion_draft.dart';
 import '../../domain/entities/suggestion_form.dart';
 import '../../domain/repositories/suggestion_repository.dart';
+import '../../domain/usecases/delete_suggestion_draft_usecase.dart';
+import '../../domain/usecases/load_suggestion_draft_usecase.dart';
 import '../../domain/usecases/register_suggestion_usecase.dart';
+import '../../domain/usecases/save_suggestion_draft_usecase.dart';
 import 'suggestion_register_state.dart';
 
 // ============================================
@@ -43,14 +47,41 @@ final registerSuggestionUseCaseProvider =
   return RegisterSuggestionUseCase(repository);
 });
 
+/// SaveSuggestionDraftUseCase Provider
+final saveSuggestionDraftUseCaseProvider =
+    Provider<SaveSuggestionDraftUseCase>((ref) {
+  final repository = ref.watch(suggestionRepositoryProvider);
+  return SaveSuggestionDraftUseCase(repository);
+});
+
+/// LoadSuggestionDraftUseCase Provider
+final loadSuggestionDraftUseCaseProvider =
+    Provider<LoadSuggestionDraftUseCase>((ref) {
+  final repository = ref.watch(suggestionRepositoryProvider);
+  return LoadSuggestionDraftUseCase(repository);
+});
+
+/// DeleteSuggestionDraftUseCase Provider
+final deleteSuggestionDraftUseCaseProvider =
+    Provider<DeleteSuggestionDraftUseCase>((ref) {
+  final repository = ref.watch(suggestionRepositoryProvider);
+  return DeleteSuggestionDraftUseCase(repository);
+});
+
 /// 제안하기 등록 Provider
 class SuggestionRegisterNotifier
     extends StateNotifier<SuggestionRegisterState> {
   final RegisterSuggestionUseCase _registerSuggestion;
+  final SaveSuggestionDraftUseCase _saveDraft;
+  final LoadSuggestionDraftUseCase _loadDraft;
 
   SuggestionRegisterNotifier({
     required RegisterSuggestionUseCase registerSuggestion,
+    required SaveSuggestionDraftUseCase saveDraft,
+    required LoadSuggestionDraftUseCase loadDraft,
   })  : _registerSuggestion = registerSuggestion,
+        _saveDraft = saveDraft,
+        _loadDraft = loadDraft,
         super(SuggestionRegisterState.initial());
 
   /// 분류 변경
@@ -200,6 +231,74 @@ class SuggestionRegisterNotifier
     }
   }
 
+  // ──────────────────────────────────────────────────────────────────
+  // 임시저장 (draft)
+  // ──────────────────────────────────────────────────────────────────
+
+  /// 임시저장 — 현재 폼 상태를 검증 없이 서버에 upsert.
+  ///
+  /// 성공/실패를 state 메시지에 반영한다.
+  Future<bool> saveDraft() async {
+    try {
+      await _saveDraft.call(state.form);
+      state = state.copyWith(hasDraft: true, clearErrorMessage: true);
+      return true;
+    } catch (e) {
+      final message = e
+          .toString()
+          .replaceFirst('Exception: ', '')
+          .replaceFirst('Error: ', '');
+      state = state.toError(message);
+      return false;
+    }
+  }
+
+  /// 이어쓰기용 임시저장 조회. 없으면 null. (조회 실패는 null 로 흡수)
+  Future<SuggestionDraft?> loadDraftIfExists() async {
+    try {
+      final draft = await _loadDraft.call();
+      state = state.copyWith(hasDraft: draft != null);
+      return draft;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 임시저장 내용을 폼에 반영(이어쓰기).
+  ///
+  /// changeCategory 의 필드 초기화 로직과 충돌하지 않도록 form 을 직접 구성한다.
+  /// 사진은 데이터소스가 내려받은 임시 파일(최대 2장)을 그대로 채운다.
+  void applyDraft(SuggestionDraft draft) {
+    final category = draft.category != null
+        ? SuggestionCategory.fromCode(draft.category!)
+        : state.form.category;
+    final isLogistics = category == SuggestionCategory.logisticsClaim;
+
+    final form = SuggestionRegisterForm(
+      category: category,
+      productCode: draft.productCode,
+      productName: draft.productName,
+      title: draft.title ?? '',
+      content: draft.content ?? '',
+      photos: draft.photos.take(2).toList(),
+      // 물류 클레임 전용 필드는 물류 클레임일 때만 채운다.
+      accountId: isLogistics ? draft.accountId : null,
+      accountName: isLogistics ? draft.accountName : null,
+      sapAccountCode: isLogistics ? draft.sapAccountCode : null,
+      claimType: isLogistics ? draft.claimType : null,
+      claimDate: isLogistics ? draft.claimDate : null,
+      carNumber: isLogistics ? draft.carNumber : null,
+    );
+
+    state = state.copyWith(
+      form: form,
+      selectedProductName: draft.productName,
+      hasDraft: true,
+      clearErrorMessage: true,
+      clearProductName: draft.productName == null || draft.productName!.isEmpty,
+    );
+  }
+
   /// 폼 초기화
   void reset() {
     state = SuggestionRegisterState.initial();
@@ -226,5 +325,7 @@ final suggestionRegisterProvider =
         (ref) {
   return SuggestionRegisterNotifier(
     registerSuggestion: ref.watch(registerSuggestionUseCaseProvider),
+    saveDraft: ref.watch(saveSuggestionDraftUseCaseProvider),
+    loadDraft: ref.watch(loadSuggestionDraftUseCaseProvider),
   );
 });

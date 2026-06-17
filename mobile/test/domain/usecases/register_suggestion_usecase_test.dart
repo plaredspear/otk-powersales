@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/suggestion_detail.dart';
+import 'package:mobile/domain/entities/suggestion_draft.dart';
 import 'package:mobile/domain/entities/suggestion_form.dart';
 import 'package:mobile/domain/entities/suggestion_result.dart';
 import 'package:mobile/domain/repositories/suggestion_repository.dart';
@@ -27,6 +28,15 @@ class _MockSuggestionRepository implements SuggestionRepository {
   Future<SuggestionDetail> getSuggestionDetail(int suggestionId) {
     throw UnimplementedError();
   }
+
+  @override
+  Future<void> saveDraft(SuggestionRegisterForm? form) async {}
+
+  @override
+  Future<SuggestionDraft?> loadDraft() async => null;
+
+  @override
+  Future<void> deleteDraft() async {}
 }
 
 File _createMockFile(String path) {

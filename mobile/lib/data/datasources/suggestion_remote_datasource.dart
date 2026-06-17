@@ -1,4 +1,6 @@
+import '../../domain/entities/suggestion_draft.dart';
 import '../models/suggestion_detail_model.dart';
+import '../models/suggestion_draft_request.dart';
 import '../models/suggestion_list_item_model.dart';
 import '../models/suggestion_register_request.dart';
 import '../models/suggestion_register_result_model.dart';
@@ -17,4 +19,14 @@ abstract class SuggestionRemoteDataSource {
 
   /// 제안/물류클레임 상세 조회 (GET /api/v1/mobile/suggestions/{id})
   Future<SuggestionDetailModel> getSuggestionDetail(int suggestionId);
+
+  /// 제안하기 임시저장 (upsert, POST /api/v1/mobile/suggestions/draft)
+  Future<void> saveDraft(SuggestionDraftRequest request);
+
+  /// 제안하기 임시저장 조회 (GET /api/v1/mobile/suggestions/draft).
+  /// 없으면 null. photoUrls 는 임시 파일로 내려받아 채운다.
+  Future<SuggestionDraft?> loadDraft();
+
+  /// 제안하기 임시저장 폐기 (DELETE /api/v1/mobile/suggestions/draft)
+  Future<void> deleteDraft();
 }

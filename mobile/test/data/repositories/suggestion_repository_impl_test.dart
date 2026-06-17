@@ -1,16 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/datasources/suggestion_remote_datasource.dart';
 import 'package:mobile/data/models/suggestion_detail_model.dart';
+import 'package:mobile/data/models/suggestion_draft_request.dart';
 import 'package:mobile/data/models/suggestion_list_item_model.dart';
 import 'package:mobile/data/models/suggestion_register_request.dart';
 import 'package:mobile/data/models/suggestion_register_result_model.dart';
 import 'package:mobile/data/repositories/suggestion_repository_impl.dart';
+import 'package:mobile/domain/entities/suggestion_draft.dart';
 import 'package:mobile/domain/entities/suggestion_form.dart';
 
 class _MockSuggestionRemoteDataSource implements SuggestionRemoteDataSource {
   SuggestionRegisterResultModel? result;
   Exception? error;
   SuggestionRegisterRequest? capturedRequest;
+  SuggestionDraftRequest? capturedDraftRequest;
+  SuggestionDraft? draftResult;
+  bool deleteDraftCalled = false;
 
   @override
   Future<SuggestionRegisterResultModel> registerSuggestion(
@@ -28,6 +33,24 @@ class _MockSuggestionRemoteDataSource implements SuggestionRemoteDataSource {
   @override
   Future<SuggestionDetailModel> getSuggestionDetail(int suggestionId) {
     throw UnimplementedError();
+  }
+
+  @override
+  Future<void> saveDraft(SuggestionDraftRequest request) async {
+    capturedDraftRequest = request;
+    if (error != null) throw error!;
+  }
+
+  @override
+  Future<SuggestionDraft?> loadDraft() async {
+    if (error != null) throw error!;
+    return draftResult;
+  }
+
+  @override
+  Future<void> deleteDraft() async {
+    deleteDraftCalled = true;
+    if (error != null) throw error!;
   }
 }
 
@@ -168,6 +191,60 @@ void main() {
         expect(result.productName, null);
         expect(result.title, '신제품 제안');
         expect(result.createdAt, DateTime(2026, 2, 12, 10, 0, 0));
+      });
+    });
+
+    group('draft', () {
+      test('saveDraft 는 폼을 DraftRequest 로 변환하여 DataSource 를 호출한다', () async {
+        // Given
+        final form = SuggestionRegisterForm(
+          category: SuggestionCategory.logisticsClaim,
+          title: '임시 제목',
+          content: '임시 내용',
+          accountId: 100,
+        );
+
+        // When
+        await repository.saveDraft(form);
+
+        // Then
+        expect(dataSource.capturedDraftRequest, isNotNull);
+        final json = dataSource.capturedDraftRequest!.toJson();
+        expect(json['category'], 'LOGISTICS_CLAIM');
+        expect(json['title'], '임시 제목');
+        expect(json['accountId'], 100);
+      });
+
+      test('loadDraft 는 DataSource 의 entity 를 그대로 반환한다', () async {
+        // Given
+        dataSource.draftResult = const SuggestionDraft(
+          category: 'NEW_PRODUCT',
+          title: '저장된 제목',
+        );
+
+        // When
+        final draft = await repository.loadDraft();
+
+        // Then
+        expect(draft, isNotNull);
+        expect(draft!.category, 'NEW_PRODUCT');
+        expect(draft.title, '저장된 제목');
+      });
+
+      test('loadDraft 는 draft 없으면 null 을 반환한다', () async {
+        // Given
+        dataSource.draftResult = null;
+
+        // When & Then
+        expect(await repository.loadDraft(), null);
+      });
+
+      test('deleteDraft 는 DataSource 를 호출한다', () async {
+        // When
+        await repository.deleteDraft();
+
+        // Then
+        expect(dataSource.deleteDraftCalled, true);
       });
     });
   });

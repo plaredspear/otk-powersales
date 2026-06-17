@@ -1,4 +1,5 @@
 import '../entities/suggestion_detail.dart';
+import '../entities/suggestion_draft.dart';
 import '../entities/suggestion_form.dart';
 import '../entities/suggestion_list_item.dart';
 import '../entities/suggestion_result.dart';
@@ -35,4 +36,13 @@ abstract class SuggestionRepository {
 
   /// 제안/물류클레임 상세 조회
   Future<SuggestionDetail> getSuggestionDetail(int suggestionId);
+
+  /// 제안하기 임시저장 (upsert)
+  Future<void> saveDraft(SuggestionRegisterForm? form);
+
+  /// 제안하기 임시저장 조회. 없으면 null.
+  Future<SuggestionDraft?> loadDraft();
+
+  /// 제안하기 임시저장 폐기
+  Future<void> deleteDraft();
 }

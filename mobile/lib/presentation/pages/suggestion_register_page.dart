@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../domain/entities/suggestion_draft.dart';
 import '../providers/pos_sales_provider.dart';
 import '../providers/suggestion_register_provider.dart';
 import '../providers/suggestion_register_state.dart';
@@ -42,10 +43,53 @@ class _SuggestionRegisterPageState
   final ImagePicker _imagePicker = ImagePicker();
 
   @override
+  void initState() {
+    super.initState();
+    // 진입 후 첫 프레임에서 임시저장 이어쓰기 확인 (레거시 nullChk='N' 흐름 대응)
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDraft());
+  }
+
+  @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  /// 임시저장이 있으면 이어쓰기 여부를 확인한다.
+  Future<void> _checkDraft() async {
+    final notifier = ref.read(suggestionRegisterProvider.notifier);
+    final draft = await notifier.loadDraftIfExists();
+    if (draft == null || !mounted) return;
+
+    final resume = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('임시저장 불러오기'),
+        content: const Text('이전에 작성 중인 내용이 있습니다.\n이어서 작성하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('새로 작성'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('이어서 작성'),
+          ),
+        ],
+      ),
+    );
+
+    if (resume == true && mounted) {
+      notifier.applyDraft(draft);
+      _syncTextControllers(draft);
+    }
+  }
+
+  /// 제목/내용은 페이지 보유 plain 컨트롤러를 쓰므로 prefill 시 직접 동기화한다.
+  void _syncTextControllers(SuggestionDraft draft) {
+    _titleController.text = draft.title ?? '';
+    _contentController.text = draft.content ?? '';
   }
 
   @override
@@ -209,7 +253,7 @@ class _SuggestionRegisterPageState
         height: 56,
         child: Row(
           children: [
-            // 임시저장 — 신규 모바일 백엔드 미지원(별 스펙), 안내만 노출
+            // 임시저장 — 현재 폼 상태를 검증 없이 서버에 upsert (이어쓰기 지원)
             Expanded(
               child: _BottomAction(
                 label: '임시저장',
@@ -288,12 +332,15 @@ class _SuggestionRegisterPageState
         );
   }
 
-  void _handleTempSave() {
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('임시저장은 추후 지원 예정입니다')));
-    }
+  /// 임시저장 — 현재 폼 상태를 검증 없이 서버에 upsert.
+  Future<void> _handleTempSave() async {
+    final notifier = ref.read(suggestionRegisterProvider.notifier);
+    final ok = await notifier.saveDraft();
+    if (!mounted || !ok) return;
+    // 성공 메시지만 직접 노출 (실패 메시지는 ref.listen 의 errorMessage 가 처리).
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('임시저장되었습니다')));
   }
 
   Future<void> _handleAddPhoto() async {

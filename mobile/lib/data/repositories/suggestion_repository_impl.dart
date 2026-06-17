@@ -1,8 +1,10 @@
 import '../../domain/entities/suggestion_detail.dart';
+import '../../domain/entities/suggestion_draft.dart';
 import '../../domain/entities/suggestion_form.dart';
 import '../../domain/entities/suggestion_result.dart';
 import '../../domain/repositories/suggestion_repository.dart';
 import '../datasources/suggestion_remote_datasource.dart';
+import '../models/suggestion_draft_request.dart';
 import '../models/suggestion_register_request.dart';
 
 /// SuggestionRepository 구현체
@@ -34,5 +36,20 @@ class SuggestionRepositoryImpl implements SuggestionRepository {
   Future<SuggestionDetail> getSuggestionDetail(int suggestionId) async {
     final model = await _dataSource.getSuggestionDetail(suggestionId);
     return model.toEntity();
+  }
+
+  @override
+  Future<void> saveDraft(SuggestionRegisterForm? form) async {
+    await _dataSource.saveDraft(SuggestionDraftRequest.fromForm(form));
+  }
+
+  @override
+  Future<SuggestionDraft?> loadDraft() async {
+    return _dataSource.loadDraft();
+  }
+
+  @override
+  Future<void> deleteDraft() async {
+    await _dataSource.deleteDraft();
   }
 }
