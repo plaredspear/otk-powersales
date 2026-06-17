@@ -57,8 +57,14 @@ class AdminPromotionService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
-    private val policyEvaluator: SharingRulePolicyEvaluator
+    private val policyEvaluator: SharingRulePolicyEvaluator,
+    private val promotionListExcelExporter: PromotionListExcelExporter
 ) {
+
+    companion object {
+        // 엑셀 export 최대 건수 — 기존 엑셀 다운로드(전문행사조마스터) 정합. 초과분은 잘라냄.
+        private const val EXPORT_MAX_ROWS = 50_000
+    }
 
     fun getPromotionFormMeta(): PromotionFormMetaResponse {
         val promotionTypes = PromotionType.entries
@@ -110,28 +116,71 @@ class AdminPromotionService(
         )
 
         // 목록 목표/실적금액 = 조원 파생값 SUM (SF rollup 재현). promotionId 일괄 집계로 N+1 회피.
-        val amountMap = promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(
-            promotionPage.content.map { it.id }
-        )
-
         return PromotionListResponse(
-            content = promotionPage.content.map { promotion ->
-                val amounts = amountMap[promotion.id]
-                PromotionListItem.from(
-                    promotion = promotion,
-                    accountName = promotion.account?.name,
-                    accountCode = promotion.account?.externalKey,
-                    primaryProductName = promotion.primaryProduct?.name,
-                    primaryProductCode = promotion.primaryProduct?.productCode,
-                    targetAmount = amounts?.first ?: 0L,
-                    actualAmount = amounts?.second ?: 0L
-                )
-            },
+            content = toListItems(promotionPage.content),
             page = page,
             size = size,
             totalElements = promotionPage.totalElements,
             totalPages = promotionPage.totalPages
         )
+    }
+
+    /**
+     * 행사마스터 목록 엑셀 export — 목록 화면(`getPromotions`)과 동일한 가시 범위/필터로 전량 추출.
+     *
+     * 페이징 없이 [EXPORT_MAX_ROWS] 단일 페이지로 조회 (초과분 잘라냄 — 전문행사조마스터 export 정합).
+     * 목록과 동일한 [PromotionListItem] 매핑(목표/실적 SUM 집계 포함) 후 [PromotionListExcelExporter] 로 위임.
+     */
+    fun exportPromotions(
+        scope: DataScope,
+        keyword: String?,
+        promotionType: String?,
+        startDate: String?,
+        endDate: String?,
+        ownerOnly: Boolean
+    ): PromotionListExcelExporter.ExcelResult {
+        val policyPredicate = policyEvaluator.buildPredicate(
+            scope = scope,
+            sObjectName = "DKRetail__Promotion__c",
+            entityPath = qPromotion
+        )
+
+        val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("createdAt").descending())
+        val promotionPage = promotionRepository.searchForAdmin(
+            policyPredicate = policyPredicate,
+            keyword = keyword,
+            promotionType = PromotionType.fromDisplayNameOrNull(promotionType),
+            startDate = startDate,
+            endDate = endDate,
+            ownerOnly = ownerOnly,
+            currentUserId = scope.userId,
+            pageable = pageable
+        )
+
+        val items = toListItems(promotionPage.content)
+        return promotionListExcelExporter.export(items)
+    }
+
+    /**
+     * Promotion 엔티티 목록 → [PromotionListItem] 변환 (목표/실적 SUM 일괄 집계로 N+1 회피).
+     * 목록 조회와 엑셀 export 가 동일 매핑을 공유한다.
+     */
+    private fun toListItems(promotions: List<Promotion>): List<PromotionListItem> {
+        val amountMap = promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(
+            promotions.map { it.id }
+        )
+        return promotions.map { promotion ->
+            val amounts = amountMap[promotion.id]
+            PromotionListItem.from(
+                promotion = promotion,
+                accountName = promotion.account?.name,
+                accountCode = promotion.account?.externalKey,
+                primaryProductName = promotion.primaryProduct?.name,
+                primaryProductCode = promotion.primaryProduct?.productCode,
+                targetAmount = amounts?.first ?: 0L,
+                actualAmount = amounts?.second ?: 0L
+            )
+        }
     }
 
     fun getPromotion(scope: DataScope, id: Long): PromotionDetailResponse {

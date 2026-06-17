@@ -8,6 +8,7 @@ import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionTargetActualReportService
+import com.otoki.powersales.domain.activity.promotion.service.PromotionListExcelExporter
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -35,6 +36,7 @@ import com.otoki.powersales.domain.activity.promotion.exception.InvalidStandLoca
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionForbiddenException
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
@@ -149,6 +151,32 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
             mockMvc.perform(get("/api/v1/admin/promotions"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.totalElements").value(0))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/promotions/export - 엑셀 다운로드")
+    inner class ExportPromotions {
+
+        @Test
+        @DisplayName("성공 - xlsx 바이트 + attachment 헤더 반환")
+        fun exportPromotions_success() {
+            every {
+                adminPromotionService.exportPromotions(any(), any(), any(), any(), any(), any())
+            } returns PromotionListExcelExporter.ExcelResult(
+                bytes = byteArrayOf(0x50, 0x4B, 0x03, 0x04), // "PK.." (xlsx ZIP magic)
+                filename = "행사마스터.xlsx",
+            )
+
+            mockMvc.perform(get("/api/v1/admin/promotions/export"))
+                .andExpect(status().isOk)
+                .andExpect(
+                    header().string(
+                        "Content-Type",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    ),
+                )
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
         }
     }
 

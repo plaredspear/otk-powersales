@@ -68,6 +68,7 @@ class AdminPromotionServiceTest {
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper = mockk(relaxUnitFun = true)
     private val policyEvaluator: SharingRulePolicyEvaluator =
         mockk(relaxed = true)
+    private val promotionListExcelExporter: PromotionListExcelExporter = PromotionListExcelExporter()
 
     private val adminPromotionService: AdminPromotionService = AdminPromotionService(
         promotionRepository = promotionRepository,
@@ -79,6 +80,7 @@ class AdminPromotionServiceTest {
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
         policyEvaluator = policyEvaluator,
+        promotionListExcelExporter = promotionListExcelExporter,
     )
 
     private val userId = 1L
@@ -224,6 +226,65 @@ class AdminPromotionServiceTest {
 
             assertThat(result.content[0].targetAmount).isEqualTo(2077400.0)
             assertThat(result.content[0].actualAmount).isEqualTo(2009770.0)
+        }
+    }
+
+    @Nested
+    @DisplayName("exportPromotions - 행사마스터 목록 엑셀 다운로드")
+    inner class ExportPromotionsTests {
+
+        @Test
+        @DisplayName("정상 export - 목록과 동일 필터로 전량 조회 후 xlsx 바이트 반환")
+        fun exportPromotions_success() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val promotion = createPromotion(promotionType = PromotionType.SAMPLING).apply {
+                account = createAccount()
+                primaryProduct = createProduct()
+            }
+            val pageable = PageRequest.of(0, 50_000, Sort.by("createdAt").descending())
+            every {
+                promotionRepository.searchForAdmin(
+                    policyPredicate = any(), keyword = null, promotionType = null,
+                    startDate = null, endDate = null, ownerOnly = false, currentUserId = any(), pageable = pageable,
+                )
+            } returns PageImpl(listOf(promotion), pageable, 1)
+
+            val result = adminPromotionService.exportPromotions(
+                scope = scope, keyword = null, promotionType = null,
+                startDate = null, endDate = null, ownerOnly = false,
+            )
+
+            // xlsx (ZIP) magic number "PK" 로 시작 — 유효한 워크북 바이트 검증
+            assertThat(result.bytes.size).isGreaterThan(0)
+            assertThat(result.bytes[0]).isEqualTo('P'.code.toByte())
+            assertThat(result.bytes[1]).isEqualTo('K'.code.toByte())
+            assertThat(result.filename).isEqualTo("행사마스터.xlsx")
+        }
+
+        @Test
+        @DisplayName("최대 건수 제한 - EXPORT_MAX_ROWS(50,000) 단일 페이지로 조회")
+        fun exportPromotions_capsAtMaxRows() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val pageable = PageRequest.of(0, 50_000, Sort.by("createdAt").descending())
+            every {
+                promotionRepository.searchForAdmin(
+                    policyPredicate = any(), keyword = any(), promotionType = any(),
+                    startDate = any(), endDate = any(), ownerOnly = any(), currentUserId = any(), pageable = pageable,
+                )
+            } returns PageImpl(emptyList(), pageable, 0)
+
+            adminPromotionService.exportPromotions(
+                scope = scope, keyword = "행사", promotionType = null,
+                startDate = null, endDate = null, ownerOnly = false,
+            )
+
+            // size=50,000 (EXPORT_MAX_ROWS) 단일 페이지로 repository 호출
+            verify {
+                promotionRepository.searchForAdmin(
+                    policyPredicate = any(), keyword = "행사", promotionType = null,
+                    startDate = null, endDate = null, ownerOnly = false, currentUserId = any(), pageable = pageable,
+                )
+            }
         }
     }
 

@@ -1,18 +1,22 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, Checkbox, DatePicker, Input, Select, Space, Tag, Typography } from 'antd';
+import { Button, Checkbox, DatePicker, Input, Select, Space, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { PlusOutlined } from '@ant-design/icons';
+import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import RefreshButton from '@/components/common/RefreshButton';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { usePermission } from '@/hooks/usePermission';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
-import type { PromotionListItem } from '@/api/promotion';
+import { exportPromotions, type PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import ResizableTable from '@/components/common/ResizableTable';
 import SavedSearchBar from '@/components/savedSearch/SavedSearchBar';
+
+// 엑셀 다운로드 최대 건수 — 서버 export 상한(EXPORT_MAX_ROWS) 정합. 초과 시 안내 후 진행.
+const EXPORT_MAX_ROWS = 50000;
 
 const PROMOTION_TYPE_TAG: Record<string, string> = {
   시식: 'blue',
@@ -76,6 +80,7 @@ export default function PromotionListPage() {
     navigate(`/users/${userId}`, { state: { listSearch: location.search } }),
   );
   const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
+  const [exporting, setExporting] = useState(false);
   const { data, isLoading, refetch, isFetching } = usePromotions({
     keyword: keyword || undefined,
     promotionType: promotionType || undefined,
@@ -90,6 +95,40 @@ export default function PromotionListPage() {
     { value: '', label: '전체' },
     ...(formMeta?.promotionTypes.map((t) => ({ value: t.name, label: t.name })) ?? []),
   ];
+
+  const handleExport = async () => {
+    const total = data?.totalElements ?? 0;
+    if (total === 0) {
+      message.warning('다운로드할 데이터가 없습니다');
+      return;
+    }
+    // 서버 export 상한 초과 시 — 안내 후 상한까지만 받는다 (PPTMaster 엑셀 다운로드 정합).
+    if (total > EXPORT_MAX_ROWS) {
+      message.warning(
+        `조회 결과가 ${total.toLocaleString()}건입니다. 최대 ${EXPORT_MAX_ROWS.toLocaleString()}건까지만 다운로드됩니다.`,
+      );
+    }
+    setExporting(true);
+    try {
+      const blob = await exportPromotions({
+        keyword: keyword || undefined,
+        promotionType: promotionType || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        ownerOnly: ownerOnly === 'true' || undefined,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `행사마스터_${dayjs().format('YYYYMMDD')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      message.error('엑셀 다운로드에 실패했습니다');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const columns: ColumnsType<PromotionListItem> = [
     {
@@ -238,6 +277,9 @@ export default function PromotionListPage() {
       >
         <Space>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+          <Button icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
+            엑셀 다운로드
+          </Button>
           {canWrite && (
             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
               행사마스터 등록

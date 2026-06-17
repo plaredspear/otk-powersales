@@ -77,6 +77,35 @@ class AdminPromotionController(
         return ResponseEntity.ok().headers(headers).body(result.bytes)
     }
 
+    /** 행사마스터 목록 엑셀 다운로드 — 목록과 동일한 가시 범위/필터로 전량 추출 (최대 건수 제한 적용). */
+    @GetMapping("/export")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun exportPromotions(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) @Size(min = 1, max = 100) keyword: String?,
+        @RequestParam(required = false) promotionType: String?,
+        @RequestParam(required = false) startDate: String?,
+        @RequestParam(required = false) endDate: String?,
+        @RequestParam(required = false, defaultValue = "false") ownerOnly: Boolean,
+    ): ResponseEntity<ByteArray> {
+        val result = adminPromotionService.exportPromotions(
+            scope = scope,
+            keyword = keyword,
+            promotionType = promotionType,
+            startDate = startDate,
+            endDate = endDate,
+            ownerOnly = ownerOnly
+        )
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
+        return ResponseEntity.ok().headers(headers).body(result.bytes)
+    }
+
     @GetMapping
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getPromotions(
