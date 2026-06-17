@@ -10,6 +10,7 @@ class DailySalesFormModel {
       employeeName: json['employeeName'] as String?,
       isClosed: json['isClosed'] as bool? ?? false,
       editable: json['editable'] as bool? ?? false,
+      attendanceRegistered: json['attendanceRegistered'] as bool? ?? false,
       hasDraft: json['hasDraft'] as bool? ?? false,
       basePrice: json['basePrice'] as num?,
       primarySalesQuantity: json['primarySalesQuantity'] as num?,

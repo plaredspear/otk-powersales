@@ -68,6 +68,9 @@ class PromotionDailySalesState {
 
   bool get isClosed => form?.isClosed ?? false;
 
+  /// 출근 등록 완료 여부 (마감 선행 조건).
+  bool get attendanceRegistered => form?.attendanceRegistered ?? false;
+
   bool get hasMainProduct => mainQuantity != null && mainAmount != null;
 
   bool get hasSubProduct =>
@@ -81,8 +84,9 @@ class PromotionDailySalesState {
   /// 기존 이미지(서버) 또는 새 사진이 있는지.
   bool get hasPhoto => photo != null || (form?.imageUrl != null);
 
-  /// 최종 마감 가능 여부.
-  bool get canSubmit => editable && hasAnyProduct && hasPhoto;
+  /// 최종 마감 가능 여부. 출근 미등록 시 마감 차단(임시저장은 허용).
+  bool get canSubmit =>
+      editable && attendanceRegistered && hasAnyProduct && hasPhoto;
 
   bool get isSubmitting => submitStatus == DailySalesSubmitStatus.submitting;
 
@@ -198,6 +202,10 @@ class PromotionDailySalesNotifier
     if (state.isSubmitting) return false;
     if (!state.editable) {
       state = state.copyWith(errorMessage: '마감되었거나 수정 권한이 없습니다');
+      return false;
+    }
+    if (!state.attendanceRegistered) {
+      state = state.copyWith(errorMessage: '출근등록을 완료해주세요');
       return false;
     }
     if (!state.hasAnyProduct) {

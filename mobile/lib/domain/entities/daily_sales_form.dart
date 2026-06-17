@@ -13,6 +13,9 @@ class DailySalesForm {
   /// 입력/수정 가능 여부 (본인 + 미마감).
   final bool editable;
 
+  /// 출근 등록 완료 여부 (마감 선행 조건). 레거시 commutelogId 존재 여부에 대응.
+  final bool attendanceRegistered;
+
   /// 임시저장 값으로 prefill 되었는지 여부.
   final bool hasDraft;
 
@@ -36,6 +39,7 @@ class DailySalesForm {
     this.employeeName,
     required this.isClosed,
     required this.editable,
+    this.attendanceRegistered = false,
     required this.hasDraft,
     this.basePrice,
     this.primarySalesQuantity,

@@ -207,3 +207,9 @@ class DailySalesPhotoRequiredException : BusinessException(
     message = "일매출 마감에는 사진이 필요합니다",
     httpStatus = HttpStatus.BAD_REQUEST
 )
+
+class DailySalesAttendanceRequiredException : BusinessException(
+    errorCode = "DAILY_SALES_ATTENDANCE_REQUIRED",
+    message = "출근등록을 완료해주세요",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

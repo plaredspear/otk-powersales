@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.DailySalesRes
 import com.otoki.powersales.domain.activity.promotion.entity.DailySalesDraft
 import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.activity.promotion.exception.DailySalesAlreadyClosedException
+import com.otoki.powersales.domain.activity.promotion.exception.DailySalesAttendanceRequiredException
 import com.otoki.powersales.domain.activity.promotion.exception.DailySalesPhotoRequiredException
 import com.otoki.powersales.domain.activity.promotion.exception.DailySalesProductRequiredException
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionEmployeeNotFoundException
@@ -72,6 +73,12 @@ class MobileDailySalesService(
     ): DailySalesResult {
         val pe = loadOwnedPromotionEmployee(userId, promotionEmployeeId)
         if (pe.promoCloseByTm) throw DailySalesAlreadyClosedException()
+
+        // 레거시(dailySalesProc) 와 동일하게 출근 등록 완료를 마감 선행 조건으로 요구한다.
+        // 출근 완료 판정 = 본 PE 가 연결된 TeamMemberSchedule 의 attendanceLog 존재
+        // (레거시 teammemberschedule.dkretail__commutelogid__c IS NOT NULL 과 동치).
+        // 임시저장(saveDraft) 은 레거시와 동일하게 이 검증을 적용하지 않는다.
+        if (pe.teamMemberSchedule?.attendanceLog == null) throw DailySalesAttendanceRequiredException()
 
         // basePrice 는 행사마스터에서 사전 설정되는 값이므로 미전달 시 기존 값을 보존한다.
         // 나머지 매출 필드도 미전달 시 기존 PE 값을 유지하여 의도치 않은 초기화를 막는다.

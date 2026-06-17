@@ -119,6 +119,10 @@ class _PromotionDailySalesPageState
               _buildClosedBanner(),
               const SizedBox(height: AppSpacing.lg),
             ],
+            if (state.editable && !state.attendanceRegistered) ...[
+              _buildAttendanceWarning(),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             if (state.editable)
               _buildEditableForm(state, notifier)
             else
@@ -172,6 +176,30 @@ class _PromotionDailySalesPageState
           Expanded(
             child: Text(
               '이미 마감된 일매출입니다. 수정할 수 없습니다.',
+              style: AppTypography.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttendanceWarning() {
+    return Container(
+      width: double.infinity,
+      padding: AppSpacing.cardPadding,
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.12),
+        borderRadius: AppSpacing.cardBorderRadius,
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 20, color: AppColors.warning),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              '출근등록을 완료해야 마감할 수 있습니다.',
               style: AppTypography.bodySmall,
             ),
           ),
