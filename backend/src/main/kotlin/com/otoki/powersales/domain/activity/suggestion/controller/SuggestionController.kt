@@ -1,10 +1,13 @@
 package com.otoki.powersales.domain.activity.suggestion.controller
 
 import com.otoki.powersales.domain.activity.suggestion.dto.request.SuggestionCreateRequest
+import com.otoki.powersales.domain.activity.suggestion.dto.request.SuggestionDraftRequest
 import com.otoki.powersales.domain.activity.suggestion.dto.request.SuggestionUpdateRequest
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionCreateResponse
+import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionDraftResponse
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionListItem
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionResponse
+import com.otoki.powersales.domain.activity.suggestion.service.SuggestionDraftService
 import com.otoki.powersales.domain.activity.suggestion.service.SuggestionService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
@@ -25,7 +28,8 @@ import org.springframework.web.multipart.MultipartFile
 @RestController
 @RequestMapping("/api/v1/mobile/suggestions")
 class SuggestionController(
-    private val suggestionService: SuggestionService
+    private val suggestionService: SuggestionService,
+    private val suggestionDraftService: SuggestionDraftService
 ) {
 
     @PostMapping(consumes = ["multipart/form-data"])
@@ -42,6 +46,38 @@ class SuggestionController(
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.success(result, "제안이 등록되었습니다"))
+    }
+
+    /**
+     * 제안 임시저장 (upsert). 검증 없이 사원 1건의 draft 를 갱신한다.
+     * 레거시 FieldTalkController.tempSuggestProc 대응. 사진 part 전달 시 전체 교체(최대 2장).
+     */
+    @PostMapping("/draft", consumes = ["multipart/form-data"])
+    fun saveDraft(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestPart("request") request: SuggestionDraftRequest,
+        @RequestPart(required = false) photos: List<MultipartFile>?
+    ): ResponseEntity<ApiResponse<SuggestionDraftResponse>> {
+        val result = suggestionDraftService.saveDraft(principal.userId, request, photos)
+        return ResponseEntity.ok(ApiResponse.success(result, "임시저장되었습니다"))
+    }
+
+    /** 제안 임시저장 조회. 없으면 data=null. */
+    @GetMapping("/draft")
+    fun getDraft(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<SuggestionDraftResponse?>> {
+        val result = suggestionDraftService.getDraft(principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
+    /** 제안 임시저장 폐기. */
+    @DeleteMapping("/draft")
+    fun deleteDraft(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<Unit>> {
+        suggestionDraftService.deleteDraft(principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "임시저장이 삭제되었습니다"))
     }
 
     @GetMapping("/{suggestionId}")

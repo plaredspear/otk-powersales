@@ -13,6 +13,7 @@ import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggesti
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionAccessDeniedException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionNotFoundException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionPhotoNotFoundException
+import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionDraftRepository
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.platform.common.entity.UploadFile
@@ -57,6 +58,7 @@ import java.time.format.DateTimeFormatter
 @Transactional(readOnly = true)
 class SuggestionService(
     private val suggestionRepository: SuggestionRepository,
+    private val suggestionDraftRepository: SuggestionDraftRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val accountRepository: AccountRepository,
     private val employeeRepository: EmployeeRepository,
@@ -158,6 +160,9 @@ class SuggestionService(
                 sortOrder = index
             )
         } ?: emptyList()
+
+        // 레거시 정합: 정식 등록 성공 시 해당 사원의 임시저장 row 삭제.
+        suggestionDraftRepository.findByEmployeeId(employeeId)?.let { suggestionDraftRepository.delete(it) }
 
         return SuggestionCreateResponse(
             id = saved.id,

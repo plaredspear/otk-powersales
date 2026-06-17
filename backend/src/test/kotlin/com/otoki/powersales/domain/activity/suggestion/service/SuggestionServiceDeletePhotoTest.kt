@@ -19,6 +19,7 @@ import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggesti
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionAccessDeniedException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionNotFoundException
 import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionPhotoNotFoundException
+import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionDraftRepository
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
 import com.otoki.powersales.domain.activity.suggestion.service.SuggestionService
 import io.mockk.every
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.Test
 class SuggestionServiceDeletePhotoTest {
 
     private val suggestionRepository: SuggestionRepository = mockk()
+    private val suggestionDraftRepository: SuggestionDraftRepository = mockk(relaxUnitFun = true)
     private val uploadFileRepository: UploadFileRepository = mockk(relaxUnitFun = true)
     private val accountRepository: AccountRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
@@ -46,6 +48,7 @@ class SuggestionServiceDeletePhotoTest {
 
     private val suggestionService = SuggestionService(
         suggestionRepository,
+        suggestionDraftRepository,
         uploadFileRepository,
         accountRepository,
         employeeRepository,
