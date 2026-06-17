@@ -178,7 +178,7 @@ class AdminScheduleController(
             .body(result.bytes)
     }
 
-    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.CREATE)
     @PostMapping
     fun createSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
@@ -189,7 +189,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 등록되었습니다"))
     }
 
-    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.CREATE)
     @PostMapping("/upload")
     fun uploadExcel(
         @CurrentDataScope scope: DataScope,
@@ -202,7 +202,7 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result, "검증 완료"))
     }
 
-    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.CREATE)
     @PostMapping("/upload/confirm")
     fun confirmUpload(
         @Valid @RequestBody request: ScheduleConfirmRequest
