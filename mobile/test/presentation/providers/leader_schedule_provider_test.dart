@@ -51,6 +51,29 @@ class FakeLeaderScheduleRepository implements LeaderScheduleRepository {
   }
 
   @override
+  Future<void> registerProxyAttendance({
+    required int targetEmployeeId,
+    int? scheduleId,
+    int? displayWorkScheduleId,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> changeEventAssignment({
+    required int scheduleId,
+    required int targetEmployeeId,
+    required DateTime workingDate,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> deleteEventAssignment(int scheduleId) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<LeaderScheduleCreated> createTeamMemberSchedule({
     required int targetEmployeeId,
     required DateTime workingDate,

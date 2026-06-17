@@ -77,8 +77,16 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   }
 
   @override
-  Future<OrderRequestDetailModel> getOrderRequestDetail({required int orderId}) {
-    throw UnimplementedError('별도 스펙에서 구현');
+  Future<OrderRequestDetailModel> getOrderRequestDetail({
+    required int orderId,
+  }) async {
+    final response = await _dio.get(
+      '/api/v1/mobile/me/order-requests/$orderId',
+    );
+
+    return OrderRequestDetailModel.fromJson(
+      response.data as Map<String, dynamic>,
+    );
   }
 
   @override

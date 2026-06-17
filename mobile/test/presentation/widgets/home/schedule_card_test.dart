@@ -290,7 +290,9 @@ void main() {
     });
 
     group('지점장(ADMIN) 뷰', () {
-      testWidgets('ADMIN도 조장과 동일한 UI를 표시해야 한다', (tester) async {
+      // 레거시 home.jsp:509 근태영역이 `eq '조장'` 정확 일치라, 지점장(ADMIN)은
+      // 조장뷰가 아닌 본인(여사원형) 일정 뷰로 폴백한다 (commit 1e8679d8).
+      testWidgets('ADMIN은 조장뷰가 아닌 본인 일정 뷰로 폴백한다', (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'ADMIN',
           schedules: _makeLeaderSchedules(),
@@ -298,11 +300,10 @@ void main() {
               const AttendanceSummary(totalCount: 3, registeredCount: 1),
         ));
 
-        expect(find.text('일정 관리'), findsOneWidget);
-        expect(find.text('3명 중, 1명 등록 완료'), findsOneWidget);
+        // 조장뷰 전용 요소("일정 관리" 버튼 + 팀 출근현황 요약)는 미표시
+        expect(find.text('일정 관리'), findsNothing);
+        expect(find.text('3명 중, 1명 등록 완료'), findsNothing);
         expect(find.text('내 일정'), findsNothing);
-        // 등록 버튼은 USER 뷰에서만 노출
-        expect(find.text('다음 등록'), findsNothing);
       });
     });
 
