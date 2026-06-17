@@ -99,7 +99,7 @@ abstract class OrderRequestRepository {
   //
   // NOTE: 거래처 여신/임시저장/검증/제출/수정/바코드는 신규 OrderFormRepository
   // (#592/#594/#596) 경로로 대체되어 제거됨. 여기에는 add_product 화면이 사용하는
-  // 즐겨찾기/검색만 남는다. 즐겨찾기 백엔드는 Spec 77 리매핑 대기로 미구현 상태.
+  // 즐겨찾기/검색만 남는다. 즐겨찾기는 /api/v1/mobile/me/favorite-products 로 풀스택 구현됨.
 
   /// 즐겨찾기 제품 목록 조회
   ///
