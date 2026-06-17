@@ -615,5 +615,150 @@ void main() {
         );
       });
     });
+
+    group('getFavoriteProducts', () {
+      test('정상 응답 시 GET 경로 검증 + ProductForOrderModel 목록 반환', () async {
+        String? capturedPath;
+        String? capturedMethod;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            capturedPath = options.path;
+            capturedMethod = options.method;
+            handler.resolve(Response(
+              data: {
+                'success': true,
+                'data': [
+                  {
+                    'productCode': '18110014',
+                    'productName': '열라면_용기105G',
+                    'barcode': '8801045570716',
+                    'storageType': '실온',
+                    'shelfLife': '7개월',
+                    'unitPrice': 1200,
+                    'boxSize': 30,
+                    'isFavorite': true,
+                    'categoryMid': '라면',
+                    'categorySub': '가정',
+                    'productType': null,
+                    'tasteGiftType': null,
+                  },
+                ],
+                'message': '조회 성공',
+              },
+              statusCode: 200,
+              requestOptions: options,
+            ));
+          },
+        ));
+
+        final result = await dataSource.getFavoriteProducts();
+
+        expect(capturedPath, '/api/v1/mobile/me/favorite-products');
+        expect(capturedMethod, 'GET');
+        expect(result.length, 1);
+        expect(result[0].productCode, '18110014');
+        expect(result[0].isFavorite, true);
+      });
+
+      test('빈 목록 응답 시 빈 리스트 반환', () async {
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.resolve(Response(
+              data: {'success': true, 'data': [], 'message': '조회 성공'},
+              statusCode: 200,
+              requestOptions: options,
+            ));
+          },
+        ));
+
+        final result = await dataSource.getFavoriteProducts();
+
+        expect(result, isEmpty);
+      });
+    });
+
+    group('addToFavorites', () {
+      test('정상 응답 시 POST 경로 검증', () async {
+        String? capturedPath;
+        String? capturedMethod;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            capturedPath = options.path;
+            capturedMethod = options.method;
+            handler.resolve(Response(
+              data: {
+                'success': true,
+                'data': null,
+                'message': '즐겨찾기에 추가되었습니다',
+              },
+              statusCode: 200,
+              requestOptions: options,
+            ));
+          },
+        ));
+
+        await dataSource.addToFavorites(productCode: '18110014');
+
+        expect(capturedPath, '/api/v1/mobile/me/favorite-products/18110014');
+        expect(capturedMethod, 'POST');
+      });
+
+      test('서버 400(ALREADY_FAVORITED) 응답 시 DioException 발생', () async {
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            handler.reject(DioException(
+              requestOptions: options,
+              response: Response(
+                data: {
+                  'success': false,
+                  'error': {
+                    'code': 'ALREADY_FAVORITED',
+                    'message': '이미 즐겨찾기에 추가된 제품입니다',
+                  },
+                },
+                statusCode: 400,
+                requestOptions: options,
+              ),
+              type: DioExceptionType.badResponse,
+            ));
+          },
+        ));
+
+        expect(
+          () => dataSource.addToFavorites(productCode: '18110014'),
+          throwsA(isA<DioException>()),
+        );
+      });
+    });
+
+    group('removeFromFavorites', () {
+      test('정상 응답 시 DELETE 경로 검증', () async {
+        String? capturedPath;
+        String? capturedMethod;
+
+        dio.interceptors.add(InterceptorsWrapper(
+          onRequest: (options, handler) {
+            capturedPath = options.path;
+            capturedMethod = options.method;
+            handler.resolve(Response(
+              data: {
+                'success': true,
+                'data': null,
+                'message': '즐겨찾기에서 해제되었습니다',
+              },
+              statusCode: 200,
+              requestOptions: options,
+            ));
+          },
+        ));
+
+        await dataSource.removeFromFavorites(productCode: '18110014');
+
+        expect(capturedPath, '/api/v1/mobile/me/favorite-products/18110014');
+        expect(capturedMethod, 'DELETE');
+      });
+    });
   });
 }

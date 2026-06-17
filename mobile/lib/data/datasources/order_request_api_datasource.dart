@@ -110,8 +110,16 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   }
 
   @override
-  Future<List<ProductForOrderModel>> getFavoriteProducts() {
-    throw UnimplementedError('별도 스펙에서 구현');
+  Future<List<ProductForOrderModel>> getFavoriteProducts() async {
+    final response = await _dio.get(
+      '/api/v1/mobile/me/favorite-products',
+    );
+
+    final data = (response.data['data'] as List<dynamic>?) ?? const [];
+    return data
+        .map((raw) =>
+            ProductForOrderModel.fromJson(raw as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -146,13 +154,17 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   }
 
   @override
-  Future<void> addToFavorites({required String productCode}) {
-    throw UnimplementedError('별도 스펙에서 구현');
+  Future<void> addToFavorites({required String productCode}) async {
+    await _dio.post(
+      '/api/v1/mobile/me/favorite-products/$productCode',
+    );
   }
 
   @override
-  Future<void> removeFromFavorites({required String productCode}) {
-    throw UnimplementedError('별도 스펙에서 구현');
+  Future<void> removeFromFavorites({required String productCode}) async {
+    await _dio.delete(
+      '/api/v1/mobile/me/favorite-products/$productCode',
+    );
   }
 
   @override
