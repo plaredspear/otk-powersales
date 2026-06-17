@@ -345,6 +345,72 @@ class MyScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 행사 전용일 → 행사 거래처(EVENT TMS)에서 소싱")
+        fun getDailySchedule_eventOnlyDay_sourcesEventAccounts() {
+            // Given
+            val userId = 1L
+            val date = LocalDate.of(2020, 8, 10)
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val eventAccount = Account(id = 30L, name = "행사거래처")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            // 진열은 없음 → 행사 거래처만 표시되어야 함
+            every { displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date) } returns emptyList()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date,
+                    workingType = WorkingType.WORK,
+                    account = eventAccount,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountId).isEqualTo(30L)
+            assertThat(result.accounts[0].accountName).isEqualTo("행사거래처")
+            assertThat(result.accounts[0].workType1).isEqualTo("행사")
+            assertThat(result.accounts[0].isRegistered).isFalse()
+            assertThat(result.reportProgress.total).isEqualTo(1)
+            assertThat(result.reportProgress.workType).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("성공 - 진열·행사 동일 거래처는 accountId 기준 1건으로 dedup")
+        fun getDailySchedule_dedupsSharedAccountById() {
+            // Given
+            val userId = 1L
+            val date = LocalDate.of(2020, 8, 11)
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val sharedAccount = Account(id = 40L, name = "공통거래처")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date) } returns listOf(
+                createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, account = sharedAccount, startDate = date)
+            )
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date,
+                    workingType = WorkingType.WORK,
+                    account = sharedAccount,
+                    attendanceLog = AttendanceLog(id = 200L),
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then — 같은 거래처는 1건으로 합쳐지고 출근완료 반영
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountId).isEqualTo(40L)
+            assertThat(result.accounts[0].isRegistered).isTrue()
+        }
+
+        @Test
         @DisplayName("성공 - 출근 등록(attendanceLog) 완료 거래처는 isRegistered=true, completed 반영")
         fun getDailySchedule_registeredAccount_reflectsCompleted() {
             // Given

@@ -143,11 +143,11 @@ class MyScheduleService(
             .mapNotNull { it.account?.id }
             .toSet()
 
-        // 거래처 목록 매핑
+        // 진열 거래처 매핑
         // 레거시 myDaily.jsp: 거래처명 | typeOfWork1 / typeOfWork5 / typeOfWork3
         //   workingcategory1 ← typeOfWork1(진열), workingcategory2 ← typeOfWork5(전담 등),
         //   workingcategory3 ← typeOfWork3(고정/격고/순회)
-        val accountItems = schedules.map { schedule ->
+        val displayAccountItems = schedules.map { schedule ->
             val accountId = schedule.account?.id
             DisplayWorkScheduleItemDto(
                 accountId = accountId ?: 0L,
@@ -159,10 +159,36 @@ class MyScheduleService(
             )
         }
 
+        // 행사 거래처 매핑 (레거시 selectAccList 행사 분기): EVENT TeamMemberSchedule 행에서 직접 소싱.
+        // 진열 마스터에 없는 행사 전용일도 거래처가 표시되도록 한다.
+        val eventAccountItems = memberSchedules
+            .filter { it.workingCategory1 == WorkingCategory1.EVENT && it.account != null }
+            .map { ms ->
+                DisplayWorkScheduleItemDto(
+                    accountId = ms.account?.id ?: 0L,
+                    accountName = ms.account?.name ?: "",
+                    workType1 = ms.workingCategory1?.displayName ?: "",
+                    workType2 = ms.workingCategory2?.displayName ?: "",
+                    workType3 = ms.workingCategory3?.displayName ?: "",
+                    isRegistered = ms.attendanceLog != null
+                )
+            }
+
+        // 진열 ∪ 행사 후 거래처 id 기준 중복 제거 (레거시 정합: 출근완료 항목 우선).
+        // accountId = 0L(식별 불가)은 합치지 않고 그대로 둔다.
+        val accountItems = (displayAccountItems + eventAccountItems)
+            .groupBy { it.accountId }
+            .flatMap { (accountId, items) ->
+                if (accountId == 0L) items
+                else listOf(items.firstOrNull { it.isRegistered } ?: items.first())
+            }
+
         // 보고 진행 상황 계산
         val completed = accountItems.count { it.isRegistered }
         val total = accountItems.size
-        val workType = schedules.firstOrNull()?.typeOfWork1?.displayName ?: ""
+        val workType = schedules.firstOrNull()?.typeOfWork1?.displayName
+            ?: eventAccountItems.firstOrNull()?.workType1
+            ?: ""
 
         return DailyScheduleResponse(
             date = date.toString(),
