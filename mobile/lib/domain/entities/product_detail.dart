@@ -67,9 +67,25 @@ class ProductDetail {
       if (storageCondition != null && storageCondition!.isNotEmpty)
         storageCondition!,
       if (shelfLife != null && shelfLife!.isNotEmpty)
-        '$shelfLife${shelfLifeUnit ?? ''}',
+        '$shelfLife${_shelfLifeUnitLabel(shelfLifeUnit)}',
     ];
     return parts.join(' ');
+  }
+
+  /// 유통기한 단위 picklist 코드(연도/월/일자)를 레거시 표시형(년/개월/일)으로 변환.
+  /// (레거시 `product/search/detail.jsp` 119~127행 분기와 정합)
+  /// 매핑되지 않는 값은 원본을 그대로 사용한다.
+  static String _shelfLifeUnitLabel(String? unit) {
+    switch (unit) {
+      case '연도':
+        return '년';
+      case '월':
+        return '개월';
+      case '일자':
+        return '일';
+      default:
+        return unit ?? '';
+    }
   }
 
   ProductDetail copyWith({
