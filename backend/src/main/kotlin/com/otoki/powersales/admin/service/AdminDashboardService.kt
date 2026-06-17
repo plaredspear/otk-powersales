@@ -223,21 +223,23 @@ class AdminDashboardService(
         val employees = findEmployees(effectiveCodes)
         val asOf = ym.atEndOfMonth()
 
-        // 판촉직/OSC직 (결정 D6 — Employee.jobCode)
+        // 판촉직/OSC직 (결정 D6 — Employee.jobCode). etc = 두 직군 외/null (모수는 사원 전체로 일치)
         val promotion = employees.count { it.jobCode == JOB_CODE_PROMOTION }
         val osc = employees.count { it.jobCode == JOB_CODE_OSC || it.jobCode == JOB_CODE_LADY }
+        val staffTypeEtc = employees.size - promotion - osc
 
-        // 재직/휴직
+        // 재직/휴직. etc = 두 상태 외/null (퇴직 등). 모수는 사원 전체로 일치
         val active = employees.count { it.status == STATUS_ACTIVE }
         val onLeave = employees.count { it.status == STATUS_ON_LEAVE }
+        val positionEtc = employees.size - active - onLeave
 
         // 근무형태별 고정/격고/순회 — MFEIS 당월 근무형태 기준 환산인원 SUM (getDashboard 1회 조회분 공유)
         val byWc3 = mfeisRows.groupBy { it.workingCategory3 }
 
         return BasicStats(
             branchName = branchName,
-            staffType = StaffTypeCount(promotion = promotion, osc = osc),
-            totalByPosition = TotalByPosition(active = active, onLeave = onLeave),
+            staffType = StaffTypeCount(promotion = promotion, osc = osc, etc = staffTypeEtc),
+            totalByPosition = TotalByPosition(active = active, onLeave = onLeave, etc = positionEtc),
             byAgeGroup = buildAgeGroups(employees, asOf),
             byWorkType = WorkTypeStats(
                 fixed = sumHeadcount(byWc3[WC3_FIXED].orEmpty()),

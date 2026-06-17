@@ -66,11 +66,15 @@ export interface StaffDeployment {
 export interface StaffTypeCount {
   promotion: number;
   osc: number;
+  /** 판촉직/OSC직 외 직군 또는 null — 모수 정합용 "기타". */
+  etc: number;
 }
 
 export interface TotalByPosition {
   active: number;
   onLeave: number;
+  /** 재직/휴직 외 상태(퇴직 등) 또는 null — 모수 정합용 "기타". */
+  etc: number;
 }
 
 export interface AgeGroupCount {

@@ -228,8 +228,8 @@ export default function DashboardPage() {
   const basicTab = useMemo(() => {
     if (!data) return null;
     const b = data.basicStats;
-    const staffTypeTotal = b.staffType.promotion + b.staffType.osc;
-    const positionTotal = b.totalByPosition.active + b.totalByPosition.onLeave;
+    const staffTypeTotal = b.staffType.promotion + b.staffType.osc + b.staffType.etc;
+    const positionTotal = b.totalByPosition.active + b.totalByPosition.onLeave + b.totalByPosition.etc;
     const ageTotal = b.byAgeGroup.reduce((sum, g) => sum + g.count, 0);
     const workTypeTotal = b.byWorkType.fixed + b.byWorkType.alternating + b.byWorkType.visiting;
     return (
@@ -240,6 +240,7 @@ export default function DashboardPage() {
               option={donutOption([
                 { name: '판촉직', value: b.staffType.promotion },
                 { name: 'OSC직', value: b.staffType.osc },
+                ...(b.staffType.etc > 0 ? [{ name: '기타', value: b.staffType.etc }] : []),
               ])}
               style={{ height: CHART_HEIGHT, width: '100%' }}
               notMerge
@@ -252,6 +253,7 @@ export default function DashboardPage() {
               option={donutOption([
                 { name: '재직', value: b.totalByPosition.active },
                 { name: '휴직', value: b.totalByPosition.onLeave },
+                ...(b.totalByPosition.etc > 0 ? [{ name: '기타', value: b.totalByPosition.etc }] : []),
               ])}
               style={{ height: CHART_HEIGHT, width: '100%' }}
               notMerge

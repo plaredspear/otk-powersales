@@ -228,12 +228,13 @@ class AdminDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("T9 재직/휴직 분류 — 재직 3 / 휴직 1")
+    @DisplayName("T9 재직/휴직 분류 — 재직 3 / 휴직 1 / 기타(퇴직·null) 2, 모수=사원 전체")
     fun activeOnLeave() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns listOf(
             employee(status = "재직"), employee(status = "재직"), employee(status = "재직"),
             employee(status = "휴직"),
+            employee(status = "퇴직"), employee(status = null),
         )
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
@@ -242,6 +243,7 @@ class AdminDashboardServiceTest {
 
         assertThat(result.basicStats.totalByPosition.active).isEqualTo(3)
         assertThat(result.basicStats.totalByPosition.onLeave).isEqualTo(1)
+        assertThat(result.basicStats.totalByPosition.etc).isEqualTo(2)
     }
 
     @Test
@@ -260,6 +262,7 @@ class AdminDashboardServiceTest {
 
         assertThat(result.basicStats.staffType.promotion).isEqualTo(2)
         assertThat(result.basicStats.staffType.osc).isEqualTo(2)
+        assertThat(result.basicStats.staffType.etc).isEqualTo(1)
     }
 
     @Test

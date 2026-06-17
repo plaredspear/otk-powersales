@@ -76,8 +76,8 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         ),
         basicStats = BasicStats(
             branchName = null,
-            staffType = StaffTypeCount(promotion = 0, osc = 0),
-            totalByPosition = TotalByPosition(active = 0, onLeave = 0),
+            staffType = StaffTypeCount(promotion = 0, osc = 0, etc = 0),
+            totalByPosition = TotalByPosition(active = 0, onLeave = 0, etc = 0),
             byAgeGroup = emptyList(),
             byWorkType = WorkTypeStats(fixed = BigDecimal.ZERO, alternating = BigDecimal.ZERO, visiting = BigDecimal.ZERO)
         )

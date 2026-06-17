@@ -72,14 +72,18 @@ data class BasicStats(
     val byWorkType: WorkTypeStats
 )
 
+/** etc = jobCode 가 판촉직/OSC직/레이디직 어디에도 해당하지 않거나 null 인 사원 수 (모수 정합용). */
 data class StaffTypeCount(
     val promotion: Int,
-    val osc: Int
+    val osc: Int,
+    val etc: Int
 )
 
+/** etc = status 가 재직/휴직 어디에도 해당하지 않거나 null 인 사원 수 (모수 정합용). */
 data class TotalByPosition(
     val active: Int,
-    val onLeave: Int
+    val onLeave: Int,
+    val etc: Int
 )
 
 data class AgeGroupCount(
