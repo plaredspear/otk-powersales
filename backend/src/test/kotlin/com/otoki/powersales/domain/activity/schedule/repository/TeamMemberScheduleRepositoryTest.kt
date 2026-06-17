@@ -6,6 +6,8 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.promotion.entity.Promotion
+import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -473,6 +475,69 @@ class TeamMemberScheduleRepositoryTest {
             val result = teamMemberScheduleRepository.findDistinctScheduledAccounts(null, 2)
 
             assertThat(result.map { it.name }).containsExactly("A거래처", "B거래처")
+        }
+    }
+
+    @Nested
+    @DisplayName("findMonthlyBy* — promotionEmployee fetch join")
+    inner class MonthlyPromotionEmployeeFetchJoin {
+
+        // 행사 일정의 promotionEmployee 를 fetch join 으로 즉시 로딩해 TeamScheduleDto.from 이
+        // promotionEmployee.promotionId 를 채울 수 있어야 한다(행사 클릭 → 행사 상세 이동).
+        // em.clear() 로 detach 한 뒤 promotionId 를 읽어도 LazyInitializationException 없이
+        // 값이 나오면 fetch join 이 동작한 것이다.
+        @Test
+        @DisplayName("findMonthlyByEmployeeIds - 행사 일정의 promotionEmployee.promotionId 가 채워진다")
+        fun findMonthlyByEmployeeIds_fetchesPromotionEmployee() {
+            val today = LocalDate.now()
+            val promotion = testEntityManager.persistAndFlush(
+                Promotion(promotionNumber = "PM-EVT-1", startDate = today, endDate = today)
+            )
+            val pe = testEntityManager.persistAndFlush(PromotionEmployee(promotionId = promotion.id))
+            val schedule = TeamMemberSchedule(
+                employee = testEmployee,
+                workingDate = today,
+                workingType = WorkingType.WORK,
+                workingCategory1 = WorkingCategory1.EVENT,
+                promotionEmployee = pe
+            )
+            testEntityManager.persistAndFlush(schedule)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                listOf(testEmployee.id), today, today, null
+            )
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].promotionEmployee?.promotionId).isEqualTo(promotion.id)
+        }
+
+        @Test
+        @DisplayName("findMonthlyByAccountIds - 행사 일정의 promotionEmployee.promotionId 가 채워진다")
+        fun findMonthlyByAccountIds_fetchesPromotionEmployee() {
+            val today = LocalDate.now()
+            val account = testEntityManager.persistAndFlush(Account(name = "행사거래처", externalKey = "EVT1"))
+            val promotion = testEntityManager.persistAndFlush(
+                Promotion(promotionNumber = "PM-EVT-2", startDate = today, endDate = today)
+            )
+            val pe = testEntityManager.persistAndFlush(PromotionEmployee(promotionId = promotion.id))
+            val schedule = TeamMemberSchedule(
+                employee = testEmployee,
+                account = account,
+                workingDate = today,
+                workingType = WorkingType.WORK,
+                workingCategory1 = WorkingCategory1.EVENT,
+                promotionEmployee = pe
+            )
+            testEntityManager.persistAndFlush(schedule)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyByAccountIds(
+                listOf(account.id), today, today, null
+            )
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].promotionEmployee?.promotionId).isEqualTo(promotion.id)
         }
     }
 }

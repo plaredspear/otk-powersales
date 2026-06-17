@@ -11,6 +11,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.activity.schedule.entity.QAttendanceLog.Companion.attendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
+import com.otoki.powersales.domain.activity.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
 import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
@@ -124,6 +125,11 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             // 2번째 행부터 EntityInitializer.updateInitializedEntityInstance 가 NPE(loadedState null).
             // 호출부(getMonthlySchedule/AdminTeamScheduleService)는 employeeInfo 를 읽지 않아 안전하게 제거.
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // promotionEmployee fetch join: TeamScheduleDto.from 이 promotionEmployee?.promotionId 를
+            // 읽는다. bytecode enhancement 환경에서는 @ManyToOne(LAZY) 가 readOnly tx 안에서도
+            // 초기화되지 않아 promotionId 가 null 로 응답돼(행사 클릭 시 "연결된 행사를 찾을 수 없습니다")
+            // fetch join 으로 명시 로딩한다.
+            .leftJoin(teamMemberSchedule.promotionEmployee, promotionEmployee).fetchJoin()
             .where(
                 teamMemberSchedule.employee.id.`in`(employeeIds),
                 teamMemberSchedule.workingDate.between(from, to),
@@ -144,6 +150,9 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
             // employee.employeeInfo fetch join 제거 (findMonthlyByEmployeeIds 와 동일 사유 — loadedState NPE 회피)
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // promotionEmployee fetch join (findMonthlyByEmployeeIds 와 동일 사유 — enhancement LAZY 미초기화로
+            // promotionId null 응답 회피)
+            .leftJoin(teamMemberSchedule.promotionEmployee, promotionEmployee).fetchJoin()
             .where(
                 teamMemberSchedule.account.id.`in`(accountIds),
                 teamMemberSchedule.workingDate.between(from, to),
