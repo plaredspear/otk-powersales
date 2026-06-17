@@ -31,6 +31,11 @@ function formatHeadcount(v: number, decimals?: number): string {
     : v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
+/** 차트 카드 우측 라벨 — 해당 그래프의 총원 + 단위. decimals 지정 시 총원을 해당 소수 자리수로 표시. */
+function cardExtra(total: number, decimals?: number) {
+  return <span style={{ color: '#8c8c8c' }}>총 {formatHeadcount(total, decimals)}명 (단위: 명)</span>;
+}
+
 /** 환산인원(소수) 막대 차트 옵션 — name/value 쌍 리스트. decimals 지정 시 라벨/툴팁을 해당 소수 자리수로 표시. */
 function headcountBarOption(
   items: { name: string; value: number }[],
@@ -223,10 +228,14 @@ export default function DashboardPage() {
   const basicTab = useMemo(() => {
     if (!data) return null;
     const b = data.basicStats;
+    const staffTypeTotal = b.staffType.promotion + b.staffType.osc;
+    const positionTotal = b.totalByPosition.active + b.totalByPosition.onLeave;
+    const ageTotal = b.byAgeGroup.reduce((sum, g) => sum + g.count, 0);
+    const workTypeTotal = b.byWorkType.fixed + b.byWorkType.alternating + b.byWorkType.visiting;
     return (
       <Row gutter={[16, 16]}>
         <Col span={12}>
-          <Card title="판촉직/OSC직 인원현황" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
+          <Card title="판촉직/OSC직 인원현황" extra={cardExtra(staffTypeTotal)}>
             <ReactECharts
               option={donutOption([
                 { name: '판촉직', value: b.staffType.promotion },
@@ -238,7 +247,7 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="총원 (재직/휴직)" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
+          <Card title="총원 (재직/휴직)" extra={cardExtra(positionTotal)}>
             <ReactECharts
               option={donutOption([
                 { name: '재직', value: b.totalByPosition.active },
@@ -250,12 +259,12 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="연령별 현황" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
+          <Card title="연령별 현황" extra={cardExtra(ageTotal)}>
             <ReactECharts option={headcountBarOption(ageGroupItems(b.byAgeGroup), '#722ed1')} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="근무형태별 고정/격고/순회 인원현황 (환산인원)" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
+          <Card title="근무형태별 고정/격고/순회 인원현황 (환산인원)" extra={cardExtra(workTypeTotal, 1)}>
             <ReactECharts
               option={headcountBarOption(
                 [
