@@ -15,6 +15,7 @@ import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.schedule.service.AdminTeamScheduleService
+import java.math.BigDecimal
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -78,7 +79,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             staffType = StaffTypeCount(promotion = 0, osc = 0),
             totalByPosition = TotalByPosition(active = 0, onLeave = 0),
             byAgeGroup = emptyList(),
-            byWorkType = WorkTypeStats(fixed = 0, alternating = 0, visiting = 0)
+            byWorkType = WorkTypeStats(fixed = BigDecimal.ZERO, alternating = BigDecimal.ZERO, visiting = BigDecimal.ZERO)
         )
     )
 

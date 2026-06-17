@@ -87,8 +87,9 @@ data class AgeGroupCount(
     val count: Int
 )
 
+/** 근무형태(고정/격고/순회)별 환산인원 SUM — MFEIS ConvertedHeadcount__c(Number 18,4) 정합. */
 data class WorkTypeStats(
-    val fixed: Int,
-    val alternating: Int,
-    val visiting: Int
+    val fixed: BigDecimal,
+    val alternating: BigDecimal,
+    val visiting: BigDecimal
 )

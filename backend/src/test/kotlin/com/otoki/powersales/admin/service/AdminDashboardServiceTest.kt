@@ -145,6 +145,28 @@ class AdminDashboardServiceTest {
     }
 
     @Test
+    @DisplayName("T3-1 기본현황 근무형태별(고정/격고/순회)은 환산인원 SUM — 고정 400+1=401 / 순회 54.9, scale=4")
+    fun basicStatsByWorkTypeUsesConvertedHeadcount() {
+        val rows = listOf(
+            mfeis(wc3 = "고정", headcount = BigDecimal("400")),
+            mfeis(wc3 = "고정", headcount = BigDecimal("1")),
+            mfeis(wc3 = "순회", headcount = BigDecimal("54.9")),
+        )
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
+        every { employeeRepository.findProjectedBy() } returns emptyList()
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+            MonthlySalesAdminQueryService.InvestedAccountSales(0L, 0L)
+
+        val result = service.getDashboard(allScope, "2026-05", null)
+        val byWorkType = result.basicStats.byWorkType
+
+        assertThat(byWorkType.fixed).isEqualByComparingTo(BigDecimal("401.0000"))
+        assertThat(byWorkType.alternating).isEqualByComparingTo(BigDecimal("0.0000"))
+        assertThat(byWorkType.visiting).isEqualByComparingTo(BigDecimal("54.9000"))
+    }
+
+    @Test
     @DisplayName("T4/T6 매출 실적 + 전년 대비 — actual 800, lastYear 760 -> ratio ≈ 105.3")
     fun salesActualAndLastYearRatio() {
         val acc = account(1, AccountType.SUPER)

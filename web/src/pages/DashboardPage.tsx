@@ -24,16 +24,24 @@ function toYearMonth(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
-/** 환산인원(소수) 막대 차트 옵션 — name/value 쌍 리스트. */
+/** 천 단위 구분 + 소수 자리수 고정 포맷. decimals 미지정 시 원래 값 그대로(정수형). */
+function formatHeadcount(v: number, decimals?: number): string {
+  return decimals == null
+    ? v.toLocaleString()
+    : v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+/** 환산인원(소수) 막대 차트 옵션 — name/value 쌍 리스트. decimals 지정 시 라벨/툴팁을 해당 소수 자리수로 표시. */
 function headcountBarOption(
   items: { name: string; value: number }[],
   color: string,
   unit = '명',
+  decimals?: number,
 ) {
   return {
     tooltip: {
       trigger: 'axis',
-      valueFormatter: (v: number | null) => (v == null ? '-' : `${v.toLocaleString()}${unit}`),
+      valueFormatter: (v: number | null) => (v == null ? '-' : `${formatHeadcount(v, decimals)}${unit}`),
     },
     grid: { left: 50, right: 20, top: 20, bottom: 40 },
     xAxis: { type: 'category', data: items.map((i) => i.name), axisLabel: { interval: 0, rotate: items.length > 6 ? 30 : 0 } },
@@ -43,7 +51,7 @@ function headcountBarOption(
         type: 'bar',
         barMaxWidth: 48,
         itemStyle: { color },
-        label: { show: true, position: 'top', formatter: (p: { value: number }) => p.value.toLocaleString() },
+        label: { show: true, position: 'top', formatter: (p: { value: number }) => formatHeadcount(p.value, decimals) },
         data: items.map((i) => i.value),
       },
     ],
@@ -247,7 +255,7 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title="근무형태별 고정/격고/순회 인원현황" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
+          <Card title="근무형태별 고정/격고/순회 인원현황 (환산인원)" extra={<span style={{ color: '#8c8c8c' }}>(단위: 명)</span>}>
             <ReactECharts
               option={headcountBarOption(
                 [
@@ -256,6 +264,8 @@ export default function DashboardPage() {
                   { name: '순회', value: b.byWorkType.visiting },
                 ],
                 '#13c2c2',
+                '명',
+                1,
               )}
               style={{ height: CHART_HEIGHT, width: '100%' }}
               notMerge

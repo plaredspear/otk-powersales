@@ -78,6 +78,7 @@ export interface AgeGroupCount {
   count: number;
 }
 
+/** 근무형태(고정/격고/순회)별 환산인원 SUM — MFEIS ConvertedHeadcount__c 정합 (소수 가능). */
 export interface WorkTypeStats {
   fixed: number;
   alternating: number;

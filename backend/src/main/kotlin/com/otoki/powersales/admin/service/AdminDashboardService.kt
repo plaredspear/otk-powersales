@@ -231,7 +231,7 @@ class AdminDashboardService(
         val active = employees.count { it.status == STATUS_ACTIVE }
         val onLeave = employees.count { it.status == STATUS_ON_LEAVE }
 
-        // 근무형태별 고정/격고/순회 — MFEIS 당월 근무형태 기준 인원 수 (getDashboard 1회 조회분 공유)
+        // 근무형태별 고정/격고/순회 — MFEIS 당월 근무형태 기준 환산인원 SUM (getDashboard 1회 조회분 공유)
         val byWc3 = mfeisRows.groupBy { it.workingCategory3 }
 
         return BasicStats(
@@ -240,9 +240,9 @@ class AdminDashboardService(
             totalByPosition = TotalByPosition(active = active, onLeave = onLeave),
             byAgeGroup = buildAgeGroups(employees, asOf),
             byWorkType = WorkTypeStats(
-                fixed = byWc3[WC3_FIXED]?.size ?: 0,
-                alternating = byWc3[WC3_ALTERNATING]?.size ?: 0,
-                visiting = byWc3[WC3_VISITING]?.size ?: 0,
+                fixed = sumHeadcount(byWc3[WC3_FIXED].orEmpty()),
+                alternating = sumHeadcount(byWc3[WC3_ALTERNATING].orEmpty()),
+                visiting = sumHeadcount(byWc3[WC3_VISITING].orEmpty()),
             ),
         )
     }
