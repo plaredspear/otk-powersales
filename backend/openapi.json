@@ -12647,6 +12647,9 @@
       },
       "DailySalesFormResponse" : {
         "properties" : {
+          "attendanceRegistered" : {
+            "type" : "boolean"
+          },
           "basePrice" : {
             "type" : [ "number", "null" ]
           },
