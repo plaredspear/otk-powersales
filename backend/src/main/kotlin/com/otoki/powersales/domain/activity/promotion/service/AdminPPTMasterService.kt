@@ -32,6 +32,8 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
+import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -39,6 +41,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Service
 @Transactional(readOnly = true)
@@ -307,7 +310,7 @@ class AdminPPTMasterService(
         teamType: String?,
         branchCode: String?,
         validOnly: Boolean
-    ): ByteArray {
+    ): ExcelResult {
         // 엑셀 다운로드도 목록 화면과 동일한 지점 가시 범위로 제한 (사원 소속 지점 기준).
         // NoAccess(권한 밖 지점 요청)는 쿼리를 생략하고 헤더만 있는 빈 엑셀을 반환한다 —
         // branchCodeFilter 를 빈 리스트로 두면 repository 가 필터를 생략해 전사가 노출되므로 분기로 차단.
@@ -329,10 +332,17 @@ class AdminPPTMasterService(
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("전문행사조마스터")
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
 
         val headerRow = sheet.createRow(0)
         val headers = listOf("사번", "사원명", "거래처코드", "거래처명", "전문행사조", "시작일", "종료일", "확정", "지점코드")
-        headers.forEachIndexed { i, h -> headerRow.createCell(i).setCellValue(h) }
+        headers.forEachIndexed { i, h ->
+            headerRow.createCell(i).apply {
+                setCellValue(h)
+                cellStyle = headerStyle
+            }
+        }
+        sheet.createFreezePane(0, 1)
 
         rows.forEachIndexed { index, result ->
             val m = result.master
@@ -348,9 +358,11 @@ class AdminPPTMasterService(
             row.createCell(8).setCellValue(m.branchCode ?: "")
         }
 
-        val out = ByteArrayOutputStream()
-        workbook.use { it.write(out) }
-        return out.toByteArray()
+        headers.indices.forEach { sheet.autoSizeColumn(it) }
+
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
+        val filename = "전문행사조마스터_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.xlsx"
+        return ExcelResult(bytes, filename)
     }
 
     fun generateExcelTemplate(): ByteArray {

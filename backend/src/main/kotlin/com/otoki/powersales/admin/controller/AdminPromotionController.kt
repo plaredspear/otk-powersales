@@ -21,15 +21,11 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Size
 import org.springframework.format.annotation.DateTimeFormat
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 
 @RestController
@@ -69,13 +65,7 @@ class AdminPromotionController(
         @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate,
     ): ResponseEntity<ByteArray> {
         val result = targetActualReportService.exportReport(startDate, endDate)
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     /** 행사마스터 목록 엑셀 다운로드 — 목록과 동일한 가시 범위/필터로 전량 추출 (최대 건수 제한 적용). */

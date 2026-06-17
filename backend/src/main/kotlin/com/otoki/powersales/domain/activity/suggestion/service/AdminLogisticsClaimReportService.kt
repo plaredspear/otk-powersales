@@ -5,14 +5,11 @@ import com.otoki.powersales.domain.activity.suggestion.dto.response.LogisticsCla
 import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
 import com.otoki.powersales.platform.common.util.TimeZones
-import org.apache.poi.ss.usermodel.FillPatternType
-import org.apache.poi.ss.usermodel.HorizontalAlignment
-import org.apache.poi.ss.usermodel.IndexedColors
-import org.apache.poi.xssf.usermodel.XSSFColor
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
+import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.io.ByteArrayOutputStream
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
@@ -69,7 +66,7 @@ class AdminLogisticsClaimReportService(
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("물류클레임")
-        val headerStyle = createHeaderStyle(workbook)
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
 
         val headers = listOf(
             "소유자명", "생성일시", "클레임일자", "책임물류센터", "물류책임", "클레임유형",
@@ -113,7 +110,7 @@ class AdminLogisticsClaimReportService(
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
-        val bytes = workbookToBytes(workbook)
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
         val periodLabel = when (response.period) {
             "THIS_MONTH" -> "당월"
             "LAST_MONTH" -> "전월"
@@ -177,37 +174,5 @@ class AdminLogisticsClaimReportService(
             actionContent = s.actionContent,
             duplicateProposalNum = s.duplicateProposalNum,
         )
-    }
-
-    private fun createHeaderStyle(workbook: XSSFWorkbook) = workbook.createCellStyle().apply {
-        setFillForegroundColor(XSSFColor(byteArrayOf(0x1E, 0x2F, 0x97.toByte()), null))
-        fillPattern = FillPatternType.SOLID_FOREGROUND
-        alignment = HorizontalAlignment.CENTER
-        setFont(workbook.createFont().apply {
-            bold = true
-            color = IndexedColors.WHITE.index
-        })
-    }
-
-    private fun workbookToBytes(workbook: XSSFWorkbook): ByteArray {
-        return ByteArrayOutputStream().use { out ->
-            workbook.write(out)
-            workbook.close()
-            out.toByteArray()
-        }
-    }
-
-    data class ExcelResult(
-        val bytes: ByteArray,
-        val filename: String,
-    ) {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-            other as ExcelResult
-            return bytes.contentEquals(other.bytes) && filename == other.filename
-        }
-
-        override fun hashCode(): Int = bytes.contentHashCode() * 31 + filename.hashCode()
     }
 }

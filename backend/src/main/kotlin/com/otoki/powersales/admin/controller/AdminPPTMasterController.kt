@@ -18,6 +18,7 @@ import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterUpdat
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTConfirmedReportService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
@@ -132,14 +133,10 @@ class AdminPPTMasterController(
         @RequestParam(required = false) branchCode: String?,
         @RequestParam(defaultValue = "true") validOnly: Boolean
     ): ResponseEntity<ByteArray> {
-        val bytes = adminPPTMasterService.exportToExcel(
+        val result = adminPPTMasterService.exportToExcel(
             scope, employeeName, employeeCode, teamType, branchCode, validOnly
         )
-        val filename = "전문행사조마스터_${LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)}.xlsx"
-        return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
-            .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-            .body(bytes)
+        return ExcelResponseUtils.build(result)
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/excel-template")

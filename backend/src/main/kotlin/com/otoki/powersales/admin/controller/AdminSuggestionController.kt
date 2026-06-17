@@ -6,6 +6,7 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.domain.activity.suggestion.dto.admin.AdminSuggestionCreateRequest
 import com.otoki.powersales.domain.activity.suggestion.dto.admin.AdminSuggestionDetailResponse
 import com.otoki.powersales.domain.activity.suggestion.dto.admin.AdminSuggestionListResponse
@@ -21,9 +22,7 @@ import com.otoki.powersales.domain.activity.suggestion.service.AdminSuggestionSe
 import com.otoki.powersales.domain.activity.suggestion.service.LogisticsClaimReportPeriod
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -37,8 +36,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 
 /**
@@ -181,12 +178,6 @@ class AdminSuggestionController(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
     ): ResponseEntity<ByteArray> {
         val result = logisticsClaimReportService.exportReport(period, startDate, endDate)
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 }

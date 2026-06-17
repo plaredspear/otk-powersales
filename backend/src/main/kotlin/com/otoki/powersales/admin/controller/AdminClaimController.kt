@@ -13,16 +13,13 @@ import com.otoki.powersales.domain.activity.claim.service.AdminClaimResendServic
 import com.otoki.powersales.domain.activity.claim.service.AdminClaimService
 import com.otoki.powersales.domain.activity.claim.service.ClaimPeriodReportType
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 
 @RestController
@@ -120,12 +117,6 @@ class AdminClaimController(
         @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
     ): ResponseEntity<ByteArray> {
         val result = adminClaimPeriodReportService.exportReport(startDate, endDate, type)
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.parseMediaType(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        val encodedFilename = URLEncoder.encode(result.filename, StandardCharsets.UTF_8.toString()).replace("+", "%20")
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''$encodedFilename")
-        return ResponseEntity.ok().headers(headers).body(result.bytes)
+        return ExcelResponseUtils.build(result)
     }
 }

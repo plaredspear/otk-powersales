@@ -631,21 +631,22 @@ class AdminPPTMasterServiceTest {
                 pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val bytes = service.exportToExcel(allBranchesScope(), null, null, null, null, true)
+            val result = service.exportToExcel(allBranchesScope(), null, null, null, null, true)
 
             // xlsx 파일 시그니처 (PK\x03\x04 — ZIP 형식) 확인
-            assertThat(bytes).isNotEmpty
-            assertThat(bytes[0]).isEqualTo(0x50.toByte()) // 'P'
-            assertThat(bytes[1]).isEqualTo(0x4B.toByte()) // 'K'
+            assertThat(result.bytes).isNotEmpty
+            assertThat(result.bytes[0]).isEqualTo(0x50.toByte()) // 'P'
+            assertThat(result.bytes[1]).isEqualTo(0x4B.toByte()) // 'K'
+            assertThat(result.filename).startsWith("전문행사조마스터_").endsWith(".xlsx")
         }
 
         @Test
         @DisplayName("지점 스코프 - 권한 밖 지점 요청(NoAccess) -> 쿼리 없이 헤더만 빈 xlsx")
         fun exportToExcel_noAccess() {
             val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
-            val bytes = service.exportToExcel(scope, null, null, null, "9999", true)
+            val result = service.exportToExcel(scope, null, null, null, "9999", true)
 
-            assertThat(bytes).isNotEmpty // 헤더 행만 있는 빈 엑셀
+            assertThat(result.bytes).isNotEmpty // 헤더 행만 있는 빈 엑셀
             verify(exactly = 0) {
                 pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
             }
@@ -659,9 +660,9 @@ class AdminPPTMasterServiceTest {
                 pptMasterRepository.searchMasters(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val bytes = service.exportToExcel(allBranchesScope(), null, null, null, null, true)
+            val result = service.exportToExcel(allBranchesScope(), null, null, null, null, true)
 
-            assertThat(bytes).isNotEmpty
+            assertThat(result.bytes).isNotEmpty
         }
     }
 
