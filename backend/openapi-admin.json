@@ -9511,9 +9511,6 @@
             "format" : "int64",
             "type" : "integer"
           },
-          "fileType" : {
-            "type" : "string"
-          },
           "fileUrl" : {
             "type" : "string"
           },
