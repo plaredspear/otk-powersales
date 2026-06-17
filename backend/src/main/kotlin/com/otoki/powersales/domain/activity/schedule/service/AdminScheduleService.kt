@@ -119,14 +119,15 @@ class AdminScheduleService(
             throw MissingCostCenterException()
         }
 
-        // cost_center 컬럼 cascade (Level5 → Level4) — 정책은 OrganizationRepository 에 응집
+        // cost_center 컬럼 cascade (Level5 → Level4) — 정책은 OrganizationRepository 에 응집.
+        // SF 정합: org 미매칭은 fatal 이 아니다. 레거시 CurrentUserBranchNameList.getOrgList() 는
+        // Org 조회 0건 시 예외 없이 빈 결과로 흘려 영업지원실 false → 본인 사업소 여사원만 조회한다.
+        // 따라서 org 가 null 이면 영업지원실 분기를 타지 않고 본인 costCenterCode 여사원만 조회한다.
         val org = organizationRepository.findFirstByCostCenterCascade(costCenterCode)
-            ?: throw OrganizationNotFoundException()
 
-        // SF 정합: 영업지원실 판별 = Org.OrgCodeLevel3 == "3475" (SF AppointmentTriggerHanlder.cls:328-331)
-        val employees = if (org.orgCodeLevel3 == SALES_SUPPORT_LEVEL3) {
-            val costCenterLevel3 = org.costCenterLevel3
-                ?: throw OrganizationNotFoundException()
+        // SF 정합: 영업지원실 판별 = Org.OrgCodeLevel3 == "3475". org 미매칭 시 false 로 간주.
+        val costCenterLevel3 = org?.takeIf { it.orgCodeLevel3 == SALES_SUPPORT_LEVEL3 }?.costCenterLevel3
+        val employees = if (costCenterLevel3 != null) {
             val costCenterCodes = organizationRepository.findByCostCenterLevel3(costCenterLevel3)
                 .mapNotNull { it.costCenterLevel5 }
                 .distinct()
@@ -894,12 +895,6 @@ class AdminScheduleService(
         val errorCount: Int
     )
 }
-
-class OrganizationNotFoundException : BusinessException(
-    errorCode = "ORGANIZATION_NOT_FOUND",
-    message = "존재하지 않는 지점 코드입니다",
-    httpStatus = HttpStatus.NOT_FOUND
-)
 
 class MissingCostCenterException : BusinessException(
     errorCode = "MISSING_COST_CENTER",

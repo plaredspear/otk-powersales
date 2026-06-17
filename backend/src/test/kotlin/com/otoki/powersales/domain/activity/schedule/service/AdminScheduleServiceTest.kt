@@ -44,7 +44,6 @@ import com.otoki.powersales.domain.activity.schedule.service.ScheduleTemplateGen
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.AdminScheduleService
 import com.otoki.powersales.domain.activity.schedule.service.MissingCostCenterException
-import com.otoki.powersales.domain.activity.schedule.service.OrganizationNotFoundException
 import com.otoki.powersales.domain.activity.schedule.service.ScheduleExcelParser
 import com.otoki.powersales.domain.activity.schedule.service.ScheduleExportGenerator
 import com.otoki.powersales.domain.activity.schedule.service.ScheduleUploadValidator
@@ -210,16 +209,30 @@ class AdminScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 지점 - OrganizationNotFoundException")
-        fun generateTemplate_orgNotFound() {
+        @DisplayName("org 미매칭 - 예외 없이 본인 사업소 여사원으로 양식 생성")
+        fun generateTemplate_orgNotFound_fallbackToOwnBranch() {
+            val userId = 1L
             val costCenterCode = "0000"
-            val employee = createEmployee(costCenterCode = costCenterCode)
-            every { employeeRepository.findById(1L) } returns Optional.of(employee)
-            // cascade Level5→4 모두 miss → null. Service 는 OrganizationNotFoundException.
+            val employee = createEmployee(id = userId, costCenterCode = costCenterCode)
+            val woman = createEmployee(employeeCode = "20030001", name = "김여사", orgName = "강복1지점", costCenterCode = costCenterCode)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            // SF 정합 (CurrentUserBranchNameList.getOrgList): cascade Level5→4 모두 miss → null 이어도
+            // 예외가 아니라 영업지원실 false 로 간주, 본인 costCenterCode 여사원만 조회한다.
             every { organizationRepository.findFirstByCostCenterCascade(costCenterCode) } returns null
+            every {
+                employeeRepository.findByCostCenterCodeAndRoleAndAppLoginActiveTrueAndStatus(
+                    costCenterCode, AppAuthority.WOMAN, "재직"
+                )
+            } returns listOf(woman)
+            every { templateGenerator.generate(listOf(woman)) } returns ByteArray(80)
 
-            assertThatThrownBy { adminScheduleService.generateTemplate(1L) }
-                .isInstanceOf(OrganizationNotFoundException::class.java)
+            val result = adminScheduleService.generateTemplate(userId)
+
+            assertThat(result.bytes).hasSize(80)
+            assertThat(result.filename).startsWith("진열마스터Template(신규작성용)_")
+            verify(exactly = 0) {
+                employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrueAndStatus(any(), any(), any())
+            }
         }
 
         @Test
