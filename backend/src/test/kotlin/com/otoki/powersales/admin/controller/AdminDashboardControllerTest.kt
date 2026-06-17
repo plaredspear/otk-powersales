@@ -66,7 +66,8 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             lastYearRatio = 0.0,
             channelSales = emptyList(),
             hasActualData = false,
-            hasLastYearData = false
+            hasLastYearData = false,
+            hasTargetData = false
         ),
         staffDeployment = StaffDeployment(
             yearMonth = yearMonth,

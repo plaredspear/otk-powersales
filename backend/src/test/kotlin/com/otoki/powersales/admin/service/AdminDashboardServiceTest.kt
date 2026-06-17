@@ -74,7 +74,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
     }
 
@@ -95,7 +95,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)
@@ -121,7 +121,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)
@@ -145,7 +145,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)
@@ -173,7 +173,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)
@@ -194,7 +194,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 800L, targetAmount = 1000L, lastYearAmount = 760L,
-                hasActualData = true, hasLastYearData = true,
+                hasActualData = true, hasLastYearData = true, hasTargetData = true,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)
@@ -208,8 +208,32 @@ class AdminDashboardServiceTest {
         // 데이터 적재 여부 플래그 전달
         assertThat(result.salesSummary.hasActualData).isTrue()
         assertThat(result.salesSummary.hasLastYearData).isTrue()
+        assertThat(result.salesSummary.hasTargetData).isTrue()
         // 유통별 목표/진도율(channelSales)은 데이터 부재로 빈 리스트
         assertThat(result.salesSummary.channelSales).isEmpty()
+    }
+
+    @Test
+    @DisplayName("T4-2 당월 목표 미등록 — targetAmount 0 + hasTargetData false + progressRate 0 (계산은 목표 0)")
+    fun salesTargetNotRegistered() {
+        val acc = account(1, AccountType.SUPER)
+        every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns
+            listOf(mfeis(acc = acc))
+        every { employeeRepository.findProjectedBy() } returns emptyList()
+        // 목표 미등록 — 실적은 있으나 목표 row 전무 (hasTargetData=false, target=0)
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 800L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = true, hasLastYearData = false, hasTargetData = false,
+            )
+
+        val result = service.getDashboard(allScope, "2026-05", null)
+
+        // 화면 "—" 신호 — 목표 미등록
+        assertThat(result.salesSummary.hasTargetData).isFalse()
+        // 계산은 목표 0 으로 — 달성률 0.0 (NaN/Infinity 없이)
+        assertThat(result.salesSummary.targetAmount).isEqualTo(0L)
+        assertThat(result.salesSummary.progressRate).isEqualTo(0.0)
     }
 
     @Test
@@ -233,7 +257,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)
@@ -250,7 +274,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)
@@ -270,7 +294,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)
@@ -292,7 +316,7 @@ class AdminDashboardServiceTest {
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
         val result = service.getDashboard(allScope, "2026-05", null)

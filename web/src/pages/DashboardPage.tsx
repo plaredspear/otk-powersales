@@ -237,7 +237,11 @@ export default function DashboardPage() {
         <Row gutter={[16, 16]}>
           <Col span={8}>
             <Card>
-              <Statistic title={cardTitle('당월 목표', SALES_CHART_INFO.target)} value={s.targetAmount} suffix="원" />
+              {s.hasTargetData ? (
+                <Statistic title={cardTitle('당월 목표', SALES_CHART_INFO.target)} value={s.targetAmount} suffix="원" />
+              ) : (
+                <Statistic title={cardTitle('당월 목표', SALES_CHART_INFO.target)} value="—" />
+              )}
             </Card>
           </Col>
           <Col span={8}>

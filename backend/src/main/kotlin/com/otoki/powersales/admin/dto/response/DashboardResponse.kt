@@ -20,7 +20,10 @@ data class SalesSummary(
     val channelSales: List<ChannelSalesItem>,
     // 매출 데이터 적재 여부 — 0원이 "미적재"인지 "실제 0"인지 구분. false 면 화면에서 "—" 표시.
     val hasActualData: Boolean,
-    val hasLastYearData: Boolean
+    val hasLastYearData: Boolean,
+    // 당월 목표 등록 여부 — 투입 거래처 중 당월 목표 row 가 전무하면 false. false 면 화면에서 "—" 표시
+    // (계산은 목표 0 으로 처리 — progressRate 0.0).
+    val hasTargetData: Boolean
 )
 
 data class ChannelSalesItem(

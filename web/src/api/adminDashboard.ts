@@ -29,6 +29,8 @@ export interface SalesSummary {
   /** 매출 데이터 적재 여부 — 0원이 "미적재"인지 "실제 0"인지 구분. false 면 화면에서 "—" 표시. */
   hasActualData: boolean;
   hasLastYearData: boolean;
+  /** 당월 목표 등록 여부 — 투입 거래처 중 당월 목표가 전무하면 false. false 면 화면 "—" (계산은 0). */
+  hasTargetData: boolean;
 }
 
 export interface AccountTypeCount {

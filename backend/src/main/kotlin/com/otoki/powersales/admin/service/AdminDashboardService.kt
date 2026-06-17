@@ -125,6 +125,7 @@ class AdminDashboardService(
             channelSales = emptyList(), // 후속 — 유통별 목표/진도율 데이터 부재
             hasActualData = sales.hasActualData,
             hasLastYearData = sales.hasLastYearData,
+            hasTargetData = sales.hasTargetData,
         )
     }
 

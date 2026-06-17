@@ -583,7 +583,7 @@ class MonthlySalesAdminQueryService(
         if (accountSapCodes.isEmpty()) {
             return InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
         }
         val currentSalesDate = toSalesDate(year, month)
@@ -601,13 +601,16 @@ class MonthlySalesAdminQueryService(
         val hasLastYearData = accounts.any { oroByKey.containsKey(it.externalKey to lastYearSalesDate) }
 
         // 목표 합계 — 투입 거래처별 (연, 월) SalesProgressRateMaster 1행 합계의 총합 (미등록 거래처는 0).
+        // 투입 거래처 중 당월 목표 row 가 하나라도 있으면 데이터 존재로 본다 (전무하면 "목표 미등록").
         val accountIds = accounts.map { it.id }
         val targetByAccountId = findTargetMap(accountIds, year, month)
         val target = targetByAccountId.values.sumOf { targetSumOf(it) }
+        val hasTargetData = targetByAccountId.isNotEmpty()
 
         return InvestedAccountSales(
             actualAmount = actual, targetAmount = target, lastYearAmount = lastYear,
             hasActualData = hasActualData, hasLastYearData = hasLastYearData,
+            hasTargetData = hasTargetData,
         )
     }
 
@@ -623,7 +626,8 @@ class MonthlySalesAdminQueryService(
 
     /**
      * 투입 거래처 매출 실적 합산 결과 (당월 실적/목표/전년 동월).
-     * has*Data 는 RDS row 적재 여부 — 0원이 "미적재"인지 "실제 0"인지 구분하는 데 쓴다.
+     * has*Data 는 데이터 존재 여부 — 0원/0목표가 "미적재·미등록"인지 "실제 0"인지 구분하는 데 쓴다.
+     * hasTargetData 는 투입 거래처 중 당월 목표(SalesProgressRateMaster) row 존재 여부 (false 면 화면 "—").
      */
     data class InvestedAccountSales(
         val actualAmount: Long,
@@ -631,6 +635,7 @@ class MonthlySalesAdminQueryService(
         val lastYearAmount: Long,
         val hasActualData: Boolean,
         val hasLastYearData: Boolean,
+        val hasTargetData: Boolean,
     )
 
     /**
