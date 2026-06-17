@@ -74,6 +74,13 @@ export default function PeriodBranchFilterBar({
     onCodesChange(allSelected ? [] : allCodes);
   };
 
+  // 년도/월 입력에서 엔터 시 조회 트리거. 단, 조회 버튼과 동일한 활성 조건(지점 선택 + 조회 중 아님)을
+  // 만족할 때만 실행해 미선택 상태에서의 의도치 않은 조회를 막는다.
+  const handleInputEnter = () => {
+    if (selectedCodes.length === 0 || searchLoading) return;
+    onSearch();
+  };
+
   return (
     <div
       style={{
@@ -132,6 +139,7 @@ export default function PeriodBranchFilterBar({
             min={2020}
             max={2099}
             onChange={(v) => v != null && onYearChange(v)}
+            onPressEnter={handleInputEnter}
             style={{ width: 100 }}
             parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
           />
@@ -144,6 +152,7 @@ export default function PeriodBranchFilterBar({
               min={1}
               max={12}
               onChange={(v) => v != null && onMonthChange?.(v)}
+              onPressEnter={handleInputEnter}
               style={{ width: 80 }}
               parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
             />
