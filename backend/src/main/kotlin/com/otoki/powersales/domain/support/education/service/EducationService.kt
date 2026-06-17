@@ -124,13 +124,14 @@ class EducationService(
         //     }
         val images = emptyList<Any>()
 
-        // 3. 첨부파일 목록 조회
+        // 3. 첨부파일 목록 조회 (fileType 으로 이미지/동영상/문서 분기 + presigned URL)
         val attachments = educationPostAttachmentRepository.findByEducationPost(post)
             .map { attachment ->
                 EducationAttachmentResponse(
                     id = attachment.fileKey,
                     fileName = attachment.fileOriginalName ?: "",
-                    fileUrl = attachment.fileKey,
+                    fileUrl = fileStorageService.getEducationFileUrl(attachment.fileKey),
+                    fileType = attachment.fileType ?: "",
                     fileSize = 0
                 )
             }

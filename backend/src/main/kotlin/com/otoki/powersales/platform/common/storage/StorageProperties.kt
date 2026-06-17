@@ -22,6 +22,10 @@ object StorageConstants {
 	// 재요청을 흡수하므로 만료 마찰이 작다.
 	const val NOTICE_PRESIGN_TTL_SECONDS: Int = 1800
 
+	// 교육자료 첨부(이미지/동영상/문서) presigned URL 만료 시간(초). 동영상은 천천히 재생되므로
+	// 공지(1800s)와 동일하게 30분. (교육 파일은 public 경로 객체이나 anonymous read 미허용이라 presign 한다.)
+	const val EDUCATION_PRESIGN_TTL_SECONDS: Int = 1800
+
 	// 현장점검(site-activity) 사진 presigned URL 만료 시간(초). 상세 화면 1회 조회 소비 + 클라이언트
 	// 새로고침으로 만료를 흡수하므로 클레임과 동일하게 10분. (엑셀 export 는 만료 회피 위해 URL 이 아닌
 	// 이미지 바이트를 임베드하므로 이 TTL 과 무관.)

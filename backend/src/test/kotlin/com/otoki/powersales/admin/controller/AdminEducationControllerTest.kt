@@ -120,7 +120,8 @@ class AdminEducationControllerTest : AdminControllerTestSupport() {
                     EducationAttachmentResponse(
                         id = "abc123",
                         fileName = "교육자료.pdf",
-                        fileUrl = "abc123",
+                        fileUrl = "https://signed/abc123.pdf",
+                        fileType = "f00003",
                         fileSize = 0
                     )
                 )

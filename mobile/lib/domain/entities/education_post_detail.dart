@@ -192,14 +192,24 @@ class EducationAttachment {
   final String id;
   final String fileName;
   final String fileUrl;
+
+  /// 레거시 edu_file_type picklist: f00001 이미지 / f00002 동영상 / f00003 문서 / f00004 기타.
+  final String fileType;
   final int fileSize;
 
   const EducationAttachment({
     required this.id,
     required this.fileName,
     required this.fileUrl,
+    this.fileType = '',
     required this.fileSize,
   });
+
+  /// 인라인 이미지로 렌더할 첨부 (레거시 f00001)
+  bool get isImage => fileType == 'f00001';
+
+  /// 동영상 첨부 (레거시 f00002) — 탭하여 외부에서 재생
+  bool get isVideo => fileType == 'f00002';
 
   /// 파일 크기를 사람이 읽을 수 있는 형식으로 변환 (KB, MB)
   String get fileSizeFormatted {
@@ -218,12 +228,14 @@ class EducationAttachment {
     String? id,
     String? fileName,
     String? fileUrl,
+    String? fileType,
     int? fileSize,
   }) {
     return EducationAttachment(
       id: id ?? this.id,
       fileName: fileName ?? this.fileName,
       fileUrl: fileUrl ?? this.fileUrl,
+      fileType: fileType ?? this.fileType,
       fileSize: fileSize ?? this.fileSize,
     );
   }
@@ -233,6 +245,7 @@ class EducationAttachment {
       'id': id,
       'fileName': fileName,
       'fileUrl': fileUrl,
+      'fileType': fileType,
       'fileSize': fileSize,
     };
   }
@@ -242,6 +255,7 @@ class EducationAttachment {
       id: json['id'] as String,
       fileName: json['fileName'] as String,
       fileUrl: json['fileUrl'] as String,
+      fileType: json['fileType'] as String? ?? '',
       fileSize: (json['fileSize'] as num).toInt(),
     );
   }
@@ -253,12 +267,13 @@ class EducationAttachment {
         other.id == id &&
         other.fileName == fileName &&
         other.fileUrl == fileUrl &&
+        other.fileType == fileType &&
         other.fileSize == fileSize;
   }
 
   @override
   int get hashCode {
-    return Object.hash(id, fileName, fileUrl, fileSize);
+    return Object.hash(id, fileName, fileUrl, fileType, fileSize);
   }
 
   @override

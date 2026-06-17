@@ -75,12 +75,14 @@ class EducationAttachmentModel {
   final String id;
   final String fileName;
   final String fileUrl;
+  final String fileType;
   final int fileSize;
 
   const EducationAttachmentModel({
     required this.id,
     required this.fileName,
     required this.fileUrl,
+    this.fileType = '',
     required this.fileSize,
   });
 
@@ -89,6 +91,7 @@ class EducationAttachmentModel {
       id: json['id'] as String,
       fileName: json['fileName'] as String,
       fileUrl: json['fileUrl'] as String,
+      fileType: json['fileType'] as String? ?? '',
       fileSize: (json['fileSize'] as num).toInt(),
     );
   }
@@ -98,6 +101,7 @@ class EducationAttachmentModel {
       'id': id,
       'fileName': fileName,
       'fileUrl': fileUrl,
+      'fileType': fileType,
       'fileSize': fileSize,
     };
   }
@@ -107,6 +111,7 @@ class EducationAttachmentModel {
       id: id,
       fileName: fileName,
       fileUrl: fileUrl,
+      fileType: fileType,
       fileSize: fileSize,
     );
   }
@@ -116,6 +121,7 @@ class EducationAttachmentModel {
       id: entity.id,
       fileName: entity.fileName,
       fileUrl: entity.fileUrl,
+      fileType: entity.fileType,
       fileSize: entity.fileSize,
     );
   }
@@ -127,17 +133,18 @@ class EducationAttachmentModel {
         other.id == id &&
         other.fileName == fileName &&
         other.fileUrl == fileUrl &&
+        other.fileType == fileType &&
         other.fileSize == fileSize;
   }
 
   @override
   int get hashCode {
-    return Object.hash(id, fileName, fileUrl, fileSize);
+    return Object.hash(id, fileName, fileUrl, fileType, fileSize);
   }
 
   @override
   String toString() {
-    return 'EducationAttachmentModel(id: $id, fileName: $fileName, fileSize: $fileSize)';
+    return 'EducationAttachmentModel(id: $id, fileName: $fileName, fileType: $fileType, fileSize: $fileSize)';
   }
 }
 

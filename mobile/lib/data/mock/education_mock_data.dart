@@ -110,12 +110,14 @@ class EducationMockData {
         id: '1',
         fileName: '진짬뽕_시식_가이드.pdf',
         fileUrl: 'https://example.com/files/tasting-guide.pdf',
+        fileType: 'f00003',
         fileSize: 2048576, // 2 MB
       ),
       EducationAttachment(
         id: '2',
         fileName: '고객_설문지.xlsx',
         fileUrl: 'https://example.com/files/survey.xlsx',
+        fileType: 'f00003',
         fileSize: 512000, // 500 KB
       ),
     ],

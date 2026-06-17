@@ -173,6 +173,7 @@ class EducationServiceTest {
             every { educationPostRepository.findByEduId("EDU001") } returns testPost
             every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns attachments
             every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns eduCode
+            every { fileStorageService.getEducationFileUrl("file-key-001") } returns "https://signed/guide.pdf"
 
             val result = educationService.getPostDetail("EDU001")
 
@@ -184,6 +185,8 @@ class EducationServiceTest {
             assertThat(result.createdAt).isEqualTo(LocalDateTime.parse("2020-08-10T00:00:00"))
             assertThat(result.attachments).hasSize(1)
             assertThat(result.attachments[0].fileName).isEqualTo("guide.pdf")
+            assertThat(result.attachments[0].fileType).isEqualTo("pdf")
+            assertThat(result.attachments[0].fileUrl).isEqualTo("https://signed/guide.pdf")
         }
 
         @Test

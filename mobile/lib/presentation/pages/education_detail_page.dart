@@ -136,23 +136,32 @@ class EducationDetailPage extends ConsumerWidget {
                     ),
                   ),
 
-                // 첨부 문서
-                if (detail.hasAttachments) ...[
+                // 첨부 이미지 (인라인 갤러리) — 레거시 f00001
+                if (detail.attachments.any((a) => a.isImage)) ...[
+                  const SizedBox(height: AppSpacing.xl),
+                  ...detail.attachments
+                      .where((a) => a.isImage)
+                      .map(_buildAttachmentImage),
+                ],
+
+                // 첨부 파일 (동영상/문서) — 탭하여 외부에서 열기
+                if (detail.attachments.any((a) => !a.isImage)) ...[
                   const SizedBox(height: AppSpacing.xl),
                   Text(
-                    '첨부 문서',
+                    '첨부 파일',
                     style: AppTypography.labelMedium.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  ...detail.attachments.map(
-                    (attachment) => _buildAttachmentItem(context, attachment),
-                  ),
+                  ...detail.attachments
+                      .where((a) => !a.isImage)
+                      .map((attachment) =>
+                          _buildAttachmentItem(context, attachment)),
                 ],
 
-                // 이미지 목록
+                // 이미지 목록 (레거시 EducationImage — 현재 백엔드 미사용, 호환 유지)
                 if (detail.hasImages) ...[
                   const SizedBox(height: AppSpacing.xl),
                   ...detail.images.map((image) => _buildImage(image)),
@@ -204,8 +213,10 @@ class EducationDetailPage extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: Row(
             children: [
-              const Icon(
-                Icons.description_outlined,
+              Icon(
+                attachment.isVideo
+                    ? Icons.play_circle_outline
+                    : Icons.description_outlined,
                 size: 20,
                 color: AppColors.secondary,
               ),
@@ -229,6 +240,44 @@ class EducationDetailPage extends ConsumerWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 인라인 이미지 첨부(f00001) — 레거시 view.jsp 의 이미지 갤러리 대응.
+  Widget _buildAttachmentImage(EducationAttachment attachment) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        child: Image.network(
+          attachment.fileUrl,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              height: 200,
+              color: AppColors.surface,
+              child: const Center(
+                child: Icon(
+                  Icons.broken_image,
+                  size: 48,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

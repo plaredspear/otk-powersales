@@ -1,6 +1,7 @@
 package com.otoki.powersales.platform.common.service
 
 import com.otoki.powersales.platform.common.exception.InvalidFileException
+import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
@@ -65,6 +66,13 @@ class FileStorageService(
 		)
 		return result.key
 	}
+
+	/**
+	 * 교육 자료 파일 조회용 presigned URL. 교육 파일은 public 경로(`upload`)에 저장되나 버킷이 anonymous read
+	 * 를 허용하지 않으므로 presign 해 내려준다. 레거시 UUID 형식 key 는 신규 S3 객체가 아니므로 그대로 둔다.
+	 */
+	fun getEducationFileUrl(fileKey: String): String =
+		storageService.getUrl(fileKey, StorageConstants.EDUCATION_PRESIGN_TTL_SECONDS)
 
 	/**
 	 * 교육 자료 파일 삭제. fileKey 가 신규 S3 키이면 그대로 삭제, 레거시 UUID 형식이면 no-op (범위 외).
