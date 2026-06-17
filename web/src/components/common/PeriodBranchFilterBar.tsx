@@ -52,14 +52,23 @@ export default function PeriodBranchFilterBar({
   const someSelected = selectedCodes.length > 0 && !allSelected;
 
   // 본인 지점만 조회 권한이 있는 단일지점 사용자(지점 옵션 1개)는 선택지가 없으므로
-  // 본인 지점을 자동 선택하고 드롭다운을 비활성화한다. 빈 placeholder("지점 선택")가
+  // 본인 지점을 자동 선택하고 선택 UI 대신 고정 Tag 로 표시한다. 빈 placeholder("지점 선택")가
   // 떠 있어 "미선택"으로 오해하게 만드는 문제를 방지. 다중지점/전사 권한은 기존 선택 UI 유지.
   const singleBranch = branches.length === 1;
   useEffect(() => {
+    if (branches.length === 0) return;
+    // 권한 주체가 바뀌면(예: 대행 종료 후 관리자 복귀) 이전 사용자 지점 목록에서 선택했던
+    // 코드가 현재 목록에 더 이상 없을 수 있다. stale 코드를 먼저 정리해 잘못된 선택/표시를 방지.
+    const validCodes = selectedCodes.filter((code) => allCodes.includes(code));
+    if (validCodes.length !== selectedCodes.length) {
+      onCodesChange(validCodes);
+      return;
+    }
+    // 단일지점 사용자는 본인 지점을 자동 선택.
     if (singleBranch && selectedCodes.length === 0) {
       onCodesChange([branches[0].branchCode]);
     }
-  }, [singleBranch, branches, selectedCodes.length, onCodesChange]);
+  }, [singleBranch, branches, allCodes, selectedCodes, onCodesChange]);
 
   const handleToggleAll = () => {
     onCodesChange(allSelected ? [] : allCodes);
