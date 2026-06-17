@@ -51,6 +51,10 @@ class PromotionDailySalesState {
   final DailySalesSubmitStatus submitStatus;
   final String? errorMessage;
 
+  /// 임시저장 발견 → 복원 여부를 사용자에게 묻는 다이얼로그 노출 트리거.
+  /// 레거시 "이어서 작성하시겠습니까?" confirm 대응. 사용자가 선택하면 false 로 내려간다.
+  final bool pendingDraftRestore;
+
   const PromotionDailySalesState({
     this.isLoading = false,
     this.form,
@@ -62,6 +66,7 @@ class PromotionDailySalesState {
     this.photo,
     this.submitStatus = DailySalesSubmitStatus.idle,
     this.errorMessage,
+    this.pendingDraftRestore = false,
   });
 
   bool get editable => form?.editable ?? false;
@@ -101,6 +106,7 @@ class PromotionDailySalesState {
     Object? photo = _undefined,
     DailySalesSubmitStatus? submitStatus,
     Object? errorMessage = _undefined,
+    bool? pendingDraftRestore,
   }) {
     return PromotionDailySalesState(
       isLoading: isLoading ?? this.isLoading,
@@ -117,6 +123,7 @@ class PromotionDailySalesState {
       submitStatus: submitStatus ?? this.submitStatus,
       errorMessage:
           identical(errorMessage, _undefined) ? this.errorMessage : errorMessage as String?,
+      pendingDraftRestore: pendingDraftRestore ?? this.pendingDraftRestore,
     );
   }
 }
@@ -151,6 +158,8 @@ class PromotionDailySalesNotifier
         subName: form.description,
         subQuantity: form.otherSalesQuantity?.toInt(),
         subAmount: form.otherSalesAmount?.toInt(),
+        // 임시저장이 있고 수정 가능하면 복원 여부 confirm 을 띄운다(레거시 "이어쓰기" 대응).
+        pendingDraftRestore: form.hasDraft && form.editable,
       );
     } catch (e) {
       state = state.copyWith(
@@ -158,6 +167,23 @@ class PromotionDailySalesNotifier
         errorMessage: extractErrorMessage(e),
       );
     }
+  }
+
+  /// 임시저장 복원 [예] — 이미 prefill 된 draft 값을 그대로 유지하고 트리거만 내린다.
+  void acceptDraft() {
+    state = state.copyWith(pendingDraftRestore: false);
+  }
+
+  /// 임시저장 복원 [아니오] — draft 를 폐기하고 기본값으로 재로드한다(빈 폼).
+  Future<void> declineDraft() async {
+    state = state.copyWith(pendingDraftRestore: false);
+    try {
+      await _repository.deleteDraft(promotionEmployeeId);
+    } catch (e) {
+      state = state.copyWith(errorMessage: extractErrorMessage(e));
+    }
+    // draft 삭제 후 PE 기준값으로 재동기화(hasDraft=false → 다이얼로그 재노출 없음).
+    await load();
   }
 
   void updateMainProduct({int? quantity, int? amount}) {

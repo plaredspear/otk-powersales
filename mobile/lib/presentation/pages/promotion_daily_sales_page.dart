@@ -9,6 +9,7 @@ import '../providers/promotion_daily_sales_provider.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/daily_sales/photo_picker_widget.dart';
 import '../widgets/daily_sales/product_input_form.dart';
+import '../widgets/order_form/draft_restore_dialog.dart';
 
 /// 여사원 일매출 마감 화면.
 ///
@@ -26,6 +27,9 @@ class PromotionDailySalesPage extends ConsumerStatefulWidget {
 class _PromotionDailySalesPageState
     extends ConsumerState<PromotionDailySalesPage>
     with ThrottledTapMixin {
+  /// 임시저장 복원 다이얼로그 1회만 노출 가드.
+  bool _restoreDialogShown = false;
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +54,23 @@ class _PromotionDailySalesPageState
           context,
         ).showSnackBar(SnackBar(content: Text(next)));
         notifier.clearError();
+      }
+    });
+
+    // 임시저장 발견 시 "이어서 작성하시겠습니까?" 다이얼로그(레거시 confirm 대응) 1회 노출.
+    ref.listen<bool>(provider.select((s) => s.pendingDraftRestore), (prev, next) {
+      if (next == true && !_restoreDialogShown) {
+        _restoreDialogShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          DraftRestoreDialog.show(
+            context,
+            onAccept: notifier.acceptDraft,
+            onDecline: notifier.declineDraft,
+          );
+        });
+      } else if (next == false) {
+        _restoreDialogShown = false;
       }
     });
 
