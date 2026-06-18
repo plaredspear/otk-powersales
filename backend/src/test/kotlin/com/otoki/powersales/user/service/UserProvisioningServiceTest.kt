@@ -67,14 +67,14 @@ class UserProvisioningServiceTest {
     inner class EventHandling {
 
         @Test
-        @DisplayName("U1 정상 — workEmail 기준 User 생성 (employee_code / username / email / password 매칭)")
+        @DisplayName("U1 정상 — email(개인메일) 기준 User 생성 (SF cls:281 DKRetail__Email__c 동등)")
         fun handleEvent_createsUser() {
             handleOne(
                 EmployeeSnapshot(
                     employeeCode = "100123",
                     name = "홍길동",
-                    workEmail = "hong@otokims.co.kr",
-                    email = null,
+                    workEmail = null,
+                    email = "hong@otokims.co.kr",
                     birthDate = "19900315",
                     role = AppAuthority.WOMAN,
                     appLoginActive = true,
@@ -95,22 +95,23 @@ class UserProvisioningServiceTest {
         }
 
         @Test
-        @DisplayName("U2 workEmail null + email 있음 — email fallback 으로 생성")
-        fun handleEvent_workEmailNull_fallsBackToEmail() {
+        @DisplayName("U2 workEmail 만 있고 email(개인) 부재 — User 생성 skip (SAP 경로는 email 단독, cls:281 동등)")
+        fun handleEvent_onlyWorkEmail_skipsCreation() {
             handleOne(
                 EmployeeSnapshot(
                     employeeCode = "100124",
                     name = "김철수",
-                    workEmail = null,
-                    email = "kim@personal.com",
+                    workEmail = "kim@otoki.com",
+                    email = null,
                     birthDate = "19850101",
                     role = AppAuthority.WOMAN,
                     appLoginActive = true,
                 )
             )
 
-            assertThat(savedUsers).hasSize(1)
-            assertThat(savedUsers[0].username).isEqualTo("kim@personal.com")
+            // SAP 경로는 개인메일(email)만 사용 — 회사메일(workEmail)만 있으면 skip.
+            verify(exactly = 0) { userRepository.saveAll(any<List<User>>()) }
+            assertThat(savedUsers).isEmpty()
         }
 
         @Test
@@ -140,8 +141,8 @@ class UserProvisioningServiceTest {
                 EmployeeSnapshot(
                     employeeCode = "100126",
                     name = "박지민",
-                    workEmail = "park@otoki.com",
-                    email = null,
+                    workEmail = null,
+                    email = "park@otoki.com",
                     birthDate = null,
                     role = AppAuthority.WOMAN,
                     appLoginActive = true,
@@ -159,8 +160,8 @@ class UserProvisioningServiceTest {
                 EmployeeSnapshot(
                     employeeCode = "100127",
                     name = "최민수",
-                    workEmail = "choi@otoki.com",
-                    email = null,
+                    workEmail = null,
+                    email = "choi@otoki.com",
                     birthDate = "19880508",
                     role = AppAuthority.WOMAN,
                     appLoginActive = false,
@@ -182,8 +183,8 @@ class UserProvisioningServiceTest {
                 EmployeeSnapshot(
                     employeeCode = "100128",
                     name = "정한별",
-                    workEmail = "dup@otoki.com",
-                    email = null,
+                    workEmail = null,
+                    email = "dup@otoki.com",
                     birthDate = "19900101",
                     role = AppAuthority.WOMAN,
                     appLoginActive = true,
@@ -204,8 +205,8 @@ class UserProvisioningServiceTest {
                         EmployeeSnapshot(
                             employeeCode = "100129",
                             name = "에러테스트",
-                            workEmail = "err@otoki.com",
-                            email = null,
+                            workEmail = null,
+                            email = "err@otoki.com",
                             birthDate = null,
                             role = AppAuthority.WOMAN,
                             appLoginActive = true,
@@ -276,8 +277,8 @@ class UserProvisioningServiceTest {
         private fun snapshot(code: String, email: String) = EmployeeSnapshot(
             employeeCode = code,
             name = "사원$code",
-            workEmail = email,
-            email = null,
+            workEmail = null,
+            email = email,
             birthDate = null,
             role = AppAuthority.WOMAN,
             appLoginActive = true,

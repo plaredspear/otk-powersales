@@ -111,9 +111,9 @@ class UserProvisioningService(
      * [reservedUsernames] 는 "DB 기존 + 본 배치에서 이미 채택" 한 username 합집합 (멱등 가드).
      */
     private fun buildUser(snapshot: EmployeeSnapshot, reservedUsernames: Set<String>): User? {
-        // SF 레거시 IF_REST_SAP_EmployeeMaster.cls:281 동등 — Email 부재 시 User 생성 skip.
-        val resolvedEmail = snapshot.workEmail?.takeIf { it.isNotBlank() }
-            ?: snapshot.email?.takeIf { it.isNotBlank() }
+        // SF 레거시 IF_REST_SAP_EmployeeMaster.cls:281 동등 — 개인 Email(DKRetail__Email__c) 부재 시 User 생성 skip.
+        // 레거시는 회사메일(WorkEmail)이 아니라 개인메일(Email)만 username/email 로 사용하므로 email 단독 사용.
+        val resolvedEmail = snapshot.email?.takeIf { it.isNotBlank() }
             ?: run {
                 log.info("Email 부재 — User 생성 skip: employeeCode={}", snapshot.employeeCode)
                 return null
@@ -193,7 +193,8 @@ class UserProvisioningService(
         overrideEncodedPassword: String? = null,
         passwordChangeRequired: Boolean = true,
     ) {
-        // SF 레거시 IF_REST_SAP_EmployeeMaster.cls:281 동등 — Email 부재 시 User 생성 skip.
+        // 시드 전용 경로. 로컬 시드는 회사메일(workEmail)만 주입하므로 workEmail 우선 fallback email 유지
+        // (SAP 인바운드 경로 buildUser 는 레거시 cls:281 정합으로 개인메일 email 단독 사용 — 경로별 정책 분리).
         val resolvedEmail = workEmail?.takeIf { it.isNotBlank() }
             ?: email?.takeIf { it.isNotBlank() }
             ?: run {

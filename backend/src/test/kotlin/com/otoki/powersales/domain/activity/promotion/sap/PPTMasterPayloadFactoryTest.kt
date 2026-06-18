@@ -45,6 +45,8 @@ class PPTMasterPayloadFactoryTest {
         assertThat(row.EmployeeNumber).isEqualTo("100123")
         assertThat(row.AccountStatus).isEqualTo("정상")
         assertThat(row.AccountType).isEqualTo(AccountType.DISCOUNT_STORE.displayName)
+        // 레거시 Account__c(sfid) 자리 → 신규 Account.id 문자열.
+        assertThat(row.Account).isEqualTo("7001")
         assertThat(row.AccountCode).isEqualTo("AK001")
         assertThat(row.StartDate).isEqualTo("2026-05-01")
         assertThat(row.EndDate).isEqualTo("2026-05-31")
@@ -181,11 +183,13 @@ class PPTMasterPayloadFactoryTest {
     }
 
     private fun account(
+        id: Long = 7001L,
         externalKey: String? = "AK",
         statusName: String? = "정상",
         type: AccountType? = AccountType.DISCOUNT_STORE
     ): Account {
         val mock: Account = mockk()
+        every { mock.id } returns id
         every { mock.externalKey } returns externalKey
         every { mock.accountStatusName } returns statusName
         every { mock.accountType } returns type

@@ -19,7 +19,7 @@ class OrderRequestCancelPayloadFactoryTest {
     private val factory = OrderRequestCancelPayloadFactory()
 
     @Test
-    @DisplayName("페이로드 — RequestNumber + reqItemList[LineNumber, ProductCode, LineChangeType=X]")
+    @DisplayName("레거시 body 동등 — reqItemList={RequestNumber}, ItemList=[{LineNumber(숫자), ProductCode, LineChangeType=X}]")
     fun payloadStructure() {
         val orderRequest = orderRequest()
         val products = listOf(
@@ -29,24 +29,33 @@ class OrderRequestCancelPayloadFactoryTest {
 
         val payload = factory.build(orderRequest, products)
 
-        assertThat(payload["RequestNumber"]).isEqualTo("ORD-20260504-000001")
+        // 헤더: reqItemList 키에 { RequestNumber } 객체 (cls:76)
         @Suppress("UNCHECKED_CAST")
-        val items = payload["reqItemList"] as List<Map<String, Any?>>
+        val header = payload["reqItemList"] as Map<String, Any?>
+        assertThat(header["RequestNumber"]).isEqualTo("ORD-20260504-000001")
+        assertThat(payload).doesNotContainKey("RequestNumber") // 최상위 평면 키 아님
+
+        // 라인: ItemList 키 (cls:95), LineNumber 는 숫자(BigDecimal) — 레거시 Decimal 동등
+        @Suppress("UNCHECKED_CAST")
+        val items = payload["ItemList"] as List<Map<String, Any?>>
         assertThat(items).hasSize(2)
-        assertThat(items[0]["LineNumber"]).isEqualTo("10")
+        assertThat(items[0]["LineNumber"]).isEqualTo(BigDecimal.valueOf(10L))
         assertThat(items[0]["ProductCode"]).isEqualTo("P001")
         assertThat(items[0]["LineChangeType"]).isEqualTo("X")
-        assertThat(items[1]["LineNumber"]).isEqualTo("20")
+        assertThat(items[1]["LineNumber"]).isEqualTo(BigDecimal.valueOf(20L))
         assertThat(items[1]["ProductCode"]).isEqualTo("P002")
         assertThat(items[1]["LineChangeType"]).isEqualTo("X")
     }
 
     @Test
-    @DisplayName("빈 라인 → 빈 reqItemList")
+    @DisplayName("빈 라인 → 빈 ItemList (헤더 reqItemList 는 유지)")
     fun emptyLines() {
         val payload = factory.build(orderRequest(), emptyList())
         @Suppress("UNCHECKED_CAST")
-        val items = payload["reqItemList"] as List<Map<String, Any?>>
+        val header = payload["reqItemList"] as Map<String, Any?>
+        assertThat(header["RequestNumber"]).isEqualTo("ORD-20260504-000001")
+        @Suppress("UNCHECKED_CAST")
+        val items = payload["ItemList"] as List<Map<String, Any?>>
         assertThat(items).isEmpty()
     }
 

@@ -38,8 +38,9 @@ import java.time.format.DateTimeParseException
  *    INSERT 시 `Employee.employeeInfo` 가 cascade=ALL 로 자동 영속화됨.
  *
  * ## User 행 자동 생성 (별도 트랜잭션, bulk)
- * Employee 신규 INSERT 집합을 [EmployeesCreatedEvent] **1건**으로 발행한다. User 행 생성은
- * [com.otoki.powersales.user.service.UserProvisioningService.handleEmployeesCreated]
+ * **User 가 아직 없는 사원** 집합을 [EmployeesCreatedEvent] **1건**으로 발행한다 (SF cls:131 의
+ * `userMap.containsKey` 분기 동등 — 신규 Employee 뿐 아니라 "기존 Employee 인데 User 부재" 도 포함).
+ * User 행 생성은 [com.otoki.powersales.user.service.UserProvisioningService.handleEmployeesCreated]
  * 가 `AFTER_COMMIT + @Async` 로 수신해 별도 트랜잭션에서 **일괄** 수행한다.
  * SF 레거시 `IF_REST_SAP_EmployeeMaster.upsertUser(@future)` 동등 (N명을 future 1회 호출로 bulk 처리) —
  * User 생성 실패는 Employee 트랜잭션에 영향을 주지 않는다.
@@ -79,7 +80,6 @@ class EmployeeUpsertService(
 
         val failures = mutableListOf<EmployeeUpsertFailedRow>()
         val toSave = mutableListOf<Employee>()
-        val newEmployees = mutableListOf<Employee>()
         val protectedManualCodes = mutableListOf<String>()
 
         commands.forEach { command ->
@@ -109,7 +109,6 @@ class EmployeeUpsertService(
                 } ?: Employee(employeeCode = employeeCode, name = employeeName).also {
                     applyMutableFields(it, command, employeeName, convertedGender, startDate, endDate, birthDate, resolvedStatus, appLoginActive)
                     cache[employeeCode] = it
-                    newEmployees += it
                 }
                 applyLockingFlagException(entity)
                 toSave += entity
@@ -122,39 +121,55 @@ class EmployeeUpsertService(
             employeeRepository.saveAll(toSave)
         }
 
-        // Employee.cost_center_code derived 캐시 동기화 — 기존 user 행에 대해서만 즉시 갱신.
-        // 신규 사원의 User 행은 아래 EmployeesCreatedEvent 흐름에서 새로 생성된다.
-        val existingCodes = toSave.mapNotNull { it.employeeCode }.filter { it.isNotBlank() } - newEmployees.mapNotNull { it.employeeCode }.toSet()
-        if (existingCodes.isNotEmpty()) {
-            val users = userRepository.findByEmployeeCodeIn(existingCodes)
-            val empByCode = toSave.filter { it.employeeCode != null }.associateBy { it.employeeCode!! }
-            users.forEach { user ->
-                val empCode = user.employeeCode ?: return@forEach
-                user.costCenterCode = empByCode[empCode]?.costCenterCode
-            }
-        }
+        // User 행 동기화 — SF IF_REST_SAP_EmployeeMaster.upsertUser(@future) (cls:201-307) 동등.
+        //
+        // 레거시 분기 기준은 "Employee 신규/기존" 이 아니라 **User 존재 여부** (cls:131
+        // `userMap.containsKey(EmployeeCode)` → 있으면 updateCode, 없으면 insertCode). 따라서
+        // 기존 Employee 라도 매칭되는 User 가 없으면 insert(신규 생성) 경로로 간다.
+        // 신규 구현도 toSave 전체 사번으로 기존 User 를 한 번에 조회한 뒤, User 유무로 update/insert 분기한다.
+        val savedByCode = toSave.filter { !it.employeeCode.isNullOrBlank() }.associateBy { it.employeeCode!! }
+        if (savedByCode.isNotEmpty()) {
+            val existingUsersByCode = userRepository.findByEmployeeCodeIn(savedByCode.keys.toList())
+                .filter { it.employeeCode != null }
+                .associateBy { it.employeeCode!! }
 
-        // SF IF_REST_SAP_EmployeeMaster.upsertUser(@future) 동등 — 신규 Employee 집합을 1건의 이벤트로 발행.
-        // 레거시가 사원 N명을 future 1회 호출(bulk)로 처리하는 것과 동일하게, 신규도 1개의 비동기 작업으로
-        // 일괄 처리한다 (사원 1명당 이벤트 발행 시의 @Async 작업 폭증 회피).
-        // 실제 User INSERT 는 UserProvisioningService 가 AFTER_COMMIT + @Async 로 별도 트랜잭션에서 일괄 처리.
-        if (newEmployees.isNotEmpty()) {
-            eventPublisher.publishEvent(
-                EmployeesCreatedEvent(
-                    newEmployees.map { employee ->
-                        EmployeeSnapshot(
-                            employeeCode = employee.employeeCode ?: error("신규 Employee 의 사번이 null - 비정상 (사번 필수 검증 후 생성)"),
-                            name = employee.name,
-                            workEmail = employee.workEmail,
-                            email = employee.email,
-                            birthDate = employee.birthDate,
-                            role = employee.role,
-                            appLoginActive = employee.appLoginActive,
-                            costCenterCode = employee.costCenterCode,
-                        )
-                    }
+            // update 경로 — User 가 이미 존재하는 사원 (SF cls:239-274).
+            // excHrCode (본사 10개 코스트센터) 는 레거시 update SOQL 에서 제외 → User 무변경.
+            existingUsersByCode.forEach { (empCode, user) ->
+                val employee = savedByCode[empCode] ?: return@forEach
+                if (employee.costCenterCode in EXCLUDED_COST_CENTER_CODES) return@forEach
+                user.costCenterCode = employee.costCenterCode
+                // SF cls:264-270 동등 — 재직상태 퇴직 → 기존 User 비활성화. 그 외 → 활성.
+                user.isActive = employee.status != STATUS_RETIRED
+            }
+
+            // insert 경로 — User 가 없는 사원 (SF cls:277, insert SOQL). 신규 Employee + "기존 Employee 인데 User 부재" 포함.
+            // insert SOQL WHERE 의 두 가드를 적용: Status != '퇴직', CostCenterCode NOT IN excHrCode.
+            // 실제 User INSERT 는 UserProvisioningService 가 AFTER_COMMIT + @Async 로 별도 트랜잭션에서 일괄 처리.
+            // 레거시가 사원 N명을 future 1회 호출(bulk)로 처리하듯, 신규도 1건의 이벤트로 발행해 비동기 작업 1개로 일괄 처리.
+            val provisionTargets = savedByCode.values.filter { employee ->
+                employee.employeeCode !in existingUsersByCode.keys &&
+                    employee.status != STATUS_RETIRED &&
+                    employee.costCenterCode !in EXCLUDED_COST_CENTER_CODES
+            }
+            if (provisionTargets.isNotEmpty()) {
+                eventPublisher.publishEvent(
+                    EmployeesCreatedEvent(
+                        provisionTargets.map { employee ->
+                            EmployeeSnapshot(
+                                employeeCode = employee.employeeCode ?: error("신규 Employee 의 사번이 null - 비정상 (사번 필수 검증 후 생성)"),
+                                name = employee.name,
+                                workEmail = employee.workEmail,
+                                email = employee.email,
+                                birthDate = employee.birthDate,
+                                role = employee.role,
+                                appLoginActive = employee.appLoginActive,
+                                costCenterCode = employee.costCenterCode,
+                            )
+                        }
+                    )
                 )
-            )
+            }
         }
 
         return EmployeeUpsertResult(
@@ -248,5 +263,12 @@ class EmployeeUpsertService(
         // role 은 AppAuthority picklist 한글 raw value (여사원 / 조장).
         private val PROTECTED_APP_AUTHORITIES = setOf("여사원", "조장")
         private const val STATUS_RETIRED = "퇴직"
+
+        // SF IF_REST_SAP_EmployeeMaster.cls:231-236 의 excHrCode 동등 — 본사 부서 등 User 계정을
+        // 만들지/갱신하지 않는 코스트센터. 레거시에서 4972/4970 은 주석처리(// excHrCode.add)되어
+        // 실제 active 는 아래 10건. update/insert 두 SOQL WHERE 의 `CostCenterCode NOT IN:excHrCode`.
+        private val EXCLUDED_COST_CENTER_CODES = setOf(
+            "4606", "5526", "4946", "5636", "5637", "5650", "5710", "5366", "3474", "4971",
+        )
     }
 }
