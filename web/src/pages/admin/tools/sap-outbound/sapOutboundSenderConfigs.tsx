@@ -221,8 +221,8 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   {
     kind: 'display-master',
     interfaceId: 'SD03131',
-    title: '진열 마스터 batch (TeamMemberMasterSchedule)',
-    tabLabel: '진열 마스터',
+    title: '여사원 진열마스터 스케줄 배치 (TeamMemberMasterSchedule)',
+    tabLabel: '여사원 진열마스터 스케줄',
     description:
       '특정 날짜의 진열사원 일정 마스터 페이지 1건을 SAP 으로 송신. sap_outbound_log 적재됨.',
     triggerTag: 'BATCH',

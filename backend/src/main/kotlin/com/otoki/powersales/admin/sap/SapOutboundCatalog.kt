@@ -43,7 +43,7 @@ object SapOutboundCatalog {
         ),
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER,
-            koreanName = "진열 마스터 일일 batch",
+            koreanName = "여사원 진열마스터 스케줄 배치",
             triggerType = OutboundTriggerType.BATCH,
             senderClass = "com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender",
             description = "매일 새벽 진열사원 일정 마스터 페이지 단위 SAP REST Adapter POST.",

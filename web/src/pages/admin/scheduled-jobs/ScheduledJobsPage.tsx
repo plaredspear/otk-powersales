@@ -49,7 +49,7 @@ const STATUS_OPTIONS: { label: string; value: ScheduledJobStatus }[] = [
 const JOB_LABELS: Record<string, string> = {
   'agreement-word-cycle-batch': '약관 동의 리셋',
   'attendance-sap-batch': '여사원일정 SAP전송',
-  'display-master-sap-batch': '진열 SAP전송',
+  'display-master-sap-batch': '진열마스터 SAP전송',
   'display-master-last-month-revenue-batch': '진열 전월매출',
   'mfeis-this-month-revenue-batch': '일정 전월매출',
   'account-naver-geocode-batch': '거래처 좌표변환',
@@ -71,7 +71,7 @@ function jobLabel(jobName: string): string {
 const JOB_SCHEDULES: Record<string, string> = {
   'agreement-word-cycle-batch': '매일 09시',
   'attendance-sap-batch': '기본 매일 01시',
-  'display-master-sap-batch': '기본 매일 01시',
+  'display-master-sap-batch': '기본 매일 23시',
   'display-master-last-month-revenue-batch': '기본 매일 02시',
   'mfeis-this-month-revenue-batch': '기본 매월 1일 03시',
   'account-naver-geocode-batch': '매일 02시',

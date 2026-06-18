@@ -31,8 +31,8 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = DisplayMasterSapOutboundBatch.JOB_NAME,
-            cron = "\${app.sap.outbound.display.cron:0 0 1 * * *}",
-            description = "진열마스터 SAP outbound 전송 (기본 매일 01시)",
+            cron = "\${app.sap.outbound.display.cron:0 0 23 * * *}",
+            description = "진열마스터 SAP outbound 전송 (기본 매일 23시) — SF \"여사원 진열마스터 스케쥴\" 운영 cron 정합",
         ),
         Entry(
             jobName = PPTMasterSapOutboundBatch.JOB_NAME,

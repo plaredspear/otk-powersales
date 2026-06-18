@@ -12,7 +12,7 @@ class DisplayMasterSapOutboundBatch(
     private val scheduledJobRunner: ScheduledJobRunner,
 ) {
 
-    @Scheduled(cron = "\${app.sap.outbound.display.cron:0 0 1 * * *}")
+    @Scheduled(cron = "\${app.sap.outbound.display.cron:0 0 23 * * *}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT10M", lockAtLeastFor = "PT30S")
     fun run() {
         scheduledJobRunner.run(JOB_NAME) { ctx ->

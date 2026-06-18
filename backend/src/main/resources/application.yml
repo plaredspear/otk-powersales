@@ -317,7 +317,8 @@ app:
         cron: ${APP_SAP_OUTBOUND_ATTENDANCE_CRON:0 0 1 * * *}
         page-size: ${APP_SAP_OUTBOUND_ATTENDANCE_PAGE_SIZE:100}
       display:
-        cron: ${APP_SAP_OUTBOUND_DISPLAY_CRON:0 0 1 * * *}
+        # 매일 23:00 KST (SF CronTrigger "여사원 진열마스터 스케쥴" `0 0 23 ? * 1-7` Asia/Seoul 운영 실측 정합)
+        cron: ${APP_SAP_OUTBOUND_DISPLAY_CRON:0 0 23 * * *}
         page-size: ${APP_SAP_OUTBOUND_DISPLAY_PAGE_SIZE:100}
       ppt-master:
         # 매시간 34분 0초 KST (SF Scheduled Jobs `IF_REST_SAP_PPTMToSAP` 운영 실측 정합)
