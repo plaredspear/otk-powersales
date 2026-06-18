@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Button, Card, DatePicker, Input, Select, Space, Tag } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { usePPTHistories } from '@/hooks/promotion/usePPTHistories';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
-import type { PPTHistory } from '@/api/pptMaster';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
+import { PPT_HISTORY_EXPORT_PATH, type PPTHistory } from '@/api/pptMaster';
 import {
   PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL,
   getPPTTeamTypeColor,
@@ -51,6 +54,8 @@ export default function PPTHistoryPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedHistory, setSelectedHistory] = useState<PPTHistory | null>(null);
 
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+
   const { data, isLoading, refetch, isFetching } = usePPTHistories({
     page,
     size,
@@ -89,6 +94,21 @@ export default function PPTHistoryPage() {
   const handleRowClick = (record: PPTHistory) => {
     setSelectedHistory(record);
     setDetailOpen(true);
+  };
+
+  // 현재 적용된 검색 조건(URL filters)을 그대로 전량 export (목록과 동일 가시 범위).
+  const handleExport = () => {
+    runExport(PPT_HISTORY_EXPORT_PATH, `전문행사조이력_${dayjs().format('YYYYMMDD')}.xlsx`, {
+      params: {
+        ...(filters.employeeName ? { employeeName: filters.employeeName } : {}),
+        ...(filters.employeeCode ? { employeeCode: filters.employeeCode } : {}),
+        ...(filters.teamType ? { teamType: filters.teamType } : {}),
+        ...(filters.changedAtFrom ? { changedAtFrom: filters.changedAtFrom } : {}),
+        ...(filters.changedAtTo ? { changedAtTo: filters.changedAtTo } : {}),
+      },
+      totalCount: data?.totalElements,
+      maxRows: EXCEL_EXPORT_MAX_ROWS,
+    });
   };
 
   const columns: ColumnsType<PPTHistory> = [
@@ -177,6 +197,9 @@ export default function PPTHistoryPage() {
           <Button onClick={handleReset}>초기화</Button>
           <Button type="primary" onClick={handleSearch}>
             조회
+          </Button>
+          <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
+            엑셀 다운로드
           </Button>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         </Space>

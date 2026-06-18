@@ -33,7 +33,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.data.domain.PageImpl
+import java.io.ByteArrayInputStream
 import org.springframework.data.domain.PageRequest
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
@@ -54,6 +56,7 @@ class AdminPPTMasterServiceTest {
         employeeRepository = employeeRepository,
         accountRepository = accountRepository,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
+        pptHistoryExcelExporter = PPTHistoryExcelExporter(),
     )
 
     private lateinit var batchService: PPTMasterBatchService
@@ -1018,6 +1021,81 @@ class AdminPPTMasterServiceTest {
 
             assertThat(result.content).isEmpty()
             assertThat(result.totalElements).isEqualTo(0)
+            verify(exactly = 0) {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("exportHistoryToExcel - 전문행사조 이력 엑셀 다운로드")
+    inner class ExportHistoryToExcelTests {
+
+        @Test
+        @DisplayName("성공 - 검색결과 전량을 헤더 7컬럼 + 데이터 행으로 출력 + 파일명 패턴")
+        fun exportHistory_success() {
+            val employee = createEmployee()
+            val history = ProfessionalPromotionTeamHistory(
+                id = 1L,
+                name = "PH0000001",
+                employeeId = employee.id,
+                oldValue = ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
+                newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
+                employee = employee
+            )
+            every {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
+            } returns PageImpl(listOf(history), PageRequest.of(0, 50_000), 1)
+
+            val result = service.exportHistoryToExcel(allBranchesScope(), null, null, null, null, null)
+
+            assertThat(result.filename).startsWith("전문행사조이력_").endsWith(".xlsx")
+            val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
+            val sheet = workbook.getSheetAt(0)
+            assertThat(sheet.sheetName).isEqualTo("전문행사조이력")
+            assertThat(sheet.getRow(0).getCell(0).stringCellValue).isEqualTo("전문행사조 이력번호")
+            assertThat(sheet.getRow(0).getCell(6).stringCellValue).isEqualTo("변경 시점")
+            val dataRow = sheet.getRow(1)
+            assertThat(dataRow.getCell(0).stringCellValue).isEqualTo("PH0000001")
+            assertThat(dataRow.getCell(1).stringCellValue).isEqualTo("서울지점")
+            assertThat(dataRow.getCell(2).stringCellValue).isEqualTo("12345678")
+            assertThat(dataRow.getCell(3).stringCellValue).isEqualTo("홍길동")
+            assertThat(dataRow.getCell(4).stringCellValue)
+                .isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING.displayName)
+            assertThat(dataRow.getCell(5).stringCellValue)
+                .isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE.displayName)
+            workbook.close()
+        }
+
+        @Test
+        @DisplayName("성공 - teamType 표시명 → enum 변환하여 repository 호출 + 50,000 페이지로 전량 조회")
+        fun exportHistory_filterAndPageSize() {
+            every {
+                pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
+            } returns PageImpl(emptyList(), PageRequest.of(0, 50_000), 0)
+
+            service.exportHistoryToExcel(allBranchesScope(), "홍", "123", "라면세일조", null, null)
+
+            verify {
+                pptHistoryRepository.searchHistories(
+                    eq("홍"), eq("123"),
+                    ProfessionalPromotionTeamType.RAMEN_SALE,
+                    any(), any(), any(),
+                    match { it.pageSize == 50_000 }
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("지점 스코프 - NoAccess -> 쿼리 없이 헤더만 있는 빈 엑셀")
+        fun exportHistory_noAccess() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+
+            val result = service.exportHistoryToExcel(scope, null, null, null, null, null)
+
+            val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
+            assertThat(workbook.getSheetAt(0).lastRowNum).isEqualTo(0) // 헤더 행만
+            workbook.close()
             verify(exactly = 0) {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             }
