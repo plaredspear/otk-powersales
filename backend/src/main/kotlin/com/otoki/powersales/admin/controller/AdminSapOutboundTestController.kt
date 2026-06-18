@@ -135,6 +135,12 @@ class AdminSapOutboundTestController(
     ): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
         ResponseEntity.ok(ApiResponse.success(service.sendDisplayMaster(req)))
 
+    /** 조회 없이 빈 배열을 실제 SAP 으로 송신 (outbound 인터페이스 연결성 확인 전용). */
+    @PostMapping("/display-master/send-empty")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun sendDisplayMasterEmpty(): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.sendDisplayMasterEmpty()))
+
     // ===== PPTMaster =====
 
     @PostMapping("/ppt-master/preview")
@@ -150,4 +156,10 @@ class AdminSapOutboundTestController(
         @RequestBody req: PPTMasterTestRequest,
     ): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
         ResponseEntity.ok(ApiResponse.success(service.sendPPTMaster(req)))
+
+    /** 조회 없이 빈 배열을 실제 SAP 으로 송신 (outbound 인터페이스 연결성 확인 전용). */
+    @PostMapping("/ppt-master/send-empty")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun sendPPTMasterEmpty(): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.sendPPTMasterEmpty()))
 }

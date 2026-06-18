@@ -12,8 +12,8 @@ import {
 import dayjs from 'dayjs';
 import {
   previewSapOutbound,
-  sendAttendanceEmpty,
   sendSapOutbound,
+  sendSapOutboundEmpty,
   type SapOutboundTestPreviewResponse,
   type SapOutboundTestSendResponse,
 } from '@/api/admin/sapOutboundTest';
@@ -24,6 +24,12 @@ import {
 } from './sapOutboundSenderConfigs';
 
 const { Title, Text, Paragraph } = Typography;
+
+/** 조회 없이 빈 배열을 실제 SAP 으로 송신해 연결성만 확인할 수 있는 batch kind. */
+const EMPTY_SEND_KINDS = ['attendance', 'display-master', 'ppt-master'] as const;
+type EmptySendKind = (typeof EMPTY_SEND_KINDS)[number];
+const supportsEmptySend = (kind: string): kind is EmptySendKind =>
+  (EMPTY_SEND_KINDS as readonly string[]).includes(kind);
 
 /**
  * SAP outbound sender 단일 인터페이스 카드.
@@ -92,12 +98,13 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
     }
   };
 
-  // 여사원일정 스케줄 SAP전송 카드 전용 — 조회 없이 빈 배열을 실제 SAP 으로 송신해 outbound 연결성만 확인.
+  // batch 카드 전용 — 조회 없이 빈 배열을 실제 SAP 으로 송신해 outbound 연결성만 확인.
   const onSendEmpty = async () => {
+    if (!supportsEmptySend(config.kind)) return;
     setLoadingEmptySend(true);
     setSendResult(null);
     try {
-      const res = await sendAttendanceEmpty();
+      const res = await sendSapOutboundEmpty(config.kind);
       setSendResult(res);
       if (res.success) {
         message.success(res.message);
@@ -126,7 +133,7 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
             <Button onClick={onPreview} loading={loadingPreview}>
               미리보기
             </Button>
-            {config.kind === 'attendance' && (
+            {supportsEmptySend(config.kind) && (
               <Button
                 danger
                 onClick={() => setEmptyConfirmOpen(true)}
@@ -267,9 +274,13 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
         confirmLoading={loadingEmptySend}
       >
         <Paragraph>
-          조회 없이 <Text strong>{'{ "request": [] }'}</Text> 를 현재 환경의{' '}
-          <Text strong>SAP REST Adapter</Text> 로 실제 전송합니다. outbound 인터페이스(
-          <code>SD03130</code>)의 연결 및 응답 정상 여부를 확인하는 용도입니다.
+          조회 없이{' '}
+          <Text strong>
+            {config.kind === 'ppt-master' ? '{ "REQUEST": [] }' : '{ "request": [] }'}
+          </Text>{' '}
+          를 현재 환경의 <Text strong>SAP REST Adapter</Text> 로 실제 전송합니다. outbound
+          인터페이스(
+          <code>{config.interfaceId}</code>)의 연결 및 응답 정상 여부를 확인하는 용도입니다.
         </Paragraph>
         <Paragraph type="secondary">
           전송 행이 없으므로 SAP 측 운영 데이터는 변경되지 않으며, 결과는 sap_outbound_log 에 적재됩니다.
