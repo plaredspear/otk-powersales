@@ -85,7 +85,7 @@
           "AppointDate" : {
             "type" : "string"
           },
-          "EmployeeCode" : {
+          "Employeecode" : {
             "type" : "string"
           },
           "Jikchak" : {
