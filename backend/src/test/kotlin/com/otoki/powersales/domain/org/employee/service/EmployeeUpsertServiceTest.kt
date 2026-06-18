@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.org.employee.enums.Gender
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.employee.service.EmployeeUpsertService
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertCommand
+import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.event.EmployeesCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.CapturingSlot
@@ -566,6 +567,75 @@ class EmployeeUpsertServiceTest {
             verify(exactly = 1) { eventPublisher.publishEvent(any<EmployeesCreatedEvent>()) }
             assertThat(eventSlot.captured.employees.map { it.employeeCode })
                 .containsExactly("100301", "100302", "100303")
+        }
+
+        @Test
+        @DisplayName("E7 신규 퇴직자 - User 생성 이벤트 발행 안 함 (SF insert SOQL Status!=퇴직 동등)")
+        fun upsert_newRetired_notProvisioned() {
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100301")) } returns emptyList()
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+
+            service.upsert(
+                listOf(command(employeeCode = "100301", employeeName = "퇴직신규", status = "퇴직", workEmail = "n1@otoki.com"))
+            )
+
+            // 퇴직자는 신규 User 생성 대상에서 제외 → 발행 대상이 없어 이벤트 미발행.
+            verify(exactly = 0) { eventPublisher.publishEvent(any<EmployeesCreatedEvent>()) }
+        }
+
+        @Test
+        @DisplayName("E8 신규 excHrCode 코스트센터 - User 생성 이벤트 대상에서 제외 (SF NOT IN excHrCode 동등)")
+        fun upsert_newExcludedCostCenter_notProvisioned() {
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100301", "100302")) } returns emptyList()
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            val eventSlot = stubEventCapture()
+
+            service.upsert(
+                listOf(
+                    // 4606 = excHrCode → 제외, 11110 = 일반 → 포함.
+                    command(employeeCode = "100301", employeeName = "본사", orgCode = "4606", workEmail = "h@otoki.com"),
+                    command(employeeCode = "100302", employeeName = "현장", orgCode = "11110", workEmail = "f@otoki.com")
+                )
+            )
+
+            assertThat(eventSlot.captured.employees.map { it.employeeCode }).containsExactly("100302")
+        }
+
+        @Test
+        @DisplayName("E9 기존 User - 사원 퇴직 전환 시 비활성화 (SF cls:264-267 동등)")
+        fun upsert_existingUserDeactivatedOnRetire() {
+            val existing = Employee(employeeCode = "100123", name = "기존").apply { costCenterCode = "11110" }
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            val user = User(username = "u@otoki.com", employeeCode = "100123", password = "x", name = "기존").apply { isActive = true }
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(user)
+
+            service.upsert(listOf(command(employeeCode = "100123", status = "퇴직", orgCode = "11110")))
+
+            assertThat(user.isActive).isFalse()
+        }
+
+        @Test
+        @DisplayName("E10 기존 User - excHrCode 사원은 User 무변경 (SF update SOQL NOT IN excHrCode 동등)")
+        fun upsert_existingUserUntouchedForExcludedCostCenter() {
+            val existing = Employee(employeeCode = "100123", name = "본사").apply { costCenterCode = "4606" }
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            // costCenterCode 가 처음부터 4606 인 기존 User — excHrCode 라 isActive/costCenter 모두 무변경이어야 한다.
+            val user = User(username = "u@otoki.com", employeeCode = "100123", password = "x", name = "본사").apply {
+                isActive = true
+                costCenterCode = "4606"
+            }
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(user)
+
+            service.upsert(listOf(command(employeeCode = "100123", status = "퇴직", orgCode = "4606")))
+
+            // excHrCode 사원은 update 루프 진입 전 skip → 퇴직이어도 비활성화하지 않는다.
+            assertThat(user.isActive).isTrue()
         }
     }
 }

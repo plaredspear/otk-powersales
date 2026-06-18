@@ -122,15 +122,22 @@ class EmployeeUpsertService(
             employeeRepository.saveAll(toSave)
         }
 
-        // Employee.cost_center_code derived 캐시 동기화 — 기존 user 행에 대해서만 즉시 갱신.
+        // 기존 User 행 동기화 — SF IF_REST_SAP_EmployeeMaster.upsertUser(@future) update 흐름 (cls:241-274) 동등.
         // 신규 사원의 User 행은 아래 EmployeesCreatedEvent 흐름에서 새로 생성된다.
+        // 레거시는 update SOQL (cls:239) WHERE 에서 CostCenterCode NOT IN excHrCode 로 본사 10개 부서를
+        // User 갱신 대상에서 제외하므로, 신규도 excHrCode 사원은 User 갱신을 건드리지 않는다.
         val existingCodes = toSave.mapNotNull { it.employeeCode }.filter { it.isNotBlank() } - newEmployees.mapNotNull { it.employeeCode }.toSet()
         if (existingCodes.isNotEmpty()) {
             val users = userRepository.findByEmployeeCodeIn(existingCodes)
             val empByCode = toSave.filter { it.employeeCode != null }.associateBy { it.employeeCode!! }
             users.forEach { user ->
                 val empCode = user.employeeCode ?: return@forEach
-                user.costCenterCode = empByCode[empCode]?.costCenterCode
+                val employee = empByCode[empCode] ?: return@forEach
+                // excHrCode (본사 10개 코스트센터) 는 레거시 update SOQL 에서 제외 → User 무변경.
+                if (employee.costCenterCode in EXCLUDED_COST_CENTER_CODES) return@forEach
+                user.costCenterCode = employee.costCenterCode
+                // SF cls:264-270 동등 — 재직상태 퇴직 → 기존 User 비활성화. 그 외 → 활성.
+                user.isActive = employee.status != STATUS_RETIRED
             }
         }
 
@@ -138,10 +145,17 @@ class EmployeeUpsertService(
         // 레거시가 사원 N명을 future 1회 호출(bulk)로 처리하는 것과 동일하게, 신규도 1개의 비동기 작업으로
         // 일괄 처리한다 (사원 1명당 이벤트 발행 시의 @Async 작업 폭증 회피).
         // 실제 User INSERT 는 UserProvisioningService 가 AFTER_COMMIT + @Async 로 별도 트랜잭션에서 일괄 처리.
-        if (newEmployees.isNotEmpty()) {
+        //
+        // SF insert SOQL (cls:277) WHERE 의 두 가드를 발행 시점에 적용한다:
+        //   - DKRetail__Status__c != '퇴직' → 퇴직자는 신규 User 생성 안 함.
+        //   - CostCenterCode__c NOT IN excHrCode → 본사 10개 부서는 신규 User 생성 안 함.
+        val provisionTargets = newEmployees.filter { employee ->
+            employee.status != STATUS_RETIRED && employee.costCenterCode !in EXCLUDED_COST_CENTER_CODES
+        }
+        if (provisionTargets.isNotEmpty()) {
             eventPublisher.publishEvent(
                 EmployeesCreatedEvent(
-                    newEmployees.map { employee ->
+                    provisionTargets.map { employee ->
                         EmployeeSnapshot(
                             employeeCode = employee.employeeCode ?: error("신규 Employee 의 사번이 null - 비정상 (사번 필수 검증 후 생성)"),
                             name = employee.name,
@@ -248,5 +262,12 @@ class EmployeeUpsertService(
         // role 은 AppAuthority picklist 한글 raw value (여사원 / 조장).
         private val PROTECTED_APP_AUTHORITIES = setOf("여사원", "조장")
         private const val STATUS_RETIRED = "퇴직"
+
+        // SF IF_REST_SAP_EmployeeMaster.cls:231-236 의 excHrCode 동등 — 본사 부서 등 User 계정을
+        // 만들지/갱신하지 않는 코스트센터. 레거시에서 4972/4970 은 주석처리(// excHrCode.add)되어
+        // 실제 active 는 아래 10건. update/insert 두 SOQL WHERE 의 `CostCenterCode NOT IN:excHrCode`.
+        private val EXCLUDED_COST_CENTER_CODES = setOf(
+            "4606", "5526", "4946", "5636", "5637", "5650", "5710", "5366", "3474", "4971",
+        )
     }
 }
