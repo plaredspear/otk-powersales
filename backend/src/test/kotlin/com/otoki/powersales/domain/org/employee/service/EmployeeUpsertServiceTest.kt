@@ -483,12 +483,15 @@ class EmployeeUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("E2 기존 Employee 갱신 - 이벤트 발행 안 함")
-        fun upsert_existingEmployee_doesNotPublish() {
+        @DisplayName("E2 기존 Employee + User 존재 - 이벤트 발행 안 함 (SF userMap.containsKey → updateCode)")
+        fun upsert_existingEmployeeWithUser_doesNotPublish() {
             val existing = Employee(employeeCode = "100123", name = "기존")
             every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
             every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
             every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            // User 가 이미 존재 → update 경로, 신규 생성 이벤트 발행 안 함.
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns
+                listOf(User(username = "u@otoki.com", employeeCode = "100123", password = "x", name = "기존"))
 
             service.upsert(listOf(command(employeeCode = "100123", employeeName = "갱신")))
 
@@ -496,18 +499,37 @@ class EmployeeUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("E3 신규 + 기존 혼합 - 이벤트 1건에 신규 스냅샷만 포함")
-        fun upsert_partialNew_publishesOnlyForNew() {
+        @DisplayName("E2b 기존 Employee 인데 User 부재 - 이벤트 발행 (SF userMap.containsKey=false → insertCode)")
+        fun upsert_existingEmployeeWithoutUser_publishes() {
+            val existing = Employee(employeeCode = "100123", name = "기존")
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            // User 가 없음 → insert(provisioning) 경로. 기존 Employee 라도 발행 대상.
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns emptyList()
+            val eventSlot = stubEventCapture()
+
+            service.upsert(listOf(command(employeeCode = "100123", employeeName = "갱신", email = "p@otoki.com")))
+
+            assertThat(eventSlot.captured.employees.map { it.employeeCode }).containsExactly("100123")
+        }
+
+        @Test
+        @DisplayName("E3 신규 + 기존(User 존재) 혼합 - 이벤트 1건에 User 없는 사원만 포함")
+        fun upsert_partialNew_publishesOnlyForMissingUser() {
             val existing = Employee(employeeCode = "100100", name = "기존")
             every { employeeRepository.findByEmployeeCodeIn(listOf("100100", "100200")) } returns listOf(existing)
             every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
             every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            // 100100 은 기존 User 존재(update), 100200 은 신규(User 없음 → insert).
+            every { userRepository.findByEmployeeCodeIn(listOf("100100", "100200")) } returns
+                listOf(User(username = "u100@otoki.com", employeeCode = "100100", password = "x", name = "기존"))
             val eventSlot = stubEventCapture()
 
             service.upsert(
                 listOf(
                     command(employeeCode = "100100", employeeName = "기존갱신"),
-                    command(employeeCode = "100200", employeeName = "신규", workEmail = "new@otoki.com")
+                    command(employeeCode = "100200", employeeName = "신규", email = "new@otoki.com")
                 )
             )
 

@@ -31,6 +31,8 @@ class PPTMasterPayloadFactory {
         return PPTMasterSapPayloadRow(
             Name = master.name,
             ProfessionalPromotionTeam = master.teamType.displayName,
+            // 레거시 Account__c(SF Account sfid) 자리 — 신규 거래처 PK 를 문자열로 송신.
+            Account = acc?.id?.toString(),
             FullName = emp?.name,
             EmployeeNumber = emp?.employeeCode,
             AccountStatus = acc?.accountStatusName,

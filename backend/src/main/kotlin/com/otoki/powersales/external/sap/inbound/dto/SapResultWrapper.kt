@@ -30,6 +30,10 @@ data class SapResultWrapper<T>(
         const val CODE_NOT_ACCEPTABLE: String = "NOT_ACCEPTABLE"
         const val CODE_INTERNAL_ERROR: String = "INTERNAL_ERROR"
 
+        // 레거시 IF_REST_SAP_* 의 DML/예외 실패 코드 '0'. 거래처 카테고리(IF_REST_SAP_AccountMaster) 는
+        // 예외 시 RESULT_MSG='Failed' 로 응답(타 클래스의 'ERROR' 와 다름 — 레거시 §4 정합).
+        const val CODE_LEGACY_ERROR: String = "0"
+
         fun <T> ok(detail: T? = null): SapResultWrapper<T> = SapResultWrapper(CODE_OK, "OK", detail)
     }
 }

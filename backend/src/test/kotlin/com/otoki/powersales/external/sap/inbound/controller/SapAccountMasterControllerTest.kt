@@ -184,6 +184,25 @@ class SapAccountMasterControllerTest {
                 .andExpect(jsonPath("$.RESULT_DETAIL.success_count").value(2))
         }
 
+        @Test
+        @DisplayName("도메인 예외 - 200, RESULT_CODE 0, RESULT_MSG Failed (레거시 IF_REST_SAP_AccountMaster §4 동등)")
+        fun upsert_domainException_returnsFailed() {
+            every { sapAccountCategoryService.upsert(any()) } throws RuntimeException("DB 오류")
+
+            val payload = """
+                { "reqItemList": [ { "AccountCode": "Z001", "Name": "일반거래처" } ] }
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/sap/account-category")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(payload)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.RESULT_CODE").value("0"))
+                .andExpect(jsonPath("$.RESULT_MSG").value("Failed"))
+        }
+
         @ParameterizedTest(name = "{0} → status={1}, RESULT_CODE=INVALID_PAYLOAD")
         @MethodSource("com.otoki.powersales.external.sap.inbound.controller.SapAccountMasterControllerTest#invalidAccountCategoryPayloadCases")
         @DisplayName("실패 - INVALID_PAYLOAD 변형들")
