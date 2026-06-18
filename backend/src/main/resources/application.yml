@@ -217,6 +217,18 @@ app:
     gps-threshold-meters: ${ATTENDANCE_GPS_THRESHOLD_METERS:500}
 
   # ---------------------------------------------------------------------------
+  # @Async 후처리 executor (AsyncConfig)
+  #  - max-pool-size 는 HikariCP maximum-pool-size(기본 5)보다 작게 — @Async 작업이
+  #    REQUIRES_NEW 로 커넥션을 잡으므로 풀 초과 시 커넥션 대기로 스레드 블로킹 점유.
+  #  - queue-capacity 유한값 + CallerRunsPolicy 로 무한 적재 차단 + 배압 형성.
+  # ---------------------------------------------------------------------------
+  async:
+    core-pool-size: ${ASYNC_CORE_POOL_SIZE:2}
+    max-pool-size: ${ASYNC_MAX_POOL_SIZE:4}
+    queue-capacity: ${ASYNC_QUEUE_CAPACITY:500}
+    await-termination-seconds: ${ASYNC_AWAIT_TERMINATION_SECONDS:30}
+
+  # ---------------------------------------------------------------------------
   # ORORA 매출이력 RDS 적재 배치 (Spec #855)
   #  - 거래처 코드 범위(from~to)를 chunk 단위로 분할해 ORORA view 를 조회 후 RDS upsert.
   #  - 레거시 OroraDailyAccountRange__mdt 실측값(from 1000000 / to 1100000 / range 2000) 기본.
