@@ -143,4 +143,50 @@ class AdminSapOutboundTestServiceTest {
         assertThat(res.success).isFalse
         assertThat(res.message).contains("실패")
     }
+
+    @Test
+    @DisplayName("sendDisplayMasterEmpty: 조회 없이 sender.sendEmptyForConnectivityCheck 호출 → success=true")
+    fun sendDisplayMasterEmpty_successPath() {
+        every { displayMasterSapSender.sendEmptyForConnectivityCheck() } returns true
+
+        val res = service.sendDisplayMasterEmpty()
+
+        assertThat(res.success).isTrue
+        assertThat(res.interfaceId).isEqualTo(SapConstants.SAP_INTERFACE_DISPLAY_MASTER)
+        verify(exactly = 1) { displayMasterSapSender.sendEmptyForConnectivityCheck() }
+    }
+
+    @Test
+    @DisplayName("sendDisplayMasterEmpty: sender 가 false 반환 → success=false")
+    fun sendDisplayMasterEmpty_failurePath() {
+        every { displayMasterSapSender.sendEmptyForConnectivityCheck() } returns false
+
+        val res = service.sendDisplayMasterEmpty()
+
+        assertThat(res.success).isFalse
+        assertThat(res.message).contains("실패")
+    }
+
+    @Test
+    @DisplayName("sendPPTMasterEmpty: 조회 없이 sender.sendEmptyForConnectivityCheck 호출 → success=true")
+    fun sendPPTMasterEmpty_successPath() {
+        every { pptMasterSapSender.sendEmptyForConnectivityCheck() } returns true
+
+        val res = service.sendPPTMasterEmpty()
+
+        assertThat(res.success).isTrue
+        assertThat(res.interfaceId).isEqualTo(SapConstants.SAP_INTERFACE_PPT_MASTER)
+        verify(exactly = 1) { pptMasterSapSender.sendEmptyForConnectivityCheck() }
+    }
+
+    @Test
+    @DisplayName("sendPPTMasterEmpty: sender 가 false 반환 → success=false")
+    fun sendPPTMasterEmpty_failurePath() {
+        every { pptMasterSapSender.sendEmptyForConnectivityCheck() } returns false
+
+        val res = service.sendPPTMasterEmpty()
+
+        assertThat(res.success).isFalse
+        assertThat(res.message).contains("실패")
+    }
 }

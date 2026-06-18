@@ -329,6 +329,21 @@ class AdminSapOutboundTestService(
         )
     }
 
+    /**
+     * 조회 없이 빈 배열(`{ "request": [] }`) 을 실제 SAP 으로 송신한다 (outbound 연결성 확인 전용).
+     * 정상 batch 의 빈 배열 SKIP 가드를 우회하여 SAP REST Adapter 응답 정상 여부만 검증한다.
+     */
+    fun sendDisplayMasterEmpty(): SapOutboundTestSendResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER
+        val ok = displayMasterSapSender.sendEmptyForConnectivityCheck()
+        return SapOutboundTestSendResponse(
+            interfaceId = interfaceId,
+            success = ok,
+            message = if (ok) "빈 배열 송신 성공 (연결성 확인) — sap_outbound_log 확인"
+            else "빈 배열 송신 실패 — sap_outbound_log 확인",
+        )
+    }
+
     private fun buildDisplayMasterPayload(req: BatchDateTestRequest):
             Pair<DisplayMasterSapPayload, String> {
         val today = req.targetDate
@@ -372,6 +387,21 @@ class AdminSapOutboundTestService(
             interfaceId = interfaceId,
             success = ok,
             message = if (ok) "송신 성공 ($summary)" else "송신 실패 ($summary) — sap_outbound_log 확인",
+        )
+    }
+
+    /**
+     * 조회 없이 빈 배열(`{ "REQUEST": [] }`) 을 실제 SAP 으로 송신한다 (outbound 연결성 확인 전용).
+     * 정상 batch 의 빈 배열 SKIP 가드를 우회하여 SAP REST Adapter 응답 정상 여부만 검증한다.
+     */
+    fun sendPPTMasterEmpty(): SapOutboundTestSendResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_PPT_MASTER
+        val ok = pptMasterSapSender.sendEmptyForConnectivityCheck()
+        return SapOutboundTestSendResponse(
+            interfaceId = interfaceId,
+            success = ok,
+            message = if (ok) "빈 배열 송신 성공 (연결성 확인) — sap_outbound_log 확인"
+            else "빈 배열 송신 실패 — sap_outbound_log 확인",
         )
     }
 

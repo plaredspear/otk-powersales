@@ -31,16 +31,13 @@ class DisplayMasterSapSender(
     private val log = LoggerFactory.getLogger(DisplayMasterSapSender::class.java)
 
     fun sendPage(payload: DisplayMasterSapPayload): Boolean {
-        val interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER
-        val endpointPath = "/$interfaceId"
-        val requestedAt = LocalDateTime.now()
-        val startNanos = System.nanoTime()
-        val requestCount = payload.request.size
-
-        if (requestCount == 0) {
+        if (payload.request.isEmpty()) {
+            // 정상 batch 흐름: 보낼 행이 없으면 SAP 호출 없이 SKIP (멱등). 연결성 확인은 [sendEmptyForConnectivityCheck] 사용.
+            val requestedAt = LocalDateTime.now()
+            val startNanos = System.nanoTime()
             persistLog(
-                interfaceId = interfaceId,
-                endpointPath = endpointPath,
+                interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER,
+                endpointPath = "/${SapConstants.SAP_INTERFACE_DISPLAY_MASTER}",
                 requestCount = 0,
                 httpStatus = null,
                 resultCode = "SKIPPED",
@@ -52,6 +49,24 @@ class DisplayMasterSapSender(
             )
             return true
         }
+        return post(payload)
+    }
+
+    /**
+     * 빈 배열(`{ "request": [] }`) 을 **실제로 SAP REST Adapter 로 POST** 한다.
+     *
+     * 조회 없이 outbound 인터페이스(`SD03131`) 의 연결/응답 정상 여부만 확인하는 용도.
+     * [sendPage] 의 빈 배열 SKIP 가드를 우회한다. 결과는 [SapOutboundLogService] 에 동일하게 적재된다.
+     * @return 송신 성공 여부 (true = SAP 응답 본문 검증 통과)
+     */
+    fun sendEmptyForConnectivityCheck(): Boolean = post(DisplayMasterSapPayload(request = emptyList()))
+
+    private fun post(payload: DisplayMasterSapPayload): Boolean {
+        val interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER
+        val endpointPath = "/$interfaceId"
+        val requestedAt = LocalDateTime.now()
+        val startNanos = System.nanoTime()
+        val requestCount = payload.request.size
 
         return try {
             val response = restClient.post()

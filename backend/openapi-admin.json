@@ -25063,6 +25063,24 @@
         "tags" : [ "admin-sap-outbound-test-controller" ]
       }
     },
+    "/api/v1/admin/sap-integration/outbound/test/display-master/send-empty" : {
+      "post" : {
+        "operationId" : "sendDisplayMasterEmpty",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestSendResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
     "/api/v1/admin/sap-integration/outbound/test/loan-inquiry/preview" : {
       "post" : {
         "operationId" : "previewLoanInquiry",
@@ -25328,6 +25346,24 @@
           },
           "required" : true
         },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestSendResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/ppt-master/send-empty" : {
+      "post" : {
+        "operationId" : "sendPPTMasterEmpty",
         "responses" : {
           "200" : {
             "content" : {

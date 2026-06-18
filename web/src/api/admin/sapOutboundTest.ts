@@ -64,12 +64,17 @@ export function sendSapOutbound<Req extends object>(
 }
 
 /**
- * 여사원일정 스케줄 SAP전송 outbound 인터페이스(SD03130)에 조회 없이 빈 배열을 실제 SAP 으로 송신한다.
- * outbound API 의 연결/응답 정상 여부 확인 전용.
+ * batch 류 outbound 인터페이스에 조회 없이 빈 배열을 실제 SAP 으로 송신한다.
+ * outbound API 의 연결/응답 정상 여부 확인 전용 (송신 행이 없어 SAP 운영 데이터는 변경되지 않음).
+ *
+ * 지원 kind: 여사원일정(attendance/SD03130), 여사원 진열마스터(display-master/SD03131),
+ * 전문행사조 마스터(ppt-master/SD03300).
  */
-export async function sendAttendanceEmpty(): Promise<SapOutboundTestSendResponse> {
+export async function sendSapOutboundEmpty(
+  kind: 'attendance' | 'display-master' | 'ppt-master',
+): Promise<SapOutboundTestSendResponse> {
   const res = await client.post<ApiResponse<SapOutboundTestSendResponse>>(
-    '/api/v1/admin/sap-integration/outbound/test/attendance/send-empty',
+    `/api/v1/admin/sap-integration/outbound/test/${kind}/send-empty`,
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '빈 배열 송신 호출에 실패했습니다');
