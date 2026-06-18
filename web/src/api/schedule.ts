@@ -187,6 +187,29 @@ export const SCHEDULE_TEMPLATE_PATH = '/api/v1/admin/schedule/template';
 /** 선택 진열스케줄 엑셀 다운로드 경로 (POST, body `{ ids }`). */
 export const SCHEDULE_EXPORT_PATH = '/api/v1/admin/schedule/export';
 
+/** 검색결과 전체 진열스케줄 엑셀 다운로드 경로 (GET, 목록과 동일 필터 파라미터). */
+export const SCHEDULE_EXPORT_ALL_PATH = '/api/v1/admin/schedule/export-all';
+
+/**
+ * 검색결과 엑셀 다운로드 쿼리 파라미터 빌더 (page/size 제외, 목록과 동일 검색 조건).
+ * 실제 다운로드는 공통 `downloadExcel`/`useExcelDownload` 가 수행한다.
+ */
+export function scheduleExportParams(
+  params: Omit<ScheduleListParams, 'page' | 'size'>,
+): Record<string, string> {
+  const queryParams: Record<string, string> = {};
+  if (params.employeeCode) queryParams.employeeCode = params.employeeCode;
+  if (params.accountName) queryParams.accountName = params.accountName;
+  if (params.confirmed != null) queryParams.confirmed = String(params.confirmed);
+  if (params.typeOfWork3) queryParams.typeOfWork3 = params.typeOfWork3;
+  if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
+  if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
+  if (params.preset) queryParams.preset = params.preset;
+  if (params.sortBy) queryParams.sortBy = params.sortBy;
+  if (params.sortDir) queryParams.sortDir = params.sortDir;
+  return queryParams;
+}
+
 export async function uploadScheduleExcel(file: File): Promise<ScheduleUploadResult> {
   const formData = new FormData();
   formData.append('file', file);

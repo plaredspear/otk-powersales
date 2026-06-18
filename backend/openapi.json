@@ -32289,6 +32289,99 @@
         "tags" : [ "admin-schedule-controller" ]
       }
     },
+    "/api/v1/admin/schedule/export-all" : {
+      "get" : {
+        "operationId" : "exportAllSchedules",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "confirmed",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "typeOfWork3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "preset",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sortBy",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sortDir",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
     "/api/v1/admin/schedule/list" : {
       "get" : {
         "operationId" : "listSchedules",

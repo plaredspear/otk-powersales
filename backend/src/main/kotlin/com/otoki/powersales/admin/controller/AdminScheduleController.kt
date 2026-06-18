@@ -63,6 +63,30 @@ class AdminScheduleController(
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
+    /** 진열스케줄마스터 검색결과 엑셀 다운로드 — 목록과 동일한 가시 범위/필터로 전량 추출 (최대 건수 제한 적용). */
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/export-all")
+    fun exportAllSchedules(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) employeeCode: String?,
+        @RequestParam(required = false) accountName: String?,
+        @RequestParam(required = false) confirmed: Boolean?,
+        @RequestParam(required = false) typeOfWork3: String?,
+        @RequestParam(required = false) startDateFrom: LocalDate?,
+        @RequestParam(required = false) startDateTo: LocalDate?,
+        @RequestParam(required = false) preset: SchedulePreset?,
+        @RequestParam(required = false) sortBy: String?,
+        @RequestParam(required = false) sortDir: String?,
+    ): ResponseEntity<ByteArray> {
+        val sort = resolveSort(sortBy, sortDir)
+        val result = adminScheduleService.exportAllSchedules(
+            scope, employeeCode, accountName, confirmed,
+            typeOfWork3, startDateFrom, startDateTo, preset, sort
+        )
+        return ExcelResponseUtils.build(result)
+    }
+
     private fun resolveSort(sortBy: String?, sortDir: String?): Sort {
         if (sortBy.isNullOrBlank()) return Sort.unsorted()
         val direction = if (sortDir.equals("asc", ignoreCase = true)) Sort.Direction.ASC else Sort.Direction.DESC
