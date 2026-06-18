@@ -3,7 +3,8 @@ package com.otoki.powersales.user.service
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
-import com.otoki.powersales.user.event.EmployeeCreatedEvent
+import com.otoki.powersales.user.event.EmployeeSnapshot
+import com.otoki.powersales.user.event.EmployeesCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
@@ -33,8 +34,9 @@ import org.springframework.transaction.event.TransactionalEventListener
  *
  * ## 호출 경로
  * - SAP 인바운드: [com.otoki.powersales.domain.org.employee.service.EmployeeUpsertService] 가
- *   Employee INSERT 후 [EmployeeCreatedEvent] 발행 → 본 서비스의
- *   [handleEmployeeCreated] 가 `AFTER_COMMIT + @Async` 로 수신.
+ *   Employee INSERT 후 신규 사원 **집합**을 담은 [EmployeesCreatedEvent] 1건을 발행 → 본 서비스의
+ *   [handleEmployeesCreated] 가 `AFTER_COMMIT + @Async` 로 수신하여 **일괄(bulk)** 처리.
+ *   (레거시 `upsertUser(@future)` 가 N명을 future 1회 호출로 처리하는 것과 동일 — cls:165/277/306)
  * - 로컬 시드: [com.otoki.powersales.platform.common.config.LocalDataInitializer] 가
  *   [provisionForSeed] 를 동기 호출 (시드는 트랜잭션 분리 의미 없음).
  */
@@ -48,32 +50,94 @@ class UserProvisioningService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
-     * SAP 인바운드 경로 진입점.
+     * SAP 인바운드 경로 진입점 — 신규 사원 집합의 User 행을 **일괄(bulk) 생성**한다.
      *
      * `AFTER_COMMIT`: Employee 트랜잭션이 commit 된 후에만 발화 (rollback 시 호출 안 됨).
-     * `@Async`: 별도 스레드에서 실행 → 메인 요청 스레드(SAP HTTP 응답) 와 분리.
+     * `@Async`: 별도 스레드에서 실행 → 메인 요청 스레드(SAP HTTP 응답) 와 분리. 한 번의 인바운드당
+     *   비동기 작업은 **1개** (사원 수와 무관) — SF `upsertUser(@future)` 1회 호출 동등.
      * `Propagation.REQUIRES_NEW`: 항상 새 트랜잭션. 실패 시 본 트랜잭션만 rollback.
+     *
+     * 멱등 가드는 `findByEmployeeCodeIn` 단일 조회로 기존 User 사번 집합을 한 번에 확보해
+     * 행마다 SELECT 하지 않는다 (SF cls:241·277 bulk 동등). 신규 User 는 `saveAll` 로 일괄 INSERT.
+     * 행 단위 변환 예외는 해당 사원만 skip 하고 나머지 적재를 계속한다.
      */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    fun handleEmployeeCreated(event: EmployeeCreatedEvent) {
+    fun handleEmployeesCreated(event: EmployeesCreatedEvent) {
         try {
-            provision(
-                employeeCode = event.employeeCode,
-                name = event.name,
-                workEmail = event.workEmail,
-                email = event.email,
-                birthDate = event.birthDate,
-                role = event.role,
-                appLoginActive = event.appLoginActive,
-                costCenterCode = event.costCenterCode,
-            )
+            provisionBatch(event.employees)
         } catch (ex: Exception) {
             // SF @future 동등: 메인(Employee) 트랜잭션에 영향 주지 않고 본 트랜잭션만 rollback.
             // 관측은 로그에 의존 (향후 outbox 패턴 도입 여지).
-            log.warn("User 자동 생성 실패: employeeCode={}, error={}", event.employeeCode, ex.message, ex)
+            log.warn("User 자동 일괄 생성 실패: count={}, error={}", event.employees.size, ex.message, ex)
         }
+    }
+
+    /**
+     * 신규 사원 스냅샷 집합 → User 일괄 생성 (SF `upsertUser` insert 흐름 bulk 동등).
+     *
+     * 1. email(workEmail 우선) 부재 행 skip (SF cls:281). email 을 username/email 양쪽에 사용.
+     * 2. 동일 인바운드 배치 내 중복 username 은 첫 행만 채택 (배치 내부 멱등).
+     * 3. 이미 존재하는 username 의 User 는 skip — 기존 User 사번 집합을 단일 조회로 확보(멱등 bulk).
+     * 4. 통과 행을 `saveAll` 로 일괄 INSERT.
+     */
+    private fun provisionBatch(employees: List<EmployeeSnapshot>) {
+        if (employees.isEmpty()) return
+
+        // 기존 User username 집합을 단일 조회로 확보 — 행마다 findByUsername 하지 않는다 (SF bulk 동등).
+        val codes = employees.map { it.employeeCode }
+        val existingUsernames = userRepository.findByEmployeeCodeIn(codes)
+            .mapNotNull { it.username }
+            .toMutableSet()
+
+        val toSave = mutableListOf<User>()
+        employees.forEach { snapshot ->
+            val user = buildUser(snapshot, existingUsernames) ?: return@forEach
+            // 같은 인바운드 배치 안에서 동일 username 이 두 번 들어오면 두 번째부터 skip.
+            existingUsernames.add(user.username)
+            toSave += user
+        }
+
+        if (toSave.isNotEmpty()) {
+            userRepository.saveAll(toSave)
+            log.info("User 자동 일괄 생성 완료: created={}, requested={}", toSave.size, employees.size)
+        }
+    }
+
+    /**
+     * 스냅샷 1건 → 저장 대상 User. skip 대상(email 부재 / 이미 존재)이면 null.
+     *
+     * [reservedUsernames] 는 "DB 기존 + 본 배치에서 이미 채택" 한 username 합집합 (멱등 가드).
+     */
+    private fun buildUser(snapshot: EmployeeSnapshot, reservedUsernames: Set<String>): User? {
+        // SF 레거시 IF_REST_SAP_EmployeeMaster.cls:281 동등 — Email 부재 시 User 생성 skip.
+        val resolvedEmail = snapshot.workEmail?.takeIf { it.isNotBlank() }
+            ?: snapshot.email?.takeIf { it.isNotBlank() }
+            ?: run {
+                log.info("Email 부재 — User 생성 skip: employeeCode={}", snapshot.employeeCode)
+                return null
+            }
+
+        if (resolvedEmail in reservedUsernames) {
+            log.info("이미 존재하는 User — skip: username={}", resolvedEmail)
+            return null
+        }
+
+        val tempPassword = "${snapshot.employeeCode}${snapshot.birthDate?.takeLast(BIRTH_SUFFIX_LENGTH) ?: BIRTH_SUFFIX_FALLBACK}"
+        return User(
+            username = resolvedEmail,
+            email = resolvedEmail,
+            employeeCode = snapshot.employeeCode,
+            name = snapshot.name,
+            password = passwordEncoder.encode(tempPassword)!!,
+            passwordChangeRequired = true,
+            isActive = snapshot.appLoginActive ?: true,
+            profileId = profileIdFor(snapshot.role),
+            isSalesSupport = false,
+            costCenterCode = snapshot.costCenterCode,
+            isDeleted = false,
+        )
     }
 
     /**
@@ -111,8 +175,9 @@ class UserProvisioningService(
     }
 
     /**
-     * 공통 본문. `handleEmployeeCreated` (비동기) 와 `provisionForSeed` (동기) 양쪽이 위임한다.
+     * 시드 단건 동기 본문 ([provisionForSeed] 위임 전용).
      *
+     * SAP 인바운드 bulk 경로는 [provisionBatch] 가 별도 처리한다 (행마다 findByUsername 회피).
      * skip 조건: (a) email 부재, (b) 같은 username User 이미 존재.
      */
     private fun provision(

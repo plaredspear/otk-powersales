@@ -5,7 +5,8 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
-import com.otoki.powersales.user.event.EmployeeCreatedEvent
+import com.otoki.powersales.user.event.EmployeeSnapshot
+import com.otoki.powersales.user.event.EmployeesCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -37,9 +38,16 @@ class UserProvisioningServiceTest {
         savedUsers.clear()
         every { passwordEncoder.encode(any<CharSequence>()) } answers { firstArg<CharSequence>().toString() + ":encoded" }
         every { userRepository.findByUsername(any<String>()) } returns null
+        // bulk 경로 멱등 가드 — 기존 User 사번 집합 단일 조회 (기본: 없음)
+        every { userRepository.findByEmployeeCodeIn(any<Collection<String>>()) } returns emptyList()
         every { userRepository.save(any<User>()) } answers {
             val arg = firstArg<User>()
             savedUsers.add(arg)
+            arg
+        }
+        every { userRepository.saveAll(any<List<User>>()) } answers {
+            val arg = firstArg<List<User>>()
+            savedUsers.addAll(arg)
             arg
         }
         // 12종 Profile name → id stub
@@ -49,15 +57,20 @@ class UserProvisioningServiceTest {
         }
     }
 
+    /** 단건 스냅샷을 bulk 이벤트 1건으로 감싸 호출하는 헬퍼 (테스트 가독성). */
+    private fun handleOne(snapshot: EmployeeSnapshot) {
+        service.handleEmployeesCreated(EmployeesCreatedEvent(listOf(snapshot)))
+    }
+
     @Nested
-    @DisplayName("handleEmployeeCreated - EmployeeCreatedEvent 수신 시 User INSERT")
+    @DisplayName("handleEmployeesCreated - EmployeesCreatedEvent 수신 시 User 일괄 INSERT")
     inner class EventHandling {
 
         @Test
         @DisplayName("U1 정상 — workEmail 기준 User 생성 (employee_code / username / email / password 매칭)")
         fun handleEvent_createsUser() {
-            service.handleEmployeeCreated(
-                EmployeeCreatedEvent(
+            handleOne(
+                EmployeeSnapshot(
                     employeeCode = "100123",
                     name = "홍길동",
                     workEmail = "hong@otokims.co.kr",
@@ -68,7 +81,7 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            verify { userRepository.save(any<User>()) }
+            verify { userRepository.saveAll(any<List<User>>()) }
             assertThat(savedUsers).hasSize(1)
             val saved = savedUsers[0]
             assertThat(saved.employeeCode).isEqualTo("100123")
@@ -84,8 +97,8 @@ class UserProvisioningServiceTest {
         @Test
         @DisplayName("U2 workEmail null + email 있음 — email fallback 으로 생성")
         fun handleEvent_workEmailNull_fallsBackToEmail() {
-            service.handleEmployeeCreated(
-                EmployeeCreatedEvent(
+            handleOne(
+                EmployeeSnapshot(
                     employeeCode = "100124",
                     name = "김철수",
                     workEmail = null,
@@ -103,8 +116,8 @@ class UserProvisioningServiceTest {
         @Test
         @DisplayName("U3 workEmail / email 둘 다 부재 — User 생성 skip (SF cls:281 동등)")
         fun handleEvent_noEmail_skipsCreation() {
-            service.handleEmployeeCreated(
-                EmployeeCreatedEvent(
+            handleOne(
+                EmployeeSnapshot(
                     employeeCode = "100125",
                     name = "이영희",
                     workEmail = null,
@@ -115,14 +128,16 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            verify(exactly = 0) { userRepository.save(any<User>()) }
+            // 통과 행이 없으면 saveAll 호출 안 함
+            verify(exactly = 0) { userRepository.saveAll(any<List<User>>()) }
+            assertThat(savedUsers).isEmpty()
         }
 
         @Test
         @DisplayName("U4 birthDate 부재 — 임시 비밀번호 = 사번 + '0000'")
         fun handleEvent_noBirthDate_passwordFallback() {
-            service.handleEmployeeCreated(
-                EmployeeCreatedEvent(
+            handleOne(
+                EmployeeSnapshot(
                     employeeCode = "100126",
                     name = "박지민",
                     workEmail = "park@otoki.com",
@@ -140,8 +155,8 @@ class UserProvisioningServiceTest {
         @Test
         @DisplayName("U5 appLoginActive=false — User.isActive=false 동기")
         fun handleEvent_appLoginActiveFalse_userInactive() {
-            service.handleEmployeeCreated(
-                EmployeeCreatedEvent(
+            handleOne(
+                EmployeeSnapshot(
                     employeeCode = "100127",
                     name = "최민수",
                     workEmail = "choi@otoki.com",
@@ -157,16 +172,14 @@ class UserProvisioningServiceTest {
         }
 
         @Test
-        @DisplayName("U6 같은 username 의 User 가 이미 존재 — 멱등 skip")
+        @DisplayName("U6 이미 존재하는 username — 멱등 skip (findByEmployeeCodeIn bulk 조회)")
         fun handleEvent_existingUsername_skipsCreation() {
-            every { userRepository.findByUsername("dup@otoki.com") } returns User(
-                username = "dup@otoki.com",
-                employeeCode = "100128",
-                password = "x"
+            every { userRepository.findByEmployeeCodeIn(listOf("100128")) } returns listOf(
+                User(username = "dup@otoki.com", employeeCode = "100128", password = "x")
             )
 
-            service.handleEmployeeCreated(
-                EmployeeCreatedEvent(
+            handleOne(
+                EmployeeSnapshot(
                     employeeCode = "100128",
                     name = "정한별",
                     workEmail = "dup@otoki.com",
@@ -177,28 +190,98 @@ class UserProvisioningServiceTest {
                 )
             )
 
-            verify(exactly = 0) { userRepository.save(any<User>()) }
+            assertThat(savedUsers).isEmpty()
         }
 
         @Test
-        @DisplayName("U7 UserProvisioningService 내부 예외 — 예외가 호출자에게 전파되지 않음 (SF @future 동등)")
+        @DisplayName("U7 내부 예외 — 호출자에게 전파되지 않음 (SF @future 동등)")
         fun handleEvent_internalException_swallowed() {
-            every { userRepository.save(any<User>()) } throws RuntimeException("DB constraint")
+            every { userRepository.saveAll(any<List<User>>()) } throws RuntimeException("DB constraint")
 
-            service.handleEmployeeCreated(
-                EmployeeCreatedEvent(
-                    employeeCode = "100129",
-                    name = "에러테스트",
-                    workEmail = "err@otoki.com",
-                    email = null,
-                    birthDate = null,
-                    role = AppAuthority.WOMAN,
-                    appLoginActive = true,
+            service.handleEmployeesCreated(
+                EmployeesCreatedEvent(
+                    listOf(
+                        EmployeeSnapshot(
+                            employeeCode = "100129",
+                            name = "에러테스트",
+                            workEmail = "err@otoki.com",
+                            email = null,
+                            birthDate = null,
+                            role = AppAuthority.WOMAN,
+                            appLoginActive = true,
+                        )
+                    )
                 )
             )
 
             // 예외가 던져지지 않으면 통과 — Employee 측 트랜잭션 격리 보장
         }
+
+        @Test
+        @DisplayName("U8 여러 명 일괄 — 단일 saveAll 로 일괄 INSERT (레거시 bulk 동등)")
+        fun handleEvent_multipleEmployees_singleBulkInsert() {
+            service.handleEmployeesCreated(
+                EmployeesCreatedEvent(
+                    listOf(
+                        snapshot("200001", "a@otoki.com"),
+                        snapshot("200002", "b@otoki.com"),
+                        snapshot("200003", "c@otoki.com"),
+                    )
+                )
+            )
+
+            // 행마다 save 가 아니라 saveAll 1회로 처리
+            verify(exactly = 1) { userRepository.saveAll(any<List<User>>()) }
+            verify(exactly = 0) { userRepository.save(any<User>()) }
+            assertThat(savedUsers).hasSize(3)
+            assertThat(savedUsers.map { it.employeeCode }).containsExactly("200001", "200002", "200003")
+        }
+
+        @Test
+        @DisplayName("U9 배치 내 중복 username — 첫 행만 채택 (배치 내부 멱등)")
+        fun handleEvent_duplicateWithinBatch_keepsFirst() {
+            service.handleEmployeesCreated(
+                EmployeesCreatedEvent(
+                    listOf(
+                        snapshot("300001", "same@otoki.com"),
+                        snapshot("300002", "same@otoki.com"),
+                    )
+                )
+            )
+
+            assertThat(savedUsers).hasSize(1)
+            assertThat(savedUsers[0].employeeCode).isEqualTo("300001")
+        }
+
+        @Test
+        @DisplayName("U10 기존/신규 혼합 — 기존 username 제외하고 신규만 적재")
+        fun handleEvent_mixedExistingAndNew_savesOnlyNew() {
+            every { userRepository.findByEmployeeCodeIn(listOf("400001", "400002")) } returns listOf(
+                User(username = "old@otoki.com", employeeCode = "400001", password = "x")
+            )
+
+            service.handleEmployeesCreated(
+                EmployeesCreatedEvent(
+                    listOf(
+                        snapshot("400001", "old@otoki.com"),
+                        snapshot("400002", "fresh@otoki.com"),
+                    )
+                )
+            )
+
+            assertThat(savedUsers).hasSize(1)
+            assertThat(savedUsers[0].employeeCode).isEqualTo("400002")
+        }
+
+        private fun snapshot(code: String, email: String) = EmployeeSnapshot(
+            employeeCode = code,
+            name = "사원$code",
+            workEmail = email,
+            email = null,
+            birthDate = null,
+            role = AppAuthority.WOMAN,
+            appLoginActive = true,
+        )
     }
 
     @Nested
