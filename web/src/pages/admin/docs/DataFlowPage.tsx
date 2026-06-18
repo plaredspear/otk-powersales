@@ -56,14 +56,14 @@ const ATTENDANCE_FLOW = `flowchart LR
   subgraph BE[Backend]
     SCH[출근 서비스\\nschedule 도메인]
     DB[(PostgreSQL\\nattendance_log)]
-    ABATCH[근무일정 SAP Outbound 배치\\n매일 01:00 KST]
+    ABATCH[여사원일정 SAP Outbound 배치\\n매일 01:00 KST]
     DBATCH[진열 SAP Outbound 배치\\n매일 01:00 KST]
   end
   SAP[SAP / ERP]
 
   MOB -->|출근/진열 입력| SCH
   SCH --> DB
-  ABATCH -->|근무일정 집계| DB
+  ABATCH -->|여사원일정 집계| DB
   DBATCH -->|진열 마스터 집계| DB
   ABATCH -->|일괄 전송| SAP
   DBATCH -->|일괄 전송| SAP`;
