@@ -78,7 +78,7 @@ class AttendancePayloadFactoryTest {
     }
 
     private fun baseRow() = AttendanceSapPayloadRow(
-        attendanceLogId = 1L,
+        scheduleId = 1L,
         workingDate = today,
         employeeCode = "EMP001",
         accountExternalKey = "ACC001",

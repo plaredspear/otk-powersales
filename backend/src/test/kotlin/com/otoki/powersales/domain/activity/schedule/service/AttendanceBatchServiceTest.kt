@@ -82,7 +82,7 @@ class AttendanceBatchServiceTest {
     private fun rows(count: Int, today: LocalDate): List<AttendanceSapPayloadRow> =
         (1..count).map { idx ->
             AttendanceSapPayloadRow(
-                attendanceLogId = idx.toLong(),
+                scheduleId = idx.toLong(),
                 workingDate = today,
                 employeeCode = "EMP$idx",
                 accountExternalKey = "ACC$idx",
