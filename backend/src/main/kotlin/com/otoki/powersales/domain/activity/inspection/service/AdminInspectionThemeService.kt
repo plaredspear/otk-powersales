@@ -1,5 +1,7 @@
 package com.otoki.powersales.domain.activity.inspection.service
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.inspection.dto.admin.AdminThemeDetailResponse
 import com.otoki.powersales.domain.activity.inspection.dto.admin.AdminThemeListItem
 import com.otoki.powersales.domain.activity.inspection.dto.admin.AdminThemeListResponse
@@ -8,7 +10,9 @@ import com.otoki.powersales.domain.activity.inspection.dto.admin.CreateThemeRequ
 import com.otoki.powersales.domain.activity.inspection.dto.admin.ThemeMutationResponse
 import com.otoki.powersales.domain.activity.inspection.dto.admin.UpdateThemeRequest
 import com.otoki.powersales.domain.activity.inspection.entity.InspectionTheme
+import com.otoki.powersales.domain.activity.inspection.exception.InspectionThemeForbiddenException
 import com.otoki.powersales.domain.activity.inspection.repository.InspectionThemeRepository
+import com.otoki.powersales.domain.activity.inspection.repository.InspectionThemeRepositoryCustomImpl
 import com.otoki.powersales.domain.activity.inspection.repository.SiteActivityRepository
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
@@ -33,6 +37,13 @@ import org.springframework.transaction.annotation.Transactional
  * - `PublicFlag__c`: SF 에서 사실상 미사용 dead field. 신규는 레거시 기본값 정합으로 false 고정 (조회 필터엔 미사용)
  * - 부서/지점: before-insert 자동 주입 동일. 수정 시 OwnerId 변경 미지원 → 부서/지점 불변
  * - 삭제: soft delete (`isDeleted = true`)
+ *
+ * ## 지점 스코프 (레거시 SF 대비 정책 강화 — deviation)
+ * 레거시 SF `Theme__c` OWD = `Read` + ListView `filterScope=Everything` 으로 등록/관리 화면은 **전사 노출**이었다.
+ * 신규는 모바일 현장점검 경로([InspectionThemeRepositoryCustom.findActiveThemesByDate])와 동일하게 **본인 지점 스코프**를
+ * admin 목록/상세/엑셀에도 적용한다(`branch_code` 기준). 전사 권한자([DataScope.isAllBranches])는 무제한.
+ * 스코프 지점 = 본인 costCenterCode + 전사공통 화이트리스트([InspectionThemeRepositoryCustomImpl] COMMON_BRANCH_CODES)
+ * — 모바일 경로 정합. 진열사원 스케줄·여사원 현황 lookup 의 `applyBranchScope` 패턴과 동형.
  */
 @Service
 @Transactional(readOnly = true)
@@ -50,8 +61,14 @@ class AdminInspectionThemeService(
         private const val THEME_NUMBER_DIGITS = 8
     }
 
-    /** 테마 목록 — 키워드(테마번호/이름/부서) + 부서/지점코드 필터 + 페이징 + 하위 점검결과 수. */
+    /**
+     * 테마 목록 — 키워드(테마번호/이름/부서) + 부서/지점코드 필터 + 본인 지점 스코프 + 페이징 + 하위 점검결과 수.
+     *
+     * 지점 스코프: 전사 권한자([EffectiveBranchResult.All])는 무제한, 그 외는 본인 지점([Filtered]) 으로 제한.
+     * 권한 밖 지점 요청([NoAccess])은 빈 목록. (사원 lookup `applyBranchScope` 패턴과 동형)
+     */
     fun search(
+        scope: DataScope,
         keyword: String?,
         department: String?,
         branchCode: String?,
@@ -60,7 +77,16 @@ class AdminInspectionThemeService(
     ): AdminThemeListResponse {
         val pageSize = size.coerceIn(1, MAX_PAGE_SIZE)
         val pageable = PageRequest.of(page.coerceAtLeast(0), pageSize)
-        val result = inspectionThemeRepository.searchForAdmin(keyword, department, branchCode, pageable)
+
+        // 표시용 branchCode 입력은 사용자 필터(보안축 아님)로 그대로 두고, 보안 스코프는 scope 로 별도 산출.
+        val scopeBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> return AdminThemeListResponse(
+                content = emptyList(), page = page, size = pageSize, totalElements = 0, totalPages = 0
+            )
+        }
+        val result = inspectionThemeRepository.searchForAdmin(keyword, department, branchCode, scopeBranchCodes, pageable)
 
         val counts = inspectionThemeRepository.countSiteActivitiesByThemeIds(result.content.map { it.id })
         val items = result.content.map { theme ->
@@ -87,9 +113,10 @@ class AdminInspectionThemeService(
         )
     }
 
-    /** 테마 상세 + 하위 현장점검 결과 관련목록. */
-    fun getDetail(id: Long): AdminThemeDetailResponse {
+    /** 테마 상세 + 하위 현장점검 결과 관련목록. 지점 스코프 밖이면 403. */
+    fun getDetail(scope: DataScope, id: Long): AdminThemeDetailResponse {
         val theme = findActiveTheme(id)
+        requireThemeInScope(scope, theme)
         val activities = siteActivityRepository.findByInspectionThemeIdForAdmin(id).map { sa ->
             AdminThemeSiteActivityItem(
                 id = sa.id,
@@ -217,6 +244,26 @@ class AdminInspectionThemeService(
             lastModifiedBy = theme.lastModifiedBy,
         ).also { it.createdAt = theme.createdAt }
         inspectionThemeRepository.save(deleted)
+    }
+
+    /**
+     * 단건(엑셀 다운로드 등) 지점 스코프 가드 — 스코프 밖 테마면 [InspectionThemeForbiddenException] (403).
+     * themeId 추측으로 타 지점 테마의 하위 점검결과를 들여다보는 것을 차단. 컨트롤러에서 직접 호출.
+     */
+    fun validateThemeScope(scope: DataScope, id: Long) {
+        requireThemeInScope(scope, findActiveTheme(id))
+    }
+
+    /** 목록 스코프와 동일 기준(본인 지점 + 전사공통 화이트리스트)으로 단건 가시성 검증. */
+    private fun requireThemeInScope(scope: DataScope, theme: InspectionTheme) {
+        val scopeBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }
+        if (!InspectionThemeRepositoryCustomImpl.isBranchInScope(theme.branchCode, scopeBranchCodes)) {
+            throw InspectionThemeForbiddenException()
+        }
     }
 
     private fun findActiveTheme(id: Long): InspectionTheme {

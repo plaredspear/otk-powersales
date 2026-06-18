@@ -20659,6 +20659,13 @@
         "operationId" : "getThemes",
         "parameters" : [ {
           "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
           "name" : "keyword",
           "required" : false,
           "schema" : {
@@ -20767,6 +20774,13 @@
       "get" : {
         "operationId" : "getThemeDetail",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "path",
           "name" : "id",
           "required" : true,
@@ -20829,6 +20843,13 @@
       "get" : {
         "operationId" : "exportTheme",
         "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
           "in" : "path",
           "name" : "id",
           "required" : true,

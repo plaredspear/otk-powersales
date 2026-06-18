@@ -1,5 +1,7 @@
 package com.otoki.powersales.domain.activity.inspection.service
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.domain.activity.inspection.exception.InspectionThemeForbiddenException
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -16,6 +18,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+// isNull()/eq() 는 MockKMatcherScope 확장 — every{}/verify{} 블록 내에서 import 없이 사용
 import java.time.LocalDate
 import java.util.Optional
 import org.assertj.core.api.Assertions.assertThat
@@ -43,29 +46,32 @@ class AdminInspectionThemeServiceTest {
         uploadFileRepository = uploadFileRepository,
     )
 
-    private fun theme(id: Long = 1L, deleted: Boolean = false) = InspectionTheme(
+    private fun theme(id: Long = 1L, deleted: Boolean = false, branchCode: String = "B001") = InspectionTheme(
         id = id,
         name = "TM00000001",
         title = "1분기 점검",
         startDate = LocalDate.of(2026, 1, 1),
         endDate = LocalDate.of(2026, 3, 31),
         department = "영업1팀",
-        branchCode = "B001",
+        branchCode = branchCode,
         publicFlag = true,
         isDeleted = deleted,
     )
+
+    private val allBranchScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+    private val branchScope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
 
     @Nested
     @DisplayName("목록 검색")
     inner class Search {
         @Test
         fun `검색 결과를 목록 항목으로 변환하고 하위 점검결과 수를 채운다`() {
-            every { inspectionThemeRepository.searchForAdmin(any(), any(), any(), any()) } returns
+            every { inspectionThemeRepository.searchForAdmin(any(), any(), any(), any(), any()) } returns
                 PageImpl(listOf(theme()), Pageable.ofSize(20), 1)
             every { inspectionThemeRepository.countSiteActivitiesByThemeIds(listOf(1L)) } returns
                 mapOf(1L to 3L)
 
-            val response = service.search(keyword = null, department = null, branchCode = null, page = 0, size = 20)
+            val response = service.search(allBranchScope, keyword = null, department = null, branchCode = null, page = 0, size = 20)
 
             assertThat(response.totalElements).isEqualTo(1)
             assertThat(response.content[0].name).isEqualTo("TM00000001")
@@ -75,15 +81,91 @@ class AdminInspectionThemeServiceTest {
         @Test
         fun `부서·지점코드 필터를 repository 에 그대로 전달한다`() {
             every {
-                inspectionThemeRepository.searchForAdmin(any(), "영업1팀", "B001", any())
+                inspectionThemeRepository.searchForAdmin(any(), "영업1팀", "B001", any(), any())
             } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
             every { inspectionThemeRepository.countSiteActivitiesByThemeIds(emptyList()) } returns emptyMap()
 
-            service.search(keyword = null, department = "영업1팀", branchCode = "B001", page = 0, size = 20)
+            service.search(allBranchScope, keyword = null, department = "영업1팀", branchCode = "B001", page = 0, size = 20)
 
             verify {
-                inspectionThemeRepository.searchForAdmin(null, "영업1팀", "B001", any())
+                inspectionThemeRepository.searchForAdmin(null, "영업1팀", "B001", any(), any())
             }
+        }
+
+        @Test
+        fun `전사 권한자는 지점 스코프 코드를 null 로 전달한다`() {
+            every {
+                inspectionThemeRepository.searchForAdmin(any(), any(), any(), isNull(), any())
+            } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
+            every { inspectionThemeRepository.countSiteActivitiesByThemeIds(emptyList()) } returns emptyMap()
+
+            service.search(allBranchScope, keyword = null, department = null, branchCode = null, page = 0, size = 20)
+
+            verify { inspectionThemeRepository.searchForAdmin(any(), any(), any(), isNull(), any()) }
+        }
+
+        @Test
+        fun `지점 권한자는 본인 지점 스코프 코드를 전달한다`() {
+            every {
+                inspectionThemeRepository.searchForAdmin(any(), any(), any(), eq(listOf("B001")), any())
+            } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
+            every { inspectionThemeRepository.countSiteActivitiesByThemeIds(emptyList()) } returns emptyMap()
+
+            service.search(branchScope, keyword = null, department = null, branchCode = null, page = 0, size = 20)
+
+            verify { inspectionThemeRepository.searchForAdmin(any(), any(), any(), eq(listOf("B001")), any()) }
+        }
+
+        @Test
+        fun `지점 권한이 비어 있으면 쿼리 없이 빈 목록을 반환한다`() {
+            val emptyScope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+
+            val response = service.search(emptyScope, keyword = null, department = null, branchCode = null, page = 0, size = 20)
+
+            assertThat(response.totalElements).isEqualTo(0)
+            assertThat(response.content).isEmpty()
+            verify(exactly = 0) { inspectionThemeRepository.searchForAdmin(any(), any(), any(), any(), any()) }
+        }
+    }
+
+    @Nested
+    @DisplayName("상세 지점 스코프 가드")
+    inner class DetailScope {
+        @Test
+        fun `전사 권한자는 타 지점 테마 상세도 조회한다`() {
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "Z999"))
+            every { siteActivityRepository.findByInspectionThemeIdForAdmin(1L) } returns emptyList()
+
+            val response = service.getDetail(allBranchScope, 1L)
+
+            assertThat(response.id).isEqualTo(1L)
+        }
+
+        @Test
+        fun `지점 권한자가 스코프 밖 테마 상세를 조회하면 403`() {
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "Z999"))
+
+            assertThatThrownBy { service.getDetail(branchScope, 1L) }
+                .isInstanceOf(InspectionThemeForbiddenException::class.java)
+        }
+
+        @Test
+        fun `지점 권한자도 전사공통 화이트리스트 지점 테마는 조회한다`() {
+            // 3473 은 COMMON_BRANCH_CODES(전사공통) 소속
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "3473"))
+            every { siteActivityRepository.findByInspectionThemeIdForAdmin(1L) } returns emptyList()
+
+            val response = service.getDetail(branchScope, 1L)
+
+            assertThat(response.id).isEqualTo(1L)
+        }
+
+        @Test
+        fun `validateThemeScope 는 스코프 밖이면 403`() {
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "Z999"))
+
+            assertThatThrownBy { service.validateThemeScope(branchScope, 1L) }
+                .isInstanceOf(InspectionThemeForbiddenException::class.java)
         }
     }
 
