@@ -52,32 +52,47 @@ class OrderRequestRegisterSender(
         return outboxRepository.save(outbox)
     }
 
+    /**
+     * 레거시 `IF_Util.registOrder` (IF_Util.cls:154-235) 의 SAP SD03050 payload 와 동등하게 구성한다.
+     *
+     * payload 구조 (레거시 `REQUEST_List_header` / `REQUEST_List_item` 2-level wrapper, IF_Util.cls:80-92):
+     * ```
+     * {
+     *   "REQUEST_List_header": { RequestNumber, SAPAccountCode, OrderDate, DeliveryRequestDate },
+     *   "REQUEST_List_item":  [ { LineNumber, ProductCode, TotalQuantity, Unit } ]
+     * }
+     * ```
+     * header/item 모두 위 4필드만 송신한다 — `EmployeeCode` / `InterfaceType` / `TotalOrderAmount`
+     * (header), `OrderQuantity` / `TotalQuantity_Each` / `TotalQuantity_Box` (item) 는 레거시
+     * SAP payload 에 존재하지 않으므로 보내지 않는다 (inbound 적재 전용 필드).
+     */
     fun buildPayload(
         orderRequest: OrderRequest,
         account: Account,
-        employee: Employee,
+        @Suppress("UNUSED_PARAMETER") employee: Employee,
         products: List<OrderRequestProduct>,
     ): Map<String, Any?> {
-        // SAP 의 `SAPAccountCode` 는 SF 레거시 IF_REST_MOBILE_OrderRequestRegist 가 ExternalKey__c lookup 키로 사용 —
+        // SAP 의 `SAPAccountCode` 는 SF 레거시 IF_Util.registOrder 가 ExternalKey__c lookup 키로 사용 (IF_Util.cls:165) —
         // sfid 식별자 미수용. application sfid 사용 금지 정책 + SAP 인터페이스 정합 모두 만족하려면 externalKey 단일 키.
         val sapAccountCode = account.externalKey
             ?: error("Account ${account.id} 의 externalKey 가 비어있어 SAP 송신 불가 — SAP 는 ExternalKey 로 거래처 lookup")
         return mapOf(
-            "SAPAccountCode" to sapAccountCode,
-            "OrderDate" to orderRequest.orderDate.toLocalDate().format(YYYYMMDD),
-            "DeliveryRequestDate" to orderRequest.deliveryDate.format(YYYYMMDD),
-            "EmployeeCode" to employee.employeeCode,
-            "RequestNumber" to orderRequest.orderRequestNumber,
-            "InterfaceType" to "New",
-            "TotalOrderAmount" to orderRequest.totalAmount,
-            "reqItemList" to products.map { p ->
+            "REQUEST_List_header" to mapOf(
+                "RequestNumber" to orderRequest.orderRequestNumber,
+                "SAPAccountCode" to sapAccountCode,
+                // 레거시 `yyyyMMdd HHmm` (날짜·시각 사이 공백 1칸, IF_Util.cls:169) 동등.
+                "OrderDate" to orderRequest.orderDate.format(YYYYMMDD_HHMM),
+                "DeliveryRequestDate" to orderRequest.deliveryDate.format(YYYYMMDD),
+            ),
+            "REQUEST_List_item" to products.map { p ->
                 mapOf(
-                    "LineNumber" to p.lineNumber.toString(),
+                    "LineNumber" to p.lineNumber,
                     "ProductCode" to p.productCode,
-                    "OrderQuantity" to p.quantityBoxes.toPlainString(),
+                    // 레거시 SAP `TotalQuantity` = `DKRetail__TotalCount__c`, inbound 적재 시
+                    // 모바일 `OrderQuantity` 값이 들어감 (IF_REST_MOBILE_OrderRequestRegist.cls:101).
+                    // 신규에서 동일 의미 값은 quantityBoxes.
+                    "TotalQuantity" to p.quantityBoxes,
                     "Unit" to p.unit,
-                    "TotalQuantity_Each" to p.quantityPieces.toString(),
-                    "TotalQuantity_Box" to p.quantityBoxes.toPlainString(),
                 )
             },
         )
@@ -85,5 +100,6 @@ class OrderRequestRegisterSender(
 
     companion object {
         private val YYYYMMDD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+        private val YYYYMMDD_HHMM: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd HHmm")
     }
 }
