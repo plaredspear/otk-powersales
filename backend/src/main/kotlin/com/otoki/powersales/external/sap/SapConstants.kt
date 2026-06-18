@@ -50,6 +50,6 @@ object SapConstants {
     /** 주문 취소 동기 callout SAP service path (Spec #597). 레거시 `IF_REST_SAP_OrderChange` (SD03051). */
     const val SAP_INTERFACE_ORDER_REQUEST_CANCEL: String = "SD03051"
 
-    /** 전문행사조 마스터 hourly batch SAP service path. 레거시 `IF_REST_SAP_PPTMToSAP` 의 endpoint `/SD03300`. */
+    /** 전문행사조 마스터 daily batch SAP service path. 레거시 `IF_REST_SAP_PPTMToSAP` 의 endpoint `/SD03300`. */
     const val SAP_INTERFACE_PPT_MASTER: String = "SD03300"
 }

@@ -50,10 +50,10 @@ object SapOutboundCatalog {
         ),
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_PPT_MASTER,
-            koreanName = "전문행사조 마스터 hourly batch",
+            koreanName = "전문행사조 SAP 송신 배치",
             triggerType = OutboundTriggerType.BATCH,
             senderClass = "com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender",
-            description = "매시 정각 전문행사조 마스터 SAP 송신 (#765).",
+            description = "매일 정오 전문행사조 마스터 SAP 송신 (#765).",
         ),
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_ORDER_REQUEST_REGIST,

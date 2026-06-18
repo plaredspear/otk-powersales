@@ -321,8 +321,8 @@ app:
         cron: ${APP_SAP_OUTBOUND_DISPLAY_CRON:0 0 23 * * *}
         page-size: ${APP_SAP_OUTBOUND_DISPLAY_PAGE_SIZE:100}
       ppt-master:
-        # 매시간 34분 0초 KST (SF Scheduled Jobs `IF_REST_SAP_PPTMToSAP` 운영 실측 정합)
-        cron: ${APP_SAP_OUTBOUND_PPT_MASTER_CRON:0 34 * * * ?}
+        # 매일 정오 12:00 KST 1회 (SF CronTrigger "전문행사조 SAP 송신 배치" `0 0 12 ? * 1-7` Asia/Seoul 운영 실측 정합)
+        cron: ${APP_SAP_OUTBOUND_PPT_MASTER_CRON:0 0 12 * * *}
         page-size: ${APP_SAP_OUTBOUND_PPT_MASTER_PAGE_SIZE:100}
 
   # ---------------------------------------------------------------------------
