@@ -243,6 +243,9 @@ export async function fetchFemaleEmployees(params: FetchFemaleEmployeesParams): 
   return res.data.data;
 }
 
+/** 여사원 현황 엑셀 다운로드 경로 (GET, 목록과 동일 검색 파라미터). */
+export const FEMALE_EMPLOYEE_EXPORT_PATH = '/api/v1/admin/female-employees/export';
+
 export async function fetchEmployee(employeeId: number): Promise<EmployeeDetail> {
   const res = await client.get<ApiResponse<EmployeeDetail>>(`/api/v1/admin/employees/${employeeId}`);
   if (!res.data.success || !res.data.data) {

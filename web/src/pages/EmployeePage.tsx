@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
-import type { Employee } from '@/api/employee';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
+import { FEMALE_EMPLOYEE_EXPORT_PATH, type Employee } from '@/api/employee';
 import { usePermission } from '@/hooks/usePermission';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
@@ -59,6 +62,21 @@ export default function EmployeePage() {
     page,
     size: PAGE_SIZE,
   });
+
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+
+  // 현재 적용된 검색 조건(URL filters)을 그대로 전량 export (목록과 동일 가시 범위).
+  const handleExport = () => {
+    runExport(FEMALE_EMPLOYEE_EXPORT_PATH, '여사원현황.xlsx', {
+      params: {
+        ...(status ? { status } : {}),
+        ...(costCenterCode ? { costCenterCode } : {}),
+        ...(keyword ? { keyword } : {}),
+      },
+      totalCount: data?.totalElements,
+      maxRows: EXCEL_EXPORT_MAX_ROWS,
+    });
+  };
 
   const columns: ColumnsType<Employee> = [
     {
@@ -209,6 +227,9 @@ export default function EmployeePage() {
           onSearch={(val) => setFilter('keyword', val)}
         />
         <Space style={{ marginLeft: 'auto' }}>
+          <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
+            엑셀 다운로드
+          </Button>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
           {canWrite && (
             <Button type="primary" onClick={() => setRegisterOpen(true)}>

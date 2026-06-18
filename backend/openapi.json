@@ -26899,6 +26899,54 @@
         "tags" : [ "admin-female-employee-placement-check-controller" ]
       }
     },
+    "/api/v1/admin/female-employees/export" : {
+      "get" : {
+        "operationId" : "exportFemaleEmployees",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
     "/api/v1/admin/female-employees/placement-check" : {
       "get" : {
         "operationId" : "getPlacementCheck",

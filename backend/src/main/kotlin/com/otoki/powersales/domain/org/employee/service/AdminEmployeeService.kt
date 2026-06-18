@@ -7,17 +7,25 @@ import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailRespo
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional(readOnly = true)
 class AdminEmployeeService(
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    private val employeeListExcelExporter: EmployeeListExcelExporter
 ) {
+
+    companion object {
+        /** 검색결과 전체 엑셀 export 최대 건수 (초과분 잘라냄 — 타 도메인 export 정합). */
+        private const val EXPORT_MAX_ROWS = 50_000
+    }
 
     /**
      * 사원 목록 조회 — SF 레거시 화면별 지점 스코프 정합.
@@ -80,6 +88,47 @@ class AdminEmployeeService(
             totalElements = userPage.totalElements,
             totalPages = userPage.totalPages
         )
+    }
+
+    /**
+     * 사원 목록 엑셀 export — 목록 화면([getEmployees])과 동일한 지점 스코프/필터로 전량 추출.
+     *
+     * 페이징 없이 [EXPORT_MAX_ROWS] 단일 페이지로 조회 (초과분 잘라냄 — 타 도메인 export 정합).
+     * `applyBranchScope = true` + 권한 밖 지점 요청(NoAccess)은 쿼리 없이 헤더만 있는 빈 엑셀을 반환한다.
+     * 목록과 동일한 [EmployeeListItem] 매핑 후 [EmployeeListExcelExporter] 로 위임.
+     */
+    fun exportEmployees(
+        scope: DataScope,
+        status: String?,
+        costCenterCode: String?,
+        keyword: String?,
+        role: String?,
+        applyBranchScope: Boolean = false,
+    ): ExcelResult {
+        val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
+        val noAccess: Boolean
+        val branchFilter: List<String>? = if (applyBranchScope) {
+            when (val result = scope.effectiveBranchCodes(requestedBranch)) {
+                is EffectiveBranchResult.All -> { noAccess = false; null }
+                is EffectiveBranchResult.Filtered -> { noAccess = false; result.codes }
+                is EffectiveBranchResult.NoAccess -> { noAccess = true; null }
+            }
+        } else {
+            noAccess = false
+            requestedBranch?.let { listOf(it) }
+        }
+
+        val items = if (noAccess) {
+            emptyList()
+        } else {
+            val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("name").ascending())
+            val today = LocalDate.now()
+            employeeRepository.findEmployees(status, branchFilter, keyword, role, pageable)
+                .content.map { EmployeeListItem.from(it, today) }
+        }
+
+        val timestamp = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
+        return employeeListExcelExporter.export(items, "여사원현황_${timestamp}.xlsx")
     }
 
     /**

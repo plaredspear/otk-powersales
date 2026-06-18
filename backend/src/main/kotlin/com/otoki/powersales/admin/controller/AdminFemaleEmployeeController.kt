@@ -7,6 +7,7 @@ import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import org.springframework.http.ResponseEntity
@@ -52,5 +53,26 @@ class AdminFemaleEmployeeController(
             applyBranchScope = true,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 여사원 현황 엑셀 다운로드 — 목록과 동일한 지점 스코프/필터로 전량 추출 (최대 건수 제한 적용). */
+    @GetMapping("/export")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
+    fun exportFemaleEmployees(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) costCenterCode: String?,
+        @RequestParam(required = false) keyword: String?,
+    ): ResponseEntity<ByteArray> {
+        val result = adminEmployeeService.exportEmployees(
+            scope = scope,
+            status = status,
+            costCenterCode = costCenterCode,
+            keyword = keyword,
+            role = AppAuthority.WOMAN,
+            applyBranchScope = true,
+        )
+        return ExcelResponseUtils.build(result)
     }
 }
