@@ -193,7 +193,29 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
     description:
       '특정 날짜의 출근 페이지 1건 (page-size 행) 을 SAP 으로 송신. sap_outbound_log 적재됨.',
     triggerTag: 'BATCH',
-    renderForm: (state, update) => <BatchDateForm state={state} update={update} />,
+    renderForm: (state, update) => (
+      <BatchDateForm
+        state={state}
+        update={update}
+        criteria={
+          <>
+            근무형태가 <b>‘근무’</b> 인 여사원 일정 중, 아래 두 가지에 해당하는 행을 대상으로 합니다.
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+              <li>
+                <b>당일분</b> — 근무일이 기준일(targetDate)인 일정. 출퇴근 로그 연결 여부와 무관하게
+                모두 전송합니다.
+              </li>
+              <li>
+                <b>전일 보정분</b> — 근무일이 기준일의 <b>하루 전</b>이면서 <b>출퇴근 로그가 연결된</b>{' '}
+                일정. 전일 마감 후 확정된 2차 근무형태(WorkingCategory4)를 채워 재전송합니다.
+              </li>
+            </ul>
+            연차·대휴 등 ‘근무’ 가 아닌 일정은 제외됩니다. 사원·거래처 식별값은 일정 자신의 정보를
+            사용하며, 결과는 sap_outbound_log 에 적재됩니다.
+          </>
+        }
+      />
+    ),
     toBody: (state) => batchDateToBody(state),
   },
   {
@@ -249,12 +271,20 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
 function BatchDateForm({
   state,
   update,
+  criteria,
 }: {
   state: Record<string, unknown>;
   update: (patch: Record<string, unknown>) => void;
+  /** 조회 대상 선별 조건을 자연어로 설명하는 안내(옵셔널). 폼 상단에 노출된다. */
+  criteria?: ReactNode;
 }) {
   return (
     <Form layout="vertical">
+      {criteria && (
+        <Form.Item>
+          <Alert showIcon type="info" message="조회 조건" description={criteria} />
+        </Form.Item>
+      )}
       <Form.Item label="targetDate" required>
         <DatePicker
           style={{ width: '100%' }}
