@@ -12,7 +12,7 @@ import java.time.LocalDate
 /**
  * 전문행사조 마스터 SAP 송신 batch service (Spec #765).
  *
- * 매시간 cron 으로 발화되어 당월 활성 마스터를 SAP `/SD03300` 으로 송신한다.
+ * 매일 정오 cron 으로 발화되어 당월 활성 마스터를 SAP `/SD03300` 으로 송신한다.
  * - 송신 대상 조회 → page 분할 → payload build → sender 호출 → 결과 metadata 기록
  * - 레거시 `IF_REST_SAP_PPTMToSAP.cls:22-36` SOQL 의 실효 동작 1:1 정합 (당월 기간 조건만 적용 — Q1 노선 A)
  * - AttendanceBatchService 패턴 정합 (3-tier: batch / service / sender)
@@ -29,11 +29,11 @@ class PPTMasterSapBatchService(
 
     private val log = LoggerFactory.getLogger(PPTMasterSapBatchService::class.java)
 
-    fun runHourly(context: ScheduledJobRunContext? = null) {
-        runHourly(LocalDate.now(), context)
+    fun runDaily(context: ScheduledJobRunContext? = null) {
+        runDaily(LocalDate.now(), context)
     }
 
-    internal fun runHourly(today: LocalDate, context: ScheduledJobRunContext? = null) {
+    internal fun runDaily(today: LocalDate, context: ScheduledJobRunContext? = null) {
         val monthFirstDay = today.withDayOfMonth(1)
         val monthLastDay = monthFirstDay.plusMonths(1).minusDays(1)
 

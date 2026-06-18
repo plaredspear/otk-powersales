@@ -36,8 +36,8 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = PPTMasterSapOutboundBatch.JOB_NAME,
-            cron = "\${app.sap.outbound.ppt-master.cron:0 34 * * * ?}",
-            description = "전문행사조 마스터 SAP outbound 전송 (기본 매시 34분) — legacy IF_REST_SAP_PPTMToSAP 동등",
+            cron = "\${app.sap.outbound.ppt-master.cron:0 0 12 * * *}",
+            description = "전문행사조 마스터 SAP outbound 전송 (기본 매일 정오 12시) — legacy IF_REST_SAP_PPTMToSAP 운영 cron 정합",
         ),
         Entry(
             jobName = DisplayMasterLastMonthRevenueBatch.JOB_NAME,

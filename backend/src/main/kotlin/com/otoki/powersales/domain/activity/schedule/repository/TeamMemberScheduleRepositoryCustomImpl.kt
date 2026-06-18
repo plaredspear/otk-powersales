@@ -469,9 +469,10 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 )
             )
             .from(teamMemberSchedule)
-            // 식별자 출처 = schedule (레거시 SOQL 의 EmployeeId__r/AccountId__r 와 동일 차원). sfid 매칭.
-            .join(employee).on(employee.sfid.eq(teamMemberSchedule.employeeSfid))
-            .join(account).on(account.sfid.eq(teamMemberSchedule.accountSfid))
+            // 식별자 출처 = schedule (레거시 SOQL 의 EmployeeId__r/AccountId__r 와 동일 차원).
+            // 신규 내부 FK(employee_id/account_id) 관계 기반 JOIN — sfid 매칭에서 전환.
+            .join(teamMemberSchedule.employee, employee)
+            .join(teamMemberSchedule.account, account)
             // commute_log 는 WorkingCategory4 전용 → LEFT JOIN (today 분은 commute_log 없어도 탈락 금지).
             .leftJoin(attendanceLog).on(teamMemberSchedule.attendanceLog.id.eq(attendanceLog.id))
             .where(todayBranch.or(yesterdayBranch))
