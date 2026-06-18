@@ -38,7 +38,7 @@ class ProductExpirationRepositoryCustomImpl(
             .selectFrom(productExpiration)
             .leftJoin(productExpiration.employee, employee).fetchJoin()
             .where(where)
-            .orderBy(productExpiration.expirationDate.asc())
+            .orderBy(productExpiration.createdAt.desc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
