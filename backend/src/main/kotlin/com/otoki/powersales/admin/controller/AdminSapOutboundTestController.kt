@@ -113,6 +113,12 @@ class AdminSapOutboundTestController(
     ): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
         ResponseEntity.ok(ApiResponse.success(service.sendAttendance(req)))
 
+    /** 조회 없이 빈 배열을 실제 SAP 으로 송신 (outbound 인터페이스 연결성 확인 전용). */
+    @PostMapping("/attendance/send-empty")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun sendAttendanceEmpty(): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.sendAttendanceEmpty()))
+
     // ===== DisplayMaster =====
 
     @PostMapping("/display-master/preview")

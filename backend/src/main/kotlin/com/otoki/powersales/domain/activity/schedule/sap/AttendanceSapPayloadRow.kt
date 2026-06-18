@@ -10,10 +10,13 @@ import java.time.LocalDate
  * 일반 출근(REGULAR) SAP 송신 페이로드 빌드용 row projection.
  *
  * 레거시 `Batch_TeamMemberSchedule.cls:43-62` SOQL 결과 셋과 동등.
- * `attendance_log` + `team_member_schedule` + `employee` + `account` join 결과.
+ * 식별자(EmployeeCode/SAPAccountCode/WorkingCategory1~3)는 schedule 측에서 직접 뽑고,
+ * WorkingCategory4(=secondWorkType)만 commute_log(attendance_log) 경유다 — 레거시 SOQL 의 출처 매핑과 일치.
+ * `team_member_schedule` + `employee`(schedule.employee_sfid) + `account`(schedule.account_sfid)
+ *   + `attendance_log` LEFT JOIN(어제 보정 row 의 secondWorkType 용) 결과.
  */
 data class AttendanceSapPayloadRow(
-    val attendanceLogId: Long,
+    val scheduleId: Long,
     val workingDate: LocalDate,
     val employeeCode: String,
     val accountExternalKey: String?,

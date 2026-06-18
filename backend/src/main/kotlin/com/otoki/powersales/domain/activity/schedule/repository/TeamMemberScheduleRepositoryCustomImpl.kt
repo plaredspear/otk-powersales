@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.activity.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.domain.activity.schedule.enums.AttendanceType
 import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayloadRow
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
@@ -444,11 +443,22 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         limit: Int,
         offset: Int
     ): List<AttendanceSapPayloadRow> {
+        // 레거시 `Batch_TeamMemberSchedule.cls:30-34` WHERE 절 동등 복원.
+        //   (a) WorkingType='근무' AND WorkingDate=오늘                         — commute_log 유무 무관 전송
+        //   (b) CommuteLogId != null AND WorkingType='근무' AND WorkingDate=어제 — commute_log 연결분만 재전송
+        // 식별자(EmployeeCode/SAPAccountCode)는 레거시처럼 schedule 자신의 EmployeeId/AccountId(=*_sfid) 에서 뽑는다.
+        // commute_log(=attendance_log) 는 WorkingCategory4(secondWorkType, 어제 보정) 전용이므로 LEFT JOIN.
+        val todayBranch = teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK)
+            .and(teamMemberSchedule.workingDate.eq(today))
+        val yesterdayBranch = teamMemberSchedule.commuteLogSfid.isNotNull
+            .and(teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK))
+            .and(teamMemberSchedule.workingDate.eq(yesterday))
+
         return queryFactory
             .select(
                 Projections.constructor(
                     AttendanceSapPayloadRow::class.java,
-                    attendanceLog.id,
+                    teamMemberSchedule.id,
                     teamMemberSchedule.workingDate,
                     employee.employeeCode,
                     account.externalKey,
@@ -459,16 +469,13 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 )
             )
             .from(teamMemberSchedule)
-            // Spec #789 — sfid 양방향 매칭 (#587 P1-B §1.4) → id-FK 단방향 JOIN (#672 audit 정합). attendance_log_id 는 V103 신설, V176 backfill.
-            .join(attendanceLog).on(teamMemberSchedule.attendanceLog.id.eq(attendanceLog.id))
-            .join(employee).on(employee.id.eq(attendanceLog.employeeId))
-            .join(account).on(account.id.eq(attendanceLog.accountId))
-            .where(
-                attendanceLog.attendanceType.eq(AttendanceType.REGULAR),
-                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
-                teamMemberSchedule.workingDate.`in`(today, yesterday)
-            )
-            .orderBy(attendanceLog.id.asc())
+            // 식별자 출처 = schedule (레거시 SOQL 의 EmployeeId__r/AccountId__r 와 동일 차원). sfid 매칭.
+            .join(employee).on(employee.sfid.eq(teamMemberSchedule.employeeSfid))
+            .join(account).on(account.sfid.eq(teamMemberSchedule.accountSfid))
+            // commute_log 는 WorkingCategory4 전용 → LEFT JOIN (today 분은 commute_log 없어도 탈락 금지).
+            .leftJoin(attendanceLog).on(teamMemberSchedule.attendanceLog.id.eq(attendanceLog.id))
+            .where(todayBranch.or(yesterdayBranch))
+            .orderBy(teamMemberSchedule.id.asc())
             .offset(offset.toLong())
             .limit(limit.toLong())
             .fetch()

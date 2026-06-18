@@ -118,4 +118,29 @@ class AdminSapOutboundTestServiceTest {
         )
         verify(exactly = 0) { orderRequestDetailSapSender.fetchDetail(any()) }
     }
+
+    @Test
+    @DisplayName("sendAttendanceEmpty: 조회 없이 sender.sendEmptyForConnectivityCheck 호출 → success=true")
+    fun sendAttendanceEmpty_successPath() {
+        every { attendanceSapSender.sendEmptyForConnectivityCheck() } returns true
+
+        val res = service.sendAttendanceEmpty()
+
+        assertThat(res.success).isTrue
+        assertThat(res.interfaceId).isEqualTo(SapConstants.SAP_INTERFACE_ATTENDANCE)
+        verify(exactly = 1) { attendanceSapSender.sendEmptyForConnectivityCheck() }
+        // 조회를 거치지 않으므로 payload factory 는 호출되지 않는다.
+        verify(exactly = 0) { attendancePayloadFactory.build(any(), any()) }
+    }
+
+    @Test
+    @DisplayName("sendAttendanceEmpty: sender 가 false 반환 → success=false")
+    fun sendAttendanceEmpty_failurePath() {
+        every { attendanceSapSender.sendEmptyForConnectivityCheck() } returns false
+
+        val res = service.sendAttendanceEmpty()
+
+        assertThat(res.success).isFalse
+        assertThat(res.message).contains("실패")
+    }
 }

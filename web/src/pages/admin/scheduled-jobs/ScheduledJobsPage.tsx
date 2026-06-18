@@ -48,7 +48,7 @@ const STATUS_OPTIONS: { label: string; value: ScheduledJobStatus }[] = [
 /** 잡 이름 → 탭에 표시할 10자 이내 한글 라벨. 미매핑 잡은 원본 jobName 으로 폴백. */
 const JOB_LABELS: Record<string, string> = {
   'agreement-word-cycle-batch': '약관 동의 리셋',
-  'attendance-sap-batch': '근태 SAP전송',
+  'attendance-sap-batch': '근무일정 SAP전송',
   'display-master-sap-batch': '진열 SAP전송',
   'display-master-last-month-revenue-batch': '진열 전월매출',
   'mfeis-this-month-revenue-batch': '일정 전월매출',
@@ -90,7 +90,7 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
   'agreement-word-cycle-batch':
     'GPS 위치정보 동의문구의 6개월 재동의 주기를 처리합니다. 신규 약관이 도래하면 기존 약관을 비활성화하고 신규 약관을 활성화하며(다음 활성일을 6개월 뒤로 갱신), 약관이 교체된 경우 전 사원의 동의 플래그를 일괄 해제합니다. 그 결과 사원들은 다음 로그인 시 GPS 재동의 화면을 다시 거치게 됩니다.',
   'attendance-sap-batch':
-    '전날~오늘 기준의 정규 근태(여사원 일정) 데이터를 페이지 단위로 조회하여 SAP로 전송합니다. 신규 시스템에 쌓인 근태 실적을 SAP에 동기화하기 위한 아웃바운드 연동 배치로, 페이지별 성공/실패 건수를 집계해 실행 이력에 기록합니다.',
+    '근무형태가 “근무”인 여사원 근무일정을 페이지 단위로 조회하여 SAP로 전송합니다. 기준일(오늘) 일정은 출퇴근 로그 유무와 무관하게 전송하고, 전일 일정은 출퇴근 로그가 연결된 건에 한해 2차 근무형태를 채워 재전송합니다. 신규 시스템에 쌓인 근무일정 실적을 SAP에 동기화하는 아웃바운드 연동 배치로, 페이지별 성공/실패 건수를 집계해 실행 이력에 기록합니다.',
   'display-master-sap-batch':
     '유효 상태의 진열(디스플레이) 작업 일정 마스터를 페이지 단위로 조회하여 사원코드·거래처키·작업유형 등을 SAP로 전송합니다. 진열 업무 실적을 SAP에 반영하기 위한 아웃바운드 연동 배치이며, 전송 성공/실패 페이지 수를 집계해 이력에 남깁니다.',
   'display-master-last-month-revenue-batch':

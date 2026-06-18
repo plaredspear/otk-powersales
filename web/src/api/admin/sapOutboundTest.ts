@@ -62,3 +62,17 @@ export function sendSapOutbound<Req extends object>(
 ): Promise<SapOutboundTestSendResponse> {
   return call(kind, 'send', body);
 }
+
+/**
+ * 근무일정 SAP전송 outbound 인터페이스(SD03130)에 조회 없이 빈 배열을 실제 SAP 으로 송신한다.
+ * outbound API 의 연결/응답 정상 여부 확인 전용.
+ */
+export async function sendAttendanceEmpty(): Promise<SapOutboundTestSendResponse> {
+  const res = await client.post<ApiResponse<SapOutboundTestSendResponse>>(
+    '/api/v1/admin/sap-integration/outbound/test/attendance/send-empty',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '빈 배열 송신 호출에 실패했습니다');
+  }
+  return res.data.data;
+}
