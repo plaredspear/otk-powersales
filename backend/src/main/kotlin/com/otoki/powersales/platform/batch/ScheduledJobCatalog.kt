@@ -27,7 +27,7 @@ object ScheduledJobCatalog {
         Entry(
             jobName = AttendanceSapOutboundBatch.JOB_NAME,
             cron = "\${app.sap.outbound.attendance.cron:0 0 1 * * *}",
-            description = "근무일정 SAP outbound 전송 (기본 매일 01시)",
+            description = "여사원일정 스케줄 SAP outbound 전송 (기본 매일 01시)",
         ),
         Entry(
             jobName = DisplayMasterSapOutboundBatch.JOB_NAME,

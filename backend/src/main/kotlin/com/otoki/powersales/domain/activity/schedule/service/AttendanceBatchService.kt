@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDate
 
 /**
- * 근무일정 SAP전송 배치 (SD03130) 의 일배치 실행 서비스.
+ * 여사원일정 스케줄 SAP전송 배치 (SD03130) 의 일배치 실행 서비스.
  *
  * 레거시 `Batch_TeamMemberSchedule.cls` (스케줄러 = 레거시 운영 잡 "여사원일정 스케줄") 동등.
  *

@@ -188,10 +188,10 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
   {
     kind: 'attendance',
     interfaceId: 'SD03130',
-    title: '근무일정 SAP전송 배치 (TeamMemberSchedule)',
-    tabLabel: '근무일정 SAP전송',
+    title: '여사원일정 스케줄 SAP전송 배치 (TeamMemberSchedule)',
+    tabLabel: '여사원일정 스케줄 SAP전송',
     description:
-      '특정 날짜의 근무일정 페이지 1건 (page-size 행) 을 SAP 으로 송신. sap_outbound_log 적재됨.',
+      '특정 날짜의 여사원일정 페이지 1건 (page-size 행) 을 SAP 으로 송신. sap_outbound_log 적재됨.',
     triggerTag: 'BATCH',
     renderForm: (state, update) => (
       <BatchDateForm

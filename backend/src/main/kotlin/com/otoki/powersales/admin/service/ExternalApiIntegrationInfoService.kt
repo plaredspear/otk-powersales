@@ -121,7 +121,7 @@ class ExternalApiIntegrationInfoService(
                 SapConstants.SAP_INTERFACE_ORDER_REQUEST_REGIST,
                 "Outbox 패턴 — SapOutboxWorker 가 비동기로 실제 송신.",
             ),
-            sap("attendance", "근무일정 SAP전송", SapConstants.SAP_INTERFACE_ATTENDANCE, "페이지 단위 송신."),
+            sap("attendance", "여사원일정 스케줄 SAP전송", SapConstants.SAP_INTERFACE_ATTENDANCE, "페이지 단위 송신."),
             sap("display-master", "진열 마스터", SapConstants.SAP_INTERFACE_DISPLAY_MASTER, "페이지 단위 송신."),
             sap("ppt-master", "전문행사조 마스터", SapConstants.SAP_INTERFACE_PPT_MASTER, "월 단위 첫 페이지 송신."),
         )
