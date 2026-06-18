@@ -61,12 +61,14 @@ class OrderRequestRegisterSenderPayloadTest {
     }
 
     @Test
-    @DisplayName("item — REQUEST_List_item[LineNumber, ProductCode, TotalQuantity(=quantityBoxes), Unit]")
+    @DisplayName("item — REQUEST_List_item[LineNumber, ProductCode, TotalQuantity(=주문단위수량), Unit]")
     fun items() {
         val order = orderRequest()
         val products = listOf(
-            product(id = 101, lineNumber = BigDecimal.valueOf(10L), productCode = "P001", boxes = BigDecimal("3"), unit = "BOX", orderRequest = order),
-            product(id = 102, lineNumber = BigDecimal.valueOf(20L), productCode = "P002", boxes = BigDecimal("5"), unit = "EA", orderRequest = order),
+            // BOX 주문 → TotalQuantity = quantityBoxes (레거시 OrderQuantity 동등)
+            product(id = 101, lineNumber = BigDecimal.valueOf(10L), productCode = "P001", boxes = BigDecimal("3"), pieces = BigDecimal("30"), unit = "BOX", orderRequest = order),
+            // EA 주문 → TotalQuantity = quantityPieces (quantityBoxes=0 이므로 박스수량 송신 시 0 누락 — 레거시는 낱개수량 송신)
+            product(id = 102, lineNumber = BigDecimal.valueOf(20L), productCode = "P002", boxes = BigDecimal.ZERO, pieces = BigDecimal("5"), unit = "EA", orderRequest = order),
         )
 
         @Suppress("UNCHECKED_CAST")
@@ -78,15 +80,28 @@ class OrderRequestRegisterSenderPayloadTest {
         assertThat(items[0]["ProductCode"]).isEqualTo("P001")
         assertThat(items[0]["TotalQuantity"]).isEqualTo(BigDecimal("3"))
         assertThat(items[0]["Unit"]).isEqualTo("BOX")
+        // EA 주문은 낱개수량(quantityPieces)을 송신 — 박스수량(0)이 아님
         assertThat(items[1]["TotalQuantity"]).isEqualTo(BigDecimal("5"))
         assertThat(items[1]["Unit"]).isEqualTo("EA")
+    }
+
+    @Test
+    @DisplayName("item — EA 주문(quantityBoxes=0) 은 TotalQuantity 에 낱개수량을 송신한다 (0 누락 방지)")
+    fun eaUnitSendsPieces() {
+        val order = orderRequest()
+        val products = listOf(
+            product(id = 201, lineNumber = BigDecimal.ONE, productCode = "P010", boxes = BigDecimal.ZERO, pieces = BigDecimal("7"), unit = "EA", orderRequest = order),
+        )
+        @Suppress("UNCHECKED_CAST")
+        val items = sender.buildPayload(order, order.account!!, order.employee!!, products)["REQUEST_List_item"] as List<Map<String, Any?>>
+        assertThat(items[0]["TotalQuantity"]).isEqualTo(BigDecimal("7"))
     }
 
     @Test
     @DisplayName("item — 레거시 미존재 필드(OrderQuantity/TotalQuantity_Each/TotalQuantity_Box)는 송신하지 않는다")
     fun itemOmitsNonLegacyFields() {
         val order = orderRequest()
-        val products = listOf(product(id = 101, lineNumber = BigDecimal.ONE, productCode = "P001", boxes = BigDecimal("1"), unit = "EA", orderRequest = order))
+        val products = listOf(product(id = 101, lineNumber = BigDecimal.ONE, productCode = "P001", boxes = BigDecimal.ZERO, pieces = BigDecimal("1"), unit = "EA", orderRequest = order))
         @Suppress("UNCHECKED_CAST")
         val items = sender.buildPayload(order, order.account!!, order.employee!!, products)["REQUEST_List_item"] as List<Map<String, Any?>>
         assertThat(items[0]).doesNotContainKeys("OrderQuantity", "TotalQuantity_Each", "TotalQuantity_Box")
@@ -117,6 +132,7 @@ class OrderRequestRegisterSenderPayloadTest {
         lineNumber: BigDecimal,
         productCode: String,
         boxes: BigDecimal,
+        pieces: BigDecimal,
         unit: String,
         orderRequest: OrderRequest,
     ) = OrderRequestProduct(
@@ -124,6 +140,7 @@ class OrderRequestRegisterSenderPayloadTest {
         lineNumber = lineNumber,
         productCode = productCode,
         quantityBoxes = boxes,
+        quantityPieces = pieces,
         unit = unit,
         orderRequest = orderRequest,
     )
