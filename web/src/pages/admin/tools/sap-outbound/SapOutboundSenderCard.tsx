@@ -92,7 +92,7 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
     }
   };
 
-  // 근태(일반 출근) 카드 전용 — 조회 없이 빈 배열을 실제 SAP 으로 송신해 outbound 연결성만 확인.
+  // 근무일정 SAP전송 카드 전용 — 조회 없이 빈 배열을 실제 SAP 으로 송신해 outbound 연결성만 확인.
   const onSendEmpty = async () => {
     setLoadingEmptySend(true);
     setSendResult(null);

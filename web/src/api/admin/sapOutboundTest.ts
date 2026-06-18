@@ -64,7 +64,7 @@ export function sendSapOutbound<Req extends object>(
 }
 
 /**
- * 근태(일반 출근) outbound 인터페이스(SD03130)에 조회 없이 빈 배열을 실제 SAP 으로 송신한다.
+ * 근무일정 SAP전송 outbound 인터페이스(SD03130)에 조회 없이 빈 배열을 실제 SAP 으로 송신한다.
  * outbound API 의 연결/응답 정상 여부 확인 전용.
  */
 export async function sendAttendanceEmpty(): Promise<SapOutboundTestSendResponse> {

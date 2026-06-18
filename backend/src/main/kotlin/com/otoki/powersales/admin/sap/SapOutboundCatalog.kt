@@ -36,10 +36,10 @@ object SapOutboundCatalog {
     val ITEMS: List<SapOutboundCatalogItem> = listOf(
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_ATTENDANCE,
-            koreanName = "일반 출근 일일 batch",
+            koreanName = "근무일정 SAP전송 배치",
             triggerType = OutboundTriggerType.BATCH,
             senderClass = "com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender",
-            description = "매일 새벽 attendance 페이지 단위 SAP REST Adapter POST.",
+            description = "매일 새벽 근무일정(TeamMemberSchedule) 페이지 단위 SAP REST Adapter POST.",
         ),
         SapOutboundCatalogItem(
             interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER,
