@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -44,6 +46,7 @@ class AdminInspectionThemeController(
     @GetMapping
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
     fun getThemes(
+        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) department: String?,
         @RequestParam(required = false) branchCode: String?,
@@ -51,16 +54,17 @@ class AdminInspectionThemeController(
         @RequestParam(required = false, defaultValue = "20") size: Int,
     ): ResponseEntity<ApiResponse<AdminThemeListResponse>> {
         return ResponseEntity.ok(
-            ApiResponse.success(themeService.search(keyword, department, branchCode, page, size))
+            ApiResponse.success(themeService.search(scope, keyword, department, branchCode, page, size))
         )
     }
 
     @GetMapping("/{id}")
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
     fun getThemeDetail(
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long,
     ): ResponseEntity<ApiResponse<AdminThemeDetailResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(themeService.getDetail(id)))
+        return ResponseEntity.ok(ApiResponse.success(themeService.getDetail(scope, id)))
     }
 
     @PostMapping
@@ -95,8 +99,11 @@ class AdminInspectionThemeController(
     @GetMapping("/{id}/export")
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
     fun exportTheme(
+        @CurrentDataScope scope: DataScope,
         @PathVariable id: Long,
     ): ResponseEntity<ByteArray> {
+        // 목록과 동일 지점 스코프 가드 — 스코프 밖 테마 export 차단(403)
+        themeService.validateThemeScope(scope, id)
         val result = excelExporter.export(id)
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(

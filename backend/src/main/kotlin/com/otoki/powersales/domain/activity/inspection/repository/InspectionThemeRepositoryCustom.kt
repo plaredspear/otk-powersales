@@ -13,11 +13,18 @@ interface InspectionThemeRepositoryCustom {
      */
     fun findActiveThemesByDate(targetDate: LocalDate, costCenterCode: String?): List<InspectionTheme>
 
-    /** admin 테마 목록 — 키워드(테마번호/이름/부서) + 부서/지점코드 필터 + 시작일 내림차순 페이징. */
+    /**
+     * admin 테마 목록 — 키워드(테마번호/이름/부서) + 부서/지점코드 필터 + 시작일 내림차순 페이징.
+     *
+     * @param scopeBranchCodes 본인 지점 스코프 코드 목록. `null` 이면 전사(스코프 미적용).
+     *   `null` 이 아니면 전사공통 화이트리스트([InspectionThemeRepositoryCustomImpl] COMMON_BRANCH_CODES)
+     *   와 합쳐 `branch_code IN (...)` 로 제한한다(모바일 [findActiveThemesByDate] 정합).
+     */
     fun searchForAdmin(
         keyword: String?,
         department: String?,
         branchCode: String?,
+        scopeBranchCodes: List<String>?,
         pageable: Pageable,
     ): Page<InspectionTheme>
 

@@ -36,6 +36,7 @@ class InspectionThemeRepositoryCustomImpl(
         keyword: String?,
         department: String?,
         branchCode: String?,
+        scopeBranchCodes: List<String>?,
         pageable: Pageable,
     ): Page<InspectionTheme> {
         val where = BooleanBuilder()
@@ -47,12 +48,17 @@ class InspectionThemeRepositoryCustomImpl(
                     .or(inspectionTheme.name.containsIgnoreCase(keyword))
             )
         }
-        // 부서 부분일치 / 지점코드 정확일치 — trigger 자동주입 값 기준 필터.
+        // 부서 부분일치 / 지점코드 정확일치 — trigger 자동주입 값 기준 사용자 표시 필터.
         if (!department.isNullOrBlank()) {
             where.and(inspectionTheme.department.containsIgnoreCase(department))
         }
         if (!branchCode.isNullOrBlank()) {
             where.and(inspectionTheme.branchCode.eq(branchCode))
+        }
+        // 본인 지점 보안 스코프 — null 이면 전사. 비-null 이면 전사공통 화이트리스트와 합쳐 제한
+        // (모바일 findActiveThemesByDate 정합). 표시용 branchCode 와 AND — 권한 밖 지점 입력은 자연히 0건.
+        if (scopeBranchCodes != null) {
+            where.and(inspectionTheme.branchCode.`in`(COMMON_BRANCH_CODES + scopeBranchCodes))
         }
 
         val content = queryFactory
@@ -114,10 +120,21 @@ class InspectionThemeRepositoryCustomImpl(
          * 의미를 추적할 마스터가 레거시 소스에 없는 잔재이나, 신규 branch_code 가 동일 SF
          * Theme__c.BranchCode__c 에서 마이그레이션되므로 값은 그대로 유효하다.
          */
-        private val COMMON_BRANCH_CODES = listOf(
+        val COMMON_BRANCH_CODES = listOf(
             "3473", "4888", "4889", "5642", "5643", "5644", "5645", "5646", "5647",
             "5648", "5649", "5074", "5351", "5066", "1837", "3227", "3228", "3229",
             "3230", "3231", "3232", "3233", "3234", "3235", "3236", "3472"
         )
+
+        /**
+         * 단건(상세/엑셀) 지점 스코프 판정 — theme 의 branch_code 가 본인 지점 스코프 또는 전사공통
+         * 화이트리스트에 속하는지. 목록 [searchForAdmin] 의 `branch_code IN (...)` 와 동일 기준.
+         * @param scopeBranchCodes 본인 지점 스코프. `null` 이면 전사(항상 true).
+         */
+        fun isBranchInScope(branchCode: String?, scopeBranchCodes: List<String>?): Boolean {
+            if (scopeBranchCodes == null) return true
+            if (branchCode == null) return false
+            return branchCode in COMMON_BRANCH_CODES || branchCode in scopeBranchCodes
+        }
     }
 }
