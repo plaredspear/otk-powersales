@@ -8,7 +8,8 @@ import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertComman
 import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepository
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertFailedRow
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertResult
-import com.otoki.powersales.user.event.EmployeeCreatedEvent
+import com.otoki.powersales.user.event.EmployeeSnapshot
+import com.otoki.powersales.user.event.EmployeesCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -36,12 +37,12 @@ import java.time.format.DateTimeParseException
  * 4. 외부 호출: [EmployeeRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 트랜잭션 롤백하지 않음.
  *    INSERT 시 `Employee.employeeInfo` 가 cascade=ALL 로 자동 영속화됨.
  *
- * ## User 행 자동 생성 (별도 트랜잭션)
- * Employee 신규 INSERT 시 [EmployeeCreatedEvent] 를 발행한다. User 행 생성은
- * [com.otoki.powersales.user.service.UserProvisioningService.handleEmployeeCreated]
- * 가 `AFTER_COMMIT + @Async` 로 수신해 별도 트랜잭션에서 수행한다.
- * SF 레거시 `IF_REST_SAP_EmployeeMaster.upsertUser(@future)` 동등 — User 생성 실패는
- * Employee 트랜잭션에 영향을 주지 않는다.
+ * ## User 행 자동 생성 (별도 트랜잭션, bulk)
+ * Employee 신규 INSERT 집합을 [EmployeesCreatedEvent] **1건**으로 발행한다. User 행 생성은
+ * [com.otoki.powersales.user.service.UserProvisioningService.handleEmployeesCreated]
+ * 가 `AFTER_COMMIT + @Async` 로 수신해 별도 트랜잭션에서 **일괄** 수행한다.
+ * SF 레거시 `IF_REST_SAP_EmployeeMaster.upsertUser(@future)` 동등 (N명을 future 1회 호출로 bulk 처리) —
+ * User 생성 실패는 Employee 트랜잭션에 영향을 주지 않는다.
  *
  * cross-domain 의존: [SystemCodeMasterRepository] (status code map lookup) — Q3 옵션 1 정합 (lookup 용도 read-only).
  * 회사 코드 / status group code 는 도메인 자체 상수로 박는다 (`sap.*` 패키지 의존 0건 정합).
@@ -122,7 +123,7 @@ class EmployeeUpsertService(
         }
 
         // Employee.cost_center_code derived 캐시 동기화 — 기존 user 행에 대해서만 즉시 갱신.
-        // 신규 사원의 User 행은 아래 EmployeeCreatedEvent 흐름에서 새로 생성된다.
+        // 신규 사원의 User 행은 아래 EmployeesCreatedEvent 흐름에서 새로 생성된다.
         val existingCodes = toSave.mapNotNull { it.employeeCode }.filter { it.isNotBlank() } - newEmployees.mapNotNull { it.employeeCode }.toSet()
         if (existingCodes.isNotEmpty()) {
             val users = userRepository.findByEmployeeCodeIn(existingCodes)
@@ -133,19 +134,25 @@ class EmployeeUpsertService(
             }
         }
 
-        // SF IF_REST_SAP_EmployeeMaster.upsertUser(@future) 동등 — Employee 신규 행에 한해 이벤트 발행.
-        // 실제 User INSERT 는 UserProvisioningService 가 AFTER_COMMIT + @Async 로 별도 트랜잭션 처리.
-        newEmployees.forEach { employee ->
+        // SF IF_REST_SAP_EmployeeMaster.upsertUser(@future) 동등 — 신규 Employee 집합을 1건의 이벤트로 발행.
+        // 레거시가 사원 N명을 future 1회 호출(bulk)로 처리하는 것과 동일하게, 신규도 1개의 비동기 작업으로
+        // 일괄 처리한다 (사원 1명당 이벤트 발행 시의 @Async 작업 폭증 회피).
+        // 실제 User INSERT 는 UserProvisioningService 가 AFTER_COMMIT + @Async 로 별도 트랜잭션에서 일괄 처리.
+        if (newEmployees.isNotEmpty()) {
             eventPublisher.publishEvent(
-                EmployeeCreatedEvent(
-                    employeeCode = employee.employeeCode ?: error("신규 Employee 의 사번이 null - 비정상 (사번 필수 검증 후 생성)"),
-                    name = employee.name,
-                    workEmail = employee.workEmail,
-                    email = employee.email,
-                    birthDate = employee.birthDate,
-                    role = employee.role,
-                    appLoginActive = employee.appLoginActive,
-                    costCenterCode = employee.costCenterCode,
+                EmployeesCreatedEvent(
+                    newEmployees.map { employee ->
+                        EmployeeSnapshot(
+                            employeeCode = employee.employeeCode ?: error("신규 Employee 의 사번이 null - 비정상 (사번 필수 검증 후 생성)"),
+                            name = employee.name,
+                            workEmail = employee.workEmail,
+                            email = employee.email,
+                            birthDate = employee.birthDate,
+                            role = employee.role,
+                            appLoginActive = employee.appLoginActive,
+                            costCenterCode = employee.costCenterCode,
+                        )
+                    }
                 )
             )
         }

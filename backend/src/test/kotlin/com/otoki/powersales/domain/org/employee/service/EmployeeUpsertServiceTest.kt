@@ -8,7 +8,7 @@ import com.otoki.powersales.domain.org.employee.enums.Gender
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.employee.service.EmployeeUpsertService
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertCommand
-import com.otoki.powersales.user.event.EmployeeCreatedEvent
+import com.otoki.powersales.user.event.EmployeesCreatedEvent
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.CapturingSlot
 import io.mockk.every
@@ -82,8 +82,8 @@ class EmployeeUpsertServiceTest {
         return slot
     }
 
-    private fun stubEventCapture(): CapturingSlot<EmployeeCreatedEvent> {
-        val slot = slot<EmployeeCreatedEvent>()
+    private fun stubEventCapture(): CapturingSlot<EmployeesCreatedEvent> {
+        val slot = slot<EmployeesCreatedEvent>()
         every { eventPublisher.publishEvent(capture(slot)) } answers { }
         return slot
     }
@@ -448,11 +448,11 @@ class EmployeeUpsertServiceTest {
     }
 
     @Nested
-    @DisplayName("Employee 신규 생성 시 EmployeeCreatedEvent 발행 (SF @future 동등)")
+    @DisplayName("Employee 신규 생성 시 EmployeesCreatedEvent 발행 (SF @future bulk 동등)")
     inner class EventPublishing {
 
         @Test
-        @DisplayName("E1 신규 Employee 인입 - EmployeeCreatedEvent 1건 발행 (Employee 스냅샷 전달)")
+        @DisplayName("E1 신규 Employee 인입 - EmployeesCreatedEvent 1건 발행 (스냅샷 1개 포함)")
         fun upsert_newEmployee_publishesEvent() {
             every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns emptyList()
             every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
@@ -472,11 +472,13 @@ class EmployeeUpsertServiceTest {
 
             assertThat(result.successCount).isEqualTo(1)
             val event = eventSlot.captured
-            assertThat(event.employeeCode).isEqualTo("100123")
-            assertThat(event.name).isEqualTo("홍길동")
-            assertThat(event.workEmail).isEqualTo("hong@otokims.co.kr")
-            assertThat(event.birthDate).isEqualTo("19900315")
-            assertThat(event.appLoginActive).isTrue()
+            assertThat(event.employees).hasSize(1)
+            val snapshot = event.employees.single()
+            assertThat(snapshot.employeeCode).isEqualTo("100123")
+            assertThat(snapshot.name).isEqualTo("홍길동")
+            assertThat(snapshot.workEmail).isEqualTo("hong@otokims.co.kr")
+            assertThat(snapshot.birthDate).isEqualTo("19900315")
+            assertThat(snapshot.appLoginActive).isTrue()
         }
 
         @Test
@@ -489,11 +491,11 @@ class EmployeeUpsertServiceTest {
 
             service.upsert(listOf(command(employeeCode = "100123", employeeName = "갱신")))
 
-            verify(exactly = 0) { eventPublisher.publishEvent(any<EmployeeCreatedEvent>()) }
+            verify(exactly = 0) { eventPublisher.publishEvent(any<EmployeesCreatedEvent>()) }
         }
 
         @Test
-        @DisplayName("E3 신규 + 기존 혼합 - 신규 행에만 이벤트 발행")
+        @DisplayName("E3 신규 + 기존 혼합 - 이벤트 1건에 신규 스냅샷만 포함")
         fun upsert_partialNew_publishesOnlyForNew() {
             val existing = Employee(employeeCode = "100100", name = "기존")
             every { employeeRepository.findByEmployeeCodeIn(listOf("100100", "100200")) } returns listOf(existing)
@@ -508,11 +510,11 @@ class EmployeeUpsertServiceTest {
                 )
             )
 
-            assertThat(eventSlot.captured.employeeCode).isEqualTo("100200")
+            assertThat(eventSlot.captured.employees.map { it.employeeCode }).containsExactly("100200")
         }
 
         @Test
-        @DisplayName("E4 LockingFlag Y - 이벤트의 appLoginActive=false 로 전달")
+        @DisplayName("E4 LockingFlag Y - 스냅샷의 appLoginActive=false 로 전달")
         fun upsert_lockingFlagY_eventCarriesAppLoginActiveFalse() {
             every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns emptyList()
             every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
@@ -530,7 +532,7 @@ class EmployeeUpsertServiceTest {
                 )
             )
 
-            assertThat(eventSlot.captured.appLoginActive).isFalse()
+            assertThat(eventSlot.captured.employees.single().appLoginActive).isFalse()
         }
 
         @Test
@@ -542,7 +544,28 @@ class EmployeeUpsertServiceTest {
 
             service.upsert(listOf(command(employeeCode = "100123", employeeName = "변경시도")))
 
-            verify(exactly = 0) { eventPublisher.publishEvent(any<EmployeeCreatedEvent>()) }
+            verify(exactly = 0) { eventPublisher.publishEvent(any<EmployeesCreatedEvent>()) }
+        }
+
+        @Test
+        @DisplayName("E6 신규 여러 명 - 단일 이벤트에 신규 스냅샷 전부 포함 (bulk)")
+        fun upsert_multipleNew_singleEventAllSnapshots() {
+            every { employeeRepository.findByEmployeeCodeIn(listOf("100301", "100302", "100303")) } returns emptyList()
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            val eventSlot = stubEventCapture()
+
+            service.upsert(
+                listOf(
+                    command(employeeCode = "100301", employeeName = "신규1", workEmail = "n1@otoki.com"),
+                    command(employeeCode = "100302", employeeName = "신규2", workEmail = "n2@otoki.com"),
+                    command(employeeCode = "100303", employeeName = "신규3", workEmail = "n3@otoki.com")
+                )
+            )
+
+            verify(exactly = 1) { eventPublisher.publishEvent(any<EmployeesCreatedEvent>()) }
+            assertThat(eventSlot.captured.employees.map { it.employeeCode })
+                .containsExactly("100301", "100302", "100303")
         }
     }
 }
