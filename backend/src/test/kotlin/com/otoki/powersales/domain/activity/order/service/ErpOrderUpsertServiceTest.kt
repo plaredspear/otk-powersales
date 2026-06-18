@@ -36,6 +36,7 @@ class ErpOrderUpsertServiceTest {
         orderQuantity: String? = "100",
         unit: String? = "EA",
         defaultReason: String? = null,
+        lineItemStatus: String? = null,
         shippingScheduleTime: String? = null,
         shippingCompleteTime: String? = null,
         shippingVehicle: String? = null
@@ -50,7 +51,7 @@ class ErpOrderUpsertServiceTest {
         confirmQuantity = null,
         confirmUnit = null,
         defaultReason = defaultReason,
-        lineItemStatus = null,
+        lineItemStatus = lineItemStatus,
         shippingDriverName = null,
         shippingVehicle = shippingVehicle,
         shippingDriverPhone = null,
@@ -214,6 +215,56 @@ class ErpOrderUpsertServiceTest {
             assertThat(saved.deliveryStatus).isEqualTo(ErpOrderUpsertService.STATUS_PENDING)
             assertThat(saved.shippingScheduleTime).isNull()
             assertThat(saved.shippingCompleteTime).isNull()
+        }
+
+        @Test
+        @DisplayName("orderStatus 미설정 - LineItemStatus 만 채워지고 시간/결품 모두 비어있으면 null (레거시 status=='' 동등)")
+        fun upsert_deliveryStatusUnsetWhenOnlyLineItemStatus() {
+            // 레거시 cls:156 대기 조건은 LineItemStatus 공백도 요구. LineItemStatus 가 채워지면 대기 if 불성립 →
+            // 어떤 if 도 안 잡혀 status='' → OrderStatus__c 미설정. 신규 deliveryStatus 도 null 유지여야 한다.
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
+            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
+            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            mockHeaderSave()
+            val captor = slot<List<ErpOrderProduct>>()
+            every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
+
+            service.upsert(
+                listOf(
+                    command(
+                        lines = listOf(
+                            line(lineItemStatus = "주문확인", shippingScheduleTime = "000000", shippingCompleteTime = "000000")
+                        )
+                    )
+                )
+            )
+
+            assertThat(captor.captured.single().deliveryStatus).isNull()
+        }
+
+        @Test
+        @DisplayName("orderStatus = 결품 - 배송완료 + 결품 조건 동시 충족 시 결품이 덮어씀 (레거시 last-match-wins)")
+        fun upsert_deliveryStatusOutOfStockWinsOverDelivered() {
+            // 레거시 cls:158(배송완료) → cls:159(결품) 순서로 평가되어, CompleteTime 이 채워졌어도
+            // DefaultReason 설정 + ScheduleTime 미설정이면 마지막 결품 if 가 배송완료를 덮어쓴다.
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
+            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
+            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            mockHeaderSave()
+            val captor = slot<List<ErpOrderProduct>>()
+            every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
+
+            service.upsert(
+                listOf(
+                    command(
+                        lines = listOf(
+                            line(defaultReason = "입고지연", shippingScheduleTime = "000000", shippingCompleteTime = "170000")
+                        )
+                    )
+                )
+            )
+
+            assertThat(captor.captured.single().deliveryStatus).isEqualTo(ErpOrderUpsertService.STATUS_OUT_OF_STOCK)
         }
 
         @Test

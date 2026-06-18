@@ -8,8 +8,11 @@ import com.otoki.powersales.platform.auth.sharing.service.PermissionSetEvaluator
 import com.otoki.powersales.user.repository.UserRepository
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.external.sap.inbound.dto.appointment.AppointmentDetail
+import com.otoki.powersales.external.sap.inbound.dto.appointment.AppointmentRequestItem
 import com.otoki.powersales.external.sap.inbound.dto.sales.FailureItem
 import com.otoki.powersales.external.sap.inbound.service.SapAppointmentService
+import org.assertj.core.api.Assertions.assertThat
+import io.mockk.slot
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -85,13 +88,16 @@ class SapAppointmentControllerTest {
         @Test
         @DisplayName("성공 - 200, RESULT_CODE 200, success_count 1")
         fun insert_success() {
-            every { sapAppointmentService.insert(any()) } returns                 AppointmentDetail(successCount = 1, failureCount = 0, failures = emptyList())
+            val captured = slot<List<AppointmentRequestItem>>()
+            every { sapAppointmentService.insert(capture(captured)) } returns                 AppointmentDetail(successCount = 1, failureCount = 0, failures = emptyList())
 
+            // 레거시 SAP 송신 키는 `Employeecode`(소문자 c). 이 키가 DTO `employeeCode` 로 바인딩되는지 검증
+            // (대문자 `EmployeeCode` 로 두면 Jackson case-sensitive 바인딩 실패 → null → 전 행 실패).
             val payload = """
                 {
                   "reqItemList": [
                     {
-                      "EmployeeCode": "100123",
+                      "Employeecode": "100123",
                       "AfterOrgCode": "11110",
                       "AfterOrgName": "서울지점",
                       "JobCode": "J001",
@@ -113,6 +119,8 @@ class SapAppointmentControllerTest {
                 .andExpect(jsonPath("$.RESULT_MSG").value("OK"))
                 .andExpect(jsonPath("$.RESULT_DETAIL.success_count").value(1))
                 .andExpect(jsonPath("$.RESULT_DETAIL.failure_count").value(0))
+
+            assertThat(captured.captured.single().employeeCode).isEqualTo("100123")
         }
 
         @Test
@@ -127,8 +135,8 @@ class SapAppointmentControllerTest {
             val payload = """
                 {
                   "reqItemList": [
-                    { "EmployeeCode": "100123", "JobCode": "J001", "AppointDate": "20260401" },
-                    { "EmployeeCode": "100124", "AppointDate": "20260401" }
+                    { "Employeecode": "100123", "JobCode": "J001", "AppointDate": "20260401" },
+                    { "Employeecode": "100124", "AppointDate": "20260401" }
                   ]
                 }
             """.trimIndent()

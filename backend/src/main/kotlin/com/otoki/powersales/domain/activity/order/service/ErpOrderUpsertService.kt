@@ -161,7 +161,8 @@ class ErpOrderUpsertService(
         entity.confirmUnit = line.confirmUnit
         entity.defaultReason = line.defaultReason
         entity.lineItemStatus = line.lineItemStatus
-        entity.deliveryStatus = computeDeliveryStatus(line)
+        // 레거시 `if(status != '') OrderStatus__c = status;` 동등 — null(=상태 미산출)이면 기존 값 유지.
+        computeDeliveryStatus(line)?.let { entity.deliveryStatus = it }
         entity.shippingDriverName = line.shippingDriverName
         if (!line.shippingVehicle.isNullOrBlank()) {
             entity.shippingVehicle = line.shippingVehicle
@@ -203,19 +204,41 @@ class ErpOrderUpsertService(
         return raw
     }
 
-    private fun computeDeliveryStatus(line: ErpOrderLineCommand): String {
-        val schedule = line.shippingScheduleTime?.trim().orEmpty()
-        val complete = line.shippingCompleteTime?.trim().orEmpty()
-        val defaultReason = line.defaultReason?.trim().orEmpty()
-        val scheduleEffective = schedule.isNotEmpty() && schedule != EMPTY_TIME
-        val completeEffective = complete.isNotEmpty() && complete != EMPTY_TIME
+    /**
+     * 라인 배송 상태 산출 — 레거시 `IF_REST_SAP_ClientOrderReceive.cls:146,156-160` 동등.
+     *
+     * 레거시는 4개 if 를 **독립적으로 순차 평가**(when 의 first-match 가 아니라 last-match-wins)하고,
+     * 마지막에 `if(status != '') product.OrderStatus__c = status;` 로 **공백이면 적재 자체를 건너뛴다**.
+     * 따라서:
+     *  - 대기 조건은 `DefaultReason 공백 AND LineItemStatus 공백 AND ScheduleTime 미설정` 세 가지를 모두
+     *    요구한다 (LineItemStatus 조건 포함). 이 조건을 빠뜨리면 LineItemStatus 만 채워진 라인이 잘못 '대기'로 분류된다.
+     *  - 배송완료 평가는 결품 평가보다 **앞**에 있어, `DefaultReason 채워짐 + CompleteTime 채워짐 + ScheduleTime 미설정`
+     *    같은 라인은 결품(마지막 if)이 배송완료를 덮어쓴다 (last-match-wins).
+     *  - 어느 if 도 성립하지 않으면 `null` 을 반환하고, 호출부는 `deliveryStatus` 를 건드리지 않는다
+     *    (레거시 `status == ''` → OrderStatus__c 미설정 동등).
+     */
+    private fun computeDeliveryStatus(line: ErpOrderLineCommand): String? {
+        val scheduleBlank = line.shippingScheduleTime.isBlankOrEmptyTime()
+        val completeBlank = line.shippingCompleteTime.isBlankOrEmptyTime()
+        val defaultReasonBlank = line.defaultReason.isNullOrBlank()
+        val lineItemStatusBlank = line.lineItemStatus.isNullOrBlank()
 
-        return when {
-            defaultReason.isNotEmpty() && !scheduleEffective -> STATUS_OUT_OF_STOCK
-            completeEffective -> STATUS_DELIVERED
-            scheduleEffective && !completeEffective -> STATUS_SHIPPING
-            else -> STATUS_PENDING
-        }
+        var status: String? = null
+        // cls:156 — 대기: DefaultReason 공백 AND LineItemStatus 공백 AND ScheduleTime 미설정
+        if (defaultReasonBlank && lineItemStatusBlank && scheduleBlank) status = STATUS_PENDING
+        // cls:157 — 배송중: ScheduleTime 설정 AND CompleteTime 미설정
+        if (!scheduleBlank && completeBlank) status = STATUS_SHIPPING
+        // cls:158 — 배송 완료: CompleteTime 설정
+        if (!completeBlank) status = STATUS_DELIVERED
+        // cls:159 — 결품: DefaultReason 설정 AND ScheduleTime 미설정 (마지막 평가 — 배송완료를 덮어씀)
+        if (!defaultReasonBlank && scheduleBlank) status = STATUS_OUT_OF_STOCK
+        return status
+    }
+
+    /** `null`/공백/`'000000'`(미설정 마커) 을 모두 "미설정"으로 본다 (레거시 `== '000000'` 동등). */
+    private fun String?.isBlankOrEmptyTime(): Boolean {
+        val raw = this?.trim().orEmpty()
+        return raw.isEmpty() || raw == EMPTY_TIME
     }
 
     companion object {
