@@ -185,8 +185,6 @@ export default function ProductExpirationPage() {
       title: '유통기한',
       dataIndex: 'expirationDate',
       width: 110,
-      sorter: true,
-      defaultSortOrder: 'ascend',
     },
     {
       title: '알림일',
@@ -197,7 +195,6 @@ export default function ProductExpirationPage() {
       title: 'D-day',
       dataIndex: 'dDay',
       width: 80,
-      sorter: true,
       render: (dDay: number) => {
         if (dDay > 0) return <Tag>{dDay}일</Tag>;
         if (dDay === 0) return <Tag color="error">D-DAY</Tag>;
