@@ -12,6 +12,7 @@ import {
 import dayjs from 'dayjs';
 import {
   previewSapOutbound,
+  sendAttendanceEmpty,
   sendSapOutbound,
   type SapOutboundTestPreviewResponse,
   type SapOutboundTestSendResponse,
@@ -38,6 +39,8 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [loadingSend, setLoadingSend] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [emptyConfirmOpen, setEmptyConfirmOpen] = useState(false);
+  const [loadingEmptySend, setLoadingEmptySend] = useState(false);
 
   const updateForm = (patch: Record<string, unknown>) => {
     setForm((prev) => ({ ...prev, ...patch }));
@@ -89,6 +92,26 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
     }
   };
 
+  // 근태(일반 출근) 카드 전용 — 조회 없이 빈 배열을 실제 SAP 으로 송신해 outbound 연결성만 확인.
+  const onSendEmpty = async () => {
+    setLoadingEmptySend(true);
+    setSendResult(null);
+    try {
+      const res = await sendAttendanceEmpty();
+      setSendResult(res);
+      if (res.success) {
+        message.success(res.message);
+      } else {
+        message.error(res.message);
+      }
+    } catch (e) {
+      message.error(`빈 배열 송신 실패: ${(e as Error).message}`);
+    } finally {
+      setLoadingEmptySend(false);
+      setEmptyConfirmOpen(false);
+    }
+  };
+
   return (
     <div>
       <Card
@@ -103,6 +126,15 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
             <Button onClick={onPreview} loading={loadingPreview}>
               미리보기
             </Button>
+            {config.kind === 'attendance' && (
+              <Button
+                danger
+                onClick={() => setEmptyConfirmOpen(true)}
+                loading={loadingEmptySend}
+              >
+                빈 배열 실송신
+              </Button>
+            )}
             <Button
               type="primary"
               danger
@@ -221,6 +253,26 @@ export default function SapOutboundSenderCard({ config }: { config: SenderCardCo
         </Paragraph>
         <Paragraph type="warning">
           {TRIGGER_SEND_EFFECT[config.triggerTag]} SAP 측 운영 데이터에도 영향을 줄 수 있습니다.
+        </Paragraph>
+      </Modal>
+
+      <Modal
+        open={emptyConfirmOpen}
+        title="빈 배열 실송신 확인 (연결성 확인)"
+        okText="빈 배열 송신"
+        okButtonProps={{ danger: true }}
+        cancelText="취소"
+        onCancel={() => setEmptyConfirmOpen(false)}
+        onOk={onSendEmpty}
+        confirmLoading={loadingEmptySend}
+      >
+        <Paragraph>
+          조회 없이 <Text strong>{'{ "request": [] }'}</Text> 를 현재 환경의{' '}
+          <Text strong>SAP REST Adapter</Text> 로 실제 전송합니다. outbound 인터페이스(
+          <code>SD03130</code>)의 연결 및 응답 정상 여부를 확인하는 용도입니다.
+        </Paragraph>
+        <Paragraph type="secondary">
+          전송 행이 없으므로 SAP 측 운영 데이터는 변경되지 않으며, 결과는 sap_outbound_log 에 적재됩니다.
         </Paragraph>
       </Modal>
     </div>

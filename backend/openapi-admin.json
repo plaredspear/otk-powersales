@@ -24989,6 +24989,24 @@
         "tags" : [ "admin-sap-outbound-test-controller" ]
       }
     },
+    "/api/v1/admin/sap-integration/outbound/test/attendance/send-empty" : {
+      "post" : {
+        "operationId" : "sendAttendanceEmpty",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestSendResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
     "/api/v1/admin/sap-integration/outbound/test/display-master/preview" : {
       "post" : {
         "operationId" : "previewDisplayMaster",

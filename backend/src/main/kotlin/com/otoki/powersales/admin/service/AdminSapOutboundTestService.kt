@@ -275,6 +275,21 @@ class AdminSapOutboundTestService(
         )
     }
 
+    /**
+     * 조회 없이 빈 배열(`{ "request": [] }`) 을 실제 SAP 으로 송신한다 (outbound 연결성 확인 전용).
+     * 정상 batch 의 빈 배열 SKIP 가드를 우회하여 SAP REST Adapter 응답 정상 여부만 검증한다.
+     */
+    fun sendAttendanceEmpty(): SapOutboundTestSendResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_ATTENDANCE
+        val ok = attendanceSapSender.sendEmptyForConnectivityCheck()
+        return SapOutboundTestSendResponse(
+            interfaceId = interfaceId,
+            success = ok,
+            message = if (ok) "빈 배열 송신 성공 (연결성 확인) — sap_outbound_log 확인"
+            else "빈 배열 송신 실패 — sap_outbound_log 확인",
+        )
+    }
+
     private fun buildAttendancePayload(req: BatchDateTestRequest):
             Pair<AttendanceSapPayload, String> {
         val today = req.targetDate
