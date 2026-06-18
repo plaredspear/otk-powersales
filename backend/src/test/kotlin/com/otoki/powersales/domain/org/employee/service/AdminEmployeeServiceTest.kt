@@ -12,9 +12,12 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import io.mockk.verify
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import java.io.ByteArrayInputStream
 
 @DisplayName("AdminEmployeeService 테스트")
 class AdminEmployeeServiceTest {
@@ -23,6 +26,7 @@ class AdminEmployeeServiceTest {
 
     private val adminEmployeeService = AdminEmployeeService(
         employeeRepository,
+        EmployeeListExcelExporter(),
     )
 
     @Nested
@@ -254,6 +258,72 @@ class AdminEmployeeServiceTest {
             assertThatThrownBy { adminEmployeeService.getEmployee(999L) }
                 .isInstanceOf(EmployeeNotFoundException::class.java)
                 .hasMessageContaining("999")
+        }
+    }
+
+    @Nested
+    @DisplayName("exportEmployees - 여사원 현황 엑셀 다운로드")
+    inner class ExportEmployeesTests {
+
+        @Test
+        @DisplayName("성공 - 검색결과 전량을 헤더 20컬럼 + 데이터 행으로 출력 + 파일명 패턴")
+        fun export_success() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val employees = listOf(
+                createEmployee(employeeCode = "10000001", name = "홍길동"),
+                createEmployee(employeeCode = "10000002", name = "김영희"),
+            )
+            val page = PageImpl(employees, PageRequest.of(0, 50_000, Sort.by("name").ascending()), 2L)
+            every { employeeRepository.findEmployees(null, null, null, "여사원", any()) } returns page
+
+            val result = adminEmployeeService.exportEmployees(
+                scope, null, null, null, "여사원", applyBranchScope = true
+            )
+
+            assertThat(result.filename).startsWith("여사원현황_").endsWith(".xlsx")
+            val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
+            val sheet = workbook.getSheetAt(0)
+            assertThat(sheet.sheetName).isEqualTo("여사원현황")
+            assertThat(sheet.getRow(0).getCell(0).stringCellValue).isEqualTo("사번")
+            assertThat(sheet.getRow(0).getCell(19).stringCellValue).isEqualTo("앱활성")
+            assertThat(sheet.getRow(1).getCell(0).stringCellValue).isEqualTo("10000001")
+            assertThat(sheet.getRow(1).getCell(1).stringCellValue).isEqualTo("홍길동")
+            assertThat(sheet.getRow(2).getCell(0).stringCellValue).isEqualTo("10000002")
+            workbook.close()
+        }
+
+        @Test
+        @DisplayName("성공 - 필터 파라미터가 repository 에 전달 + 50,000 페이지로 전량 조회")
+        fun export_filterAndPageSize() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val page = PageImpl(emptyList<Employee>(), PageRequest.of(0, 50_000, Sort.by("name").ascending()), 0L)
+            every { employeeRepository.findEmployees("재직", null, "홍", "여사원", any()) } returns page
+
+            adminEmployeeService.exportEmployees(scope, "재직", null, "홍", "여사원", applyBranchScope = true)
+
+            verify {
+                employeeRepository.findEmployees(
+                    "재직", null, "홍", "여사원",
+                    match { it.pageSize == 50_000 }
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("지점 스코프 - 권한 밖 지점 요청(NoAccess) -> 쿼리 없이 헤더만 빈 엑셀")
+        fun export_noAccess() {
+            val scope = DataScope(branchCodes = listOf("A001"), isAllBranches = false)
+
+            val result = adminEmployeeService.exportEmployees(
+                scope, null, "B002", null, "여사원", applyBranchScope = true
+            )
+
+            val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
+            assertThat(workbook.getSheetAt(0).lastRowNum).isEqualTo(0) // 헤더 행만
+            workbook.close()
+            verify(exactly = 0) {
+                employeeRepository.findEmployees(any(), any(), any(), any(), any())
+            }
         }
     }
 

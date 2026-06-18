@@ -50,7 +50,8 @@ class AdminPPTMasterService(
     private val pptHistoryRepository: PPTHistoryRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val pptHistoryExcelExporter: PPTHistoryExcelExporter
 ) {
 
     companion object {
@@ -293,6 +294,44 @@ class AdminPPTMasterService(
             number = page.number,
             size = page.size
         )
+    }
+
+    /**
+     * 현재 검색 조건 기준 전문행사조 이력 데이터를 xlsx 로 export — 목록 화면(`getAllHistory`)과 동일한 지점 가시 범위/필터.
+     *
+     * 페이징 없이 [EXPORT_MAX_ROWS] 단일 페이지로 조회 (초과분 잘라냄 — 마스터 export 정합).
+     * NoAccess(권한 밖 지점)는 쿼리를 생략하고 헤더만 있는 빈 엑셀을 반환한다 (마스터 export 와 동일 분기).
+     * 목록과 동일한 [PPTMasterHistoryResponse] 매핑 후 [PPTHistoryExcelExporter] 로 위임.
+     */
+    fun exportHistoryToExcel(
+        scope: DataScope,
+        employeeName: String?,
+        employeeCode: String?,
+        teamType: String?,
+        changedAtFrom: LocalDate?,
+        changedAtTo: LocalDate?
+    ): ExcelResult {
+        val rows = when (val result = scope.effectiveBranchCodes(null)) {
+            is EffectiveBranchResult.NoAccess -> emptyList()
+            else -> {
+                val branchCodeFilter = when (result) {
+                    is EffectiveBranchResult.All -> null
+                    is EffectiveBranchResult.Filtered -> result.codes
+                    is EffectiveBranchResult.NoAccess -> emptyList() // unreachable
+                }
+                val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
+                pptHistoryRepository.searchHistories(
+                    employeeName, employeeCode, teamTypeEnum, changedAtFrom, changedAtTo,
+                    branchCodeFilter, PageRequest.of(0, EXPORT_MAX_ROWS)
+                ).content.map { history ->
+                    val emp = history.employee
+                    PPTMasterHistoryResponse.from(history, emp?.name, emp?.employeeCode, emp?.orgName)
+                }
+            }
+        }
+
+        val timestamp = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
+        return pptHistoryExcelExporter.export(rows, "전문행사조이력_${timestamp}.xlsx")
     }
 
     /**

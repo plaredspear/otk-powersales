@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.request.AdminScheduleUp
 import com.otoki.powersales.domain.activity.schedule.dto.response.RowPreview
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
@@ -115,6 +116,7 @@ class AdminScheduleServiceTest {
         organizationRepository,
         templateGenerator,
         exportGenerator,
+        ScheduleListExcelExporter(),
         excelParser,
         uploadValidator,
         scheduleRepository,
@@ -355,6 +357,108 @@ class AdminScheduleServiceTest {
             verify { exportGenerator.generate(match<List<DisplayWorkSchedule>> {
                 it.size == 1 && it[0].id == 11L
             }) }
+        }
+    }
+
+    @Nested
+    @DisplayName("exportAllSchedules - 검색결과 전체 다운로드 (UC-08)")
+    inner class ExportAllSchedulesTests {
+
+        private fun mockAdminScope(): DataScope =
+            DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        private fun row(id: Long, employeeCode: String?, employeeName: String?): ScheduleListRow =
+            ScheduleListRow(
+                id = id,
+                employeeId = null,
+                employeeCode = employeeCode,
+                employeeName = employeeName,
+                branchName = null,
+                employeeStatus = null,
+                employeeAppLoginActive = null,
+                employeeEndDate = null,
+                accountId = null,
+                accountCode = null,
+                accountName = null,
+                accountType = null,
+                accountStatusName = null,
+                typeOfWork3 = null,
+                typeOfWork4 = null,
+                typeOfWork5 = null,
+                startDate = null,
+                endDate = null,
+                confirmed = true,
+                costCenterCode = null,
+                lastMonthRevenue = null,
+            )
+
+        @Test
+        @DisplayName("정상 다운로드 - 목록과 동일 필터로 전량 추출 + 파일명 패턴")
+        fun exportAll_success() {
+            val scope = mockAdminScope()
+            val page = PageImpl(
+                listOf(row(1L, "20030001", "홍길동"), row(2L, "20030002", "김영희")),
+                PageRequest.of(0, 50_000), 2
+            )
+            every {
+                scheduleRepository.findScheduleList(null, null, null, null, null, null, null, any(), any())
+            } returns page
+
+            val result = adminScheduleService.exportAllSchedules(
+                scope, null, null, null, null, null, null, null, Sort.unsorted()
+            )
+
+            assertThat(result.filename).startsWith("진열스케줄_").endsWith(".xlsx")
+            // 헤더 1행 + 데이터 2행이 실제 워크북에 들어갔는지 확인
+            val workbook = XSSFWorkbook(java.io.ByteArrayInputStream(result.bytes))
+            val sheet = workbook.getSheetAt(0)
+            assertThat(sheet.lastRowNum).isEqualTo(2)
+            assertThat(sheet.getRow(1).getCell(1).stringCellValue).isEqualTo("20030001")
+            assertThat(sheet.getRow(2).getCell(1).stringCellValue).isEqualTo("20030002")
+            workbook.close()
+        }
+
+        @Test
+        @DisplayName("accountName 필터 - account id IN 조건으로 전달")
+        fun exportAll_accountNameFilter() {
+            val scope = mockAdminScope()
+            every { accountRepository.findByNameContainingIgnoreCase("이마트") } returns
+                listOf(Account(id = 100, externalKey = "ACC100", name = "이마트 강남점"))
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 50_000), 0)
+            every {
+                scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, any(), any())
+            } returns emptyPage
+
+            adminScheduleService.exportAllSchedules(
+                scope, null, "이마트", null, null, null, null, null, Sort.unsorted()
+            )
+
+            verify {
+                scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("preset/sort 전달 - 목록과 동일하게 전달")
+        fun exportAll_presetAndSort() {
+            val scope = mockAdminScope()
+            val sort = Sort.by(Sort.Direction.DESC, "startDate")
+            val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 50_000, sort), 0)
+            every {
+                scheduleRepository.findScheduleList(
+                    null, null, null, null, null, null, SchedulePreset.END, any(), any()
+                )
+            } returns emptyPage
+
+            adminScheduleService.exportAllSchedules(
+                scope, null, null, null, null, null, null, SchedulePreset.END, sort
+            )
+
+            verify {
+                scheduleRepository.findScheduleList(
+                    null, null, null, null, null, null, SchedulePreset.END, any(), any()
+                )
+            }
         }
     }
 

@@ -26899,6 +26899,54 @@
         "tags" : [ "admin-female-employee-placement-check-controller" ]
       }
     },
+    "/api/v1/admin/female-employees/export" : {
+      "get" : {
+        "operationId" : "exportFemaleEmployees",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
     "/api/v1/admin/female-employees/placement-check" : {
       "get" : {
         "operationId" : "getPlacementCheck",
@@ -28828,6 +28876,70 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePPTMasterHistoryListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-master-controller" ]
+      }
+    },
+    "/api/v1/admin/ppt-histories/export" : {
+      "get" : {
+        "operationId" : "exportHistories",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "teamType",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "changedAtFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "changedAtTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
                 }
               }
             },
@@ -31383,6 +31495,33 @@
         "tags" : [ "admin-pos-sales-controller" ]
       }
     },
+    "/api/v1/admin/sales/pos/export" : {
+      "get" : {
+        "operationId" : "exportPosSales",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/PosSalesRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-pos-sales-controller" ]
+      }
+    },
     "/api/v1/admin/sap-integration/inbound/audits" : {
       "get" : {
         "operationId" : "searchInboundAudits",
@@ -32273,6 +32412,99 @@
           },
           "required" : true
         },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/schedule/export-all" : {
+      "get" : {
+        "operationId" : "exportAllSchedules",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "confirmed",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "typeOfWork3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "preset",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sortBy",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sortDir",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {

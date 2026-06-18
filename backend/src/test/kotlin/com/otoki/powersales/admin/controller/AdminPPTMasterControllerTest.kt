@@ -15,7 +15,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import io.mockk.Runs
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import io.mockk.every
+import io.mockk.verify
 import io.mockk.just
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
@@ -361,6 +363,62 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content[0].employeeName").doesNotExist())
                 .andExpect(jsonPath("$.data.content[0].employeeCode").doesNotExist())
                 .andExpect(jsonPath("$.data.content[0].orgName").doesNotExist())
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/ppt-histories/export - 전문행사조 이력 엑셀 다운로드")
+    inner class ExportHistories {
+
+        @Test
+        @DisplayName("성공 - Excel byte 응답 + Content-Disposition")
+        fun exportHistories_success() {
+            val result = ExcelResult(
+                bytes = ByteArray(800),
+                filename = "전문행사조이력_20260518.xlsx"
+            )
+            every {
+                adminPPTMasterService.exportHistoryToExcel(any(), any(), any(), any(), any(), any())
+            } returns result
+
+            mockMvc.perform(get("/api/v1/admin/ppt-histories/export"))
+                .andExpect(status().isOk)
+                .andExpect(
+                    header().string(
+                        "Content-Type",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                )
+                .andExpect(header().exists("Content-Disposition"))
+        }
+
+        @Test
+        @DisplayName("성공 - 검색 필터 파라미터가 service 에 전달")
+        fun exportHistories_filterParams() {
+            val result = ExcelResult(bytes = ByteArray(10), filename = "전문행사조이력.xlsx")
+            every {
+                adminPPTMasterService.exportHistoryToExcel(
+                    any(), eq("홍"), eq("EMP001"), eq("라면세일조"),
+                    eq(LocalDate.of(2026, 5, 1)), eq(LocalDate.of(2026, 5, 31))
+                )
+            } returns result
+
+            mockMvc.perform(
+                get("/api/v1/admin/ppt-histories/export")
+                    .param("employeeName", "홍")
+                    .param("employeeCode", "EMP001")
+                    .param("teamType", "라면세일조")
+                    .param("changedAtFrom", "2026-05-01")
+                    .param("changedAtTo", "2026-05-31")
+            )
+                .andExpect(status().isOk)
+
+            verify {
+                adminPPTMasterService.exportHistoryToExcel(
+                    any(), eq("홍"), eq("EMP001"), eq("라면세일조"),
+                    eq(LocalDate.of(2026, 5, 1)), eq(LocalDate.of(2026, 5, 31))
+                )
+            }
         }
     }
 }

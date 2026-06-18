@@ -16,7 +16,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import io.mockk.every
+import io.mockk.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.MethodParameter
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -536,6 +538,60 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                     .content("""{"ids": []}""")
             )
                 .andExpect(status().isBadRequest)
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/schedule/export-all - 검색결과 전체 다운로드 (UC-08)")
+    inner class ExportAllSchedules {
+
+        @Test
+        @DisplayName("성공 - Excel byte 응답 + Content-Disposition")
+        fun exportAll_success() {
+            val result = ExcelResult(
+                bytes = ByteArray(800),
+                filename = "진열스케줄_20260516_120000.xlsx"
+            )
+            every {
+                adminScheduleService.exportAllSchedules(any(), any(), any(), any(), any(), any(), any(), any(), any())
+            } returns result
+
+            mockMvc.perform(get("/api/v1/admin/schedule/export-all"))
+                .andExpect(status().isOk)
+                .andExpect(
+                    header().string(
+                        "Content-Type",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                )
+                .andExpect(header().exists("Content-Disposition"))
+        }
+
+        @Test
+        @DisplayName("성공 - 검색/프리셋 필터 파라미터가 service 에 전달")
+        fun exportAll_filterParams() {
+            val result = ExcelResult(bytes = ByteArray(10), filename = "진열스케줄.xlsx")
+            every {
+                adminScheduleService.exportAllSchedules(
+                    any(), eq("2003"), eq("이마트"), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
+                )
+            } returns result
+
+            mockMvc.perform(
+                get("/api/v1/admin/schedule/export-all")
+                    .param("employeeCode", "2003")
+                    .param("accountName", "이마트")
+                    .param("confirmed", "true")
+                    .param("typeOfWork3", "고정")
+                    .param("preset", "END")
+            )
+                .andExpect(status().isOk)
+
+            verify {
+                adminScheduleService.exportAllSchedules(
+                    any(), eq("2003"), eq("이마트"), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
+                )
+            }
         }
     }
 

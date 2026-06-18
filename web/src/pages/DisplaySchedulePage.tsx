@@ -25,7 +25,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
-import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH } from '@/api/schedule';
+import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, SchedulePreset } from '@/api/schedule';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
@@ -52,6 +52,9 @@ const SCHEDULE_PRESET_OPTIONS: PresetOption<SchedulePreset>[] = [
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
+
+// 검색결과 엑셀 다운로드 최대 건수 — 서버 export 상한(EXPORT_MAX_ROWS) 정합. 초과 시 안내 후 진행.
+const EXPORT_MAX_ROWS = 50000;
 
 const errorColumns: ColumnsType<RowError> = [
   { title: '행', dataIndex: 'row', key: 'row', width: 60 },
@@ -181,6 +184,7 @@ export default function DisplaySchedulePage() {
   const navigate = useNavigate();
   const { run: runTemplate, downloading } = useExcelDownload();
   const { run: runExport, downloading: exporting } = useExcelDownload();
+  const { run: runExportAll, downloading: exportingAll } = useExcelDownload();
   const [uploadResult, setUploadResult] = useState<ScheduleUploadResult | null>(null);
   const uploadMutation = useScheduleUpload();
   const confirmMutation = useScheduleConfirm();
@@ -346,6 +350,15 @@ export default function DisplaySchedulePage() {
     const ids = selectedRowKeys as number[];
     if (ids.length === 0) return;
     runExport(SCHEDULE_EXPORT_PATH, '진열스케줄.xlsx', { method: 'post', data: { ids } });
+  };
+
+  // 현재 적용된 검색/프리셋 필터 + 정렬을 그대로 전량 export (목록과 동일 가시 범위).
+  const handleExportAll = () => {
+    runExportAll(SCHEDULE_EXPORT_ALL_PATH, '진열스케줄.xlsx', {
+      params: scheduleExportParams({ ...appliedFilters, sortBy, sortDir }),
+      totalCount: scheduleListQuery.data?.totalElements ?? 0,
+      maxRows: EXPORT_MAX_ROWS,
+    });
   };
 
   const handleBatchDelete = () => {
@@ -622,6 +635,13 @@ export default function DisplaySchedulePage() {
             {selectedRowKeys.length > 0
               ? `선택 다운로드 (${selectedRowKeys.length}건 선택)`
               : '선택 다운로드'}
+          </Button>
+          <Button
+            icon={<DownloadOutlined />}
+            loading={exportingAll}
+            onClick={handleExportAll}
+          >
+            검색결과 다운로드
           </Button>
         </Space>
 

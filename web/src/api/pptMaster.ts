@@ -206,6 +206,9 @@ export interface PPTHistorySearchParams {
   changedAtTo?: string;
 }
 
+/** 전문행사조 이력 엑셀 다운로드 경로 (GET, 목록과 동일 검색 파라미터). */
+export const PPT_HISTORY_EXPORT_PATH = '/api/v1/admin/ppt-histories/export';
+
 export async function getPPTHistories(
   params: PPTHistorySearchParams,
 ): Promise<PPTHistoryListData> {

@@ -41,6 +41,7 @@ import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvalu
 import com.otoki.powersales.domain.activity.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule as qDisplayWorkSchedule
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.exception.BusinessException
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
@@ -69,6 +70,7 @@ class AdminScheduleService(
     private val organizationRepository: OrganizationRepository,
     private val templateGenerator: ScheduleTemplateGenerator,
     private val exportGenerator: ScheduleExportGenerator,
+    private val listExcelExporter: ScheduleListExcelExporter,
     private val excelParser: ScheduleExcelParser,
     private val uploadValidator: ScheduleUploadValidator,
     private val scheduleRepository: DisplayWorkScheduleRepository,
@@ -88,6 +90,9 @@ class AdminScheduleService(
         private const val REDIS_TTL_MINUTES = 30L
         private const val MAX_FILE_SIZE = 5 * 1024 * 1024L // 5MB
         private const val MAX_ROWS = 500
+
+        /** 검색결과 전체 엑셀 export 최대 건수 (초과분 잘라냄 — promotion export 정합). */
+        private const val EXPORT_MAX_ROWS = 50_000
 
         /** SF 시스템 관리자 Profile.Name ([SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME] 와 동일 값). */
         private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
@@ -373,36 +378,77 @@ class AdminScheduleService(
             employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
         )
 
-        return schedulePage.map { row ->
-            ScheduleListItemDto(
-                id = row.id,
-                employeeId = row.employeeId,
-                employeeCode = row.employeeCode ?: "",
-                employeeName = row.employeeName ?: "",
-                branchName = row.branchName,
-                employmentStatus = if (row.employeeId != null) {
-                    displayStatusCalculator.employmentStatus(
-                        row.employeeStatus, row.employeeAppLoginActive, row.employeeEndDate
-                    )
-                } else {
-                    null
-                },
-                accountId = row.accountId,
-                accountCode = row.accountCode,
-                accountName = row.accountName,
-                accountType = row.accountType?.displayName,
-                accountStatus = row.accountStatusName,
-                typeOfWork3 = row.typeOfWork3?.displayName,
-                typeOfWork4 = row.typeOfWork4?.displayName,
-                typeOfWork5 = row.typeOfWork5?.displayName,
-                startDate = row.startDate,
-                endDate = row.endDate,
-                confirmed = row.confirmed,
-                costCenterCode = row.costCenterCode,
-                lastMonthRevenue = row.lastMonthRevenue?.toLong()
-            )
-        }
+        return schedulePage.map { toListItemDto(it) }
     }
+
+    /**
+     * UC-08 진열스케줄마스터 "검색결과 다운로드" — 목록(`listSchedules`)과 동일한 가시 범위/필터로 전량 추출.
+     *
+     * 페이징 없이 [EXPORT_MAX_ROWS] 단일 페이지로 조회 (초과분 잘라냄 — promotion export 정합).
+     * 목록과 동일한 [ScheduleListItemDto] 매핑([toListItemDto]) 후 [ScheduleListExcelExporter] 로 위임.
+     * 선택 레코드 export([exportSchedules]) 와 달리 ids 가 아닌 검색 조건 기반.
+     */
+    fun exportAllSchedules(
+        scope: DataScope,
+        employeeCode: String?,
+        accountName: String?,
+        confirmed: Boolean?,
+        typeOfWork3: String?,
+        startDateFrom: LocalDate?,
+        startDateTo: LocalDate?,
+        preset: SchedulePreset?,
+        sort: Sort,
+    ): ExcelResult {
+        val accountIds = if (!accountName.isNullOrBlank()) {
+            accountRepository.findByNameContainingIgnoreCase(accountName).map { it.id }
+        } else {
+            null
+        }
+
+        val policyPredicate = schedulePolicyPredicate(scope)
+        val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, sort)
+
+        val schedulePage = scheduleRepository.findScheduleList(
+            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
+        )
+
+        val items = schedulePage.content.map { toListItemDto(it) }
+        val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        return listExcelExporter.export(items, "진열스케줄_${timestamp}.xlsx")
+    }
+
+    /**
+     * [com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow] projection → [ScheduleListItemDto] 매핑.
+     * 목록 조회와 검색결과 엑셀 export 가 동일 매핑(재직상태 계산 포함)을 공유한다.
+     */
+    private fun toListItemDto(row: com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow): ScheduleListItemDto =
+        ScheduleListItemDto(
+            id = row.id,
+            employeeId = row.employeeId,
+            employeeCode = row.employeeCode ?: "",
+            employeeName = row.employeeName ?: "",
+            branchName = row.branchName,
+            employmentStatus = if (row.employeeId != null) {
+                displayStatusCalculator.employmentStatus(
+                    row.employeeStatus, row.employeeAppLoginActive, row.employeeEndDate
+                )
+            } else {
+                null
+            },
+            accountId = row.accountId,
+            accountCode = row.accountCode,
+            accountName = row.accountName,
+            accountType = row.accountType?.displayName,
+            accountStatus = row.accountStatusName,
+            typeOfWork3 = row.typeOfWork3?.displayName,
+            typeOfWork4 = row.typeOfWork4?.displayName,
+            typeOfWork5 = row.typeOfWork5?.displayName,
+            startDate = row.startDate,
+            endDate = row.endDate,
+            confirmed = row.confirmed,
+            costCenterCode = row.costCenterCode,
+            lastMonthRevenue = row.lastMonthRevenue?.toLong()
+        )
 
     /**
      * UC-03 단건 편집 모달 상세 조회 — SF 「진열사원 스케줄 마스터」 레이아웃 정합.

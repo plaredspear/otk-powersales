@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.auth.permission.PermissionResource
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.domain.sales.dto.request.PosSalesRequest
 import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
 import com.otoki.powersales.domain.sales.service.PosSalesService
@@ -37,5 +38,18 @@ class AdminPosSalesController(
     ): ResponseEntity<ApiResponse<PosSalesResponse>> {
         val response = posSalesService.getPosSales(request.customerId, request.yearMonth)
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * POS매출 제품별 명세 엑셀 다운로드 (거래처 1곳 + 연월) — 조회와 동일 데이터.
+     * GET /api/v1/admin/sales/pos/export
+     */
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @GetMapping("/export")
+    fun exportPosSales(
+        @Valid request: PosSalesRequest,
+    ): ResponseEntity<ByteArray> {
+        val result = posSalesService.exportPosSales(request.customerId, request.yearMonth)
+        return ExcelResponseUtils.build(result)
     }
 }

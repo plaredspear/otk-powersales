@@ -9,6 +9,7 @@ import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
@@ -18,6 +19,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.core.MethodParameter
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -131,5 +133,51 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.content").isEmpty)
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/export - Excel byte 응답 + Content-Disposition")
+    fun exportFemaleEmployees_success() {
+        val result = ExcelResult(bytes = ByteArray(800), filename = "여사원현황_20260618.xlsx")
+        every {
+            adminEmployeeService.exportEmployees(
+                any(), any(), any(), any(), eq(AppAuthority.WOMAN), applyBranchScope = eq(true)
+            )
+        } returns result
+
+        mockMvc.perform(get("/api/v1/admin/female-employees/export"))
+            .andExpect(status().isOk)
+            .andExpect(
+                header().string(
+                    "Content-Type",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            )
+            .andExpect(header().exists("Content-Disposition"))
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/export - 검색 필터가 WOMAN role + 본인 지점 스코프로 전달")
+    fun exportFemaleEmployees_filterParams() {
+        val result = ExcelResult(bytes = ByteArray(10), filename = "여사원현황.xlsx")
+        every {
+            adminEmployeeService.exportEmployees(
+                any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), applyBranchScope = eq(true)
+            )
+        } returns result
+
+        mockMvc.perform(
+            get("/api/v1/admin/female-employees/export")
+                .param("status", "재직")
+                .param("costCenterCode", "A001")
+                .param("keyword", "김"),
+        )
+            .andExpect(status().isOk)
+
+        verify {
+            adminEmployeeService.exportEmployees(
+                any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), applyBranchScope = eq(true)
+            )
+        }
     }
 }

@@ -23,6 +23,9 @@ export interface PosSalesResponse {
   items: PosSalesProduct[];
 }
 
+/** POS매출 제품별 명세 엑셀 다운로드 경로 (GET, 조회와 동일 customerId/yearMonth 파라미터). */
+export const POS_SALES_EXPORT_PATH = '/api/v1/admin/sales/pos/export';
+
 /**
  * 거래처 1곳 + 연월(YYYYMM) 의 제품별 POS매출 조회.
  */

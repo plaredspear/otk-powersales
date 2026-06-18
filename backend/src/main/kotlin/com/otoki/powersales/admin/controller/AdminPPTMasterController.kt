@@ -186,6 +186,23 @@ class AdminPPTMasterController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
+    @GetMapping("/api/v1/admin/ppt-histories/export")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun exportHistories(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) employeeName: String?,
+        @RequestParam(required = false) employeeCode: String?,
+        @RequestParam(required = false) teamType: String?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtFrom: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtTo: LocalDate?
+    ): ResponseEntity<ByteArray> {
+        val result = adminPPTMasterService.exportHistoryToExcel(
+            scope, employeeName, employeeCode, teamType, changedAtFrom, changedAtTo
+        )
+        return ExcelResponseUtils.build(result)
+    }
+
     @GetMapping("/api/v1/admin/ppt-histories")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getAllHistory(
