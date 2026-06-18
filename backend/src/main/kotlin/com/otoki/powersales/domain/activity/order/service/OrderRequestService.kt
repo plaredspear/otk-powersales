@@ -196,11 +196,15 @@ class OrderRequestService(
 
         val processingGroups = mapped?.processingGroups?.takeIf { it.isNotEmpty() }
         val rejectedItems = mapped?.rejectedItems?.takeIf { it.isNotEmpty() }
+        val outOfStockReasons = mapped?.outOfStockReasons.orEmpty()
 
         // 마감 전 — 그룹 응답 매핑 생략 (Q6, 레거시 동등). SAP 호출은 이미 수행.
         val finalProcessingGroups = if (isClosed) processingGroups else null
 
-        val orderedItems = crmProducts.map { OrderedItemResponse.from(it) }
+        // 결품(SAP DefaultReason) 제품은 "주문한 제품" 리스트에 결품 플래그로 표시 (레거시 view.jsp:414 동등).
+        val orderedItems = crmProducts.map {
+            OrderedItemResponse.from(it, outOfStockReason = outOfStockReasons[it.productCode])
+        }
 
         return OrderRequestDetailResponse.of(
             orderRequest = orderRequest,

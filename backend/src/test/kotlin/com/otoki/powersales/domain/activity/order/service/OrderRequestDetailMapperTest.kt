@@ -22,7 +22,7 @@ class OrderRequestDetailMapperTest {
     private val requestNumber = "OR-0001234"
 
     @Test
-    @DisplayName("정상 — 단일 SAPOrderNumber, derived = DELIVERED + BOX→EA 환산")
+    @DisplayName("정상 — 단일 SAPOrderNumber, derived = DELIVERED + BOX→EA 환산(boxReceivingQuantity), 시각 무가공")
     fun singleGroupDelivered() {
         val sap = listOf(
             line(
@@ -33,7 +33,7 @@ class OrderRequestDetailMapperTest {
                 shippingQuantityBox = "10",
             ),
         )
-        val crm = mapOf("1000023" to product("1000023", "진라면 매운맛", piecesPerBox = 30))
+        val crm = mapOf("1000023" to product("1000023", "진라면 매운맛", boxReceivingQuantity = 30))
 
         val result = mapper.map(requestNumber, sap, crm)
 
@@ -46,13 +46,14 @@ class OrderRequestDetailMapperTest {
         assertThat(item.productName).isEqualTo("진라면 매운맛")
         assertThat(item.deliveryStatus).isEqualTo(DeliveryStatus.DELIVERED)
         assertThat(item.deliveredQuantity).isEqualTo("10 BOX (300 EA)")
-        assertThat(item.scheduleTime).isEqualTo("12:00")
-        assertThat(item.completeTime).isEqualTo("14:30")
+        // 레거시 cls:141-142 무가공 — HHmmss 그대로
+        assertThat(item.scheduleTime).isEqualTo("120000")
+        assertThat(item.completeTime).isEqualTo("143000")
         assertThat(result.rejectedItems).isEmpty()
     }
 
     @Test
-    @DisplayName("derived = SHIPPING — schedule 채워짐 + complete 비어있음")
+    @DisplayName("derived = SHIPPING — schedule 채워짐 + complete '000000', 시각 무가공('000000'은 빈값 아님→유지)")
     fun deliveryStatusShipping() {
         val sap = listOf(
             line(
@@ -66,8 +67,9 @@ class OrderRequestDetailMapperTest {
         val result = mapper.map(requestNumber, sap, mapOf("P1" to product("P1", "P1Name", 10)))
         val item = result.processingGroups[0].items[0]
         assertThat(item.deliveryStatus).isEqualTo(DeliveryStatus.SHIPPING)
-        assertThat(item.scheduleTime).isEqualTo("12:00")
-        assertThat(item.completeTime).isNull()
+        // 레거시 무가공 — '120000' 그대로, '000000' 도 빈 문자열이 아니라 그대로 유지
+        assertThat(item.scheduleTime).isEqualTo("120000")
+        assertThat(item.completeTime).isEqualTo("000000")
     }
 
     @Test
@@ -89,8 +91,8 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
-    @DisplayName("derived = 결품 — DefaultReason 채워짐 → rejectedItems")
-    fun rejectedAsOutOfStock() {
+    @DisplayName("결품 — DefaultReason 채워짐 → 처리현황/반려 아닌 outOfStockReasons 로 분리 (레거시 view.jsp:414 동등)")
+    fun outOfStockGoesToOrderedItems() {
         val sap = listOf(
             line(
                 productCode = "P_REJ",
@@ -100,17 +102,14 @@ class OrderRequestDetailMapperTest {
                 shippingCompleteTime = "143000",
             ),
         )
-        val crm = mapOf("P_REJ" to product("P_REJ", "참기름", piecesPerBox = 30, quantityBoxes = BigDecimal("5")))
+        val crm = mapOf("P_REJ" to product("P_REJ", "참기름", boxReceivingQuantity = 30, quantityBoxes = BigDecimal("5")))
 
         val result = mapper.map(requestNumber, sap, crm)
 
+        // 결품은 처리현황 그룹도 반려도 아니라 orderedItems 플래그용 맵으로만 수집된다.
         assertThat(result.processingGroups).isEmpty()
-        assertThat(result.rejectedItems).hasSize(1)
-        val rej = result.rejectedItems[0]
-        assertThat(rej.productCode).isEqualTo("P_REJ")
-        assertThat(rej.productName).isEqualTo("참기름")
-        assertThat(rej.rejectionReason).isEqualTo("재고부족")
-        assertThat(rej.orderQuantityBoxes).isEqualByComparingTo("5")
+        assertThat(result.rejectedItems).isEmpty()
+        assertThat(result.outOfStockReasons).containsEntry("P_REJ", "재고부족")
     }
 
     @Test
@@ -124,17 +123,18 @@ class OrderRequestDetailMapperTest {
                 defaultReason = "",
             ),
         )
-        val crm = mapOf("P_REJ" to product("P_REJ", "참기름", piecesPerBox = 30, quantityBoxes = BigDecimal("5")))
+        val crm = mapOf("P_REJ" to product("P_REJ", "참기름", boxReceivingQuantity = 30, quantityBoxes = BigDecimal("5")))
 
         val result = mapper.map(requestNumber, sap, crm)
 
         assertThat(result.processingGroups).isEmpty()
         assertThat(result.rejectedItems).hasSize(1)
         assertThat(result.rejectedItems[0].rejectionReason).isEqualTo("REJ")
+        assertThat(result.outOfStockReasons).isEmpty()
     }
 
     @Test
-    @DisplayName("마지막 매칭 우선 — DefaultReason + LineItemStatus + ShippingCompleteTime 모두 채워져도 결품 (평가 5)")
+    @DisplayName("마지막 매칭 우선 — DefaultReason + LineItemStatus + ShippingCompleteTime 모두 채워져도 결품 (평가 5) → outOfStockReasons")
     fun derivedLastMatchWins() {
         val sap = listOf(
             line(
@@ -146,10 +146,10 @@ class OrderRequestDetailMapperTest {
             ),
         )
         val result = mapper.map(requestNumber, sap, mapOf("P1" to product("P1", "P1Name", 10)))
-        // DefaultReason 매칭이 최종 — `결품` 으로 분리됨
+        // DefaultReason 매칭이 최종(평가 5) — 반려가 아니라 결품으로 분류
         assertThat(result.processingGroups).isEmpty()
-        assertThat(result.rejectedItems).hasSize(1)
-        assertThat(result.rejectedItems[0].rejectionReason).isEqualTo("재고부족")
+        assertThat(result.rejectedItems).isEmpty()
+        assertThat(result.outOfStockReasons).containsEntry("P1", "재고부족")
     }
 
     @Test
@@ -215,10 +215,10 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
-    @DisplayName("pieces_per_box = 0 → EA 환산 생략, BOX 만 표시")
-    fun piecesPerBoxZeroSkipsEa() {
+    @DisplayName("boxReceivingQuantity = 0 → EA 환산 생략, BOX 만 표시")
+    fun boxReceivingQuantityZeroSkipsEa() {
         val sap = listOf(line(productCode = "P1", sapOrderNumber = "S1", shippingCompleteTime = "143000", shippingQuantityBox = "10"))
-        val crm = mapOf("P1" to product("P1", "P1", piecesPerBox = 0))
+        val crm = mapOf("P1" to product("P1", "P1", boxReceivingQuantity = 0))
         val result = mapper.map(requestNumber, sap, crm)
         assertThat(result.processingGroups[0].items[0].deliveredQuantity).isEqualTo("10 BOX")
     }
@@ -266,16 +266,18 @@ class OrderRequestDetailMapperTest {
         assertThat(item1.driverName).isEqualTo("홍길동")
         assertThat(item1.vehicle).isEqualTo("12가3456")
         assertThat(item1.driverPhone).isEqualTo("010-1234-5678")
-        assertThat(item1.scheduleTime).isEqualTo("12:00")
-        assertThat(item1.completeTime).isEqualTo("14:30")
+        // 레거시 무가공 — HHmmss 그대로
+        assertThat(item1.scheduleTime).isEqualTo("120000")
+        assertThat(item1.completeTime).isEqualTo("143000")
 
         val result2 = mapper.map(requestNumber, empty, crm)
         val item2 = result2.processingGroups[0].items[0]
+        // 빈 문자열 driver 필드는 null, 시각 '000000' 은 빈값이 아니라 그대로 유지 (레거시 무가공)
         assertThat(item2.driverName).isNull()
         assertThat(item2.vehicle).isNull()
         assertThat(item2.driverPhone).isNull()
-        assertThat(item2.scheduleTime).isNull()
-        assertThat(item2.completeTime).isNull()
+        assertThat(item2.scheduleTime).isEqualTo("000000")
+        assertThat(item2.completeTime).isEqualTo("000000")
     }
 
     @Test
@@ -324,7 +326,7 @@ class OrderRequestDetailMapperTest {
     private fun product(
         productCode: String,
         productName: String,
-        piecesPerBox: Int = 30,
+        boxReceivingQuantity: Int = 30,
         quantityBoxes: BigDecimal = BigDecimal.ZERO,
     ): OrderRequestProduct {
         val account = Account(id = 1, name = "ACC")
@@ -339,10 +341,12 @@ class OrderRequestDetailMapperTest {
             employee = employee,
             account = account,
         )
+        // 레거시 EA 환산 계수 = 제품 마스터 Product.BoxReceivingQuantity__c.
         val productEntity = Product(
             id = 1L,
             productCode = productCode,
             name = productName,
+            boxReceivingQuantity = BigDecimal.valueOf(boxReceivingQuantity.toLong()),
         )
         return OrderRequestProduct(
             id = 1L,
@@ -353,7 +357,7 @@ class OrderRequestDetailMapperTest {
             unit = "BOX",
             unitPrice = BigDecimal.ZERO,
             amount = BigDecimal.ZERO,
-            piecesPerBox = piecesPerBox,
+            piecesPerBox = 1,
             orderRequest = order,
             product = productEntity,
         )
