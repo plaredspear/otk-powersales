@@ -79,6 +79,8 @@ class SapOutboundRestClientConfig(
                 configurer.withJsonConverter(jsonConverter)
             }
             .defaultHeader("Content-Type", "${MediaType.APPLICATION_JSON_VALUE}; charset=UTF-8")
+            // 레거시 IF_Util.httpCall (IF_Util.cls:518) 동등 — 모든 SAP outbound 인터페이스에 공통 적용.
+            .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
 
         if (properties.baseUrl.isNotBlank()) {
             builder.baseUrl(properties.baseUrl)

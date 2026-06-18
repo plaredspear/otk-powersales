@@ -159,4 +159,51 @@ void main() {
       expect(entity.orderProcessingStatusList, isNull);
     });
   });
+
+  group('OrderedItem 결품 플래그 (레거시 view.jsp:414 동등)', () {
+    Map<String, dynamic> orderedItemJson({
+      bool isOutOfStock = false,
+      String? outOfStockReason,
+    }) {
+      return {
+        'orderProductId': 101,
+        'productCode': '1000023',
+        'productName': '진라면 매운맛',
+        'totalQuantityBoxes': 10.0,
+        'totalQuantityPieces': 300,
+        'isCancelled': false,
+        'isOutOfStock': isOutOfStock,
+        'outOfStockReason': outOfStockReason,
+      };
+    }
+
+    test('결품 제품 — isOutOfStock=true + outOfStockReason 파싱', () {
+      final model = OrderedItemModel.fromJson(
+        orderedItemJson(isOutOfStock: true, outOfStockReason: '재고부족'),
+      );
+      expect(model.isOutOfStock, isTrue);
+      expect(model.outOfStockReason, '재고부족');
+      final entity = model.toEntity();
+      expect(entity.isOutOfStock, isTrue);
+      expect(entity.outOfStockReason, '재고부족');
+    });
+
+    test('정상 제품 — 필드 부재 시 isOutOfStock=false 기본값 (하위호환)', () {
+      final json = orderedItemJson();
+      json.remove('isOutOfStock');
+      json.remove('outOfStockReason');
+      final model = OrderedItemModel.fromJson(json);
+      expect(model.isOutOfStock, isFalse);
+      expect(model.outOfStockReason, isNull);
+    });
+
+    test('toJson ↔ fromJson 왕복 — 결품 필드 보존', () {
+      final original = OrderedItemModel.fromJson(
+        orderedItemJson(isOutOfStock: true, outOfStockReason: '재고부족'),
+      );
+      final roundTrip = OrderedItemModel.fromJson(original.toJson());
+      expect(roundTrip.isOutOfStock, isTrue);
+      expect(roundTrip.outOfStockReason, '재고부족');
+    });
+  });
 }

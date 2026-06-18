@@ -5424,6 +5424,12 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "outOfStock" : {
+            "type" : "boolean"
+          },
+          "outOfStockReason" : {
+            "type" : [ "string", "null" ]
+          },
           "productCode" : {
             "type" : "string"
           },

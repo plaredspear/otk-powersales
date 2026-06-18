@@ -80,43 +80,71 @@ class OrderedItemList extends StatelessWidget {
   }
 
   Widget _buildItemRow(OrderedItem item) {
-    return Row(
+    // 레거시 view.jsp:414 동등 — 취소/결품 제품은 회색 처리.
+    final isGrayed = item.isCancelled || item.isOutOfStock;
+    final nameColor =
+        isGrayed ? AppColors.textTertiary : AppColors.textPrimary;
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          flex: 3,
-          child: RichText(
-            text: TextSpan(
-              children: [
-                if (item.isCancelled)
-                  TextSpan(
-                    text: '[취소] ',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.bold,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    if (item.isCancelled)
+                      TextSpan(
+                        text: '[취소] ',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    if (item.isOutOfStock)
+                      TextSpan(
+                        text: '[결품] ',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    TextSpan(
+                      text: '(${item.productCode}) ${item.productName}',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: nameColor,
+                      ),
                     ),
-                  ),
-                TextSpan(
-                  text: '(${item.productCode}) ${item.productName}',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
+                  ],
                 ),
-              ],
+              ),
+            ),
+            SizedBox(width: AppSpacing.md),
+            Expanded(
+              flex: 2,
+              child: Text(
+                '${_formatBoxes(item.totalQuantityBoxes)}박스 (${_formatPieces(item.totalQuantityPieces)}개)',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ),
+        // 결품 사유 (SAP DefaultReason) — 레거시 결품 표시 동등.
+        if (item.isOutOfStock && item.outOfStockReason != null) ...[
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            '결품사유: ${item.outOfStockReason}',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.error,
             ),
           ),
-        ),
-        SizedBox(width: AppSpacing.md),
-        Expanded(
-          flex: 2,
-          child: Text(
-            '${_formatBoxes(item.totalQuantityBoxes)}박스 (${_formatPieces(item.totalQuantityPieces)}개)',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.right,
-          ),
-        ),
+        ],
       ],
     );
   }

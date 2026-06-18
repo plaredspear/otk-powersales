@@ -9,6 +9,8 @@ class OrderedItemModel {
   final double totalQuantityBoxes;
   final int totalQuantityPieces;
   final bool isCancelled;
+  final bool isOutOfStock;
+  final String? outOfStockReason;
 
   const OrderedItemModel({
     required this.orderProductId,
@@ -17,6 +19,8 @@ class OrderedItemModel {
     required this.totalQuantityBoxes,
     required this.totalQuantityPieces,
     required this.isCancelled,
+    this.isOutOfStock = false,
+    this.outOfStockReason,
   });
 
   factory OrderedItemModel.fromJson(Map<String, dynamic> json) {
@@ -27,6 +31,8 @@ class OrderedItemModel {
       totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
       totalQuantityPieces: (json['totalQuantityPieces'] as num).toInt(),
       isCancelled: json['isCancelled'] as bool,
+      isOutOfStock: json['isOutOfStock'] as bool? ?? false,
+      outOfStockReason: json['outOfStockReason'] as String?,
     );
   }
 
@@ -38,6 +44,8 @@ class OrderedItemModel {
       'totalQuantityBoxes': totalQuantityBoxes,
       'totalQuantityPieces': totalQuantityPieces,
       'isCancelled': isCancelled,
+      'isOutOfStock': isOutOfStock,
+      'outOfStockReason': outOfStockReason,
     };
   }
 
@@ -49,6 +57,8 @@ class OrderedItemModel {
       totalQuantityBoxes: totalQuantityBoxes,
       totalQuantityPieces: totalQuantityPieces,
       isCancelled: isCancelled,
+      isOutOfStock: isOutOfStock,
+      outOfStockReason: outOfStockReason,
     );
   }
 
@@ -60,14 +70,17 @@ class OrderedItemModel {
       totalQuantityBoxes: entity.totalQuantityBoxes,
       totalQuantityPieces: entity.totalQuantityPieces,
       isCancelled: entity.isCancelled,
+      isOutOfStock: entity.isOutOfStock,
+      outOfStockReason: entity.outOfStockReason,
     );
   }
 }
 
 /// 처리 항목 API 모델 (DTO).
 ///
-/// 차량/기사 5필드 (Q5) — `SHIPPING`/`DELIVERED` 라인 탭 팝업용. 서버가 빈 문자열 또는
-/// `'000000'` sentinel 을 `null` 로 매핑한 결과를 그대로 수신한다.
+/// 차량/기사 5필드 (Q5) — `SHIPPING`/`DELIVERED` 라인 탭 팝업용. 시각 필드(`scheduleTime`/
+/// `completeTime`)는 레거시 동등으로 SAP 응답 `HHmmss` 문자열을 **무가공** 으로 수신한다
+/// (`'000000'` sentinel 도 그대로). 빈 문자열만 서버가 `null` 로 매핑한다.
 class ProcessingItemModel {
   final String productCode;
   final String productName;

@@ -56,6 +56,13 @@ class OrderedItem {
   /// 취소 여부
   final bool isCancelled;
 
+  /// 결품 여부 — SAP `OrderRequestDetail` 응답의 `DefaultReason` 이 있는 제품.
+  /// 레거시 `view.jsp:414` 동등 — 결품 제품은 "주문한 제품" 리스트에 회색+사유로 표시.
+  final bool isOutOfStock;
+
+  /// 결품 사유 (SAP `DefaultReason`). `isOutOfStock == true` 일 때만 채워진다.
+  final String? outOfStockReason;
+
   const OrderedItem({
     required this.orderProductId,
     required this.productCode,
@@ -63,6 +70,8 @@ class OrderedItem {
     required this.totalQuantityBoxes,
     required this.totalQuantityPieces,
     required this.isCancelled,
+    this.isOutOfStock = false,
+    this.outOfStockReason,
   });
 
   OrderedItem copyWith({
@@ -72,6 +81,8 @@ class OrderedItem {
     double? totalQuantityBoxes,
     int? totalQuantityPieces,
     bool? isCancelled,
+    bool? isOutOfStock,
+    String? outOfStockReason,
   }) {
     return OrderedItem(
       orderProductId: orderProductId ?? this.orderProductId,
@@ -80,6 +91,8 @@ class OrderedItem {
       totalQuantityBoxes: totalQuantityBoxes ?? this.totalQuantityBoxes,
       totalQuantityPieces: totalQuantityPieces ?? this.totalQuantityPieces,
       isCancelled: isCancelled ?? this.isCancelled,
+      isOutOfStock: isOutOfStock ?? this.isOutOfStock,
+      outOfStockReason: outOfStockReason ?? this.outOfStockReason,
     );
   }
 
@@ -91,6 +104,8 @@ class OrderedItem {
       'totalQuantityBoxes': totalQuantityBoxes,
       'totalQuantityPieces': totalQuantityPieces,
       'isCancelled': isCancelled,
+      'isOutOfStock': isOutOfStock,
+      'outOfStockReason': outOfStockReason,
     };
   }
 
@@ -102,6 +117,8 @@ class OrderedItem {
       totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
       totalQuantityPieces: json['totalQuantityPieces'] as int,
       isCancelled: json['isCancelled'] as bool,
+      isOutOfStock: json['isOutOfStock'] as bool? ?? false,
+      outOfStockReason: json['outOfStockReason'] as String?,
     );
   }
 
@@ -114,7 +131,9 @@ class OrderedItem {
         other.productName == productName &&
         other.totalQuantityBoxes == totalQuantityBoxes &&
         other.totalQuantityPieces == totalQuantityPieces &&
-        other.isCancelled == isCancelled;
+        other.isCancelled == isCancelled &&
+        other.isOutOfStock == isOutOfStock &&
+        other.outOfStockReason == outOfStockReason;
   }
 
   @override
@@ -126,6 +145,8 @@ class OrderedItem {
       totalQuantityBoxes,
       totalQuantityPieces,
       isCancelled,
+      isOutOfStock,
+      outOfStockReason,
     );
   }
 
@@ -135,7 +156,7 @@ class OrderedItem {
         'productCode: $productCode, productName: $productName, '
         'totalQuantityBoxes: $totalQuantityBoxes, '
         'totalQuantityPieces: $totalQuantityPieces, '
-        'isCancelled: $isCancelled)';
+        'isCancelled: $isCancelled, isOutOfStock: $isOutOfStock)';
   }
 }
 
@@ -166,10 +187,10 @@ class ProcessingItem {
   /// 기사 연락처 (배송중/배송완료 라인 팝업용)
   final String? driverPhone;
 
-  /// 배송 예정 시각 (`HH:mm`) — `'000000'` sentinel 또는 빈 값은 null
+  /// 배송 예정 시각 — 레거시 동등으로 SAP `HHmmss` 무가공 ('000000' 도 그대로). 빈 값만 null
   final String? scheduleTime;
 
-  /// 배송 완료 시각 (`HH:mm`) — `'000000'` sentinel 또는 빈 값은 null
+  /// 배송 완료 시각 — 레거시 동등으로 SAP `HHmmss` 무가공 ('000000' 도 그대로). 빈 값만 null
   final String? completeTime;
 
   const ProcessingItem({
