@@ -12,15 +12,16 @@ import {
   Typography,
   message,
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAccountsForPosSalesLookup } from '@/api/account';
-import { fetchPosSales, type PosSalesProduct } from '@/api/posSales';
+import { fetchPosSales, POS_SALES_EXPORT_PATH, type PosSalesProduct } from '@/api/posSales';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 
 const { Text } = Typography;
 
@@ -84,6 +85,17 @@ export default function SalesQueryPage() {
   const totalAmount = items.reduce((sum, it) => sum + it.amount, 0);
   const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);
 
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+
+  // 조회 화면과 동일한 거래처 + 연월의 제품별 명세를 엑셀로 export.
+  const handleExport = () => {
+    if (!hasQuery) return;
+    runExport(POS_SALES_EXPORT_PATH, 'POS매출.xlsx', {
+      params: { customerId: customerId!, yearMonth: yearMonth! },
+      totalCount: items.length,
+    });
+  };
+
   const columns: ColumnsType<PosSalesProduct> = [
     { title: '제품코드', dataIndex: 'productCode', key: 'productCode', width: 140 },
     { title: '제품명', dataIndex: 'productName', key: 'productName' },
@@ -140,10 +152,19 @@ export default function SalesQueryPage() {
             조회
           </Button>
           {hasQuery && (
-            <RefreshButton
-              onRefresh={posSalesQuery.refetch}
-              refreshing={posSalesQuery.isFetching}
-            />
+            <>
+              <Button
+                icon={<DownloadOutlined />}
+                loading={exporting}
+                onClick={handleExport}
+              >
+                엑셀 다운로드
+              </Button>
+              <RefreshButton
+                onRefresh={posSalesQuery.refetch}
+                refreshing={posSalesQuery.isFetching}
+              />
+            </>
           )}
         </Space>
       </Card>

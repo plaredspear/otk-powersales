@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -44,8 +45,19 @@ import java.time.format.DateTimeFormatter
 class PosSalesService(
 	private val accountRepository: AccountRepository,
 	private val livePosSalesDailyRepository: LivePosSalesDailyRepository,
+	private val posSalesExcelExporter: PosSalesExcelExporter,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
+
+	/**
+	 * 거래처 1곳 + 연월의 제품별 POS매출 명세를 xlsx 로 export — 조회([getPosSales])와 동일 데이터.
+	 *
+	 * 조회와 동일하게 거래처 미존재 시 404, POS DB 장애 시 빈 명세로 fallback (헤더만 있는 엑셀).
+	 */
+	fun exportPosSales(customerId: Long, yearMonth: String): ExcelResult {
+		val response = getPosSales(customerId, yearMonth)
+		return posSalesExcelExporter.export(response.customerName, response.yearMonth, response.items)
+	}
 
 	/**
 	 * 거래처 1곳 + 연월의 제품별 POS매출 조회.

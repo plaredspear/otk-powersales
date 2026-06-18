@@ -24617,6 +24617,33 @@
         "tags" : [ "admin-pos-sales-controller" ]
       }
     },
+    "/api/v1/admin/sales/pos/export" : {
+      "get" : {
+        "operationId" : "exportPosSales",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/PosSalesRequest"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-pos-sales-controller" ]
+      }
+    },
     "/api/v1/admin/sap-integration/inbound/audits" : {
       "get" : {
         "operationId" : "searchInboundAudits",
