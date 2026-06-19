@@ -221,10 +221,12 @@ class OrderDraftItem {
     this.validationError,
   });
 
-  /// 총액을 수량과 단가에서 재계산
+  /// 총액을 수량과 단가에서 재계산.
+  /// 레거시(write.jsp fnTotalPrice / SF Get_Product_Sales_By_Account)는 금액 = 총낱개수 × 낱개단가.
+  /// unitPrice 는 낱개단가(standardUnitPrice + supertax)이므로 boxSize 로 나누지 않는다.
   int get calculatedTotalPrice {
     final totalPieces = (quantityBoxes * boxSize).round() + quantityPieces;
-    return (totalPieces * unitPrice / boxSize).round();
+    return totalPieces * unitPrice;
   }
 
   /// 유효성 에러가 있는지 여부

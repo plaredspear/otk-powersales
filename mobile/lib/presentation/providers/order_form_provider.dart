@@ -416,9 +416,9 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   ) {
     final updatedItems = state.orderDraft.items.map((item) {
       if (item.productCode == productCode) {
-        // 총액 재계산
+        // 총액 재계산 — 레거시 정합: 금액 = 총낱개수 × 낱개단가 (boxSize 로 나누지 않음).
         final totalPieces = (boxes * item.boxSize).round() + pieces;
-        final totalPrice = (totalPieces * item.unitPrice / item.boxSize).round();
+        final totalPrice = totalPieces * item.unitPrice;
 
         return item.copyWith(
           quantityBoxes: boxes,

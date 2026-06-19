@@ -59,7 +59,10 @@ class RealSapInventorySearchClient(
                 conversionQuantity = item.conversionQuantity.toQuantity(default = 1).coerceAtLeast(1),
                 // SupplyLimitQTY 누락/공란 = 공급제한 없음 (레거시는 미표시 시 미차단). Int.MAX_VALUE 로 통과.
                 supplyLimitQuantity = item.supplyLimitQuantity.toQuantity(default = Int.MAX_VALUE),
-                unitPrice = product?.standardUnitPrice ?: run {
+                // 레거시 정합: 낱개단가 = 표준단가 + 주세(supertax). 금액 = 낱개단가 × 총 EA.
+                unitPrice = product?.let {
+                    (it.standardUnitPrice ?: BigDecimal.ZERO) + (it.superTax ?: BigDecimal.ZERO)
+                } ?: run {
                     log.warn("Product 마스터 단가 없음 — unitPrice=0 처리 (productCode={})", item.productCode)
                     BigDecimal.ZERO
                 },

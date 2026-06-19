@@ -44,7 +44,9 @@ data class OrderProductDto(
                 barcode = barcode ?: product.logisticsBarcode ?: "",
                 storageType = product.storageCondition?.displayName ?: "",
                 shelfLife = shelf,
-                unitPrice = product.standardUnitPrice?.toInt() ?: 0,
+                // 레거시 정합: 낱개단가 = 표준단가 + 주세(supertax). (orderMapper selectPrd / SF Flow 동일)
+                unitPrice = ((product.standardUnitPrice ?: java.math.BigDecimal.ZERO) +
+                    (product.superTax ?: java.math.BigDecimal.ZERO)).toInt(),
                 boxSize = product.boxReceivingQuantity?.toInt() ?: 0,
                 isFavorite = false,
                 categoryMid = product.productCategory2,

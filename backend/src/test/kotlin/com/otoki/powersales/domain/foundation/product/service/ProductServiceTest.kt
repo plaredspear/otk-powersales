@@ -344,7 +344,26 @@ class ProductServiceTest {
             assertThat(dto.productType).isNull()
             assertThat(dto.tasteGiftType).isNull()
             assertThat(dto.isFavorite).isFalse()
-            verify { productRepository.searchForOrder("열라면", null, null, any()) }
+        }
+
+        @Test
+        @DisplayName("낱개단가 = 표준단가 + 주세(supertax) 합산 (레거시 정합)")
+        fun searchProductsForOrder_unitPriceIncludesSuperTax() {
+            val products = listOf(
+                createTestProduct(
+                    "18110014", "참치액_대", "18110014", "8801045570716",
+                    standardUnitPrice = BigDecimal("1200"),
+                    boxReceivingQuantity = BigDecimal("30"),
+                    superTax = BigDecimal("300")
+                )
+            )
+            val page = rowPage(products, PageRequest.of(0, 30), 1)
+            every { productRepository.searchForOrder("참치", null, null, any()) } returns page
+            every { favoriteProductService.getFavoriteProductCodes(1L) } returns emptySet()
+
+            val result = productService.searchProductsForOrder("참치", null, null, 0, 30, 1L)
+
+            assertThat(result.content[0].unitPrice).isEqualTo(1500)
         }
 
         @Test
@@ -426,7 +445,8 @@ class ProductServiceTest {
         productType: ProductType? = null,
         tasteGift: String? = null,
         standardUnitPrice: BigDecimal? = null,
-        boxReceivingQuantity: BigDecimal? = null
+        boxReceivingQuantity: BigDecimal? = null,
+        superTax: BigDecimal? = null
     ): Product {
         return Product(
             name = productName,
@@ -439,7 +459,8 @@ class ProductServiceTest {
             productType = productType,
             tasteGift = tasteGift,
             standardUnitPrice = standardUnitPrice,
-            boxReceivingQuantity = boxReceivingQuantity
+            boxReceivingQuantity = boxReceivingQuantity,
+            superTax = superTax
         )
     }
 }
