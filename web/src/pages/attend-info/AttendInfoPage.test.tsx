@@ -14,20 +14,18 @@ vi.mock('@/api/attendInfo', async () => {
   };
 });
 
-// 월별 근무내역 탭(기본 활성)의 여사원 목록 — 실제 네트워크 호출 방지용 stub.
-vi.mock('@/api/employee', async () => {
-  const actual = await vi.importActual<typeof import('@/api/employee')>('@/api/employee');
-  const emptyList = {
-    content: [],
-    page: 0,
-    size: 20,
-    totalElements: 0,
-    totalPages: 0,
-  };
+// 월별 근무내역 탭(기본 활성)이 여사원 일정관리 form API 로 여사원 목록을 받으므로 stub.
+vi.mock('@/api/team-schedule', async () => {
+  const actual = await vi.importActual<typeof import('@/api/team-schedule')>('@/api/team-schedule');
   return {
     ...actual,
-    fetchEmployees: vi.fn().mockResolvedValue(emptyList),
-    fetchFemaleEmployees: vi.fn().mockResolvedValue(emptyList),
+    fetchTeamScheduleForm: vi.fn().mockResolvedValue({
+      branches: [],
+      members: [],
+      professionalPromotionTeams: [],
+      accounts: [],
+      dailySummary: [],
+    }),
   };
 });
 
