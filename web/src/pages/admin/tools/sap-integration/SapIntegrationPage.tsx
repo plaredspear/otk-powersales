@@ -68,9 +68,17 @@ export default function SapIntegrationPage() {
     children: <SapInboundCatalogDetail item={item} />,
   }));
 
+  // Outbound 탭 라벨에는 한글명 아래 SAP interfaceId 를 회색 보조 텍스트로 표기한다.
   const outboundApiTabs: TabItem[] = (outboundCatalogQuery.data ?? []).map((item) => ({
     key: `outbound-api:${item.interfaceId}`,
-    label: item.koreanName,
+    label: (
+      <div style={{ lineHeight: 1.4, textAlign: 'left' }}>
+        <div>{item.koreanName}</div>
+        <Text type="secondary" style={{ fontSize: 13 }}>
+          ({item.interfaceId})
+        </Text>
+      </div>
+    ),
     children: <SapOutboundCatalogDetail item={item} />,
   }));
 

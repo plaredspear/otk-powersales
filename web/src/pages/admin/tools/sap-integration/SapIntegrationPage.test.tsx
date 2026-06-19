@@ -123,7 +123,8 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     // 카탈로그 항목마다 한글명 탭
     expect(screen.getByRole('tab', { name: '조직 마스터 수신' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: '사원 마스터 수신' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '전문행사조 마스터' })).toBeInTheDocument();
+    // Outbound 탭은 한글명 + 회색 SAP interfaceId 가 함께 렌더되므로 부분 매칭
+    expect(screen.getByRole('tab', { name: /전문행사조 마스터/ })).toBeInTheDocument();
   });
 
   it('H3 - 진입 시 첫 Inbound API 탭이 기본 활성이고 그 API 의 상세가 표시', () => {
@@ -149,7 +150,8 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
   it('H5 - Outbound API 탭 클릭 시 트리거/Sender + 연동 정보 + 테스트 송신 + 호출 이력이 인라인 표시', async () => {
     renderPage();
     const user = userEvent.setup();
-    await user.click(screen.getByRole('tab', { name: '전문행사조 마스터' }));
+    // 탭 라벨에 한글명 + 회색 SAP interfaceId 가 함께 렌더되므로 부분 매칭으로 선택
+    await user.click(screen.getByRole('tab', { name: /전문행사조 마스터/ }));
 
     // 카탈로그 고유 메타(트리거)와 외부 연동 정보가 하나의 표로 통합 표시
     expect(await screen.findByText('BATCH')).toBeInTheDocument();
