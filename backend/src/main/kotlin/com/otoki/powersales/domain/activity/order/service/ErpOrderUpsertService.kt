@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderLineComman
 import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderUpsertCommand
 import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderUpsertFailedRow
 import com.otoki.powersales.domain.activity.order.service.dto.ErpOrderUpsertResult
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -34,9 +35,13 @@ import java.time.format.DateTimeFormatter
  *    - [ErpOrderProductRepository.saveAll] (라인)
  * 6. 라인 ConstraintViolation 등 적재 도중 throw → 트랜잭션 전체 롤백 (헤더까지 미반영).
  *
- * ## 신규 차이 — 동등 (생략)
+ * ## 레거시 정합 (의도적 deviation 외 동등)
+ * - Account FK: SAPAccountCode → [AccountRepository.findByExternalKeyIn] resolve 거래처를 헤더의
+ *   [ErpOrder.account] (account_id) + [ErpOrder.accountSfid] 에 연결 (레거시 `AccountId__c` MasterDetail 정합).
+ * - 날짜: 빈값/`00000000`/파싱 실패 → `2999-12-31` 센티넬 ([parseDate], 레거시 `Util.convertStringToDate` 정합).
+ * - 라인 externalKey: `ShippingVehicle` 을 키에서 제외 (의도적 개선, [computeExternalKey] 참조).
  *
- * cross-domain 의존: [AccountRepository] (Account 매칭 lookup) — Q3 옵션 1 정합 (lookup 용도 read-only).
+ * cross-domain 의존: [AccountRepository] (Account 매칭 lookup) — lookup 용도 read-only.
  * `sap.*` 패키지 의존 0건.
  */
 @Service
@@ -49,12 +54,12 @@ class ErpOrderUpsertService(
     @Transactional
     fun upsert(commands: List<ErpOrderUpsertCommand>): ErpOrderUpsertResult {
         val accountCodes = commands.mapNotNull { it.sapAccountCode?.takeIf { c -> c.isNotBlank() } }.distinct()
-        val accountKeySet: Set<String> = if (accountCodes.isEmpty()) {
-            emptySet()
+        val accountByCode: Map<String, Account> = if (accountCodes.isEmpty()) {
+            emptyMap()
         } else {
             accountRepository.findByExternalKeyIn(accountCodes)
-                .mapNotNull { it.externalKey }
-                .toHashSet()
+                .mapNotNull { account -> account.externalKey?.let { it to account } }
+                .toMap()
         }
 
         val orderNumbers = commands.mapNotNull { it.sapOrderNumber?.takeIf { n -> n.isNotBlank() } }.distinct()
@@ -78,14 +83,15 @@ class ErpOrderUpsertService(
                 failures += ErpOrderUpsertFailedRow(sapOrderNumber, "SAPAccountCode 필수")
                 return@forEach
             }
-            if (sapAccountCode !in accountKeySet) {
+            val account = accountByCode[sapAccountCode]
+            if (account == null) {
                 failures += ErpOrderUpsertFailedRow(sapOrderNumber, "account not found")
                 return@forEach
             }
 
-            val entity = existingHeaders[sapOrderNumber]?.also { applyHeaderFields(it, command) }
+            val entity = existingHeaders[sapOrderNumber]?.also { applyHeaderFields(it, command, account) }
                 ?: ErpOrder(sapOrderNumber = sapOrderNumber).also {
-                    applyHeaderFields(it, command)
+                    applyHeaderFields(it, command, account)
                     existingHeaders[sapOrderNumber] = it
                 }
             acceptedHeaders += entity
@@ -121,7 +127,11 @@ class ErpOrderUpsertService(
         )
     }
 
-    private fun applyHeaderFields(entity: ErpOrder, command: ErpOrderUpsertCommand) {
+    private fun applyHeaderFields(entity: ErpOrder, command: ErpOrderUpsertCommand, account: Account) {
+        // 레거시 ERP_Order__c.AccountId__c (MasterDetail→Account) 정합:
+        // SAPAccountCode → Account.externalKey 로 resolve 한 거래처를 FK + SF Id 양쪽에 연결.
+        entity.account = account
+        entity.accountSfid = account.sfid
         entity.sapAccountCode = command.sapAccountCode
         entity.sapAccountName = command.sapAccountName
         entity.deliveryRequestDate = parseDate(command.deliveryRequestDate)
@@ -249,6 +259,13 @@ class ErpOrderUpsertService(
         private const val EMPTY_TIME = "000000"
         private val YYYYMMDD = DateTimeFormatter.ofPattern("yyyyMMdd")
 
+        /**
+         * 레거시 `Util.convertStringToDate` 센티넬 정합 — 빈값/`00000000`/파싱 실패 시
+         * `2999-12-31` 을 반환한다 (날짜 미정 표현). SF 다운스트림이 이 센티넬을
+         * "미정" 으로 가정하므로 null 대신 동일 센티넬을 저장해 동작을 일치시킨다.
+         */
+        private val DATE_SENTINEL: LocalDate = LocalDate.of(2999, 12, 31)
+
         fun parseAmount(value: String?): Double? {
             val trimmed = value?.trim()
             if (trimmed.isNullOrEmpty()) return 0.0
@@ -288,11 +305,11 @@ class ErpOrderUpsertService(
 
         fun parseDate(value: String?): LocalDate? {
             val trimmed = value?.trim()
-            if (trimmed.isNullOrEmpty()) return null
+            if (trimmed.isNullOrEmpty() || trimmed == "00000000") return DATE_SENTINEL
             return try {
                 LocalDate.parse(trimmed, YYYYMMDD)
             } catch (_: Exception) {
-                null
+                DATE_SENTINEL
             }
         }
     }

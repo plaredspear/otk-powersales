@@ -90,7 +90,8 @@ class ErpOrderUpsertServiceTest {
         lines = lines
     )
 
-    private fun account(externalKey: String): Account = Account(externalKey = externalKey)
+    private fun account(externalKey: String, sfid: String? = null): Account =
+        Account(externalKey = externalKey, sfid = sfid)
 
     private fun mockHeaderSave() {
         every { erpOrderRepository.saveAllAndFlush(any<List<ErpOrder>>()) } answers { firstArg<List<ErpOrder>>() }
@@ -291,6 +292,61 @@ class ErpOrderUpsertServiceTest {
             val saved = captor.captured.single()
             assertThat(saved).isSameAs(existingLine)
             assertThat(saved.shippingVehicle).isEqualTo("12가3456")
+        }
+
+        @Test
+        @DisplayName("Account FK 연결 - SAPAccountCode resolve 거래처를 account + accountSfid 에 연결 (레거시 AccountId__c 정합)")
+        fun upsert_linksAccountFk() {
+            every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns
+                listOf(account("1032619", sfid = "001A000000ABCDE"))
+            every { erpOrderRepository.findBySapOrderNumber("0010012345") } returns null
+            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
+            val captor = slot<List<ErpOrder>>()
+            every { erpOrderRepository.saveAllAndFlush(capture(captor)) } answers { firstArg<List<ErpOrder>>() }
+
+            service.upsert(listOf(command()))
+
+            val saved = captor.captured.single()
+            assertThat(saved.account?.externalKey).isEqualTo("1032619")
+            assertThat(saved.accountSfid).isEqualTo("001A000000ABCDE")
+        }
+
+        @Test
+        @DisplayName("날짜 센티넬 - 빈 OrderDate/DeliveryRequestDate 및 00000000 은 2999-12-31 로 저장 (레거시 convertStringToDate 정합)")
+        fun upsert_dateSentinel() {
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
+            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
+            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
+            val captor = slot<List<ErpOrder>>()
+            every { erpOrderRepository.saveAllAndFlush(capture(captor)) } answers { firstArg<List<ErpOrder>>() }
+
+            service.upsert(
+                listOf(
+                    command().copy(orderDate = null, deliveryRequestDate = "00000000")
+                )
+            )
+
+            val saved = captor.captured.single()
+            val sentinel = java.time.LocalDate.of(2999, 12, 31)
+            assertThat(saved.orderDate).isEqualTo(sentinel)
+            assertThat(saved.deliveryRequestDate).isEqualTo(sentinel)
+        }
+
+        @Test
+        @DisplayName("날짜 정상 파싱 - yyyyMMdd 유효 입력은 그대로 LocalDate 변환")
+        fun upsert_dateParsedNormally() {
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
+            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
+            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
+            val captor = slot<List<ErpOrder>>()
+            every { erpOrderRepository.saveAllAndFlush(capture(captor)) } answers { firstArg<List<ErpOrder>>() }
+
+            service.upsert(listOf(command().copy(orderDate = "20260619")))
+
+            assertThat(captor.captured.single().orderDate).isEqualTo(java.time.LocalDate.of(2026, 6, 19))
         }
 
         @Test
