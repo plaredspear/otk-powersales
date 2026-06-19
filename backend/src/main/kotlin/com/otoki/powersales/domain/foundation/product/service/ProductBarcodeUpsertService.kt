@@ -22,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional
  * 2. 캐시 빌드: [ProductRepository.findByProductCodeIn] (FK lookup) / [ProductBarcodeRepository.findByCustomKey] (개별 조회 — 기존 동작 보존).
  * 3. 행 단위 검증/적용:
  *    - 필수값 (`productCode`/`productUnit`/`productSequence`/`productBarcode`) 누락 → failures.
- *    - Product 매칭 실패 (`product_code not found: <code>`) → failures.
+ *    - Product 매칭 실패 → orphan 저장 (productId=null, product_code 평문 보존). 레거시 SF 가 Product__c=null 로
+ *      그대로 upsert 하는 동작 정합 — 행 failure 처리하지 않는다.
  *    - 정상 행: 신규 [ProductBarcode] 생성 또는 기존 entity 의 mutable 필드 갱신.
  * 4. 외부 호출: [ProductBarcodeRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 트랜잭션 롤백하지 않음.
  *
@@ -87,15 +88,14 @@ class ProductBarcodeUpsertService(
             }
 
             val key = productCode + productUnit + productSequence
+            // 레거시 IF_REST_SAP_BarcodeMaster 정합 — Product 미매칭 시에도 orphan 으로 저장한다.
+            // (SF 는 prdMap.get(ProductCode) 가 null 이면 Product__c=null 로 그대로 upsert. 제품 마스터가
+            //  바코드보다 늦게 도착해도 바코드 유실 없음. product_code 평문 컬럼에 코드 보존.)
             val matchedProduct = productCache[productCode]
-            if (matchedProduct == null) {
-                failures += ProductBarcodeUpsertFailedRow(key, "product_code not found: $productCode")
-                return@forEach
-            }
 
             val entity = barcodeCache[key]?.also {
-                applyToEntity(it, command, key, matchedProduct, productUnit, barcode)
-            } ?: createBarcode(key, command, matchedProduct, productUnit, barcode)
+                applyToEntity(it, command, key, matchedProduct, productCode, productUnit, barcode)
+            } ?: createBarcode(key, command, matchedProduct, productCode, productUnit, barcode)
                 .also { barcodeCache[key] = it }
             toSave += entity
         }
@@ -121,7 +121,8 @@ class ProductBarcodeUpsertService(
     private fun createBarcode(
         key: String,
         command: ProductBarcodeUpsertCommand,
-        matchedProduct: Product,
+        matchedProduct: Product?,
+        productCode: String,
         productUnit: String,
         barcode: String
     ): ProductBarcode {
@@ -130,8 +131,11 @@ class ProductBarcodeUpsertService(
             name = productUnit,
             unit = productUnit,
             barcode = barcode,
-            productId = matchedProduct.id
+            // 레거시 정합 — Product 미매칭이면 null (orphan 허용).
+            productId = matchedProduct?.id
         )
+        // 레거시 ProductCode__c 평문 보존 — lookup 실패해도 코드 추적 가능.
+        entity.productCode = productCode
         entity.productName = command.productName
         entity.sortOrder = command.productSequence
         return entity
@@ -141,7 +145,8 @@ class ProductBarcodeUpsertService(
         entity: ProductBarcode,
         command: ProductBarcodeUpsertCommand,
         key: String,
-        matchedProduct: Product,
+        matchedProduct: Product?,
+        productCode: String,
         productUnit: String,
         barcode: String
     ) {
@@ -151,7 +156,10 @@ class ProductBarcodeUpsertService(
         entity.barcode = barcode
         entity.sortOrder = command.productSequence
         entity.productName = command.productName
+        // 레거시 ProductCode__c 평문 보존.
+        entity.productCode = productCode
         // sfid 는 SF 데이터 마이그레이션 보조 필드 — runtime 에서 박지 않음 (정책).
-        entity.productId = matchedProduct.id
+        // 레거시 정합 — Product 미매칭이면 null (orphan 허용).
+        entity.productId = matchedProduct?.id
     }
 }

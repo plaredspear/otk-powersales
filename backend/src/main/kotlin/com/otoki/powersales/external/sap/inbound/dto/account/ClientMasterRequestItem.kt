@@ -1,5 +1,6 @@
 package com.otoki.powersales.external.sap.inbound.dto.account
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
@@ -27,7 +28,11 @@ data class ClientMasterRequestItem(
     @JsonProperty("BusinessType") val businessType: String? = null,
     @JsonProperty("BusinessCategory") val businessCategory: String? = null,
     @JsonProperty("EmployeeCode") val employeeCode: String? = null,
-    @JsonProperty("BusinessLicenseNumber") val businessLicenseNumber: String? = null,
+    // 레거시 SF IF_REST_SAP_ClientMasterReceive 의 실제 수신 key 는 오타 `BusinessLiicenseNumber`(i 2개).
+    // SAP RESTAdapter 가 오타 key 를 그대로 보낼 수 있어 정상 철자 + 오타 둘 다 수용한다 (데이터 유실 방지).
+    @JsonProperty("BusinessLicenseNumber")
+    @JsonAlias("BusinessLiicenseNumber")
+    val businessLicenseNumber: String? = null,
     @JsonProperty("Representative") val representative: String? = null,
     @JsonProperty("Zipcode") val zipcode: String? = null,
     @JsonProperty("Address1") val address1: String? = null,

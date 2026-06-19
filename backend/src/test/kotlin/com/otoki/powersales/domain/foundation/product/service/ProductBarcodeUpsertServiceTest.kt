@@ -68,6 +68,7 @@ class ProductBarcodeUpsertServiceTest {
             assertThat(saved.barcode).isEqualTo("8801045123456")
             assertThat(saved.sortOrder).isEqualTo("001")
             assertThat(saved.productId).isEqualTo(7L)
+            assertThat(saved.productCode).isEqualTo("100100")
             assertThat(result.successCount).isEqualTo(1)
         }
 
@@ -93,18 +94,21 @@ class ProductBarcodeUpsertServiceTest {
     inner class UpsertError {
 
         @Test
-        @DisplayName("Product 매칭 실패 - failures, 적재 스킵")
+        @DisplayName("Product 매칭 실패 - orphan 저장 (productId=null, product_code 평문 보존, 레거시 정합)")
         fun upsert_productNotFound() {
             every { productRepository.findByProductCodeIn(listOf("999999")) } returns emptyList()
             every { productBarcodeRepository.findByCustomKey(any()) } returns null
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(productCode = "999999")))
 
-            assertThat(result.successCount).isEqualTo(0)
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().identifier).isEqualTo("999999EA001")
-            assertThat(result.failures.single().reason).contains("product_code not found")
-            verify(exactly = 0) { productBarcodeRepository.saveAll(any<List<ProductBarcode>>()) }
+            val saved = savedSlot.captured.single()
+            assertThat(saved.customKey).isEqualTo("999999EA001")
+            assertThat(saved.productId).isNull()
+            assertThat(saved.productCode).isEqualTo("999999")
+            assertThat(saved.barcode).isEqualTo("8801045123456")
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
         }
 
         @Test

@@ -32,7 +32,7 @@ import java.time.format.DateTimeParseException
  * 3. 행 단위 검증/변환/적용 (try/catch):
  *    - 필수값 (`employeeCode`/`employeeName`) 누락 → IllegalArgumentException → failures.
  *    - 기존 entity origin=MANUAL → 갱신 스킵 + [EmployeeUpsertResult.protectedManualCodes] 누적 (#579).
- *    - Gender 변환 (`"1"` → MALE / `"2"` → FEMALE / 그 외 → null), 날짜 (`yyyyMMdd`, `"00000000"` → null), birthdate 정규화,
+ *    - Gender 변환 (`"1"` → MALE / `"2"` → FEMALE / 그 외 → null), 날짜 (`yyyyMMdd`, 빈값/`"00000000"` → `2999-12-31` 센티넬), birthdate 정규화,
  *      status code map lookup (매칭 시 detailCodeName, 미매칭 시 raw), LockingFlag (`"Y"` → false / 그 외 → true) 적용.
  * 4. 외부 호출: [EmployeeRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 트랜잭션 롤백하지 않음.
  *    INSERT 시 `Employee.employeeInfo` 가 cascade=ALL 로 자동 영속화됨.
@@ -234,9 +234,13 @@ class EmployeeUpsertService(
         }
     }
 
+    /**
+     * SF `Util.convertStringToDate` 정합 — 빈값/`00000000` → `2999-12-31` 센티넬 (날짜 미정 표현,
+     * 특히 EndDate 미래 날짜로 재직중 표현). 형식 오류(8자리 yyyyMMdd 가 아님) 는 행 failure 로 처리.
+     */
     private fun parseDate(value: String?, fieldName: String): LocalDate? {
         val raw = value?.trim().orEmpty()
-        if (raw.isEmpty() || raw == EMPTY_DATE) return null
+        if (raw.isEmpty() || raw == EMPTY_DATE) return DATE_SENTINEL
         return try {
             LocalDate.parse(raw, DATE_FORMATTER)
         } catch (ex: DateTimeParseException) {
@@ -244,9 +248,13 @@ class EmployeeUpsertService(
         }
     }
 
+    /**
+     * SF `String.valueOf(Util.convertStringToDate(birthdate))` 정합 — 빈값/`00000000` → `"2999-12-31"`
+     * 문자열 센티넬. birthDate 는 `yyyy-MM-dd` 텍스트 컬럼이므로 센티넬도 문자열로 보존.
+     */
     private fun normalizeBirthdate(value: String?): String? {
         val raw = value?.trim().orEmpty()
-        if (raw.isEmpty() || raw == EMPTY_DATE) return null
+        if (raw.isEmpty() || raw == EMPTY_DATE) return DATE_SENTINEL.toString()
         return raw
     }
 
@@ -256,6 +264,8 @@ class EmployeeUpsertService(
         private const val OTOKI_COMPANY_CODE = "1000"
         private const val EMPTY_DATE = "00000000"
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+        // SF Util.convertStringToDate 빈값/00000000 센티넬 (날짜 미정). ErpOrder 와 동일 정합.
+        private val DATE_SENTINEL: LocalDate = LocalDate.of(2999, 12, 31)
 
         // SF EmployeeTrigger.lockingFlagException 보호 대상. jobCode 는 H10060 라벨 변환 후 한글값.
         // (2024-01-02 레이디직 → OSC직 명칭 변경, 하위호환으로 레이디직 유지)

@@ -147,6 +147,25 @@ class AppointmentInsertServiceTest {
         }
 
         @Test
+        @DisplayName("AppointDate 빈값 / 00000000 - 2999-12-31 센티넬 저장 (레거시 convertStringToDate 정합)")
+        fun insert_emptyAppointDateSentinel() {
+            every { employeeRepository.findByEmployeeCodeIn(any()) } returns emptyList()
+            val savedSlot = slot<List<Appointment>>()
+            every { appointmentRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<Appointment>>() }
+
+            val result = service.insert(
+                listOf(
+                    command(appointDate = ""),
+                    command(appointDate = "00000000")
+                )
+            )
+
+            assertThat(result.successCount).isEqualTo(2)
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(savedSlot.captured).allMatch { it.appointDate == LocalDate.of(2999, 12, 31) }
+        }
+
+        @Test
         @DisplayName("부분 실패 - 정상 1건 + JobCode 누락 1건")
         fun insert_partialFailure() {
             every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(employee("100123"))

@@ -29,7 +29,7 @@ import java.time.format.DateTimeParseException
  * 3. 행 단위 검증/변환/적용:
  *    - 필수값 (`productCode`/`productName`) 누락 → failures.
  *    - 숫자 변환 (StandardPrice/BoxReceivingQuantity/SuperTax/Pallet) 실패 → failures.
- *    - 날짜 변환 (LaunchDate, `yyyyMMdd`. `null`/`""`/`"00000000"` → null 정상) 실패 → failures.
+ *    - 날짜 변환 (LaunchDate, `yyyyMMdd`. `null`/`""`/`"00000000"` → `2999-12-31` 센티넬) 형식 오류 → failures.
  *    - 정상 행: 신규 [Product] 생성 또는 기존 entity 의 mutable 필드 갱신.
  * 4. 외부 호출: [ProductRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 트랜잭션 롤백하지 않음.
  *
@@ -199,10 +199,14 @@ class ProductUpsertService(
         }
     }
 
+    /**
+     * SF `Util.convertStringToDate` 정합 — 빈값/`null`/`"00000000"` → `2999-12-31` 센티넬 (발매일 미정).
+     * 형식 오류(8자리 yyyyMMdd 가 아님) 는 행 failure (`isFailure=true`).
+     */
     private fun parseLaunchDate(value: String?): ParseResult<LocalDate> {
         val trimmed = value?.trim()
         if (trimmed.isNullOrEmpty() || trimmed == "00000000") {
-            return ParseResult(null, false)
+            return ParseResult(DATE_SENTINEL, false)
         }
         return try {
             ParseResult(LocalDate.parse(trimmed, DATE_FORMAT), false)
@@ -213,5 +217,7 @@ class ProductUpsertService(
 
     companion object {
         private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+        // SF Util.convertStringToDate 빈값/00000000 센티넬 (발매일 미정). ErpOrder·employee 와 동일 정합.
+        private val DATE_SENTINEL: LocalDate = LocalDate.of(2999, 12, 31)
     }
 }

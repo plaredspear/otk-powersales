@@ -3,8 +3,6 @@ package com.otoki.powersales.domain.foundation.account.service
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertCommand
-import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.entity.Organization
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.user.entity.User
@@ -24,14 +22,12 @@ import org.junit.jupiter.api.Test
 class AccountUpsertServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
-    private val employeeRepository: EmployeeRepository = mockk()
     private val organizationRepository: OrganizationRepository = mockk()
     private val userRepository: UserRepository = mockk()
     private val mapper: AccountUpsertMapper = AccountUpsertMapper()
 
     private val service = AccountUpsertService(
         accountRepository,
-        employeeRepository,
         organizationRepository,
         userRepository,
         mapper,
@@ -39,7 +35,6 @@ class AccountUpsertServiceTest {
 
     @BeforeEach
     fun setUpDefaults() {
-        every { employeeRepository.findByEmployeeCodeIn(any()) } returns emptyList()
         every { userRepository.findByEmployeeCodeIn(any()) } returns emptyList()
     }
 
@@ -218,11 +213,9 @@ class AccountUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("EmployeeCode 매칭 성공 - 거래처 적재")
+        @DisplayName("EmployeeCode 컬럼 적재 - 거래처 저장")
         fun upsert_employeeMatched() {
-            val employee = Employee(employeeCode = "100123", name = "홍길동")
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
-            every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(employee)
             every { organizationRepository.findAll() } returns emptyList()
             val savedSlot = stubSaveAllCapture()
 
@@ -326,19 +319,19 @@ class AccountUpsertServiceTest {
     inner class UpsertError {
 
         @Test
-        @DisplayName("EmployeeCode 매칭 실패 - failures 에 기록, 적재 스킵")
+        @DisplayName("EmployeeCode 매칭 실패 - owner=null silent 저장 (레거시 정합, failure 아님)")
         fun upsert_employeeNotFound() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
-            every { employeeRepository.findByEmployeeCodeIn(listOf("999999")) } returns emptyList()
             every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(employeeCode = "999999")))
 
-            assertThat(result.successCount).isEqualTo(0)
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().identifier).isEqualTo("1032619")
-            assertThat(result.failures.single().reason).contains("employee_code not found")
-            verify(exactly = 0) { accountRepository.saveAll(any<List<Account>>()) }
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            val saved = savedSlot.captured.single()
+            assertThat(saved.employeeCode).isEqualTo("999999")
+            assertThat(saved.ownerUser).isNull()
         }
 
         @Test
@@ -556,10 +549,8 @@ class AccountUpsertServiceTest {
         @Test
         @DisplayName("O1 정상 owner 매핑 -  account.ownerUser = 매칭 User (employee_code 매칭)")
         fun upsert_ownerMapped() {
-            val employee = Employee(employeeCode = "12345", name = "홍길동")
             val matchedUser = user("12345")
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
-            every { employeeRepository.findByEmployeeCodeIn(listOf("12345")) } returns listOf(employee)
             every { userRepository.findByEmployeeCodeIn(listOf("12345")) } returns listOf(matchedUser)
             every { organizationRepository.findAll() } returns emptyList()
             val savedSlot = stubSaveAllCapture()
@@ -572,19 +563,20 @@ class AccountUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("O2 Employee 미존재 - 행 차단, owner 매핑 도달 안 함")
+        @DisplayName("O2 User 미존재 - owner=null silent 저장 (레거시 정합, 행 차단 아님)")
         fun upsert_employeeMissing_blocksRow() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
-            every { employeeRepository.findByEmployeeCodeIn(listOf("99999")) } returns emptyList()
             every { userRepository.findByEmployeeCodeIn(listOf("99999")) } returns emptyList()
             every { organizationRepository.findAll() } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(employeeCode = "99999")))
 
-            assertThat(result.successCount).isEqualTo(0)
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().reason).contains("employee_code not found: 99999")
-            verify(exactly = 0) { accountRepository.saveAll(any<List<Account>>()) }
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            val saved = savedSlot.captured.single()
+            assertThat(saved.employeeCode).isEqualTo("99999")
+            assertThat(saved.ownerUser).isNull()
         }
 
         @Test
@@ -602,11 +594,9 @@ class AccountUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("O4 Employee 존재 but User 미존재 -  account.ownerUser = null (Employee invariant 미적재 케이스)")
+        @DisplayName("O4 User 미존재 -  account.ownerUser = null silent 저장")
         fun upsert_userMissing_ownerNull() {
-            val employee = Employee(employeeCode = "12345", name = "홍길동")
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
-            every { employeeRepository.findByEmployeeCodeIn(listOf("12345")) } returns listOf(employee)
             every { userRepository.findByEmployeeCodeIn(listOf("12345")) } returns emptyList()
             every { organizationRepository.findAll() } returns emptyList()
             val savedSlot = stubSaveAllCapture()
@@ -618,12 +608,10 @@ class AccountUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("O5 다건 + 일부 owner miss - 통과 행만 owner set, 실패 행 failures 누적")
+        @DisplayName("O5 다건 + 일부 owner miss - 전건 저장, 매칭 행만 owner set, 미매칭 owner=null (레거시 정합)")
         fun upsert_partialOwnerMiss() {
-            val employee = Employee(employeeCode = "12345", name = "홍길동")
             val matchedUser = user("12345")
             every { accountRepository.findByExternalKeyIn(listOf("A", "B", "C")) } returns emptyList()
-            every { employeeRepository.findByEmployeeCodeIn(listOf("12345", "99999")) } returns listOf(employee)
             every { userRepository.findByEmployeeCodeIn(listOf("12345", "99999")) } returns listOf(matchedUser)
             every { organizationRepository.findAll() } returns emptyList()
             val savedSlot = stubSaveAllCapture()
@@ -636,12 +624,12 @@ class AccountUpsertServiceTest {
                 )
             )
 
-            assertThat(result.successCount).isEqualTo(2)
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().identifier).isEqualTo("B")
+            assertThat(result.successCount).isEqualTo(3)
+            assertThat(result.failureCount).isEqualTo(0)
             val saved = savedSlot.captured
-            assertThat(saved).hasSize(2)
+            assertThat(saved).hasSize(3)
             assertThat(saved.first { it.externalKey == "A" }.ownerUser).isSameAs(matchedUser)
+            assertThat(saved.first { it.externalKey == "B" }.ownerUser).isNull()
             assertThat(saved.first { it.externalKey == "C" }.ownerUser).isNull()
         }
     }

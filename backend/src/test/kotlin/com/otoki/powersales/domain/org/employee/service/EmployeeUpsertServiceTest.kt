@@ -206,7 +206,7 @@ class EmployeeUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("StartDate / EndDate / Birthdate - YYYYMMDD 변환, 00000000 은 null")
+        @DisplayName("StartDate / EndDate / Birthdate - YYYYMMDD 변환, 빈값/00000000 은 2999-12-31 센티넬 (레거시 convertStringToDate 정합)")
         fun upsert_dateConversion() {
             every { employeeRepository.findByEmployeeCodeIn(any<List<String>>()) } returns emptyList()
             every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
@@ -218,8 +218,25 @@ class EmployeeUpsertServiceTest {
 
             val saved = savedSlot.captured.single()
             assertThat(saved.startDate).isEqualTo(LocalDate.of(2020, 4, 1))
-            assertThat(saved.endDate).isNull()
+            assertThat(saved.endDate).isEqualTo(LocalDate.of(2999, 12, 31))
             assertThat(saved.birthDate).isEqualTo("19850315")
+        }
+
+        @Test
+        @DisplayName("빈 StartDate / null Birthdate - 2999-12-31 센티넬 저장 (날짜 미정)")
+        fun upsert_emptyDateSentinel() {
+            every { employeeRepository.findByEmployeeCodeIn(any<List<String>>()) } returns emptyList()
+            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
+
+            service.upsert(
+                listOf(command(startDate = "", endDate = null, birthdate = "00000000"))
+            )
+
+            val saved = savedSlot.captured.single()
+            assertThat(saved.startDate).isEqualTo(LocalDate.of(2999, 12, 31))
+            assertThat(saved.endDate).isEqualTo(LocalDate.of(2999, 12, 31))
+            assertThat(saved.birthDate).isEqualTo("2999-12-31")
         }
 
         @Test

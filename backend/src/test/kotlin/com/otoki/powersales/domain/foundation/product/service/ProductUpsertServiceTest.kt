@@ -110,14 +110,14 @@ class ProductUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("LaunchDate 00000000 - launchDate=null")
+        @DisplayName("LaunchDate 00000000 / 빈값 - 2999-12-31 센티넬 (레거시 convertStringToDate 정합)")
         fun upsert_launchDateZero() {
             every { productRepository.findByProductCodeIn(listOf("100100")) } returns emptyList()
             val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(launchDate = "00000000")))
 
-            assertThat(savedSlot.captured.single().launchDate).isNull()
+            assertThat(savedSlot.captured.single().launchDate).isEqualTo(LocalDate.of(2999, 12, 31))
             assertThat(result.successCount).isEqualTo(1)
         }
 
