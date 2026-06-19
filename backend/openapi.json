@@ -16838,7 +16838,7 @@
             "type" : "string"
           },
           "quantity" : {
-            "minimum" : 0.01,
+            "minimum" : 0,
             "type" : "number"
           },
           "quantityBoxes" : {
@@ -16907,7 +16907,6 @@
             "items" : {
               "$ref" : "#/components/schemas/OrderDraftLineRequest"
             },
-            "minItems" : 1,
             "type" : "array"
           },
           "totalAmount" : {
@@ -16916,7 +16915,6 @@
             "type" : "integer"
           }
         },
-        "required" : [ "lines" ],
         "type" : "object"
       },
       "OrderDraftSaveResponse" : {
