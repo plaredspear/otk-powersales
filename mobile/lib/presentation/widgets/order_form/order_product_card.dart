@@ -81,16 +81,14 @@ class OrderProductCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: SyncedTextField(
+                        // 레거시 write.jsp: 박스 입력칸(.unitQty)은 parseInt 로
+                        // 정수만 유효. 표시/입력 모두 정수 단위로 맞춘다.
                         value: item.quantityBoxes > 0
-                            ? item.quantityBoxes.toString()
+                            ? item.quantityBoxes.toInt().toString()
                             : '',
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
+                        keyboardType: TextInputType.number,
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d*\.?\d*'),
-                          ),
+                          FilteringTextInputFormatter.digitsOnly,
                         ],
                         decoration: InputDecoration(
                           isDense: true,
@@ -107,7 +105,7 @@ class OrderProductCard extends StatelessWidget {
                           ),
                         ),
                         onChanged: (value) {
-                          final boxes = double.tryParse(value) ?? 0.0;
+                          final boxes = (int.tryParse(value) ?? 0).toDouble();
                           onQuantityChanged(boxes, item.quantityPieces);
                         },
                       ),
