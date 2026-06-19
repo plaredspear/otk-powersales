@@ -153,11 +153,15 @@ describe('SapIntegrationPage (SAP 연동 통합 페이지)', () => {
     // 탭 라벨에 한글명 + 회색 SAP interfaceId 가 함께 렌더되므로 부분 매칭으로 선택
     await user.click(screen.getByRole('tab', { name: /전문행사조 마스터/ }));
 
-    // 카탈로그 고유 메타(트리거)와 외부 연동 정보가 하나의 표로 통합 표시
+    // Endpoint 는 항상 표시되는 메인 표에 인라인 렌더 (SD03300 → ppt-master)
+    expect(
+      await screen.findByText('https://sap.example.com/ppt-master'),
+    ).toBeInTheDocument();
+
+    // 트리거/외부 시스템 등 상세 메타는 접이식 패널에 분리 — 펼치면 노출
+    await user.click(screen.getByRole('button', { name: /상세 메타/ }));
     expect(await screen.findByText('BATCH')).toBeInTheDocument();
-    // 외부 연동 정보가 해당 인터페이스의 kind 로 같은 표에 인라인 렌더 (SD03300 → ppt-master)
     expect(screen.getByText('external-system:ppt-master')).toBeInTheDocument();
-    expect(screen.getByText('https://sap.example.com/ppt-master')).toBeInTheDocument();
     // 테스트 송신 카드가 해당 인터페이스로 인라인 렌더
     expect(screen.getByText('sender-card:ppt-master')).toBeInTheDocument();
     // 호출 이력이 해당 interfaceId 로 고정되어 인라인 렌더

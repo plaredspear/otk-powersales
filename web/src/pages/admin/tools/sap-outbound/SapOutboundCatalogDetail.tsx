@@ -1,4 +1,12 @@
-import { Alert, Descriptions, Divider, Skeleton, Tag, Typography } from 'antd';
+import {
+  Alert,
+  Collapse,
+  Descriptions,
+  Divider,
+  Skeleton,
+  Tag,
+  Typography,
+} from 'antd';
 import type {
   OutboundTriggerType,
   SapOutboundCatalogItem,
@@ -50,31 +58,55 @@ export default function SapOutboundCatalogDetail({
       <Title level={5} style={{ marginBottom: 16 }}>
         연동 정보
       </Title>
+      {/* Endpoint / 설명 / 비고 는 항상 표시, 그 외 메타(트리거/외부시스템/Method/인증)는 접이식으로 분리 */}
       <Descriptions column={1} bordered size="middle">
-        <Descriptions.Item label="트리거">
-          <Tag color={TRIGGER_TAG_COLOR[item.triggerType]}>{item.triggerType}</Tag>
-        </Descriptions.Item>
+        {senderConfig && info && (
+          <Descriptions.Item label="Endpoint">
+            <Text copyable code style={{ fontSize: 12 }}>
+              {info.endpoint}
+            </Text>
+          </Descriptions.Item>
+        )}
         <Descriptions.Item label="설명">{item.description}</Descriptions.Item>
         {senderConfig && info && (
-          <>
-            <Descriptions.Item label="외부 시스템">
-              {info.externalSystem}
-            </Descriptions.Item>
-            <Descriptions.Item label="HTTP Method">
-              <Tag color={METHOD_COLOR[info.httpMethod] ?? 'default'}>
-                {info.httpMethod}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Endpoint">
-              <Text copyable code style={{ fontSize: 12 }}>
-                {info.endpoint}
-              </Text>
-            </Descriptions.Item>
-            <Descriptions.Item label="인증">{info.authType}</Descriptions.Item>
-            <Descriptions.Item label="비고">{info.note}</Descriptions.Item>
-          </>
+          <Descriptions.Item label="비고">{info.note}</Descriptions.Item>
         )}
       </Descriptions>
+
+      <Collapse
+        size="small"
+        style={{ marginTop: 12 }}
+        items={[
+          {
+            key: 'meta',
+            label: '상세 메타',
+            children: (
+              <Descriptions column={2} size="small" colon>
+                <Descriptions.Item label="트리거">
+                  <Tag color={TRIGGER_TAG_COLOR[item.triggerType]}>
+                    {item.triggerType}
+                  </Tag>
+                </Descriptions.Item>
+                {senderConfig && info && (
+                  <Descriptions.Item label="외부 시스템">
+                    {info.externalSystem}
+                  </Descriptions.Item>
+                )}
+                {senderConfig && info && (
+                  <>
+                    <Descriptions.Item label="HTTP Method">
+                      <Tag color={METHOD_COLOR[info.httpMethod] ?? 'default'}>
+                        {info.httpMethod}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="인증">{info.authType}</Descriptions.Item>
+                  </>
+                )}
+              </Descriptions>
+            ),
+          },
+        ]}
+      />
       {senderConfig && isLoading && (
         <Skeleton active paragraph={{ rows: 2 }} style={{ marginTop: 16 }} />
       )}
