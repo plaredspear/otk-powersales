@@ -113,10 +113,13 @@ class OrderRequestCreateService(
         // 6. 라인 일괄 INSERT
         val savedLines = request.lines.map { line ->
             val info = inventoryMap.getValue(line.productCode)
+            // 레거시 정합: 박스 수량은 총 EA ÷ 환산수량으로 서버가 역산(클라이언트 박스 입력값 비신뢰).
+            // 박스+낱개 혼합도 총 EA 가 환산수량 배수면 박스 수로 흡수됨 (예: 박스5+낱개8, 환산8 → 6박스).
+            val derivedBoxes = UnitConverter.toBoxQuantity(line.quantityPieces, info.conversionQuantity)
             OrderRequestProduct(
                 lineNumber = BigDecimal.valueOf(line.lineNumber.toLong()),
                 productCode = line.productCode,
-                quantityBoxes = line.quantityBoxes,
+                quantityBoxes = derivedBoxes,
                 quantityPieces = BigDecimal.valueOf(line.quantityPieces.toLong()),
                 unit = line.unit,
                 unitPrice = info.unitPrice,
@@ -165,24 +168,24 @@ class OrderRequestCreateService(
         request.lines.forEach { line ->
             val info = inventoryMap[line.productCode]
                 ?: throw OrderInvalidRequestException("제품 마스터 미등록 (productCode: ${line.productCode})")
+            val conv = info.conversionQuantity.coerceAtLeast(1)
 
-            // 단위 환산 정합 검증
-            val piecesValid = UnitConverter.isPiecesValid(
-                quantity = line.quantity,
-                unit = line.unit,
-                quantityPieces = line.quantityPieces,
-                conversionQuantity = info.conversionQuantity,
-            )
-            if (!piecesValid) {
+            // 단위 환산 정합 검증 — 레거시 OrderController.java:630-632.
+            // 박스류(EA 외)는 총 EA(quantityPieces)가 환산수량 배수여야 정합 (박스+낱개 혼합은 총 EA 로 평탄화).
+            if (!UnitConverter.isPiecesValid(line.unit, line.quantityPieces, conv)) {
                 throw OrderInvalidUnitException(
                     "단위 환산 정합 위반 (productCode: ${line.productCode}, unit: ${line.unit}, " +
-                            "quantity: ${line.quantity}, quantityPieces: ${line.quantityPieces}, " +
-                            "conversionQuantity: ${info.conversionQuantity})"
+                            "quantityPieces: ${line.quantityPieces}, conversionQuantity: $conv)"
                 )
             }
 
-            // 공급제한 검증
-            if (info.supplyLimitQuantity < line.quantityPieces) {
+            // 공급제한 검증 — 레거시 OrderController.java:557-558,650.
+            // SAP SupplyLimitQTY 는 주문 단위(박스) 기준이므로 EA 외 단위는 환산수량을 곱해 총 EA 와 비교.
+            // (Int.MAX_VALUE = 제한 없음 → ×conv 오버플로 방지를 위해 Long 연산.)
+            val supplyLimitPieces: Long =
+                if (line.unit == UNIT_EA) info.supplyLimitQuantity.toLong()
+                else info.supplyLimitQuantity.toLong() * conv.toLong()
+            if (supplyLimitPieces < line.quantityPieces.toLong()) {
                 throw OrderProductRestrictedException(
                     productCode = line.productCode,
                     limit = info.supplyLimitQuantity,
@@ -200,6 +203,7 @@ class OrderRequestCreateService(
     }
 
     companion object {
+        private const val UNIT_EA = "EA"
         private val ALLOWED_UNITS = setOf("BOX", "EA")
         private val YYYYMMDD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
     }

@@ -584,14 +584,18 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         final index = entry.key;
         final item = entry.value;
         final unit = item.quantityBoxes > 0 ? 'BOX' : 'EA';
+        // 레거시 TotalQuantity_Each 동등 — 박스×환산수량 + 낱개 합산 "총 EA" 를 단일 진실값으로 송신.
+        // (quantityPieces 는 백엔드에서 금액·공급제한·박스환산의 기준이 되는 총 낱개수.)
+        final totalPieces =
+            (item.quantityBoxes * item.boxSize).round() + item.quantityPieces;
         return OrderRequestLineModel(
           lineNumber: index + 1,
           productCode: item.productCode,
           quantity: unit == 'BOX'
               ? item.quantityBoxes
-              : item.quantityPieces.toDouble(),
+              : totalPieces.toDouble(),
           unit: unit,
-          quantityPieces: item.quantityPieces,
+          quantityPieces: totalPieces,
           quantityBoxes: item.quantityBoxes,
         );
       }).toList(),

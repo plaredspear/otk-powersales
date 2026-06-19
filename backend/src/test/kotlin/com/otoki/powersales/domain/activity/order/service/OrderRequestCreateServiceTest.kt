@@ -25,6 +25,7 @@ import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.external.sap.outbox.SapOutbox
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
@@ -102,6 +103,53 @@ class OrderRequestCreateServiceTest {
 
             assertThat(response.orderRequestNumber).startsWith("ORD-")
             assertThat(response.orderRequestNumber).endsWith("-42")
+            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT)
+            verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("박스+낱개 혼합 — 총 EA 가 환산수량 배수면 박스 수로 흡수 저장 (레거시 정합)")
+        fun mixedBoxAndPiecesAbsorbed() {
+            stubAuthAndAccount()
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 8, supply = 1000)))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
+            val savedLines = slot<List<OrderRequestProduct>>()
+            every { orderRequestProductRepository.saveAll(capture(savedLines)) } answers { firstArg() }
+            every { orderRequestRegisterSender.enqueue(any(), any()) } returns
+                SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
+
+            // 박스 5 + 낱개 8 = 총 48 EA (환산 8 의 배수). 클라이언트 박스 입력값(5)은 신뢰하지 않고
+            // 서버가 48 / 8 = 6 박스로 역산해야 한다.
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 5, unit = "BOX", quantityPieces = 48, quantityBoxes = 5))
+            )
+
+            service.create(userId, request)
+
+            val saved = savedLines.captured.single()
+            assertThat(saved.quantityPieces).isEqualByComparingTo(BigDecimal.valueOf(48))
+            assertThat(saved.quantityBoxes).isEqualByComparingTo(BigDecimal.valueOf(6))
+        }
+
+        @Test
+        @DisplayName("박스류 공급제한 — 공급제한(박스)×환산수량 한도 내 박스 주문 통과 (레거시 정합)")
+        fun boxSupplyLimitConvertedToPieces() {
+            stubAuthAndAccount()
+            // 공급제한 5(박스) → 환산 8 적용 시 40 EA 한도. 5박스(=40 EA) 주문은 한도 내 → 통과.
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 8, supply = 5)))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
+            every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
+            every { orderRequestRegisterSender.enqueue(any(), any()) } returns
+                SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 5, unit = "BOX", quantityPieces = 40, quantityBoxes = 5))
+            )
+
+            val response = service.create(userId, request)
+
             assertThat(response.status).isEqualTo(OrderRequestStatus.SENT)
             verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
         }
