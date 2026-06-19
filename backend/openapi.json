@@ -10627,7 +10627,7 @@
           "AppointDate" : {
             "type" : "string"
           },
-          "Employeecode" : {
+          "EmployeeCode" : {
             "type" : "string"
           },
           "Jikchak" : {
