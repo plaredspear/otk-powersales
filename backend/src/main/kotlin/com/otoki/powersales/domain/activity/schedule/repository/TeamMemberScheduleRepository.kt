@@ -65,4 +65,14 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
         employee: Employee,
         pageable: Pageable,
     ): List<TeamMemberSchedule>
+
+    /**
+     * 근무기간 조회 — 월별 개인 근무내역(어디서/어떻게) 조회.
+     * `working_date asc, created_at asc` 정렬으로 일자 오름차순 캘린더/표 렌더에 적합.
+     */
+    fun findByEmployeeAndWorkingDateBetweenOrderByWorkingDateAscCreatedAtAsc(
+        employee: Employee,
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): List<TeamMemberSchedule>
 }

@@ -15,6 +15,11 @@ const items: EmployeeWorkHistoryItem[] = [
     accountName: '거래처A',
     accountExternalKey: 'A001',
     isClockIn: true,
+    refAccountName: null,
+    costCenterCode: null,
+    secondWorkType: null,
+    startTime: null,
+    completeTime: null,
   },
   {
     id: 2,
@@ -26,6 +31,11 @@ const items: EmployeeWorkHistoryItem[] = [
     accountName: null,
     accountExternalKey: null,
     isClockIn: false,
+    refAccountName: null,
+    costCenterCode: null,
+    secondWorkType: null,
+    startTime: null,
+    completeTime: null,
   },
 ];
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Space, Tag, Typography, message } from 'antd';
+import { Button, Space, Tabs, Tag, Typography, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useAttendInfoList, useDeleteAttendInfo } from '@/hooks/attend-info/useAttendInfo';
 import { usePermission } from '@/hooks/usePermission';
@@ -10,6 +10,7 @@ import AttendInfoList from './components/AttendInfoList';
 import AttendInfoCreateModal from './components/AttendInfoCreateModal';
 import AttendInfoDetailModal from './components/AttendInfoDetailModal';
 import AttendInfoDeleteConfirmModal from './components/AttendInfoDeleteConfirmModal';
+import MonthlyWorkDetailTab from './components/monthly/MonthlyWorkDetailTab';
 
 const { Title } = Typography;
 
@@ -52,20 +53,15 @@ export default function AttendInfoPage() {
     }
   };
 
-  return (
-    <div style={{ padding: 24 }}>
-      <Space style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={3} style={{ margin: 0 }}>
-          근무기간 조회
-        </Title>
-        <Space>
-          <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-          {canWrite && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
-              신규 등록
-            </Button>
-          )}
-        </Space>
+  const hrTab = (
+    <>
+      <Space style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <RefreshButton onRefresh={refetch} refreshing={isFetching} />
+        {canWrite && (
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+            신규 등록
+          </Button>
+        )}
       </Space>
       <Tag color="orange" style={{ marginBottom: 16 }}>
         SAP HR 인바운드 적재 근무기간 데이터 — admin 보정 입력 / 수정 / 삭제 시 연차 일정 자동 cascade
@@ -80,6 +76,21 @@ export default function AttendInfoPage() {
         onPageChange={handlePageChange}
         onView={(item) => setDetailId(item.id)}
         onDelete={canDelete ? (item) => setDeleteTarget(item) : undefined}
+      />
+    </>
+  );
+
+  return (
+    <div style={{ padding: 24 }}>
+      <Title level={3} style={{ margin: '0 0 12px' }}>
+        근무기간 조회
+      </Title>
+      <Tabs
+        defaultActiveKey="monthly"
+        items={[
+          { key: 'monthly', label: '월별 근무내역 (개인)', children: <MonthlyWorkDetailTab /> },
+          { key: 'hr', label: 'HR 적재 근무기간', children: hrTab },
+        ]}
       />
       {createOpen && (
         <AttendInfoCreateModal open={createOpen} onClose={() => setCreateOpen(false)} />

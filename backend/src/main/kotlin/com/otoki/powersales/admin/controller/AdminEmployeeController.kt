@@ -32,6 +32,8 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.YearMonth
+import java.time.format.DateTimeParseException
 
 @RestController
 @RequestMapping("/api/v1/admin/employees")
@@ -281,6 +283,26 @@ class AdminEmployeeController(
         @RequestParam(required = false, defaultValue = "10") limit: Int,
     ): ResponseEntity<ApiResponse<EmployeeWorkHistoryResponse>> {
         val response = employeeWorkHistoryService.getRecentHistory(employeeId, limit)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 근무기간 조회(월별) — 인원 1명 × 지정 월의 근무내역(어디서/어떻게)을 일자 오름차순 조회.
+     *
+     * @param yearMonth `yyyy-MM` (예: 2026-06). 일자별 표(raw) + 캘린더/요약 인사이트 공용 데이터.
+     */
+    @GetMapping("/{employeeId}/work-history/monthly")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
+    fun getMonthlyWorkHistory(
+        @PathVariable employeeId: Long,
+        @RequestParam yearMonth: String,
+    ): ResponseEntity<ApiResponse<EmployeeWorkHistoryResponse>> {
+        val parsed = try {
+            YearMonth.parse(yearMonth)
+        } catch (e: DateTimeParseException) {
+            throw IllegalArgumentException("yearMonth 형식이 올바르지 않습니다 (yyyy-MM): $yearMonth")
+        }
+        val response = employeeWorkHistoryService.getMonthlyHistory(employeeId, parsed)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

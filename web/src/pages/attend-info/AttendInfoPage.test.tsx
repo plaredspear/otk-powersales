@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AttendInfoPage from './AttendInfoPage';
 import * as api from '@/api/attendInfo';
@@ -14,7 +14,27 @@ vi.mock('@/api/attendInfo', async () => {
   };
 });
 
+// 월별 근무내역 탭(기본 활성)의 사원 검색 — 실제 네트워크 호출 방지용 stub.
+vi.mock('@/api/employee', async () => {
+  const actual = await vi.importActual<typeof import('@/api/employee')>('@/api/employee');
+  return {
+    ...actual,
+    fetchEmployees: vi.fn().mockResolvedValue({
+      content: [],
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+    }),
+  };
+});
+
 const mockedSearch = vi.mocked(api.searchAttendInfo);
+
+/** 기본 활성 탭은 '월별 근무내역' 이므로, HR 목록 검증 전 'HR 적재 근무기간' 탭으로 전환. */
+function switchToHrTab() {
+  fireEvent.click(screen.getByRole('tab', { name: 'HR 적재 근무기간' }));
+}
 
 function renderPage() {
   const client = new QueryClient({
@@ -58,6 +78,7 @@ describe('AttendInfoPage', () => {
     });
     renderPage();
     expect(screen.getByText('근무기간 조회')).toBeInTheDocument();
+    switchToHrTab();
     expect(
       screen.getByText(/SAP HR 인바운드 적재 근무기간 데이터/),
     ).toBeInTheDocument();
@@ -73,6 +94,7 @@ describe('AttendInfoPage', () => {
       totalPages: 0,
     });
     renderPage();
+    switchToHrTab();
     expect(screen.getByRole('button', { name: /신규 등록/ })).toBeInTheDocument();
   });
 
@@ -97,6 +119,7 @@ describe('AttendInfoPage', () => {
       totalPages: 0,
     });
     renderPage();
+    switchToHrTab();
     expect(screen.queryByRole('button', { name: /신규 등록/ })).not.toBeInTheDocument();
   });
 
@@ -122,6 +145,7 @@ describe('AttendInfoPage', () => {
       totalPages: 1,
     });
     renderPage();
+    switchToHrTab();
     await waitFor(() => {
       expect(screen.getByText('AI0001')).toBeInTheDocument();
       expect(screen.getByText('20120253')).toBeInTheDocument();

@@ -291,6 +291,12 @@ export interface EmployeeWorkHistoryItem {
   accountName: string | null;
   accountExternalKey: string | null;
   isClockIn: boolean;
+  // 근무기간 조회(월별) 화면 확장 필드 — 최근이력 응답에서는 값이 채워질 수 있으나 미사용
+  refAccountName: string | null;
+  costCenterCode: string | null;
+  secondWorkType: string | null;
+  startTime: string | null;
+  completeTime: string | null;
 }
 
 export interface EmployeeWorkHistory {
@@ -307,6 +313,24 @@ export async function fetchEmployeeWorkHistory(
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '근무이력 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 근무기간 조회(월별) — 인원 1명 × 지정 월의 근무내역(어디서/어떻게)을 일자 오름차순 조회.
+ * @param yearMonth `yyyy-MM` (예: 2026-06)
+ */
+export async function fetchEmployeeMonthlyWorkHistory(
+  employeeId: number,
+  yearMonth: string,
+): Promise<EmployeeWorkHistory> {
+  const res = await client.get<ApiResponse<EmployeeWorkHistory>>(
+    `/api/v1/admin/employees/${employeeId}/work-history/monthly`,
+    { params: { yearMonth } },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '월별 근무내역 조회에 실패했습니다');
   }
   return res.data.data;
 }

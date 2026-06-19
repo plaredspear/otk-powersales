@@ -17,6 +17,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.data.domain.Pageable
 import java.time.LocalDate
+import java.time.YearMonth
 import java.util.Optional
 
 @DisplayName("EmployeeWorkHistoryService")
@@ -112,5 +113,73 @@ class EmployeeWorkHistoryServiceTest {
         val response = service.getRecentHistory(1L, 10)
 
         assertThat(response.items).isEmpty()
+    }
+
+    @Test
+    @DisplayName("월별 — 해당 월의 일자 오름차순 근무내역을 DTO 로 변환해 반환")
+    fun getMonthlyHistory_returnsItems() {
+        val employee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트사원")
+        val s1 = TeamMemberSchedule(
+            id = 20L,
+            employee = employee,
+            workingDate = LocalDate.of(2026, 6, 1),
+            workingType = WorkingType.WORK,
+        )
+        val s2 = TeamMemberSchedule(
+            id = 21L,
+            employee = employee,
+            workingDate = LocalDate.of(2026, 6, 3),
+            workingType = WorkingType.ANNUAL_LEAVE,
+        )
+        every { employeeRepository.findById(1L) } returns Optional.of(employee)
+        every {
+            teamMemberScheduleRepository
+                .findByEmployeeAndWorkingDateBetweenOrderByWorkingDateAscCreatedAtAsc(
+                    employee,
+                    LocalDate.of(2026, 6, 1),
+                    LocalDate.of(2026, 6, 30),
+                )
+        } returns listOf(s1, s2)
+
+        val response = service.getMonthlyHistory(1L, YearMonth.of(2026, 6))
+
+        assertThat(response.items).hasSize(2)
+        assertThat(response.items[0].id).isEqualTo(20L)
+        assertThat(response.items[1].workingType).isEqualTo(WorkingType.ANNUAL_LEAVE.displayName)
+    }
+
+    @Test
+    @DisplayName("월별 — 월 시작·종료일이 정확히 경계로 전달된다")
+    fun getMonthlyHistory_monthBoundaries() {
+        val employee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트사원")
+        every { employeeRepository.findById(1L) } returns Optional.of(employee)
+        every {
+            teamMemberScheduleRepository
+                .findByEmployeeAndWorkingDateBetweenOrderByWorkingDateAscCreatedAtAsc(
+                    employee,
+                    any(),
+                    any(),
+                )
+        } returns emptyList()
+
+        service.getMonthlyHistory(1L, YearMonth.of(2026, 2))
+
+        verify {
+            teamMemberScheduleRepository
+                .findByEmployeeAndWorkingDateBetweenOrderByWorkingDateAscCreatedAtAsc(
+                    employee,
+                    LocalDate.of(2026, 2, 1),
+                    LocalDate.of(2026, 2, 28),
+                )
+        }
+    }
+
+    @Test
+    @DisplayName("월별 — 존재하지 않는 employee 는 EmployeeNotFoundException")
+    fun getMonthlyHistory_missingEmployee_throws() {
+        every { employeeRepository.findById(999L) } returns Optional.empty()
+
+        assertThatThrownBy { service.getMonthlyHistory(999L, YearMonth.of(2026, 6)) }
+            .isInstanceOf(EmployeeNotFoundException::class.java)
     }
 }
