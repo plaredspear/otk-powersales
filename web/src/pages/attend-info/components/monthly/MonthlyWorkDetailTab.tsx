@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Alert, DatePicker, Spin, Tabs, Typography } from 'antd';
+import { useCallback, useState } from 'react';
+import { Alert, Button, Segmented, Spin, Typography } from 'antd';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleForm } from '@/hooks/team-schedule/useTeamScheduleForm';
 import { useEmployeeMonthlyWorkHistory } from '@/hooks/employee/useEmployeeWorkHistory';
@@ -11,16 +12,19 @@ import MonthlyWorkInsight from './MonthlyWorkInsight';
 
 const { Text } = Typography;
 
+type MonthlyView = 'month' | 'list';
+
 /**
  * 근무기간 조회 — 월별 개인 근무내역(어디서/어떻게).
  *
  * 좌측에 여사원 일정관리와 동일한 리스트(검색 + 이름(사번))가 페이지 접근 즉시 나열되고,
  * 1명을 클릭하면 우측에서 지정 월의 근무내역을 team_member_schedule 기반으로 조회.
- * 기본 화면은 근무 인사이트(요약+캘린더 2단).
+ * 우측 캘린더 상단은 여사원 일정관리와 동일한 [◀ 년월 ▶ 오늘] 네비게이션 + [월간/목록] 토글.
  */
 export default function MonthlyWorkDetailTab() {
   const [selected, setSelected] = useState<TeamMember | undefined>(undefined);
   const [period, setPeriod] = useState<Dayjs>(dayjs());
+  const [viewType, setViewType] = useState<MonthlyView>('month');
 
   // 여사원 일정관리와 동일한 form 응답 — members(본인 지점 스코프 자동) 를 즉시 나열.
   const formQuery = useTeamScheduleForm();
@@ -30,6 +34,12 @@ export default function MonthlyWorkDetailTab() {
   const histQuery = useEmployeeMonthlyWorkHistory(employeeId, employeeId ? yearMonth : undefined);
 
   const items = histQuery.data?.items ?? [];
+
+  const handlePrev = useCallback(() => setPeriod((p) => p.subtract(1, 'month')), []);
+  const handleNext = useCallback(() => setPeriod((p) => p.add(1, 'month')), []);
+  const handleToday = useCallback(() => setPeriod(dayjs()), []);
+
+  const isHistLoading = employeeId != null && histQuery.isLoading;
 
   return (
     <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
@@ -41,41 +51,53 @@ export default function MonthlyWorkDetailTab() {
       />
 
       <div style={{ flex: 1, minWidth: 0 }}>
+        {/* 여사원 일정관리 캘린더 상단과 동일한 헤더 — 월 네비게이션 + 월간/목록 토글 */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 16,
             gap: 12,
-            marginBottom: 12,
             flexWrap: 'wrap',
           }}
         >
-          {selected ? (
-            <Text strong>
-              {selected.name}({selected.employeeCode})
-            </Text>
-          ) : (
-            <Text type="secondary">좌측에서 여사원을 선택하세요</Text>
-          )}
-          <span style={{ marginLeft: 'auto' }}>년·월:</span>
-          <DatePicker
-            picker="month"
-            value={period}
-            onChange={(v) => v && setPeriod(v)}
-            allowClear={false}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Button icon={<LeftOutlined />} size="small" onClick={handlePrev} />
+            <span style={{ fontSize: 18, fontWeight: 600, minWidth: 140, textAlign: 'center' }}>
+              {period.year()}년 {period.month() + 1}월
+            </span>
+            <Button icon={<RightOutlined />} size="small" onClick={handleNext} />
+            <Button size="small" onClick={handleToday} style={{ marginLeft: 8 }}>
+              오늘
+            </Button>
+            {employeeId != null && (
+              <RefreshButton onRefresh={histQuery.refetch} refreshing={histQuery.isFetching} />
+            )}
+          </div>
+          <Segmented
+            size="small"
+            options={[
+              { label: '월간', value: 'month' },
+              { label: '목록', value: 'list' },
+            ]}
+            value={viewType}
+            onChange={(v) => setViewType(v as MonthlyView)}
           />
-          {employeeId != null && (
-            <RefreshButton onRefresh={histQuery.refetch} refreshing={histQuery.isFetching} />
-          )}
         </div>
 
-        {employeeId != null && (
-          <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 8 }}>
+          {selected ? (
             <Text type="secondary">
-              {period.year()}년 {period.month() + 1}월 — 총 {items.length}건
+              {selected.name}({selected.employeeCode}) · {period.year()}년 {period.month() + 1}월 —
+              총 {items.length}건
             </Text>
-          </div>
-        )}
+          ) : (
+            <Text type="secondary">
+              좌측에서 여사원을 선택하면 해당 월 근무내역이 채워집니다.
+            </Text>
+          )}
+        </div>
 
         {formQuery.isError && (
           <Alert
@@ -92,46 +114,16 @@ export default function MonthlyWorkDetailTab() {
           />
         )}
 
-        {employeeId == null && (
-          <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
-            좌측에서 여사원을 선택하면 해당 월 근무내역이 채워집니다.
-          </Text>
+        {/* 캘린더(월간)는 여사원 미선택/내역 0건과 무관하게 항상 노출 — 선택 전에는 빈 달력. */}
+        {isHistLoading ? (
+          <div style={{ textAlign: 'center', padding: 48 }}>
+            <Spin size="large" />
+          </div>
+        ) : viewType === 'month' ? (
+          <MonthlyWorkInsight items={items} year={period.year()} month={period.month() + 1} />
+        ) : (
+          <MonthlyWorkRawTable items={items} />
         )}
-
-        {/* 캘린더는 여사원 미선택/로딩과 무관하게 항상 노출. 선택 전에는 빈 달력. */}
-        <Tabs
-          defaultActiveKey="insight"
-          items={[
-            {
-              key: 'insight',
-              label: '근무 인사이트',
-              children:
-                employeeId != null && histQuery.isLoading ? (
-                  <div style={{ textAlign: 'center', padding: 48 }}>
-                    <Spin size="large" />
-                  </div>
-                ) : (
-                  <MonthlyWorkInsight
-                    items={items}
-                    year={period.year()}
-                    month={period.month() + 1}
-                  />
-                ),
-            },
-            {
-              key: 'raw',
-              label: '일자별 내역',
-              children:
-                employeeId != null && histQuery.isLoading ? (
-                  <div style={{ textAlign: 'center', padding: 48 }}>
-                    <Spin size="large" />
-                  </div>
-                ) : (
-                  <MonthlyWorkRawTable items={items} />
-                ),
-            },
-          ]}
-        />
       </div>
     </div>
   );
