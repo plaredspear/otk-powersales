@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Empty, Typography } from 'antd';
+import { Typography } from 'antd';
 import dayjs from 'dayjs';
 import type { EmployeeWorkHistoryItem } from '@/api/employee';
 
@@ -280,10 +280,7 @@ function CalendarPanel({
 export default function MonthlyWorkInsight({ items, year, month }: Props) {
   const agg = useMemo(() => aggregate(items), [items]);
 
-  if (items.length === 0) {
-    return <Empty description="해당 월 근무내역이 없습니다" />;
-  }
-
+  // 근무내역이 없어도(미선택 포함) 캘린더 격자는 항상 그린다 — 빈 달력으로 노출.
   return (
     <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' }}>
       <SummaryPanel agg={agg} />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, DatePicker, Empty, Spin, Tabs, Typography } from 'antd';
+import { Alert, DatePicker, Spin, Tabs, Typography } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleForm } from '@/hooks/team-schedule/useTeamScheduleForm';
 import { useEmployeeMonthlyWorkHistory } from '@/hooks/employee/useEmployeeWorkHistory';
@@ -92,35 +92,46 @@ export default function MonthlyWorkDetailTab() {
           />
         )}
 
-        {employeeId == null ? (
-          <Empty description="여사원을 선택하면 해당 월 근무내역을 조회합니다" />
-        ) : histQuery.isLoading ? (
-          <div style={{ textAlign: 'center', padding: 48 }}>
-            <Spin size="large" />
-          </div>
-        ) : (
-          <Tabs
-            defaultActiveKey="insight"
-            items={[
-              {
-                key: 'insight',
-                label: '근무 인사이트',
-                children: (
+        {employeeId == null && (
+          <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+            좌측에서 여사원을 선택하면 해당 월 근무내역이 채워집니다.
+          </Text>
+        )}
+
+        {/* 캘린더는 여사원 미선택/로딩과 무관하게 항상 노출. 선택 전에는 빈 달력. */}
+        <Tabs
+          defaultActiveKey="insight"
+          items={[
+            {
+              key: 'insight',
+              label: '근무 인사이트',
+              children:
+                employeeId != null && histQuery.isLoading ? (
+                  <div style={{ textAlign: 'center', padding: 48 }}>
+                    <Spin size="large" />
+                  </div>
+                ) : (
                   <MonthlyWorkInsight
                     items={items}
                     year={period.year()}
                     month={period.month() + 1}
                   />
                 ),
-              },
-              {
-                key: 'raw',
-                label: '일자별 내역',
-                children: <MonthlyWorkRawTable items={items} />,
-              },
-            ]}
-          />
-        )}
+            },
+            {
+              key: 'raw',
+              label: '일자별 내역',
+              children:
+                employeeId != null && histQuery.isLoading ? (
+                  <div style={{ textAlign: 'center', padding: 48 }}>
+                    <Spin size="large" />
+                  </div>
+                ) : (
+                  <MonthlyWorkRawTable items={items} />
+                ),
+            },
+          ]}
+        />
       </div>
     </div>
   );
