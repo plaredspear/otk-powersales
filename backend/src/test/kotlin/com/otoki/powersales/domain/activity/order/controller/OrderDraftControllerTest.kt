@@ -67,8 +67,11 @@ class OrderDraftControllerTest : MobileControllerTestSupport() {
         }
 
         @Test
-        @DisplayName("E2 - lines 누락 → 400")
+        @DisplayName("E2 - lines 빈 배열 → 200 (레거시 정합, 거래처만 선택한 임시저장 허용)")
         fun emptyLines() {
+            every { orderDraftService.save(any(), any()) } returns
+                OrderDraftSaveResponse(draftId = 100L, savedAt = LocalDateTime.of(2026, 5, 4, 10, 0))
+
             val body = """
                 { "accountId": 5678, "totalAmount": 0, "lines": [] }
             """.trimIndent()
@@ -78,7 +81,9 @@ class OrderDraftControllerTest : MobileControllerTestSupport() {
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(body),
             )
-                .andExpect(status().isBadRequest)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.draftId").value(100))
         }
 
         @Test
