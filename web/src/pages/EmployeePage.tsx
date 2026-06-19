@@ -99,17 +99,7 @@ export default function EmployeePage() {
       title: '이름',
       dataIndex: 'name',
       width: 120,
-      render: (val: string, record: Employee) => (
-        <a
-          onClick={(e) => {
-            e.preventDefault();
-            goToDetail(record.id);
-          }}
-          href={`/female-employee/${record.id}`}
-        >
-          {val}
-        </a>
-      ),
+      render: (val: string | null) => val ?? '-',
     },
     { title: '성별', dataIndex: 'gender', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
     {
