@@ -50,6 +50,7 @@ const JOB_LABELS: Record<string, string> = {
   'agreement-word-cycle-batch': '약관 동의 리셋',
   'attendance-sap-batch': '여사원일정 SAP전송',
   'display-master-sap-batch': '진열마스터 SAP전송',
+  'ppt-master-sap-batch': 'PPT마스터 SAP전송',
   'display-master-last-month-revenue-batch': '진열 전월매출',
   'mfeis-this-month-revenue-batch': '일정 전월매출',
   'account-naver-geocode-batch': '거래처 좌표변환',
@@ -72,6 +73,7 @@ const JOB_SCHEDULES: Record<string, string> = {
   'agreement-word-cycle-batch': '매일 09시',
   'attendance-sap-batch': '기본 매일 01시',
   'display-master-sap-batch': '기본 매일 23시',
+  'ppt-master-sap-batch': '기본 매일 12시',
   'display-master-last-month-revenue-batch': '기본 매일 02시',
   'mfeis-this-month-revenue-batch': '기본 매월 1일 03시',
   'account-naver-geocode-batch': '매일 02시',
@@ -93,6 +95,8 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
     '근무형태가 “근무”인 여사원일정을 페이지 단위로 조회하여 SAP로 전송합니다. 기준일(오늘) 일정은 출퇴근 로그 유무와 무관하게 전송하고, 전일 일정은 출퇴근 로그가 연결된 건에 한해 2차 근무형태를 채워 재전송합니다. 신규 시스템에 쌓인 여사원일정 실적을 SAP에 동기화하는 아웃바운드 연동 배치로, 페이지별 성공/실패 건수를 집계해 실행 이력에 기록합니다.',
   'display-master-sap-batch':
     '유효 상태의 진열(디스플레이) 작업 일정 마스터를 페이지 단위로 조회하여 사원코드·거래처키·작업유형 등을 SAP로 전송합니다. 진열 업무 실적을 SAP에 반영하기 위한 아웃바운드 연동 배치이며, 전송 성공/실패 페이지 수를 집계해 이력에 남깁니다.',
+  'ppt-master-sap-batch':
+    '실행일이 속한 당월에 유효 기간이 걸치는 전문행사조(PPT) 마스터 전량을 페이지 단위로 조회하여 사원·거래처·기간·유효상태 등 마스터 정보를 SAP로 전송합니다. 전송 완료 플래그 없이 당월 마스터를 매번 다시 송신하는 스냅샷 방식의 아웃바운드 연동 배치이며, 전송 성공/실패 페이지 수를 집계해 이력에 남깁니다.',
   'display-master-last-month-revenue-batch':
     '유효 상태의 진열 작업 일정 마스터를 순회하며 각 거래처의 직전월 매출을 조회하여 해당 마스터의 전월 매출 값을 최신값으로 갱신합니다. 값이 비어 있거나 기존 값과 다른 경우에만 갱신해 불필요한 변경을 피합니다. 화면에서 진열 거래처의 전월 매출 참고치를 보여주기 위한 데이터를 매일 새로 채웁니다.',
   'mfeis-this-month-revenue-batch':
