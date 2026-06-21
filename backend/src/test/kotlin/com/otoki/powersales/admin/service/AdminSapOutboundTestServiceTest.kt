@@ -9,7 +9,7 @@ import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegiste
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.domain.activity.promotion.sap.PPTMasterPayloadFactory
 import com.otoki.powersales.external.sap.SapConstants
-import com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender
+import com.otoki.powersales.external.sap.outbound.sender.TeamMemberScheduleSapSender
 import com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender
 import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender
 import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySapResult
@@ -18,7 +18,7 @@ import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSende
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.domain.activity.schedule.sap.AttendancePayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadFactory
 import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterPayloadFactory
 import io.mockk.every
 import io.mockk.mockk
@@ -36,8 +36,8 @@ class AdminSapOutboundTestServiceTest {
     private val orderRequestCancelSender: OrderRequestCancelSender = mockk()
     private val orderRequestCancelPayloadFactory: OrderRequestCancelPayloadFactory = mockk()
     private val orderRequestRegisterSender: OrderRequestRegisterSender = mockk()
-    private val attendanceSapSender: AttendanceSapSender = mockk()
-    private val attendancePayloadFactory: AttendancePayloadFactory = mockk()
+    private val teamMemberScheduleSapSender: TeamMemberScheduleSapSender = mockk()
+    private val teamMemberScheduleSapPayloadFactory: TeamMemberScheduleSapPayloadFactory = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
     private val displayMasterSapSender: DisplayMasterSapSender = mockk()
     private val displayMasterPayloadFactory: DisplayMasterPayloadFactory = mockk()
@@ -54,8 +54,8 @@ class AdminSapOutboundTestServiceTest {
         orderRequestCancelSender = orderRequestCancelSender,
         orderRequestCancelPayloadFactory = orderRequestCancelPayloadFactory,
         orderRequestRegisterSender = orderRequestRegisterSender,
-        attendanceSapSender = attendanceSapSender,
-        attendancePayloadFactory = attendancePayloadFactory,
+        teamMemberScheduleSapSender = teamMemberScheduleSapSender,
+        teamMemberScheduleSapPayloadFactory = teamMemberScheduleSapPayloadFactory,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         displayMasterSapSender = displayMasterSapSender,
         displayMasterPayloadFactory = displayMasterPayloadFactory,
@@ -122,21 +122,21 @@ class AdminSapOutboundTestServiceTest {
     @Test
     @DisplayName("sendAttendanceEmpty: 조회 없이 sender.sendEmptyForConnectivityCheck 호출 → success=true")
     fun sendAttendanceEmpty_successPath() {
-        every { attendanceSapSender.sendEmptyForConnectivityCheck() } returns true
+        every { teamMemberScheduleSapSender.sendEmptyForConnectivityCheck() } returns true
 
         val res = service.sendAttendanceEmpty()
 
         assertThat(res.success).isTrue
         assertThat(res.interfaceId).isEqualTo(SapConstants.SAP_INTERFACE_ATTENDANCE)
-        verify(exactly = 1) { attendanceSapSender.sendEmptyForConnectivityCheck() }
+        verify(exactly = 1) { teamMemberScheduleSapSender.sendEmptyForConnectivityCheck() }
         // 조회를 거치지 않으므로 payload factory 는 호출되지 않는다.
-        verify(exactly = 0) { attendancePayloadFactory.build(any(), any()) }
+        verify(exactly = 0) { teamMemberScheduleSapPayloadFactory.build(any(), any()) }
     }
 
     @Test
     @DisplayName("sendAttendanceEmpty: sender 가 false 반환 → success=false")
     fun sendAttendanceEmpty_failurePath() {
-        every { attendanceSapSender.sendEmptyForConnectivityCheck() } returns false
+        every { teamMemberScheduleSapSender.sendEmptyForConnectivityCheck() } returns false
 
         val res = service.sendAttendanceEmpty()
 

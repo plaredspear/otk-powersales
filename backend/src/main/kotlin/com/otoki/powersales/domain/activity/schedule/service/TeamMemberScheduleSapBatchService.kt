@@ -1,9 +1,9 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.domain.activity.schedule.sap.AttendancePayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadFactory
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
-import com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender
+import com.otoki.powersales.external.sap.outbound.sender.TeamMemberScheduleSapSender
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -29,14 +29,14 @@ import java.time.LocalDate
  *   [TeamMemberScheduleRepository.findRegularAttendancesForSapPaged] 쿼리 주석 참조.
  */
 @Service
-class AttendanceBatchService(
+class TeamMemberScheduleSapBatchService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val payloadFactory: AttendancePayloadFactory,
-    private val sender: AttendanceSapSender,
-    @Value("\${app.sap.outbound.attendance.page-size:100}") private val pageSize: Int,
+    private val payloadFactory: TeamMemberScheduleSapPayloadFactory,
+    private val sender: TeamMemberScheduleSapSender,
+    @Value("\${app.sap.outbound.team-member-schedule.page-size:100}") private val pageSize: Int,
 ) {
 
-    private val log = LoggerFactory.getLogger(AttendanceBatchService::class.java)
+    private val log = LoggerFactory.getLogger(TeamMemberScheduleSapBatchService::class.java)
 
     fun runDaily(context: ScheduledJobRunContext? = null) {
         // today = 실행일(KST). 레거시 `Date.today()` 와 동일 기준 — 자정 직후 실행이라 같은 달력일.
@@ -71,7 +71,7 @@ class AttendanceBatchService(
 
         val totalPages = sentPages + failedPages
         log.info(
-            "ATT_SAP_BATCH today={} totalRows={} pages={} sent={} failed={}",
+            "TMS_SAP_BATCH today={} totalRows={} pages={} sent={} failed={}",
             today, totalRows, totalPages, sentPages, failedPages
         )
         context?.metadata(

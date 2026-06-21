@@ -1,21 +1,21 @@
 package com.otoki.powersales.domain.activity.schedule.sap
 
-import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayloadRow
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadRow
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory2
 import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
-import com.otoki.powersales.domain.activity.schedule.sap.AttendancePayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-@DisplayName("AttendancePayloadFactory — 일반 출근(REGULAR) SAP 페이로드 빌더")
-class AttendancePayloadFactoryTest {
+@DisplayName("TeamMemberScheduleSapPayloadFactory — 일반 출근(REGULAR) SAP 페이로드 빌더")
+class TeamMemberScheduleSapPayloadFactoryTest {
 
-    private val factory = AttendancePayloadFactory()
+    private val factory = TeamMemberScheduleSapPayloadFactory()
     private val today: LocalDate = LocalDate.of(2026, 5, 4)
     private val yesterday: LocalDate = today.minus(1, ChronoUnit.DAYS)
 
@@ -77,7 +77,7 @@ class AttendancePayloadFactoryTest {
         assertThat(payload.request.single().CompanyCode).isEqualTo("1000")
     }
 
-    private fun baseRow() = AttendanceSapPayloadRow(
+    private fun baseRow() = TeamMemberScheduleSapPayloadRow(
         scheduleId = 1L,
         workingDate = today,
         employeeCode = "EMP001",

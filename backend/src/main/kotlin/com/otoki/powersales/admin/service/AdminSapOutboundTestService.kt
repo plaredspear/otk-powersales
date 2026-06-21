@@ -19,7 +19,7 @@ import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterReposi
 import com.otoki.powersales.domain.activity.promotion.sap.PPTMasterSapPayload
 import com.otoki.powersales.domain.activity.promotion.sap.PPTMasterPayloadFactory
 import com.otoki.powersales.external.sap.SapConstants
-import com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender
+import com.otoki.powersales.external.sap.outbound.sender.TeamMemberScheduleSapSender
 import com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender
 import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
@@ -27,8 +27,8 @@ import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSe
 import com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.domain.activity.schedule.sap.AttendancePayloadFactory
-import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayload
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayload
 import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterPayloadFactory
 import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterSapPayload
 import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterSapPayloadRow
@@ -59,8 +59,8 @@ class AdminSapOutboundTestService(
     // outbox sender
     private val orderRequestRegisterSender: OrderRequestRegisterSender,
     // batch sender 들 + payload factory + repo
-    private val attendanceSapSender: AttendanceSapSender,
-    private val attendancePayloadFactory: AttendancePayloadFactory,
+    private val teamMemberScheduleSapSender: TeamMemberScheduleSapSender,
+    private val teamMemberScheduleSapPayloadFactory: TeamMemberScheduleSapPayloadFactory,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val displayMasterSapSender: DisplayMasterSapSender,
     private val displayMasterPayloadFactory: DisplayMasterPayloadFactory,
@@ -267,7 +267,7 @@ class AdminSapOutboundTestService(
     fun sendAttendance(req: BatchDateTestRequest): SapOutboundTestSendResponse {
         val interfaceId = SapConstants.SAP_INTERFACE_ATTENDANCE
         val (payload, summary) = buildAttendancePayload(req)
-        val ok = attendanceSapSender.sendPage(payload)
+        val ok = teamMemberScheduleSapSender.sendPage(payload)
         return SapOutboundTestSendResponse(
             interfaceId = interfaceId,
             success = ok,
@@ -281,7 +281,7 @@ class AdminSapOutboundTestService(
      */
     fun sendAttendanceEmpty(): SapOutboundTestSendResponse {
         val interfaceId = SapConstants.SAP_INTERFACE_ATTENDANCE
-        val ok = attendanceSapSender.sendEmptyForConnectivityCheck()
+        val ok = teamMemberScheduleSapSender.sendEmptyForConnectivityCheck()
         return SapOutboundTestSendResponse(
             interfaceId = interfaceId,
             success = ok,
@@ -291,7 +291,7 @@ class AdminSapOutboundTestService(
     }
 
     private fun buildAttendancePayload(req: BatchDateTestRequest):
-            Pair<AttendanceSapPayload, String> {
+            Pair<TeamMemberScheduleSapPayload, String> {
         val today = req.targetDate
         val yesterday = today.minusDays(1)
         val size = req.pageSize ?: ATTENDANCE_DEFAULT_PAGE_SIZE
@@ -301,7 +301,7 @@ class AdminSapOutboundTestService(
             limit = size,
             offset = 0,
         )
-        val payload = attendancePayloadFactory.build(rows, today)
+        val payload = teamMemberScheduleSapPayloadFactory.build(rows, today)
         return payload to "targetDate=$today rows=${rows.size} (page-size=$size)"
     }
 

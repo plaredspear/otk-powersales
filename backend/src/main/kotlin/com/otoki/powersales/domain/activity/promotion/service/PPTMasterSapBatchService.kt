@@ -15,7 +15,7 @@ import java.time.LocalDate
  * 매일 정오 cron 으로 발화되어 당월 활성 마스터를 SAP `/SD03300` 으로 송신한다.
  * - 송신 대상 조회 → page 분할 → payload build → sender 호출 → 결과 metadata 기록
  * - 레거시 `IF_REST_SAP_PPTMToSAP.cls:22-36` SOQL 의 실효 동작 1:1 정합 (당월 기간 조건만 적용 — Q1 노선 A)
- * - AttendanceBatchService 패턴 정합 (3-tier: batch / service / sender)
+ * - TeamMemberScheduleSapBatchService 패턴 정합 (3-tier: batch / service / sender)
  * - 결과 0건이면 sender 호출 안 함 + INFO 로그 + metadata totalRows=0 기록
  * - sender 실패는 throw 하지 않음 — `failedPages` 누적 후 다음 page 계속. cron 다음 fire (1시간 후) 가 자연 재시도.
  */

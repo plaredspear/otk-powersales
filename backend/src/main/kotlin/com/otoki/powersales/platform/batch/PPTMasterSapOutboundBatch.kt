@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component
  *
  * - `ScheduledJobRunner` 위임으로 실행 이력은 `scheduled_job_run` 테이블에 자동 적재
  * - `@SchedulerLock` 으로 다중 인스턴스 환경에서 중복 발화 방지
- * - 본문은 [PPTMasterSapBatchService.runDaily] 에 위임 (AttendanceSapOutboundBatch 패턴 정합)
+ * - 본문은 [PPTMasterSapBatchService.runDaily] 에 위임 (TeamMemberScheduleSapOutboundBatch 패턴 정합)
  */
 @Component
 class PPTMasterSapOutboundBatch(

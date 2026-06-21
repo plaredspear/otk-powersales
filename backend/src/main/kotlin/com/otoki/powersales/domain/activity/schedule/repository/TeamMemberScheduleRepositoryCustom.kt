@@ -2,7 +2,7 @@ package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.activity.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayloadRow
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadRow
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -132,7 +132,7 @@ interface TeamMemberScheduleRepositoryCustom {
         yesterday: LocalDate,
         limit: Int,
         offset: Int
-    ): List<AttendanceSapPayloadRow>
+    ): List<TeamMemberScheduleSapPayloadRow>
 
     /**
      * 여사원 배치 점검 조회 (Spec #839 — SF Report `InternalSalesReportFolder/new_report_4Ic` 이식).

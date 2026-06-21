@@ -5,7 +5,7 @@ import com.otoki.powersales.external.sap.SapConstants
 /**
  * SAP 아웃바운드 호출 트리거 분류.
  *
- * - [BATCH]    `@Scheduled` 잡 또는 수동 트리거 batch (예: AttendanceSapSender)
+ * - [BATCH]    `@Scheduled` 잡 또는 수동 트리거 batch (예: TeamMemberScheduleSapSender)
  * - [REALTIME] 사용자 액션 기반 즉시 동기 호출 (예: 거래처 여신 한도 조회)
  * - [OUTBOX]   `sap_outbox` 큐 적재 후 비동기 워커 송신 (예: 주문 등록)
  */
@@ -38,7 +38,7 @@ object SapOutboundCatalog {
             interfaceId = SapConstants.SAP_INTERFACE_ATTENDANCE,
             koreanName = "여사원일정 스케줄 배치",
             triggerType = OutboundTriggerType.BATCH,
-            senderClass = "com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender",
+            senderClass = "com.otoki.powersales.external.sap.outbound.sender.TeamMemberScheduleSapSender",
             description = "매일 새벽 여사원일정(TeamMemberSchedule) 페이지 단위 SAP REST Adapter POST.",
         ),
         SapOutboundCatalogItem(

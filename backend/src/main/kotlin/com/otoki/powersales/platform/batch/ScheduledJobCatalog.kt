@@ -25,8 +25,8 @@ object ScheduledJobCatalog {
             description = "동의 약관 단어 주기 리셋 (매일 09시)",
         ),
         Entry(
-            jobName = AttendanceSapOutboundBatch.JOB_NAME,
-            cron = "\${app.sap.outbound.attendance.cron:0 0 1 * * *}",
+            jobName = TeamMemberScheduleSapOutboundBatch.JOB_NAME,
+            cron = "\${app.sap.outbound.team-member-schedule.cron:0 0 1 * * *}",
             description = "여사원일정 스케줄 SAP outbound 전송 (기본 매일 01시)",
         ),
         Entry(

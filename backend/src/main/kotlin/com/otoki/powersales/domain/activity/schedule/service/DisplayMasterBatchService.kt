@@ -15,7 +15,7 @@ import java.time.LocalDate
  * 진열 마스터 SAP전송 배치 (SD03131) 의 일배치 실행 서비스.
  *
  * 레거시 `Batch_TeamMemberMasterSchedule.cls` (interface `IF_REST_SAP_TeamMemberMasterSchedule`) 동등.
- * 여사원일정 배치([AttendanceBatchService], SD03130) 와 **별개** — 대상 객체 / 페이로드 키가 다름.
+ * 여사원일정 배치([TeamMemberScheduleSapBatchService], SD03130) 와 **별개** — 대상 객체 / 페이로드 키가 다름.
  *
  * **실행 시각 정합 (검토: 2026-06-18)**
  * - 레거시 운영 cron = `0 0 23 ? * 1-7` (매일 23:00 KST, CronTrigger "여사원 진열마스터 스케쥴", TZ=Asia/Seoul).

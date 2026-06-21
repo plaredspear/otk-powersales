@@ -7,7 +7,7 @@ import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import java.time.LocalDate
 
 /**
- * 일반 출근(REGULAR) SAP 송신 페이로드 빌드용 row projection.
+ * 여사원일정 근무(REGULAR) SAP 송신 페이로드 빌드용 row projection.
  *
  * 레거시 `Batch_TeamMemberSchedule.cls:43-62` SOQL 결과 셋과 동등.
  * 식별자(EmployeeCode/SAPAccountCode/WorkingCategory1~3)는 schedule 측에서 직접 뽑고,
@@ -15,7 +15,7 @@ import java.time.LocalDate
  * `team_member_schedule` + `employee`(schedule.employee_sfid) + `account`(schedule.account_sfid)
  *   + `attendance_log` LEFT JOIN(어제 보정 row 의 secondWorkType 용) 결과.
  */
-data class AttendanceSapPayloadRow(
+data class TeamMemberScheduleSapPayloadRow(
     val scheduleId: Long,
     val workingDate: LocalDate,
     val employeeCode: String,

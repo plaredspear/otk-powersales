@@ -314,8 +314,8 @@ app:
   sap:
     outbound:
       attendance:
-        cron: ${APP_SAP_OUTBOUND_ATTENDANCE_CRON:0 0 1 * * *}
-        page-size: ${APP_SAP_OUTBOUND_ATTENDANCE_PAGE_SIZE:100}
+        cron: ${APP_SAP_OUTBOUND_TEAM_MEMBER_SCHEDULE_CRON:0 0 1 * * *}
+        page-size: ${APP_SAP_OUTBOUND_TEAM_MEMBER_SCHEDULE_PAGE_SIZE:100}
       display:
         # 매일 23:00 KST (SF CronTrigger "여사원 진열마스터 스케쥴" `0 0 23 ? * 1-7` Asia/Seoul 운영 실측 정합)
         cron: ${APP_SAP_OUTBOUND_DISPLAY_CRON:0 0 23 * * *}

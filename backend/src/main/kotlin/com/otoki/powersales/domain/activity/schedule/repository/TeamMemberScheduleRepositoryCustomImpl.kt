@@ -2,7 +2,7 @@ package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.activity.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayloadRow
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadRow
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
@@ -442,7 +442,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         yesterday: LocalDate,
         limit: Int,
         offset: Int
-    ): List<AttendanceSapPayloadRow> {
+    ): List<TeamMemberScheduleSapPayloadRow> {
         // 레거시 `Batch_TeamMemberSchedule.cls:30-34` WHERE 절 동등 복원.
         //   (a) WorkingType='근무' AND WorkingDate=오늘                         — commute_log 유무 무관 전송
         //   (b) CommuteLogId != null AND WorkingType='근무' AND WorkingDate=어제 — commute_log 연결분만 재전송
@@ -457,7 +457,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         return queryFactory
             .select(
                 Projections.constructor(
-                    AttendanceSapPayloadRow::class.java,
+                    TeamMemberScheduleSapPayloadRow::class.java,
                     teamMemberSchedule.id,
                     teamMemberSchedule.workingDate,
                     employee.employeeCode,

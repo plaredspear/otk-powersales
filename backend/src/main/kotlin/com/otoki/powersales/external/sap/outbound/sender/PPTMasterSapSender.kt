@@ -22,7 +22,7 @@ import java.time.LocalDateTime
  * - 결과는 [SapOutboundLogService] 로 적재
  *
  * **재시도 없음** — 레거시 `IF_REST_SAP_PPTMToSAP.cls` 가 동기 callout + 실패 시 다음 cron fire (1시간 후)
- * 대기 정책이었으므로 정합. AttendanceSapSender / DisplayMasterSapSender 패턴 정합.
+ * 대기 정책이었으므로 정합. TeamMemberScheduleSapSender / DisplayMasterSapSender 패턴 정합.
  */
 @Component
 class PPTMasterSapSender(

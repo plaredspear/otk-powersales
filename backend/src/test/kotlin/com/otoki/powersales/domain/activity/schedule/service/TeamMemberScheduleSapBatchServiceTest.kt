@@ -1,11 +1,11 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
-import com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender
+import com.otoki.powersales.external.sap.outbound.sender.TeamMemberScheduleSapSender
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.domain.activity.schedule.sap.AttendancePayloadFactory
-import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayload
-import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayloadRow
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayload
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadRow
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -16,19 +16,19 @@ import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
-@DisplayName("AttendanceBatchService — daily SAP outbound 처리 (#588 P1-B / #692)")
-class AttendanceBatchServiceTest {
+@DisplayName("TeamMemberScheduleSapBatchService — daily SAP outbound 처리 (#588 P1-B / #692)")
+class TeamMemberScheduleSapBatchServiceTest {
 
     private val repository: TeamMemberScheduleRepository = mockk()
-    private val sender: AttendanceSapSender = mockk()
-    private val payloadFactory = AttendancePayloadFactory()
+    private val sender: TeamMemberScheduleSapSender = mockk()
+    private val payloadFactory = TeamMemberScheduleSapPayloadFactory()
 
     private val pageSize = 100
-    private lateinit var service: AttendanceBatchService
+    private lateinit var service: TeamMemberScheduleSapBatchService
 
     @BeforeEach
     fun setUp() {
-        service = AttendanceBatchService(
+        service = TeamMemberScheduleSapBatchService(
             teamMemberScheduleRepository = repository,
             payloadFactory = payloadFactory,
             sender = sender,
@@ -44,7 +44,7 @@ class AttendanceBatchServiceTest {
         every { repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(0)) } returns rows(100, today)
         every { repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(pageSize)) } returns rows(100, today)
         every { repository.findRegularAttendancesForSapPaged(eq(today), eq(yesterday), eq(pageSize), eq(2 * pageSize)) } returns rows(50, today)
-        val captured = mutableListOf<AttendanceSapPayload>()
+        val captured = mutableListOf<TeamMemberScheduleSapPayload>()
         every { sender.sendPage(capture(captured)) } returns true
 
         service.runDaily(today)
@@ -78,9 +78,9 @@ class AttendanceBatchServiceTest {
         verify(exactly = 3) { sender.sendPage(any()) }
     }
 
-    private fun rows(count: Int, today: LocalDate): List<AttendanceSapPayloadRow> =
+    private fun rows(count: Int, today: LocalDate): List<TeamMemberScheduleSapPayloadRow> =
         (1..count).map { idx ->
-            AttendanceSapPayloadRow(
+            TeamMemberScheduleSapPayloadRow(
                 scheduleId = idx.toLong(),
                 workingDate = today,
                 employeeCode = "EMP$idx",

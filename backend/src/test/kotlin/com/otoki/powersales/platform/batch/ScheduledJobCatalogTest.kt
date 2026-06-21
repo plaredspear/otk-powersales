@@ -2,7 +2,7 @@ package com.otoki.powersales.platform.batch
 
 import com.otoki.powersales.platform.batch.AccountNaverGeocodeBatch
 import com.otoki.powersales.platform.batch.AgreementWordCycleBatch
-import com.otoki.powersales.platform.batch.AttendanceSapOutboundBatch
+import com.otoki.powersales.platform.batch.TeamMemberScheduleSapOutboundBatch
 import com.otoki.powersales.platform.batch.DisplayMasterLastMonthRevenueBatch
 import com.otoki.powersales.platform.batch.DisplayMasterSapOutboundBatch
 import com.otoki.powersales.platform.batch.ErpOrderRetentionBatch
@@ -32,7 +32,7 @@ class ScheduledJobCatalogTest {
     fun jobNames_alignWithBatchConstants() {
         val expected = setOf(
             AgreementWordCycleBatch.JOB_NAME,
-            AttendanceSapOutboundBatch.JOB_NAME,
+            TeamMemberScheduleSapOutboundBatch.JOB_NAME,
             DisplayMasterSapOutboundBatch.JOB_NAME,
             PPTMasterSapOutboundBatch.JOB_NAME,
             DisplayMasterLastMonthRevenueBatch.JOB_NAME,

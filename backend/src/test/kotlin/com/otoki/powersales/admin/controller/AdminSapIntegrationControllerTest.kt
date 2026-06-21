@@ -165,7 +165,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
                     interfaceId = "SD03130",
                     koreanName = "여사원일정 스케줄 배치",
                     triggerType = OutboundTriggerType.BATCH,
-                    senderClass = "com.otoki.powersales.external.sap.outbound.sender.AttendanceSapSender",
+                    senderClass = "com.otoki.powersales.external.sap.outbound.sender.TeamMemberScheduleSapSender",
                     description = "매일 새벽 attendance 송신.",
                 ),
                 SapOutboundCatalogItemDto(
