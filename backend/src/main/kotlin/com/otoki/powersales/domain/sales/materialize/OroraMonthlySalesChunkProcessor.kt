@@ -91,14 +91,15 @@ class OroraMonthlySalesChunkProcessor(
         entity.salesYear = salesYear
         entity.salesMonth = salesMonthEnum
         entity.externalkeyC = key
-        entity.abcClosingAmount1 = orora.abcClosingAmount1?.toDouble()
-        entity.abcClosingAmount2 = orora.abcClosingAmount2?.toDouble()
-        entity.abcClosingAmount3 = orora.abcClosingAmount3?.toDouble()
-        entity.abcClosingAmount4 = orora.abcClosingAmount4?.toDouble()
-        entity.shipClosingAmount1 = orora.shipClosingAmount1?.toDouble()
-        entity.shipClosingAmount2 = orora.shipClosingAmount2?.toDouble()
-        entity.shipClosingAmount3 = orora.shipClosingAmount3?.toDouble()
-        entity.shipClosingAmount4 = orora.shipClosingAmount4?.toDouble()
+        // 레거시 doPost 동등: 개별 마감 1~4 컬럼은 null → 0 으로 적재 ((objMap.get(..) == null) ? 0 : ..).
+        entity.abcClosingAmount1 = orora.abcClosingAmount1?.toDouble() ?: 0.0
+        entity.abcClosingAmount2 = orora.abcClosingAmount2?.toDouble() ?: 0.0
+        entity.abcClosingAmount3 = orora.abcClosingAmount3?.toDouble() ?: 0.0
+        entity.abcClosingAmount4 = orora.abcClosingAmount4?.toDouble() ?: 0.0
+        entity.shipClosingAmount1 = orora.shipClosingAmount1?.toDouble() ?: 0.0
+        entity.shipClosingAmount2 = orora.shipClosingAmount2?.toDouble() ?: 0.0
+        entity.shipClosingAmount3 = orora.shipClosingAmount3?.toDouble() ?: 0.0
+        entity.shipClosingAmount4 = orora.shipClosingAmount4?.toDouble() ?: 0.0
         entity.abcClosingSumAmount = orora.abcClosingSumAmount.toDouble()
         entity.shipClosingSumAmount = orora.shipClosingSumAmount.toDouble()
         if (account != null) {

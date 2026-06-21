@@ -88,6 +88,35 @@ class OroraMonthlySalesChunkProcessorTest {
     }
 
     @Test
+    @DisplayName("레거시 raw 정합: 개별 마감 1~4 컬럼은 source null → 0.0 으로 적재")
+    fun nullClosingColumnsStoredAsZero() {
+        // abc3/abc4, ship2/ship3/ship4 가 null 인 row → 레거시 doPost 처럼 0 으로 적재되어야 한다.
+        every {
+            ororaRepo.findBySalesDateAndSapAccountCodeBetween("202605", "0001000000", "0001001999")
+        } returns listOf(ororaRow("0001000077"))
+        every { accountRepo.findByExternalKeyIn(listOf("1000077")) } returns
+            listOf(Account(id = 5, externalKey = "1000077", sfid = "001ACC"))
+        every {
+            monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
+        } returns emptyList()
+        val saved = slot<List<MonthlySalesHistory>>()
+        every { monthlyRepo.saveAll(capture(saved)) } answers { saved.captured }
+
+        processor.process("202605", SalesYear.Y2026, SalesMonth.M05, "0001000000", "0001001999")
+
+        val entity = saved.captured.first()
+        // source null → null 유지(과거 동작)가 아니라 0.0 적재(레거시 raw)
+        assertThat(entity.abcClosingAmount3).isEqualTo(0.0)
+        assertThat(entity.abcClosingAmount4).isEqualTo(0.0)
+        assertThat(entity.shipClosingAmount2).isEqualTo(0.0)
+        assertThat(entity.shipClosingAmount3).isEqualTo(0.0)
+        assertThat(entity.shipClosingAmount4).isEqualTo(0.0)
+        // 값 있는 컬럼은 그대로
+        assertThat(entity.abcClosingAmount1).isEqualTo(100.0)
+        assertThat(entity.shipClosingAmount1).isEqualTo(10.0)
+    }
+
+    @Test
     @DisplayName("ORORA 조회 결과 비면 upsert 호출 없이 0 반환")
     fun emptyOrora() {
         every {
