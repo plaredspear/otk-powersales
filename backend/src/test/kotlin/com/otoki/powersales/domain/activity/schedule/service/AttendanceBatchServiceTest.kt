@@ -6,7 +6,6 @@ import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberSchedu
 import com.otoki.powersales.domain.activity.schedule.sap.AttendancePayloadFactory
 import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayload
 import com.otoki.powersales.domain.activity.schedule.sap.AttendanceSapPayloadRow
-import com.otoki.powersales.domain.activity.schedule.service.AttendanceBatchService
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -30,7 +29,7 @@ class AttendanceBatchServiceTest {
     @BeforeEach
     fun setUp() {
         service = AttendanceBatchService(
-            repository = repository,
+            teamMemberScheduleRepository = repository,
             payloadFactory = payloadFactory,
             sender = sender,
             pageSize = pageSize,

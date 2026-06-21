@@ -30,7 +30,7 @@ import java.time.LocalDate
  */
 @Service
 class AttendanceBatchService(
-    private val repository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val payloadFactory: AttendancePayloadFactory,
     private val sender: AttendanceSapSender,
     @Value("\${app.sap.outbound.attendance.page-size:100}") private val pageSize: Int,
@@ -52,7 +52,7 @@ class AttendanceBatchService(
         var failedPages = 0
 
         while (true) {
-            val rows = repository.findRegularAttendancesForSapPaged(
+            val rows = teamMemberScheduleRepository.findRegularAttendancesForSapPaged(
                 today = today,
                 yesterday = yesterday,
                 limit = pageSize,
