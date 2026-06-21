@@ -52,7 +52,7 @@ const JOB_LABELS: Record<string, string> = {
   'display-master-sap-batch': '진열마스터 SAP전송',
   'ppt-master-sap-batch': 'PPT마스터 SAP전송',
   'display-master-last-month-revenue-batch': '진열 전월매출',
-  'mfeis-this-month-revenue-batch': '일정 전월매출',
+  'mfeis-this-month-revenue-batch': '일정 평균매출',
   'account-naver-geocode-batch': '거래처 좌표변환',
   'pptMaster.expire': '행사조 만료',
   'pptMaster.syncValid': '행사조 sync',
