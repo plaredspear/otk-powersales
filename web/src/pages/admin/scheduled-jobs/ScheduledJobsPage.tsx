@@ -115,8 +115,8 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
     '송신 대기(PENDING)·재시도(RETRY) 상태의 SAP 아웃박스 행을 일괄 조회하여, 각 행의 인터페이스 ID로 엔드포인트를 찾아 페이로드를 SAP REST 어댑터로 전송합니다. 응답을 검증해 성공이면 SENT, 실패면 재시도 한도 내에서 RETRY, 한도 초과 시 FAILED로 상태를 갱신하고 도메인별 후처리를 수행합니다. 트랜잭셔널 아웃박스 패턴의 범용 SAP 송신 엔진입니다.',
   'scheduledJobRun.cleanup':
     '배치 실행 이력 테이블에서 보존 기간(90일)을 초과한 오래된 행을 일괄 삭제로 정리합니다. 배치 실행 로그가 무한히 쌓이는 것을 막기 위한 보존 정책 정리 배치입니다.',
-  'orora-daily-sales-materialize-batch':
-    'ORORA 영업시스템의 일별 매출 view를 거래처 범위 단위로 조회하여 daily_sales_history 테이블에 적재하고, 해당 월의 monthly_sales_history 원장매출 합계를 갱신합니다. 당월을 대상으로 매일 실행되어 진행 중인 달의 일별 매출을 누적합니다. (legacy Queueable_OroraDailySalesHistory_M1 동등)',
+    'orora-daily-sales-materialize-batch':
+    'ORORA 영업시스템의 일별 매출 view를 거래처 범위 단위로 조회하여 daily_sales_history 테이블에 적재하고, 같은 거래처·월의 monthly_sales_history 전산마감실적 합계·물류마감실적 합계·총 원장매출을 갱신합니다. 일자는 대상월이 당월이면 오늘, 과거월이면 그 달 말일로 보정해 저장하며, 거래처가 매칭되지 않는 매출 행은 적재하지 않습니다. 당월을 대상으로 매일 실행됩니다. (legacy Queueable_OroraDailySalesHistory_M1 + DailyErpSalesInfoTriggerHandler 동등)',
   'orora-monthly-sales-materialize-batch':
     'ORORA 영업시스템의 월별 마감 view(ABC/물류 마감실적)를 거래처 범위 단위로 조회하여 monthly_sales_history 테이블에 적재(upsert)합니다. 익월 초에 전월 마감분을 적재하며, 운영 목표/비고/마감확정 컬럼은 보존합니다. 아래에서 특정 월을 지정해 수동 재적재할 수 있습니다. (legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등)',
 };

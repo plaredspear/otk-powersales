@@ -20,9 +20,12 @@ import org.springframework.stereotype.Service
  * 3. 외부 호출: ORORA MSSQL view 조회 (chunk processor 내부).
  * 4. 부수 효과: `daily_sales_history` upsert (단일 금액 2컬럼) + 해당 월 `monthly_sales_history.total_ledger_amount` 갱신.
  *
- * ## 신규 차이
- * - SalesDate: 레거시 today/월말일 보정 폐기 → ORORA 원본 `YYYYMMDD` 그대로 보관 (Q3, `OroraDailySalesHistory.kt:34`).
- * - 월별 합계 권위: ABC/Ship 마감은 월별 적재(§2.1)가 정본, 일별 파생은 `total_ledger_amount` 만 갱신 (Q4 옵션 1).
+ * ## 레거시 raw 동작 정합 (사용자 결정 2026-06-22)
+ * - SalesDate: 레거시 보정 동작 복원 — 대상월==today연월이면 `today`, 아니면 그 달 말일 (Queueable:113-119).
+ *   external key 는 원본 `YYYYMMDD` 유지 (key 와 저장 SalesDate 가 어긋나는 레거시 동작 포함).
+ * - 월별 갱신: `abcClosingSumAmount`(ΣERPSales) + `shipClosingSumAmount`(ΣERPDist) + `totalLedgerAmount`(ΣLedger=0).
+ *   insert 경로=합산 / update 경로=마지막 1건 값 덮어쓰기 (레거시 트리거 raw 동작, update buggy 경로 포함).
+ * - 거래처 미매칭 row 는 적재하지 않음 (레거시 TriggerHandler addError 동등).
  */
 @Service
 class OroraDailySalesMaterializeService(
