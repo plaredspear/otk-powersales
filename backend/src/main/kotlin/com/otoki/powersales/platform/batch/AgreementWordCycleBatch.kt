@@ -15,7 +15,7 @@ class AgreementWordCycleBatch(
 
     private val log = LoggerFactory.getLogger(AgreementWordCycleBatch::class.java)
 
-    @Scheduled(cron = "0 0 9 * * *")
+    @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT30M", lockAtLeastFor = "PT5M")
     fun run() {
         scheduledJobRunner.run(JOB_NAME) { ctx ->

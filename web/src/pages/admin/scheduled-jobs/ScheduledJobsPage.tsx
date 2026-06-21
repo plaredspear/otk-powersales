@@ -70,7 +70,7 @@ function jobLabel(jobName: string): string {
 
 /** 잡 이름 → 사람이 읽기 쉬운 실행 주기. cron placeholder(override 가능) 잡은 "기본" 표기. */
 const JOB_SCHEDULES: Record<string, string> = {
-  'agreement-word-cycle-batch': '매일 09시',
+  'agreement-word-cycle-batch': '매일 자정',
   'attendance-sap-batch': '기본 매일 01시',
   'display-master-sap-batch': '기본 매일 23시',
   'ppt-master-sap-batch': '기본 매일 12시',
