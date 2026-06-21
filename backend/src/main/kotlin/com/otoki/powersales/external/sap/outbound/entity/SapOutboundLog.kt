@@ -7,7 +7,9 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
+@DomainName("SAP송신로그")
 @Entity
 @Table(name = "sap_outbound_log")
 class SapOutboundLog(

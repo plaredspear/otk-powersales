@@ -12,8 +12,10 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("공지사항")
 @Entity
 @Table(name = "notice")
 @SFObject("DKRetail__Notice__c")

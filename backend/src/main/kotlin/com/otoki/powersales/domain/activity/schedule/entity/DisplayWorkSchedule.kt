@@ -21,6 +21,7 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 거래처 일정 Entity (진열마스터 확정 스케줄)
@@ -35,6 +36,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
  * - LastMonthRevenue__c 는 SF `double precision=18 scale=0` — `BigDecimal` 매핑.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("거래처 진열일정")
 @Entity
 @Table(name = "display_work_schedule")
 @SFObject("DisplayWorkScheduleMaster__c")

@@ -10,6 +10,7 @@ import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 거래처목표등록마스터 Entity (SF `SalesProgressRateMaster__c`).
@@ -23,6 +24,7 @@ import org.springframework.data.annotation.LastModifiedBy
  * - TargetSum__c (RT+FR+RM+FO 합계) — 필요 시 응용 코드에서 산출
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("매출진도율마스터")
 @Entity
 @Table(name = "sales_progress_rate_master")
 @SFObject("SalesProgressRateMaster__c")

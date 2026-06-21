@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 모바일 앱 패키지(APK/IPA) 버전.
@@ -18,6 +19,7 @@ import jakarta.persistence.Table
  *
  * 플랫폼별 최신 1개는 [isLatest] + 부분 unique index(`uq_app_package_latest_per_platform`)로 DB 가 보장.
  */
+@DomainName("앱패키지")
 @Entity
 @Table(name = "app_package")
 class AppPackage(

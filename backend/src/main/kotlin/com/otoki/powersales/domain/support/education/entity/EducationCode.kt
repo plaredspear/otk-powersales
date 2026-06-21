@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.*
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 교육 코드 Entity
@@ -11,6 +12,7 @@ import jakarta.persistence.*
  * V1 테이블: education_code (구: education_code_mng)
  * PK: education_code_id (BIGINT IDENTITY)
  */
+@DomainName("교육코드")
 @Entity
 @Table(name = "education_code")
 @HerokuOnly("education_code_mng")

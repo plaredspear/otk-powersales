@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF GroupMember mirror (spec #790).
@@ -23,6 +24,7 @@ import jakarta.persistence.Table
  *
  * `@SFObject` 어노테이션 미부착 — verify-metadata.main.kts 면제 (운영 데이터 mirror).
  */
+@DomainName("그룹멤버")
 @Entity
 @Table(name = "group_member")
 class GroupMember(

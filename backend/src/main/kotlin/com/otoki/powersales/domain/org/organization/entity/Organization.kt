@@ -9,6 +9,7 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 조직 마스터 Entity
@@ -21,6 +22,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
  * 조직 정보를 참조할 때는 [costCenterLevel5](cc_cd5) 등 코드값을 문자열로 사용하세요.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("조직마스터")
 @Entity
 @Table(name = "organization")
 @SFObject("Org__c")

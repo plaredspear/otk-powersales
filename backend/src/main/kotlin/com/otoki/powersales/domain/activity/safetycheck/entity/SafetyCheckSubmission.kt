@@ -9,7 +9,9 @@ import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import jakarta.persistence.*
 import java.time.LocalDate
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
+@DomainName("안전점검제출")
 @Entity
 // 레거시 Heroku 원본(safetycheck__workschedule__member)에 PK/unique 제약이 없어 같은 직원·날짜·
 // 일정 복수 안전점검 row 를 허용했으므로, 신규에서도 unique 제약을 두지 않는다 (제약 제거:

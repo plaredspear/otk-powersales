@@ -5,6 +5,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * cost_center_code 이력 합집합 매핑.
@@ -20,6 +21,7 @@ import jakarta.persistence.Table
  * 운영 의미: Organization 코드 변경 시 (예: `5479` → `5849`) 과거 데이터의 cost_center_code 시점 스냅샷 보존,
  * 조회 시 [com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander] 가 현행 코드 → 이력+현행 합집합 확장.
  */
+@DomainName("지점매핑")
 @Entity
 @Table(name = "branch_mapping")
 class BranchMapping(

@@ -12,8 +12,10 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("공휴일마스터")
 @Entity
 @Table(name = "holiday_master")
 @SFObject("HolidayMaster__c")

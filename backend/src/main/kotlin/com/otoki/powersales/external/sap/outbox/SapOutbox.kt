@@ -11,6 +11,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 범용 SAP outbound 송신 큐 (Spec #592).
@@ -26,6 +27,7 @@ import java.time.LocalDateTime
  * `payload` 는 SAP 송신 페이로드를 JSON 문자열로 직렬화해 저장한다 (PostgreSQL `jsonb` / H2 `JSON`).
  * 도메인 sender 가 `ObjectMapper` 로 직렬화한 String 을 적재.
  */
+@DomainName("SAP송신큐")
 @Entity
 @Table(
     name = "sap_outbox",

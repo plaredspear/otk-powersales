@@ -10,12 +10,14 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 현장 점검 테마 Entity
  * V1 스키마: theme__c
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("현장점검테마")
 @Entity
 @Table(name = "inspection_theme")
 @SFObject("Theme__c")

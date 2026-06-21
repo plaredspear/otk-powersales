@@ -15,12 +15,14 @@ import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 출근현황 Entity
  * Salesforce: DKRetail__CommuteLog__c
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("출근현황")
 @Entity
 @Table(name = "attendance_log")
 @SFObject("DKRetail__CommuteLog__c")

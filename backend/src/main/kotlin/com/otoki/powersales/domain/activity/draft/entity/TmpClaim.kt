@@ -7,6 +7,8 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.DomainName
+@DomainName("임시저장 클레임")
 @Entity
 @Table(name = "tmp_claim")
 @HerokuOnly("tmp_claim")

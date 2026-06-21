@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF Profile SObject 매핑 entity (Spec #780).
@@ -20,6 +21,7 @@ import jakarta.persistence.Table
  * 본 entity 는 SF 권한 모델 (spec #801) 의 Profile FK SoT — User.profileId → Profile.id 로 연결되어
  * SfPermissionResolver 가 ProfileFlags / PermissionSetFlags 와 함께 권한 산출.
  */
+@DomainName("프로파일")
 @Entity
 @Table(name = "profile")
 @SFObject("Profile")

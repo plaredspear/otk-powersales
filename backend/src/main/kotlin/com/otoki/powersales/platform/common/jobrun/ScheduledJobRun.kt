@@ -9,10 +9,12 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 시각 필드는 UTC wall clock 으로 저장된다 (전사 컨벤션 — 스펙 #564).
  */
+@DomainName("스케줄잡실행이력")
 @Entity
 @Table(name = "scheduled_job_run")
 class ScheduledJobRun(

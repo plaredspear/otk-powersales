@@ -17,12 +17,14 @@ import java.time.LocalTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 거래처 마스터 Entity
  * Salesforce Account(거래처) 오브젝트 — SAP 거래처 마스터 동기화 대상 테이블.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("거래처")
 @Entity
 @Table(name = "account")
 @SFObject("Account")

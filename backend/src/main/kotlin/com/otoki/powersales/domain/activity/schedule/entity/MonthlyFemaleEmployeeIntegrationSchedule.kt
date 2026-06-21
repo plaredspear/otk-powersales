@@ -14,11 +14,13 @@ import java.math.BigDecimal
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 월별 여사원 통합일정 Entity
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("월별 여사원 통합일정")
 @Entity
 @Table(name = "monthly_female_employee_integration_schedule")
 @SFObject("MonthlyFemaleEmployeeIntegrationSchedule__c")

@@ -9,12 +9,14 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * PermissionSet × Field FLS (spec #795).
  *
  * 운영 26 PermissionSet. XML 출처: `permissionsets/<Name>.permissionset-meta.xml` 의 `<fieldPermissions>` element.
  */
+@DomainName("권한집합 필드권한")
 @Entity
 @SFMeta(SFMetaSource.PERMISSION_SET_XML, "fieldPermissions")
 @Table(name = "permission_set_field_permission")

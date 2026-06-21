@@ -10,6 +10,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF Profile 의 system 권한 비트 + 객체/가상자원 권한 (spec #782 P1-B).
@@ -23,6 +24,7 @@ import org.hibernate.type.SqlTypes
  *
  * profile_id UNIQUE — 한 Profile 당 1행. XML 출처: `profiles/<Name>.profile-meta.xml` 의 systemPermissions / objectPermissions.
  */
+@DomainName("프로파일 플래그")
 @Entity
 @SFMeta(SFMetaSource.PROFILE_XML, "systemPermissions")
 @Table(name = "profile_flags")

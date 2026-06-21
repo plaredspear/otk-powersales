@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF UserRole SObject 매핑 entity (Spec #780).
@@ -22,6 +23,7 @@ import java.time.LocalDateTime
  * BaseEntity 미상속 — SF UserRole 은 `CreatedDate` / `CreatedById` 필드 자체가 부재.
  * `LastModifiedDate` / `LastModifiedById` 만 audit 컬럼으로 보유.
  */
+@DomainName("사용자역할")
 @Entity
 @Table(name = "user_role")
 @SFObject("UserRole")

@@ -15,12 +15,14 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 여사원 투입 기준 마스터 Entity (EmployeeInputCriteriaMaster__c).
  * MonthlyFemaleEmployeeIntegrationSchedule 의 인사 투입 기준 source.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("여사원 투입기준마스터")
 @Entity
 @Table(name = "employee_input_criteria_master")
 @SFObject("EmployeeInputCriteriaMaster__c")

@@ -5,6 +5,7 @@ import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 교육 조회 이력 Entity
@@ -12,6 +13,7 @@ import java.time.LocalDateTime
  * V1 테이블: education_view_history (구: education_member_history)
  * V39: 복합키 → IDENTITY PK + FK 정규화
  */
+@DomainName("교육조회이력")
 @Entity
 @Table(name = "education_view_history")
 @HerokuOnly("education_member_history")

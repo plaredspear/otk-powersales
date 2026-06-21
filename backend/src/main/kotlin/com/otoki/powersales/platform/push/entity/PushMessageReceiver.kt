@@ -11,6 +11,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 푸시 메시지 수신자 Entity
@@ -20,6 +21,7 @@ import org.springframework.data.annotation.LastModifiedBy
  * PushMessage N:1 관계 (PK 참조, DB FK 없음)
  * BaseEntity 미상속 — CreatedDate/LastModifiedDate 자체 컬럼 처리.
  */
+@DomainName("푸시메시지 수신자")
 @Entity
 @Table(name = "push_message_receiver")
 @SFObject("PushMessageReceiver__c")

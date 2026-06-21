@@ -16,12 +16,14 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 월매출 이력 Entity
  * V1 스키마: monthlysaleshistory__c (Heroku Connect 동기화)
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("월별매출이력")
 @Entity
 @Table(name = "monthly_sales_history")
 @SFObject("MonthlySalesHistory__c")

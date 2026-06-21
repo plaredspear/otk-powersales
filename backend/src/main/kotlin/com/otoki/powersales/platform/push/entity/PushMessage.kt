@@ -15,12 +15,14 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 푸시 메시지 Entity
  * Salesforce PushMessage__c (메시지) — Spec #709 SF Object 정합 (Group A + Reference R-2).
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("푸시메시지")
 @Entity
 @Table(name = "push_message")
 @SFObject("PushMessage__c")

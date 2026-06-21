@@ -8,12 +8,14 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.DomainName
 /**
  * 교육 게시물 Entity
  *
  * V1 테이블: education_post (구: education_mng)
  * PK: education_post_id (BIGINT IDENTITY)
  */
+@DomainName("교육게시물")
 @Entity
 @Table(name = "education_post")
 @HerokuOnly("education_mng")

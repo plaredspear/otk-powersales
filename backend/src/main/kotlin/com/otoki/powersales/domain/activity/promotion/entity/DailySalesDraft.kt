@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.math.BigDecimal
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 일매출 마감 임시저장(draft) 엔티티.
@@ -18,6 +19,7 @@ import java.math.BigDecimal
  *
  * SF 와 동기화되지 않는 로컬 전용 테이블이므로 [com.otoki.powersales.platform.common.salesforce.SFObject] 어노테이션을 두지 않는다.
  */
+@DomainName("일매출마감 임시저장")
 @Entity
 @Table(name = "daily_sales_draft")
 class DailySalesDraft(

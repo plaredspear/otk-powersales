@@ -2,6 +2,7 @@ package com.otoki.powersales.platform.common.entity
 
 import jakarta.persistence.*
 
+@DomainName("시스템코드마스터")
 @Entity
 @Table(name = "system_code_master")
 class SystemCodeMaster(

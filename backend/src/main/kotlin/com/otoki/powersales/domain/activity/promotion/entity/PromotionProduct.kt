@@ -9,6 +9,7 @@ import jakarta.persistence.*
 import java.math.BigDecimal
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 행사상품 (DKRetail__PromotionProduct__c — DKRetail 관리형 패키지 SObject "상세 POS품목").
@@ -16,6 +17,7 @@ import org.springframework.data.annotation.LastModifiedBy
  * 레거시 PromotionTriggerHandler 가 행사마스터 신규 등록 / 대표품목 변경 시 자동 생성·upsert.
  * 행사 1건당 정확히 1건만 유지 (PromotionIdExt__c 외부 키 기반 upsert — 신규에서는 promotion_id UNIQUE 제약).
  */
+@DomainName("행사상품")
 @Entity
 @Table(name = "promotion_product")
 @SFObject("DKRetail__PromotionProduct__c")

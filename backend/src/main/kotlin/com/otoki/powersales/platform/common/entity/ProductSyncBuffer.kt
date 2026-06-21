@@ -12,6 +12,7 @@ import java.time.LocalDateTime
  * product 테이블의 트리거(if__product)가 INSERT 시 id를 복사하므로 외부 할당 PK.
  * 읽기 전용 — 앱에서 INSERT/UPDATE 하지 않음.
  */
+@DomainName("제품동기화버퍼")
 @Entity
 @Table(name = "product_sync_buffer")
 @HerokuOnly("if_product__c")

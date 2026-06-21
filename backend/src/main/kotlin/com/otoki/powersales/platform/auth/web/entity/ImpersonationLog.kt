@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * Web 관리자 대행 로그인 감사 로그 (Spec #851).
@@ -20,6 +21,7 @@ import java.time.LocalDateTime
  * - `endedAt`: 대행 종료 시각. null = 미종료 (명시 종료 없이 만료된 세션 포함)
  * - `accessExpiresAt`: 발급한 대행 access 토큰의 만료 시각 (참고용)
  */
+@DomainName("관리자대행로그인 감사로그")
 @Entity
 @Table(name = "impersonation_log")
 class ImpersonationLog(

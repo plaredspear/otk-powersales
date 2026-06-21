@@ -7,12 +7,14 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.DomainName
 /**
  * 즐겨찾기 제품 Entity
  *
  * V1 테이블: powersales.product_favorites (PK 없음 → @IdClass 복합 키)
  * @ManyToOne 관계를 raw String 컬럼으로 전환.
  */
+@DomainName("즐겨찾기제품")
 @Entity
 @Table(name = "product_favorite")
 @IdClass(ProductFavoriteId::class)

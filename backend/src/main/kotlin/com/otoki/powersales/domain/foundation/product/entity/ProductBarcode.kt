@@ -9,6 +9,7 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 제품 바코드 Entity
@@ -16,6 +17,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
  * Product와 N:1 관계 (product_id FK).
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("제품바코드")
 @Entity
 @Table(name = "product_barcode")
 @SFObject("ProductBarcode__c")

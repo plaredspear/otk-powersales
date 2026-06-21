@@ -7,6 +7,7 @@ import jakarta.persistence.IdClass
 import jakarta.persistence.Table
 import org.hibernate.annotations.Immutable
 import java.math.BigDecimal
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * ORORA MSSQL view `ECRM_ABCCUST_MH_V` 직매핑 entity (NS00030 — 거래처별 월별 매출 이력 수신).
@@ -61,6 +62,7 @@ import java.math.BigDecimal
  * SF `Externalkey__c` (= `SAPAccountCode + SalesYear + SalesMonth`, unique=true) 는 본 entity 의
  * `(sapAccountCode, salesDate)` 1쌍에서 derive 되는 값이므로 PK 의미상 동등.
  */
+@DomainName("ORORA월별매출이력")
 @Entity
 @Immutable
 @Table(name = "ECRM_ABCCUST_MH_V")

@@ -26,12 +26,14 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import jakarta.persistence.EntityListeners
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 주문요청 Entity (DKRetail__OrderRequest__c).
  * 영업사원이 거래처에 등록한 주문 요청서. SF managed package DKRetail 의 주문요청 객체에 매핑된다.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("주문요청")
 @Entity
 @Table(
     name = "order_request",

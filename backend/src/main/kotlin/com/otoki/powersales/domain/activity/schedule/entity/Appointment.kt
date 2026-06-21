@@ -10,6 +10,7 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 발령정보 Entity
@@ -26,6 +27,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
  * Spec #758: audit FK (createdBy / lastModifiedBy) 타입 Employee → User 일괄 전환.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("발령정보")
 @Entity
 @Table(
     name = "appointment",

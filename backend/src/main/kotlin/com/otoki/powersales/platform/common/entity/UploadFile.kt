@@ -16,6 +16,7 @@ import org.springframework.data.annotation.LastModifiedBy
  * Salesforce UploadFile__c (업로드파일) — Spec #712 SF Object 정합 (Group A + Reference R-2).
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("업로드파일")
 @Entity
 @Table(name = "upload_file")
 @SFObject("UploadFile__c")

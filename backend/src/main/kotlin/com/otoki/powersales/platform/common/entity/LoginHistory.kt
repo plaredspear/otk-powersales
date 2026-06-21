@@ -8,6 +8,7 @@ import java.time.LocalDateTime
 /**
  * 로그인 이력 Entity (login_history 테이블)
  */
+@DomainName("로그인이력")
 @Entity
 @Table(name = "login_history")
 @HerokuOnly("employee_his")

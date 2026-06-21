@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * Profile × RecordType visibility (spec #794).
@@ -16,6 +17,7 @@ import jakarta.persistence.Table
  * 운영 0건 (Profile 의 RT visibility 미사용 — PermissionSet 위임). XML 출처: `profiles/<Name>.profile-meta.xml`
  * 의 `<recordTypeVisibilities>` element.
  */
+@DomainName("프로파일 레코드타입")
 @Entity
 @SFMeta(SFMetaSource.PROFILE_XML, "recordTypeVisibilities")
 @Table(name = "profile_record_type")

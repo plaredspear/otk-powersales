@@ -9,6 +9,7 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 거래처유형마스터 Entity
@@ -23,6 +24,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
  * - Spec #758: audit FK (createdBy / lastModifiedBy) Employee → User 일괄 전환.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("거래처유형마스터")
 @Entity
 @Table(
     name = "account_category_master",

@@ -28,12 +28,14 @@ import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 클레임 Entity
  * 사용자가 등록한 클레임 정보를 관리한다.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("클레임")
 @Entity
 @Table(
     name = "claim",

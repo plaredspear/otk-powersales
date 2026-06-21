@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * User ↔ PermissionSet 매핑 (spec #782 P1-B).
@@ -22,6 +23,7 @@ import java.time.LocalDateTime
  * Spec #804 에서 BaseEntity 상속 전환 + createdById/updatedById audit FK 추가.
  * partial UNIQUE 인덱스 (V187) — 동일 (assignee_user_id, permission_set_flags_id) active row 1개 invariant.
  */
+@DomainName("권한집합 할당")
 @Entity
 @SFObject("PermissionSetAssignment")
 @Table(name = "permission_set_assignment")

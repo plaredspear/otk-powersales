@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF RecordType 정의 (spec #794).
@@ -17,6 +18,7 @@ import jakarta.persistence.UniqueConstraint
  * XML 출처: `objects/<SObject>/recordTypes/<DeveloperName>.recordType-meta.xml`
  * Master RT 는 적재하지 않음 (Q4 옵션 1) — `record_type_id IS NULL` 이 곧 Master 의미.
  */
+@DomainName("레코드타입")
 @Entity
 @SFMeta(SFMetaSource.RECORD_TYPE_XML)
 @Table(

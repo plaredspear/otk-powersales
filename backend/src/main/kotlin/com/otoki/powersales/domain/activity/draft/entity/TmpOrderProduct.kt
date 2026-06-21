@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 임시저장 주문 라인 — Heroku 호환 + 신규 #596 컬럼 보강.
@@ -15,6 +16,7 @@ import com.otoki.powersales.platform.common.entity.AuditedEntity
  * Spec #596: `tmp_order_id` FK + 단위/단가/금액/라인번호 컬럼 추가 (V29 마이그레이션).
  * 레거시 `box_cnt`/`ea_cnt`/`total_cnt` 는 Heroku 호환을 위해 유지 (후속 스펙으로 drop).
  */
+@DomainName("임시저장 주문상품")
 @Entity
 @Table(name = "tmp_order_product")
 @HerokuOnly("tmp_order_product")

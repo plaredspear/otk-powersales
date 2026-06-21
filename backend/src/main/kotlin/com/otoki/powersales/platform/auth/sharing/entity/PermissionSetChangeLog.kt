@@ -11,6 +11,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * Spec #837 — PermissionSet 변경 이력 audit.
@@ -19,6 +20,7 @@ import java.time.LocalDateTime
  * before/after JSON snapshot 으로 박제. PS 삭제 시 본 row 의 [permissionSetId] 는 ON DELETE SET NULL 로
  * NULL 처리되어 audit 은 보존됨.
  */
+@DomainName("권한집합 변경이력")
 @Entity
 @Table(name = "permission_set_change_log")
 class PermissionSetChangeLog(

@@ -19,7 +19,9 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
+@DomainName("행사사원")
 @Entity
 @Table(name = "promotion_employee")
 @SFObject("DKRetail__PromotionEmployee__c")

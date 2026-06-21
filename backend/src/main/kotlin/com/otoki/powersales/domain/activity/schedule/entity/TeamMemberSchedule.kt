@@ -25,12 +25,14 @@ import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 일정 Entity
  * V1 스키마: dkretail__teammemberschedule__c (팀원 스케줄 + 안전점검 장비 + 업무보고)
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("여사원일정")
 @Entity
 @Table(name = "team_member_schedule")
 @SFObject("DKRetail__TeamMemberSchedule__c")

@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDate
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 제안하기(물류클레임 포함) 등록 임시저장(draft) 엔티티.
@@ -22,6 +23,7 @@ import java.time.LocalDate
  * 거래처명/제품명은 prefill 표시용으로 저장 시점 값을 함께 보관한다(form-data 에 없는 정보).
  * 사진은 레거시 tmp_suggest 와 동일하게 최대 2장(S3 private key)을 보관한다.
  */
+@DomainName("제안 임시저장")
 @Entity
 @Table(name = "suggestion_draft")
 class SuggestionDraft(

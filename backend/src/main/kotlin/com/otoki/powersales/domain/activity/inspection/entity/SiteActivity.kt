@@ -14,6 +14,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 현장 점검 결과 Entity
@@ -26,6 +27,7 @@ import org.springframework.data.annotation.LastModifiedBy
  * SF calculated 필드 → DB 컬럼 미추가 (backend-conventions §6.7).
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("현장점검결과")
 @Entity
 @Table(name = "site_activity")
 @SFObject("DKRetail__SiteAcitivity__c")

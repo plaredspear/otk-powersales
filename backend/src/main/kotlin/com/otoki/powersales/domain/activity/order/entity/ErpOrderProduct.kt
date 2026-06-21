@@ -10,8 +10,10 @@ import java.math.BigDecimal
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("ERP주문상품")
 @Entity
 @Table(name = "erp_order_product")
 @SFObject("ERP_OrderProduct__c")

@@ -10,7 +10,9 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
+@DomainName("ERP주문")
 @Entity
 @Table(name = "erp_order")
 @SFObject("ERP_Order__c")

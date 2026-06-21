@@ -10,6 +10,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF PermissionSet 의 object/system 권한 비트 (spec #782 P1-B).
@@ -19,6 +20,7 @@ import org.hibernate.type.SqlTypes
  *
  * XML 출처: `permissionsets/<Name>.permissionset-meta.xml` 의 `<objectPermissions>` + system 권한 비트.
  */
+@DomainName("권한집합 플래그")
 @Entity
 @SFMeta(SFMetaSource.PERMISSION_SET_XML, "objectPermissions")
 @Table(name = "permission_set_flags")

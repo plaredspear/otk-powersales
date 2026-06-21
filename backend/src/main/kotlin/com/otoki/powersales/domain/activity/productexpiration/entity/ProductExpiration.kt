@@ -11,11 +11,13 @@ import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.DomainName
 /**
  * 유통기한 관리 Entity
  *
  * V1 테이블: powersales.product_expiration (원본: expirationdate__mng)
  */
+@DomainName("유통기한관리")
 @Entity
 @Table(name = "product_expiration")
 @HerokuOnly("expirationdate__mng")

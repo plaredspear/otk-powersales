@@ -23,6 +23,7 @@ import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import jakarta.persistence.EntityListeners
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 주문요청 라인 Entity (DKRetail__OrderRequestProduct__c).
@@ -36,6 +37,7 @@ import jakarta.persistence.EntityListeners
  * - 타입·길이 정합 (§4) — unit/product_code/box_quantity/amount/quantity_boxes/line_number/quantity_pieces/dk_total_count/total_count.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("주문요청상품")
 @Entity
 @Table(
     name = "order_request_product",

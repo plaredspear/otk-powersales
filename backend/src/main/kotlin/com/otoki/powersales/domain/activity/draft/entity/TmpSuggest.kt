@@ -8,6 +8,8 @@ import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.DomainName
+@DomainName("임시저장 제안")
 @Entity
 @Table(name = "tmp_suggest")
 @HerokuOnly("tmp_suggest")

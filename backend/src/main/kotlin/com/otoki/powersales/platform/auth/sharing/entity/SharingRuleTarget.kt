@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SharingRule 의 대상 (Role / Group / User) 1행 (spec #782 P1-B).
@@ -17,6 +18,7 @@ import jakarta.persistence.Table
  * target_sfid 는 polymorphic — `00E` prefix = UserRole / `00G` = Group / `005` = User.
  * Stage 2 fk substep 으로 prefix 분기 후 target_id 채움.
  */
+@DomainName("공유규칙대상")
 @Entity
 @SFMeta(SFMetaSource.SHARING_RULES_XML, "sharedTo")
 @Table(name = "sharing_rule_target")

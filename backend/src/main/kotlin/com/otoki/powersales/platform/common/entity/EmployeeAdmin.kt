@@ -9,6 +9,7 @@ import jakarta.persistence.*
  *
  * 단일 컬럼 String PK. 관리자 사번 존재 여부로 권한 체크.
  */
+@DomainName("사원관리자")
 @Entity
 @Table(name = "employee_admin")
 @HerokuOnly("employee_admin_mng")

@@ -7,6 +7,7 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 사원 인증/기기 정보 Entity (employee_info 테이블)
@@ -15,6 +16,7 @@ import java.time.LocalDateTime
  * EmployeeInfo 가 owning side (@MapsId) — 영속 시 부모(employee) PK 가 자식 PK 로 전파된다.
  * employee_code 는 PK 가 아닌 HC sync 자연 키(empcode__c) 컬럼으로 잔류.
  */
+@DomainName("사원인증정보")
 @Entity
 @Table(name = "employee_info")
 @HerokuOnly("employee_mng")

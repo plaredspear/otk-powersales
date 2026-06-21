@@ -7,6 +7,7 @@ import jakarta.persistence.IdClass
 import jakarta.persistence.Table
 import org.hibernate.annotations.Immutable
 import java.math.BigDecimal
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * ORORA MSSQL view `ECRM_MULCUST_MH_V` 직매핑 entity (Spec #823).
@@ -46,6 +47,7 @@ import java.math.BigDecimal
  * DB 측 PK 부재 (view 일반 성질). application 단에서 `(sapAccountCode, salesDate)` 복합 unique 가정.
  * SF `Externalkey__c` (= `SAPAccountCode + SalesDate원본문자열`, unique=true) 동등 의미.
  */
+@DomainName("ORORA일별매출이력")
 @Entity
 @Immutable
 @Table(name = "ECRM_MULCUST_MH_V")

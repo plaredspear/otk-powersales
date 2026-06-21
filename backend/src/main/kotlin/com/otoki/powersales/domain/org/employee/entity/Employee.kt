@@ -20,6 +20,7 @@ import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.domain.activity.schedule.entity.Appointment
 import java.math.BigDecimal
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 사원 Entity
@@ -32,6 +33,7 @@ import java.math.BigDecimal
  * JPA @SecondaryTable은 PK 기반 조인만 지원하므로, @OneToOne + delegate property로 구현.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("사원")
 @Entity
 @Table(name = "employee")
 @SFObject("DKRetail__Employee__c")

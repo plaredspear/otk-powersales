@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF PermissionSet 정규 테이블 (spec #796).
@@ -21,6 +22,7 @@ import jakarta.persistence.Table
  *   XML 출처 (`permissionsets/<Name>.permissionset-meta.xml`) 는 PermissionSetFlags / PermissionSetRecordType /
  *   PermissionSetFieldPermission 가 분담.
  */
+@DomainName("권한집합")
 @Entity
 @SFObject("PermissionSet")
 @Table(name = "permission_set")

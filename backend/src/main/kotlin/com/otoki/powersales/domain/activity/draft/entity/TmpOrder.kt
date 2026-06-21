@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 임시저장 주문 헤더 — Heroku 호환 + Spec #596 보강.
@@ -15,6 +16,7 @@ import com.otoki.powersales.platform.common.entity.AuditedEntity
  * 사번당 1건 정책 (Q2). DB UNIQUE(`employee_id`) 제약은 V29 마이그레이션에서 추가.
  * 납기일 컬럼은 보유하지 않음 (Q8 — 레거시 정합).
  */
+@DomainName("임시저장 주문")
 @Entity
 @Table(
     name = "tmp_order",

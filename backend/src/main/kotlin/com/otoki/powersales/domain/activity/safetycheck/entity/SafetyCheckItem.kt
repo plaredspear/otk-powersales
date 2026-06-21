@@ -4,7 +4,9 @@ import com.otoki.powersales.platform.common.entity.BaseEntity
 import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.*
+import com.otoki.powersales.platform.common.entity.DomainName
 
+@DomainName("안전점검항목")
 @Entity
 @Table(name = "safety_check_item")
 @HerokuOnly("safetycheck_list")

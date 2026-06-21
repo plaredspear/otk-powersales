@@ -17,6 +17,7 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 제품 Entity
@@ -24,6 +25,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
  * Heroku Connect로 Salesforce Product 오브젝트와 동기화된다.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("제품")
 @Entity
 @Table(name = "product")
 @SFObject("DKRetail__Product__c")

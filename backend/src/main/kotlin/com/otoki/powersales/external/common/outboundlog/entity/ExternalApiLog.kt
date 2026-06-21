@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 외부 시스템으로 나가는 모든 HTTP outbound 호출의 공통 관측 로그.
@@ -19,6 +20,7 @@ import java.time.LocalDateTime
  * SAP 전용 `sap_outbound_log` (interface_id / request_count / 재시도 도메인 의미 보유) 와는 별개로,
  * "모든 외부 HTTP 호출을 한 곳에서 관측" 하는 운영 로그 역할을 담당한다.
  */
+@DomainName("외부API호출로그")
 @Entity
 @Table(name = "external_api_log")
 class ExternalApiLog(

@@ -11,6 +11,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 저장된 검색 (SavedSearch) — 목록 화면의 검색 조건 프리셋 (Spec #852).
@@ -21,6 +22,7 @@ import org.hibernate.type.SqlTypes
  * 신규 자체 데이터로 Salesforce 동기화 대상이 아니다 (HC 컬럼 / @SFObject 불필요). 단, `@Table(name)`
  * 기반으로 [EntitySfNameRegistry] 가 부팅 시 자원 키 `saved_search` 를 권한 카탈로그에 자동 등록한다.
  */
+@DomainName("저장된검색")
 @Entity
 @Table(name = "saved_search")
 class SavedSearch(

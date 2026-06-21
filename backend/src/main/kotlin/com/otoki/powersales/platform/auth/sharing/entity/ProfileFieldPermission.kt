@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * Profile × Field FLS (spec #795).
@@ -16,6 +17,7 @@ import jakarta.persistence.Table
  * 운영 0건 (Profile 측 fieldPermissions 미사용 — PermissionSet 위임). XML 출처: `profiles/<Name>.profile-meta.xml`
  * 의 `<fieldPermissions>` element.
  */
+@DomainName("프로파일 필드권한")
 @Entity
 @SFMeta(SFMetaSource.PROFILE_XML, "fieldPermissions")
 @Table(name = "profile_field_permission")

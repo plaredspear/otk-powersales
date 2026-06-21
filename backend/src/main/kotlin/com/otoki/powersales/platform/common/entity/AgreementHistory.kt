@@ -20,6 +20,7 @@ import com.otoki.powersales.domain.support.agreement.entity.AgreementWord
  * - audit (CreatedById / LastModifiedById) FK 는 SF `referenceTo = [User]` 정합 — `User` entity 참조 (spec #757).
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("동의이력")
 @Entity
 @Table(name = "agreement_history")
 @SFObject("AgreementHistory__c")

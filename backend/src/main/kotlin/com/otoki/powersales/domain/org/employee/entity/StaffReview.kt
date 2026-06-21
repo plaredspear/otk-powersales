@@ -14,6 +14,7 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import java.time.LocalDate
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 사원평가 Entity
@@ -31,6 +32,7 @@ import java.time.LocalDate
  *  - Formula 8개 중 EmployeeName / EmployeeNumber / Branch / CostCenterCode / EmployeeTotalScore /
  *    EmployeeType / EntryDate / Jikwee 는 레거시에서 비수식 캐시 컬럼으로 운영되어 DB 컬럼 유지.
  */
+@DomainName("사원평가")
 @Entity
 @Table(name = "staff_review")
 @SFObject("StaffReview__c")

@@ -13,8 +13,10 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("대체공휴일")
 @Entity
 @Table(name = "alternative_holiday")
 @SFObject("DKRetail__AlternativeHoliday__c")

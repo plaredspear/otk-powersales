@@ -10,6 +10,7 @@ import jakarta.persistence.*
 import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 영업일관리마스터 Entity (SF `WorkingDayMaster__c`).
@@ -21,6 +22,7 @@ import org.springframework.data.annotation.LastModifiedBy
  * Name 은 SF AutoNumber(`WM-{00000000}`) — 적재 정합 위해 보존하되 조회엔 미사용.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("영업일관리마스터")
 @Entity
 @Table(name = "working_day_master")
 @SFObject("WorkingDayMaster__c")

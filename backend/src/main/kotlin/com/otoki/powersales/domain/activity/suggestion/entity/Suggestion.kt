@@ -17,6 +17,7 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 제안 Entity — Salesforce `DKRetail__Proposal__c` (제안사항) 매핑.
@@ -35,6 +36,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
  * 정정 X — 별 스펙으로 분리 결정.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("제안")
 @Entity
 @Table(name = "suggestion")
 @SFObject("DKRetail__Proposal__c")

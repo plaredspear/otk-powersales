@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF OWD (Org-Wide Default) + role hierarchy 옵트인 메타 (spec #791).
@@ -21,6 +22,7 @@ import jakarta.persistence.Table
  * `Stage1Targets` 의 ALL 맵에 등록되어 #790 의 sharing 메타 entity 와 동일 ETL 흐름.
  * EntityMetadata.sObjectName 은 null (XML 메타 출처 — #790 Q1 옵션 1 정합).
  */
+@DomainName("SObject설정메타")
 @Entity
 @SFMeta(SFMetaSource.OBJECT_META_XML, "sharingModel")
 @SFMeta(SFMetaSource.SETTINGS_XML, "sharingSettings")

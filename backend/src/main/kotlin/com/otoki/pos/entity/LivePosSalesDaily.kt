@@ -8,6 +8,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.Immutable
 import java.math.BigDecimal
 import java.time.LocalDate
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * POS DB `public.live_pos_sales_dh` 직매핑 entity (POS매출 = 매장 POS 스캔 실적, 제품·일별).
@@ -35,6 +36,7 @@ import java.time.LocalDate
  *
  * 실제 조회는 [com.otoki.pos.repository.LivePosSalesDailyRepository] 의 native 집계 query 로만 수행.
  */
+@DomainName("POS매출일별")
 @Entity
 @Immutable
 @Table(name = "live_pos_sales_dh", schema = "public")

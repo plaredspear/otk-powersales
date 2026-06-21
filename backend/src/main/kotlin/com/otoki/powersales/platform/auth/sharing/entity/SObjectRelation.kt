@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF master-detail relationship 정규화 메타 (spec #791 Q2 옵션 1).
@@ -17,6 +18,7 @@ import jakarta.persistence.UniqueConstraint
  * ControlledByParent SObject 의 parent SObject 추론 출처. SF describe API 의 `childRelationships`
  * 와 정합. extract-sharing-meta.sh 의 master-detail 추출 결과 적재.
  */
+@DomainName("SObject관계메타")
 @Entity
 @SFMeta(SFMetaSource.DESCRIBE_API, "childRelationships")
 @Table(

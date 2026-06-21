@@ -9,6 +9,7 @@ import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 일별매출이력 Entity
@@ -18,6 +19,7 @@ import jakarta.persistence.*
  * sapAccountCode + salesDate 조합으로 externalKey 를 구성하여 UPSERT.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("일별매출이력")
 @Entity
 @Table(name = "daily_sales_history")
 @SFObject("DailySalesHistory__c")

@@ -17,6 +17,7 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 신제품 Entity
@@ -28,6 +29,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
  * + RecordType 9개 sfid 보존 (도메인 모델링은 #739 후속).
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("신제품")
 @Entity
 @Table(name = "new_product")
 @SFObject("NewProduct__c")

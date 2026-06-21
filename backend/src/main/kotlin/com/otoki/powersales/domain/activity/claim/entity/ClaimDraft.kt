@@ -9,6 +9,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.math.BigDecimal
 import java.time.LocalDate
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 클레임 등록 임시저장(draft) 엔티티.
@@ -22,6 +23,7 @@ import java.time.LocalDate
  * 임시저장은 검증을 건너뛰므로 거래처/제품/종류 등 모든 입력 필드가 nullable 이다.
  * 거래처명/제품명은 prefill 표시용으로 저장 시점 값을 함께 보관한다(form-data 에 없는 정보).
  */
+@DomainName("클레임 임시저장")
 @Entity
 @Table(name = "claim_draft")
 class ClaimDraft(

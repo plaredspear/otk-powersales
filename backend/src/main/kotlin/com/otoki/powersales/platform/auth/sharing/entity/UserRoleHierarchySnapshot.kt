@@ -8,6 +8,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * UserRole 트리의 정적 스냅샷 (spec #782 P1-B).
@@ -20,6 +21,7 @@ import java.time.LocalDateTime
  *
  * jsonb 컬럼은 application layer 에서 Jackson 으로 List<Long> ↔ JSON 직렬화 (의존성 추가 회피).
  */
+@DomainName("사용자역할 계층스냅샷")
 @Entity
 @SFShareAux
 @Table(name = "user_role_hierarchy_snapshot")

@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.support.education.entity
 import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.*
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 교육 첨부파일 Entity
@@ -10,6 +11,7 @@ import jakarta.persistence.*
  * V1 테이블: education_post_attachment (구: education_file_mng)
  * PK: education_post_attachment_id (BIGINT IDENTITY)
  */
+@DomainName("교육첨부파일")
 @Entity
 @Table(name = "education_post_attachment")
 @HerokuOnly("education_file_mng")

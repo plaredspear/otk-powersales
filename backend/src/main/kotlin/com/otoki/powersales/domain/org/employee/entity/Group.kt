@@ -21,6 +21,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import jakarta.persistence.EntityListeners
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * Salesforce `Group` 표준 sobject 매핑 entity (Spec #755).
@@ -40,6 +41,7 @@ import jakarta.persistence.EntityListeners
  * audit (createdBy / lastModifiedBy) 는 backend `User` entity self-reference R-2 — Spec #757 정합.
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("그룹")
 @Entity
 @Table(name = "\"group\"")
 @SFObject("Group")

@@ -15,6 +15,7 @@ import jakarta.persistence.Table
 import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF User Object 매핑 Entity (Spec #757).
@@ -31,6 +32,7 @@ import org.springframework.data.annotation.LastModifiedBy
  * - #759: EmployeeProfileResolver + is_sales_support 산출
  * - #760: Spring Security UserDetailsService (Web 전용)
  */
+@DomainName("사용자")
 @Entity
 @Table(name = "\"user\"")
 @SFObject("User")

@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * PermissionSet × RecordType visibility (spec #794).
@@ -16,6 +17,7 @@ import jakarta.persistence.Table
  * 운영 10건 (X1_1 / Marketing_ETC 등). XML 출처: `permissionsets/<Name>.permissionset-meta.xml`
  * 의 `<recordTypeVisibilities>` element.
  */
+@DomainName("권한집합 레코드타입")
 @Entity
 @SFMeta(SFMetaSource.PERMISSION_SET_XML, "recordTypeVisibilities")
 @Table(name = "permission_set_record_type")

@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SF SharingRule meta 본문 1행 (spec #782 P1-B).
@@ -19,6 +20,7 @@ import jakarta.persistence.UniqueConstraint
  *
  * 조건 (sharing_rule_condition) + 대상 (sharing_rule_target) 은 별도 테이블.
  */
+@DomainName("공유규칙")
 @Entity
 @SFMeta(SFMetaSource.SHARING_RULES_XML, "sharingCriteriaRules")
 @SFMeta(SFMetaSource.SHARING_RULES_XML, "sharingOwnerRules")

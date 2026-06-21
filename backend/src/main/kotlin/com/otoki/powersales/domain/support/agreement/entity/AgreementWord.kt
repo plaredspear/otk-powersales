@@ -22,6 +22,7 @@ import org.springframework.data.annotation.LastModifiedBy
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * 동의문구 Entity (Salesforce `AgreementWord__c`) — Spec #707 + sf-meta-diff 후속 (OwnerId polymorphic + audit FK User 전환).
@@ -31,6 +32,7 @@ import java.time.LocalDateTime
  * - audit (CreatedById / LastModifiedById) FK 는 SF `referenceTo = [com.otoki.powersales.user.entity.User]` 정합 — `User` entity 참조 (spec #757).
  */
 @EntityListeners(OwnerUserDefaultListener::class)
+@DomainName("동의문구")
 @Entity
 @Table(name = "agreement_word")
 @SFObject("AgreementWord__c")

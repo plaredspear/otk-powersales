@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * SharingRule 의 Criteria-based 조건 1행 (spec #782 P1-B).
@@ -15,6 +16,7 @@ import jakarta.persistence.Table
  * `<sharingCriteriaRules><criteriaItems><field>...</field><operation>...</operation><value>...</value>`
  * 본문 1건 = 본 entity 1건. rule 안의 condition 적용 순서는 `conditionOrder` 로 박제.
  */
+@DomainName("공유규칙조건")
 @Entity
 @SFMeta(SFMetaSource.SHARING_RULES_XML, "criteriaItems")
 @Table(name = "sharing_rule_condition")

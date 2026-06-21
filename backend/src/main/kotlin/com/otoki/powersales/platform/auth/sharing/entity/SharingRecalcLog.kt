@@ -9,12 +9,14 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.OffsetDateTime
+import com.otoki.powersales.platform.common.entity.DomainName
 
 /**
  * sharing recalc endpoint 호출 audit (spec #792).
  *
  * SF mirror 아님 — SF sharing 구현을 보조하는 신규 시스템 자체 운영 audit. `Stage1Targets.ALL` 미등록.
  */
+@DomainName("공유재계산로그")
 @Entity
 @SFShareAux
 @Table(name = "sharing_recalc_log")
