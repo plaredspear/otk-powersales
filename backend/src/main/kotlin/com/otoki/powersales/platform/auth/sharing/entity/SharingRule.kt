@@ -11,6 +11,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF SharingRule meta 본문 1행 (spec #782 P1-B).
@@ -39,24 +40,31 @@ class SharingRule(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("공유규칙ID")
     @Column(name = "sharing_rule_id")
     val id: Long = 0,
 
+    @FieldName("개발자명")
     @Column(name = "developer_name", nullable = false, length = 80)
     var developerName: String,
 
+    @FieldName("SObject명")
     @Column(name = "s_object_name", nullable = false, length = 80)
     var sObjectName: String,
 
+    @FieldName("규칙유형")
     @Column(name = "rule_type", nullable = false, length = 20)
     var ruleType: String,
 
+    @FieldName("라벨")
     @Column(name = "label", length = 255)
     var label: String? = null,
 
+    @FieldName("접근수준")
     @Column(name = "access_level", nullable = false, length = 10)
     var accessLevel: String,
 
+    @FieldName("전체소유포함여부")
     @Column(name = "include_owned_by_all", nullable = false)
     var includeOwnedByAll: Boolean = false,
 ) : BaseEntity()

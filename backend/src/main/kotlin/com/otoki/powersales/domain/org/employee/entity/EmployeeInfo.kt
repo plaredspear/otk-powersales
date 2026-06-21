@@ -8,6 +8,7 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 사원 인증/기기 정보 Entity (employee_info 테이블)
@@ -28,33 +29,41 @@ class EmployeeInfo(
     val employee: Employee,
 
     @HCColumn("empcode__c")
+    @FieldName("사번")
     @Column(name = "employee_code", length = 40)
     val employeeCode: String? = null,
 
     @HCColumn("emp_pwd")
+    @FieldName("비밀번호")
     @Column(name = "password", length = 200)
     var password: String? = null,
 
     @HCColumn("pwd_yn")
+    @FieldName("비밀번호변경필요여부")
     @Column(name = "password_change_required")
     var passwordChangeRequired: Boolean? = true,
 
     @HCColumn("emp_uuid")
+    @FieldName("기기UUID")
     @Column(name = "device_uuid", length = 200)
     var deviceUuid: String? = null,
 
     @HCColumn("emp_token")
+    @FieldName("FCM토큰")
     @Column(name = "fcm_token", length = 200)
     var fcmToken: String? = null,
 
     @HCColumn("gps_yn")
+    @FieldName("GPS동의여부")
     @Column(name = "gps_consent")
     val gpsYn: Boolean? = null,
 
     @HCColumn("gps_yn_date")
+    @FieldName("GPS동의일시")
     @Column(name = "gps_consent_date")
     val gpsYnDate: LocalDateTime? = null,
 
+    @FieldName("최종동의번호")
     @Column(name = "last_agreement_number", length = 80)
     var lastAgreementNumber: String? = null,
 
@@ -62,15 +71,19 @@ class EmployeeInfo(
     // 로그인/토큰 리프레시 때 클라이언트가 보고한 값으로 덮어쓴다(현재값만 유지, 이력 X).
     // 웹 관리자(사원 상세 > 앱 설정)에서 사용 버전 분포 파악 용도.
 
+    @FieldName("앱버전명")
     @Column(name = "app_version_name", length = 40)
     var appVersionName: String? = null,
 
+    @FieldName("앱버전코드")
     @Column(name = "app_version_code")
     var appVersionCode: Long? = null,
 
+    @FieldName("앱플랫폼")
     @Column(name = "app_platform", length = 20)
     var appPlatform: String? = null,
 
+    @FieldName("앱버전확인일시")
     @Column(name = "app_version_seen_at")
     var appVersionSeenAt: LocalDateTime? = null,
 
@@ -95,6 +108,7 @@ class EmployeeInfo(
 ) : AuditedEntity() {
 
     @Id
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     var employeeId: Long = 0
 }

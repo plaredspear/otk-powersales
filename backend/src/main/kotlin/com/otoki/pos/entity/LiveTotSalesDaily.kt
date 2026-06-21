@@ -9,6 +9,7 @@ import org.hibernate.annotations.Immutable
 import java.math.BigDecimal
 import java.time.LocalDate
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * POS DB `public.live_tot_sales_dh` 직매핑 entity (전산매출 = ABC 매출, 제품·일별 실적).
@@ -41,26 +42,33 @@ import com.otoki.powersales.platform.common.entity.DomainName
 @IdClass(LiveTotSalesDailyId::class)
 class LiveTotSalesDaily(
 	@Id
+	@FieldName("일자")
 	@Column(name = "`YMD_ID`")
 	val ymdId: LocalDate,
 
 	@Id
+	@FieldName("거래처코드")
 	@Column(name = "`CUST_CD`")
 	val custCd: String,
 
 	@Id
+	@FieldName("제품코드")
 	@Column(name = "`ITEM_CD`")
 	val itemCd: String,
 
+	@FieldName("제품명")
 	@Column(name = "`ITEM_NM`")
 	val itemNm: String? = null,
 
+	@FieldName("바코드")
 	@Column(name = "`UPC_CD`")
 	val upcCd: String? = null,
 
+	@FieldName("매출실적금액")
 	@Column(name = "`SALES_RAMT`", precision = 18, scale = 0)
 	val salesRamt: BigDecimal? = null,
 
+	@FieldName("매출실적수량")
 	@Column(name = "`SALES_RQTY`", precision = 18, scale = 0)
 	val salesRqty: BigDecimal? = null,
 )

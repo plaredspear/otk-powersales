@@ -10,6 +10,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 @EntityListeners(OwnerUserDefaultListener::class)
 @DomainName("출근정보")
@@ -26,6 +27,7 @@ class AttendInfo(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("출근정보ID")
     @Column(name = "attend_info_id")
     val id: Long = 0,
 
@@ -33,26 +35,32 @@ class AttendInfo(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("EmployeeCode__c")
+    @FieldName("사원번호")
     @Column(name = "employee_code", nullable = false, length = 100)
     val employeeCode: String,
 
     @SFField("StartDate__c")
+    @FieldName("시작일")
     @Column(name = "start_date", nullable = false, length = 100)
     var startDate: String,
 
     @SFField("EndDate__c")
+    @FieldName("종료일")
     @Column(name = "end_date", length = 100)
     var endDate: String? = null,
 
     @SFField("AttendType__c")
+    @FieldName("근태유형")
     @Column(name = "attend_type", length = 100)
     var attendType: String? = null,
 
     @SFField("Status__c")
+    @FieldName("상태")
     @Column(name = "status", length = 100)
     var status: String? = null,
 
@@ -69,6 +77,7 @@ class AttendInfo(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

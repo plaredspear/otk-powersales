@@ -14,6 +14,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 @EntityListeners(OwnerUserDefaultListener::class)
 @DomainName("전문행사조 이력")
@@ -24,6 +25,7 @@ class ProfessionalPromotionTeamHistory(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("전문행사조이력ID")
     @Column(name = "professional_promotion_team_history_id")
     val id: Long = 0,
 
@@ -31,9 +33,11 @@ class ProfessionalPromotionTeamHistory(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
@@ -43,15 +47,18 @@ class ProfessionalPromotionTeamHistory(
 
     @SFField("oldValue__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
+    @FieldName("변경 전")
     @Column(name = "old_value", length = 255)
     val oldValue: ProfessionalPromotionTeamType? = null,
 
     @SFField("newValue__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
+    @FieldName("변경 후")
     @Column(name = "new_value", nullable = false, length = 255)
     val newValue: ProfessionalPromotionTeamType?,
 
     @SFField("updateTime__c")
+    @FieldName("변경 시점")
     @Column(name = "changed_at", nullable = false)
     val changedAt: LocalDateTime = LocalDateTime.now(),
 
@@ -69,6 +76,7 @@ class ProfessionalPromotionTeamHistory(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

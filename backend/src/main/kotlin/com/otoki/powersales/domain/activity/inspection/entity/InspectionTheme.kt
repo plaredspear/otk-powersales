@@ -11,6 +11,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 현장 점검 테마 Entity
@@ -25,6 +26,7 @@ class InspectionTheme(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("현장점검테마ID")
     @Column(name = "inspection_theme_id")
     val id: Long = 0,
 
@@ -32,34 +34,42 @@ class InspectionTheme(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("Title__c")
+    @FieldName("테마이름")
     @Column(name = "title", length = 250)
     val title: String? = null,
 
     @SFField("StartDate__c")
+    @FieldName("시작일")
     @Column(name = "start_date")
     val startDate: LocalDate? = null,
 
     @SFField("EndDate__c")
+    @FieldName("종료일")
     @Column(name = "end_date")
     val endDate: LocalDate? = null,
 
     @SFField("Department__c")
+    @FieldName("부서")
     @Column(name = "department", length = 100)
     val department: String? = null,
 
     @SFField("BranchCode__c")
+    @FieldName("지점코드")
     @Column(name = "branch_code", length = 30)
     val branchCode: String? = null,
 
     @SFField("PublicFlag__c")
+    @FieldName("공개여부")
     @Column(name = "public_flag")
     val publicFlag: Boolean? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

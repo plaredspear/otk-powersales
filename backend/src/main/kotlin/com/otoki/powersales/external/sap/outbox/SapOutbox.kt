@@ -12,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 범용 SAP outbound 송신 큐 (Spec #592).
@@ -40,31 +41,40 @@ class SapOutbox(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("SAP송신큐ID")
     @Column(name = "sap_outbox_id")
     val id: Long = 0,
 
+    @FieldName("도메인유형")
     @Column(name = "domain_type", nullable = false, length = 50)
     val domainType: String,
 
+    @FieldName("집계대상ID")
     @Column(name = "aggregate_id", nullable = false)
     val aggregateId: Long,
 
+    @FieldName("인터페이스ID")
     @Column(name = "interface_id", nullable = false, length = 80)
     val interfaceId: String,
 
     @JdbcTypeCode(SqlTypes.JSON)
+    @FieldName("페이로드")
     @Column(name = "payload", nullable = false)
     val payload: String,
 
+    @FieldName("상태")
     @Column(name = "status", nullable = false, length = 20)
     var status: String = STATUS_PENDING,
 
+    @FieldName("재시도횟수")
     @Column(name = "retry_count", nullable = false)
     var retryCount: Int = 0,
 
+    @FieldName("마지막오류")
     @Column(name = "last_error", columnDefinition = "TEXT")
     var lastError: String? = null,
 
+    @FieldName("송신일시")
     @Column(name = "sent_at")
     var sentAt: LocalDateTime? = null,
 ) : BaseEntity() {

@@ -11,6 +11,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF PermissionSet 의 object/system 권한 비트 (spec #782 P1-B).
@@ -28,6 +29,7 @@ class PermissionSetFlags(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("권한집합플래그ID")
     @Column(name = "permission_set_flags_id")
     val id: Long = 0,
 
@@ -37,32 +39,39 @@ class PermissionSetFlags(
     @Column(name = "permission_set_sfid", length = 18)
     var permissionSetSfid: String? = null,
 
+    @FieldName("권한집합명")
     @Column(name = "permission_set_name", nullable = false, length = 80)
     var permissionSetName: String,
 
+    @FieldName("전체데이터조회권한")
     @Column(name = "permissions_view_all_data", nullable = false)
     var permissionsViewAllData: Boolean = false,
 
+    @FieldName("전체데이터수정권한")
     @Column(name = "permissions_modify_all_data", nullable = false)
     var permissionsModifyAllData: Boolean = false,
 
     // PG = jsonb (V175), H2 = JSON-as-text. Hibernate 6+ dialect 자동 매핑 (SapOutbox.payload / ScheduledJobRun.metadata 와 동일 패턴).
     @JdbcTypeCode(SqlTypes.JSON)
+    @FieldName("객체권한")
     @Column(name = "object_permissions")
     var objectPermissions: String? = null,
 
     // spec #808 — JPA entity 가 없는 가상 자원 (@PermissionResource) 의 CRUD 비트. SF customPermissions 정합.
     // 예: { "dashboard": { "allowRead": true } }
     @JdbcTypeCode(SqlTypes.JSON)
+    @FieldName("커스텀권한")
     @Column(name = "custom_permissions")
     var customPermissions: String? = null,
 
     // spec #796 — permission_set 정규 테이블 FK (Stage2 fk resolve 후 채움)
+    @FieldName("권한집합ID")
     @Column(name = "permission_set_id")
     var permissionSetId: Long? = null,
 
     // spec #837 — dirty 플래그. SF 출처 (sfid 보유 PS 의 flags) 가 신규 시스템에서 수정되면 true.
     // Stage1 재적재 시 본 컬럼 true 인 행은 보존 정책 (재적재 service 변경은 후속 — 현재는 audit 컬럼만).
+    @FieldName("로컬수정여부")
     @Column(name = "is_locally_modified", nullable = false)
     var isLocallyModified: Boolean = false,
 )

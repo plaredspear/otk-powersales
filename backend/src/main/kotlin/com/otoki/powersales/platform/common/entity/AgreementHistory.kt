@@ -28,12 +28,14 @@ class AgreementHistory(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("동의이력ID")
     @Column(name = "agreement_history_id")
     val id: Long = 0,
 
     @Column(name = "sfid", length = 18, unique = true)
     val sfid: String? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
@@ -42,13 +44,16 @@ class AgreementHistory(
     val employeeSfid: String? = null,
 
     @SFField("AgreementFlag__c")
+    @FieldName("개인정보, 위치정보의 수집 및 이용에 대한 동의")
     @Column(name = "agreement_flag", nullable = false)
     val agreementFlag: Boolean,
 
     @SFField("AgreementDate__c")
+    @FieldName("동의일자")
     @Column(name = "agreement_date", nullable = false)
     val agreementDate: LocalDate,
 
+    @FieldName("동의문구ID")
     @Column(name = "agreement_word_id")
     val agreementWordId: Long? = null,
 
@@ -58,11 +63,13 @@ class AgreementHistory(
 
     // -- Spec #706: Group A — IsDeleted --
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 
     // -- Spec #706: 표준 비-A 필드 (Name = 동의번호) --
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 

@@ -8,6 +8,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.Immutable
 import java.math.BigDecimal
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * ORORA MSSQL view `ECRM_ABCCUST_MH_V` 직매핑 entity (NS00030 — 거래처별 월별 매출 이력 수신).
@@ -69,34 +70,44 @@ import com.otoki.powersales.platform.common.entity.DomainName
 @IdClass(OroraMonthlySalesHistoryId::class)
 class OroraMonthlySalesHistory(
 	@Id
+	@FieldName("거래처코드")
 	@Column(name = "SAPAccountCode")
 	val sapAccountCode: String,
 
 	@Id
+	@FieldName("매출발생년월")
 	@Column(name = "SalesDate")
 	val salesDate: String,
 
+	@FieldName("전산마감실적_상온 (원)")
 	@Column(name = "ABCClosingAmount1", precision = 18, scale = 0)
 	val abcClosingAmount1: BigDecimal? = null,
 
+	@FieldName("전산마감실적_라면 (원)")
 	@Column(name = "ABCClosingAmount2", precision = 18, scale = 0)
 	val abcClosingAmount2: BigDecimal? = null,
 
+	@FieldName("전산마감실적_냉장냉동 (원)")
 	@Column(name = "ABCClosingAmount3", precision = 18, scale = 0)
 	val abcClosingAmount3: BigDecimal? = null,
 
+	@FieldName("전산마감실적_유지 (원)")
 	@Column(name = "ABCClosingAmount4", precision = 18, scale = 0)
 	val abcClosingAmount4: BigDecimal? = null,
 
+	@FieldName("물류마감실적_상온 (원)")
 	@Column(name = "ShipClosingAmount1", precision = 18, scale = 0)
 	val shipClosingAmount1: BigDecimal? = null,
 
+	@FieldName("물류마감실적_라면 (원)")
 	@Column(name = "ShipClosingAmount2", precision = 18, scale = 0)
 	val shipClosingAmount2: BigDecimal? = null,
 
+	@FieldName("물류마감실적_냉장냉동 (원)")
 	@Column(name = "ShipClosingAmount3", precision = 18, scale = 0)
 	val shipClosingAmount3: BigDecimal? = null,
 
+	@FieldName("물류마감실적_유지 (원)")
 	@Column(name = "ShipClosingAmount4", precision = 18, scale = 0)
 	val shipClosingAmount4: BigDecimal? = null,
 ) {

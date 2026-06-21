@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 모바일 앱 패키지(APK/IPA) 버전.
@@ -26,47 +27,59 @@ class AppPackage(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("앱패키지ID")
     @Column(name = "app_package_id")
     val id: Long = 0,
 
     @Enumerated(EnumType.STRING)
+    @FieldName("플랫폼")
     @Column(name = "platform", nullable = false, length = 16)
     val platform: AppPlatform,
 
     /** 표시용 버전 문자열 (예: 1.2.0). */
+    @FieldName("버전명")
     @Column(name = "version_name", nullable = false, length = 32)
     var versionName: String,
 
     /** 정수 비교용 버전 (Android versionCode / iOS buildNumber). */
+    @FieldName("버전코드")
     @Column(name = "version_code", nullable = false)
     val versionCode: Long,
 
     /** 강제 업데이트 여부 — 이 버전 미만 클라이언트는 진입 차단 대상. */
+    @FieldName("강제업데이트여부")
     @Column(name = "force_update", nullable = false)
     var forceUpdate: Boolean = false,
 
+    @FieldName("릴리즈노트")
     @Column(name = "release_note", columnDefinition = "TEXT")
     var releaseNote: String? = null,
 
     /** StorageService uniqueKey (segment 없음, 실제 S3 객체는 private/ + key). */
+    @FieldName("파일고유키")
     @Column(name = "file_unique_key", nullable = false, length = 512)
     val fileUniqueKey: String,
 
+    @FieldName("파일명")
     @Column(name = "file_name", nullable = false, length = 255)
     val fileName: String,
 
+    @FieldName("Size")
     @Column(name = "file_size", nullable = false)
     val fileSize: Long,
 
     /** 플랫폼별 최신 지정. 동일 platform 내 단 1개만 true (부분 unique index 보장). */
+    @FieldName("최신여부")
     @Column(name = "is_latest", nullable = false)
     var isLatest: Boolean = false,
 
     /** iOS plist 의 bundle-identifier (서명된 IPA 의 실제 값과 일치 필수). Android 는 null. */
+    @FieldName("번들식별자")
     @Column(name = "bundle_identifier", length = 255)
     val bundleIdentifier: String? = null,
 
     /** 업로더 employee.id. employee 삭제 시 null (ON DELETE SET NULL). */
+    @FieldName("업로더사원ID")
     @Column(name = "uploaded_by_id")
     val uploadedById: Long? = null,
 

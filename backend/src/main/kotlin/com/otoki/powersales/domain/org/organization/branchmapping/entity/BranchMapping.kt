@@ -6,6 +6,7 @@ import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * cost_center_code 이력 합집합 매핑.
@@ -26,12 +27,15 @@ import com.otoki.powersales.platform.common.entity.DomainName
 @Table(name = "branch_mapping")
 class BranchMapping(
     @Id
+    @FieldName("지점코드")
     @Column(name = "branch_code", length = 20, nullable = false)
     val branchCode: String,
 
+    @FieldName("포함지점코드목록")
     @Column(name = "included_branch_codes", length = 255, nullable = false)
     var includedBranchCodes: String,
 
+    @FieldName("라벨")
     @Column(name = "label", length = 100)
     var label: String? = null,
 ) : BaseEntity()

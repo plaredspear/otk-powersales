@@ -16,6 +16,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 출근현황 Entity
@@ -30,6 +31,7 @@ class AttendanceLog(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("출근현황ID")
     @Column(name = "attendance_log_id")
     val id: Long = 0,
 
@@ -37,6 +39,7 @@ class AttendanceLog(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
@@ -44,10 +47,12 @@ class AttendanceLog(
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
     @SFField("DKRetail__CommuteDate__c")
+    @FieldName("출근일시")
     @Column(name = "attendance_date")
     val attendanceDate: LocalDateTime? = null,
 
@@ -55,15 +60,18 @@ class AttendanceLog(
     @Column(name = "account_sfid", length = 18)
     val accountSfid: String? = null,
 
+    @FieldName("거래처ID")
     @Column(name = "account_id")
     val accountId: Long? = null,
 
     @SFField("DKRetail__SecondWorkType__c")
+    @FieldName("2차근무형태")
     @Column(name = "second_work_type", length = 255)
     @Convert(converter = SecondWorkTypeConverter::class)
     val secondWorkType: SecondWorkType? = null,
 
     @SFField("DKRetail__Reason__c")
+    @FieldName("사유")
     @Column(name = "reason", length = 255)
     val reason: String? = null,
 
@@ -73,6 +81,7 @@ class AttendanceLog(
      * DB 체크 제약 없음 — 본 enum 으로만 검증 (backend-conventions.md "Enum 컬럼 정책").
      */
     @Enumerated(EnumType.STRING)
+    @FieldName("출근종류")
     @Column(name = "attendance_type", length = 20)
     val attendanceType: AttendanceType? = AttendanceType.REGULAR,
 
@@ -89,6 +98,7 @@ class AttendanceLog(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

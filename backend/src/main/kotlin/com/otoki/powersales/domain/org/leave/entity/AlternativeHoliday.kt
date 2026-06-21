@@ -14,6 +14,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 @EntityListeners(OwnerUserDefaultListener::class)
 @DomainName("대체공휴일")
@@ -24,6 +25,7 @@ class AlternativeHoliday(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("대체공휴일ID")
     @Column(name = "alternative_holiday_id")
     val id: Long = 0,
 
@@ -31,9 +33,11 @@ class AlternativeHoliday(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
@@ -42,26 +46,32 @@ class AlternativeHoliday(
     val employeeSfid: String? = null,
 
     @SFField("DKRetail__ActualWorkDate__c")
+    @FieldName("대휴대상일자")
     @Column(name = "actual_work_date", nullable = false)
     val actualWorkDate: LocalDate,
 
     @SFField("DKRetail__TargetAltHolidayDate__c")
+    @FieldName("대휴신청일자")
     @Column(name = "target_alt_holiday_date", nullable = false)
     val targetAltHolidayDate: LocalDate,
 
     @SFField("DKRetail__ConfirmAltHolidayDate__c")
+    @FieldName("대휴일자")
     @Column(name = "confirm_alt_holiday_date")
     var confirmAltHolidayDate: LocalDate? = null,
 
     @SFField("DKRetail__Status__c")
     @Convert(converter = AltHolidayStatusConverter::class)
+    @FieldName("상태")
     @Column(name = "status", nullable = false, length = 255)
     var status: AltHolidayStatus = AltHolidayStatus.NEW,
 
     @SFField("DKRetail__ChangeReason__c")
+    @FieldName("변경사유")
     @Column(name = "change_reason", length = 255)
     var changeReason: String? = null,
 
+    @FieldName("생성자사번")
     @Column(name = "created_by_emp_no", length = 20)
     val createdByEmpNo: String? = null,
 
@@ -78,6 +88,7 @@ class AlternativeHoliday(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

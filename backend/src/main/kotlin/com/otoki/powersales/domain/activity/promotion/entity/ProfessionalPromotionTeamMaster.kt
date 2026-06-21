@@ -15,6 +15,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 @EntityListeners(OwnerUserDefaultListener::class)
 @DomainName("전문행사조 마스터")
@@ -25,6 +26,7 @@ class ProfessionalPromotionTeamMaster(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("전문행사조마스터ID")
     @Column(name = "professional_promotion_team_master_id")
     val id: Long = 0,
 
@@ -32,12 +34,15 @@ class ProfessionalPromotionTeamMaster(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     var employeeId: Long? = null,
 
+    @FieldName("거래처ID")
     @Column(name = "account_id")
     var accountId: Long? = null,
 
@@ -51,22 +56,27 @@ class ProfessionalPromotionTeamMaster(
 
     @SFField("ProfessionalPromotionTeam__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
+    @FieldName("전문행사조")
     @Column(name = "team_type", nullable = false, length = 255)
     var teamType: ProfessionalPromotionTeamType,
 
     @SFField("StartDate__c")
+    @FieldName("시작일")
     @Column(name = "start_date", nullable = false)
     var startDate: LocalDate,
 
     @SFField("EndDate__c")
+    @FieldName("종료일")
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
 
     @SFField("Confirmed__c")
+    @FieldName("확정")
     @Column(name = "is_confirmed", nullable = false)
     var isConfirmed: Boolean = false,
 
     @SFField("CostCenterCode__c")
+    @FieldName("조직유형")
     @Column(name = "branch_code", length = 255)
     var branchCode: String? = null,
 
@@ -83,6 +93,7 @@ class ProfessionalPromotionTeamMaster(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

@@ -12,6 +12,7 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * Spec #837 — PermissionSet 변경 이력 audit.
@@ -27,30 +28,38 @@ class PermissionSetChangeLog(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("권한집합변경이력ID")
     @Column(name = "permission_set_change_log_id")
     val id: Long = 0,
 
+    @FieldName("권한집합ID")
     @Column(name = "permission_set_id")
     var permissionSetId: Long? = null,
 
     @Enumerated(EnumType.STRING)
+    @FieldName("이벤트유형")
     @Column(name = "event_type", nullable = false, length = 32)
     val eventType: PermissionSetChangeLogEventType,
 
     @JdbcTypeCode(SqlTypes.JSON)
+    @FieldName("변경전스냅샷")
     @Column(name = "before_snapshot")
     val beforeSnapshot: String? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
+    @FieldName("변경후스냅샷")
     @Column(name = "after_snapshot")
     val afterSnapshot: String? = null,
 
+    @FieldName("변경자ID")
     @Column(name = "changed_by_id", nullable = false)
     val changedById: Long,
 
+    @FieldName("변경 시점")
     @Column(name = "changed_at", nullable = false)
     val changedAt: LocalDateTime = LocalDateTime.now(),
 
+    @FieldName("변경사유")
     @Column(name = "change_reason", length = 500)
     val changeReason: String? = null,
 )

@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF PermissionSet 정규 테이블 (spec #796).
@@ -30,18 +31,22 @@ class PermissionSet(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("권한집합ID")
     @Column(name = "permission_set_id")
     val id: Long = 0,
 
     @Column(name = "sfid", length = 18, unique = true)
     var sfid: String? = null,
 
+    @FieldName("이름")
     @Column(name = "name", nullable = false, length = 80, unique = true)
     var name: String,
 
+    @FieldName("라벨")
     @Column(name = "label", length = 255)
     var label: String? = null,
 
+    @FieldName("행사대체제품")
     @Column(name = "description", length = 1024)
     var description: String? = null,
 ) : BaseEntity()

@@ -11,6 +11,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 발령정보 Entity
@@ -43,6 +44,7 @@ class Appointment(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("발령정보ID")
     @Column(name = "appointment_id")
     val id: Long = 0,
 
@@ -50,76 +52,94 @@ class Appointment(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("EmployeeCode__c")
+    @FieldName("사원코드")
     @Column(name = "employee_code", nullable = false, length = 100)
     val employeeCode: String,
 
     @SFField("isEmpCodeExist__c")
+    @FieldName("사번존재여부")
     @Column(name = "emp_code_exist", nullable = false)
     var empCodeExist: Boolean = false,
 
     @SFField("OrgCode__c")
+    @FieldName("조직코드")
     @Column(name = "after_org_code", length = 100)
     val afterOrgCode: String? = null,
 
     @SFField("OrgName__c")
+    @FieldName("조직명")
     @Column(name = "after_org_name", length = 100)
     val afterOrgName: String? = null,
 
     @SFField("Jikchak__c")
+    @FieldName("직책명")
     @Column(name = "jikchak", length = 100)
     val jikchak: String? = null,
 
     @SFField("Jikwee__c")
+    @FieldName("직위명")
     @Column(name = "jikwee", length = 100)
     val jikwee: String? = null,
 
     @SFField("Jikgub__c")
+    @FieldName("직급명")
     @Column(name = "jikgub", length = 100)
     val jikgub: String? = null,
 
     @SFField("WorkType__c")
+    @FieldName("직군명")
     @Column(name = "work_type", length = 100)
     val workType: String? = null,
 
     @SFField("ManageType__c")
+    @FieldName("사원구분명")
     @Column(name = "manage_type", length = 100)
     val manageType: String? = null,
 
     @SFField("JobCode__c")
+    @FieldName("직무코드")
     @Column(name = "job_code", length = 100)
     val jobCode: String? = null,
 
     @SFField("WorkArea__c")
+    @FieldName("실근무지역코드명")
     @Column(name = "work_area", length = 100)
     val workArea: String? = null,
 
     @SFField("Jikjong__c")
+    @FieldName("직종명")
     @Column(name = "jikjong", length = 100)
     val jikjong: String? = null,
 
     @SFField("AppointmentDate__c")
+    @FieldName("발령일자")
     @Column(name = "appoint_date", nullable = false)
     val appointDate: LocalDate,
 
     @SFField("JobName__c")
+    @FieldName("직무명")
     @Column(name = "job_name", length = 100)
     val jobName: String? = null,
 
     @SFField("OrdDetailCode__c")
+    @FieldName("발령코드")
     @Column(name = "ord_detail_code", length = 100)
     val ordDetailCode: String? = null,
 
     @SFField("OrdDetailNode__c")
+    @FieldName("발령코드명")
     @Column(name = "ord_detail_node", length = 250)
     val ordDetailNode: String? = null,
 
     // -- Spec #736: Group A — IsDeleted --
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

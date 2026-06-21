@@ -22,6 +22,7 @@ import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import jakarta.persistence.EntityListeners
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * Salesforce `Group` 표준 sobject 매핑 entity (Spec #755).
@@ -49,6 +50,7 @@ class Group(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("그룹ID")
     @Column(name = "group_id")
     val id: Long = 0,
 
@@ -56,15 +58,18 @@ class Group(
     var sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", nullable = false, length = 40)
     var name: String,
 
     @SFField("DeveloperName")
+    @FieldName("개발자명")
     @Column(name = "developer_name", length = 80)
     var developerName: String? = null,
 
     @SFField("Type")
     @Convert(converter = GroupTypeConverter::class)
+    @FieldName("제안유형")
     @Column(name = "type", nullable = false, length = 40)
     var type: GroupType,
 
@@ -77,18 +82,22 @@ class Group(
     var ownerSfid: String? = null,
 
     @SFField("Email")
+    @FieldName("이메일(개인)")
     @Column(name = "email", length = 255)
     var email: String? = null,
 
     @SFField("DoesSendEmailToMembers")
+    @FieldName("멤버이메일발송여부")
     @Column(name = "does_send_email_to_members", nullable = false)
     var doesSendEmailToMembers: Boolean = false,
 
     @SFField("DoesIncludeBosses")
+    @FieldName("상위자포함여부")
     @Column(name = "does_include_bosses", nullable = false)
     var doesIncludeBosses: Boolean = false,
 
     @SFField("Description")
+    @FieldName("행사대체제품")
     @Column(name = "description", columnDefinition = "TEXT")
     var description: String? = null,
 

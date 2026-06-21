@@ -24,6 +24,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import jakarta.persistence.EntityListeners
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 주문요청 라인 Entity (DKRetail__OrderRequestProduct__c).
@@ -53,6 +54,7 @@ class OrderRequestProduct(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("주문요청상품ID")
     @Column(name = "order_request_product_id")
     val id: Long = 0,
 
@@ -61,63 +63,80 @@ class OrderRequestProduct(
     val orderRequestSfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("LineNumber__c")
+    @FieldName("라인번호")
     @Column(name = "line_number", nullable = false)
     val lineNumber: BigDecimal,
 
     @SFField("DKRetail__LineNumber__c")
+    @FieldName("라인번호(DK)")
     @Column(name = "dk_line_number", length = 30)
     var dkLineNumber: String? = null,
 
     @SFField("ProductCode__c")
+    @FieldName("상품코드")
     @Column(name = "product_code", nullable = false, length = 255)
     val productCode: String,
 
     @SFField("TotalQuantity_Box__c")
+    @FieldName("총 박스환산치")
     @Column(name = "quantity_boxes", nullable = false, precision = 18, scale = 2)
     val quantityBoxes: BigDecimal = BigDecimal.ZERO,
 
     @SFField("TotalQuantity_Each__c")
+    @FieldName("총주문낱개수량")
     @Column(name = "quantity_pieces", nullable = false)
     val quantityPieces: BigDecimal = BigDecimal.ZERO,
 
     @SFField("DKRetail__OrderingUnit__c")
+    @FieldName("발주단위")
     @Column(name = "unit", nullable = false, length = 40)
     val unit: String,
 
+    @FieldName("단가")
     @Column(name = "unit_price", precision = 16, scale = 2)
     val unitPrice: BigDecimal? = BigDecimal.ZERO,
 
     @SFField("DKRetail__TotalAmount__c")
+    @FieldName("총금액")
     @Column(name = "amount", nullable = false, precision = 18, scale = 2)
     val amount: BigDecimal = BigDecimal.ZERO,
 
+    @FieldName("박스당낱개수")
     @Column(name = "pieces_per_box")
     val piecesPerBox: Int? = 1,
 
+    @FieldName("최소주문단위")
     @Column(name = "min_order_unit")
     val minOrderUnit: Int? = 1,
 
+    @FieldName("공급수량")
     @Column(name = "supply_quantity")
     val supplyQuantity: Int? = 0,
 
+    @FieldName("할인수량")
     @Column(name = "dc_quantity")
     val dcQuantity: Int? = 0,
 
     @SFField("DKRetail__LineChangeType__c")
+    @FieldName("취소여부")
     @Column(name = "line_change_type", length = 10)
     var lineChangeType: String? = null,
 
+    @FieldName("취소시각")
     @Column(name = "cancelled_at")
     var cancelledAt: LocalDateTime? = null,
 
+    @FieldName("취소자")
     @Column(name = "cancelled_by", length = 8)
     var cancelledBy: String? = null,
 
     @SFField("Status__c")
+    @FieldName("상태")
     @Column(name = "status", length = 255)
     val status: String? = null,
 
@@ -126,22 +145,27 @@ class OrderRequestProduct(
     val productSfid: String? = null,
 
     @SFField("DKRetail__Box__c")
+    @FieldName("Box")
     @Column(name = "box", precision = 18, scale = 0)
     val box: BigDecimal? = null,
 
     @SFField("DKRetail__Piece__c")
+    @FieldName("낱개")
     @Column(name = "piece", precision = 18, scale = 0)
     val piece: BigDecimal? = null,
 
     @SFField("DKRetail__BoxQuantity__c")
+    @FieldName("박스환산치")
     @Column(name = "box_quantity", precision = 18, scale = 3)
     val boxQuantity: BigDecimal? = null,
 
     @SFField("DKRetail__TotalCount__c")
+    @FieldName("총수량")
     @Column(name = "dk_total_count", precision = 18, scale = 0)
     var dkTotalCount: BigDecimal? = null,
 
     @SFField("TotalCount__c")
+    @FieldName("주문수량 (최소발주단위 기준)")
     @Column(name = "total_count", precision = 18, scale = 0)
     var totalCount: BigDecimal? = null,
 
@@ -171,6 +195,7 @@ class OrderRequestProduct(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

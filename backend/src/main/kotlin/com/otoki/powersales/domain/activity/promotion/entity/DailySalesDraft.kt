@@ -9,6 +9,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.math.BigDecimal
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 일매출 마감 임시저장(draft) 엔티티.
@@ -26,36 +27,47 @@ class DailySalesDraft(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("일매출마감임시저장ID")
     @Column(name = "daily_sales_draft_id")
     val id: Long = 0,
 
+    @FieldName("행사사원ID")
     @Column(name = "promotion_employee_id", nullable = false)
     val promotionEmployeeId: Long,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 
+    @FieldName("기준단가")
     @Column(name = "base_price")
     var basePrice: BigDecimal? = null,
 
+    @FieldName("대표품목판매수량")
     @Column(name = "primary_sales_quantity")
     var primarySalesQuantity: BigDecimal? = null,
 
+    @FieldName("대표품목판매단가")
     @Column(name = "primary_sales_price")
     var primarySalesPrice: BigDecimal? = null,
 
+    @FieldName("대표품목 매출")
     @Column(name = "primary_product_amount")
     var primaryProductAmount: BigDecimal? = null,
 
+    @FieldName("기타판매수량")
     @Column(name = "other_sales_quantity")
     var otherSalesQuantity: BigDecimal? = null,
 
+    @FieldName("기타매출금금액")
     @Column(name = "other_sales_amount")
     var otherSalesAmount: BigDecimal? = null,
 
+    @FieldName("행사대체제품")
     @Column(name = "description", length = 50)
     var description: String? = null,
 
+    @FieldName("S3ImageUniqueKey")
     @Column(name = "s3_image_unique_key", length = 255)
     var s3ImageUniqueKey: String? = null,
 

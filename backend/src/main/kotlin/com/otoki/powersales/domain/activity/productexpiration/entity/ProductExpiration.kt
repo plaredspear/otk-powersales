@@ -12,6 +12,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 /**
  * 유통기한 관리 Entity
  *
@@ -25,24 +26,30 @@ class ProductExpiration(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("유통기한관리ID")
     @Column(name = "product_expiration_id")
     val productExpirationId: Int = 0,
 
     @HCColumn("seq")
+    @FieldName("순번")
     @Column(name = "seq")
     val seq: Int = 0,
 
     @HCColumn("account_id")
+    @FieldName("거래처명")
     @Column(name = "account_name", length = 100)
     val accountName: String? = null,
 
+    @FieldName("거래처ID")
     @Column(name = "account_id")
     val accountId: Long? = null,
 
     @HCColumn("account_code")
+    @FieldName("거래처유형코드")
     @Column(name = "account_code", length = 100)
     val accountCode: String? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
@@ -51,25 +58,31 @@ class ProductExpiration(
     val employeeSfid: String? = null,
 
     @HCColumn("product_id")
+    @FieldName("제품명")
     @Column(name = "product_name", length = 100)
     val productName: String? = null,
 
+    @FieldName("제품ID")
     @Column(name = "product_id")
     val productId: Long? = null,
 
     @HCColumn("product_code")
+    @FieldName("제품코드")
     @Column(name = "product_code", length = 100)
     val productCode: String? = null,
 
+    @FieldName("유통기한")
     @Column(name = "expiration_date")
     @HCColumn("expiration_date")
     var expirationDate: LocalDate? = null,
 
     @HCColumn("alarm_date")
+    @FieldName("알람일자")
     @Column(name = "alarm_date")
     var alarmDate: LocalDate? = null,
 
     @HCColumn("description")
+    @FieldName("행사대체제품")
     @Column(name = "description", columnDefinition = "TEXT")
     var description: String? = null,
 

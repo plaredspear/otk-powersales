@@ -12,6 +12,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 저장된 검색 (SavedSearch) — 목록 화면의 검색 조건 프리셋 (Spec #852).
@@ -28,15 +29,18 @@ import com.otoki.powersales.platform.common.entity.DomainName
 class SavedSearch(
 
     /** 화면 식별자 (예: "promotion"). 같은 화면의 검색끼리 묶는다. */
+    @FieldName("자원키")
     @Column(name = "resource_key", nullable = false, length = 50)
     var resourceKey: String,
 
     /** 검색 표시명 (예: "관리자_검색용"). 드롭다운에 노출. */
+    @FieldName("이름")
     @Column(name = "name", nullable = false, length = 100)
     var name: String,
 
     /** 공유 스코프 — PRIVATE(개인) / SHARED(공용). */
     @Enumerated(EnumType.STRING)
+    @FieldName("공개범위")
     @Column(name = "scope", nullable = false, length = 20)
     var scope: SavedSearchScope,
 
@@ -52,10 +56,12 @@ class SavedSearch(
      * Map 으로 저장/반환만 한다. 필터 키의 의미 해석은 프런트가 담당.
      */
     @JdbcTypeCode(SqlTypes.JSON)
+    @FieldName("필터조건")
     @Column(name = "filters", nullable = false, columnDefinition = "jsonb")
     var filters: Map<String, Any?>,
 
     /** 드롭다운 표시 순서. 동일값이면 생성일 오름차순. */
+    @FieldName("시퀀스")
     @Column(name = "sort_order", nullable = false)
     var sortOrder: Int = 0,
 

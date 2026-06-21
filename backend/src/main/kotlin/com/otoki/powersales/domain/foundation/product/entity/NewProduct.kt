@@ -18,6 +18,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 신제품 Entity
@@ -37,6 +38,7 @@ class NewProduct(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("신제품ID")
     @Column(name = "new_product_id")
     val id: Long = 0,
 
@@ -44,26 +46,31 @@ class NewProduct(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     // -- Custom 필드 (15개) --
 
     @SFField("Customer_Survey__c")
+    @FieldName("소비자조사")
     @Column(name = "customer_survey")
     val customerSurvey: LocalDate? = null,
 
     @SFField("Initiator__c")
     @Convert(converter = InitiatorConverter::class)
+    @FieldName("발의주체")
     @Column(name = "initiator", length = 255)
     val initiator: Initiator? = null,
 
     @SFField("ManagementType__c")
     @Convert(converter = ManagementTypeConverter::class)
+    @FieldName("관리유형명칭")
     @Column(name = "management_type", length = 255)
     val managementType: ManagementType? = null,
 
     @SFField("Marketability_Review_Report__c")
+    @FieldName("시장성 검토보고")
     @Column(name = "marketability_review_report")
     val marketabilityReviewReport: LocalDate? = null,
 
@@ -72,49 +79,60 @@ class NewProduct(
     val productCodeSfid: String? = null,
 
     @SFField("Product_Name__c")
+    @FieldName("제품명")
     @Column(name = "product_name", nullable = false, length = 100)
     val productName: String,
 
     @SFField("Product_code1__c")
+    @FieldName("제품코드")
     @Column(name = "product_code1", columnDefinition = "TEXT")
     val productCode1: String? = null,
 
     @SFField("Purpose__c")
+    @FieldName("목적")
     @Column(name = "purpose", nullable = false, length = 255)
     val purpose: String,
 
     @SFField("Release_Review_Report__c")
+    @FieldName("출시검토보고")
     @Column(name = "release_review_report", nullable = false)
     val releaseReviewReport: LocalDate,
 
     @SFField("Release__c")
+    @FieldName("출시")
     @Column(name = "release", nullable = false)
     val release: LocalDate,
 
     @SFField("Status__c")
     @Convert(converter = NewProductStatusConverter::class)
+    @FieldName("진행상태")
     @Column(name = "status", nullable = false, length = 255)
     val status: NewProductStatus,
 
     @SFField("firstpropose__c")
+    @FieldName("최초발의(지시)")
     @Column(name = "firstpropose", nullable = false)
     val firstpropose: LocalDate,
 
     @SFField("friday_taste__c")
+    @FieldName("금요시식통과")
     @Column(name = "friday_taste", nullable = false)
     val fridayTaste: LocalDate,
 
     @SFField("Upload_Description__c")
+    @FieldName("업로드설명")
     @Column(name = "upload_description", length = 255)
     val uploadDescription: String? = null,
 
     @SFField("MarketingTeam__c")
+    @FieldName("팀")
     @Column(name = "marketing_team", length = 255)
     val marketingTeam: String? = null,
 
     // -- Group A — IsDeleted --
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

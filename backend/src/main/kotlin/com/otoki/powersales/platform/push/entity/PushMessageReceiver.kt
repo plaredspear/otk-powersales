@@ -12,6 +12,7 @@ import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 푸시 메시지 수신자 Entity
@@ -29,6 +30,7 @@ class PushMessageReceiver(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("푸시메시지수신자ID")
     @Column(name = "push_message_receiver_id")
     val id: Int = 0,
 
@@ -36,9 +38,11 @@ class PushMessageReceiver(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
@@ -46,6 +50,7 @@ class PushMessageReceiver(
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,
 
+    @FieldName("푸시메시지ID")
     @Column(name = "push_message_id")
     val pushMessageId: Int? = null,
 
@@ -55,6 +60,7 @@ class PushMessageReceiver(
 
     // -- Spec #710: Group A — IsDeleted --
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

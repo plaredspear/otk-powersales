@@ -11,6 +11,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF Profile 의 system 권한 비트 + 객체/가상자원 권한 (spec #782 P1-B).
@@ -32,38 +33,48 @@ class ProfileFlags(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("프로파일플래그ID")
     @Column(name = "profile_flags_id")
     val id: Long = 0,
 
+    @FieldName("프로파일ID")
     @Column(name = "profile_id", nullable = false, unique = true)
     var profileId: Long,
 
+    @FieldName("전체데이터조회권한")
     @Column(name = "permissions_view_all_data", nullable = false)
     var permissionsViewAllData: Boolean = false,
 
+    @FieldName("전체데이터수정권한")
     @Column(name = "permissions_modify_all_data", nullable = false)
     var permissionsModifyAllData: Boolean = false,
 
+    @FieldName("전체사용자조회권한")
     @Column(name = "permissions_view_all_users", nullable = false)
     var permissionsViewAllUsers: Boolean = false,
 
+    @FieldName("사용자관리권한")
     @Column(name = "permissions_manage_users", nullable = false)
     var permissionsManageUsers: Boolean = false,
 
+    @FieldName("API사용권한")
     @Column(name = "permissions_api_enabled", nullable = false)
     var permissionsApiEnabled: Boolean = false,
 
     // SF API name → {allowRead, allowCreate, allowEdit, allowDelete} JSON. PermissionSetFlags 와 동일 구조.
+    @FieldName("객체권한")
     @Column(name = "object_permissions", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     var objectPermissions: String? = null,
 
     // 가상 자원 (@PermissionResource) → 동일 4비트 JSON. SF API name 아님.
+    @FieldName("커스텀권한")
     @Column(name = "custom_permissions", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)
     var customPermissions: String? = null,
 
     // Web admin 에서 권한 비트를 편집하면 set. Stage2 재적재 시 dirty row 는 skip (SF 덮어쓰기 보호).
+    @FieldName("로컬수정여부")
     @Column(name = "is_locally_modified", nullable = false)
     var isLocallyModified: Boolean = false,
 )

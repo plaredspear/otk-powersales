@@ -11,6 +11,7 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 영업일관리마스터 Entity (SF `WorkingDayMaster__c`).
@@ -30,6 +31,7 @@ class WorkingDayMaster(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("영업일관리마스터ID")
     @Column(name = "working_day_master_id")
     val id: Long = 0,
 
@@ -37,19 +39,23 @@ class WorkingDayMaster(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("WorkingDate__c")
+    @FieldName("영업관리일")
     @Column(name = "working_date")
     var workingDate: LocalDate? = null,
 
     /** SF `WorkingDateCheck__c` (Number). 1 = 영업일. SF describe type = double. */
     @SFField("WorkingDateCheck__c")
+    @FieldName("영업일체크")
     @Column(name = "working_date_check")
     var workingDateCheck: Double? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

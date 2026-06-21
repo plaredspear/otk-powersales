@@ -8,6 +8,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * Web 관리자 대행 로그인 감사 로그 (Spec #851).
@@ -28,24 +29,31 @@ class ImpersonationLog(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("대행로그인감사로그ID")
     @Column(name = "impersonation_log_id")
     val id: Long = 0,
 
+    @FieldName("관리자사용자ID")
     @Column(name = "admin_user_id", nullable = false)
     val adminUserId: Long,
 
+    @FieldName("대상사용자ID")
     @Column(name = "target_user_id", nullable = false)
     val targetUserId: Long,
 
+    @FieldName("사유")
     @Column(name = "reason", length = 500)
     val reason: String? = null,
 
+    @FieldName("대행시작시각")
     @Column(name = "started_at", nullable = false)
     val startedAt: LocalDateTime,
 
+    @FieldName("대행종료시각")
     @Column(name = "ended_at")
     var endedAt: LocalDateTime? = null,
 
+    @FieldName("토큰만료시각")
     @Column(name = "access_expires_at", nullable = false)
     val accessExpiresAt: LocalDateTime,
 ) {

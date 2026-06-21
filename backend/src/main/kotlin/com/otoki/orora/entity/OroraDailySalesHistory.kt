@@ -8,6 +8,7 @@ import jakarta.persistence.Table
 import org.hibernate.annotations.Immutable
 import java.math.BigDecimal
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * ORORA MSSQL view `ECRM_MULCUST_MH_V` 직매핑 entity (Spec #823).
@@ -54,16 +55,20 @@ import com.otoki.powersales.platform.common.entity.DomainName
 @IdClass(OroraDailySalesHistoryId::class)
 class OroraDailySalesHistory(
 	@Id
+	@FieldName("거래처코드")
 	@Column(name = "SAPAccountCode")
 	val sapAccountCode: String,
 
 	@Id
+	@FieldName("매출발생년월")
 	@Column(name = "SalesDate")
 	val salesDate: String,
 
+	@FieldName("전산매출실적")
 	@Column(name = "ERPSalesAmount", precision = 18, scale = 0)
 	val erpSalesAmount: BigDecimal? = null,
 
+	@FieldName("물류배부매출실적")
 	@Column(name = "ERPDistributionAmount", precision = 18, scale = 0)
 	val erpDistributionAmount: BigDecimal? = null,
 )

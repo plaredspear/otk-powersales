@@ -8,6 +8,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 /**
  * 즐겨찾기 제품 Entity
  *
@@ -23,11 +24,13 @@ class FavoriteProduct(
 
     @Id
     @HCColumn("employeecode")
+    @FieldName("사번")
     @Column(name = "employee_code", length = 80)
     val employeeCode: String = "",
 
     @Id
     @HCColumn("productcode")
+    @FieldName("제품코드")
     @Column(name = "product_code", length = 80)
     val productCode: String = "",
 

@@ -17,6 +17,7 @@ class EmployeeAdmin(
 
     @Id
     @HCColumn("empcode__c")
+    @FieldName("사번")
     @Column(name = "employee_code", length = 40)
     val empCode: String
 ) : BaseEntity()

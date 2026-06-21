@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * UserRole 트리의 정적 스냅샷 (spec #782 P1-B).
@@ -28,24 +29,29 @@ import com.otoki.powersales.platform.common.entity.DomainName
 class UserRoleHierarchySnapshot(
 
     @Id
+    @FieldName("사용자역할ID")
     @Column(name = "user_role_id")
     val userRoleId: Long,
 
     // PG = jsonb (V175), H2 = JSON-as-text. Hibernate 6+ dialect 자동 매핑 (SapOutbox.payload / ScheduledJobRun.metadata 와 동일 패턴).
     // V181 이 NOT NULL 해제 — Stage1 적재 시점에 NULL 정상 (Stage3 recomputeAll 후 채움).
     @JdbcTypeCode(SqlTypes.JSON)
+    @FieldName("전체하위역할ID목록")
     @Column(name = "all_subordinate_ids")
     var allSubordinateIds: String? = null,
 
     // V181 이 NOT NULL 해제 — Stage1 시점 NULL 정상. primitive Int 이면 Hibernate setter
     // 에서 NPE 유발 (운영 사고: /api/v1/admin/accounts 500 + recomputeAll 자기 자신 fix 실패).
+    @FieldName("계층깊이")
     @Column(name = "depth")
     var depth: Int? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
+    @FieldName("상위역할경로")
     @Column(name = "ancestor_path")
     var ancestorPath: String? = null,
 
+    @FieldName("스냅샷일시")
     @Column(name = "snapshot_at", nullable = false)
     var snapshotAt: LocalDateTime = LocalDateTime.now(),
 )

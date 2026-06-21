@@ -24,6 +24,7 @@ class UploadFile(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("업로드파일ID")
     @Column(name = "upload_file_id")
     val id: Long = 0,
 
@@ -31,10 +32,12 @@ class UploadFile(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 255)
     val name: String? = null,
 
     @SFField("UniqueKey__c")
+    @FieldName("유니크키")
     @Column(name = "unique_key", length = 500)
     val uniqueKey: String? = null,
 
@@ -45,38 +48,46 @@ class UploadFile(
     val recordSfid: String? = null,
 
     @SFField("Size__c")
+    @FieldName("Size")
     @Column(name = "size", length = 100)
     val fileSize: String? = null,
 
     // SF Object__c 원본 (부모 SObject API 명). Stage1 이 직접 적재.
     @SFField("Object__c")
+    @FieldName("오브젝트")
     @Column(name = "object_type", length = 40)
     val objectType: String? = null,
 
     // 신규 시스템 parent_type — Stage2 가 object_type 기준으로 파생 (DB DEFAULT 'UNKNOWN').
     // SF 직접 매핑 아님 (@SFField 미부착). 신규 INSERT 경로는 UploadFileParentTypes 상수 명시 지정.
+    @FieldName("부모유형")
     @Column(name = "parent_type", nullable = false, length = 40)
     val parentType: String = "UNKNOWN",
 
+    @FieldName("부모ID")
     @Column(name = "parent_id")
     val parentId: Long? = null,
 
     // --- Spec #616: SF 누락 비수식 3개 도입 ---
 
     @SFField("Url__c")
+    @FieldName("Url")
     @Column(name = "url", length = 500)
     val url: String? = null,
 
     @SFField("UploadKbn__c")
+    @FieldName("업로드구분")
     @Column(name = "upload_kbn", length = 200)
     val uploadKbn: String? = null,
 
     @SFField("FileId__c")
+    @FieldName("파일아이디")
     @Column(name = "file_id", length = 100)
     val fileId: String? = null,
 
     // -- Spec #712: Group A — IsDeleted --
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

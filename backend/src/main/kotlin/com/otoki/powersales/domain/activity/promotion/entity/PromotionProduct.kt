@@ -10,6 +10,7 @@ import java.math.BigDecimal
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 행사상품 (DKRetail__PromotionProduct__c — DKRetail 관리형 패키지 SObject "상세 POS품목").
@@ -25,6 +26,7 @@ class PromotionProduct(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("행사상품ID")
     @Column(name = "promotion_product_id")
     val id: Long = 0,
 
@@ -32,12 +34,14 @@ class PromotionProduct(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     // SF: DKRetail__PromotionId__c (Master-Detail → DKRetail__Promotion__c, relationshipOrder=0, unique=False).
     // 신규: promotion_id (FK). Stage1 적재 시점에는 NULL (promotion_sfid 만 채워짐), Stage2-A FK resolve 가 채움 (V195).
     // V200 — UNIQUE 제거 (SF Master-Detail child 다수 허용 정합). 운영 분포상 한 Promotion 에 다수 child 존재.
+    @FieldName("행사ID")
     @Column(name = "promotion_id")
     var promotionId: Long? = null,
 
@@ -46,6 +50,7 @@ class PromotionProduct(
     var promotionSfid: String? = null,
 
     // SF: DKRetail__ProductId__c (Lookup → DKRetail__Product__c, SetNull)
+    @FieldName("제품ID")
     @Column(name = "product_id")
     var productId: Long? = null,
 
@@ -56,11 +61,13 @@ class PromotionProduct(
     // SF: DKRetail__Price__c (double 18/0 — SF describe 가 0 scale 이라 정수 의미이나 SF export 는
     // trailing `.0` 으로 직렬화. DB 도 NUMERIC(18,0) (V194), entity 도 BigDecimal 로 정렬.
     @SFField("DKRetail__Price__c")
+    @FieldName("금액")
     @Column(name = "price", precision = 18, scale = 0)
     var price: BigDecimal? = null,
 
     // SF: PromotionIdExt__c (Text(100), externalId) — 레거시 upsert 외부 키
     @SFField("PromotionIdExt__c")
+    @FieldName("PromotionIdExt")
     @Column(name = "promotion_id_ext", length = 100)
     var promotionIdExt: String? = null,
 
@@ -75,6 +82,7 @@ class PromotionProduct(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 

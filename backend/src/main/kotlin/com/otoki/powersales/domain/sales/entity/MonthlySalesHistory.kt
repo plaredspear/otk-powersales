@@ -17,6 +17,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 월매출 이력 Entity
@@ -31,6 +32,7 @@ class MonthlySalesHistory(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("월별매출이력ID")
     @Column(name = "monthly_sales_history_id")
     val id: Long = 0,
 
@@ -38,61 +40,75 @@ class MonthlySalesHistory(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("SalesYear__c")
     @Convert(converter = SalesYearConverter::class)
+    @FieldName("매출발생년")
     @Column(name = "sales_year", length = 4)
     var salesYear: SalesYear? = null,
 
     @SFField("SalesMonth__c")
     @Convert(converter = SalesMonthConverter::class)
+    @FieldName("매출발생월")
     @Column(name = "sales_month", length = 2)
     var salesMonth: SalesMonth? = null,
 
     @SFField("LastMonthResults__c")
+    @FieldName("전월실적")
     @Column(name = "last_month_results", precision = 18, scale = 0)
     val lastMonthResults: BigDecimal? = null,
 
     @SFField("ShipClosingAmount__c")
+    @FieldName("마감실적_물류")
     @Column(name = "ship_closing_amount")
     var shipClosingAmount: Double? = null,
 
     @SFField("ABCClosingAmount1__c")
+    @FieldName("전산마감실적_상온 (원)")
     @Column(name = "abc_closing_amount1")
     var abcClosingAmount1: Double? = null,
 
     @SFField("ABCClosingAmount2__c")
+    @FieldName("전산마감실적_라면 (원)")
     @Column(name = "abc_closing_amount2")
     var abcClosingAmount2: Double? = null,
 
     @SFField("ABCClosingAmount3__c")
+    @FieldName("전산마감실적_냉장냉동 (원)")
     @Column(name = "abc_closing_amount3")
     var abcClosingAmount3: Double? = null,
 
     @SFField("AmbientPurpose__c")
+    @FieldName("상온 매출목표 (원)")
     @Column(name = "ambient_purpose")
     val ambientPurpose: Double? = null,
 
     @SFField("FridgePurpose__c")
+    @FieldName("냉장냉동 매출목표 (원)")
     @Column(name = "fridge_purpose")
     val fridgePurpose: Double? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @SFField("Externalkey__c")
+    @FieldName("Externalkey")
     @Column(name = "external_key", unique = true, length = 40)
     var externalkeyC: String? = null,
 
     // SAP 인바운드 적재 전용 (amounts[5]) — SF 메타 미매핑이라 @SFField 부재. 현재 소비처 0건.
+    @FieldName("RL매출")
     @Column(name = "rl_sales")
     var rlsalesC: Double? = null,
 
     // SF 메타 정합: type=double precision=18 scale=0
     @SFField("TotalLedgerAmount__c")
+    @FieldName("총 원장매출")
     @Column(name = "total_ledger_amount", precision = 18, scale = 0)
     var totalLedgerAmount: BigDecimal? = null,
 
@@ -101,10 +117,12 @@ class MonthlySalesHistory(
     var accountSfid: String? = null,
 
     @SFField("SAPAccountCode__c")
+    @FieldName("거래처코드")
     @Column(name = "sap_account_code", length = 100)
     var sapAccountCode: String? = null,
 
     @SFField("SalesDate__c")
+    @FieldName("매출발생년월")
     @Column(name = "sales_date")
     var salesDate: LocalDate? = null,
 
@@ -113,52 +131,64 @@ class MonthlySalesHistory(
     var lastMonthlySalesHistorySfid: String? = null,
 
     @SFField("Confirm__c")
+    @FieldName("마감")
     @Column(name = "is_confirmed")
     var isConfirmed: Boolean? = null,
 
     @SFField("Remark__c")
+    @FieldName("비고")
     @Column(name = "remark", columnDefinition = "TEXT")
     var remark: String? = null,
 
     @SFField("ShipClosingAmountNH__c")
+    @FieldName("마감실적_물류(농협)")
     @Column(name = "ship_closing_amount_nh")
     var shipClosingAmountNh: Double? = null,
 
     @SFField("ShipClosingAmount1__c")
+    @FieldName("물류마감실적_상온 (원)")
     @Column(name = "ship_closing_amount1")
     var shipClosingAmount1: Double? = null,
 
     @SFField("ShipClosingAmount2__c")
+    @FieldName("물류마감실적_라면 (원)")
     @Column(name = "ship_closing_amount2")
     var shipClosingAmount2: Double? = null,
 
     @SFField("ShipClosingAmount3__c")
+    @FieldName("물류마감실적_냉장냉동 (원)")
     @Column(name = "ship_closing_amount3")
     var shipClosingAmount3: Double? = null,
 
     @SFField("ShipClosingAmount4__c")
+    @FieldName("물류마감실적_유지 (원)")
     @Column(name = "ship_closing_amount4")
     var shipClosingAmount4: Double? = null,
 
     // SF 메타 정합: type=double precision=18 scale=0 (물류마감실적_합계). non-calculated 실저장 합계 필드.
     @SFField("ShipClosingSumAmount__c")
+    @FieldName("물류마감실적_합계")
     @Column(name = "ship_closing_sum_amount")
     var shipClosingSumAmount: Double? = null,
 
     @SFField("ABCClosingAmount4__c")
+    @FieldName("전산마감실적_유지 (원)")
     @Column(name = "abc_closing_amount4")
     var abcClosingAmount4: Double? = null,
 
     // SF 메타 정합: type=double precision=18 scale=0 (전산마감실적_합계). non-calculated 실저장 합계 필드.
     @SFField("ABCClosingSumAmount__c")
+    @FieldName("전산마감실적_합계")
     @Column(name = "abc_closing_sum_amount")
     var abcClosingSumAmount: Double? = null,
 
     @SFField("LastMonthTargetByHand__c")
+    @FieldName("평가대상월목표(직접입력)")
     @Column(name = "last_month_target_by_hand", precision = 18, scale = 0)
     var lastMonthTargetByHand: BigDecimal? = null,
 
     @SFField("ThisMonthTarget__c")
+    @FieldName("당월목표")
     @Column(name = "this_month_target", precision = 18, scale = 0)
     var thisMonthTarget: BigDecimal? = null,
 

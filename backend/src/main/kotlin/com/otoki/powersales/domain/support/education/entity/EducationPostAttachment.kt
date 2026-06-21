@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 교육 첨부파일 Entity
@@ -19,6 +20,7 @@ class EducationPostAttachment(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("교육첨부파일ID")
     @Column(name = "education_post_attachment_id")
     val id: Long = 0,
 
@@ -27,18 +29,22 @@ class EducationPostAttachment(
     val educationPost: EducationPost? = null,
 
     @HCColumn("edu_id")
+    @FieldName("교육ID")
     @Column(name = "edu_id", length = 20)
     val eduId: String? = null,
 
     @HCColumn("edu_file_key")
+    @FieldName("파일키")
     @Column(name = "file_key", length = 30, nullable = false)
     val fileKey: String,
 
     @HCColumn("edu_file_type")
+    @FieldName("파일유형")
     @Column(name = "file_type", length = 10)
     val fileType: String? = null,
 
     @HCColumn("edu_file_orgnm")
+    @FieldName("파일원본명")
     @Column(name = "file_original_name", length = 200)
     val fileOriginalName: String? = null
 )

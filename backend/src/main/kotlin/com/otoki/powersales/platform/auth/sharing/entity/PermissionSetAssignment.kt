@@ -10,6 +10,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * User ↔ PermissionSet 매핑 (spec #782 P1-B).
@@ -31,6 +32,7 @@ class PermissionSetAssignment(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("권한집합할당ID")
     @Column(name = "permission_set_assignment_id")
     val id: Long = 0,
 
@@ -42,6 +44,7 @@ class PermissionSetAssignment(
     @Column(name = "assignee_user_sfid", length = 18)
     var assigneeUserSfid: String? = null,
 
+    @FieldName("할당대상사용자ID")
     @Column(name = "assignee_user_id")
     var assigneeUserId: Long? = null,
 
@@ -49,12 +52,15 @@ class PermissionSetAssignment(
     @Column(name = "permission_set_sfid", length = 18)
     var permissionSetSfid: String? = null,
 
+    @FieldName("권한집합플래그ID")
     @Column(name = "permission_set_flags_id")
     var permissionSetFlagsId: Long? = null,
 
+    @FieldName("활성여부")
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true,
 
+    @FieldName("할당일시")
     @Column(name = "assigned_at")
     var assignedAt: LocalDateTime? = null,
 

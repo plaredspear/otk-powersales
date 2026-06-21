@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF Profile SObject 매핑 entity (Spec #780).
@@ -29,6 +30,7 @@ class Profile(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("프로파일ID")
     @Column(name = "profile_id")
     val id: Long = 0,
 
@@ -36,14 +38,17 @@ class Profile(
     var sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", nullable = false, length = 255)
     var name: String,
 
     @SFField("UserType")
+    @FieldName("사용자유형")
     @Column(name = "user_type", length = 40)
     var userType: String? = null,
 
     @SFField("Description")
+    @FieldName("행사대체제품")
     @Column(name = "description", length = 255)
     var description: String? = null,
 
@@ -58,6 +63,7 @@ class Profile(
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
+    @FieldName("최종수정자ID")
     @Column(name = "last_modified_by_id")
     var lastModifiedById: Long? = null,
 

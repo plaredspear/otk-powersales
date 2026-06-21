@@ -16,6 +16,7 @@ import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 푸시 메시지 Entity
@@ -30,6 +31,7 @@ class PushMessage(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("푸시메시지ID")
     @Column(name = "push_message_id")
     val id: Int = 0,
 
@@ -37,14 +39,17 @@ class PushMessage(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("Message__c")
+    @FieldName("메시지")
     @Column(name = "message", length = 500)
     val message: String? = null,
 
     @SFField("ScheduleDate__c")
+    @FieldName("발송예정일시")
     @Column(name = "schedule_date")
     val scheduleDate: LocalDateTime? = null,
 
@@ -56,20 +61,24 @@ class PushMessage(
 
     @SFField("Branch__c")
     @Convert(converter = PushMessageBranchConverter::class)
+    @FieldName("지점")
     @Column(name = "branch", length = 100)
     val branch: PushMessageBranch? = null,
 
     @SFField("BranchCode__c")
     @Convert(converter = PushMessageBranchCodeConverter::class)
+    @FieldName("지점코드")
     @Column(name = "branch_code", length = 40)
     val branchCode: PushMessageBranchCode? = null,
 
     @SFField("SObjectRecordId__c")
+    @FieldName("SObjectRecordId")
     @Column(name = "s_object_record_id", length = 50)
     val sObjectRecordId: String? = null,
 
     // -- Spec #709: Group A — IsDeleted --
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

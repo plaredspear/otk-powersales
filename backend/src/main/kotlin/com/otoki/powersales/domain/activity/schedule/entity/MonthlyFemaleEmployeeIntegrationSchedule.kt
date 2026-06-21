@@ -15,6 +15,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 월별 여사원 통합일정 Entity
@@ -28,6 +29,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("월별여사원통합일정ID")
     @Column(name = "monthly_female_employee_integration_schedule_id")
     val id: Long = 0,
 
@@ -35,18 +37,22 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("ExternalKey__c")
+    @FieldName("ExternalKey")
     @Column(name = "external_key", length = 255, unique = true)
     val externalKey: String? = null,
 
     @SFField("Year__c")
+    @FieldName("연도")
     @Column(name = "year", length = 255)
     val year: String? = null,
 
     @SFField("Month__c")
+    @FieldName("월")
     @Column(name = "month", length = 255)
     val month: String? = null,
 
@@ -59,59 +65,73 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     val employeeSfid: String? = null,
 
     @SFField("CostCenterCode__c")
+    @FieldName("조직유형")
     @Column(name = "cost_center_code", length = 40)
     val costCenterCode: String? = null,
 
     @SFField("WorkingCategory1__c")
+    @FieldName("근무유형1")
     @Column(name = "working_category1", length = 255)
     val workingCategory1: String? = null,
 
     @SFField("WorkingCategory3__c")
+    @FieldName("근무유형3")
     @Column(name = "working_category3", length = 255)
     val workingCategory3: String? = null,
 
     @SFField("WorkingCategory4__c")
+    @FieldName("근무유형4")
     @Column(name = "working_category4", length = 255)
     val workingCategory4: String? = null,
 
     @SFField("WorkingCategory5__c")
+    @FieldName("근무유형5")
     @Column(name = "working_category5", length = 255)
     val workingCategory5: String? = null,
 
     @SFField("EmpBranchName__c")
+    @FieldName("사원지점명")
     @Column(name = "emp_branch_name", length = 255)
     val empBranchName: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
+    @FieldName("전문행사조")
     @Column(name = "professional_promotion_team", length = 255)
     val professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
 
     @SFField("WorkingDaysMonth__c")
+    @FieldName("당월 근무일수")
     @Column(name = "working_days_month", precision = 18, scale = 4)
     val workingDaysMonth: BigDecimal? = null,
 
     @SFField("NumberOfInputs__c")
+    @FieldName("총 투입횟수")
     @Column(name = "number_of_inputs")
     val numberOfInputs: BigDecimal? = null,
 
     @SFField("EquivalentNumberOfWorkingDays__c")
+    @FieldName("총 환산근무일수")
     @Column(name = "equivalent_number_of_working_days", precision = 18, scale = 4)
     val equivalentNumberOfWorkingDays: BigDecimal? = null,
 
     @SFField("ConvertedHeadcount__c")
+    @FieldName("총 환산인원")
     @Column(name = "converted_headcount", precision = 18, scale = 4)
     val convertedHeadcount: BigDecimal? = null,
 
     @SFField("EDI_POS__c")
+    @FieldName("EDI/POS")
     @Column(name = "edi_pos")
     val ediPos: BigDecimal? = null,
 
     @SFField("ThisMonthAmount__c")
+    @FieldName("【검증용】6개월평균매출")
     @Column(name = "this_month_amount")
     var thisMonthAmount: BigDecimal? = null,
 
     @SFField("AccountConvertedHeadcount__c")
+    @FieldName("【검증용】총 진열환산인원(거래처별)")
     @Column(name = "account_converted_headcount", precision = 18, scale = 4)
     var accountConvertedHeadcount: BigDecimal? = null,
 
@@ -132,6 +152,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

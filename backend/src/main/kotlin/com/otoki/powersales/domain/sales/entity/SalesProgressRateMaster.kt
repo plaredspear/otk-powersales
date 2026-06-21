@@ -11,6 +11,7 @@ import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 거래처목표등록마스터 Entity (SF `SalesProgressRateMaster__c`).
@@ -32,6 +33,7 @@ class SalesProgressRateMaster(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("매출진도율마스터ID")
     @Column(name = "sales_progress_rate_master_id")
     val id: Long = 0,
 
@@ -39,67 +41,83 @@ class SalesProgressRateMaster(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     @SFField("AccountCDUpl__c")
+    @FieldName("거래처코드업로드용")
     @Column(name = "account_cd_upl", length = 255)
     var accountCdUpl: String? = null,
 
     @SFField("BusinessRate__c")
+    @FieldName("영업일 기준 진도율")
     @Column(name = "business_rate")
     var businessRate: Double? = null,
 
     @SFField("CurrentMonthSalesAmount__c")
+    @FieldName("당월 매출 실적")
     @Column(name = "current_month_sales_amount")
     var currentMonthSalesAmount: Double? = null,
 
     @SFField("ExternalKey__c")
+    @FieldName("ExternalKey")
     @Column(name = "external_key", unique = true, length = 255)
     var externalKey: String? = null,
 
     @SFField("FOTartgetAmount__c")
+    @FieldName("유지 목표 금액")
     @Column(name = "fo_target_amount")
     var foTargetAmount: Double? = null,
 
     @SFField("FRTargetAmount__c")
+    @FieldName("냉동/냉장 목표 금액")
     @Column(name = "fr_target_amount")
     var frTargetAmount: Double? = null,
 
     @SFField("PreviousMonthSalesAmount__c")
+    @FieldName("전월 매출 실적")
     @Column(name = "previous_month_sales_amount")
     var previousMonthSalesAmount: Double? = null,
 
     @SFField("RMTartgetAmount__c")
+    @FieldName("라면 목표 금액")
     @Column(name = "rm_target_amount")
     var rmTargetAmount: Double? = null,
 
     @SFField("RTTargetAmount__c")
+    @FieldName("상온 목표 금액")
     @Column(name = "rt_target_amount")
     var rtTargetAmount: Double? = null,
 
     @SFField("TargetMonth__c")
+    @FieldName("목표 월")
     @Column(name = "target_month", length = 100)
     var targetMonth: String? = null,
 
     // SF Label "합계 목표(미사용)" — 운영 미사용 컬럼이나 적재 정합 위해 보존.
     @SFField("TargetSumAmount__c")
+    @FieldName("합계 목표(미사용)")
     @Column(name = "target_sum_amount")
     var targetSumAmount: Double? = null,
 
     @SFField("TargetYear__c")
+    @FieldName("목표 년도")
     @Column(name = "target_year", length = 100)
     var targetYear: String? = null,
 
     @SFField("accountbranchView__c")
+    @FieldName("거래처지점명(조회권한용)")
     @Column(name = "account_branch_view", length = 100)
     var accountBranchView: String? = null,
 
     @SFField("AccountBranchCode__c")
+    @FieldName("거래처지점코드(조회권한용)")
     @Column(name = "account_branch_code", length = 255)
     var accountBranchCode: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

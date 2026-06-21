@@ -10,6 +10,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF UserRole SObject 매핑 entity (Spec #780).
@@ -31,6 +32,7 @@ class UserRole(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("사용자역할ID")
     @Column(name = "user_role_id")
     val id: Long = 0,
 
@@ -38,14 +40,17 @@ class UserRole(
     var sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", nullable = false, length = 80)
     var name: String,
 
     @SFField("DeveloperName")
+    @FieldName("개발자명")
     @Column(name = "developer_name", length = 80)
     var developerName: String? = null,
 
     @SFField("RollupDescription")
+    @FieldName("롤업설명")
     @Column(name = "rollup_description", length = 80)
     var rollupDescription: String? = null,
 
@@ -53,6 +58,7 @@ class UserRole(
     @Column(name = "parent_user_role_sfid", length = 18)
     var parentUserRoleSfid: String? = null,
 
+    @FieldName("상위사용자역할ID")
     @Column(name = "parent_user_role_id")
     var parentUserRoleId: Long? = null,
 
@@ -64,6 +70,7 @@ class UserRole(
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
+    @FieldName("최종수정자ID")
     @Column(name = "last_modified_by_id")
     var lastModifiedById: Long? = null,
 )

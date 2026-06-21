@@ -10,6 +10,7 @@ import jakarta.persistence.Table
 import java.math.BigDecimal
 import java.time.LocalDate
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 클레임 등록 임시저장(draft) 엔티티.
@@ -30,57 +31,75 @@ class ClaimDraft(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("클레임임시저장ID")
     @Column(name = "claim_draft_id")
     val id: Long = 0,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 
+    @FieldName("거래처ID")
     @Column(name = "account_id")
     var accountId: Long? = null,
 
+    @FieldName("거래처명")
     @Column(name = "account_name", length = 255)
     var accountName: String? = null,
 
+    @FieldName("제품코드")
     @Column(name = "product_code", length = 50)
     var productCode: String? = null,
 
+    @FieldName("제품명")
     @Column(name = "product_name", length = 255)
     var productName: String? = null,
 
+    @FieldName("일자유형")
     @Column(name = "date_type", length = 30)
     var dateType: String? = null,
 
+    @FieldName("물류 클레임 발생일자")
     @Column(name = "claim_date")
     var claimDate: LocalDate? = null,
 
+    @FieldName("클레임종류1")
     @Column(name = "claim_type1", length = 10)
     var claimType1: String? = null,
 
+    @FieldName("클레임종류2")
     @Column(name = "claim_type2", length = 10)
     var claimType2: String? = null,
 
+    @FieldName("불만내역")
     @Column(name = "defect_description", length = 4000)
     var defectDescription: String? = null,
 
+    @FieldName("불량수량")
     @Column(name = "defect_quantity")
     var defectQuantity: BigDecimal? = null,
 
+    @FieldName("금액(원)")
     @Column(name = "purchase_amount")
     var purchaseAmount: BigDecimal? = null,
 
+    @FieldName("구매방법")
     @Column(name = "purchase_method_code", length = 10)
     var purchaseMethodCode: String? = null,
 
+    @FieldName("요청사항")
     @Column(name = "request_type_code", length = 255)
     var requestTypeCode: String? = null,
 
+    @FieldName("불량사진키")
     @Column(name = "defect_photo_key", length = 255)
     var defectPhotoKey: String? = null,
 
+    @FieldName("라벨사진키")
     @Column(name = "label_photo_key", length = 255)
     var labelPhotoKey: String? = null,
 
+    @FieldName("영수증사진키")
     @Column(name = "receipt_photo_key", length = 255)
     var receiptPhotoKey: String? = null,
 

@@ -10,6 +10,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 거래처유형마스터 Entity
@@ -39,6 +40,7 @@ import com.otoki.powersales.platform.common.entity.DomainName
 class AccountCategoryMaster(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("거래처유형마스터ID")
     @Column(name = "account_category_master_id")
     val id: Long = 0,
 
@@ -46,14 +48,17 @@ class AccountCategoryMaster(
     val sfid: String? = null,
 
     @SFField("AccountCode__c")
+    @FieldName("거래처유형코드")
     @Column(name = "account_code", nullable = false, unique = true, length = 255)
     val accountCode: String,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", nullable = false, length = 80)
     var name: String,
 
     @SFField("useSearch__c")
+    @FieldName("조회화면이용")
     @Column(name = "use_search", nullable = false)
     var useSearch: Boolean = false,
 
@@ -76,6 +81,7 @@ class AccountCategoryMaster(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

@@ -20,6 +20,7 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 @DomainName("행사사원")
 @Entity
@@ -29,6 +30,7 @@ class PromotionEmployee(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("행사사원ID")
     @Column(name = "promotion_employee_id")
     val id: Long = 0,
 
@@ -36,9 +38,11 @@ class PromotionEmployee(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
+    @FieldName("행사ID")
     @Column(name = "promotion_id")
     val promotionId: Long? = null,
 
@@ -46,6 +50,7 @@ class PromotionEmployee(
     @Column(name = "promotion_sfid", length = 18)
     var promotionSfid: String? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     var employeeId: Long? = null,
 
@@ -54,24 +59,29 @@ class PromotionEmployee(
     var employeeSfid: String? = null,
 
     @SFField("DKRetail__ScheduleDate__c")
+    @FieldName("투입일")
     @Column(name = "schedule_date")
     var scheduleDate: LocalDate? = null,
 
     @SFField("DKRetail__WorkStatus__c")
+    @FieldName("근무형태")
     @Column(name = "work_status", length = 255)
     @Convert(converter = WorkingTypeConverter::class)
     var workStatus: WorkingType? = null,
 
     @SFField("DKRetail__WorkType1__c")
+    @FieldName("근무유형1")
     @Column(name = "work_type1", length = 255)
     @Convert(converter = WorkingCategory1Converter::class)
     var workType1: WorkingCategory1? = null,
 
     @SFField("DKRetail__WorkType3__c")
+    @FieldName("근무유형3")
     @Column(name = "work_type3", length = 255)
     @Convert(converter = WorkingCategory3Converter::class)
     var workType3: WorkingCategory3? = null,
 
+    @FieldName("여사원일정ID")
     @Column(name = "team_member_schedule_id")
     var teamMemberScheduleId: Long? = null,
 
@@ -80,52 +90,65 @@ class PromotionEmployee(
     var teamMemberScheduleSfid: String? = null,
 
     @SFField("PromoCloseByTm__c")
+    @FieldName("여사원마감")
     @Column(name = "promo_close_by_tm", nullable = false)
     var promoCloseByTm: Boolean = false,
 
     @SFField("DKRetail__BasePrice__c")
+    @FieldName("기준단가")
     @Column(name = "base_price")
     var basePrice: BigDecimal? = null,
 
     @SFField("DKRetail__DailyTargetCount__c")
+    @FieldName("일별목표갯수")
     @Column(name = "daily_target_count")
     var dailyTargetCount: BigDecimal? = null,
 
+    @FieldName("목표금액")
     @Column(name = "target_amount")
     var targetAmount: Long? = 0,
 
+    @FieldName("실적금액")
     @Column(name = "actual_amount")
     var actualAmount: Long? = 0,
 
     @SFField("PrimaryProductAmount__c")
+    @FieldName("대표품목 매출")
     @Column(name = "primary_product_amount")
     var primaryProductAmount: BigDecimal? = null,
 
     @SFField("DKRetail__PrimarySalesQuantity__c")
+    @FieldName("대표품목판매수량")
     @Column(name = "primary_sales_quantity")
     var primarySalesQuantity: BigDecimal? = null,
 
     @SFField("DKRetail__PrimarySalesPrice__c")
+    @FieldName("대표품목판매단가")
     @Column(name = "primary_sales_price")
     var primarySalesPrice: BigDecimal? = null,
 
     @SFField("DKRetail__OtherSalesAmount__c")
+    @FieldName("기타매출금금액")
     @Column(name = "other_sales_amount")
     var otherSalesAmount: BigDecimal? = null,
 
     @SFField("DKRetail__OtherSalesQuantity__c")
+    @FieldName("기타판매수량")
     @Column(name = "other_sales_quantity")
     var otherSalesQuantity: BigDecimal? = null,
 
     @SFField("S3ImageUniqueKey__c")
+    @FieldName("S3ImageUniqueKey")
     @Column(name = "s3_image_unique_key", length = 255)
     var s3ImageUniqueKey: String? = null,
 
     @SFField("Description__c")
+    @FieldName("행사대체제품")
     @Column(name = "description", length = 50)
     var description: String? = null,
 
     @SFField("DKRetail__WorkType2__c")
+    @FieldName("근무유형2")
     @Column(name = "dk_work_type2", length = 255)
     @Convert(converter = WorkingCategory2Converter::class)
     var dkWorkType2: WorkingCategory2? = null,
@@ -139,6 +162,7 @@ class PromotionEmployee(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

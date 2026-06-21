@@ -10,6 +10,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 제품 바코드 Entity
@@ -25,6 +26,7 @@ class ProductBarcode(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("제품바코드ID")
     @Column(name = "product_barcode_id")
     val id: Int = 0,
 
@@ -32,25 +34,31 @@ class ProductBarcode(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("ProductName__c")
+    @FieldName("ProductName")
     @Column(name = "product_name", length = 255)
     var productName: String? = null,
 
     @SFField("ProductBarcode__c")
+    @FieldName("바코드")
     @Column(name = "barcode", length = 255)
     var barcode: String? = null,
 
     @SFField("ProductUnit__c")
+    @FieldName("단위")
     @Column(name = "unit", length = 255)
     var unit: String? = null,
 
     @SFField("ProductSequence__c")
+    @FieldName("시퀀스")
     @Column(name = "sort_order", length = 255)
     var sortOrder: String? = null,
 
+    @FieldName("제품ID")
     @Column(name = "product_id")
     var productId: Long? = null,
 
@@ -59,14 +67,17 @@ class ProductBarcode(
     var productSfid: String? = null,
 
     @SFField("ProductCode__c")
+    @FieldName("ProductCode")
     @Column(name = "product_code", length = 255)
     var productCode: String? = null,
 
     @SFField("CustomKey__c")
+    @FieldName("CustomKey")
     @Column(name = "custom_key", unique = true, length = 255)
     var customKey: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

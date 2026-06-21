@@ -21,6 +21,7 @@ import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.domain.activity.schedule.entity.Appointment
 import java.math.BigDecimal
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 사원 Entity
@@ -41,6 +42,7 @@ class Employee(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     val id: Long = 0,
 
@@ -51,22 +53,27 @@ class Employee(
     // 마이그레이션 전량 적재 정합 (common.kts employee_code nullable). plain UNIQUE 라 NULL 다중 허용.
     // 사번 없는 사원은 앱 로그인 대상이 아니므로 employeeInfo 가 null 이어도 도메인상 정상.
     @SFField("DKRetail__EmpCode__c")
+    @FieldName("사번")
     @Column(name = "employee_code", unique = true, length = 100)
     val employeeCode: String?,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String,
 
     @SFField("DKRetail__Birthdate__c")
+    @FieldName("생일")
     @Column(name = "birth_date", length = 10)
     var birthDate: String? = null,
 
     @SFField("DKRetail__Status__c")
+    @FieldName("재직상태명")
     @Column(name = "status", length = 40)
     var status: String? = null,
 
     @SFField("DKRetail__APPLoginActive__c")
+    @FieldName("현장사원 App 로그인 활성")
     @Column(name = "app_login_active")
     var appLoginActive: Boolean? = null,
 
@@ -77,34 +84,42 @@ class Employee(
      * SAP 발령 → role 변환은 [AppAuthorityMapper.fromSapCodes] 사용.
      */
     @SFField("DKRetail__AppAuthority__c")
+    @FieldName("현장사원App권한")
     @Column(name = "role", length = 50)
     var role: String? = null,
 
     @SFField("DKRetail__OrgName__c")
+    @FieldName("조직명")
     @Column(name = "org_name", length = 100)
     var orgName: String? = null,
 
     @SFField("CostCenterCode__c")
+    @FieldName("조직유형")
     @Column(name = "cost_center_code", length = 10)
     var costCenterCode: String? = null,
 
     @SFField("DKRetail__WorkPhone__c")
+    @FieldName("전화번호(오피스)")
     @Column(name = "work_phone", length = 255)
     var workPhone: String? = null,
 
     @SFField("Phone__c")
+    @FieldName("전화번호(HP)")
     @Column(name = "phone", length = 40)
     var phone: String? = null,
 
     @SFField("DKRetail__HomePhone__c")
+    @FieldName("전화번호(자택)")
     @Column(name = "home_phone", length = 255)
     var homePhone: String? = null,
 
     @SFField("DKRetail__WorkEmail__c")
+    @FieldName("이메일(회사)")
     @Column(name = "work_email", length = 100)
     var workEmail: String? = null,
 
     @SFField("DKRetail__Email__c")
+    @FieldName("이메일(개인)")
     @Column(name = "email", length = 100)
     var email: String? = null,
 
@@ -112,85 +127,105 @@ class Employee(
     // Spec #713: @Enumerated → GenderConverter 전환 (SF 원본값 `남`/`여` 저장 + MALE/FEMALE backward compat)
     @SFField("DKRetail__Sex__c")
     @Convert(converter = GenderConverter::class)
+    @FieldName("성별")
     @Column(name = "gender", length = 10)
     var gender: Gender? = null,
 
     @SFField("DKRetail__StartDate__c")
+    @FieldName("시작일자")
     @Column(name = "start_date")
     var startDate: LocalDate? = null,
 
     @SFField("DKRetail__EndDate__c")
+    @FieldName("종료일자")
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
 
     @SFField("AgreementFlag__c")
+    @FieldName("개인정보, 위치정보의 수집 및 이용에 대한 동의")
     @Column(name = "agreement_flag")
     var agreementFlag: Boolean? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
+    @FieldName("전문행사조")
     @Column(name = "professional_promotion_team", length = 50)
     var professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
 
     @SFField("DKRetail__Jikchak__c")
+    @FieldName("직책명")
     @Column(name = "jikchak", length = 100)
     var jikchak: String? = null,
 
     @SFField("DKRetail__Jikwee__c")
+    @FieldName("직위명")
     @Column(name = "jikwee", length = 40)
     var jikwee: String? = null,
 
     @SFField("DKRetail__Jikgub__c")
+    @FieldName("직급명")
     @Column(name = "jikgub", length = 40)
     var jikgub: String? = null,
 
     @SFField("DKRetail__WorkType__c")
+    @FieldName("직군명")
     @Column(name = "work_type", length = 40)
     var workType: String? = null,
 
     @SFField("DKRetail__JobCode__c")
+    @FieldName("직무코드")
     @Column(name = "job_code", length = 40)
     var jobCode: String? = null,
 
     @SFField("DKRetail__WorkArea__c")
+    @FieldName("실근무지역코드명")
     @Column(name = "work_area", length = 100)
     var workArea: String? = null,
 
     @SFField("DKRetail__Jikjong__c")
+    @FieldName("직종명")
     @Column(name = "jikjong", length = 40)
     var jikjong: String? = null,
 
     @SFField("DKRetail__AppointmentDate__c")
+    @FieldName("발령일자")
     @Column(name = "appointment_date")
     var appointmentDate: LocalDate? = null,
 
     @SFField("OrdDetailNode__c")
+    @FieldName("발령명")
     @Column(name = "ord_detail_node", length = 255)
     var ordDetailNode: String? = null,
 
     @SFField("DKRetail__CRM_WorkStartDate__c")
+    @FieldName("실제근무시작일(CRM)")
     @Column(name = "crm_work_start_date")
     var crmWorkStartDate: LocalDate? = null,
 
     // -- Spec #607: SF 누락 컬럼 9개 신규 도입 --
 
     @SFField("DKRetail__CostCenterCode__c")
+    @FieldName("CC Code")
     @Column(name = "dk_cost_center_code", length = 3)
     var dkCostCenterCode: String? = null,
 
     @SFField("DKRetail__LocationCode__c")
+    @FieldName("Location코드")
     @Column(name = "location_code", length = 100)
     var locationCode: String? = null,
 
     @SFField("DKRetail__TotalAnnualLeave__c")
+    @FieldName("전체연차일수")
     @Column(name = "total_annual_leave", precision = 18, scale = 0)
     var totalAnnualLeave: BigDecimal? = null,
 
     @SFField("DKRetail__UsedAnnualLeave__c")
+    @FieldName("사용연차일수")
     @Column(name = "used_annual_leave", precision = 18, scale = 0)
     var usedAnnualLeave: BigDecimal? = null,
 
@@ -203,21 +238,25 @@ class Employee(
     var postponedAppointmentSfid: String? = null,
 
     @SFField("LockingFlag__c")
+    @FieldName("시스템접근 플래그")
     @Column(name = "locking_flag")
     var lockingFlag: Boolean? = null,
 
     @Enumerated(EnumType.STRING)
+    @FieldName("데이터출처")
     @Column(name = "origin", length = 20)
     var origin: EmployeeOrigin? = EmployeeOrigin.SAP,
 
     // -- Spec #713: SF Object 정합 (Group A + Reference R-2) --
 
     @SFField("OfficePhone__c")
+    @FieldName("전화번호(사무실)")
     @Column(name = "office_phone", length = 40)
     var officePhone: String? = null,
 
     @SFField("DKRetail__CRM_WorkType__c")
     @Convert(converter = CrmWorkTypeConverter::class)
+    @FieldName("근무형태(CRM)")
     @Column(name = "crm_work_type", length = 255)
     var crmWorkType: CrmWorkType? = null,
 

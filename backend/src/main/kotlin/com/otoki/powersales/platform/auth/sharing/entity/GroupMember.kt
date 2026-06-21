@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF GroupMember mirror (spec #790).
@@ -31,6 +32,7 @@ class GroupMember(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("그룹멤버ID")
     @Column(name = "group_member_id")
     val id: Long = 0,
 
@@ -40,15 +42,18 @@ class GroupMember(
     @Column(name = "group_sfid", nullable = false, length = 18)
     var groupSfid: String,
 
+    @FieldName("그룹ID")
     @Column(name = "group_id")
     var groupId: Long? = null,
 
     @Column(name = "user_or_group_sfid", nullable = false, length = 18)
     var userOrGroupSfid: String,
 
+    @FieldName("사용자또는그룹ID")
     @Column(name = "user_or_group_id")
     var userOrGroupId: Long? = null,
 
+    @FieldName("사용자또는그룹유형")
     @Column(name = "user_or_group_type", length = 10)
     var userOrGroupType: String? = null,
 ) : BaseEntity()

@@ -23,6 +23,7 @@ import org.springframework.data.annotation.LastModifiedDate
 import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 동의문구 Entity (Salesforce `AgreementWord__c`) — Spec #707 + sf-meta-diff 후속 (OwnerId polymorphic + audit FK User 전환).
@@ -40,31 +41,38 @@ class AgreementWord(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("동의문구ID")
     @Column(name = "agreement_word_id")
     val id: Int = 0,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80, nullable = false)
     val name: String,
 
     @SFField("Contents__c")
+    @FieldName("상세내용")
     @Column(name = "contents", length = 8000)
     val contents: String? = null,
 
     @SFField("Active__c")
+    @FieldName("Active")
     @Column(name = "active", nullable = false)
     var active: Boolean = false,
 
     @SFField("ActiveDate__c")
+    @FieldName("시행일자")
     @Column(name = "active_date")
     var activeDate: LocalDate? = null,
 
     @SFField("AfterActiveDate__c")
+    @FieldName("향후 시행일자")
     @Column(name = "after_active_date")
     var afterActiveDate: LocalDate? = null,
 
     // -- Spec #707: Group A — IsDeleted --
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

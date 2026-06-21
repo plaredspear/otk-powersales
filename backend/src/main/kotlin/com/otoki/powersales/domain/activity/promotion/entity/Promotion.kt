@@ -17,6 +17,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 @EntityListeners(OwnerUserDefaultListener::class)
 @DomainName("행사")
@@ -27,6 +28,7 @@ class Promotion(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("행사ID")
     @Column(name = "promotion_id")
     val id: Long = 0,
 
@@ -34,11 +36,13 @@ class Promotion(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("행사번호")
     @Column(name = "promotion_number", nullable = false, unique = true, length = 80)
     val promotionNumber: String,
 
 
     @SFField("DKRetail__PromotionType__c")
+    @FieldName("행사유형")
     @Column(name = "promotion_type", length = 255)
     @Convert(converter = PromotionTypeConverter::class)
     var promotionType: PromotionType? = null,
@@ -52,17 +56,21 @@ class Promotion(
     @Column(name = "dk_account_sfid", length = 18)
     var dkAccountSfid: String? = null,
 
+    @FieldName("DK거래처ID")
     @Column(name = "dk_account_id")
     var dkAccountId: Long? = null,
 
     @SFField("DKRetail__StartDate__c")
+    @FieldName("시작일")
     @Column(name = "start_date", nullable = false)
     var startDate: LocalDate,
 
     @SFField("DKRetail__EndDate__c")
+    @FieldName("종료일")
     @Column(name = "end_date", nullable = false)
     var endDate: LocalDate,
 
+    @FieldName("대표제품ID")
     @Column(name = "primary_product_id")
     var primaryProductId: Long? = null,
 
@@ -71,23 +79,28 @@ class Promotion(
     var primaryProductSfid: String? = null,
 
     @SFField("DKRetail__OtherProduct__c")
+    @FieldName("기타제품")
     @Column(name = "other_product", length = 200)
     var otherProduct: String? = null,
 
     @SFField("DKRetail__Message__c")
+    @FieldName("메시지")
     @Column(name = "message", length = 255)
     var message: String? = null,
 
     @SFField("DKRetail__StandLocation__c")
+    @FieldName("매대위치")
     @Column(name = "stand_location", length = 255)
     @Convert(converter = StandLocationConverter::class)
     var standLocation: StandLocation? = null,
 
     @SFField("CostCenterCode__c")
+    @FieldName("CC Code")
     @Column(name = "cost_center_code", length = 100)
     val costCenterCode: String? = null,
 
     @SFField("DKRetail__Remark__c")
+    @FieldName("비고")
     @Column(name = "remark", length = 200)
     var remark: String? = null,
 
@@ -96,6 +109,7 @@ class Promotion(
     // enum 으로 제약하면 비활성 값(`냉동`/`카레` 등)이 변환 시 유실된다.
     // 레거시와 동일하게 원시 문자열로 보존한다.
     @SFField("DKRetail__ProductType__c")
+    @FieldName("상품유형")
     @Column(name = "product_type", length = 255)
     var productType: String? = null,
 
@@ -111,10 +125,12 @@ class Promotion(
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
 
+    @FieldName("종료여부")
     @Column(name = "is_closed", nullable = false)
     var isClosed: Boolean = false,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 
@@ -143,10 +159,12 @@ class Promotion(
     var lastModifiedBy: User? = null,
 
     @SFField("DKRetail__ActualAmount__c")
+    @FieldName("실적금액")
     @Column(name = "dk_actual_amount")
     var dkActualAmount: Double? = null,
 
     @SFField("DKRetail__TargetAmount__c")
+    @FieldName("목표금액")
     @Column(name = "dk_target_amount")
     var dkTargetAmount: Double? = null,
 ) : BaseEntity() {

@@ -13,6 +13,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 @EntityListeners(OwnerUserDefaultListener::class)
 @DomainName("공휴일마스터")
@@ -23,6 +24,7 @@ class HolidayMaster(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("공휴일마스터ID")
     @Column(name = "holiday_master_id")
     val id: Long = 0,
 
@@ -30,18 +32,22 @@ class HolidayMaster(
     val sfid: String? = null,
 
     @SFField("HolidayDate__c")
+    @FieldName("휴일일자")
     @Column(name = "holiday_date", nullable = false, unique = true)
     var holidayDate: LocalDate,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", nullable = false, length = 80)
     var name: String,
 
     @SFField("Type__c")
     @Convert(converter = HolidayTypeConverter::class)
+    @FieldName("휴일구분")
     @Column(name = "type", nullable = false, length = 255)
     var type: HolidayType,
 
+    @FieldName("연도")
     @Column(name = "year", nullable = false)
     var year: Int,
 
@@ -58,6 +64,7 @@ class HolidayMaster(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

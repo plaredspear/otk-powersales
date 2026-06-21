@@ -22,6 +22,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 거래처 일정 Entity (진열마스터 확정 스케줄)
@@ -44,6 +45,7 @@ class DisplayWorkSchedule(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("거래처진열일정ID")
     @Column(name = "display_work_schedule_id")
     val id: Long = 0,
 
@@ -51,6 +53,7 @@ class DisplayWorkSchedule(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
@@ -63,33 +66,40 @@ class DisplayWorkSchedule(
     val employeeSfid: String? = null,
 
     @SFField("StartDate__c")
+    @FieldName("시작일")
     @Column(name = "start_date")
     var startDate: LocalDate? = null,
 
     @SFField("EndDate__c")
+    @FieldName("종료일")
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
 
     @SFField("Confirmed__c")
+    @FieldName("확정")
     @Column(name = "confirmed")
     var confirmed: Boolean? = null,
 
     @SFField("TypeOfWork1__c")
+    @FieldName("근무형태1")
     @Column(name = "type_of_work1", length = 255)
     @Convert(converter = TypeOfWork1Converter::class)
     var typeOfWork1: TypeOfWork1? = null,
 
     @SFField("TypeOfWork3__c")
+    @FieldName("근무형태3")
     @Column(name = "type_of_work3", length = 255)
     @Convert(converter = TypeOfWork3Converter::class)
     var typeOfWork3: TypeOfWork3? = null,
 
     @SFField("TypeOfWork4__c")
+    @FieldName("근무형태4")
     @Column(name = "type_of_work4", length = 255)
     @Convert(converter = SecondWorkTypeConverter::class)
     var typeOfWork4: SecondWorkType? = null,
 
     @SFField("TypeOfWork5__c")
+    @FieldName("근무형태5")
     @Column(name = "type_of_work5", length = 255)
     @Convert(converter = TypeOfWork5Converter::class)
     var typeOfWork5: TypeOfWork5? = null,
@@ -107,14 +117,17 @@ class DisplayWorkSchedule(
     var lastModifiedBySfid: String? = null,
 
     @SFField("CostCenterCode__c")
+    @FieldName("조직유형")
     @Column(name = "cost_center_code", length = 20)
     var costCenterCode: String? = null,
 
     @SFField("LastMonthRevenue__c")
+    @FieldName("전월매출")
     @Column(name = "last_month_revenue", precision = 18, scale = 0)
     var lastMonthRevenue: BigDecimal? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

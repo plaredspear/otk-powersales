@@ -9,6 +9,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.time.LocalDate
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 현장점검 등록 임시저장(draft) 엔티티.
@@ -30,60 +31,79 @@ class SiteActivityDraft(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("현장점검임시저장ID")
     @Column(name = "site_activity_draft_id")
     val id: Long = 0,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id", nullable = false)
     val employeeId: Long,
 
+    @FieldName("테마ID")
     @Column(name = "theme_id")
     var themeId: Long? = null,
 
+    @FieldName("제안구분")
     @Column(name = "category", length = 20)
     var category: String? = null,
 
+    @FieldName("거래처ID")
     @Column(name = "account_id")
     var accountId: Long? = null,
 
+    @FieldName("거래처명")
     @Column(name = "account_name", length = 255)
     var accountName: String? = null,
 
+    @FieldName("점검일자")
     @Column(name = "inspection_date")
     var inspectionDate: LocalDate? = null,
 
+    @FieldName("현장유형코드")
     @Column(name = "field_type_code", length = 30)
     var fieldTypeCode: String? = null,
 
+    @FieldName("행사대체제품")
     @Column(name = "description", length = 4000)
     var description: String? = null,
 
+    @FieldName("제품코드")
     @Column(name = "product_code", length = 50)
     var productCode: String? = null,
 
+    @FieldName("제품명")
     @Column(name = "product_name", length = 255)
     var productName: String? = null,
 
+    @FieldName("경쟁사명")
     @Column(name = "competitor_name", length = 255)
     var competitorName: String? = null,
 
+    @FieldName("경쟁사활동내용")
     @Column(name = "competitor_activity", length = 4000)
     var competitorActivity: String? = null,
 
+    @FieldName("경쟁사시식여부")
     @Column(name = "competitor_tasting")
     var competitorTasting: Boolean? = null,
 
+    @FieldName("경쟁사 상품명")
     @Column(name = "competitor_product_name", length = 255)
     var competitorProductName: String? = null,
 
+    @FieldName("경쟁사제품가격")
     @Column(name = "competitor_product_price")
     var competitorProductPrice: Int? = null,
 
+    @FieldName("경쟁사판매수량")
     @Column(name = "competitor_sales_quantity")
     var competitorSalesQuantity: Int? = null,
 
+    @FieldName("사진키1")
     @Column(name = "photo_key_1", length = 255)
     var photoKey1: String? = null,
 
+    @FieldName("사진키2")
     @Column(name = "photo_key_2", length = 255)
     var photoKey2: String? = null,
 

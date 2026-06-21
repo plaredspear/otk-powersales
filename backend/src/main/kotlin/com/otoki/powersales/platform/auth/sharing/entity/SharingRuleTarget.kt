@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SharingRule 의 대상 (Role / Group / User) 1행 (spec #782 P1-B).
@@ -26,21 +27,26 @@ class SharingRuleTarget(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("공유규칙대상ID")
     @Column(name = "sharing_rule_target_id")
     val id: Long = 0,
 
+    @FieldName("공유규칙ID")
     @Column(name = "sharing_rule_id", nullable = false)
     var sharingRuleId: Long,
 
+    @FieldName("공유규칙객체명")
     @Column(name = "sharing_rule_s_object_name", nullable = false, length = 80)
     var sharingRuleSObjectName: String,
 
+    @FieldName("대상유형")
     @Column(name = "target_type", nullable = false, length = 30)
     var targetType: String,
 
     @Column(name = "target_sfid", length = 18)
     var targetSfid: String? = null,
 
+    @FieldName("대상ID")
     @Column(name = "target_id")
     var targetId: Long? = null,
 )

@@ -11,6 +11,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF master-detail relationship 정규화 메타 (spec #791 Q2 옵션 1).
@@ -29,18 +30,23 @@ class SObjectRelation(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("SObject관계ID")
     @Column(name = "sobject_relation_id")
     val id: Long = 0,
 
+    @FieldName("자식SObject명")
     @Column(name = "child_sobject_name", nullable = false, length = 80)
     var childSObjectName: String,
 
+    @FieldName("부모SObject명")
     @Column(name = "parent_sobject_name", nullable = false, length = 80)
     var parentSObjectName: String,
 
+    @FieldName("관계필드명")
     @Column(name = "relation_field_name", nullable = false, length = 80)
     var relationFieldName: String,
 
+    @FieldName("마스터디테일여부")
     @Column(name = "is_master_detail", nullable = false)
     var isMasterDetail: Boolean = true,
 ) : BaseEntity()

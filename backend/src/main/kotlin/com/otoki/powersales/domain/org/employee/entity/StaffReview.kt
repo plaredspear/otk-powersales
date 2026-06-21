@@ -15,6 +15,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import java.time.LocalDate
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 사원평가 Entity
@@ -40,6 +41,7 @@ class StaffReview(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("사원평가ID")
     @Column(name = "staff_review_id")
     val id: Long = 0,
 
@@ -47,11 +49,13 @@ class StaffReview(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     // -- 사원 식별 / 캐시 --
 
+    @FieldName("사원ID")
     @Column(name = "employee_id", insertable = false, updatable = false)
     val employeeId: Long? = null,
 
@@ -60,14 +64,17 @@ class StaffReview(
     var employeeSfid: String? = null,
 
     @SFField("EmployeeName__c")
+    @FieldName("성명")
     @Column(name = "employee_name", length = 1300)
     var employeeName: String? = null,
 
     @SFField("EmployeeNumber__c")
+    @FieldName("사번")
     @Column(name = "employee_code", length = 1300)
     var employeeCode: String? = null,
 
     @SFField("Branch__c")
+    @FieldName("지점")
     @Column(name = "branch", length = 1300)
     var branch: String? = null,
 
@@ -76,44 +83,54 @@ class StaffReview(
     var branchReviewSfid: String? = null,
 
     @SFField("CostCenterCode__c")
+    @FieldName("지점코드")
     @Column(name = "cost_center_code", length = 1300)
     var costCenterCode: String? = null,
 
     @SFField("EmployeeTotalScore__c")
+    @FieldName("사원합계점수")
     @Column(name = "employee_total_score")
     var employeeTotalScore: Double? = null,
 
     // -- 점수 항목 --
 
     @SFField("Attendance__c")
+    @FieldName("근태(3점)")
     @Column(name = "attendance_score")
     var attendanceScore: Double? = null,
 
     @SFField("InstructionsDefault__c")
+    @FieldName("지시불이행(3점)")
     @Column(name = "instruction_disobedience_score")
     var instructionDisobedienceScore: Double? = null,
 
     @SFField("Priority_EventItemManage__c")
+    @FieldName("중점품목관리&amp;행사품목연출(5점)")
     @Column(name = "priority_item_event_score")
     var priorityItemEventScore: Double? = null,
 
     @SFField("DisplayManageEventGoals__c")
+    @FieldName("진열관리&amp;행사목표달성(5점)")
     @Column(name = "display_event_goal_score")
     var displayEventGoalScore: Double? = null,
 
     @SFField("BusinessPartnerTies__c")
+    @FieldName("거래처유대관계(2점)")
     @Column(name = "account_partnership_score")
     var accountPartnershipScore: Double? = null,
 
     @SFField("ClothesSatellite__c")
+    @FieldName("복장및위생(2점)")
     @Column(name = "clothes_hygiene_score")
     var clothesHygieneScore: Double? = null,
 
     @SFField("ProductManageCallment__c")
+    @FieldName("제품관리&amp;콜멘트(5점)")
     @Column(name = "product_manage_callment_score")
     var productManageCallmentScore: Double? = null,
 
     @SFField("EducationalEvaluation__c")
+    @FieldName("교육평가(5점)")
     @Column(name = "education_evaluation_score")
     var educationEvaluationScore: Double? = null,
 
@@ -121,44 +138,53 @@ class StaffReview(
 
     @SFField("DKRetail_WorkingCategory1__c")
     @Convert(converter = WorkingCategory1Converter::class)
+    @FieldName("근무유형1")
     @Column(name = "working_category1", length = 255)
     var workingCategory1: WorkingCategory1? = null,
 
     @SFField("DKRetail_WorkingCategory2__c")
     @Convert(converter = WorkingCategory2Converter::class)
+    @FieldName("근무유형2")
     @Column(name = "working_category2", length = 255)
     var workingCategory2: WorkingCategory2? = null,
 
     @SFField("DKRetail_WorkingCategory3__c")
     @Convert(converter = WorkingCategory3Converter::class)
+    @FieldName("근무유형3")
     @Column(name = "working_category3", length = 255)
     var workingCategory3: WorkingCategory3? = null,
 
     @SFField("JobCode__c")
+    @FieldName("직무코드")
     @Column(name = "job_code", length = 20)
     var jobCode: String? = null,
 
     @SFField("FirstDayofMonth__c")
+    @FieldName("월초기준일")
     @Column(name = "first_day_of_month")
     var firstDayOfMonth: LocalDate? = null,
 
     // -- 구분 / 입사일 / 직위 --
 
     @SFField("EmployeeType__c")
+    @FieldName("구분")
     @Column(name = "employee_type", length = 1300)
     var employeeType: String? = null,
 
     @SFField("EntryDate__c")
+    @FieldName("입사일")
     @Column(name = "entry_date")
     var entryDate: LocalDate? = null,
 
     @SFField("Jikwee__c")
+    @FieldName("직위")
     @Column(name = "jikwee", length = 1300)
     var jikwee: String? = null,
 
     // -- Group A --
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

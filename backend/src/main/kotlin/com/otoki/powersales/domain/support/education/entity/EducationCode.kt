@@ -5,6 +5,7 @@ import com.otoki.powersales.platform.common.salesforce.HCColumn
 import com.otoki.powersales.platform.common.salesforce.HerokuOnly
 import jakarta.persistence.*
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 교육 코드 Entity
@@ -20,18 +21,22 @@ class EducationCode(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("교육코드ID")
     @Column(name = "education_code_id")
     val id: Long = 0,
 
     @HCColumn("edu_code")
+    @FieldName("교육코드")
     @Column(name = "edu_code", length = 20, nullable = false, unique = true)
     val eduCode: String,
 
     @HCColumn("edu_code_nm")
+    @FieldName("교육코드명")
     @Column(name = "edu_code_name", length = 50)
     val eduCodeNm: String? = null,
 
     @HCColumn("edu_type")
+    @FieldName("교육유형")
     @Column(name = "edu_type", length = 10)
     val eduType: String? = null
 ) : BaseEntity()

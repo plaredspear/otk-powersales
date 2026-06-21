@@ -26,6 +26,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 일정 Entity
@@ -40,6 +41,7 @@ class TeamMemberSchedule(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("여사원일정ID")
     @Column(name = "team_member_schedule_id")
     val id: Long = 0,
 
@@ -47,6 +49,7 @@ class TeamMemberSchedule(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
@@ -55,30 +58,36 @@ class TeamMemberSchedule(
     val employeeSfid: String? = null,
 
     @SFField("DKRetail__WorkingDate__c")
+    @FieldName("근무일자")
     @Column(name = "working_date")
     var workingDate: LocalDate? = null,
 
     @SFField("DKRetail__WorkingType__c")
+    @FieldName("근무형태")
     @Column(name = "working_type", length = 255)
     @Convert(converter = WorkingTypeConverter::class)
     var workingType: WorkingType? = null,
 
     @SFField("DKRetail__WorkingCategory1__c")
+    @FieldName("근무유형1")
     @Column(name = "working_category1", length = 255)
     @Convert(converter = WorkingCategory1Converter::class)
     var workingCategory1: WorkingCategory1? = null,
 
     @SFField("DKRetail__WorkingCategory2__c")
+    @FieldName("근무유형2")
     @Column(name = "working_category2", length = 255)
     @Convert(converter = WorkingCategory2Converter::class)
     val workingCategory2: WorkingCategory2? = null,
 
     @SFField("DKRetail__WorkingCategory3__c")
+    @FieldName("근무유형3")
     @Column(name = "working_category3", length = 255)
     @Convert(converter = WorkingCategory3Converter::class)
     var workingCategory3: WorkingCategory3? = null,
 
     @SFField("WorkingCategory4__c")
+    @FieldName("WorkingCategory4")
     @Column(name = "working_category4", length = 255)
     var workingCategory4: String? = null,
 
@@ -91,6 +100,7 @@ class TeamMemberSchedule(
     @Column(name = "dk_account_sfid", length = 18)
     val dkAccountSfid: String? = null,
 
+    @FieldName("거래처ID")
     @Column(name = "dk_account_id")
     val dkAccountId: Long? = null,
 
@@ -124,92 +134,114 @@ class TeamMemberSchedule(
     val displayWorkScheduleSfid: String? = null,
 
     @SFField("CommuteReportDateTime__c")
+    @FieldName("CommuteReportDateTime")
     @Column(name = "commute_report_datetime")
     val commuteReportDatetime: LocalDateTime? = null,
 
     @SFField("ID__c")
+    @FieldName("ID")
     @Column(name = "id_field", length = 30)
     val idField: String? = null,
 
     @SFField("TraversalFlag__c")
+    @FieldName("순회체크")
     @Column(name = "traversal_flag", length = 10)
     val traversalFlag: String? = null,
 
     @SFField("Equipment1__c")
+    @FieldName("1) 손목보호대를 착용했습니다.")
     @Column(name = "equipment1", length = 10)
     val equipment1: String? = null,
 
     @SFField("Equipment2__c")
+    @FieldName("2) 숨수건(화재피해 예방)을 소지하고 있습니다.")
     @Column(name = "equipment2", length = 10)
     val equipment2: String? = null,
 
     @SFField("Equipment3__c")
+    @FieldName("3) 안전화를 착용했습니다.")
     @Column(name = "equipment3", length = 10)
     val equipment3: String? = null,
 
     @SFField("Equipment4__c")
+    @FieldName("4) 진열업무시 코팅장갑 및 허리보호대를 착용합니다.")
     @Column(name = "equipment4", length = 10)
     val equipment4: String? = null,
 
     @SFField("Equipment5__c")
+    @FieldName("5) 진열대가 높을 경우 안전사다리를 사용합니다.")
     @Column(name = "equipment5", length = 10)
     val equipment5: String? = null,
 
     @SFField("Equipment6__c")
+    @FieldName("6) 시식행사 진행시 위생장갑을 사용합니다.")
     @Column(name = "equipment6", length = 10)
     val equipment6: String? = null,
 
     @SFField("Equipment7__c")
+    @FieldName("7) 오뚜기 유니폼을 착용하였습니다.")
     @Column(name = "equipment7", length = 10)
     val equipment7: String? = null,
 
     @SFField("Equipment8__c")
+    @FieldName("8) 오뚜기 판매여사원 명찰을 착용하였습니다.")
     @Column(name = "equipment8", length = 10)
     val equipment8: String? = null,
 
     @SFField("Equipment9__c")
+    @FieldName("9) 코로나 예방 마스크 착용 했습니다.")
     @Column(name = "equipment9", length = 10)
     val equipment9: String? = null,
 
     @SFField("Equipment10__c")
+    @FieldName("10) 확장1")
     @Column(name = "equipment10", length = 10)
     val equipment10: String? = null,
 
     @SFField("Yes_ChkCnt__c")
+    @FieldName("&lt;예&gt; 체크 개수")
     @Column(name = "yes_chk_cnt")
     val yesChkCnt: Double? = null,
 
     @SFField("No_ChkCnt__c")
+    @FieldName("&lt;해당없음&gt; 체크 개수")
     @Column(name = "no_chk_cnt")
     val noChkCnt: Double? = null,
 
     @SFField("precaution_chk__c")
+    @FieldName("예방사항 총 체크")
     @Column(name = "precaution_chk")
     val precautionChk: Double? = null,
 
     @SFField("precaution__c")
+    @FieldName("예방사항 통합관리")
     @Column(name = "precaution", length = 3000)
     val precaution: String? = null,
 
     @SFField("StartTime__c")
+    @FieldName("점검시간")
     @Column(name = "start_time")
     val startTime: LocalDateTime? = null,
 
     @SFField("CompleteTime__c")
+    @FieldName("완료시간")
     @Column(name = "complete_time")
     val completeTime: LocalDateTime? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 
     // -- Spec #609: SF 누락 컬럼 7개 신규 도입 (Q1 옵션 1) --
 
     @SFField("HRCode__c")
+    @FieldName("HRCode")
     @Column(name = "hr_code", length = 255)
     var hrCode: String? = null,
 
     @SFField("DKRetail__PromotionEmpIdExt__c")
+    @FieldName("PromotionEmpIdExt")
     @Column(name = "promotion_emp_id_ext", length = 30)
     var promotionEmpIdExt: String? = null,
 
@@ -219,15 +251,18 @@ class TeamMemberSchedule(
      * 본 entity 한정으로 enum 매핑 환원 — Converter 부착 금지.
      */
     @SFField("SecondWorkType__c")
+    @FieldName("근무유형4")
     @Column(name = "second_work_type", length = 255)
     var secondWorkType: String? = null,
 
     @SFField("WorkingCategory5__c")
+    @FieldName("근무유형5")
     @Column(name = "working_category5", length = 255)
     @Convert(converter = WorkingCategory5Converter::class)
     var workingCategory5: WorkingCategory5? = null,
 
     @SFField("ref_accountName__c")
+    @FieldName("참조용거래처명")
     @Column(name = "ref_account_name", length = 255)
     var refAccountName: String? = null,
 
@@ -236,10 +271,12 @@ class TeamMemberSchedule(
     var monthlyFemaleEmployeeIntegrationScheduleSfid: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
+    @FieldName("전문행사조")
     @Column(name = "professional_promotion_team", length = 255)
     var professionalPromotionTeam: String? = null,
 
     @SFField("CostCenterCode__c")
+    @FieldName("조직유형")
     @Column(name = "cost_center_code", length = 255)
     var costCenterCode: String? = null,
 
@@ -247,6 +284,7 @@ class TeamMemberSchedule(
      * 대리 등록자(조장) employee_id. 조장이 본인 팀원의 일정을 대리 등록할 때 audit trail 용도로 저장.
      * 본 스펙 외부 INSERT(스케줄러 자동 생성 등)는 NULL.
      */
+    @FieldName("대리등록자ID")
     @Column(name = "proxy_registered_by")
     val proxyRegisteredBy: Long? = null,
 

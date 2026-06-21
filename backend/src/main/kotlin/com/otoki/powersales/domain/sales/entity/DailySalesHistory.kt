@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 일별매출이력 Entity
@@ -34,14 +35,17 @@ class DailySalesHistory(
     var sfid: String? = null,
 
     @SFField("SAPAccountCode__c")
+    @FieldName("거래처코드")
     @Column(name = "sap_account_code", nullable = false, length = 100)
     val sapAccountCode: String,
 
     @SFField("SalesDate__c")
+    @FieldName("매출발생년월일")
     @Column(name = "sales_date", nullable = false, length = 8)
     val salesDate: String,
 
     @SFField("Externalkey__c")
+    @FieldName("Externalkey")
     @Column(name = "external_key", nullable = false, unique = true, length = 40)
     val externalKey: String,
 
@@ -50,38 +54,47 @@ class DailySalesHistory(
     var accountSfid: String? = null,
 
     @SFField("ERPSalesAmount1__c")
+    @FieldName("전산매출실적_상온 (원)")
     @Column(name = "erp_sales_amount1")
     var erpSalesAmount1: Double? = null,
 
     @SFField("ERPSalesAmount2__c")
+    @FieldName("전산매출실적_라면 (원)")
     @Column(name = "erp_sales_amount2")
     var erpSalesAmount2: Double? = null,
 
     @SFField("ERPSalesAmount3__c")
+    @FieldName("전산매출실적_냉장냉동 (원)")
     @Column(name = "erp_sales_amount3")
     var erpSalesAmount3: Double? = null,
 
     @SFField("ERPDistributionAmount1__c")
+    @FieldName("물류배부매출실적_상온 (원)")
     @Column(name = "erp_distribution_amount1")
     var erpDistributionAmount1: Double? = null,
 
     @SFField("ERPDistributionAmount2__c")
+    @FieldName("물류배부매출실적_라면 (원)")
     @Column(name = "erp_distribution_amount2")
     var erpDistributionAmount2: Double? = null,
 
     @SFField("ERPDistributionAmount3__c")
+    @FieldName("물류배부매출실적_냉장냉동 (원)")
     @Column(name = "erp_distribution_amount3")
     var erpDistributionAmount3: Double? = null,
 
     @SFField("ERPSalesAmount__c")
+    @FieldName("전산매출실적")
     @Column(name = "erp_sales_amount")
     var erpSalesAmount: Double? = null,
 
     @SFField("ERPDistributionAmount__c")
+    @FieldName("물류배부매출실적")
     @Column(name = "erp_distribution_amount")
     var erpDistributionAmount: Double? = null,
 
     @SFField("LedgerAmount__c")
+    @FieldName("원장매출")
     @Column(name = "ledger_amount")
     var ledgerAmount: Double? = null,
 

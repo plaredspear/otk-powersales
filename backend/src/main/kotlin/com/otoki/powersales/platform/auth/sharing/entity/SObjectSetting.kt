@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * SF OWD (Org-Wide Default) + role hierarchy 옵트인 메타 (spec #791).
@@ -32,18 +33,23 @@ class SObjectSetting(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("SObject설정ID")
     @Column(name = "sobject_setting_id")
     val id: Long = 0,
 
+    @FieldName("SObject명")
     @Column(name = "sobject_name", nullable = false, length = 80, unique = true)
     var sObjectName: String,
 
+    @FieldName("조직기본공유설정")
     @Column(name = "org_wide_default", nullable = false, length = 30)
     var orgWideDefault: String,
 
+    @FieldName("계층권한부여허용여부")
     @Column(name = "allow_hierarchy_grant", nullable = false)
     var allowHierarchyGrant: Boolean = true,
 
+    @FieldName("상위SObject명")
     @Column(name = "parent_sobject_name", length = 80)
     var parentSObjectName: String? = null,
 ) : BaseEntity()

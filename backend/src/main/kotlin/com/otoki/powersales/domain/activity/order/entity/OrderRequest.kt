@@ -27,6 +27,7 @@ import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import jakarta.persistence.EntityListeners
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 주문요청 Entity (DKRetail__OrderRequest__c).
@@ -50,10 +51,12 @@ class OrderRequest(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("주문요청ID")
     @Column(name = "order_request_id")
     val id: Long = 0,
 
     @SFField("Name")
+    @FieldName("주문요청번호")
     @Column(name = "order_request_number", nullable = false, unique = true, length = 80)
     val orderRequestNumber: String,
 
@@ -61,6 +64,7 @@ class OrderRequest(
      * 모바일 등록 멱등키 (Spec #592). 동일 키 재요청 시 1차 row 의 응답을 그대로 반환.
      * `idx_order_request_client_request_id_unique` partial unique 인덱스 (`WHERE NOT NULL`).
      */
+    @FieldName("클라이언트요청ID")
     @Column(name = "client_request_id", length = 64)
     val clientRequestId: String? = null,
 
@@ -73,32 +77,40 @@ class OrderRequest(
     val accountSfid: String? = null,
 
     @SFField("OrderDate__c")
+    @FieldName("주문일시")
     @Column(name = "order_date", nullable = false)
     val orderDate: LocalDateTime,
 
     @SFField("DKRetail__OrderDate__c")
+    @FieldName("주문일시(DK)")
     @Column(name = "dk_order_date")
     var dkOrderDate: LocalDate? = null,
 
     @SFField("DKRetail__RequestDate__c")
+    @FieldName("납기일")
     @Column(name = "delivery_date", nullable = false)
     val deliveryDate: LocalDate,
 
     @SFField("TotalOrderAmount__c")
+    @FieldName("총주문금액 (원)")
     @Column(name = "total_amount", nullable = false, precision = 18, scale = 2)
     val totalAmount: BigDecimal = BigDecimal.ZERO,
 
+    @FieldName("총승인금액")
     @Column(name = "total_approved_amount", precision = 18, scale = 2)
     var totalApprovedAmount: BigDecimal? = BigDecimal.ZERO,
 
     @SFField("DKRetail__RequestStatus__c")
+    @FieldName("상태")
     @Column(name = "order_request_status", nullable = false, length = 255)
     @Convert(converter = OrderRequestStatusConverter::class)
     var orderRequestStatus: OrderRequestStatus = OrderRequestStatus.DRAFT,
 
+    @FieldName("마감여부")
     @Column(name = "is_closed", nullable = false)
     var isClosed: Boolean = false,
 
+    @FieldName("마감시각")
     @Column(name = "client_deadline_time", length = 5)
     val clientDeadlineTime: String? = null,
 
@@ -128,6 +140,7 @@ class OrderRequest(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

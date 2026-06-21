@@ -16,6 +16,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 여사원 투입 기준 마스터 Entity (EmployeeInputCriteriaMaster__c).
@@ -30,6 +31,7 @@ class EmployeeInputCriteriaMaster(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("여사원투입기준마스터ID")
     @Column(name = "employee_input_criteria_master_id")
     val id: Long = 0,
 
@@ -37,14 +39,17 @@ class EmployeeInputCriteriaMaster(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("BifurcationHalfPersonStandard__c")
+    @FieldName("격고0.5명 기준금액")
     @Column(name = "bifurcation_half_person_standard", precision = 18, scale = 0)
     var bifurcationHalfPersonStandard: BigDecimal? = null,
 
     @SFField("Boundary__c")
+    @FieldName("경계율")
     @Column(name = "boundary", precision = 18, scale = 0)
     var boundary: BigDecimal? = null,
 
@@ -53,23 +58,28 @@ class EmployeeInputCriteriaMaster(
     var categorySfid: String? = null,
 
     @SFField("Confirmed__c")
+    @FieldName("확정")
     @Column(name = "confirmed", nullable = false)
     var confirmed: Boolean = false,
 
     @SFField("StartDate__c")
+    @FieldName("시작일")
     @Column(name = "start_date")
     var startDate: LocalDate? = null,
 
     @SFField("EndDate__c")
+    @FieldName("종료일")
     @Column(name = "end_date")
     var endDate: LocalDate? = null,
 
     @SFField("Fixed1PersonStandardAmount__c")
+    @FieldName("고정1명 기준금액")
     @Column(name = "fixed_1_person_standard_amount", precision = 18, scale = 0)
     var fixed1PersonStandardAmount: BigDecimal? = null,
 
     @SFField("TypeOfWork1__c")
     @Convert(converter = TypeOfWork1Converter::class)
+    @FieldName("근무형태1")
     @Column(name = "type_of_work_1", length = 255)
     var typeOfWork1: TypeOfWork1? = null,
 
@@ -86,6 +96,7 @@ class EmployeeInputCriteriaMaster(
     var lastModifiedBySfid: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

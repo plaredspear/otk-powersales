@@ -13,6 +13,7 @@ import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 @EntityListeners(OwnerUserDefaultListener::class)
 @DomainName("공지사항")
@@ -23,6 +24,7 @@ class Notice(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("공지사항ID")
     @Column(name = "notice_id")
     val id: Long = 0,
 
@@ -30,10 +32,12 @@ class Notice(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     var name: String? = null,
 
     @SFField("Title__c")
+    @FieldName("제목")
     @Column(name = "title", length = 255)
     var title: String? = null,
 
@@ -42,33 +46,40 @@ class Notice(
     val employeeSfid: String? = null,
 
     @SFField("DKRetail__Scope__c")
+    @FieldName("공개범위")
     @Column(name = "scope", length = 255)
     @Convert(converter = NoticeScopeConverter::class)
     var scope: NoticeScope? = null,
 
     @SFField("DKRetail__Category__c")
+    @FieldName("카테고리")
     @Column(name = "category", length = 255)
     @Convert(converter = NoticeCategoryConverter::class)
     var category: NoticeCategory? = null,
 
     @SFField("DKRetail__Contents__c")
+    @FieldName("상세내용")
     @Column(name = "contents", columnDefinition = "TEXT")
     var contents: String? = null,
 
     // DKRetail__EduCategory__c (Label="교육 카테고리(사용안함)") — Spec #849 부활: SF 메타 존재 non-calculated 필드는 데이터 무관 마이그레이션 대상. plain String 원본 보존 (enum 변환 없음). (과거 Spec #745 Q2 V100 DROP 부활)
     @SFField("DKRetail__EduCategory__c")
+    @FieldName("교육 카테고리")
     @Column(name = "edu_category", length = 255)
     var eduCategory: String? = null,
 
     @SFField("DKRetail__Jeejum__c")
+    @FieldName("지점")
     @Column(name = "branch", length = 255)
     var branch: String? = null,
 
     @SFField("DKRetail__JeejumCode__c")
+    @FieldName("지점코드")
     @Column(name = "branch_code", length = 255)
     var branchCode: String? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 

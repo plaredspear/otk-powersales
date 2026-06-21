@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * Profile × Field FLS (spec #795).
@@ -25,24 +26,31 @@ class ProfileFieldPermission(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("프로파일필드권한ID")
     @Column(name = "profile_field_permission_id")
     val id: Long = 0,
 
+    @FieldName("프로파일ID")
     @Column(name = "profile_id")
     var profileId: Long? = null,
 
+    @FieldName("프로파일명")
     @Column(name = "profile_name", nullable = false, length = 255)
     var profileName: String,
 
+    @FieldName("SObject명")
     @Column(name = "sobject_name", nullable = false, length = 80)
     var sObjectName: String,
 
+    @FieldName("필드명")
     @Column(name = "field_name", nullable = false, length = 80)
     var fieldName: String,
 
+    @FieldName("조회가능여부")
     @Column(name = "readable", nullable = false)
     var readable: Boolean = false,
 
+    @FieldName("수정가능여부")
     @Column(name = "editable", nullable = false)
     var editable: Boolean = false,
 ) : BaseEntity()

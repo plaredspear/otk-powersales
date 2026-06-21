@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 교육 조회 이력 Entity
@@ -21,6 +22,7 @@ class EducationViewHistory(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("교육조회이력ID")
     @Column(name = "education_view_history_id")
     val id: Long = 0,
 
@@ -33,18 +35,22 @@ class EducationViewHistory(
     val employee: Employee? = null,
 
     @HCColumn("inst_date")
+    @FieldName("조회일시")
     @Column(name = "viewed_at", nullable = false)
     val viewedAt: LocalDateTime,
 
     @HCColumn("community_id")
+    @FieldName("교육ID")
     @Column(name = "edu_id", length = 20)
     val eduId: String? = null,
 
     @HCColumn("empcode__c")
+    @FieldName("사번")
     @Column(name = "emp_code", length = 40)
     val empCode: String? = null,
 
     @HCColumn("costcentercode__c")
+    @FieldName("조직유형")
     @Column(name = "cost_center_code", length = 40)
     val costCenterCode: String? = null
 )

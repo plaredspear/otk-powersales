@@ -9,6 +9,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import com.otoki.powersales.platform.common.entity.AuditedEntity
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 임시저장 주문 헤더 — Heroku 호환 + Spec #596 보강.
@@ -29,28 +30,35 @@ class TmpOrder(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("임시저장주문ID")
     @Column(name = "tmp_order_id")
     val id: Long = 0,
 
     @HCColumn("tmp_employeecode")
+    @FieldName("사번")
     @Column(name = "employee_code", length = 80)
     var tmpEmployeeCode: String? = null,
 
     @HCColumn("tmp_accountcode")
+    @FieldName("거래처유형코드")
     @Column(name = "account_code", length = 80)
     var tmpAccountCode: String? = null,
 
     @HCColumn("tmp_orderdate")
+    @FieldName("주문일시")
     @Column(name = "order_date")
     var tmpOrderDate: LocalDate? = null,
 
     @HCColumn("tmp_totalamount")
+    @FieldName("총주문금액 (원)")
     @Column(name = "total_amount", length = 80)
     var tmpTotalAmount: String? = null,
 
+    @FieldName("거래처ID")
     @Column(name = "account_id")
     var accountId: Long? = null,
 
+    @FieldName("사원ID")
     @Column(name = "employee_id")
     var employeeId: Long? = null,
 

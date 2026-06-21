@@ -15,6 +15,7 @@ import java.time.LocalDate
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.DomainName
+import com.otoki.powersales.platform.common.entity.FieldName
 
 /**
  * 현장 점검 결과 Entity
@@ -35,6 +36,7 @@ class SiteActivity(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("현장점검결과ID")
     @Column(name = "site_activity_id")
     val id: Long = 0,
 
@@ -42,67 +44,82 @@ class SiteActivity(
     val sfid: String? = null,
 
     @SFField("Name")
+    @FieldName("이름")
     @Column(name = "name", length = 80)
     val name: String? = null,
 
     // -- 점검 본문 --
 
     @SFField("DKRetail__ActivityDate__c")
+    @FieldName("점검날짜")
     @Column(name = "activity_date")
     val activityDate: LocalDate? = null,
 
     @SFField("DKRetail__Category__c")
+    @FieldName("현장유형")
     @Column(name = "category", length = 255)
     val category: String? = null,
 
     @SFField("DKRetail__ProductType__c")
+    @FieldName("제품구분")
     @Column(name = "product_type", length = 255)
     val productType: String? = null,
 
     @SFField("DKRetail__Description__c")
+    @FieldName("상세내용")
     @Column(name = "description", length = 4000)
     val description: String? = null,
 
     @SFField("DKRetail__Title__c")
+    @FieldName("제목")
     @Column(name = "title", length = 250)
     val title: String? = null,
 
     @SFField("DKRetail__SAPAccountCode__c")
+    @FieldName("SAP거래처코드")
     @Column(name = "sap_account_code", length = 100)
     val sapAccountCode: String? = null,
 
     @SFField("CostCenterCode__c")
+    @FieldName("CC Code")
     @Column(name = "cost_center_code", length = 255)
     val costCenterCode: String? = null,
 
     // -- 경쟁사 활동 --
 
     @SFField("DKRetail__CompetitorName__c")
+    @FieldName("경쟁사명")
     @Column(name = "competitor_name", length = 100)
     val competitorName: String? = null,
 
     @SFField("DKRetail__CompetitorProductName__c")
+    @FieldName("경쟁사 상품명")
     @Column(name = "competitor_product_name", length = 250)
     val competitorProductName: String? = null,
 
     @SFField("DKRetail__CompetitorActivityDescription__c")
+    @FieldName("경쟁사 활동내용")
     @Column(name = "competitor_activity_description", length = 2000)
     val competitorActivityDescription: String? = null,
 
     // SF 원본 API 명 오타(Proudct) 유지.
     @SFField("DKRetail__CompetitorProudctPrice__c")
+    @FieldName("경쟁사 상품 가격")
     @Column(name = "competitor_proudct_price", precision = 18, scale = 0)
     val competitorProudctPrice: BigDecimal? = null,
 
     @SFField("DKRetail__SampleTastFlag__c")
+    @FieldName("경쟁사 상품 시식여부")
     @Column(name = "sample_tast_flag", length = 255)
     val sampleTastFlag: String? = null,
 
     @SFField("DKRetail__SalesQuantity__c")
+    @FieldName("행사 시 판매수량")
     @Column(name = "sales_quantity", precision = 18, scale = 0)
     val salesQuantity: BigDecimal? = null,
 
     @SFField("IsDeleted")
+    @FieldName("삭제여부")
     @Column(name = "is_deleted")
     val isDeleted: Boolean? = null,
 

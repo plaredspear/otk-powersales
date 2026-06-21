@@ -16,14 +16,17 @@ class LoginHistory(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @FieldName("로그인이력ID")
     @Column(name = "login_history_id")
     val id: Long = 0,
 
     @HCColumn("empcode__c")
+    @FieldName("사번")
     @Column(name = "employee_code", nullable = false, length = 80)
     val empCode: String,
 
     @HCColumn("inst_date")
+    @FieldName("로그인시각")
     @Column(name = "login_at", nullable = false)
     val instDate: LocalDateTime = LocalDateTime.now(),
 )
