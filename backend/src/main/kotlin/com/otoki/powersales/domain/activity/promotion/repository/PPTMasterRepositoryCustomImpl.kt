@@ -112,9 +112,13 @@ class PPTMasterRepositoryCustomImpl(
     }
 
     override fun findValidMasters(today: LocalDate): List<ProfessionalPromotionTeamMaster> {
+        // legacy `Batch_PPTMaster1` 의 WHERE ValidData__c='유효' 동등.
+        // ValidData__c formula 는 Confirmed__c==false → '미확정' 으로 분기하므로 '유효' 는 확정 마스터만 포함한다.
+        // → 미확정(isConfirmed=false, ex: bulk 업로드) 마스터는 sync 대상에서 제외해야 한다.
         return queryFactory
             .selectFrom(professionalPromotionTeamMaster)
             .where(
+                professionalPromotionTeamMaster.isConfirmed.isTrue,
                 professionalPromotionTeamMaster.startDate.loe(today),
                 professionalPromotionTeamMaster.endDate.isNull
                     .or(professionalPromotionTeamMaster.endDate.goe(today))
@@ -123,9 +127,15 @@ class PPTMasterRepositoryCustomImpl(
     }
 
     override fun findExpiringMasters(today: LocalDate): List<ProfessionalPromotionTeamMaster> {
+        // legacy `Batch_PPTMaster2` 의 WHERE ValidData__c='유효' AND EndDate__c=TODAY 동등.
+        // ValidData__c formula 는 Confirmed__c==false → '미확정' 으로 분기하므로 '유효' 는 확정 마스터만 포함한다.
+        // → 미확정(isConfirmed=false) 마스터는 종료일이 오늘이어도 만료 대상에서 제외 (sync 와 동일 전제).
         return queryFactory
             .selectFrom(professionalPromotionTeamMaster)
-            .where(professionalPromotionTeamMaster.endDate.eq(today))
+            .where(
+                professionalPromotionTeamMaster.isConfirmed.isTrue,
+                professionalPromotionTeamMaster.endDate.eq(today)
+            )
             .fetch()
     }
 
