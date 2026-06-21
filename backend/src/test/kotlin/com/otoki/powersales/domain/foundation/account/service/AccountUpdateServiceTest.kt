@@ -381,6 +381,84 @@ class AccountUpdateServiceTest {
     }
 
     @Nested
+    @DisplayName("주소 변경 시 좌표 무효화 (레거시 setLatLongNull 동등)")
+    inner class CoordinateInvalidationOnAddressChange {
+
+        private fun accountWithCoords(
+            address1: String? = "기존 주소1",
+            address2: String? = "기존 주소2",
+        ): Account = nativeAccount(address1 = address1).also {
+            it.address2 = address2
+            it.latitude = "37.5"
+            it.longitude = "127.0"
+        }
+
+        @Test
+        @DisplayName("T20 address1 변경 - latitude/longitude null 초기화")
+        fun t20_address1Changed_coordsNulled() {
+            val account = accountWithCoords()
+            every { accountRepository.findActiveById(accountId) } returns account
+
+            service.update(
+                id = accountId,
+                principal = branchManagerPrincipal,
+                request = AdminAccountUpdateRequest(address1 = "서울특별시 강남구 테헤란로 100")
+            )
+
+            assertThat(account.latitude).isNull()
+            assertThat(account.longitude).isNull()
+        }
+
+        @Test
+        @DisplayName("T21 address2 변경 - latitude/longitude null 초기화")
+        fun t21_address2Changed_coordsNulled() {
+            val account = accountWithCoords()
+            every { accountRepository.findActiveById(accountId) } returns account
+
+            service.update(
+                id = accountId,
+                principal = branchManagerPrincipal,
+                request = AdminAccountUpdateRequest(address2 = "10층 1001호")
+            )
+
+            assertThat(account.latitude).isNull()
+            assertThat(account.longitude).isNull()
+        }
+
+        @Test
+        @DisplayName("T22 주소 미변경 (다른 필드만 수정) - 기존 좌표 보존")
+        fun t22_addressUnchanged_coordsPreserved() {
+            val account = accountWithCoords()
+            every { accountRepository.findActiveById(accountId) } returns account
+
+            service.update(
+                id = accountId,
+                principal = branchManagerPrincipal,
+                request = AdminAccountUpdateRequest(phone = "02-9999-9999")
+            )
+
+            assertThat(account.latitude).isEqualTo("37.5")
+            assertThat(account.longitude).isEqualTo("127.0")
+        }
+
+        @Test
+        @DisplayName("T23 address1 동일 값 재전송 - 변경 아님 → 좌표 보존")
+        fun t23_address1SameValue_coordsPreserved() {
+            val account = accountWithCoords(address1 = "기존 주소1")
+            every { accountRepository.findActiveById(accountId) } returns account
+
+            service.update(
+                id = accountId,
+                principal = branchManagerPrincipal,
+                request = AdminAccountUpdateRequest(address1 = "기존 주소1")
+            )
+
+            assertThat(account.latitude).isEqualTo("37.5")
+            assertThat(account.longitude).isEqualTo("127.0")
+        }
+    }
+
+    @Nested
     @DisplayName("SYSTEM_ADMIN 검증 우회 (Q-A)")
     inner class SystemAdminBypass {
 

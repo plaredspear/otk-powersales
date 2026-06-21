@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional
  * - **prefix 메시지 분기**: 신규 [AccountNamePrefixRequiredForUpdateException] — errorCode 는 `ACCOUNT_NAME_PREFIX_REQUIRED` 동일 (#640 와 호환), 메시지만 "거래처 수정은 ..." 으로 분기.
  * - **자기 자신 제외 중복 검증**: 레거시 `Trigger.oldMap` 비교 동등 효과 — `existsActiveByNameAndIdNot(name, id)` 로 자기 자신 제외.
  * - **employeeCode 변경 허용 + branch 자동 재계산 안 함**: 레거시 동등 — `BranchCode__c` 자동 set 은 `newAccount()` (CREATE) 경로 한정. 운영자 필요 시 branch 직접 수정. 결정 근거: 스펙 §3 Q-D.
- * - **Address 변경 시 좌표 자동 null 미적용**: #637 (account-naver-geocode-batch) §2.6 정책 — Naver Geocode batch 가 lat/long null 거래처 자동 픽업 정책으로 충분.
+ * - **Address 변경 시 좌표 자동 null 적용**: 레거시 `setLatLongNull` 트리거 동등 복원 — Address1/Address2 변경 감지 시 `latitude/longitude=null` 초기화 → Naver Geocode batch 가 재변환 픽업. SAP 인바운드 경로([AccountUpsertMapper])와 동일 동작으로 정합.
  * - **PUT 부분 갱신 시맨틱**: nullable 필드 + null = 미포함 (보존) 패턴 — Q-E 의 "null 명시 = null 로 덮어쓰기" 부분만 의도적 단순화 (본 P1-B 구현 시점, 운영 시나리오 빈도 낮음).
  * - **SAP 동기 키 silent ignore**: DTO 정의 자체에서 제외 — Jackson deserialization 단에서 알 수 없는 필드 무시.
  *
@@ -75,11 +75,41 @@ class AccountUpdateService(
         val account = accountRepository.findActiveById(id)
             ?: throw AccountNotFoundException(id)
 
+        val prevAddress1 = account.address1
+        val prevAddress2 = account.address2
+
         validateAndApplyName(account, request.name, principal)
         validateAndApplyEmployeeCode(account, request.employeeCode)
         applyOtherFields(account, request)
 
+        invalidateCoordinatesIfAddressChanged(account, prevAddress1, prevAddress2)
+
         return AdminAccountUpdateResponse.Companion.from(account)
+    }
+
+    /**
+     * 주소 변경 시 좌표 무효화 — 레거시 AccountTriggerHandler.setLatLongNull() 동등 복원.
+     *
+     * 레거시는 거래처 수정(UI / API) 시 beforeUpdate 트리거에서
+     * `oldAcc.Address1__c != acc.Address1__c || oldAcc.Address2__c != acc.Address2__c` 일 때
+     * Latitude__c / Longitude__c 를 null 로 초기화하고, 이후 좌표 보강 배치(Naver Geocode)가
+     * null 좌표 거래처를 재취득한다. 신규는 SF Trigger 가 없으므로 본 service 가 동일 책임을 진다.
+     *
+     * SAP 인바운드 수신 경로의 동일 로직은 [AccountUpsertMapper.invalidateCoordinatesIfAddressChanged]
+     * 이며, 본 메서드는 web admin 거래처 수정 경로에 동일 동작을 부여한다.
+     *
+     * 미적용 시: 거래처 주소가 바뀌어도 기존 좌표가 잔존해 보강 배치 후보(latitude/longitude IS NULL)
+     * 에서 영구 제외되어 지도 위치가 옛 주소에 고정되는 비동등이 발생한다.
+     */
+    private fun invalidateCoordinatesIfAddressChanged(
+        account: Account,
+        prevAddress1: String?,
+        prevAddress2: String?
+    ) {
+        if (prevAddress1 != account.address1 || prevAddress2 != account.address2) {
+            account.latitude = null
+            account.longitude = null
+        }
     }
 
     private fun validateAndApplyName(account: Account, requestName: String?, principal: WebUserPrincipal) {
