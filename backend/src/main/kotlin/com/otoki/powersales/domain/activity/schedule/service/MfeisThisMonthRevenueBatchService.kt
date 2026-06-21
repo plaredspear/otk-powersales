@@ -79,8 +79,10 @@ class MfeisThisMonthRevenueBatchService(
                 .groupBy { externalKeyToId[it.sapAccountCode] ?: 0L }
                 .filter { it.key != 0L }
                 .mapValues { (_, accountHistories) ->
+                    // legacy `UpdateThisMonthRevenueBatch.cls:64-65` 는 ClosingAmountSum__c(=ABC합+Ship합) 으로 양수 평균 산출.
+                    // 개별 카테고리(abcClosingAmount1=상온) 단독 사용 시 라면/냉장냉동/유지+물류매출 누락 → closingAmountSum 사용.
                     val positives = accountHistories
-                        .mapNotNull { it.abcClosingAmount1 }
+                        .map { it.closingAmountSum }
                         .filter { it > BigDecimal.ZERO }
                     val divider = positives.size
                     if (divider > 0) {

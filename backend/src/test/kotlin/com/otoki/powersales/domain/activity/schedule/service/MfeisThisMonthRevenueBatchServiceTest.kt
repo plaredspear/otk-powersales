@@ -45,11 +45,15 @@ class MfeisThisMonthRevenueBatchServiceTest {
             every { this@mockk.thisMonthAmount } returns currentAmount
         }
 
-    private fun row(sapCode: String, abc1: Long) =
+    /**
+     * 평균 산출은 closingAmountSum(=ABC합+Ship합) 기준이어야 한다 (legacy ClosingAmountSum__c 동등).
+     * abc1(=상온 단일 카테고리) 은 의도적으로 다른 값을 줘서 잘못된 컬럼 사용 시 테스트가 깨지도록 한다.
+     */
+    private fun row(sapCode: String, closingSum: Long, abc1: Long = closingSum) =
         MonthlySalesRow(
             sapAccountCode = sapCode,
             salesDate = "",
-            closingAmountSum = BigDecimal(abc1),
+            closingAmountSum = BigDecimal(closingSum),
             abcClosingAmount1 = BigDecimal(abc1),
         )
 
@@ -93,6 +97,30 @@ class MfeisThisMonthRevenueBatchServiceTest {
 
         verify(exactly = 0) { monthlySalesHistoryGateway.findBySalesDates(any(), any()) }
         verify(exactly = 0) { mfeisRepository.save(any()) }
+    }
+
+    @Test
+    @DisplayName("평균 산출 source 는 closingAmountSum(ABC합+Ship합) — abcClosingAmount1(상온) 단독 아님")
+    fun averagesOverClosingAmountSumNotAbc1() {
+        val targetYm = YearMonth.of(2026, 4)
+        val account = account(1, "S001")
+        val mfeis = mfeisRow(100L, account, BigDecimal.ZERO)
+
+        every {
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+        } returns listOf(mfeis)
+        // closingAmountSum 과 abc1 을 다르게: 잘못된 컬럼(abc1) 평균이면 150_000 이 나와 검증 실패한다.
+        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
+            row("S001", closingSum = 1_000_000, abc1 = 100_000),
+            row("S001", closingSum = 2_000_000, abc1 = 200_000),
+        )
+        val saved = slot<MonthlyFemaleEmployeeIntegrationSchedule>()
+        every { mfeisRepository.save(capture(saved)) } answers { saved.captured }
+
+        service.runMonthly(targetYm)
+
+        // (1_000_000 + 2_000_000) / 2 = 1_500_000  (closingAmountSum 기준)
+        verify { mfeis.thisMonthAmount = BigDecimal("1500000") }
     }
 
     @Test
