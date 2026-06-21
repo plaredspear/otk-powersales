@@ -41,16 +41,15 @@ class PPTMasterBatchService(
 
         val employeeIds = expiringMasters.mapNotNull { it.employeeId }.distinct()
 
+        // legacy `Batch_PPTMaster2` 동등: 오늘 종료되는 마스터의 사원은 잔여 유효 마스터 유무와 무관하게
+        // 무조건 행사조 소속을 해제한다 (레거시는 사원 팀을 '일반' 으로 덮어씀 — 신규 모델에선 미배정=null).
+        // 다음 날 sync 배치(pptMaster.syncValid)가 잔여 유효 마스터 기준으로 팀을 재정합한다.
         var reverted = 0
         for (employeeId in employeeIds) {
-            val remainingValid = pptMasterRepository.findValidMastersByEmployeeId(employeeId, today)
-                .filter { it.endDate == null || it.endDate!! > today }
-            if (remainingValid.isEmpty()) {
-                val employee = employeeRepository.findById(employeeId).orElse(null) ?: continue
-                if (employee.professionalPromotionTeam != null) {
-                    adminPPTMasterService.updateEmployeeTeam(employee, null)
-                    reverted++
-                }
+            val employee = employeeRepository.findById(employeeId).orElse(null) ?: continue
+            if (employee.professionalPromotionTeam != null) {
+                adminPPTMasterService.updateEmployeeTeam(employee, null)
+                reverted++
             }
         }
         context?.metadata(mapOf("expiringEmployees" to employeeIds.size, "reverted" to reverted))

@@ -765,14 +765,13 @@ class AdminPPTMasterServiceTest {
     inner class ExpireMastersTests {
 
         @Test
-        @DisplayName("성공 - 종료일 도래, 다른 유효 마스터 없음 -> 사원 미배정(null)으로 복귀")
+        @DisplayName("성공 - 종료일 도래 -> 사원 미배정(null)으로 복귀")
         fun expireMasters_revertToDefault() {
             val today = LocalDate.now()
             val master = createMaster(employeeId = 1L, endDate = today)
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
             every { pptMasterRepository.findExpiringMasters(today) } returns listOf(master)
-            every { pptMasterRepository.findValidMastersByEmployeeId(1L, today) } returns listOf(master)
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
             every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
             stubTeamMemberScheduleDelete()
@@ -780,6 +779,27 @@ class AdminPPTMasterServiceTest {
             batchService.expireMasters()
 
             assertThat(employee.professionalPromotionTeam).isNull()
+        }
+
+        @Test
+        @DisplayName("legacy Batch_PPTMaster2 동등 - 잔여 유효 마스터가 있어도 만료 사원은 무조건 해제")
+        fun expireMasters_revertsEvenWhenOtherValidMasterRemains() {
+            val today = LocalDate.now()
+            // 오늘 종료되는 마스터 A. 같은 사원에게 다음 달 종료되는 유효 마스터 B 가 남아 있어도
+            // 레거시는 잔여 마스터 유무를 확인하지 않고 무조건 사원 팀을 해제한다.
+            val expiring = createMaster(employeeId = 1L, endDate = today)
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+
+            every { pptMasterRepository.findExpiringMasters(today) } returns listOf(expiring)
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
+
+            batchService.expireMasters()
+
+            // 잔여 유효 마스터 조회 없이 무조건 해제 (레거시 동작) — sync 배치가 익일 재정합.
+            assertThat(employee.professionalPromotionTeam).isNull()
+            verify(exactly = 0) { pptMasterRepository.findValidMastersByEmployeeId(any(), any()) }
         }
     }
 
@@ -892,7 +912,6 @@ class AdminPPTMasterServiceTest {
             val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
 
             every { pptMasterRepository.findExpiringMasters(today) } returns listOf(master)
-            every { pptMasterRepository.findValidMastersByEmployeeId(1L, today) } returns listOf(master)
             every { employeeRepository.findById(1L) } returns Optional.of(employee)
             every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
             stubTeamMemberScheduleDelete()
