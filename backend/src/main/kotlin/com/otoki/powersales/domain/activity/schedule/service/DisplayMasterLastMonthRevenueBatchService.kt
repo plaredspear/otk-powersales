@@ -6,6 +6,7 @@ import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -23,6 +24,9 @@ import java.time.LocalDate
  * - update 패턴: [com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepositoryCustom.updateLastMonthRevenueById] native UPDATE
  *   (last_month_revenue 컬럼만 — JPA save 회피로 BaseEntity 의 updated_at 자동 갱신 영향 0,
  *   legacy `TriggerHandler.bypass` 의미 정합).
+ * - 에러 처리: legacy `update updateList` all-or-nothing 정합. [runDaily] 전체가 단일 `@Transactional`
+ *   이라 한 row 라도 update 실패 시 전체 롤백 + 예외 전파 → ScheduledJobRunner 가 FAILURE 로 기록
+ *   (row 별 try/catch 로 실패를 삼키지 않음 — 운영 인지 가능).
  */
 @Service
 class DisplayMasterLastMonthRevenueBatchService(
@@ -33,6 +37,7 @@ class DisplayMasterLastMonthRevenueBatchService(
 
     private val log = LoggerFactory.getLogger(DisplayMasterLastMonthRevenueBatchService::class.java)
 
+    @Transactional
     fun runDaily(context: ScheduledJobRunContext? = null) {
         runDaily(LocalDate.now(), context)
     }
@@ -42,7 +47,6 @@ class DisplayMasterLastMonthRevenueBatchService(
         var totalRows = 0
         var updatedRows = 0
         var skippedRows = 0
-        var failedRows = 0
 
         while (true) {
             val entities = repository.findValidForLastMonthRevenuePaged(
@@ -64,16 +68,9 @@ class DisplayMasterLastMonthRevenueBatchService(
                     skippedRows++
                     continue
                 }
-                try {
-                    repository.updateLastMonthRevenueById(schedule.id, newRevenue)
-                    updatedRows++
-                } catch (ex: Exception) {
-                    failedRows++
-                    log.warn(
-                        "DISPLAY_LAST_MONTH_REVENUE_BATCH update failed id={} accountId={} reason={}",
-                        schedule.id, schedule.account?.id, ex.message
-                    )
-                }
+                // legacy all-or-nothing 정합: update 실패 시 예외를 삼키지 않고 전파 → @Transactional 전체 롤백.
+                repository.updateLastMonthRevenueById(schedule.id, newRevenue)
+                updatedRows++
             }
 
             if (entities.size < pageSize) break
@@ -81,15 +78,14 @@ class DisplayMasterLastMonthRevenueBatchService(
         }
 
         log.info(
-            "DISPLAY_LAST_MONTH_REVENUE_BATCH today={} totalRows={} updated={} skipped={} failed={}",
-            today, totalRows, updatedRows, skippedRows, failedRows
+            "DISPLAY_LAST_MONTH_REVENUE_BATCH today={} totalRows={} updated={} skipped={}",
+            today, totalRows, updatedRows, skippedRows
         )
         context?.metadata(
             mapOf(
                 "totalRows" to totalRows,
                 "updatedRows" to updatedRows,
-                "skippedRows" to skippedRows,
-                "failedRows" to failedRows
+                "skippedRows" to skippedRows
             )
         )
     }

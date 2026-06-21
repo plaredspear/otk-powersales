@@ -13,6 +13,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
 import java.time.YearMonth
 
@@ -139,5 +140,28 @@ class MfeisThisMonthRevenueBatchServiceTest {
         service.runMonthly(targetYm)
 
         verify(exactly = 0) { mfeisRepository.save(any()) }
+    }
+
+    @Test
+    @DisplayName("save 실패 시 예외 전파 (legacy all-or-nothing) — 후속 row save 시도 안 함")
+    fun saveFailurePropagatesAndStopsBatch() {
+        val targetYm = YearMonth.of(2026, 4)
+        val mfeisA = mfeisRow(100L, account(1, "S001"), BigDecimal.ZERO)
+        val mfeisB = mfeisRow(200L, account(2, "S002"), BigDecimal.ZERO)
+        every {
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+        } returns listOf(mfeisA, mfeisB)
+        every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
+            row("S001", 100_000),
+            row("S002", 200_000),
+        )
+        // 첫 row(id=100) save 가 실패하면 예외가 그대로 전파되어야 한다 (전체 롤백 + FAILURE 기록).
+        every { mfeisRepository.save(mfeisA) } throws RuntimeException("DB down")
+
+        assertThrows<RuntimeException> { service.runMonthly(targetYm) }
+
+        // 첫 row 에서 멈추므로 두 번째 row 의 save 는 시도되지 않는다.
+        verify(exactly = 1) { mfeisRepository.save(mfeisA) }
+        verify(exactly = 0) { mfeisRepository.save(mfeisB) }
     }
 }

@@ -15,6 +15,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -138,8 +139,8 @@ class DisplayMasterLastMonthRevenueBatchServiceTest {
     }
 
     @Test
-    @DisplayName("update 실패 시 다음 row 진행 — exception 전파 안 함")
-    fun runDaily_updateFailureDoesNotStopBatch() {
+    @DisplayName("update 실패 시 예외 전파 (legacy all-or-nothing) — 후속 row update 시도 안 함")
+    fun runDaily_updateFailurePropagatesAndStopsBatch() {
         val today = LocalDate.of(2026, 5, 4)
         val account = Account(id = 10, externalKey = "ACC010")
         val a = entity(id = 1L, account = account, lastMonthRevenue = null)
@@ -147,12 +148,13 @@ class DisplayMasterLastMonthRevenueBatchServiceTest {
         every { repository.findValidForLastMonthRevenuePaged(any(), any(), eq(0)) } returns listOf(a, b)
         every { lookup.forAccounts(any(), eq(today)) } returns mapOf(10L to BigDecimal("100"))
         every { repository.updateLastMonthRevenueById(eq(1L), any()) } throws RuntimeException("DB down")
-        every { repository.updateLastMonthRevenueById(eq(2L), any()) } returns 1L
 
-        service.runDaily(today)
+        // 첫 row 실패 시 예외가 그대로 전파되어야 한다 (ScheduledJobRunner 가 FAILURE 로 기록 + 전체 롤백).
+        assertThrows<RuntimeException> { service.runDaily(today) }
 
+        // 첫 row 에서 멈추므로 두 번째 row 의 update 는 시도되지 않는다.
         verify(exactly = 1) { repository.updateLastMonthRevenueById(eq(1L), any()) }
-        verify(exactly = 1) { repository.updateLastMonthRevenueById(eq(2L), any()) }
+        verify(exactly = 0) { repository.updateLastMonthRevenueById(eq(2L), any()) }
     }
 
     private fun entities(range: IntRange): List<DisplayWorkSchedule> =

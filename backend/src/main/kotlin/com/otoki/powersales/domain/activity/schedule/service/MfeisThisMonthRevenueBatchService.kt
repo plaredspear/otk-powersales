@@ -1,6 +1,5 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
-import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
@@ -19,6 +18,10 @@ import java.time.YearMonth
  * 매월 fire 로 전월 기준 "상시" MFEIS 의 거래처별 6개월 매출 평균 (양수 필터) 을
  * `this_month_amount` 컬럼에 persist. 차이 있는 row 만 update.
  *
+ * 에러 처리: legacy `update updateList` all-or-nothing 정합. [runMonthly] 전체가 단일 `@Transactional`
+ * 이라 한 row 라도 update 실패 시 전체 롤백 + 예외 전파 → ScheduledJobRunner 가 FAILURE 로 기록
+ * (row 별 try/catch 로 실패를 삼키지 않음 — 운영 인지 가능).
+ *
  * cron 사용자 결정 (#680 Q15 옵션 1): `0 0 3 1 * ?` 매월 1일 03:00.
  * ShedLock (#680 Q13 옵션 1): chunk 200 + `PT30M / PT5M`.
  *
@@ -34,6 +37,7 @@ class MfeisThisMonthRevenueBatchService(
 
     private val log = LoggerFactory.getLogger(MfeisThisMonthRevenueBatchService::class.java)
 
+    @Transactional
     fun runMonthly(context: ScheduledJobRunContext? = null) {
         runMonthly(YearMonth.now().minusMonths(1), context)
     }
@@ -49,7 +53,6 @@ class MfeisThisMonthRevenueBatchService(
         val totalRows = targets.size
         var updatedRows = 0
         var skippedRows = 0
-        var failedRows = 0
 
         // 6개월 평균 매출 — legacy `UpdateThisMonthRevenueBatch.execute` 의 -5 ~ 0 월 범위 동등.
         // (lastYearMonth 가 전월이므로 targetYearMonth = 전월. 6개월 범위는 [targetYM - 5, targetYM])
@@ -107,37 +110,24 @@ class MfeisThisMonthRevenueBatchService(
                     skippedRows++
                     continue
                 }
-                try {
-                    saveThisMonthAmount(mfeis, newAmount)
-                    updatedRows++
-                } catch (ex: Exception) {
-                    failedRows++
-                    log.warn(
-                        "MFEIS_THIS_MONTH_REVENUE_BATCH update failed id={} accountId={} reason={}",
-                        mfeis.id, accId, ex.message
-                    )
-                }
+                // legacy all-or-nothing 정합: update 실패 시 예외를 삼키지 않고 전파 → @Transactional 전체 롤백.
+                mfeis.thisMonthAmount = newAmount
+                mfeisRepository.save(mfeis)
+                updatedRows++
             }
         }
 
         log.info(
-            "MFEIS_THIS_MONTH_REVENUE_BATCH target={}-{} totalRows={} updated={} skipped={} failed={}",
-            yearStr, monthStr, totalRows, updatedRows, skippedRows, failedRows
+            "MFEIS_THIS_MONTH_REVENUE_BATCH target={}-{} totalRows={} updated={} skipped={}",
+            yearStr, monthStr, totalRows, updatedRows, skippedRows
         )
         context?.metadata(
             mapOf(
                 "yearMonth" to "$yearStr-$monthStr",
                 "totalRows" to totalRows,
                 "updatedRows" to updatedRows,
-                "skippedRows" to skippedRows,
-                "failedRows" to failedRows
+                "skippedRows" to skippedRows
             )
         )
-    }
-
-    @Transactional
-    internal fun saveThisMonthAmount(mfeis: MonthlyFemaleEmployeeIntegrationSchedule, newAmount: BigDecimal) {
-        mfeis.thisMonthAmount = newAmount
-        mfeisRepository.save(mfeis)
     }
 }
