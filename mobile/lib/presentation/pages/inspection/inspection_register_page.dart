@@ -79,7 +79,7 @@ class _InspectionRegisterPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('점검 등록'),
+        title: const Text('현장 점검 등록'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),

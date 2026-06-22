@@ -14,7 +14,7 @@ void main() {
       expect(items[0].label, '유통기한 관리');
       expect(items[0].route, AppRouter.productExpiration);
 
-      expect(items[1].label, '현장 점검');
+      expect(items[1].label, '현장 점검 등록');
       expect(items[1].route, AppRouter.inspectionRegister);
 
       expect(items[2].label, '제안하기(물류클레임, 신제품 제안 등)');

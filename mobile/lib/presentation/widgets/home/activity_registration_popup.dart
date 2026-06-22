@@ -31,7 +31,7 @@ class ActivityMenuItem {
 /// 활동등록 팝업 위젯
 ///
 /// 영업사원이 현장 활동을 등록하기 위한 진입점.
-/// 6개의 메뉴(유통기한 관리, 현장 점검, 제안하기, 클레임 등록,
+/// 6개의 메뉴(유통기한 관리, 현장 점검 등록, 제안하기, 클레임 등록,
 /// 내 클레임 조회, 내 물류클레임 조회)를 BottomSheet 형태로 제공하며,
 /// 각 메뉴 선택 시 해당 화면으로 이동한다. (레거시 GNB "활동 등록" 정합)
 class ActivityRegistrationPopup extends StatelessWidget {
@@ -56,7 +56,7 @@ class ActivityRegistrationPopup extends StatelessWidget {
     ),
     ActivityMenuItem(
       iconAsset: 'assets/images/ico_active4.png',
-      label: '현장 점검',
+      label: '현장 점검 등록',
       route: AppRouter.inspectionRegister,
     ),
     ActivityMenuItem(
