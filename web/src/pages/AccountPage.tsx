@@ -8,7 +8,6 @@ import { useAccounts } from '@/hooks/account/useAccounts';
 import { usePermission } from '@/hooks/usePermission';
 import type { Account } from '@/api/account';
 import AdminAccountCreateModal from './admin/accounts/AdminAccountCreateModal';
-import AdminAccountUpdateModal from './admin/accounts/AdminAccountUpdateModal';
 import AccountDeleteAction from './admin/accounts/components/AccountDeleteAction';
 
 const ABC_TYPE_TAG: Record<string, string> = {
@@ -57,13 +56,12 @@ export default function AccountPage() {
     return Number.isFinite(p) && p > 0 ? p : 0;
   });
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const navigate = useNavigate();
   const { hasEntityPermission } = usePermission();
   const canCreateAccount = hasEntityPermission('account', 'EDIT');
-  const canUpdateAccount = hasEntityPermission('account', 'EDIT');
   const canDeleteAccount = hasEntityPermission('account', 'DELETE');
-  const showActionsColumn = canUpdateAccount || canDeleteAccount;
+  // 거래처 수정(주소)은 상세 페이지로 일원화 — 목록 "관리" 컬럼은 삭제 액션만 담당.
+  const showActionsColumn = canDeleteAccount;
 
   // 상세 페이지에서 "목록으로" 복귀 시 직전 검색 조건을 복원하기 위한 query string.
   const listSearch = (() => {
@@ -132,11 +130,6 @@ export default function AccountPage() {
             align: 'center' as const,
             render: (_: unknown, account: Account) => (
               <Space size={4}>
-                {canUpdateAccount && (
-                  <Button size="small" onClick={() => setEditingAccount(account)}>
-                    수정
-                  </Button>
-                )}
                 {canDeleteAccount && <AccountDeleteAction account={account} />}
               </Space>
             ),
@@ -219,11 +212,6 @@ export default function AccountPage() {
       <AdminAccountCreateModal
         open={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
-      />
-      <AdminAccountUpdateModal
-        open={editingAccount !== null}
-        account={editingAccount}
-        onClose={() => setEditingAccount(null)}
       />
     </div>
   );
