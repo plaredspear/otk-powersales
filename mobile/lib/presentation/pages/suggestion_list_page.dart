@@ -10,6 +10,8 @@ import '../../core/utils/throttled_tap_mixin.dart';
 import '../../domain/entities/suggestion_form.dart';
 import '../../domain/entities/suggestion_list_item.dart';
 import '../providers/suggestion_list_provider.dart';
+import '../widgets/account/account_selector_sheet.dart';
+import '../widgets/common/date_range_filter_field.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/common/loading_indicator.dart';
 
@@ -36,6 +38,10 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // 진입 유형에 맞춰 검색조건을 첫 build 전에 동기 초기화한다.
+    // (물류클레임 전용: 거래처 해제 + 등록일 범위 기본값 최근 30일 / 제안 전체: 필터 해제)
+    // 전역 provider 공유로 인한 이전 진입 필터 누수를 막고, 필터 UI 가 항상 유효한 범위를 갖게 한다.
+    ref.read(suggestionListProvider.notifier).initFilters(claimOnly: _isClaimOnly);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(suggestionListProvider.notifier)
@@ -86,7 +92,121 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
       ),
-      body: _buildBody(state),
+      body: Column(
+        children: [
+          // 레거시 logisticsclaimlist 검색조건(거래처 + 등록일 범위)은 물류클레임 전용 진입에만 노출.
+          if (_isClaimOnly) ...[
+            _buildAccountFilter(state),
+            _buildDateFilter(state),
+          ],
+          Expanded(child: _buildBody(state)),
+        ],
+      ),
+    );
+  }
+
+  /// 거래처 필터 — 레거시 "거래처 전체" 옵션(필터 해제) 포함. 현장클레임 화면과 동일 패턴.
+  Widget _buildAccountFilter(SuggestionListState state) {
+    final hasAccount = state.selectedAccountId != null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 0),
+      child: InkWell(
+        onTap: () => throttledTap(_selectAccount),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.sm,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.store_outlined,
+                  size: 18, color: AppColors.textSecondary),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  hasAccount ? state.selectedAccountName! : '거래처 전체',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: hasAccount
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (hasAccount)
+                GestureDetector(
+                  onTap: () =>
+                      ref.read(suggestionListProvider.notifier).clearAccount(),
+                  child: const Icon(Icons.close,
+                      size: 18, color: AppColors.textSecondary),
+                )
+              else
+                const Icon(Icons.arrow_drop_down,
+                    color: AppColors.textSecondary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectAccount() async {
+    final account =
+        await AccountSelectorSheet.show(context, includeAllOption: true);
+    if (account == null) return;
+    final notifier = ref.read(suggestionListProvider.notifier);
+    if (AccountSelectorSheet.isAllOption(account)) {
+      notifier.clearAccount();
+      return;
+    }
+    notifier.selectAccount(account.accountId, account.accountName);
+  }
+
+  /// 등록일 범위 필터 + 검색 버튼 — 레거시 maxSpan 30일 / 기본 최근 30일 정합.
+  Widget _buildDateFilter(SuggestionListState state) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        children: [
+          Expanded(
+            // 레거시 daterangepicker: minDate/maxDate 없음, maxSpan 30일.
+            child: DateRangeFilterField(
+              label: '기간',
+              // _isClaimOnly 진입 시 initState 에서 기본 범위를 동기 세팅하므로 항상 non-null.
+              startDate: state.startDate!,
+              endDate: state.endDate!,
+              maxRangeDays: 30,
+              onChanged: (start, end) => ref
+                  .read(suggestionListProvider.notifier)
+                  .updateDateRange(start, end),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          SizedBox(
+            height: DateRangeFilterField.fieldHeight,
+            child: ElevatedButton(
+              onPressed: () => throttledTapAsync(
+                () => ref.read(suggestionListProvider.notifier).load(),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                minimumSize: const Size(48, DateRangeFilterField.fieldHeight),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Icon(Icons.search, size: 20),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

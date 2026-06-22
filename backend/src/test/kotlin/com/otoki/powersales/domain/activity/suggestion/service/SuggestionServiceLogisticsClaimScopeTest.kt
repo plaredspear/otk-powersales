@@ -62,13 +62,19 @@ class SuggestionServiceLogisticsClaimScopeTest {
     )
 
     @Test
-    @DisplayName("목록 - 조장은 같은 원가센터 물류클레임 전체를 조회한다")
+    @DisplayName("목록 - 조장은 같은 원가센터 물류클레임 전체를 조회한다(scope=원가센터)")
     fun leaderListsCostCenterWide() {
         every { employeeRepository.findById(leaderId) } returns Optional.of(leader())
         every { orgCostCenterMatchService.findMatchingCostCenterCode("RAW-100") } returns Optional.of(orgCc)
         every {
-            suggestionRepository.findByOrgCostCenterCodeAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(
-                orgCc, SuggestionCategory.LOGISTICS_CLAIM, any()
+            suggestionRepository.searchMine(
+                employeeId = leaderId,
+                scopeOrgCostCenterCode = orgCc,
+                category = SuggestionCategory.LOGISTICS_CLAIM,
+                accountId = any(),
+                createdFrom = any(),
+                createdToExclusive = any(),
+                pageable = any()
             )
         } returns PageImpl(listOf(logisticsClaim(1L, woman())))
 
@@ -76,35 +82,87 @@ class SuggestionServiceLogisticsClaimScopeTest {
 
         assertThat(result.content).hasSize(1)
         verify(exactly = 1) {
-            suggestionRepository.findByOrgCostCenterCodeAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(
-                orgCc, SuggestionCategory.LOGISTICS_CLAIM, any()
+            suggestionRepository.searchMine(
+                employeeId = leaderId,
+                scopeOrgCostCenterCode = orgCc,
+                category = SuggestionCategory.LOGISTICS_CLAIM,
+                accountId = any(),
+                createdFrom = any(),
+                createdToExclusive = any(),
+                pageable = any()
             )
-        }
-        verify(exactly = 0) {
-            suggestionRepository.findByEmployeeIdAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(any(), any(), any())
         }
     }
 
     @Test
-    @DisplayName("목록 - 여사원은 본인 물류클레임만 조회한다")
+    @DisplayName("목록 - 여사원은 본인 물류클레임만 조회한다(scope=본인)")
     fun womanListsOwnOnly() {
         every { employeeRepository.findById(womanId) } returns Optional.of(woman())
         every { orgCostCenterMatchService.findMatchingCostCenterCode(any()) } returns Optional.of(orgCc)
         every {
-            suggestionRepository.findByEmployeeIdAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(
-                womanId, SuggestionCategory.LOGISTICS_CLAIM, any()
+            suggestionRepository.searchMine(
+                employeeId = womanId,
+                scopeOrgCostCenterCode = null,
+                category = SuggestionCategory.LOGISTICS_CLAIM,
+                accountId = any(),
+                createdFrom = any(),
+                createdToExclusive = any(),
+                pageable = any()
             )
         } returns PageImpl(emptyList())
 
         service.listMine(womanId, 0, 20, SuggestionCategory.LOGISTICS_CLAIM)
 
         verify(exactly = 1) {
-            suggestionRepository.findByEmployeeIdAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(
-                womanId, SuggestionCategory.LOGISTICS_CLAIM, any()
+            suggestionRepository.searchMine(
+                employeeId = womanId,
+                scopeOrgCostCenterCode = null,
+                category = SuggestionCategory.LOGISTICS_CLAIM,
+                accountId = any(),
+                createdFrom = any(),
+                createdToExclusive = any(),
+                pageable = any()
             )
         }
-        verify(exactly = 0) {
-            suggestionRepository.findByOrgCostCenterCodeAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(any(), any(), any())
+    }
+
+    @Test
+    @DisplayName("목록 - 거래처·기간 필터가 searchMine 으로 전달된다(기간=등록일, 종료일 익일 미만)")
+    fun listPassesAccountAndDateFilters() {
+        every { employeeRepository.findById(leaderId) } returns Optional.of(leader())
+        every { orgCostCenterMatchService.findMatchingCostCenterCode("RAW-100") } returns Optional.of(orgCc)
+        every {
+            suggestionRepository.searchMine(
+                employeeId = leaderId,
+                scopeOrgCostCenterCode = orgCc,
+                category = SuggestionCategory.LOGISTICS_CLAIM,
+                accountId = 77L,
+                createdFrom = java.time.LocalDate.of(2026, 6, 1).atStartOfDay(),
+                createdToExclusive = java.time.LocalDate.of(2026, 6, 30).plusDays(1).atStartOfDay(),
+                pageable = any()
+            )
+        } returns PageImpl(emptyList())
+
+        service.listMine(
+            employeeId = leaderId,
+            page = 0,
+            size = 20,
+            category = SuggestionCategory.LOGISTICS_CLAIM,
+            accountId = 77L,
+            startDate = java.time.LocalDate.of(2026, 6, 1),
+            endDate = java.time.LocalDate.of(2026, 6, 30)
+        )
+
+        verify(exactly = 1) {
+            suggestionRepository.searchMine(
+                employeeId = leaderId,
+                scopeOrgCostCenterCode = orgCc,
+                category = SuggestionCategory.LOGISTICS_CLAIM,
+                accountId = 77L,
+                createdFrom = java.time.LocalDate.of(2026, 6, 1).atStartOfDay(),
+                createdToExclusive = java.time.LocalDate.of(2026, 6, 30).plusDays(1).atStartOfDay(),
+                pageable = any()
+            )
         }
     }
 

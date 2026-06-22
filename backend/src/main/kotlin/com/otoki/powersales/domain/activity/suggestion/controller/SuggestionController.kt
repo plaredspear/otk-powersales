@@ -14,11 +14,13 @@ import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import java.time.LocalDate
 
 /**
  * 제안하기 API Controller — Spec #664 P2-B.
@@ -93,15 +95,28 @@ class SuggestionController(
     /**
      * 본인 제안/물류클레임 목록. category 미지정 시 전체, 지정 시 해당 분류만.
      * 레거시 `logisticsclaimlist`(물류클레임 전용 조회) 진입은 category=LOGISTICS_CLAIM 으로 호출.
+     *
+     * 레거시 검색조건 정합: [accountId] 거래처(SAPAccountCode), [startDate]~[endDate] 등록일 범위.
      */
     @GetMapping
     fun listMine(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int,
-        @RequestParam(required = false) category: SuggestionCategory?
+        @RequestParam(required = false) category: SuggestionCategory?,
+        @RequestParam(required = false) accountId: Long?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate?
     ): ResponseEntity<ApiResponse<Page<SuggestionListItem>>> {
-        val response = suggestionService.listMine(principal.userId, page, size, category)
+        val response = suggestionService.listMine(
+            employeeId = principal.userId,
+            page = page,
+            size = size,
+            category = category,
+            accountId = accountId,
+            startDate = startDate,
+            endDate = endDate
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

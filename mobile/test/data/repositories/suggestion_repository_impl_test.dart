@@ -30,6 +30,9 @@ class _MockSuggestionRemoteDataSource implements SuggestionRemoteDataSource {
     int page = 0,
     int size = 20,
     String? category,
+    int? accountId,
+    String? startDate,
+    String? endDate,
   }) {
     throw UnimplementedError();
   }

@@ -42,6 +42,9 @@ class SuggestionApiDataSource implements SuggestionRemoteDataSource {
     int page = 0,
     int size = 20,
     String? category,
+    int? accountId,
+    String? startDate,
+    String? endDate,
   }) async {
     final response = await _dio.get(
       '/api/v1/mobile/suggestions',
@@ -49,6 +52,9 @@ class SuggestionApiDataSource implements SuggestionRemoteDataSource {
         'page': page,
         'size': size,
         'category': ?category,
+        'accountId': ?accountId,
+        'startDate': ?startDate,
+        'endDate': ?endDate,
       },
     );
 

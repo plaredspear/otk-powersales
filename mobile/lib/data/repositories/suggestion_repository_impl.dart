@@ -26,11 +26,17 @@ class SuggestionRepositoryImpl implements SuggestionRepository {
     int page = 0,
     int size = 20,
     String? category,
+    int? accountId,
+    String? startDate,
+    String? endDate,
   }) async {
     final pageModel = await _dataSource.getSuggestions(
       page: page,
       size: size,
       category: category,
+      accountId: accountId,
+      startDate: startDate,
+      endDate: endDate,
     );
     return SuggestionListPage(
       items: pageModel.content.map((m) => m.toEntity()).toList(),

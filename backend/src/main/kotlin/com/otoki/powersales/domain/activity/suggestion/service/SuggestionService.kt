@@ -213,11 +213,21 @@ class SuggestionService(
         return SuggestionResponse.from(suggestion, attachments, showReceptionEmployee)
     }
 
+    /**
+     * 본인/원가센터 제안·물류클레임 목록 — 레거시 `LogisticsClaimSearch` 동등.
+     *
+     * 권한 분기: 여사원=본인분 / 그 외(조장·지점장)=같은 원가센터 전체(물류클레임 한정, 정규 제안은 본인분 유지).
+     * 선택 필터: [accountId] 거래처(레거시 SAPAccountCode), [startDate]~[endDate] 등록일 범위
+     * (레거시는 `CreatedDate` 기준 + 종료일 익일 미만 경계이므로 `endDate+1일 00:00` 미만으로 조회).
+     */
     fun listMine(
         employeeId: Long,
         page: Int,
         size: Int,
-        category: SuggestionCategory? = null
+        category: SuggestionCategory? = null,
+        accountId: Long? = null,
+        startDate: LocalDate? = null,
+        endDate: LocalDate? = null
     ): Page<SuggestionListItem> {
         val pageable: Pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
         val requester = employeeRepository.findById(employeeId).orElse(null)
@@ -229,19 +239,21 @@ class SuggestionService(
         val useCostCenterScope = category == SuggestionCategory.LOGISTICS_CLAIM &&
             requester.role != AppAuthority.WOMAN &&
             requesterOrgCostCenter != null
+        val scopeOrgCostCenterCode = if (useCostCenterScope) requesterOrgCostCenter else null
 
-        val result = when {
-            useCostCenterScope ->
-                suggestionRepository.findByOrgCostCenterCodeAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(
-                    requesterOrgCostCenter!!, category!!, pageable
-                )
-            category != null ->
-                suggestionRepository
-                    .findByEmployeeIdAndCategoryAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, category, pageable)
-            else ->
-                suggestionRepository
-                    .findByEmployeeIdAndIsDeletedFalseOrderByCreatedAtDesc(employeeId, pageable)
-        }
+        // 기간 필터는 CreatedDate(등록일) 기준 — 종료일 당일 전체 포함(익일 00:00 미만).
+        val createdFrom = startDate?.atStartOfDay()
+        val createdToExclusive = endDate?.plusDays(1)?.atStartOfDay()
+
+        val result = suggestionRepository.searchMine(
+            employeeId = employeeId,
+            scopeOrgCostCenterCode = scopeOrgCostCenterCode,
+            category = category,
+            accountId = accountId,
+            createdFrom = createdFrom,
+            createdToExclusive = createdToExclusive,
+            pageable = pageable
+        )
         return result.map { SuggestionListItem.from(it) }
     }
 

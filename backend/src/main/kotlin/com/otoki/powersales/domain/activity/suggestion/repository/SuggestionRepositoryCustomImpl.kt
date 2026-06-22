@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.support.PageableExecutionUtils
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * 제안 Querydsl Impl (Spec #830 P1-B §2.4).
@@ -79,6 +80,46 @@ class SuggestionRepositoryCustomImpl(
             .leftJoin(suggestion.ownerUser, user)
             .where(where)
             .fetchFirst() != null
+    }
+
+    override fun searchMine(
+        employeeId: Long,
+        scopeOrgCostCenterCode: String?,
+        category: SuggestionCategory?,
+        accountId: Long?,
+        createdFrom: LocalDateTime?,
+        createdToExclusive: LocalDateTime?,
+        pageable: Pageable
+    ): Page<Suggestion> {
+        val where = BooleanBuilder()
+            .and(suggestion.isDeleted.eq(false))
+            // 스코프: 원가센터 전체(조장·지점장 물류클레임) 또는 본인분(여사원/정규 제안).
+            .and(
+                if (scopeOrgCostCenterCode != null) suggestion.orgCostCenterCode.eq(scopeOrgCostCenterCode)
+                else suggestion.employee.id.eq(employeeId)
+            )
+        category?.let { where.and(suggestion.category.eq(it)) }
+        accountId?.let { where.and(suggestion.account.id.eq(it)) }
+        // 레거시 LogisticsClaimSearch: 기간 필터는 CreatedDate 기준(발생일자 아님), 종료일 익일 미만 경계.
+        createdFrom?.let { where.and(suggestion.createdAt.goe(it)) }
+        createdToExclusive?.let { where.and(suggestion.createdAt.lt(it)) }
+
+        val content = queryFactory
+            .selectFrom(suggestion)
+            .where(where)
+            .orderBy(suggestion.createdAt.desc())
+            .offset(pageable.offset)
+            .limit(pageable.pageSize.toLong())
+            .fetch()
+
+        val countQuery = queryFactory
+            .select(suggestion.count())
+            .from(suggestion)
+            .where(where)
+
+        return PageableExecutionUtils.getPage(content, pageable) {
+            countQuery.fetchOne() ?: 0L
+        }
     }
 
     override fun findLogisticsClaimReport(

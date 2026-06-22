@@ -24,6 +24,9 @@ class _MockSuggestionRepository implements SuggestionRepository {
     String? category,
     int page = 0,
     int size = 20,
+    int? accountId,
+    String? startDate,
+    String? endDate,
   }) {
     throw UnimplementedError();
   }
