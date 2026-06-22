@@ -5,8 +5,6 @@ import com.otoki.powersales.admin.permission.dto.PermissionSetCreateRequest
 import com.otoki.powersales.admin.permission.dto.PermissionSetMutationResponse
 import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateFlagsRequest
 import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateMetaRequest
-import com.otoki.powersales.admin.permission.exception.InvalidCustomPermissionKeyException
-import com.otoki.powersales.admin.permission.exception.InvalidObjectPermissionKeyException
 import com.otoki.powersales.admin.permission.exception.PermissionSetFlagsNotFoundException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNameAlreadyExistsException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNameInvalidException
@@ -186,15 +184,15 @@ class AdminPermissionSetMutationService(
         val flags = permissionSetFlagsRepository.findByPermissionSetId(permissionSetId)
             ?: throw PermissionSetFlagsNotFoundException(permissionSetId)
 
-        validateObjectPermissionKeys(request.objectPermissions)
-        validateCustomPermissionKeys(request.customPermissions)
+        val objectPermissions = sanitizeObjectPermissionKeys(request.objectPermissions, permissionSetId)
+        val customPermissions = sanitizeCustomPermissionKeys(request.customPermissions, permissionSetId)
 
         val before = buildResponse(ps, flags)
 
         flags.permissionsViewAllData = request.viewAllData
         flags.permissionsModifyAllData = request.modifyAllData
-        flags.objectPermissions = objectMapper.writeValueAsString(request.objectPermissions)
-        flags.customPermissions = objectMapper.writeValueAsString(request.customPermissions)
+        flags.objectPermissions = objectMapper.writeValueAsString(objectPermissions)
+        flags.customPermissions = objectMapper.writeValueAsString(customPermissions)
         if (ps.sfid != null) {
             flags.isLocallyModified = true
         }
@@ -361,21 +359,44 @@ class AdminPermissionSetMutationService(
         }
     }
 
-    private fun validateObjectPermissionKeys(map: Map<String, Map<String, Boolean>>) {
+    /**
+     * objectPermissions 키 정제 — 레지스트리(snapshot) 미등록 키는 조용히 제거하고 등록 키만 반환.
+     *
+     * 화면 GET 은 DB objectPermissions JSON 을 무필터 노출하므로, entity 미복원 SObject (예: BranchReview__c)
+     * 같은 SF 출처 레거시 잔재 키가 편집 화면에 그대로 표시된다. 화면은 전체 교체 방식이라 사용자가 해당 키를
+     * 건드리지 않아도 PUT body 에 그대로 실려온다. 이를 throw 로 막으면 정상 저장 자체가 불가능해지므로,
+     * 저장 시점에 죽은 키를 청소(drop)해 레지스트리 정합으로 수렴시킨다. (Profile 측과 동일 정책)
+     */
+    private fun sanitizeObjectPermissionKeys(
+        map: Map<String, Map<String, Boolean>>,
+        permissionSetId: Long,
+    ): Map<String, Map<String, Boolean>> {
         val sfNames = entitySfNameRegistry.snapshot().values.toSet()
-        for (key in map.keys) {
-            if (key !in sfNames) throw InvalidObjectPermissionKeyException(key)
+        val (kept, dropped) = map.entries.partition { it.key in sfNames }
+        if (dropped.isNotEmpty()) {
+            log.info(
+                "[AdminPermissionSetMutationService] 레지스트리 미등록 objectPermission 키 drop permissionSetId={} keys={}",
+                permissionSetId, dropped.map { it.key },
+            )
         }
+        return kept.associate { it.key to it.value }
     }
 
-    private fun validateCustomPermissionKeys(map: Map<String, Map<String, Boolean>>) {
+    private fun sanitizeCustomPermissionKeys(
+        map: Map<String, Map<String, Boolean>>,
+        permissionSetId: Long,
+    ): Map<String, Map<String, Boolean>> {
         val sfMappedEntities = entitySfNameRegistry.snapshot().keys
-        val allResources = entitySfNameRegistry.allResources()
         // custom 자원 = allResources - SF 매핑 entity (objectPermissions 영역과 분리)
-        val customResources = allResources - sfMappedEntities
-        for (key in map.keys) {
-            if (key !in customResources) throw InvalidCustomPermissionKeyException(key)
+        val customResources = entitySfNameRegistry.allResources() - sfMappedEntities
+        val (kept, dropped) = map.entries.partition { it.key in customResources }
+        if (dropped.isNotEmpty()) {
+            log.info(
+                "[AdminPermissionSetMutationService] 미등록 customPermission 키 drop permissionSetId={} keys={}",
+                permissionSetId, dropped.map { it.key },
+            )
         }
+        return kept.associate { it.key to it.value }
     }
 
     private fun parseJsonOrEmpty(json: String?): Map<String, Map<String, Boolean>> {

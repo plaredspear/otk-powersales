@@ -75,14 +75,3 @@ class SfOriginDeleteBlockedException(permissionSetId: Long) : BusinessException(
     httpStatus = HttpStatus.CONFLICT,
 )
 
-class InvalidObjectPermissionKeyException(sfApiName: String) : BusinessException(
-    errorCode = "INVALID_OBJECT_PERMISSION_KEY",
-    message = "등록되지 않은 SObject API name 입니다 (sfApiName=$sfApiName)",
-    httpStatus = HttpStatus.BAD_REQUEST,
-)
-
-class InvalidCustomPermissionKeyException(resourceName: String) : BusinessException(
-    errorCode = "INVALID_CUSTOM_PERMISSION_KEY",
-    message = "등록되지 않은 custom resource name 입니다 (resourceName=$resourceName)",
-    httpStatus = HttpStatus.BAD_REQUEST,
-)

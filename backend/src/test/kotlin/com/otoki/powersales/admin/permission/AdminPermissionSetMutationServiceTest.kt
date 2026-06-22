@@ -3,8 +3,6 @@ package com.otoki.powersales.admin.permission
 import com.otoki.powersales.admin.permission.dto.PermissionSetCreateRequest
 import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateFlagsRequest
 import com.otoki.powersales.admin.permission.dto.PermissionSetUpdateMetaRequest
-import com.otoki.powersales.admin.permission.exception.InvalidCustomPermissionKeyException
-import com.otoki.powersales.admin.permission.exception.InvalidObjectPermissionKeyException
 import com.otoki.powersales.admin.permission.exception.PermissionSetFlagsNotFoundException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNameAlreadyExistsException
 import com.otoki.powersales.admin.permission.exception.PermissionSetNameInvalidException
@@ -226,45 +224,57 @@ class AdminPermissionSetMutationServiceTest {
     }
 
     @Test
-    @DisplayName("updateFlags - 미등록 SObject 키 → INVALID_OBJECT_PERMISSION_KEY")
-    fun updateFlagsInvalidSObjectKey() {
+    @DisplayName("updateFlags - 미등록 SObject 키 (예 BranchReview__c) 는 throw 없이 drop, 등록 키만 저장")
+    fun updateFlagsDropsUnknownSObjectKey() {
         val ps = permissionSet(sfid = null)
         val flags = permissionSetFlags()
         every { permissionSetRepository.findById(90) } returns Optional.of(ps)
         every { permissionSetFlagsRepository.findByPermissionSetId(90) } returns flags
         every { entitySfNameRegistry.snapshot() } returns mapOf("account" to "Account")
         every { entitySfNameRegistry.allResources() } returns setOf("account")
+        every { permissionSetFlagsRepository.save(any()) } returnsArgument 0
+        every { permissionSetChangeLogRepository.save(any()) } returnsArgument 0
 
-        assertThatThrownBy {
-            service.updateFlags(
-                permissionSetId = 90,
-                request = PermissionSetUpdateFlagsRequest(
-                    objectPermissions = mapOf("Foo__c" to mapOf("allowRead" to true)),
+        val response = service.updateFlags(
+            permissionSetId = 90,
+            request = PermissionSetUpdateFlagsRequest(
+                objectPermissions = mapOf(
+                    "Account" to mapOf("allowRead" to true),
+                    "BranchReview__c" to mapOf("allowRead" to true),
                 ),
-                principalUserId = 100,
-            )
-        }.isInstanceOf(InvalidObjectPermissionKeyException::class.java)
+            ),
+            principalUserId = 100,
+        )
+
+        assertThat(response.objectPermissions).containsKey("Account")
+        assertThat(response.objectPermissions).doesNotContainKey("BranchReview__c")
     }
 
     @Test
-    @DisplayName("updateFlags - 미등록 custom 자원 키 → INVALID_CUSTOM_PERMISSION_KEY")
-    fun updateFlagsInvalidCustomKey() {
+    @DisplayName("updateFlags - 미등록 custom 자원 키는 throw 없이 drop, 등록 키만 저장")
+    fun updateFlagsDropsUnknownCustomKey() {
         val ps = permissionSet(sfid = null)
         val flags = permissionSetFlags()
         every { permissionSetRepository.findById(90) } returns Optional.of(ps)
         every { permissionSetFlagsRepository.findByPermissionSetId(90) } returns flags
         every { entitySfNameRegistry.snapshot() } returns mapOf("account" to "Account")
-        every { entitySfNameRegistry.allResources() } returns setOf("account", "dashboard")
+        every { entitySfNameRegistry.allResources() } returns setOf("account", "female_employee")
+        every { permissionSetFlagsRepository.save(any()) } returnsArgument 0
+        every { permissionSetChangeLogRepository.save(any()) } returnsArgument 0
 
-        assertThatThrownBy {
-            service.updateFlags(
-                permissionSetId = 90,
-                request = PermissionSetUpdateFlagsRequest(
-                    customPermissions = mapOf("invalidResource" to mapOf("allowRead" to true)),
+        val response = service.updateFlags(
+            permissionSetId = 90,
+            request = PermissionSetUpdateFlagsRequest(
+                customPermissions = mapOf(
+                    "female_employee" to mapOf("allowRead" to true),
+                    "invalidResource" to mapOf("allowRead" to true),
                 ),
-                principalUserId = 100,
-            )
-        }.isInstanceOf(InvalidCustomPermissionKeyException::class.java)
+            ),
+            principalUserId = 100,
+        )
+
+        assertThat(response.customPermissions).containsKey("female_employee")
+        assertThat(response.customPermissions).doesNotContainKey("invalidResource")
     }
 
     // ── delete ──────────────────────────────────────────────────────────────

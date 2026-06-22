@@ -2,8 +2,6 @@ package com.otoki.powersales.admin.permission
 
 import com.otoki.powersales.admin.permission.dto.ProfileFlagsMutationResponse
 import com.otoki.powersales.admin.permission.dto.ProfileUpdateFlagsRequest
-import com.otoki.powersales.admin.permission.exception.InvalidCustomPermissionKeyException
-import com.otoki.powersales.admin.permission.exception.InvalidObjectPermissionKeyException
 import com.otoki.powersales.admin.permission.exception.ProfileNotFoundException
 import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
@@ -36,7 +34,9 @@ import tools.jackson.databind.ObjectMapper
  *   조건 없이 set (PS 는 sfid != null 일 때만 set).
  * - upsert: ProfileFlags 행은 일부 Profile 에만 존재하므로 (로컬 '시스템 관리자' 1건 시드 / dev·prod 는
  *   SF systemPermissions 정의 Profile 만 Stage1 적재), 행이 없으면 기본값(전부 false) 신규 생성 후 편집분 교체
- * - 권한 비트 키 검증: EntitySfNameRegistry snapshot()/allResources() 기준 — 미등록 키 400
+ * - 권한 비트 키 정제: EntitySfNameRegistry snapshot()/allResources() 기준 — 미등록 키는 저장 시
+ *   조용히 drop (throw 아님). 화면 GET 이 entity 미복원 SObject (예: BranchReview__c) 등 SF 출처 레거시
+ *   잔재 키를 무필터 노출 + 전체 교체 방식이라, throw 시 정상 저장 불가. drop 으로 레지스트리 정합 수렴.
  * - 전체 교체 방식: 누락 키는 "권한 없음" 으로 해석 (부분 patch 아님)
  * - 캐시: 편집 후 CACHE_PERMISSION_MATRIX evict + CACHE_PROFILE_FLAGS (Profile 보유 user 전원 영향) clear
  *   + AdminPermissionCache / AdminDataScopeCache invalidateAll
@@ -80,16 +80,16 @@ class AdminProfileFlagsMutationService(
         val flags = profileFlagsRepository.findByProfileId(profileId)
             ?: ProfileFlags(profileId = profileId)
 
-        validateObjectPermissionKeys(request.objectPermissions)
-        validateCustomPermissionKeys(request.customPermissions)
+        val objectPermissions = sanitizeObjectPermissionKeys(request.objectPermissions, profileId)
+        val customPermissions = sanitizeCustomPermissionKeys(request.customPermissions, profileId)
 
         flags.permissionsViewAllData = request.viewAllData
         flags.permissionsModifyAllData = request.modifyAllData
         flags.permissionsViewAllUsers = request.viewAllUsers
         flags.permissionsManageUsers = request.manageUsers
         flags.permissionsApiEnabled = request.apiEnabled
-        flags.objectPermissions = objectMapper.writeValueAsString(request.objectPermissions)
-        flags.customPermissions = objectMapper.writeValueAsString(request.customPermissions)
+        flags.objectPermissions = objectMapper.writeValueAsString(objectPermissions)
+        flags.customPermissions = objectMapper.writeValueAsString(customPermissions)
         flags.isLocallyModified = true
         profileFlagsRepository.save(flags)
 
@@ -120,19 +120,43 @@ class AdminProfileFlagsMutationService(
         adminDataScopeCache.invalidateAll()
     }
 
-    private fun validateObjectPermissionKeys(map: Map<String, Map<String, Boolean>>) {
+    /**
+     * objectPermissions 키 정제 — 레지스트리(snapshot) 미등록 키는 조용히 제거하고 등록 키만 반환.
+     *
+     * 화면 GET 은 DB objectPermissions JSON 을 무필터 노출하므로, entity 미복원 SObject (예: BranchReview__c)
+     * 같은 SF 출처 레거시 잔재 키가 편집 화면에 그대로 표시된다. 화면은 전체 교체 방식이라 사용자가 해당 키를
+     * 건드리지 않아도 PUT body 에 그대로 실려온다. 이를 throw 로 막으면 정상 저장 자체가 불가능해지므로,
+     * 저장 시점에 죽은 키를 청소(drop)해 레지스트리 정합으로 수렴시킨다.
+     */
+    private fun sanitizeObjectPermissionKeys(
+        map: Map<String, Map<String, Boolean>>,
+        profileId: Long,
+    ): Map<String, Map<String, Boolean>> {
         val sfNames = entitySfNameRegistry.snapshot().values.toSet()
-        for (key in map.keys) {
-            if (key !in sfNames) throw InvalidObjectPermissionKeyException(key)
+        val (kept, dropped) = map.entries.partition { it.key in sfNames }
+        if (dropped.isNotEmpty()) {
+            log.info(
+                "[AdminProfileFlagsMutationService] 레지스트리 미등록 objectPermission 키 drop profileId={} keys={}",
+                profileId, dropped.map { it.key },
+            )
         }
+        return kept.associate { it.key to it.value }
     }
 
-    private fun validateCustomPermissionKeys(map: Map<String, Map<String, Boolean>>) {
+    private fun sanitizeCustomPermissionKeys(
+        map: Map<String, Map<String, Boolean>>,
+        profileId: Long,
+    ): Map<String, Map<String, Boolean>> {
         val sfMappedEntities = entitySfNameRegistry.snapshot().keys
         val customResources = entitySfNameRegistry.allResources() - sfMappedEntities
-        for (key in map.keys) {
-            if (key !in customResources) throw InvalidCustomPermissionKeyException(key)
+        val (kept, dropped) = map.entries.partition { it.key in customResources }
+        if (dropped.isNotEmpty()) {
+            log.info(
+                "[AdminProfileFlagsMutationService] 미등록 customPermission 키 drop profileId={} keys={}",
+                profileId, dropped.map { it.key },
+            )
         }
+        return kept.associate { it.key to it.value }
     }
 
     private fun parseJsonOrEmpty(json: String?): Map<String, Map<String, Boolean>> {

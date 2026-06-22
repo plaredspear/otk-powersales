@@ -1,8 +1,6 @@
 package com.otoki.powersales.admin.permission
 
 import com.otoki.powersales.admin.permission.dto.ProfileUpdateFlagsRequest
-import com.otoki.powersales.admin.permission.exception.InvalidCustomPermissionKeyException
-import com.otoki.powersales.admin.permission.exception.InvalidObjectPermissionKeyException
 import com.otoki.powersales.admin.permission.exception.ProfileNotFoundException
 import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.platform.auth.entity.Profile
@@ -121,29 +119,44 @@ class AdminProfileFlagsMutationServiceTest {
     }
 
     @Test
-    fun `updateFlags — 미등록 object 키면 InvalidObjectPermissionKeyException`() {
+    fun `updateFlags — 미등록 object 키 (예 BranchReview__c) 는 throw 없이 drop 되고 등록 키만 저장`() {
+        val flags = profileFlags()
         every { profileRepository.findById(10L) } returns Optional.of(profile())
-        every { profileFlagsRepository.findByProfileId(10L) } returns profileFlags()
+        every { profileFlagsRepository.findByProfileId(10L) } returns flags
+        every { profileFlagsRepository.save(any()) } returnsArgument 0
         every { entitySfNameRegistry.snapshot() } returns mapOf("account" to "Account")
 
+        // 화면 전체 교체 — 등록 키(Account) + entity 미복원 잔재 키(BranchReview__c) 가 함께 실려옴.
         val request = ProfileUpdateFlagsRequest(
-            objectPermissions = mapOf("UnknownObj" to mapOf("allowRead" to true)),
+            objectPermissions = mapOf(
+                "Account" to mapOf("allowRead" to true),
+                "BranchReview__c" to mapOf("allowRead" to true),
+            ),
         )
-        assertThatThrownBy { service.updateFlags(10L, request, 1L) }
-            .isInstanceOf(InvalidObjectPermissionKeyException::class.java)
+        val response = service.updateFlags(10L, request, 1L)
+
+        assertThat(response.objectPermissions).containsKey("Account")
+        assertThat(response.objectPermissions).doesNotContainKey("BranchReview__c")
     }
 
     @Test
-    fun `updateFlags — 미등록 custom 키면 InvalidCustomPermissionKeyException`() {
+    fun `updateFlags — 미등록 custom 키는 throw 없이 drop 되고 등록 키만 저장`() {
+        val flags = profileFlags()
         every { profileRepository.findById(10L) } returns Optional.of(profile())
-        every { profileFlagsRepository.findByProfileId(10L) } returns profileFlags()
+        every { profileFlagsRepository.findByProfileId(10L) } returns flags
+        every { profileFlagsRepository.save(any()) } returnsArgument 0
         every { entitySfNameRegistry.snapshot() } returns mapOf("account" to "Account")
-        every { entitySfNameRegistry.allResources() } returns setOf("account", "dashboard")
+        every { entitySfNameRegistry.allResources() } returns setOf("account", "female_employee")
 
         val request = ProfileUpdateFlagsRequest(
-            customPermissions = mapOf("unknown_resource" to mapOf("allowRead" to true)),
+            customPermissions = mapOf(
+                "female_employee" to mapOf("allowRead" to true),
+                "unknown_resource" to mapOf("allowRead" to true),
+            ),
         )
-        assertThatThrownBy { service.updateFlags(10L, request, 1L) }
-            .isInstanceOf(InvalidCustomPermissionKeyException::class.java)
+        val response = service.updateFlags(10L, request, 1L)
+
+        assertThat(response.customPermissions).containsKey("female_employee")
+        assertThat(response.customPermissions).doesNotContainKey("unknown_resource")
     }
 }
