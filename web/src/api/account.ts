@@ -129,6 +129,25 @@ export async function fetchAccountsForPromotionLookup(
 }
 
 /**
+ * 진열사원스케줄 마스터 등록/수정 화면의 거래처 lookup search — display_work_schedule 권한 보유자 호출용.
+ *
+ * 행사마스터 lookup 과 동일한 계정그룹 필터를 적용하되 폐업 거래처는 완전 제외한다 — 폐업 거래처는
+ * 진열사원스케줄 등록 자체가 차단되므로 조회 후보에서도 일관되게 제외. Account READ 권한 없이도 호출 가능.
+ */
+export async function fetchAccountsForDisplayScheduleLookup(
+  params: Pick<FetchAccountsParams, 'keyword' | 'page' | 'size'>,
+): Promise<AccountListData> {
+  const res = await client.get<ApiResponse<AccountListData>>(
+    '/api/v1/admin/accounts/lookup-for-display-schedule',
+    { params },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '거래처 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
  * 물류 클레임 등록/수정 화면의 거래처 lookup search — suggestion 권한 보유자 호출용.
  *
  * Account READ 권한 없이도 호출 가능 (SF Claim__c.AccId__c Lookup 메커니즘 정합).

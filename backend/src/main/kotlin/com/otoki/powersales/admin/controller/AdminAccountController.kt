@@ -99,6 +99,36 @@ class AdminAccountController(
     }
 
     /**
+     * 진열사원스케줄 마스터 등록/수정 화면의 거래처 lookup search.
+     *
+     * 행사마스터 lookup(`/lookup`)과 동일한 accountGroup ∈ {1000,1010} 필터를 적용하되, 폐업 거래처는
+     * `excludeClosedAccount=true` 로 distribution 면제 없이 완전 제외한다 — 폐업 거래처는 진열사원스케줄
+     * 등록 검증(`ScheduleUploadValidator`)에서 차단되므로 조회 후보에서도 일관되게 제외하기 위함이다.
+     * display_work_schedule.READ 권한으로 가드 (Account READ 권한 불요 — SF lookup search 메커니즘 정합).
+     */
+    @GetMapping("/lookup-for-display-schedule")
+    @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.READ)
+    fun lookupAccountsForDisplaySchedule(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
+        @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
+    ): ResponseEntity<ApiResponse<AccountListResponse>> {
+        val response = adminAccountService.getAccounts(
+            scope = scope,
+            keyword = keyword,
+            abcType = null,
+            branchCode = null,
+            accountStatusName = null,
+            page = page,
+            size = size,
+            excludeClosedAccount = true
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
      * 물류 클레임 등록/수정 화면의 거래처 lookup search — SF Claim__c.AccId__c Lookup 정합.
      *
      * SF 의 lookup search 는 Account FLS/object access 와 무관하게 화면 권한 (Suggestion/Claim CRUD)
