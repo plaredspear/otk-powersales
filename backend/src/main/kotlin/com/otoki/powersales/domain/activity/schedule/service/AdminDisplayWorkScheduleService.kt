@@ -64,7 +64,7 @@ import java.util.concurrent.TimeUnit
 
 @Service
 @Transactional(readOnly = true)
-class AdminScheduleService(
+class AdminDisplayWorkScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val organizationRepository: OrganizationRepository,
@@ -101,7 +101,7 @@ class AdminScheduleService(
     /**
      * SF ADMIN_GRADE 동등 — Profile.Name == "시스템 관리자" OR User.isSalesSupport.
      *
-     * SF 원본 분기 (`AdminScheduleService` 의 ADMIN_GRADE = SYSTEM_ADMIN + SALES_SUPPORT) 정합.
+     * SF 원본 분기 (`AdminDisplayWorkScheduleService` 의 ADMIN_GRADE = SYSTEM_ADMIN + SALES_SUPPORT) 정합.
      * Employee 인자만으로 판단 — 매칭 User 의 profileId + isSalesSupport 캐시 컬럼 조회.
      */
     private fun isAdminGrade(employeeCode: String?): Boolean {
