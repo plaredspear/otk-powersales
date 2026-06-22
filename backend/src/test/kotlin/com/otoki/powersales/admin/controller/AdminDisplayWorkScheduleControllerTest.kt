@@ -10,7 +10,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.request.AdminScheduleCr
 import com.otoki.powersales.domain.activity.schedule.dto.request.AdminScheduleUpdateRequest
 import com.otoki.powersales.domain.activity.schedule.dto.request.ScheduleConfirmRequest
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
-import com.otoki.powersales.domain.activity.schedule.service.AdminScheduleService
+import com.otoki.powersales.domain.activity.schedule.service.AdminDisplayWorkScheduleService
 import com.otoki.powersales.domain.activity.schedule.service.MissingCostCenterException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -61,7 +61,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
     private lateinit var objectMapper: ObjectMapper
 
     @MockkBean
-    private lateinit var adminScheduleService: AdminScheduleService
+    private lateinit var adminDisplayWorkScheduleService: AdminDisplayWorkScheduleService
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     // @AutoConfigureMockMvc(addFilters = false) 환경에서 WebAdminContextFilter 가 동작하지 않으므로
@@ -109,7 +109,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 )
             )
             val page = PageImpl(items, PageRequest.of(0, 20), 1)
-            every { adminScheduleService.listSchedules(
+            every { adminDisplayWorkScheduleService.listSchedules(
                 any(), eq(0), eq(20), null, null, null, null, null, null, null, any()
             ) } returns page
 
@@ -124,7 +124,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 필터 파라미터 적용")
         fun list_withFilters() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
-            every { adminScheduleService.listSchedules(
+            every { adminDisplayWorkScheduleService.listSchedules(
                 any(), eq(0), eq(20), eq("123"), null, eq(true), null, null, null, null, any()
             ) } returns emptyPage
 
@@ -141,7 +141,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 빈 결과")
         fun list_empty() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
-            every { adminScheduleService.listSchedules(
+            every { adminDisplayWorkScheduleService.listSchedules(
                 any(), eq(0), eq(20), null, null, null, null, null, null, null, any()
             ) } returns emptyPage
 
@@ -155,7 +155,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - preset 파라미터 (END) 가 service 에 전달")
         fun list_withPreset() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
-            every { adminScheduleService.listSchedules(
+            every { adminDisplayWorkScheduleService.listSchedules(
                 any(), eq(0), eq(20), null, null, null, null, null, null,
                 eq(SchedulePreset.END), any()
             ) } returns emptyPage
@@ -171,7 +171,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - sortBy/sortDir 파라미터가 Sort 로 변환")
         fun list_withSort() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
-            every { adminScheduleService.listSchedules(
+            every { adminDisplayWorkScheduleService.listSchedules(
                 any(), eq(0), eq(20), null, null, null, null, null, null, null,
                 match { it.getOrderFor("endDate")?.direction == Sort.Direction.ASC }
             ) } returns emptyPage
@@ -216,7 +216,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 costCenterCode = "A10010",
                 lastMonthRevenue = 5000000L
             )
-            every { adminScheduleService.createSchedule(any(), eq(1L), any()) } returns result
+            every { adminDisplayWorkScheduleService.createSchedule(any(), eq(1L), any()) } returns result
 
             mockMvc.perform(
                 post("/api/v1/admin/display-work-schedule")
@@ -242,7 +242,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = null
             )
-            every { adminScheduleService.createSchedule(any(), eq(1L), any()) } throws ScheduleValidationException("기간내에 동일한 거래처가 등록되어 있습니다")
+            every { adminDisplayWorkScheduleService.createSchedule(any(), eq(1L), any()) } throws ScheduleValidationException("기간내에 동일한 거래처가 등록되어 있습니다")
 
             mockMvc.perform(
                 post("/api/v1/admin/display-work-schedule")
@@ -301,7 +301,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 costCenterCode = "5452",
                 lastMonthRevenue = 121861916L,
             )
-            every { adminScheduleService.getScheduleDetail(any(), eq(10L)) } returns detail
+            every { adminDisplayWorkScheduleService.getScheduleDetail(any(), eq(10L)) } returns detail
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/10"))
                 .andExpect(status().isOk)
@@ -344,7 +344,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 costCenterCode = "A10010",
                 lastMonthRevenue = 3000000L
             )
-            every { adminScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()) } returns result
+            every { adminDisplayWorkScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()) } returns result
 
             mockMvc.perform(
                 put("/api/v1/admin/display-work-schedule/10")
@@ -369,7 +369,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = LocalDate.of(2026, 12, 31)
             )
-            every { adminScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()) } throws ScheduleEditBlockedAfterConfirmException()
+            every { adminDisplayWorkScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()) } throws ScheduleEditBlockedAfterConfirmException()
 
             mockMvc.perform(
                 put("/api/v1/admin/display-work-schedule/10")
@@ -393,7 +393,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = LocalDate.of(2026, 12, 31)
             )
-            every { adminScheduleService.updateSchedule(any(), eq(1L), eq(999L), any()) } throws ScheduleNotFoundException(
+            every { adminDisplayWorkScheduleService.updateSchedule(any(), eq(1L), eq(999L), any()) } throws ScheduleNotFoundException(
                 "존재하지 않거나 삭제된 스케줄입니다"
             )
 
@@ -415,7 +415,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 3건 확정")
         fun confirm_success() {
             val result = ScheduleBatchConfirmResultDto(updatedCount = 3)
-            every { adminScheduleService.batchConfirm(listOf(1L, 2L, 3L)) } returns result
+            every { adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 2L, 3L)) } returns result
 
             mockMvc.perform(
                 patch("/api/v1/admin/display-work-schedule/confirm")
@@ -442,7 +442,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 미존재 ID 포함")
         fun confirm_notFound() {
-            every { adminScheduleService.batchConfirm(listOf(1L, 999L)) } throws ScheduleNotFoundException()
+            every { adminDisplayWorkScheduleService.batchConfirm(listOf(1L, 999L)) } throws ScheduleNotFoundException()
 
             mockMvc.perform(
                 patch("/api/v1/admin/display-work-schedule/confirm")
@@ -462,7 +462,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 2건 확정 해제")
         fun unconfirm_success() {
             val result = ScheduleBatchConfirmResultDto(updatedCount = 2)
-            every { adminScheduleService.batchUnconfirm(listOf(1L, 2L)) } returns result
+            every { adminDisplayWorkScheduleService.batchUnconfirm(listOf(1L, 2L)) } returns result
 
             mockMvc.perform(
                 patch("/api/v1/admin/display-work-schedule/unconfirm")
@@ -489,7 +489,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 미존재 ID 포함")
         fun unconfirm_notFound() {
-            every { adminScheduleService.batchUnconfirm(listOf(1L, 999L)) } throws ScheduleNotFoundException()
+            every { adminDisplayWorkScheduleService.batchUnconfirm(listOf(1L, 999L)) } throws ScheduleNotFoundException()
 
             mockMvc.perform(
                 patch("/api/v1/admin/display-work-schedule/unconfirm")
@@ -508,11 +508,11 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - Excel byte 응답 + Content-Disposition")
         fun export_success() {
-            val result = AdminScheduleService.TemplateResult(
+            val result = AdminDisplayWorkScheduleService.TemplateResult(
                 bytes = ByteArray(800),
                 filename = "진열스케줄_20260516_120000.xlsx"
             )
-            every { adminScheduleService.exportSchedules(any(), eq(listOf(1L, 2L, 3L))) } returns result
+            every { adminDisplayWorkScheduleService.exportSchedules(any(), eq(listOf(1L, 2L, 3L))) } returns result
 
             mockMvc.perform(
                 post("/api/v1/admin/display-work-schedule/export")
@@ -553,7 +553,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 filename = "진열스케줄_20260516_120000.xlsx"
             )
             every {
-                adminScheduleService.exportAllSchedules(any(), any(), any(), any(), any(), any(), any(), any(), any())
+                adminDisplayWorkScheduleService.exportAllSchedules(any(), any(), any(), any(), any(), any(), any(), any(), any())
             } returns result
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/export-all"))
@@ -572,7 +572,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         fun exportAll_filterParams() {
             val result = ExcelResult(bytes = ByteArray(10), filename = "진열스케줄.xlsx")
             every {
-                adminScheduleService.exportAllSchedules(
+                adminDisplayWorkScheduleService.exportAllSchedules(
                     any(), eq("2003"), eq("이마트"), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
                 )
             } returns result
@@ -588,7 +588,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 .andExpect(status().isOk)
 
             verify {
-                adminScheduleService.exportAllSchedules(
+                adminDisplayWorkScheduleService.exportAllSchedules(
                     any(), eq("2003"), eq("이마트"), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
                 )
             }
@@ -613,7 +613,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                     )
                 )
             )
-            every { adminScheduleService.batchDelete(any(), eq(1L), eq(listOf(21L, 22L, 23L))) } returns result
+            every { adminDisplayWorkScheduleService.batchDelete(any(), eq(1L), eq(listOf(21L, 22L, 23L))) } returns result
 
             mockMvc.perform(
                 post("/api/v1/admin/display-work-schedule/batch-delete")
@@ -633,7 +633,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             val result = ScheduleBatchDeleteResultDto(
                 deletedCount = 3, failedCount = 0, failures = emptyList()
             )
-            every { adminScheduleService.batchDelete(any(), eq(1L), any()) } returns result
+            every { adminDisplayWorkScheduleService.batchDelete(any(), eq(1L), any()) } returns result
 
             mockMvc.perform(
                 post("/api/v1/admin/display-work-schedule/batch-delete")
@@ -648,7 +648,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - BRANCH_MANAGER → 403")
         fun batchDelete_branchManagerForbidden() {
-            every { adminScheduleService.batchDelete(any(), eq(1L), any()) } throws ScheduleDeleteForbiddenException()
+            every { adminDisplayWorkScheduleService.batchDelete(any(), eq(1L), any()) } throws ScheduleDeleteForbiddenException()
 
             mockMvc.perform(
                 post("/api/v1/admin/display-work-schedule/batch-delete")
@@ -678,11 +678,11 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - Excel 파일 다운로드 (파라미터 없이)")
         fun downloadTemplate_success() {
-            val result = AdminScheduleService.TemplateResult(
+            val result = AdminDisplayWorkScheduleService.TemplateResult(
                 bytes = ByteArray(100),
                 filename = "진열스케줄_양식_20260314120000.xlsx"
             )
-            every { adminScheduleService.generateTemplate(any(), eq(1L)) } returns result
+            every { adminDisplayWorkScheduleService.generateTemplate(any(), eq(1L)) } returns result
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/template"))
                 .andExpect(status().isOk)
@@ -698,7 +698,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 사용자 미존재")
         fun downloadTemplate_userNotFound() {
-            every { adminScheduleService.generateTemplate(any(), eq(1L)) } throws EmployeeNotFoundException()
+            every { adminDisplayWorkScheduleService.generateTemplate(any(), eq(1L)) } throws EmployeeNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/template"))
                 .andExpect(status().isNotFound)
@@ -708,7 +708,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 소속 지점 미설정")
         fun downloadTemplate_missingCostCenter() {
-            every { adminScheduleService.generateTemplate(any(), eq(1L)) } throws MissingCostCenterException()
+            every { adminDisplayWorkScheduleService.generateTemplate(any(), eq(1L)) } throws MissingCostCenterException()
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/template"))
                 .andExpect(status().isBadRequest)
@@ -749,7 +749,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                     RowPreview(4, "20030001", "홍길동", "ACC001", "이마트 강남점", "고정", "상온", "상시", "2026-04-01", null)
                 )
             )
-            every { adminScheduleService.uploadAndValidate(any(), any()) } returns uploadResult
+            every { adminDisplayWorkScheduleService.uploadAndValidate(any(), any()) } returns uploadResult
 
             val file = MockMultipartFile(
                 "file", "test.xlsx",
@@ -775,7 +775,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 잘못된 확장자")
         fun upload_invalidFileType() {
-            every { adminScheduleService.uploadAndValidate(any(), any()) } throws ScheduleInvalidFileTypeException()
+            every { adminDisplayWorkScheduleService.uploadAndValidate(any(), any()) } throws ScheduleInvalidFileTypeException()
 
             val file = MockMultipartFile(
                 "file", "test.csv", "text/csv", ByteArray(100)
@@ -789,7 +789,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 빈 파일")
         fun upload_emptyFile() {
-            every { adminScheduleService.uploadAndValidate(any(), any()) } throws ScheduleEmptyFileException()
+            every { adminDisplayWorkScheduleService.uploadAndValidate(any(), any()) } throws ScheduleEmptyFileException()
 
             val file = MockMultipartFile(
                 "file", "test.xlsx",
@@ -805,7 +805,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 행 초과")
         fun upload_rowLimitExceeded() {
-            every { adminScheduleService.uploadAndValidate(any(), any()) } throws ScheduleRowLimitExceededException()
+            every { adminDisplayWorkScheduleService.uploadAndValidate(any(), any()) } throws ScheduleRowLimitExceededException()
 
             val file = MockMultipartFile(
                 "file", "test.xlsx",
@@ -827,7 +827,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 등록 완료")
         fun confirm_success() {
             val confirmResult = ScheduleConfirmResultDto(insertedCount = 10)
-            every { adminScheduleService.confirmUpload("test-uuid") } returns confirmResult
+            every { adminDisplayWorkScheduleService.confirmUpload("test-uuid") } returns confirmResult
 
             val request = ScheduleConfirmRequest(uploadId = "test-uuid")
 
@@ -845,7 +845,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 만료된 upload_id")
         fun confirm_notFound() {
-            every { adminScheduleService.confirmUpload("expired-id") } throws ScheduleUploadNotFoundException()
+            every { adminDisplayWorkScheduleService.confirmUpload("expired-id") } throws ScheduleUploadNotFoundException()
 
             val request = ScheduleConfirmRequest(uploadId = "expired-id")
 
@@ -861,7 +861,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 에러 있는 상태 확정")
         fun confirm_hasErrors() {
-            every { adminScheduleService.confirmUpload("error-id") } throws ScheduleHasValidationErrorsException()
+            every { adminDisplayWorkScheduleService.confirmUpload("error-id") } throws ScheduleHasValidationErrorsException()
 
             val request = ScheduleConfirmRequest(uploadId = "error-id")
 

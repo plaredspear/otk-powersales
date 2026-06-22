@@ -18,7 +18,7 @@ import com.otoki.powersales.domain.org.organization.entity.Organization
  *
  * - `orgCodeLevel3` — [com.otoki.powersales.user.service.EmployeeProfileResolver] 의 Profile.name 분기
  * - `orgNameLevel4` / `orgNameLevel3` — [com.otoki.powersales.user.service.UserRoleResolver] 의 영업지원/영업본부 매칭
- * - `costCenterLevel3` — [com.otoki.powersales.domain.activity.schedule.service.AdminScheduleService] 의 영업지원실 다중 지점 expand
+ * - `costCenterLevel3` — [com.otoki.powersales.domain.activity.schedule.service.AdminDisplayWorkScheduleService] 의 영업지원실 다중 지점 expand
  *
  * 신규 호출자가 다른 필드를 필요로 하면 본 DTO 에 필드 추가 + Repository 의 [from] 매핑 갱신.
  * cache value 형식 변경 시 기존 Redis entry 호환성 — `GenericJacksonJsonRedisSerializer` 의

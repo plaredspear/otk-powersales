@@ -19,7 +19,7 @@ import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
-import com.otoki.powersales.domain.activity.schedule.service.AdminScheduleService
+import com.otoki.powersales.domain.activity.schedule.service.AdminDisplayWorkScheduleService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -35,7 +35,7 @@ import java.time.LocalDate
 @RestController
 @RequestMapping("/api/v1/admin/display-work-schedule")
 class AdminDisplayWorkScheduleController(
-    private val adminScheduleService: AdminScheduleService,
+    private val adminDisplayWorkScheduleService: AdminDisplayWorkScheduleService,
 ) {
 
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.READ)
@@ -56,7 +56,7 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) sortDir: String?,
     ): ResponseEntity<ApiResponse<Page<ScheduleListItemDto>>> {
         val sort = resolveSort(sortBy, sortDir)
-        val result = adminScheduleService.listSchedules(
+        val result = adminDisplayWorkScheduleService.listSchedules(
             scope, page, size, employeeCode, accountName, confirmed,
             typeOfWork3, startDateFrom, startDateTo, preset, sort
         )
@@ -80,7 +80,7 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) sortDir: String?,
     ): ResponseEntity<ByteArray> {
         val sort = resolveSort(sortBy, sortDir)
-        val result = adminScheduleService.exportAllSchedules(
+        val result = adminDisplayWorkScheduleService.exportAllSchedules(
             scope, employeeCode, accountName, confirmed,
             typeOfWork3, startDateFrom, startDateTo, preset, sort
         )
@@ -98,7 +98,7 @@ class AdminDisplayWorkScheduleController(
     fun batchConfirm(
         @Valid @RequestBody request: ScheduleBatchConfirmRequest
     ): ResponseEntity<ApiResponse<ScheduleBatchConfirmResultDto>> {
-        val result = adminScheduleService.batchConfirm(request.ids)
+        val result = adminDisplayWorkScheduleService.batchConfirm(request.ids)
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정되었습니다"))
     }
 
@@ -107,7 +107,7 @@ class AdminDisplayWorkScheduleController(
     fun batchUnconfirm(
         @Valid @RequestBody request: ScheduleBatchConfirmRequest
     ): ResponseEntity<ApiResponse<ScheduleBatchConfirmResultDto>> {
-        val result = adminScheduleService.batchUnconfirm(request.ids)
+        val result = adminDisplayWorkScheduleService.batchUnconfirm(request.ids)
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정 해제되었습니다"))
     }
 
@@ -118,7 +118,7 @@ class AdminDisplayWorkScheduleController(
         @CurrentDataScope scope: DataScope,
         @PathVariable id: Long,
     ): ResponseEntity<ApiResponse<ScheduleDetailDto>> {
-        val result = adminScheduleService.getScheduleDetail(scope, id)
+        val result = adminDisplayWorkScheduleService.getScheduleDetail(scope, id)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -130,7 +130,7 @@ class AdminDisplayWorkScheduleController(
         @PathVariable id: Long,
         @Valid @RequestBody request: AdminScheduleUpdateRequest
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
-        val result = adminScheduleService.updateSchedule(scope, principal.requireEmployeeId(), id, request)
+        val result = adminDisplayWorkScheduleService.updateSchedule(scope, principal.requireEmployeeId(), id, request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 수정되었습니다"))
     }
 
@@ -141,7 +141,7 @@ class AdminDisplayWorkScheduleController(
         @CurrentDataScope scope: DataScope,
         @Valid @RequestBody request: ScheduleExportRequest
     ): ResponseEntity<ByteArray> {
-        val result = adminScheduleService.exportSchedules(scope, request.ids)
+        val result = adminDisplayWorkScheduleService.exportSchedules(scope, request.ids)
         return ExcelResponseUtils.build(result.bytes, result.filename)
     }
 
@@ -152,7 +152,7 @@ class AdminDisplayWorkScheduleController(
         @CurrentDataScope scope: DataScope,
         @Valid @RequestBody request: ScheduleBatchDeleteRequest
     ): ResponseEntity<ApiResponse<ScheduleBatchDeleteResultDto>> {
-        val result = adminScheduleService.batchDelete(scope, principal.requireEmployeeId(), request.ids)
+        val result = adminDisplayWorkScheduleService.batchDelete(scope, principal.requireEmployeeId(), request.ids)
         val message = when {
             result.failedCount == 0 -> "${result.deletedCount}건이 삭제되었습니다"
             result.deletedCount == 0 -> "모든 항목 삭제 실패 (${result.failedCount}건)"
@@ -168,7 +168,7 @@ class AdminDisplayWorkScheduleController(
         @CurrentDataScope scope: DataScope,
         @PathVariable id: Long
     ): ResponseEntity<ApiResponse<Any?>> {
-        adminScheduleService.deleteSchedule(scope, principal.requireEmployeeId(), id)
+        adminDisplayWorkScheduleService.deleteSchedule(scope, principal.requireEmployeeId(), id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "스케줄이 삭제되었습니다"))
     }
 
@@ -178,7 +178,7 @@ class AdminDisplayWorkScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
     ): ResponseEntity<ByteArray> {
-        val result = adminScheduleService.generateTemplate(scope, principal.requireEmployeeId())
+        val result = adminDisplayWorkScheduleService.generateTemplate(scope, principal.requireEmployeeId())
         return ExcelResponseUtils.build(result.bytes, result.filename)
     }
 
@@ -189,7 +189,7 @@ class AdminDisplayWorkScheduleController(
         @CurrentDataScope scope: DataScope,
         @Valid @RequestBody request: AdminScheduleCreateRequest
     ): ResponseEntity<ApiResponse<ScheduleCreateResultDto>> {
-        val result = adminScheduleService.createSchedule(scope, principal.requireEmployeeId(), request)
+        val result = adminDisplayWorkScheduleService.createSchedule(scope, principal.requireEmployeeId(), request)
         return ResponseEntity.ok(ApiResponse.success(result, "스케줄이 등록되었습니다"))
     }
 
@@ -202,7 +202,7 @@ class AdminDisplayWorkScheduleController(
         if (file == null) {
             throw ScheduleFileRequiredException()
         }
-        val result = adminScheduleService.uploadAndValidate(scope, file)
+        val result = adminDisplayWorkScheduleService.uploadAndValidate(scope, file)
         return ResponseEntity.ok(ApiResponse.success(result, "검증 완료"))
     }
 
@@ -211,7 +211,7 @@ class AdminDisplayWorkScheduleController(
     fun confirmUpload(
         @Valid @RequestBody request: ScheduleConfirmRequest
     ): ResponseEntity<ApiResponse<ScheduleConfirmResultDto>> {
-        val result = adminScheduleService.confirmUpload(request.uploadId)
+        val result = adminDisplayWorkScheduleService.confirmUpload(request.uploadId)
         return ResponseEntity.ok(ApiResponse.success(result, "등록이 완료되었습니다"))
     }
 }

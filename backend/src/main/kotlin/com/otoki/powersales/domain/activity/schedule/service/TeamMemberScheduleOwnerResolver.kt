@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
  * 레거시 SF `TeamMemberScheduleTriggerHandler.insertOwner()` 동등:
  *   "모바일에서 조원일정 생성 시, 소유자를 조장으로 맵핑" — teamleadersfid → Employee → User → OwnerId.
  * 신규는 레코드별 teamleadersfid 대신 대상 직원의 costCenterCode 로 활성 LEADER 사원을 찾아
- * 그 사원의 employeeCode == User.employeeCode 인 User 를 owner 로 지정한다 (AdminScheduleService 의
+ * 그 사원의 employeeCode == User.employeeCode 인 User 를 owner 로 지정한다 (AdminDisplayWorkScheduleService 의
  * DisplayWorkSchedule owner chain 과 동일 패턴).
  *
  * owner 미해소(조장 부재 / costCenterCode 없음) 시 null 반환 — 호출처는 owner 미지정으로 두고,

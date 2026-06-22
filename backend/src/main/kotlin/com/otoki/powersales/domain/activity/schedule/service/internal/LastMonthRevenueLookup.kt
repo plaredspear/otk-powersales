@@ -21,7 +21,7 @@ import java.time.LocalDate
  * SF batch / Trigger 의 fallback 정합: row 부재 시 `0` ([UpdateLastMonthRevenueBatch.cls:56-60],
  * [DisplayWorkScheduleMasterTriggerHandler.setLastMonthRevenue:288-292]).
  *
- * 단건 변형 [forAccount] 는 SF 정합과 별개로 신규 시스템의 호출 흐름 (`AdminScheduleService` 단건
+ * 단건 변형 [forAccount] 는 SF 정합과 별개로 신규 시스템의 호출 흐름 (`AdminDisplayWorkScheduleService` 단건
  * createSchedule / updateSchedule) 편의를 위해 `null` 반환 — 호출 측이 `?:` 로 fallback 선택 가능.
  *
  * ## 호출 흐름
