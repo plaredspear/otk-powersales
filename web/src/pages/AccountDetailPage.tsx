@@ -1,9 +1,27 @@
-import { Alert, Button, Card, Descriptions, Empty, Skeleton, Space, Spin, Tabs, Tag } from 'antd';
+import { useState } from 'react';
+import {
+  Alert,
+  Button,
+  Card,
+  Descriptions,
+  Empty,
+  Form,
+  Input,
+  Skeleton,
+  Space,
+  Spin,
+  Tabs,
+  Tag,
+  notification,
+} from 'antd';
 import type { TabsProps } from 'antd';
+import { isAxiosError } from 'axios';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAccountDetail } from '@/hooks/account/useAccountDetail';
+import { useUpdateAccountMutation } from '@/hooks/account/useUpdateAccountMutation';
 import { usePermission } from '@/hooks/usePermission';
+import { isApiErrorBody } from '@/api/types';
 import { fetchDetail } from '@/api/monthlySalesDashboard';
 import MonthlySalesDetailBody from './MonthlySalesDetailBody';
 import type { AccountDetail } from '@/api/account';
@@ -49,6 +67,7 @@ export default function AccountDetailPage() {
   const location = useLocation();
   const { hasEntityPermission } = usePermission();
   const canViewSales = hasEntityPermission('monthly_sales_history', 'READ');
+  const canEditAccount = hasEntityPermission('account', 'EDIT');
 
   // 목록에서 넘어온 경우 직전 목록의 query string(page/필터)을 붙여 복귀 — "목록으로" 시 조건 초기화 방지.
   const listSearch = (location.state as { listSearch?: string } | null)?.listSearch ?? '';
@@ -86,7 +105,7 @@ export default function AccountDetailPage() {
     {
       key: 'info',
       label: '기본 정보',
-      children: <AccountInfoTab account={data} />,
+      children: <AccountInfoTab account={data} canEdit={canEditAccount} />,
     },
     ...(canViewSales
       ? [
@@ -123,7 +142,7 @@ export default function AccountDetailPage() {
   );
 }
 
-function AccountInfoTab({ account }: { account: AccountDetail }) {
+function AccountInfoTab({ account, canEdit }: { account: AccountDetail; canEdit: boolean }) {
   return (
     <div>
       <Card size="small" title="기본 정보" style={{ marginBottom: 16 }}>
@@ -151,25 +170,7 @@ function AccountInfoTab({ account }: { account: AccountDetail }) {
         </Descriptions>
       </Card>
 
-      <Card size="small" title="연락처 / 주소" style={{ marginBottom: 16 }}>
-        <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="전화번호">{dash(account.phone)}</Descriptions.Item>
-          <Descriptions.Item label="휴대전화">{dash(account.mobilePhone)}</Descriptions.Item>
-          <Descriptions.Item label="팩스">{dash(account.fax)}</Descriptions.Item>
-          <Descriptions.Item label="이메일">{dash(account.email)}</Descriptions.Item>
-          <Descriptions.Item label="웹사이트">{dash(account.website)}</Descriptions.Item>
-          <Descriptions.Item label="우편번호">{dash(account.zipCode)}</Descriptions.Item>
-          <Descriptions.Item label="주소" span={2}>
-            {dash(account.address1)}
-            {account.address2 ? ` ${account.address2}` : ''}
-          </Descriptions.Item>
-          <Descriptions.Item label="좌표">
-            {account.latitude && account.longitude
-              ? `${account.latitude}, ${account.longitude}`
-              : '-'}
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
+      <AccountAddressCard account={account} canEdit={canEdit} />
 
       <Card size="small" title="거래 / 여신 정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2} bordered size="small">
@@ -201,6 +202,202 @@ function AccountInfoTab({ account }: { account: AccountDetail }) {
       )}
     </div>
   );
+}
+
+interface AddressFormValues {
+  zipCode?: string;
+  address1?: string;
+  address2?: string;
+}
+
+/**
+ * "연락처 / 주소" 카드 — 거래처 상세에서 **주소(우편번호/주소1/주소2)만** 인라인 수정.
+ *
+ * 거래처 수정은 상세 페이지로 일원화되었고, 상세 페이지에서 변경 가능한 항목은 주소로 한정한다
+ * (거래처명·담당사원·연락처 등 다른 정보는 SAP/영업 시스템이 권위 출처라 본 화면에서 변경 불가).
+ * 전화/이메일 등 연락처 항목은 읽기 전용으로 함께 표시한다.
+ *
+ * 저장은 `PUT /api/v1/admin/accounts/{id}` (account EDIT 권한) — 주소 3개 필드만 body 에 포함.
+ * 주소 변경 시 좌표(latitude/longitude)는 Backend 가 감지해 재산출하므로 클라이언트는 전송하지 않는다.
+ */
+function AccountAddressCard({ account, canEdit }: { account: AccountDetail; canEdit: boolean }) {
+  const [form] = Form.useForm<AddressFormValues>();
+  const [editing, setEditing] = useState(false);
+  const mutation = useUpdateAccountMutation();
+
+  const startEdit = () => {
+    form.setFieldsValue({
+      zipCode: account.zipCode ?? '',
+      address1: account.address1 ?? '',
+      address2: account.address2 ?? '',
+    });
+    mutation.reset();
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    form.resetFields();
+    setEditing(false);
+  };
+
+  const handleSave = async () => {
+    let values: AddressFormValues;
+    try {
+      values = await form.validateFields();
+    } catch {
+      return;
+    }
+
+    // 변경된 주소 필드만 PUT body 에 포함 (미변경 = 미전송 = 보존).
+    const payload: AddressFormValues = {};
+    if ((values.zipCode ?? '') !== (account.zipCode ?? '')) payload.zipCode = values.zipCode ?? '';
+    if ((values.address1 ?? '') !== (account.address1 ?? '')) payload.address1 = values.address1 ?? '';
+    if ((values.address2 ?? '') !== (account.address2 ?? '')) payload.address2 = values.address2 ?? '';
+
+    if (Object.keys(payload).length === 0) {
+      notification.info({ message: '변경된 내용이 없습니다.' });
+      setEditing(false);
+      return;
+    }
+
+    try {
+      await mutation.mutateAsync({ id: account.id, payload });
+      notification.success({ message: '주소가 수정되었습니다.' });
+      setEditing(false);
+    } catch (err) {
+      handleAddressError(err);
+    }
+  };
+
+  const isSaving = mutation.isPending;
+
+  return (
+    <Card
+      size="small"
+      title="연락처 / 주소"
+      style={{ marginBottom: 16 }}
+      extra={
+        canEdit &&
+        (editing ? (
+          <Space>
+            <Button size="small" onClick={cancelEdit} disabled={isSaving}>
+              취소
+            </Button>
+            <Button size="small" type="primary" loading={isSaving} onClick={handleSave}>
+              저장
+            </Button>
+          </Space>
+        ) : (
+          <Button size="small" onClick={startEdit}>
+            주소 수정
+          </Button>
+        ))
+      }
+    >
+      {/* 카드 레벨 단일 Form — component={false} 라 <form> DOM 을 렌더하지 않아 Descriptions 의 table 구조를 깨지 않는다. */}
+      <Form form={form} component={false}>
+        <Descriptions column={2} bordered size="small">
+          <Descriptions.Item label="전화번호">{dash(account.phone)}</Descriptions.Item>
+          <Descriptions.Item label="휴대전화">{dash(account.mobilePhone)}</Descriptions.Item>
+          <Descriptions.Item label="팩스">{dash(account.fax)}</Descriptions.Item>
+          <Descriptions.Item label="이메일">{dash(account.email)}</Descriptions.Item>
+          <Descriptions.Item label="웹사이트">{dash(account.website)}</Descriptions.Item>
+          {editing ? (
+            <>
+              <Descriptions.Item label="우편번호">
+                <Form.Item
+                  name="zipCode"
+                  noStyle
+                  rules={[{ max: 100, message: '우편번호는 100자 이하여야 합니다.' }]}
+                >
+                  <Input maxLength={100} disabled={isSaving} placeholder="우편번호" />
+                </Form.Item>
+              </Descriptions.Item>
+              <Descriptions.Item label="주소" span={2}>
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Form.Item
+                    name="address1"
+                    noStyle
+                    rules={[{ max: 120, message: '주소1은 120자 이하여야 합니다.' }]}
+                  >
+                    <Input maxLength={120} disabled={isSaving} placeholder="주소1 (기본 주소)" />
+                  </Form.Item>
+                  <Form.Item
+                    name="address2"
+                    noStyle
+                    rules={[{ max: 120, message: '주소2는 120자 이하여야 합니다.' }]}
+                  >
+                    <Input maxLength={120} disabled={isSaving} placeholder="주소2 (상세 주소)" />
+                  </Form.Item>
+                </Space>
+              </Descriptions.Item>
+            </>
+          ) : (
+            <>
+              <Descriptions.Item label="우편번호">{dash(account.zipCode)}</Descriptions.Item>
+              <Descriptions.Item label="주소" span={2}>
+                {dash(account.address1)}
+                {account.address2 ? ` ${account.address2}` : ''}
+              </Descriptions.Item>
+            </>
+          )}
+          <Descriptions.Item label="좌표">
+            {account.latitude && account.longitude
+              ? `${account.latitude}, ${account.longitude}`
+              : '-'}
+          </Descriptions.Item>
+        </Descriptions>
+      </Form>
+      {editing && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginTop: 12 }}
+          message="※ 주소 변경을 저장하면 좌표(위경도)가 변경된 주소 기준으로 자동 재산출됩니다."
+        />
+      )}
+    </Card>
+  );
+}
+
+/** 주소 수정 PUT 에러 표시 — 거래처 상세 주소 수정 한정 (name/employee 검증 분기는 발생하지 않음). */
+function handleAddressError(err: unknown): void {
+  if (isAxiosError(err)) {
+    const status = err.response?.status;
+    const body = err.response?.data;
+    if (isApiErrorBody(body)) {
+      const code = body.error!.code;
+      const message = body.error!.message;
+      if (code === 'ACCOUNT_NOT_FOUND') {
+        notification.error({
+          message: '주소 수정 실패',
+          description: '거래처를 찾을 수 없습니다. 페이지를 새로고침해 주세요.',
+        });
+        return;
+      }
+      notification.error({ message: '주소 수정 실패', description: message });
+      return;
+    }
+    if (status === 401) {
+      // axios interceptor 가 로그인 리다이렉트 처리
+      return;
+    }
+    if (status === 403) {
+      notification.error({ message: '주소 수정 실패', description: '수정 권한이 없습니다.' });
+      return;
+    }
+    if (status && status >= 500) {
+      notification.error({
+        message: '주소 수정 실패',
+        description: '수정 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+      });
+      return;
+    }
+  }
+  notification.error({
+    message: '주소 수정 실패',
+    description: err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.',
+  });
 }
 
 /**
