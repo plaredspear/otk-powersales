@@ -24,9 +24,10 @@ class AdminMonthlyIntegrationController(
     fun getMonthlyIntegration(
         @RequestParam year: Int,
         @RequestParam month: Int,
-        @RequestParam costCenterCodes: List<String>
+        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) keyword: String?
     ): ResponseEntity<ApiResponse<MonthlyIntegrationScheduleResponse>> {
-        val response = adminMonthlyIntegrationService.getMonthlyIntegration(year, month, costCenterCodes)
+        val response = adminMonthlyIntegrationService.getMonthlyIntegration(year, month, costCenterCodes, keyword)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -35,9 +36,10 @@ class AdminMonthlyIntegrationController(
     fun exportMonthlyIntegration(
         @RequestParam year: Int,
         @RequestParam month: Int,
-        @RequestParam costCenterCodes: List<String>
+        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) keyword: String?
     ): ResponseEntity<ByteArray> {
-        val result = adminMonthlyIntegrationService.exportMonthlyIntegration(year, month, costCenterCodes)
+        val result = adminMonthlyIntegrationService.exportMonthlyIntegration(year, month, costCenterCodes, keyword)
         return ExcelResponseUtils.build(result)
     }
 

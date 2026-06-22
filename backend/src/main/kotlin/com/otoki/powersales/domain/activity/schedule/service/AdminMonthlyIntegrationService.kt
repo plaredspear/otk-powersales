@@ -59,13 +59,15 @@ class AdminMonthlyIntegrationService(
     fun getMonthlyIntegration(
         year: Int,
         month: Int,
-        costCenterCodes: List<String>
+        costCenterCodes: List<String>,
+        keyword: String? = null,
     ): MonthlyIntegrationScheduleResponse {
         validateParams(year, month, costCenterCodes)
         val sf = teamMemberScheduleSearchService.search(
             year = year.toString(),
             month = month.toString(),
             orgValues = costCenterCodes,
+            keyword = keyword,
         )
         val items = sf.result.map { it.toMonthlyIntegrationItem() }
         return MonthlyIntegrationScheduleResponse(
@@ -91,8 +93,8 @@ class AdminMonthlyIntegrationService(
         return CategoryScheduleResponse(year = year, month = month, items = items)
     }
 
-    fun exportMonthlyIntegration(year: Int, month: Int, costCenterCodes: List<String>): ExcelResult {
-        val response = getMonthlyIntegration(year, month, costCenterCodes)
+    fun exportMonthlyIntegration(year: Int, month: Int, costCenterCodes: List<String>, keyword: String? = null): ExcelResult {
+        val response = getMonthlyIntegration(year, month, costCenterCodes, keyword)
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("통합일정")
 

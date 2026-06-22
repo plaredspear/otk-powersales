@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Card, Empty, Grid, message, Space, Spin, Typography } from 'antd';
+import { Alert, Card, Empty, Grid, Input, message, Space, Spin, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
@@ -104,10 +104,12 @@ export default function MonthlyIntegrationSchedulePage() {
   const [year, setYear] = useState(now.year());
   const [month, setMonth] = useState(now.month() + 1);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const [keyword, setKeyword] = useState('');
   const [queryParams, setQueryParams] = useState<{
     year: number;
     month: number;
     codes: string[];
+    keyword: string;
   } | null>(null);
 
   const screens = useBreakpoint();
@@ -118,6 +120,7 @@ export default function MonthlyIntegrationSchedulePage() {
     queryParams?.month ?? month,
     queryParams?.codes ?? [],
     queryParams != null,
+    queryParams?.keyword,
   );
 
   const exportMutation = useMonthlyIntegrationExport();
@@ -131,8 +134,8 @@ export default function MonthlyIntegrationSchedulePage() {
     if (autoSearchedRef.current) return;
     if (selectedCodes.length === 0) return;
     autoSearchedRef.current = true;
-    setQueryParams({ year, month, codes: selectedCodes });
-  }, [selectedCodes, year, month]);
+    setQueryParams({ year, month, codes: selectedCodes, keyword });
+  }, [selectedCodes, year, month, keyword]);
 
   useEffect(() => {
     if (isLoading || isError) return;
@@ -149,7 +152,7 @@ export default function MonthlyIntegrationSchedulePage() {
       message.warning('년도와 월을 입력해주세요');
       return;
     }
-    setQueryParams({ year, month, codes: selectedCodes });
+    setQueryParams({ year, month, codes: selectedCodes, keyword });
   };
 
   const handleExport = () => {
@@ -158,6 +161,7 @@ export default function MonthlyIntegrationSchedulePage() {
       year: queryParams.year,
       month: queryParams.month,
       costCenterCodes: queryParams.codes,
+      keyword: queryParams.keyword,
     });
   };
 
@@ -176,6 +180,19 @@ export default function MonthlyIntegrationSchedulePage() {
         exportLoading={exportMutation.isPending}
         searchLoading={isLoading}
         hideExport={isMobile}
+        extraFilters={
+          <Space size={4}>
+            <Text>사번/이름:</Text>
+            <Input
+              allowClear
+              placeholder="사번 또는 이름"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              onPressEnter={handleSearch}
+              style={{ width: 160 }}
+            />
+          </Space>
+        }
         extraActions={
           queryParams != null && !isMobile ? (
             <RefreshButton onRefresh={refetch} refreshing={isFetching} />
