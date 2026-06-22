@@ -34,7 +34,7 @@ import java.time.format.DateTimeFormatter
  *
  * **흐름** (단일 DB 트랜잭션):
  *  1. 멱등 검사 — `clientRequestId` 가 전달되면 기존 row 조회 후 200 OK 멱등 반환 (SAP 호출 없음)
- *  2. 입력 검증 — 형식 + 본인 담당 거래처 / 미래 일자
+ *  2. 입력 검증 — 형식 / 미래 일자 (거래처 담당 재검증 없음 — 레거시 정합, 일정 기반 셀렉터만 게이트)
  *  3. SAP `InventorySearch` 1회 호출 — 단위 환산/공급제한/제품마스터 메타 일괄 조회 (응답 라인 누락 시 거부)
  *  4. SAP `LoanInquiry` 호출 — 여신 한도 서버 재검증 (`creditBalance >= totalAmount`)
  *  5. `order_request` 헤더 INSERT — 백엔드 자체 채번 `ORD-YYYYMMDD-{seq}`, 초기 status `SENT`
@@ -75,9 +75,11 @@ class OrderRequestCreateService(
         val account = accountRepository.findById(request.accountId)
             .orElseThrow { OrderInvalidRequestException("거래처를 찾을 수 없습니다") }
 
-        if (account.employeeCode.isNullOrBlank() || account.employeeCode != employee.employeeCode) {
-            throw OrderAccountForbiddenException()
-        }
+        // 거래처 담당(owner) 재검증은 하지 않는다 (레거시 정합).
+        // 레거시 주문 저장(reqOrder)은 화면이 보낸 거래처 코드를 무검증 신뢰했고, 거래처 후보는
+        // 전적으로 일정(방문/진열) 기반 셀렉터(`/accounts/my` scope=order)로만 결정된다.
+        // account.employeeCode(거래처 마스터 담당사원) 기준 게이트는 그 일정 기반 조회 집합과
+        // 어긋나, 일정만 잡힌(담당자가 다른) 거래처 주문을 잘못 차단했다. → 제거.
 
         // 3. SAP InventorySearch
         val productCodes = request.lines.map { it.productCode }.distinct()

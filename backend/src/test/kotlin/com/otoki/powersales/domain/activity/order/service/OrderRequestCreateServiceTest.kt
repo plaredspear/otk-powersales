@@ -9,7 +9,6 @@ import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreate
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
-import com.otoki.powersales.domain.activity.order.exception.OrderAccountForbiddenException
 import com.otoki.powersales.domain.activity.order.exception.OrderDeadlinePassedException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidRequestException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidUnitException
@@ -155,6 +154,30 @@ class OrderRequestCreateServiceTest {
         }
 
         @Test
+        @DisplayName("담당사원이 다른(일정만 잡힌) 거래처도 주문 통과 — 거래처 담당 재검증 제거(레거시 정합)")
+        fun nonOwnedAccountAllowed() {
+            // 거래처 마스터 담당사원(employeeCode)이 로그인 사원과 달라도(일정 기반 셀렉터에 노출된 거래처)
+            // 주문 등록이 거부되지 않아야 한다. 레거시는 저장 시 거래처 담당 재검증이 없었다.
+            every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
+            every { accountRepository.findById(accountId) } returns Optional.of(account(employeeCode = "OTHER"))
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000)))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
+            every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
+            every { orderRequestRegisterSender.enqueue(any(), any()) } returns
+                SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 10, unit = "BOX", quantityPieces = 300, quantityBoxes = 10))
+            )
+
+            val response = service.create(userId, request)
+
+            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT)
+            verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
+        }
+
+        @Test
         @DisplayName("멱등 — 동일 clientRequestId 재요청 시 기존 row 응답, 신규 INSERT 없음")
         fun idempotent() {
             val existing = mockHeader(orderRequestNumber = "ORD-20260505-1", status = OrderRequestStatus.APPROVED)
@@ -179,16 +202,6 @@ class OrderRequestCreateServiceTest {
     @Nested
     @DisplayName("검증 실패")
     inner class ErrorCases {
-
-        @Test
-        @DisplayName("본인 담당 거래처 아님 → ORD_ACCOUNT_FORBIDDEN")
-        fun accountForbidden() {
-            every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
-            every { accountRepository.findById(accountId) } returns Optional.of(account(employeeCode = "OTHER"))
-
-            assertThatThrownBy { service.create(userId, baseRequest(lines = listOf(line()))) }
-                .isInstanceOf(OrderAccountForbiddenException::class.java)
-        }
 
         @Test
         @DisplayName("InventorySearch 응답 라인 누락 → ORD_INVALID_REQUEST")
