@@ -18678,6 +18678,578 @@
         "tags" : [ "admin-dashboard-controller" ]
       }
     },
+    "/api/v1/admin/display-schedule" : {
+      "post" : {
+        "operationId" : "createSchedule_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminScheduleCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleCreateResultDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/batch-delete" : {
+      "post" : {
+        "operationId" : "batchDelete_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleBatchDeleteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchDeleteResultDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/confirm" : {
+      "patch" : {
+        "operationId" : "batchConfirm",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleBatchConfirmRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchConfirmResultDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/export" : {
+      "post" : {
+        "operationId" : "exportSchedules",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleExportRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/export-all" : {
+      "get" : {
+        "operationId" : "exportAllSchedules",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "confirmed",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "typeOfWork3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "preset",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sortBy",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sortDir",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/list" : {
+      "get" : {
+        "operationId" : "listSchedules",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "confirmed",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "typeOfWork3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDateTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "preset",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sortBy",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sortDir",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePageScheduleListItemDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/template" : {
+      "get" : {
+        "operationId" : "downloadTemplate",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/unconfirm" : {
+      "patch" : {
+        "operationId" : "batchUnconfirm",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleBatchConfirmRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchConfirmResultDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/upload" : {
+      "post" : {
+        "operationId" : "uploadExcel",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "properties" : {
+                  "file" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleUploadResultDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/upload/confirm" : {
+      "post" : {
+        "operationId" : "confirmUpload",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduleConfirmRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleConfirmResultDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-schedule/{id}" : {
+      "delete" : {
+        "operationId" : "deleteSchedule_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      },
+      "get" : {
+        "operationId" : "getScheduleDetail",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleDetailDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateSchedule_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminScheduleUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleCreateResultDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-schedule-controller" ]
+      }
+    },
     "/api/v1/admin/education/categories" : {
       "get" : {
         "operationId" : "getCategories_1",
@@ -22679,7 +23251,7 @@
     },
     "/api/v1/admin/product-expiration/batch-delete" : {
       "post" : {
-        "operationId" : "batchDelete_1",
+        "operationId" : "batchDelete",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -25537,578 +26109,6 @@
           }
         },
         "tags" : [ "saved-search-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule" : {
-      "post" : {
-        "operationId" : "createSchedule_1",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AdminScheduleCreateRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleCreateResultDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/batch-delete" : {
-      "post" : {
-        "operationId" : "batchDelete",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ScheduleBatchDeleteRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchDeleteResultDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/confirm" : {
-      "patch" : {
-        "operationId" : "batchConfirm",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ScheduleBatchConfirmRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchConfirmResultDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/export" : {
-      "post" : {
-        "operationId" : "exportSchedules",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ScheduleExportRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "format" : "byte",
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/export-all" : {
-      "get" : {
-        "operationId" : "exportAllSchedules",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
-          "name" : "employeeCode",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "accountName",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "confirmed",
-          "required" : false,
-          "schema" : {
-            "type" : "boolean"
-          }
-        }, {
-          "in" : "query",
-          "name" : "typeOfWork3",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "startDateFrom",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "startDateTo",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "preset",
-          "required" : false,
-          "schema" : {
-            "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ],
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "sortBy",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "sortDir",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "format" : "byte",
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/list" : {
-      "get" : {
-        "operationId" : "listSchedules",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
-          "name" : "page",
-          "required" : false,
-          "schema" : {
-            "default" : 0,
-            "format" : "int32",
-            "type" : "integer"
-          }
-        }, {
-          "in" : "query",
-          "name" : "size",
-          "required" : false,
-          "schema" : {
-            "default" : 20,
-            "format" : "int32",
-            "type" : "integer"
-          }
-        }, {
-          "in" : "query",
-          "name" : "employeeCode",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "accountName",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "confirmed",
-          "required" : false,
-          "schema" : {
-            "type" : "boolean"
-          }
-        }, {
-          "in" : "query",
-          "name" : "typeOfWork3",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "startDateFrom",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "startDateTo",
-          "required" : false,
-          "schema" : {
-            "format" : "date",
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "preset",
-          "required" : false,
-          "schema" : {
-            "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ],
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "sortBy",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "sortDir",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePageScheduleListItemDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/template" : {
-      "get" : {
-        "operationId" : "downloadTemplate",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "format" : "byte",
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/unconfirm" : {
-      "patch" : {
-        "operationId" : "batchUnconfirm",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ScheduleBatchConfirmRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchConfirmResultDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/upload" : {
-      "post" : {
-        "operationId" : "uploadExcel",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "properties" : {
-                  "file" : {
-                    "format" : "binary",
-                    "type" : "string"
-                  }
-                },
-                "type" : "object"
-              }
-            }
-          }
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleUploadResultDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/upload/confirm" : {
-      "post" : {
-        "operationId" : "confirmUpload",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ScheduleConfirmRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleConfirmResultDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      }
-    },
-    "/api/v1/admin/schedule/{id}" : {
-      "delete" : {
-        "operationId" : "deleteSchedule_1",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseObject"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      },
-      "get" : {
-        "operationId" : "getScheduleDetail",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleDetailDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
-      },
-      "put" : {
-        "operationId" : "updateSchedule_1",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AdminScheduleUpdateRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleCreateResultDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-schedule-controller" ]
       }
     },
     "/api/v1/admin/scheduled-jobs/catalog" : {

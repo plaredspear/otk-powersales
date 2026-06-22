@@ -73,9 +73,9 @@ function ValidLight({ valid }: { valid: string | null | undefined }) {
  *
  * SF 「진열사원 스케줄 마스터」 편집 레이아웃 정합 — 좌측 편집 필드 +
  * 우측 readonly 계산 정보 (SF 「저장 시 이 필드가 계산됨」). 편집 모드에서는
- * `GET /api/v1/admin/schedule/{id}` 로 상세를 조회해 readonly 정보를 채운다.
+ * `GET /api/v1/admin/display-schedule/{id}` 로 상세를 조회해 readonly 정보를 채운다.
  *
- * 검증/자동채움은 backend `POST /api/v1/admin/schedule` (신규) 또는 `PUT /{id}` (편집) 에서 일괄 처리.
+ * 검증/자동채움은 backend `POST /api/v1/admin/display-schedule` (신규) 또는 `PUT /{id}` (편집) 에서 일괄 처리.
  * 편집 모드에서 confirmed=true 인 레코드를 ADMIN_GRADE 외 사용자가 종료일 외 필드를 변경 시도하면
  * backend 가 `SCHEDULE_EDIT_BLOCKED_AFTER_CONFIRM` (409) 로 차단.
  */

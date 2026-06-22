@@ -96,7 +96,7 @@ class GlobalExceptionHandler {
 
     /**
      * Path variable / 요청 파라미터 타입 변환 실패 처리.
-     * 예: `GET /api/v1/admin/schedule/abc` 처럼 Long path variable 에 비숫자 값이 들어온 경우.
+     * 예: `GET /api/v1/admin/display-schedule/abc` 처럼 Long path variable 에 비숫자 값이 들어온 경우.
      * 핸들러가 없으면 500 이 되므로 400 으로 명시 처리한다.
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException::class)

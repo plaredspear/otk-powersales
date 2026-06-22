@@ -79,7 +79,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/schedule/list - 스케줄 목록 조회")
+    @DisplayName("GET /api/v1/admin/display-schedule/list - 스케줄 목록 조회")
     inner class ListSchedules {
 
         @Test
@@ -113,7 +113,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 any(), eq(0), eq(20), null, null, null, null, null, null, null, any()
             ) } returns page
 
-            mockMvc.perform(get("/api/v1/admin/schedule/list"))
+            mockMvc.perform(get("/api/v1/admin/display-schedule/list"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
@@ -129,7 +129,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             ) } returns emptyPage
 
             mockMvc.perform(
-                get("/api/v1/admin/schedule/list")
+                get("/api/v1/admin/display-schedule/list")
                     .param("employeeCode", "123")
                     .param("confirmed", "true")
             )
@@ -145,7 +145,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 any(), eq(0), eq(20), null, null, null, null, null, null, null, any()
             ) } returns emptyPage
 
-            mockMvc.perform(get("/api/v1/admin/schedule/list"))
+            mockMvc.perform(get("/api/v1/admin/display-schedule/list"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty())
                 .andExpect(jsonPath("$.data.totalElements").value(0))
@@ -161,7 +161,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             ) } returns emptyPage
 
             mockMvc.perform(
-                get("/api/v1/admin/schedule/list")
+                get("/api/v1/admin/display-schedule/list")
                     .param("preset", "END")
             )
                 .andExpect(status().isOk)
@@ -177,7 +177,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             ) } returns emptyPage
 
             mockMvc.perform(
-                get("/api/v1/admin/schedule/list")
+                get("/api/v1/admin/display-schedule/list")
                     .param("sortBy", "endDate")
                     .param("sortDir", "asc")
             )
@@ -186,7 +186,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/admin/schedule - 단건 신규 등록")
+    @DisplayName("POST /api/v1/admin/display-schedule - 단건 신규 등록")
     inner class CreateSchedule {
 
         @Test
@@ -219,7 +219,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.createSchedule(any(), eq(1L), any()) } returns result
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule")
+                post("/api/v1/admin/display-schedule")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -245,7 +245,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.createSchedule(any(), eq(1L), any()) } throws ScheduleValidationException("기간내에 동일한 거래처가 등록되어 있습니다")
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule")
+                post("/api/v1/admin/display-schedule")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -262,7 +262,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             """.trimIndent()
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule")
+                post("/api/v1/admin/display-schedule")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidBody)
             )
@@ -271,7 +271,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/schedule/{id} - 단건 상세 조회")
+    @DisplayName("GET /api/v1/admin/display-schedule/{id} - 단건 상세 조회")
     inner class GetScheduleDetail {
 
         @Test
@@ -303,7 +303,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             )
             every { adminScheduleService.getScheduleDetail(any(), eq(10L)) } returns detail
 
-            mockMvc.perform(get("/api/v1/admin/schedule/10"))
+            mockMvc.perform(get("/api/v1/admin/display-schedule/10"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.name").value("SM-00002829"))
                 .andExpect(jsonPath("$.data.accountName").value("이마트 강남점"))
@@ -314,7 +314,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("PUT /api/v1/admin/schedule/{id} - 단건 편집")
+    @DisplayName("PUT /api/v1/admin/display-schedule/{id} - 단건 편집")
     inner class UpdateSchedule {
 
         @Test
@@ -347,7 +347,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()) } returns result
 
             mockMvc.perform(
-                put("/api/v1/admin/schedule/10")
+                put("/api/v1/admin/display-schedule/10")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -372,7 +372,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()) } throws ScheduleEditBlockedAfterConfirmException()
 
             mockMvc.perform(
-                put("/api/v1/admin/schedule/10")
+                put("/api/v1/admin/display-schedule/10")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -398,7 +398,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             )
 
             mockMvc.perform(
-                put("/api/v1/admin/schedule/999")
+                put("/api/v1/admin/display-schedule/999")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -408,7 +408,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("PATCH /api/v1/admin/schedule/confirm - 일괄 확정")
+    @DisplayName("PATCH /api/v1/admin/display-schedule/confirm - 일괄 확정")
     inner class BatchConfirm {
 
         @Test
@@ -418,7 +418,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.batchConfirm(listOf(1L, 2L, 3L)) } returns result
 
             mockMvc.perform(
-                patch("/api/v1/admin/schedule/confirm")
+                patch("/api/v1/admin/display-schedule/confirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [1, 2, 3]}""")
             )
@@ -432,7 +432,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("실패 - 빈 ids 목록")
         fun confirm_emptyIds() {
             mockMvc.perform(
-                patch("/api/v1/admin/schedule/confirm")
+                patch("/api/v1/admin/display-schedule/confirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": []}""")
             )
@@ -445,7 +445,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.batchConfirm(listOf(1L, 999L)) } throws ScheduleNotFoundException()
 
             mockMvc.perform(
-                patch("/api/v1/admin/schedule/confirm")
+                patch("/api/v1/admin/display-schedule/confirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [1, 999]}""")
             )
@@ -455,7 +455,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("PATCH /api/v1/admin/schedule/unconfirm - 확정 해제")
+    @DisplayName("PATCH /api/v1/admin/display-schedule/unconfirm - 확정 해제")
     inner class BatchUnconfirm {
 
         @Test
@@ -465,7 +465,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.batchUnconfirm(listOf(1L, 2L)) } returns result
 
             mockMvc.perform(
-                patch("/api/v1/admin/schedule/unconfirm")
+                patch("/api/v1/admin/display-schedule/unconfirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [1, 2]}""")
             )
@@ -479,7 +479,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("실패 - 빈 ids 목록")
         fun unconfirm_emptyIds() {
             mockMvc.perform(
-                patch("/api/v1/admin/schedule/unconfirm")
+                patch("/api/v1/admin/display-schedule/unconfirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": []}""")
             )
@@ -492,7 +492,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.batchUnconfirm(listOf(1L, 999L)) } throws ScheduleNotFoundException()
 
             mockMvc.perform(
-                patch("/api/v1/admin/schedule/unconfirm")
+                patch("/api/v1/admin/display-schedule/unconfirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [1, 999]}""")
             )
@@ -502,7 +502,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/admin/schedule/export - 선택 다운로드 (UC-08)")
+    @DisplayName("POST /api/v1/admin/display-schedule/export - 선택 다운로드 (UC-08)")
     inner class ExportSchedules {
 
         @Test
@@ -515,7 +515,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.exportSchedules(any(), eq(listOf(1L, 2L, 3L))) } returns result
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule/export")
+                post("/api/v1/admin/display-schedule/export")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [1, 2, 3]}""")
             )
@@ -533,7 +533,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("실패 - 빈 ids 목록 → 400")
         fun export_emptyIds() {
             mockMvc.perform(
-                post("/api/v1/admin/schedule/export")
+                post("/api/v1/admin/display-schedule/export")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": []}""")
             )
@@ -542,7 +542,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/schedule/export-all - 검색결과 전체 다운로드 (UC-08)")
+    @DisplayName("GET /api/v1/admin/display-schedule/export-all - 검색결과 전체 다운로드 (UC-08)")
     inner class ExportAllSchedules {
 
         @Test
@@ -556,7 +556,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 adminScheduleService.exportAllSchedules(any(), any(), any(), any(), any(), any(), any(), any(), any())
             } returns result
 
-            mockMvc.perform(get("/api/v1/admin/schedule/export-all"))
+            mockMvc.perform(get("/api/v1/admin/display-schedule/export-all"))
                 .andExpect(status().isOk)
                 .andExpect(
                     header().string(
@@ -578,7 +578,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             } returns result
 
             mockMvc.perform(
-                get("/api/v1/admin/schedule/export-all")
+                get("/api/v1/admin/display-schedule/export-all")
                     .param("employeeCode", "2003")
                     .param("accountName", "이마트")
                     .param("confirmed", "true")
@@ -596,7 +596,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/admin/schedule/batch-delete - 일괄 삭제 (UC-07)")
+    @DisplayName("POST /api/v1/admin/display-schedule/batch-delete - 일괄 삭제 (UC-07)")
     inner class BatchDelete {
 
         @Test
@@ -616,7 +616,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.batchDelete(any(), eq(1L), eq(listOf(21L, 22L, 23L))) } returns result
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule/batch-delete")
+                post("/api/v1/admin/display-schedule/batch-delete")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [21, 22, 23]}""")
             )
@@ -636,7 +636,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.batchDelete(any(), eq(1L), any()) } returns result
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule/batch-delete")
+                post("/api/v1/admin/display-schedule/batch-delete")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [1, 2, 3]}""")
             )
@@ -651,7 +651,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             every { adminScheduleService.batchDelete(any(), eq(1L), any()) } throws ScheduleDeleteForbiddenException()
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule/batch-delete")
+                post("/api/v1/admin/display-schedule/batch-delete")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [1, 2]}""")
             )
@@ -663,7 +663,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("실패 - 빈 ids 목록 → 400")
         fun batchDelete_emptyIds() {
             mockMvc.perform(
-                post("/api/v1/admin/schedule/batch-delete")
+                post("/api/v1/admin/display-schedule/batch-delete")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": []}""")
             )
@@ -672,7 +672,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/schedule/template - 양식 다운로드")
+    @DisplayName("GET /api/v1/admin/display-schedule/template - 양식 다운로드")
     inner class DownloadTemplate {
 
         @Test
@@ -684,7 +684,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             )
             every { adminScheduleService.generateTemplate(any(), eq(1L)) } returns result
 
-            mockMvc.perform(get("/api/v1/admin/schedule/template"))
+            mockMvc.perform(get("/api/v1/admin/display-schedule/template"))
                 .andExpect(status().isOk)
                 .andExpect(
                     header().string(
@@ -700,7 +700,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         fun downloadTemplate_userNotFound() {
             every { adminScheduleService.generateTemplate(any(), eq(1L)) } throws EmployeeNotFoundException()
 
-            mockMvc.perform(get("/api/v1/admin/schedule/template"))
+            mockMvc.perform(get("/api/v1/admin/display-schedule/template"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("USER_NOT_FOUND"))
         }
@@ -710,14 +710,14 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         fun downloadTemplate_missingCostCenter() {
             every { adminScheduleService.generateTemplate(any(), eq(1L)) } throws MissingCostCenterException()
 
-            mockMvc.perform(get("/api/v1/admin/schedule/template"))
+            mockMvc.perform(get("/api/v1/admin/display-schedule/template"))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("MISSING_COST_CENTER"))
         }
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/schedule/branches - 제거된 엔드포인트")
+    @DisplayName("GET /api/v1/admin/display-schedule/branches - 제거된 엔드포인트")
     inner class GetBranches {
 
         @Test
@@ -725,13 +725,13 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         fun getBranches_removed() {
             // 과거 전용 /branches GET 엔드포인트는 제거됨. 현재는 GET /{id} 에 매칭되며
             // path "branches" 가 Long 으로 변환되지 않아 400 (MethodArgumentTypeMismatch) 반환.
-            mockMvc.perform(get("/api/v1/admin/schedule/branches"))
+            mockMvc.perform(get("/api/v1/admin/display-schedule/branches"))
                 .andExpect(status().isBadRequest)
         }
     }
 
     @Nested
-    @DisplayName("POST /api/v1/admin/schedule/upload - Excel 업로드")
+    @DisplayName("POST /api/v1/admin/display-schedule/upload - Excel 업로드")
     inner class UploadExcel {
 
         @Test
@@ -757,7 +757,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 ByteArray(100)
             )
 
-            mockMvc.perform(multipart("/api/v1/admin/schedule/upload").file(file))
+            mockMvc.perform(multipart("/api/v1/admin/display-schedule/upload").file(file))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.uploadId").value("test-uuid"))
                 .andExpect(jsonPath("$.data.errorRows").value(1))
@@ -767,7 +767,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 파일 미첨부")
         fun upload_noFile() {
-            mockMvc.perform(post("/api/v1/admin/schedule/upload"))
+            mockMvc.perform(post("/api/v1/admin/display-schedule/upload"))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("FILE_REQUIRED"))
         }
@@ -781,7 +781,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 "file", "test.csv", "text/csv", ByteArray(100)
             )
 
-            mockMvc.perform(multipart("/api/v1/admin/schedule/upload").file(file))
+            mockMvc.perform(multipart("/api/v1/admin/display-schedule/upload").file(file))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("INVALID_FILE_TYPE"))
         }
@@ -797,7 +797,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 ByteArray(100)
             )
 
-            mockMvc.perform(multipart("/api/v1/admin/schedule/upload").file(file))
+            mockMvc.perform(multipart("/api/v1/admin/display-schedule/upload").file(file))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("EMPTY_FILE"))
         }
@@ -813,14 +813,14 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
                 ByteArray(100)
             )
 
-            mockMvc.perform(multipart("/api/v1/admin/schedule/upload").file(file))
+            mockMvc.perform(multipart("/api/v1/admin/display-schedule/upload").file(file))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.error.code").value("ROW_LIMIT_EXCEEDED"))
         }
     }
 
     @Nested
-    @DisplayName("POST /api/v1/admin/schedule/upload/confirm - 업로드 확정")
+    @DisplayName("POST /api/v1/admin/display-schedule/upload/confirm - 업로드 확정")
     inner class ConfirmUpload {
 
         @Test
@@ -832,7 +832,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val request = ScheduleConfirmRequest(uploadId = "test-uuid")
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule/upload/confirm")
+                post("/api/v1/admin/display-schedule/upload/confirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -850,7 +850,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val request = ScheduleConfirmRequest(uploadId = "expired-id")
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule/upload/confirm")
+                post("/api/v1/admin/display-schedule/upload/confirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
@@ -866,7 +866,7 @@ class AdminScheduleControllerTest : AdminControllerTestSupport() {
             val request = ScheduleConfirmRequest(uploadId = "error-id")
 
             mockMvc.perform(
-                post("/api/v1/admin/schedule/upload/confirm")
+                post("/api/v1/admin/display-schedule/upload/confirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request))
             )
