@@ -116,7 +116,7 @@ export async function fetchAccountDetail(id: number): Promise<AccountDetail> {
  * 행사마스터 등록/수정 화면의 거래처 lookup search — promotion 권한 보유자 호출용.
  *
  * Account READ 권한 없이도 호출 가능 (SF lookup search 메커니즘 정합). lookupFilter +
- * sharing rule 평가는 백엔드가 동일하게 적용.
+ * sharing rule 평가는 백엔드가 동일하게 적용. 폐업 거래처는 조회에서 완전 제외 (행사 등록 대상 아님).
  */
 export async function fetchAccountsForPromotionLookup(
   params: Pick<FetchAccountsParams, 'keyword' | 'page' | 'size'>,
