@@ -4,10 +4,14 @@ import {
   fetchEmployeeMonthlyWorkHistory,
 } from '@/api/employee';
 
-export function useEmployeeWorkHistory(employeeId: number | undefined, limit = 10) {
+export function useEmployeeWorkHistory(
+  employeeId: number | undefined,
+  limit = 10,
+  isFemale = false,
+) {
   return useQuery({
-    queryKey: ['admin', 'employee', employeeId, 'work-history', limit],
-    queryFn: () => fetchEmployeeWorkHistory(employeeId as number, limit),
+    queryKey: ['admin', 'employee', employeeId, 'work-history', limit, isFemale ? 'female' : 'all'],
+    queryFn: () => fetchEmployeeWorkHistory(employeeId as number, limit, isFemale),
     enabled: typeof employeeId === 'number',
   });
 }

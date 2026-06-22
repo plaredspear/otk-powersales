@@ -9,8 +9,11 @@ import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
+import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -30,6 +33,9 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var adminEmployeeService: AdminEmployeeService
+
+    @MockkBean
+    private lateinit var employeeWorkHistoryService: EmployeeWorkHistoryService
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
@@ -179,5 +185,48 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                 any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), applyBranchScope = eq(true)
             )
         }
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/{id} - 여사원 단건 상세 조회 (employee READ 와 동일 응답)")
+    fun getFemaleEmployee_success() {
+        every { adminEmployeeService.getEmployee(7L) } returns mockk(relaxed = true) {
+            every { id } returns 7L
+        }
+
+        mockMvc.perform(get("/api/v1/admin/female-employees/7"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify(exactly = 1) { adminEmployeeService.getEmployee(7L) }
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/{id}/work-history - 근무이력 조회 (limit 기본 10)")
+    fun getFemaleEmployeeWorkHistory_success() {
+        every { employeeWorkHistoryService.getRecentHistory(7L, 10) } returns
+            EmployeeWorkHistoryResponse(items = emptyList())
+
+        mockMvc.perform(get("/api/v1/admin/female-employees/7/work-history"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.items").isArray)
+
+        verify(exactly = 1) { employeeWorkHistoryService.getRecentHistory(7L, 10) }
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/{id}/work-history/monthly - 월별 근무내역 조회")
+    fun getFemaleEmployeeMonthlyWorkHistory_success() {
+        every { employeeWorkHistoryService.getMonthlyHistory(7L, java.time.YearMonth.of(2026, 6)) } returns
+            EmployeeWorkHistoryResponse(items = emptyList())
+
+        mockMvc.perform(
+            get("/api/v1/admin/female-employees/7/work-history/monthly").param("yearMonth", "2026-06"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify(exactly = 1) { employeeWorkHistoryService.getMonthlyHistory(7L, java.time.YearMonth.of(2026, 6)) }
     }
 }

@@ -7,6 +7,8 @@ import ResizableTable from '@/components/common/ResizableTable';
 interface Props {
   employeeId: number;
   limit?: number;
+  /** 여사원 상세에서 진입한 경우 true — `female_employee` 가드의 근무이력 endpoint 호출. */
+  isFemale?: boolean;
 }
 
 const COLUMNS: ColumnsType<EmployeeWorkHistoryItem> = [
@@ -51,8 +53,8 @@ const COLUMNS: ColumnsType<EmployeeWorkHistoryItem> = [
   },
 ];
 
-export default function WorkHistorySection({ employeeId, limit = 10 }: Props) {
-  const { data, isLoading, isError, error } = useEmployeeWorkHistory(employeeId, limit);
+export default function WorkHistorySection({ employeeId, limit = 10, isFemale = false }: Props) {
+  const { data, isLoading, isError, error } = useEmployeeWorkHistory(employeeId, limit, isFemale);
 
   return (
     <Card title={`근무이력 (최근 ${limit}건)`} style={{ marginBottom: 12 }}>

@@ -246,8 +246,23 @@ export async function fetchFemaleEmployees(params: FetchFemaleEmployeesParams): 
 /** 여사원 현황 엑셀 다운로드 경로 (GET, 목록과 동일 검색 파라미터). */
 export const FEMALE_EMPLOYEE_EXPORT_PATH = '/api/v1/admin/female-employees/export';
 
-export async function fetchEmployee(employeeId: number): Promise<EmployeeDetail> {
-  const res = await client.get<ApiResponse<EmployeeDetail>>(`/api/v1/admin/employees/${employeeId}`);
+/**
+ * 상세/근무이력 endpoint base path 선택자.
+ *
+ * 여사원 현황(`female_employee` 권한)에서 진입한 상세는 `/female-employees/*` 를,
+ * 설정 사원(`employee` 권한) 에서 진입한 상세는 `/employees/*` 를 호출하여 권한 가드와 정합.
+ */
+function detailBasePath(isFemale: boolean): string {
+  return isFemale ? '/api/v1/admin/female-employees' : '/api/v1/admin/employees';
+}
+
+export async function fetchEmployee(
+  employeeId: number,
+  isFemale = false,
+): Promise<EmployeeDetail> {
+  const res = await client.get<ApiResponse<EmployeeDetail>>(
+    `${detailBasePath(isFemale)}/${employeeId}`,
+  );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '사원 상세 조회에 실패했습니다');
   }
@@ -306,9 +321,10 @@ export interface EmployeeWorkHistory {
 export async function fetchEmployeeWorkHistory(
   employeeId: number,
   limit = 10,
+  isFemale = false,
 ): Promise<EmployeeWorkHistory> {
   const res = await client.get<ApiResponse<EmployeeWorkHistory>>(
-    `/api/v1/admin/employees/${employeeId}/work-history`,
+    `${detailBasePath(isFemale)}/${employeeId}/work-history`,
     { params: { limit } },
   );
   if (!res.data.success || !res.data.data) {
@@ -324,9 +340,10 @@ export async function fetchEmployeeWorkHistory(
 export async function fetchEmployeeMonthlyWorkHistory(
   employeeId: number,
   yearMonth: string,
+  isFemale = false,
 ): Promise<EmployeeWorkHistory> {
   const res = await client.get<ApiResponse<EmployeeWorkHistory>>(
-    `/api/v1/admin/employees/${employeeId}/work-history/monthly`,
+    `${detailBasePath(isFemale)}/${employeeId}/work-history/monthly`,
     { params: { yearMonth } },
   );
   if (!res.data.success || !res.data.data) {

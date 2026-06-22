@@ -8,10 +8,10 @@ import {
   type EmployeeManualRegisterRequest,
 } from '@/api/employee';
 
-export function useEmployee(employeeId: number | undefined) {
+export function useEmployee(employeeId: number | undefined, isFemale = false) {
   return useQuery({
-    queryKey: ['admin', 'employee', employeeId],
-    queryFn: () => fetchEmployee(employeeId as number),
+    queryKey: ['admin', 'employee', employeeId, isFemale ? 'female' : 'all'],
+    queryFn: () => fetchEmployee(employeeId as number, isFemale),
     enabled: typeof employeeId === 'number',
   });
 }

@@ -63,22 +63,23 @@ export default function EmployeeDetailPage() {
   const employeeId = rawId ? Number(rawId) : undefined;
   const navigate = useNavigate();
   const location = useLocation();
-  // 진입 맥락별 "목록으로" 대상: 여사원 현황(/female-employee/...) → 여사원 목록, 그 외(설정 사원목록 /employee/...) → 설정 사원 목록.
-  const listBasePath = location.pathname.startsWith('/female-employee')
-    ? '/female-employee'
-    : '/settings/employees';
+  // 진입 맥락 — 여사원 현황(/female-employee/...) ↔ 설정 사원목록(/employee/...). 권한 자원 + 호출 endpoint 분기.
+  const isFemale = location.pathname.startsWith('/female-employee');
+  // "목록으로" 대상: 여사원 → 여사원 목록, 그 외 → 설정 사원 목록.
+  const listBasePath = isFemale ? '/female-employee' : '/settings/employees';
   // 목록에서 넘어온 경우 직전 목록의 query string(page/필터)을 붙여 복귀 — "목록으로" 시 조건 초기화 방지.
   const listSearch = (location.state as { listSearch?: string } | null)?.listSearch ?? '';
   const listPath = `${listBasePath}${listSearch}`;
   const { hasEntityPermission, hasSystemPermission } = usePermission();
-  const canEdit = hasEntityPermission('employee', 'EDIT');
+  // 수정 권한은 진입 맥락의 자원으로 판정 — 여사원 상세는 female_employee:EDIT, 사원 상세는 employee:EDIT.
+  const canEdit = hasEntityPermission(isFemale ? 'female_employee' : 'employee', 'EDIT');
   const canReset = hasSystemPermission('MANAGE_USERS');
 
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [deviceOpen, setDeviceOpen] = useState(false);
 
-  const { data: employee, isLoading, isError, error, refetch } = useEmployee(employeeId);
+  const { data: employee, isLoading, isError, error, refetch } = useEmployee(employeeId, isFemale);
 
   if (isLoading) {
     return (
@@ -259,7 +260,7 @@ export default function EmployeeDetailPage() {
         </Descriptions>
       </Card>
 
-      {employeeId && <WorkHistorySection employeeId={employeeId} />}
+      {employeeId && <WorkHistorySection employeeId={employeeId} isFemale={isFemale} />}
 
       {editOpen && (
         <EmployeeEditModal
