@@ -181,8 +181,8 @@ export default function MonthlyIntegrationSchedulePage() {
         searchLoading={isLoading}
         hideExport={isMobile}
         extraFilters={
-          <Space size={4}>
-            <Text>사번/이름:</Text>
+          <Space direction="vertical" size={4}>
+            <span>사번/이름:</span>
             <Input
               allowClear
               placeholder="사번 또는 이름"
