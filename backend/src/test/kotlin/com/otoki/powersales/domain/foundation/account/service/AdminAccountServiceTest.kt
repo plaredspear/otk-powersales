@@ -104,6 +104,7 @@ class AdminAccountServiceTest {
                     abcType = null,
                     accountStatusName = null,
                     applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
                     pageable = any(),
                 )
             }
@@ -125,6 +126,7 @@ class AdminAccountServiceTest {
                     abcType = "편의점",
                     accountStatusName = null,
                     applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
                     pageable = any(),
                 )
             }
@@ -146,6 +148,7 @@ class AdminAccountServiceTest {
                     abcType = null,
                     accountStatusName = "활성",
                     applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
                     pageable = any(),
                 )
             }
@@ -164,6 +167,7 @@ class AdminAccountServiceTest {
                     abcType = null,
                     accountStatusName = null,
                     applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
                     pageable = any(),
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
@@ -188,6 +192,7 @@ class AdminAccountServiceTest {
                     abcType = null,
                     accountStatusName = null,
                     applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
                     pageable = any(),
                 )
             } returns PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 100L)
@@ -214,6 +219,7 @@ class AdminAccountServiceTest {
                     abcType = null,
                     accountStatusName = null,
                     applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
                     pageable = capture(pageableSlot),
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
@@ -292,6 +298,7 @@ class AdminAccountServiceTest {
                 abcType = any(),
                 accountStatusName = any(),
                 applyPromotionFilter = any(),
+                excludeClosedAccount = any(),
                 pageable = any(),
             )
         } returns PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), accounts.size.toLong())

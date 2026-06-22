@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Select, Spin } from 'antd';
-import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
+import { fetchAccountsForDisplayScheduleLookup, type Account } from '@/api/account';
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_PAGE_SIZE = 20;
@@ -26,8 +26,9 @@ interface AccountOption {
 /**
  * 거래처 검색 dropdown (UC-02 단건 등록 — 진열사원스케줄 마스터 폼).
  *
- * `GET /api/v1/admin/accounts` 의 keyword 검색 (거래처명) 활용. 디바운스 300ms.
- * 표시 형식: `거래처코드 — 거래처명 (지점명)`. 선택 값은 externalKey (거래처코드).
+ * `GET /api/v1/admin/accounts/lookup-for-display-schedule` 의 keyword 검색 (거래처명) 활용. 디바운스 300ms.
+ * 폐업 거래처는 조회에서 제외 (등록 차단 정합). 표시 형식: `거래처코드 — 거래처명 (지점명)`.
+ * 선택 값은 externalKey (거래처코드).
  */
 export default function AccountSelect({ value, onChange, disabled, placeholder, initialLabel }: AccountSelectProps) {
   const [keyword, setKeyword] = useState('');
@@ -47,7 +48,7 @@ export default function AccountSelect({ value, onChange, disabled, placeholder, 
     }
     let cancelled = false;
     setLoading(true);
-    fetchAccountsForPromotionLookup({ keyword: debouncedKeyword.trim(), page: 0, size: SEARCH_PAGE_SIZE })
+    fetchAccountsForDisplayScheduleLookup({ keyword: debouncedKeyword.trim(), page: 0, size: SEARCH_PAGE_SIZE })
       .then((data) => {
         if (cancelled) return;
         setOptions(

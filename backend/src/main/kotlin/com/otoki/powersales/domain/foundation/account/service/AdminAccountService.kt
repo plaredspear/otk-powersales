@@ -41,6 +41,8 @@ class AdminAccountService(
      *              적용 여부. 행사/클레임/제품 거래처 lookup 진입점은 true (SF Lookup 필드 정합),
      *              메인 거래처 목록(`GET /api/v1/admin/accounts`)은 false (SF AllAccounts listView=Everything,
      *              추가 필터 없음 — lookupFilter 를 메인 목록에 적용하면 과소노출 GAP).
+     * @param excludeClosedAccount 폐업 거래처 완전 제외 여부. 진열사원스케줄 마스터 등록 거래처 lookup
+     *              진입점만 true — 폐업 거래처는 등록 자체가 차단되므로 조회 후보에서도 제외한다.
      */
     fun getAccounts(
         scope: DataScope,
@@ -50,7 +52,8 @@ class AdminAccountService(
         accountStatusName: String?,
         page: Int,
         size: Int,
-        applyPromotionFilter: Boolean = true
+        applyPromotionFilter: Boolean = true,
+        excludeClosedAccount: Boolean = false
     ): AccountListResponse {
         val policyPredicate = policyEvaluator.buildPredicate(
             scope = scope,
@@ -74,6 +77,7 @@ class AdminAccountService(
             abcType = abcType,
             accountStatusName = accountStatusName,
             applyPromotionFilter = applyPromotionFilter,
+            excludeClosedAccount = excludeClosedAccount,
             pageable = pageable,
         )
 

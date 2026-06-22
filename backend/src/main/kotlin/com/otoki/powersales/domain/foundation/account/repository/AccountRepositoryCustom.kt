@@ -25,6 +25,10 @@ interface AccountRepositoryCustom {
      *                        + 폐업/distribution 조건) 적용 여부. SF 에서 이 조건은 Promotion 거래처 선택
      *                        Lookup 필드에만 존재하고 메인 거래처 탭 listView(AllAccounts=Everything)에는
      *                        미적용 — 따라서 lookup 진입점은 true, 메인 목록은 false.
+     * @param excludeClosedAccount 폐업(`account_status_name = '폐업'`) 거래처를 distribution/abcType 면제
+     *                        없이 완전 제외할지 여부. 진열사원스케줄 마스터 등록 거래처 lookup 전용 —
+     *                        폐업 거래처는 등록 자체가 차단되므로 조회 후보에서도 일관되게 제외한다.
+     *                        [applyPromotionFilter] 의 distribution 면제 노출보다 우선 (AND 합성).
      * @param pageable 페이지네이션 + 정렬 (count query 정합 자동 처리)
      */
     fun findAllAccessibleByPolicy(
@@ -33,6 +37,7 @@ interface AccountRepositoryCustom {
         abcType: String?,
         accountStatusName: String?,
         applyPromotionFilter: Boolean,
+        excludeClosedAccount: Boolean,
         pageable: Pageable,
     ): Page<Account>
 

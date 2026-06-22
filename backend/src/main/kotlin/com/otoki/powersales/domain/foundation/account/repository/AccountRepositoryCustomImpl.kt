@@ -20,6 +20,7 @@ class AccountRepositoryCustomImpl(
         abcType: String?,
         accountStatusName: String?,
         applyPromotionFilter: Boolean,
+        excludeClosedAccount: Boolean,
         pageable: Pageable,
     ): Page<Account> {
         val builder = BooleanBuilder()
@@ -30,6 +31,11 @@ class AccountRepositoryCustomImpl(
         // (AllAccounts=Everything) 에는 미적용. 따라서 lookup 진입점만 AND 합성.
         if (applyPromotionFilter) {
             builder.and(promotionLookupFilter())
+        }
+        // 진열사원스케줄 마스터 등록 거래처 lookup 전용 — 폐업 거래처는 등록이 차단되므로 조회에서도
+        // 완전 제외 (promotionLookupFilter 의 distribution 면제 노출과 무관하게 AND 로 폐업 배제).
+        if (excludeClosedAccount) {
+            builder.and(account.accountStatusName.ne(ACCOUNT_STATUS_CLOSED).or(account.accountStatusName.isNull))
         }
 
         if (!keyword.isNullOrBlank()) {
