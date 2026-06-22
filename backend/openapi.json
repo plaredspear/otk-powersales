@@ -25560,7 +25560,7 @@
         "tags" : [ "admin-dashboard-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule" : {
+    "/api/v1/admin/display-work-schedule" : {
       "post" : {
         "operationId" : "createSchedule_1",
         "parameters" : [ {
@@ -25593,10 +25593,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/batch-delete" : {
+    "/api/v1/admin/display-work-schedule/batch-delete" : {
       "post" : {
         "operationId" : "batchDelete_1",
         "parameters" : [ {
@@ -25629,10 +25629,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/confirm" : {
+    "/api/v1/admin/display-work-schedule/confirm" : {
       "patch" : {
         "operationId" : "batchConfirm",
         "requestBody" : {
@@ -25657,10 +25657,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/export" : {
+    "/api/v1/admin/display-work-schedule/export" : {
       "post" : {
         "operationId" : "exportSchedules",
         "parameters" : [ {
@@ -25694,10 +25694,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/export-all" : {
+    "/api/v1/admin/display-work-schedule/export-all" : {
       "get" : {
         "operationId" : "exportAllSchedules",
         "parameters" : [ {
@@ -25787,10 +25787,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/list" : {
+    "/api/v1/admin/display-work-schedule/list" : {
       "get" : {
         "operationId" : "listSchedules",
         "parameters" : [ {
@@ -25897,10 +25897,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/template" : {
+    "/api/v1/admin/display-work-schedule/template" : {
       "get" : {
         "operationId" : "downloadTemplate",
         "parameters" : [ {
@@ -25924,10 +25924,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/unconfirm" : {
+    "/api/v1/admin/display-work-schedule/unconfirm" : {
       "patch" : {
         "operationId" : "batchUnconfirm",
         "requestBody" : {
@@ -25952,10 +25952,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/upload" : {
+    "/api/v1/admin/display-work-schedule/upload" : {
       "post" : {
         "operationId" : "uploadExcel",
         "parameters" : [ {
@@ -25993,10 +25993,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/upload/confirm" : {
+    "/api/v1/admin/display-work-schedule/upload/confirm" : {
       "post" : {
         "operationId" : "confirmUpload",
         "requestBody" : {
@@ -26021,10 +26021,10 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
-    "/api/v1/admin/display-schedule/{id}" : {
+    "/api/v1/admin/display-work-schedule/{id}" : {
       "delete" : {
         "operationId" : "deleteSchedule_1",
         "parameters" : [ {
@@ -26055,7 +26055,7 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       },
       "get" : {
         "operationId" : "getScheduleDetail",
@@ -26087,7 +26087,7 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       },
       "put" : {
         "operationId" : "updateSchedule_1",
@@ -26129,7 +26129,7 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "admin-schedule-controller" ]
+        "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
     "/api/v1/admin/education/categories" : {

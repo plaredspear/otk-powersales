@@ -182,13 +182,13 @@ export interface ScheduleCreateResult {
 // --- API functions ---
 
 /** 진열스케줄 양식 다운로드 경로. */
-export const SCHEDULE_TEMPLATE_PATH = '/api/v1/admin/display-schedule/template';
+export const SCHEDULE_TEMPLATE_PATH = '/api/v1/admin/display-work-schedule/template';
 
 /** 선택 진열스케줄 엑셀 다운로드 경로 (POST, body `{ ids }`). */
-export const SCHEDULE_EXPORT_PATH = '/api/v1/admin/display-schedule/export';
+export const SCHEDULE_EXPORT_PATH = '/api/v1/admin/display-work-schedule/export';
 
 /** 검색결과 전체 진열스케줄 엑셀 다운로드 경로 (GET, 목록과 동일 필터 파라미터). */
-export const SCHEDULE_EXPORT_ALL_PATH = '/api/v1/admin/display-schedule/export-all';
+export const SCHEDULE_EXPORT_ALL_PATH = '/api/v1/admin/display-work-schedule/export-all';
 
 /**
  * 검색결과 엑셀 다운로드 쿼리 파라미터 빌더 (page/size 제외, 목록과 동일 검색 조건).
@@ -215,7 +215,7 @@ export async function uploadScheduleExcel(file: File): Promise<ScheduleUploadRes
   formData.append('file', file);
 
   const res = await client.post<ApiResponse<ScheduleUploadResult>>(
-    '/api/v1/admin/display-schedule/upload',
+    '/api/v1/admin/display-work-schedule/upload',
     formData,
     { headers: { 'Content-Type': 'multipart/form-data' } },
   );
@@ -229,7 +229,7 @@ export async function uploadScheduleExcel(file: File): Promise<ScheduleUploadRes
 
 export async function confirmScheduleUpload(uploadId: string): Promise<ScheduleConfirmResult> {
   const res = await client.post<ApiResponse<ScheduleConfirmResult>>(
-    '/api/v1/admin/display-schedule/upload/confirm',
+    '/api/v1/admin/display-work-schedule/upload/confirm',
     { uploadId: uploadId },
   );
 
@@ -255,7 +255,7 @@ export async function fetchScheduleList(params: ScheduleListParams): Promise<Sch
   if (params.sortDir) queryParams.sortDir = params.sortDir;
 
   const res = await client.get<ApiResponse<PageRaw<ScheduleListItem>>>(
-    '/api/v1/admin/display-schedule/list',
+    '/api/v1/admin/display-work-schedule/list',
     { params: queryParams },
   );
 
@@ -275,7 +275,7 @@ export async function fetchScheduleList(params: ScheduleListParams): Promise<Sch
 
 export async function batchConfirmSchedules(ids: number[]): Promise<ScheduleBatchConfirmResult> {
   const res = await client.patch<ApiResponse<ScheduleBatchConfirmResult>>(
-    '/api/v1/admin/display-schedule/confirm',
+    '/api/v1/admin/display-work-schedule/confirm',
     { ids },
   );
 
@@ -287,7 +287,7 @@ export async function batchConfirmSchedules(ids: number[]): Promise<ScheduleBatc
 }
 
 export async function fetchScheduleDetail(id: number): Promise<ScheduleDetail> {
-  const res = await client.get<ApiResponse<ScheduleDetail>>(`/api/v1/admin/display-schedule/${id}`);
+  const res = await client.get<ApiResponse<ScheduleDetail>>(`/api/v1/admin/display-work-schedule/${id}`);
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || '상세 조회에 실패했습니다');
   }
@@ -296,7 +296,7 @@ export async function fetchScheduleDetail(id: number): Promise<ScheduleDetail> {
 
 export async function createSchedule(payload: ScheduleCreateRequest): Promise<ScheduleCreateResult> {
   const res = await client.post<ApiResponse<ScheduleCreateResult>>(
-    '/api/v1/admin/display-schedule',
+    '/api/v1/admin/display-work-schedule',
     payload,
   );
   if (!res.data.success || !res.data.data) {
@@ -307,7 +307,7 @@ export async function createSchedule(payload: ScheduleCreateRequest): Promise<Sc
 
 export async function updateSchedule(id: number, payload: ScheduleUpdateRequest): Promise<ScheduleCreateResult> {
   const res = await client.put<ApiResponse<ScheduleCreateResult>>(
-    `/api/v1/admin/display-schedule/${id}`,
+    `/api/v1/admin/display-work-schedule/${id}`,
     payload,
   );
   if (!res.data.success || !res.data.data) {
@@ -318,7 +318,7 @@ export async function updateSchedule(id: number, payload: ScheduleUpdateRequest)
 
 export async function batchDeleteSchedules(ids: number[]): Promise<ScheduleBatchDeleteResult> {
   const res = await client.post<ApiResponse<ScheduleBatchDeleteResult>>(
-    '/api/v1/admin/display-schedule/batch-delete',
+    '/api/v1/admin/display-work-schedule/batch-delete',
     { ids },
   );
   if (!res.data.success || !res.data.data) {
@@ -329,7 +329,7 @@ export async function batchDeleteSchedules(ids: number[]): Promise<ScheduleBatch
 
 export async function batchUnconfirmSchedules(ids: number[]): Promise<ScheduleBatchConfirmResult> {
   const res = await client.patch<ApiResponse<ScheduleBatchConfirmResult>>(
-    '/api/v1/admin/display-schedule/unconfirm',
+    '/api/v1/admin/display-work-schedule/unconfirm',
     { ids },
   );
 

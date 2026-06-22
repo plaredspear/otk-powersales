@@ -33,8 +33,8 @@ import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
 
 @RestController
-@RequestMapping("/api/v1/admin/display-schedule")
-class AdminScheduleController(
+@RequestMapping("/api/v1/admin/display-work-schedule")
+class AdminDisplayWorkScheduleController(
     private val adminScheduleService: AdminScheduleService,
 ) {
 
