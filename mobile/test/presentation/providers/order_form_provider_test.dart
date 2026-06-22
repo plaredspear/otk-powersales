@@ -418,6 +418,17 @@ void main() {
         expect(notifier.state.errorMessage, isNull);
       });
 
+      test('E6-b (G) — 여신 한도 초과 → SnackBar + 미전송 (레거시 write.jsp:188)', () async {
+        seedValidState(); // 총 주문금액 1234
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.errorMessage, '총 주문금액이 여신잔액을 초과했습니다.');
+        expect(formRepo.submitOrderRequestCount, 0);
+        expect(notifier.state.isLoanExceeded, true);
+      });
+
       test('I — 납기일 +10일 → requiresDeliveryDateConfirm = true', () async {
         notifier.state = notifier.state.copyWith(
           selectedAccountId: 5678,

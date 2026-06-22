@@ -121,6 +121,11 @@ class OrderFormState {
   /// 제품이 있는지 여부
   bool get hasItems => orderDraft.items.isNotEmpty;
 
+  /// 여신 한도 초과 여부 (레거시 write.jsp:188 `loan < total` 차단 조건).
+  /// 여신 잔액이 조회된 경우에만 판정한다(null 이면 미초과로 간주).
+  bool get isLoanExceeded =>
+      creditBalance != null && totalAmount > creditBalance!;
+
   /// 모든 제품이 선택되었는지 여부
   bool get allItemsSelected => orderDraft.allItemsSelected;
 

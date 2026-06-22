@@ -10,6 +10,9 @@ class OrderFormActionButtons extends StatelessWidget {
   final bool isSubmitting;
   final bool hasItems;
 
+  /// 여신 한도 초과 여부 — 레거시 write.jsp:188 처럼 초과 시 승인요청을 막는다.
+  final bool loanExceeded;
+
   const OrderFormActionButtons({
     super.key,
     required this.onDelete,
@@ -17,12 +20,14 @@ class OrderFormActionButtons extends StatelessWidget {
     required this.onSubmit,
     required this.isSubmitting,
     required this.hasItems,
+    this.loanExceeded = false,
   });
 
   @override
   Widget build(BuildContext context) {
     // 레거시 write.jsp 하단 고정 바: 삭제(회색) / 임시저장(다크) / 승인요청(옐로) 풀폭 3분할.
-    final bool submitEnabled = !isSubmitting && hasItems;
+    // 승인요청은 제품이 있고 제출 중이 아니며 여신 한도를 넘지 않았을 때만 활성.
+    final bool submitEnabled = !isSubmitting && hasItems && !loanExceeded;
 
     return SafeArea(
       top: false,

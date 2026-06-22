@@ -541,13 +541,14 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (state.orderDraft.items.length > 100) {
       return '제품은 100개 이하로 추가해주세요';
     }
-    // (G) 여신 한도 초과 / 조회 중
+    // (G) 여신 한도 초과 / 조회 중 — 레거시 write.jsp:188-191 `loan < total` 차단 정합.
     final creditBalance = state.creditBalance;
     if (creditBalance == null && state.selectedExternalKey != null) {
       return '여신 조회 중입니다. 잠시 후 다시 시도해주세요';
     }
     if (creditBalance != null && state.totalAmount > creditBalance) {
-      return null; // 버튼 disabled 로 도달 자체 차단 — SnackBar 표시 안 함
+      // 승인요청 버튼은 한도 초과 시 disabled 이지만, 비-UI 호출 방어를 위해 여기서도 차단한다.
+      return '총 주문금액이 여신잔액을 초과했습니다.';
     }
     // (H) 라인 총EA <= 0 — 레거시 write.jsp:219 `tot-quantity-each(총EA) <= 0` 정합.
     // 총EA = (박스 × 입수) + 낱개. 박스만 입력(낱개 0)해도 총EA > 0 이면 통과해야 한다.

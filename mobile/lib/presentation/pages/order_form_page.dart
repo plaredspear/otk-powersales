@@ -306,6 +306,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     onSubmit: () => notifier.validateAndSubmitOrder(),
                     isSubmitting: state.isSubmitting,
                     hasItems: state.hasItems,
+                    loanExceeded: state.isLoanExceeded,
                   ),
                 ],
               ),
