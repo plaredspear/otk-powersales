@@ -114,16 +114,15 @@ export default function MonthlyWorkDetailTab() {
           />
         )}
 
-        {/* 캘린더(월간)는 여사원 미선택/내역 0건과 무관하게 항상 노출 — 선택 전에는 빈 달력. */}
-        {isHistLoading ? (
-          <div style={{ textAlign: 'center', padding: 48 }}>
-            <Spin size="large" />
-          </div>
-        ) : viewType === 'month' ? (
-          <MonthlyWorkInsight items={items} year={period.year()} month={period.month() + 1} />
-        ) : (
-          <MonthlyWorkRawTable items={items} />
-        )}
+        {/* 캘린더(월간)는 여사원 미선택/내역 0건과 무관하게 항상 노출 — 선택 전에는 빈 달력.
+            여사원 변경 시 로딩 중에도 캘린더를 유지하고, 로딩 스피너는 그 위에 오버레이. */}
+        <Spin spinning={isHistLoading} size="large">
+          {viewType === 'month' ? (
+            <MonthlyWorkInsight items={items} year={period.year()} month={period.month() + 1} />
+          ) : (
+            <MonthlyWorkRawTable items={items} />
+          )}
+        </Spin>
       </div>
     </div>
   );
