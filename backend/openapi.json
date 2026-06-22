@@ -16884,6 +16884,10 @@
           "amount" : {
             "type" : [ "number", "null" ]
           },
+          "boxSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "lineNumber" : {
             "format" : "int32",
             "type" : "integer"
