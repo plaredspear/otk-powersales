@@ -92,6 +92,9 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
 
   const { data: detail, isLoading: detailLoading } = useScheduleDetail(editTarget?.id ?? null, open && isEdit);
 
+  /** 확정된 스케줄은 편집 모드에서 모든 입력 항목을 비활성화한다 (권한 무관). */
+  const isConfirmedLocked = isEdit && detail?.confirmed === true;
+
   useEffect(() => {
     if (!open) return;
     setErrorMessage(null);
@@ -166,6 +169,8 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       onOk={handleOk}
       okText="저장"
       cancelText="취소"
+      // 확정된 스케줄은 모든 항목이 잠기므로 저장 버튼을 비활성화한다.
+      okButtonProps={{ disabled: isConfirmedLocked }}
       confirmLoading={mutation.isPending}
       width={isEdit ? 880 : 560}
     >
@@ -175,7 +180,7 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       {isEdit && detail?.confirmed && (
         <Alert
           type="warning"
-          message="확정된 스케줄입니다. 시스템 관리자 / 영업지원이 아닌 경우 종료일 외 필드 변경 시 저장이 차단됩니다."
+          message="확정된 스케줄입니다. 항목을 변경할 수 없습니다."
           style={{ marginBottom: 16 }}
         />
       )}
@@ -201,11 +206,12 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
               </Checkbox>
             </div>
           )}
-          <Form form={form} layout="vertical" preserve={false}>
+          <Form form={form} layout="vertical" preserve={false} disabled={isConfirmedLocked}>
             <Form.Item name="employeeCode" label="성명" rules={[{ required: true, message: '성명은 필수입니다' }]}>
               <EmployeeSelect
                 value={form.getFieldValue('employeeCode')}
                 initialLabel={detail ? `${detail.employeeName}(${detail.employeeCode})` : undefined}
+                disabled={isConfirmedLocked}
                 onChange={(code) => form.setFieldValue('employeeCode', code)}
               />
             </Form.Item>
@@ -214,6 +220,7 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
               <AccountSelect
                 value={form.getFieldValue('accountCode')}
                 initialLabel={detail?.accountName ?? undefined}
+                disabled={isConfirmedLocked}
                 onChange={(code) => form.setFieldValue('accountCode', code)}
               />
             </Form.Item>
