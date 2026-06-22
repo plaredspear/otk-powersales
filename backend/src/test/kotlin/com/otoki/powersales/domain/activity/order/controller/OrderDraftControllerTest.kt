@@ -87,8 +87,10 @@ class OrderDraftControllerTest : MobileControllerTestSupport() {
         }
 
         @Test
-        @DisplayName("E1 - 본인 외 거래처 → 403 ORD_DRAFT_ACCOUNT_FORBIDDEN")
+        @DisplayName("OrderDraftAccountForbiddenException → 403 ORD_DRAFT_ACCOUNT_FORBIDDEN (컨트롤러 매핑)")
         fun forbidden() {
+            // 거래처 담당 게이트는 제거됐고(레거시 정합), 이 예외는 사원 미존재 등 방어 경로에서만 발생.
+            // 본 테스트는 예외 → 403 매핑(전역 핸들러)만 검증한다.
             every { orderDraftService.save(any(), any()) } throws OrderDraftAccountForbiddenException()
 
             mockMvc.perform(

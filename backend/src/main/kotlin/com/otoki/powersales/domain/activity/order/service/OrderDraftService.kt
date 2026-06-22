@@ -52,9 +52,10 @@ class OrderDraftService(
         val account = accountRepository.findById(request.accountId)
             .orElseThrow { OrderDraftInvalidRequestException("거래처를 찾을 수 없습니다") }
 
-        if (account.employeeCode.isNullOrBlank() || account.employeeCode != employee.employeeCode) {
-            throw OrderDraftAccountForbiddenException()
-        }
+        // 거래처 담당(owner) 재검증은 하지 않는다 (레거시 정합 — 주문 등록과 동일 정책).
+        // 거래처 후보는 일정 기반 셀렉터(`/accounts/my` scope=order)로만 결정되며,
+        // account.employeeCode(거래처 마스터 담당사원) 게이트는 그 조회 집합과 어긋나
+        // 일정만 잡힌(담당자가 다른) 거래처의 임시저장을 잘못 차단했다. → 제거.
 
         // §2.5 row lock — 동일 사번 동시 등록 직렬화. 기존 row 가 있으면 잠금, 없으면 첫 INSERT 가 UNIQUE 보장.
         val existing = tmpOrderRepository.findByEmployeeIdForUpdate(userId)

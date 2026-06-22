@@ -9,7 +9,6 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.order.dto.request.OrderDraftLineRequest
 import com.otoki.powersales.domain.activity.order.dto.request.OrderDraftRequest
-import com.otoki.powersales.domain.activity.order.exception.OrderDraftAccountForbiddenException
 import com.otoki.powersales.domain.activity.order.exception.OrderDraftInvalidRequestException
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
@@ -128,25 +127,24 @@ class OrderDraftServiceTest {
         }
 
         @Test
-        @DisplayName("E1 - 본인 담당 거래처 아님 → ORD_DRAFT_ACCOUNT_FORBIDDEN")
-        fun notMyAccount() {
+        @DisplayName("담당사원이 다른(일정만 잡힌) 거래처도 임시저장 통과 — 거래처 담당 재검증 제거(레거시 정합)")
+        fun nonOwnedAccountAllowed() {
+            // 거래처 마스터 담당사원(employeeCode)이 로그인 사원과 달라도(또는 null) 임시저장이
+            // 거부되지 않아야 한다. 주문 등록과 동일 정책 — 거래처 게이트는 일정 기반 셀렉터에만 존재.
             every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
             every { accountRepository.findById(eq(accountId)) } returns Optional.of(account(empCode = "OTHER"))
+            every { tmpOrderRepository.findByEmployeeIdForUpdate(userId) } returns null
+            every { productRepository.findByProductCodeIn(any()) } returns listOf(Product(id = 99L, productCode = "P001", name = "진라면"))
+            every { tmpOrderRepository.save(any<TmpOrder>()) } answers {
+                val o = firstArg<TmpOrder>()
+                setId(o, 99L)
+                o
+            }
 
-            assertThatThrownBy { service.save(userId, req()) }
-                .isInstanceOf(OrderDraftAccountForbiddenException::class.java)
+            val response = service.save(userId, req())
 
-            verify(exactly = 0) { tmpOrderRepository.save(any<TmpOrder>()) }
-        }
-
-        @Test
-        @DisplayName("E1 - 거래처 employeeCode 가 null → ORD_DRAFT_ACCOUNT_FORBIDDEN")
-        fun nullAccountEmpCode() {
-            every { employeeRepository.findById(eq(userId)) } returns Optional.of(employee())
-            every { accountRepository.findById(eq(accountId)) } returns Optional.of(account(empCode = null))
-
-            assertThatThrownBy { service.save(userId, req()) }
-                .isInstanceOf(OrderDraftAccountForbiddenException::class.java)
+            assertThat(response.draftId).isEqualTo(99L)
+            verify { tmpOrderRepository.save(any<TmpOrder>()) }
         }
 
         @Test
