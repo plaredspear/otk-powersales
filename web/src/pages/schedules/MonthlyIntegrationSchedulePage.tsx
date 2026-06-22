@@ -100,9 +100,9 @@ function MobileItemCard({ item }: { item: MonthlyIntegrationScheduleItem }) {
 }
 
 export default function MonthlyIntegrationSchedulePage() {
-  const previousMonth = dayjs().subtract(1, 'month');
-  const [year, setYear] = useState(previousMonth.year());
-  const [month, setMonth] = useState(previousMonth.month() + 1);
+  const now = dayjs();
+  const [year, setYear] = useState(now.year());
+  const [month, setMonth] = useState(now.month() + 1);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [queryParams, setQueryParams] = useState<{
     year: number;
@@ -123,6 +123,16 @@ export default function MonthlyIntegrationSchedulePage() {
   const exportMutation = useMonthlyIntegrationExport();
 
   const emptyNoticeShownForRef = useRef<string | null>(null);
+  const autoSearchedRef = useRef(false);
+
+  // 페이지 진입 시 현재 년/월로 자동 조회. 단일지점 사용자는 본인 지점이 자동 선택되므로
+  // 지점 코드가 채워지는 시점에 최초 1회만 조회를 트리거한다. (codes 빈 배열은 backend 에서 거부)
+  useEffect(() => {
+    if (autoSearchedRef.current) return;
+    if (selectedCodes.length === 0) return;
+    autoSearchedRef.current = true;
+    setQueryParams({ year, month, codes: selectedCodes });
+  }, [selectedCodes, year, month]);
 
   useEffect(() => {
     if (isLoading || isError) return;
