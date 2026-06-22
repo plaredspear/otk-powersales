@@ -728,13 +728,19 @@ export default function PromotionDetailPage() {
     return v.toLocaleString();
   };
 
+  // SF 여사원마감(Formula_PromoCloseByTm__c): IF(PromoCloseByTm__c = true, '✔️', '❌')
+  // 여사원 모바일 일매출 마감 완료(true) 시 ✔️, 미마감(false) 시 ❌
   const closeColumn = {
     title: '여사원마감',
     dataIndex: 'promoCloseByTm',
     width: 70,
     align: 'center' as const,
     render: (v: boolean) =>
-      v ? <CloseCircleFilled style={{ color: '#ff4d4f' }} /> : null,
+      v ? (
+        <CheckCircleFilled style={{ color: '#52c41a' }} />
+      ) : (
+        <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+      ),
   };
 
   // --- 읽기 모드 컬럼 ---
@@ -1141,6 +1147,7 @@ export default function PromotionDetailPage() {
           ),
       },
       {
+        // 여사원마감(true) 시 ✔️ + 마감 해제 버튼, 미마감(false) 시 ❌ (읽기 모드 closeColumn 과 동일 의미)
         title: '여사원마감',
         dataIndex: 'promoCloseByTm',
         width: 90,
@@ -1148,7 +1155,7 @@ export default function PromotionDetailPage() {
         render: (v: boolean, record: EditableRow) =>
           v ? (
             <Space size={4}>
-              <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+              <CheckCircleFilled style={{ color: '#52c41a' }} />
               <Button
                 type="text"
                 size="small"
@@ -1158,7 +1165,9 @@ export default function PromotionDetailPage() {
                 style={{ minWidth: 0, padding: '0 4px' }}
               />
             </Space>
-          ) : null,
+          ) : (
+            <CloseCircleFilled style={{ color: '#ff4d4f' }} />
+          ),
       },
       {
         title: '삭제',
