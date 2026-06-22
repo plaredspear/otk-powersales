@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestCreat
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
+import com.otoki.powersales.domain.activity.order.event.OrderRequestRegisteredEvent
 import com.otoki.powersales.domain.activity.order.exception.OrderAccountForbiddenException
 import com.otoki.powersales.domain.activity.order.exception.OrderDeadlinePassedException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidRequestException
@@ -22,6 +23,7 @@ import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import jakarta.persistence.EntityManager
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -56,6 +58,7 @@ class OrderRequestCreateService(
     private val orderDraftService: OrderDraftService,
     private val orderDeadlineCalculator: OrderDeadlineCalculator,
     private val entityManager: EntityManager,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     @Transactional
@@ -136,7 +139,12 @@ class OrderRequestCreateService(
         orderRequestProductRepository.saveAll(savedLines)
 
         // 7. sap_outbox 적재
-        orderRequestRegisterSender.enqueue(savedHeader, savedLines)
+        val outbox = orderRequestRegisterSender.enqueue(savedHeader, savedLines)
+
+        // 7-1. 커밋 후 SAP SD03050 송신 트리거 (비동기). 스케줄러(SapOutboxBatch) 비활성 상태에서도
+        //      주문 등록 즉시 SD03050 이 호출되도록 한다. 실제 송신/상태갱신/재시도는
+        //      OrderRequestRegisterDispatcher → SapOutboxBatchService.processOne 가 수행.
+        eventPublisher.publishEvent(OrderRequestRegisteredEvent(outbox.id))
 
         // 8. 임시저장 자동 삭제 (Spec #596 Q4 — 레거시 버그 보강).
         orderDraftService.deleteByEmployeeId(userId)

@@ -33,7 +33,9 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
+import com.otoki.powersales.domain.activity.order.event.OrderRequestRegisteredEvent
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -54,6 +56,7 @@ class OrderRequestCreateServiceTest {
     private val orderDeadlineCalculator = OrderDeadlineCalculator()
     private val entityManager: EntityManager = mockk()
     private val nativeQuery: Query = mockk()
+    private val eventPublisher: ApplicationEventPublisher = mockk(relaxed = true)
     private val service = OrderRequestCreateService(
         orderRequestRepository,
         orderRequestProductRepository,
@@ -65,6 +68,7 @@ class OrderRequestCreateServiceTest {
         orderDraftService,
         orderDeadlineCalculator,
         entityManager,
+        eventPublisher,
     )
 
     private val userId = 1L
@@ -104,6 +108,8 @@ class OrderRequestCreateServiceTest {
             assertThat(response.orderRequestNumber).endsWith("-42")
             assertThat(response.status).isEqualTo(OrderRequestStatus.SENT)
             verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
+            // SD03050 송신 트리거: 등록 직후 OrderRequestRegisteredEvent 발행 (커밋 후 비동기 송신).
+            verify(exactly = 1) { eventPublisher.publishEvent(ofType(OrderRequestRegisteredEvent::class)) }
         }
 
         @Test
