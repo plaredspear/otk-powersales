@@ -27,7 +27,7 @@ class OrderedItemModel {
     return OrderedItemModel(
       orderProductId: (json['orderProductId'] as num).toInt(),
       productCode: json['productCode'] as String,
-      productName: json['productName'] as String,
+      productName: json['productName'] as String? ?? '',
       totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
       totalQuantityPieces: (json['totalQuantityPieces'] as num).toInt(),
       isCancelled: json['isCancelled'] as bool,
