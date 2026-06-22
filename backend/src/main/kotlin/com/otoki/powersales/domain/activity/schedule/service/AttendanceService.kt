@@ -236,7 +236,6 @@ class AttendanceService(
             else -> resolveByEventSchedule(eventScheduleId!!, employee, today)
         }
         val teamMemberSchedule = resolved.schedule
-        val newlyCreated = resolved.newlyCreated
         val displayMaster = resolved.displayMaster
         val isEventBranch = resolved.isEventBranch
 
@@ -313,8 +312,13 @@ class AttendanceService(
             )
         }
 
-        // 7. 동적 생성 시 월별여사원 통합일정 갱신
-        if (newlyCreated && account != null) {
+        // 7. 출근 등록 후 월별여사원 통합일정(환산 일정) 갱신
+        // SF 레거시 동등: TeamMemberScheduleTrigger 가 beforeInsert(진열 신규)·beforeUpdate(행사/기존 일정 출근)
+        // 양쪽 모두에서 updateMonthlyFemaleEmployeeIntegrationSchedule 를 발화시킨다. 즉 신규 생성뿐 아니라
+        // 기존 일정에 출근만 찍는 경우(CommuteLogId__c null→not null)에도 환산 재집계가 돌아야 한다.
+        // 집계 모수 전제(CommuteLogId__c != null AND AccountId__c != null)는 여기서 attendanceLog 등록 완료 +
+        // account != null 로 충족된다. (이전 newlyCreated 한정은 행사/기존 분기 환산 누락 버그였음)
+        if (account != null) {
             adminMonthlyIntegrationService.refreshIntegration(
                 employeeId = employee.id,
                 accountId = account.id,
@@ -402,7 +406,6 @@ class AttendanceService(
         }
         val teamMemberSchedule = resolved.schedule
         val displayMaster = resolved.displayMaster
-        val newlyCreated = resolved.newlyCreated
 
         // scheduleId 분기는 대상 여사원 본인 스케줄인지 확인 (타인 스케줄 등록 차단)
         if (scheduleId != null && teamMemberSchedule.employee?.id != targetEmployee.id) {
@@ -469,9 +472,11 @@ class AttendanceService(
             )
         }
 
-        // 동적 생성 시 월별여사원 통합일정 갱신
+        // 출근 등록 후 월별여사원 통합일정(환산 일정) 갱신
+        // SF 레거시 동등: 신규 생성(진열)뿐 아니라 기존 일정 출근(CommuteLogId__c null→not null) 도 트리거 발화.
+        // 대리출근도 동일 출근 등록 경로이므로 account != null 이면 환산 재집계한다.
         val account = teamMemberSchedule.account
-        if (newlyCreated && account != null) {
+        if (account != null) {
             adminMonthlyIntegrationService.refreshIntegration(
                 employeeId = targetEmployee.id,
                 accountId = account.id,
