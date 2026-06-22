@@ -47,6 +47,9 @@ class OrderDraftLineModel {
   final double quantity;
   final int? quantityPieces;
   final double? quantityBoxes;
+
+  /// 1박스당 입수. 복원 시 박스→낱개 환산·소계 재계산에 사용 (백엔드가 제품 마스터에서 재조회).
+  final int? boxSize;
   final double? unitPrice;
   final double? amount;
 
@@ -58,6 +61,7 @@ class OrderDraftLineModel {
     required this.quantity,
     this.quantityPieces,
     this.quantityBoxes,
+    this.boxSize,
     this.unitPrice,
     this.amount,
   });
@@ -71,6 +75,7 @@ class OrderDraftLineModel {
       quantity: (json['quantity'] as num).toDouble(),
       quantityPieces: (json['quantityPieces'] as num?)?.toInt(),
       quantityBoxes: (json['quantityBoxes'] as num?)?.toDouble(),
+      boxSize: (json['boxSize'] as num?)?.toInt(),
       unitPrice: (json['unitPrice'] as num?)?.toDouble(),
       amount: (json['amount'] as num?)?.toDouble(),
     );

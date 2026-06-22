@@ -138,17 +138,27 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     final pending = state.pendingDraft;
     if (pending == null) return;
 
-    final items = pending.lines
-        .map((l) => OrderDraftItem(
-              productCode: l.productCode,
-              productName: l.productName,
-              quantityBoxes: l.quantityBoxes ?? 0,
-              quantityPieces: l.quantityPieces ?? 0,
-              unitPrice: (l.unitPrice ?? 0).toInt(),
-              boxSize: 1,
-              totalPrice: (l.amount ?? 0).toInt(),
-            ))
-        .toList();
+    // 레거시 selectTempPrdList 정합: 단가·입수(boxSize)는 저장값이 아니라 백엔드가
+    // 제품 마스터에서 재조회해 내려준 값을 쓰고, 소계는 그 값으로 재계산한다
+    // (구버전/마이그레이션 draft 의 0/누락 단가·boxSize 1 하드코딩 버그 보정).
+    final items = pending.lines.map((l) {
+      final unitPrice = (l.unitPrice ?? 0).toInt();
+      final boxSize = l.boxSize ?? 1;
+      final quantityBoxes = l.quantityBoxes ?? 0;
+      final quantityPieces = l.quantityPieces ?? 0;
+      final totalPieces = (quantityBoxes * boxSize).round() + quantityPieces;
+      return OrderDraftItem(
+        productCode: l.productCode,
+        productName: l.productName,
+        quantityBoxes: quantityBoxes,
+        quantityPieces: quantityPieces,
+        unitPrice: unitPrice,
+        boxSize: boxSize,
+        totalPrice: totalPieces * unitPrice,
+      );
+    }).toList();
+
+    final totalAmount = items.fold(0, (sum, i) => sum + i.totalPrice);
 
     final filledDraft = OrderDraft(
       clientId: pending.accountId,
@@ -157,7 +167,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
           ? DateTime.tryParse(pending.deliveryDate!)
           : null,
       items: items,
-      totalAmount: pending.totalAmount,
+      totalAmount: totalAmount,
       isDraft: true,
       lastModified: DateTime.now(),
     );

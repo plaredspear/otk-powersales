@@ -208,7 +208,17 @@ class OrderDraftServiceTest {
             draft.products += product
             every { tmpOrderRepository.findByEmployeeId(userId) } returns draft
             every { accountRepository.findById(eq(accountId)) } returns Optional.of(account())
-            every { productRepository.findByProductCodeIn(eq(listOf("P001"))) } returns listOf(Product(id = 99L, productCode = "P001", name = "진라면"))
+            // 제품 마스터: 단가/입수 재조회 검증용 (표준단가 560 + 주세 56 = 616, 입수 12).
+            every { productRepository.findByProductCodeIn(eq(listOf("P001"))) } returns listOf(
+                Product(
+                    id = 99L,
+                    productCode = "P001",
+                    name = "진라면",
+                    standardUnitPrice = BigDecimal("560"),
+                    superTax = BigDecimal("56"),
+                    boxReceivingQuantity = BigDecimal("12"),
+                )
+            )
 
             val response = service.findByUserId(userId)
 
@@ -223,6 +233,9 @@ class OrderDraftServiceTest {
             assertThat(response.lines[0].productName).isEqualTo("진라면")
             assertThat(response.lines[0].unit).isEqualTo("BOX")
             assertThat(response.lines[0].quantity).isEqualByComparingTo("10")
+            // 레거시 selectTempPrdList 정합: 단가·입수는 저장된 temp 값이 아니라 제품 마스터에서 재조회.
+            assertThat(response.lines[0].boxSize).isEqualTo(12)
+            assertThat(response.lines[0].unitPrice).isEqualByComparingTo("616")
         }
     }
 

@@ -108,21 +108,29 @@ class OrderDraftService(
         val draft = tmpOrderRepository.findByEmployeeId(userId) ?: return null
         val account = draft.accountId?.let { accountRepository.findById(it).orElse(null) }
         val productCodes = draft.products.mapNotNull { it.tmpProductCode }.distinct()
-        val productNames = productRepository.findByProductCodeIn(productCodes)
-            .associate { (it.productCode ?: "") to it.name }
+        // 레거시 selectTempPrdList 정합: 복원 라인의 단가·입수는 저장된 temp 값이 아니라
+        // 제품 마스터(JOIN dkretail__product__c)에서 재조회한다.
+        val productsByCode = productRepository.findByProductCodeIn(productCodes)
+            .associateBy { it.productCode ?: "" }
         val lines = draft.products
             .sortedBy { it.lineNumber ?: Int.MAX_VALUE }
             .map { line ->
-                val name = line.tmpProductCode?.let { productNames[it] }
+                val product = line.tmpProductCode?.let { productsByCode[it] }
+                // 단가 = 표준단가 + 주세 (레거시 `(standardunitprice__c + supertax__c)`).
+                // 제품 마스터에 없으면(단종/삭제) 저장된 단가로 graceful fallback.
+                val masterUnitPrice = product?.let {
+                    (it.standardUnitPrice ?: BigDecimal.ZERO) + (it.superTax ?: BigDecimal.ZERO)
+                }
                 OrderDraftLineResponse(
                     lineNumber = line.lineNumber ?: 0,
                     productCode = line.tmpProductCode.orEmpty(),
-                    productName = name,
+                    productName = product?.name,
                     unit = line.unit ?: inferUnit(line),
                     quantity = line.quantity ?: BigDecimal.ZERO,
                     quantityPieces = line.quantityPieces,
                     quantityBoxes = line.quantityBoxes,
-                    unitPrice = line.unitPrice,
+                    boxSize = product?.boxReceivingQuantity?.toInt() ?: 0,
+                    unitPrice = masterUnitPrice ?: line.unitPrice,
                     amount = line.amount,
                 )
             }

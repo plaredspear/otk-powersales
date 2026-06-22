@@ -34,6 +34,15 @@ data class OrderDraftLineResponse(
     val quantity: BigDecimal,
     val quantityPieces: Int?,
     val quantityBoxes: BigDecimal?,
+    /**
+     * 1박스당 입수(boxReceivingQuantity). 복원 시 박스→낱개 환산·소계 재계산에 필수.
+     * 레거시 `selectTempPrdList` 처럼 저장값이 아니라 제품 마스터에서 재조회한 값이다.
+     */
+    val boxSize: Int,
+    /**
+     * 낱개단가(표준단가 + 주세). 레거시 `selectTempPrdList` 정합 — 저장된 임시 단가가 아니라
+     * 제품 마스터에서 재조회해 내려준다(가격 변동·구버전/마이그레이션 draft 의 0/누락 단가 보정).
+     */
     val unitPrice: BigDecimal?,
     val amount: BigDecimal?,
 )

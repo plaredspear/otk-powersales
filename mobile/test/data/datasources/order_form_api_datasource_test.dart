@@ -87,6 +87,7 @@ void main() {
                       'quantity': 10,
                       'quantityPieces': 100,
                       'quantityBoxes': 10,
+                      'boxSize': 12,
                       'unitPrice': 12345,
                       'amount': 1234500,
                     }
@@ -103,6 +104,7 @@ void main() {
         expect(result!.draftId, 99);
         expect(result.lines, hasLength(1));
         expect(result.lines[0].productCode, 'P001');
+        expect(result.lines[0].boxSize, 12);
       });
     });
 

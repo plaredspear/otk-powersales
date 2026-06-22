@@ -122,6 +122,12 @@ void main() {
         expect(notifier.state.selectedExternalKey, 'EK001');
         expect(notifier.state.orderDraft.items, hasLength(1));
         expect(notifier.state.orderDraft.items[0].productCode, 'P001');
+        // 레거시 selectTempPrdList 정합: 단가·입수는 마스터 재조회값을 쓰고 소계는 재계산.
+        // boxSize=12, unitPrice=12345, 총개수=(10박스×12)+100낱개=220 → 소계=220×12345.
+        expect(notifier.state.orderDraft.items[0].boxSize, 12);
+        expect(notifier.state.orderDraft.items[0].unitPrice, 12345);
+        expect(notifier.state.orderDraft.items[0].totalPrice, 220 * 12345);
+        expect(notifier.state.totalAmount, 220 * 12345);
         // 여신 호출 검증
         expect(formRepo.lastExternalKey, 'EK001');
         expect(notifier.state.creditBalance, 2500000);
@@ -528,6 +534,7 @@ OrderDraftResponseModel _draftResponse() => const OrderDraftResponseModel(
           quantity: 10,
           quantityPieces: 100,
           quantityBoxes: 10,
+          boxSize: 12,
           unitPrice: 12345,
           amount: 1234,
         ),

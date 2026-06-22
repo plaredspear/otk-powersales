@@ -148,6 +148,7 @@ class OrderDraftControllerTest : MobileControllerTestSupport() {
                         quantity = BigDecimal("10"),
                         quantityPieces = 100,
                         quantityBoxes = BigDecimal("10"),
+                        boxSize = 12,
                         unitPrice = BigDecimal("12345"),
                         amount = BigDecimal("1234500"),
                     ),
@@ -162,6 +163,7 @@ class OrderDraftControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.totalAmount").value(1234567))
                 .andExpect(jsonPath("$.data.lines[0].productCode").value("P001"))
                 .andExpect(jsonPath("$.data.lines[0].unit").value("BOX"))
+                .andExpect(jsonPath("$.data.lines[0].boxSize").value(12))
         }
     }
 
