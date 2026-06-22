@@ -124,13 +124,20 @@ class AttendanceService(
         // 진열마스터 기반 거래처 조회 (confirmed=true, 오늘 유효, 미삭제)
         val validMasters = displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(employee.id, today)
 
-        // 이미 TeamMemberSchedule에 존재하는 거래처 제외
-        val existingAccountIds = teamMemberSchedules.mapNotNull { it.account?.id }.toSet()
+        // 이미 TMS 에 "진열(DISPLAY)" 일정으로 잡힌 거래처만 마스터 항목에서 제외한다.
+        // (진열 출근 등록 시 마스터→TMS DISPLAY row 가 생성되므로, 그 거래처의 마스터를 다시 더하면 진열이 2번 노출됨.)
+        // dedup 키를 account.id 단독으로 두면 같은 거래처에 행사(EVENT)만 TMS 에 있고 진열은 마스터에만 있는 경우에도
+        // 진열 마스터가 제거되어, 홈 화면(행사+진열 2건)과 건수가 어긋난다(출근등록은 행사 1건). 진열로 잡힌
+        // 거래처로 dedup 을 한정해 같은 거래처의 행사·진열 공존을 보존한다.
+        val displayScheduledAccountIds = teamMemberSchedules
+            .filter { it.workingCategory1 == WorkingCategory1.DISPLAY }
+            .mapNotNull { it.account?.id }
+            .toSet()
 
         val masterAccountInfos = validMasters.mapNotNull { master ->
             val account = master.account
             val accountId = account?.id ?: return@mapNotNull null
-            if (accountId in existingAccountIds) return@mapNotNull null
+            if (accountId in displayScheduledAccountIds) return@mapNotNull null
 
             val accountName = account.name ?: ""
             if (!matchesKeyword(keyword, accountName, account)) return@mapNotNull null
