@@ -281,10 +281,10 @@ export default function PPTMasterPage() {
       fixed: 'right',
       render: (_, record) => (
         <Space size={4}>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>
+          <Button size="small" onClick={() => handleEdit(record)}>
             수정
           </Button>
-          <Button type="link" size="small" onClick={() => handleClone(record)}>
+          <Button size="small" onClick={() => handleClone(record)}>
             복제
           </Button>
           <Popconfirm
@@ -293,7 +293,7 @@ export default function PPTMasterPage() {
             okText="확인"
             cancelText="취소"
           >
-            <Button type="link" size="small" danger>
+            <Button size="small" danger>
               삭제
             </Button>
           </Popconfirm>
