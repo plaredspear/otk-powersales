@@ -90,7 +90,6 @@ export const menuRoute: MenuRoute = {
           ],
         },
         { path: '/leave', name: '휴무관리' },
-        { path: '/attendance', name: '근무 등록현황', entity: 'attendance_log', operation: 'READ' },
         { path: '/attend-info', name: '근무기간 조회', entity: 'attend_info', operation: 'READ' },
       ],
     },
@@ -366,6 +365,7 @@ export const menuRoute: MenuRoute = {
             },
           ],
         },
+        { path: '/attendance', name: '근무 등록현황', entity: 'attendance_log', operation: 'READ' },
       ],
     },
     {
