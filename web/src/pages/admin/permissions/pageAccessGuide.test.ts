@@ -15,7 +15,7 @@ function makeMenu(): MenuRoute {
       {
         name: '인사/근무',
         children: [
-          { path: '/female-employee', name: '여사원 현황', entity: 'employee', operation: 'READ' },
+          { path: '/female-employee', name: '여사원 현황', entity: 'female_employee', operation: 'READ' },
         ],
       },
       {
@@ -89,7 +89,7 @@ function makeProfileMatrix(): PermissionMatrix {
     ],
     rows: [
       {
-        entity: 'employee',
+        entity: 'female_employee',
         byProfile: [
           { profileId: 1, canRead: true, canCreate: true, canEdit: true, canDelete: true },
           { profileId: 2, canRead: true, canCreate: false, canEdit: false, canDelete: false },
@@ -110,7 +110,7 @@ function makePermissionSetMatrix(): PermissionSetMatrix {
         viewAllData: false,
         modifyAllData: false,
         objectPermissions: [
-          { sfApiName: 'Employee__c', entity: 'employee', canRead: true, canCreate: false, canEdit: false, canDelete: false },
+          { sfApiName: 'FemaleEmployee', entity: 'female_employee', canRead: true, canCreate: false, canEdit: false, canDelete: false },
         ],
       },
       {
@@ -136,7 +136,7 @@ describe('buildRows', () => {
     });
     const employee = rows.find((r) => r.path === '/female-employee')!;
     expect(employee.requirementKind).toBe('entity');
-    expect(employee.requirementLabel).toBe('사원 (employee, READ/조회)');
+    expect(employee.requirementLabel).toBe('여사원 (female_employee, READ/조회)');
     expect(employee.satisfyingProfiles).toEqual([
       { profileId: 1, name: '시스템 관리자' },
       { profileId: 2, name: 'CEO' },

@@ -93,7 +93,7 @@ describe('EmployeePage 계정 관리 컬럼 (Spec #582 P2-W)', () => {
   });
 
   it('MANAGE_USERS 권한 미보유 - 계정 관리 컬럼이 렌더링되지 않음', () => {
-    setPermissions([entityPermissionKey('employee', 'READ')]);
+    setPermissions([entityPermissionKey('female_employee', 'READ')]);
     renderPage();
     expect(screen.queryByText('계정 관리')).not.toBeInTheDocument();
     expect(screen.queryAllByRole('button', { name: '단말 초기화' })).toHaveLength(0);
@@ -101,7 +101,7 @@ describe('EmployeePage 계정 관리 컬럼 (Spec #582 P2-W)', () => {
   });
 
   it('MANAGE_USERS 권한 보유 - active 사원은 버튼 활성, 비활성 사원은 disabled', () => {
-    setPermissions([entityPermissionKey('employee', 'READ'), systemPermissionKey('MANAGE_USERS')]);
+    setPermissions([entityPermissionKey('female_employee', 'READ'), systemPermissionKey('MANAGE_USERS')]);
     renderPage();
 
     const deviceButtons = screen.getAllByRole('button', { name: '단말 초기화' });

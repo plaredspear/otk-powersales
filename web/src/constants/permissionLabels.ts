@@ -21,6 +21,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   attendance_log: '근무 등록',
   claim: '클레임',
   employee: '사원',
+  female_employee: '여사원',
   employee_input_criteria_master: '진열사원 투입기준',
   monthly_sales_history: '월매출',
   notice_post: '공지사항',

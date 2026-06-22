@@ -259,10 +259,15 @@ export const router = createBrowserRouter(
                   ],
                 },
                 {
-                  element: <PermissionRoute entity="employee" operation="READ" />,
+                  element: <PermissionRoute entity="female_employee" operation="READ" />,
                   children: [
                     { path: '/female-employee', element: <LazyWrapper><EmployeePage /></LazyWrapper> },
                     { path: '/female-employee/:employeeId', element: <LazyWrapper><EmployeeDetailPage /></LazyWrapper> },
+                  ],
+                },
+                {
+                  element: <PermissionRoute entity="employee" operation="READ" />,
+                  children: [
                     { path: '/employee/:employeeId', element: <LazyWrapper><EmployeeDetailPage /></LazyWrapper> },
                     { path: '/settings/employees', element: <LazyWrapper><EmployeeListPage /></LazyWrapper> },
                   ],

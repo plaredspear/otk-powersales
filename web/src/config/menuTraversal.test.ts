@@ -115,7 +115,7 @@ describe('flattenMenuLeaves', () => {
             {
               path: '/female-employee',
               name: '여사원 현황',
-              entity: 'employee',
+              entity: 'female_employee',
               operation: 'READ',
             },
           ],
@@ -126,7 +126,7 @@ describe('flattenMenuLeaves', () => {
     const result = flattenMenuLeaves(menu);
     expect(result[0].item.allowedProfileNames).toEqual(['시스템 관리자']);
     expect(result[1].item.systemPermission).toBe('MODIFY_ALL_DATA');
-    expect(result[2].item.entity).toBe('employee');
+    expect(result[2].item.entity).toBe('female_employee');
     expect(result[2].item.operation).toBe('READ');
   });
 

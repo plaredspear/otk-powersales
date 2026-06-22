@@ -83,10 +83,10 @@ export const menuRoute: MenuRoute = {
         {
           path: '/female-employee',
           name: '여사원 현황',
-          entity: 'employee',
+          entity: 'female_employee',
           operation: 'READ',
           subRoutes: [
-            { path: '/female-employee/:employeeId', name: '여사원 상세', entity: 'employee', operation: 'READ' },
+            { path: '/female-employee/:employeeId', name: '여사원 상세', entity: 'female_employee', operation: 'READ' },
           ],
         },
         { path: '/leave', name: '휴무관리' },
