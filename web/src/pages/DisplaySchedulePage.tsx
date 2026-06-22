@@ -173,6 +173,7 @@ function buildListColumns(
       key: 'action',
       width: 140,
       align: 'center',
+      fixed: 'right',
       render: (_, row) => (
         <Space size={4}>
           <Button size="small" onClick={() => onEdit(row)}>
