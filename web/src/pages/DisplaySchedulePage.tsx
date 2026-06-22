@@ -567,6 +567,7 @@ export default function DisplaySchedulePage() {
             placeholder="사원번호"
             value={filterEmployeeCode}
             onChange={(e) => setFilterEmployeeCode(e.target.value)}
+            onPressEnter={handleSearch}
             style={{ width: 140 }}
             allowClear
           />
@@ -574,6 +575,7 @@ export default function DisplaySchedulePage() {
             placeholder="거래처명"
             value={filterAccountName}
             onChange={(e) => setFilterAccountName(e.target.value)}
+            onPressEnter={handleSearch}
             style={{ width: 140 }}
             allowClear
           />
