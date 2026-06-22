@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Modal, Form, DatePicker, Select, message, Alert, Row, Col, Typography, Badge, Checkbox } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
+import { AxiosError } from 'axios';
 import EmployeeSelect from './EmployeeSelect';
 import AccountSelect from './AccountSelect';
 import { useScheduleCreate, useScheduleUpdate, useScheduleDetail } from '@/hooks/schedule/useScheduleCreate';
 import type { ScheduleCreateRequest, ScheduleListItem } from '@/api/schedule';
+import { isApiErrorBody } from '@/api/types';
 
 const { Text } = Typography;
 
@@ -142,7 +144,14 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
         // Form validation error — antd 가 자체 표시
         return;
       }
-      const msg = err instanceof Error ? err.message : '스케줄 저장에 실패했습니다';
+      // 백엔드 에러 봉투 { success:false, error:{ code, message } } 에서 메시지 추출.
+      // 4xx 는 axios 가 throw 하므로 응답 본문은 err.response.data 에 들어 있다.
+      const msg =
+        err instanceof AxiosError && isApiErrorBody(err.response?.data)
+          ? err.response!.data.error!.message
+          : err instanceof Error
+            ? err.message
+            : '스케줄 저장에 실패했습니다';
       setErrorMessage(msg);
     }
   };
