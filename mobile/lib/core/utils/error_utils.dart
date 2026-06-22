@@ -20,8 +20,37 @@ String extractErrorMessage(dynamic e) {
         return topMessage;
       }
     }
+    // 서버 응답 본문이 없는 네트워크/타임아웃 계열 — e.toString() 대신 사용자 친화 메시지.
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return '서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.';
+      case DioExceptionType.connectionError:
+        return '네트워크 연결을 확인해주세요.';
+      default:
+        break;
+    }
   }
   return e.toString().replaceFirst('Exception: ', '');
+}
+
+/// 서버 응답 없이 발생한 네트워크/타임아웃 계열 오류 여부.
+///
+/// 이 경우 서버 `error.code` 가 없으므로, 코드 기반 매핑 대신
+/// [extractErrorMessage] 의 친화 메시지를 그대로 노출해야 한다.
+bool isNetworkError(dynamic e) {
+  if (e is! DioException) return false;
+  if (e.response != null) return false;
+  switch (e.type) {
+    case DioExceptionType.connectionTimeout:
+    case DioExceptionType.sendTimeout:
+    case DioExceptionType.receiveTimeout:
+    case DioExceptionType.connectionError:
+      return true;
+    default:
+      return false;
+  }
 }
 
 /// API 에러 응답에서 에러 코드(`error.code`)를 추출합니다.

@@ -650,6 +650,15 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (raw.contains('LOAN_SAP_ERROR') || raw.contains('SAP')) {
       return 'SAP 일시 오류. 잠시 후 다시 시도해주세요.';
     }
+    // 서버가 비즈니스 에러 코드를 내려준 경우(마감 ORD_DEADLINE_PASSED 등 위에서 미정의 코드 포함)
+    // 사용자 친화 메시지(error.message)를 그대로 노출한다.
+    if (extractErrorCode(error) != null && raw.isNotEmpty) {
+      return raw;
+    }
+    // 서버 응답이 없는 네트워크/타임아웃(예: SAP InventorySearch 지연) — friendly 메시지 노출.
+    if (isNetworkError(error) && raw.isNotEmpty) {
+      return raw;
+    }
     return '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
   }
 
@@ -713,6 +722,14 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       return '본인 담당 거래처가 아닙니다.';
     }
     if (message.contains('ORD_DRAFT_INVALID_REQUEST')) {
+      return message;
+    }
+    // 서버 비즈니스 에러 메시지(error.message)가 있으면 그대로 노출.
+    if (extractErrorCode(error) != null && message.isNotEmpty) {
+      return message;
+    }
+    // 서버 응답이 없는 네트워크/타임아웃 — friendly 메시지 노출.
+    if (isNetworkError(error) && message.isNotEmpty) {
       return message;
     }
     return '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
