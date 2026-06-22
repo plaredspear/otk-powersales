@@ -10131,9 +10131,26 @@
           "clockIn" : {
             "type" : "boolean"
           },
+          "completeTime" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "costCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "refAccountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "secondWorkType" : {
+            "type" : [ "string", "null" ]
+          },
+          "startTime" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
           },
           "workingCategory1" : {
             "type" : [ "string", "null" ]
@@ -19622,6 +19639,40 @@
             "default" : 10,
             "format" : "int32",
             "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeWorkHistoryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/employees/{employeeId}/work-history/monthly" : {
+      "get" : {
+        "operationId" : "getMonthlyWorkHistory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "yearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "responses" : {
