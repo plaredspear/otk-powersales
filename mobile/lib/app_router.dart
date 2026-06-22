@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'domain/entities/attendance_result.dart';
 import 'domain/entities/education_category.dart';
 import 'domain/entities/product_expiration_item.dart';
 import 'domain/entities/suggestion_form.dart';
@@ -133,7 +134,11 @@ class AppRouter {
         logisticsSales: (context) => const LogisticsSalesScreen(),
         electronicSales: (context) => const ElectronicSalesScreen(),
         attendance: (context) => const AttendancePage(),
-        attendanceComplete: (context) => const AttendanceCompletePage(),
+        attendanceComplete: (context) {
+          final result =
+              ModalRoute.of(context)!.settings.arguments as AttendanceResult;
+          return AttendanceCompletePage(result: result);
+        },
         myAccounts: (context) => const MyAccountsPage(),
         productSearch: (context) {
           final selectionMode =

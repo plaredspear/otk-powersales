@@ -3,6 +3,7 @@ import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/account_schedule_item.dart';
+import '../../domain/entities/attendance_result.dart';
 
 import '../../data/datasources/attendance_api_datasource.dart';
 import '../../data/repositories/attendance_repository_impl.dart';
@@ -119,13 +120,21 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
   }
 
   /// 출근등록
-  Future<void> register({double? latitude, double? longitude}) async {
+  ///
+  /// 완료 화면 이동은 호출 측(UI)이 반환된 [AttendanceResult] 를 route argument
+  /// 로 직접 전달해 수행한다. provider state 에는 결과를 보관하지 않는다
+  /// (트리거 겸 데이터로 겸용 시 화면 전환 race → 검정 화면 발생).
+  /// 성공 시 결과를, 실패 시 null 을 반환한다.
+  Future<AttendanceResult?> register({
+    double? latitude,
+    double? longitude,
+  }) async {
     final selectedId = state.selectedScheduleId;
-    if (selectedId == null) return;
+    if (selectedId == null) return null;
 
     if (latitude == null || longitude == null) {
       state = state.toError('GPS 좌표를 가져올 수 없습니다');
-      return;
+      return null;
     }
 
     state = state.toRegistering();
@@ -140,17 +149,19 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
 
       state = state.copyWith(
         isRegistering: false,
-        registrationResult: result,
         registeredCount: result.registeredCount,
         totalCount: result.totalCount,
         errorMessage: null,
       );
+      return result;
     } on ArgumentError catch (e) {
       state = state.toError(e.message as String);
+      return null;
     } catch (e) {
       state = state.toError(
         extractErrorMessage(e),
       );
+      return null;
     }
   }
 
@@ -163,16 +174,6 @@ class AttendanceNotifier extends StateNotifier<AttendanceState> {
 
     // 거래처 목록 새로고침
     await loadAccounts();
-  }
-
-  /// 등록 결과 초기화
-  void clearRegistrationResult() {
-    state = AttendanceState(
-      allAccounts: state.allAccounts,
-      filteredAccounts: state.allAccounts,
-      totalCount: state.totalCount,
-      registeredCount: state.registeredCount,
-    );
   }
 
   /// 출근등록 현황 조회

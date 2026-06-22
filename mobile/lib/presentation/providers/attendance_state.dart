@@ -1,4 +1,3 @@
-import '../../domain/entities/attendance_result.dart';
 import '../../domain/entities/attendance_status.dart';
 import '../../domain/entities/account_schedule_item.dart';
 
@@ -29,9 +28,6 @@ class AttendanceState {
   /// 검색 키워드
   final String searchKeyword;
 
-  /// 등록 결과 (등록 완료 후)
-  final AttendanceResult? registrationResult;
-
   /// 출근등록 현황 리스트
   final List<AttendanceStatus> statusList;
 
@@ -49,7 +45,6 @@ class AttendanceState {
     this.selectedScheduleId,
     this.selectedSource,
     this.searchKeyword = '',
-    this.registrationResult,
     this.statusList = const [],
     this.safetyCheckCompleted = false,
   });
@@ -104,7 +99,6 @@ class AttendanceState {
     int? selectedScheduleId,
     String? selectedSource,
     String? searchKeyword,
-    AttendanceResult? registrationResult,
     List<AttendanceStatus>? statusList,
     bool? safetyCheckCompleted,
     bool clearSelection = false,
@@ -120,7 +114,6 @@ class AttendanceState {
       selectedScheduleId: clearSelection ? null : (selectedScheduleId ?? this.selectedScheduleId),
       selectedSource: clearSelection ? null : (selectedSource ?? this.selectedSource),
       searchKeyword: searchKeyword ?? this.searchKeyword,
-      registrationResult: registrationResult ?? this.registrationResult,
       statusList: statusList ?? this.statusList,
       safetyCheckCompleted: safetyCheckCompleted ?? this.safetyCheckCompleted,
     );

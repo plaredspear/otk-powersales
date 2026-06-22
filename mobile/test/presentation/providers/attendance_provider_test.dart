@@ -143,16 +143,16 @@ void main() {
       await notifier.loadAccounts();
       notifier.selectAccount(_mockAccounts[0]);
 
-      await notifier.register(latitude: 35.1696, longitude: 129.1318);
+      final result =
+          await notifier.register(latitude: 35.1696, longitude: 129.1318);
 
       expect(notifier.state.isRegistering, false);
-      expect(notifier.state.registrationResult, isNotNull);
-      expect(notifier.state.registrationResult?.scheduleId,
-          12345);
-      expect(notifier.state.registrationResult?.accountName, '이마트 해운대점');
-      expect(notifier.state.registrationResult?.distanceKm, 0.12);
-      expect(notifier.state.registrationResult?.totalCount, 5);
-      expect(notifier.state.registrationResult?.registeredCount, 1);
+      expect(result, isNotNull);
+      expect(result?.scheduleId, 12345);
+      expect(result?.accountName, '이마트 해운대점');
+      expect(result?.distanceKm, 0.12);
+      expect(result?.totalCount, 5);
+      expect(result?.registeredCount, 1);
       expect(notifier.state.registeredCount, 1);
       expect(notifier.state.errorMessage, null);
     });
@@ -161,9 +161,9 @@ void main() {
       await notifier.loadAccounts();
 
       // 거래처를 선택하지 않음
-      await notifier.register(latitude: 35.0, longitude: 129.0);
+      final result = await notifier.register(latitude: 35.0, longitude: 129.0);
 
-      expect(notifier.state.registrationResult, null);
+      expect(result, null);
       expect(notifier.state.registeredCount, 0);
     });
 
@@ -181,8 +181,9 @@ void main() {
 
       // 첫 번째 등록
       notifier.selectAccount(_mockAccounts[0]);
-      await notifier.register(latitude: 35.0, longitude: 129.0);
-      expect(notifier.state.registrationResult, isNotNull);
+      final firstResult =
+          await notifier.register(latitude: 35.0, longitude: 129.0);
+      expect(firstResult, isNotNull);
 
       // 동일한 거래처 재등록 시도
       repository.exceptionToThrow = Exception('이미 출근 등록된 스케줄입니다');
@@ -204,28 +205,6 @@ void main() {
       expect(notifier.state.selectedScheduleId, null);
       expect(notifier.state.searchKeyword, '');
       expect(notifier.state.filteredAccounts.length, 5);
-    });
-
-    test('clearRegistrationResult 등록 결과 초기화하지만 거래처 정보 유지',
-        () async {
-      await notifier.loadAccounts();
-      notifier.selectAccount(_mockAccounts[0]);
-      await notifier.register(latitude: 35.0, longitude: 129.0);
-
-      // 등록 완료 상태
-      expect(notifier.state.registrationResult, isNotNull);
-      expect(notifier.state.allAccounts.length, 5);
-
-      notifier.clearRegistrationResult();
-
-      // 등록 결과는 초기화되지만 기본 정보는 유지
-      expect(notifier.state.registrationResult, null);
-      expect(notifier.state.selectedScheduleId, null);
-      expect(notifier.state.searchKeyword, '');
-      expect(notifier.state.allAccounts.length, 5);
-      expect(notifier.state.filteredAccounts.length, 5);
-      expect(notifier.state.totalCount, 5);
-      expect(notifier.state.registeredCount, 1);
     });
 
     test('loadAttendanceStatus 출근등록 현황 조회', () async {
@@ -262,11 +241,11 @@ void main() {
       await notifier.loadAccounts();
       notifier.selectAccount(masterAccount);
 
-      await notifier.register(latitude: 35.0, longitude: 129.0);
+      final result = await notifier.register(latitude: 35.0, longitude: 129.0);
 
       expect(notifier.state.isRegistering, false);
-      expect(notifier.state.registrationResult, isNotNull);
-      expect(notifier.state.registrationResult?.accountName, '진열마스터 거래처');
+      expect(result, isNotNull);
+      expect(result?.accountName, '진열마스터 거래처');
       expect(notifier.state.errorMessage, null);
     });
 
@@ -355,8 +334,9 @@ void main() {
       expect(notifier.state.selectedScheduleId, 12345);
 
       // 4. 출근등록
-      await notifier.register(latitude: 35.1696, longitude: 129.1318);
-      expect(notifier.state.registrationResult, isNotNull);
+      final result =
+          await notifier.register(latitude: 35.1696, longitude: 129.1318);
+      expect(result, isNotNull);
       expect(notifier.state.registeredCount, 1);
 
       // 5. 현황 조회

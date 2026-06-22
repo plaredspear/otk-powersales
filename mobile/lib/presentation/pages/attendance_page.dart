@@ -64,10 +64,22 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
 
     if (!mounted) return;
 
-    notifier.register(
+    final result = await notifier.register(
       latitude: position?.latitude,
       longitude: position?.longitude,
     );
+
+    if (!mounted) return;
+
+    // 등록 성공 시에만 완료 화면으로 이동. 결과는 route argument 로 직접 전달해
+    // provider state 변화에 의존하지 않는다 (검정 화면 방지).
+    if (result != null) {
+      AppRouter.navigateTo(
+        context,
+        AppRouter.attendanceComplete,
+        arguments: result,
+      );
+    }
   }
 
   @override
@@ -90,12 +102,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
             ),
           ),
         );
-      }
-
-      // 등록 완료 시 완료 화면으로 이동
-      if (next.registrationResult != null &&
-          previous?.registrationResult == null) {
-        AppRouter.navigateTo(context, AppRouter.attendanceComplete);
       }
     });
 

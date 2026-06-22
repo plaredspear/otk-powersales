@@ -2,27 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../domain/entities/attendance_result.dart';
 import '../providers/attendance_provider.dart';
 import '../widgets/common/primary_button.dart';
 import '../../app_router.dart';
 
 /// 출근등록 완료 화면
+///
+/// 등록 결과는 route argument 로 직접 주입받는다. provider state 를 watch 하지
+/// 않으므로, 다른 화면에서 provider 결과를 비워도 이 화면이 빈 화면으로
+/// 리빌드되지 않는다 (검정 화면 방지).
 class AttendanceCompletePage extends ConsumerWidget {
-  const AttendanceCompletePage({super.key});
+  const AttendanceCompletePage({super.key, required this.result});
+
+  final AttendanceResult result;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(attendanceProvider);
-    final result = state.registrationResult;
-
-    if (result == null) {
-      // 등록 결과가 없으면 이전 화면으로
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        AppRouter.goBack(context);
-      });
-      return const Scaffold(body: SizedBox.shrink());
-    }
-
     final workTypeLabel =
         result.workType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
     final isAllDone = result.isAllRegistered;
@@ -177,9 +173,6 @@ class AttendanceCompletePage extends ConsumerWidget {
             ? PrimaryButton(
                 text: '홈으로 돌아가기',
                 onPressed: () {
-                  ref
-                      .read(attendanceProvider.notifier)
-                      .clearRegistrationResult();
                   AppRouter.navigateToAndRemoveAll(
                       context, AppRouter.main);
                 },
@@ -189,9 +182,6 @@ class AttendanceCompletePage extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        ref
-                            .read(attendanceProvider.notifier)
-                            .clearRegistrationResult();
                         AppRouter.navigateToAndRemoveAll(
                             context, AppRouter.main);
                       },
