@@ -402,6 +402,22 @@ void main() {
         expect(notifier.state.errorMessage, '수량이 0인 라인이 있습니다.');
       });
 
+      test('E7-b (H) — 박스만 입력(낱개 0)이라도 총EA > 0 이면 통과', () async {
+        // 레거시 write.jsp:219 tot-quantity-each(총EA) 기준 — 박스 2 × 입수 20 = 40 > 0.
+        notifier.state = notifier.state.copyWith(
+          selectedAccountId: 5678,
+          selectedExternalKey: 'EK001',
+          orderDraft: notifier.state.orderDraft.copyWith(
+            clientId: 5678,
+            deliveryDate: DateTime.now().add(const Duration(days: 3)),
+            creditBalance: 1000000,
+            items: [_item('P001', boxes: 2, pieces: 0)],
+          ),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.errorMessage, isNull);
+      });
+
       test('I — 납기일 +10일 → requiresDeliveryDateConfirm = true', () async {
         notifier.state = notifier.state.copyWith(
           selectedAccountId: 5678,

@@ -549,20 +549,12 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (creditBalance != null && state.totalAmount > creditBalance) {
       return null; // 버튼 disabled 로 도달 자체 차단 — SnackBar 표시 안 함
     }
-    // (H) 라인 총EA <= 0
-    final zeroLine = state.orderDraft.items.firstWhere(
-      (e) => e.quantityPieces <= 0,
-      orElse: () => const OrderDraftItem(
-        productCode: '',
-        productName: '',
-        quantityBoxes: 0,
-        quantityPieces: 1,
-        unitPrice: 0,
-        boxSize: 1,
-        totalPrice: 0,
-      ),
+    // (H) 라인 총EA <= 0 — 레거시 write.jsp:219 `tot-quantity-each(총EA) <= 0` 정합.
+    // 총EA = (박스 × 입수) + 낱개. 박스만 입력(낱개 0)해도 총EA > 0 이면 통과해야 한다.
+    final hasZeroLine = state.orderDraft.items.any(
+      (e) => (e.quantityBoxes * e.boxSize).round() + e.quantityPieces <= 0,
     );
-    if (zeroLine.productCode.isNotEmpty) {
+    if (hasZeroLine) {
       return '수량이 0인 라인이 있습니다.';
     }
     return null;
