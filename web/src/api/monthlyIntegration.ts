@@ -59,10 +59,19 @@ export async function fetchMonthlyIntegrationSchedule(
   year: number,
   month: number,
   costCenterCodes: string[],
+  keyword?: string,
 ): Promise<MonthlyIntegrationScheduleResponse> {
+  const trimmedKeyword = keyword?.trim();
   const res = await client.get<ApiResponse<MonthlyIntegrationScheduleResponse>>(
     '/api/v1/admin/schedules/monthly-integration',
-    { params: { year, month, costCenterCodes: costCenterCodes.join(',') } },
+    {
+      params: {
+        year,
+        month,
+        costCenterCodes: costCenterCodes.join(','),
+        ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
+      },
+    },
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || '통합일정 조회에 실패했습니다');
@@ -75,11 +84,20 @@ export async function fetchMonthlyIntegrationExport(
   year: number,
   month: number,
   costCenterCodes: string[],
+  keyword?: string,
 ): Promise<void> {
+  const trimmedKeyword = keyword?.trim();
   await downloadExcel(
     '/api/v1/admin/schedules/monthly-integration/export',
     `${year}년${month}월_여사원_통합일정.xlsx`,
-    { params: { year, month, costCenterCodes: costCenterCodes.join(',') } },
+    {
+      params: {
+        year,
+        month,
+        costCenterCodes: costCenterCodes.join(','),
+        ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
+      },
+    },
   );
 }
 

@@ -41,14 +41,19 @@ class TeamMemberScheduleSearchService(
      * @param month 월 ("5" / "05" 모두 허용)
      * @param orgValues 사용자 선택 지점 코드 리스트
      */
-    fun search(year: String, month: String, orgValues: List<String>): TeamMemberScheduleSearchResult {
+    fun search(
+        year: String,
+        month: String,
+        orgValues: List<String>,
+        keyword: String? = null,
+    ): TeamMemberScheduleSearchResult {
         val normMonth = month.toInt().toString()
         val expandedCodes = expander.expand(orgValues)
         if (expandedCodes.isEmpty()) {
             return TeamMemberScheduleSearchResult(resultCode = "S", resultMsg = "검색결과가 없습니다.", result = emptyList())
         }
 
-        val rows = fetchMfeisOrdered(year, normMonth, expandedCodes)
+        val rows = fetchMfeisOrdered(year, normMonth, expandedCodes, keyword)
         val avgSalesByAccountId = computeSixMonthAverageSales(rows, year, normMonth)
 
         val items = rows.map { toResultItem(it, avgSalesByAccountId) }
@@ -68,8 +73,15 @@ class TeamMemberScheduleSearchService(
         year: String,
         month: String,
         costCenterCodes: Collection<String>,
+        keyword: String? = null,
     ): List<TeamMemberScheduleRow> {
         val q = monthlyFemaleEmployeeIntegrationSchedule
+        // 사번 또는 이름 통합 검색어 — 사번 정확일치 OR 이름 부분일치(대소문자/공백 무시).
+        // employee 는 이미 lazy join 으로 select 중이라 추가 join 없이 WHERE 조건만 덧붙인다.
+        val trimmedKeyword = keyword?.trim()?.takeIf { it.isNotEmpty() }
+        val keywordPredicate = trimmedKeyword?.let {
+            q.employee.employeeCode.eq(it).or(q.employee.name.containsIgnoreCase(it))
+        }
         // DTO projection — MFEIS + employee/account 의 필요 컬럼만 select.
         // 엔티티(특히 Employee) 를 hydrate 하지 않으므로 Employee.employeeInfo @OneToOne 강제 로딩
         // (N+1) 을 회피한다. 화면에 쓰는 컬럼은 orgName/employeeCode/jikwee/name(employee),
@@ -103,6 +115,7 @@ class TeamMemberScheduleSearchService(
                 q.year.eq(year)
                     .and(q.month.eq(month))
                     .and(q.costCenterCode.`in`(costCenterCodes))
+                    .and(keywordPredicate)
             )
             // SF ORDER BY BranchName__c, AccountCode__c, EmployeeNumber__c (모두 formula)
             // backend lazy join 컬럼으로 동등 정렬

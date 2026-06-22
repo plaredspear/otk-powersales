@@ -6,10 +6,11 @@ export function useMonthlyIntegrationSchedule(
   month: number,
   costCenterCodes: string[],
   enabled: boolean,
+  keyword?: string,
 ) {
   return useQuery({
-    queryKey: ['admin', 'schedules', 'monthly-integration', year, month, costCenterCodes],
-    queryFn: () => fetchMonthlyIntegrationSchedule(year, month, costCenterCodes),
+    queryKey: ['admin', 'schedules', 'monthly-integration', year, month, costCenterCodes, keyword ?? ''],
+    queryFn: () => fetchMonthlyIntegrationSchedule(year, month, costCenterCodes, keyword),
     enabled,
   });
 }
