@@ -76,6 +76,9 @@ class AdminAccountController(
      * SF 의 lookup search 는 Account FLS/object access 와 무관하게 화면 권한 (Promotion CRUD) 으로
      * 작동 — 본 endpoint 는 SF 메커니즘 정합. 결과는 동일 [AccountListResponse] 재사용
      * (lookupFilter + sharing rule 평가는 `adminAccountService.getAccounts` 가 그대로 적용).
+     *
+     * 단, 폐업 거래처는 `excludeClosedAccount=true` 로 distribution 면제 없이 완전 제외한다 —
+     * 폐업 거래처는 행사 등록 대상이 아니므로 조회 후보에서도 일관되게 배제 (운영 정책).
      */
     @GetMapping("/lookup")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
@@ -93,7 +96,8 @@ class AdminAccountController(
             branchCode = null,
             accountStatusName = null,
             page = page,
-            size = size
+            size = size,
+            excludeClosedAccount = true
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
