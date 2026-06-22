@@ -92,8 +92,12 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
 
   const { data: detail, isLoading: detailLoading } = useScheduleDetail(editTarget?.id ?? null, open && isEdit);
 
-  /** 확정된 스케줄은 편집 모드에서 모든 입력 항목을 비활성화한다 (권한 무관). */
-  const isConfirmedLocked = isEdit && detail?.confirmed === true;
+  /**
+   * 확정된 스케줄은 편집 모드에서 모든 입력 항목을 비활성화한다 (권한 무관).
+   * 상세 조회가 끝나기 전에는 row 데이터(editTarget.confirmed)로 즉시 잠금 상태를 결정해
+   * "활성 상태로 잠깐 보였다가 disabled 되는" 깜빡임을 막는다. 조회가 끝나면 detail 값을 권위로 사용.
+   */
+  const isConfirmedLocked = isEdit && (detail?.confirmed ?? editTarget?.confirmed) === true;
 
   useEffect(() => {
     if (!open) return;
@@ -177,7 +181,7 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       {errorMessage && (
         <Alert type="error" message={errorMessage} style={{ marginBottom: 16 }} closable onClose={() => setErrorMessage(null)} />
       )}
-      {isEdit && detail?.confirmed && (
+      {isConfirmedLocked && (
         <Alert
           type="warning"
           message="확정된 스케줄입니다. 항목을 변경할 수 없습니다."
