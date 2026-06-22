@@ -77,6 +77,8 @@ const previewColumns: ColumnsType<RowPreview> = [
 
 function buildListColumns(
   onEdit: (row: ScheduleListItem) => void,
+  onConfirm: (row: ScheduleListItem) => void,
+  confirming: boolean,
   navigate: NavigateFunction,
 ): ColumnsType<ScheduleListItem> {
   // SF 「진열사원 스케줄 마스터」 List View 컬럼 순서 정합:
@@ -169,12 +171,24 @@ function buildListColumns(
     {
       title: '액션',
       key: 'action',
-      width: 80,
+      width: 140,
       align: 'center',
       render: (_, row) => (
-        <Button size="small" onClick={() => onEdit(row)}>
-          수정
-        </Button>
+        <Space size={4}>
+          <Button size="small" onClick={() => onEdit(row)}>
+            수정
+          </Button>
+          {!row.confirmed && (
+            <Button
+              size="small"
+              type="primary"
+              loading={confirming}
+              onClick={() => onConfirm(row)}
+            >
+              확정
+            </Button>
+          )}
+        </Space>
       ),
     },
   ];
@@ -215,7 +229,6 @@ export default function DisplaySchedulePage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ScheduleListItem | null>(null);
   const modalOpen = createModalOpen || editTarget != null;
-  const listColumns = buildListColumns((row) => setEditTarget(row), navigate);
 
   const scheduleListQuery = useScheduleList({
     page: listPage,
@@ -228,6 +241,13 @@ export default function DisplaySchedulePage() {
   const batchConfirmMutation = useScheduleBatchConfirm();
   const batchUnconfirmMutation = useScheduleBatchUnconfirm();
   const batchDeleteMutation = useScheduleBatchDelete();
+
+  const listColumns = buildListColumns(
+    (row) => setEditTarget(row),
+    (row) => handleRowConfirm(row),
+    batchConfirmMutation.isPending,
+    navigate,
+  );
 
   const handleDownload = () => {
     runTemplate(SCHEDULE_TEMPLATE_PATH, '진열스케줄_양식.xlsx');
@@ -327,6 +347,20 @@ export default function DisplaySchedulePage() {
           setSelectedRowKeys([]);
         }).catch((err) => {
           message.error(err instanceof Error ? err.message : '일괄 확정에 실패했습니다');
+        }),
+    });
+  };
+
+  const handleRowConfirm = (row: ScheduleListItem) => {
+    Modal.confirm({
+      title: '확정',
+      content: `${row.employeeName} · ${row.accountName ?? '-'} 1건을 확정하시겠습니까?`,
+      onOk: () =>
+        batchConfirmMutation.mutateAsync([row.id]).then((result) => {
+          message.success(`${result.updatedCount}건이 확정되었습니다`);
+          setSelectedRowKeys((keys) => keys.filter((k) => k !== row.id));
+        }).catch((err) => {
+          message.error(err instanceof Error ? err.message : '확정에 실패했습니다');
         }),
     });
   };
