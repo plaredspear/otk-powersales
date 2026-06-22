@@ -483,6 +483,45 @@ class AttendanceServiceTest {
             assertThat(result.accounts[0].source).isEqualTo("schedule")
             assertThat(result.accounts[0].scheduleId).isEqualTo(1L)
         }
+
+        @Test
+        @DisplayName("같은 거래처에 행사(EVENT) TMS + 진열마스터 동시 -> 둘 다 표시 (행사 schedule 1건 + 진열 master 1건). 홈 화면과 일치")
+        fun getAccountList_eventScheduleAndDisplayMaster_sameAccount_returnsBoth() {
+            // Given - 같은 accountId=8938 에 TMS 는 행사(EVENT) 만, 진열은 마스터에만 존재
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            // 여사원일정에 accountId=8938 행사(EVENT) 존재
+            val teamMemberSchedules = listOf(
+                createTeamMemberSchedule(id = 1L, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                    accountName = "이마트 원주점", workingCategory1 = WorkingCategory1.EVENT)
+            )
+
+            // 진열마스터에도 동일 accountId=8938 존재
+            val masters = listOf(
+                createDisplayWorkSchedule(id = 100L, confirmed = true,
+                    startDate = today.minus(10, ChronoUnit.DAYS), endDate = today.plus(10, ChronoUnit.DAYS),
+                    employeeId = userId, accountId = 8938, accountName = "이마트 원주점")
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns teamMemberSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns masters
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then - 행사(schedule) + 진열(master) 둘 다 노출 (dedup 키는 진열로 잡힌 거래처로 한정)
+            assertThat(result.accounts).hasSize(2)
+            val eventItem = result.accounts.single { it.source == "schedule" }
+            val displayItem = result.accounts.single { it.source == "master" }
+            assertThat(eventItem.workCategory).isEqualTo("행사")
+            assertThat(displayItem.workCategory).isEqualTo("진열")
+            assertThat(displayItem.accountId).isEqualTo(8938)
+        }
+
         @Test
         @DisplayName("마감 전(16:59) - isRegistrationClosed=false, registrationDeadline='17:00'")
         fun getAccountList_beforeDeadline_registrationOpen() {
