@@ -561,13 +561,15 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     return null;
   }
 
-  /// (I) 납기일 ≥ 주문일+10일 룰.
+  /// (I) 납기일이 주문일+10일을 초과(= 11일 이상)하면 확인창.
+  /// 레거시 write.jsp:292 `realdeliveryDt > realNow(today+10)` 정합 — 정확히 +10일은 통과.
   bool _isDeliveryFarOff() {
     final delivery = state.deliveryDate;
     if (delivery == null) return false;
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
-    return delivery.difference(todayDate).inDays >= 10;
+    final deliveryDate = DateTime(delivery.year, delivery.month, delivery.day);
+    return deliveryDate.difference(todayDate).inDays > 10;
   }
 
   Future<void> _submitOrderInternal() async {

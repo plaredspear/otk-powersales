@@ -446,6 +446,19 @@ void main() {
         expect(formRepo.submitOrderRequestCount, 0);
       });
 
+      test('I-b — 납기일 정확히 +10일 → 확인창 없이 통과 (레거시 +11일부터 확인)', () async {
+        seedValidState(); // 총 주문금액 1234
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(
+            deliveryDate: DateTime.now().add(const Duration(days: 10)),
+            creditBalance: 1000000,
+          ),
+        );
+        await notifier.validateAndSubmitOrder();
+        expect(notifier.state.requiresDeliveryDateConfirm, false);
+        expect(formRepo.submitOrderRequestCount, 1);
+      });
+
       test('H4 — 검증 통과 → 등록 200 OK + clientRequestId 폐기', () async {
         seedValidState();
         notifier.state = notifier.state.copyWith(
