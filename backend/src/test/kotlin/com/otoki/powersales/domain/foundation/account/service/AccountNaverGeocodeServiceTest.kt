@@ -111,6 +111,75 @@ class AccountNaverGeocodeServiceTest {
     }
 
     @Nested
+    @DisplayName("refreshSingleAccount — 주소 변경 후 좌표 즉시 재조회 (실패 시 무효화)")
+    inner class RefreshSingleAccountTests {
+
+        @Test
+        @DisplayName("정상 — 응답 x/y → longitude/latitude 갱신")
+        fun refreshSingleAccount_success() {
+            val account = createAccount(id = 20, address1 = "서울특별시 강남구 테헤란로 100", latitude = "1.0", longitude = "2.0")
+            every { accountRepository.findById(20) } returns Optional.of(account)
+            every { naverGeocodeClient.geocode("서울특별시 강남구 테헤란로 100") } returns
+                NaverGeocodeResponse(addresses = listOf(NaverGeocodeResponse.Address(x = "127.0276", y = "37.4979")))
+
+            service.refreshSingleAccount(20)
+
+            assertThat(account.longitude).isEqualTo("127.0276")
+            assertThat(account.latitude).isEqualTo("37.4979")
+        }
+
+        @Test
+        @DisplayName("Account 미존재 — Naver 호출 없음 (no-op)")
+        fun refreshSingleAccount_accountNotFound() {
+            every { accountRepository.findById(99) } returns Optional.empty()
+
+            service.refreshSingleAccount(99)
+
+            verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
+        }
+
+        @Test
+        @DisplayName("address1 null/blank — Naver 호출 없음 + 좌표 null 무효화")
+        fun refreshSingleAccount_addressBlank_coordsNulled() {
+            val account = createAccount(id = 21, address1 = "  ", latitude = "1.0", longitude = "2.0")
+            every { accountRepository.findById(21) } returns Optional.of(account)
+
+            service.refreshSingleAccount(21)
+
+            assertThat(account.latitude).isNull()
+            assertThat(account.longitude).isNull()
+            verify(exactly = 0) { naverGeocodeClient.geocode(any()) }
+        }
+
+        @Test
+        @DisplayName("Naver 응답 null (호출 실패) — 좌표 null 무효화 (배치 fallback)")
+        fun refreshSingleAccount_naverReturnsNull_coordsNulled() {
+            val account = createAccount(id = 22, address1 = "부산시 사상구", latitude = "1.0", longitude = "2.0")
+            every { accountRepository.findById(22) } returns Optional.of(account)
+            every { naverGeocodeClient.geocode("부산시 사상구") } returns null
+
+            service.refreshSingleAccount(22)
+
+            assertThat(account.latitude).isNull()
+            assertThat(account.longitude).isNull()
+        }
+
+        @Test
+        @DisplayName("응답 x/y blank — 좌표 null 무효화")
+        fun refreshSingleAccount_xyBlank_coordsNulled() {
+            val account = createAccount(id = 23, address1 = "주소", latitude = "1.0", longitude = "2.0")
+            every { accountRepository.findById(23) } returns Optional.of(account)
+            every { naverGeocodeClient.geocode("주소") } returns
+                NaverGeocodeResponse(addresses = listOf(NaverGeocodeResponse.Address(x = "", y = "")))
+
+            service.refreshSingleAccount(23)
+
+            assertThat(account.latitude).isNull()
+            assertThat(account.longitude).isNull()
+        }
+    }
+
+    @Nested
     @DisplayName("enrichCoordinatesMissingAccounts — batch 묶음 처리")
     inner class EnrichBatchTests {
 

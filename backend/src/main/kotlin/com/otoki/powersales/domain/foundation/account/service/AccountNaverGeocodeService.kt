@@ -77,6 +77,46 @@ class AccountNaverGeocodeService(
     }
 
     /**
+     * 거래처 1건의 좌표를 `address1` 으로 즉시 재조회 — web admin 거래처 주소 수정 후행 처리.
+     *
+     * [enrichSingleAccount] 와 좌표 조회/적용 로직은 동일하되, **조회 실패 / 응답 좌표 부재 시
+     * 기존 좌표를 null 로 무효화**한다는 점이 다르다. 거래처 수정으로 주소가 바뀐 상황에서는
+     * 옛 좌표가 잔존하면 안 되며, 무효화해야 본 service 의 보강 배치 후보(latitude/longitude IS NULL)
+     * 로 재진입해 후속 보강할 수 있다. ([enrichSingleAccount] 는 좌표 미수신 거래처 보강이 목적이라
+     * 실패 시 좌표를 건드리지 않고 다음 배치 재시도에 맡긴다.)
+     *
+     * 본 메서드 단위로 트랜잭션을 분리한다 — 거래처 수정 메인 쓰기 트랜잭션이 외부 HTTP 응답 동안
+     * DB 커넥션을 점유하지 않도록 [AccountUpdateService.update] 커밋 후 후행 호출된다.
+     *
+     * `address1` 이 없으면(null/blank) 조회할 주소가 없으므로 좌표를 null 로 무효화한다.
+     */
+    @Transactional
+    fun refreshSingleAccount(accountId: Long) {
+        val account = accountRepository.findById(accountId).orElse(null) ?: run {
+            log.warn("Account 조회 실패 — accountId={}", accountId)
+            return
+        }
+        val address = account.address1
+        if (address.isNullOrBlank()) {
+            account.latitude = null
+            account.longitude = null
+            return
+        }
+
+        val first = naverGeocodeClient.geocode(address)?.addresses?.firstOrNull()
+        val x = first?.x
+        val y = first?.y
+        if (x.isNullOrBlank() || y.isNullOrBlank()) {
+            log.warn("거래처 주소 변경 좌표 조회 실패 — accountId={} address={}", accountId, address)
+            account.latitude = null
+            account.longitude = null
+            return
+        }
+        account.longitude = x
+        account.latitude = y
+    }
+
+    /**
      * 좌표 미수신 거래처를 [limit] 건 조회 → 거래처별 보강.
      *
      * @return 처리 결과 — `scanned` (조회 건수), `succeeded` (좌표 set 성공), `failed` (좌표 set 실패)
