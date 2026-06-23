@@ -45,8 +45,14 @@ class _SuggestionRegisterPageState
   @override
   void initState() {
     super.initState();
-    // 진입 후 첫 프레임에서 임시저장 이어쓰기 확인 (레거시 nullChk='N' 흐름 대응)
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkDraft());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 전역 provider 라 이전 등록 성공(successMessage) 등 종료 상태가 그대로
+      // 남아 있다. 재진입 시 첫 상태 변화(임시저장 조회 등)에 listen 이 묵은
+      // 성공 메시지를 감지해 곧바로 pop 되는 문제를 막기 위해 먼저 초기화한다.
+      ref.read(suggestionRegisterProvider.notifier).reset();
+      // 진입 후 첫 프레임에서 임시저장 이어쓰기 확인 (레거시 nullChk='N' 흐름 대응)
+      _checkDraft();
+    });
   }
 
   @override
