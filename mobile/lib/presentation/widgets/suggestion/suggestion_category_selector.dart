@@ -5,8 +5,9 @@ import 'suggestion_logistics_claim_fields.dart';
 
 /// 제안하기 분류 선택 위젯 (레거시 suggestWrite.jsp 정합)
 ///
-/// "분류 *" 라벨 + 컴팩트 라디오 3행을 풀폭 하단 구분선으로 구획한다.
-/// 순서: 물류 클레임 / 신제품 제안 / 기존제품 상품가치향상 (기본 물류 클레임).
+/// "분류 *" 라벨 + 컴팩트 라디오를 풀폭 하단 구분선으로 구획한다.
+/// 현재 운영 정책상 물류 클레임만 사용하므로 물류 클레임 1행만 항상 선택된
+/// 상태로 노출한다(신제품 제안 / 기존제품 상품가치향상 제외).
 class SuggestionCategorySelector extends StatelessWidget {
   const SuggestionCategorySelector({
     super.key,
@@ -41,18 +42,6 @@ class SuggestionCategorySelector extends StatelessWidget {
                 _CategoryOption(
                   label: '물류 클레임',
                   value: SuggestionCategory.logisticsClaim,
-                  selectedCategory: selectedCategory,
-                  onChanged: onCategoryChanged,
-                ),
-                _CategoryOption(
-                  label: '신제품 제안',
-                  value: SuggestionCategory.newProduct,
-                  selectedCategory: selectedCategory,
-                  onChanged: onCategoryChanged,
-                ),
-                _CategoryOption(
-                  label: '기존제품 상품가치향상',
-                  value: SuggestionCategory.existingProduct,
                   selectedCategory: selectedCategory,
                   onChanged: onCategoryChanged,
                 ),
