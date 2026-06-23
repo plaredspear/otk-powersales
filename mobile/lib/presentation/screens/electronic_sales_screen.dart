@@ -9,6 +9,7 @@ import '../../core/utils/error_utils.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../providers/electronic_sales_provider.dart';
 import '../providers/electronic_sales_state.dart';
+import '../providers/my_accounts_provider.dart';
 import '../providers/product_add_provider.dart';
 import '../providers/product_add_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
@@ -65,6 +66,32 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
     final now = DateTime.now();
     _startDate = DateTime(now.year, now.month, 1); // 당월 1일
     _endDate = DateTime(now.year, now.month, now.day); // 오늘
+    // 화면 진입 시 기본 거래처(내 거래처 첫 거래처)를 자동 선택하고 매출을 조회한다.
+    // 레거시 abcmain.jsp 진입 동작 정합.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDefaultCustomer());
+  }
+
+  /// 진입 시 매출 scope 거래처 목록의 첫 거래처를 자동 선택하고 매출을 조회한다.
+  ///
+  /// 레거시 abcMain — 컨트롤러가 권한별 거래처 목록 첫 행을 `defaultAccountCode`로 내려주고
+  /// `window load` 에서 즉시 `searchSalesList()` 를 호출하던 동작 정합. 매출 scope(부서장이면
+  /// 전체) 거래처 목록의 첫 거래처를 선택해 조회한다. 이미 선택돼 있으면 건너뛴다.
+  Future<void> _loadDefaultCustomer() async {
+    if (_customerId != null) return;
+    try {
+      final result = await ref
+          .read(getMyAccountsUseCaseProvider)
+          .call(scope: MyAccountScope.sales);
+      if (!mounted || result.accounts.isEmpty) return;
+      final first = result.accounts.first;
+      setState(() {
+        _customerId = first.accountId;
+        _customerName = first.accountName;
+      });
+      _search();
+    } catch (_) {
+      // 기본 거래처 로딩 실패는 조용히 무시 (사용자가 수동 선택 가능)
+    }
   }
 
   // ── 입력 핸들러 ──────────────────────────────────────────────
