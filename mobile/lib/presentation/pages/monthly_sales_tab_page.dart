@@ -183,15 +183,19 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    '기준 진도율 : ${monthlySales.baseRate.toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.legacyDanger),
+                // 기준 진도율은 당월에만 표시 (레거시 list.jsp base-rate-note
+                // display: isRealCurrentMonth ? block : none 정합).
+                if (state.isRealCurrentMonth) ...[
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '기준 진도율 : ${monthlySales.baseRate.toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.legacyDanger),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
