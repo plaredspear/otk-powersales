@@ -22,6 +22,7 @@ import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionPhoto
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionDraftRepository
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
 import com.otoki.powersales.domain.activity.suggestion.service.SuggestionService
+import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -31,6 +32,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.springframework.transaction.support.TransactionTemplate
 
 @DisplayName("SuggestionService.deletePhoto - 첨부 사진 단건 삭제 (UC-06 / Spec #828)")
 class SuggestionServiceDeletePhotoTest {
@@ -45,6 +47,8 @@ class SuggestionServiceDeletePhotoTest {
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
     private val validator: SuggestionValidator = mockk()
     private val storageService: StorageService = mockk(relaxUnitFun = true)
+    private val sfOutboundClient: SfOutboundClient = mockk()
+    private val txTemplate: TransactionTemplate = mockk()
 
     private val suggestionService = SuggestionService(
         suggestionRepository,
@@ -56,7 +60,9 @@ class SuggestionServiceDeletePhotoTest {
         orgCostCenterMatchService,
         fileStorageService,
         validator,
-        storageService
+        storageService,
+        sfOutboundClient,
+        txTemplate
     )
 
     private val employeeId = 100L

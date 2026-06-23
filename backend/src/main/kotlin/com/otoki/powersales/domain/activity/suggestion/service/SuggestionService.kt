@@ -30,14 +30,22 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.enums.StorageCondition
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionSfSendStatus
+import com.otoki.powersales.external.sf.outbound.SfApiResponse
+import com.otoki.powersales.external.sf.outbound.SfOAuthFailedException
+import com.otoki.powersales.external.sf.outbound.SfOutboundClient
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
@@ -68,15 +76,43 @@ class SuggestionService(
     private val orgCostCenterMatchService: OrgCostCenterMatchService,
     private val fileStorageService: FileStorageService,
     private val validator: SuggestionValidator,
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val sfOutboundClient: SfOutboundClient,
+    private val txTemplate: TransactionTemplate,
 ) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
         private const val MAX_PHOTO_COUNT = 10
         private val PROPOSAL_NUMBER_DATE_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+
+        /**
+         * SF Apex REST `IF_REST_MOBILE_ProposalRegist` endpoint suffix.
+         * `sf.outbound.apex-base-url` prefix 뒤에 붙는다 (클레임 등록 `/ClaimRegist` 와 동일 컨벤션).
+         */
+        private const val SF_PROPOSAL_REGIST_ENDPOINT = "/ProposalRegist"
+
+        /** SF Apex `Date.valueOf(String)` 는 ISO(yyyy-MM-dd) 만 파싱 (클레임 등록 정합). */
+        private val SF_DATE_FMT: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     }
 
-    @Transactional
+    /**
+     * 제안/물류클레임 등록 — dual-write (DB INSERT + SF Apex `IF_REST_MOBILE_ProposalRegist` 직접 호출).
+     *
+     * 클레임 등록(`AdminClaimCreateService`) 과 동일 패턴:
+     *  1. 검증 + 의존 entity 조회 + 매핑(트리거 부수효과 이식)
+     *  2. [Tx1] suggestion + 첨부 INSERT (sf_send_status=PENDING) + 임시저장 삭제
+     *  3. [SF call, 트랜잭션 외부] apiMap 빌드 + SfOutboundClient.callApi("/ProposalRegist", apiMap)
+     *  4. [Tx2] 전송상태 update (성공 → SENT + sf_sent_at, 실패 → SEND_FAILED + sf_send_fail_message)
+     *
+     * SF 호출 실패는 catch 하여 SEND_FAILED 로 기록하고 등록은 성공(201)으로 응답한다 — 사용자 등록을
+     * SF 장애로 막지 않는다(클레임 등록 정책 동일). 실패 row 는 sf_send_status=SEND_FAILED 로 남아 추적된다.
+     *
+     * 클래스 기본 `@Transactional(readOnly=true)` 가 외곽을 감싸지 않도록 NOT_SUPPORTED 로 두고,
+     * write 트랜잭션 2건은 [txTemplate] 로 명시 분리한다(SF HTTP 호출 구간을 DB 트랜잭션 밖으로 뺀다).
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     fun create(employeeId: Long, request: SuggestionCreateRequest, photos: List<MultipartFile>?): SuggestionCreateResponse {
         // step 1~2 (validate)
         val category = request.category ?: throw IllegalArgumentException("category is required")
@@ -113,65 +149,179 @@ class SuggestionService(
 
         val proposalNumber = generateProposalNumber(LocalDate.now())
 
-        val suggestion = Suggestion(
-            proposalNumber = proposalNumber,
-            title = request.title ?: throw IllegalArgumentException("제목은 필수입니다"),
-            content = request.content ?: throw IllegalArgumentException("내용은 필수입니다"),
-            category = category,
-            category1 = product?.productCategory1,
-            category2 = product?.productCategory2,
-            category3 = product?.productCategory3,
-            sapAccountCode = request.sapAccountCode,
-            orgCostCenterCode = orgCostCenterCode,
-            carNumber = request.carNumber,
-            claimDate = request.claimDate,
-            claimType = request.claimType,
-            // Q9 옵션 1 — service 단 자동 복사 (레거시 동등)
-            claimTypeMeasures = request.claimType,
-            logisticsResponsibility = request.logisticsResponsibility,
-            receptionLogisticsCenter = receptionCenter,
-            responsibleLogisticsCenter = responsibleCenter,
-            status = SuggestionStatus.SUBMITTED,
-            actionStatus = request.actionStatus,
-            duplicateProposalNum = request.duplicateProposalNum,
-            isDeleted = false,
-            account = account,
-            employee = employee,
-            product = product,
+        // step 5 — [Tx1] INSERT + 첨부 N건 (sf_send_status=PENDING) + 임시저장 삭제
+        val inserted = txTemplate.execute {
+            val suggestion = Suggestion(
+                proposalNumber = proposalNumber,
+                title = request.title ?: throw IllegalArgumentException("제목은 필수입니다"),
+                content = request.content ?: throw IllegalArgumentException("내용은 필수입니다"),
+                category = category,
+                category1 = product?.productCategory1,
+                category2 = product?.productCategory2,
+                category3 = product?.productCategory3,
+                sapAccountCode = request.sapAccountCode,
+                orgCostCenterCode = orgCostCenterCode,
+                carNumber = request.carNumber,
+                claimDate = request.claimDate,
+                claimType = request.claimType,
+                // Q9 옵션 1 — service 단 자동 복사 (레거시 동등)
+                claimTypeMeasures = request.claimType,
+                logisticsResponsibility = request.logisticsResponsibility,
+                receptionLogisticsCenter = receptionCenter,
+                responsibleLogisticsCenter = responsibleCenter,
+                status = SuggestionStatus.SUBMITTED,
+                actionStatus = request.actionStatus,
+                duplicateProposalNum = request.duplicateProposalNum,
+                isDeleted = false,
+                sfSendStatus = SuggestionSfSendStatus.PENDING,
+                account = account,
+                employee = employee,
+                product = product,
+            )
+            val saved = suggestionRepository.save(suggestion)
+
+            val photoMetas = mutableListOf<SfPhotoMeta>()
+            val attachments = photos?.mapIndexedNotNull { index, file ->
+                if (file.isEmpty) return@mapIndexedNotNull null
+                val key = fileStorageService.uploadSuggestionPhoto(file, saved.id)
+                val uploadFile = UploadFile(
+                    name = file.originalFilename,
+                    uniqueKey = key,
+                    fileSize = formatFileSize(file.size),
+                    parentType = UploadFileParentTypes.SUGGESTION,
+                    parentId = saved.id,
+                    isDeleted = false
+                )
+                val savedFile = uploadFileRepository.save(uploadFile)
+                photoMetas += SfPhotoMeta(uniqueKey = key, fileSize = file.size, fileName = file.originalFilename)
+                SuggestionAttachment(
+                    id = savedFile.id,
+                    s3Url = composeS3Url(key),
+                    fileName = file.originalFilename,
+                    sortOrder = index
+                )
+            } ?: emptyList()
+
+            // 레거시 정합: 정식 등록 성공 시 해당 사원의 임시저장 row 삭제.
+            suggestionDraftRepository.findByEmployeeId(employeeId)?.let { suggestionDraftRepository.delete(it) }
+
+            InsertResult(
+                id = saved.id,
+                proposalNumber = saved.proposalNumber,
+                attachments = attachments,
+                photoMetas = photoMetas
+            )
+        }!!
+
+        // step 6 — [SF call, 트랜잭션 외부]
+        val sfResult = invokeSf(
+            buildSfApiMap(
+                category = category,
+                request = request,
+                employeeCode = employee.employeeCode,
+                photoMetas = inserted.photoMetas
+            )
         )
 
-        // step 5 — INSERT + 첨부 N건
-        val saved = suggestionRepository.save(suggestion)
-
-        val attachments = photos?.mapIndexedNotNull { index, file ->
-            if (file.isEmpty) return@mapIndexedNotNull null
-            val key = fileStorageService.uploadSuggestionPhoto(file, saved.id)
-            val uploadFile = UploadFile(
-                name = file.originalFilename,
-                uniqueKey = key,
-                fileSize = formatFileSize(file.size),
-                parentType = UploadFileParentTypes.SUGGESTION,
-                parentId = saved.id,
-                isDeleted = false
-            )
-            val savedFile = uploadFileRepository.save(uploadFile)
-            SuggestionAttachment(
-                id = savedFile.id,
-                s3Url = composeS3Url(key),
-                fileName = file.originalFilename,
-                sortOrder = index
-            )
-        } ?: emptyList()
-
-        // 레거시 정합: 정식 등록 성공 시 해당 사원의 임시저장 row 삭제.
-        suggestionDraftRepository.findByEmployeeId(employeeId)?.let { suggestionDraftRepository.delete(it) }
+        // step 7 — [Tx2] 전송상태 update
+        txTemplate.execute {
+            val persisted = suggestionRepository.findByIdAndIsDeletedFalse(inserted.id)
+                ?: throw SuggestionNotFoundException()
+            applySfResult(persisted, sfResult)
+        }
 
         return SuggestionCreateResponse(
-            id = saved.id,
-            proposalNumber = saved.proposalNumber,
-            attachments = attachments
+            id = inserted.id,
+            proposalNumber = inserted.proposalNumber,
+            attachments = inserted.attachments
         )
     }
+
+    /**
+     * SF push — 실패해도 예외를 throw 하지 않고 [SfPushResult] 로 반환(클레임 등록 정합).
+     */
+    internal fun invokeSf(apiMap: Map<String, Any?>): SfPushResult =
+        try {
+            val response = sfOutboundClient.callApi(SF_PROPOSAL_REGIST_ENDPOINT, apiMap)
+            SfPushResult(success = response.isSuccess(), apiResponse = response, errorSummary = null)
+        } catch (e: SfOAuthFailedException) {
+            log.warn("[suggestion-create] SF OAuth 실패: {}", e.message)
+            SfPushResult(success = false, apiResponse = null, errorSummary = e.message ?: "SF OAuth 실패")
+        } catch (e: Exception) {
+            log.warn("[suggestion-create] SF 호출 예외: {}", e.message)
+            SfPushResult(success = false, apiResponse = null, errorSummary = e.message ?: e.javaClass.simpleName)
+        }
+
+    internal fun applySfResult(suggestion: Suggestion, result: SfPushResult) {
+        suggestion.sfSendAttemptCount += 1
+        if (result.success) {
+            suggestion.sfSendStatus = SuggestionSfSendStatus.SENT
+            suggestion.sfSentAt = LocalDateTime.now()
+            suggestion.sfSendFailMessage = null
+        } else {
+            suggestion.sfSendStatus = SuggestionSfSendStatus.SEND_FAILED
+            suggestion.sfSendFailMessage = (result.apiResponse?.resultMsg ?: result.errorSummary)?.take(1000)
+        }
+    }
+
+    /**
+     * 레거시 `IF_REST_MOBILE_ProposalRegist` Input key 셋으로 SF 전송 payload 구성
+     * (`AdminLogisticsClaimRegistTestService.buildApiMap` 의 key 순서·이름 정합).
+     *
+     * 이미지는 레거시가 S3 사전 업로드 후 식별 정보(UniqueKey/Size/FileName)만 전송하는 방식이라,
+     * 본 경로는 [Tx1] 에서 S3 업로드로 확보한 uniqueKey/크기/파일명을 1·2번 슬롯(최대 2장)에 채운다.
+     * SF 측이 UniqueKey 로 S3 객체를 회수하는 정확한 키 형식은 SF 구현에 종속(미확정) — 저장 uniqueKey 원본 전송.
+     */
+    internal fun buildSfApiMap(
+        category: SuggestionCategory,
+        request: SuggestionCreateRequest,
+        employeeCode: String?,
+        photoMetas: List<SfPhotoMeta>
+    ): Map<String, Any?> {
+        val p1 = photoMetas.getOrNull(0)
+        val p2 = photoMetas.getOrNull(1)
+        return linkedMapOf(
+            "Category" to category.displayName,
+            "Type" to null,
+            "ProductCode" to request.productCode?.trim(),
+            "SAPAccountCode" to request.sapAccountCode?.trim(),
+            "accountCode" to request.sapAccountCode?.trim(),
+            "Title" to request.title?.trim(),
+            "Description" to request.content?.trim(),
+            "EmployeeCode" to employeeCode,
+            "CarNumber" to request.carNumber?.trim()?.takeIf { it.isNotEmpty() },
+            "claimList" to request.claimType?.trim(),
+            "logclaimDate" to request.claimDate?.format(SF_DATE_FMT),
+            "S3ImageUniqueKey1" to p1?.uniqueKey,
+            "S3ImageFileSize1" to p1?.fileSize?.toString(),
+            "S3ImageFileName1" to p1?.fileName,
+            "S3ImageUniqueKey2" to p2?.uniqueKey,
+            "S3ImageFileSize2" to p2?.fileSize?.toString(),
+            "S3ImageFileName2" to p2?.fileName,
+        )
+    }
+
+    /** SF 전송용 첨부 메타 — [Tx1] S3 업로드 결과(클레임의 Base64 와 달리 ProposalRegist 는 키 전송). */
+    internal data class SfPhotoMeta(
+        val uniqueKey: String,
+        val fileSize: Long,
+        val fileName: String?,
+    )
+
+    /** [Tx1] 결과 — Tx 밖으로 넘길 식별자·응답 첨부·SF 전송용 메타. */
+    internal data class InsertResult(
+        val id: Long,
+        val proposalNumber: String,
+        val attachments: List<SuggestionAttachment>,
+        val photoMetas: List<SfPhotoMeta>,
+    )
+
+    /** SF push 결과 — 성공/실패 + 응답 또는 오류 요약 (클레임 등록 정합). */
+    internal data class SfPushResult(
+        val success: Boolean,
+        val apiResponse: SfApiResponse?,
+        val errorSummary: String?,
+    )
 
     fun getDetail(suggestionId: Long, requesterEmployeeId: Long): SuggestionResponse {
         if (suggestionId <= 0) throw InvalidSuggestionIdException()

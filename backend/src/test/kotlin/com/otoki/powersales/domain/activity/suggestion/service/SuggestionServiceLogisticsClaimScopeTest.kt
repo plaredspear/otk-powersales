@@ -13,10 +13,12 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.service.OrgCostCenterMatchService
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
+import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
 import io.mockk.every
+import org.springframework.transaction.support.TransactionTemplate
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -39,10 +41,13 @@ class SuggestionServiceLogisticsClaimScopeTest {
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
     private val validator: SuggestionValidator = mockk()
     private val storageService: StorageService = mockk(relaxUnitFun = true)
+    private val sfOutboundClient: SfOutboundClient = mockk()
+    private val txTemplate: TransactionTemplate = mockk()
 
     private val service = SuggestionService(
         suggestionRepository, suggestionDraftRepository, uploadFileRepository, accountRepository,
-        employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, validator, storageService
+        employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, validator, storageService,
+        sfOutboundClient, txTemplate
     )
 
     private val leaderId = 10L

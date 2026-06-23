@@ -14,6 +14,7 @@ import jakarta.persistence.*
 import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
 import java.time.LocalDate
+import java.time.LocalDateTime
 import org.springframework.data.annotation.CreatedBy
 import org.springframework.data.annotation.LastModifiedBy
 import com.otoki.powersales.platform.common.entity.OwnerUserDefaultListener
@@ -216,6 +217,26 @@ class Suggestion(
     @SFField("LastModifiedById")
     @Column(name = "last_modified_by_sfid", length = 18)
     var lastModifiedBySfid: String? = null,
+
+    // -- SF outbound 전송상태 추적 (mobile 제안/물류클레임 등록 dual-write — IF_REST_MOBILE_ProposalRegist).
+    //    SF 매핑 없음(@SFField 미부착) — backend 내부 lifecycle 전용 (클레임 dual-write 정합). --
+
+    @Enumerated(EnumType.STRING)
+    @FieldName("SF전송상태")
+    @Column(name = "sf_send_status", length = 20)
+    var sfSendStatus: SuggestionSfSendStatus? = null,
+
+    @FieldName("SF전송시각")
+    @Column(name = "sf_sent_at")
+    var sfSentAt: LocalDateTime? = null,
+
+    @FieldName("SF전송실패사유")
+    @Column(name = "sf_send_fail_message", length = 1000)
+    var sfSendFailMessage: String? = null,
+
+    @FieldName("SF전송시도횟수")
+    @Column(name = "sf_send_attempt_count", nullable = false)
+    var sfSendAttemptCount: Int = 0,
 
     // -- Relations --
 
