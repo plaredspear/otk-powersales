@@ -265,40 +265,45 @@ class SuggestionService(
     }
 
     /**
-     * 레거시 `IF_REST_MOBILE_ProposalRegist` Input key 셋으로 SF 전송 payload 구성
-     * (`AdminLogisticsClaimRegistTestService.buildApiMap` 의 key 순서·이름 정합).
+     * 레거시 Heroku `FieldTalkController.suggestProc`(신규 등록 분기 hndSp="I", line 1726-1752) 가
+     * SF `.../apexrest/mobile/ProposalRegist` 로 보내던 JSON payload 를 그대로 재현한다.
      *
-     * 이미지는 레거시가 S3 사전 업로드 후 식별 정보(UniqueKey/Size/FileName)만 전송하는 방식이라,
-     * 본 경로는 [Tx1] 에서 S3 업로드로 확보한 uniqueKey/크기/파일명을 1·2번 슬롯(최대 2장)에 채운다.
-     * SF 측이 UniqueKey 로 S3 객체를 회수하는 정확한 키 형식은 SF 구현에 종속(미확정) — 저장 uniqueKey 원본 전송.
+     * 운영 검증된 key 셋만 전송한다 — 레거시 제안 등록은:
+     *  - 거래처 key 는 **소문자 `accountCode`** 한 가지만 사용한다(대문자 `SAPAccountCode` 는
+     *    클레임/현장점검 전용이며 제안 payload 엔 없음). 값은 동일하게 SAP 거래처코드.
+     *  - `Type` 은 전송하지 않는다.
+     * 미입력(빈) 값은 key 자체를 생략해 레거시 null 가드(`logclaimDate`/`accountCode`) 동작과 맞춘다.
+     *
+     * 이미지는 레거시가 S3 사전 업로드 후 식별 정보(UniqueKey/FileName/FileSize)만 전송하는 방식이라
+     * (클레임의 Base64 buffer 와 상반), [Tx1] 에서 확보한 uniqueKey/파일명/크기를 1·2번 슬롯(최대 2장)에
+     * 채운다. SF `IF_REST_MOBILE_ProposalRegist.cls` 가 동일 key 로 `UploadFile__c` insert.
      */
     internal fun buildSfApiMap(
         category: SuggestionCategory,
         request: SuggestionCreateRequest,
         employeeCode: String?,
         photoMetas: List<SfPhotoMeta>
-    ): Map<String, Any?> {
-        val p1 = photoMetas.getOrNull(0)
-        val p2 = photoMetas.getOrNull(1)
-        return linkedMapOf(
-            "Category" to category.displayName,
-            "Type" to null,
-            "ProductCode" to request.productCode?.trim(),
-            "SAPAccountCode" to request.sapAccountCode?.trim(),
-            "accountCode" to request.sapAccountCode?.trim(),
-            "Title" to request.title?.trim(),
-            "Description" to request.content?.trim(),
-            "EmployeeCode" to employeeCode,
-            "CarNumber" to request.carNumber?.trim()?.takeIf { it.isNotEmpty() },
-            "claimList" to request.claimType?.trim(),
-            "logclaimDate" to request.claimDate?.format(SF_DATE_FMT),
-            "S3ImageUniqueKey1" to p1?.uniqueKey,
-            "S3ImageFileSize1" to p1?.fileSize?.toString(),
-            "S3ImageFileName1" to p1?.fileName,
-            "S3ImageUniqueKey2" to p2?.uniqueKey,
-            "S3ImageFileSize2" to p2?.fileSize?.toString(),
-            "S3ImageFileName2" to p2?.fileName,
-        )
+    ): Map<String, Any?> = buildMap {
+        put("Category", category.displayName)
+        put("ProductCode", request.productCode?.trim())
+        put("Title", request.title?.trim())
+        put("Description", request.content?.trim())
+        put("CarNumber", request.carNumber?.trim()?.takeIf { it.isNotEmpty() })
+        put("claimList", request.claimType?.trim())
+        request.claimDate?.let { put("logclaimDate", it.format(SF_DATE_FMT)) }
+        put("EmployeeCode", employeeCode)
+        request.sapAccountCode?.trim()?.takeIf { it.isNotEmpty() }?.let { put("accountCode", it) }
+
+        photoMetas.getOrNull(0)?.let {
+            put("S3ImageUniqueKey1", it.uniqueKey)
+            put("S3ImageFileName1", it.fileName)
+            put("S3ImageFileSize1", it.fileSize.toString())
+        }
+        photoMetas.getOrNull(1)?.let {
+            put("S3ImageUniqueKey2", it.uniqueKey)
+            put("S3ImageFileName2", it.fileName)
+            put("S3ImageFileSize2", it.fileSize.toString())
+        }
     }
 
     /** SF 전송용 첨부 메타 — [Tx1] S3 업로드 결과(클레임의 Base64 와 달리 ProposalRegist 는 키 전송). */
