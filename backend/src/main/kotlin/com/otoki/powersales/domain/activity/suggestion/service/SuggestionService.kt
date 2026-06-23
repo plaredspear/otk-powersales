@@ -279,11 +279,11 @@ class SuggestionService(
      * (클레임의 Base64 buffer 와 상반), [Tx1] 에서 확보한 uniqueKey/파일명/크기를 1·2번 슬롯(최대 2장)에
      * 채운다. SF `IF_REST_MOBILE_ProposalRegist.cls` 가 동일 key 로 `UploadFile__c` insert.
      *
-     * 추가: [pwrskey] — 해당 물류클레임(=제안) 레코드의 PowerSales primary key(`suggestion_id`).
-     * SF 가 등록된 SF 레코드와 PowerSales row 를 역연결(back-link)하도록 전송한다.
-     * ⚠️ 선행조건: 레거시 SF Apex 는 `JSON.deserializeStrict` 로 파싱하므로 SF `Input` 클래스에
-     * `public String pwrskey;` 필드가 추가 배포돼 있어야 한다. 미배포 상태로 전송하면 strict 파싱이
-     * 실패해 전 건 SEND_FAILED 가 된다.
+     * [pwrskey] — 레거시엔 없던 필드로, 이번에 SF 와 신규 협의해 추가했다. 해당 물류클레임(=제안)
+     * 레코드의 PowerSales primary key(`suggestion_id`)를 전송해 SF 가 등록 SF 레코드와 PowerSales
+     * row 를 역연결(back-link)하도록 한다.
+     * 배포 의존성: SF Apex 는 `JSON.deserializeStrict` 로 파싱하므로 SF `Input` 클래스의
+     * `pwrskey` 필드 반영과 동반 배포돼야 한다(SF 미반영 상태로 단독 배포 시 strict 파싱 실패 → 전 건 SEND_FAILED).
      */
     internal fun buildSfApiMap(
         pwrskey: Long,
