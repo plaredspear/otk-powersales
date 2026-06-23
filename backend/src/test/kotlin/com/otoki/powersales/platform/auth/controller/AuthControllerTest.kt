@@ -331,7 +331,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("비밀번호 검증 실패 - 비밀번호 불일치 시 401 AUTH_CURRENT_PASSWORD_MISMATCH")
+    @DisplayName("비밀번호 검증 실패 - 비밀번호 불일치 시 400 AUTH_CURRENT_PASSWORD_MISMATCH")
     fun verifyPassword_passwordMismatch() {
         every { authService.verifyPassword(1L, any()) } throws InvalidCurrentPasswordException()
 
@@ -340,7 +340,7 @@ class AuthControllerTest : MobileControllerTestSupport() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"currentPassword": "wrongPass"}""")
         )
-            .andExpect(status().isUnauthorized)
+            .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code").value("AUTH_CURRENT_PASSWORD_MISMATCH"))
     }
 
@@ -465,9 +465,9 @@ class AuthControllerTest : MobileControllerTestSupport() {
         @JvmStatic
         fun changePasswordExceptions(): List<Arguments> = listOf(
             Arguments.of(
-                "wrongCurrentPassword -> 401 AUTH_CURRENT_PASSWORD_MISMATCH",
+                "wrongCurrentPassword -> 400 AUTH_CURRENT_PASSWORD_MISMATCH",
                 InvalidCurrentPasswordException(),
-                401,
+                400,
                 "AUTH_CURRENT_PASSWORD_MISMATCH",
             ),
         )

@@ -15,11 +15,16 @@ class InvalidCredentialsException : BusinessException(
 
 /**
  * 현재 비밀번호 불일치 (자발 변경 / 본인 검증).
+ *
+ * 인증 토큰 실패(401)가 아니라 입력값 검증 실패이므로 400 을 반환한다.
+ * 401 로 두면 모바일/웹의 인증 인터셉터가 "세션 만료"로 오인해 강제 로그아웃시킨다
+ * (현재 비밀번호 확인 단계에서 로그인 화면으로 튕기는 버그). 형제 예외인
+ * AUTH_CURRENT_PASSWORD_REQUIRED / AUTH_NEW_PASSWORD_INVALID 와도 400 으로 정합.
  */
 class InvalidCurrentPasswordException : BusinessException(
     errorCode = "AUTH_CURRENT_PASSWORD_MISMATCH",
     message = "현재 비밀번호가 일치하지 않습니다",
-    httpStatus = HttpStatus.UNAUTHORIZED
+    httpStatus = HttpStatus.BAD_REQUEST
 )
 
 /**

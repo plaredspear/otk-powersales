@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/error_utils.dart';
 import '../providers/auth_provider.dart';
 import '../providers/password_provider.dart';
 
@@ -61,10 +62,9 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      final errorString = e.toString();
-      // 401 AUTH_CURRENT_PASSWORD_MISMATCH → 비밀번호 불일치 (레거시 메시지)
-      if (errorString.contains('AUTH_CURRENT_PASSWORD_MISMATCH') ||
-          errorString.contains('401')) {
+      // 비밀번호 불일치는 서버 error.code(AUTH_CURRENT_PASSWORD_MISMATCH)로 판별한다.
+      // HTTP 상태코드(400)에 의존하지 않으므로 서버 상태코드가 바뀌어도 안전하다.
+      if (extractErrorCode(e) == 'AUTH_CURRENT_PASSWORD_MISMATCH') {
         await _showAlert('비밀번호가 일치하지 않습니다.');
       } else {
         await _showAlert('잠시 후 다시 시도해주세요.');
