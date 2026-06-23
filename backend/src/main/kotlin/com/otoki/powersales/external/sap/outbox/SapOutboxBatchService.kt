@@ -2,6 +2,7 @@ package com.otoki.powersales.external.sap.outbox
 
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import com.otoki.powersales.external.sap.outbound.guard.SapResponseHtmlGuard
+import com.otoki.powersales.external.sap.outbound.guard.SapResponseInterpreter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -118,15 +119,8 @@ class SapOutboxBatchService(
     }
 
     private fun interpretSapResponse(body: String?): Pair<Boolean, String?> {
-        if (body.isNullOrBlank()) return false to "EMPTY_RESPONSE"
-        return try {
-            val parsed = objectMapper.readValue(body, Map::class.java)
-            val resultCode = parsed["resultCode"]?.toString()
-            val resultMsg = parsed["resutlMsg"]?.toString() ?: parsed["resultMsg"]?.toString()
-            (resultCode == "S") to resultMsg
-        } catch (_: Exception) {
-            false to "INVALID_JSON: ${body.take(200)}"
-        }
+        val result = SapResponseInterpreter.interpret(objectMapper, body)
+        return result.success to result.message
     }
 
     data class WorkerResult(val picked: Int, val sent: Int, val failed: Int)

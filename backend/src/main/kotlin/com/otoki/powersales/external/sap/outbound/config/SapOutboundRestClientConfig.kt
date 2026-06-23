@@ -4,6 +4,8 @@ import com.otoki.powersales.external.common.outboundlog.ExternalApiLogBodyCaptur
 import com.otoki.powersales.external.common.outboundlog.ExternalApiLogInterceptor
 import com.otoki.powersales.external.common.outboundlog.ExternalApiTarget
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
+import com.otoki.powersales.external.sap.outbound.SapOutboundResponseSink
+import com.otoki.powersales.external.sap.outbound.service.SapOutboundLogService
 import com.otoki.powersales.platform.common.util.TimeZones
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -23,7 +25,8 @@ import java.util.TimeZone
 class SapOutboundRestClientConfig(
     private val properties: SapOutboundProperties,
     private val externalApiLogService: ExternalApiLogService,
-    private val bodyCapture: ExternalApiLogBodyCapture
+    private val bodyCapture: ExternalApiLogBodyCapture,
+    private val sapOutboundLogService: SapOutboundLogService
 ) {
 
     /**
@@ -65,8 +68,15 @@ class SapOutboundRestClientConfig(
 
         val builder = RestClient.builder()
             .requestFactory(factory)
+            // 범용 인터셉터 1개가 external_api_log 적재 + (SAP sink 를 통한) sap_outbound_log 적재를
+            // 함께 수행한다. SAP sink 가 주입되면 prod 에서도 응답 본문을 1회 buffering 해 result_code 를 파싱한다.
             .requestInterceptor(
-                ExternalApiLogInterceptor(ExternalApiTarget.SAP, externalApiLogService, bodyCapture.enabled)
+                ExternalApiLogInterceptor(
+                    target = ExternalApiTarget.SAP,
+                    logService = externalApiLogService,
+                    captureBody = bodyCapture.enabled,
+                    responseSink = SapOutboundResponseSink(sapOutboundLogService, sapOutboundObjectMapper),
+                )
             )
             .configureMessageConverters { configurer ->
                 // 기본 converter 체인을 등록(registerDefaults)한 뒤 JSON 슬롯만 SAP 전용 KST mapper

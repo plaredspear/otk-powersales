@@ -70,10 +70,8 @@ class PPTMasterSapSender(
     private fun post(payload: PPTMasterSapPayload): Boolean {
         val interfaceId = SapConstants.SAP_INTERFACE_PPT_MASTER
         val endpointPath = "/$interfaceId"
-        val requestedAt = LocalDateTime.now()
-        val startNanos = System.nanoTime()
-        val requestCount = payload.REQUEST.size
 
+        // 실제 HTTP 호출 이력은 ExternalApiLogInterceptor → SapOutboundResponseSink 가 sap_outbound_log 로 일괄 적재한다.
         return try {
             val response = restClient.post()
                 .uri(endpointPath)
@@ -84,51 +82,14 @@ class PPTMasterSapSender(
             val status = response.statusCode.value()
             val body = response.body
             val isValid = SapResponseHtmlGuard.isValid(body)
-
-            persistLog(
-                interfaceId = interfaceId,
-                endpointPath = endpointPath,
-                requestCount = requestCount,
-                httpStatus = status,
-                resultCode = if (isValid) "SUCCESS" else "INVALID_RESPONSE",
-                resultMsg = if (isValid) null else "HTML_RESPONSE_DETECTED",
-                attemptCount = 1,
-                startNanos = startNanos,
-                requestedAt = requestedAt,
-                errorDetail = if (isValid) null else body?.take(MAX_ERROR_DETAIL_LENGTH)
-            )
             if (!isValid) {
                 log.warn("SAP 전문행사조 마스터 송신 실패 (HTML 응답) interfaceId={} status={} bodyHead={}", interfaceId, status, body?.take(80))
             }
             isValid
         } catch (ex: HttpStatusCodeException) {
-            persistLog(
-                interfaceId = interfaceId,
-                endpointPath = endpointPath,
-                requestCount = requestCount,
-                httpStatus = ex.statusCode.value(),
-                resultCode = "FAIL",
-                resultMsg = "HTTP_${ex.statusCode.value()}",
-                attemptCount = 1,
-                startNanos = startNanos,
-                requestedAt = requestedAt,
-                errorDetail = ex.responseBodyAsString.take(MAX_ERROR_DETAIL_LENGTH)
-            )
             log.warn("SAP 전문행사조 마스터 송신 실패 (HTTP {}) interfaceId={}", ex.statusCode, interfaceId)
             false
         } catch (ex: ResourceAccessException) {
-            persistLog(
-                interfaceId = interfaceId,
-                endpointPath = endpointPath,
-                requestCount = requestCount,
-                httpStatus = null,
-                resultCode = "FAIL",
-                resultMsg = "NETWORK_ERROR",
-                attemptCount = 1,
-                startNanos = startNanos,
-                requestedAt = requestedAt,
-                errorDetail = "${ex.javaClass.simpleName}: ${ex.message}".take(MAX_ERROR_DETAIL_LENGTH)
-            )
             log.warn("SAP 전문행사조 마스터 송신 실패 (네트워크) interfaceId={} cause={}", interfaceId, ex.message)
             false
         }
@@ -163,9 +124,5 @@ class PPTMasterSapSender(
         } catch (ex: Exception) {
             log.error("SAP 전문행사조 마스터 송신 이력 저장 실패 interfaceId=$interfaceId", ex)
         }
-    }
-
-    companion object {
-        private const val MAX_ERROR_DETAIL_LENGTH = 4000
     }
 }

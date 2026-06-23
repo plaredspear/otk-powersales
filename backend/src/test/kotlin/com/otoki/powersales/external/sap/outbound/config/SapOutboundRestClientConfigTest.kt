@@ -2,8 +2,10 @@ package com.otoki.powersales.external.sap.outbound.config
 
 import com.otoki.powersales.external.common.outboundlog.ExternalApiLogBodyCapture
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
+import com.otoki.powersales.external.sap.outbound.service.SapOutboundLogService
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
 import org.junit.jupiter.api.DisplayName
@@ -30,17 +32,30 @@ import org.springframework.test.web.client.response.MockRestResponseCreators.wit
 @DisplayName("SapOutboundRestClientConfig converter 구성 테스트")
 class SapOutboundRestClientConfigTest {
 
-    private fun newConfig(): SapOutboundRestClientConfig {
-        val logService = mockk<ExternalApiLogService>(relaxed = true)
+    private class Fixture(
+        val config: SapOutboundRestClientConfig,
+        val externalApiLogService: ExternalApiLogService,
+        val sapOutboundLogService: SapOutboundLogService,
+    )
+
+    private fun newFixture(captureBody: Boolean = false): Fixture {
+        val externalApiLogService = mockk<ExternalApiLogService>(relaxed = true)
         every {
-            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-        } answers {
-            mockk(relaxed = true)
-        }
+            externalApiLogService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } answers { mockk(relaxed = true) }
         val bodyCapture = mockk<ExternalApiLogBodyCapture>()
-        every { bodyCapture.enabled } returns false
-        return SapOutboundRestClientConfig(SapOutboundProperties(), logService, bodyCapture)
+        every { bodyCapture.enabled } returns captureBody
+        val sapOutboundLogService = mockk<SapOutboundLogService>(relaxed = true)
+        every {
+            sapOutboundLogService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } answers { mockk(relaxed = true) }
+        val config = SapOutboundRestClientConfig(
+            SapOutboundProperties(), externalApiLogService, bodyCapture, sapOutboundLogService
+        )
+        return Fixture(config, externalApiLogService, sapOutboundLogService)
     }
+
+    private fun newConfig(): SapOutboundRestClientConfig = newFixture().config
 
     @Test
     @DisplayName("mapOf 단일 엔트리(SingletonMap) 페이로드가 No HttpMessageConverter 없이 직렬화된다")
@@ -71,6 +86,42 @@ class SapOutboundRestClientConfigTest {
                 .toEntity(String::class.java)
         }.doesNotThrowAnyException()
 
+        server.verify()
+    }
+
+    @Test
+    @DisplayName("인터셉터 1개 + SAP sink — 응답 본문이 다운스트림에 온전히 전달되고 각 logService 가 1회씩 호출된다")
+    fun interceptorWithSinkRecordsBothAndPassesThroughBody() {
+        // captureBody=true 로 응답 stream 을 읽게 한다 — 범용 인터셉터가 본문을 1회 buffering 한 뒤
+        // external_api_log 적재 + SAP sink 위임을 모두 수행해도 다운스트림이 본문을 다시 읽을 수 있는지 검증.
+        val fixture = newFixture(captureBody = true)
+        val builder = fixture.config.restClientBuilder(fixture.config.sapOutboundObjectMapper())
+            .baseUrl("http://sap-mock")
+        val server = MockRestServiceServer.bindTo(builder).build()
+
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03052"))
+            .andExpect(method(HttpMethod.POST))
+            .andRespond(withSuccess("""{"resultCode":"S","resutlMsg":"OK"}""", MediaType.APPLICATION_JSON))
+
+        val response = builder.build().post()
+            .uri("/SD03052")
+            .body(mapOf("request" to mapOf("RequestNumber" to "ORD-1")))
+            .retrieve()
+            .toEntity(String::class.java)
+
+        // 다운스트림(toEntity)이 인터셉터들의 stream 소비 후에도 본문을 온전히 받았는지.
+        assertThat(response.body).contains("\"resultCode\":\"S\"")
+
+        verify(exactly = 1) {
+            fixture.sapOutboundLogService.log(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+        verify(exactly = 1) {
+            fixture.externalApiLogService.log(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
         server.verify()
     }
 }
