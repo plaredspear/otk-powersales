@@ -4,6 +4,8 @@ import com.otoki.powersales.external.common.outboundlog.ExternalApiLogBodyCaptur
 import com.otoki.powersales.external.common.outboundlog.ExternalApiLogInterceptor
 import com.otoki.powersales.external.common.outboundlog.ExternalApiTarget
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
+import com.otoki.powersales.external.sap.outbound.SapOutboundLogInterceptor
+import com.otoki.powersales.external.sap.outbound.service.SapOutboundLogService
 import com.otoki.powersales.platform.common.util.TimeZones
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -23,7 +25,8 @@ import java.util.TimeZone
 class SapOutboundRestClientConfig(
     private val properties: SapOutboundProperties,
     private val externalApiLogService: ExternalApiLogService,
-    private val bodyCapture: ExternalApiLogBodyCapture
+    private val bodyCapture: ExternalApiLogBodyCapture,
+    private val sapOutboundLogService: SapOutboundLogService
 ) {
 
     /**
@@ -67,6 +70,10 @@ class SapOutboundRestClientConfig(
             .requestFactory(factory)
             .requestInterceptor(
                 ExternalApiLogInterceptor(ExternalApiTarget.SAP, externalApiLogService, bodyCapture.enabled)
+            )
+            // 모든 실제 SAP outbound 호출을 sap_outbound_log 로 일괄 적재 (sender 별 명시 로깅 누락 제거).
+            .requestInterceptor(
+                SapOutboundLogInterceptor(sapOutboundLogService, sapOutboundObjectMapper)
             )
             .configureMessageConverters { configurer ->
                 // 기본 converter 체인을 등록(registerDefaults)한 뒤 JSON 슬롯만 SAP 전용 KST mapper
