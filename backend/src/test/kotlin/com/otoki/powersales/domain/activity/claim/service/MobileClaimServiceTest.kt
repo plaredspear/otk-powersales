@@ -312,8 +312,8 @@ class MobileClaimServiceTest {
     }
 
     @Test
-    @DisplayName("Employee.costCenterCode 우선 - claim.costCenterCode 자동 채움")
-    fun fillsCostCenterCodeFromEmployee() {
+    @DisplayName("SF ClaimRegist 정합 - claim.costCenterCode 는 거래처 branchCode 로 자동 채움")
+    fun fillsCostCenterCodeFromAccountBranch() {
         stubCreateDeps()
         val claimSlot = slot<Claim>()
         every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
@@ -321,8 +321,10 @@ class MobileClaimServiceTest {
 
         service.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
 
-        assertThat(claimSlot.captured.costCenterCode).isEqualTo("CC100")
-        assertThat(claimSlot.captured.division).isEqualTo("FS사업부")
+        // SF ClaimRegist.cls:90 정합 — 거래처(Account) BranchCode 기준 (사원 costCenterCode 아님)
+        assertThat(claimSlot.captured.costCenterCode).isEqualTo("B001")
+        // SF 정합 — division 은 등록 시 공란 (컨트롤러 미설정 + 트리거 Interface 가드 미실행)
+        assertThat(claimSlot.captured.division).isNull()
     }
 
     @Test

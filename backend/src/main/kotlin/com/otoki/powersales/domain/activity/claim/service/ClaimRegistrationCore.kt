@@ -79,9 +79,10 @@ class ClaimRegistrationCore(
                 status = ClaimStatus.SF_PENDING,
                 channel = channel,
                 product = product,
-                // 레거시 Trigger 정합: CC코드 자동 복사 (Employee.costCenterCode 우선, 없으면 Account.branchCode)
-                costCenterCode = employee.costCenterCode ?: account.branchCode,
-                division = employee.orgName,
+                // SF ClaimRegist.cls:90 정합 — CC코드는 거래처(Account) BranchCode 기준 (CostCenter__c formula = AccountId__r.BranchCode__c 와 동일).
+                costCenterCode = account.branchCode,
+                // SF 정합 — division__c 는 IF_REST_MOBILE_ClaimRegist 컨트롤러가 set 안 함 + 트리거는 Interface 가드로 미실행 → 등록 시 공란.
+                division = null,
             )
             val saved = claimRepository.save(claim)
             val rows = mutableListOf<UploadFile>().apply {
