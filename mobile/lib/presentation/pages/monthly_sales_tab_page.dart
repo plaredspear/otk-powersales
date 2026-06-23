@@ -23,9 +23,6 @@ class MonthlySalesTabPage extends ConsumerStatefulWidget {
 }
 
 class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
-  /// 선택된 거래처명 (필터 표시용, 미선택 시 전체).
-  String? _selectedAccountName;
-
   @override
   void initState() {
     super.initState();
@@ -57,10 +54,9 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
   /// 거래처 선택 — 내 거래처 선택 바텀시트에서 고른 거래처로 조회 (레거시 정합 — 필수)
   Future<void> _onAccountSelected(MyAccount account) async {
     if (!mounted) return;
-    setState(() => _selectedAccountName = account.accountName);
     await ref
         .read(monthlySalesProvider.notifier)
-        .setCustomer(account.accountId.toString());
+        .setCustomer(account.accountId.toString(), account.accountName);
   }
 
   @override
@@ -71,7 +67,7 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
     return Column(
       children: [
         AccountSelectorField(
-          selectedName: _selectedAccountName,
+          selectedName: state.selectedCustomerName,
           placeholder: '거래처 선택',
           scope: MyAccountScope.sales,
           onSelected: _onAccountSelected,

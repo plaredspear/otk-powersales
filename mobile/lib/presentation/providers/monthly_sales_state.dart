@@ -13,6 +13,9 @@ class MonthlySalesState {
   /// 선택된 거래처 ID (null이면 전체)
   final String? selectedCustomerId;
 
+  /// 선택된 거래처명 (상단 거래처 필드 표시용 — 재진입 시에도 provider 상태로 유지)
+  final String? selectedCustomerName;
+
   /// 조회 연월 (YYYYMM 형식)
   final String yearMonth;
 
@@ -23,6 +26,7 @@ class MonthlySalesState {
     this.isLoading = false,
     this.errorMessage,
     this.selectedCustomerId,
+    this.selectedCustomerName,
     required this.yearMonth,
     this.monthlySales,
   });
@@ -110,6 +114,7 @@ class MonthlySalesState {
     bool? isLoading,
     String? errorMessage,
     String? selectedCustomerId,
+    String? selectedCustomerName,
     String? yearMonth,
     MonthlySales? monthlySales,
     bool clearCustomerFilter = false,
@@ -120,6 +125,9 @@ class MonthlySalesState {
       selectedCustomerId: clearCustomerFilter
           ? null
           : (selectedCustomerId ?? this.selectedCustomerId),
+      selectedCustomerName: clearCustomerFilter
+          ? null
+          : (selectedCustomerName ?? this.selectedCustomerName),
       yearMonth: yearMonth ?? this.yearMonth,
       monthlySales: monthlySales ?? this.monthlySales,
     );

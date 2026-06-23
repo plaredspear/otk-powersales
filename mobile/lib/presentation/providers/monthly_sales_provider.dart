@@ -71,9 +71,12 @@ class MonthlySalesNotifier extends StateNotifier<MonthlySalesState> {
   }
 
   /// 거래처 선택 (레거시 정합 — 거래처 필수)
-  Future<void> setCustomer(String customerId) async {
+  ///
+  /// 거래처명도 함께 보관해 상단 거래처 필드가 재진입 시에도 유지되도록 한다.
+  Future<void> setCustomer(String customerId, String customerName) async {
     state = state.copyWith(
       selectedCustomerId: customerId,
+      selectedCustomerName: customerName,
     );
     await loadMonthlySales();
   }
