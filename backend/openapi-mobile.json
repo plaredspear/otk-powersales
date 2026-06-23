@@ -4976,7 +4976,9 @@
             "type" : "string"
           },
           "orderRequestStatus" : {
-            "enum" : [ "임시저장", "전송", "승인완료", "전송실패", "주문취소" ],
+            "type" : "string"
+          },
+          "orderRequestStatusName" : {
             "type" : "string"
           }
         },
@@ -5285,7 +5287,9 @@
             "type" : "string"
           },
           "status" : {
-            "enum" : [ "임시저장", "전송", "승인완료", "전송실패", "주문취소" ],
+            "type" : "string"
+          },
+          "statusName" : {
             "type" : "string"
           },
           "totalAmount" : {
@@ -5331,7 +5335,9 @@
             "type" : "string"
           },
           "orderRequestStatus" : {
-            "enum" : [ "임시저장", "전송", "승인완료", "전송실패", "주문취소" ],
+            "type" : "string"
+          },
+          "orderRequestStatusName" : {
             "type" : "string"
           },
           "orderedItemCount" : {
@@ -5409,6 +5415,9 @@
             "type" : "string"
           },
           "orderRequestStatus" : {
+            "type" : "string"
+          },
+          "orderRequestStatusName" : {
             "type" : "string"
           },
           "totalAmount" : {
