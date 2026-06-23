@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.activity.order.dto.response
 
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
-import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import java.time.LocalDateTime
 import java.math.BigDecimal
 
@@ -12,7 +11,9 @@ import java.math.BigDecimal
 data class OrderCancelResponse(
     val orderRequestId: Long,
     val orderRequestNumber: String,
-    val orderRequestStatus: OrderRequestStatus,
+    // 상태는 코드(영문)와 한글 표시명을 분리해 내려준다 (목록/상세와 정합).
+    val orderRequestStatus: String,
+    val orderRequestStatusName: String,
     val cancelledLines: List<CancelledLineResponse>,
 ) {
     companion object {
@@ -20,7 +21,8 @@ data class OrderCancelResponse(
             return OrderCancelResponse(
                 orderRequestId = orderRequest.id,
                 orderRequestNumber = orderRequest.orderRequestNumber,
-                orderRequestStatus = orderRequest.orderRequestStatus,
+                orderRequestStatus = orderRequest.orderRequestStatus.name,
+                orderRequestStatusName = orderRequest.orderRequestStatus.displayName,
                 cancelledLines = cancelledProducts.map(CancelledLineResponse::from),
             )
         }

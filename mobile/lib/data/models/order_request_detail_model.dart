@@ -1,4 +1,3 @@
-import '../../domain/entities/order_request.dart';
 import '../../domain/entities/order_detail.dart';
 
 /// 주문한 제품 API 모델 (DTO)
@@ -237,6 +236,7 @@ class OrderRequestDetailModel {
   final int totalAmount;
   final int? totalApprovedAmount;
   final String orderRequestStatus;
+  final String orderRequestStatusName;
   final bool isClosed;
   final int orderedItemCount;
   final List<OrderedItemModel> orderedItems;
@@ -256,6 +256,7 @@ class OrderRequestDetailModel {
     required this.totalAmount,
     this.totalApprovedAmount,
     required this.orderRequestStatus,
+    required this.orderRequestStatusName,
     required this.isClosed,
     required this.orderedItemCount,
     required this.orderedItems,
@@ -285,6 +286,7 @@ class OrderRequestDetailModel {
       totalAmount: (data['totalAmount'] as num).toInt(),
       totalApprovedAmount: (data['totalApprovedAmount'] as num?)?.toInt(),
       orderRequestStatus: data['orderRequestStatus'] as String,
+      orderRequestStatusName: data['orderRequestStatusName'] as String,
       isClosed: data['isClosed'] as bool,
       orderedItemCount: (data['orderedItemCount'] as num).toInt(),
       orderedItems: orderedItemsJson
@@ -318,6 +320,7 @@ class OrderRequestDetailModel {
       'totalAmount': totalAmount,
       'totalApprovedAmount': totalApprovedAmount,
       'orderRequestStatus': orderRequestStatus,
+      'orderRequestStatusName': orderRequestStatusName,
       'isClosed': isClosed,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
@@ -339,7 +342,8 @@ class OrderRequestDetailModel {
       deliveryDate: DateTime.parse(deliveryDate),
       totalAmount: totalAmount,
       totalApprovedAmount: totalApprovedAmount,
-      orderRequestStatus: OrderRequestStatus.fromCode(orderRequestStatus),
+      orderRequestStatus: orderRequestStatus,
+      orderRequestStatusName: orderRequestStatusName,
       isClosed: isClosed,
       orderedItemCount: orderedItemCount,
       orderedItems: orderedItems.map((e) => e.toEntity()).toList(),

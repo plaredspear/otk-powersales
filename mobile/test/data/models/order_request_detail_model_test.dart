@@ -18,6 +18,7 @@ void main() {
           'totalAmount': 1234567,
           'totalApprovedAmount': 1200000,
           'orderRequestStatus': 'APPROVED',
+          'orderRequestStatusName': '승인완료',
           'isClosed': true,
           'orderedItemCount': 1,
           'orderedItems': <dynamic>[

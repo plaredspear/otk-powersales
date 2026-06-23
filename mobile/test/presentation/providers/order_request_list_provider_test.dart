@@ -132,7 +132,8 @@ _StateView _stateWith({required int allCount}) {
       orderDate: DateTime(2026, 5, 1),
       deliveryDate: DateTime(2026, 5, 6),
       totalAmount: 100,
-      orderRequestStatus: OrderRequestStatus.approved,
+      orderRequestStatus: 'APPROVED',
+      orderRequestStatusName: '승인완료',
       isClosed: false,
     ),
   );

@@ -77,7 +77,10 @@ class OrderInfoHeader extends StatelessWidget {
           _buildInfoRow(
             '승인 상태',
             '',
-            customValue: OrderRequestStatusBadge(status: orderDetail.orderRequestStatus),
+            customValue: OrderRequestStatusBadge(
+              statusCode: orderDetail.orderRequestStatus,
+              statusName: orderDetail.orderRequestStatusName,
+            ),
           ),
           if (orderDetail.isClosed) ...[
             SizedBox(height: AppSpacing.sm),

@@ -76,6 +76,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                 deliveryDate = LocalDate.of(2026, 5, 6),
                 totalAmount = BigDecimal("1234567.00"),
                 orderRequestStatus = "APPROVED",
+                orderRequestStatusName = "승인완료",
                 isClosed = false,
             )
             val response = OrderRequestListResponse(
@@ -95,6 +96,8 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.items[0].orderRequestNumber").value("OR-0001234"))
+                .andExpect(jsonPath("$.data.items[0].orderRequestStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.items[0].orderRequestStatusName").value("승인완료"))
                 .andExpect(jsonPath("$.data.total").value(1))
         }
 
@@ -137,7 +140,8 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                 deliveryDate = LocalDate.of(2026, 5, 6),
                 totalAmount = BigDecimal("1234567.00"),
                 totalApprovedAmount = BigDecimal("1200000.00"),
-                orderRequestStatus = OrderRequestStatus.APPROVED,
+                orderRequestStatus = OrderRequestStatus.APPROVED.name,
+                orderRequestStatusName = OrderRequestStatus.APPROVED.displayName,
                 isClosed = true,
                 orderedItemCount = 1,
                 orderedItems = listOf(
@@ -175,6 +179,9 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
             mockMvc.perform(get("/api/v1/mobile/me/order-requests/12345"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.orderRequestNumber").value("OR-0001234"))
+                // 상태는 코드(영문) + 한글 표시명을 분리해 내려준다 (모바일은 표시명을 그대로 출력)
+                .andExpect(jsonPath("$.data.orderRequestStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.orderRequestStatusName").value("승인완료"))
                 .andExpect(jsonPath("$.data.isClosed").value(true))
                 .andExpect(jsonPath("$.data.orderProcessingStatusList[0].items[0].deliveryStatus").value("DELIVERED"))
         }
@@ -203,12 +210,13 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("성공 - 빈 본문(전체 취소) → 200")
         fun successFullCancel() {
-            // controller 후처리: orderRequestStatus enum → 한글 표시명 변환 ("주문취소") — 가드레일 5.3
+            // 모바일 API 는 enum 을 영문 코드로 직렬화한다 (목록/상세와 정합, 한글 displayName 금지)
             every { orderCancelService.cancel(any(), any(), any()) } returns
                 OrderCancelResponse(
                     orderRequestId = 12345L,
                     orderRequestNumber = "ORD-20260504-12345",
-                    orderRequestStatus = OrderRequestStatus.CANCELED,
+                    orderRequestStatus = OrderRequestStatus.CANCELED.name,
+                    orderRequestStatusName = OrderRequestStatus.CANCELED.displayName,
                     cancelledLines = listOf(
                         CancelledLineResponse(
                             orderProductId = 101L,
@@ -221,19 +229,21 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
 
             mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.orderRequestStatus").value("주문취소"))
+                .andExpect(jsonPath("$.data.orderRequestStatus").value("CANCELED"))
+                .andExpect(jsonPath("$.data.orderRequestStatusName").value("주문취소"))
                 .andExpect(jsonPath("$.data.cancelledLines[0].productCode").value("P001"))
         }
 
         @Test
-        @DisplayName("성공 - 부분 취소(orderProductIds) → 200, status=승인완료 유지")
+        @DisplayName("성공 - 부분 취소(orderProductIds) → 200, status=APPROVED 유지")
         fun successPartialCancel() {
-            // controller 후처리: 부분 취소 시 orderRequestStatus 가 APPROVED 유지 → 한글 "승인완료"
+            // 부분 취소 시 orderRequestStatus 는 APPROVED 유지 → 영문 코드 "APPROVED"
             every { orderCancelService.cancel(any(), any(), any()) } returns
                 OrderCancelResponse(
                     orderRequestId = 12345L,
                     orderRequestNumber = "ORD-20260504-12345",
-                    orderRequestStatus = OrderRequestStatus.APPROVED,
+                    orderRequestStatus = OrderRequestStatus.APPROVED.name,
+                    orderRequestStatusName = OrderRequestStatus.APPROVED.displayName,
                     cancelledLines = listOf(
                         CancelledLineResponse(101L, BigDecimal.valueOf(10L), "P001", LocalDateTime.of(2026, 5, 4, 13, 25)),
                     ),
@@ -245,7 +255,8 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                     .content("""{"orderProductIds":[101]}"""),
             )
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.orderRequestStatus").value("승인완료"))
+                .andExpect(jsonPath("$.data.orderRequestStatus").value("APPROVED"))
+                .andExpect(jsonPath("$.data.orderRequestStatusName").value("승인완료"))
                 .andExpect(jsonPath("$.data.cancelledLines.length()").value(1))
         }
 

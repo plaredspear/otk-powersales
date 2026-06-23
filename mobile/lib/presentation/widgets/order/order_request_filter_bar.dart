@@ -108,12 +108,12 @@ class OrderRequestFilterBar extends StatelessWidget {
   /// 상태 선택 트리거 — 탭하면 거래처 선택과 동일한 바텀시트를 띄운다.
   Widget _buildStatusDropdown(BuildContext context) {
     final matches = selectedStatus == null
-        ? const <OrderRequestStatus>[]
-        : OrderRequestStatus.values
+        ? const <({String code, String label})>[]
+        : OrderStatusCode.filterOptions
               .where((s) => s.code == selectedStatus)
               .toList();
     final selected = matches.isEmpty ? null : matches.first;
-    final label = selected?.displayName ?? '상태 전체';
+    final label = selected?.label ?? '상태 전체';
     final hasSelection = selected != null;
 
     return InkWell(
@@ -151,8 +151,8 @@ class OrderRequestFilterBar extends StatelessWidget {
       selectedValue: selectedStatus,
       options: [
         const SingleSelectOption(value: null, label: '상태 전체'),
-        ...OrderRequestStatus.values.map(
-          (s) => SingleSelectOption(value: s.code, label: s.displayName),
+        ...OrderStatusCode.filterOptions.map(
+          (s) => SingleSelectOption(value: s.code, label: s.label),
         ),
       ],
     );

@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.order.dto.response
 
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
-import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -24,7 +23,10 @@ data class OrderRequestDetailResponse(
     val deliveryDate: LocalDate,
     val totalAmount: BigDecimal,
     val totalApprovedAmount: BigDecimal,
-    val orderRequestStatus: OrderRequestStatus,
+    // 상태는 코드(영문)와 한글 표시명을 분리해 내려준다 (목록 API 와 정합). 모바일은 표시명을 그대로 출력하고
+    // 코드는 색상/분기 로직에만 사용한다 (클라이언트 enum 매핑 제거).
+    val orderRequestStatus: String,
+    val orderRequestStatusName: String,
     val isClosed: Boolean,
     val orderedItemCount: Int,
     val orderedItems: List<OrderedItemResponse>,
@@ -49,7 +51,8 @@ data class OrderRequestDetailResponse(
                 deliveryDate = orderRequest.deliveryDate,
                 totalAmount = orderRequest.totalAmount,
                 totalApprovedAmount = orderRequest.totalApprovedAmount ?: BigDecimal.ZERO,
-                orderRequestStatus = orderRequest.orderRequestStatus,
+                orderRequestStatus = orderRequest.orderRequestStatus.name,
+                orderRequestStatusName = orderRequest.orderRequestStatus.displayName,
                 isClosed = isClosed,
                 orderedItemCount = orderedItems.size,
                 orderedItems = orderedItems,

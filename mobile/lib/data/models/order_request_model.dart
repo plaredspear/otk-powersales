@@ -12,6 +12,7 @@ class OrderRequestModel {
   final String deliveryDate;
   final int totalAmount;
   final String orderRequestStatus;
+  final String orderRequestStatusName;
   final bool isClosed;
 
   const OrderRequestModel({
@@ -23,6 +24,7 @@ class OrderRequestModel {
     required this.deliveryDate,
     required this.totalAmount,
     required this.orderRequestStatus,
+    required this.orderRequestStatusName,
     required this.isClosed,
   });
 
@@ -37,6 +39,7 @@ class OrderRequestModel {
       deliveryDate: json['deliveryDate'] as String,
       totalAmount: (json['totalAmount'] as num).toInt(),
       orderRequestStatus: json['orderRequestStatus'] as String,
+      orderRequestStatusName: json['orderRequestStatusName'] as String,
       isClosed: json['isClosed'] as bool,
     );
   }
@@ -52,6 +55,7 @@ class OrderRequestModel {
       'deliveryDate': deliveryDate,
       'totalAmount': totalAmount,
       'orderRequestStatus': orderRequestStatus,
+      'orderRequestStatusName': orderRequestStatusName,
       'isClosed': isClosed,
     };
   }
@@ -66,7 +70,8 @@ class OrderRequestModel {
       orderDate: DateTime.parse(orderDate),
       deliveryDate: DateTime.parse(deliveryDate),
       totalAmount: totalAmount,
-      orderRequestStatus: OrderRequestStatus.fromCode(orderRequestStatus),
+      orderRequestStatus: orderRequestStatus,
+      orderRequestStatusName: orderRequestStatusName,
       isClosed: isClosed,
     );
   }
@@ -81,7 +86,8 @@ class OrderRequestModel {
       orderDate: entity.orderDate.toIso8601String().split('T')[0],
       deliveryDate: entity.deliveryDate.toIso8601String().split('T')[0],
       totalAmount: entity.totalAmount,
-      orderRequestStatus: entity.orderRequestStatus.code,
+      orderRequestStatus: entity.orderRequestStatus,
+      orderRequestStatusName: entity.orderRequestStatusName,
       isClosed: entity.isClosed,
     );
   }
@@ -98,6 +104,7 @@ class OrderRequestModel {
         other.deliveryDate == deliveryDate &&
         other.totalAmount == totalAmount &&
         other.orderRequestStatus == orderRequestStatus &&
+        other.orderRequestStatusName == orderRequestStatusName &&
         other.isClosed == isClosed;
   }
 
@@ -112,6 +119,7 @@ class OrderRequestModel {
       deliveryDate,
       totalAmount,
       orderRequestStatus,
+      orderRequestStatusName,
       isClosed,
     );
   }
@@ -122,6 +130,7 @@ class OrderRequestModel {
         'clientId: $clientId, clientName: $clientName, '
         'orderDate: $orderDate, deliveryDate: $deliveryDate, '
         'totalAmount: $totalAmount, orderRequestStatus: $orderRequestStatus, '
+        'orderRequestStatusName: $orderRequestStatusName, '
         'isClosed: $isClosed)';
   }
 }

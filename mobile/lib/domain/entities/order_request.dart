@@ -1,37 +1,42 @@
 import 'package:flutter/material.dart';
 
-/// 주문요청 상태 열거형 (5단계 라이프사이클).
+/// 주문요청 상태 코드 상수 (서버 `orderRequestStatus` 코드값).
 ///
-/// SF `DKRetail__RequestStatus__c` 매핑 + 신규 시스템 자체 상태.
+/// 상태 표시명(한글)은 서버가 `orderRequestStatusName` 으로 함께 내려주므로 클라이언트에서 매핑하지 않는다.
+/// 코드는 색상/분기 로직(취소·재전송 버튼 등)에만 사용한다.
 /// 라이프사이클: DRAFT → SENT → APPROVED 또는 SEND_FAILED → (사용자 취소 시) CANCELED
-enum OrderRequestStatus {
-  draft('임시저장', 'DRAFT', Colors.grey),
-  sent('전송', 'SENT', Colors.blue),
-  approved('승인완료', 'APPROVED', Colors.green),
-  sendFailed('전송실패', 'SEND_FAILED', Colors.red),
-  canceled('주문취소', 'CANCELED', Colors.brown);
+abstract final class OrderStatusCode {
+  static const String draft = 'DRAFT';
+  static const String sent = 'SENT';
+  static const String approved = 'APPROVED';
+  static const String sendFailed = 'SEND_FAILED';
+  static const String canceled = 'CANCELED';
 
-  const OrderRequestStatus(this.displayName, this.code, this.color);
-
-  /// 화면에 표시되는 이름
-  final String displayName;
-
-  /// API 코드 값
-  final String code;
-
-  /// 뱃지 색상
-  final Color color;
-
-  /// API 코드에서 OrderRequestStatus로 변환
-  static OrderRequestStatus fromCode(String code) {
-    return OrderRequestStatus.values.firstWhere(
-      (status) => status.code == code,
-      orElse: () => OrderRequestStatus.draft,
-    );
+  /// 상태 코드별 뱃지 색상. 미정의 코드는 회색.
+  static Color color(String code) {
+    switch (code) {
+      case sent:
+        return Colors.blue;
+      case approved:
+        return Colors.green;
+      case sendFailed:
+        return Colors.red;
+      case canceled:
+        return Colors.brown;
+      case draft:
+      default:
+        return Colors.grey;
+    }
   }
 
-  String toJson() => code;
-  static OrderRequestStatus fromJson(String json) => fromCode(json);
+  /// 상태 필터 옵션 (코드, 표시명) — 목록 화면 상태 필터 드롭다운용.
+  static const List<({String code, String label})> filterOptions = [
+    (code: draft, label: '임시저장'),
+    (code: sent, label: '전송'),
+    (code: approved, label: '승인완료'),
+    (code: sendFailed, label: '전송실패'),
+    (code: canceled, label: '주문취소'),
+  ];
 }
 
 /// 주문 정렬 타입 열거형
@@ -79,8 +84,11 @@ class OrderRequest {
   /// 총 주문금액 (원)
   final int totalAmount;
 
-  /// 승인상태
-  final OrderRequestStatus orderRequestStatus;
+  /// 승인상태 코드 (서버 `orderRequestStatus`, 예: APPROVED). 색상/분기 로직용.
+  final String orderRequestStatus;
+
+  /// 승인상태 표시명 (서버 `orderRequestStatusName`, 예: 승인완료). 화면 출력용.
+  final String orderRequestStatusName;
 
   /// 마감 여부
   final bool isClosed;
@@ -94,6 +102,7 @@ class OrderRequest {
     required this.deliveryDate,
     required this.totalAmount,
     required this.orderRequestStatus,
+    required this.orderRequestStatusName,
     required this.isClosed,
   });
 
@@ -105,7 +114,8 @@ class OrderRequest {
     DateTime? orderDate,
     DateTime? deliveryDate,
     int? totalAmount,
-    OrderRequestStatus? orderRequestStatus,
+    String? orderRequestStatus,
+    String? orderRequestStatusName,
     bool? isClosed,
   }) {
     return OrderRequest(
@@ -117,6 +127,8 @@ class OrderRequest {
       deliveryDate: deliveryDate ?? this.deliveryDate,
       totalAmount: totalAmount ?? this.totalAmount,
       orderRequestStatus: orderRequestStatus ?? this.orderRequestStatus,
+      orderRequestStatusName:
+          orderRequestStatusName ?? this.orderRequestStatusName,
       isClosed: isClosed ?? this.isClosed,
     );
   }
@@ -130,7 +142,8 @@ class OrderRequest {
       'orderDate': orderDate.toIso8601String(),
       'deliveryDate': deliveryDate.toIso8601String(),
       'totalAmount': totalAmount,
-      'orderRequestStatus': orderRequestStatus.code,
+      'orderRequestStatus': orderRequestStatus,
+      'orderRequestStatusName': orderRequestStatusName,
       'isClosed': isClosed,
     };
   }
@@ -144,7 +157,8 @@ class OrderRequest {
       orderDate: DateTime.parse(json['orderDate'] as String),
       deliveryDate: DateTime.parse(json['deliveryDate'] as String),
       totalAmount: json['totalAmount'] as int,
-      orderRequestStatus: OrderRequestStatus.fromCode(json['orderRequestStatus'] as String),
+      orderRequestStatus: json['orderRequestStatus'] as String,
+      orderRequestStatusName: json['orderRequestStatusName'] as String,
       isClosed: json['isClosed'] as bool,
     );
   }
@@ -161,6 +175,7 @@ class OrderRequest {
         other.deliveryDate == deliveryDate &&
         other.totalAmount == totalAmount &&
         other.orderRequestStatus == orderRequestStatus &&
+        other.orderRequestStatusName == orderRequestStatusName &&
         other.isClosed == isClosed;
   }
 
@@ -175,6 +190,7 @@ class OrderRequest {
       deliveryDate,
       totalAmount,
       orderRequestStatus,
+      orderRequestStatusName,
       isClosed,
     );
   }
@@ -185,6 +201,7 @@ class OrderRequest {
         'clientId: $clientId, clientName: $clientName, '
         'orderDate: $orderDate, deliveryDate: $deliveryDate, '
         'totalAmount: $totalAmount, orderRequestStatus: $orderRequestStatus, '
+        'orderRequestStatusName: $orderRequestStatusName, '
         'isClosed: $isClosed)';
   }
 }

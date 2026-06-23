@@ -70,7 +70,10 @@ class OrderRequestCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  OrderRequestStatusBadge(status: order.orderRequestStatus),
+                  OrderRequestStatusBadge(
+                    statusCode: order.orderRequestStatus,
+                    statusName: order.orderRequestStatusName,
+                  ),
                 ],
               ),
               const SizedBox(height: AppSpacing.xs),

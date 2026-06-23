@@ -7,18 +7,23 @@ import '../../../domain/entities/order_request.dart';
 /// 승인상태 뱃지 위젯
 ///
 /// 주문의 승인상태를 색상 뱃지로 표시합니다.
-/// 승인완료(녹색), 승인상태(노란색), 전송실패(빨간색), 재전송(주황색)
+/// 표시명(한글)은 서버가 내려준 [statusName] 을 그대로 출력하고, 색상만 상태 코드([statusCode])로 결정합니다.
 class OrderRequestStatusBadge extends StatelessWidget {
-  /// 승인상태
-  final OrderRequestStatus status;
+  /// 승인상태 코드 (예: APPROVED) — 색상 결정용
+  final String statusCode;
+
+  /// 승인상태 표시명 (예: 승인완료) — 서버 제공 라벨
+  final String statusName;
 
   const OrderRequestStatusBadge({
     super.key,
-    required this.status,
+    required this.statusCode,
+    required this.statusName,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = OrderStatusCode.color(statusCode);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
@@ -26,18 +31,18 @@ class OrderRequestStatusBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         // ignore: deprecated_member_use
-        color: status.color.withOpacity(0.15),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         border: Border.all(
           // ignore: deprecated_member_use
-          color: status.color.withOpacity(0.4),
+          color: color.withOpacity(0.4),
           width: 1,
         ),
       ),
       child: Text(
-        status.displayName,
+        statusName,
         style: AppTypography.labelMedium.copyWith(
-          color: status.color,
+          color: color,
           fontWeight: FontWeight.w700,
         ),
       ),

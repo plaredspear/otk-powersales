@@ -34,6 +34,7 @@ void main() {
                         'deliveryDate': '2026-03-05',
                         'totalAmount': 1500000,
                         'orderRequestStatus': 'APPROVED',
+                        'orderRequestStatusName': '승인완료',
                         'isClosed': false,
                       }
                     ],
@@ -357,6 +358,7 @@ void main() {
                     'totalAmount': 1500000,
                     'totalApprovedAmount': 1400000,
                     'orderRequestStatus': 'APPROVED',
+                    'orderRequestStatusName': '승인완료',
                     'isClosed': true,
                     'orderedItemCount': 1,
                     'orderedItems': [

@@ -1,4 +1,3 @@
-import 'order_request.dart';
 
 /// 배송 상태 열거형
 ///
@@ -489,8 +488,11 @@ class OrderDetail {
   /// 총 승인금액 (원) — 마감후에만 의미
   final int? totalApprovedAmount;
 
-  /// 승인상태
-  final OrderRequestStatus orderRequestStatus;
+  /// 승인상태 코드 (서버 `orderRequestStatus`, 예: APPROVED). 색상/분기 로직용.
+  final String orderRequestStatus;
+
+  /// 승인상태 표시명 (서버 `orderRequestStatusName`, 예: 승인완료). 화면 출력용.
+  final String orderRequestStatusName;
 
   /// 마감 여부
   final bool isClosed;
@@ -522,6 +524,7 @@ class OrderDetail {
     required this.totalAmount,
     this.totalApprovedAmount,
     required this.orderRequestStatus,
+    required this.orderRequestStatusName,
     required this.isClosed,
     required this.orderedItemCount,
     required this.orderedItems,
@@ -547,7 +550,8 @@ class OrderDetail {
     DateTime? deliveryDate,
     int? totalAmount,
     int? totalApprovedAmount,
-    OrderRequestStatus? orderRequestStatus,
+    String? orderRequestStatus,
+    String? orderRequestStatusName,
     bool? isClosed,
     int? orderedItemCount,
     List<OrderedItem>? orderedItems,
@@ -565,6 +569,8 @@ class OrderDetail {
       totalAmount: totalAmount ?? this.totalAmount,
       totalApprovedAmount: totalApprovedAmount ?? this.totalApprovedAmount,
       orderRequestStatus: orderRequestStatus ?? this.orderRequestStatus,
+      orderRequestStatusName:
+          orderRequestStatusName ?? this.orderRequestStatusName,
       isClosed: isClosed ?? this.isClosed,
       orderedItemCount: orderedItemCount ?? this.orderedItemCount,
       orderedItems: orderedItems ?? this.orderedItems,
@@ -585,7 +591,8 @@ class OrderDetail {
       'deliveryDate': deliveryDate.toIso8601String(),
       'totalAmount': totalAmount,
       'totalApprovedAmount': totalApprovedAmount,
-      'orderRequestStatus': orderRequestStatus.code,
+      'orderRequestStatus': orderRequestStatus,
+      'orderRequestStatusName': orderRequestStatusName,
       'isClosed': isClosed,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
@@ -606,8 +613,8 @@ class OrderDetail {
       deliveryDate: DateTime.parse(json['deliveryDate'] as String),
       totalAmount: json['totalAmount'] as int,
       totalApprovedAmount: json['totalApprovedAmount'] as int?,
-      orderRequestStatus:
-          OrderRequestStatus.fromCode(json['orderRequestStatus'] as String),
+      orderRequestStatus: json['orderRequestStatus'] as String,
+      orderRequestStatusName: json['orderRequestStatusName'] as String,
       isClosed: json['isClosed'] as bool,
       orderedItemCount: json['orderedItemCount'] as int,
       orderedItems: (json['orderedItems'] as List<dynamic>)
@@ -641,6 +648,7 @@ class OrderDetail {
     if (other.totalAmount != totalAmount) return false;
     if (other.totalApprovedAmount != totalApprovedAmount) return false;
     if (other.orderRequestStatus != orderRequestStatus) return false;
+    if (other.orderRequestStatusName != orderRequestStatusName) return false;
     if (other.isClosed != isClosed) return false;
     if (other.orderedItemCount != orderedItemCount) return false;
     if (other.orderedItems.length != orderedItems.length) return false;
@@ -682,6 +690,7 @@ class OrderDetail {
       totalAmount,
       totalApprovedAmount,
       orderRequestStatus,
+      orderRequestStatusName,
       isClosed,
       orderedItemCount,
       Object.hashAll(orderedItems),
