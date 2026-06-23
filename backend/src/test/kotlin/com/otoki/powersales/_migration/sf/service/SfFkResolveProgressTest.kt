@@ -62,6 +62,60 @@ class SfFkResolveProgressTest {
     }
 
     @Test
+    @DisplayName("tryAcquire — 첫 호출만 true, RUNNING 중 재호출은 false (동시 실행 차단)")
+    fun tryAcquireBlocksConcurrent() {
+        val p = SfFkResolveProgress()
+
+        assertThat(p.tryAcquire()).isTrue()
+        assertThat(p.status).isEqualTo(SfFkResolveProgress.Status.RUNNING)
+
+        // 진행 중 재선점은 거부.
+        assertThat(p.tryAcquire()).isFalse()
+        assertThat(p.tryAcquire()).isFalse()
+
+        // 완료 후에는 다시 선점 가능.
+        p.finishOk()
+        assertThat(p.tryAcquire()).isTrue()
+    }
+
+    @Test
+    @DisplayName("tryAcquire — 직전 실행의 결과/경고를 비워 stale 노출 방지")
+    fun tryAcquireClearsStaleResult() {
+        val p = SfFkResolveProgress()
+        p.begin(totalTables = 1)
+        p.beginTable("erp_order_product", 1)
+        p.advanceChunk(6300)
+        p.finishTable(SubstepResult("erp_order_product (4 FK + polymorphic owner)", 6300))
+        p.addError("[erp_order_product] erp_order_sfid → erp_order_id 미해소 6300 건")
+        p.finishOk()
+
+        assertThat(p.tableResults).isNotEmpty()
+        assertThat(p.errors).isNotEmpty()
+
+        // 새 실행 선점 즉시 직전 결과가 비워져야 한다 (202 응답이 옛 결과를 노출하지 않도록).
+        assertThat(p.tryAcquire()).isTrue()
+        assertThat(p.status).isEqualTo(SfFkResolveProgress.Status.RUNNING)
+        assertThat(p.tableResults).isEmpty()
+        assertThat(p.errors).isEmpty()
+        assertThat(p.totalRowsAffected).isZero()
+        assertThat(p.completedTablesCount).isZero()
+        assertThat(p.finishedAt).isNull()
+    }
+
+    @Test
+    @DisplayName("releaseWithoutRun — 선점 락을 IDLE 로 되돌려 다음 선점 허용")
+    fun releaseWithoutRunResetsLock() {
+        val p = SfFkResolveProgress()
+        assertThat(p.tryAcquire()).isTrue()
+
+        p.releaseWithoutRun()
+        assertThat(p.status).isEqualTo(SfFkResolveProgress.Status.IDLE)
+        assertThat(p.startedAt).isNull()
+
+        assertThat(p.tryAcquire()).isTrue()
+    }
+
+    @Test
     @DisplayName("begin 재호출 시 이전 상태 초기화")
     fun reset() {
         val p = SfFkResolveProgress()

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 
 /**
  * SF 데이터 마이그레이션 Stage 2 admin 엔드포인트 (1회성 cut-over).
@@ -57,21 +58,35 @@ class SfMigrationStage2Controller(
     fun runFkResolve(
         @RequestParam(name = "tableName", required = false) tableName: String?,
     ): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
-        if (fkProgress.status == SfFkResolveProgress.Status.RUNNING) {
+        // 동시 실행 차단 — 요청 스레드에서 원자적으로 RUNNING 을 선점한다. submit 후 워커의 begin() 에
+        // status 세팅을 맡기면, 선점~begin() 사이에 두 요청이 모두 가드를 통과하는 TOCTOU 구멍이 생긴다
+        // (single-thread executor 라 순차 실행되긴 하나 동시 1회 의도와 어긋나고, 두 번째 202 응답이
+        // 직전 실행의 stale 진행 상태를 노출했다). tryAcquire 로 선점에 실패하면 진행 중이므로 거부한다.
+        if (!fkProgress.tryAcquire()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.success(fkProgress.toResponse()))
         }
-        fkExecutor.submit {
-            try {
-                fkService.runFkResolve(tableName?.takeIf { it.isNotBlank() })
-                // FK resolve 가 permission_set_assignment.user_id 등 권한 FK 를 채운 직후 — stale
-                // 권한 캐시 무효화 (마이그레이션 직후 권한 어긋남 방지).
-                adminPermissionCache.invalidateAll()
-                adminDataScopeCache.invalidateAll()
-            } catch (e: Exception) {
-                log.error("[fk] async run failed", e)
+        try {
+            fkExecutor.submit {
+                try {
+                    fkService.runFkResolve(tableName?.takeIf { it.isNotBlank() })
+                    // FK resolve 가 permission_set_assignment.user_id 등 권한 FK 를 채운 직후 — stale
+                    // 권한 캐시 무효화 (마이그레이션 직후 권한 어긋남 방지).
+                    adminPermissionCache.invalidateAll()
+                    adminDataScopeCache.invalidateAll()
+                } catch (e: Exception) {
+                    log.error("[fk] async run failed", e)
+                }
             }
+        } catch (e: RejectedExecutionException) {
+            // 스레드풀이 작업을 거부하면 워커가 begin()/finish*() 를 호출하지 않아 RUNNING 이 영구히
+            // 남는다 — 선점한 락을 즉시 되돌려 다음 요청이 가능하게 한다.
+            fkProgress.releaseWithoutRun()
+            log.error("[fk] executor rejected the task", e)
+            throw e
         }
+        // tryAcquire 가 이미 이번 실행용으로 progress 를 비우고 RUNNING 으로 전이했으므로,
+        // 이 202 응답 body 는 항상 "방금 시작한 이 실행" 을 가리킨다 (옛 결과 노출 없음).
         return ResponseEntity.accepted().body(ApiResponse.success(fkProgress.toResponse()))
     }
 

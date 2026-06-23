@@ -23,6 +23,46 @@ class SfFkResolveProgress {
     @Volatile var status: Status = Status.IDLE
         internal set
 
+    /**
+     * 동시 실행 차단용 원자적 게이트. 요청 스레드가 비동기 작업을 submit 하기 **전에** 호출해 즉시
+     * 실행 권한을 선점한다.
+     *
+     * 기존 가드 (`status == RUNNING` 체크 → submit) 는 워커 스레드가 [begin] 으로 RUNNING 을 세팅하기
+     * 전까지 status 가 옛 값(COMPLETED 등)이라, 두 요청이 모두 가드를 통과하는 TOCTOU 구멍이 있었다.
+     * 본 메서드로 요청 스레드에서 원자적으로 RUNNING 을 선점하면, 두 번째 요청은 반드시 false 를 받는다.
+     *
+     * 선점 성공 시 이전 실행의 결과(테이블 결과 / 경고)를 즉시 비워, submit 직후 반환하는 202 응답이
+     * 옛 실행의 stale 진행 상태를 노출하지 않도록 한다. 실제 totalTables / 시작시각은 워커가 [begin]
+     * 에서 확정한다.
+     *
+     * @return 선점 성공 시 true. 이미 RUNNING 이면 false (호출자는 CONFLICT 반환).
+     */
+    @Synchronized
+    fun tryAcquire(): Boolean {
+        if (status == Status.RUNNING) return false
+        status = Status.RUNNING
+        completedTables.set(0)
+        currentTable = null
+        currentTableTotalChunks = 0
+        currentTableChunkNo.set(0)
+        tableResults.clear()
+        errors.clear()
+        totalRowsAffectedRef.set(0L)
+        totalTables = 0
+        startedAt = Instant.now()
+        finishedAt = null
+        return true
+    }
+
+    /**
+     * [tryAcquire] 로 선점한 락을, 비동기 작업을 끝내 submit 하지 못한 경우(스레드풀 거부 등) 되돌린다.
+     */
+    @Synchronized
+    fun releaseWithoutRun() {
+        status = Status.IDLE
+        startedAt = null
+    }
+
     @Volatile var startedAt: Instant? = null
         internal set
 
