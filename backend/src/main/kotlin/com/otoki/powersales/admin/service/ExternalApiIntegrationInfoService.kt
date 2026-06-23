@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service
  * 탭별 메타로 조립한다.
  *
  * 인증 secret(비밀번호 / client secret)은 절대 응답에 포함하지 않고 방식만 표기한다.
- * SAP 7개 인터페이스는 모두 `sap.outbound.base-url` + `/{interfaceId}` 구조이며 interfaceId 만 다르다.
+ * SAP 인터페이스는 모두 `sap.outbound.base-url` + `/{interfaceId}` 구조이며 interfaceId 만 다르다.
  */
 @Service
 class ExternalApiIntegrationInfoService(
@@ -114,6 +114,7 @@ class ExternalApiIntegrationInfoService(
         return listOf(
             sap("loan-inquiry", "여신 한도 조회", SapConstants.SAP_INTERFACE_LOAN_INQUIRY, "동기 조회."),
             sap("order-request-detail", "주문요청 상세 조회", SapConstants.SAP_INTERFACE_ORDER_REQUEST_DETAIL, "동기 조회."),
+            sap("inventory-search", "재고 조회", SapConstants.SAP_INTERFACE_INVENTORY_SEARCH, "동기 조회."),
             sap("order-request-cancel", "주문 취소", SapConstants.SAP_INTERFACE_ORDER_REQUEST_CANCEL, "송신만 수행."),
             sap(
                 "order-request-register",

@@ -90,7 +90,7 @@ class ExternalApiIntegrationInfoServiceTest {
     }
 
     @Test
-    @DisplayName("SAP 인터페이스 7개 — endpoint = baseUrl + /{interfaceId}, POST, Basic")
+    @DisplayName("SAP 인터페이스 8개 — endpoint = baseUrl + /{interfaceId}, POST, Basic")
     fun sapInfos() {
         val items = service().getIntegrationInfo().items
         val loan = items.first { it.key == "loan-inquiry" }
@@ -98,8 +98,14 @@ class ExternalApiIntegrationInfoServiceTest {
         assertThat(loan.endpoint).isEqualTo("https://sap.example.com/rest/SD03040")
         assertThat(loan.httpMethod).isEqualTo("POST")
         assertThat(loan.authType).contains("Basic")
-        // SAP 7개 모두 포함
-        assertThat(items.filter { it.externalSystem.startsWith("SAP") }).hasSize(7)
+
+        // 재고 조회(InventorySearch/SD03070) 도 동일 구조로 노출.
+        val inventory = items.first { it.key == "inventory-search" }
+        assertThat(inventory.endpoint).isEqualTo("https://sap.example.com/rest/SD03070")
+        assertThat(inventory.httpMethod).isEqualTo("POST")
+
+        // SAP 8개 모두 포함
+        assertThat(items.filter { it.externalSystem.startsWith("SAP") }).hasSize(8)
     }
 
     @Test

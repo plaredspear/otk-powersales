@@ -83,5 +83,12 @@ object SapOutboundCatalog {
             senderClass = "com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender",
             description = "거래처 여신 한도 동기 조회.",
         ),
+        SapOutboundCatalogItem(
+            interfaceId = SapConstants.SAP_INTERFACE_INVENTORY_SEARCH,
+            koreanName = "재고 조회",
+            triggerType = OutboundTriggerType.REALTIME,
+            senderClass = "com.otoki.powersales.external.sap.outbound.sender.InventorySearchSender",
+            description = "거래처/제품/납기일 기준 재고·공급제한·환산수량·발주단위 동기 조회 (주문 등록 사전 검증).",
+        ),
     )
 }

@@ -89,6 +89,7 @@ class AdminSapIntegrationServiceTest {
                 SapConstants.SAP_INTERFACE_ORDER_REQUEST_DETAIL,
                 SapConstants.SAP_INTERFACE_ORDER_REQUEST_CANCEL,
                 SapConstants.SAP_INTERFACE_LOAN_INQUIRY,
+                SapConstants.SAP_INTERFACE_INVENTORY_SEARCH,
             )
 
             val ids = service.outboundCatalog().map { it.interfaceId }.toSet()
