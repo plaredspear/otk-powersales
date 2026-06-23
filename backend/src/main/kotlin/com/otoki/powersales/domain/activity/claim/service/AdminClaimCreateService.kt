@@ -139,6 +139,7 @@ class AdminClaimCreateService(
             sapAccountCode = parsed.sapAccountCode,
             productCode = parsed.productCode,
             parsed = parsed,
+            channel = ClaimChannel.WEB.name,
             claimPhoto = claimPhoto,
             claimKey = claimKey,
             partPhoto = partPhoto,
@@ -170,6 +171,7 @@ class AdminClaimCreateService(
         sapAccountCode: String,
         productCode: String,
         parsed: ParsedInput,
+        channel: String,
         claimPhoto: MultipartFile,
         claimKey: String,
         partPhoto: MultipartFile,
@@ -182,6 +184,7 @@ class AdminClaimCreateService(
             sapAccountCode = sapAccountCode,
             productCode = productCode,
             parsed = parsed,
+            channel = channel,
             claimPhoto = claimPhoto,
             partPhoto = partPhoto,
             receiptPhoto = receiptPhoto,
@@ -198,6 +201,7 @@ class AdminClaimCreateService(
         sapAccountCode: String,
         productCode: String,
         parsed: ParsedInput,
+        channel: String,
         claimKey: String,
         partKey: String,
         receiptKey: String?,
@@ -216,6 +220,7 @@ class AdminClaimCreateService(
             sapAccountCode = sapAccountCode,
             productCode = productCode,
             parsed = parsed,
+            channel = channel,
             claimBytes = claimBytes,
             claimFilename = claimPhotoFilename,
             claimContentType = claimPhotoContentType,
@@ -259,6 +264,7 @@ class AdminClaimCreateService(
         sapAccountCode: String,
         productCode: String,
         parsed: ParsedInput,
+        channel: String,
         claimPhoto: MultipartFile,
         partPhoto: MultipartFile,
         receiptPhoto: MultipartFile?,
@@ -267,6 +273,7 @@ class AdminClaimCreateService(
         sapAccountCode = sapAccountCode,
         productCode = productCode,
         parsed = parsed,
+        channel = channel,
         claimBytes = claimPhoto.bytes,
         claimFilename = claimPhoto.originalFilename ?: "claim",
         claimContentType = claimPhoto.contentType ?: "image/jpeg",
@@ -283,6 +290,7 @@ class AdminClaimCreateService(
         sapAccountCode: String,
         productCode: String,
         parsed: ParsedInput,
+        channel: String,
         claimBytes: ByteArray,
         claimFilename: String,
         claimContentType: String,
@@ -308,7 +316,9 @@ class AdminClaimCreateService(
         map["Amount"] = parsed.amount?.toPlainString()
         map["RequestType"] = parsed.requestTypes.joinToString(";") { it.displayName }
         map["Description"] = parsed.description
-        map["Channel"] = "WEB"
+        // SF Apex `IF_REST_MOBILE_ClaimRegist` 는 Input.Channel 을 무시하고 Channel='CAP' 로 하드코딩하나,
+        // 신규는 backend.claim.channel 추적값과 정합을 위해 명시 전송한다 (web=WEB, mobile=CAP).
+        map["Channel"] = channel
         map["EmployeeCode"] = employeeCode
 
         map["ClaimImageBuffer"] = Base64.getEncoder().encodeToString(claimBytes)

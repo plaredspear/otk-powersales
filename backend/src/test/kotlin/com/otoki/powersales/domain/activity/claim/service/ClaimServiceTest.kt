@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.domain.activity.claim.dto.request.ClaimCreateRequest
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.entity.sfpicklist.RequestType
+import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
@@ -39,6 +40,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.mock.web.MockMultipartFile
+import org.springframework.transaction.support.TransactionCallback
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDate
 import java.util.Optional
 import java.math.BigDecimal
@@ -55,6 +58,8 @@ class ClaimServiceTest {
     private val productRepository: ProductRepository = mockk()
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
     private val storageService: StorageService = mockk(relaxUnitFun = true)
+    private val sfClaimCreateService: AdminClaimCreateService = mockk(relaxUnitFun = true)
+    private val txTemplate: TransactionTemplate = mockk()
 
     private val claimService = ClaimService(
         claimRepository,
@@ -65,6 +70,8 @@ class ClaimServiceTest {
         productRepository,
         fileStorageService,
         storageService,
+        sfClaimCreateService,
+        txTemplate,
     )
 
     private val userId = 100L
@@ -83,8 +90,13 @@ class ClaimServiceTest {
             orgName = "FS사업부",
             costCenterCode = "CC100"
         )
-        account = Account(id = 1, name = "테스트거래처", branchCode = "B001")
+        account = Account(id = 1, name = "테스트거래처", branchCode = "B001", externalKey = "SAP001")
         product = Product(id = 1L, name = "테스트제품", productCode = "P0001")
+
+        // txTemplate.execute { ... } 가 람다를 실제 실행하도록 stub (트랜잭션 분할 구조 검증).
+        every { txTemplate.execute(any<TransactionCallback<*>>()) } answers {
+            firstArg<TransactionCallback<*>>().doInTransaction(mockk(relaxed = true))
+        }
     }
 
     private fun validRequest(
@@ -111,14 +123,30 @@ class ClaimServiceTest {
 
     private fun mockPhoto(name: String) = MockMultipartFile(name, "$name.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
 
-    private fun stubCreateDeps() {
+    private fun stubCreateDeps(sfSuccess: Boolean = true) {
         every { employeeRepository.findById(userId) } returns Optional.of(employee)
         every { accountRepository.findById(1) } returns Optional.of(account)
         every { productRepository.findByProductCode("P0001") } returns product
-        every { claimRepository.save(any<Claim>()) } answers { firstArg() }
+        val saved = slot<Claim>()
+        every { claimRepository.save(capture(saved)) } answers { firstArg() }
+        // status update 트랜잭션의 findByIdOrNull(savedClaim.id) → 방금 저장한 claim 재조회.
+        every { claimRepository.findById(any()) } answers { Optional.of(saved.captured) }
         every { fileStorageService.uploadClaimPhoto(any(), any(), any(), any()) } returns
             "uploads/claim/2026/01/01/uuid.jpg"
         every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg() }
+        // SF push — 성공/실패 결과 반환 + applySfResultToClaim 이 claim.status 를 전이.
+        val pushResult = AdminClaimCreateService.SfPushResult(
+            success = sfSuccess, apiResponse = null, errorSummary = if (sfSuccess) null else "SF 오류"
+        )
+        every {
+            sfClaimCreateService.pushToSf(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        } returns pushResult
+        every { sfClaimCreateService.applySfResultToClaim(any(), any()) } answers {
+            val c = firstArg<Claim>()
+            c.status = if (sfSuccess) ClaimStatus.SENT else ClaimStatus.SEND_FAILED
+        }
     }
 
     @Nested
@@ -143,6 +171,49 @@ class ClaimServiceTest {
             assertThat(result.productCode).isEqualTo("P0001")
             assertThat(savedSlots).hasSize(2)
             assertThat(savedSlots.map { it.uploadKbn }).containsExactly("claim", "part")
+        }
+
+        @Test
+        @DisplayName("등록 즉시 SF /ClaimRegist 호출 (channel=CAP) - 성공 시 status=SENT")
+        fun pushesToSfWithCapChannelOnCreate() {
+            stubCreateDeps(sfSuccess = true)
+            val claimSlot = slot<Claim>()
+            every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
+            every { claimRepository.findById(any()) } answers { Optional.of(claimSlot.captured) }
+
+            claimService.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
+
+            // INSERT 시점 channel=CAP (레거시 모바일 정합)
+            assertThat(claimSlot.captured.channel).isEqualTo(ClaimChannel.CAP)
+            // SF push 가 channel="CAP" 으로 호출됨
+            verify {
+                sfClaimCreateService.pushToSf(
+                    employeeCode = "EMP001",
+                    sapAccountCode = "SAP001",
+                    productCode = "P0001",
+                    parsed = any(),
+                    channel = ClaimChannel.CAP.name,
+                    claimPhoto = any(), claimKey = any(),
+                    partPhoto = any(), partKey = any(),
+                    receiptPhoto = any(), receiptKey = any()
+                )
+            }
+            // 성공 → status SENT 전이
+            assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SENT)
+        }
+
+        @Test
+        @DisplayName("SF 전송 실패 - 예외 미전파 + status=SEND_FAILED")
+        fun keepsClaimWhenSfPushFails() {
+            stubCreateDeps(sfSuccess = false)
+            val claimSlot = slot<Claim>()
+            every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
+            every { claimRepository.findById(any()) } answers { Optional.of(claimSlot.captured) }
+
+            // SF 실패해도 createClaim 은 정상 반환 (HTTP 5xx 아님)
+            claimService.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
+
+            assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SEND_FAILED)
         }
 
         @Test
@@ -263,6 +334,7 @@ class ClaimServiceTest {
             stubCreateDeps()
             val claimSlot = slot<Claim>()
             every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
+            every { claimRepository.findById(any()) } answers { Optional.of(claimSlot.captured) }
 
             claimService.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
 

@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.claim.service
 
 import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimCreateResponse
+import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.activity.claim.exception.ClaimNotFoundException
@@ -48,6 +49,8 @@ class AdminClaimResendService(
                     ?: error("재전송 시점에 claim.account.externalKey 가 null"),
                 productCode = claim.product?.productCode
                     ?: error("재전송 시점에 claim.product.productCode 가 null"),
+                // 등록 경로별 channel 유지 (web=WEB, mobile=CAP). 미설정 row 는 WEB 으로 fallback.
+                channel = (claim.channel ?: ClaimChannel.WEB).name,
                 parsed = AdminClaimCreateService.ParsedInput(
                     sapAccountCode = claim.account?.externalKey!!,
                     productCode = claim.product?.productCode!!,
@@ -82,6 +85,7 @@ class AdminClaimResendService(
             sapAccountCode = snapshot.sapAccountCode,
             productCode = snapshot.productCode,
             parsed = snapshot.parsed,
+            channel = snapshot.channel,
             claimKey = snapshot.claimKey,
             partKey = snapshot.partKey,
             receiptKey = snapshot.receiptKey,
@@ -112,6 +116,7 @@ class AdminClaimResendService(
         val employeeCode: String,
         val sapAccountCode: String,
         val productCode: String,
+        val channel: String,
         val parsed: AdminClaimCreateService.ParsedInput,
         val claimKey: String,
         val claimFilename: String,
