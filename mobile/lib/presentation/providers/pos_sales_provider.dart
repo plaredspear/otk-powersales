@@ -7,10 +7,13 @@ import '../../data/datasources/pos_sales_api_datasource.dart';
 import '../../data/repositories/pos_product_repository_impl.dart';
 import '../../data/repositories/pos_sales_repository_impl.dart';
 import '../../domain/entities/pos_product.dart';
+import '../../domain/repositories/my_account_repository.dart';
 import '../../domain/repositories/pos_product_repository.dart';
 import '../../domain/repositories/pos_sales_repository.dart';
+import '../../domain/usecases/get_my_accounts.dart';
 import '../../domain/usecases/get_pos_sales.dart';
 import '../../domain/usecases/pos_product_usecase.dart';
+import 'my_accounts_provider.dart';
 import 'pos_sales_state.dart';
 
 /// POS 매출 DataSource Provider (실 API)
@@ -51,9 +54,41 @@ final posProductUseCaseProvider = Provider<PosProductUseCase>((ref) {
 
 /// POS 매출 상태 관리 Notifier
 class PosSalesNotifier extends StateNotifier<PosSalesState> {
-  PosSalesNotifier(this._getPosSales) : super(PosSalesState.initial());
+  PosSalesNotifier(this._getPosSales, this._getMyAccounts)
+      : super(PosSalesState.initial());
 
   final GetPosSalesUseCase _getPosSales;
+  final GetMyAccounts _getMyAccounts;
+
+  /// 화면 진입 시 기본 거래처(내 거래처 목록의 첫 거래처)를 자동 선택하고 합계를 조회한다.
+  ///
+  /// 레거시 `promotion/month/posmain.jsp` 진입 동작 정합 — 컨트롤러가 권한별 거래처 목록의
+  /// 첫 행을 `defaultAccountCode`로 내려주고 `document.ready`에서 즉시 `searchSalesList()`를
+  /// 호출한다. 모바일도 매출 scope(부서장이면 전체) 거래처 목록의 첫 거래처를 선택해 조회한다.
+  /// 이미 거래처가 선택돼 있으면(재진입) 건너뛴다.
+  Future<void> initDefaultCustomer() async {
+    if (state.selectedCustomerId != null) return;
+    state = state.copyWith(isLoading: true, clearErrorMessage: true);
+    try {
+      final result = await _getMyAccounts.call(scope: MyAccountScope.sales);
+      if (result.accounts.isEmpty) {
+        state = state.copyWith(isLoading: false);
+        return;
+      }
+      final first = result.accounts.first;
+      state = state.copyWith(
+        selectedCustomerId: first.accountId,
+        selectedCustomerName: first.accountName,
+      );
+      // selectCustomer 와 동일하게 선택 직후 합계 조회 (isLoading 유지).
+      await fetchSales();
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: extractErrorMessage(e),
+      );
+    }
+  }
 
   /// 기간(시작/종료일) 설정.
   void setDateRange(String startDate, String endDate) {
@@ -160,5 +195,8 @@ class PosSalesNotifier extends StateNotifier<PosSalesState> {
 /// POS 매출 StateNotifier Provider
 final posSalesProvider =
     StateNotifierProvider<PosSalesNotifier, PosSalesState>((ref) {
-  return PosSalesNotifier(ref.watch(getPosSalesUseCaseProvider));
+  return PosSalesNotifier(
+    ref.watch(getPosSalesUseCaseProvider),
+    ref.watch(getMyAccountsUseCaseProvider),
+  );
 });

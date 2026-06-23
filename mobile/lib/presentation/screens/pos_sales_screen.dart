@@ -16,11 +16,27 @@ import 'barcode_scanner_screen.dart';
 ///
 /// 레거시 Heroku `promotion/month/posmain.jsp` 동등 디자인 — 기간(날짜범위) + 거래처 선택,
 /// 제품명 검색/바코드 스캔으로 매출 조회 제품을 누적한 뒤 "매출 조회" 로 합계금액/명세를 조회한다.
-class PosSalesScreen extends ConsumerWidget {
+class PosSalesScreen extends ConsumerStatefulWidget {
   const PosSalesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PosSalesScreen> createState() => _PosSalesScreenState();
+}
+
+class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // 화면 진입 시 기본 거래처(내 거래처 첫 거래처)를 자동 선택하고 합계를 조회한다.
+    // 레거시 posmain.jsp 진입 동작 정합.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(posSalesProvider.notifier).initDefaultCustomer();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(posSalesProvider);
     final notifier = ref.read(posSalesProvider.notifier);
 
