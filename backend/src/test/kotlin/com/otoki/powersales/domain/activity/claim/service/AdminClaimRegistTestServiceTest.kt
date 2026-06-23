@@ -36,20 +36,26 @@ class AdminClaimRegistTestServiceTest {
     fun setUp() {
         claimRepository = mockk(relaxed = true)
         sfOutboundClient = mockk()
-        // createService 는 실제 인스턴스 — buildApiMapFromBytes / invokeSf 로직을 그대로 사용.
+        // createService 는 실제 인스턴스 — parseRequest (입력 검증/정규화) 로직을 그대로 사용.
+        // SF apiMap 빌드/호출은 sfOutboundService 실제 인스턴스가 담당 (buildApiMapFromBytes / invokeSf).
         // 테스트 도구는 DB 저장을 하지 않으므로 repository/storage 는 호출되지 않아야 한다 (relaxed mock).
+        val sfOutboundService = ClaimSfOutboundService(
+            storageService = mockk<StorageService>(relaxed = true),
+            sfOutboundClient = sfOutboundClient,
+        )
         createService = AdminClaimCreateService(
-            claimRepository = claimRepository,
-            uploadFileRepository = mockk(relaxed = true),
             employeeRepository = mockk<EmployeeRepository>(relaxed = true),
             accountRepository = mockk<AccountRepository>(relaxed = true),
             productRepository = mockk<ProductRepository>(relaxed = true),
             fileStorageService = mockk<FileStorageService>(relaxed = true),
-            storageService = mockk<StorageService>(relaxed = true),
-            sfOutboundClient = sfOutboundClient,
-            txTemplate = mockk<TransactionTemplate>(relaxed = true),
+            registrationCore = ClaimRegistrationCore(
+                claimRepository = claimRepository,
+                uploadFileRepository = mockk(relaxed = true),
+                sfOutboundService = sfOutboundService,
+                txTemplate = mockk<TransactionTemplate>(relaxed = true),
+            ),
         )
-        service = AdminClaimRegistTestService(createService, ObjectMapper())
+        service = AdminClaimRegistTestService(createService, sfOutboundService, ObjectMapper())
     }
 
     private fun newRequest(

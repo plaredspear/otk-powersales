@@ -68,16 +68,20 @@ class AdminClaimCreateServiceTest {
             val callback = arg<TransactionCallback<Any>>(0)
             callback.doInTransaction(mockk(relaxed = true))
         }
-        service = AdminClaimCreateService(
+        // SF 전송 + 등록 골격은 실제 협력 객체로 조립 (callApi/repository mock 단언 보존).
+        val sfOutboundService = ClaimSfOutboundService(storageService, sfOutboundClient)
+        val registrationCore = ClaimRegistrationCore(
             claimRepository,
             uploadFileRepository,
+            sfOutboundService,
+            txTemplate,
+        )
+        service = AdminClaimCreateService(
             employeeRepository,
             accountRepository,
             productRepository,
             fileStorageService,
-            storageService,
-            sfOutboundClient,
-            txTemplate,
+            registrationCore,
         )
 
         every { fileStorageService.uploadClaimPhoto(any(), any(), any(), any()) } returnsMany listOf(

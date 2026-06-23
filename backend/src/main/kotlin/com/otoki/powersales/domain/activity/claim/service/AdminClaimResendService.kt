@@ -18,13 +18,13 @@ import org.springframework.transaction.support.TransactionTemplate
  * SF 재전송 service — Spec #829.
  *
  * 사전 조건: claim.status == SEND_FAILED (그 외 상태는 409).
- * 처리: S3 이미지 회수 → SF push (AdminClaimCreateService 의 헬퍼 재사용) → status update.
+ * 처리: S3 이미지 회수 → SF push (ClaimSfOutboundService 재사용) → status update.
  */
 @Service
 class AdminClaimResendService(
     private val claimRepository: ClaimRepository,
     private val uploadFileRepository: UploadFileRepository,
-    private val createService: AdminClaimCreateService,
+    private val sfOutboundService: ClaimSfOutboundService,
     private val txTemplate: TransactionTemplate,
 ) {
 
@@ -51,7 +51,7 @@ class AdminClaimResendService(
                     ?: error("재전송 시점에 claim.product.productCode 가 null"),
                 // 등록 경로별 channel 유지 (web=WEB, mobile=CAP). 미설정 row 는 WEB 으로 fallback.
                 channel = (claim.channel ?: ClaimChannel.WEB).name,
-                parsed = AdminClaimCreateService.ParsedInput(
+                parsed = ClaimSfOutboundService.ParsedInput(
                     sapAccountCode = claim.account?.externalKey!!,
                     productCode = claim.product?.productCode!!,
                     employeeCode = claim.employee?.employeeCode
@@ -80,7 +80,7 @@ class AdminClaimResendService(
         }!!
 
         // SF call (트랜잭션 외부)
-        val sfResult = createService.pushToSfFromStored(
+        val sfResult = sfOutboundService.pushToSfFromStored(
             employeeCode = snapshot.employeeCode,
             sapAccountCode = snapshot.sapAccountCode,
             productCode = snapshot.productCode,
@@ -101,7 +101,7 @@ class AdminClaimResendService(
         return txTemplate.execute {
             val claim = claimRepository.findByIdOrNull(snapshot.claimId)
                 ?: throw ClaimNotFoundException(snapshot.claimId)
-            createService.applySfResultToClaim(claim, sfResult)
+            sfOutboundService.applySfResultToClaim(claim, sfResult)
             AdminClaimCreateResponse(
                 claimId = claim.id,
                 status = claim.status?.name ?: "",
@@ -117,7 +117,7 @@ class AdminClaimResendService(
         val sapAccountCode: String,
         val productCode: String,
         val channel: String,
-        val parsed: AdminClaimCreateService.ParsedInput,
+        val parsed: ClaimSfOutboundService.ParsedInput,
         val claimKey: String,
         val claimFilename: String,
         val claimContentType: String,

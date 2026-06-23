@@ -15,9 +15,9 @@ import tools.jackson.databind.ObjectMapper
  * SF 로만 전송한다. Naver Geocode 테스트 탭과 동일하게 "외부 API 호출 + raw 응답 확인" 성격의 도구.
  *
  * 처리:
- *  1. [AdminClaimCreateService.ParsedInput.from] 으로 입력 검증/정규화 (운영 경로와 동일 규칙).
- *  2. [AdminClaimCreateService.buildApiMapFromBytes] 로 apiMap 구성 (이미지 미첨부 시 빈 바이트).
- *  3. [AdminClaimCreateService.invokeSf] 로 SF POST — 성공/실패 모두 응답에 담아 반환 (예외 throw 안 함).
+ *  1. [AdminClaimCreateService.parseRequest] 로 입력 검증/정규화 (운영 경로와 동일 규칙).
+ *  2. [ClaimSfOutboundService.buildApiMapFromBytes] 로 apiMap 구성 (이미지 미첨부 시 빈 바이트).
+ *  3. [ClaimSfOutboundService.invokeSf] 로 SF POST — 성공/실패 모두 응답에 담아 반환 (예외 throw 안 함).
  *  4. apiMap 을 JSON 으로 직렬화하되 이미지 Buffer 는 길이 표기로 마스킹해 미리보기로 함께 반환.
  *
  * DB 변경이 없으므로 audit 적재 없이 slf4j INFO 로그만 남긴다 (naver-geocode 테스트 도구와 동일 정책).
@@ -25,6 +25,7 @@ import tools.jackson.databind.ObjectMapper
 @Service
 class AdminClaimRegistTestService(
     private val createService: AdminClaimCreateService,
+    private val sfOutboundService: ClaimSfOutboundService,
     private val objectMapper: ObjectMapper,
 ) {
 
@@ -38,9 +39,9 @@ class AdminClaimRegistTestService(
         receiptPhoto: MultipartFile?,
     ): AdminClaimRegistTestResponse {
         // 운영 경로와 동일한 검증/정규화 규칙 적용 (영수증 조건부 필수 포함).
-        val parsed = AdminClaimCreateService.ParsedInput.from(request, receiptPhoto)
+        val parsed = createService.parseRequest(request, receiptPhoto)
 
-        val apiMap = createService.buildApiMapFromBytes(
+        val apiMap = sfOutboundService.buildApiMapFromBytes(
             employeeCode = parsed.employeeCode,
             sapAccountCode = parsed.sapAccountCode,
             productCode = parsed.productCode,
@@ -57,7 +58,7 @@ class AdminClaimRegistTestService(
             receiptContentType = receiptPhoto?.contentType,
         )
 
-        val result = createService.invokeSf(apiMap)
+        val result = sfOutboundService.invokeSf(apiMap)
 
         log.info(
             "SF_CLAIM_REGIST_TEST user={} sapAccountCode={} productCode={} employeeCode={} success={} resultCode={}",

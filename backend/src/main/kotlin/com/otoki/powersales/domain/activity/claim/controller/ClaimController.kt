@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.activity.claim.dto.response.ClaimDraftRespons
 import com.otoki.powersales.domain.activity.claim.service.ClaimDraftService
 import com.otoki.powersales.domain.activity.claim.service.ClaimService
 import com.otoki.powersales.domain.activity.claim.service.ClaimUpdateRequest
+import com.otoki.powersales.domain.activity.claim.service.MobileClaimService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
 import jakarta.validation.Valid
@@ -32,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile
 @RequestMapping("/api/v1/mobile/claims")
 class ClaimController(
     private val claimService: ClaimService,
+    private val mobileClaimService: MobileClaimService,
     private val claimDraftService: ClaimDraftService
 ) {
 
@@ -46,7 +48,7 @@ class ClaimController(
         @RequestParam labelPhoto: MultipartFile,
         @RequestParam(required = false) receiptPhoto: MultipartFile?
     ): ResponseEntity<ApiResponse<ClaimCreateResponse>> {
-        val result = claimService.createClaim(
+        val result = mobileClaimService.createClaim(
             userId = principal.userId,
             request = request,
             defectPhoto = defectPhoto,
