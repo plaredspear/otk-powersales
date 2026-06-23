@@ -106,7 +106,8 @@ class OrderRequestCreateServiceTest {
 
             assertThat(response.orderRequestNumber).startsWith("ORD-")
             assertThat(response.orderRequestNumber).endsWith("-42")
-            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT)
+            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT.name)
+            assertThat(response.statusName).isEqualTo(OrderRequestStatus.SENT.displayName)
             verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
             // SD03050 송신 트리거: 등록 직후 OrderRequestRegisteredEvent 발행 (커밋 후 비동기 송신).
             verify(exactly = 1) { eventPublisher.publishEvent(ofType(OrderRequestRegisteredEvent::class)) }
@@ -155,7 +156,8 @@ class OrderRequestCreateServiceTest {
 
             val response = service.create(userId, request)
 
-            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT)
+            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT.name)
+            assertThat(response.statusName).isEqualTo(OrderRequestStatus.SENT.displayName)
             verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
         }
 
@@ -179,7 +181,8 @@ class OrderRequestCreateServiceTest {
 
             val response = service.create(userId, request)
 
-            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT)
+            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT.name)
+            assertThat(response.statusName).isEqualTo(OrderRequestStatus.SENT.displayName)
             verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
         }
 
@@ -197,7 +200,8 @@ class OrderRequestCreateServiceTest {
             val response = service.create(userId, request)
 
             assertThat(response.orderRequestId).isEqualTo(existing.id)
-            assertThat(response.status).isEqualTo(OrderRequestStatus.APPROVED)
+            assertThat(response.status).isEqualTo(OrderRequestStatus.APPROVED.name)
+            assertThat(response.statusName).isEqualTo(OrderRequestStatus.APPROVED.displayName)
             verify(exactly = 0) { inventorySearchClient.search(any(), any(), any()) }
             verify(exactly = 0) { loanInquiryClient.inquireCreditBalance(any()) }
             verify(exactly = 0) { orderRequestRepository.save(any<OrderRequest>()) }

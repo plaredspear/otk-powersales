@@ -95,7 +95,8 @@ class OrderCancelServiceTest {
 
         verify { sender.send(any()) }
         assertThat(captor.captured).containsExactly(101L, 102L)
-        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED)
+        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED.name)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.CANCELED.displayName)
         assertThat(response.cancelledLines).hasSize(2)
     }
 
@@ -119,7 +120,8 @@ class OrderCancelServiceTest {
         val response = service.cancel(orderRequestId, userId, listOf(101L, 102L))
 
         assertThat(captor.captured).containsExactly(101L, 102L)
-        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED)
+        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED.name)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.APPROVED.displayName)
         assertThat(response.cancelledLines).hasSize(2)
     }
 
@@ -137,7 +139,8 @@ class OrderCancelServiceTest {
 
         val response = service.cancel(orderRequestId, userId, emptyList())
 
-        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED)
+        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED.name)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.CANCELED.displayName)
         verify { sender.send(any()) }
     }
 
