@@ -7,6 +7,7 @@ import '../../domain/entities/my_account.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../providers/monthly_sales_provider.dart';
 import '../providers/monthly_sales_state.dart';
+import '../providers/my_accounts_provider.dart';
 import '../widgets/account/account_selector_field.dart';
 import '../widgets/sales/monthly_sales_chart_widget.dart';
 
@@ -28,9 +29,29 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(monthlySalesProvider.notifier).initialize();
-    });
+    // 화면 진입 시 기본 거래처(내 거래처 첫 거래처)를 자동 선택하고 당월 매출을 조회한다.
+    // 레거시 list.jsp 진입 동작 정합(네이티브 select 첫 옵션 + monthlyApi() 자동 호출).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDefaultCustomer());
+  }
+
+  /// 진입 시 매출 scope 거래처 목록의 첫 거래처를 자동 선택하고 월매출을 조회한다.
+  ///
+  /// 레거시 monthList/list.jsp — 권한별 거래처 목록 첫 행이 (네이티브 select 첫 옵션으로)
+  /// 기본 선택되고 `monthlyApi()` 가 진입 시 당월 기준으로 자동 조회되던 동작 정합.
+  /// 매출 scope(부서장이면 전체) 거래처 목록의 첫 거래처를 선택해 조회한다. 이미 선택돼
+  /// 있으면 건너뛴다.
+  Future<void> _loadDefaultCustomer() async {
+    if (ref.read(monthlySalesProvider).selectedCustomerId != null) return;
+    try {
+      final result = await ref
+          .read(getMyAccountsUseCaseProvider)
+          .call(scope: MyAccountScope.sales);
+      if (!mounted || result.accounts.isEmpty) return;
+      // setCustomer 가 선택 직후 조회를 수행한다(레거시 진입 자동조회 정합).
+      await _onAccountSelected(result.accounts.first);
+    } catch (_) {
+      // 기본 거래처 로딩 실패는 조용히 무시 (사용자가 수동 선택 가능)
+    }
   }
 
   /// 거래처 선택 — 내 거래처 선택 바텀시트에서 고른 거래처로 조회 (레거시 정합 — 필수)
