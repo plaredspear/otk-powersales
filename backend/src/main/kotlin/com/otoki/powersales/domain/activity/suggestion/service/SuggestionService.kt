@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionCr
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionListItem
 import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionResponse
 import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
+import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionActionStatus
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionStatus
 import com.otoki.powersales.domain.activity.suggestion.exception.InvalidSuggestionIdException
@@ -87,6 +88,9 @@ class SuggestionService(
         private const val MAX_PHOTO_COUNT = 10
         private val PROPOSAL_NUMBER_DATE_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
+        /** SF LogisticsResponsibility__c picklist default — 등록 시 항상 이 값 (해당/미해당/확인중 중 default). */
+        private const val LOGISTICS_RESPONSIBILITY_DEFAULT = "확인중"
+
         /**
          * SF Apex REST `IF_REST_MOBILE_ProposalRegist` endpoint suffix.
          * `sf.outbound.apex-base-url` prefix 뒤에 붙는다 (클레임 등록 `/ClaimRegist` 와 동일 컨벤션).
@@ -115,6 +119,8 @@ class SuggestionService(
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     fun create(employeeId: Long, request: SuggestionCreateRequest, photos: List<MultipartFile>?): SuggestionCreateResponse {
         // step 1~2 (validate)
+        // 등록 시 action_status 는 항상 UNCONFIRMED 고정(SF picklist default)이므로 BR3(중복접수 시 중복번호 필수)는
+        // insert 시점에 발동하지 않는다(SF beforeInsertProposal 정합). BR3 는 조치 단계 update 에서만 발동.
         val category = request.category ?: throw IllegalArgumentException("category is required")
         validator.validate(
             category = category,
@@ -122,7 +128,7 @@ class SuggestionService(
             claimDate = request.claimDate,
             carNumber = request.carNumber,
             duplicateProposalNum = request.duplicateProposalNum,
-            actionStatus = request.actionStatus
+            actionStatus = SuggestionActionStatus.UNCONFIRMED
         )
 
         if ((photos?.size ?: 0) > MAX_PHOTO_COUNT) {
@@ -161,16 +167,20 @@ class SuggestionService(
                 category3 = product?.productCategory3,
                 sapAccountCode = request.sapAccountCode,
                 orgCostCenterCode = orgCostCenterCode,
+                // SF CostCenterCode__c — 등록 사원 소속 코스트센터코드 원본 (ProposalRegist.cls:197 정합)
+                costCenterCode = employee.costCenterCode,
                 carNumber = request.carNumber,
                 claimDate = request.claimDate,
                 claimType = request.claimType,
                 // Q9 옵션 1 — service 단 자동 복사 (레거시 동등)
                 claimTypeMeasures = request.claimType,
-                logisticsResponsibility = request.logisticsResponsibility,
+                // SF LogisticsResponsibility__c picklist default — 등록 시 항상 '확인중' (트리거/UI 모두 set 안 함)
+                logisticsResponsibility = LOGISTICS_RESPONSIBILITY_DEFAULT,
                 receptionLogisticsCenter = receptionCenter,
                 responsibleLogisticsCenter = responsibleCenter,
                 status = SuggestionStatus.SUBMITTED,
-                actionStatus = request.actionStatus,
+                // SF ActionStatus__c picklist default — 등록 시 항상 '미확인' (조치 단계에서 변경)
+                actionStatus = SuggestionActionStatus.UNCONFIRMED,
                 duplicateProposalNum = request.duplicateProposalNum,
                 isDeleted = false,
                 sfSendStatus = SuggestionSfSendStatus.PENDING,

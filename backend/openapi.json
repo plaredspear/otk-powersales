@@ -22550,10 +22550,6 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
-          "actionStatus" : {
-            "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
-            "type" : [ "string", "null" ]
-          },
           "carNumber" : {
             "maxLength" : 20,
             "minLength" : 0,
@@ -22578,11 +22574,6 @@
           },
           "duplicateProposalNum" : {
             "maxLength" : 255,
-            "minLength" : 0,
-            "type" : [ "string", "null" ]
-          },
-          "logisticsResponsibility" : {
-            "maxLength" : 20,
             "minLength" : 0,
             "type" : [ "string", "null" ]
           },
