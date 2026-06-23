@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.order.entity.ErpOrder
 import com.otoki.powersales.domain.activity.order.entity.ErpOrderProduct
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
 import java.math.BigDecimal
+import java.text.DecimalFormat
 import java.time.LocalDate
 
 /**
@@ -53,7 +54,9 @@ data class ClientOrderDetailResponse(
 /**
  * 거래처 출하 주문 상세 - 라인 응답.
  *
- * `deliveredQuantity` 는 `shippingQuantityBox` + `unit` 조립한 표시 문자열 (예: `"10 BOX"`).
+ * `deliveredQuantity` 는 `confirmQuantityBox`(총납품수량 Box환산치) 를 표시 문자열로 조립 (예: `"10 BOX"`).
+ * 레거시 `view.jsp:89` 가 `${data.ConfirmQuantity_Box}` 를 표시하며, 배송수량(`shippingQuantityBox`)이 아님 —
+ * 배송 전(대기/결품) 라인은 배송수량이 0 이므로 배송수량을 쓰면 전 라인이 `0 BOX` 로 오표시됨.
  * `deliveryStatus` 는 DB 한글 라벨을 [DeliveryStatus] enum 으로 변환한 영문 코드.
  *
  * 배송 5필드(기사명/차량/연락처/예정시간/완료시간) 는 배송중/배송완료 라인 탭 팝업용
@@ -78,7 +81,7 @@ data class ClientOrderItemResponse(
             return ClientOrderItemResponse(
                 productCode = product.productCode,
                 productName = product.productName,
-                deliveredQuantity = formatDeliveredQuantity(product.shippingQuantityBox, product.unit),
+                deliveredQuantity = formatDeliveredQuantity(product.confirmQuantityBox),
                 deliveryStatus = DeliveryStatus.fromKoreanLabel(product.deliveryStatus),
                 driverName = nullIfBlank(product.shippingDriverName),
                 vehicle = nullIfBlank(product.shippingVehicle),
@@ -97,11 +100,15 @@ data class ClientOrderItemResponse(
             return "${s.substring(0, 2)}:${s.substring(2, 4)}"
         }
 
-        private fun formatDeliveredQuantity(quantityBox: BigDecimal?, unit: String?): String {
+        /**
+         * 레거시 `view.jsp:89` 정합: `<fmt:formatNumber value="${data.ConfirmQuantity_Box}" pattern="#,###.##"/> BOX`.
+         * 천단위 구분 + 소수 최대 2자리(후행 0 제거) 로 포맷한 뒤 리터럴 `"BOX"` 를 붙인다.
+         * 레거시가 동적 단위(`Confirm_Unit`)를 주석 처리하고 `"BOX"` 를 하드코딩하므로 단위는 항상 `"BOX"` 로 고정.
+         * `DecimalFormat` 은 thread-safe 하지 않으므로 호출마다 생성.
+         */
+        private fun formatDeliveredQuantity(quantityBox: BigDecimal?): String {
             val qty = quantityBox ?: BigDecimal.ZERO
-            val stripped = qty.stripTrailingZeros()
-            val qtyStr = if (stripped.scale() <= 0) stripped.toBigInteger().toString() else stripped.toPlainString()
-            return if (unit.isNullOrBlank()) qtyStr else "$qtyStr $unit"
+            return "${DecimalFormat("#,###.##").format(qty)} BOX"
         }
     }
 }

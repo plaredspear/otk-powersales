@@ -51,8 +51,8 @@ class ClientOrderQueryServiceTest {
         fun success() {
             val order = createOrder(employeeCode = employeeCode)
             val products = listOf(
-                createProduct(lineNumber = "10", deliveryStatus = "배송중", productCode = "P001", productName = "예시1", shippingQuantityBox = BigDecimal("5"), unit = "BOX"),
-                createProduct(lineNumber = "20", deliveryStatus = "배송 완료", productCode = "P002", productName = "예시2", shippingQuantityBox = BigDecimal("10"), unit = "BOX"),
+                createProduct(lineNumber = "10", deliveryStatus = "배송중", productCode = "P001", productName = "예시1", confirmQuantityBox = BigDecimal("5")),
+                createProduct(lineNumber = "20", deliveryStatus = "배송 완료", productCode = "P002", productName = "예시2", confirmQuantityBox = BigDecimal("1234.5")),
             )
             every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
             every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
@@ -71,7 +71,8 @@ class ClientOrderQueryServiceTest {
             assertThat(result.orderedItems[0].deliveryStatus).isEqualTo(DeliveryStatus.SHIPPING)
             assertThat(result.orderedItems[0].deliveredQuantity).isEqualTo("5 BOX")
             assertThat(result.orderedItems[1].deliveryStatus).isEqualTo(DeliveryStatus.DELIVERED)
-            assertThat(result.orderedItems[1].deliveredQuantity).isEqualTo("10 BOX")
+            // 레거시 `#,###.##` 정합 — 천단위 구분 + 소수 최대 2자리
+            assertThat(result.orderedItems[1].deliveredQuantity).isEqualTo("1,234.5 BOX")
         }
 
         @Test
@@ -262,7 +263,7 @@ class ClientOrderQueryServiceTest {
         deliveryStatus: String?,
         productCode: String? = "P001",
         productName: String? = "예시 상품",
-        shippingQuantityBox: BigDecimal? = BigDecimal.ZERO,
+        confirmQuantityBox: BigDecimal? = BigDecimal.ZERO,
         unit: String? = "BOX",
     ): ErpOrderProduct {
         val order = createOrder(employeeCode = employeeCode)
@@ -273,7 +274,7 @@ class ClientOrderQueryServiceTest {
             externalKey = "$sapOrderNumber-$lineNumber",
             productCode = productCode,
             productName = productName,
-            shippingQuantityBox = shippingQuantityBox,
+            confirmQuantityBox = confirmQuantityBox,
             unit = unit,
             deliveryStatus = deliveryStatus,
         )
