@@ -59,6 +59,17 @@ class MonthlySalesState {
   /// 데이터가 있는지 여부
   bool get hasData => monthlySales != null;
 
+  /// 선택 월이 실제 현재월인지 여부.
+  ///
+  /// 레거시 `promotion/month/list.jsp` 의 `isRealCurrentMonth` 정합 — 현재월을 조회하면
+  /// 온도대별(상온/라면/냉동냉장/유지류) 목표·실적 박스(box1/2/3/5)를 숨기고 마감 합계
+  /// 실적(box4)만 표시한다. 과거 월이면 실적이 0이라도 온도대별 박스를 모두 표시한다.
+  bool get isRealCurrentMonth {
+    final now = DateTime.now();
+    final realYearMonth = '${now.year}${now.month.toString().padLeft(2, '0')}';
+    return yearMonth == realYearMonth;
+  }
+
   /// 이전 월로 이동 가능한지 (예: 3년 전까지만 허용)
   bool get canGoToPreviousMonth {
     final current = DateTime.parse('${yearMonth}01');

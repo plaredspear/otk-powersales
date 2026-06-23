@@ -227,15 +227,18 @@ class _MonthlySalesTabPageState extends ConsumerState<MonthlySalesTabPage> {
           ),
 
           // 온도대별 목표 / 실적 (상온 / 라면 / 냉동·냉장 / 유지류)
-          ...monthlySales.categorySales.map(
-            (c) => _targetActualCard(
-              targetLabel: '${_categoryLabel(c.category)} 목표',
-              targetAmount: c.targetAmount,
-              actualLabel: '${_categoryLabel(c.category)} 실적',
-              actualAmount: c.achievedAmount,
-              achievementRate: c.achievementRate,
+          // 레거시 list.jsp 정합 — 현재월이면 온도대별 박스를 숨기고 마감 합계 실적만
+          // 표시하며, 과거 월이면 실적이 0이라도 모두 표시한다.
+          if (!state.isRealCurrentMonth)
+            ...monthlySales.categorySales.map(
+              (c) => _targetActualCard(
+                targetLabel: '${_categoryLabel(c.category)} 목표',
+                targetAmount: c.targetAmount,
+                actualLabel: '${_categoryLabel(c.category)} 실적',
+                actualAmount: c.achievedAmount,
+                achievementRate: c.achievementRate,
+              ),
             ),
-          ),
 
           const SizedBox(height: 24),
 
