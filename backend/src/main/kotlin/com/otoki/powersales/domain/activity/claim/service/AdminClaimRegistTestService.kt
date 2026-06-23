@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.claim.service
 
 import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimRegistTestResponse
+import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
@@ -44,6 +45,7 @@ class AdminClaimRegistTestService(
             sapAccountCode = parsed.sapAccountCode,
             productCode = parsed.productCode,
             parsed = parsed,
+            channel = ClaimChannel.WEB.name,
             claimBytes = claimPhoto?.bytes ?: ByteArray(0),
             claimFilename = claimPhoto?.originalFilename ?: "claim",
             claimContentType = claimPhoto?.contentType ?: "image/jpeg",

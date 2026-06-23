@@ -37,8 +37,10 @@ Future<File?> pickImageWithSourceSheet(
   try {
     final picked = await (picker ?? ImagePicker()).pickImage(
       source: source,
-      maxWidth: 1920,
-      maxHeight: 1920,
+      // 레거시 정합: Heroku ImageUtil.resizeImage(650, 650) 와 동일하게 가로/세로 각 650px 상한.
+      // SF ContentVersion 저장 이미지 규격을 레거시와 맞춘다 (클레임/현장점검 공유 헬퍼).
+      maxWidth: 650,
+      maxHeight: 650,
       imageQuality: 85,
     );
     return picked == null ? null : File(picked.path);
