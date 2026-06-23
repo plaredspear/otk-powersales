@@ -216,6 +216,7 @@ class SuggestionService(
         // step 6 — [SF call, 트랜잭션 외부]
         val sfResult = invokeSf(
             buildSfApiMap(
+                pwrskey = inserted.id,
                 category = category,
                 request = request,
                 employeeCode = employee.employeeCode,
@@ -277,13 +278,21 @@ class SuggestionService(
      * 이미지는 레거시가 S3 사전 업로드 후 식별 정보(UniqueKey/FileName/FileSize)만 전송하는 방식이라
      * (클레임의 Base64 buffer 와 상반), [Tx1] 에서 확보한 uniqueKey/파일명/크기를 1·2번 슬롯(최대 2장)에
      * 채운다. SF `IF_REST_MOBILE_ProposalRegist.cls` 가 동일 key 로 `UploadFile__c` insert.
+     *
+     * 추가: [pwrskey] — 해당 물류클레임(=제안) 레코드의 PowerSales primary key(`suggestion_id`).
+     * SF 가 등록된 SF 레코드와 PowerSales row 를 역연결(back-link)하도록 전송한다.
+     * ⚠️ 선행조건: 레거시 SF Apex 는 `JSON.deserializeStrict` 로 파싱하므로 SF `Input` 클래스에
+     * `public String pwrskey;` 필드가 추가 배포돼 있어야 한다. 미배포 상태로 전송하면 strict 파싱이
+     * 실패해 전 건 SEND_FAILED 가 된다.
      */
     internal fun buildSfApiMap(
+        pwrskey: Long,
         category: SuggestionCategory,
         request: SuggestionCreateRequest,
         employeeCode: String?,
         photoMetas: List<SfPhotoMeta>
     ): Map<String, Any?> = buildMap {
+        put("pwrskey", pwrskey.toString())
         put("Category", category.displayName)
         put("ProductCode", request.productCode?.trim())
         put("Title", request.title?.trim())
