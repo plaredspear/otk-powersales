@@ -768,7 +768,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeJobCode" : {
             "type" : [ "string", "null" ]
@@ -800,7 +800,7 @@
             "type" : [ "string", "null" ]
           },
           "startDate" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : [ "string", "null" ]
@@ -828,7 +828,7 @@
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeJobCode" : {
             "type" : [ "string", "null" ]
@@ -847,7 +847,7 @@
             "type" : [ "string", "null" ]
           },
           "startDate" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : [ "string", "null" ]
@@ -1196,7 +1196,7 @@
             "type" : [ "string", "null" ]
           },
           "status" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "storeName" : {
             "type" : [ "string", "null" ]
@@ -1245,7 +1245,7 @@
             "type" : [ "string", "null" ]
           },
           "status" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "storeName" : {
             "type" : [ "string", "null" ]
@@ -2394,10 +2394,10 @@
           },
           "category" : {
             "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "categoryName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "claimDate" : {
             "format" : "date",
@@ -2410,7 +2410,7 @@
             "type" : [ "string", "null" ]
           },
           "content" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "createdAt" : {
             "format" : "date-time",
@@ -2462,7 +2462,7 @@
             "type" : "string"
           },
           "title" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -2487,10 +2487,10 @@
           },
           "category" : {
             "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "categoryName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "claimDate" : {
             "format" : "date",
@@ -2500,7 +2500,7 @@
             "type" : [ "string", "null" ]
           },
           "content" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "createdAt" : {
             "format" : "date-time",
@@ -2538,7 +2538,7 @@
             "type" : [ "string", "null" ]
           },
           "title" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -3009,7 +3009,7 @@
             "type" : "integer"
           },
           "status" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -3040,7 +3040,7 @@
             "type" : "integer"
           },
           "status" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -3049,7 +3049,7 @@
         "properties" : {
           "actualWorkDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "changeReason" : {
             "type" : [ "string", "null" ]
@@ -3080,11 +3080,11 @@
           },
           "status" : {
             "enum" : [ "신규", "승인", "조정", "반려" ],
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "targetAltHolidayDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -3107,7 +3107,7 @@
             "type" : "integer"
           },
           "status" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -10953,7 +10953,7 @@
         "properties" : {
           "holidayDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -10963,7 +10963,7 @@
             "type" : "string"
           },
           "type" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -12192,7 +12192,7 @@
         "properties" : {
           "changedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "employeeCode" : {
             "type" : [ "string", "null" ]
@@ -12318,7 +12318,7 @@
           },
           "teamType" : {
             "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "updatedAt" : {
             "format" : "date-time",
@@ -13661,7 +13661,7 @@
           },
           "endDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -13703,7 +13703,7 @@
           },
           "startDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "targetAmount" : {
             "format" : "int64",
@@ -14011,7 +14011,7 @@
           },
           "endDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
@@ -14043,7 +14043,7 @@
           },
           "startDate" : {
             "format" : "date",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "targetAmount" : {
             "format" : "double",
