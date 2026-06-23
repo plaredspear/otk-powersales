@@ -28,14 +28,21 @@ class QuickMenuItem {
 /// 내 일정, 매출 현황, 주문 관리, 활동 등록, 교육, 행사매출 등록
 /// (레거시 Heroku home.jsp .main_quick_nav 6개 항목과 1:1 정합)
 ///
-/// 조장(LEADER)/지점장(ADMIN): "행사매출 등록" 탭 시 스낵바 안내 + 이동 차단
+/// 조장(LEADER):
+/// - 조장은 본인 행사/진열 일정이 없어 "내 일정"이 무의미하므로, 첫 번째 항목을
+///   "일정 관리"(팀원 월간 일정 캘린더, 날짜 카드 navy 버튼과 동일 목적지)로 대체한다.
+/// - "행사매출 등록" 탭 시 스낵바 안내 + 이동 차단
 class QuickMenuGrid extends StatelessWidget {
   /// 메뉴 아이템 탭 콜백
   final void Function(QuickMenuItem item)? onMenuTap;
 
+  /// 사용자 역할 ("USER", "LEADER", "ADMIN")
+  final String userRole;
+
   const QuickMenuGrid({
     super.key,
     this.onMenuTap,
+    this.userRole = 'USER',
   });
 
   /// 빠른 메뉴 목록 (레거시 Heroku home.jsp 정합 — 6개)
@@ -48,9 +55,22 @@ class QuickMenuGrid extends StatelessWidget {
     QuickMenuItem(assetPath: 'assets/images/ico_quick6.png', label: '행사매출\n등록'),
   ];
 
+  /// 조장(LEADER): 첫 항목을 "일정 관리"(팀원 월간 일정)로 대체한 목록
+  static const QuickMenuItem _leaderScheduleItem = QuickMenuItem(
+    assetPath: 'assets/images/ico_quick1.png',
+    label: '일정 관리',
+    route: AppRouter.leaderSchedule,
+  );
+
+  /// 역할별 빠른 메뉴 목록 (레거시 `eq '조장'` 정확 일치 — 지점장/부서장 제외)
+  List<QuickMenuItem> get _resolvedItems {
+    if (userRole != 'LEADER') return menuItems;
+    return [_leaderScheduleItem, ...menuItems.skip(1)];
+  }
+
   @override
   Widget build(BuildContext context) {
-    const items = menuItems;
+    final items = _resolvedItems;
     // 레거시(common.css .main_quick_nav): 3열, 행 간 15px, 셀 높이는 콘텐츠
     // (아이콘+라벨) 높이를 그대로 따른다. 정사각형(childAspectRatio:1.0)으로
     // 강제하지 않아 셀 위아래에 불필요한 여백이 생기지 않는다.
