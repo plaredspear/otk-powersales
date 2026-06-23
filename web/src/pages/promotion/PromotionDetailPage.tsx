@@ -462,7 +462,7 @@ export default function PromotionDetailPage() {
     const count = employees?.length ?? 0;
     Modal.confirm({
       title: '스케줄 확정',
-      content: `스케줄을 확정하시겠습니까? 행사사원 ${count}명의 여사원일정이 생성/갱신됩니다.`,
+      content: `스케줄을 확정하시겠습니까? 행사사원 ${count}건의 여사원일정이 생성/갱신됩니다.`,
       okText: '확인',
       cancelText: '취소',
       onOk: async () => {
