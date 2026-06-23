@@ -492,6 +492,15 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       return;
     }
 
+    // 검증 통과 후 승인요청 확인 다이얼로그. [예] 선택 시 confirmSubmit 진행.
+    state = state.copyWith(requiresSubmitConfirm: true);
+  }
+
+  /// 승인요청 확인 다이얼로그에서 [예] 선택 시 호출.
+  /// (I) 납기일 +10일 케이스면 추가 확인창으로, 아니면 바로 전송.
+  Future<void> confirmSubmit() async {
+    state = state.copyWith(clearRequiresSubmitConfirm: true);
+
     // (I) 납기일 +10일
     if (_isDeliveryFarOff()) {
       state = state.copyWith(requiresDeliveryDateConfirm: true);
@@ -499,6 +508,11 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     }
 
     await _submitOrderInternal();
+  }
+
+  /// 승인요청 확인 다이얼로그에서 [아니오] 선택 시 호출 (혹은 닫힘).
+  void cancelSubmitConfirm() {
+    state = state.copyWith(clearRequiresSubmitConfirm: true);
   }
 
   /// (I) +10일 다이얼로그에서 [예] 선택 시 호출.

@@ -16,6 +16,7 @@ import '../widgets/order/order_processing_status_section.dart';
 import '../widgets/order/ordered_item_expandable.dart';
 import '../widgets/order/ordered_item_list.dart';
 import '../widgets/order/rejected_item_list.dart';
+import '../widgets/order/resend_confirm_dialog.dart';
 
 /// 주문 상세 페이지
 ///
@@ -210,6 +211,12 @@ class OrderDetailPage extends ConsumerWidget {
 
   /// 주문 재전송 버튼 탭
   Future<void> _onResendOrder(BuildContext context, WidgetRef ref) async {
+    // 레거시 정합: 재전송 전 사용자 확인 (confirm('재전송 하시겠습니까?'))
+    final confirmed = await ResendConfirmDialog.show(context);
+    if (confirmed != true) return;
+
+    if (!context.mounted) return;
+
     final success = await ref
         .read(orderRequestDetailProvider(orderId).notifier)
         .resendOrderRequest(orderId: orderId);

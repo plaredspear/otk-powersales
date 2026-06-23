@@ -54,6 +54,12 @@ class OrderFormState {
   /// UI 가 listener 로 다이얼로그 표시 후 confirmDeliveryDateAndSubmit 또는 cancelDeliveryDateConfirm 호출.
   final bool requiresDeliveryDateConfirm;
 
+  /// 승인요청 확인 다이얼로그 표시 트리거.
+  /// validateAndSubmitOrder 가 (A)~(H) 통과 시 true 로 set.
+  /// UI 가 listener 로 "승인요청 하시겠습니까?" 다이얼로그 표시 후
+  /// confirmSubmit 또는 cancelSubmitConfirm 호출.
+  final bool requiresSubmitConfirm;
+
   const OrderFormState({
     required this.orderDraft,
     this.hasDraft = false,
@@ -69,6 +75,7 @@ class OrderFormState {
     this.selectedAccountId,
     this.pendingDraft,
     this.requiresDeliveryDateConfirm = false,
+    this.requiresSubmitConfirm = false,
   });
 
   /// 초기 상태
@@ -153,6 +160,7 @@ class OrderFormState {
     int? selectedAccountId,
     OrderDraftResponseModel? pendingDraft,
     bool? requiresDeliveryDateConfirm,
+    bool? requiresSubmitConfirm,
     bool clearError = false,
     bool clearSuccess = false,
     bool clearValidationErrors = false,
@@ -163,6 +171,7 @@ class OrderFormState {
     bool clearSelectedAccountId = false,
     bool clearPendingDraft = false,
     bool clearRequiresDeliveryDateConfirm = false,
+    bool clearRequiresSubmitConfirm = false,
   }) {
     return OrderFormState(
       orderDraft: orderDraft ?? this.orderDraft,
@@ -192,6 +201,9 @@ class OrderFormState {
       requiresDeliveryDateConfirm: clearRequiresDeliveryDateConfirm
           ? false
           : (requiresDeliveryDateConfirm ?? this.requiresDeliveryDateConfirm),
+      requiresSubmitConfirm: clearRequiresSubmitConfirm
+          ? false
+          : (requiresSubmitConfirm ?? this.requiresSubmitConfirm),
     );
   }
 }

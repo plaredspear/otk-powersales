@@ -16,6 +16,7 @@ import '../widgets/order_form/draft_delete_dialog.dart';
 import '../widgets/order_form/draft_restore_dialog.dart';
 import '../widgets/order_form/exit_confirm_dialog.dart';
 import '../widgets/order_form/product_list_section.dart';
+import '../widgets/order_form/submit_confirm_dialog.dart';
 import '../widgets/order_form/total_amount_display.dart';
 import '../widgets/order_form/order_form_action_buttons.dart';
 import '../widgets/order_form/add_product_bottom_sheet.dart';
@@ -128,6 +129,23 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
         _restoreDialogShown = false;
       }
     });
+
+    // 승인요청 확인 다이얼로그 트리거 (검증 통과 후 전송 직전).
+    ref.listen<bool>(
+      orderFormProvider.select((s) => s.requiresSubmitConfirm),
+      (prev, next) {
+        if (next == true) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            SubmitConfirmDialog.show(
+              context,
+              onConfirm: () => notifier.confirmSubmit(),
+              onCancel: () => notifier.cancelSubmitConfirm(),
+            );
+          });
+        }
+      },
+    );
 
     // (I) 납기일 +10일 다이얼로그 트리거 (Spec #598 P3-M §2.6).
     ref.listen<bool>(

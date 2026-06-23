@@ -442,6 +442,11 @@ void main() {
           ),
         );
         await notifier.validateAndSubmitOrder();
+        // 검증 통과 → 승인요청 확인 다이얼로그 트리거, 아직 미전송.
+        expect(notifier.state.requiresSubmitConfirm, true);
+        expect(formRepo.submitOrderRequestCount, 0);
+        // [예] → +10일 케이스라 납기일 확인창으로 이어짐.
+        await notifier.confirmSubmit();
         expect(notifier.state.requiresDeliveryDateConfirm, true);
         expect(formRepo.submitOrderRequestCount, 0);
       });
@@ -455,11 +460,34 @@ void main() {
           ),
         );
         await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
         expect(notifier.state.requiresDeliveryDateConfirm, false);
         expect(formRepo.submitOrderRequestCount, 1);
       });
 
-      test('H4 — 검증 통과 → 등록 200 OK + clientRequestId 폐기', () async {
+      test('승인요청 확인 — 검증 통과 시 requiresSubmitConfirm = true + 미전송', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+        );
+
+        await notifier.validateAndSubmitOrder();
+
+        expect(notifier.state.requiresSubmitConfirm, true);
+        expect(formRepo.submitOrderRequestCount, 0);
+      });
+
+      test('cancelSubmitConfirm — [아니오] 시 등록 안 함', () {
+        notifier.state = notifier.state.copyWith(requiresSubmitConfirm: true);
+
+        notifier.cancelSubmitConfirm();
+
+        expect(notifier.state.requiresSubmitConfirm, false);
+        expect(formRepo.submitOrderRequestCount, 0);
+      });
+
+      test('H4 — 검증 통과 → 승인요청 확인 → 등록 200 OK + clientRequestId 폐기',
+          () async {
         seedValidState();
         notifier.state = notifier.state.copyWith(
           orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
@@ -467,7 +495,9 @@ void main() {
         );
 
         await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
 
+        expect(notifier.state.requiresSubmitConfirm, false);
         expect(formRepo.submitOrderRequestCount, 1);
         expect(formRepo.lastSubmittedPayload!.clientRequestId, 'idemp-123');
         expect(formRepo.lastSubmittedPayload!.accountId, 5678);
@@ -518,6 +548,7 @@ void main() {
             Exception('ORD_LOAN_EXCEEDED: 여신 한도를 초과했습니다 (한도: 1000)');
 
         await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
 
         expect(notifier.state.errorMessage, contains('ORD_LOAN_EXCEEDED'));
         expect(notifier.state.clientRequestId, 'idemp-123');
@@ -531,6 +562,7 @@ void main() {
         formRepo.exceptionToThrow = Exception('ORD_ACCOUNT_FORBIDDEN');
 
         await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
 
         expect(notifier.state.errorMessage, '본인 담당 거래처가 아닙니다.');
       });
