@@ -16,6 +16,7 @@ import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundExcepti
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderHistoryRow
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -39,6 +40,7 @@ class OrderRequestServiceTest {
     private val orderRequestProductRepository: OrderRequestProductRepository = mockk()
     private val orderRequestDetailSapSender: OrderRequestDetailSapSender = mockk()
     private val orderRequestDetailMapper = OrderRequestDetailMapper()
+    private val productRepository: ProductRepository = mockk()
 
     private val fixedClock: Clock = Clock.fixed(
         LocalDateTime.of(2026, 5, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
@@ -54,8 +56,11 @@ class OrderRequestServiceTest {
             orderRequestProductRepository,
             orderRequestDetailSapSender,
             orderRequestDetailMapper,
+            productRepository,
             fixedClock,
         )
+        // 기본값 — 상세 조회 시 제품명 일괄조회. 개별 테스트에서 필요 시 override.
+        every { productRepository.findByProductCodeIn(any()) } returns emptyList()
     }
 
     @Nested
@@ -397,6 +402,25 @@ class OrderRequestServiceTest {
             assertThat(response.orderProcessingStatusList).isNull()
             assertThat(response.rejectedItems).isNull()
         }
+
+        @Test
+        @DisplayName("성공 — 라인 product FK 가 null 이어도 product_code 로 제품명 복구 (레거시 CRM_ProductName 동등)")
+        fun productNameResolvedByCode() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            // product FK 미설정 라인 (주문 등록 시 product_id 누락 시나리오)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProductWithoutFk("19310235", orderRequest))
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns null
+            every { productRepository.findByProductCodeIn(listOf("19310235")) } returns
+                listOf(Product(id = 9L, productCode = "19310235", name = "오뚜기밥"))
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            assertThat(response.orderedItems).hasSize(1)
+            assertThat(response.orderedItems[0].productCode).isEqualTo("19310235")
+            assertThat(response.orderedItems[0].productName).isEqualTo("오뚜기밥")
+        }
     }
 
     private fun createOrderRequest(
@@ -458,6 +482,25 @@ class OrderRequestServiceTest {
                 productCode = productCode,
                 name = productName,
             ),
+        )
+
+    /** product FK 미설정 (product_id 누락) 라인. */
+    private fun buildCrmProductWithoutFk(
+        productCode: String,
+        orderRequest: OrderRequest,
+    ): OrderRequestProduct =
+        OrderRequestProduct(
+            id = 1L,
+            lineNumber = BigDecimal.valueOf(1L),
+            productCode = productCode,
+            quantityBoxes = BigDecimal("10"),
+            quantityPieces = BigDecimal.valueOf(0L),
+            unit = "BOX",
+            unitPrice = BigDecimal.ZERO,
+            amount = BigDecimal.ZERO,
+            piecesPerBox = 1,
+            orderRequest = orderRequest,
+            product = null,
         )
 
     private fun buildSapLine(

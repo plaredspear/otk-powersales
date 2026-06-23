@@ -14,6 +14,7 @@ import com.otoki.powersales.domain.activity.order.exception.OrderDateRangeTooWid
 import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundException
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import org.slf4j.LoggerFactory
 import org.springframework.data.repository.findByIdOrNull
@@ -33,6 +34,7 @@ class OrderRequestService(
     private val orderRequestProductRepository: OrderRequestProductRepository,
     private val orderRequestDetailSapSender: OrderRequestDetailSapSender,
     private val orderRequestDetailMapper: OrderRequestDetailMapper,
+    private val productRepository: ProductRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) {
 
@@ -201,9 +203,19 @@ class OrderRequestService(
         // 마감 전 — 그룹 응답 매핑 생략 (Q6, 레거시 동등). SAP 호출은 이미 수행.
         val finalProcessingGroups = if (isClosed) processingGroups else null
 
+        // 제품명은 product_code 로 제품마스터에서 조회 (레거시 CRM_ProductName = ProductId__r.Name 동등).
+        // 주문 라인의 product FK 가 비어 있어도 코드 기준으로 이름을 채운다.
+        val productNamesByCode = productRepository
+            .findByProductCodeIn(crmProducts.map { it.productCode })
+            .associate { it.productCode to it.name }
+
         // 결품(SAP DefaultReason) 제품은 "주문한 제품" 리스트에 결품 플래그로 표시 (레거시 view.jsp:414 동등).
         val orderedItems = crmProducts.map {
-            OrderedItemResponse.from(it, outOfStockReason = outOfStockReasons[it.productCode])
+            OrderedItemResponse.from(
+                it,
+                productName = productNamesByCode[it.productCode],
+                outOfStockReason = outOfStockReasons[it.productCode],
+            )
         }
 
         return OrderRequestDetailResponse.of(

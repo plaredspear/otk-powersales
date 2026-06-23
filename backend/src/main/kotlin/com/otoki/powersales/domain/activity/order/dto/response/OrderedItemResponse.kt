@@ -23,12 +23,13 @@ data class OrderedItemResponse(
     companion object {
         fun from(
             item: OrderRequestProduct,
+            productName: String? = null,
             outOfStockReason: String? = null,
         ): OrderedItemResponse =
             OrderedItemResponse(
                 orderProductId = item.id,
                 productCode = item.productCode,
-                productName = item.product?.name,
+                productName = productName ?: item.product?.name,
                 totalQuantityBoxes = item.quantityBoxes,
                 totalQuantityPieces = item.quantityPieces,
                 isCancelled = item.isCancelled(),
