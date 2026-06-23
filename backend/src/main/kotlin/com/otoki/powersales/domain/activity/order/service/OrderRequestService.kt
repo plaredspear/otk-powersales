@@ -180,7 +180,10 @@ class OrderRequestService(
 
         val crmProducts = orderRequestProductRepository
             .findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId)
-        val crmProductsByCode = crmProducts.associateBy { it.productCode }
+        // productCode 는 SF nillable=true 정합으로 nullable — SAP productCode 매칭 키이므로 null 은 제외.
+        val crmProductsByCode = crmProducts
+            .mapNotNull { p -> p.productCode?.let { it to p } }
+            .toMap()
 
         val isClosed = calculateIsClosed(orderRequest.deliveryDate, orderRequest.clientDeadlineTime)
 
@@ -205,9 +208,11 @@ class OrderRequestService(
 
         // 제품명은 product_code 로 제품마스터에서 조회 (레거시 CRM_ProductName = ProductId__r.Name 동등).
         // 주문 라인의 product FK 가 비어 있어도 코드 기준으로 이름을 채운다.
+        // productCode 는 SF nillable=true 정합으로 nullable — 제품마스터 조회 키이므로 null 은 제외.
         val productNamesByCode = productRepository
-            .findByProductCodeIn(crmProducts.map { it.productCode })
-            .associate { it.productCode to it.name }
+            .findByProductCodeIn(crmProducts.mapNotNull { it.productCode })
+            .mapNotNull { p -> p.productCode?.let { it to p.name } }
+            .toMap()
 
         // 결품(SAP DefaultReason) 제품은 "주문한 제품" 리스트에 결품 플래그로 표시 (레거시 view.jsp:414 동등).
         val orderedItems = crmProducts.map {
@@ -235,7 +240,9 @@ class OrderRequestService(
      *     - clientDeadlineTime null → false
      *     - 현재 시각 ≥ deadline - 20분 → true, 그 외 false
      */
-    internal fun calculateIsClosed(deliveryDate: LocalDate, clientDeadlineTime: String?): Boolean {
+    internal fun calculateIsClosed(deliveryDate: LocalDate?, clientDeadlineTime: String?): Boolean {
+        // deliveryDate 는 SF nillable=true 정합으로 nullable — 마감 기준일 부재 시 마감되지 않음으로 처리.
+        if (deliveryDate == null) return false
         val now = LocalDateTime.now(clock)
         val today = now.toLocalDate()
 

@@ -30,7 +30,7 @@ class PPTHistoryExcelExporter : BaseExcelExporter<PPTMasterHistoryResponse>() {
         row.createCell(3).setCellValue(item.employeeName ?: "")
         row.createCell(4).setCellValue(item.oldValue?.displayName ?: "")
         row.createCell(5).setCellValue(item.newValue?.displayName ?: "")
-        row.createCell(6).setCellValue(item.changedAt.format(DATETIME_FORMAT))
+        row.createCell(6).setCellValue(item.changedAt?.format(DATETIME_FORMAT) ?: "")
     }
 
     companion object {

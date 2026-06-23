@@ -391,7 +391,7 @@ class AdminPPTMasterService(
             row.createCell(1).setCellValue(result.employeeName ?: "")
             row.createCell(2).setCellValue(result.accountCode ?: "")
             row.createCell(3).setCellValue(result.accountName ?: "")
-            row.createCell(4).setCellValue(m.teamType.displayName)
+            row.createCell(4).setCellValue(m.teamType?.displayName ?: "")
             row.createCell(5).setCellValue(m.startDate.toString())
             row.createCell(6).setCellValue(m.endDate?.toString() ?: "")
             row.createCell(7).setCellValue(if (m.isConfirmed) "Y" else "N")

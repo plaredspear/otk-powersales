@@ -12,7 +12,7 @@ import java.math.BigDecimal
  */
 data class OrderedItemResponse(
     val orderProductId: Long,
-    val productCode: String,
+    val productCode: String?,
     val productName: String?,
     val totalQuantityBoxes: BigDecimal,
     val totalQuantityPieces: BigDecimal,
@@ -30,8 +30,9 @@ data class OrderedItemResponse(
                 orderProductId = item.id,
                 productCode = item.productCode,
                 productName = productName ?: item.product?.name,
-                totalQuantityBoxes = item.quantityBoxes,
-                totalQuantityPieces = item.quantityPieces,
+                // SF nillable=true 정합으로 수량이 nullable — 응답은 0 으로 보정 (기존 의미 보존).
+                totalQuantityBoxes = item.quantityBoxes ?: BigDecimal.ZERO,
+                totalQuantityPieces = item.quantityPieces ?: BigDecimal.ZERO,
                 isCancelled = item.isCancelled(),
                 isOutOfStock = outOfStockReason != null,
                 outOfStockReason = outOfStockReason,

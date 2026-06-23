@@ -57,8 +57,9 @@ class ProfessionalPromotionTeamMaster(
     @SFField("ProfessionalPromotionTeam__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @FieldName("전문행사조")
-    @Column(name = "team_type", nullable = false, length = 255)
-    var teamType: ProfessionalPromotionTeamType,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "team_type", length = 255)
+    var teamType: ProfessionalPromotionTeamType? = null,
 
     @SFField("StartDate__c")
     @FieldName("시작일")

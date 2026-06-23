@@ -174,8 +174,10 @@ class ClaimService(
         request.claimType1?.let {
             val t1 = ClaimType1.fromValueOrNull(it) ?: throw InvalidClaimType1Exception()
             claim.claimType1 = t1
-            if (claim.claimType2.parent != t1) {
-                throw ClaimTypeHierarchyMismatchException()
+            claim.claimType2?.let { ct2 ->
+                if (ct2.parent != t1) {
+                    throw ClaimTypeHierarchyMismatchException()
+                }
             }
         }
         request.claimType2?.let {

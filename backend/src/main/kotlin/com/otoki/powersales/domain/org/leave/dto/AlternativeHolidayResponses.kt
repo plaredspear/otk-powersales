@@ -6,9 +6,9 @@ import java.time.LocalDateTime
 
 data class AlternativeHolidayCreateResponse(
     val id: Long,
-    val actualWorkDate: LocalDate,
-    val targetAltHolidayDate: LocalDate,
-    val status: String,
+    val actualWorkDate: LocalDate?,
+    val targetAltHolidayDate: LocalDate?,
+    val status: String?,
     val createdAt: LocalDateTime
 ) {
     companion object {
@@ -17,7 +17,7 @@ data class AlternativeHolidayCreateResponse(
                 id = entity.id,
                 actualWorkDate = entity.actualWorkDate,
                 targetAltHolidayDate = entity.targetAltHolidayDate,
-                status = entity.status.displayName,
+                status = entity.status?.displayName,
                 createdAt = entity.createdAt
             )
     }
@@ -25,10 +25,10 @@ data class AlternativeHolidayCreateResponse(
 
 data class AlternativeHolidayListItemResponse(
     val id: Long,
-    val actualWorkDate: LocalDate,
-    val targetAltHolidayDate: LocalDate,
+    val actualWorkDate: LocalDate?,
+    val targetAltHolidayDate: LocalDate?,
     val confirmAltHolidayDate: LocalDate?,
-    val status: String,
+    val status: String?,
     val changeReason: String?,
     val createdAt: LocalDateTime
 ) {
@@ -39,7 +39,7 @@ data class AlternativeHolidayListItemResponse(
                 actualWorkDate = entity.actualWorkDate,
                 targetAltHolidayDate = entity.targetAltHolidayDate,
                 confirmAltHolidayDate = entity.confirmAltHolidayDate,
-                status = entity.status.displayName,
+                status = entity.status?.displayName,
                 changeReason = entity.changeReason,
                 createdAt = entity.createdAt
             )

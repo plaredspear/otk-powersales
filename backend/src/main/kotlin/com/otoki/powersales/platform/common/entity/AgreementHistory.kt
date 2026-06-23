@@ -50,8 +50,9 @@ class AgreementHistory(
 
     @SFField("AgreementDate__c")
     @FieldName("동의일자")
-    @Column(name = "agreement_date", nullable = false)
-    val agreementDate: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "agreement_date")
+    val agreementDate: LocalDate? = null,
 
     @FieldName("동의문구ID")
     @Column(name = "agreement_word_id")

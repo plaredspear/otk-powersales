@@ -57,7 +57,7 @@ class AttendInfoToScheduleConverter(
             )
         }
 
-        val employeeCodes = targets.map { it.employeeCode }.distinct()
+        val employeeCodes = targets.mapNotNull { it.employeeCode }.distinct()
         val employeeMap = employeeRepository.findByEmployeeCodeIn(employeeCodes)
             .associateBy { it.employeeCode }
 

@@ -58,7 +58,10 @@ class OrderRequestResendService(
         if (orderRequest.orderRequestStatus != OrderRequestStatus.SEND_FAILED) {
             throw InvalidOrderStatusException()
         }
-        if (!orderDeadlineCalculator.isWithinDeadline(orderRequest.deliveryDate)) {
+        // deliveryDate 는 SF nillable=true 정합으로 nullable — 마감 판단 불가(=마감)로 처리.
+        val deliveryDate = orderRequest.deliveryDate
+            ?: throw OrderAlreadyClosedException("마감된 주문은 재전송할 수 없습니다")
+        if (!orderDeadlineCalculator.isWithinDeadline(deliveryDate)) {
             throw OrderAlreadyClosedException("마감된 주문은 재전송할 수 없습니다")
         }
         return orderRequest

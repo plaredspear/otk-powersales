@@ -5,16 +5,16 @@ import java.time.LocalDate
 
 data class HolidayMasterResponse(
     val id: Long,
-    val holidayDate: LocalDate,
+    val holidayDate: LocalDate?,
     val name: String,
-    val type: String
+    val type: String?
 ) {
     companion object {
         fun from(entity: HolidayMaster): HolidayMasterResponse = HolidayMasterResponse(
             id = entity.id,
             holidayDate = entity.holidayDate,
             name = entity.name,
-            type = entity.type.displayName
+            type = entity.type?.displayName
         )
     }
 }

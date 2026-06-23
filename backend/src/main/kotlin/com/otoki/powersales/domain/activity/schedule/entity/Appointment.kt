@@ -58,8 +58,9 @@ class Appointment(
 
     @SFField("EmployeeCode__c")
     @FieldName("사원코드")
-    @Column(name = "employee_code", nullable = false, length = 100)
-    val employeeCode: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "employee_code", length = 100)
+    val employeeCode: String? = null,
 
     @SFField("isEmpCodeExist__c")
     @FieldName("사번존재여부")
@@ -118,8 +119,9 @@ class Appointment(
 
     @SFField("AppointmentDate__c")
     @FieldName("발령일자")
-    @Column(name = "appoint_date", nullable = false)
-    val appointDate: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "appoint_date")
+    val appointDate: LocalDate? = null,
 
     @SFField("JobName__c")
     @FieldName("직무명")

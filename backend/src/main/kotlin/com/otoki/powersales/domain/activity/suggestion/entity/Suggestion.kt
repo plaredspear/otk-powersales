@@ -59,19 +59,22 @@ class Suggestion(
 
     @SFField("DKRetail__Title__c")
     @FieldName("제목")
-    @Column(name = "title", nullable = false, length = 250)
-    var title: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "title", length = 250)
+    var title: String? = null,
 
     @SFField("DKRetail__Description__c")
     @FieldName("제안내용")
-    @Column(name = "content", nullable = false, columnDefinition = "text")
-    var content: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "content", columnDefinition = "text")
+    var content: String? = null,
 
     @Convert(converter = SuggestionCategoryConverter::class)
     @SFField("Category__c")
     @FieldName("제안구분")
-    @Column(name = "category", nullable = false, length = 255)
-    var category: SuggestionCategory,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "category", length = 255)
+    var category: SuggestionCategory? = null,
 
     // -- Spec #849: deprecated SF Text(40) `DKRetail__Category__c` (제안구분 구버전 텍스트) 부활. plain String 원본 보존. --
     @SFField("DKRetail__Category__c")

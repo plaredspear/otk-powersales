@@ -154,7 +154,7 @@ class AdminClaimCreateService(
             applySfResultToClaim(claim, sfResult)
             AdminClaimCreateResponse(
                 claimId = claim.id,
-                status = claim.status.name,
+                status = claim.status?.name ?: "",
                 sfResultCode = sfResult.apiResponse?.resultCode,
                 sfResultMsg = sfResult.apiResponse?.resultMsg ?: sfResult.errorSummary,
             )

@@ -17,8 +17,8 @@ data class ClaimListItemResponse(
     val subcategoryLabel: String?,
     val defectQuantity: BigDecimal?,
     val defectDescription: String? = null,
-    val status: String,
-    val statusLabel: String,
+    val status: String?,
+    val statusLabel: String?,
     // 발생일자(SF ClaimDate) — 레거시 list.jsp 의 목록 표시/필터 기준 날짜.
     val date: LocalDate? = null,
     val createdAt: LocalDateTime
@@ -30,14 +30,14 @@ data class ClaimListItemResponse(
             accountName = claim.account?.name,
             productName = claim.product?.name,
             productCode = claim.product?.productCode,
-            categoryValue = claim.claimType1.value,
-            categoryLabel = claim.claimType1.label,
-            subcategoryValue = claim.claimType2.value,
-            subcategoryLabel = claim.claimType2.label,
+            categoryValue = claim.claimType1?.value,
+            categoryLabel = claim.claimType1?.label,
+            subcategoryValue = claim.claimType2?.value,
+            subcategoryLabel = claim.claimType2?.label,
             defectQuantity = claim.defectQuantity,
             defectDescription = claim.defectDescription,
-            status = claim.status.name,
-            statusLabel = claim.status.displayName,
+            status = claim.status?.name,
+            statusLabel = claim.status?.displayName,
             date = claim.date,
             createdAt = claim.createdAt
         )

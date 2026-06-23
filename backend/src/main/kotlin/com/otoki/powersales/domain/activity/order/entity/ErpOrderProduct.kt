@@ -44,18 +44,21 @@ class ErpOrderProduct(
 
     @SFField("SAPOrderNumber__c")
     @FieldName("ERP 주문 Key값(Back-End 용)")
-    @Column(name = "sap_order_number", nullable = false, length = 255)
-    val sapOrderNumber: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "sap_order_number", length = 255)
+    val sapOrderNumber: String? = null,
 
     @SFField("LineNumber__c")
     @FieldName("시퀀스")
-    @Column(name = "line_number", nullable = false, length = 255)
-    val lineNumber: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "line_number", length = 255)
+    val lineNumber: String? = null,
 
     @SFField("ExternalKey__c")
     @FieldName("ExternalKey")
-    @Column(name = "external_key", nullable = false, length = 255)
-    val externalKey: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "external_key", length = 255)
+    val externalKey: String? = null,
 
     @SFField("ProductCode__c")
     @FieldName("제품코드")

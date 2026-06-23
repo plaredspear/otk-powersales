@@ -54,7 +54,7 @@ class AdminClaimPeriodReportService(
 
         val claims = adminClaimRepository.findPeriodReport(start, end, claimType1)
         val items = claims.map { toItem(it) }
-        val totalQuantity = claims.fold(BigDecimal.ZERO) { acc, c -> acc + (c.defectQuantity) }
+        val totalQuantity = claims.fold(BigDecimal.ZERO) { acc, c -> acc + (c.defectQuantity ?: BigDecimal.ZERO) }
 
         return ClaimPeriodReportResponse(
             startDate = start.toString(),
@@ -149,8 +149,8 @@ class AdminClaimPeriodReportService(
         return ClaimPeriodReportItem(
             claimName = c.name,
             interfaceDate = c.interfaceDate?.toString(),
-            claimDate = c.date.toString(),
-            claimType1 = c.claimType1.label,
+            claimDate = c.date?.toString(),
+            claimType1 = c.claimType1?.label,
             branchName = acc?.branchName,
             employeeCode = emp?.employeeCode,
             employeeName = emp?.name,
@@ -163,7 +163,7 @@ class AdminClaimPeriodReportService(
             manufacturingDate = c.manufacturingDate?.toString(),
             expirationDate = c.expirationDate?.toString(),
             quantity = c.defectQuantity,
-            claimType2 = c.claimType2.label,
+            claimType2 = c.claimType2?.label,
             defectDescription = c.defectDescription,
             counselNumber = c.counselNumber,
             actionStatus = c.actionStatus,

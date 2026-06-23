@@ -54,13 +54,15 @@ class ProfessionalPromotionTeamHistory(
     @SFField("newValue__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @FieldName("변경 후")
-    @Column(name = "new_value", nullable = false, length = 255)
-    val newValue: ProfessionalPromotionTeamType?,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "new_value", length = 255)
+    val newValue: ProfessionalPromotionTeamType? = null,
 
     @SFField("updateTime__c")
     @FieldName("변경 시점")
-    @Column(name = "changed_at", nullable = false)
-    val changedAt: LocalDateTime = LocalDateTime.now(),
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "changed_at")
+    val changedAt: LocalDateTime? = LocalDateTime.now(),
 
     // -- Group A R-2: Owner / CreatedBy / LastModifiedBy --
     @SFField("OwnerId")

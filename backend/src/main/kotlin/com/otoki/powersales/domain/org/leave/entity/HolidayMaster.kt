@@ -33,8 +33,9 @@ class HolidayMaster(
 
     @SFField("HolidayDate__c")
     @FieldName("휴일일자")
-    @Column(name = "holiday_date", nullable = false, unique = true)
-    var holidayDate: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "holiday_date", unique = true)
+    var holidayDate: LocalDate? = null,
 
     @SFField("Name")
     @FieldName("이름")
@@ -44,8 +45,9 @@ class HolidayMaster(
     @SFField("Type__c")
     @Convert(converter = HolidayTypeConverter::class)
     @FieldName("휴일구분")
-    @Column(name = "type", nullable = false, length = 255)
-    var type: HolidayType,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "type", length = 255)
+    var type: HolidayType? = null,
 
     @FieldName("연도")
     @Column(name = "year", nullable = false)

@@ -81,6 +81,7 @@ class AdminAlternativeHolidayService(
         }
 
         val confirmDate = request.confirmAltHolidayDate ?: altHoliday.targetAltHolidayDate
+            ?: throw AltHolidayInvalidStatusException()
         validator.validateConfirmDate(confirmDate)
 
         val changeReason = if (request.confirmAltHolidayDate != null &&

@@ -62,13 +62,15 @@ class Promotion(
 
     @SFField("DKRetail__StartDate__c")
     @FieldName("시작일")
-    @Column(name = "start_date", nullable = false)
-    var startDate: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "start_date")
+    var startDate: LocalDate? = null,
 
     @SFField("DKRetail__EndDate__c")
     @FieldName("종료일")
-    @Column(name = "end_date", nullable = false)
-    var endDate: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "end_date")
+    var endDate: LocalDate? = null,
 
     @FieldName("대표제품ID")
     @Column(name = "primary_product_id")

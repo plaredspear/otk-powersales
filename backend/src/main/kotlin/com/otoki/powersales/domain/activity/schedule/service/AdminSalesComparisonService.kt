@@ -63,7 +63,7 @@ class AdminSalesComparisonService(
     fun getSearchCategories(): List<SearchAccountCategoryItem> {
         return accountCategoryMasterRepository
             .findByUseSearchTrueAndIsDeletedNotOrderByAccountCode(true)
-            .map { SearchAccountCategoryItem(accountCode = it.accountCode, name = it.name) }
+            .map { SearchAccountCategoryItem(accountCode = it.accountCode ?: "", name = it.name) }
     }
 
     /** 체인 거래처 (4종) — 일반 카테고리 대신 ABCType 으로 투입기준 조회. */

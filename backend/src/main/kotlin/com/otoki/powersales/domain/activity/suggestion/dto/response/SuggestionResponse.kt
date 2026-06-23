@@ -13,10 +13,10 @@ import java.time.LocalDateTime
 data class SuggestionResponse(
     val id: Long,
     val proposalNumber: String,
-    val category: SuggestionCategory,
-    val categoryName: String,
-    val title: String,
-    val content: String,
+    val category: SuggestionCategory?,
+    val categoryName: String?,
+    val title: String?,
+    val content: String?,
     val productCode: String?,
     val sapAccountCode: String?,
     val accountId: Long?,
@@ -55,7 +55,7 @@ data class SuggestionResponse(
                 id = suggestion.id,
                 proposalNumber = suggestion.proposalNumber,
                 category = suggestion.category,
-                categoryName = suggestion.category.displayName,
+                categoryName = suggestion.category?.displayName,
                 title = suggestion.title,
                 content = suggestion.content,
                 productCode = suggestion.product?.productCode,
@@ -86,9 +86,9 @@ data class SuggestionResponse(
 data class SuggestionListItem(
     val id: Long,
     val proposalNumber: String,
-    val category: SuggestionCategory,
-    val categoryName: String,
-    val title: String,
+    val category: SuggestionCategory?,
+    val categoryName: String?,
+    val title: String?,
     val createdAt: LocalDateTime
 ) {
     companion object {
@@ -97,7 +97,7 @@ data class SuggestionListItem(
                 id = suggestion.id,
                 proposalNumber = suggestion.proposalNumber,
                 category = suggestion.category,
-                categoryName = suggestion.category.displayName,
+                categoryName = suggestion.category?.displayName,
                 title = suggestion.title,
                 createdAt = suggestion.createdAt
             )

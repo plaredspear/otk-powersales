@@ -41,13 +41,15 @@ class AttendInfo(
 
     @SFField("EmployeeCode__c")
     @FieldName("사원번호")
-    @Column(name = "employee_code", nullable = false, length = 100)
-    val employeeCode: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "employee_code", length = 100)
+    val employeeCode: String? = null,
 
     @SFField("StartDate__c")
     @FieldName("시작일")
-    @Column(name = "start_date", nullable = false, length = 100)
-    var startDate: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "start_date", length = 100)
+    var startDate: String? = null,
 
     @SFField("EndDate__c")
     @FieldName("종료일")

@@ -34,7 +34,7 @@ class AdminEmployeeInputCriteriaMasterController(
         val categories = accountCategoryMasterRepository.findAll()
             .filter { it.isDeleted != true }
             .sortedBy { it.accountCode }
-            .map { AccountCategoryOptionResponse(it.id, it.accountCode, it.name) }
+            .map { AccountCategoryOptionResponse(it.id, it.accountCode ?: "", it.name) }
         return ResponseEntity.ok(ApiResponse.success(categories))
     }
 

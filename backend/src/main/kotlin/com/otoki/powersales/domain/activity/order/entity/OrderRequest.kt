@@ -78,8 +78,9 @@ class OrderRequest(
 
     @SFField("OrderDate__c")
     @FieldName("주문일시")
-    @Column(name = "order_date", nullable = false)
-    val orderDate: LocalDateTime,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "order_date")
+    val orderDate: LocalDateTime? = null,
 
     @SFField("DKRetail__OrderDate__c")
     @FieldName("주문일시(DK)")
@@ -88,13 +89,15 @@ class OrderRequest(
 
     @SFField("DKRetail__RequestDate__c")
     @FieldName("납기일")
-    @Column(name = "delivery_date", nullable = false)
-    val deliveryDate: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "delivery_date")
+    val deliveryDate: LocalDate? = null,
 
     @SFField("TotalOrderAmount__c")
     @FieldName("총주문금액 (원)")
-    @Column(name = "total_amount", nullable = false, precision = 18, scale = 2)
-    val totalAmount: BigDecimal = BigDecimal.ZERO,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "total_amount", precision = 18, scale = 2)
+    val totalAmount: BigDecimal? = BigDecimal.ZERO,
 
     @FieldName("총승인금액")
     @Column(name = "total_approved_amount", precision = 18, scale = 2)
@@ -102,9 +105,10 @@ class OrderRequest(
 
     @SFField("DKRetail__RequestStatus__c")
     @FieldName("상태")
-    @Column(name = "order_request_status", nullable = false, length = 255)
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "order_request_status", length = 255)
     @Convert(converter = OrderRequestStatusConverter::class)
-    var orderRequestStatus: OrderRequestStatus = OrderRequestStatus.DRAFT,
+    var orderRequestStatus: OrderRequestStatus? = OrderRequestStatus.DRAFT,
 
     @FieldName("마감여부")
     @Column(name = "is_closed", nullable = false)

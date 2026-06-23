@@ -54,12 +54,12 @@ class AdminClaimResendService(
                     employeeCode = claim.employee?.employeeCode
                         ?: error("사번 미보유 사원의 claim 은 재전송할 수 없습니다"),
                     dateType = claim.dateType ?: ClaimDateType.EXPIRY_DATE,
-                    date = claim.date,
+                    date = claim.date ?: error("발생일자 미보유 claim 은 재전송할 수 없습니다"),
                     claimDate = claim.createdAt.toLocalDate(),
-                    claimType1 = claim.claimType1,
-                    claimType2 = claim.claimType2,
-                    quantity = claim.defectQuantity,
-                    description = claim.defectDescription,
+                    claimType1 = claim.claimType1 ?: error("클레임대분류 미보유 claim 은 재전송할 수 없습니다"),
+                    claimType2 = claim.claimType2 ?: error("클레임소분류 미보유 claim 은 재전송할 수 없습니다"),
+                    quantity = claim.defectQuantity ?: error("수량 미보유 claim 은 재전송할 수 없습니다"),
+                    description = claim.defectDescription ?: error("불만내용 미보유 claim 은 재전송할 수 없습니다"),
                     purchaseMethod = claim.purchaseMethodCode,
                     amount = claim.purchaseAmount,
                     requestTypes = claim.requestTypeCode,
@@ -100,7 +100,7 @@ class AdminClaimResendService(
             createService.applySfResultToClaim(claim, sfResult)
             AdminClaimCreateResponse(
                 claimId = claim.id,
-                status = claim.status.name,
+                status = claim.status?.name ?: "",
                 sfResultCode = sfResult.apiResponse?.resultCode,
                 sfResultMsg = sfResult.apiResponse?.resultMsg ?: sfResult.errorSummary,
             )

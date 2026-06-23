@@ -18,7 +18,7 @@ data class PPTMasterResponse(
     val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,
-    val teamType: ProfessionalPromotionTeamType,
+    val teamType: ProfessionalPromotionTeamType?,
     val startDate: LocalDate,
     val endDate: LocalDate?,
     val isConfirmed: Boolean,
@@ -108,7 +108,7 @@ data class PPTMasterHistoryResponse(
     val orgName: String?,
     val oldValue: ProfessionalPromotionTeamType?,
     val newValue: ProfessionalPromotionTeamType?,
-    val changedAt: LocalDateTime
+    val changedAt: LocalDateTime?
 ) {
     companion object {
         fun from(

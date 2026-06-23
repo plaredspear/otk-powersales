@@ -26,7 +26,7 @@ data class AdminClaimListItem(
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
     val defectQuantity: BigDecimal?,
-    val status: String,
+    val status: String?,
     val createdAt: LocalDateTime,
     /**
      * 목록 카드 뷰 배경용 대표 이미지 URL.
@@ -42,12 +42,12 @@ data class AdminClaimListItem(
             storeName = claim.account?.name,
             productName = claim.product?.name,
             productCode = claim.product?.productCode,
-            categoryValue = claim.claimType1.value,
-            categoryLabel = claim.claimType1.label,
-            subcategoryValue = claim.claimType2.value,
-            subcategoryLabel = claim.claimType2.label,
+            categoryValue = claim.claimType1?.value,
+            categoryLabel = claim.claimType1?.label,
+            subcategoryValue = claim.claimType2?.value,
+            subcategoryLabel = claim.claimType2?.label,
             defectQuantity = claim.defectQuantity,
-            status = claim.status.name,
+            status = claim.status?.name,
             createdAt = claim.createdAt,
             representativeImageUrl = representativeImageUrl
         )
@@ -72,7 +72,7 @@ data class AdminClaimDetailResponse(
     val purchaseAmount: BigDecimal?,
     val purchaseMethodName: String?,
     val requestTypeName: String?,
-    val status: String,
+    val status: String?,
     val createdAt: LocalDateTime,
     val photos: List<ClaimPhotoResponse>
 ) {
@@ -90,16 +90,16 @@ data class AdminClaimDetailResponse(
             productName = claim.product?.name,
             dateType = claim.dateType?.name,
             date = claim.date,
-            categoryValue = claim.claimType1.value,
-            categoryLabel = claim.claimType1.label,
-            subcategoryValue = claim.claimType2.value,
-            subcategoryLabel = claim.claimType2.label,
+            categoryValue = claim.claimType1?.value,
+            categoryLabel = claim.claimType1?.label,
+            subcategoryValue = claim.claimType2?.value,
+            subcategoryLabel = claim.claimType2?.label,
             defectDescription = claim.defectDescription,
             defectQuantity = claim.defectQuantity,
             purchaseAmount = claim.purchaseAmount,
             purchaseMethodName = claim.purchaseMethodCode?.displayName,
             requestTypeName = claim.requestTypeCode.joinToString(";") { it.displayName }.ifBlank { null },
-            status = claim.status.name,
+            status = claim.status?.name,
             createdAt = claim.createdAt,
             photos = uploadFiles.mapNotNull { ClaimPhotoResponse.from(it, urlResolver) }
         )

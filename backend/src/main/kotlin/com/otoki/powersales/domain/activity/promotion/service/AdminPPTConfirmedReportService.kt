@@ -81,7 +81,7 @@ class AdminPPTConfirmedReportService(
             accountName = acc?.name,
             // 기존 PPTMasterSearchResult 와 동일 — accountCode = account.externalKey
             accountCode = acc?.externalKey,
-            professionalPromotionTeam = m.teamType.displayName,
+            professionalPromotionTeam = m.teamType?.displayName,
         )
     }
 }

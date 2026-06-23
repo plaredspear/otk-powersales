@@ -47,13 +47,15 @@ class AlternativeHoliday(
 
     @SFField("DKRetail__ActualWorkDate__c")
     @FieldName("대휴대상일자")
-    @Column(name = "actual_work_date", nullable = false)
-    val actualWorkDate: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "actual_work_date")
+    val actualWorkDate: LocalDate? = null,
 
     @SFField("DKRetail__TargetAltHolidayDate__c")
     @FieldName("대휴신청일자")
-    @Column(name = "target_alt_holiday_date", nullable = false)
-    val targetAltHolidayDate: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "target_alt_holiday_date")
+    val targetAltHolidayDate: LocalDate? = null,
 
     @SFField("DKRetail__ConfirmAltHolidayDate__c")
     @FieldName("대휴일자")
@@ -63,8 +65,9 @@ class AlternativeHoliday(
     @SFField("DKRetail__Status__c")
     @Convert(converter = AltHolidayStatusConverter::class)
     @FieldName("상태")
-    @Column(name = "status", nullable = false, length = 255)
-    var status: AltHolidayStatus = AltHolidayStatus.NEW,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "status", length = 255)
+    var status: AltHolidayStatus? = AltHolidayStatus.NEW,
 
     @SFField("DKRetail__ChangeReason__c")
     @FieldName("변경사유")

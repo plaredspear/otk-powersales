@@ -10,10 +10,10 @@ data class AlternativeHolidayListItem(
     val employeeCode: String,
     val employeeName: String,
     val orgName: String?,
-    val actualWorkDate: LocalDate,
-    val targetAltHolidayDate: LocalDate,
+    val actualWorkDate: LocalDate?,
+    val targetAltHolidayDate: LocalDate?,
     val confirmAltHolidayDate: LocalDate?,
-    val status: AltHolidayStatus,
+    val status: AltHolidayStatus?,
     val changeReason: String?,
     val createdByEmpNo: String,
     val createdAt: LocalDateTime
@@ -21,27 +21,27 @@ data class AlternativeHolidayListItem(
 
 data class AlternativeHolidayCreateResponse(
     val id: Long,
-    val status: String
+    val status: String?
 ) {
     companion object {
         fun from(entity: AlternativeHoliday): AlternativeHolidayCreateResponse =
             AlternativeHolidayCreateResponse(
                 id = entity.id,
-                status = entity.status.displayName
+                status = entity.status?.displayName
             )
     }
 }
 
 data class AlternativeHolidayApproveResponse(
     val id: Long,
-    val status: String,
+    val status: String?,
     val confirmAltHolidayDate: LocalDate?
 ) {
     companion object {
         fun from(entity: AlternativeHoliday): AlternativeHolidayApproveResponse =
             AlternativeHolidayApproveResponse(
                 id = entity.id,
-                status = entity.status.displayName,
+                status = entity.status?.displayName,
                 confirmAltHolidayDate = entity.confirmAltHolidayDate
             )
     }
@@ -49,13 +49,13 @@ data class AlternativeHolidayApproveResponse(
 
 data class AlternativeHolidayRejectResponse(
     val id: Long,
-    val status: String
+    val status: String?
 ) {
     companion object {
         fun from(entity: AlternativeHoliday): AlternativeHolidayRejectResponse =
             AlternativeHolidayRejectResponse(
                 id = entity.id,
-                status = entity.status.displayName
+                status = entity.status?.displayName
             )
     }
 }

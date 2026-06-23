@@ -49,14 +49,14 @@ class AdminAttendInfoService(
 
     fun search(filter: AdminAttendInfoSearchRequest, pageable: Pageable): Page<AdminAttendInfoListItemResponse> {
         val page = attendInfoRepository.searchByFilter(filter, pageable)
-        val employeeCodes = page.content.map { it.employeeCode }.distinct()
+        val employeeCodes = page.content.mapNotNull { it.employeeCode }.distinct()
         val employeeMap = employeeRepository.findByEmployeeCodeIn(employeeCodes).associateBy { it.employeeCode }
         return page.map { AdminAttendInfoListItemResponse.from(it, employeeMap[it.employeeCode]) }
     }
 
     fun get(id: Long): AdminAttendInfoDetailResponse {
         val entity = attendInfoRepository.findById(id).orElseThrow { AttendInfoNotFoundException() }
-        val employee = employeeRepository.findByEmployeeCode(entity.employeeCode).orElse(null)
+        val employee = entity.employeeCode?.let { employeeRepository.findByEmployeeCode(it).orElse(null) }
         val linked = findLinkedSchedules(entity)
         return AdminAttendInfoDetailResponse.from(entity, employee, linked)
     }
@@ -134,7 +134,7 @@ class AdminAttendInfoService(
         val totalSummary = summary.copy(deletedScheduleCount = summary.deletedScheduleCount + deletedCount)
         log.info("admin attend_info update cascade {}", totalSummary.toReason())
 
-        val employee = employeeRepository.findByEmployeeCode(entity.employeeCode).orElse(null)
+        val employee = entity.employeeCode?.let { employeeRepository.findByEmployeeCode(it).orElse(null) }
         val linked = findLinkedSchedules(entity)
         return AdminAttendInfoDetailResponse.from(entity, employee, linked, totalSummary)
     }
@@ -161,7 +161,8 @@ class AdminAttendInfoService(
     private fun findLinkedSchedules(entity: AttendInfo): List<TeamMemberSchedule> {
         val attendType = entity.attendType ?: return emptyList()
         if (attendType !in AttendType.ANNUAL_LEAVE_CODES) return emptyList()
-        val employee = employeeRepository.findByEmployeeCode(entity.employeeCode).orElse(null) ?: return emptyList()
+        val empCode = entity.employeeCode ?: return emptyList()
+        val employee = employeeRepository.findByEmployeeCode(empCode).orElse(null) ?: return emptyList()
         val start = parseDate(entity.startDate) ?: return emptyList()
         val end = parseDate(entity.endDate) ?: start
         return teamMemberScheduleRepository.findAllByEmployeeAndWorkingDateBetweenAndWorkingType(
@@ -175,12 +176,13 @@ class AdminAttendInfoService(
      * REQUIRES_NEW 격리 회피 — admin 호출 실패 시 함께 롤백.
      */
     private fun cascadeDeleteSchedules(
-        employeeCode: String,
-        startDateText: String,
+        employeeCode: String?,
+        startDateText: String?,
         endDateText: String?,
         attendType: String?,
     ): Int {
         if (attendType !in AttendType.ANNUAL_LEAVE_CODES) return 0
+        if (employeeCode == null) return 0
         val employee = employeeRepository.findByEmployeeCode(employeeCode).orElse(null) ?: return 0
         val start = parseDate(startDateText) ?: return 0
         val end = parseDate(endDateText) ?: start

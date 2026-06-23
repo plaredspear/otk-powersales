@@ -63,19 +63,29 @@ class AppointmentUserProfileUpdater(
                     continue
                 }
 
+                val employeeCode = appointment.employeeCode
+                if (employeeCode == null) {
+                    skippedCount++
+                    continue
+                }
+
                 val afterOrgCode = appointment.afterOrgCode
                 if (afterOrgCode == null) {
                     skippedCount++
                     continue
                 }
 
-                val employee = employeeRepository.findByEmployeeCode(appointment.employeeCode).orElse(null)
+                val employee = employeeRepository.findByEmployeeCode(employeeCode).orElse(null)
                 if (employee == null) {
                     skippedCount++
                     continue
                 }
 
                 val appointDate = appointment.appointDate
+                if (appointDate == null) {
+                    skippedCount++
+                    continue
+                }
 
                 if (appointDate.isAfter(today)) {
                     applyReservedAppointment(employee, appointment, appointDate, codeMap)

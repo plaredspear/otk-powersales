@@ -533,8 +533,9 @@ class AdminPromotionService(
         val clonedRequest = PromotionCreateRequest(
             promotionType = source.promotionType?.displayName,
             accountId = source.account!!.id,
-            startDate = source.startDate,
-            endDate = source.endDate,
+            // 클론은 신규 데이터 생성 — 원본이 SF 마이그레이션 레코드라 일자가 비어 있으면 당일로 보정.
+            startDate = source.startDate ?: LocalDate.now(),
+            endDate = source.endDate ?: LocalDate.now(),
             primaryProductId = source.primaryProductId,
             otherProduct = source.otherProduct,
             message = source.message,

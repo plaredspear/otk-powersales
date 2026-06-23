@@ -69,8 +69,9 @@ class OrderRequestProduct(
 
     @SFField("LineNumber__c")
     @FieldName("라인번호")
-    @Column(name = "line_number", nullable = false)
-    val lineNumber: BigDecimal,
+    // SF nillable=true (field-meta required=false) 정합 — 마이그레이션이 SF NULL row 를 보존하도록 nullable.
+    @Column(name = "line_number")
+    val lineNumber: BigDecimal? = null,
 
     @SFField("DKRetail__LineNumber__c")
     @FieldName("라인번호(DK)")
@@ -79,23 +80,25 @@ class OrderRequestProduct(
 
     @SFField("ProductCode__c")
     @FieldName("상품코드")
-    @Column(name = "product_code", nullable = false, length = 255)
-    val productCode: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "product_code", length = 255)
+    val productCode: String? = null,
 
     @SFField("TotalQuantity_Box__c")
     @FieldName("총 박스환산치")
-    @Column(name = "quantity_boxes", nullable = false, precision = 18, scale = 2)
-    val quantityBoxes: BigDecimal = BigDecimal.ZERO,
+    // SF nillable=true 정합. 앱 신규 INSERT 는 기본값 0 유지.
+    @Column(name = "quantity_boxes", precision = 18, scale = 2)
+    val quantityBoxes: BigDecimal? = BigDecimal.ZERO,
 
     @SFField("TotalQuantity_Each__c")
     @FieldName("총주문낱개수량")
-    @Column(name = "quantity_pieces", nullable = false)
-    val quantityPieces: BigDecimal = BigDecimal.ZERO,
+    @Column(name = "quantity_pieces")
+    val quantityPieces: BigDecimal? = BigDecimal.ZERO,
 
     @SFField("DKRetail__OrderingUnit__c")
     @FieldName("발주단위")
-    @Column(name = "unit", nullable = false, length = 40)
-    val unit: String,
+    @Column(name = "unit", length = 40)
+    val unit: String? = null,
 
     @FieldName("단가")
     @Column(name = "unit_price", precision = 16, scale = 2)
@@ -103,8 +106,9 @@ class OrderRequestProduct(
 
     @SFField("DKRetail__TotalAmount__c")
     @FieldName("총금액")
-    @Column(name = "amount", nullable = false, precision = 18, scale = 2)
-    val amount: BigDecimal = BigDecimal.ZERO,
+    // SF nillable=true (field-meta required=false) 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "amount", precision = 18, scale = 2)
+    val amount: BigDecimal? = BigDecimal.ZERO,
 
     @FieldName("박스당낱개수")
     @Column(name = "pieces_per_box")

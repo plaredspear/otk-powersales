@@ -67,9 +67,11 @@ class OrderCancelService(
             throw ForbiddenOrderAccessException()
         }
         if (orderRequest.orderRequestStatus !in CANCELLABLE_STATUSES) {
-            throw OrderCancelInvalidStatusException(orderRequest.orderRequestStatus.name)
+            throw OrderCancelInvalidStatusException(orderRequest.orderRequestStatus?.name ?: "")
         }
-        if (!orderDeadlineCalculator.isCancellable(orderRequest.deliveryDate)) {
+        // deliveryDate 는 SF nillable=true 정합으로 nullable — 마감 판단 불가(=취소 불가)로 처리.
+        val deliveryDate = orderRequest.deliveryDate ?: throw OrderCancelDeadlinePassedException()
+        if (!orderDeadlineCalculator.isCancellable(deliveryDate)) {
             throw OrderCancelDeadlinePassedException()
         }
         return orderRequest

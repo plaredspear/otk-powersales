@@ -49,8 +49,9 @@ class AccountCategoryMaster(
 
     @SFField("AccountCode__c")
     @FieldName("거래처유형코드")
-    @Column(name = "account_code", nullable = false, unique = true, length = 255)
-    val accountCode: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "account_code", unique = true, length = 255)
+    val accountCode: String? = null,
 
     @SFField("Name")
     @FieldName("이름")

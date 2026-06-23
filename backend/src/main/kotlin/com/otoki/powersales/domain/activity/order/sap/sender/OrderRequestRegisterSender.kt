@@ -81,8 +81,10 @@ class OrderRequestRegisterSender(
                 "RequestNumber" to orderRequest.orderRequestNumber,
                 "SAPAccountCode" to sapAccountCode,
                 // 레거시 `yyyyMMdd HHmm` (날짜·시각 사이 공백 1칸, IF_Util.cls:169) 동등.
-                "OrderDate" to orderRequest.orderDate.format(YYYYMMDD_HHMM),
-                "DeliveryRequestDate" to orderRequest.deliveryDate.format(YYYYMMDD),
+                // orderDate / deliveryDate 는 SF nillable=true 정합으로 nullable —
+                // 신규 앱 생성 주문은 항상 값이 있으나 마이그 SF NULL row 보존 위해 안전 호출 + 빈문자열 fallback.
+                "OrderDate" to (orderRequest.orderDate?.format(YYYYMMDD_HHMM) ?: ""),
+                "DeliveryRequestDate" to (orderRequest.deliveryDate?.format(YYYYMMDD) ?: ""),
             ),
             "REQUEST_List_item" to products.map { p ->
                 mapOf(

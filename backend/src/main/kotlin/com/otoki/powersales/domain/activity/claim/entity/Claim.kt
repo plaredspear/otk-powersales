@@ -82,8 +82,9 @@ class Claim(
 
     @SFField("DKRetail__ClaimDate__c")
     @FieldName("발생일자")
-    @Column(name = "date", nullable = false)
-    var date: LocalDate,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "date")
+    var date: LocalDate? = null,
 
     // Spec #743: SF picklist `DKRetail__ClaimType1__c`/`ClaimType2__c` 직접 enum 매핑.
     // 기존 ClaimCategory/ClaimSubcategory FK 제거 (#741 옵션 C 적용).
@@ -91,24 +92,28 @@ class Claim(
     @SFField("DKRetail__ClaimType1__c")
     @Convert(converter = ClaimType1Converter::class)
     @FieldName("클레임종류1")
-    @Column(name = "claim_type1", nullable = false, length = 10)
-    var claimType1: ClaimType1,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "claim_type1", length = 10)
+    var claimType1: ClaimType1? = null,
 
     @SFField("DKRetail__ClaimType2__c")
     @Convert(converter = ClaimType2Converter::class)
     @FieldName("클레임종류2")
-    @Column(name = "claim_type2", nullable = false, length = 10)
-    var claimType2: ClaimType2,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "claim_type2", length = 10)
+    var claimType2: ClaimType2? = null,
 
     @SFField("DKRetail__Description__c")
     @FieldName("불만내역")
-    @Column(name = "defect_description", nullable = false, length = 4000)
-    var defectDescription: String,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "defect_description", length = 4000)
+    var defectDescription: String? = null,
 
     @SFField("DKRetail__Quantity__c")
     @FieldName("불량수량")
-    @Column(name = "defect_quantity", nullable = false)
-    var defectQuantity: BigDecimal,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "defect_quantity")
+    var defectQuantity: BigDecimal? = null,
 
     @SFField("DKRetail__Amount__c")
     @FieldName("금액(원)")
@@ -132,8 +137,9 @@ class Claim(
     @SFField("DKRetail__Status__c")
     @Convert(converter = ClaimStatusConverter::class)
     @FieldName("상태")
-    @Column(name = "status", nullable = false, length = 20)
-    var status: ClaimStatus = ClaimStatus.DRAFT,
+    // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.
+    @Column(name = "status", length = 20)
+    var status: ClaimStatus? = ClaimStatus.DRAFT,
 
     // -- SAP 인바운드 갱신 컬럼 (Spec #561) --
 
