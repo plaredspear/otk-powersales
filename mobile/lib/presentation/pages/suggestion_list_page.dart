@@ -15,16 +15,13 @@ import '../widgets/common/date_range_filter_field.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/common/loading_indicator.dart';
 
-/// 내 제안/물류클레임 목록 화면
+/// 내 물류클레임 조회 화면
 ///
-/// 레거시 `fieldTalk/suggest/logisticsclaimlist.jsp` 대응.
-/// [category] 지정 시 해당 분류만 조회(물류클레임 전용 진입 = LOGISTICS_CLAIM),
-/// 미지정 시 전체 제안/물류클레임을 카테고리 배지와 함께 표시한다.
+/// 레거시 `fieldTalk/suggest/logisticsclaimlist.jsp` 대응(물류클레임 전용 목록).
+/// 레거시에는 제안/물류클레임 통합 목록이 없으므로 LOGISTICS_CLAIM 만 조회한다.
 /// 백엔드 `GET /api/v1/mobile/suggestions` 를 소비한다.
 class SuggestionListPage extends ConsumerStatefulWidget {
-  final SuggestionCategory? category;
-
-  const SuggestionListPage({super.key, this.category});
+  const SuggestionListPage({super.key});
 
   @override
   ConsumerState<SuggestionListPage> createState() => _SuggestionListPageState();
@@ -38,14 +35,13 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // 진입 유형에 맞춰 검색조건을 첫 build 전에 동기 초기화한다.
-    // (물류클레임 전용: 거래처 해제 + 등록일 범위 기본값 최근 30일 / 제안 전체: 필터 해제)
+    // 검색조건을 첫 build 전에 동기 초기화한다(레거시 정합: 거래처 전체 + 등록일 범위 기본 최근 30일).
     // 전역 provider 공유로 인한 이전 진입 필터 누수를 막고, 필터 UI 가 항상 유효한 범위를 갖게 한다.
-    ref.read(suggestionListProvider.notifier).initFilters(claimOnly: _isClaimOnly);
+    ref.read(suggestionListProvider.notifier).initFilters();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(suggestionListProvider.notifier)
-          .load(category: widget.category?.code);
+          .load(category: SuggestionCategory.logisticsClaim.code);
     });
   }
 
@@ -70,15 +66,9 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
     });
   }
 
-  /// 물류클레임 전용 진입 여부
-  bool get _isClaimOnly =>
-      widget.category == SuggestionCategory.logisticsClaim;
+  String get _title => '내 물류클레임 조회';
 
-  String get _title => _isClaimOnly ? '내 물류클레임 조회' : '내 제안 / 물류클레임';
-
-  String get _emptyMessage => _isClaimOnly
-      ? '등록된 물류클레임이 없습니다'
-      : '등록된 제안/물류클레임이 없습니다';
+  String get _emptyMessage => '등록된 물류클레임이 없습니다';
 
   @override
   Widget build(BuildContext context) {
@@ -94,11 +84,10 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
       ),
       body: Column(
         children: [
-          // 레거시 logisticsclaimlist 검색조건(거래처 + 등록일 범위)은 물류클레임 전용 진입에만 노출.
-          if (_isClaimOnly) ...[
-            _buildAccountFilter(state),
-            _buildDateFilter(state),
-          ],
+          // 레거시 logisticsclaimlist 는 진입 시 검색조건(거래처 + 등록일 범위)을 항상 노출한다.
+          // 통합("내 제안/물류클레임")·전용 진입 모두 동일하게 필터를 노출해 레거시와 정합한다.
+          _buildAccountFilter(state),
+          _buildDateFilter(state),
           Expanded(child: _buildBody(state)),
         ],
       ),

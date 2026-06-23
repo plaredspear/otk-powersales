@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'domain/entities/attendance_result.dart';
 import 'domain/entities/education_category.dart';
 import 'domain/entities/product_expiration_item.dart';
-import 'domain/entities/suggestion_form.dart';
 import 'presentation/pages/app_info_page.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
@@ -213,12 +212,7 @@ class AppRouter {
           return const ClaimRegisterPage();
         },
         suggestionRegister: (context) => const SuggestionRegisterPage(),
-        suggestionList: (context) {
-          // 물류클레임 전용 진입 시 SuggestionCategory 를 인자로 전달받는다.
-          final category =
-              ModalRoute.of(context)?.settings.arguments as SuggestionCategory?;
-          return SuggestionListPage(category: category);
-        },
+        suggestionList: (context) => const SuggestionListPage(),
         suggestionDetail: (context) {
           final suggestionId =
               ModalRoute.of(context)!.settings.arguments as int;

@@ -83,9 +83,11 @@ abstract final class MenuConstants {
           label: '제안하기',
           route: '/suggestion/register',
         ),
+        // 레거시 GNB "내 물류클레임 조회"(logisticsclaimlist) 정합 — 물류클레임 전용 목록.
+        // (레거시에는 제안/물류클레임 통합 목록이 없음)
         MenuItem(
-          id: 'suggestion-list',
-          label: '내 제안/물류클레임',
+          id: 'logistics-claim-list',
+          label: '내 물류클레임 조회',
           route: '/suggestion/list',
         ),
       ],

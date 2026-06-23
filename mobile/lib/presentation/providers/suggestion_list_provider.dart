@@ -113,22 +113,18 @@ class SuggestionListNotifier extends StateNotifier<SuggestionListState> {
 
   /// 화면 진입 시 검색조건 초기화(레거시는 페이지 로드마다 기본값으로 시작).
   ///
-  /// 전역 provider 를 두 진입(물류클레임 전용 / 제안 전체)이 공유하므로, 진입 유형에 맞게
-  /// 필터를 리셋해 이전 진입의 필터가 새 진입에 누수되지 않게 한다.
-  /// - [claimOnly] 물류클레임 전용: 거래처 해제 + 등록일 범위 기본값(최근 30일) 설정
-  /// - 그 외(제안 전체): 거래처/등록일 필터 모두 해제(전체 조회)
-  void initFilters({required bool claimOnly}) {
-    if (claimOnly) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      state = state.copyWith(
-        clearAccount: true,
-        startDate: today.subtract(const Duration(days: _defaultRangeDays)),
-        endDate: today,
-      );
-    } else {
-      state = state.copyWith(clearAccount: true, clearDates: true);
-    }
+  /// 레거시 logisticsclaimlist 정합: 진입 유형(물류클레임 전용 / 제안·물류클레임 통합)과
+  /// 무관하게 거래처 전체 + 등록일 범위 기본값(최근 30일)으로 초기화한다.
+  /// 전역 provider 를 두 진입이 공유하므로, 매 진입마다 리셋해 이전 진입의 필터 누수를 막고
+  /// 필터 UI 가 항상 유효한 날짜 범위를 갖게 한다.
+  void initFilters() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    state = state.copyWith(
+      clearAccount: true,
+      startDate: today.subtract(const Duration(days: _defaultRangeDays)),
+      endDate: today,
+    );
   }
 
   /// 거래처 필터 선택

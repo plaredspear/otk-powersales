@@ -4,7 +4,6 @@ import '../../../app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../domain/entities/suggestion_form.dart';
 
 /// 활동등록 메뉴 아이템 데이터
 class ActivityMenuItem {
@@ -77,9 +76,8 @@ class ActivityRegistrationPopup extends StatelessWidget {
     ActivityMenuItem(
       iconAsset: 'assets/images/ico_active1.png',
       label: '내 물류클레임 조회',
+      // 레거시 logisticsclaimlist 정합: 물류클레임 전용 목록(suggestionList 는 항상 물류클레임만 조회)
       route: AppRouter.suggestionList,
-      // 레거시 logisticsclaimlist 정합: 물류클레임 전용 목록으로 진입
-      arguments: SuggestionCategory.logisticsClaim,
     ),
   ];
 
