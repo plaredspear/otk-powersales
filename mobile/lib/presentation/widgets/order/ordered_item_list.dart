@@ -13,11 +13,9 @@ class OrderedItemList extends StatelessWidget {
     required this.items,
   });
 
+  // 레거시 view.jsp:274 동등 — 박스 수량은 소수 2자리까지(#,###.##).
   String _formatBoxes(double boxes) {
-    if (boxes == boxes.toInt()) {
-      return boxes.toInt().toString();
-    }
-    return boxes.toStringAsFixed(1);
+    return NumberFormat('#,##0.##').format(boxes);
   }
 
   String _formatPieces(int pieces) {
@@ -80,7 +78,7 @@ class OrderedItemList extends StatelessWidget {
   }
 
   Widget _buildItemRow(OrderedItem item) {
-    // 레거시 view.jsp:414 동등 — 취소/결품 제품은 회색 처리.
+    // 레거시 view.jsp:272-273 동등 — 취소/결품 제품은 회색 처리 + '[주문 취소]' 접두 공통.
     final isGrayed = item.isCancelled || item.isOutOfStock;
     final nameColor =
         isGrayed ? AppColors.textTertiary : AppColors.textPrimary;
@@ -96,24 +94,16 @@ class OrderedItemList extends StatelessWidget {
               child: RichText(
                 text: TextSpan(
                   children: [
-                    if (item.isCancelled)
+                    if (isGrayed)
                       TextSpan(
-                        text: '[취소] ',
+                        text: '[주문 취소] ',
                         style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.bold,
+                          color: AppColors.textTertiary,
                         ),
                       ),
-                    if (item.isOutOfStock)
-                      TextSpan(
-                        text: '[결품] ',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    // 레거시 view.jsp:273 동등 — 제품명 (제품코드) 순서.
                     TextSpan(
-                      text: '(${item.productCode}) ${item.productName}',
+                      text: '${item.productName} (${item.productCode})',
                       style: AppTypography.bodyMedium.copyWith(
                         color: nameColor,
                       ),
@@ -126,7 +116,7 @@ class OrderedItemList extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Text(
-                '${_formatBoxes(item.totalQuantityBoxes)}박스 (${_formatPieces(item.totalQuantityPieces)}개)',
+                '${_formatBoxes(item.totalQuantityBoxes)} BOX (${_formatPieces(item.totalQuantityPieces)}개)',
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -135,13 +125,13 @@ class OrderedItemList extends StatelessWidget {
             ),
           ],
         ),
-        // 결품 사유 (SAP DefaultReason) — 레거시 결품 표시 동등.
+        // 결품 사유 (SAP DefaultReason) — 회색 처리 행에 부가 표기.
         if (item.isOutOfStock && item.outOfStockReason != null) ...[
           SizedBox(height: AppSpacing.xs),
           Text(
             '결품사유: ${item.outOfStockReason}',
             style: AppTypography.bodySmall.copyWith(
-              color: AppColors.error,
+              color: AppColors.textTertiary,
             ),
           ),
         ],
