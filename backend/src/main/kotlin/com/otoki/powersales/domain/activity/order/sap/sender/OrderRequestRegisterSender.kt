@@ -90,12 +90,11 @@ class OrderRequestRegisterSender(
                 mapOf(
                     "LineNumber" to p.lineNumber,
                     "ProductCode" to p.productCode,
-                    // 레거시 SAP `TotalQuantity` = `DKRetail__TotalCount__c`, inbound 적재 시
-                    // 모바일 `OrderQuantity` 값이 들어감 (IF_REST_MOBILE_OrderRequestRegist.cls:101).
-                    // `OrderQuantity` 는 "주문 단위 수량" — BOX 주문이면 박스수량(quantityBoxes),
-                    // EA 주문이면 낱개수량(quantityPieces). 단위 무관하게 quantityBoxes 를 보내면
-                    // EA 주문(quantityBoxes=0) 시 TotalQuantity=0 으로 송신되어 SAP 에 수량 누락.
-                    "TotalQuantity" to if (p.unit == UNIT_BOX) p.quantityBoxes else p.quantityPieces,
+                    // 레거시 SAP `TotalQuantity` = `OrderQuantity` (IF_REST_MOBILE_OrderRequestRegist.cls:101).
+                    // 레거시 OrderController.java:630-644 정합: 단위(MinOrderingUnit)가 EA 가 *아니면*
+                    // 박스환산수량(quantityBoxes = 총EA/환산수량), EA 면 낱개수량(quantityPieces).
+                    // `p.unit` 은 SAP MinOrderingUnit 으로 저장된 값 (CT 등 비-EA·비-BOX 단위도 박스환산 경로).
+                    "TotalQuantity" to if (p.unit != UNIT_EA) p.quantityBoxes else p.quantityPieces,
                     "Unit" to p.unit,
                 )
             },
@@ -103,7 +102,7 @@ class OrderRequestRegisterSender(
     }
 
     companion object {
-        private const val UNIT_BOX = "BOX"
+        private const val UNIT_EA = "EA"
         private val YYYYMMDD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
         private val YYYYMMDD_HHMM: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd HHmm")
     }

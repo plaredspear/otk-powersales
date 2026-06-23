@@ -49,8 +49,8 @@ class AdminProductInventoryServiceTest {
             createProduct(productCode = "P002", name = "카레 100G", unit = "EA")
         )
         every { sapInventorySearchClient.search(1L, any(), any()) } returns mapOf(
-            "P001" to InventoryInfo("P001", "SAP_P001", 1, 100, BigDecimal("1000")),
-            "P002" to InventoryInfo("P002", "SAP_P002", 1, 200, BigDecimal("2000")),
+            "P001" to InventoryInfo("P001", "SAP_P001", "EA", 1, 100, BigDecimal("1000")),
+            "P002" to InventoryInfo("P002", "SAP_P002", "EA", 1, 200, BigDecimal("2000")),
         )
 
         val response = service.searchInventory(request)

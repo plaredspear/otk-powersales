@@ -126,7 +126,9 @@ class OrderRequestCreateService(
                 productCode = line.productCode,
                 quantityBoxes = derivedBoxes,
                 quantityPieces = BigDecimal.valueOf(line.quantityPieces.toLong()),
-                unit = line.unit,
+                // 레거시 정합: 저장/SAP 송신 단위는 SAP MinOrderingUnit (OrderController.java:664 setUnit(minOrderingUnit)).
+                // 클라이언트 unit 은 무시. 공란이면 빈 문자열 그대로 (레거시 setUnit("") 동등).
+                unit = info.minOrderingUnit,
                 unitPrice = info.unitPrice,
                 amount = info.unitPrice.multiply(BigDecimal.valueOf(line.quantityPieces.toLong())),
                 piecesPerBox = info.conversionQuantity.coerceAtLeast(1),
@@ -179,12 +181,14 @@ class OrderRequestCreateService(
             val info = inventoryMap[line.productCode]
                 ?: throw OrderInvalidRequestException("제품 마스터 미등록 (productCode: ${line.productCode})")
             val conv = info.conversionQuantity.coerceAtLeast(1)
+            // 레거시 정합: 단위는 클라이언트 unit 이 아니라 SAP MinOrderingUnit 으로 결정 (OrderController.java:548,664).
+            val unit = info.minOrderingUnit
 
             // 단위 환산 정합 검증 — 레거시 OrderController.java:630-632.
             // 박스류(EA 외)는 총 EA(quantityPieces)가 환산수량 배수여야 정합 (박스+낱개 혼합은 총 EA 로 평탄화).
-            if (!UnitConverter.isPiecesValid(line.unit, line.quantityPieces, conv)) {
+            if (!UnitConverter.isPiecesValid(unit, line.quantityPieces, conv)) {
                 throw OrderInvalidUnitException(
-                    "단위 환산 정합 위반 (productCode: ${line.productCode}, unit: ${line.unit}, " +
+                    "단위 환산 정합 위반 (productCode: ${line.productCode}, unit: $unit, " +
                             "quantityPieces: ${line.quantityPieces}, conversionQuantity: $conv)"
                 )
             }
@@ -193,7 +197,7 @@ class OrderRequestCreateService(
             // SAP SupplyLimitQTY 는 주문 단위(박스) 기준이므로 EA 외 단위는 환산수량을 곱해 총 EA 와 비교.
             // (Int.MAX_VALUE = 제한 없음 → ×conv 오버플로 방지를 위해 Long 연산.)
             val supplyLimitPieces: Long =
-                if (line.unit == UNIT_EA) info.supplyLimitQuantity.toLong()
+                if (unit == UNIT_EA) info.supplyLimitQuantity.toLong()
                 else info.supplyLimitQuantity.toLong() * conv.toLong()
             if (supplyLimitPieces < line.quantityPieces.toLong()) {
                 throw OrderProductRestrictedException(

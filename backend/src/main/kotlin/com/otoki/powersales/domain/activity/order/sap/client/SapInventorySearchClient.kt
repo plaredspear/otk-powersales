@@ -29,6 +29,12 @@ interface SapInventorySearchClient {
 data class InventoryInfo(
     val productCode: String,
     val productName: String,
+    /**
+     * SAP 가 결정하는 발주 단위 (레거시 `MinOrderingUnit`). 주문 등록 시 클라이언트 unit 을 무시하고
+     * 이 값으로 SAP 송신 단위/수량 환산을 강제한다 (레거시 OrderController.java:664 `setUnit(minOrderingUnit)`).
+     * SAP 응답에서 공란/누락이면 빈 문자열 — 레거시는 빈 단위를 그대로 SAP 로 전송한다.
+     */
+    val minOrderingUnit: String,
     val conversionQuantity: Int,
     val supplyLimitQuantity: Int,
     val unitPrice: BigDecimal,

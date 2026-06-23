@@ -56,6 +56,9 @@ class RealSapInventorySearchClient(
             item.productCode to InventoryInfo(
                 productCode = item.productCode,
                 productName = product?.name ?: item.productName ?: item.productCode,
+                // 레거시 정합: SAP 응답 MinOrderingUnit 으로 단위 강제 (OrderController.java:548,664).
+                // 공란/누락이면 빈 문자열 그대로 (레거시 setUnit("") 동등) — 클라이언트 unit 은 사용하지 않음.
+                minOrderingUnit = item.minOrderingUnit?.trim().orEmpty(),
                 conversionQuantity = item.conversionQuantity.toQuantity(default = 1).coerceAtLeast(1),
                 // SupplyLimitQTY 누락/공란 = 공급제한 없음 (레거시는 미표시 시 미차단). Int.MAX_VALUE 로 통과.
                 supplyLimitQuantity = item.supplyLimitQuantity.toQuantity(default = Int.MAX_VALUE),

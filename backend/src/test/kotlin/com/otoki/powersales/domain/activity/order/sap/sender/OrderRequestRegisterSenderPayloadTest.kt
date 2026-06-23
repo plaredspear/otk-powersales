@@ -98,6 +98,21 @@ class OrderRequestRegisterSenderPayloadTest {
     }
 
     @Test
+    @DisplayName("item — 비-EA 단위(MinOrderingUnit 공란 포함)는 TotalQuantity 에 박스환산수량을 송신한다 (레거시 !EA 분기)")
+    fun nonEaUnitSendsBoxes() {
+        // 레거시 OrderController.java:630 `!"EA".equals(minOrderingUnit)` — EA 가 아니면(빈 단위 포함) 박스환산수량.
+        // 신규는 단위를 SAP MinOrderingUnit 으로 저장하며, 공란이면 빈 문자열(레거시 setUnit("") 동등).
+        val order = orderRequest()
+        val products = listOf(
+            product(id = 301, lineNumber = BigDecimal.ONE, productCode = "P020", boxes = BigDecimal("4"), pieces = BigDecimal("40"), unit = "", orderRequest = order),
+        )
+        @Suppress("UNCHECKED_CAST")
+        val items = sender.buildPayload(order, order.account!!, order.employee!!, products)["REQUEST_List_item"] as List<Map<String, Any?>>
+        assertThat(items[0]["TotalQuantity"]).isEqualTo(BigDecimal("4"))
+        assertThat(items[0]["Unit"]).isEqualTo("")
+    }
+
+    @Test
     @DisplayName("item — 레거시 미존재 필드(OrderQuantity/TotalQuantity_Each/TotalQuantity_Box)는 송신하지 않는다")
     fun itemOmitsNonLegacyFields() {
         val order = orderRequest()

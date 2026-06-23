@@ -91,7 +91,7 @@ class OrderRequestCreateServiceTest {
         @DisplayName("단일 BOX 라인 — order_request + product + sap_outbox 적재")
         fun success() {
             stubAuthAndAccount()
-            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000)))
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000, minOrderingUnit = "BOX")))
             every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
             every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
             every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
@@ -117,7 +117,7 @@ class OrderRequestCreateServiceTest {
         @DisplayName("박스+낱개 혼합 — 총 EA 가 환산수량 배수면 박스 수로 흡수 저장 (레거시 정합)")
         fun mixedBoxAndPiecesAbsorbed() {
             stubAuthAndAccount()
-            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 8, supply = 1000)))
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 8, supply = 1000, minOrderingUnit = "BOX")))
             every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
             every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
             val savedLines = slot<List<OrderRequestProduct>>()
@@ -136,6 +136,8 @@ class OrderRequestCreateServiceTest {
             val saved = savedLines.captured.single()
             assertThat(saved.quantityPieces).isEqualByComparingTo(BigDecimal.valueOf(48))
             assertThat(saved.quantityBoxes).isEqualByComparingTo(BigDecimal.valueOf(6))
+            // 레거시 정합: 저장 단위는 클라이언트 unit 이 아닌 SAP MinOrderingUnit 으로 강제.
+            assertThat(saved.unit).isEqualTo("BOX")
         }
 
         @Test
@@ -143,7 +145,7 @@ class OrderRequestCreateServiceTest {
         fun boxSupplyLimitConvertedToPieces() {
             stubAuthAndAccount()
             // 공급제한 5(박스) → 환산 8 적용 시 40 EA 한도. 5박스(=40 EA) 주문은 한도 내 → 통과.
-            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 8, supply = 5)))
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 8, supply = 5, minOrderingUnit = "BOX")))
             every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
             every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
             every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
@@ -168,7 +170,7 @@ class OrderRequestCreateServiceTest {
             // 주문 등록이 거부되지 않아야 한다. 레거시는 저장 시 거래처 담당 재검증이 없었다.
             every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
             every { accountRepository.findById(accountId) } returns Optional.of(account(employeeCode = "OTHER"))
-            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000)))
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000, minOrderingUnit = "BOX")))
             every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
             every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
             every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
@@ -227,7 +229,8 @@ class OrderRequestCreateServiceTest {
         @DisplayName("단위 환산 정합 위반 → ORD_INVALID_UNIT")
         fun invalidUnit() {
             stubAuthAndAccount()
-            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000)))
+            // 단위는 SAP MinOrderingUnit(BOX)로 결정 → 총 EA 가 환산수량 배수여야 정합.
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000, minOrderingUnit = "BOX")))
 
             // BOX × 10 × conv 30 = 300, 그러나 quantityPieces = 999 송신
             val request = baseRequest(
@@ -361,9 +364,12 @@ class OrderRequestCreateServiceTest {
         account = account(employeeCode = employeeCode),
     )
 
-    private fun inventoryInfo(productCode: String, conv: Int, supply: Int) = InventoryInfo(
+    // minOrderingUnit: 레거시 정합으로 단위는 클라이언트가 아닌 SAP InventorySearch 응답으로 결정됨.
+    // 환산검증/공급제한/SAP 송신 단위가 모두 이 값 기준 (line() 의 unit 은 형식 검증용으로만 사용).
+    private fun inventoryInfo(productCode: String, conv: Int, supply: Int, minOrderingUnit: String = "EA") = InventoryInfo(
         productCode = productCode,
         productName = "STUB_$productCode",
+        minOrderingUnit = minOrderingUnit,
         conversionQuantity = conv,
         supplyLimitQuantity = supply,
         unitPrice = BigDecimal.ZERO,
