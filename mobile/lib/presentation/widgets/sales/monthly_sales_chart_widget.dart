@@ -147,12 +147,13 @@ class _LegacyComparisonChart extends StatelessWidget {
   }
 
   Widget _buildLegend() {
+    // 막대 배치(전년 좌 → 당해 우)와 동일한 순서로 범례를 노출한다.
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _legendItem('당해 실적', _currentColor),
-        const SizedBox(width: 24),
         _legendItem('전년 실적', _previousColor),
+        const SizedBox(width: 24),
+        _legendItem('당해 실적', _currentColor),
       ],
     );
   }
