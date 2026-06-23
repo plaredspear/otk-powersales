@@ -40,6 +40,7 @@ import com.otoki.powersales.domain.foundation.product.repository.ProductReposito
 import com.otoki.powersales.domain.activity.promotion.exception.AccountNotFoundException
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.multipart.MultipartFile
@@ -83,6 +84,10 @@ class ClaimService(
      *
      * @param userId UserPrincipal.userId — Employee.id 와 동일 (조회 정책: ClaimQueryService 와 정합)
      */
+    // 클래스 레벨 @Transactional(readOnly=true) 를 상속하면 메서드 내부 txTemplate(REQUIRED) 이
+    // 그 read-only 트랜잭션에 참여해 INSERT 가 막힌다. 트랜잭션 경계는 txTemplate 으로 직접 관리하므로
+    // 진입 시점엔 트랜잭션이 없어야 한다 (web admin AdminClaimCreateService 와 동일하게 무 트랜잭션 진입).
+    @Transactional(propagation = Propagation.NEVER)
     fun createClaim(
         userId: Long,
         request: ClaimCreateRequest,

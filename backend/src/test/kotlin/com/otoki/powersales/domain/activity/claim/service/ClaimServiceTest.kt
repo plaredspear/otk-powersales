@@ -40,12 +40,15 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.mock.web.MockMultipartFile
+import org.springframework.transaction.annotation.Propagation
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.transaction.support.TransactionCallback
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDate
 import java.util.Optional
 import java.math.BigDecimal
 import java.time.temporal.ChronoUnit
+import kotlin.reflect.full.findAnnotation
 
 @DisplayName("ClaimService 테스트")
 class ClaimServiceTest {
@@ -340,6 +343,20 @@ class ClaimServiceTest {
 
             assertThat(claimSlot.captured.costCenterCode).isEqualTo("CC100")
             assertThat(claimSlot.captured.division).isEqualTo("FS사업부")
+        }
+
+        @Test
+        @DisplayName("createClaim 은 @Transactional(propagation=NEVER) - 클래스 readOnly 트랜잭션 상속 차단")
+        fun createClaimDeclaresPropagationNever() {
+            // 회귀 가드: 클래스 레벨 @Transactional(readOnly=true) 를 상속하면 내부 txTemplate(REQUIRED) 이
+            // 그 read-only 트랜잭션에 참여해 INSERT 가 "cannot execute INSERT in a read-only transaction" 으로 막힌다.
+            // createClaim 은 txTemplate 으로 트랜잭션 경계를 직접 관리하므로 진입 시 트랜잭션이 없어야 한다.
+            val annotation = ClaimService::createClaim.findAnnotation<Transactional>()
+
+            assertThat(annotation)
+                .withFailMessage("createClaim 에 @Transactional(propagation=NEVER) 가 선언되어 있어야 한다")
+                .isNotNull
+            assertThat(annotation!!.propagation).isEqualTo(Propagation.NEVER)
         }
     }
 
