@@ -102,7 +102,7 @@ export default function SapOutboundOutboxTab() {
         showIcon
         style={{ marginBottom: 16 }}
         message="본 탭은 큐에 남아있는 항목입니다 (PENDING + RETRY)."
-        description="정상 발송된 항목은 호출 이력 탭에 표시됩니다. 30초마다 자동 새로고침됩니다."
+        description="정상 발송된 항목은 호출 이력 탭에 표시됩니다."
       />
       <Space style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
         <RefreshButton onRefresh={outboxQuery.refetch} refreshing={outboxQuery.isFetching} />

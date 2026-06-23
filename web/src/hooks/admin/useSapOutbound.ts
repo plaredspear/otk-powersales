@@ -38,15 +38,12 @@ export function useSapOutboundLogDetail(id: number, enabled: boolean = true) {
 }
 
 /**
- * SAP 아웃박스 대기 큐 모니터링 — 30초 주기 자동 새로고침.
- *
- * 운영자가 화면을 켜둔 상태로 큐 적체를 실시간 인지할 수 있도록 [refetchInterval] 30s.
+ * SAP 아웃박스 대기 큐 모니터링 — 수동 새로고침.
  */
 export function useSapOutboundOutboxPending(page: number = 1, size: number = 20) {
   return useQuery({
     queryKey: [...KEY_BASE, 'outbox-pending', page, size],
     queryFn: () => getSapOutboundOutboxPending(page, size),
-    refetchInterval: 30_000,
     placeholderData: (previous) => previous,
   });
 }
