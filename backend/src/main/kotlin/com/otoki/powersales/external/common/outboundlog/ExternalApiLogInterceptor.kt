@@ -33,10 +33,18 @@ import java.time.LocalDateTime
 class ExternalApiLogInterceptor(
     private val target: String,
     private val logService: ExternalApiLogService,
-    private val captureBody: Boolean = false
+    private val captureBody: Boolean = false,
+    /**
+     * 대상 시스템별 추가 적재 위임 콜백 (선택). 주입되면 `captureBody` 와 무관하게 응답 본문을 1회
+     * buffering 해 [OutboundResponseSink.accept] 로 넘긴다 (예: SAP `sap_outbound_log` 적재).
+     */
+    private val responseSink: OutboundResponseSink? = null,
 ) : ClientHttpRequestInterceptor {
 
     private val log = LoggerFactory.getLogger(ExternalApiLogInterceptor::class.java)
+
+    /** 응답 본문을 읽어야 하는지 — body 캡처(dev) 또는 도메인 sink 주입 시. */
+    private val needsResponseBody: Boolean get() = captureBody || responseSink != null
 
     override fun intercept(
         request: org.springframework.http.HttpRequest,
@@ -47,15 +55,15 @@ class ExternalApiLogInterceptor(
         val startNanos = System.nanoTime()
         val method = request.method.name()
         val uri = request.uri.toString()
-        val requestBody = if (captureBody) decodeBody(body) else null
+        val requestBody = decodeBody(body)
 
         try {
             val response = execution.execute(request, body)
             val status = runCatching { response.statusCode.value() }.getOrNull()
             val success = status != null && status in 200..299
 
-            // 본문 캡처 시에만 응답 stream 을 읽고 buffering wrapper 로 다시 감싸 다운스트림에 전달한다.
-            val (responseBody, returned) = if (captureBody) bufferResponse(response) else (null to response)
+            // 응답 본문이 필요할 때만 stream 을 읽고 buffering wrapper 로 다시 감싸 다운스트림에 전달한다.
+            val (responseBody, returned) = if (needsResponseBody) bufferResponse(response) else (null to response)
 
             record(
                 method = method,
@@ -65,9 +73,10 @@ class ExternalApiLogInterceptor(
                 startNanos = startNanos,
                 requestedAt = requestedAt,
                 errorDetail = if (success) null else "HTTP $status",
-                requestBody = requestBody,
-                responseBody = responseBody
+                requestBody = if (captureBody) requestBody else null,
+                responseBody = if (captureBody) responseBody else null
             )
+            notifySink(uri, requestBody, status, responseBody, requestedAt, startNanos, networkError = false)
             return returned
         } catch (ex: IOException) {
             record(
@@ -78,9 +87,10 @@ class ExternalApiLogInterceptor(
                 startNanos = startNanos,
                 requestedAt = requestedAt,
                 errorDetail = "${ex.javaClass.simpleName}: ${ex.message}",
-                requestBody = requestBody,
+                requestBody = if (captureBody) requestBody else null,
                 responseBody = null
             )
+            notifySink(uri, requestBody, null, null, requestedAt, startNanos, networkError = true)
             throw ex
         } catch (ex: RuntimeException) {
             record(
@@ -91,10 +101,37 @@ class ExternalApiLogInterceptor(
                 startNanos = startNanos,
                 requestedAt = requestedAt,
                 errorDetail = "${ex.javaClass.simpleName}: ${ex.message}",
-                requestBody = requestBody,
+                requestBody = if (captureBody) requestBody else null,
                 responseBody = null
             )
+            notifySink(uri, requestBody, null, null, requestedAt, startNanos, networkError = true)
             throw ex
+        }
+    }
+
+    /** 도메인 sink 에 호출 결과를 위임한다 (best-effort — sink 실패가 외부 호출에 영향 없도록 격리). */
+    private fun notifySink(
+        uri: String,
+        requestBody: String?,
+        httpStatus: Int?,
+        responseBody: String?,
+        requestedAt: LocalDateTime,
+        startNanos: Long,
+        networkError: Boolean,
+    ) {
+        val sink = responseSink ?: return
+        try {
+            sink.accept(
+                uri = uri,
+                requestBody = requestBody.orEmpty(),
+                httpStatus = httpStatus,
+                responseBody = responseBody,
+                requestedAt = requestedAt,
+                durationMs = Duration.ofNanos(System.nanoTime() - startNanos).toMillis(),
+                networkError = networkError,
+            )
+        } catch (ex: Exception) {
+            log.error("외부 API 응답 sink 처리 실패 target={} uri={}", target, uri, ex)
         }
     }
 

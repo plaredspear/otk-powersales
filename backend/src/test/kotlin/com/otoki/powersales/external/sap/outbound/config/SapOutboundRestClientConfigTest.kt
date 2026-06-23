@@ -90,10 +90,10 @@ class SapOutboundRestClientConfigTest {
     }
 
     @Test
-    @DisplayName("두 인터셉터 동시 등록 — 응답 본문이 다운스트림에 온전히 전달되고 각 logService 가 1회씩 호출된다")
-    fun bothInterceptorsRecordAndPassThroughBody() {
-        // captureBody=true 로 ExternalApiLogInterceptor 도 응답 stream 을 읽게 한다 — 두 인터셉터가
-        // 같은 응답을 연쇄 소비해도 다운스트림이 본문을 다시 읽을 수 있는지(이중 buffering) 검증.
+    @DisplayName("인터셉터 1개 + SAP sink — 응답 본문이 다운스트림에 온전히 전달되고 각 logService 가 1회씩 호출된다")
+    fun interceptorWithSinkRecordsBothAndPassesThroughBody() {
+        // captureBody=true 로 응답 stream 을 읽게 한다 — 범용 인터셉터가 본문을 1회 buffering 한 뒤
+        // external_api_log 적재 + SAP sink 위임을 모두 수행해도 다운스트림이 본문을 다시 읽을 수 있는지 검증.
         val fixture = newFixture(captureBody = true)
         val builder = fixture.config.restClientBuilder(fixture.config.sapOutboundObjectMapper())
             .baseUrl("http://sap-mock")

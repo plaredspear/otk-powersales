@@ -65,7 +65,7 @@ class DisplayMasterSapSender(
         val interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER
         val endpointPath = "/$interfaceId"
 
-        // 실제 HTTP 호출 이력은 SapOutboundLogInterceptor 가 sap_outbound_log 로 일괄 적재한다.
+        // 실제 HTTP 호출 이력은 ExternalApiLogInterceptor → SapOutboundResponseSink 가 sap_outbound_log 로 일괄 적재한다.
         return try {
             val response = restClient.post()
                 .uri(endpointPath)

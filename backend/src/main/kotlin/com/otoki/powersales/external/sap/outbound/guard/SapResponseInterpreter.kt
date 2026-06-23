@@ -7,7 +7,7 @@ import tools.jackson.databind.ObjectMapper
  *
  * SAP 정상 응답은 `{"resultCode":"S", ...}` 형태이며, 메시지 필드는 SAP 측 오타로 `resutlMsg` 가
  * 1순위, 표준 철자 `resultMsg` 가 fallback 이다. 이 규칙은 [com.otoki.powersales.external.sap.outbox.SapOutboxBatchService]
- * (범용 outbox 송신) 과 [com.otoki.powersales.external.sap.outbound.SapOutboundLogInterceptor]
+ * (범용 outbox 송신) 과 [com.otoki.powersales.external.sap.outbound.SapOutboundResponseSink]
  * (모든 SAP outbound 호출 이력 적재) 가 공유한다 — 한쪽만 고쳐져 해석이 어긋나는 것을 막는다.
  */
 object SapResponseInterpreter {
