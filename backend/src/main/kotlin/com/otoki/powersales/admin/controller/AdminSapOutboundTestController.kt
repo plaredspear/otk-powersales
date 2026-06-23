@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.request.BatchDateTestRequest
 import com.otoki.powersales.admin.dto.request.LoanInquiryTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestCancelTestRequest
+import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestRegisterTestRequest
 import com.otoki.powersales.admin.dto.request.PPTMasterTestRequest
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * Admin SAP outbound 테스트 endpoint — 7개 sender 모두에 대한 preview / send.
+ * Admin SAP outbound 테스트 endpoint — 각 sender 에 대한 preview / send.
  *
  * - preview: 페이로드만 빌드, SAP 송신 안 함. SAP 호출 없이 빌드 결과를 검증할 때 사용.
  * - send: 실제 SAP 송신. BATCH 류는 sap_outbound_log 자동 적재, OUTBOX 류는 sap_outbox 적재.
@@ -64,6 +65,22 @@ class AdminSapOutboundTestController(
         @RequestBody req: OrderRequestDetailTestRequest,
     ): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
         ResponseEntity.ok(ApiResponse.success(service.sendOrderRequestDetail(req)))
+
+    // ===== InventorySearch =====
+
+    @PostMapping("/inventory-search/preview")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
+    fun previewInventorySearch(
+        @RequestBody req: InventorySearchTestRequest,
+    ): ResponseEntity<ApiResponse<SapOutboundTestPreviewResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.previewInventorySearch(req)))
+
+    @PostMapping("/inventory-search/send")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun sendInventorySearch(
+        @RequestBody req: InventorySearchTestRequest,
+    ): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.sendInventorySearch(req)))
 
     // ===== OrderRequestCancel =====
 

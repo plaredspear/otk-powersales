@@ -15173,6 +15173,24 @@
         },
         "type" : "object"
       },
+      "InventorySearchTestRequest" : {
+        "properties" : {
+          "deliveryDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "externalKey" : {
+            "type" : "string"
+          },
+          "productCodes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "LeaderAccountListResponse" : {
         "properties" : {
           "accountGroup" : {
@@ -32737,6 +32755,62 @@
     "/api/v1/admin/sap-integration/outbound/test/display-master/send-empty" : {
       "post" : {
         "operationId" : "sendDisplayMasterEmpty",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestSendResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/inventory-search/preview" : {
+      "post" : {
+        "operationId" : "previewInventorySearch",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InventorySearchTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/inventory-search/send" : {
+      "post" : {
+        "operationId" : "sendInventorySearch",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InventorySearchTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {

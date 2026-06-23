@@ -112,6 +112,65 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
     },
   },
   {
+    kind: 'inventory-search',
+    interfaceId: 'SD03070',
+    title: '재고 조회 (InventorySearch)',
+    tabLabel: '재고 조회',
+    description:
+      '거래처 SAP 코드 + 제품 코드 목록 + 납기일로 SAP 재고/공급제한/환산수량/발주단위를 동기 조회합니다. 실제 SAP 호출 발생 (조회만 — 운영 데이터 변경 없음).',
+    triggerTag: 'REALTIME',
+    renderForm: (state, update) => (
+      <Form layout="vertical">
+        <Form.Item
+          label="externalKey (account.external_key)"
+          required
+          help="Account.externalKey ≡ SAP 거래처 코드"
+        >
+          <Input
+            placeholder="예: 1032619"
+            value={(state.externalKey as string) ?? ''}
+            onChange={(e) => update({ externalKey: e.target.value })}
+          />
+        </Form.Item>
+        <Form.Item
+          label="productCodes (콤마 또는 줄바꿈 구분)"
+          required
+          help="요청 라인의 제품 코드 전체. 예: 1000123, 1000456"
+        >
+          <Input.TextArea
+            rows={3}
+            placeholder="1000123, 1000456"
+            value={(state.productCodesRaw as string) ?? ''}
+            onChange={(e) => update({ productCodesRaw: e.target.value })}
+          />
+        </Form.Item>
+        <Form.Item label="deliveryDate (납기 요청일, 기본 = 오늘)">
+          <DatePicker
+            style={{ width: '100%' }}
+            value={state.deliveryDate as Dayjs | undefined}
+            onChange={(v) => update({ deliveryDate: v ?? undefined })}
+          />
+        </Form.Item>
+      </Form>
+    ),
+    toBody: (state) => {
+      const externalKey = (state.externalKey as string | undefined)?.trim();
+      if (!externalKey) throw new Error('externalKey 를 입력하세요');
+      const raw = ((state.productCodesRaw as string) ?? '').trim();
+      const productCodes = raw
+        ? raw
+            .split(/[,\n]/)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0)
+        : [];
+      if (productCodes.length === 0) throw new Error('productCodes 를 1개 이상 입력하세요');
+      const body: Record<string, unknown> = { externalKey, productCodes };
+      const d = state.deliveryDate as Dayjs | undefined;
+      if (d) body.deliveryDate = d.format('YYYY-MM-DD');
+      return body;
+    },
+  },
+  {
     kind: 'order-request-cancel',
     interfaceId: 'SD03051',
     title: '주문 요청 취소 (OrderChange)',

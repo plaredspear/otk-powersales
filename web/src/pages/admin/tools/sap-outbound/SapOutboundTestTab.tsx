@@ -11,7 +11,7 @@ import {
 /**
  * SAP Outbound 전용 페이지의 '테스트 송신' 탭.
  *
- * 7개 인터페이스를 라디오 버튼으로 선택해 한 화면에서 폼/미리보기/실송신한다.
+ * outbound 인터페이스를 라디오 버튼으로 선택해 한 화면에서 폼/미리보기/실송신한다.
  * 인터페이스별 폼·송신 로직은 `SapOutboundSenderCard` + `sapOutboundSenderConfigs` 가 단일 출처.
  */
 export default function SapOutboundTestTab() {

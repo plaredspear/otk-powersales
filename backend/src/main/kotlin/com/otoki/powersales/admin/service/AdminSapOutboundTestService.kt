@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.request.BatchDateTestRequest
 import com.otoki.powersales.admin.dto.request.LoanInquiryTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestCancelTestRequest
+import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestRegisterTestRequest
 import com.otoki.powersales.admin.dto.request.PPTMasterTestRequest
@@ -22,6 +23,7 @@ import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbound.sender.TeamMemberScheduleSapSender
 import com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender
 import com.otoki.powersales.external.sap.outbound.sender.LoanInquirySender
+import com.otoki.powersales.external.sap.outbound.sender.InventorySearchSender
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import com.otoki.powersales.external.sap.outbound.sender.PPTMasterSapSender
@@ -39,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 
 /**
- * Admin SAP outbound 테스트 service — 7개 sender 모두에 대한 preview / send 진입점.
+ * Admin SAP outbound 테스트 service — 각 sender 에 대한 preview / send 진입점.
  *
  * - preview: payload 빌드까지만 수행, 송신 안 함
  * - send: 실제 sender 호출. BATCH 류는 `sap_outbound_log` 적재, OUTBOX 류는 `sap_outbox` 적재,
@@ -54,6 +56,7 @@ class AdminSapOutboundTestService(
     // realtime sender 들
     private val loanInquirySender: LoanInquirySender,
     private val orderRequestDetailSapSender: OrderRequestDetailSapSender,
+    private val inventorySearchSender: InventorySearchSender,
     private val orderRequestCancelSender: OrderRequestCancelSender,
     private val orderRequestCancelPayloadFactory: OrderRequestCancelPayloadFactory,
     // outbox sender
@@ -125,6 +128,70 @@ class AdminSapOutboundTestService(
             message = if (result == null) "SAP 호출 실패 또는 응답 오류" else "라인 ${result.size}건 수신",
             result = result,
         )
+    }
+
+    // ===== InventorySearch =====
+
+    fun previewInventorySearch(req: InventorySearchTestRequest): SapOutboundTestPreviewResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_INVENTORY_SEARCH
+        val (externalKey, productCodes, deliveryDate) = normalizeInventorySearch(req)
+        val dateStr = deliveryDate.format(SAP_YYYYMMDD)
+        val requestItems = productCodes.map { code ->
+            mapOf(
+                "SAPAccountCode" to externalKey,
+                "ProductCode" to code,
+                "DeliveryRequestDate" to dateStr,
+            )
+        }
+        return SapOutboundTestPreviewResponse(
+            interfaceId = interfaceId,
+            endpointPath = "/$interfaceId",
+            payload = mapOf("request" to requestItems),
+            summary = "externalKey=$externalKey productCodes=${productCodes.size} deliveryDate=$deliveryDate",
+        )
+    }
+
+    fun sendInventorySearch(req: InventorySearchTestRequest): SapOutboundTestSendResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_INVENTORY_SEARCH
+        val (externalKey, productCodes, deliveryDate) = normalizeInventorySearch(req)
+        return try {
+            val items = inventorySearchSender.search(externalKey, productCodes, deliveryDate)
+            SapOutboundTestSendResponse(
+                interfaceId = interfaceId,
+                success = true,
+                message = "SAP 재고 조회 성공 — 응답 ${items.size}건 (요청 ${productCodes.size}건)",
+                result = items,
+            )
+        } catch (ex: Exception) {
+            SapOutboundTestSendResponse(
+                interfaceId = interfaceId,
+                success = false,
+                message = ex.message ?: ex.javaClass.simpleName,
+            )
+        }
+    }
+
+    /** externalKey/productCodes 공백 정리 + deliveryDate 기본값(오늘) 적용. 비면 검증 예외. */
+    private fun normalizeInventorySearch(
+        req: InventorySearchTestRequest,
+    ): Triple<String, List<String>, LocalDate> {
+        val externalKey = req.externalKey.trim()
+        if (externalKey.isEmpty()) {
+            throw BusinessException(
+                errorCode = "INVENTORY_SEARCH_MISSING_EXTERNAL_KEY",
+                message = "externalKey 를 입력하세요",
+                httpStatus = HttpStatus.BAD_REQUEST,
+            )
+        }
+        val productCodes = req.productCodes.map { it.trim() }.filter { it.isNotEmpty() }
+        if (productCodes.isEmpty()) {
+            throw BusinessException(
+                errorCode = "INVENTORY_SEARCH_MISSING_PRODUCT_CODES",
+                message = "productCodes 를 1개 이상 입력하세요",
+                httpStatus = HttpStatus.BAD_REQUEST,
+            )
+        }
+        return Triple(externalKey, productCodes, req.deliveryDate ?: LocalDate.now())
     }
 
     // ===== OrderRequestCancel =====
@@ -421,5 +488,9 @@ class AdminSapOutboundTestService(
         private const val ATTENDANCE_DEFAULT_PAGE_SIZE = 100
         private const val DISPLAY_DEFAULT_PAGE_SIZE = 100
         private const val PPT_DEFAULT_PAGE_SIZE = 100
+
+        /** SAP InventorySearch DeliveryRequestDate 포맷 (preview payload 미리보기용). */
+        private val SAP_YYYYMMDD: java.time.format.DateTimeFormatter =
+            java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 }

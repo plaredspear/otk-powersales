@@ -2,7 +2,7 @@ import client from '@/api/client';
 import type { ApiResponse } from '../types';
 
 /**
- * Admin SAP outbound 테스트 API — 7개 sender 모두에 preview / send.
+ * Admin SAP outbound 테스트 API — 각 sender 에 preview / send.
  *
  * 백엔드 `/api/v1/admin/sap-integration/outbound/test/**` 호출.
  * - preview: `VIEW_ALL_DATA` 권한
@@ -28,6 +28,7 @@ export interface SapOutboundTestSendResponse {
 export type SapOutboundTestKind =
   | 'loan-inquiry'
   | 'order-request-detail'
+  | 'inventory-search'
   | 'order-request-cancel'
   | 'order-request-register'
   | 'attendance'
