@@ -2,6 +2,8 @@ package com.otoki.powersales.domain.activity.order.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreateLine
@@ -47,6 +49,7 @@ class OrderRequestCreateServiceTest {
 
     private val orderRequestRepository: OrderRequestRepository = mockk()
     private val orderRequestProductRepository: OrderRequestProductRepository = mockk()
+    private val productRepository: ProductRepository = mockk()
     private val accountRepository: AccountRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val inventorySearchClient: SapInventorySearchClient = mockk()
@@ -60,6 +63,7 @@ class OrderRequestCreateServiceTest {
     private val service = OrderRequestCreateService(
         orderRequestRepository,
         orderRequestProductRepository,
+        productRepository,
         accountRepository,
         employeeRepository,
         inventorySearchClient,
@@ -81,6 +85,9 @@ class OrderRequestCreateServiceTest {
         every { nativeQuery.singleResult } returns 42L
         every { orderRequestRepository.findByClientRequestId(any()) } returns null
         every { orderDraftService.deleteByEmployeeId(any()) } returns Unit
+        // 기본: 제품 마스터 미존재 → product FK null 허용 (라인은 productCode 로 보존).
+        // product FK 채움을 검증하는 테스트는 개별 stub 으로 덮어쓴다.
+        every { productRepository.findByProductCodeIn(any()) } returns emptyList()
     }
 
     @Nested
@@ -94,7 +101,11 @@ class OrderRequestCreateServiceTest {
             stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 30, supply = 1000, minOrderingUnit = "BOX")))
             every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
             every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
-            every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
+            // product FK 채움 검증 — productCode 로 Product 일괄 조회 후 라인에 set 되어야 한다.
+            val product = Product(id = 99L, productCode = "P001")
+            every { productRepository.findByProductCodeIn(listOf("P001")) } returns listOf(product)
+            val savedLines = slot<List<OrderRequestProduct>>()
+            every { orderRequestProductRepository.saveAll(capture(savedLines)) } answers { firstArg() }
             every { orderRequestRegisterSender.enqueue(any(), any()) } returns
                 SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
 
@@ -108,6 +119,8 @@ class OrderRequestCreateServiceTest {
             assertThat(response.orderRequestNumber).isEqualTo("OR00000042")
             assertThat(response.status).isEqualTo(OrderRequestStatus.SENT.name)
             assertThat(response.statusName).isEqualTo(OrderRequestStatus.SENT.displayName)
+            // 라인의 product FK 가 productCode 로 resolve 되어 채워졌는지 확인 (product_id 미적재 회귀 방지).
+            assertThat(savedLines.captured.single().product).isSameAs(product)
             verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
             // SD03050 송신 트리거: 등록 직후 OrderRequestRegisteredEvent 발행 (커밋 후 비동기 송신).
             verify(exactly = 1) { eventPublisher.publishEvent(ofType(OrderRequestRegisteredEvent::class)) }
