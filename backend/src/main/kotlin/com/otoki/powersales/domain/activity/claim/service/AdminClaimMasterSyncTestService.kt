@@ -3,8 +3,9 @@ package com.otoki.powersales.domain.activity.claim.service
 import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimMasterSyncTestRequest
 import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimMasterSyncTestResponse
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
-import com.otoki.powersales.external.sf.outbound.SfOAuthFailedException
 import com.otoki.powersales.external.sf.outbound.SfOutboundClient
+import com.otoki.powersales.external.sf.outbound.SfOAuthFailedException
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import org.slf4j.LoggerFactory
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -12,6 +13,8 @@ import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.core.type.TypeReference
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * SF Apex REST `/IF_SendClaimToPWS` 클레임 마스터 조회 + 갱신 서비스 (개발자 도구 — 외부 API 테스트).
@@ -83,7 +86,38 @@ class AdminClaimMasterSyncTestService(
     }
 
     /**
-     * 파싱된 레코드들을 한 트랜잭션에서 claim 에 적용한다 (SF I/O 는 트랜잭션 밖 — [test] 에서 호출 완료 후 진입).
+     * 주기 배치 진입점 — SF fetch → pwrskey 매칭 claim 갱신. ([com.otoki.powersales.platform.batch.ClaimMasterSyncBatch])
+     *
+     * 테스트 도구([test])와 동일한 fetch/parse/갱신 경로를 쓰되, 응답 DTO 대신 [UpdateResult] 를 반환하고
+     * 실행 통계를 [ScheduledJobRunContext] metadata 로 기록한다. SF 호출 실패는 throw 하여 배치 러너가
+     * FAILURE 로 이력에 남기도록 한다(테스트 도구는 흡수했지만, 배치는 실패를 가시화).
+     *
+     * @param modDt SF 조회 기준 일자 (YYYYMMDD). 미지정 시 오늘 — 주기 배치가 당일 변경분을 가져온다.
+     */
+    fun sync(
+        context: ScheduledJobRunContext? = null,
+        modDt: String = LocalDate.now().format(MOD_DT_FORMAT),
+    ): UpdateResult {
+        val apiResponse = sfOutboundClient.callApi(SF_ENDPOINT, mapOf("MOD_DT" to modDt))
+        val records = parseRecords(apiResponse.rawBody)
+        val result = applyUpdates(records)
+        context?.metadata(
+            mapOf(
+                "fetched" to result.fetched,
+                "updated" to result.updated,
+                "notFound" to result.notFound,
+                "skipped" to result.skipped,
+            )
+        )
+        log.info(
+            "[claim-master-sync] 배치 완료 — modDt={} resultCode={} fetched={} updated={} notFound={} skipped={}",
+            modDt, apiResponse.resultCode, result.fetched, result.updated, result.notFound, result.skipped,
+        )
+        return result
+    }
+
+    /**
+     * 파싱된 레코드들을 한 트랜잭션에서 claim 에 적용한다 (SF I/O 는 트랜잭션 밖 — [test]/[sync] 에서 호출 완료 후 진입).
      * pwrskey(=claim_id) 로 claim 을 찾아 존재하면 6필드를 신규 데이터로 갱신한다.
      */
     fun applyUpdates(records: List<ClaimMasterSfRecord>): UpdateResult = txTemplate.execute {
@@ -167,5 +201,8 @@ class AdminClaimMasterSyncTestService(
 
         /** SF 응답 wrapper key 후보 (sales-progress fetch 와 동일 순서). */
         private val WRAPPER_KEYS = listOf("data", "DATA", "list", "LIST", "result", "RESULT", "items")
+
+        /** SF Request Body MOD_DT 형식 (YYYYMMDD). */
+        private val MOD_DT_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 }

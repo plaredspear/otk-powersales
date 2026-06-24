@@ -75,6 +75,16 @@ object ScheduledJobCatalog {
             description = "거래처목표등록마스터 SF fetch → upsert sync (기본 1시간 주기)",
         ),
         Entry(
+            jobName = ClaimMasterSyncBatch.JOB_NAME,
+            cron = ClaimMasterSyncBatch.CRON,
+            description = "SF 클레임 상태 업데이트 — IF_SendClaimToPWS fetch → pwrskey 매칭 claim 조치/상담 6필드 갱신 (기본 매시 정각, 1시간 주기)",
+        ),
+        Entry(
+            jobName = LogisticsClaimMasterSyncBatch.JOB_NAME,
+            cron = LogisticsClaimMasterSyncBatch.CRON,
+            description = "SF 물류 클레임 상태 업데이트 — IF_SendLogisticsClaimToPWS fetch → pwrskey 매칭 제안 조치 6필드 갱신 (기본 매시 30분, 1시간 주기)",
+        ),
+        Entry(
             jobName = StaffReviewSyncBatch.JOB_NAME,
             cron = StaffReviewSyncBatch.CRON,
             description = "사원평가 마스터 SF fetch → upsert sync (기본 매일 03시)",
