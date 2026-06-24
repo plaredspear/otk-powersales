@@ -104,8 +104,8 @@ class OrderRequestCreateServiceTest {
 
             val response = service.create(userId, request)
 
-            assertThat(response.orderRequestNumber).startsWith("ORD-")
-            assertThat(response.orderRequestNumber).endsWith("-42")
+            // 레거시 SF Auto Number `OP{00000000}` 동폭: prefix OR + 8자리 zero-pad (seq=42)
+            assertThat(response.orderRequestNumber).isEqualTo("OR00000042")
             assertThat(response.status).isEqualTo(OrderRequestStatus.SENT.name)
             assertThat(response.statusName).isEqualTo(OrderRequestStatus.SENT.displayName)
             verify(exactly = 1) { orderRequestRegisterSender.enqueue(any(), any()) }
@@ -191,7 +191,7 @@ class OrderRequestCreateServiceTest {
         @Test
         @DisplayName("멱등 — 동일 clientRequestId 재요청 시 기존 row 응답, 신규 INSERT 없음")
         fun idempotent() {
-            val existing = mockHeader(orderRequestNumber = "ORD-20260505-1", status = OrderRequestStatus.APPROVED)
+            val existing = mockHeader(orderRequestNumber = "OR00000001", status = OrderRequestStatus.APPROVED)
             every { orderRequestRepository.findByClientRequestId("idem-1") } returns existing
 
             val request = baseRequest(

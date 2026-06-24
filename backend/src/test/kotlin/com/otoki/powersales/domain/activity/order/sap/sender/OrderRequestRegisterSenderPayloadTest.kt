@@ -44,7 +44,7 @@ class OrderRequestRegisterSenderPayloadTest {
         assertThat(header.keys).containsExactlyInAnyOrder(
             "RequestNumber", "SAPAccountCode", "OrderDate", "DeliveryRequestDate",
         )
-        assertThat(header["RequestNumber"]).isEqualTo("ORD-20260504-000001")
+        assertThat(header["RequestNumber"]).isEqualTo("OR00000001")
         assertThat(header["SAPAccountCode"]).isEqualTo("EXT-1")
         // 레거시 IF_Util.cls:169 = yyyyMMdd HHmm (날짜·시각 사이 공백 1칸)
         assertThat(header["OrderDate"]).isEqualTo("20260504 1430")
@@ -133,7 +133,7 @@ class OrderRequestRegisterSenderPayloadTest {
 
     private fun orderRequest() = OrderRequest(
         id = 1L,
-        orderRequestNumber = "ORD-20260504-000001",
+        orderRequestNumber = "OR00000001",
         orderDate = LocalDateTime.of(2026, 5, 4, 14, 30),
         deliveryDate = LocalDate.of(2026, 5, 6),
         totalAmount = BigDecimal("100000"),

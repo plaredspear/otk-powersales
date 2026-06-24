@@ -273,7 +273,7 @@ class OrderCancelServiceTest {
         employee: Employee = Employee(id = userId, employeeCode = employeeCode, name = "tester", role = AppAuthority.WOMAN),
     ) = OrderRequest(
         id = orderRequestId,
-        orderRequestNumber = "ORD-20260504-000001",
+        orderRequestNumber = "OR00000001",
         orderDate = LocalDateTime.of(2026, 4, 28, 10, 0),
         deliveryDate = deliveryDate,
         totalAmount = BigDecimal("100000"),
