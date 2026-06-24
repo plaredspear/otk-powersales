@@ -29,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * 주문 등록 핵심 트랜잭션 서비스 (Spec #592).
@@ -39,7 +38,7 @@ import java.time.format.DateTimeFormatter
  *  2. 입력 검증 — 형식 / 미래 일자 (거래처 담당 재검증 없음 — 레거시 정합, 일정 기반 셀렉터만 게이트)
  *  3. SAP `InventorySearch` 1회 호출 — 단위 환산/공급제한/제품마스터 메타 일괄 조회 (응답 라인 누락 시 거부)
  *  4. SAP `LoanInquiry` 호출 — 여신 한도 서버 재검증 (`creditBalance >= totalAmount`)
- *  5. `order_request` 헤더 INSERT — 백엔드 자체 채번 `ORD-YYYYMMDD-{seq}`, 초기 status `SENT`
+ *  5. `order_request` 헤더 INSERT — 백엔드 자체 채번 `OR{00000000}` (레거시 SF Auto Number 동폭), 초기 status `SENT`
  *  6. `order_request_product` 라인 일괄 INSERT — `pieces_per_box` 등록 시점 스냅샷 (#595 의존)
  *  7. `sap_outbox` 행 INSERT — `domain_type='ORDER_REQUEST_REGISTER'`, status `PENDING`
  *
@@ -98,9 +97,7 @@ class OrderRequestCreateService(
 
         // 5. order_request 헤더 INSERT
         val now = LocalDateTime.now()
-        val orderRequestNumber = nextOrderRequestNumber(
-            now.toLocalDate()
-        )
+        val orderRequestNumber = nextOrderRequestNumber()
         val header = OrderRequest(
             orderRequestNumber = orderRequestNumber,
             clientRequestId = request.clientRequestId,
@@ -209,16 +206,19 @@ class OrderRequestCreateService(
         }
     }
 
-    private fun nextOrderRequestNumber(today: LocalDate): String {
+    // 레거시 SF Auto Number `OP{00000000}` 와 동일 폭 (prefix 2자 + 8자리) 으로 채번.
+    // prefix 는 SF 사용분(OP/OG/EP …)과 충돌하지 않는 OR 로 분리 — 마이그레이션 데이터와 번호공간 미겹침.
+    private fun nextOrderRequestNumber(): String {
         val seq = entityManager
             .createNativeQuery("SELECT nextval('powersales.order_request_number_seq')")
             .singleResult as Number
-        return "ORD-${today.format(YYYYMMDD)}-${seq.toLong()}"
+        return "$ORDER_REQUEST_NUMBER_PREFIX${seq.toLong().toString().padStart(ORDER_REQUEST_NUMBER_DIGITS, '0')}"
     }
 
     companion object {
         private const val UNIT_EA = "EA"
         private val ALLOWED_UNITS = setOf("BOX", "EA")
-        private val YYYYMMDD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+        private const val ORDER_REQUEST_NUMBER_PREFIX = "OR"
+        private const val ORDER_REQUEST_NUMBER_DIGITS = 8
     }
 }

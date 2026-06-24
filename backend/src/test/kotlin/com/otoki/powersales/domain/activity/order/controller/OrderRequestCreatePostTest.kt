@@ -44,7 +44,7 @@ class OrderRequestCreatePostTest : MobileControllerTestSupport() {
     fun success() {
         val response = OrderRequestCreateResponse(
             orderRequestId = 12345L,
-            orderRequestNumber = "ORD-20260505-42",
+            orderRequestNumber = "OR00000042",
             status = OrderRequestStatus.SENT.name,
             statusName = OrderRequestStatus.SENT.displayName,
             totalAmount = BigDecimal.valueOf(1234567),
@@ -61,7 +61,7 @@ class OrderRequestCreatePostTest : MobileControllerTestSupport() {
             .andExpect(status().isCreated)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.orderRequestId").value(12345L))
-            .andExpect(jsonPath("$.data.orderRequestNumber").value("ORD-20260505-42"))
+            .andExpect(jsonPath("$.data.orderRequestNumber").value("OR00000042"))
             .andExpect(jsonPath("$.data.status").value("SENT"))
             .andExpect(jsonPath("$.data.statusName").value("전송"))
     }

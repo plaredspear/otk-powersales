@@ -214,7 +214,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
             every { orderCancelService.cancel(any(), any(), any()) } returns
                 OrderCancelResponse(
                     orderRequestId = 12345L,
-                    orderRequestNumber = "ORD-20260504-12345",
+                    orderRequestNumber = "OR00012345",
                     orderRequestStatus = OrderRequestStatus.CANCELED.name,
                     orderRequestStatusName = OrderRequestStatus.CANCELED.displayName,
                     cancelledLines = listOf(
@@ -241,7 +241,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
             every { orderCancelService.cancel(any(), any(), any()) } returns
                 OrderCancelResponse(
                     orderRequestId = 12345L,
-                    orderRequestNumber = "ORD-20260504-12345",
+                    orderRequestNumber = "OR00012345",
                     orderRequestStatus = OrderRequestStatus.APPROVED.name,
                     orderRequestStatusName = OrderRequestStatus.APPROVED.displayName,
                     cancelledLines = listOf(

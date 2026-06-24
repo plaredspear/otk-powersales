@@ -32,7 +32,7 @@ class OrderRequestCancelPayloadFactoryTest {
         // 헤더: reqItemList 키에 { RequestNumber } 객체 (cls:76)
         @Suppress("UNCHECKED_CAST")
         val header = payload["reqItemList"] as Map<String, Any?>
-        assertThat(header["RequestNumber"]).isEqualTo("ORD-20260504-000001")
+        assertThat(header["RequestNumber"]).isEqualTo("OR00000001")
         assertThat(payload).doesNotContainKey("RequestNumber") // 최상위 평면 키 아님
 
         // 라인: ItemList 키 (cls:95), LineNumber 는 숫자(BigDecimal) — 레거시 Decimal 동등
@@ -53,7 +53,7 @@ class OrderRequestCancelPayloadFactoryTest {
         val payload = factory.build(orderRequest(), emptyList())
         @Suppress("UNCHECKED_CAST")
         val header = payload["reqItemList"] as Map<String, Any?>
-        assertThat(header["RequestNumber"]).isEqualTo("ORD-20260504-000001")
+        assertThat(header["RequestNumber"]).isEqualTo("OR00000001")
         @Suppress("UNCHECKED_CAST")
         val items = payload["ItemList"] as List<Map<String, Any?>>
         assertThat(items).isEmpty()
@@ -61,7 +61,7 @@ class OrderRequestCancelPayloadFactoryTest {
 
     private fun orderRequest(
         id: Long = 1L,
-        number: String = "ORD-20260504-000001",
+        number: String = "OR00000001",
     ) = OrderRequest(
         id = id,
         orderRequestNumber = number,

@@ -25,7 +25,7 @@ class OrderRequestCancelSenderTest {
     private val objectMapper = ObjectMapper()
 
     private val payload = mapOf(
-        "RequestNumber" to "ORD-20260504-000001",
+        "RequestNumber" to "OR00000001",
         "reqItemList" to listOf(
             mapOf("LineNumber" to "10", "ProductCode" to "P001", "LineChangeType" to "X"),
         ),
