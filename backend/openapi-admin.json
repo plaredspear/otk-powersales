@@ -14372,6 +14372,9 @@
           "description" : {
             "type" : "string"
           },
+          "enabled" : {
+            "type" : "boolean"
+          },
           "jobName" : {
             "type" : "string"
           }
