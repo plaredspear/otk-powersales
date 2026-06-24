@@ -33,6 +33,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    // 사번/비밀번호 입력값 변화 시 clear(X) 버튼 노출 여부를 갱신하기 위해 리스너를 건다.
+    _employeeCodeController.addListener(_onInputChanged);
+    _passwordController.addListener(_onInputChanged);
+
     // 저장된 사번 로드를 보장한다. 정상 기동은 스플래시의 initialize() 가 이미 로드하지만,
     // 로그아웃 재생성 세션은 스플래시를 건너뛰므로 여기서 직접 로드해 프리필이 깨지지 않게 한다.
     // (값이 채워지면 build 의 _loadSavedSettings 가 컨트롤러에 반영한다.)
@@ -94,8 +98,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  /// 입력값이 비었는지 여부에 따라 각 필드의 clear 버튼을 표시/숨김 처리한다.
+  void _onInputChanged() {
+    setState(() {});
+  }
+
   @override
   void dispose() {
+    _employeeCodeController.removeListener(_onInputChanged);
+    _passwordController.removeListener(_onInputChanged);
     _employeeCodeController.dispose();
     _passwordController.dispose();
     _passwordFocusNode.dispose();
@@ -260,6 +271,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         fillColor: AppColors.white,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        // 입력값이 있을 때만 전체 삭제(X) 버튼을 노출한다.
+        suffixIcon: _employeeCodeController.text.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                color: AppColors.textTertiary,
+                splashRadius: 18,
+                tooltip: '입력 내용 지우기',
+                onPressed: () {
+                  _employeeCodeController.clear();
+                },
+              ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
@@ -310,6 +333,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         fillColor: AppColors.white,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        // 입력값이 있을 때만 전체 삭제(X) 버튼을 노출한다.
+        suffixIcon: _passwordController.text.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                color: AppColors.textTertiary,
+                splashRadius: 18,
+                tooltip: '입력 내용 지우기',
+                onPressed: () {
+                  _passwordController.clear();
+                },
+              ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           borderSide: const BorderSide(color: Color(0xFFD0D0D0)),
