@@ -181,6 +181,8 @@ class MobileClaimServiceTest {
         assertThat(apiMapSlot.captured["Channel"]).isEqualTo(ClaimChannel.CAP.name)
         assertThat(apiMapSlot.captured["EmployeeCode"]).isEqualTo("EMP001")
         assertThat(apiMapSlot.captured["SAPAccountCode"]).isEqualTo("SAP001")
+        // pwrskey — Tx1 insert 후 확보한 claim PK 를 문자열로 전송 (save mock 이 입력 claim 을 그대로 반환)
+        assertThat(apiMapSlot.captured["pwrskey"]).isEqualTo(claimSlot.captured.id.toString())
         // 성공 → status SENT 전이
         assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SENT)
     }

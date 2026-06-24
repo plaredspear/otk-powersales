@@ -39,8 +39,11 @@ class ClaimSfOutboundService(
 
     /**
      * 신규 등록 push — MultipartFile bytes 를 직접 Base64 인코딩.
+     *
+     * @param pwrskey 등록된 claim 의 PowerSales primary key (`claim_id`). SF 역연결용. [buildApiMapFromBytes] 참조.
      */
     fun pushToSf(
+        pwrskey: Long,
         employeeCode: String,
         sapAccountCode: String,
         productCode: String,
@@ -54,6 +57,7 @@ class ClaimSfOutboundService(
         receiptKey: String?,
     ): SfPushResult {
         val apiMap = buildApiMap(
+            pwrskey = pwrskey,
             employeeCode = employeeCode,
             sapAccountCode = sapAccountCode,
             productCode = productCode,
@@ -68,8 +72,11 @@ class ClaimSfOutboundService(
 
     /**
      * 재전송 push — S3 에 이미 업로드된 이미지를 다시 읽어 Base64 인코딩.
+     *
+     * @param pwrskey 재전송 대상 claim 의 PowerSales primary key (`claim_id`). SF 역연결용. [buildApiMapFromBytes] 참조.
      */
     fun pushToSfFromStored(
+        pwrskey: Long,
         employeeCode: String,
         sapAccountCode: String,
         productCode: String,
@@ -89,6 +96,7 @@ class ClaimSfOutboundService(
         val partBytes = storageService.downloadPrivate(partKey)
         val receiptBytes = receiptKey?.let { storageService.downloadPrivate(it) }
         val apiMap = buildApiMapFromBytes(
+            pwrskey = pwrskey,
             employeeCode = employeeCode,
             sapAccountCode = sapAccountCode,
             productCode = productCode,
@@ -133,6 +141,7 @@ class ClaimSfOutboundService(
     }
 
     private fun buildApiMap(
+        pwrskey: Long,
         employeeCode: String,
         sapAccountCode: String,
         productCode: String,
@@ -142,6 +151,7 @@ class ClaimSfOutboundService(
         partPhoto: MultipartFile,
         receiptPhoto: MultipartFile?,
     ): Map<String, Any?> = buildApiMapFromBytes(
+        pwrskey = pwrskey,
         employeeCode = employeeCode,
         sapAccountCode = sapAccountCode,
         productCode = productCode,
@@ -158,7 +168,15 @@ class ClaimSfOutboundService(
         receiptContentType = receiptPhoto?.contentType,
     )
 
+    /**
+     * @param pwrskey 해당 클레임 레코드의 PowerSales primary key (`claim_id`). SF 가 등록된 SF 레코드와
+     * PowerSales row 를 역연결(back-link)하도록 전송한다.
+     * ⚠️ 선행조건: 레거시 SF Apex `IF_REST_MOBILE_ClaimRegist` 는 `JSON.deserializeStrict` 로 본문을 파싱하므로
+     * SF `Input` 클래스에 `public String pwrskey;` 필드가 추가 배포돼 있어야 한다. 미배포 상태로 전송하면 strict
+     * 파싱이 실패해 전 건 SEND_FAILED 가 된다 (제안 `ProposalRegist` pwrskey 추가와 동일 패턴/제약).
+     */
     fun buildApiMapFromBytes(
+        pwrskey: Long,
         employeeCode: String,
         sapAccountCode: String,
         productCode: String,
@@ -175,6 +193,7 @@ class ClaimSfOutboundService(
         receiptContentType: String?,
     ): Map<String, Any?> {
         val map = linkedMapOf<String, Any?>()
+        map["pwrskey"] = pwrskey.toString()
         map["SAPAccountCode"] = sapAccountCode
         map["ProductCode"] = productCode
         map["ExpirationDate"] = if (parsed.dateType == ClaimDateType.EXPIRY_DATE) parsed.date.toSfDate() else ""

@@ -196,6 +196,8 @@ class AdminClaimCreateServiceTest {
         assertThat(response.status).isEqualTo("SENT")
         assertThat(response.sfResultCode).isEqualTo("200")
         assertThat(apiMapSlot.captured["Channel"]).isEqualTo("WEB")
+        // pwrskey — Tx1 insert 후 확보한 claim PK(stubClaimSave idAfterSave=42L) 를 문자열로 전송
+        assertThat(apiMapSlot.captured["pwrskey"]).isEqualTo("42")
         assertThat(apiMapSlot.captured["SAPAccountCode"]).isEqualTo("SAP-001")
         assertThat(apiMapSlot.captured["EmployeeCode"]).isEqualTo("EMP-001")
         assertThat(apiMapSlot.captured["ExpirationDate"]).isEqualTo("2027-01-01")

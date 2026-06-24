@@ -42,6 +42,8 @@ class AdminClaimRegistTestService(
         val parsed = createService.parseRequest(request, receiptPhoto)
 
         val apiMap = sfOutboundService.buildApiMapFromBytes(
+            // 테스트 도구는 claim 테이블에 저장하지 않아 PK 가 없으므로 pwrskey=0 (역연결 불필요).
+            pwrskey = 0L,
             employeeCode = parsed.employeeCode,
             sapAccountCode = parsed.sapAccountCode,
             productCode = parsed.productCode,

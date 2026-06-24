@@ -102,6 +102,8 @@ class ClaimRegistrationOrchestrator(
 
         // 2. SF call (트랜잭션 외부)
         val sfResult = sfOutboundService.pushToSf(
+            // Tx1 insert 후 확보한 claim PK 를 pwrskey 로 전송 — SF 역연결용.
+            pwrskey = savedClaim.id,
             employeeCode = parsed.employeeCode,
             sapAccountCode = parsed.sapAccountCode,
             productCode = parsed.productCode,

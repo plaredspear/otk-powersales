@@ -81,6 +81,8 @@ class AdminClaimResendService(
 
         // SF call (트랜잭션 외부)
         val sfResult = sfOutboundService.pushToSfFromStored(
+            // 재전송 대상 claim PK 를 pwrskey 로 전송 — SF 역연결용.
+            pwrskey = snapshot.claimId,
             employeeCode = snapshot.employeeCode,
             sapAccountCode = snapshot.sapAccountCode,
             productCode = snapshot.productCode,

@@ -138,6 +138,8 @@ class AdminClaimResendServiceTest {
         assertThat(apiMapSlot.captured["Channel"]).isEqualTo(ClaimChannel.CAP.name)
         assertThat(apiMapSlot.captured["EmployeeCode"]).isEqualTo("EMP001")
         assertThat(apiMapSlot.captured["SAPAccountCode"]).isEqualTo("SAP001")
+        // pwrskey — 재전송 대상 claim PK(claimId=42L) 를 문자열로 전송
+        assertThat(apiMapSlot.captured["pwrskey"]).isEqualTo(claimId.toString())
     }
 
     @Test
