@@ -4,6 +4,8 @@ import {
   getScheduledJobRuns,
   getScheduledJobSummary,
   triggerOroraMonthlyMaterialize,
+  triggerPptMaster,
+  type PptMasterTriggerAction,
   type ScheduledJobRunsQuery,
 } from '@/api/admin/scheduledJob';
 
@@ -40,6 +42,20 @@ export function useTriggerOroraMonthlyMaterialize() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (salesMonth?: string) => triggerOroraMonthlyMaterialize(salesMonth),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'runs'] });
+      queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'summary'] });
+    },
+  });
+}
+
+/**
+ * 전문행사조(PPT) 마스터 배치 수동 실행 트리거. 성공 시 실행 이력/요약 쿼리를 무효화하여 갱신한다.
+ */
+export function useTriggerPptMaster() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (action: PptMasterTriggerAction) => triggerPptMaster(action),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'runs'] });
       queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'summary'] });

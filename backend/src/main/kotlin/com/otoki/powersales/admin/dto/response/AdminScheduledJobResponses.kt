@@ -44,6 +44,21 @@ data class RegisteredScheduledJobDto(
 )
 
 /**
+ * `@Scheduled` 잡 수동 실행 트리거 결과.
+ *
+ * 수동 실행도 자동 스케줄과 동일하게 `ScheduledJobRunner` 로 감싸 `scheduled_job_run` 에 이력이
+ * 남는다. 본 엔드포인트는 동기 실행으로, 본문이 예외 없이 끝나면 `SUCCESS` 를 반환한다 (실패 시
+ * 예외가 전파되어 에러 응답). 화면은 본 응답으로 즉시 결과를 띄우고 이력 탭을 새로고침한다.
+ *
+ * @property jobName 실행한 잡 이름
+ * @property status 실행 결과 상태 (정상 반환 시 항상 `SUCCESS`)
+ */
+data class ScheduledJobManualTriggerResponse(
+    val jobName: String,
+    val status: String,
+)
+
+/**
  * ORORA 월매출 수동 적재 트리거 결과.
  *
  * @property salesMonth 적재한 대상 매출월 (`YYYYMM`)

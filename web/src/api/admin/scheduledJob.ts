@@ -98,6 +98,30 @@ export interface OroraMonthlyMaterializeTriggerResponse {
   skippedAccountUnmatchedCount: number;
 }
 
+export interface ScheduledJobManualTriggerResponse {
+  jobName: string;
+  status: string;
+}
+
+/** 전문행사조(PPT) 마스터 배치 수동 실행 대상. expire=금일 전문행사조 마감, sync=금일 전문행사조 반영. */
+export type PptMasterTriggerAction = 'expire' | 'sync';
+
+/**
+ * 전문행사조 마스터 배치를 수동 실행한다. 자동 스케줄과 동일하게 이력이 남으므로 실행 후
+ * 이력 탭에서 결과를 확인할 수 있다. 사원 행사조 소속을 변경하므로 `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function triggerPptMaster(
+  action: PptMasterTriggerAction,
+): Promise<ScheduledJobManualTriggerResponse> {
+  const res = await client.post<ApiResponse<ScheduledJobManualTriggerResponse>>(
+    `/api/v1/admin/scheduled-jobs/ppt-master/${action}/trigger`,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '전문행사조 배치 수동 실행에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 /**
  * ORORA 월매출 적재를 특정 월(`YYYYMM`)로 수동 실행한다 (`salesMonth` 미지정 시 전월).
  * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.

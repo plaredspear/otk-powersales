@@ -3,10 +3,14 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
 import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
+import com.otoki.powersales.admin.dto.response.ScheduledJobManualTriggerResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
 import com.otoki.powersales.admin.service.AdminScheduledJobService
+import com.otoki.powersales.admin.service.PPTMasterManualTriggerService
+import com.otoki.powersales.platform.batch.PPTMasterExpireBatch
+import com.otoki.powersales.platform.batch.PPTMasterSyncBatch
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -28,6 +32,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
 
     @MockkBean private lateinit var adminScheduledJobService: AdminScheduledJobService
+    @MockkBean private lateinit var pptMasterManualTriggerService: PPTMasterManualTriggerService
 
     @Test
     @DisplayName("GET /runs - 필터 없이 호출 시 service 에 page=1, size=20 기본값 전달")
@@ -164,5 +169,42 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.salesMonth").value("202605"))
 
         verify(exactly = 1) { adminScheduledJobService.triggerOroraMonthly(null) }
+    }
+
+    @Test
+    @DisplayName("POST /ppt-master/expire/trigger - expire jobName 으로 service 위임")
+    fun triggerPptMaster_expire() {
+        every { pptMasterManualTriggerService.trigger(PPTMasterExpireBatch.JOB_NAME) } returns
+            ScheduledJobManualTriggerResponse(PPTMasterExpireBatch.JOB_NAME, "SUCCESS")
+
+        mockMvc.perform(post("/api/v1/admin/scheduled-jobs/ppt-master/expire/trigger"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.jobName").value(PPTMasterExpireBatch.JOB_NAME))
+            .andExpect(jsonPath("$.data.status").value("SUCCESS"))
+
+        verify(exactly = 1) { pptMasterManualTriggerService.trigger(PPTMasterExpireBatch.JOB_NAME) }
+    }
+
+    @Test
+    @DisplayName("POST /ppt-master/sync/trigger - sync jobName 으로 service 위임")
+    fun triggerPptMaster_sync() {
+        every { pptMasterManualTriggerService.trigger(PPTMasterSyncBatch.JOB_NAME) } returns
+            ScheduledJobManualTriggerResponse(PPTMasterSyncBatch.JOB_NAME, "SUCCESS")
+
+        mockMvc.perform(post("/api/v1/admin/scheduled-jobs/ppt-master/sync/trigger"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.jobName").value(PPTMasterSyncBatch.JOB_NAME))
+
+        verify(exactly = 1) { pptMasterManualTriggerService.trigger(PPTMasterSyncBatch.JOB_NAME) }
+    }
+
+    @Test
+    @DisplayName("POST /ppt-master/{action}/trigger - 미지원 action 은 400 + service 미호출")
+    fun triggerPptMaster_invalidAction() {
+        mockMvc.perform(post("/api/v1/admin/scheduled-jobs/ppt-master/unknown/trigger"))
+            .andExpect(status().isBadRequest)
+
+        verify(exactly = 0) { pptMasterManualTriggerService.trigger(any()) }
     }
 }
