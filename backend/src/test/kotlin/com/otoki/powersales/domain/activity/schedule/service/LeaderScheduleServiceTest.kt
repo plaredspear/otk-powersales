@@ -452,7 +452,7 @@ class LeaderScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("진열 정렬 = 출근완료 → 임시(미출근) → 정규(미출근) + 요약은 (여사원,cat2) 그룹 수")
+        @DisplayName("진열 정렬 = 출근완료 → 임시(미출근) → 정규(미출근) + 요약은 distinct 여사원 수")
         fun getDailyStatus_displayOrdering() {
             val date = LocalDate.of(2026, 6, 10)
             val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
@@ -488,9 +488,45 @@ class LeaderScheduleServiceTest {
             // 순서: 출근완료(이여사) → 임시(박여사) → 정규(김여사) — 이름순 아님, 버킷순.
             assertThat(result.displayWorkers.map { it.employeeName })
                 .containsExactly("이여사", "박여사", "김여사")
-            // dislength = (여사원,cat2) 3그룹, 출근 1그룹.
+            // dislength = distinct 여사원 3명, 출근 1명.
             assertThat(result.summary.displayTotal).isEqualTo(3)
             assertThat(result.summary.displayAttended).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("요약 진열 총원 = distinct 여사원 수 — 한 여사원이 상시·임시 동시 보유해도 1명 (목록 헤더 정합)")
+        fun getDailyStatus_displayTotalDedupByEmployee() {
+            val date = LocalDate.of(2026, 6, 24)
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            val w1 = createEmployee(id = 10, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "강숙경")
+            val w2 = createEmployee(id = 11, authority = AppAuthority.WOMAN, costCenterCode = "C001", name = "김명숙")
+            val a1 = createAccount(id = 100, branchCode = "C001", accountGroup = "1000", name = "무실점")
+            val a2 = createAccount(id = 101, branchCode = "C001", accountGroup = "1000", name = "원주점")
+            val a3 = createAccount(id = 102, branchCode = "C001", accountGroup = "1000", name = "남원원마트")
+
+            val teamIds = listOf(4001L, 10L, 11L)
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCodeIn(listOf("C001")) } returns listOf(leader, w1, w2)
+            every {
+                displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(teamIds, date)
+            } returns listOf(
+                displayMaster(employee = w1, account = a1, typeOfWork5 = TypeOfWork5.REGULAR),    // 강숙경 상시
+                displayMaster(employee = w2, account = a2, typeOfWork5 = TypeOfWork5.TEMPORARY),  // 김명숙 임시
+                displayMaster(employee = w2, account = a3, typeOfWork5 = TypeOfWork5.REGULAR),    // 김명숙 상시 (동일 여사원, 다른 cat2)
+            )
+            every {
+                safetyCheckSubmissionRepository.findByEmployeeIdInAndWorkingDate(teamIds, date)
+            } returns listOf(safetySubmission(10L), safetySubmission(11L))
+            every {
+                teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date, teamIds)
+            } returns emptyList()
+
+            val result = leaderScheduleService.getDailyStatus(leader.id, date)
+
+            // 목록 행은 3건(여사원×거래처)이지만, 요약 총원은 distinct 여사원 2명 — 목록 헤더(여사원 그룹 2) 정합.
+            assertThat(result.displayWorkers).hasSize(3)
+            assertThat(result.displayWorkers.mapNotNull { it.employeeId }.toSet()).hasSize(2)
+            assertThat(result.summary.displayTotal).isEqualTo(2)
         }
 
         @Test

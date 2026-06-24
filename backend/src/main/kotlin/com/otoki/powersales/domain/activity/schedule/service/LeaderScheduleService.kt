@@ -344,7 +344,8 @@ class LeaderScheduleService(
      * - 행사: `team_member_schedule` `WORK && cat1=EVENT` (`selectHomeSchedulePromote` 정합).
      * - 연차: `team_member_schedule` `ANNUAL_LEAVE` (레거시 `costcentercode` 키 불일치 버그를
      *   계승하지 않고 정상 표시 — 코스트센터 인원 × 해당 일자).
-     * - 요약 총원/출근: 레거시 `dislength`=(여사원,cat2) 그룹 수, `promotelength`=(여사원,cat2,cat3) 그룹 수.
+     * - 요약 총원/출근: 레거시 `dislength`/`promotelength` 와 동일 — 진열·행사 distinct 여사원 수
+     *   (mergedList 여사원 단위 카운터). 근무자 목록 헤더 개수와 항상 일치(cat2/cat3 그룹 분할 아님).
      * - 정렬: 레거시 mergedList 버킷 순서 — 진열=출근완료→임시(미출근)→정규(미출근),
      *   행사=출근완료→미출근, 그 안은 이름·거래처명순(레거시 accList `order by name`).
      */
@@ -406,15 +407,15 @@ class LeaderScheduleService(
             .sortedBy { it.name }
             .map { LeaderDailyEmployeeItem(employeeId = it.id, employeeName = it.name, employeeCode = it.employeeCode) }
 
-        // ── 요약: 레거시 dislength/promotelength 와 동일 그룹 단위 ──
-        // dislength = (여사원, cat2) 그룹 수 / promotelength = (여사원, cat2, cat3) 그룹 수.
+        // ── 요약: 레거시 dislength/promotelength 와 동일 단위(여사원 distinct) ──
+        // 레거시는 mergedList(여사원 단위)를 돌며 진열·행사 여사원당 1회 카운트(dislength++/promotelength++)
+        // 하므로 분모 = distinct 여사원 수이며, 진열/행사 근무자 목록 헤더 개수와 항상 일치한다.
+        // (cat2/cat3 로 쪼개면 한 여사원이 상시·임시를 동시 보유할 때 목록 개수와 어긋남.)
         val summary = LeaderDailyStatusSummary(
-            displayTotal = rawDisplay.map { it.employeeId to it.workingCategory2 }.toSet().size,
-            displayAttended = rawDisplay.filter { it.attended }
-                .map { it.employeeId to it.workingCategory2 }.toSet().size,
-            eventTotal = rawEvent.map { Triple(it.employeeId, it.workingCategory2, it.workingCategory3) }.toSet().size,
-            eventAttended = rawEvent.filter { it.attended }
-                .map { Triple(it.employeeId, it.workingCategory2, it.workingCategory3) }.toSet().size,
+            displayTotal = rawDisplay.mapNotNull { it.employeeId }.toSet().size,
+            displayAttended = rawDisplay.filter { it.attended }.mapNotNull { it.employeeId }.toSet().size,
+            eventTotal = rawEvent.mapNotNull { it.employeeId }.toSet().size,
+            eventAttended = rawEvent.filter { it.attended }.mapNotNull { it.employeeId }.toSet().size,
             annualLeaveCount = annualLeaveWorkers.size,
         )
 
