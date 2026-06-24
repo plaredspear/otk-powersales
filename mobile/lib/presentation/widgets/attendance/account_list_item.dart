@@ -57,6 +57,7 @@ class AccountListItem extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     _buildWorkCategoryBadge(),
+                    ..._buildWorkCategory3Badge(),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -123,6 +124,7 @@ class AccountListItem extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       _buildWorkCategoryBadge(),
+                      ..._buildWorkCategory3Badge(),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -169,6 +171,31 @@ class AccountListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 근무유형3(고정/격고/순회) 배지. 진열 거래처에만 값이 있으므로 없으면 미표시.
+  List<Widget> _buildWorkCategory3Badge() {
+    final category3 = account.workCategory3;
+    if (category3 == null || category3.isEmpty) return const [];
+
+    return [
+      const SizedBox(width: 4),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: AppColors.otokiBlue.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          category3,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: AppColors.otokiBlue,
+          ),
+        ),
+      ),
+    ];
   }
 
   Widget _buildRegisteredWorkTypeBadge() {
