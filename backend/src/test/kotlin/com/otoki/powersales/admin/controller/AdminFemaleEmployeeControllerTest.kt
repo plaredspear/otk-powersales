@@ -8,6 +8,7 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
@@ -22,6 +23,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.core.MethodParameter
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -36,6 +38,9 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var employeeWorkHistoryService: EmployeeWorkHistoryService
+
+    @MockkBean
+    private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
@@ -228,5 +233,31 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.success").value(true))
 
         verify(exactly = 1) { employeeWorkHistoryService.getMonthlyHistory(7L, java.time.YearMonth.of(2026, 6)) }
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/admin/female-employees/{id}/reset-device - 단말 초기화 위임 (female_employee:EDIT 가드)")
+    fun resetFemaleEmployeeDevice_success() {
+        every { adminEmployeeCredentialService.resetDevice(7L) } returns mockk(relaxed = true)
+
+        mockMvc.perform(post("/api/v1/admin/female-employees/7/reset-device"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("단말이 초기화되었습니다"))
+
+        verify(exactly = 1) { adminEmployeeCredentialService.resetDevice(7L) }
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/admin/female-employees/{id}/reset-password - 비밀번호 초기화 위임 (female_employee:EDIT 가드)")
+    fun resetFemaleEmployeePassword_success() {
+        every { adminEmployeeCredentialService.resetPassword(7L) } returns mockk(relaxed = true)
+
+        mockMvc.perform(post("/api/v1/admin/female-employees/7/reset-password"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("비밀번호가 초기화되었습니다"))
+
+        verify(exactly = 1) { adminEmployeeCredentialService.resetPassword(7L) }
     }
 }

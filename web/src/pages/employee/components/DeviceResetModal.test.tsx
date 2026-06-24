@@ -41,14 +41,14 @@ const employee: Employee = {
   yearsOfService: null,
 };
 
-function renderModal() {
+function renderModal(isFemale = false) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const onClose = vi.fn();
   const utils = render(
     <QueryClientProvider client={client}>
-      <DeviceResetModal employee={employee} open onClose={onClose} />
+      <DeviceResetModal employee={employee} open onClose={onClose} isFemale={isFemale} />
     </QueryClientProvider>,
   );
   return { ...utils, onClose };
@@ -100,7 +100,7 @@ describe('DeviceResetModal (Spec #582 P2-W)', () => {
     await user.click(screen.getByRole('button', { name: '초기화 실행' }));
 
     await waitFor(() => {
-      expect(mockedResetDevice).toHaveBeenCalledWith(12345);
+      expect(mockedResetDevice).toHaveBeenCalledWith(12345, false);
     });
     await waitFor(() => {
       expect(successSpy).toHaveBeenCalled();
@@ -108,6 +108,27 @@ describe('DeviceResetModal (Spec #582 P2-W)', () => {
     const arg = successSpy.mock.calls[0][0];
     expect(arg.message).toContain('단말이 초기화되었습니다');
     expect(onClose).toHaveBeenCalledTimes(1);
+
+    successSpy.mockRestore();
+  });
+
+  it('여사원 현황 진입(isFemale) 시 female_employee 엔드포인트로 호출된다', async () => {
+    mockedResetDevice.mockResolvedValueOnce({
+      employeeId: 12345,
+      employeeCode: '100123',
+      name: '홍길동',
+      previousDeviceBound: true,
+      resetAt: '2026-05-04T14:30:00',
+    });
+    const successSpy = vi.spyOn(notification, 'success').mockImplementation(() => undefined);
+
+    renderModal(true);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: '초기화 실행' }));
+
+    await waitFor(() => {
+      expect(mockedResetDevice).toHaveBeenCalledWith(12345, true);
+    });
 
     successSpy.mockRestore();
   });

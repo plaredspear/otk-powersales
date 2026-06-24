@@ -9,10 +9,17 @@ interface DeviceResetModalProps {
   employee: Employee;
   open: boolean;
   onClose: () => void;
+  /** 여사원 현황에서 진입한 경우 `female_employee:EDIT` 가드 엔드포인트 호출. */
+  isFemale?: boolean;
 }
 
-export default function DeviceResetModal({ employee, open, onClose }: DeviceResetModalProps) {
-  const mutation = useResetDevice();
+export default function DeviceResetModal({
+  employee,
+  open,
+  onClose,
+  isFemale = false,
+}: DeviceResetModalProps) {
+  const mutation = useResetDevice(isFemale);
 
   const handleConfirm = async () => {
     try {

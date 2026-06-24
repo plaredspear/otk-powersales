@@ -73,7 +73,12 @@ export default function EmployeeDetailPage() {
   const { hasEntityPermission, hasSystemPermission } = usePermission();
   // 수정 권한은 진입 맥락의 자원으로 판정 — 여사원 상세는 female_employee:EDIT, 사원 상세는 employee:EDIT.
   const canEdit = hasEntityPermission(isFemale ? 'female_employee' : 'employee', 'EDIT');
-  const canReset = hasSystemPermission('MANAGE_USERS');
+  // 계정 초기화 권한도 진입 맥락의 자원으로 판정 — 여사원 현황은 female_employee:EDIT,
+  // 설정 사원목록은 전체 사원 관리 시스템 권한(MANAGE_USERS). 조장 등 여사원 권한만 가진
+  // 직책이 여사원 현황에서 초기화를 쓸 수 있도록 분리.
+  const canReset = isFemale
+    ? hasEntityPermission('female_employee', 'EDIT')
+    : hasSystemPermission('MANAGE_USERS');
 
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -274,6 +279,7 @@ export default function EmployeeDetailPage() {
           employee={toEmployeeListItem(employee)}
           open={true}
           onClose={() => setPasswordOpen(false)}
+          isFemale={isFemale}
         />
       )}
       {deviceOpen && (
@@ -281,6 +287,7 @@ export default function EmployeeDetailPage() {
           employee={toEmployeeListItem(employee)}
           open={true}
           onClose={() => setDeviceOpen(false)}
+          isFemale={isFemale}
         />
       )}
     </div>

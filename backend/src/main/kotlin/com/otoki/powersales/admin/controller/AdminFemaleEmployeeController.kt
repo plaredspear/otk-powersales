@@ -11,6 +11,9 @@ import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
+import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
@@ -18,6 +21,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -46,6 +50,7 @@ import java.time.format.DateTimeParseException
 class AdminFemaleEmployeeController(
     private val adminEmployeeService: AdminEmployeeService,
     private val employeeWorkHistoryService: EmployeeWorkHistoryService,
+    private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
 ) {
 
     @GetMapping
@@ -138,5 +143,32 @@ class AdminFemaleEmployeeController(
         }
         val response = employeeWorkHistoryService.getMonthlyHistory(employeeId, parsed)
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 여사원 단말 초기화 — [AdminEmployeeController.resetDevice] 와 동일 동작이나
+     * `female_employee:EDIT` 권한으로 가드. 여사원 현황 화면에서 조장 등 여사원 권한만 가진
+     * 직책이 호출할 수 있도록 분리. 전체 사원 관리(`MANAGE_USERS`)와 별개 권한.
+     */
+    @PostMapping("/{employeeId}/reset-device")
+    @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.EDIT)
+    fun resetFemaleEmployeeDevice(
+        @PathVariable employeeId: Long,
+    ): ResponseEntity<ApiResponse<ResetDeviceResponse>> {
+        val response = adminEmployeeCredentialService.resetDevice(employeeId)
+        return ResponseEntity.ok(ApiResponse.success(response, "단말이 초기화되었습니다"))
+    }
+
+    /**
+     * 여사원 비밀번호 초기화 — [AdminEmployeeController.resetPassword] 와 동일 동작이나
+     * `female_employee:EDIT` 권한으로 가드.
+     */
+    @PostMapping("/{employeeId}/reset-password")
+    @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.EDIT)
+    fun resetFemaleEmployeePassword(
+        @PathVariable employeeId: Long,
+    ): ResponseEntity<ApiResponse<ResetPasswordResponse>> {
+        val response = adminEmployeeCredentialService.resetPassword(employeeId)
+        return ResponseEntity.ok(ApiResponse.success(response, "비밀번호가 초기화되었습니다"))
     }
 }

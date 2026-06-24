@@ -11,10 +11,17 @@ interface PasswordResetModalProps {
   employee: Employee;
   open: boolean;
   onClose: () => void;
+  /** 여사원 현황에서 진입한 경우 `female_employee:EDIT` 가드 엔드포인트 호출. */
+  isFemale?: boolean;
 }
 
-export default function PasswordResetModal({ employee, open, onClose }: PasswordResetModalProps) {
-  const mutation = useResetPassword();
+export default function PasswordResetModal({
+  employee,
+  open,
+  onClose,
+  isFemale = false,
+}: PasswordResetModalProps) {
+  const mutation = useResetPassword(isFemale);
 
   const handleConfirm = async () => {
     try {
