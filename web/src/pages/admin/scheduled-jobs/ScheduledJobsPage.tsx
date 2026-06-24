@@ -405,7 +405,7 @@ export default function ScheduledJobsPage() {
   return (
     <div style={{ padding: 24 }}>
       <Space style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-        <Title level={3} style={{ margin: 0 }}>스케줄 잡 실행 이력</Title>
+        <Title level={3} style={{ margin: 0 }}>스케줄 잡</Title>
         <RefreshButton
           onRefresh={handleRefresh}
           refreshing={summaryQuery.isFetching || runsQuery.isFetching}

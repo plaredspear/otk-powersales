@@ -104,7 +104,7 @@ const SECTIONS: DocSection[] = [
       {
         key: 'jobs',
         to: '/admin/tools/scheduled-jobs',
-        title: '스케줄 잡 실행 이력',
+        title: '스케줄 잡',
         desc: '배치 작업의 최근 실행 상태와 이력.',
         icon: <HistoryOutlined />,
       },
