@@ -3,12 +3,14 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.domain.activity.promotion.service.PPTMasterBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-@Profile("!local")
+@Profile("dev | prod")
+@ConditionalOnProperty(name = ["app.batch.ppt-master.expire.enabled"], havingValue = "true", matchIfMissing = false)
 class PPTMasterExpireBatch(
     private val pptMasterBatchService: PPTMasterBatchService,
     private val scheduledJobRunner: ScheduledJobRunner,

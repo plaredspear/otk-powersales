@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.domain.activity.schedule.service.MfeisThisMonthRevenueBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -16,8 +17,10 @@ import org.springframework.stereotype.Component
  *
  * 현재 [BatchConfig] 의 `@EnableScheduling` 전면 임시 비활성 (commit d927d1bc, 2026-05-14) — 본 batch
  * fire 도 비활성 상태와 무관. 어노테이션 한 줄 복원 시 즉시 활성.
+ * `app.batch.mfeis.this-month-revenue.enabled=true` 인 환경에서만 빈이 생성·발화한다 (기본 OFF).
  */
 @Component
+@ConditionalOnProperty(name = ["app.batch.mfeis.this-month-revenue.enabled"], havingValue = "true", matchIfMissing = false)
 class MfeisThisMonthRevenueBatch(
     private val batchService: MfeisThisMonthRevenueBatchService,
     private val scheduledJobRunner: ScheduledJobRunner,

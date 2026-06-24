@@ -4,10 +4,12 @@ import com.otoki.powersales.domain.foundation.account.service.AccountNaverGeocod
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
+@ConditionalOnProperty(name = ["app.batch.account-naver-geocode.enabled"], havingValue = "true", matchIfMissing = false)
 class AccountNaverGeocodeBatch(
     private val service: AccountNaverGeocodeService,
     private val scheduledJobRunner: ScheduledJobRunner,

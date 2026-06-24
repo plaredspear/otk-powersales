@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.domain.activity.promotion.service.PPTMasterSapBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -16,8 +17,10 @@ import org.springframework.stereotype.Component
  * - `ScheduledJobRunner` 위임으로 실행 이력은 `scheduled_job_run` 테이블에 자동 적재
  * - `@SchedulerLock` 으로 다중 인스턴스 환경에서 중복 발화 방지
  * - 본문은 [PPTMasterSapBatchService.runDaily] 에 위임 (TeamMemberScheduleSapOutboundBatch 패턴 정합)
+ * `app.sap.outbound.ppt-master.enabled=true` 인 환경에서만 빈이 생성·발화한다 (기본 OFF).
  */
 @Component
+@ConditionalOnProperty(name = ["app.sap.outbound.ppt-master.enabled"], havingValue = "true", matchIfMissing = false)
 class PPTMasterSapOutboundBatch(
     private val pptMasterSapBatchService: PPTMasterSapBatchService,
     private val scheduledJobRunner: ScheduledJobRunner,

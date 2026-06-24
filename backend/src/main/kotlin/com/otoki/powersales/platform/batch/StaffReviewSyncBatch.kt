@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.domain.org.employee.sfsync.StaffReviewSyncService
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -13,9 +14,11 @@ import org.springframework.stereotype.Component
  * 매일 새벽 03시 SF 변경분(MOD_DT=당일, 수정일 기준)을 fetch 하여 SF 레코드 Id(sfid) 기준 upsert 한다.
  * 분산 환경 중복 실행은 ShedLock 으로 차단하고, 실행 이력은 [ScheduledJobRunner] 가
  * `scheduled_job_run` 에 영속화한다.
+ * `app.batch.staff-review.sync.enabled=true` 인 환경에서만 빈이 생성·발화한다 (기본 OFF).
  */
 @Component
-@Profile("!local")
+@Profile("dev | prod")
+@ConditionalOnProperty(name = ["app.batch.staff-review.sync.enabled"], havingValue = "true", matchIfMissing = false)
 class StaffReviewSyncBatch(
     private val syncService: StaffReviewSyncService,
     private val scheduledJobRunner: ScheduledJobRunner,

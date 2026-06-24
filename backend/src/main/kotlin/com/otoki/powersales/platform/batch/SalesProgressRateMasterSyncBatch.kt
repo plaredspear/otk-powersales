@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.domain.sales.sfsync.SalesProgressRateMasterSyncService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -12,9 +13,11 @@ import org.springframework.stereotype.Component
  *
  * 1시간마다 SF 변경분을 fetch 하여 ExternalKey 기준 upsert 한다. 분산 환경 중복 실행은
  * ShedLock 으로 차단하고, 실행 이력은 [ScheduledJobRunner] 가 `scheduled_job_run` 에 영속화한다.
+ * `app.batch.sales-progress-rate-master.sync.enabled=true` 인 환경에서만 빈이 생성·발화한다 (기본 OFF).
  */
 @Component
-@Profile("!local")
+@Profile("dev | prod")
+@ConditionalOnProperty(name = ["app.batch.sales-progress-rate-master.sync.enabled"], havingValue = "true", matchIfMissing = false)
 class SalesProgressRateMasterSyncBatch(
     private val syncService: SalesProgressRateMasterSyncService,
     private val scheduledJobRunner: ScheduledJobRunner,

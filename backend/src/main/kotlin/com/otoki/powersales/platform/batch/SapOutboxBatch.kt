@@ -4,10 +4,12 @@ import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.external.sap.outbox.SapOutboxBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
+@ConditionalOnProperty(name = ["app.sap.outbox.enabled"], havingValue = "true", matchIfMissing = false)
 class SapOutboxBatch(
     private val sapOutboxBatchService: SapOutboxBatchService,
     private val scheduledJobRunner: ScheduledJobRunner,

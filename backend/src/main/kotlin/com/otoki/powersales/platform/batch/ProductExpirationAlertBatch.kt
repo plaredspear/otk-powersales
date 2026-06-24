@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.domain.activity.productexpiration.service.ProductExpirationAlertService
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -16,9 +17,11 @@ import java.time.LocalDate
  * 기본 cron 은 매일 00:00 (`app.batch.product-expiration-alert.cron` 으로 재정의 가능).
  *
  * ⚠️ 전역 `@EnableScheduling` (BatchConfig) 활성 시에만 실제 발화한다 (현재 비활성).
+ * `app.batch.product-expiration-alert.enabled=true` 인 환경에서만 빈이 생성·발화한다 (기본 OFF).
  */
 @Component
-@Profile("!local")
+@Profile("dev | prod")
+@ConditionalOnProperty(name = ["app.batch.product-expiration-alert.enabled"], havingValue = "true", matchIfMissing = false)
 class ProductExpirationAlertBatch(
     private val productExpirationAlertService: ProductExpirationAlertService,
     private val scheduledJobRunner: ScheduledJobRunner,

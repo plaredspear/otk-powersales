@@ -3,10 +3,12 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.domain.activity.schedule.service.DisplayMasterBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
+@ConditionalOnProperty(name = ["app.sap.outbound.display.enabled"], havingValue = "true", matchIfMissing = false)
 class DisplayMasterSapOutboundBatch(
     private val displayMasterBatchService: DisplayMasterBatchService,
     private val scheduledJobRunner: ScheduledJobRunner,

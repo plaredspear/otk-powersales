@@ -3,10 +3,12 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.external.sap.inbound.service.PostponedAppointmentBatchService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
+@ConditionalOnProperty(name = ["app.batch.postponed-appointment.enabled"], havingValue = "true", matchIfMissing = false)
 class PostponedAppointmentBatch(
     private val postponedAppointmentBatchService: PostponedAppointmentBatchService,
     private val scheduledJobRunner: ScheduledJobRunner,

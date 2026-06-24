@@ -4,12 +4,14 @@ import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunCleanupService
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Profile
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-@Profile("!local")
+@Profile("dev | prod")
+@ConditionalOnProperty(name = ["app.batch.scheduled-job-run-cleanup.enabled"], havingValue = "true", matchIfMissing = false)
 class ScheduledJobRunCleanupBatch(
     private val cleanupService: ScheduledJobRunCleanupService,
     private val scheduledJobRunner: ScheduledJobRunner,
