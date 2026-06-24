@@ -34,6 +34,13 @@ data class RegisteredScheduledJobDto(
     val jobName: String,
     val cron: String,
     val description: String,
+    /**
+     * 현재 환경에서 해당 배치 빈이 실제로 등록(스케줄링)되어 있는지 여부.
+     *
+     * 각 배치의 `@ConditionalOnProperty(enabled)` + `@Profile(dev|prod)` 평가 결과를 그대로 반영한다
+     * (빈 등록 = 활성). local 등 프로필이나 enabled=false 설정으로 비활성화된 잡은 `false`.
+     */
+    val enabled: Boolean,
 )
 
 /**

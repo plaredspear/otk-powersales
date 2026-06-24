@@ -245,6 +245,15 @@ export default function ScheduledJobsPage() {
     return map;
   }, [catalogQuery.data]);
 
+  // 잡 이름 → 현재 환경 활성 여부 (탭 라벨에 비활성 표기). catalog 미로딩 시 기본 활성 가정.
+  const enabledByJob = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    (catalogQuery.data ?? []).forEach((entry) => {
+      map[entry.jobName] = entry.enabled;
+    });
+    return map;
+  }, [catalogQuery.data]);
+
   const runColumns: ColumnsType<ScheduledJobRun> = [
     {
       title: '시작 시각',
@@ -285,6 +294,19 @@ export default function ScheduledJobsPage() {
   ];
 
   const catalogColumns: ColumnsType<RegisteredScheduledJob> = [
+    {
+      title: '상태',
+      dataIndex: 'enabled',
+      key: 'enabled',
+      width: 90,
+      filters: [
+        { text: '활성', value: true },
+        { text: '비활성', value: false },
+      ],
+      onFilter: (value, record) => record.enabled === value,
+      render: (enabled: boolean) =>
+        enabled ? <Tag color="green">활성</Tag> : <Tag color="default">비활성</Tag>,
+    },
     { title: '잡 이름', dataIndex: 'jobName', key: 'jobName', width: 240 },
     { title: 'cron 표현식', dataIndex: 'cron', key: 'cron', width: 280 },
     { title: '설명', dataIndex: 'description', key: 'description' },
@@ -345,42 +367,79 @@ export default function ScheduledJobsPage() {
       label: '전체',
       children: runsHistoryNode,
     },
-    ...jobNames.map((name) => ({
-      key: name,
-      label: (
-        <span title={name} style={{ display: 'inline-block', lineHeight: 1.3 }}>
-          {jobLabel(name)}
-          {JOB_SCHEDULES[name] && (
-            <span style={{ display: 'block', fontSize: 11, color: '#999' }}>
-              {JOB_SCHEDULES[name]}
-            </span>
-          )}
-        </span>
-      ),
-      children: (
-        <>
-          <Alert
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-            message={
-              <Space size={8} wrap>
-                <Text strong>{jobLabel(name)}</Text>
-                <Text type="secondary" code>
-                  {name}
-                </Text>
-                {cronByJob[name] && (
-                  <Text type="secondary">cron: {cronByJob[name]}</Text>
-                )}
-              </Space>
-            }
-            description={JOB_DESCRIPTIONS[name] ?? '등록된 설명이 없습니다.'}
-          />
-          {name === ORORA_MONTHLY_JOB && <OroraMonthlyTriggerPanel />}
-          {runsHistoryNode}
-        </>
-      ),
-    })),
+    ...jobNames.map((name) => {
+      // catalog 미로딩 중에는 활성으로 간주(undefined !== false), 로딩 후 false 면 비활성 표기.
+      const isDisabled = enabledByJob[name] === false;
+      return {
+        key: name,
+        label: (
+          <span
+            title={isDisabled ? `${name} (비활성)` : name}
+            style={{
+              display: 'inline-block',
+              lineHeight: 1.3,
+              color: isDisabled ? '#bfbfbf' : undefined,
+            }}
+          >
+            {jobLabel(name)}
+            {isDisabled && (
+              <span style={{ fontSize: 11, marginLeft: 4 }}>(비활성)</span>
+            )}
+            {JOB_SCHEDULES[name] && (
+              <span
+                style={{
+                  display: 'block',
+                  fontSize: 11,
+                  color: isDisabled ? '#cfcfcf' : '#999',
+                }}
+              >
+                {JOB_SCHEDULES[name]}
+              </span>
+            )}
+          </span>
+        ),
+        children: (
+          <>
+            <Alert
+              type={isDisabled ? 'warning' : 'info'}
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={
+                <Space size={8} wrap>
+                  <Text strong>{jobLabel(name)}</Text>
+                  {isDisabled ? (
+                    <Tag color="default">비활성</Tag>
+                  ) : (
+                    <Tag color="green">활성</Tag>
+                  )}
+                  <Text type="secondary" code>
+                    {name}
+                  </Text>
+                  {cronByJob[name] && (
+                    <Text type="secondary">cron: {cronByJob[name]}</Text>
+                  )}
+                </Space>
+              }
+              description={
+                <>
+                  {JOB_DESCRIPTIONS[name] ?? '등록된 설명이 없습니다.'}
+                  {isDisabled && (
+                    <>
+                      <br />
+                      <Text type="secondary">
+                        현재 환경에서 비활성화되어 있어 자동 실행되지 않습니다. 과거 실행 이력만 조회됩니다.
+                      </Text>
+                    </>
+                  )}
+                </>
+              }
+            />
+            {name === ORORA_MONTHLY_JOB && <OroraMonthlyTriggerPanel />}
+            {runsHistoryNode}
+          </>
+        ),
+      };
+    }),
     {
       key: CATALOG_KEY,
       label: '등록된 작업',
