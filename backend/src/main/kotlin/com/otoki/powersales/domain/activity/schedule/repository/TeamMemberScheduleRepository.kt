@@ -48,14 +48,16 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     fun findByEmployeeAndAccountAndWorkingDate(employee: Employee, account: Account, workingDate: LocalDate): TeamMemberSchedule?
 
     /**
-     * Spec #587 P1-B §1.2 step 4 — 동일 `(employee, working_date, working_category3)` 조합 중복 검증.
-     * 진열 출근 시 다른 거래처라도 같은 근무유형(고정/격고/순회)으로 이미 일정이 있으면 거부.
+     * 진열 출근 중복 검증 — 동일 `(employee, working_date, working_category3)` 조합 일정 건수.
+     * 레거시 `TeamMemberScheduleTriggerHandler.checkDuplicatedSchedule` 의 AggregateResult
+     * (사원+날짜+근무유형3 GROUP BY COUNT) 동등. 거래처/출근여부 무관, 일정 존재 기준 카운트.
+     * 유형별 양립 매트릭스(고정/격고/순회)는 호출처(AttendanceService)가 이 카운트로 판정.
      */
-    fun existsByEmployeeAndWorkingDateAndWorkingCategory3(
+    fun countByEmployeeAndWorkingDateAndWorkingCategory3(
         employee: Employee,
         workingDate: LocalDate,
         workingCategory3: WorkingCategory3
-    ): Boolean
+    ): Long
 
     /**
      * 여사원 상세 — 시간순서별 근무이력 조회.

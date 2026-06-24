@@ -102,7 +102,7 @@ class AttendanceServiceTest {
         every { clock.withZone(any()) } returns fixedClock
         // 부수 호출 — 개별 테스트가 override 가능 (MockK 는 마지막 stub 우선)
         every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any()) } returns false
-        every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(any(), any(), any()) } returns false
+        every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(any(), any(), any()) } returns 0L
     }
 
     // ========== getAccountList Tests ==========
@@ -1811,7 +1811,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
             every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
-            every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns false
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), any()) } returns 0L
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), AppAuthority.LEADER) } returns emptyList()
             every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
@@ -1859,7 +1859,7 @@ class AttendanceServiceTest {
         }
 
         @Test
-        @DisplayName("Spec #587 T7 — 동일 (사원, today, working_category3) 다른 거래처에 일정 존재 -> DisplayAttendanceDuplicateException")
+        @DisplayName("Spec #587 T7 — 고정 등록 + 기존 고정 1건 존재 (다른 거래처) -> DisplayAttendanceDuplicateException")
         fun register_byDisplayWorkSchedule_duplicateWorkingCategory3_throwsException() {
             // Given
             val userId = 1L
@@ -1882,8 +1882,145 @@ class AttendanceServiceTest {
             every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
             // 동일 사원+거래처+오늘은 없음 → step 4-1 통과
             every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
-            // 다른 거래처에 동일 working_category3=고정 일정 존재 → step 4-2 차단
-            every { teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns true
+            // 다른 거래처에 고정 1건 존재 → 매트릭스상 고정 등록은 기존 고정 ≥ 1 이면 거부
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns 1L
+
+            // When & Then
+            assertThatThrownBy {
+                attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(DisplayAttendanceDuplicateException::class.java)
+
+            verify(exactly = 0) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
+        }
+
+        @Test
+        @DisplayName("레거시 매트릭스 — 순회 등록 + 기존 순회 1건만 존재: 허용 (출근 미등록 사전배정 순회 일정이 막지 않음)")
+        fun register_byDisplayWorkSchedule_patrolWithExistingPatrolOnly_allows() {
+            // Given — 운영 버그 재현 시나리오: 출근 안 찍힌 순회 일정 1건이 사전 배정되어 있어도 진열(순회) 출근은 허용되어야 한다.
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.minus(10, ChronoUnit.DAYS),
+                endDate = today.plus(10, ChronoUnit.DAYS),
+                typeOfWork3 = TypeOfWork3.ROTATION,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                employeeId = userId,
+                accountId = 8938,
+                accountLatitude = accountLat.toString(),
+                accountLongitude = accountLon.toString(),
+                accountAbcTypeCode = "2110",
+            )
+            val newTms = createTeamMemberSchedule(
+                id = 51L, sfid = null, employeeId = userId, accountId = 8938,
+                workingType = WorkingType.WORK, workingCategory1 = WorkingCategory1.DISPLAY, workingCategory3 = WorkingCategory3.PATROL,
+                accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
+            every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
+            // 기존: 순회 1건만 존재 (고정 0, 격고 0) → 순회 등록은 고정 ≥ 1 또는 격고 ≥ 2 일 때만 거부 → 허용
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns 0L
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.ALTERNATE)) } returns 0L
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.PATROL)) } returns 1L
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), AppAuthority.LEADER) } returns emptyList()
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
+
+            // When
+            val result = attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
+
+            // Then — 거부 없이 출근 등록 성공
+            assertThat(result.attendanceType).isEqualTo(AttendanceType.DISPLAY)
+            verify(exactly = 1) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
+        }
+
+        @Test
+        @DisplayName("레거시 매트릭스 — 격고 등록 + 기존 격고 1건만 존재: 허용 (격고는 최대 2건까지)")
+        fun register_byDisplayWorkSchedule_alternateWithOneExistingAlternate_allows() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.minus(10, ChronoUnit.DAYS),
+                endDate = today.plus(10, ChronoUnit.DAYS),
+                typeOfWork3 = TypeOfWork3.GAP,
+                typeOfWork5 = TypeOfWork5.REGULAR,
+                employeeId = userId,
+                accountId = 8938,
+                accountLatitude = accountLat.toString(),
+                accountLongitude = accountLon.toString(),
+                accountAbcTypeCode = "2110",
+            )
+            val newTms = createTeamMemberSchedule(
+                id = 52L, sfid = null, employeeId = userId, accountId = 8938,
+                workingType = WorkingType.WORK, workingCategory1 = WorkingCategory1.DISPLAY, workingCategory3 = WorkingCategory3.ALTERNATE,
+                accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
+            every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
+            // 기존: 격고 1건 (고정 0, 순회 0) → 격고 등록은 격고 ≥ 2 일 때만 거부 → 허용
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns 0L
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.ALTERNATE)) } returns 1L
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.PATROL)) } returns 0L
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), AppAuthority.LEADER) } returns emptyList()
+            every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
+
+            // When
+            val result = attendanceService.register(userId, null, displayWorkScheduleId, null, nearUserLat, nearUserLon, null)
+
+            // Then — 격고 2건째이므로 허용
+            assertThat(result.attendanceType).isEqualTo(AttendanceType.DISPLAY)
+            verify(exactly = 1) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
+        }
+
+        @Test
+        @DisplayName("레거시 매트릭스 — 격고 등록 + 기존 격고 2건 존재: DisplayAttendanceDuplicateException (상한 초과)")
+        fun register_byDisplayWorkSchedule_alternateWithTwoExistingAlternate_throws() {
+            // Given
+            val userId = 1L
+            val displayWorkScheduleId = 100L
+            val today = LocalDate.now()
+
+            val employee = createEmployee(id = userId, sfid = "USR001", costCenterCode = "CC001")
+            val master = createDisplayWorkSchedule(
+                id = displayWorkScheduleId,
+                confirmed = true,
+                startDate = today.minus(10, ChronoUnit.DAYS),
+                endDate = today.plus(10, ChronoUnit.DAYS),
+                typeOfWork3 = TypeOfWork3.GAP,
+                employeeId = userId,
+                accountId = 8938,
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
+            every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns null
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.FIXED)) } returns 0L
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.ALTERNATE)) } returns 2L
+            every { teamMemberScheduleRepository.countByEmployeeAndWorkingDateAndWorkingCategory3(eq(employee), eq(today), eq(WorkingCategory3.PATROL)) } returns 0L
 
             // When & Then
             assertThatThrownBy {

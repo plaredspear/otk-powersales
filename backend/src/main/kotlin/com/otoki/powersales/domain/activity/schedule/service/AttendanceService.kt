@@ -599,15 +599,15 @@ class AttendanceService(
         val account = master.account ?: throw DisplayScheduleNotFoundException()
 
         // step 4: 중복 검증 — 동일 사원+거래처+오늘 일정이 있으면 그 row 재사용 (기존 정책 유지).
-        // 단, 다른 거래처에서 동일 working_category3 로 이미 등록된 일정이 있으면 거부 (Spec #587 P1-B Q6).
+        // 단, 다른 거래처라도 동일 사원·날짜의 근무유형3(고정/격고/순회) 양립 매트릭스에 위배되면 거부.
+        // 레거시 TeamMemberScheduleTriggerHandler.checkDuplicatedSchedule (insert 경로) 동등 —
+        // 단순 "동일 유형 1건이라도 있으면 거부" 가 아니라 유형별 허용 개수를 반영한다.
         val existing = teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(employee, account, today)
         val masterTypeOfWork3 = master.typeOfWork3
         if (existing == null && masterTypeOfWork3 != null) {
             // typeOfWork3 와 workingCategory3 는 picklist 옵션값(고정/격고/순회) 동일 — displayName 으로 변환 후 매칭
             val workingCategory3 = WorkingCategory3.fromDisplayNameOrNull(masterTypeOfWork3.displayName)
-            val duplicateInOtherAccount = workingCategory3 != null && teamMemberScheduleRepository
-                .existsByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, workingCategory3)
-            if (duplicateInOtherAccount) {
+            if (workingCategory3 != null && violatesWorkingCategory3Matrix(employee, today, workingCategory3)) {
                 throw DisplayAttendanceDuplicateException()
             }
         }
@@ -633,6 +633,35 @@ class AttendanceService(
         )
         val saved = teamMemberScheduleRepository.save(newSchedule)
         return ResolveResult(schedule = saved, newlyCreated = true, displayMaster = master)
+    }
+
+    /**
+     * 근무유형3(고정/격고/순회) 양립 매트릭스 검증 — 레거시 SF
+     * `TeamMemberScheduleTriggerHandler.checkDuplicatedSchedule` 의 신규생성일정 체크(insert 경로) 동등.
+     *
+     * 동일 사원·날짜의 기존 일정 건수를 유형별로 집계(거래처/출근여부 무관)한 뒤, 등록하려는 유형에 따라:
+     *  - 고정: 기존 고정 ≥ 1, 또는 기존 격고 ≥ 1 / 순회 ≥ 1
+     *  - 격고: 기존 격고 ≥ 2, 또는 기존 고정 ≥ 1, 또는 (격고 ≥ 1 AND 순회 ≥ 1)
+     *  - 순회: 기존 고정 ≥ 1, 또는 기존 격고 ≥ 2
+     * 위 조건에 해당하면 true(중복 거부). 레거시 update 전용 bypass 분기는 출근(insert) 경로에 무관하여 제외.
+     */
+    private fun violatesWorkingCategory3Matrix(
+        employee: Employee,
+        today: LocalDate,
+        category3: WorkingCategory3
+    ): Boolean {
+        val fixed = teamMemberScheduleRepository
+            .countByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, WorkingCategory3.FIXED)
+        val alternate = teamMemberScheduleRepository
+            .countByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, WorkingCategory3.ALTERNATE)
+        val patrol = teamMemberScheduleRepository
+            .countByEmployeeAndWorkingDateAndWorkingCategory3(employee, today, WorkingCategory3.PATROL)
+
+        return when (category3) {
+            WorkingCategory3.FIXED -> fixed >= 1 || alternate >= 1 || patrol >= 1
+            WorkingCategory3.ALTERNATE -> alternate >= 2 || fixed >= 1 || (alternate >= 1 && patrol >= 1)
+            WorkingCategory3.PATROL -> fixed >= 1 || alternate >= 2
+        }
     }
 
     /**
