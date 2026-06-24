@@ -79,7 +79,10 @@ class PPTMasterRepositoryCustomImpl(
             .leftJoin(employee).on(professionalPromotionTeamMaster.employeeId.eq(employee.id))
             .leftJoin(account).on(professionalPromotionTeamMaster.accountId.eq(account.id))
             .where(builder)
-            .orderBy(professionalPromotionTeamMaster.id.desc())
+            .orderBy(
+                professionalPromotionTeamMaster.createdAt.desc(),
+                professionalPromotionTeamMaster.id.desc()
+            )
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
