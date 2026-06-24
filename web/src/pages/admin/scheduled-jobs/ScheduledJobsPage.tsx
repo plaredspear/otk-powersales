@@ -54,8 +54,8 @@ const JOB_LABELS: Record<string, string> = {
   'display-master-last-month-revenue-batch': '진열 전월매출',
   'mfeis-this-month-revenue-batch': '일정 평균매출',
   'account-naver-geocode-batch': '거래처 좌표변환',
-  'pptMaster.expire': '행사조 만료',
-  'pptMaster.syncValid': '행사조 sync',
+  'pptMaster.expire': '금일 전문행사조 마감',
+  'pptMaster.syncValid': '금일 전문행사조 반영',
   'sap.processPostponedAppointments': '연기예약 처리',
   'salesProgressRateMaster.sync': '목표마스터 sync',
   'sap-outbox-worker': 'SAP outbox',
@@ -77,8 +77,8 @@ const JOB_SCHEDULES: Record<string, string> = {
   'display-master-last-month-revenue-batch': '기본 매일 02시',
   'mfeis-this-month-revenue-batch': '기본 매월 1일 03시',
   'account-naver-geocode-batch': '매일 02시',
-  'pptMaster.expire': '매일 23시',
-  'pptMaster.syncValid': '매일 05시',
+  'pptMaster.expire': '매일 23:30',
+  'pptMaster.syncValid': '매시간 44분',
   'sap.processPostponedAppointments': '매일 자정',
   'salesProgressRateMaster.sync': '기본 1시간 주기',
   'sap-outbox-worker': '기본 30초 주기',
@@ -104,9 +104,9 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
   'account-naver-geocode-batch':
     '위경도 좌표가 비어 있는 "거래" 상태의 거래처를 최대 1000건 조회하여, 각 거래처 주소를 네이버 지도 Geocode API로 변환해 위도·경도를 채워 넣습니다. 거래처 위치를 지도에 표시하기 위한 좌표 보강 배치로, 좌표가 채워지지 못한 거래처는 다음 실행 때 다시 처리 대상이 됩니다.',
   'pptMaster.expire':
-    '오늘로 만료되는(확정 + 종료일=오늘) 전문 판촉팀(PPT) 마스터를 조회하여, 해당 사원의 전문 판촉팀 소속을 해제(일반 복귀)합니다. 미확정 마스터는 제외하며, 판촉 활동 기간이 끝난 사원을 자동으로 일반 소속 상태로 되돌리고, 다음 날 sync 배치가 잔여 유효 마스터 기준으로 소속을 다시 정합시킵니다.',
+    '오늘로 만료되는(확정 + 종료일=오늘) 전문 판촉팀(PPT) 마스터를 조회하여, 해당 사원의 전문 판촉팀 소속을 해제(일반 복귀)합니다. 미확정 마스터는 제외하며, 판촉 활동 기간이 끝난 사원을 자동으로 일반 소속 상태로 되돌리고, 이후 sync 배치가 잔여 유효 마스터 기준으로 소속을 다시 정합시킵니다.',
   'pptMaster.syncValid':
-    '현재 유효한(확정 + 기간 내) 전문 판촉팀(PPT) 마스터를 조회하여, 마스터에 지정된 팀 유형과 사원의 실제 소속 팀이 다르면 사원의 소속을 마스터 기준으로 맞춥니다. 미확정 마스터는 제외하며, 판촉팀 배정 마스터를 권위 출처로 삼아 사원의 팀 소속을 매일 정합시킵니다.',
+    '현재 유효한(확정 + 기간 내) 전문 판촉팀(PPT) 마스터를 조회하여, 마스터에 지정된 팀 유형과 사원의 실제 소속 팀이 다르면 사원의 소속을 마스터 기준으로 맞춥니다. 미확정 마스터는 제외하며, 판촉팀 배정 마스터를 권위 출처로 삼아 사원의 팀 소속을 매시간 정합시킵니다.',
   'sap.processPostponedAppointments':
     '발령 예정일이 오늘 이전인 사원들을 조회하여, 각 사원의 최신 발령 정보를 즉시 적용하고 사용자 프로필 캐시를 갱신합니다. 미래 시점으로 예약된 인사 발령이 효력 발생일에 도달했을 때 자동으로 반영하며, 발령 데이터가 없으면 예약 표시만 해제하고 건너뜁니다.',
   'salesProgressRateMaster.sync':
