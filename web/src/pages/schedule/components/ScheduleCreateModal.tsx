@@ -173,8 +173,8 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       onOk={handleOk}
       okText="저장"
       cancelText="취소"
-      // 확정된 스케줄은 모든 항목이 잠기므로 저장 버튼을 비활성화한다.
-      okButtonProps={{ disabled: isConfirmedLocked }}
+      // 확정된 스케줄도 종료일은 수정 가능하므로 저장 버튼은 비활성화하지 않는다.
+      // 종료일 외 필드 변경은 backend(SCHEDULE_EDIT_BLOCKED_AFTER_CONFIRM)가 차단한다.
       confirmLoading={mutation.isPending}
       width={isEdit ? 880 : 560}
     >
@@ -184,7 +184,7 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       {isConfirmedLocked && (
         <Alert
           type="warning"
-          message="확정된 스케줄입니다. 항목을 변경할 수 없습니다."
+          message="확정된 스케줄입니다. 종료일만 변경할 수 있습니다."
           style={{ marginBottom: 16 }}
         />
       )}
@@ -249,8 +249,9 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
               <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} placeholder="시작일" />
             </Form.Item>
 
+            {/* 확정된 스케줄도 종료일만은 수정 가능 (backend UC-05 허용 필드). Form 의 disabled 를 개별 해제. */}
             <Form.Item name="endDate" label="종료일">
-              <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} placeholder="종료일 (선택)" />
+              <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} placeholder="종료일 (선택)" disabled={false} />
             </Form.Item>
           </Form>
         </Col>
