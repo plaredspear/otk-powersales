@@ -7824,6 +7824,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseScheduledJobManualTriggerResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduledJobManualTriggerResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseScheduledJobRunListResponse" : {
         "properties" : {
           "data" : {
@@ -15866,6 +15895,17 @@
             "type" : "integer"
           },
           "uploadId" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduledJobManualTriggerResponse" : {
+        "properties" : {
+          "jobName" : {
+            "type" : "string"
+          },
+          "status" : {
             "type" : "string"
           }
         },
@@ -26463,6 +26503,32 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseOroraMonthlyMaterializeTriggerResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/ppt-master/{action}/trigger" : {
+      "post" : {
+        "operationId" : "triggerPptMaster",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "action",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduledJobManualTriggerResponse"
                 }
               }
             },

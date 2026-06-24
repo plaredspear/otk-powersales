@@ -19,8 +19,10 @@ import {
   useScheduledJobRuns,
   useScheduledJobSummary,
   useTriggerOroraMonthlyMaterialize,
+  useTriggerPptMaster,
 } from '@/hooks/admin/useScheduledJobs';
 import type {
+  PptMasterTriggerAction,
   RegisteredScheduledJob,
   ScheduledJobRun,
   ScheduledJobStatus,
@@ -124,6 +126,12 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
 /** ORORA 월매출 수동 트리거 대상 jobName (해당 탭에서만 수동 적재 UI 노출). */
 const ORORA_MONTHLY_JOB = 'orora-monthly-sales-materialize-batch';
 
+/** 전문행사조(PPT) 마스터 수동 실행 대상 jobName → 트리거 action 매핑. */
+const PPT_MASTER_TRIGGER_ACTIONS: Record<string, PptMasterTriggerAction> = {
+  'pptMaster.expire': 'expire',
+  'pptMaster.syncValid': 'sync',
+};
+
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return '-';
   return dayjs(value).format('YYYY-MM-DD HH:mm:ss');
@@ -198,6 +206,59 @@ function OroraMonthlyTriggerPanel() {
         </Popconfirm>
         <Text type="secondary" style={{ fontSize: 12 }}>
           ORORA view 를 조회해 monthly_sales_history 에 upsert 합니다. 외부 연동이므로 수십 초 소요될 수 있습니다.
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+/**
+ * 전문행사조(PPT) 마스터 배치 수동 실행 패널. "금일 전문행사조 마감"(expire) / "금일 전문행사조 반영"
+ * (sync) 탭에서 노출되며, 실행 시 backend 가 즉시 배치를 1회 돌리고 결과를 이력에 남긴다.
+ * 사원 행사조 소속을 변경하므로 `MODIFY_ALL_DATA` 권한자에게만 버튼을 노출한다.
+ */
+function PptMasterTriggerPanel({
+  action,
+  jobLabelText,
+}: {
+  action: PptMasterTriggerAction;
+  jobLabelText: string;
+}) {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const trigger = useTriggerPptMaster();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const handleRun = () => {
+    trigger.mutate(action, {
+      onSuccess: (result) => {
+        message.success(`${jobLabelText} 수동 실행 완료 (${result.status})`);
+      },
+      onError: (err) => {
+        message.error(err instanceof Error ? err.message : '전문행사조 배치 수동 실행에 실패했습니다');
+      },
+    });
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="수동 실행">
+      <Space wrap align="center">
+        <Popconfirm
+          title={`${jobLabelText} 수동 실행`}
+          description="지금 즉시 배치를 1회 실행합니다. 사원 행사조 소속이 변경될 수 있습니다. 실행하시겠습니까?"
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+        >
+          <Button type="primary" loading={trigger.isPending}>
+            지금 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          실행 결과는 아래 이력 목록에 자동 스케줄 실행과 동일하게 기록됩니다 (수동 실행은 metadata 의 triggeredBy=MANUAL 로 구분).
         </Text>
       </Space>
     </Card>
@@ -435,6 +496,12 @@ export default function ScheduledJobsPage() {
               }
             />
             {name === ORORA_MONTHLY_JOB && <OroraMonthlyTriggerPanel />}
+            {PPT_MASTER_TRIGGER_ACTIONS[name] && (
+              <PptMasterTriggerPanel
+                action={PPT_MASTER_TRIGGER_ACTIONS[name]}
+                jobLabelText={jobLabel(name)}
+              />
+            )}
             {runsHistoryNode}
           </>
         ),

@@ -7,13 +7,16 @@ import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
 import com.otoki.powersales.admin.dto.request.OroraMonthlyMaterializeTriggerRequest
 import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
+import com.otoki.powersales.admin.dto.response.ScheduledJobManualTriggerResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
 import com.otoki.powersales.admin.service.AdminScheduledJobService
+import com.otoki.powersales.admin.service.PPTMasterManualTriggerService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
@@ -33,6 +36,7 @@ import java.time.LocalDateTime
 @RestController
 class AdminScheduledJobController(
     private val adminScheduledJobService: AdminScheduledJobService,
+    private val pptMasterManualTriggerService: PPTMasterManualTriggerService,
 ) {
 
     @GetMapping("/api/v1/admin/scheduled-jobs/runs")
@@ -82,6 +86,29 @@ class AdminScheduledJobController(
         @RequestBody(required = false) request: OroraMonthlyMaterializeTriggerRequest?,
     ): ResponseEntity<ApiResponse<OroraMonthlyMaterializeTriggerResponse>> {
         val response = adminScheduledJobService.triggerOroraMonthly(request?.salesMonth)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 전문행사조(PPT) 마스터 배치를 수동 실행한다.
+     *
+     * [action] `expire` = "금일 전문행사조 마감"(`pptMaster.expire`), `sync` = "금일 전문행사조 반영"
+     * (`pptMaster.syncValid`). jobName 의 `.` 이 path 확장자로 오인되지 않도록 짧은 action 세그먼트로 받는다.
+     *
+     * 자동 스케줄과 동일하게 이력이 남으므로 실행 후 화면 이력 탭에서 결과를 조회할 수 있다.
+     * 사원 행사조 소속을 변경하는 쓰기 작업이라 `MODIFY_ALL_DATA` 권한 필요.
+     */
+    @PostMapping("/api/v1/admin/scheduled-jobs/ppt-master/{action}/trigger")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun triggerPptMaster(
+        @PathVariable action: String,
+    ): ResponseEntity<ApiResponse<ScheduledJobManualTriggerResponse>> {
+        val jobName = when (action) {
+            "expire" -> com.otoki.powersales.platform.batch.PPTMasterExpireBatch.JOB_NAME
+            "sync" -> com.otoki.powersales.platform.batch.PPTMasterSyncBatch.JOB_NAME
+            else -> throw IllegalArgumentException("지원하지 않는 PPT 배치 action 입니다: $action (expire | sync)")
+        }
+        val response = pptMasterManualTriggerService.trigger(jobName)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

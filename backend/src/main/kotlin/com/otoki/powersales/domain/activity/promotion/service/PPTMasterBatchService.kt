@@ -15,8 +15,12 @@ class PPTMasterBatchService(
     private val adminPPTMasterService: AdminPPTMasterService,
 ) {
 
+    /**
+     * @param triggeredBy 실행 출처. 자동 스케줄 실행은 `null`(이력 metadata 에 표기 안 함),
+     *   운영자 수동 실행은 `"MANUAL"` 을 넘겨 이력 metadata 에 함께 기록한다.
+     */
     @Transactional
-    fun syncValidMasters(context: ScheduledJobRunContext? = null) {
+    fun syncValidMasters(context: ScheduledJobRunContext? = null, triggeredBy: String? = null) {
         val today = LocalDate.now()
         val validMasters = pptMasterRepository.findValidMasters(today)
 
@@ -31,11 +35,16 @@ class PPTMasterBatchService(
                 updated++
             }
         }
-        context?.metadata(mapOf("scanned" to validMasters.size, "updated" to updated))
+        context?.metadata(
+            buildMetadata(triggeredBy, "scanned" to validMasters.size, "updated" to updated),
+        )
     }
 
+    /**
+     * @param triggeredBy 실행 출처. 자동 스케줄 실행은 `null`, 운영자 수동 실행은 `"MANUAL"`.
+     */
     @Transactional
-    fun expireMasters(context: ScheduledJobRunContext? = null) {
+    fun expireMasters(context: ScheduledJobRunContext? = null, triggeredBy: String? = null) {
         val today = LocalDate.now()
         val expiringMasters = pptMasterRepository.findExpiringMasters(today)
 
@@ -52,6 +61,15 @@ class PPTMasterBatchService(
                 reverted++
             }
         }
-        context?.metadata(mapOf("expiringEmployees" to employeeIds.size, "reverted" to reverted))
+        context?.metadata(
+            buildMetadata(triggeredBy, "expiringEmployees" to employeeIds.size, "reverted" to reverted),
+        )
+    }
+
+    /** 통계 metadata 에 (수동 실행 시) `triggeredBy` 를 합성한다. */
+    private fun buildMetadata(triggeredBy: String?, vararg stats: Pair<String, Any?>): Map<String, Any?> {
+        val base = linkedMapOf(*stats)
+        if (triggeredBy != null) base["triggeredBy"] = triggeredBy
+        return base
     }
 }
