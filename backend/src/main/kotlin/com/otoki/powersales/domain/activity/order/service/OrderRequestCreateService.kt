@@ -21,6 +21,7 @@ import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegiste
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import jakarta.persistence.EntityManager
 import org.springframework.context.ApplicationEventPublisher
@@ -49,6 +50,7 @@ import java.time.LocalDateTime
 class OrderRequestCreateService(
     private val orderRequestRepository: OrderRequestRepository,
     private val orderRequestProductRepository: OrderRequestProductRepository,
+    private val productRepository: ProductRepository,
     private val accountRepository: AccountRepository,
     private val employeeRepository: EmployeeRepository,
     private val inventorySearchClient: SapInventorySearchClient,
@@ -113,6 +115,10 @@ class OrderRequestCreateService(
         val savedHeader = orderRequestRepository.save(header)
 
         // 6. 라인 일괄 INSERT
+        // 제품 마스터 일괄 조회 — product FK(product_id) 채움 (레거시 ProductCode 로 DKRetail__Product__c
+        // 조회해 DKRetail__ProductId__c set 한 동등 처리). 미존재 시 null 허용 (라인은 productCode 로도 보존).
+        val productsByCode = productRepository.findByProductCodeIn(productCodes)
+            .associateBy { it.productCode }
         val savedLines = request.lines.map { line ->
             val info = inventoryMap.getValue(line.productCode)
             // 레거시 정합: 박스 수량은 총 EA ÷ 환산수량으로 서버가 역산(클라이언트 박스 입력값 비신뢰).
@@ -133,6 +139,7 @@ class OrderRequestCreateService(
                 supplyQuantity = info.supplyLimitQuantity,
                 dcQuantity = 0,
                 orderRequest = savedHeader,
+                product = productsByCode[line.productCode],
             )
         }
         orderRequestProductRepository.saveAll(savedLines)
