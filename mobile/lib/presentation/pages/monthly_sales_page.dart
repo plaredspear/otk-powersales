@@ -11,7 +11,7 @@ class MonthlySalesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('월 매출')),
+      appBar: AppBar(title: const Text('물류 매출 조회')),
       body: const MonthlySalesTabPage(),
     );
   }

@@ -180,17 +180,24 @@ class _LegacyComparisonChart extends StatelessWidget {
       alignment: BarChartAlignment.spaceAround,
       maxY: maxY,
       minY: 0,
+      // 각 막대 위에 백만원 환산 수치를 상시 표시(showingTooltipIndicators).
+      // 터치 토글로 사라지지 않도록 배경 투명 + 패딩 0 의 라벨 형태로 띄운다.
       barTouchData: BarTouchData(
-        enabled: true,
+        enabled: false,
         touchTooltipData: BarTouchTooltipData(
+          getTooltipColor: (_) => AppColors.transparent,
+          tooltipPadding: EdgeInsets.zero,
+          tooltipMargin: 4,
+          fitInsideHorizontally: true,
+          fitInsideVertically: true,
           getTooltipItem: (group, groupIndex, rod, rodIndex) {
-            final bar = bars[groupIndex];
+            // 단위 캡션(백만원)과 정합 — 원 → 백만원, 소수 1자리(정수면 생략).
             return BarTooltipItem(
-              '${bar.label}\n${NumberFormat('#,###').format(bar.amount)}',
+              NumberFormat('#,##0.#').format(rod.toY / 1000000),
               const TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontSize: 11,
               ),
             );
           },
@@ -263,6 +270,8 @@ class _LegacyComparisonChart extends StatelessWidget {
         for (var i = 0; i < bars.length; i++)
           BarChartGroupData(
             x: i,
+            // 막대 위 수치 라벨을 상시 노출(0번 rod).
+            showingTooltipIndicators: const [0],
             barRods: [
               BarChartRodData(
                 toY: bars[i].amount,
