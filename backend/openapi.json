@@ -1384,6 +1384,14 @@
       },
       "AdminClaimMasterSyncTestResponse" : {
         "properties" : {
+          "fetchedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "notFoundCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "rawResponse" : {
             "type" : [ "string", "null" ]
           },
@@ -1396,8 +1404,16 @@
           "resultMsg" : {
             "type" : [ "string", "null" ]
           },
+          "skippedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "success" : {
             "type" : "boolean"
+          },
+          "updatedCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -1827,6 +1843,14 @@
       },
       "AdminLogisticsClaimMasterSyncTestResponse" : {
         "properties" : {
+          "fetchedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "notFoundCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "rawResponse" : {
             "type" : [ "string", "null" ]
           },
@@ -1839,8 +1863,16 @@
           "resultMsg" : {
             "type" : [ "string", "null" ]
           },
+          "skippedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "success" : {
             "type" : "boolean"
+          },
+          "updatedCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -27996,6 +28028,60 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/{employeeId}/reset-device" : {
+      "post" : {
+        "operationId" : "resetFemaleEmployeeDevice",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseResetDeviceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/{employeeId}/reset-password" : {
+      "post" : {
+        "operationId" : "resetFemaleEmployeePassword",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseResetPasswordResponse"
                 }
               }
             },
