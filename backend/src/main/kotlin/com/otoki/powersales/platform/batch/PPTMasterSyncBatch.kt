@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @Profile("dev | prod")
-@ConditionalOnProperty(name = ["app.batch.ppt-master.sync-valid.enabled"], havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = ["app.batch.ppt-master.sync.enabled"], havingValue = "true", matchIfMissing = false)
 class PPTMasterSyncBatch(
     private val pptMasterBatchService: PPTMasterBatchService,
     private val scheduledJobRunner: ScheduledJobRunner,

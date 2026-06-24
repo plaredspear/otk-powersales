@@ -387,6 +387,17 @@ springdoc:
   swagger-ui:
     enabled: false
 
+app:
+  # prod 환경에서 발화할 스케줄 잡 (전역 @EnableScheduling ON + 잡별 enabled 게이팅, 기본 OFF).
+  # 전문행사조 마스터 → 사원 행사조 정합 (SF Batch_PPTMaster1/2 동등) 을 prod 에서 활성화한다.
+  # sync: 매시간 44분, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
+  batch:
+    ppt-master:
+      sync:
+        enabled: true
+      expire:
+        enabled: true
+
 ---
 # ---------------------------------------------------------------------------
 # dev 전용 — 단말 바인딩 면제 사번 추가
@@ -404,11 +415,18 @@ app:
     uuid-check:
       excluded-employee-codes: "00000009,20030239,20230001"
   # dev 환경에서 발화할 스케줄 잡 (전역 @EnableScheduling ON + 잡별 enabled 게이팅, 기본 OFF).
-  # 클레임 / 물류클레임 상태 업데이트 sync 만 dev 에서 활성화한다.
+  # 클레임 / 물류클레임 상태 업데이트 sync + 전문행사조 마스터 sync/만료 를 dev 에서 활성화한다.
   batch:
     claim-master:
       sync:
         enabled: true
     logistics-claim-master:
       sync:
+        enabled: true
+    # 전문행사조 마스터 → 사원 행사조 정합 (SF Batch_PPTMaster1/2 동등).
+    # sync: 매시간 44분, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
+    ppt-master:
+      sync:
+        enabled: true
+      expire:
         enabled: true
