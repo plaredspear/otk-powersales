@@ -6,7 +6,7 @@ import '../../core/theme/app_colors.dart';
 /// 매출 현황 허브 화면
 ///
 /// 레거시 Heroku `promotion/month/main2.jsp` 와 동일하게 매출 조회 3종
-/// (POS 매출 조회 / 월 매출 조회(전산) / 월 매출 조회(물류)) 으로 진입하는
+/// (POS 매출 조회 / 전산 매출 조회 / 물류 매출 조회) 으로 진입하는
 /// 메뉴 버튼만 나열한다. 행사 매출·월 매출은 별도 화면으로 분리되어 있어
 /// 본 허브에는 포함되지 않는다.
 class SalesOverviewScreen extends StatelessWidget {
@@ -29,13 +29,13 @@ class SalesOverviewScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               _HubButton(
-                label: '월 매출 조회(전산)',
+                label: '전산 매출 조회',
                 onTap: () =>
                     AppRouter.navigateTo(context, AppRouter.electronicSales),
               ),
               const SizedBox(height: 24),
               _HubButton(
-                label: '월 매출 조회(물류)',
+                label: '물류 매출 조회',
                 // 레거시 main2.jsp 의 "월 매출 조회(물류)" 는 /sales/monthList →
                 // list.jsp(월 매출 진도율·목표/실적 대시보드)로 진입한다.
                 // 신규에선 동일 대시보드가 MonthlySalesPage(=monthlySales)에 정합돼 있다.
