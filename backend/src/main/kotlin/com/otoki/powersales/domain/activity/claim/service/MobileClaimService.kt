@@ -38,17 +38,17 @@ import java.time.LocalDate
  * 모바일 클레임 등록 (UC-02/UC-10) — SF dual-write (channel=CAP).
  *
  * 모바일 입력 파싱 + 의존 entity 조회(userId/accountId/productCode 기반) + draft 삭제 정책을 책임지고,
- * 등록 골격(Tx 분할 + SF 호출)은 [ClaimRegistrationCore] 에 위임한다.
+ * 등록 골격(Tx 분할 + SF 호출)은 [ClaimRegistrationOrchestrator] 에 위임한다.
  *
  * 레거시 ClaimTrigger / IF_REST_MOBILE_ClaimRegist 정합:
  *   - 제조일자 미래 차단
  *   - 요청사항 최대 4개
- *   - 접수사원·부서 자동 채움 (Employee → costCenter/orgName) — 코어가 처리
- *   - CC코드 자동 복사 (Employee.costCenterCode 우선, 없으면 Account.branchCode) — 코어가 처리
+ *   - CC코드(cost_center_code)는 거래처(Account) BranchCode 로 자동 채움 (SF ClaimRegist.cls:90 정합) — 오케스트레이터가 처리
+ *   - division 은 등록 시 공란 (SF 모바일 등록 정합) — 오케스트레이터가 처리
  *   - 등록 즉시 SF `/ClaimRegist` 호출 (channel=CAP)
  *   - 정식 등록 성공 시 해당 사원의 임시저장 row 삭제
  *
- * 트랜잭션 경계는 [ClaimRegistrationCore] 가 txTemplate 으로 관리하므로 본 service 진입 시점엔
+ * 트랜잭션 경계는 [ClaimRegistrationOrchestrator] 가 txTemplate 으로 관리하므로 본 service 진입 시점엔
  * 트랜잭션이 없어야 한다 — 클래스 레벨 @Transactional 을 두지 않는다.
  */
 @Service
@@ -58,13 +58,13 @@ class MobileClaimService(
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val fileStorageService: FileStorageService,
-    private val registrationCore: ClaimRegistrationCore,
+    private val registrationOrchestrator: ClaimRegistrationOrchestrator,
 ) {
 
     /**
      * @param userId UserPrincipal.userId — Employee.id 와 동일 (조회 정책: ClaimQueryService 와 정합)
      */
-    // 등록 골격(ClaimRegistrationCore)이 txTemplate 으로 트랜잭션 경계를 직접 관리하므로 진입 시점엔
+    // 등록 골격(ClaimRegistrationOrchestrator)이 txTemplate 으로 트랜잭션 경계를 직접 관리하므로 진입 시점엔
     // 트랜잭션이 없어야 한다 — NEVER 로 상위 readOnly 트랜잭션 상속을 능동 차단.
     @Transactional(propagation = Propagation.NEVER)
     fun createClaim(
@@ -134,13 +134,13 @@ class MobileClaimService(
         )
 
         // 3. 등록 골격 위임 (Tx1 INSERT → SF call → Tx2 status update) + draft 삭제
-        val result = registrationCore.register(
+        val result = registrationOrchestrator.register(
             employee = employee,
             account = account,
             product = product,
             parsed = parsed,
             channel = ClaimChannel.CAP,
-            photos = ClaimRegistrationCore.ClaimPhotos(
+            photos = ClaimRegistrationOrchestrator.ClaimPhotos(
                 defectPhoto = defectPhoto,
                 defectKey = defectKey,
                 partPhoto = labelPhoto,

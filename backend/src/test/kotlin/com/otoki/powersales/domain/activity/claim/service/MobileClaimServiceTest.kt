@@ -61,7 +61,7 @@ class MobileClaimServiceTest {
 
     // 실제 협력 객체로 조립 — SF 성공/실패는 sfOutboundClient.callApi mock 으로 제어.
     private val sfOutboundService = ClaimSfOutboundService(storageService, sfOutboundClient)
-    private val registrationCore = ClaimRegistrationCore(
+    private val registrationOrchestrator = ClaimRegistrationOrchestrator(
         claimRepository, uploadFileRepository, sfOutboundService, txTemplate,
     )
     private val service = MobileClaimService(
@@ -70,7 +70,7 @@ class MobileClaimServiceTest {
         accountRepository,
         productRepository,
         fileStorageService,
-        registrationCore,
+        registrationOrchestrator,
     )
 
     private val userId = 100L
@@ -342,12 +342,12 @@ class MobileClaimServiceTest {
     @Test
     @DisplayName("등록 경로는 @Transactional(propagation=NEVER) 로 read-only 상속 능동 차단 - 회귀 가드")
     fun registrationPathGuardsAgainstReadOnlyInheritance() {
-        // 회귀 가드: 등록 골격(ClaimRegistrationCore)은 txTemplate(REQUIRED)으로 트랜잭션을 직접 관리한다.
+        // 회귀 가드: 등록 골격(ClaimRegistrationOrchestrator)은 txTemplate(REQUIRED)으로 트랜잭션을 직접 관리한다.
         // 진입 시점에 트랜잭션(특히 readOnly)이 있으면 내부 txTemplate 이 거기 참여해 INSERT 가
         // "cannot execute INSERT in a read-only transaction" 으로 막힌다.
         // ① 클래스 레벨 @Transactional 이 없어야 하고(상속 차단), ② 진입 메서드는 NEVER 로 능동 차단.
-        assertThat(ClaimRegistrationCore::class.findAnnotation<Transactional>())
-            .withFailMessage("ClaimRegistrationCore 에 클래스 레벨 @Transactional 을 두면 read-only 상속 위험")
+        assertThat(ClaimRegistrationOrchestrator::class.findAnnotation<Transactional>())
+            .withFailMessage("ClaimRegistrationOrchestrator 에 클래스 레벨 @Transactional 을 두면 read-only 상속 위험")
             .isNull()
         assertThat(MobileClaimService::class.findAnnotation<Transactional>())
             .withFailMessage("MobileClaimService 에 클래스 레벨 @Transactional 을 두면 read-only 상속 위험")
@@ -356,8 +356,8 @@ class MobileClaimServiceTest {
         assertThat(MobileClaimService::createClaim.findAnnotation<Transactional>()?.propagation)
             .withFailMessage("MobileClaimService.createClaim 은 @Transactional(propagation=NEVER) 여야 한다")
             .isEqualTo(Propagation.NEVER)
-        assertThat(ClaimRegistrationCore::register.findAnnotation<Transactional>()?.propagation)
-            .withFailMessage("ClaimRegistrationCore.register 는 @Transactional(propagation=NEVER) 여야 한다")
+        assertThat(ClaimRegistrationOrchestrator::register.findAnnotation<Transactional>()?.propagation)
+            .withFailMessage("ClaimRegistrationOrchestrator.register 는 @Transactional(propagation=NEVER) 여야 한다")
             .isEqualTo(Propagation.NEVER)
     }
 }

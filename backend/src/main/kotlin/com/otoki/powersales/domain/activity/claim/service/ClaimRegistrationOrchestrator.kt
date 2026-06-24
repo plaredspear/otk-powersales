@@ -20,21 +20,24 @@ import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.multipart.MultipartFile
 
 /**
- * 클레임 등록 공통 골격 — web ([AdminClaimCreateService]) · mobile ([MobileClaimService]) 공용.
+ * 클레임 등록 트랜잭션 오케스트레이터 — web ([AdminClaimCreateService]) · mobile ([MobileClaimService]) 공용.
  *
- * 진입점이 입력 검증·entity 조회·S3 업로드를 끝낸 뒤 본 코어를 호출하면:
+ * 진입점이 입력 검증·entity 조회·S3 업로드를 끝낸 뒤 본 오케스트레이터를 호출하면 다음 3단 시퀀스를 조율한다:
  *   1. [Transaction 1] claim + photo INSERT (status=SF_PENDING)
- *   2. [SF call] ClaimSfOutboundService.pushToSf("/ClaimRegist")
+ *   2. [SF call] ClaimSfOutboundService.pushToSf("/ClaimRegist") — 트랜잭션 외부
  *   3. [Transaction 2] status update (성공 → SENT, 실패 → SEND_FAILED)
  *
  * SF 호출은 트랜잭션 외부에서 일어나며 실패해도 throw 하지 않는다 — claim 은 SEND_FAILED 로 보존되어
- * 나중에 [AdminClaimResendService] 로 수동 재전송 가능. 본 코어는 채널/응답 매핑에 무관하며,
+ * 나중에 [AdminClaimResendService] 로 수동 재전송 가능. 본 오케스트레이터는 채널/응답 매핑에 무관하며,
  * 등록 후 [RegistrationResult] (claim + SF 결과)를 반환해 진입점이 각자의 응답 DTO 로 매핑한다.
+ *
+ * 이렇게 Tx 골격·repository·SF I/O 의존을 본 클래스에 가둬, 진입점([MobileClaimService]/[AdminClaimCreateService])은
+ * 입력 처리에만 집중하고 트랜잭션/INSERT 변경의 영향 범위가 본 클래스 한 곳에 머문다.
  *
  * 트랜잭션 경계를 [txTemplate] 으로 직접 관리하므로 본 클래스에 클래스 레벨 @Transactional 을 두지 않는다.
  */
 @Service
-class ClaimRegistrationCore(
+class ClaimRegistrationOrchestrator(
     private val claimRepository: ClaimRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val sfOutboundService: ClaimSfOutboundService,

@@ -48,7 +48,7 @@ class AdminClaimRegistTestServiceTest {
             accountRepository = mockk<AccountRepository>(relaxed = true),
             productRepository = mockk<ProductRepository>(relaxed = true),
             fileStorageService = mockk<FileStorageService>(relaxed = true),
-            registrationCore = ClaimRegistrationCore(
+            registrationOrchestrator = ClaimRegistrationOrchestrator(
                 claimRepository = claimRepository,
                 uploadFileRepository = mockk(relaxed = true),
                 sfOutboundService = sfOutboundService,

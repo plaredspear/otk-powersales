@@ -70,7 +70,7 @@ class AdminClaimCreateServiceTest {
         }
         // SF 전송 + 등록 골격은 실제 협력 객체로 조립 (callApi/repository mock 단언 보존).
         val sfOutboundService = ClaimSfOutboundService(storageService, sfOutboundClient)
-        val registrationCore = ClaimRegistrationCore(
+        val registrationOrchestrator = ClaimRegistrationOrchestrator(
             claimRepository,
             uploadFileRepository,
             sfOutboundService,
@@ -81,7 +81,7 @@ class AdminClaimCreateServiceTest {
             accountRepository,
             productRepository,
             fileStorageService,
-            registrationCore,
+            registrationOrchestrator,
         )
 
         every { fileStorageService.uploadClaimPhoto(any(), any(), any(), any()) } returnsMany listOf(
