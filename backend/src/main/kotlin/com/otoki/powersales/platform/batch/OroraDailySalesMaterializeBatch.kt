@@ -26,7 +26,9 @@ class OroraDailySalesMaterializeBatch(
     private val scheduledJobRunner: ScheduledJobRunner,
 ) {
 
-    @Scheduled(cron = "\${app.batch.orora.daily.cron:0 30 4 * * *}")
+    // 레거시 SF CronTrigger "오로라 일별 데이터 수신" `0 0 11 ? * 1,2,3,4,5,6,7` (매일 11:00 Asia/Seoul) 정합.
+    // JVM/컨테이너 TZ=Asia/Seoul (Dockerfile) 이므로 zone 명시 없이 KST 로 발화.
+    @Scheduled(cron = "\${app.batch.orora.daily.cron:0 0 11 * * *}")
     // lockAtMostFor=PT2H: 다중 인스턴스 환경에서 거래처 chunk(≈50개) 누적 처리가 길어져도
     // 락이 본문 완료 전 만료되어 다른 노드가 중복 실행 → 월별 합계 정합성이 깨지는 것을 차단.
     // 첫 운영 실행의 실측 소요시간(ORORA_DAILY_MATERIALIZE elapsedMs 로그) 기반으로 추후 조정.
