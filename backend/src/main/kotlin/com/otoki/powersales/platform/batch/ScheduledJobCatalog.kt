@@ -56,13 +56,13 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = PPTMasterExpireBatch.JOB_NAME,
-            cron = "0 0 23 * * *",
-            description = "전문행사조 마스터 만료 처리 (매일 23시)",
+            cron = "0 30 23 * * *",
+            description = "전문행사조 마스터 만료 처리 (매일 23시 30분) — SF \"금일 전문행사조 마감\" 운영 cron 정합",
         ),
         Entry(
             jobName = PPTMasterSyncBatch.JOB_NAME,
-            cron = "0 0 5 * * *",
-            description = "전문행사조 마스터 유효 sync (매일 05시)",
+            cron = "0 44 * * * *",
+            description = "전문행사조 마스터 유효 sync (매시간 44분) — SF \"금일 전문행사조 변경\" 운영 cron 정합",
         ),
         Entry(
             jobName = PostponedAppointmentBatch.JOB_NAME,

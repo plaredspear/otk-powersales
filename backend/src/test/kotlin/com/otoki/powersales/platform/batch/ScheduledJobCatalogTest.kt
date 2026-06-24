@@ -25,6 +25,7 @@ import com.otoki.powersales.platform.batch.ScheduledJobRunCleanupBatch
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.springframework.scheduling.support.CronExpression
 
 @DisplayName("ScheduledJobCatalog 테스트")
 class ScheduledJobCatalogTest {
@@ -68,5 +69,21 @@ class ScheduledJobCatalogTest {
             assertThat(entry.cron).isNotBlank()
             assertThat(entry.description).isNotBlank()
         }
+    }
+
+    @Test
+    @DisplayName("전문행사조 배치 cron 이 SF 운영 CronTrigger 와 정합한다 (변경=매시간 44분, 마감=23:30)")
+    fun pptMasterCrons_alignWithLegacyOperationalSchedule() {
+        val byName = ScheduledJobCatalog.ENTRIES.associateBy { it.jobName }
+
+        // legacy SF "금일 전문행사조 변경" = 0 44 * * * ? (매시간 44분)
+        val syncCron = byName.getValue(PPTMasterSyncBatch.JOB_NAME).cron
+        assertThat(syncCron).isEqualTo("0 44 * * * *")
+        assertThat(CronExpression.isValidExpression(syncCron)).isTrue()
+
+        // legacy SF "금일 전문행사조 마감" = 0 30 23 ? * 1~7 (매일 23:30)
+        val expireCron = byName.getValue(PPTMasterExpireBatch.JOB_NAME).cron
+        assertThat(expireCron).isEqualTo("0 30 23 * * *")
+        assertThat(CronExpression.isValidExpression(expireCron)).isTrue()
     }
 }
