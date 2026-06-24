@@ -42,6 +42,8 @@ export interface RegisteredScheduledJob {
   jobName: string;
   cron: string;
   description: string;
+  /** 현재 환경에서 해당 배치가 실제로 스케줄링 활성화되어 있는지 여부 (backend 빈 등록 기준). */
+  enabled: boolean;
 }
 
 export interface ScheduledJobRunsQuery {

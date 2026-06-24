@@ -64,7 +64,7 @@ const DOMAINS: DomainRow[] = [
   { key: 'sf', pkg: 'sf', name: 'Salesforce 연동', responsibility: 'SF OAuth, 권한/데이터 인바운드 동기, 헬스체크', entities: '(연동 전용)', webMenu: '개발자 도구 > SF Migration', mobileArea: '—', kind: 'infra' },
   { key: 'sfmigration', pkg: 'sfmigration', name: 'SF 마이그레이션', responsibility: 'SF 데이터 복제(Stage 1) → FK 정합(Stage 2)', entities: '(임시 단계 도구)', webMenu: '개발자 도구 > SF Migration', mobileArea: '—', kind: 'infra' },
   { key: 'draft', pkg: 'draft', name: '임시 데이터', responsibility: '레거시 마이그레이션용 임시 적재(미지급 claim/onsite)', entities: 'TmpClaim · TmpOnsite', webMenu: '—', mobileArea: '—', kind: 'infra' },
-  { key: 'batch', pkg: 'batch', name: '배치', responsibility: 'SAP 전송·매출 집계·약관 순환·지오코딩 등 정기 작업 진입점 (ShedLock)', entities: '(서비스 위임)', webMenu: '개발자 도구 > 스케줄 잡 실행 이력', mobileArea: '—', kind: 'infra' },
+  { key: 'batch', pkg: 'batch', name: '배치', responsibility: 'SAP 전송·매출 집계·약관 순환·지오코딩 등 정기 작업 진입점 (ShedLock)', entities: '(서비스 위임)', webMenu: '개발자 도구 > 스케줄 잡', mobileArea: '—', kind: 'infra' },
   { key: 'common', pkg: 'common', name: '공통 인프라', responsibility: '스토리지(S3/로컬), 보안, Naver, 공통 엔티티 기저', entities: 'AuditedEntity 등', webMenu: '(전반에 사용)', mobileArea: '(전반에 사용)', kind: 'infra' },
 ];
 

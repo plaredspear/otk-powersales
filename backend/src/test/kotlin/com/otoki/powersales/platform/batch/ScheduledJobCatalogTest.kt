@@ -72,6 +72,19 @@ class ScheduledJobCatalogTest {
     }
 
     @Test
+    @DisplayName("각 항목의 beanType 이 가리키는 배치 클래스의 JOB_NAME 상수가 entry.jobName 과 일치한다")
+    fun beanType_jobNameConstant_matchesEntryJobName() {
+        ScheduledJobCatalog.ENTRIES.forEach { entry ->
+            // 활성 여부 판정의 정확성은 beanType ↔ jobName 정합에 달려 있으므로,
+            // 각 배치 클래스의 companion const JOB_NAME 을 리플렉션으로 읽어 entry.jobName 과 대조한다.
+            val constant = entry.beanType.getDeclaredField("JOB_NAME").apply { isAccessible = true }.get(null)
+            assertThat(constant)
+                .describedAs("beanType=${entry.beanType.simpleName} 의 JOB_NAME 이 entry.jobName=${entry.jobName} 과 일치해야 한다")
+                .isEqualTo(entry.jobName)
+        }
+    }
+
+    @Test
     @DisplayName("전문행사조 배치 cron 이 SF 운영 CronTrigger 와 정합한다 (변경=매시간 44분, 마감=23:30)")
     fun pptMasterCrons_alignWithLegacyOperationalSchedule() {
         val byName = ScheduledJobCatalog.ENTRIES.associateBy { it.jobName }

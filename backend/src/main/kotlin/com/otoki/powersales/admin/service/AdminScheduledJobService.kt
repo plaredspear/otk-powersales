@@ -10,6 +10,7 @@ import com.otoki.powersales.platform.batch.ScheduledJobCatalog
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRun
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunRepository
 import com.otoki.powersales.domain.sales.materialize.OroraSalesMaterializeFacade
+import org.springframework.beans.factory.ListableBeanFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -27,6 +28,7 @@ import java.time.LocalDateTime
 class AdminScheduledJobService(
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
     private val ororaSalesMaterializeFacade: OroraSalesMaterializeFacade,
+    private val beanFactory: ListableBeanFactory,
 ) {
 
     fun search(query: AdminScheduledJobQuery): ScheduledJobRunListResponse {
@@ -72,12 +74,20 @@ class AdminScheduledJobService(
         )
     }
 
+    /**
+     * 등록된 `@Scheduled` 잡 카탈로그 + 현재 환경 활성 여부.
+     *
+     * 활성 여부는 각 Entry 의 배치 빈 타입이 [beanFactory] 에 등록되어 있는지로 판정한다. 배치 클래스는
+     * `@ConditionalOnProperty(enabled)` + `@Profile(dev|prod)` 로 조건부 등록되므로, 빈 존재 여부가 곧
+     * 현재 환경의 실제 스케줄링 활성 여부와 일치한다 (yml override 포함 반영).
+     */
     fun catalog(): List<RegisteredScheduledJobDto> =
         ScheduledJobCatalog.ENTRIES.map {
             RegisteredScheduledJobDto(
                 jobName = it.jobName,
                 cron = it.cron,
                 description = it.description,
+                enabled = beanFactory.getBeanNamesForType(it.beanType).isNotEmpty(),
             )
         }
 

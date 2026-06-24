@@ -276,7 +276,7 @@ export default function SystemOverviewPage() {
           <Paragraph>
             출근·진열·주문의 SAP 전송, 매출 수익 집계, 약관 순환, 거래처 지오코딩 등 주기 작업이 배치로
             동작합니다. 다중 인스턴스 환경에서 같은 배치가 중복 실행되지 않도록 ShedLock 으로 잠금을
-            겁니다. 실행 이력은 <Text strong>개발자 도구 → 스케줄 잡 실행 이력</Text> 에서 확인할 수 있습니다.
+            겁니다. 실행 이력은 <Text strong>개발자 도구 → 스케줄 잡</Text> 에서 확인할 수 있습니다.
           </Paragraph>
 
           <Divider />

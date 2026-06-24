@@ -89,17 +89,19 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("GET /catalog - 정적 9건 응답 매핑")
+    @DisplayName("GET /catalog - 응답 매핑 + enabled 활성/비활성 플래그 직렬화")
     fun catalog_ok() {
         every { adminScheduledJobService.catalog() } returns listOf(
-                RegisteredScheduledJobDto("sap-outbox-worker", "*/30 * * * * *", "SAP outbox worker"),
-                RegisteredScheduledJobDto("pptMaster.expire", "0 0 23 * * *", "전문행사조 만료"),
+                RegisteredScheduledJobDto("sap-outbox-worker", "*/30 * * * * *", "SAP outbox worker", enabled = true),
+                RegisteredScheduledJobDto("pptMaster.expire", "0 0 23 * * *", "전문행사조 만료", enabled = false),
             )
 
         mockMvc.perform(get("/api/v1/admin/scheduled-jobs/catalog"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data[0].jobName").value("sap-outbox-worker"))
+            .andExpect(jsonPath("$.data[0].enabled").value(true))
             .andExpect(jsonPath("$.data[1].cron").value("0 0 23 * * *"))
+            .andExpect(jsonPath("$.data[1].enabled").value(false))
     }
 
     @Test
