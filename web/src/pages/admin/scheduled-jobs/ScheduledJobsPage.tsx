@@ -433,6 +433,8 @@ export default function ScheduledJobsPage() {
       <Tabs
         tabPosition="left"
         style={{ marginTop: 24 }}
+        // 세로 탭이 잡 수만큼 길어져 화면을 넘어가므로, 탭 바 영역만 스크롤되도록 높이를 제한한다.
+        tabBarStyle={{ maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' }}
         activeKey={activeTab}
         onChange={(key) => {
           setActiveTab(key);
