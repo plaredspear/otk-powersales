@@ -328,13 +328,15 @@ class AdminPromotionEmployeeService(
 
         // 1-4-B: 연쇄 삭제 — 스케줄 삭제
         // Spec #693 — cascade helper 로 validateDisplayMasterLink 가드 + MFEIS refresh 일관 적용
+        // cascade 내부 refreshIntegration 의 SELECT auto-flush 시점에 PE 가 삭제될 schedule 을 참조하면
+        // TransientPropertyValueException → PE 를 먼저 삭제·flush 하여 dangling reference 를 제거한 뒤 cascade.
         val scheduleId = pe.teamMemberScheduleId
+        promotionEmployeeRepository.delete(pe)
+        promotionEmployeeRepository.flush()
+
         if (scheduleId != null) {
             teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(scheduleId))
         }
-
-        promotionEmployeeRepository.delete(pe)
-        promotionEmployeeRepository.flush()
     }
 
     // --- Private helpers ---
@@ -521,8 +523,15 @@ class AdminPromotionEmployeeService(
             pe.workType3?.displayName != workType3
 
         if (criticalChanged) {
-            teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(scheduleId))
+            // cascade 내부 refreshIntegration 의 SELECT 가 auto-flush 를 트리거하는데, 이때 PE 가 삭제될
+            // TeamMemberSchedule 을 (FK 값 + 로드된 연관 객체로) 여전히 참조하면 TransientPropertyValueException.
+            // schedule hard delete 전에 PE 의 연관을 먼저 끊고 flush 하여 dangling reference 를 제거한다.
             pe.teamMemberScheduleId = null
+            pe.teamMemberScheduleSfid = null
+            pe.teamMemberSchedule = null
+            promotionEmployeeRepository.saveAndFlush(pe)
+
+            teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(scheduleId))
         }
     }
 
