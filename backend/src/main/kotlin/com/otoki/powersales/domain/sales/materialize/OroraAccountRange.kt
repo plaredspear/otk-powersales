@@ -38,6 +38,34 @@ data class OroraAccountRange(
         return chunks
     }
 
+    /**
+     * [toChunks] 가 만드는 전체 청크 개수.
+     *
+     * 운영자 수동 트리거가 "전체 N개 청크 중 몇 번째" 를 선택할 수 있도록 청크 총수를 노출한다.
+     */
+    fun chunkCount(): Int {
+        val span = toInclusive - fromInclusive + 1
+        return ((span + chunkSize - 1) / chunkSize).toInt()
+    }
+
+    /**
+     * `chunkIndex`(0-based) 번째 청크 1개만 담은 새 [OroraAccountRange] 를 반환.
+     *
+     * 거래처별 chunk 단위 수동 적재용 — 전체 범위를 도는 대신 선택된 청크 1개의 거래처 구간만
+     * 적재하도록, 그 청크의 (from, to) 를 새 range 로 좁혀 [toChunks] 가 단일 청크를 반환하게 한다.
+     *
+     * @throws IndexOutOfBoundsException `chunkIndex` 가 `[0, chunkCount)` 밖일 때
+     */
+    fun singleChunk(chunkIndex: Int): OroraAccountRange {
+        val count = chunkCount()
+        if (chunkIndex < 0 || chunkIndex >= count) {
+            throw IndexOutOfBoundsException("chunkIndex($chunkIndex) 는 [0, $count) 범위여야 합니다")
+        }
+        val from = fromInclusive + chunkIndex.toLong() * chunkSize
+        val to = minOf(from + chunkSize - 1, toInclusive)
+        return OroraAccountRange(from, to, chunkSize)
+    }
+
     private fun withPrefix(code: Long): String = ACCOUNT_CODE_PREFIX + code.toString()
 
     companion object {

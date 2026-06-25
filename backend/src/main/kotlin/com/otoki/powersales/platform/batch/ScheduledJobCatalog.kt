@@ -125,14 +125,14 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = OroraDailySalesMaterializeBatch.JOB_NAME,
-            cron = "\${app.batch.orora.daily.cron:0 30 4 * * *}",
-            description = "ORORA 일별 매출 → daily_sales_history 적재 + 월별 합계 갱신 (기본 매일 04:30) — legacy Queueable_OroraDailySalesHistory_M1 동등",
+            cron = "\${app.batch.orora.daily.cron:0 0 11 * * *}",
+            description = "ORORA 일별 매출 → daily_sales_history 적재 + 월별 합계 갱신 (기본 매일 11:00) — legacy Queueable_OroraDailySalesHistory_M1 동등 (SF CronTrigger \"오로라 일별 데이터 수신\" 0 0 11 ? * 1-7 Asia/Seoul 정합)",
             beanType = OroraDailySalesMaterializeBatch::class.java,
         ),
         Entry(
             jobName = OroraMonthlySalesMaterializeBatch.JOB_NAME,
-            cron = "\${app.batch.orora.monthly.cron:0 0 5 3 * *}",
-            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매월 3일 05시, 전월분) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등. 수동 트리거로 특정 월 재적재 가능",
+            cron = "\${app.batch.orora.monthly.cron:0 0 11 ? * THU#1}",
+            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매월 첫째 주 목요일 11:00, 전월분) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등 (SF CronTrigger \"오로라 월별 매출 이력 수신\" 0 0 11 ? * 5#1 Asia/Seoul 정합). 수동 트리거로 특정 월 재적재 가능",
             beanType = OroraMonthlySalesMaterializeBatch::class.java,
         ),
         Entry(

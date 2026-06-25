@@ -99,4 +99,24 @@ class ScheduledJobCatalogTest {
         assertThat(expireCron).isEqualTo("0 30 23 * * *")
         assertThat(CronExpression.isValidExpression(expireCron)).isTrue()
     }
+
+    @Test
+    @DisplayName("ORORA 매출 적재 배치 cron 이 SF 운영 CronTrigger 와 정합한다 (일별=매일 11시, 월별=첫째 주 목요일 11시)")
+    fun ororaSalesCrons_alignWithLegacyOperationalSchedule() {
+        val byName = ScheduledJobCatalog.ENTRIES.associateBy { it.jobName }
+
+        // legacy SF "오로라 일별 데이터 수신" = 0 0 11 ? * 1,2,3,4,5,6,7 (매일 11:00 Asia/Seoul)
+        val dailyCron = cronDefault(byName.getValue(OroraDailySalesMaterializeBatch.JOB_NAME).cron)
+        assertThat(dailyCron).isEqualTo("0 0 11 * * *")
+        assertThat(CronExpression.isValidExpression(dailyCron)).isTrue()
+
+        // legacy SF "오로라 월별 매출 이력 수신" = 0 0 11 ? * 5#1 (매월 첫째 주 목요일 11:00 Asia/Seoul)
+        val monthlyCron = cronDefault(byName.getValue(OroraMonthlySalesMaterializeBatch.JOB_NAME).cron)
+        assertThat(monthlyCron).isEqualTo("0 0 11 ? * THU#1")
+        assertThat(CronExpression.isValidExpression(monthlyCron)).isTrue()
+    }
+
+    /** `${app.batch.x.cron:DEFAULT}` placeholder 표기에서 운영 기본 cron(DEFAULT) 만 추출. */
+    private fun cronDefault(raw: String): String =
+        if (raw.startsWith("\${")) raw.substringAfter(':').removeSuffix("}") else raw
 }

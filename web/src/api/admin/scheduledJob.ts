@@ -138,3 +138,56 @@ export async function triggerOroraMonthlyMaterialize(
   }
   return res.data.data;
 }
+
+/** ORORA 월매출 거래처 청크 1개의 메타 (UI 선택 표시용). */
+export interface OroraMonthlyChunkInfo {
+  /** 0-based 청크 번호. */
+  chunkIndex: number;
+  /** 청크 시작 거래처 코드 (ORORA view 원본 형식, 선행 000 포함). */
+  fromAccountCode: string;
+  /** 청크 끝 거래처 코드 (ORORA view 원본 형식, 선행 000 포함). */
+  toAccountCode: string;
+}
+
+/** ORORA 월매출 거래처 청크 메타 응답. */
+export interface OroraMonthlyChunkCatalogResponse {
+  /** 전체 거래처 청크 개수. */
+  chunkCount: number;
+  /** 청크 1개의 거래처 코드 폭. */
+  chunkSize: number;
+  /** 각 청크의 index + 거래처 코드 경계. */
+  chunks: OroraMonthlyChunkInfo[];
+}
+
+/**
+ * ORORA 월매출 거래처 청크 메타(전체 청크 수 + 각 청크 경계)를 조회한다.
+ * 정적 거래처 범위에서 산출되므로 ORORA 호출 없이 즉시 반환된다. 조회 권한(`VIEW_ALL_DATA`) 이면 충분.
+ */
+export async function getOroraMonthlyChunks(): Promise<OroraMonthlyChunkCatalogResponse> {
+  const res = await client.get<ApiResponse<OroraMonthlyChunkCatalogResponse>>(
+    '/api/v1/admin/scheduled-jobs/orora-monthly/chunks',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'ORORA 월매출 청크 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * ORORA 월매출 적재를 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 수동 실행한다
+ * (`salesMonth` 미지정 시 전월). 전체 범위 실행과 달리 선택 청크의 거래처 구간만 적재한다.
+ * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function triggerOroraMonthlyMaterializeChunk(
+  chunkIndex: number,
+  salesMonth?: string,
+): Promise<OroraMonthlyMaterializeTriggerResponse> {
+  const res = await client.post<ApiResponse<OroraMonthlyMaterializeTriggerResponse>>(
+    '/api/v1/admin/scheduled-jobs/orora-monthly/chunk/trigger',
+    salesMonth ? { chunkIndex, salesMonth } : { chunkIndex },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'ORORA 월매출 청크 수동 적재에 실패했습니다');
+  }
+  return res.data.data;
+}

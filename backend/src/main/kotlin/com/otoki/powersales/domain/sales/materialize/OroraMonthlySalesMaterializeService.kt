@@ -47,23 +47,37 @@ class OroraMonthlySalesMaterializeService(
         var upserted = 0
         var unmatched = 0
 
-        range.toChunks().forEachIndexed { idx, (fromCode, toCode) ->
+        // 데이터량 급증 시 전체 소요시간이 lockAtMostFor 를 넘기는지 운영에서 식별할 수 있도록
+        // chunk 별 소요시간 + 전체 누적 elapsedMs 를 남긴다 (monotonic clock).
+        val chunks = range.toChunks()
+        val totalChunks = chunks.size
+        val startedNanos = System.nanoTime()
+        chunks.forEachIndexed { idx, (fromCode, toCode) ->
+            val chunkStartedNanos = System.nanoTime()
             try {
                 val result = chunkProcessor.process(salesMonth, salesYear, salesMonthEnum, fromCode, toCode)
                 fetched += result.fetched
                 upserted += result.upserted
                 unmatched += result.unmatched
+                log.info(
+                    "ORORA_MONTHLY_MATERIALIZE chunk {}/{} 완료 (range={}~{}) fetched={} upserted={} unmatched={} chunkMs={} cumulativeMs={}",
+                    idx + 1, totalChunks, fromCode, toCode, result.fetched, result.upserted, result.unmatched,
+                    (System.nanoTime() - chunkStartedNanos) / 1_000_000,
+                    (System.nanoTime() - startedNanos) / 1_000_000,
+                )
             } catch (ex: Exception) {
                 log.warn(
-                    "ORORA_MONTHLY_MATERIALIZE chunk {} 실패 (salesMonth={}, range={}~{}): {}",
-                    idx, salesMonth, fromCode, toCode, ex.message,
+                    "ORORA_MONTHLY_MATERIALIZE chunk {}/{} 실패 (salesMonth={}, range={}~{}) chunkMs={}: {}",
+                    idx + 1, totalChunks, salesMonth, fromCode, toCode,
+                    (System.nanoTime() - chunkStartedNanos) / 1_000_000, ex.message,
                 )
             }
         }
 
         log.info(
-            "ORORA_MONTHLY_MATERIALIZE salesMonth={} fetched={} upserted={} unmatched={}",
-            salesMonth, fetched, upserted, unmatched,
+            "ORORA_MONTHLY_MATERIALIZE salesMonth={} chunks={} fetched={} upserted={} unmatched={} elapsedMs={}",
+            salesMonth, totalChunks, fetched, upserted, unmatched,
+            (System.nanoTime() - startedNanos) / 1_000_000,
         )
         return OroraMonthlyMaterializeResult(salesMonth, fetched, upserted, unmatched)
     }

@@ -15,10 +15,12 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
+  useOroraMonthlyChunks,
   useScheduledJobCatalog,
   useScheduledJobRuns,
   useScheduledJobSummary,
   useTriggerOroraMonthlyMaterialize,
+  useTriggerOroraMonthlyMaterializeChunk,
   useTriggerPptMaster,
 } from '@/hooks/admin/useScheduledJobs';
 import type {
@@ -210,6 +212,98 @@ function OroraMonthlyTriggerPanel() {
         </Popconfirm>
         <Text type="secondary" style={{ fontSize: 12 }}>
           ORORA view 를 조회해 monthly_sales_history 에 upsert 합니다. 외부 연동이므로 수십 초 소요될 수 있습니다.
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+/**
+ * ORORA 월매출 거래처 청크 단위 수동 적재 패널. 전체 거래처 범위를 도는 전체 실행과 달리, 거래처
+ * 청크(약 2,000 거래처 폭) 1개만 선택해 적재한다. 특정 거래처 구간만 재적재하거나 부분 점검할 때 사용.
+ * `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function OroraMonthlyChunkTriggerPanel() {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const [month, setMonth] = useState<Dayjs | null>(null);
+  const [chunkIndex, setChunkIndex] = useState<number | undefined>(undefined);
+  const chunksQuery = useOroraMonthlyChunks();
+  const trigger = useTriggerOroraMonthlyMaterializeChunk();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const salesMonth = month ? month.format('YYYYMM') : undefined;
+  const chunkOptions = (chunksQuery.data?.chunks ?? []).map((chunk) => ({
+    value: chunk.chunkIndex,
+    label: `${chunk.chunkIndex + 1}번 (거래처 ${chunk.fromAccountCode} ~ ${chunk.toAccountCode})`,
+  }));
+
+  const handleRun = () => {
+    if (chunkIndex === undefined) {
+      message.warning('실행할 거래처 청크를 선택하세요');
+      return;
+    }
+    trigger.mutate(
+      { chunkIndex, salesMonth },
+      {
+        onSuccess: (result) => {
+          message.success(
+            `${result.salesMonth} ${chunkIndex + 1}번 청크 적재 완료 — 조회 ${result.fetchedCount}건 / 적재 ${result.upsertedCount}건` +
+              (result.skippedAccountUnmatchedCount > 0
+                ? ` / 거래처 미매칭 ${result.skippedAccountUnmatchedCount}건`
+                : ''),
+          );
+        },
+        onError: (err) => {
+          message.error(
+            err instanceof Error ? err.message : 'ORORA 월매출 청크 수동 적재에 실패했습니다',
+          );
+        },
+      },
+    );
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="거래처 청크 단위 적재">
+      <Space wrap align="center">
+        <Text type="secondary">대상 월</Text>
+        <DatePicker
+          picker="month"
+          placeholder="미지정 시 전월"
+          value={month}
+          onChange={(value) => setMonth(value)}
+          disabledDate={(current) => current && current > dayjs().endOf('month')}
+        />
+        <Text type="secondary">거래처 청크</Text>
+        <Select
+          style={{ minWidth: 320 }}
+          placeholder={chunksQuery.isLoading ? '청크 목록 불러오는 중…' : '청크 선택'}
+          loading={chunksQuery.isLoading}
+          value={chunkIndex}
+          onChange={(value: number) => setChunkIndex(value)}
+          options={chunkOptions}
+          showSearch
+          optionFilterProp="label"
+        />
+        <Popconfirm
+          title="ORORA 월매출 청크 수동 적재"
+          description={`${salesMonth ?? '전월'} 마감분 중 ${
+            chunkIndex === undefined ? '선택한' : `${chunkIndex + 1}번`
+          } 거래처 청크만 ORORA에서 조회하여 적재합니다. 실행하시겠습니까?`}
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+          disabled={chunkIndex === undefined}
+        >
+          <Button type="primary" loading={trigger.isPending} disabled={chunkIndex === undefined}>
+            청크 적재 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          선택한 거래처 청크 1개 구간만 적재합니다 (특정 거래처 구간 재적재 / 부분 점검용).
         </Text>
       </Space>
     </Card>
@@ -499,7 +593,12 @@ export default function ScheduledJobsPage() {
                 </>
               }
             />
-            {name === ORORA_MONTHLY_JOB && <OroraMonthlyTriggerPanel />}
+            {name === ORORA_MONTHLY_JOB && (
+              <>
+                <OroraMonthlyTriggerPanel />
+                <OroraMonthlyChunkTriggerPanel />
+              </>
+            )}
             {PPT_MASTER_TRIGGER_ACTIONS[name] && (
               <PptMasterTriggerPanel
                 action={PPT_MASTER_TRIGGER_ACTIONS[name]}

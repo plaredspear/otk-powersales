@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  getOroraMonthlyChunks,
   getScheduledJobCatalog,
   getScheduledJobRuns,
   getScheduledJobSummary,
   triggerOroraMonthlyMaterialize,
+  triggerOroraMonthlyMaterializeChunk,
   triggerPptMaster,
   type PptMasterTriggerAction,
   type ScheduledJobRunsQuery,
@@ -42,6 +44,33 @@ export function useTriggerOroraMonthlyMaterialize() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (salesMonth?: string) => triggerOroraMonthlyMaterialize(salesMonth),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'runs'] });
+      queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'summary'] });
+    },
+  });
+}
+
+/**
+ * ORORA 월매출 거래처 청크 메타(전체 청크 수 + 각 청크 경계) 조회. 정적 거래처 범위 산출이라
+ * 거의 변하지 않으므로 staleTime 을 길게 둔다.
+ */
+export function useOroraMonthlyChunks() {
+  return useQuery({
+    queryKey: [...KEY_BASE, 'orora-monthly-chunks'],
+    queryFn: getOroraMonthlyChunks,
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * ORORA 월매출 거래처 청크 단위 수동 적재 트리거. 성공 시 실행 이력/요약 쿼리를 무효화하여 갱신한다.
+ */
+export function useTriggerOroraMonthlyMaterializeChunk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ chunkIndex, salesMonth }: { chunkIndex: number; salesMonth?: string }) =>
+      triggerOroraMonthlyMaterializeChunk(chunkIndex, salesMonth),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'runs'] });
       queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'summary'] });
