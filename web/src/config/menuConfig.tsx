@@ -4,6 +4,7 @@ import {
   TeamOutlined,
   CalendarOutlined,
   BulbOutlined,
+  UsergroupAddOutlined,
   DatabaseOutlined,
   SearchOutlined,
   NotificationOutlined,
@@ -45,17 +46,7 @@ export const menuRoute: MenuRoute = {
   path: '/',
   children: [
     {
-      name: '여사원 일정',
-      icon: <CalendarOutlined />,
-      children: [
-        { path: '/schedule', name: '여사원 일정관리', entity: 'team_member_schedule', operation: 'READ' },
-        { path: '/monthly-integration', name: '월별여사원 통합일정', entity: 'team_member_schedule', operation: 'READ' },
-        { path: '/work-type-headcount', name: '근무형태별 여사원인원현황', entity: 'team_member_schedule', operation: 'READ' },
-        { path: '/monthly-input-adequacy', name: '월별 진열사원 투입적합성', entity: 'monthly_sales_history', operation: 'READ' },
-      ],
-    },
-    {
-      name: '행사/배치',
+      name: '근무배치 마스터',
       icon: <BulbOutlined />,
       children: [
         {
@@ -70,10 +61,25 @@ export const menuRoute: MenuRoute = {
           ],
         },
         { path: '/display-work-schedules', name: '진열스케줄마스터', entity: 'display_work_schedule', operation: 'READ' },
+      ],
+    },
+    {
+      name: '전문행사조',
+      icon: <UsergroupAddOutlined />,
+      children: [
         { path: '/promotion/ppt-masters', name: '전문행사조' },
         { path: '/promotion/ppt-master-history', name: '전문행사조 이력', entity: 'promotion', operation: 'READ' },
-        { path: '/deployment', name: '거래처별 진열사원 배치적합성', entity: 'monthly_sales_history', operation: 'READ' },
-        { path: '/alternative-holidays', name: '대체휴무' },
+      ],
+    },
+    {
+      name: '여사원 일정',
+      icon: <CalendarOutlined />,
+      children: [
+        { path: '/schedule', name: '여사원 일정관리', entity: 'team_member_schedule', operation: 'READ' },
+        { path: '/monthly-integration', name: '월별여사원 통합일정', entity: 'team_member_schedule', operation: 'READ' },
+        { path: '/work-type-headcount', name: '근무형태별 여사원인원현황', entity: 'team_member_schedule', operation: 'READ' },
+        { path: '/monthly-input-adequacy', name: '월별 진열사원 투입적합성', entity: 'monthly_sales_history', operation: 'READ' },
+        { path: '/deployment', name: '진열사원 배치 적합성', entity: 'monthly_sales_history', operation: 'READ' },
       ],
     },
     {
@@ -90,6 +96,7 @@ export const menuRoute: MenuRoute = {
           ],
         },
         { path: '/leave', name: '휴무관리' },
+        { path: '/alternative-holidays', name: '대체휴무' },
         { path: '/attend-info', name: '근무기간 조회', entity: 'attend_info', operation: 'READ' },
       ],
     },

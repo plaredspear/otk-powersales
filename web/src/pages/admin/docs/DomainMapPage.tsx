@@ -37,7 +37,7 @@ const DOMAINS: DomainRow[] = [
   // ── Mobile / Web 공용 도메인 ──
   { key: 'sales', pkg: 'sales', name: '매출/실적', responsibility: '일일 매출 기록, 월간 매출 집계 조회', entities: 'DailySalesHistory', webMenu: '매출/실적 > 월 매출', mobileArea: '일일매출 등록, 월/행사 매출 탭', kind: 'shared' },
   { key: 'schedule', pkg: 'schedule', name: '여사원 일정/근무', responsibility: '캘린더, 월간 통합 일정, 근무 정보(출근) 등록', entities: 'Appointment · AttendanceLog · AttendInfo', webMenu: '여사원 일정 > 일정관리', mobileArea: '일정 캘린더, 출근 등록', kind: 'shared' },
-  { key: 'promotion', pkg: 'promotion', name: '행사 관리', responsibility: '판촉 행사 마스터, 전문행사조, 진열 스케줄', entities: 'Promotion · ProfessionalPromotionTeamMaster', webMenu: '행사/배치 > 행사마스터', mobileArea: '행사 목록/상세, 행사 매출', kind: 'shared' },
+  { key: 'promotion', pkg: 'promotion', name: '행사 관리', responsibility: '판촉 행사 마스터, 전문행사조, 진열 스케줄', entities: 'Promotion · ProfessionalPromotionTeamMaster', webMenu: '근무배치 마스터 > 행사마스터 / 전문행사조', mobileArea: '행사 목록/상세, 행사 매출', kind: 'shared' },
   { key: 'order', pkg: 'order', name: '주문 관리', responsibility: '발주 요청, 거래처 주문 조회, 여신(선금) 조회', entities: 'ErpOrder · ErpOrderProduct · OrderRequest', webMenu: '—', mobileArea: '주문 목록/등록, 거래처 주문 상세', kind: 'shared' },
   { key: 'inspection', pkg: 'inspection', name: '현장 점검', responsibility: '현장점검 테마 정의 및 점검 기록 관리', entities: 'InspectionTheme', webMenu: '현장점검/이슈 > 현장점검', mobileArea: '점검 목록/상세', kind: 'shared' },
   { key: 'safetycheck', pkg: 'safetycheck', name: '안전 점검', responsibility: '현장 안전 점검 항목 정의 및 제출 기록', entities: 'SafetyCheckItem · SafetyCheckSubmission', webMenu: '현장점검/이슈 > 안전점검', mobileArea: '안전점검, 점검 현황', kind: 'shared' },
