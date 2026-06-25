@@ -11,6 +11,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInf
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoListItemResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberDto
 import com.otoki.powersales.domain.activity.schedule.service.AdminAttendInfoService
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
@@ -36,17 +37,31 @@ class AdminAttendInfoController(
 ) {
 
     /**
+     * 근무기간 조회 화면 "지점 선택" 드롭다운 옵션 — 권한별 조회 허용 지점.
+     */
+    @GetMapping("/branches")
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
+    fun getBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        return ResponseEntity.ok(ApiResponse.success(service.getBranches(principal)))
+    }
+
+    /**
      * 근무기간 조회 화면 좌측 여사원 선택 목록.
      *
      * 여사원 일정관리의 /team-schedule/form members 를 빌려쓰던 것을 화면 도메인 권한(attend_info)으로
      * 분리. 퇴사/휴직 등 비활성 여사원도 포함하여 과거 근무내역 조회를 지원한다.
+     *
+     * `branchCode` 지정 시 (다중/전사 권한자가 지점 선택) 해당 지점 여사원을 조회 — 권한 화이트리스트 검증.
      */
     @GetMapping("/members")
     @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
     fun getMembers(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<List<TeamMemberDto>>> {
-        return ResponseEntity.ok(ApiResponse.success(service.getMembers(principal)))
+        return ResponseEntity.ok(ApiResponse.success(service.getMembers(principal, branchCode)))
     }
 
     @GetMapping

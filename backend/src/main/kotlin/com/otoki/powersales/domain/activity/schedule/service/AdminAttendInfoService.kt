@@ -21,7 +21,9 @@ import com.otoki.powersales.domain.activity.schedule.exception.InvalidAttendInfo
 import com.otoki.powersales.domain.activity.schedule.repository.AttendInfoRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -45,21 +47,39 @@ class AdminAttendInfoService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val attendInfoToScheduleConverter: AttendInfoToScheduleConverter,
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
+     * 근무기간 조회 화면 "지점 선택" 드롭다운 옵션 — 권한별 조회 허용 지점.
+     *
+     * 여사원 일정관리와 동일한 권한 스코프([WomenScheduleBranchResolver]). 단일지점 사용자는 1건만
+     * 반환되어 web 에서 고정 표시, 다중/전사 권한자는 선택 드롭다운으로 노출된다.
+     */
+    fun getBranches(principal: WebUserPrincipal): List<BranchResponse> =
+        womenScheduleBranchResolver.resolveBranches(principal)
+
+    /**
      * 근무기간 조회 화면 좌측 여사원 선택 목록.
      *
-     * 여사원 일정관리(AdminTeamScheduleService.getMembers)와 동일한 권한 스코프([WomenMemberScopeResolver])
-     * 를 쓰되, 과거 근무내역 조회 화면이므로 **퇴사/휴직 등 비활성 여사원도 포함**한다
+     * - `branchCode == null`: 본인 지점 스코프([WomenMemberScopeResolver]) — 기존 동작.
+     * - `branchCode != null`: 다중/전사 권한자가 선택한 지점. [WomenScheduleBranchResolver] 화이트리스트로
+     *   검증하여 권한 밖 지점 조회(IDOR)를 차단하고, 통과 시 해당 지점 cost center(매핑 확장)로 조회.
+     *
+     * 과거 근무내역 조회 화면이므로 **퇴사/휴직 등 비활성 여사원도 포함**한다
      * (findWomenByCostCenterCodes — appLoginActive 조건 제외). DTO 의 status 로 재직상태 구분/필터.
      */
-    fun getMembers(principal: WebUserPrincipal): List<TeamMemberDto> {
-        val targetCostCenterCodes = WomenMemberScopeResolver.resolveCostCenterCodes(
-            principal.employeeCode, principal.costCenterCode
-        )
+    fun getMembers(principal: WebUserPrincipal, branchCode: String? = null): List<TeamMemberDto> {
+        val targetCostCenterCodes: List<String> = if (branchCode.isNullOrBlank()) {
+            WomenMemberScopeResolver.resolveCostCenterCodes(principal.employeeCode, principal.costCenterCode)
+        } else {
+            // 권한 밖 지점 조회 차단 — 화이트리스트 미포함이면 빈 목록.
+            if (!womenScheduleBranchResolver.isBranchAllowed(principal, branchCode)) return emptyList()
+            branchCodeExpander.expand(setOf(branchCode)).toList()
+        }
         if (targetCostCenterCodes.isEmpty()) return emptyList()
 
         return employeeRepository.findWomenByCostCenterCodes(targetCostCenterCodes)

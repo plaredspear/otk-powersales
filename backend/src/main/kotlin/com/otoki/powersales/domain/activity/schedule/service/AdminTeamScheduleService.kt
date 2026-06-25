@@ -12,7 +12,6 @@ import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberSchedu
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
-import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyScheduleWithSummaryDto
@@ -45,11 +44,11 @@ class AdminTeamScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
-    private val organizationRepository: OrganizationRepository,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
     private val teamScheduleValidator: TeamScheduleValidator,
     private val branchCodeExpander: BranchCodeExpander,
-    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
+    private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver
 ) {
 
     /**
@@ -106,21 +105,8 @@ class AdminTeamScheduleService(
      * - ALL_BRANCHES Role (영업지원/본부): SF `RT.Name in ('영업지원실','영업본부')` 분기 (CVS 미포함)
      * - 그 외 (LEADER, BRANCH_MANAGER, WOMAN 등): 본인 `costCenterCode` 기준 조직 트리 + Retail/제1/CVS사업부
      */
-    fun getBranches(principal: WebUserPrincipal): List<BranchResponse> {
-        val profileName = principal.profileName
-        val isAllBranches = principal.isSalesSupport || profileName in ALL_BRANCHES_PROFILES
-
-        return when {
-            profileName == SYSTEM_ADMIN_PROFILE_NAME -> organizationRepository.findAllTeamScheduleBranches()
-            isAllBranches ->
-                organizationRepository.findTeamScheduleBranches(hrCode = null, allBranches = true)
-            else ->
-                organizationRepository.findTeamScheduleBranches(
-                    hrCode = principal.costCenterCode,
-                    allBranches = false
-                )
-        }
-    }
+    fun getBranches(principal: WebUserPrincipal): List<BranchResponse> =
+        womenScheduleBranchResolver.resolveBranches(principal)
 
     /**
      * 여사원 일정관리 "전문행사조" 필터 옵션 — [getForm] 내부 전용.
@@ -496,11 +482,6 @@ class AdminTeamScheduleService(
     companion object {
         /** SF 시스템 관리자 Profile.Name ([SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME] 와 동일 값). */
         private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
-
-        /** SF "전 지점 가시" Profile.Name 집합 — 영업본부 / 사업부장 등. SF AppointmentTriggerHanlder.cls:344-365 정합. */
-        private val ALL_BRANCHES_PROFILES: Set<String> = setOf(
-            "1.본부장", "2.사업부장", "3.영업부장"
-        )
 
         /** 기간 조회 상한 — 운영 부하 worst case 회피. ChronoUnit.DAYS.between(from, to) 가 이 값을 초과하면 거부 */
         private const val MAX_RANGE_DAYS = 91L

@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
-import { Alert, Button, Segmented, Spin, Tag, Typography } from 'antd';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Segmented, Select, Spin, Tag, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
+import { useAttendInfoBranches, useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
 import { useEmployeeMonthlyWorkHistory } from '@/hooks/employee/useEmployeeWorkHistory';
 import { MEMBER_STATUS_COLOR, type TeamMember } from '@/api/team-schedule';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -25,9 +25,35 @@ export default function MonthlyWorkDetailTab() {
   const [selected, setSelected] = useState<TeamMember | undefined>(undefined);
   const [period, setPeriod] = useState<Dayjs>(dayjs());
   const [viewType, setViewType] = useState<MonthlyView>('month');
+  // 다중/전사 권한자가 선택한 지점. 단일지점 사용자는 본인 지점이 자동 채워진다.
+  const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
 
-  // 근무기간 조회 전용 여사원 목록 — 본인 지점 스코프 자동 + 퇴사/휴직 포함 (attend_info 권한).
-  const membersQuery = useAttendInfoMembers();
+  // 권한별 조회 허용 지점. 단일지점이면 1건 → 고정 표시, 다중/전사면 드롭다운.
+  const branchesQuery = useAttendInfoBranches();
+  const branches = useMemo(() => branchesQuery.data ?? [], [branchesQuery.data]);
+  const singleBranch = branches.length === 1;
+
+  // 단일지점 사용자는 본인 지점을 자동 선택. stale 코드(권한 주체 변경)는 정리.
+  useEffect(() => {
+    if (branches.length === 0) return;
+    if (branchCode && !branches.some((b) => b.branchCode === branchCode)) {
+      setBranchCode(undefined);
+      setSelected(undefined);
+      return;
+    }
+    if (singleBranch && !branchCode) {
+      setBranchCode(branches[0].branchCode);
+    }
+  }, [branches, singleBranch, branchCode]);
+
+  // 근무기간 조회 전용 여사원 목록 — 선택 지점(또는 본인 지점) + 퇴사/휴직 포함 (attend_info 권한).
+  const membersQuery = useAttendInfoMembers(branchCode);
+
+  // 지점 변경 시 이전 지점에서 고른 여사원은 무효 — 선택 해제.
+  const handleBranchChange = useCallback((code: string) => {
+    setBranchCode(code);
+    setSelected(undefined);
+  }, []);
 
   const employeeId = selected?.employeeId;
   const yearMonth = period.format('YYYY-MM');
@@ -43,12 +69,41 @@ export default function MonthlyWorkDetailTab() {
 
   return (
     <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-      <MonthlyMemberSelectPanel
-        members={membersQuery.data ?? []}
-        isLoading={membersQuery.isLoading}
-        selectedId={employeeId}
-        onSelect={setSelected}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+        {/* 지점명 — 단일지점은 고정 Tag, 다중/전사 권한자는 선택 드롭다운. */}
+        <div style={{ width: 240 }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            지점명
+          </Text>
+          {singleBranch ? (
+            <div style={{ marginTop: 4 }}>
+              <Tag color="geekblue" style={{ fontSize: 13, padding: '3px 10px', marginInlineEnd: 0 }}>
+                {branches[0].branchName}
+              </Tag>
+            </div>
+          ) : (
+            <Select
+              size="small"
+              style={{ width: '100%', marginTop: 4 }}
+              placeholder="지점 선택"
+              value={branchCode}
+              onChange={handleBranchChange}
+              options={branches.map((b) => ({ value: b.branchCode, label: b.branchName }))}
+              showSearch
+              optionFilterProp="label"
+              loading={branchesQuery.isLoading}
+              notFoundContent="지점 없음"
+            />
+          )}
+        </div>
+
+        <MonthlyMemberSelectPanel
+          members={membersQuery.data ?? []}
+          isLoading={membersQuery.isLoading}
+          selectedId={employeeId}
+          onSelect={setSelected}
+        />
+      </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
         {/* 여사원 일정관리 캘린더 상단과 동일한 헤더 — 월 네비게이션 + 월간/목록 토글 */}

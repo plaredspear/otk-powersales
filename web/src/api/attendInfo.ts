@@ -1,6 +1,6 @@
 import client from './client';
 import type { ApiResponse } from './types';
-import type { TeamMember } from './team-schedule';
+import type { Branch, TeamMember } from './team-schedule';
 
 export type AttendInfoStatus = 'N' | 'Y';
 
@@ -149,13 +149,28 @@ export async function deleteAttendInfo(id: number): Promise<DeleteAttendInfoResp
 }
 
 /**
+ * 근무기간 조회 "지점 선택" 옵션 — 권한별 조회 허용 지점 (attend_info READ).
+ */
+export async function fetchAttendInfoBranches(): Promise<Branch[]> {
+  const res = await client.get<ApiResponse<Branch[]>>(`${BASE}/branches`);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
  * 근무기간 조회 좌측 여사원 선택 목록.
  *
  * 여사원 일정관리의 form members 와 달리 퇴사/휴직 등 비활성 여사원도 포함 (과거 근무내역 조회).
  * 화면 도메인 권한(attend_info READ)으로 가드되는 전용 엔드포인트.
+ *
+ * `branchCode` 지정 시 (다중/전사 권한자가 지점 선택) 해당 지점 여사원을 조회 — backend 가 권한 검증.
  */
-export async function fetchAttendInfoMembers(): Promise<TeamMember[]> {
-  const res = await client.get<ApiResponse<TeamMember[]>>(`${BASE}/members`);
+export async function fetchAttendInfoMembers(branchCode?: string): Promise<TeamMember[]> {
+  const res = await client.get<ApiResponse<TeamMember[]>>(`${BASE}/members`, {
+    params: branchCode ? { branchCode } : undefined,
+  });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '여사원 목록 조회에 실패했습니다');
   }

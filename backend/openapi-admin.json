@@ -18205,9 +18205,35 @@
         "tags" : [ "admin-attend-info-controller" ]
       }
     },
+    "/api/v1/admin/attend-info/branches" : {
+      "get" : {
+        "operationId" : "getBranches_2",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-attend-info-controller" ]
+      }
+    },
     "/api/v1/admin/attend-info/members" : {
       "get" : {
         "operationId" : "getMembers",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
