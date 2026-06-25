@@ -403,6 +403,12 @@ app:
         enabled: true
       expire:
         enabled: true
+    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 04:30 / 월매출 매월 3일 05:00).
+    orora:
+      daily:
+        enabled: true
+      monthly:
+        enabled: true
 
 ---
 # ---------------------------------------------------------------------------
@@ -435,4 +441,10 @@ app:
       sync:
         enabled: true
       expire:
+        enabled: true
+    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 04:30 / 월매출 매월 3일 05:00).
+    orora:
+      daily:
+        enabled: true
+      monthly:
         enabled: true
