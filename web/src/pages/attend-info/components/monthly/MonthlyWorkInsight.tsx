@@ -113,7 +113,7 @@ function SummaryPanel({ agg }: { agg: Aggregates }) {
                   >
                     {k}
                   </span>
-                  <span style={{ flexShrink: 0 }}>{n}일</span>
+                  <span style={{ flexShrink: 0 }}>{n}회</span>
                 </div>
                 <div style={{ background: '#f0f0f0', borderRadius: 2, height: 6 }}>
                   <div
@@ -142,7 +142,7 @@ function SummaryPanel({ agg }: { agg: Aggregates }) {
                 <span style={{ color: CATEGORY1_COLOR[k] ?? '#888' }}>
                   {CATEGORY1_SYMBOL[k] ?? '•'}
                 </span>{' '}
-                {k} <Text strong>{n}</Text>
+                {k} <Text strong>{n}</Text>회
               </span>
             ))
           )}
@@ -157,7 +157,7 @@ function SummaryPanel({ agg }: { agg: Aggregates }) {
           ) : (
             agg.byCategory3.map(([k, n]) => (
               <span key={k} style={{ marginRight: 12 }}>
-                {k} <Text strong>{n}</Text>
+                {k} <Text strong>{n}</Text>회
               </span>
             ))
           )}
