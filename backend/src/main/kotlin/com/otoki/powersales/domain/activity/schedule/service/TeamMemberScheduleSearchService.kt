@@ -46,6 +46,7 @@ class TeamMemberScheduleSearchService(
         month: String,
         orgValues: List<String>,
         keyword: String? = null,
+        accountKeyword: String? = null,
     ): TeamMemberScheduleSearchResult {
         val normMonth = month.toInt().toString()
         val expandedCodes = expander.expand(orgValues)
@@ -53,7 +54,7 @@ class TeamMemberScheduleSearchService(
             return TeamMemberScheduleSearchResult(resultCode = "S", resultMsg = "검색결과가 없습니다.", result = emptyList())
         }
 
-        val rows = fetchMfeisOrdered(year, normMonth, expandedCodes, keyword)
+        val rows = fetchMfeisOrdered(year, normMonth, expandedCodes, keyword, accountKeyword)
         val avgSalesByAccountId = computeSixMonthAverageSales(rows, year, normMonth)
 
         val items = rows.map { toResultItem(it, avgSalesByAccountId) }
@@ -74,6 +75,7 @@ class TeamMemberScheduleSearchService(
         month: String,
         costCenterCodes: Collection<String>,
         keyword: String? = null,
+        accountKeyword: String? = null,
     ): List<TeamMemberScheduleRow> {
         val q = monthlyFemaleEmployeeIntegrationSchedule
         // 사번 또는 이름 통합 검색어 — 사번 정확일치 OR 이름 부분일치(대소문자/공백 무시).
@@ -81,6 +83,13 @@ class TeamMemberScheduleSearchService(
         val trimmedKeyword = keyword?.trim()?.takeIf { it.isNotEmpty() }
         val keywordPredicate = trimmedKeyword?.let {
             q.employee.employeeCode.eq(it).or(q.employee.name.containsIgnoreCase(it))
+        }
+        // 거래처 통합 검색어 — 거래처코드(ExternalKey) 정확일치 OR 거래처명 부분일치(대소문자/공백 무시).
+        // account 도 이미 lazy join 으로 select 중이라 추가 join 없이 WHERE 조건만 덧붙인다.
+        // keyword(사번/이름) 와 AND 결합 — 둘 다 입력 시 교집합.
+        val trimmedAccountKeyword = accountKeyword?.trim()?.takeIf { it.isNotEmpty() }
+        val accountKeywordPredicate = trimmedAccountKeyword?.let {
+            q.account.externalKey.eq(it).or(q.account.name.containsIgnoreCase(it))
         }
         // DTO projection — MFEIS + employee/account 의 필요 컬럼만 select.
         // 엔티티(특히 Employee) 를 hydrate 하지 않으므로 Employee.employeeInfo @OneToOne 강제 로딩
@@ -116,6 +125,7 @@ class TeamMemberScheduleSearchService(
                     .and(q.month.eq(month))
                     .and(q.costCenterCode.`in`(costCenterCodes))
                     .and(keywordPredicate)
+                    .and(accountKeywordPredicate)
             )
             // SF ORDER BY BranchName__c, AccountCode__c, EmployeeNumber__c (모두 formula)
             // backend lazy join 컬럼으로 동등 정렬

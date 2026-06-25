@@ -56,7 +56,7 @@ class AdminMonthlyIntegrationControllerTest : AdminControllerTestSupport() {
                 ),
                 totalCount = 1
             )
-            every { adminMonthlyIntegrationService.getMonthlyIntegration(eq(2026), eq(3), any(), any()) } returns response
+            every { adminMonthlyIntegrationService.getMonthlyIntegration(eq(2026), eq(3), any(), any(), any()) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/schedules/monthly-integration")
@@ -81,7 +81,7 @@ class AdminMonthlyIntegrationControllerTest : AdminControllerTestSupport() {
                 year = 2026, month = 3, items = emptyList(), totalCount = 0
             )
             every {
-                adminMonthlyIntegrationService.getMonthlyIntegration(eq(2026), eq(3), any(), eq("김영희"))
+                adminMonthlyIntegrationService.getMonthlyIntegration(eq(2026), eq(3), any(), eq("김영희"), any())
             } returns response
 
             mockMvc.perform(
@@ -95,14 +95,39 @@ class AdminMonthlyIntegrationControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.success").value(true))
 
             io.mockk.verify {
-                adminMonthlyIntegrationService.getMonthlyIntegration(2026, 3, any(), "김영희")
+                adminMonthlyIntegrationService.getMonthlyIntegration(2026, 3, any(), "김영희", any())
+            }
+        }
+
+        @Test
+        @DisplayName("성공 - 거래처명/코드 검색어(accountKeyword) 가 서비스로 전달됨")
+        fun passesAccountKeyword() {
+            val response = MonthlyIntegrationScheduleResponse(
+                year = 2026, month = 3, items = emptyList(), totalCount = 0
+            )
+            every {
+                adminMonthlyIntegrationService.getMonthlyIntegration(eq(2026), eq(3), any(), any(), eq("이마트"))
+            } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/schedules/monthly-integration")
+                    .param("year", "2026")
+                    .param("month", "3")
+                    .param("costCenterCodes", "CC001")
+                    .param("accountKeyword", "이마트")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+
+            io.mockk.verify {
+                adminMonthlyIntegrationService.getMonthlyIntegration(2026, 3, any(), any(), "이마트")
             }
         }
 
         @Test
         @DisplayName("실패 - year 범위 초과")
         fun invalidYear() {
-            every { adminMonthlyIntegrationService.getMonthlyIntegration(eq(1999), eq(3), any(), any()) } throws InvalidParameterException("year는 2020~2099 범위여야 합니다")
+            every { adminMonthlyIntegrationService.getMonthlyIntegration(eq(1999), eq(3), any(), any(), any()) } throws InvalidParameterException("year는 2020~2099 범위여야 합니다")
 
             mockMvc.perform(
                 get("/api/v1/admin/schedules/monthly-integration")
@@ -126,7 +151,7 @@ class AdminMonthlyIntegrationControllerTest : AdminControllerTestSupport() {
                 bytes = byteArrayOf(0x50, 0x4B), // dummy xlsx header
                 filename = "2026년3월_여사원 통합일정 조회_20260322_120000.xlsx"
             )
-            every { adminMonthlyIntegrationService.exportMonthlyIntegration(eq(2026), eq(3), any(), any()) } returns excelResult
+            every { adminMonthlyIntegrationService.exportMonthlyIntegration(eq(2026), eq(3), any(), any(), any()) } returns excelResult
 
             mockMvc.perform(
                 get("/api/v1/admin/schedules/monthly-integration/export")

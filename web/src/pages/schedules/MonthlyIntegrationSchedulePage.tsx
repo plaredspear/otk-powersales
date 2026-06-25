@@ -105,11 +105,13 @@ export default function MonthlyIntegrationSchedulePage() {
   const [month, setMonth] = useState(now.month() + 1);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
+  const [accountKeyword, setAccountKeyword] = useState('');
   const [queryParams, setQueryParams] = useState<{
     year: number;
     month: number;
     codes: string[];
     keyword: string;
+    accountKeyword: string;
   } | null>(null);
 
   const screens = useBreakpoint();
@@ -121,6 +123,7 @@ export default function MonthlyIntegrationSchedulePage() {
     queryParams?.codes ?? [],
     queryParams != null,
     queryParams?.keyword,
+    queryParams?.accountKeyword,
   );
 
   const exportMutation = useMonthlyIntegrationExport();
@@ -134,8 +137,8 @@ export default function MonthlyIntegrationSchedulePage() {
     if (autoSearchedRef.current) return;
     if (selectedCodes.length === 0) return;
     autoSearchedRef.current = true;
-    setQueryParams({ year, month, codes: selectedCodes, keyword });
-  }, [selectedCodes, year, month, keyword]);
+    setQueryParams({ year, month, codes: selectedCodes, keyword, accountKeyword });
+  }, [selectedCodes, year, month, keyword, accountKeyword]);
 
   useEffect(() => {
     if (isLoading || isError) return;
@@ -152,7 +155,7 @@ export default function MonthlyIntegrationSchedulePage() {
       message.warning('년도와 월을 입력해주세요');
       return;
     }
-    setQueryParams({ year, month, codes: selectedCodes, keyword });
+    setQueryParams({ year, month, codes: selectedCodes, keyword, accountKeyword });
   };
 
   const handleExport = () => {
@@ -162,6 +165,7 @@ export default function MonthlyIntegrationSchedulePage() {
       month: queryParams.month,
       costCenterCodes: queryParams.codes,
       keyword: queryParams.keyword,
+      accountKeyword: queryParams.accountKeyword,
     });
   };
 
@@ -181,17 +185,30 @@ export default function MonthlyIntegrationSchedulePage() {
         searchLoading={isLoading}
         hideExport={isMobile}
         extraFilters={
-          <Space direction="vertical" size={4}>
-            <span>사번/이름:</span>
-            <Input
-              allowClear
-              placeholder="사번 또는 이름"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              onPressEnter={handleSearch}
-              style={{ width: 160 }}
-            />
-          </Space>
+          <>
+            <Space direction="vertical" size={4}>
+              <span>거래처명/코드:</span>
+              <Input
+                allowClear
+                placeholder="거래처명 또는 코드"
+                value={accountKeyword}
+                onChange={(e) => setAccountKeyword(e.target.value)}
+                onPressEnter={handleSearch}
+                style={{ width: 160 }}
+              />
+            </Space>
+            <Space direction="vertical" size={4}>
+              <span>사번/이름:</span>
+              <Input
+                allowClear
+                placeholder="사번 또는 이름"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onPressEnter={handleSearch}
+                style={{ width: 160 }}
+              />
+            </Space>
+          </>
         }
         extraActions={
           queryParams != null && !isMobile ? (

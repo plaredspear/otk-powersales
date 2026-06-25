@@ -60,8 +60,10 @@ export async function fetchMonthlyIntegrationSchedule(
   month: number,
   costCenterCodes: string[],
   keyword?: string,
+  accountKeyword?: string,
 ): Promise<MonthlyIntegrationScheduleResponse> {
   const trimmedKeyword = keyword?.trim();
+  const trimmedAccountKeyword = accountKeyword?.trim();
   const res = await client.get<ApiResponse<MonthlyIntegrationScheduleResponse>>(
     '/api/v1/admin/schedules/monthly-integration',
     {
@@ -70,6 +72,7 @@ export async function fetchMonthlyIntegrationSchedule(
         month,
         costCenterCodes: costCenterCodes.join(','),
         ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
+        ...(trimmedAccountKeyword ? { accountKeyword: trimmedAccountKeyword } : {}),
       },
     },
   );
@@ -85,8 +88,10 @@ export async function fetchMonthlyIntegrationExport(
   month: number,
   costCenterCodes: string[],
   keyword?: string,
+  accountKeyword?: string,
 ): Promise<void> {
   const trimmedKeyword = keyword?.trim();
+  const trimmedAccountKeyword = accountKeyword?.trim();
   await downloadExcel(
     '/api/v1/admin/schedules/monthly-integration/export',
     `${year}년${month}월_여사원_통합일정.xlsx`,
@@ -96,6 +101,7 @@ export async function fetchMonthlyIntegrationExport(
         month,
         costCenterCodes: costCenterCodes.join(','),
         ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
+        ...(trimmedAccountKeyword ? { accountKeyword: trimmedAccountKeyword } : {}),
       },
     },
   );
