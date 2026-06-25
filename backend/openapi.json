@@ -8010,6 +8010,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseOroraMonthlyChunkCatalogResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OroraMonthlyChunkCatalogResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseOroraMonthlyMaterializeResult" : {
         "properties" : {
           "data" : {
@@ -17561,6 +17590,52 @@
           },
           "salesMonth" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraMonthlyChunkCatalogResponse" : {
+        "properties" : {
+          "chunkCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "chunkSize" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "chunks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OroraMonthlyChunkInfo"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraMonthlyChunkInfo" : {
+        "properties" : {
+          "chunkIndex" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "fromAccountCode" : {
+            "type" : "string"
+          },
+          "toAccountCode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraMonthlyMaterializeChunkTriggerRequest" : {
+        "properties" : {
+          "chunkIndex" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -33484,6 +33559,52 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListRegisteredScheduledJobDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/orora-monthly/chunk/trigger" : {
+      "post" : {
+        "operationId" : "triggerOroraMonthlyChunk",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OroraMonthlyMaterializeChunkTriggerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraMonthlyMaterializeTriggerResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/orora-monthly/chunks" : {
+      "get" : {
+        "operationId" : "getOroraMonthlyChunks",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraMonthlyChunkCatalogResponse"
                 }
               }
             },
