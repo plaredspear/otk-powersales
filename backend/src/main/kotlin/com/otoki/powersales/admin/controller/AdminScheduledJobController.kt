@@ -4,7 +4,9 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.request.OroraMonthlyMaterializeChunkTriggerRequest
 import com.otoki.powersales.admin.dto.request.OroraMonthlyMaterializeTriggerRequest
+import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkCatalogResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobManualTriggerResponse
@@ -86,6 +88,33 @@ class AdminScheduledJobController(
         @RequestBody(required = false) request: OroraMonthlyMaterializeTriggerRequest?,
     ): ResponseEntity<ApiResponse<OroraMonthlyMaterializeTriggerResponse>> {
         val response = adminScheduledJobService.triggerOroraMonthly(request?.salesMonth)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * ORORA 월매출 거래처 청크 메타(전체 청크 수 + 각 청크 거래처 경계) 조회.
+     *
+     * 수동 트리거 UI 가 "전체 N개 중 몇 번째 청크" 를 선택하도록 제공한다. 정적 거래처 범위에서
+     * 산출되므로 ORORA 호출 없이 즉시 반환. 조회 권한(`VIEW_ALL_DATA`) 이면 충분하다.
+     */
+    @GetMapping("/api/v1/admin/scheduled-jobs/orora-monthly/chunks")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
+    fun getOroraMonthlyChunks(): ResponseEntity<ApiResponse<OroraMonthlyChunkCatalogResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(adminScheduledJobService.ororaMonthlyChunkCatalog()))
+    }
+
+    /**
+     * ORORA 월매출 적재를 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 수동 실행한다.
+     *
+     * 전체 범위를 도는 [triggerOroraMonthly] 와 달리 선택 청크의 거래처 구간만 적재한다. 스케줄 배치와
+     * 동일 잡명으로 이력에 남는다. 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+     */
+    @PostMapping("/api/v1/admin/scheduled-jobs/orora-monthly/chunk/trigger")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun triggerOroraMonthlyChunk(
+        @RequestBody request: OroraMonthlyMaterializeChunkTriggerRequest,
+    ): ResponseEntity<ApiResponse<OroraMonthlyMaterializeTriggerResponse>> {
+        val response = adminScheduledJobService.triggerOroraMonthlyChunk(request.chunkIndex, request.salesMonth)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

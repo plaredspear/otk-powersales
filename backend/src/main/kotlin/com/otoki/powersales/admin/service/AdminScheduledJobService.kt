@@ -1,14 +1,18 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkCatalogResponse
+import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkInfo
 import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
+import com.otoki.powersales.platform.batch.OroraMonthlySalesMaterializeBatch
 import com.otoki.powersales.platform.batch.ScheduledJobCatalog
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRun
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunRepository
+import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.domain.sales.materialize.OroraSalesMaterializeFacade
 import org.springframework.beans.factory.ListableBeanFactory
 import org.springframework.data.domain.PageRequest
@@ -28,6 +32,7 @@ import java.time.LocalDateTime
 class AdminScheduledJobService(
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
     private val ororaSalesMaterializeFacade: OroraSalesMaterializeFacade,
+    private val scheduledJobRunner: ScheduledJobRunner,
     private val beanFactory: ListableBeanFactory,
 ) {
 
@@ -114,6 +119,65 @@ class AdminScheduledJobService(
             upsertedCount = result.upsertedCount,
             skippedAccountUnmatchedCount = result.skippedAccountUnmatchedCount,
         )
+    }
+
+    /**
+     * ORORA 월매출 거래처 청크 메타 — 수동 트리거 UI 가 "전체 N개 중 몇 번째 청크" 를 선택하도록 제공.
+     *
+     * 청크 경계는 정적 거래처 범위(`app.batch.orora.account-range.*`) 에서 산출되므로 ORORA 호출 없이 즉시 반환된다.
+     */
+    fun ororaMonthlyChunkCatalog(): OroraMonthlyChunkCatalogResponse {
+        val boundaries = ororaSalesMaterializeFacade.monthlyChunkBoundaries()
+        return OroraMonthlyChunkCatalogResponse(
+            chunkCount = boundaries.size,
+            chunkSize = ororaSalesMaterializeFacade.chunkSize(),
+            chunks = boundaries.mapIndexed { index, (from, to) ->
+                OroraMonthlyChunkInfo(chunkIndex = index, fromAccountCode = from, toAccountCode = to)
+            },
+        )
+    }
+
+    /**
+     * ORORA 월매출 적재를 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 수동 실행한다.
+     *
+     * 전체 범위를 도는 [triggerOroraMonthly] 와 달리 선택 청크의 거래처 구간만 적재한다 (특정 구간 재적재 / 부분 점검).
+     * 스케줄 배치와 동일한 `JOB_NAME` 으로 [ScheduledJobRunner] 로 감싸 `scheduled_job_run` 이력에 남긴다 —
+     * 화면 이력 탭에서 chunk 수동 실행도 함께 조회된다. metadata 의 `trigger=manual-chunk` + `chunkIndex` 로 구분.
+     *
+     * @param chunkIndex 적재 대상 청크 번호 (0-based). `[0, chunkCount)` 범위.
+     * @param salesMonth `YYYYMM` 6자. null/blank 면 전월 자동 산출.
+     */
+    fun triggerOroraMonthlyChunk(chunkIndex: Int, salesMonth: String?): OroraMonthlyMaterializeTriggerResponse {
+        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() }
+        if (normalized != null) {
+            require(normalized.length == 6 && normalized.all { it.isDigit() }) {
+                "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
+            }
+        }
+        val chunkCount = ororaSalesMaterializeFacade.monthlyChunkCount()
+        require(chunkIndex in 0 until chunkCount) {
+            "chunkIndex 는 0 이상 $chunkCount 미만이어야 합니다: $chunkIndex"
+        }
+
+        return scheduledJobRunner.run(OroraMonthlySalesMaterializeBatch.JOB_NAME) { ctx ->
+            val result = ororaSalesMaterializeFacade.materializeMonthlyChunk(chunkIndex, normalized)
+            ctx.metadata(
+                mapOf(
+                    "trigger" to "manual-chunk",
+                    "chunkIndex" to chunkIndex,
+                    "salesMonth" to result.salesMonth,
+                    "fetchedCount" to result.fetchedCount,
+                    "upsertedCount" to result.upsertedCount,
+                    "skippedAccountUnmatchedCount" to result.skippedAccountUnmatchedCount,
+                )
+            )
+            OroraMonthlyMaterializeTriggerResponse(
+                salesMonth = result.salesMonth,
+                fetchedCount = result.fetchedCount,
+                upsertedCount = result.upsertedCount,
+                skippedAccountUnmatchedCount = result.skippedAccountUnmatchedCount,
+            )
+        }
     }
 
     private fun ScheduledJobRun.toDto(): ScheduledJobRunDto {

@@ -72,3 +72,29 @@ data class OroraMonthlyMaterializeTriggerResponse(
     val upsertedCount: Int,
     val skippedAccountUnmatchedCount: Int,
 )
+
+/**
+ * ORORA 월매출 거래처 청크 메타 — 수동 트리거 UI 가 "전체 N개 중 몇 번째 청크" 를 선택하도록 제공.
+ *
+ * @property chunkCount 전체 거래처 청크 개수
+ * @property chunkSize 청크 1개의 거래처 코드 폭
+ * @property chunks 각 청크의 0-based index 와 거래처 코드 경계 (UI 표시용)
+ */
+data class OroraMonthlyChunkCatalogResponse(
+    val chunkCount: Int,
+    val chunkSize: Long,
+    val chunks: List<OroraMonthlyChunkInfo>,
+)
+
+/**
+ * 거래처 청크 1개의 메타.
+ *
+ * @property chunkIndex 0-based 청크 번호
+ * @property fromAccountCode 청크 시작 거래처 코드 (ORORA view 원본 형식, 선행 `000` 포함)
+ * @property toAccountCode 청크 끝 거래처 코드 (ORORA view 원본 형식, 선행 `000` 포함)
+ */
+data class OroraMonthlyChunkInfo(
+    val chunkIndex: Int,
+    val fromAccountCode: String,
+    val toAccountCode: String,
+)

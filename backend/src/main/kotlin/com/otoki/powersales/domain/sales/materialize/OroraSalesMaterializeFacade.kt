@@ -32,6 +32,32 @@ class OroraSalesMaterializeFacade(
         monthlyService.materialize(resolvePreviousSalesMonth(salesMonth), accountRange())
 
     /**
+     * 월별 적재 — 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 실행.
+     *
+     * 전체 거래처 범위를 도는 [materializeMonthly] 대신, 운영자가 선택한 단일 청크의 거래처 구간만
+     * 적재한다 (특정 거래처 구간 재적재 / 부분 점검용). `salesMonth` null 이면 전월 동적 산출.
+     *
+     * @throws IndexOutOfBoundsException `chunkIndex` 가 `[0, monthlyChunkCount())` 밖일 때
+     */
+    fun materializeMonthlyChunk(chunkIndex: Int, salesMonth: String? = null): OroraMonthlyMaterializeResult =
+        monthlyService.materialize(resolvePreviousSalesMonth(salesMonth), accountRange().singleChunk(chunkIndex))
+
+    /**
+     * 월별 적재의 전체 거래처 청크 개수 — 수동 트리거 UI 가 "전체 N개 중 몇 번째" 를 선택하도록 노출.
+     */
+    fun monthlyChunkCount(): Int = accountRange().chunkCount()
+
+    /**
+     * 월별 적재의 거래처 청크 경계 목록 — 수동 트리거 UI 의 청크 선택 표시용.
+     *
+     * 각 항목은 (from, to) 거래처 코드 (ORORA view 원본 형식, 선행 `000` 포함). 0-based index 는 리스트 순서.
+     */
+    fun monthlyChunkBoundaries(): List<Pair<String, String>> = accountRange().toChunks()
+
+    /** 청크 선택 수동 트리거가 참조하는 청크 폭 (거래처 코드 폭). */
+    fun chunkSize(): Long = chunkSize
+
+    /**
      * 일별 적재 + 월별 합계 갱신 — `salesMonth` null 이면 당월 동적 산출 (Q2 옵션 1).
      */
     fun materializeDaily(salesMonth: String? = null): OroraDailyMaterializeResult =
