@@ -15,10 +15,13 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
+  useOroraDailyChunks,
   useOroraMonthlyChunks,
   useScheduledJobCatalog,
   useScheduledJobRuns,
   useScheduledJobSummary,
+  useTriggerOroraDailyMaterialize,
+  useTriggerOroraDailyMaterializeChunk,
   useTriggerOroraMonthlyMaterialize,
   useTriggerOroraMonthlyMaterializeChunk,
   useTriggerPptMaster,
@@ -124,13 +127,16 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
   'scheduledJobRun.cleanup':
     '배치 실행 이력 테이블에서 보존 기간(90일)을 초과한 오래된 행을 일괄 삭제로 정리합니다. 배치 실행 로그가 무한히 쌓이는 것을 막기 위한 보존 정책 정리 배치입니다.',
     'orora-daily-sales-materialize-batch':
-    'ORORA 영업시스템의 일별 매출 view를 거래처 범위 단위로 조회하여 daily_sales_history 테이블에 적재하고, 같은 거래처·월의 monthly_sales_history 전산마감실적 합계·물류마감실적 합계·총 원장매출을 갱신합니다. 일자는 대상월이 당월이면 오늘, 과거월이면 그 달 말일로 보정해 저장하며, 거래처가 매칭되지 않는 매출 행은 적재하지 않습니다. 당월을 대상으로 매일 실행됩니다. (legacy Queueable_OroraDailySalesHistory_M1 + DailyErpSalesInfoTriggerHandler 동등)',
+    'ORORA 영업시스템의 일별 매출 view를 거래처 범위 단위로 조회하여 daily_sales_history 테이블에 적재하고, 같은 거래처·월의 monthly_sales_history 전산마감실적 합계·물류마감실적 합계·총 원장매출을 갱신합니다. 일자는 대상월이 당월이면 오늘, 과거월이면 그 달 말일로 보정해 저장하며, 거래처가 매칭되지 않는 매출 행은 적재하지 않습니다. 당월을 대상으로 매일 실행됩니다. 아래에서 특정 월을 지정해 수동 재적재할 수 있습니다. (legacy Queueable_OroraDailySalesHistory_M1 + DailyErpSalesInfoTriggerHandler 동등)',
   'orora-monthly-sales-materialize-batch':
     'ORORA 영업시스템의 월별 마감 view(ABC/물류 마감실적)를 거래처 범위 단위로 조회하여 monthly_sales_history 테이블에 적재(upsert)합니다. 익월 초에 전월 마감분을 적재하며, 운영 목표/비고/마감확정 컬럼은 보존합니다. 아래에서 특정 월을 지정해 수동 재적재할 수 있습니다. (legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등)',
 };
 
 /** ORORA 월매출 수동 트리거 대상 jobName (해당 탭에서만 수동 적재 UI 노출). */
 const ORORA_MONTHLY_JOB = 'orora-monthly-sales-materialize-batch';
+
+/** ORORA 일매출 수동 트리거 대상 jobName (해당 탭에서만 수동 적재 UI 노출). */
+const ORORA_DAILY_JOB = 'orora-daily-sales-materialize-batch';
 
 /** 전문행사조(PPT) 마스터 수동 실행 대상 jobName → 트리거 action 매핑. */
 const PPT_MASTER_TRIGGER_ACTIONS: Record<string, PptMasterTriggerAction> = {
@@ -291,6 +297,155 @@ function OroraMonthlyChunkTriggerPanel() {
         <Popconfirm
           title="ORORA 월매출 청크 수동 적재"
           description={`${salesMonth ?? '전월'} 마감분 중 ${
+            chunkIndex === undefined ? '선택한' : `${chunkIndex + 1}번`
+          } 거래처 청크만 ORORA에서 조회하여 적재합니다. 실행하시겠습니까?`}
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+          disabled={chunkIndex === undefined}
+        >
+          <Button type="primary" loading={trigger.isPending} disabled={chunkIndex === undefined}>
+            청크 적재 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          선택한 거래처 청크 1개 구간만 적재합니다 (특정 거래처 구간 재적재 / 부분 점검용).
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+/**
+ * ORORA 일매출 수동 적재 패널. 월 선택(미지정 시 당월) 후 실행하면 backend 가 ORORA view 를 조회해
+ * 해당 월의 일별 매출을 daily_sales_history 에 upsert 하고 monthly_sales_history 합계를 갱신한다.
+ * `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function OroraDailyTriggerPanel() {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const [month, setMonth] = useState<Dayjs | null>(null);
+  const trigger = useTriggerOroraDailyMaterialize();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const salesMonth = month ? month.format('YYYYMM') : undefined;
+
+  const handleRun = () => {
+    trigger.mutate(salesMonth, {
+      onSuccess: (result) => {
+        message.success(
+          `${result.salesMonth} 적재 완료 — 일별 ${result.dailyUpsertedCount}건 / 월합계 갱신 ${result.monthlyAggregateUpdatedCount}건`,
+        );
+      },
+      onError: (err) => {
+        message.error(err instanceof Error ? err.message : 'ORORA 일매출 수동 적재에 실패했습니다');
+      },
+    });
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="수동 적재">
+      <Space wrap align="center">
+        <Text type="secondary">대상 월</Text>
+        <DatePicker
+          picker="month"
+          placeholder="미지정 시 당월"
+          value={month}
+          onChange={(value) => setMonth(value)}
+          disabledDate={(current) => current && current > dayjs().endOf('month')}
+        />
+        <Popconfirm
+          title="ORORA 일매출 수동 적재"
+          description={`${salesMonth ?? '당월'} 일별 매출을 ORORA에서 조회하여 적재합니다. 실행하시겠습니까?`}
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+        >
+          <Button type="primary" loading={trigger.isPending}>
+            적재 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          ORORA view 를 조회해 daily_sales_history 에 upsert + 월합계를 갱신합니다. 외부 연동이므로 수십 초 소요될 수 있습니다.
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+/**
+ * ORORA 일매출 거래처 청크 단위 수동 적재 패널. 전체 거래처 범위를 도는 전체 실행과 달리, 거래처
+ * 청크(약 2,000 거래처 폭) 1개만 선택해 적재한다. 특정 거래처 구간만 재적재하거나 부분 점검할 때 사용.
+ * `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function OroraDailyChunkTriggerPanel() {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const [month, setMonth] = useState<Dayjs | null>(null);
+  const [chunkIndex, setChunkIndex] = useState<number | undefined>(undefined);
+  const chunksQuery = useOroraDailyChunks();
+  const trigger = useTriggerOroraDailyMaterializeChunk();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const salesMonth = month ? month.format('YYYYMM') : undefined;
+  const chunkOptions = (chunksQuery.data?.chunks ?? []).map((chunk) => ({
+    value: chunk.chunkIndex,
+    label: `${chunk.chunkIndex + 1}번 (거래처 ${chunk.fromAccountCode} ~ ${chunk.toAccountCode})`,
+  }));
+
+  const handleRun = () => {
+    if (chunkIndex === undefined) {
+      message.warning('실행할 거래처 청크를 선택하세요');
+      return;
+    }
+    trigger.mutate(
+      { chunkIndex, salesMonth },
+      {
+        onSuccess: (result) => {
+          message.success(
+            `${result.salesMonth} ${chunkIndex + 1}번 청크 적재 완료 — 일별 ${result.dailyUpsertedCount}건 / 월합계 갱신 ${result.monthlyAggregateUpdatedCount}건`,
+          );
+        },
+        onError: (err) => {
+          message.error(
+            err instanceof Error ? err.message : 'ORORA 일매출 청크 수동 적재에 실패했습니다',
+          );
+        },
+      },
+    );
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="거래처 청크 단위 적재">
+      <Space wrap align="center">
+        <Text type="secondary">대상 월</Text>
+        <DatePicker
+          picker="month"
+          placeholder="미지정 시 당월"
+          value={month}
+          onChange={(value) => setMonth(value)}
+          disabledDate={(current) => current && current > dayjs().endOf('month')}
+        />
+        <Text type="secondary">거래처 청크</Text>
+        <Select
+          style={{ minWidth: 320 }}
+          placeholder={chunksQuery.isLoading ? '청크 목록 불러오는 중…' : '청크 선택'}
+          loading={chunksQuery.isLoading}
+          value={chunkIndex}
+          onChange={(value: number) => setChunkIndex(value)}
+          options={chunkOptions}
+          showSearch
+          optionFilterProp="label"
+        />
+        <Popconfirm
+          title="ORORA 일매출 청크 수동 적재"
+          description={`${salesMonth ?? '당월'} 일별 매출 중 ${
             chunkIndex === undefined ? '선택한' : `${chunkIndex + 1}번`
           } 거래처 청크만 ORORA에서 조회하여 적재합니다. 실행하시겠습니까?`}
           okText="실행"
@@ -597,6 +752,12 @@ export default function ScheduledJobsPage() {
               <>
                 <OroraMonthlyTriggerPanel />
                 <OroraMonthlyChunkTriggerPanel />
+              </>
+            )}
+            {name === ORORA_DAILY_JOB && (
+              <>
+                <OroraDailyTriggerPanel />
+                <OroraDailyChunkTriggerPanel />
               </>
             )}
             {PPT_MASTER_TRIGGER_ACTIONS[name] && (

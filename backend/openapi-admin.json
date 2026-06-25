@@ -6344,11 +6344,69 @@
         },
         "type" : "object"
       },
+      "ApiResponseOroraDailyChunkCatalogResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OroraDailyChunkCatalogResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseOroraDailyMaterializeResult" : {
         "properties" : {
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/OroraDailyMaterializeResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseOroraDailyMaterializeTriggerResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OroraDailyMaterializeTriggerResponse"
             }, {
               "type" : "null"
             } ]
@@ -12112,7 +12170,62 @@
         },
         "type" : "object"
       },
+      "OroraDailyChunkCatalogResponse" : {
+        "properties" : {
+          "chunkCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "chunkSize" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "chunks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OroraMonthlyChunkInfo"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraDailyMaterializeChunkTriggerRequest" : {
+        "properties" : {
+          "chunkIndex" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "OroraDailyMaterializeResult" : {
+        "properties" : {
+          "dailyUpsertedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "monthlyAggregateUpdatedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OroraDailyMaterializeTriggerRequest" : {
+        "properties" : {
+          "salesMonth" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "OroraDailyMaterializeTriggerResponse" : {
         "properties" : {
           "dailyUpsertedCount" : {
             "format" : "int32",
@@ -26673,6 +26786,79 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListRegisteredScheduledJobDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/orora-daily/chunk/trigger" : {
+      "post" : {
+        "operationId" : "triggerOroraDailyChunk",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OroraDailyMaterializeChunkTriggerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraDailyMaterializeTriggerResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/orora-daily/chunks" : {
+      "get" : {
+        "operationId" : "getOroraDailyChunks",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraDailyChunkCatalogResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/orora-daily/trigger" : {
+      "post" : {
+        "operationId" : "triggerOroraDaily",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OroraDailyMaterializeTriggerRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraDailyMaterializeTriggerResponse"
                 }
               }
             },

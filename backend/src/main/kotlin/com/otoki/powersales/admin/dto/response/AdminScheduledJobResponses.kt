@@ -98,3 +98,31 @@ data class OroraMonthlyChunkInfo(
     val fromAccountCode: String,
     val toAccountCode: String,
 )
+
+/**
+ * ORORA 일매출 수동 적재 트리거 결과.
+ *
+ * @property salesMonth 적재한 대상 매출월 (`YYYYMM`)
+ * @property dailyUpsertedCount `daily_sales_history` 에 적재된 row 수
+ * @property monthlyAggregateUpdatedCount 일별 합계로 갱신/생성된 `monthly_sales_history` row 수
+ */
+data class OroraDailyMaterializeTriggerResponse(
+    val salesMonth: String,
+    val dailyUpsertedCount: Int,
+    val monthlyAggregateUpdatedCount: Int,
+)
+
+/**
+ * ORORA 일매출 거래처 청크 메타 — 수동 트리거 UI 가 "전체 N개 중 몇 번째 청크" 를 선택하도록 제공.
+ *
+ * 거래처 범위가 일·월 공용이라 [OroraMonthlyChunkCatalogResponse] 와 형태가 동일하다.
+ *
+ * @property chunkCount 전체 거래처 청크 개수
+ * @property chunkSize 청크 1개의 거래처 코드 폭
+ * @property chunks 각 청크의 0-based index 와 거래처 코드 경계 (UI 표시용)
+ */
+data class OroraDailyChunkCatalogResponse(
+    val chunkCount: Int,
+    val chunkSize: Long,
+    val chunks: List<OroraMonthlyChunkInfo>,
+)

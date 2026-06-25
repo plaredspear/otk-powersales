@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.response.OroraDailyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobManualTriggerResponse
@@ -169,6 +170,85 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.salesMonth").value("202605"))
 
         verify(exactly = 1) { adminScheduledJobService.triggerOroraMonthly(null) }
+    }
+
+    @Test
+    @DisplayName("POST /orora-daily/trigger - salesMonth 가 service 로 전달되고 결과 반환")
+    fun triggerOroraDaily_withMonth() {
+        every { adminScheduledJobService.triggerOroraDaily("202606") } returns
+            OroraDailyMaterializeTriggerResponse(
+                salesMonth = "202606",
+                dailyUpsertedCount = 12000,
+                monthlyAggregateUpdatedCount = 8900,
+            )
+
+        mockMvc.perform(
+            post("/api/v1/admin/scheduled-jobs/orora-daily/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"salesMonth":"202606"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.salesMonth").value("202606"))
+            .andExpect(jsonPath("$.data.dailyUpsertedCount").value(12000))
+            .andExpect(jsonPath("$.data.monthlyAggregateUpdatedCount").value(8900))
+
+        verify(exactly = 1) { adminScheduledJobService.triggerOroraDaily("202606") }
+    }
+
+    @Test
+    @DisplayName("POST /orora-daily/trigger - body 없으면 service 에 null 전달 (당월 자동)")
+    fun triggerOroraDaily_noBody() {
+        every { adminScheduledJobService.triggerOroraDaily(null) } returns
+            OroraDailyMaterializeTriggerResponse("202606", 0, 0)
+
+        mockMvc.perform(post("/api/v1/admin/scheduled-jobs/orora-daily/trigger"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.salesMonth").value("202606"))
+
+        verify(exactly = 1) { adminScheduledJobService.triggerOroraDaily(null) }
+    }
+
+    @Test
+    @DisplayName("POST /orora-daily/chunk/trigger - chunkIndex + salesMonth 가 service 로 전달")
+    fun triggerOroraDailyChunk_withMonth() {
+        every { adminScheduledJobService.triggerOroraDailyChunk(2, "202606") } returns
+            OroraDailyMaterializeTriggerResponse(
+                salesMonth = "202606",
+                dailyUpsertedCount = 500,
+                monthlyAggregateUpdatedCount = 300,
+            )
+
+        mockMvc.perform(
+            post("/api/v1/admin/scheduled-jobs/orora-daily/chunk/trigger")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"chunkIndex":2,"salesMonth":"202606"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.dailyUpsertedCount").value(500))
+
+        verify(exactly = 1) { adminScheduledJobService.triggerOroraDailyChunk(2, "202606") }
+    }
+
+    @Test
+    @DisplayName("GET /orora-daily/chunks - 청크 카탈로그 응답 매핑")
+    fun getOroraDailyChunks_ok() {
+        every { adminScheduledJobService.ororaDailyChunkCatalog() } returns
+            com.otoki.powersales.admin.dto.response.OroraDailyChunkCatalogResponse(
+                chunkCount = 2,
+                chunkSize = 2000L,
+                chunks = listOf(
+                    com.otoki.powersales.admin.dto.response.OroraMonthlyChunkInfo(0, "0001000000", "0001001999"),
+                    com.otoki.powersales.admin.dto.response.OroraMonthlyChunkInfo(1, "0001002000", "0001003999"),
+                ),
+            )
+
+        mockMvc.perform(get("/api/v1/admin/scheduled-jobs/orora-daily/chunks"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.chunkCount").value(2))
+            .andExpect(jsonPath("$.data.chunks[0].fromAccountCode").value("0001000000"))
+
+        verify(exactly = 1) { adminScheduledJobService.ororaDailyChunkCatalog() }
     }
 
     @Test

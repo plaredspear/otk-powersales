@@ -109,4 +109,38 @@ class OroraSalesMaterializeFacadeTest {
 
         assertThat(month.captured).isEqualTo(LocalDate.now().minusMonths(1).format(yyyymm))
     }
+
+    @Test
+    @DisplayName("dailyChunkCount 는 전체 거래처 범위의 청크 개수를 반환 (월배치와 동일 거래처 범위)")
+    fun dailyChunkCountReflectsAccountRange() {
+        assertThat(facade.dailyChunkCount()).isEqualTo(51)
+    }
+
+    @Test
+    @DisplayName("일배치 chunk: 선택한 chunkIndex 의 단일 거래처 구간 range 만 service 에 전달")
+    fun dailyChunkPassesSingleChunkRange() {
+        val month = slot<String>()
+        val range = slot<OroraAccountRange>()
+        every { dailyService.materialize(capture(month), capture(range)) } returns
+                OroraDailyMaterializeResult("ignored", 0, 0)
+
+        // index 1 = 두 번째 chunk (1002000~1003999)
+        facade.materializeDailyChunk(chunkIndex = 1, salesMonth = "202606")
+
+        assertThat(month.captured).isEqualTo("202606")
+        assertThat(range.captured.toChunks()).containsExactly("0001002000" to "0001003999")
+        verify(exactly = 1) { dailyService.materialize(any(), any()) }
+    }
+
+    @Test
+    @DisplayName("일배치 chunk: salesMonth 미지정 시 당월 산출 + 선택 chunk range")
+    fun dailyChunkResolvesCurrentMonth() {
+        val month = slot<String>()
+        every { dailyService.materialize(capture(month), any()) } returns
+                OroraDailyMaterializeResult("ignored", 0, 0)
+
+        facade.materializeDailyChunk(chunkIndex = 0)
+
+        assertThat(month.captured).isEqualTo(LocalDate.now().format(yyyymm))
+    }
 }

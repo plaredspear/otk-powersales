@@ -1,6 +1,8 @@
 package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.response.OroraDailyChunkCatalogResponse
+import com.otoki.powersales.admin.dto.response.OroraDailyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkCatalogResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkInfo
 import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
@@ -8,6 +10,7 @@ import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
+import com.otoki.powersales.platform.batch.OroraDailySalesMaterializeBatch
 import com.otoki.powersales.platform.batch.OroraMonthlySalesMaterializeBatch
 import com.otoki.powersales.platform.batch.ScheduledJobCatalog
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRun
@@ -176,6 +179,88 @@ class AdminScheduledJobService(
                 fetchedCount = result.fetchedCount,
                 upsertedCount = result.upsertedCount,
                 skippedAccountUnmatchedCount = result.skippedAccountUnmatchedCount,
+            )
+        }
+    }
+
+    /**
+     * ORORA 일매출 적재를 특정 월(`YYYYMM`)로 수동 실행한다.
+     *
+     * 입력 월을 검증한 뒤 [OroraSalesMaterializeFacade.materializeDaily] 에 명시 월로 위임한다 (당월
+     * 자동 산출 대신 운영자 지정 월 재적재). 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+     * facade 내부 chunk processor 가 별도 트랜잭션으로 적재하므로 본 서비스의 readOnly 경계와 무관.
+     *
+     * @param salesMonth `YYYYMM` 6자 (예: `202606`). null/blank 면 당월 자동 산출.
+     */
+    fun triggerOroraDaily(salesMonth: String?): OroraDailyMaterializeTriggerResponse {
+        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() }
+        if (normalized != null) {
+            require(normalized.length == 6 && normalized.all { it.isDigit() }) {
+                "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
+            }
+        }
+        val result = ororaSalesMaterializeFacade.materializeDaily(normalized)
+        return OroraDailyMaterializeTriggerResponse(
+            salesMonth = result.salesMonth,
+            dailyUpsertedCount = result.dailyUpsertedCount,
+            monthlyAggregateUpdatedCount = result.monthlyAggregateUpdatedCount,
+        )
+    }
+
+    /**
+     * ORORA 일매출 거래처 청크 메타 — 수동 트리거 UI 가 "전체 N개 중 몇 번째 청크" 를 선택하도록 제공.
+     *
+     * 청크 경계는 정적 거래처 범위(`app.batch.orora.account-range.*`) 에서 산출되므로 ORORA 호출 없이 즉시 반환된다.
+     * 거래처 범위가 일·월 공용이라 [ororaMonthlyChunkCatalog] 와 같은 경계를 반환한다.
+     */
+    fun ororaDailyChunkCatalog(): OroraDailyChunkCatalogResponse {
+        val boundaries = ororaSalesMaterializeFacade.dailyChunkBoundaries()
+        return OroraDailyChunkCatalogResponse(
+            chunkCount = boundaries.size,
+            chunkSize = ororaSalesMaterializeFacade.chunkSize(),
+            chunks = boundaries.mapIndexed { index, (from, to) ->
+                OroraMonthlyChunkInfo(chunkIndex = index, fromAccountCode = from, toAccountCode = to)
+            },
+        )
+    }
+
+    /**
+     * ORORA 일매출 적재를 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 수동 실행한다.
+     *
+     * 전체 범위를 도는 [triggerOroraDaily] 와 달리 선택 청크의 거래처 구간만 적재한다 (특정 구간 재적재 / 부분 점검).
+     * 스케줄 배치와 동일한 `JOB_NAME` 으로 [ScheduledJobRunner] 로 감싸 `scheduled_job_run` 이력에 남긴다 —
+     * 화면 이력 탭에서 chunk 수동 실행도 함께 조회된다. metadata 의 `trigger=manual-chunk` + `chunkIndex` 로 구분.
+     *
+     * @param chunkIndex 적재 대상 청크 번호 (0-based). `[0, chunkCount)` 범위.
+     * @param salesMonth `YYYYMM` 6자. null/blank 면 당월 자동 산출.
+     */
+    fun triggerOroraDailyChunk(chunkIndex: Int, salesMonth: String?): OroraDailyMaterializeTriggerResponse {
+        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() }
+        if (normalized != null) {
+            require(normalized.length == 6 && normalized.all { it.isDigit() }) {
+                "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
+            }
+        }
+        val chunkCount = ororaSalesMaterializeFacade.dailyChunkCount()
+        require(chunkIndex in 0 until chunkCount) {
+            "chunkIndex 는 0 이상 $chunkCount 미만이어야 합니다: $chunkIndex"
+        }
+
+        return scheduledJobRunner.run(OroraDailySalesMaterializeBatch.JOB_NAME) { ctx ->
+            val result = ororaSalesMaterializeFacade.materializeDailyChunk(chunkIndex, normalized)
+            ctx.metadata(
+                mapOf(
+                    "trigger" to "manual-chunk",
+                    "chunkIndex" to chunkIndex,
+                    "salesMonth" to result.salesMonth,
+                    "dailyUpsertedCount" to result.dailyUpsertedCount,
+                    "monthlyAggregateUpdatedCount" to result.monthlyAggregateUpdatedCount,
+                )
+            )
+            OroraDailyMaterializeTriggerResponse(
+                salesMonth = result.salesMonth,
+                dailyUpsertedCount = result.dailyUpsertedCount,
+                monthlyAggregateUpdatedCount = result.monthlyAggregateUpdatedCount,
             )
         }
     }

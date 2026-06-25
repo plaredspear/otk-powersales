@@ -191,3 +191,69 @@ export async function triggerOroraMonthlyMaterializeChunk(
   }
   return res.data.data;
 }
+
+export interface OroraDailyMaterializeTriggerResponse {
+  salesMonth: string;
+  dailyUpsertedCount: number;
+  monthlyAggregateUpdatedCount: number;
+}
+
+/** ORORA 일매출 거래처 청크 메타 응답 (거래처 범위가 일·월 공용이라 월매출과 형태 동일). */
+export interface OroraDailyChunkCatalogResponse {
+  /** 전체 거래처 청크 개수. */
+  chunkCount: number;
+  /** 청크 1개의 거래처 코드 폭. */
+  chunkSize: number;
+  /** 각 청크의 index + 거래처 코드 경계. */
+  chunks: OroraMonthlyChunkInfo[];
+}
+
+/**
+ * ORORA 일매출 적재를 특정 월(`YYYYMM`)로 수동 실행한다 (`salesMonth` 미지정 시 당월).
+ * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function triggerOroraDailyMaterialize(
+  salesMonth?: string,
+): Promise<OroraDailyMaterializeTriggerResponse> {
+  const res = await client.post<ApiResponse<OroraDailyMaterializeTriggerResponse>>(
+    '/api/v1/admin/scheduled-jobs/orora-daily/trigger',
+    salesMonth ? { salesMonth } : {},
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'ORORA 일매출 수동 적재에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * ORORA 일매출 거래처 청크 메타(전체 청크 수 + 각 청크 경계)를 조회한다.
+ * 정적 거래처 범위에서 산출되므로 ORORA 호출 없이 즉시 반환된다. 조회 권한(`VIEW_ALL_DATA`) 이면 충분.
+ */
+export async function getOroraDailyChunks(): Promise<OroraDailyChunkCatalogResponse> {
+  const res = await client.get<ApiResponse<OroraDailyChunkCatalogResponse>>(
+    '/api/v1/admin/scheduled-jobs/orora-daily/chunks',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'ORORA 일매출 청크 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * ORORA 일매출 적재를 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 수동 실행한다
+ * (`salesMonth` 미지정 시 당월). 전체 범위 실행과 달리 선택 청크의 거래처 구간만 적재한다.
+ * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function triggerOroraDailyMaterializeChunk(
+  chunkIndex: number,
+  salesMonth?: string,
+): Promise<OroraDailyMaterializeTriggerResponse> {
+  const res = await client.post<ApiResponse<OroraDailyMaterializeTriggerResponse>>(
+    '/api/v1/admin/scheduled-jobs/orora-daily/chunk/trigger',
+    salesMonth ? { chunkIndex, salesMonth } : { chunkIndex },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'ORORA 일매출 청크 수동 적재에 실패했습니다');
+  }
+  return res.data.data;
+}
