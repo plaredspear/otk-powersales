@@ -26,6 +26,17 @@ interface EmployeeRepositoryCustom {
      */
     fun findActiveWomenByCostCenterCodes(costCenterCodes: List<String>?): List<Employee>
 
+    /**
+     * 여사원 목록 조회 — [findActiveWomenByCostCenterCodes] 와 달리 `app_login_active` 조건을 제외해
+     * 퇴사/휴직 등 비활성 여사원도 포함한다. 근무기간 조회(과거 근무내역 조회) 화면 전용.
+     *
+     * `DKRetail__Employee__c WHERE CostCenterCode__c IN :codes AND DKRetail__AppAuthority__c='여사원'
+     *                              AND is_deleted != true ORDER BY Name` (APPLoginActive 필터 없음)
+     *
+     * @param costCenterCodes  필터링할 cost center 코드 집합. `null` 또는 비어있으면 전사 조회.
+     */
+    fun findWomenByCostCenterCodes(costCenterCodes: List<String>?): List<Employee>
+
     fun findAllEmployeeCodes(): List<String>
 
     fun findEmployees(

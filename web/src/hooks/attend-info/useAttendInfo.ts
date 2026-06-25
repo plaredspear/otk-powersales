@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createAttendInfo,
   deleteAttendInfo,
+  fetchAttendInfoMembers,
   getAttendInfo,
   searchAttendInfo,
   updateAttendInfo,
@@ -16,6 +17,16 @@ export function useAttendInfoList(params: FetchAttendInfoParams) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'list', params],
     queryFn: () => searchAttendInfo(params),
+  });
+}
+
+/**
+ * 근무기간 조회 좌측 여사원 선택 목록 (퇴사/휴직 포함, attend_info 권한 가드).
+ */
+export function useAttendInfoMembers() {
+  return useQuery({
+    queryKey: [...QUERY_KEY, 'members'],
+    queryFn: fetchAttendInfoMembers,
   });
 }
 

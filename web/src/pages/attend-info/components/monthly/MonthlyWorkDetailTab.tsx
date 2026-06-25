@@ -2,9 +2,9 @@ import { useCallback, useState } from 'react';
 import { Alert, Button, Segmented, Spin, Tag, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useTeamScheduleForm } from '@/hooks/team-schedule/useTeamScheduleForm';
+import { useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
 import { useEmployeeMonthlyWorkHistory } from '@/hooks/employee/useEmployeeWorkHistory';
-import type { TeamMember } from '@/api/team-schedule';
+import { MEMBER_STATUS_COLOR, type TeamMember } from '@/api/team-schedule';
 import RefreshButton from '@/components/common/RefreshButton';
 import { MonthlyMemberSelectPanel } from './MonthlyMemberSelectPanel';
 import MonthlyWorkRawTable from './MonthlyWorkRawTable';
@@ -13,13 +13,6 @@ import MonthlyWorkInsight from './MonthlyWorkInsight';
 const { Text } = Typography;
 
 type MonthlyView = 'month' | 'list';
-
-/** 재직상태명 → Tag 색상. 매핑에 없으면 기본(default). */
-const STATUS_COLOR: Record<string, string> = {
-  재직: 'green',
-  휴직: 'orange',
-  퇴사: 'red',
-};
 
 /**
  * 근무기간 조회 — 월별 개인 근무내역(어디서/어떻게).
@@ -33,8 +26,8 @@ export default function MonthlyWorkDetailTab() {
   const [period, setPeriod] = useState<Dayjs>(dayjs());
   const [viewType, setViewType] = useState<MonthlyView>('month');
 
-  // 여사원 일정관리와 동일한 form 응답 — members(본인 지점 스코프 자동) 를 즉시 나열.
-  const formQuery = useTeamScheduleForm();
+  // 근무기간 조회 전용 여사원 목록 — 본인 지점 스코프 자동 + 퇴사/휴직 포함 (attend_info 권한).
+  const membersQuery = useAttendInfoMembers();
 
   const employeeId = selected?.employeeId;
   const yearMonth = period.format('YYYY-MM');
@@ -51,8 +44,8 @@ export default function MonthlyWorkDetailTab() {
   return (
     <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
       <MonthlyMemberSelectPanel
-        members={formQuery.data?.members ?? []}
-        isLoading={formQuery.isLoading}
+        members={membersQuery.data ?? []}
+        isLoading={membersQuery.isLoading}
         selectedId={employeeId}
         onSelect={setSelected}
       />
@@ -114,7 +107,7 @@ export default function MonthlyWorkDetailTab() {
             </Text>
             {selected.status && (
               <Tag
-                color={STATUS_COLOR[selected.status] ?? 'default'}
+                color={MEMBER_STATUS_COLOR[selected.status] ?? 'default'}
                 style={{ marginLeft: 8 }}
               >
                 {selected.status}
@@ -129,10 +122,10 @@ export default function MonthlyWorkDetailTab() {
           </div>
         )}
 
-        {formQuery.isError && (
+        {membersQuery.isError && (
           <Alert
             type="error"
-            message={(formQuery.error as Error)?.message ?? '여사원 목록 조회 실패'}
+            message={(membersQuery.error as Error)?.message ?? '여사원 목록 조회 실패'}
             style={{ marginBottom: 8 }}
           />
         )}

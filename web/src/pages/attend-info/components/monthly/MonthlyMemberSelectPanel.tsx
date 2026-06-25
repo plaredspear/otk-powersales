@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Empty, Input, Spin } from 'antd';
+import { Empty, Input, Select, Spin, Tag } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import type { TeamMember } from '@/api/team-schedule';
+import { MEMBER_STATUS_COLOR, type TeamMember } from '@/api/team-schedule';
 
 interface Props {
   members: TeamMember[];
@@ -19,17 +19,30 @@ interface Props {
  */
 export function MonthlyMemberSelectPanel({ members, isLoading, selectedId, onSelect }: Props) {
   const [search, setSearch] = useState('');
+  // 'ALL' = 전체, 그 외에는 status 값. 데이터에 실제 존재하는 status 만 옵션화.
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  // 이름 또는 사번에 검색어를 포함하는 row 만 표시. 공백/대소문자 정규화.
+  // 데이터에 존재하는 재직상태 목록 (필터 옵션). 정의된 색상 순서를 우선 적용.
+  const statusOptions = useMemo(() => {
+    const present = new Set(
+      members.map((m) => m.status).filter((s): s is string => !!s),
+    );
+    const known = Object.keys(MEMBER_STATUS_COLOR).filter((s) => present.has(s));
+    const extra = [...present].filter((s) => !(s in MEMBER_STATUS_COLOR));
+    return [...known, ...extra];
+  }, [members]);
+
+  // 검색어(이름/사번) + 재직상태 필터를 AND 조합. 공백/대소문자 정규화.
   const filteredMembers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return members;
     return members.filter((m) => {
+      if (statusFilter !== 'ALL' && (m.status ?? '') !== statusFilter) return false;
+      if (!q) return true;
       const name = (m.name ?? '').toLowerCase();
       const code = (m.employeeCode ?? '').toLowerCase();
       return name.includes(q) || code.includes(q);
     });
-  }, [members, search]);
+  }, [members, search, statusFilter]);
 
   return (
     <div
@@ -54,6 +67,18 @@ export function MonthlyMemberSelectPanel({ members, isLoading, selectedId, onSel
         onChange={(e) => setSearch(e.target.value)}
         style={{ marginBottom: 6 }}
       />
+      {statusOptions.length > 0 && (
+        <Select
+          size="small"
+          value={statusFilter}
+          onChange={setStatusFilter}
+          style={{ width: '100%', marginBottom: 6 }}
+          options={[
+            { label: '재직상태 전체', value: 'ALL' },
+            ...statusOptions.map((s) => ({ label: s, value: s })),
+          ]}
+        />
+      )}
       <div
         style={{
           padding: '4px 0',
@@ -106,9 +131,29 @@ export function MonthlyMemberSelectPanel({ members, isLoading, selectedId, onSel
                   background: active ? '#e6f4ff' : undefined,
                   color: active ? '#1677ff' : undefined,
                   fontWeight: active ? 600 : undefined,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 6,
                 }}
               >
-                {member.name}({member.employeeCode})
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {member.name}({member.employeeCode})
+                </span>
+                {member.status && (
+                  <Tag
+                    color={MEMBER_STATUS_COLOR[member.status] ?? 'default'}
+                    style={{ marginInlineEnd: 0, flexShrink: 0 }}
+                  >
+                    {member.status}
+                  </Tag>
+                )}
               </div>
             );
           })

@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.request.AdminAttendInfo
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoDeleteResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoDetailResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoListItemResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberDto
 import com.otoki.powersales.domain.activity.schedule.entity.AttendInfo
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.AttendType
@@ -20,6 +21,7 @@ import com.otoki.powersales.domain.activity.schedule.exception.InvalidAttendInfo
 import com.otoki.powersales.domain.activity.schedule.repository.AttendInfoRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -46,6 +48,23 @@ class AdminAttendInfoService(
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * 근무기간 조회 화면 좌측 여사원 선택 목록.
+     *
+     * 여사원 일정관리(AdminTeamScheduleService.getMembers)와 동일한 권한 스코프([WomenMemberScopeResolver])
+     * 를 쓰되, 과거 근무내역 조회 화면이므로 **퇴사/휴직 등 비활성 여사원도 포함**한다
+     * (findWomenByCostCenterCodes — appLoginActive 조건 제외). DTO 의 status 로 재직상태 구분/필터.
+     */
+    fun getMembers(principal: WebUserPrincipal): List<TeamMemberDto> {
+        val targetCostCenterCodes = WomenMemberScopeResolver.resolveCostCenterCodes(
+            principal.employeeCode, principal.costCenterCode
+        )
+        if (targetCostCenterCodes.isEmpty()) return emptyList()
+
+        return employeeRepository.findWomenByCostCenterCodes(targetCostCenterCodes)
+            .map { TeamMemberDto.from(it) }
+    }
 
     fun search(filter: AdminAttendInfoSearchRequest, pageable: Pageable): Page<AdminAttendInfoListItemResponse> {
         val page = attendInfoRepository.searchByFilter(filter, pageable)

@@ -67,15 +67,10 @@ class AdminTeamScheduleService(
      *                  Employee 엔티티 재조회 없이 데이터 스코프 분기를 수행.
      */
     fun getMembers(principal: WebUserPrincipal): List<TeamMemberDto> {
-        val empCode = principal.employeeCode
-        val ccCode = principal.costCenterCode
-
-        val targetCostCenterCodes: List<String> = when {
-            empCode in SF_SPECIAL_EMPLOYEE_CODES ->
-                SF_SPECIAL_EMPLOYEE_COST_CENTERS
-            ccCode.isNullOrBlank() -> return emptyList()
-            else -> listOf(ccCode)
-        }
+        val targetCostCenterCodes = WomenMemberScopeResolver.resolveCostCenterCodes(
+            principal.employeeCode, principal.costCenterCode
+        )
+        if (targetCostCenterCodes.isEmpty()) return emptyList()
 
         return employeeRepository.findActiveWomenByCostCenterCodes(targetCostCenterCodes)
             .map { TeamMemberDto.from(it) }
@@ -506,12 +501,6 @@ class AdminTeamScheduleService(
         private val ALL_BRANCHES_PROFILES: Set<String> = setOf(
             "1.본부장", "2.사업부장", "3.영업부장"
         )
-
-        /** SF `TeamMemberListController.fetchTeamMembers` 특수 사번 하드코딩 분기 — 인천 cost center 광역 매핑 */
-        private val SF_SPECIAL_EMPLOYEE_CODES = setOf("19951029", "20001013", "20060052", "20050308")
-
-        /** SF `TeamMemberListController.fetchTeamMembers:18` 특수 사번 4명 매핑 cost center 6개 */
-        private val SF_SPECIAL_EMPLOYEE_COST_CENTERS = listOf("3233", "3234", "3235", "3236", "5691", "5694")
 
         /** 기간 조회 상한 — 운영 부하 worst case 회피. ChronoUnit.DAYS.between(from, to) 가 이 값을 초과하면 거부 */
         private const val MAX_RANGE_DAYS = 91L

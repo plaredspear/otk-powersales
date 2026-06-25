@@ -17,6 +17,8 @@ import com.otoki.powersales.domain.activity.schedule.exception.InvalidAttendInfo
 import com.otoki.powersales.domain.activity.schedule.repository.AttendInfoRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.AdminAttendInfoService
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -45,6 +47,45 @@ class AdminAttendInfoServiceTest {
         teamMemberScheduleRepository,
         attendInfoToScheduleConverter,
     )
+
+    @Nested
+    @DisplayName("getMembers - 근무기간 조회 여사원 목록")
+    inner class GetMembersTests {
+
+        @Test
+        @DisplayName("본인 costCenterCode 스코프 + 비활성(퇴사/휴직) 포함 + status 매핑")
+        fun getMembers_includesInactive() {
+            val principal = principalOf(employeeCode = "20030001", costCenterCode = "1234")
+            val active = Employee(id = 2L, employeeCode = "20030002", name = "김영희").apply {
+                role = AppAuthority.WOMAN; orgName = "강북유통지점"; jikwee = "사원"; status = "재직"
+            }
+            val resigned = Employee(id = 3L, employeeCode = "20030003", name = "이수진").apply {
+                role = AppAuthority.WOMAN; status = "퇴직"
+            }
+            // 근무기간 조회는 appLoginActive 무관 — findWomenByCostCenterCodes 사용.
+            every { employeeRepository.findWomenByCostCenterCodes(listOf("1234")) } returns listOf(active, resigned)
+
+            val result = service.getMembers(principal)
+
+            assertThat(result).hasSize(2)
+            assertThat(result[0].status).isEqualTo("재직")
+            assertThat(result[0].orgName).isEqualTo("강북유통지점")
+            assertThat(result[0].jikwee).isEqualTo("사원")
+            assertThat(result[1].status).isEqualTo("퇴직")
+            verify(exactly = 1) { employeeRepository.findWomenByCostCenterCodes(listOf("1234")) }
+        }
+
+        @Test
+        @DisplayName("costCenterCode 가 비어 있으면 빈 목록 (조회 미수행)")
+        fun getMembers_blankCostCenter_returnsEmpty() {
+            val principal = principalOf(employeeCode = "20030001", costCenterCode = null)
+
+            val result = service.getMembers(principal)
+
+            assertThat(result).isEmpty()
+            verify(exactly = 0) { employeeRepository.findWomenByCostCenterCodes(any()) }
+        }
+    }
 
     @Nested
     @DisplayName("create - 보정 등록")
@@ -266,6 +307,23 @@ class AdminAttendInfoServiceTest {
     ).apply {
         jobCode = "판촉직"
     }
+
+    private fun principalOf(employeeCode: String, costCenterCode: String?): WebUserPrincipal =
+        WebUserPrincipal(
+            userId = 1L,
+            usernameValue = employeeCode,
+            employeeCode = employeeCode,
+            employeeId = 1L,
+            role = null,
+            costCenterCode = costCenterCode,
+            profileName = "9. Staff",
+            isSalesSupport = false,
+            passwordChangeRequired = false,
+            permissions = emptySet(),
+            encodedPassword = "",
+            grantedAuthorities = emptyList(),
+            active = true,
+        )
 
     private fun newSchedule(id: Long, employee: Employee, date: LocalDate): TeamMemberSchedule {
         val schedule = TeamMemberSchedule(id = id)

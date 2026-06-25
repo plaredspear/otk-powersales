@@ -82,6 +82,22 @@ class EmployeeRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findWomenByCostCenterCodes(costCenterCodes: List<String>?): List<Employee> {
+        // findActiveWomenByCostCenterCodes 와 동일하되 appLoginActive 조건 제외 — 퇴사/휴직 여사원 포함.
+        val builder = BooleanBuilder()
+        builder.and(employee.role.eq(AppAuthority.WOMAN))
+        builder.and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
+        if (!costCenterCodes.isNullOrEmpty()) {
+            builder.and(employee.costCenterCode.`in`(costCenterCodes))
+        }
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(builder)
+            .orderBy(employee.name.asc())
+            .fetch()
+    }
+
     override fun findAllEmployeeCodes(): List<String> {
         return queryFactory
             .select(employee.employeeCode)

@@ -6,26 +6,13 @@ import * as api from '@/api/attendInfo';
 import { useAuthStore } from '@/stores/authStore';
 import { entityPermissionKey } from '@/hooks/usePermission';
 
+// 월별 근무내역 탭(기본 활성)이 전용 members API 로 여사원 목록을 받으므로 stub.
 vi.mock('@/api/attendInfo', async () => {
   const actual = await vi.importActual<typeof import('@/api/attendInfo')>('@/api/attendInfo');
   return {
     ...actual,
     searchAttendInfo: vi.fn(),
-  };
-});
-
-// 월별 근무내역 탭(기본 활성)이 여사원 일정관리 form API 로 여사원 목록을 받으므로 stub.
-vi.mock('@/api/team-schedule', async () => {
-  const actual = await vi.importActual<typeof import('@/api/team-schedule')>('@/api/team-schedule');
-  return {
-    ...actual,
-    fetchTeamScheduleForm: vi.fn().mockResolvedValue({
-      branches: [],
-      members: [],
-      professionalPromotionTeams: [],
-      accounts: [],
-      dailySummary: [],
-    }),
+    fetchAttendInfoMembers: vi.fn().mockResolvedValue([]),
   };
 });
 

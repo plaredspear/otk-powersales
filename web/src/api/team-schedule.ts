@@ -14,6 +14,13 @@ export interface TeamMember {
   status?: string | null;
 }
 
+/** 재직상태명 → Ant Design Tag 색상. 매핑에 없으면 호출부에서 'default'. */
+export const MEMBER_STATUS_COLOR: Record<string, string> = {
+  재직: 'green',
+  휴직: 'orange',
+  퇴사: 'red',
+};
+
 export interface TeamScheduleAccount {
   accountId: number;
   externalKey: string;

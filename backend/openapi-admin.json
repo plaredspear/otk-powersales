@@ -5886,6 +5886,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseListTeamMemberDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TeamMemberDto"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListUserRoleNode" : {
         "properties" : {
           "data" : {
@@ -16357,8 +16385,17 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "jikwee" : {
+            "type" : [ "string", "null" ]
+          },
           "name" : {
             "type" : "string"
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"
@@ -18159,6 +18196,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAdminAttendInfoDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-attend-info-controller" ]
+      }
+    },
+    "/api/v1/admin/attend-info/members" : {
+      "get" : {
+        "operationId" : "getMembers",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTeamMemberDto"
                 }
               }
             },
