@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, Input, Popconfirm, Select, Space, Tag, Tooltip, message } from 'antd';
-import { PlusOutlined, DownloadOutlined, UploadOutlined, CheckOutlined } from '@ant-design/icons';
+import { PlusOutlined, DownloadOutlined, UploadOutlined, CheckOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
@@ -330,6 +330,18 @@ export default function PPTMasterPage() {
           <Checkbox checked={filterValidOnly} onChange={(e) => setFilterValidOnly(e.target.checked)}>
             유효만
           </Checkbox>
+          <Tooltip
+            title={
+              <span>
+                확정된 마스터 중 오늘 기준 진행 중인 항목만 조회합니다.
+                <br />· 확정 완료 (확정 체크)
+                <br />· 시작일이 오늘 이전 또는 오늘
+                <br />· 종료일이 없거나 오늘 이후
+              </span>
+            }
+          >
+            <InfoCircleOutlined style={{ marginLeft: -4, color: 'rgba(0, 0, 0, 0.45)' }} />
+          </Tooltip>
           <Button onClick={handleReset}>초기화</Button>
           <Button type="primary" onClick={handleSearch}>
             검색

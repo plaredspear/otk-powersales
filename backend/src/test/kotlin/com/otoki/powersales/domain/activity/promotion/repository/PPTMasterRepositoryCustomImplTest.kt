@@ -12,6 +12,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
+import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDate
 
@@ -117,5 +118,50 @@ class PPTMasterRepositoryCustomImplTest {
         val ids = result.map { it.id }
         assertThat(ids).contains(confirmed.id)
         assertThat(ids).doesNotContain(unconfirmed.id, notExpiringToday.id)
+    }
+
+    @Test
+    @DisplayName("searchMasters validOnly=true - 미확정(isConfirmed=false)은 날짜가 유효해도 제외 — legacy ValidData__c='유효' 정합")
+    fun searchMasters_validOnly_excludesUnconfirmed() {
+        // 날짜는 유효 범위인데 미확정 — SF '유효만' 에서는 미확정이 보이지 않아야 한다
+        val unconfirmed = persist(today.minusDays(1), today.plusDays(10), isConfirmed = false)
+        val confirmed = persist(today.minusDays(1), today.plusDays(10), isConfirmed = true)
+        em.clear()
+
+        val result = repository.searchMasters(
+            employeeName = null,
+            employeeCode = null,
+            teamType = null,
+            branchCodeFilter = null,
+            validOnly = true,
+            today = today,
+            pageable = PageRequest.of(0, 20),
+        )
+
+        val ids = result.content.map { it.master.id }
+        assertThat(ids).contains(confirmed.id)
+        assertThat(ids).doesNotContain(unconfirmed.id)
+    }
+
+    @Test
+    @DisplayName("searchMasters validOnly=false - 미확정/날짜범위 밖 마스터도 모두 포함")
+    fun searchMasters_validOnlyFalse_includesAll() {
+        val unconfirmed = persist(today.minusDays(1), today.plusDays(10), isConfirmed = false)
+        val ended = persist(today.minusDays(10), today.minusDays(1), isConfirmed = true)
+        val valid = persist(today.minusDays(1), today.plusDays(10), isConfirmed = true)
+        em.clear()
+
+        val result = repository.searchMasters(
+            employeeName = null,
+            employeeCode = null,
+            teamType = null,
+            branchCodeFilter = null,
+            validOnly = false,
+            today = today,
+            pageable = PageRequest.of(0, 20),
+        )
+
+        assertThat(result.content.map { it.master.id })
+            .contains(unconfirmed.id, ended.id, valid.id)
     }
 }

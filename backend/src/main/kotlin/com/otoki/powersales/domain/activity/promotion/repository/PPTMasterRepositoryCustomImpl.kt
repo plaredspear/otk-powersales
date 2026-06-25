@@ -50,8 +50,11 @@ class PPTMasterRepositoryCustomImpl(
         }
 
         if (validOnly) {
+            // SF `ValidData__c = '유효'` 동등. ValidData__c formula 는 Confirmed__c==false → '미확정' 으로
+            // 분기하므로 '유효' 는 확정(isConfirmed=true) 마스터만 포함한다 (findValidMasters 와 동일 전제).
             builder.and(
-                professionalPromotionTeamMaster.startDate.loe(today)
+                professionalPromotionTeamMaster.isConfirmed.isTrue
+                    .and(professionalPromotionTeamMaster.startDate.loe(today))
                     .and(
                         professionalPromotionTeamMaster.endDate.isNull
                             .or(professionalPromotionTeamMaster.endDate.goe(today))
