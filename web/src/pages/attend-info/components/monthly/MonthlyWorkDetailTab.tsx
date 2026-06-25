@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Segmented, Select, Spin, Tag, Typography } from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { DownloadOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useAttendInfoBranches, useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
 import { useEmployeeMonthlyWorkHistory } from '@/hooks/employee/useEmployeeWorkHistory';
+import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
+import { employeeMonthlyWorkHistoryExportPath } from '@/api/employee';
 import { MEMBER_STATUS_COLOR, type TeamMember } from '@/api/team-schedule';
 import RefreshButton from '@/components/common/RefreshButton';
 import { MonthlyMemberSelectPanel } from './MonthlyMemberSelectPanel';
@@ -64,6 +67,17 @@ export default function MonthlyWorkDetailTab() {
   const handlePrev = useCallback(() => setPeriod((p) => p.subtract(1, 'month')), []);
   const handleNext = useCallback(() => setPeriod((p) => p.add(1, 'month')), []);
   const handleToday = useCallback(() => setPeriod(dayjs()), []);
+
+  // 목록 엑셀 다운로드 — 현재 선택 사원 + 조회 월 데이터를 서버에서 xlsx 로 추출.
+  const { run: runExport, downloading: exporting } = useExcelDownload();
+  const handleExport = useCallback(() => {
+    if (employeeId == null) return;
+    runExport(
+      employeeMonthlyWorkHistoryExportPath(employeeId),
+      `월별근무내역_${selected?.employeeCode ?? employeeId}_${period.format('YYYYMM')}.xlsx`,
+      { params: { yearMonth }, totalCount: items.length, maxRows: EXCEL_EXPORT_MAX_ROWS },
+    );
+  }, [employeeId, selected, period, yearMonth, items.length, runExport]);
 
   const isHistLoading = employeeId != null && histQuery.isLoading;
 
@@ -130,15 +144,28 @@ export default function MonthlyWorkDetailTab() {
               <RefreshButton onRefresh={histQuery.refetch} refreshing={histQuery.isFetching} />
             )}
           </div>
-          <Segmented
-            size="small"
-            options={[
-              { label: '월간', value: 'month' },
-              { label: '목록', value: 'list' },
-            ]}
-            value={viewType}
-            onChange={(v) => setViewType(v as MonthlyView)}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {viewType === 'list' && (
+              <Button
+                size="small"
+                icon={<DownloadOutlined />}
+                loading={exporting}
+                disabled={employeeId == null || items.length === 0}
+                onClick={handleExport}
+              >
+                엑셀 다운로드
+              </Button>
+            )}
+            <Segmented
+              size="small"
+              options={[
+                { label: '월간', value: 'month' },
+                { label: '목록', value: 'list' },
+              ]}
+              value={viewType}
+              onChange={(v) => setViewType(v as MonthlyView)}
+            />
+          </div>
         </div>
 
         {selected ? (

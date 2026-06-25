@@ -31,7 +31,11 @@ class EmployeeWorkHistoryServiceTest {
     fun setUp() {
         employeeRepository = mockk()
         teamMemberScheduleRepository = mockk()
-        service = EmployeeWorkHistoryService(employeeRepository, teamMemberScheduleRepository)
+        service = EmployeeWorkHistoryService(
+            employeeRepository,
+            teamMemberScheduleRepository,
+            EmployeeWorkHistoryExcelExporter(),
+        )
     }
 
     @Test
@@ -181,5 +185,31 @@ class EmployeeWorkHistoryServiceTest {
 
         assertThatThrownBy { service.getMonthlyHistory(999L, YearMonth.of(2026, 6)) }
             .isInstanceOf(EmployeeNotFoundException::class.java)
+    }
+
+    @Test
+    @DisplayName("export — 파일명에 사번+연월 포함 + xlsx 바이트 생성")
+    fun exportMonthlyHistory_buildsFile() {
+        val employee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트사원")
+        val s1 = TeamMemberSchedule(
+            id = 20L,
+            employee = employee,
+            workingDate = LocalDate.of(2026, 6, 1),
+            workingType = WorkingType.WORK,
+        )
+        every { employeeRepository.findById(1L) } returns Optional.of(employee)
+        every {
+            teamMemberScheduleRepository
+                .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
+                    employee,
+                    LocalDate.of(2026, 6, 1),
+                    LocalDate.of(2026, 6, 30),
+                )
+        } returns listOf(s1)
+
+        val result = service.exportMonthlyHistory(1L, YearMonth.of(2026, 6))
+
+        assertThat(result.filename).isEqualTo("월별근무내역_EMP001_202606.xlsx")
+        assertThat(result.bytes).isNotEmpty()
     }
 }

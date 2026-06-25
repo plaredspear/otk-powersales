@@ -20498,6 +20498,41 @@
         "tags" : [ "admin-employee-controller" ]
       }
     },
+    "/api/v1/admin/employees/{employeeId}/work-history/monthly/export" : {
+      "get" : {
+        "operationId" : "exportMonthlyWorkHistory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "yearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-employee-controller" ]
+      }
+    },
     "/api/v1/admin/external-api/integration-info" : {
       "get" : {
         "operationId" : "getIntegrationInfo",

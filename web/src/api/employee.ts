@@ -341,6 +341,14 @@ export async function fetchEmployeeWorkHistory(
  * 근무기간 조회(월별) — 인원 1명 × 지정 월의 근무내역(어디서/어떻게)을 일자 오름차순 조회.
  * @param yearMonth `yyyy-MM` (예: 2026-06)
  */
+/** 근무기간 조회(월별) 엑셀 다운로드 경로 (GET, ?yearMonth=yyyy-MM). */
+export function employeeMonthlyWorkHistoryExportPath(
+  employeeId: number,
+  isFemale = false,
+): string {
+  return `${detailBasePath(isFemale)}/${employeeId}/work-history/monthly/export`;
+}
+
 export async function fetchEmployeeMonthlyWorkHistory(
   employeeId: number,
   yearMonth: string,

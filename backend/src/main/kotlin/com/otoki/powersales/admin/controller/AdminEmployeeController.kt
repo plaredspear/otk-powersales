@@ -1,5 +1,6 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionInspectionService
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
@@ -304,6 +305,24 @@ class AdminEmployeeController(
         }
         val response = employeeWorkHistoryService.getMonthlyHistory(employeeId, parsed)
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 근무기간 조회(월별) 엑셀 다운로드 — 목록 탭과 동일 데이터/컬럼을 xlsx 로 추출.
+     */
+    @GetMapping("/{employeeId}/work-history/monthly/export")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
+    fun exportMonthlyWorkHistory(
+        @PathVariable employeeId: Long,
+        @RequestParam yearMonth: String,
+    ): ResponseEntity<ByteArray> {
+        val parsed = try {
+            YearMonth.parse(yearMonth)
+        } catch (e: DateTimeParseException) {
+            throw IllegalArgumentException("yearMonth 형식이 올바르지 않습니다 (yyyy-MM): $yearMonth")
+        }
+        val result = employeeWorkHistoryService.exportMonthlyHistory(employeeId, parsed)
+        return ExcelResponseUtils.build(result)
     }
 
     private fun emptyInspection(employeeId: Long): SfPermissionInspectionService.EmployeePermissionInspection =

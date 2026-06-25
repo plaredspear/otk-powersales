@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHi
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,6 +21,7 @@ import java.time.YearMonth
 class EmployeeWorkHistoryService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val excelExporter: EmployeeWorkHistoryExcelExporter,
 ) {
 
     fun getRecentHistory(employeeId: Long, limit: Int): EmployeeWorkHistoryResponse {
@@ -48,7 +50,27 @@ class EmployeeWorkHistoryService(
         return EmployeeWorkHistoryResponse(items = schedules.map { EmployeeWorkHistoryItem.from(it) })
     }
 
+    /**
+     * 근무기간 조회(월별) 엑셀 export — 목록 탭과 동일 데이터/컬럼. 파일명: 월별근무내역_{사번}_{yyyyMM}.xlsx
+     */
+    fun exportMonthlyHistory(employeeId: Long, yearMonth: YearMonth): ExcelResult {
+        val employee = employeeRepository.findById(employeeId).orElseThrow {
+            EmployeeNotFoundException(employeeId)
+        }
+        val items = teamMemberScheduleRepository
+            .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
+                employee,
+                yearMonth.atDay(1),
+                yearMonth.atEndOfMonth(),
+            )
+            .map { EmployeeWorkHistoryItem.from(it) }
+        val filename = "월별근무내역_${employee.employeeCode.orEmpty()}_${yearMonth.format(FILENAME_MONTH_FMT)}.xlsx"
+        return excelExporter.export(items, filename)
+    }
+
     companion object {
         const val DEFAULT_LIMIT = 10
+        private val FILENAME_MONTH_FMT: java.time.format.DateTimeFormatter =
+            java.time.format.DateTimeFormatter.ofPattern("yyyyMM")
     }
 }
