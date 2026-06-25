@@ -72,7 +72,7 @@ function aggregate(items: EmployeeWorkHistoryItem[]): Aggregates {
   };
 }
 
-/** 좌측 C — 근무지/업무성격/근무방식 요약. */
+/** 좌측 C — 근무지/근무유형/근무형태 요약. */
 function SummaryPanel({ agg }: { agg: Aggregates }) {
   const maxWp = Math.max(1, ...agg.byWorkplace.map(([, n]) => n));
   return (
@@ -150,7 +150,7 @@ function SummaryPanel({ agg }: { agg: Aggregates }) {
       </div>
 
       <div>
-        <Text strong>근무 방식</Text>
+        <Text strong>근무 형태</Text>
         <div style={{ marginTop: 6 }}>
           {agg.byCategory3.length === 0 ? (
             <Text type="secondary">-</Text>
@@ -167,7 +167,7 @@ function SummaryPanel({ agg }: { agg: Aggregates }) {
   );
 }
 
-/** 우측 B — 월 캘린더. 바탕(근무/휴무) + 색(진열/행사) + 텍스트(근무방식) 3중 인코딩. */
+/** 우측 B — 월 캘린더. 바탕(근무/휴무) + 색(진열/행사) + 텍스트(근무형태) 3중 인코딩. */
 function CalendarPanel({
   items,
   year,

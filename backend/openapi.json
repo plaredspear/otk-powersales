@@ -13864,6 +13864,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          },
           "refAccountName" : {
             "type" : [ "string", "null" ]
           },

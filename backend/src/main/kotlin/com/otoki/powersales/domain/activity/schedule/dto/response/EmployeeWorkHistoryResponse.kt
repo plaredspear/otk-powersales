@@ -20,6 +20,8 @@ data class EmployeeWorkHistoryItem(
     val workingCategory1: String?,
     val workingCategory3: String?,
     val workingCategory4: String?,
+    /** 전문행사조 (SF ProfessionalPromotionTeam__c) — 라면세일조/카레행사조 등. */
+    val professionalPromotionTeam: String?,
     val accountName: String?,
     val accountExternalKey: String?,
     /** 거래처유형 (SF Account.Type) — 대형마트(3대)/체인/C.V.S 등. */
@@ -39,6 +41,7 @@ data class EmployeeWorkHistoryItem(
             workingCategory1 = schedule.workingCategory1?.displayName,
             workingCategory3 = schedule.workingCategory3?.displayName,
             workingCategory4 = schedule.workingCategory4,
+            professionalPromotionTeam = schedule.professionalPromotionTeam,
             accountName = schedule.account?.name,
             accountExternalKey = schedule.account?.externalKey,
             accountType = schedule.account?.accountType?.displayName,

@@ -72,20 +72,26 @@ const COLUMNS: ColumnsType<EmployeeWorkHistoryItem> = [
     render: (v: string | null) => v ?? '-',
   },
   {
-    title: '업무성격',
+    title: '근무유형',
     dataIndex: 'workingCategory1',
     width: 90,
     render: (v: string | null) =>
       v ? <Tag color={v === '진열' ? 'blue' : 'orange'}>{v}</Tag> : '-',
   },
   {
-    title: '근무방식',
+    title: '전문행사조',
+    dataIndex: 'professionalPromotionTeam',
+    width: 130,
+    render: (v: string | null) => v ?? '-',
+  },
+  {
+    title: '근무형태',
     dataIndex: 'workingCategory3',
     width: 90,
     render: (v: string | null) => (v ? <Tag>{v}</Tag> : '-'),
   },
   {
-    title: '부근무유형',
+    title: '상세유형',
     dataIndex: 'secondWorkType',
     width: 110,
     render: (v: string | null) => v ?? '-',
