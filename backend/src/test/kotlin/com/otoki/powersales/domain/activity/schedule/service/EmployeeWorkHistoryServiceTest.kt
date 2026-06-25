@@ -134,7 +134,7 @@ class EmployeeWorkHistoryServiceTest {
         every { employeeRepository.findById(1L) } returns Optional.of(employee)
         every {
             teamMemberScheduleRepository
-                .findByEmployeeAndWorkingDateBetweenOrderByWorkingDateAscCreatedAtAsc(
+                .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
                     employee,
                     LocalDate.of(2026, 6, 1),
                     LocalDate.of(2026, 6, 30),
@@ -149,13 +149,13 @@ class EmployeeWorkHistoryServiceTest {
     }
 
     @Test
-    @DisplayName("월별 — 월 시작·종료일이 정확히 경계로 전달된다")
+    @DisplayName("월별 — 월 시작·종료일이 정확히 경계로 전달되고 출근로그 연결 일정만 조회한다")
     fun getMonthlyHistory_monthBoundaries() {
         val employee = Employee(id = 1L, employeeCode = "EMP001", name = "테스트사원")
         every { employeeRepository.findById(1L) } returns Optional.of(employee)
         every {
             teamMemberScheduleRepository
-                .findByEmployeeAndWorkingDateBetweenOrderByWorkingDateAscCreatedAtAsc(
+                .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
                     employee,
                     any(),
                     any(),
@@ -166,7 +166,7 @@ class EmployeeWorkHistoryServiceTest {
 
         verify {
             teamMemberScheduleRepository
-                .findByEmployeeAndWorkingDateBetweenOrderByWorkingDateAscCreatedAtAsc(
+                .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
                     employee,
                     LocalDate.of(2026, 2, 1),
                     LocalDate.of(2026, 2, 28),
