@@ -23,7 +23,8 @@ import dayjs from 'dayjs';
 /**
  * Spec #829 — Web admin 클레임 등록 페이지.
  *
- * Backend dual-write (DB INSERT → SF Apex push) 호출. 응답 status 별 토스트 분기.
+ * Backend 가 DB INSERT 후 SF Apex push 를 비동기 처리한다. 등록 직후엔 SF_PENDING 상태로
+ * "등록되었습니다" 토스트만 띄우고, SF 전송 성공/실패는 상세 화면에서 확인한다.
  * 검색 모달 (거래처 / 제품) 은 본 스펙 범위 외 — 텍스트 입력으로 단순화 후 후속 보강.
  */
 
@@ -155,13 +156,9 @@ export default function ClaimCreatePage() {
       },
       {
         onSuccess: (data) => {
-          if (data.status === 'SENT') {
-            message.success('클레임이 등록되어 SF에 전송되었습니다');
-          } else {
-            message.warning(
-              `클레임은 등록되었으나 SF 전송에 실패했습니다: ${data.sfResultMsg ?? '연동 오류'}. 상세에서 재전송하세요`,
-            );
-          }
+          // SF 송신은 등록 후 비동기 처리된다. 등록 직후엔 SF_PENDING(전송대기) 상태이며,
+          // 전송 성공/실패는 상세 화면의 상태 배너·재전송 버튼으로 확인한다.
+          message.success('클레임이 등록되었습니다. SF 전송은 잠시 후 처리됩니다');
           navigate(`/claims/${data.claimId}`);
         },
         onError: (err) => {

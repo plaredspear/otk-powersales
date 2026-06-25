@@ -51,7 +51,7 @@ class AdminClaimRegistTestServiceTest {
             registrationOrchestrator = ClaimRegistrationOrchestrator(
                 claimRepository = claimRepository,
                 uploadFileRepository = mockk(relaxed = true),
-                sfOutboundService = sfOutboundService,
+                eventPublisher = mockk(relaxed = true),
                 txTemplate = mockk<TransactionTemplate>(relaxed = true),
             ),
         )

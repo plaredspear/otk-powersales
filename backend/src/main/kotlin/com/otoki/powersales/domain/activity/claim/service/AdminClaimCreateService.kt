@@ -77,8 +77,10 @@ class AdminClaimCreateService(
             fileStorageService.uploadClaimPhoto(it, employee.id, 0L, UploadFileKbnTypes.CLAIM_RECEIPT)
         }
 
-        // 4. 등록 골격 위임 (Tx1 INSERT → SF call → Tx2 status update)
-        val result = registrationOrchestrator.register(
+        // 4. 등록 골격 위임 (Tx INSERT → 커밋 후 SF 송신 이벤트).
+        // SF 전송 결과는 응답에 쓰지 않는다 — 등록(SF_PENDING) 사실만 반환하고,
+        // 전송 성공/실패는 상세 화면의 상태 배너/재전송 버튼으로 확인한다.
+        val claim = registrationOrchestrator.register(
             employee = employee,
             account = account,
             product = product,
@@ -94,12 +96,9 @@ class AdminClaimCreateService(
             ),
         )
 
-        val sfResult = result.sfResult
         return AdminClaimCreateResponse(
-            claimId = result.claim.id,
-            status = result.claim.status?.name ?: "",
-            sfResultCode = sfResult.apiResponse?.resultCode,
-            sfResultMsg = sfResult.apiResponse?.resultMsg ?: sfResult.errorSummary,
+            claimId = claim.id,
+            status = claim.status?.name ?: "",
         )
     }
 

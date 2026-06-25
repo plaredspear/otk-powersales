@@ -1,133 +1,35 @@
 package com.otoki.powersales.domain.activity.claim.service
 
 import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimCreateResponse
-import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
-import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
-import com.otoki.powersales.domain.activity.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.domain.activity.claim.exception.ClaimNotResendableException
-import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
-import com.otoki.powersales.platform.common.repository.UploadFileRepository
-import com.otoki.powersales.platform.common.storage.UploadFileKbnTypes
-import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import org.springframework.transaction.support.TransactionTemplate
 
 /**
  * SF 재전송 service — Spec #829.
  *
  * 사전 조건: claim.status == SEND_FAILED (그 외 상태는 409).
- * 처리: S3 이미지 회수 → SF push (ClaimSfOutboundService 재사용) → status update.
+ * 처리: S3 이미지 회수 → SF push → status update. 실제 전송 골격은 [ClaimSfDispatchService] 에 위임하며,
+ * 신규 등록 직후 비동기 전송([ClaimSfPushDispatcher])과 동일 경로를 공유한다.
  */
 @Service
 class AdminClaimResendService(
-    private val claimRepository: ClaimRepository,
-    private val uploadFileRepository: UploadFileRepository,
-    private val sfOutboundService: ClaimSfOutboundService,
-    private val txTemplate: TransactionTemplate,
+    private val dispatchService: ClaimSfDispatchService,
 ) {
 
     fun resend(claimId: Long): AdminClaimCreateResponse {
-        val snapshot = txTemplate.execute {
-            val claim = claimRepository.findByIdOrNull(claimId)
-                ?: throw ClaimNotFoundException(claimId)
-            if (claim.status != ClaimStatus.SEND_FAILED) {
-                throw ClaimNotResendableException()
-            }
-            val photos = uploadFileRepository
-                .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claimId)
-            val defect = photos.first { it.uploadKbn == UploadFileKbnTypes.CLAIM_DEFECT }
-            val label = photos.first { it.uploadKbn == UploadFileKbnTypes.CLAIM_PART }
-            val receipt = photos.firstOrNull { it.uploadKbn == UploadFileKbnTypes.CLAIM_RECEIPT }
+        val result = dispatchService.dispatch(
+            claimId = claimId,
+            allowedStatuses = setOf(ClaimStatus.SEND_FAILED),
+            onStatusMismatch = { throw ClaimNotResendableException() },
+        ) ?: throw ClaimNotResendableException()
 
-            ResendSnapshot(
-                claimId = claim.id,
-                employeeCode = claim.employee?.employeeCode
-                    ?: error("재전송 시점에 claim.employee 가 null"),
-                sapAccountCode = claim.account?.externalKey
-                    ?: error("재전송 시점에 claim.account.externalKey 가 null"),
-                productCode = claim.product?.productCode
-                    ?: error("재전송 시점에 claim.product.productCode 가 null"),
-                // 등록 경로별 channel 유지 (web=WEB, mobile=CAP). 미설정 row 는 WEB 으로 fallback.
-                channel = (claim.channel ?: ClaimChannel.WEB).name,
-                parsed = ClaimSfOutboundService.ParsedInput(
-                    sapAccountCode = claim.account?.externalKey!!,
-                    productCode = claim.product?.productCode!!,
-                    employeeCode = claim.employee?.employeeCode
-                        ?: error("사번 미보유 사원의 claim 은 재전송할 수 없습니다"),
-                    dateType = claim.dateType ?: ClaimDateType.EXPIRY_DATE,
-                    date = claim.date ?: error("발생일자 미보유 claim 은 재전송할 수 없습니다"),
-                    claimDate = claim.createdAt.toLocalDate(),
-                    claimType1 = claim.claimType1 ?: error("클레임대분류 미보유 claim 은 재전송할 수 없습니다"),
-                    claimType2 = claim.claimType2 ?: error("클레임소분류 미보유 claim 은 재전송할 수 없습니다"),
-                    quantity = claim.defectQuantity ?: error("수량 미보유 claim 은 재전송할 수 없습니다"),
-                    description = claim.defectDescription ?: error("불만내용 미보유 claim 은 재전송할 수 없습니다"),
-                    purchaseMethod = claim.purchaseMethodCode,
-                    amount = claim.purchaseAmount,
-                    requestTypes = claim.requestTypeCode,
-                ),
-                claimKey = defect.uniqueKey ?: error("DEFECT 사진 uniqueKey 누락"),
-                claimFilename = defect.name ?: "claim",
-                claimContentType = "image/jpeg",
-                partKey = label.uniqueKey ?: error("PART 사진 uniqueKey 누락"),
-                partFilename = label.name ?: "part",
-                partContentType = "image/jpeg",
-                receiptKey = receipt?.uniqueKey,
-                receiptFilename = receipt?.name,
-                receiptContentType = receipt?.let { "image/jpeg" },
-            )
-        }!!
-
-        // SF call (트랜잭션 외부)
-        val sfResult = sfOutboundService.pushToSfFromStored(
-            // 재전송 대상 claim PK 를 pwrskey 로 전송 — SF 역연결용.
-            pwrskey = snapshot.claimId,
-            employeeCode = snapshot.employeeCode,
-            sapAccountCode = snapshot.sapAccountCode,
-            productCode = snapshot.productCode,
-            parsed = snapshot.parsed,
-            channel = snapshot.channel,
-            claimKey = snapshot.claimKey,
-            partKey = snapshot.partKey,
-            receiptKey = snapshot.receiptKey,
-            claimPhotoFilename = snapshot.claimFilename,
-            claimPhotoContentType = snapshot.claimContentType,
-            partPhotoFilename = snapshot.partFilename,
-            partPhotoContentType = snapshot.partContentType,
-            receiptPhotoFilename = snapshot.receiptFilename,
-            receiptPhotoContentType = snapshot.receiptContentType,
+        val sfResult = result.sfResult
+        return AdminClaimCreateResponse(
+            claimId = claimId,
+            status = result.status?.name ?: "",
+            sfResultCode = sfResult.apiResponse?.resultCode,
+            sfResultMsg = sfResult.apiResponse?.resultMsg ?: sfResult.errorSummary,
         )
-
-        // Transaction 2 — status update
-        return txTemplate.execute {
-            val claim = claimRepository.findByIdOrNull(snapshot.claimId)
-                ?: throw ClaimNotFoundException(snapshot.claimId)
-            sfOutboundService.applySfResultToClaim(claim, sfResult)
-            AdminClaimCreateResponse(
-                claimId = claim.id,
-                status = claim.status?.name ?: "",
-                sfResultCode = sfResult.apiResponse?.resultCode,
-                sfResultMsg = sfResult.apiResponse?.resultMsg ?: sfResult.errorSummary,
-            )
-        }!!
     }
-
-    private data class ResendSnapshot(
-        val claimId: Long,
-        val employeeCode: String,
-        val sapAccountCode: String,
-        val productCode: String,
-        val channel: String,
-        val parsed: ClaimSfOutboundService.ParsedInput,
-        val claimKey: String,
-        val claimFilename: String,
-        val claimContentType: String,
-        val partKey: String,
-        val partFilename: String,
-        val partContentType: String,
-        val receiptKey: String?,
-        val receiptFilename: String?,
-        val receiptContentType: String?,
-    )
 }

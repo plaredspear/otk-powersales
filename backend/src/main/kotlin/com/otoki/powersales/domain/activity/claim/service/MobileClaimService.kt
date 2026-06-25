@@ -133,8 +133,9 @@ class MobileClaimService(
             requestTypes = requestTypes,
         )
 
-        // 3. 등록 골격 위임 (Tx1 INSERT → SF call → Tx2 status update) + draft 삭제
-        val result = registrationOrchestrator.register(
+        // 3. 등록 골격 위임 (Tx INSERT → 커밋 후 SF 송신 이벤트) + draft 삭제.
+        // SF 전송 결과는 응답에 쓰지 않는다 — claim 정보만 반환.
+        val claim = registrationOrchestrator.register(
             employee = employee,
             account = account,
             product = product,
@@ -154,7 +155,7 @@ class MobileClaimService(
             },
         )
 
-        return ClaimCreateResponse.from(result.claim)
+        return ClaimCreateResponse.from(claim)
     }
 
     private fun parseDateType(raw: String): ClaimDateType =

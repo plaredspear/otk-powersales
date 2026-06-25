@@ -6,8 +6,7 @@ import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimCreateRe
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
-import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
-import com.otoki.powersales.domain.activity.claim.enums.ClaimType2
+import com.otoki.powersales.domain.activity.claim.event.ClaimRegisteredEvent
 import com.otoki.powersales.domain.activity.claim.exception.InvalidClaimDateException
 import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.domain.activity.claim.exception.RequestTypeMaxExceededException
@@ -15,14 +14,11 @@ import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
-import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.activity.promotion.exception.AccountNotFoundException
-import com.otoki.powersales.external.sf.outbound.SfApiResponse
-import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -32,6 +28,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.transaction.support.TransactionCallback
 import org.springframework.transaction.support.TransactionTemplate
@@ -39,6 +36,13 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Optional
 
+/**
+ * AdminClaimCreateService 테스트 — 입력 검증/조회/INSERT + SF 송신 이벤트 발행까지.
+ *
+ * SF push(/ClaimRegist 호출, apiMap 구성, status 전이)는 등록 트랜잭션 커밋 후 비동기로 분리됐다
+ * ([ClaimSfPushDispatcher] → [ClaimSfDispatchService]). 해당 검증은 ClaimSfDispatchServiceTest 책임이며,
+ * 본 테스트는 등록(SF_PENDING) 응답과 이벤트 발행만 다룬다.
+ */
 @DisplayName("AdminClaimCreateService 테스트")
 class AdminClaimCreateServiceTest {
 
@@ -48,8 +52,7 @@ class AdminClaimCreateServiceTest {
     private lateinit var accountRepository: AccountRepository
     private lateinit var productRepository: ProductRepository
     private lateinit var fileStorageService: FileStorageService
-    private lateinit var storageService: StorageService
-    private lateinit var sfOutboundClient: SfOutboundClient
+    private lateinit var eventPublisher: ApplicationEventPublisher
     private lateinit var txTemplate: TransactionTemplate
     private lateinit var service: AdminClaimCreateService
 
@@ -61,19 +64,16 @@ class AdminClaimCreateServiceTest {
         accountRepository = mockk()
         productRepository = mockk()
         fileStorageService = mockk()
-        storageService = mockk()
-        sfOutboundClient = mockk()
+        eventPublisher = mockk(relaxUnitFun = true)
         txTemplate = mockk()
         every { txTemplate.execute<Any>(any()) } answers {
             val callback = arg<TransactionCallback<Any>>(0)
             callback.doInTransaction(mockk(relaxed = true))
         }
-        // SF 전송 + 등록 골격은 실제 협력 객체로 조립 (callApi/repository mock 단언 보존).
-        val sfOutboundService = ClaimSfOutboundService(storageService, sfOutboundClient)
         val registrationOrchestrator = ClaimRegistrationOrchestrator(
             claimRepository,
             uploadFileRepository,
-            sfOutboundService,
+            eventPublisher,
             txTemplate,
         )
         service = AdminClaimCreateService(
@@ -137,7 +137,7 @@ class AdminClaimCreateServiceTest {
         val captured = slot<Claim>()
         every { claimRepository.save(capture(captured)) } answers {
             val src = captured.captured
-            // id 를 시뮬레이션
+            // id 를 시뮬레이션 (영속화된 PK 를 가진 entity 반환).
             Claim(
                 id = idAfterSave,
                 employee = src.employee,
@@ -158,33 +158,19 @@ class AdminClaimCreateServiceTest {
                 division = src.division,
             )
         }
-        every { claimRepository.findById(idAfterSave) } answers {
-            Optional.of(
-                Claim(
-                    id = idAfterSave,
-                    employee = newEmployee(),
-                    account = newAccount(),
-                    product = newProduct(),
-                    date = LocalDate.now(),
-                    claimType1 = ClaimType1.A,
-                    claimType2 = ClaimType2.AA,
-                    defectDescription = "이물질 발견",
-                    defectQuantity = BigDecimal("5"),
-                    status = ClaimStatus.SF_PENDING,
-                    channel = ClaimChannel.WEB,
-                )
-            )
-        }
     }
 
     @Test
-    @DisplayName("정상 등록 (SF 200 응답) → status=SENT")
-    fun create_sfSuccess() {
+    @DisplayName("정상 등록 → status=SF_PENDING + claimId 반환 + SF 송신 이벤트 발행 (channel=WEB INSERT)")
+    fun create_success() {
         stubLookups()
         stubClaimSave()
-        val apiMapSlot = slot<Map<String, Any?>>()
-        every { sfOutboundClient.callApi("/ClaimRegist", capture(apiMapSlot)) } returns
-            SfApiResponse(resultCode = "200", resultMsg = "SUCCESS", rawBody = "{}")
+        val claimSlot = slot<Claim>()
+        every { claimRepository.save(capture(claimSlot)) } answers {
+            Claim(id = 42L, status = claimSlot.captured.status, channel = claimSlot.captured.channel)
+        }
+        val eventSlot = slot<ClaimRegisteredEvent>()
+        every { eventPublisher.publishEvent(capture(eventSlot)) } answers {}
 
         val response = service.createClaim(
             request = newRequest(),
@@ -193,19 +179,17 @@ class AdminClaimCreateServiceTest {
             receiptPhoto = null,
         )
 
-        assertThat(response.status).isEqualTo("SENT")
-        assertThat(response.sfResultCode).isEqualTo("200")
-        assertThat(apiMapSlot.captured["Channel"]).isEqualTo("WEB")
-        // pwrskey — Tx1 insert 후 확보한 claim PK(stubClaimSave idAfterSave=42L) 를 문자열로 전송
-        assertThat(apiMapSlot.captured["pwrskey"]).isEqualTo("42")
-        assertThat(apiMapSlot.captured["SAPAccountCode"]).isEqualTo("SAP-001")
-        assertThat(apiMapSlot.captured["EmployeeCode"]).isEqualTo("EMP-001")
-        assertThat(apiMapSlot.captured["ExpirationDate"]).isEqualTo("2027-01-01")
-        assertThat(apiMapSlot.captured["ManufacturingDate"]).isEqualTo("")
-        assertThat(apiMapSlot.captured["Quantity"]).isEqualTo("5")
-        // Amount 미입력 시 null — SF Apex `Decimal.valueOf("")` Exception 회피 (빈 문자열 아님)
-        assertThat(apiMapSlot.captured.containsKey("Amount")).isTrue()
-        assertThat(apiMapSlot.captured["Amount"]).isNull()
+        // 등록 직후 상태는 SF_PENDING (SF 송신은 커밋 후 비동기)
+        assertThat(response.claimId).isEqualTo(42L)
+        assertThat(response.status).isEqualTo("SF_PENDING")
+        assertThat(response.sfResultCode).isNull()
+        assertThat(response.sfResultMsg).isNull()
+        // INSERT 시점 channel=WEB
+        assertThat(claimSlot.captured.channel).isEqualTo(ClaimChannel.WEB)
+        assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SF_PENDING)
+        // 커밋 후 SF 송신 트리거 이벤트가 claimId 로 발행됨
+        verify { eventPublisher.publishEvent(any<ClaimRegisteredEvent>()) }
+        assertThat(eventSlot.captured.claimId).isEqualTo(42L)
     }
 
     @Test
@@ -215,8 +199,6 @@ class AdminClaimCreateServiceTest {
         stubClaimSave()
         val savedSlot = slot<List<UploadFile>>()
         every { uploadFileRepository.saveAll(capture(savedSlot)) } answers { firstArg() }
-        every { sfOutboundClient.callApi("/ClaimRegist", any()) } returns
-            SfApiResponse(resultCode = "200", resultMsg = "SUCCESS", rawBody = "{}")
 
         service.createClaim(
             request = newRequest(purchaseMethod = "B", amount = BigDecimal("10000")),
@@ -232,46 +214,27 @@ class AdminClaimCreateServiceTest {
     }
 
     @Test
-    @DisplayName("SF 응답 RESULT_CODE=0 → status=SEND_FAILED + send_fail_message 박제")
-    fun create_sfFailure() {
+    @DisplayName("costCenterCode 는 거래처 branchCode 로 자동 채움 + division 공란 (SF 정합)")
+    fun create_fillsCostCenterFromAccountBranch() {
         stubLookups()
-        stubClaimSave()
-        every { sfOutboundClient.callApi("/ClaimRegist", any()) } returns
-            SfApiResponse(resultCode = "0", resultMsg = "DML 에러", rawBody = "{}")
+        val claimSlot = slot<Claim>()
+        every { claimRepository.save(capture(claimSlot)) } answers {
+            Claim(id = 42L, status = claimSlot.captured.status, channel = claimSlot.captured.channel)
+        }
 
-        val response = service.createClaim(
+        service.createClaim(
             request = newRequest(),
             claimPhoto = newPhoto("claim"),
             partPhoto = newPhoto("part"),
             receiptPhoto = null,
         )
 
-        assertThat(response.status).isEqualTo("SEND_FAILED")
-        assertThat(response.sfResultCode).isEqualTo("0")
-        assertThat(response.sfResultMsg).isEqualTo("DML 에러")
+        assertThat(claimSlot.captured.costCenterCode).isEqualTo("BR-100")
+        assertThat(claimSlot.captured.division).isNull()
     }
 
     @Test
-    @DisplayName("SF HTTP 예외 → status=SEND_FAILED + sfResultCode=null")
-    fun create_sfException() {
-        stubLookups()
-        stubClaimSave()
-        every { sfOutboundClient.callApi("/ClaimRegist", any()) } throws RuntimeException("timeout")
-
-        val response = service.createClaim(
-            request = newRequest(),
-            claimPhoto = newPhoto("claim"),
-            partPhoto = newPhoto("part"),
-            receiptPhoto = null,
-        )
-
-        assertThat(response.status).isEqualTo("SEND_FAILED")
-        assertThat(response.sfResultCode).isNull()
-        assertThat(response.sfResultMsg).contains("timeout")
-    }
-
-    @Test
-    @DisplayName("Account 미존재 → AccountNotFoundException 422, SF 호출 X")
+    @DisplayName("Account 미존재 → AccountNotFoundException 422, INSERT/이벤트 X")
     fun create_accountNotFound() {
         every { employeeRepository.findByEmployeeCode("EMP-001") } returns Optional.of(newEmployee())
         every { accountRepository.findByExternalKey("SAP-001") } returns null
@@ -285,12 +248,12 @@ class AdminClaimCreateServiceTest {
             )
         }.isInstanceOf(AccountNotFoundException::class.java)
 
-        verify(exactly = 0) { sfOutboundClient.callApi(any(), any()) }
         verify(exactly = 0) { claimRepository.save(any()) }
+        verify(exactly = 0) { eventPublisher.publishEvent(any<ClaimRegisteredEvent>()) }
     }
 
     @Test
-    @DisplayName("영수증 누락 (purchaseMethod=B) → ReceiptRequiredException 422, SF 호출 X")
+    @DisplayName("영수증 누락 (purchaseMethod=B) → ReceiptRequiredException 422, INSERT/이벤트 X")
     fun create_receiptRequired() {
         assertThatThrownBy {
             service.createClaim(
@@ -301,34 +264,11 @@ class AdminClaimCreateServiceTest {
             )
         }.isInstanceOf(ReceiptRequiredException::class.java)
 
-        verify(exactly = 0) { sfOutboundClient.callApi(any(), any()) }
+        verify(exactly = 0) { eventPublisher.publishEvent(any<ClaimRegisteredEvent>()) }
     }
 
     @Test
-    @DisplayName("영수증 포함 (purchaseMethod=B + receipt 첨부) → 정상")
-    fun create_withReceipt() {
-        stubLookups()
-        stubClaimSave()
-        val apiMapSlot = slot<Map<String, Any?>>()
-        every { sfOutboundClient.callApi("/ClaimRegist", capture(apiMapSlot)) } returns
-            SfApiResponse(resultCode = "200", resultMsg = "SUCCESS", rawBody = "{}")
-
-        val response = service.createClaim(
-            request = newRequest(purchaseMethod = "B", amount = BigDecimal("10000")),
-            claimPhoto = newPhoto("claim"),
-            partPhoto = newPhoto("part"),
-            receiptPhoto = newPhoto("receipt"),
-        )
-
-        assertThat(response.status).isEqualTo("SENT")
-        assertThat(apiMapSlot.captured["PurchaseMethod"]).isEqualTo("B")
-        assertThat(apiMapSlot.captured["Amount"]).isEqualTo("10000")
-        assertThat(apiMapSlot.captured["ReceiptImageBuffer"]).isNotNull()
-        assertThat(apiMapSlot.captured["ReceiptImageBuffer"].toString()).isNotEmpty()
-    }
-
-    @Test
-    @DisplayName("requestType 5개 → RequestTypeMaxExceededException 422, SF 호출 X")
+    @DisplayName("requestType 5개 → RequestTypeMaxExceededException 422, INSERT/이벤트 X")
     fun create_requestTypeMaxExceeded() {
         assertThatThrownBy {
             service.createClaim(
@@ -339,11 +279,11 @@ class AdminClaimCreateServiceTest {
             )
         }.isInstanceOf(RequestTypeMaxExceededException::class.java)
 
-        verify(exactly = 0) { sfOutboundClient.callApi(any(), any()) }
+        verify(exactly = 0) { eventPublisher.publishEvent(any<ClaimRegisteredEvent>()) }
     }
 
     @Test
-    @DisplayName("미래 제조일자 → InvalidClaimDateException 400, SF 호출 X")
+    @DisplayName("미래 제조일자 → InvalidClaimDateException 400, INSERT/이벤트 X")
     fun create_futureManufacturingDate() {
         val tomorrow = LocalDate.now().plusDays(1).toString()
         val req = newRequest().copy(
@@ -362,65 +302,6 @@ class AdminClaimCreateServiceTest {
         }.isInstanceOf(InvalidClaimDateException::class.java)
             .hasMessageContaining("제조일자")
 
-        verify(exactly = 0) { sfOutboundClient.callApi(any(), any()) }
-    }
-
-    @Test
-    @DisplayName("dateType=MANUFACTURE_DATE — apiMap.ManufacturingDate 만 채워지고 ExpirationDate=\"\"")
-    fun create_manufactureDateBranch() {
-        stubLookups()
-        stubClaimSave()
-        val apiMapSlot = slot<Map<String, Any?>>()
-        every { sfOutboundClient.callApi("/ClaimRegist", capture(apiMapSlot)) } returns
-            SfApiResponse(resultCode = "200", resultMsg = "SUCCESS", rawBody = "{}")
-
-        val req = newRequest().copy(
-            dateType = "MANUFACTURE_DATE",
-            expirationDate = null,
-            manufacturingDate = "2025-01-01",
-        )
-        service.createClaim(
-            request = req,
-            claimPhoto = newPhoto("claim"),
-            partPhoto = newPhoto("part"),
-            receiptPhoto = null,
-        )
-
-        assertThat(apiMapSlot.captured["ManufacturingDate"]).isEqualTo("2025-01-01")
-        assertThat(apiMapSlot.captured["ExpirationDate"]).isEqualTo("")
-    }
-
-    @Test
-    @DisplayName("send_attempt_count — 신규 등록 후 1 (성공/실패 무관 +1)")
-    fun create_sendAttemptCountIncrement() {
-        stubLookups()
-        val foundClaim = Claim(
-            id = 42L,
-            employee = newEmployee(),
-            account = newAccount(),
-            product = newProduct(),
-            date = LocalDate.now(),
-            claimType1 = ClaimType1.A,
-            claimType2 = ClaimType2.AA,
-            defectDescription = "이물질",
-            defectQuantity = BigDecimal("5"),
-            status = ClaimStatus.SF_PENDING,
-            channel = ClaimChannel.WEB,
-        )
-        every { claimRepository.save(any()) } returns foundClaim
-        every { claimRepository.findById(42L) } returns Optional.of(foundClaim)
-        every { sfOutboundClient.callApi("/ClaimRegist", any()) } returns
-            SfApiResponse(resultCode = "200", resultMsg = "SUCCESS", rawBody = "{}")
-
-        service.createClaim(
-            request = newRequest(),
-            claimPhoto = newPhoto("claim"),
-            partPhoto = newPhoto("part"),
-            receiptPhoto = null,
-        )
-
-        assertThat(foundClaim.sendAttemptCount).isEqualTo(1)
-        assertThat(foundClaim.status).isEqualTo(ClaimStatus.SENT)
-        assertThat(foundClaim.sentAt).isNotNull()
+        verify(exactly = 0) { eventPublisher.publishEvent(any<ClaimRegisteredEvent>()) }
     }
 }

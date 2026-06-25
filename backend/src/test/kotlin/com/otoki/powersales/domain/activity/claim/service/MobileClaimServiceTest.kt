@@ -13,22 +13,21 @@ import com.otoki.powersales.domain.activity.claim.exception.InvalidClaimDateExce
 import com.otoki.powersales.domain.activity.claim.exception.InvalidClaimType1Exception
 import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.domain.activity.claim.exception.RequestTypeMaxExceededException
+import com.otoki.powersales.domain.activity.claim.event.ClaimRegisteredEvent
 import com.otoki.powersales.domain.activity.claim.repository.ClaimDraftRepository
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
-import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
-import com.otoki.powersales.external.sf.outbound.SfApiResponse
-import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.springframework.context.ApplicationEventPublisher
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -55,14 +54,13 @@ class MobileClaimServiceTest {
     private val accountRepository: AccountRepository = mockk()
     private val productRepository: ProductRepository = mockk()
     private val fileStorageService: FileStorageService = mockk(relaxUnitFun = true)
-    private val storageService: StorageService = mockk(relaxUnitFun = true)
-    private val sfOutboundClient: SfOutboundClient = mockk()
+    private val eventPublisher: ApplicationEventPublisher = mockk(relaxUnitFun = true)
     private val txTemplate: TransactionTemplate = mockk()
 
-    // 실제 협력 객체로 조립 — SF 성공/실패는 sfOutboundClient.callApi mock 으로 제어.
-    private val sfOutboundService = ClaimSfOutboundService(storageService, sfOutboundClient)
+    // SF push 는 등록 트랜잭션 커밋 후 비동기(ClaimSfPushDispatcher)로 분리됐다 — 본 테스트는 등록(INSERT)과
+    // SF 송신 이벤트 발행까지만 검증한다. 실제 SF 호출/status 전이 검증은 ClaimSfDispatchService 테스트 책임.
     private val registrationOrchestrator = ClaimRegistrationOrchestrator(
-        claimRepository, uploadFileRepository, sfOutboundService, txTemplate,
+        claimRepository, uploadFileRepository, eventPublisher, txTemplate,
     )
     private val service = MobileClaimService(
         claimDraftRepository,
@@ -121,25 +119,16 @@ class MobileClaimServiceTest {
 
     private fun mockPhoto(name: String) = MockMultipartFile(name, "$name.jpg", "image/jpeg", byteArrayOf(1, 2, 3))
 
-    private fun stubCreateDeps(sfSuccess: Boolean = true) {
+    private fun stubCreateDeps() {
         every { employeeRepository.findById(userId) } returns Optional.of(employee)
         every { accountRepository.findById(1) } returns Optional.of(account)
         every { productRepository.findByProductCode("P0001") } returns product
         val saved = slot<Claim>()
         every { claimRepository.save(capture(saved)) } answers { firstArg() }
-        // status update 트랜잭션의 findByIdOrNull(savedClaim.id) → 방금 저장한 claim 재조회.
-        every { claimRepository.findById(any()) } answers { Optional.of(saved.captured) }
         every { fileStorageService.uploadClaimPhoto(any(), any(), any(), any()) } returns
             "uploads/claim/2026/01/01/uuid.jpg"
         every { uploadFileRepository.save(any<UploadFile>()) } answers { firstArg() }
         every { uploadFileRepository.saveAll(any<List<UploadFile>>()) } answers { firstArg() }
-        // SF push 성공/실패는 callApi 응답으로 제어 (resultCode "200" → 성공).
-        val response = if (sfSuccess) {
-            SfApiResponse(resultCode = "200", resultMsg = "OK", rawBody = "{}")
-        } else {
-            SfApiResponse(resultCode = "500", resultMsg = "SF 오류", rawBody = "{}")
-        }
-        every { sfOutboundClient.callApi("/ClaimRegist", any()) } returns response
     }
 
     @Test
@@ -163,42 +152,26 @@ class MobileClaimServiceTest {
     }
 
     @Test
-    @DisplayName("등록 즉시 SF /ClaimRegist 호출 (channel=CAP) - 성공 시 status=SENT")
-    fun pushesToSfWithCapChannelOnCreate() {
-        stubCreateDeps(sfSuccess = true)
+    @DisplayName("등록 시 channel=CAP INSERT(status=SF_PENDING) + SF 송신 이벤트 발행")
+    fun insertsWithCapChannelAndPublishesSfEvent() {
+        stubCreateDeps()
         val claimSlot = slot<Claim>()
-        every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
-        every { claimRepository.findById(any()) } answers { Optional.of(claimSlot.captured) }
-        val apiMapSlot = slot<Map<String, Any?>>()
-        every { sfOutboundClient.callApi("/ClaimRegist", capture(apiMapSlot)) } returns
-            SfApiResponse(resultCode = "200", resultMsg = "OK", rawBody = "{}")
+        // save 가 PK 가 채워진 영속 entity 를 반환하도록 — 이벤트의 claimId 검증용.
+        val persisted = Claim(id = 77L, status = ClaimStatus.SF_PENDING, channel = ClaimChannel.CAP)
+        every { claimRepository.save(capture(claimSlot)) } returns persisted
+        val eventSlot = slot<ClaimRegisteredEvent>()
+        every { eventPublisher.publishEvent(capture(eventSlot)) } answers {}
 
-        service.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
+        val result = service.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
 
-        // INSERT 시점 channel=CAP (레거시 모바일 정합)
+        // INSERT 시점 channel=CAP (레거시 모바일 정합) + 등록 직후 상태는 SF_PENDING (전송대기)
         assertThat(claimSlot.captured.channel).isEqualTo(ClaimChannel.CAP)
-        // SF push 가 channel="CAP" payload 로 호출됨
-        assertThat(apiMapSlot.captured["Channel"]).isEqualTo(ClaimChannel.CAP.name)
-        assertThat(apiMapSlot.captured["EmployeeCode"]).isEqualTo("EMP001")
-        assertThat(apiMapSlot.captured["SAPAccountCode"]).isEqualTo("SAP001")
-        // pwrskey — Tx1 insert 후 확보한 claim PK 를 문자열로 전송 (save mock 이 입력 claim 을 그대로 반환)
-        assertThat(apiMapSlot.captured["pwrskey"]).isEqualTo(claimSlot.captured.id.toString())
-        // 성공 → status SENT 전이
-        assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SENT)
-    }
-
-    @Test
-    @DisplayName("SF 전송 실패 - 예외 미전파 + status=SEND_FAILED")
-    fun keepsClaimWhenSfPushFails() {
-        stubCreateDeps(sfSuccess = false)
-        val claimSlot = slot<Claim>()
-        every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
-        every { claimRepository.findById(any()) } answers { Optional.of(claimSlot.captured) }
-
-        // SF 실패해도 createClaim 은 정상 반환 (HTTP 5xx 아님)
-        service.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
-
-        assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SEND_FAILED)
+        assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SF_PENDING)
+        // 응답은 claim 정보만 (SF 결과 미포함)
+        assertThat(result.id).isEqualTo(77L)
+        // 커밋 후 SF 송신을 트리거할 이벤트가 (PK 가 채워진) claimId 로 발행됨
+        verify { eventPublisher.publishEvent(any<ClaimRegisteredEvent>()) }
+        assertThat(eventSlot.captured.claimId).isEqualTo(77L)
     }
 
     @Test
@@ -319,7 +292,6 @@ class MobileClaimServiceTest {
         stubCreateDeps()
         val claimSlot = slot<Claim>()
         every { claimRepository.save(capture(claimSlot)) } answers { firstArg() }
-        every { claimRepository.findById(any()) } answers { Optional.of(claimSlot.captured) }
 
         service.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
 
