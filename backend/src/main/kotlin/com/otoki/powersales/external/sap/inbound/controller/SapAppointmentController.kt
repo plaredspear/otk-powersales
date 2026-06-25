@@ -8,7 +8,6 @@ import com.otoki.powersales.external.sap.inbound.service.SapAppointmentService
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -36,7 +35,6 @@ class SapAppointmentController(
         """
     )
     @PostMapping("/appointment")
-    @PreAuthorize("hasAuthority('SCOPE_sap.attendance.write')")
     fun insertAppointment(
         @Valid @RequestBody request: AppointmentRequest
     ): ResponseEntity<SapResultWrapper<AppointmentDetail>> {

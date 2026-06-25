@@ -7,7 +7,6 @@ import com.otoki.powersales.external.sap.auth.config.SapAuthProperties
 import com.otoki.powersales.external.sap.auth.dto.TokenRequest
 import com.otoki.powersales.external.sap.auth.dto.TokenResponse
 import com.otoki.powersales.external.sap.auth.exception.SapInvalidClientException
-import com.otoki.powersales.external.sap.auth.exception.SapInvalidScopeException
 import com.otoki.powersales.external.sap.auth.exception.SapIpNotAllowedException
 import com.otoki.powersales.external.sap.auth.exception.SapUnsupportedGrantTypeException
 import com.otoki.powersales.external.sap.auth.util.IpAllowlistMatcher
@@ -72,26 +71,12 @@ class SapTokenService(
             throw SapInvalidClientException()
         }
 
-        val requestedScopes = (request.scope ?: "")
-            .split(" ")
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-        if (requestedScopes.isEmpty() || requestedScopes.any { it !in properties.allowedScopes }) {
-            auditService.record(
-                SapInboundAudit(
-                    eventType = SapInboundAuditEventType.TOKEN_REJECTED,
-                    clientId = clientId,
-                    endpoint = TOKEN_ENDPOINT,
-                    httpMethod = "POST",
-                    clientIp = clientIp,
-                    scope = request.scope,
-                    reason = "허용되지 않은 scope"
-                )
-            )
-            throw SapInvalidScopeException()
-        }
+        // scope 검증 제거: 폐쇄망(private network) + IP allowlist + client_id/secret 인증으로
+        // 신뢰 경계가 확보되어 scope 세분화를 적용하지 않는다. 요청 scope 값과 무관하게
+        // 모든 inbound API 권한(allowedScopes 전체)을 토큰에 부여한다.
+        val grantedScopes = properties.allowedScopes
 
-        val issued = jwtCodec.issue(clientId = clientId, scopes = requestedScopes)
+        val issued = jwtCodec.issue(clientId = clientId, scopes = grantedScopes)
         auditService.record(
             SapInboundAudit(
                 eventType = SapInboundAuditEventType.TOKEN_ISSUED,
@@ -99,7 +84,7 @@ class SapTokenService(
                 endpoint = TOKEN_ENDPOINT,
                 httpMethod = "POST",
                 clientIp = clientIp,
-                scope = requestedScopes.joinToString(" "),
+                scope = grantedScopes.joinToString(" "),
                 reason = "jti=${issued.jti}"
             )
         )
@@ -107,7 +92,7 @@ class SapTokenService(
             accessToken = issued.token,
             tokenType = "Bearer",
             expiresIn = issued.expiresIn,
-            scope = requestedScopes.joinToString(" ")
+            scope = grantedScopes.joinToString(" ")
         )
     }
 

@@ -98,7 +98,9 @@ class SapInboundExceptionHandler(
         )
     }
 
-    // method-level @PreAuthorize 가 던진 AccessDeniedException 은 catch-all 보다 먼저 잡아 403 + INSUFFICIENT_SCOPE 로 매핑.
+    // AccessDeniedException 은 catch-all 보다 먼저 잡아 403 + INSUFFICIENT_SCOPE 로 매핑한다.
+    // 현재 inbound 컨트롤러는 scope 기반 @PreAuthorize 를 사용하지 않으나 (폐쇄망 + IP/client 인증으로
+    // 신뢰 경계 확보), Spring Security 가 다른 경로로 AccessDeniedException 을 던질 경우의 안전망으로 유지한다.
     // SecurityFilterChain 의 accessDeniedHandler 와 의미를 일치시키고, REQUEST_REJECTED_SCOPE audit 도 함께 기록.
     @ExceptionHandler(AccessDeniedException::class)
     fun handleAccessDenied(ex: AccessDeniedException): ResponseEntity<SapResultWrapper<Nothing>> {

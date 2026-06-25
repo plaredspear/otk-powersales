@@ -12,7 +12,6 @@ import com.otoki.powersales.external.sap.inbound.service.SapSystemCodeMasterServ
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -45,7 +44,6 @@ class SapProductMasterController(
         """
     )
     @PostMapping("/product")
-    @PreAuthorize("hasAuthority('SCOPE_sap.product.write')")
     fun upsertProduct(
         @Valid @RequestBody request: ProductMasterRequest
     ): ResponseEntity<SapResultWrapper<ProductMasterDetail>> {
@@ -66,7 +64,6 @@ class SapProductMasterController(
         """
     )
     @PostMapping("/product-barcode")
-    @PreAuthorize("hasAuthority('SCOPE_sap.product.write')")
     fun upsertProductBarcode(
         @Valid @RequestBody request: BarcodeMasterRequest
     ): ResponseEntity<SapResultWrapper<ProductMasterDetail>> {
@@ -87,7 +84,6 @@ class SapProductMasterController(
         """
     )
     @PostMapping("/system-code")
-    @PreAuthorize("hasAuthority('SCOPE_sap.product.write')")
     fun upsertSystemCode(
         @Valid @RequestBody request: SystemCodeMasterRequest
     ): ResponseEntity<SapResultWrapper<ProductMasterDetail>> {

@@ -8,7 +8,6 @@ import com.otoki.powersales.external.sap.inbound.service.SapOrganizationMasterSe
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -41,7 +40,6 @@ class SapOrganizationMasterController(
         """
     )
     @PostMapping("/organization")
-    @PreAuthorize("hasAuthority('SCOPE_sap.org.write')")
     fun replaceOrganizations(
         @Valid @RequestBody request: OrganizationMasterRequest
     ): ResponseEntity<SapResultWrapper<OrganizationMasterDetail>> {

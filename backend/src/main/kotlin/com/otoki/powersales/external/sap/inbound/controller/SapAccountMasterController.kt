@@ -10,7 +10,6 @@ import com.otoki.powersales.external.sap.inbound.service.SapClientMasterService
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -43,7 +42,6 @@ class SapAccountMasterController(
         """
     )
     @PostMapping("/account")
-    @PreAuthorize("hasAuthority('SCOPE_sap.account.write')")
     fun upsertAccount(
         @Valid @RequestBody request: ClientMasterRequest
     ): ResponseEntity<SapResultWrapper<AccountMasterDetail>> {
@@ -66,7 +64,6 @@ class SapAccountMasterController(
         """
     )
     @PostMapping("/account-category")
-    @PreAuthorize("hasAuthority('SCOPE_sap.account.write')")
     fun upsertAccountCategory(
         @Valid @RequestBody request: AccountCategoryRequest
     ): ResponseEntity<SapResultWrapper<AccountMasterDetail>> {
