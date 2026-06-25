@@ -3,7 +3,8 @@ package com.otoki.powersales.domain.activity.claim.event
 /**
  * 클레임 등록 SF 송신(`/ClaimRegist`) 트리거 이벤트.
  *
- * 발행: [com.otoki.powersales.domain.activity.claim.service.ClaimRegistrationOrchestrator] 가
+ * 발행: 등록 진입점([com.otoki.powersales.domain.activity.claim.service.MobileClaimService] ·
+ *       [com.otoki.powersales.domain.activity.claim.service.AdminClaimCreateService]) 이
  *       claim + photo INSERT(status=SF_PENDING) 직후 발행.
  * 수신: [com.otoki.powersales.domain.activity.claim.service.ClaimSfPushDispatcher]
  *       (`@TransactionalEventListener(AFTER_COMMIT) + @Async`).

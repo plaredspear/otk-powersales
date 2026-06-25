@@ -38,7 +38,7 @@ import java.math.BigDecimal
 /**
  * 모바일 클레임 수정/삭제 (UC-03/06/11) — DRAFT 상태 한정.
  *
- * 클레임 등록(UC-02/10)은 SF dual-write 골격이 필요해 [MobileClaimService] + [ClaimRegistrationOrchestrator] 가 담당한다.
+ * 클레임 등록(UC-02/10)은 SF dual-write 가 필요해 [MobileClaimService] 가 담당한다.
  * 조회(UC-01 등)는 [ClaimQueryService] 가 담당한다.
  */
 @Service

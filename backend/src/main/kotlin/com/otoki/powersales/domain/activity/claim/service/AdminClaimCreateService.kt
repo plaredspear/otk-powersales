@@ -19,15 +19,21 @@ import com.otoki.powersales.domain.activity.claim.exception.InvalidPurchaseMetho
 import com.otoki.powersales.domain.activity.claim.exception.InvalidRequestTypeException
 import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredException
 import com.otoki.powersales.domain.activity.claim.exception.RequestTypeMaxExceededException
+import com.otoki.powersales.domain.activity.claim.entity.Claim
+import com.otoki.powersales.domain.activity.claim.event.ClaimRegisteredEvent
+import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.platform.common.exception.ProductNotFoundException
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.UploadFileKbnTypes
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.activity.promotion.exception.AccountNotFoundException
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
 import java.time.DateTimeException
@@ -37,7 +43,8 @@ import java.time.LocalDate
  * Web admin 클레임 등록 — dual-write (Spec #829).
  *
  * web 입력(AdminClaimCreateRequest) 파싱·검증 + 의존 entity 조회(employeeCode/externalKey 기반) 를 책임지고,
- * 등록 골격(Tx 분할 + SF 호출)은 [ClaimRegistrationOrchestrator] 에, SF 전송 로직은 [ClaimSfOutboundService] 에 위임한다.
+ * 트랜잭션 안에서 claim + photo 를 INSERT(status=SF_PENDING)한 뒤 [ClaimRegisteredEvent] 를 발행한다.
+ * SF `/ClaimRegist` 송신은 커밋 후 [ClaimSfPushDispatcher] 가 비동기로 수행한다.
  *
  * SF 호출 실패는 claim 을 SEND_FAILED 로 보존한다 — 사용자는 [AdminClaimResendService] 로 수동 재전송 가능.
  */
@@ -47,11 +54,14 @@ class AdminClaimCreateService(
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val fileStorageService: FileStorageService,
-    private val registrationOrchestrator: ClaimRegistrationOrchestrator,
+    private val claimRepository: ClaimRepository,
+    private val uploadFileRepository: UploadFileRepository,
+    private val eventPublisher: ApplicationEventPublisher,
+    private val txTemplate: TransactionTemplate,
 ) {
 
-    // 등록 골격(ClaimRegistrationOrchestrator)이 txTemplate 으로 트랜잭션 경계를 직접 관리하므로 진입 시점엔
-    // 트랜잭션이 없어야 한다 — NEVER 로 상위 readOnly 트랜잭션 상속을 능동 차단.
+    // txTemplate 으로 트랜잭션 경계를 직접 관리하므로 진입 시점엔 트랜잭션이 없어야 한다 —
+    // NEVER 로 상위 readOnly 트랜잭션 상속을 능동 차단.
     @Transactional(propagation = Propagation.NEVER)
     fun createClaim(
         request: AdminClaimCreateRequest,
@@ -77,24 +87,34 @@ class AdminClaimCreateService(
             fileStorageService.uploadClaimPhoto(it, employee.id, 0L, UploadFileKbnTypes.CLAIM_RECEIPT)
         }
 
-        // 4. 등록 골격 위임 (Tx INSERT → 커밋 후 SF 송신 이벤트).
+        // 4. Tx INSERT (status=SF_PENDING) + 커밋 후 SF 송신 이벤트 발행.
         // SF 전송 결과는 응답에 쓰지 않는다 — 등록(SF_PENDING) 사실만 반환하고,
         // 전송 성공/실패는 상세 화면의 상태 배너/재전송 버튼으로 확인한다.
-        val claim = registrationOrchestrator.register(
-            employee = employee,
-            account = account,
-            product = product,
-            parsed = parsed,
-            channel = ClaimChannel.WEB,
-            photos = ClaimRegistrationOrchestrator.ClaimPhotos(
-                defectPhoto = claimPhoto,
-                defectKey = claimKey,
-                partPhoto = partPhoto,
-                partKey = partKey,
-                receiptPhoto = receiptPhoto,
-                receiptKey = receiptKey,
-            ),
-        )
+        val claim = txTemplate.execute {
+            val saved = claimRepository.save(
+                Claim.forRegistration(
+                    employee = employee,
+                    account = account,
+                    product = product,
+                    channel = ClaimChannel.WEB,
+                    dateType = parsed.dateType,
+                    date = parsed.date,
+                    claimType1 = parsed.claimType1,
+                    claimType2 = parsed.claimType2,
+                    quantity = parsed.quantity,
+                    description = parsed.description,
+                    purchaseMethod = parsed.purchaseMethod,
+                    amount = parsed.amount,
+                    requestTypes = parsed.requestTypes,
+                ),
+            )
+            uploadFileRepository.saveAll(
+                buildClaimPhotoRows(saved, claimPhoto, claimKey, partPhoto, partKey, receiptPhoto, receiptKey),
+            )
+            // 커밋 후 SF 송신 트리거 — claimId 만 운반, SF 입력·이미지는 ClaimSfDispatchService 가 DB+S3 에서 복원.
+            eventPublisher.publishEvent(ClaimRegisteredEvent(saved.id))
+            saved
+        }!!
 
         return AdminClaimCreateResponse(
             claimId = claim.id,

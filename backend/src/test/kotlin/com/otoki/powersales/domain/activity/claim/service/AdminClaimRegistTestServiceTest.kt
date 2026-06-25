@@ -48,12 +48,10 @@ class AdminClaimRegistTestServiceTest {
             accountRepository = mockk<AccountRepository>(relaxed = true),
             productRepository = mockk<ProductRepository>(relaxed = true),
             fileStorageService = mockk<FileStorageService>(relaxed = true),
-            registrationOrchestrator = ClaimRegistrationOrchestrator(
-                claimRepository = claimRepository,
-                uploadFileRepository = mockk(relaxed = true),
-                eventPublisher = mockk(relaxed = true),
-                txTemplate = mockk<TransactionTemplate>(relaxed = true),
-            ),
+            claimRepository = claimRepository,
+            uploadFileRepository = mockk(relaxed = true),
+            eventPublisher = mockk(relaxed = true),
+            txTemplate = mockk<TransactionTemplate>(relaxed = true),
         )
         service = AdminClaimRegistTestService(createService, sfOutboundService, ObjectMapper())
     }

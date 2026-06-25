@@ -70,18 +70,15 @@ class AdminClaimCreateServiceTest {
             val callback = arg<TransactionCallback<Any>>(0)
             callback.doInTransaction(mockk(relaxed = true))
         }
-        val registrationOrchestrator = ClaimRegistrationOrchestrator(
-            claimRepository,
-            uploadFileRepository,
-            eventPublisher,
-            txTemplate,
-        )
         service = AdminClaimCreateService(
             employeeRepository,
             accountRepository,
             productRepository,
             fileStorageService,
-            registrationOrchestrator,
+            claimRepository,
+            uploadFileRepository,
+            eventPublisher,
+            txTemplate,
         )
 
         every { fileStorageService.uploadClaimPhoto(any(), any(), any(), any()) } returnsMany listOf(

@@ -330,4 +330,51 @@ class Claim(
     @FieldName("전송시도횟수")
     @Column(name = "send_attempt_count", nullable = false)
     var sendAttemptCount: Int = 0
-) : BaseEntity()
+) : BaseEntity() {
+
+    companion object {
+        /**
+         * 신규 등록용 Claim 생성 — web ([com.otoki.powersales.domain.activity.claim.service.AdminClaimCreateService]) ·
+         * mobile ([com.otoki.powersales.domain.activity.claim.service.MobileClaimService]) 공용 factory.
+         *
+         * 등록 시 SF 정합 필드를 한 곳에 가둔다 (진입점별 중복 방지):
+         *  - status = SF_PENDING — SF 송신은 등록 커밋 후 비동기 처리.
+         *  - costCenterCode = 거래처(Account) BranchCode (SF ClaimRegist.cls:90 정합,
+         *    CostCenter__c formula = AccountId__r.BranchCode__c 와 동일).
+         *  - division = null — IF_REST_MOBILE_ClaimRegist 컨트롤러가 set 안 함 + 트리거는
+         *    Interface 가드로 미실행 → 등록 시 공란.
+         */
+        fun forRegistration(
+            employee: Employee,
+            account: Account,
+            product: Product,
+            channel: ClaimChannel,
+            dateType: ClaimDateType,
+            date: LocalDate,
+            claimType1: ClaimType1,
+            claimType2: ClaimType2,
+            quantity: BigDecimal,
+            description: String,
+            purchaseMethod: PurchaseMethod?,
+            amount: BigDecimal?,
+            requestTypes: Set<RequestType>,
+        ): Claim = Claim(
+            employee = employee,
+            account = account,
+            dateType = dateType,
+            date = date,
+            claimType1 = claimType1,
+            claimType2 = claimType2,
+            defectDescription = description,
+            defectQuantity = quantity,
+            purchaseAmount = amount,
+            purchaseMethodCode = purchaseMethod,
+            requestTypeCode = requestTypes,
+            status = ClaimStatus.SF_PENDING,
+            channel = channel,
+            product = product,
+            costCenterCode = account.branchCode,
+            division = null,
+        )
+    }
+}

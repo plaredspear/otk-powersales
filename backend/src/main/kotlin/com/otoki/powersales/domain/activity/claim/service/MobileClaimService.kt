@@ -20,17 +20,23 @@ import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredExcep
 import com.otoki.powersales.domain.activity.claim.exception.RequestTypeMaxExceededException
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType2
+import com.otoki.powersales.domain.activity.claim.entity.Claim
+import com.otoki.powersales.domain.activity.claim.event.ClaimRegisteredEvent
 import com.otoki.powersales.domain.activity.claim.repository.ClaimDraftRepository
+import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
+import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.UploadFileKbnTypes
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.activity.promotion.exception.AccountNotFoundException
 import com.otoki.powersales.platform.common.exception.ProductNotFoundException
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.multipart.MultipartFile
 import java.time.LocalDate
 
@@ -38,18 +44,18 @@ import java.time.LocalDate
  * 모바일 클레임 등록 (UC-02/UC-10) — SF dual-write (channel=CAP).
  *
  * 모바일 입력 파싱 + 의존 entity 조회(userId/accountId/productCode 기반) + draft 삭제 정책을 책임지고,
- * 등록 골격(Tx 분할 + SF 호출)은 [ClaimRegistrationOrchestrator] 에 위임한다.
+ * 트랜잭션 안에서 claim + photo 를 INSERT(status=SF_PENDING)한 뒤 [ClaimRegisteredEvent] 를 발행한다.
+ * SF `/ClaimRegist` 송신은 커밋 후 [ClaimSfPushDispatcher] 가 비동기로 수행하므로 본 service 는 SF I/O 무관.
  *
  * 레거시 ClaimTrigger / IF_REST_MOBILE_ClaimRegist 정합:
  *   - 제조일자 미래 차단
  *   - 요청사항 최대 4개
- *   - CC코드(cost_center_code)는 거래처(Account) BranchCode 로 자동 채움 (SF ClaimRegist.cls:90 정합) — 오케스트레이터가 처리
- *   - division 은 등록 시 공란 (SF 모바일 등록 정합) — 오케스트레이터가 처리
- *   - 등록 즉시 SF `/ClaimRegist` 호출 (channel=CAP)
+ *   - CC코드(cost_center_code)는 거래처(Account) BranchCode 로 자동 채움 (SF ClaimRegist.cls:90 정합) — [Claim.forRegistration] 처리
+ *   - division 은 등록 시 공란 (SF 모바일 등록 정합) — [Claim.forRegistration] 처리
  *   - 정식 등록 성공 시 해당 사원의 임시저장 row 삭제
  *
- * 트랜잭션 경계는 [ClaimRegistrationOrchestrator] 가 txTemplate 으로 관리하므로 본 service 진입 시점엔
- * 트랜잭션이 없어야 한다 — 클래스 레벨 @Transactional 을 두지 않는다.
+ * 트랜잭션 경계를 [txTemplate] 으로 직접 관리하므로 진입 시점엔 트랜잭션이 없어야 한다 — 클래스 레벨
+ * @Transactional 을 두지 않고, 진입 메서드는 NEVER 로 상위 readOnly 상속을 능동 차단한다.
  */
 @Service
 class MobileClaimService(
@@ -58,14 +64,17 @@ class MobileClaimService(
     private val accountRepository: AccountRepository,
     private val productRepository: ProductRepository,
     private val fileStorageService: FileStorageService,
-    private val registrationOrchestrator: ClaimRegistrationOrchestrator,
+    private val claimRepository: ClaimRepository,
+    private val uploadFileRepository: UploadFileRepository,
+    private val eventPublisher: ApplicationEventPublisher,
+    private val txTemplate: TransactionTemplate,
 ) {
 
     /**
      * @param userId UserPrincipal.userId — Employee.id 와 동일 (조회 정책: ClaimQueryService 와 정합)
      */
-    // 등록 골격(ClaimRegistrationOrchestrator)이 txTemplate 으로 트랜잭션 경계를 직접 관리하므로 진입 시점엔
-    // 트랜잭션이 없어야 한다 — NEVER 로 상위 readOnly 트랜잭션 상속을 능동 차단.
+    // txTemplate 으로 트랜잭션 경계를 직접 관리하므로 진입 시점엔 트랜잭션이 없어야 한다 —
+    // NEVER 로 상위 readOnly 트랜잭션 상속을 능동 차단.
     @Transactional(propagation = Propagation.NEVER)
     fun createClaim(
         userId: Long,
@@ -116,44 +125,35 @@ class MobileClaimService(
             fileStorageService.uploadClaimPhoto(it, userId, 0L, UploadFileKbnTypes.CLAIM_RECEIPT)
         }
 
-        val parsed = ClaimSfOutboundService.ParsedInput(
-            sapAccountCode = sapAccountCode,
-            productCode = request.productCode!!,
-            employeeCode = employeeCode,
-            dateType = dateType,
-            date = date,
-            // 레거시 모바일은 ClaimDate=todayReg(오늘) 전송 — 발생일자=등록일.
-            claimDate = LocalDate.now(),
-            claimType1 = claimType1,
-            claimType2 = claimType2,
-            quantity = request.defectQuantity!!,
-            description = request.defectDescription!!,
-            purchaseMethod = purchaseMethod,
-            amount = request.purchaseAmount,
-            requestTypes = requestTypes,
-        )
-
-        // 3. 등록 골격 위임 (Tx INSERT → 커밋 후 SF 송신 이벤트) + draft 삭제.
-        // SF 전송 결과는 응답에 쓰지 않는다 — claim 정보만 반환.
-        val claim = registrationOrchestrator.register(
-            employee = employee,
-            account = account,
-            product = product,
-            parsed = parsed,
-            channel = ClaimChannel.CAP,
-            photos = ClaimRegistrationOrchestrator.ClaimPhotos(
-                defectPhoto = defectPhoto,
-                defectKey = defectKey,
-                partPhoto = labelPhoto,
-                partKey = labelKey,
-                receiptPhoto = receiptPhoto,
-                receiptKey = receiptKey,
-            ),
-            onAfterInsert = {
-                // 레거시 정합: 정식 등록 성공 시 해당 사원의 임시저장 row 삭제.
-                claimDraftRepository.findByEmployeeId(userId)?.let { claimDraftRepository.delete(it) }
-            },
-        )
+        // 3. Tx INSERT (status=SF_PENDING) + draft 삭제 + 커밋 후 SF 송신 이벤트 발행.
+        // SF 송신은 커밋 후 비동기(ClaimSfPushDispatcher) — 본 응답은 claim 정보만 반환한다.
+        val claim = txTemplate.execute {
+            val saved = claimRepository.save(
+                Claim.forRegistration(
+                    employee = employee,
+                    account = account,
+                    product = product,
+                    channel = ClaimChannel.CAP,
+                    dateType = dateType,
+                    date = date,
+                    claimType1 = claimType1,
+                    claimType2 = claimType2,
+                    quantity = request.defectQuantity!!,
+                    description = request.defectDescription!!,
+                    purchaseMethod = purchaseMethod,
+                    amount = request.purchaseAmount,
+                    requestTypes = requestTypes,
+                ),
+            )
+            uploadFileRepository.saveAll(
+                buildClaimPhotoRows(saved, defectPhoto, defectKey, labelPhoto, labelKey, receiptPhoto, receiptKey),
+            )
+            // 레거시 정합: 정식 등록 성공 시 해당 사원의 임시저장 row 삭제.
+            claimDraftRepository.findByEmployeeId(userId)?.let { claimDraftRepository.delete(it) }
+            // 커밋 후 SF 송신 트리거 — claimId 만 운반, SF 입력·이미지는 ClaimSfDispatchService 가 DB+S3 에서 복원.
+            eventPublisher.publishEvent(ClaimRegisteredEvent(saved.id))
+            saved
+        }!!
 
         return ClaimCreateResponse.from(claim)
     }
