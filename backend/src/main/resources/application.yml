@@ -409,6 +409,18 @@ app:
         enabled: true
       monthly:
         enabled: true
+    # 진열 전월매출 배치 (매일 02:00).
+    display:
+      last-month-revenue:
+        enabled: true
+    # 일정 평균매출 배치 (매월 1일 03:00).
+    mfeis:
+      this-month-revenue:
+        enabled: true
+    # 목표마스터 sync 배치 (매시 정각).
+    sales-progress-rate-master:
+      sync:
+        enabled: true
   # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
   sap:
     outbound:
@@ -456,6 +468,18 @@ app:
       daily:
         enabled: true
       monthly:
+        enabled: true
+    # 진열 전월매출 배치 (매일 02:00).
+    display:
+      last-month-revenue:
+        enabled: true
+    # 일정 평균매출 배치 (매월 1일 03:00).
+    mfeis:
+      this-month-revenue:
+        enabled: true
+    # 목표마스터 sync 배치 (매시 정각).
+    sales-progress-rate-master:
+      sync:
         enabled: true
   # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
   sap:
