@@ -305,6 +305,8 @@ export interface EmployeeWorkHistoryItem {
   workingCategory4: string | null;
   accountName: string | null;
   accountExternalKey: string | null;
+  /** 거래처유형 (대형마트(3대)/체인/C.V.S 등) */
+  accountType: string | null;
   isClockIn: boolean;
   // 근무기간 조회(월별) 화면 확장 필드 — 최근이력 응답에서는 값이 채워질 수 있으나 미사용
   refAccountName: string | null;

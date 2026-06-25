@@ -50,11 +50,26 @@ const COLUMNS: ColumnsType<EmployeeWorkHistoryItem> = [
   {
     title: '근무지',
     dataIndex: 'accountName',
-    render: (_: unknown, row) => {
-      const place = resolveWorkplace(row);
-      if (place === '-') return '-';
-      return row.accountExternalKey ? `${place} (${row.accountExternalKey})` : place;
-    },
+    render: (_: unknown, row) => resolveWorkplace(row),
+  },
+  {
+    title: '거래처코드',
+    dataIndex: 'accountExternalKey',
+    width: 110,
+    render: (v: string | null) => v ?? '-',
+  },
+  {
+    // TODO: SF 메타에 "유통형태" 원천 필드가 없어 데이터 미연결 — 원천 확정 후 매핑.
+    title: '유통형태',
+    dataIndex: 'distributionType',
+    width: 100,
+    render: () => '(TODO)',
+  },
+  {
+    title: '거래처유형',
+    dataIndex: 'accountType',
+    width: 110,
+    render: (v: string | null) => v ?? '-',
   },
   {
     title: '업무성격',
