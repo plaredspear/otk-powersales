@@ -97,13 +97,30 @@ class FullMenuDrawer extends ConsumerWidget {
   /// 조장(LEADER)일 때만 "거래처" 그룹 다음에 "여사원 관리" 그룹을 삽입한다.
   /// 레거시 GNB(gnb.jsp:212-218) nav7 조건이 `eq '조장'` 정확 일치이므로,
   /// 지점장(ADMIN)·부서장(AccountViewAll)에게는 노출하지 않는다.
+  ///
+  /// 또한 조장(LEADER)·지점장(ADMIN)은 유통기한 기능을 사용하지 않으므로 'expiry'
+  /// 메뉴를 제외하며, 제외 후 항목이 비는 그룹(제품)은 그룹 자체를 노출하지 않는다.
   List<Widget> _buildMenuGroups(BuildContext context, String? role) {
     final isLeader = role == 'LEADER';
+    final hideExpiry = role == 'LEADER' || role == 'ADMIN';
 
     // 조건부 삽입할 그룹 목록 구성
     final groups = <domain.MenuGroup>[];
     for (final group in MenuConstants.menuGroups) {
-      groups.add(group);
+      if (hideExpiry) {
+        final items =
+            group.items.where((item) => item.id != 'expiry').toList();
+        if (items.isEmpty) continue;
+        groups.add(domain.MenuGroup(
+          id: group.id,
+          icon: group.icon,
+          iconAsset: group.iconAsset,
+          label: group.label,
+          items: items,
+        ));
+      } else {
+        groups.add(group);
+      }
       if (isLeader && group.id == 'trade') {
         groups.add(MenuConstants.teamManagementGroup);
       }
