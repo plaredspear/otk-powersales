@@ -87,7 +87,7 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
         fun getForm_success() {
             val form = TeamScheduleFormDto(
                 branches = listOf(BranchResponse("5457", "강북유통지점")),
-                members = listOf(TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "김영희", orgName = "강북유통지점", jikwee = "사원")),
+                members = listOf(TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "김영희", orgName = "강북유통지점", jikwee = "사원", status = "재직")),
                 professionalPromotionTeams = listOf("라면세일조"),
                 accounts = listOf(TeamScheduleAccountDto(accountId = 1001, externalKey = "EXT001", name = "이마트 강북점")),
                 dailySummary = emptyList()
@@ -113,7 +113,7 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                     BranchResponse("5457", "강북유통지점"),
                     BranchResponse("5458", "강남유통지점")
                 ),
-                members = listOf(TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "김영희", orgName = "강북유통지점", jikwee = "사원")),
+                members = listOf(TeamMemberDto(employeeId = 1L, employeeCode = "20030001", name = "김영희", orgName = "강북유통지점", jikwee = "사원", status = "재직")),
                 professionalPromotionTeams = listOf("라면세일조"),
                 accounts = listOf(TeamScheduleAccountDto(accountId = 2001, externalKey = "EXT002", name = "이마트 강남점")),
                 dailySummary = emptyList()

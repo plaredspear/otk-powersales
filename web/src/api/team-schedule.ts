@@ -10,6 +10,8 @@ export interface TeamMember {
   orgName?: string | null;
   /** 직위명 */
   jikwee?: string | null;
+  /** 재직상태명 (재직/퇴사/휴직 등) */
+  status?: string | null;
 }
 
 export interface TeamScheduleAccount {

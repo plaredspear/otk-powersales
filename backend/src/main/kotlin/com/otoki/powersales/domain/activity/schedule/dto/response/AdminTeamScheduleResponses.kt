@@ -12,7 +12,9 @@ data class TeamMemberDto(
     /** 소속(조직명) */
     val orgName: String?,
     /** 직위명 */
-    val jikwee: String?
+    val jikwee: String?,
+    /** 재직상태명 (재직/퇴사/휴직 등) */
+    val status: String?
 ) {
     companion object {
         fun from(employee: Employee): TeamMemberDto = TeamMemberDto(
@@ -20,7 +22,8 @@ data class TeamMemberDto(
             employeeCode = employee.employeeCode,
             name = employee.name,
             orgName = employee.orgName,
-            jikwee = employee.jikwee
+            jikwee = employee.jikwee,
+            status = employee.status
         )
     }
 }

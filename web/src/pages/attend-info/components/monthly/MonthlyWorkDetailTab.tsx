@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert, Button, Segmented, Spin, Typography } from 'antd';
+import { Alert, Button, Segmented, Spin, Tag, Typography } from 'antd';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTeamScheduleForm } from '@/hooks/team-schedule/useTeamScheduleForm';
@@ -13,6 +13,13 @@ import MonthlyWorkInsight from './MonthlyWorkInsight';
 const { Text } = Typography;
 
 type MonthlyView = 'month' | 'list';
+
+/** 재직상태명 → Tag 색상. 매핑에 없으면 기본(default). */
+const STATUS_COLOR: Record<string, string> = {
+  재직: 'green',
+  휴직: 'orange',
+  퇴사: 'red',
+};
 
 /**
  * 근무기간 조회 — 월별 개인 근무내역(어디서/어떻게).
@@ -86,24 +93,41 @@ export default function MonthlyWorkDetailTab() {
           />
         </div>
 
-        <div style={{ marginBottom: 8 }}>
-          {selected ? (
-            <Text type="secondary">
+        {selected ? (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: '8px 12px',
+              borderLeft: '3px solid #1677ff',
+              borderRadius: 4,
+              background: '#f0f7ff',
+            }}
+          >
+            <Text strong style={{ fontSize: 15 }}>
               {[
                 selected.orgName,
                 `${selected.name}(${selected.employeeCode})`,
                 selected.jikwee,
               ]
                 .filter(Boolean)
-                .join(' · ')}{' '}
-              · {period.year()}년 {period.month() + 1}월 — 총 {items.length}건
+                .join(' · ')}
             </Text>
-          ) : (
+            {selected.status && (
+              <Tag
+                color={STATUS_COLOR[selected.status] ?? 'default'}
+                style={{ marginLeft: 8 }}
+              >
+                {selected.status}
+              </Tag>
+            )}
+          </div>
+        ) : (
+          <div style={{ marginBottom: 12 }}>
             <Text type="secondary">
               좌측에서 여사원을 선택하면 해당 월 근무내역이 채워집니다.
             </Text>
-          )}
-        </div>
+          </div>
+        )}
 
         {formQuery.isError && (
           <Alert
