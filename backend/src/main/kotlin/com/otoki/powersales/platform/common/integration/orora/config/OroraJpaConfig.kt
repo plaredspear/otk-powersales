@@ -2,6 +2,7 @@ package com.otoki.powersales.platform.common.integration.orora.config
 
 import jakarta.persistence.EntityManagerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.boot.jpa.EntityManagerFactoryBuilder
 import org.springframework.context.annotation.Bean
@@ -28,7 +29,9 @@ import javax.sql.DataSource
  * ## ⚠️ 절대 수정 불가 (read-only 가드)
  * - **Hibernate `hbm2ddl.auto = none`**: 자동 DDL 생성/실행 차단
  * - **Hibernate `connection.autocommit = true`**: Hikari read-only=true 정합
- * - **`jakarta.persistence.query.timeout = 30000`**: SELECT 지연 상한
+ * - **`jakarta.persistence.query.timeout`**: SELECT 지연 상한 (기본 300초, `ORORA_QUERY_TIMEOUT_MS`
+ *   환경변수로 override). ORORA view 가 거래처 chunk 수십개 폭 단일 SELECT 에 수십초 이상 걸릴 수
+ *   있어, 짧은 상한은 chunk 적재를 `The query has timed out.` 으로 실패시킨다.
  * - JPA Repository 의 mutation API 노출은 [com.otoki.orora.repository.OroraDailySalesHistoryRepository]
  *   / [com.otoki.orora.repository.OroraMonthlySalesHistoryRepository] 가 `Repository<>` marker 만
  *   상속하여 컴파일 시점에 차단됨
@@ -46,7 +49,11 @@ import javax.sql.DataSource
 	entityManagerFactoryRef = "ororaEntityManagerFactory",
 	transactionManagerRef = "ororaTransactionManager",
 )
-class OroraJpaConfig {
+class OroraJpaConfig(
+	// ORORA SELECT 지연 상한 (ms). ORORA view 의 무거운 chunk SELECT 가 수십초 이상 걸릴 수 있어
+	// 운영에서 환경변수로 조정 가능하게 외부화. 기본 300000ms(300초).
+	@Value("\${app.batch.orora.query-timeout-ms:300000}") private val queryTimeoutMs: Long,
+) {
 	@Bean
 	fun ororaEntityManagerFactory(
 		builder: EntityManagerFactoryBuilder,
@@ -56,15 +63,18 @@ class OroraJpaConfig {
 		.dataSource(ororaDataSource)
 		.packages("com.otoki.orora.entity")
 		.persistenceUnit("orora")
-		.properties(ororaHibernateProperties(beanFactory))
+		.properties(ororaHibernateProperties(beanFactory, queryTimeoutMs))
 		.build()
 
 	@Bean
 	fun ororaTransactionManager(
 		@Qualifier("ororaEntityManagerFactory") emf: EntityManagerFactory,
 	): PlatformTransactionManager = JpaTransactionManager(emf).apply {
-		// ORORA 트랜잭션 default timeout 30초 — Hikari connection-timeout 5초 + SELECT 지연 상한과 정합
-		defaultTimeout = 30
+		// ORORA 트랜잭션 default timeout 을 SELECT 지연 상한(query-timeout-ms)과 정합.
+		// 트랜잭션 timeout(초) 이 query timeout 보다 짧으면 무거운 chunk 가 트랜잭션 레벨에서 먼저
+		// 끊겨 query-timeout 상향 효과가 무력화되므로, query-timeout-ms 를 초로 환산해 동일 상한 적용
+		// (ceil — 부분 초 절상). Hikari connection-timeout 5초는 connection acquire 단계 한정이라 무관.
+		defaultTimeout = ((queryTimeoutMs + 999) / 1000).toInt()
 	}
 
 	companion object {
@@ -75,7 +85,10 @@ class OroraJpaConfig {
 		 * 회귀 방지 대상 — 메인 RDS 의 `default_schema=powersales` 가 ORORA EMF 로 전파되어
 		 * ORORA MSSQL view 앞에 `powersales.` prefix 가 붙는 사고.
 		 */
-		fun ororaHibernateProperties(beanFactory: ConfigurableListableBeanFactory): Map<String, Any> = mapOf(
+		fun ororaHibernateProperties(
+			beanFactory: ConfigurableListableBeanFactory,
+			queryTimeoutMs: Long = 300_000,
+		): Map<String, Any> = mapOf(
 			"hibernate.dialect" to "org.hibernate.dialect.SQLServerDialect",
 			// 메인 RDS 측 application.yml 의 spring.jpa.properties.hibernate.default_schema=powersales
 			// 가 EntityManagerFactoryBuilder 의 jpaProperties 로 본 ORORA EMF 에도 전파되어
@@ -87,7 +100,7 @@ class OroraJpaConfig {
 			"hibernate.connection.autocommit" to "true",
 			"hibernate.connection.provider_disables_autocommit" to "false",
 			// SELECT 지연 상한 — ORORA 측 view 응답 지연이 backend API 응답성을 침해하지 않도록
-			"jakarta.persistence.query.timeout" to "30000",
+			"jakarta.persistence.query.timeout" to queryTimeoutMs.toString(),
 			"hibernate.session.events.log.LOG_QUERIES_SLOWER_THAN_MS" to "5000",
 			// VPN 장애 / local 환경 부팅 시 ORORA DB 도달 불가 상황에서도 메인 부팅이 차단되지
 			// 않도록 Hibernate 가 JDBC 메타데이터를 부팅 시점에 조회하지 않게 강제.

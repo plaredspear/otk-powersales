@@ -237,10 +237,16 @@ app:
   # ---------------------------------------------------------------------------
   batch:
     orora:
+      # ORORA view SELECT 지연 상한 (ms). ORORA 외부 view 의 무거운 chunk SELECT 가 수십초 이상
+      # 걸려 짧은 상한은 chunk 적재를 `The query has timed out.` 으로 실패시킨다 (운영 실측 30초 timeout
+      # 사건). 기본 300초. JpaTransactionManager.defaultTimeout 도 이 값(초 환산)과 정합된다.
+      query-timeout-ms: ${ORORA_QUERY_TIMEOUT_MS:300000}
       account-range:
         from: ${ORORA_MATERIALIZE_ACCOUNT_FROM:1000000}
         to: ${ORORA_MATERIALIZE_ACCOUNT_TO:1100000}
-        chunk-size: ${ORORA_MATERIALIZE_CHUNK_SIZE:2000}
+        # chunk 당 거래처 코드 폭. 폭이 클수록 chunk 단일 SELECT 가 무거워져 timeout 위험 ↑.
+        # 레거시 mdt 실측은 2000 이었으나 timeout 회피 위해 기본 1000 으로 축소.
+        chunk-size: ${ORORA_MATERIALIZE_CHUNK_SIZE:1000}
       daily:
         cron: ${ORORA_MATERIALIZE_DAILY_CRON:0 30 4 * * *}
       monthly:

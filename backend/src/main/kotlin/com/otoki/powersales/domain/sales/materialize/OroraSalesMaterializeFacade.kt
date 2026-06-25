@@ -9,7 +9,10 @@ import java.time.format.DateTimeFormatter
  * ORORA 매출이력 적재의 진입 facade (Spec #855).
  *
  * 배치 / 수동 트리거 공통으로 사용하는 거래처 범위 조립 + 대상 월 결정(동적 산출, Q2) 을 한 곳에 둔다.
- * 거래처 범위 기본값은 레거시 `OroraDailyAccountRange__mdt` 실측(from 1000000 / to 1100000 / range 2000) 정합.
+ * 거래처 범위 기본값 from 1000000 / to 1100000. 레거시 `OroraDailyAccountRange__mdt` 실측 range 는 2000
+ * 이었으나, ORORA view 의 무거운 chunk SELECT 가 query timeout 에 걸리는 사건(운영 실측)으로 신규 기본
+ * chunk-size 는 1000 으로 축소 — chunk 당 SELECT 부담을 줄여 timeout 회피 + 부분 실패 격리 강화.
+ * 운영에서 `ORORA_MATERIALIZE_CHUNK_SIZE` 환경변수로 추가 조절 가능.
  */
 @Service
 class OroraSalesMaterializeFacade(
@@ -17,7 +20,7 @@ class OroraSalesMaterializeFacade(
     private val dailyService: OroraDailySalesMaterializeService,
     @Value("\${app.batch.orora.account-range.from:1000000}") private val rangeFrom: Long,
     @Value("\${app.batch.orora.account-range.to:1100000}") private val rangeTo: Long,
-    @Value("\${app.batch.orora.account-range.chunk-size:2000}") private val chunkSize: Long,
+    @Value("\${app.batch.orora.account-range.chunk-size:1000}") private val chunkSize: Long,
 ) {
 
     /**
