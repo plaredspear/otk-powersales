@@ -34087,6 +34087,13 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "accountKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -34226,6 +34233,13 @@
         }, {
           "in" : "query",
           "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountKeyword",
           "required" : false,
           "schema" : {
             "type" : "string"
