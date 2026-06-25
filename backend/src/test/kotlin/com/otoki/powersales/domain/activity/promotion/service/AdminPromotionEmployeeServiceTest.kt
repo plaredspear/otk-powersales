@@ -78,6 +78,9 @@ class AdminPromotionEmployeeServiceTest {
     @BeforeEach
     fun stubLenientCompatDefaults() {
         every { employeeRepository.findById(any()) } returns Optional.empty()
+        // 핵심필드 변경 시 schedule cascade delete 전 dangling reference 제거용 saveAndFlush
+        // (relaxUnitFun 대상이 아니므로 명시 stub 필요) — 각 테스트에서 override 가능.
+        every { promotionEmployeeRepository.saveAndFlush(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
     }
 
     @Nested

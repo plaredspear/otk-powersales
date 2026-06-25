@@ -438,9 +438,9 @@ void main() {
         totalPrice: 0, // 실제 계산값과 무관
       );
 
-      // (2.0 * 20 + 5) = 45개
-      // 45 * 10000 / 20 = 22500
-      expect(item.calculatedTotalPrice, 22500);
+      // (2.0 * 20 + 5) = 45개 (총EA)
+      // 낱개단가 산식: 45 * 10000 = 450000 (boxSize 나눗셈 제거)
+      expect(item.calculatedTotalPrice, 450000);
     });
 
     test('calculatedTotalPrice 계산 테스트 - 소수점 박스', () {
@@ -454,9 +454,9 @@ void main() {
         totalPrice: 0,
       );
 
-      // (2.5 * 20 + 0) = 50개
-      // 50 * 10000 / 20 = 25000
-      expect(item.calculatedTotalPrice, 25000);
+      // (2.5 * 20 + 0) = 50개 (총EA)
+      // 낱개단가 산식: 50 * 10000 = 500000 (boxSize 나눗셈 제거)
+      expect(item.calculatedTotalPrice, 500000);
     });
 
     test('hasError getter 테스트 - 에러 있는 경우', () {
