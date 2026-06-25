@@ -40,7 +40,7 @@ class EmployeeWorkHistoryService(
             EmployeeNotFoundException(employeeId)
         }
         val schedules = teamMemberScheduleRepository
-            .findByEmployeeAndWorkingDateBetweenOrderByWorkingDateAscCreatedAtAsc(
+            .findByEmployeeAndWorkingDateBetweenAndAttendanceLogIsNotNullOrderByWorkingDateAscCreatedAtAsc(
                 employee,
                 yearMonth.atDay(1),
                 yearMonth.atEndOfMonth(),

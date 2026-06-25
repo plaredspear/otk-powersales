@@ -68,7 +68,7 @@ function SummaryPanel({ agg }: { agg: Aggregates }) {
   return (
     <div style={{ width: 260, flexShrink: 0 }}>
       <div style={{ marginBottom: 16 }}>
-        <Text strong>근무 유형</Text>
+        <Text strong>근무 구분</Text>
         <div style={{ marginTop: 6 }}>
           {agg.byWorkType.length === 0 ? (
             <Text type="secondary">-</Text>
