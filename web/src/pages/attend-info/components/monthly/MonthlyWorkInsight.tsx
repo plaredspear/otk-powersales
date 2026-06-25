@@ -29,14 +29,16 @@ function resolveWorkplace(row: EmployeeWorkHistoryItem): string {
 }
 
 interface Aggregates {
-  byWorkType: Array<[string, number]>;
+  /** 근무유형별 [유형, 고유 날짜 수(일), 건수(회)] — 하루에 복수 근무 row 가 있으면 일≠회. */
+  byWorkType: Array<[string, number, number]>;
   byWorkplace: Array<[string, number]>;
   byCategory1: Array<[string, number]>;
   byCategory3: Array<[string, number]>;
 }
 
 function aggregate(items: EmployeeWorkHistoryItem[]): Aggregates {
-  const wt = new Map<string, number>();
+  /** 근무유형 → { 건수, 고유 날짜 set } */
+  const wt = new Map<string, { count: number; days: Set<string> }>();
   const wp = new Map<string, number>();
   const c1 = new Map<string, number>();
   const c3 = new Map<string, number>();
@@ -45,7 +47,12 @@ function aggregate(items: EmployeeWorkHistoryItem[]): Aggregates {
     m.set(k, (m.get(k) ?? 0) + 1);
   };
   for (const it of items) {
-    bump(wt, it.workingType);
+    if (it.workingType) {
+      const e = wt.get(it.workingType) ?? { count: 0, days: new Set<string>() };
+      e.count += 1;
+      if (it.workingDate) e.days.add(it.workingDate);
+      wt.set(it.workingType, e);
+    }
     if (it.workingType === '근무') {
       bump(wp, resolveWorkplace(it));
       bump(c1, it.workingCategory1);
@@ -54,8 +61,11 @@ function aggregate(items: EmployeeWorkHistoryItem[]): Aggregates {
   }
   const sortDesc = (m: Map<string, number>) =>
     Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
+  const byWorkType = Array.from(wt.entries())
+    .map(([k, v]) => [k, v.days.size, v.count] as [string, number, number])
+    .sort((a, b) => b[2] - a[2]);
   return {
-    byWorkType: sortDesc(wt),
+    byWorkType,
     byWorkplace: sortDesc(wp),
     byCategory1: sortDesc(c1),
     byCategory3: sortDesc(c3),
@@ -73,9 +83,10 @@ function SummaryPanel({ agg }: { agg: Aggregates }) {
           {agg.byWorkType.length === 0 ? (
             <Text type="secondary">-</Text>
           ) : (
-            agg.byWorkType.map(([k, n]) => (
+            agg.byWorkType.map(([k, days, count]) => (
               <span key={k} style={{ marginRight: 12 }}>
-                {k} <Text strong>{n}</Text>일
+                {k} <Text strong>{days}</Text>일{' '}
+                <Text type="secondary">({count}회)</Text>
               </span>
             ))
           )}
@@ -121,7 +132,7 @@ function SummaryPanel({ agg }: { agg: Aggregates }) {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Text strong>업무 성격</Text>
+        <Text strong>근무 유형</Text>
         <div style={{ marginTop: 6 }}>
           {agg.byCategory1.length === 0 ? (
             <Text type="secondary">-</Text>
