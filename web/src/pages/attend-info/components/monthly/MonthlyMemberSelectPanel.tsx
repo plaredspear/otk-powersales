@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Empty, Input, Select, Spin, Tag } from 'antd';
+import { Empty, Input, Radio, Spin, Tag } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { MEMBER_STATUS_COLOR, type TeamMember } from '@/api/team-schedule';
 
@@ -22,14 +22,15 @@ export function MonthlyMemberSelectPanel({ members, isLoading, selectedId, onSel
   // 'ALL' = 전체, 그 외에는 status 값. 데이터에 실제 존재하는 status 만 옵션화.
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
-  // 데이터에 존재하는 재직상태 목록 (필터 옵션). 정의된 색상 순서를 우선 적용.
+  // 데이터에 존재하는 재직상태별 건수 (필터 옵션 + 라벨 카운트). 정의된 색상 순서를 우선 적용.
   const statusOptions = useMemo(() => {
-    const present = new Set(
-      members.map((m) => m.status).filter((s): s is string => !!s),
-    );
-    const known = Object.keys(MEMBER_STATUS_COLOR).filter((s) => present.has(s));
-    const extra = [...present].filter((s) => !(s in MEMBER_STATUS_COLOR));
-    return [...known, ...extra];
+    const counts = new Map<string, number>();
+    for (const m of members) {
+      if (m.status) counts.set(m.status, (counts.get(m.status) ?? 0) + 1);
+    }
+    const known = Object.keys(MEMBER_STATUS_COLOR).filter((s) => counts.has(s));
+    const extra = [...counts.keys()].filter((s) => !(s in MEMBER_STATUS_COLOR));
+    return [...known, ...extra].map((s) => ({ status: s, count: counts.get(s) ?? 0 }));
   }, [members]);
 
   // 검색어(이름/사번) + 재직상태 필터를 AND 조합. 공백/대소문자 정규화.
@@ -68,16 +69,21 @@ export function MonthlyMemberSelectPanel({ members, isLoading, selectedId, onSel
         style={{ marginBottom: 6 }}
       />
       {statusOptions.length > 0 && (
-        <Select
+        <Radio.Group
           size="small"
           value={statusFilter}
-          onChange={setStatusFilter}
-          style={{ width: '100%', marginBottom: 6 }}
-          options={[
-            { label: '재직상태 전체', value: 'ALL' },
-            ...statusOptions.map((s) => ({ label: s, value: s })),
-          ]}
-        />
+          onChange={(e) => setStatusFilter(e.target.value)}
+          optionType="button"
+          buttonStyle="solid"
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}
+        >
+          <Radio.Button value="ALL">전체 {members.length}</Radio.Button>
+          {statusOptions.map(({ status, count }) => (
+            <Radio.Button key={status} value={status}>
+              {status} {count}
+            </Radio.Button>
+          ))}
+        </Radio.Group>
       )}
       <div
         style={{
