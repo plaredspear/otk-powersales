@@ -89,8 +89,14 @@ export default function MonthlyWorkDetailTab() {
         <div style={{ marginBottom: 8 }}>
           {selected ? (
             <Text type="secondary">
-              {selected.name}({selected.employeeCode}) · {period.year()}년 {period.month() + 1}월 —
-              총 {items.length}건
+              {[
+                selected.orgName,
+                `${selected.name}(${selected.employeeCode})`,
+                selected.jikwee,
+              ]
+                .filter(Boolean)
+                .join(' · ')}{' '}
+              · {period.year()}년 {period.month() + 1}월 — 총 {items.length}건
             </Text>
           ) : (
             <Text type="secondary">

@@ -8,13 +8,19 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 data class TeamMemberDto(
     val employeeId: Long,
     val employeeCode: String?,
-    val name: String
+    val name: String,
+    /** 소속(조직명) */
+    val orgName: String?,
+    /** 직위명 */
+    val jikwee: String?
 ) {
     companion object {
         fun from(employee: Employee): TeamMemberDto = TeamMemberDto(
             employeeId = employee.id,
             employeeCode = employee.employeeCode,
-            name = employee.name
+            name = employee.name,
+            orgName = employee.orgName,
+            jikwee = employee.jikwee
         )
     }
 }

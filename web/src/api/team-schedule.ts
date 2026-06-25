@@ -6,6 +6,10 @@ export interface TeamMember {
   employeeId: number;
   employeeCode: string;
   name: string;
+  /** 소속(조직명) */
+  orgName?: string | null;
+  /** 직위명 */
+  jikwee?: string | null;
 }
 
 export interface TeamScheduleAccount {

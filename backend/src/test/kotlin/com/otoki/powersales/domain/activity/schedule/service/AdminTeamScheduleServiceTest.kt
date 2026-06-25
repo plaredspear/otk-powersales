@@ -138,6 +138,8 @@ class AdminTeamScheduleServiceTest {
         status: String? = "재직",
         role: String? = null,
         costCenterCode: String? = "1234",
+        orgName: String? = null,
+        jikwee: String? = null,
         isDeleted: Boolean? = false
     ): Employee = Employee(
         id = id,
@@ -147,6 +149,8 @@ class AdminTeamScheduleServiceTest {
         status = status,
         role = role,
         costCenterCode = costCenterCode,
+        orgName = orgName,
+        jikwee = jikwee,
         isDeleted = isDeleted
     )
 
@@ -226,7 +230,7 @@ class AdminTeamScheduleServiceTest {
         @DisplayName("일반 조장 - 본인 costCenterCode 의 활성 WOMAN 반환")
         fun getMembers_leader_singleCostCenter() {
             val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "1234", role = AppAuthority.LEADER)
-            val m1 = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = AppAuthority.WOMAN)
+            val m1 = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = AppAuthority.WOMAN, orgName = "강북유통지점", jikwee = "사원")
             val m2 = createEmployee(id = 3L, employeeCode = "20030003", name = "이수진", role = AppAuthority.WOMAN)
 
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")) } returns listOf(m1, m2)
@@ -235,6 +239,8 @@ class AdminTeamScheduleServiceTest {
 
             assertThat(result).hasSize(2)
             assertThat(result[0].employeeCode).isEqualTo("20030002")
+            assertThat(result[0].orgName).isEqualTo("강북유통지점")
+            assertThat(result[0].jikwee).isEqualTo("사원")
             assertThat(result[1].employeeCode).isEqualTo("20030003")
         }
 
