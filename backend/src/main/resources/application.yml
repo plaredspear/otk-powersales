@@ -409,6 +409,15 @@ app:
         enabled: true
       monthly:
         enabled: true
+  # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
+  sap:
+    outbound:
+      team-member-schedule:
+        enabled: true
+      display:
+        enabled: true
+      ppt-master:
+        enabled: true
 
 ---
 # ---------------------------------------------------------------------------
@@ -447,4 +456,13 @@ app:
       daily:
         enabled: true
       monthly:
+        enabled: true
+  # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
+  sap:
+    outbound:
+      team-member-schedule:
+        enabled: true
+      display:
+        enabled: true
+      ppt-master:
         enabled: true
