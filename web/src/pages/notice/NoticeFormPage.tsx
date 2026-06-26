@@ -7,6 +7,7 @@ import 'react-quill-new/dist/quill.snow.css';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutation';
+import { useAuth } from '@/hooks/useAuth';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const QUILL_MODULES = {
@@ -22,36 +23,29 @@ interface FormValues {
   title: string;
   scope: string;
   category: string;
-  branch?: { value: string; label: string };
   content: string;
 }
 
 function BranchField({
   form,
-  branches,
+  branchName,
 }: {
   form: FormInstance<FormValues>;
-  branches: Array<{ branchCode: string; branchName: string }>;
+  branchName: string | null;
 }) {
   const categoryValue = Form.useWatch('category', form);
   if (categoryValue !== 'BRANCH') return null;
 
+  // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제 저장한다.
+  // 사용자가 임의 지점을 고를 수 없도록 읽기전용으로 해당 지점만 표시한다.
+  // - 신규: 등록자(로그인 사용자) 소속 지점
+  // - 수정: 공지 소유자 소속 지점 (= 기존 저장된 지점)
   return (
     <Form.Item
-      name="branch"
       label="지점"
-      rules={[{ required: true, message: '지점을 선택해주세요' }]}
+      extra="지점공지는 등록자 소속 지점으로 저장됩니다."
     >
-      <Select
-        showSearch
-        labelInValue
-        placeholder="지점 선택"
-        optionFilterProp="label"
-        options={branches.map((b) => ({
-          value: b.branchCode,
-          label: b.branchName,
-        }))}
-      />
+      <Input value={branchName ?? '소속 지점 정보 없음'} disabled />
     </Form.Item>
   );
 }
@@ -65,10 +59,21 @@ export default function NoticeFormPage() {
   const [form] = Form.useForm<FormValues>();
 
   const { setDynamicTitle } = useContext(BreadcrumbContext);
+  const { user } = useAuth();
   const { data: formMeta, isLoading: metaLoading } = useNoticeFormMeta();
+
   const { data: notice, isLoading: detailLoading } = useNoticeDetail(isEdit ? noticeId : 0);
   const createMutation = useCreateNotice();
   const updateMutation = useUpdateNotice();
+
+  // 지점공지 폼에 표시할 지점명.
+  // - 수정: 공지에 이미 저장된 지점(소유자 지점)을 그대로 표시
+  // - 신규: 등록자(로그인 사용자) 소속 지점명 (백엔드 저장값과 동일하게 form-meta 에서 코드로 매칭)
+  const myBranchName =
+    formMeta?.branches.find((b) => b.branchCode === user?.costCenterCode)?.branchName ??
+    user?.orgName ??
+    null;
+  const branchFieldName = isEdit ? (notice?.branch ?? null) : myBranchName;
 
   useEffect(() => {
     if (isEdit) {
@@ -84,21 +89,19 @@ export default function NoticeFormPage() {
         scope: notice.scope ?? undefined,
         category: notice.category,
         content: notice.content,
-        branch: notice.branchCode
-          ? { value: notice.branchCode, label: notice.branch ?? '' }
-          : undefined,
       });
     }
   }, [isEdit, notice, form]);
 
   const handleSubmit = async (values: FormValues) => {
+    // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제하므로 전송하지 않는다.
     const payload = {
       title: values.title,
       scope: values.scope,
       category: values.category,
       content: values.content,
-      branch: values.category === 'BRANCH' && values.branch ? values.branch.label : null,
-      branchCode: values.category === 'BRANCH' && values.branch ? values.branch.value : null,
+      branch: null,
+      branchCode: null,
     };
 
     try {
@@ -154,7 +157,6 @@ export default function NoticeFormPage() {
             >
               <Select
                 options={formMeta?.categories.map((c) => ({ value: c.code, label: c.name }))}
-                onChange={() => form.setFieldValue('branch', undefined)}
               />
             </Form.Item>
           </Col>
@@ -163,7 +165,7 @@ export default function NoticeFormPage() {
         <Row gutter={24}>
           <Col xs={24} sm={12} />
           <Col xs={24} sm={12}>
-            <BranchField form={form} branches={formMeta?.branches ?? []} />
+            <BranchField form={form} branchName={branchFieldName} />
           </Col>
         </Row>
 

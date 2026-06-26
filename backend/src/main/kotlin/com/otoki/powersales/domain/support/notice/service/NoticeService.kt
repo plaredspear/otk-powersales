@@ -28,6 +28,7 @@ import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeIdExcep
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeScopeException
 import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import org.springframework.data.domain.PageRequest
@@ -188,16 +189,21 @@ class NoticeService(
     fun createNotice(request: NoticeCreateRequest, creatorId: Long): NoticeMutationResponse {
         val cat = parseCategory(request.category)
         val noticeScope = parseScope(request.scope)
-        validateBranch(cat, request.branch, request.branchCode)
+
+        // 지점공지(BRANCH) 의 지점/지점코드는 요청 값이 아니라 등록자(조장/지점장) 소속 지점을 권위로 사용한다.
+        // 이로써 누가 등록하든 본인 지점 공지로만 등록되며, 프론트 우회로 타 지점 공지를 만들 수 없다.
+        val creator = employeeRepository.findById(creatorId)
+            .orElseThrow { EmployeeNotFoundException() }
+        val (branch, branchCode) = resolveCreatorBranch(cat, creator)
 
         val notice = Notice(
             name = request.title,
             scope = noticeScope,
             category = cat,
             contents = request.content,
-            branch = if (cat == NoticeCategory.BRANCH) request.branch else null,
-            branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null,
-            employee = employeeRepository.getReferenceById(creatorId)
+            branch = branch,
+            branchCode = branchCode,
+            employee = creator
         )
         val saved = noticeRepository.save(notice)
         return NoticeMutationResponse.Companion.from(saved)
@@ -210,14 +216,31 @@ class NoticeService(
 
         val cat = parseCategory(request.category)
         val noticeScope = parseScope(request.scope)
-        validateBranch(cat, request.branch, request.branchCode)
 
         notice.name = request.title
         notice.scope = noticeScope
         notice.category = cat
         notice.contents = request.content
-        notice.branch = if (cat == NoticeCategory.BRANCH) request.branch else null
-        notice.branchCode = if (cat == NoticeCategory.BRANCH) request.branchCode else null
+
+        // 등록(createNotice) 과 동일하게, 지점공지의 지점/지점코드는 요청 값이 아니라 공지 소유자(등록자)
+        // 소속 지점을 권위로 강제한다. 이로써 등록 후 수정으로 타 지점 코드로 바꾸는 우회를 차단한다.
+        // 소유자(employee) 정보가 없는 레거시 데이터는 기존 지점값을 보존한다.
+        if (cat == NoticeCategory.BRANCH) {
+            val ownerId = notice.employee?.id
+            if (ownerId != null) {
+                val owner = employeeRepository.findById(ownerId)
+                    .orElseThrow { EmployeeNotFoundException() }
+                val (branch, branchCode) = resolveCreatorBranch(cat, owner)
+                notice.branch = branch
+                notice.branchCode = branchCode
+            } else if (notice.branchCode.isNullOrBlank()) {
+                throw BranchRequiredException()
+            }
+            // ownerId == null 이고 기존 지점값이 있으면 보존 (변경하지 않음)
+        } else {
+            notice.branch = null
+            notice.branchCode = null
+        }
 
         val saved = noticeRepository.save(notice)
         return NoticeMutationResponse.Companion.from(saved)
@@ -319,7 +342,17 @@ class NoticeService(
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
-        val branches = organizationRepository.findAll()
+        val branches = loadBranchOptions()
+
+        return NoticeFormMetaResponse(scopes = scopes, categories = categories, branches = branches)
+    }
+
+    /**
+     * 조직 마스터(Organization) 에서 지점 옵션 목록을 생성한다.
+     * 지점코드는 5레벨(costCenterLevel5) 우선, 없으면 4레벨(costCenterLevel4).
+     */
+    private fun loadBranchOptions(): List<BranchOption> =
+        organizationRepository.findAll()
             .filter { !it.orgNameLevel3.isNullOrBlank() && !it.orgNameLevel4.isNullOrBlank() }
             .map { org ->
                 val branchName = if (org.orgNameLevel5.isNullOrBlank()) {
@@ -337,7 +370,21 @@ class NoticeService(
             .distinctBy { it.branchCode }
             .sortedBy { it.branchName }
 
-        return NoticeFormMetaResponse(scopes = scopes, categories = categories, branches = branches)
+    /**
+     * 지점공지(BRANCH) 등록 시 저장할 (지점명, 지점코드) 를 등록자 소속 지점에서 해석한다.
+     * - 회사공지/교육: (null, null)
+     * - 지점공지: 등록자 costCenterCode 가 권위. 미보유 시 등록 차단(BranchRequiredException).
+     *   지점명은 조직 마스터의 지점 옵션에서 코드로 매칭, 없으면 등록자 orgName 으로 폴백.
+     */
+    private fun resolveCreatorBranch(category: NoticeCategory, creator: Employee): Pair<String?, String?> {
+        if (category != NoticeCategory.BRANCH) return null to null
+
+        val branchCode = creator.costCenterCode
+        if (branchCode.isNullOrBlank()) throw BranchRequiredException()
+
+        val branchName = loadBranchOptions().firstOrNull { it.branchCode == branchCode }?.branchName
+            ?: creator.orgName
+        return branchName to branchCode
     }
 
     private fun findActiveNotice(noticeId: Long): Notice {
@@ -357,14 +404,6 @@ class NoticeService(
 
     private fun parseScope(scope: String): NoticeScope {
         return NoticeScope.Companion.fromDisplayNameOrNull(scope) ?: throw InvalidNoticeScopeException()
-    }
-
-    private fun validateBranch(category: NoticeCategory, branch: String?, branchCode: String?) {
-        if (category == NoticeCategory.BRANCH) {
-            if (branch.isNullOrBlank() || branchCode.isNullOrBlank()) {
-                throw BranchRequiredException()
-            }
-        }
     }
 
     private fun formatFileSize(bytes: Long): String {
