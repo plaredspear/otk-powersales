@@ -313,6 +313,8 @@ export interface EmployeeWorkHistoryItem {
   abcType: string | null;
   /** ABC유형코드 */
   abcTypeCode: string | null;
+  /** 거래처상태코드 (유통형태 표시용) */
+  accountStatusCode: string | null;
   isClockIn: boolean;
   // 근무기간 조회(월별) 화면 확장 필드 — 최근이력 응답에서는 값이 채워질 수 있으나 미사용
   refAccountName: string | null;

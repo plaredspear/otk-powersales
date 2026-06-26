@@ -59,11 +59,13 @@ const COLUMNS: ColumnsType<EmployeeWorkHistoryItem> = [
     render: (v: string | null) => v ?? '-',
   },
   {
-    // TODO: SF 메타에 "유통형태" 원천 필드가 없어 데이터 미연결 — 원천 확정 후 매핑.
     title: '유통형태',
-    dataIndex: 'distributionType',
+    dataIndex: 'accountStatusCode',
     width: 100,
-    render: () => '(TODO)',
+    render: (_v, row) => {
+      const text = [row.accountStatusCode, row.accountType].filter(Boolean).join(' ');
+      return text || '-';
+    },
   },
   {
     title: '거래처유형',
