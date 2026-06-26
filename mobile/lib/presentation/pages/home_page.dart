@@ -199,6 +199,9 @@ class _HomePageState extends ConsumerState<HomePage>
                   padding: horizontalGutter,
                   child: ExpiryAlertCard(
                     expiryAlert: homeData.expiryAlert,
+                    // 조장(LEADER)·지점장(ADMIN)은 유통기한 임박제품 라인을 숨긴다.
+                    showExpiryCount:
+                        userRole != 'LEADER' && userRole != 'ADMIN',
                     onTap: () {
                       AppRouter.navigateTo(context, AppRouter.productExpiration);
                     },
@@ -242,7 +245,7 @@ class _HomePageState extends ConsumerState<HomePage>
                 child: QuickMenuGrid(
                   userRole: userRole,
                   onMenuTap: (item) {
-                    throttledTap(() => _handleQuickMenuTap(item, userRole));
+                    throttledTap(() => _handleQuickMenuTap(item));
                   },
                 ),
               ),
@@ -339,27 +342,15 @@ class _HomePageState extends ConsumerState<HomePage>
   }
 
   /// 빠른 메뉴 탭 핸들러
-  void _handleQuickMenuTap(QuickMenuItem item, String userRole) {
-    // 레거시 home.jsp JS 의 행사매출 차단 조건이 `== '조장'` 정확 일치이므로,
-    // 조장(LEADER)만 차단하고 지점장/부서장은 여사원과 동일하게 등록을 허용한다.
-    final isLeader = userRole == 'LEADER';
-
+  void _handleQuickMenuTap(QuickMenuItem item) {
     if (item.label == '활동 등록') {
       ActivityRegistrationPopup.show(
         context,
         onMenuTap: _handleActivityMenuTap,
       );
     } else if (item.label == '행사매출\n등록') {
-      if (isLeader) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('행사 담당자만 행사매출을 등록할 수 있습니다.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      } else {
-        AppRouter.navigateTo(context, AppRouter.promotionDailySalesEntry);
-      }
+      // 행사매출 등록 항목은 여사원(USER)에게만 노출된다(조장·지점장은 그리드에서 제외).
+      AppRouter.navigateTo(context, AppRouter.promotionDailySalesEntry);
     } else if (item.route != null) {
       AppRouter.navigateTo(context, item.route!);
     } else {

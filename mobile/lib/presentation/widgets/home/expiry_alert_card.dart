@@ -16,10 +16,16 @@ class ExpiryAlertCard extends StatelessWidget {
   /// 카드 탭 콜백 (유통기한 관리 화면으로 이동)
   final VoidCallback? onTap;
 
+  /// 유통기한 임박제품 라인 노출 여부.
+  /// 조장(LEADER)·지점장(ADMIN)은 유통기한 기능을 사용하지 않으므로 false로
+  /// 전달해 라인을 숨기고 프로필(지점/이름) 행만 표시한다.
+  final bool showExpiryCount;
+
   const ExpiryAlertCard({
     super.key,
     this.expiryAlert,
     this.onTap,
+    this.showExpiryCount = true,
   });
 
   @override
@@ -32,7 +38,8 @@ class ExpiryAlertCard extends StatelessWidget {
     final alert = expiryAlert!;
 
     return InkWell(
-      onTap: onTap,
+      // 유통기한 라인을 숨긴 경우(조장·지점장) 유통기한 화면 이동도 비활성화한다.
+      onTap: showExpiryCount ? onTap : null,
       borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -58,29 +65,31 @@ class ExpiryAlertCard extends StatelessWidget {
                     style: AppTypography.legacyTitleLG,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/ico_alert.png',
-                        width: 15,
-                        height: 18,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '유통기한 임박제품 : ',
-                        style: AppTypography.legacyBody,
-                      ),
-                      Text(
-                        '${alert.expiryCount}건',
-                        style: AppTypography.legacyBody.copyWith(
-                          color: AppColors.legacyDanger,
-                          fontWeight: FontWeight.w800,
+                  if (showExpiryCount) ...[
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Image.asset(
+                          'assets/images/ico_alert.png',
+                          width: 15,
+                          height: 18,
+                          fit: BoxFit.contain,
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '유통기한 임박제품 : ',
+                          style: AppTypography.legacyBody,
+                        ),
+                        Text(
+                          '${alert.expiryCount}건',
+                          style: AppTypography.legacyBody.copyWith(
+                            color: AppColors.legacyDanger,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

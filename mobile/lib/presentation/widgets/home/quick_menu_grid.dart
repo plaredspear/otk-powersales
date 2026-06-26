@@ -31,7 +31,9 @@ class QuickMenuItem {
 /// 조장(LEADER):
 /// - 조장은 본인 행사/진열 일정이 없어 "내 일정"이 무의미하므로, 첫 번째 항목을
 ///   "일정 관리"(팀원 월간 일정 캘린더, 날짜 카드 navy 버튼과 동일 목적지)로 대체한다.
-/// - "행사매출 등록" 탭 시 스낵바 안내 + 이동 차단
+///
+/// 조장(LEADER)·지점장(ADMIN):
+/// - 행사매출은 행사 담당자(여사원)만 등록하므로 "행사매출 등록" 항목을 숨긴다.
 class QuickMenuGrid extends StatelessWidget {
   /// 메뉴 아이템 탭 콜백
   final void Function(QuickMenuItem item)? onMenuTap;
@@ -62,10 +64,16 @@ class QuickMenuGrid extends StatelessWidget {
     route: AppRouter.leaderSchedule,
   );
 
-  /// 역할별 빠른 메뉴 목록 (레거시 `eq '조장'` 정확 일치 — 지점장/부서장 제외)
+  /// 역할별 빠른 메뉴 목록
+  /// - 조장(LEADER): 첫 항목을 "일정 관리"로 대체 (레거시 `eq '조장'` 정확 일치)
+  /// - 조장(LEADER)·지점장(ADMIN): "행사매출 등록" 항목 제외
   List<QuickMenuItem> get _resolvedItems {
-    if (userRole != 'LEADER') return menuItems;
-    return [_leaderScheduleItem, ...menuItems.skip(1)];
+    final hidePromotionSales = userRole == 'LEADER' || userRole == 'ADMIN';
+    final base = hidePromotionSales
+        ? menuItems.where((item) => item.label != '행사매출\n등록').toList()
+        : menuItems;
+    if (userRole != 'LEADER') return base;
+    return [_leaderScheduleItem, ...base.skip(1)];
   }
 
   @override
