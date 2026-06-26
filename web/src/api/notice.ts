@@ -118,6 +118,30 @@ export async function deleteNotice(id: number): Promise<void> {
   }
 }
 
+export interface NoticeInlineImage {
+  refid: string;
+  placeholder: string;
+  previewUrl: string;
+}
+
+/**
+ * 공지 본문 인라인 이미지 업로드 (Quill 드래그앤드롭).
+ * 응답의 previewUrl 로 에디터에 즉시 미리보기를 띄우되, 저장 본문에는 placeholder(`<img data-refid>`)가 들어가야 한다.
+ */
+export async function uploadNoticeInlineImage(file: File): Promise<NoticeInlineImage> {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await client.post<ApiResponse<NoticeInlineImage>>(
+    '/api/v1/admin/notices/images/inline',
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '이미지 업로드에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchNoticeFormMeta(): Promise<NoticeFormMeta> {
   const res = await client.get<ApiResponse<NoticeFormMeta>>('/api/v1/admin/notices/form-meta');
   if (!res.data.success || !res.data.data) {

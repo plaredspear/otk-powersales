@@ -13,6 +13,7 @@ import com.otoki.powersales.domain.support.notice.dto.response.BranchOption
 import com.otoki.powersales.domain.support.notice.dto.response.CategoryOption
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeFormMetaResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeImageResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticeInlineImageResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostListResponse
@@ -52,6 +53,9 @@ class NoticeService(
         // 조회측 rewrite 는 그 정규식 2개를 그대로 참조 — 생성측(마이그레이션 치환)과 형식 정합 보장.
         private val INLINE_IMG_REGEX = NoticeImagePlaceholder.PLACEHOLDER_IMG_REGEX
         private val SRC_ATTR_REGEX = NoticeImagePlaceholder.SRC_ATTR_REGEX
+
+        // 본문 인라인 이미지 식별자 (upload_file.upload_kbn). 첨부 목록과 구분하기 위함.
+        private const val UPLOAD_KBN_INLINE = "INLINE"
     }
 
     /**
@@ -73,14 +77,22 @@ class NoticeService(
             .findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.NOTICE, notice.id)
             .filter { !it.uniqueKey.isNullOrBlank() }
 
-        // 본문 rewrite 용 refid(=sfid) → uniqueKey 맵 (1회 조회 재사용, N+1 없음).
-        val uniqueKeyByRefid: Map<String, String> = uploadFiles
-            .filter { !it.sfid.isNullOrBlank() }
-            .associate { it.sfid!! to it.uniqueKey!! }
+        // 본문 rewrite 용 refid → uniqueKey 맵 (1회 조회 재사용, N+1 없음).
+        // 마이그레이션분: refid = upload_file.sfid. 신규 업로드분: refid = upload_file.id (Long 문자열).
+        // 둘을 하나의 맵에 합쳐 rewrite 가 출처 무관하게 매칭하도록 한다 (id/sfid 충돌 가능성 없음 — sfid 는 18자 영숫자).
+        val uniqueKeyByRefid: Map<String, String> = buildMap {
+            uploadFiles.forEach { file ->
+                val key = file.uniqueKey ?: return@forEach
+                file.sfid?.takeIf { it.isNotBlank() }?.let { put(it, key) }
+                put(file.id.toString(), key)
+            }
+        }
 
         val content = rewriteInlineImages(notice.contents ?: "", uniqueKeyByRefid)
 
+        // 본문 인라인 이미지(upload_kbn=INLINE)는 하단 첨부 목록에서 제외 — 본문에 이미 렌더링되므로 중복 노출 방지.
         val images = uploadFiles
+            .filter { it.uploadKbn != UPLOAD_KBN_INLINE }
             .sortedBy { it.createdAt }
             .mapIndexed { index, file ->
                 NoticeImageResponse(
@@ -206,6 +218,7 @@ class NoticeService(
             employee = creator
         )
         val saved = noticeRepository.save(notice)
+        backfillInlineImages(saved.id, saved.contents)
         return NoticeMutationResponse.Companion.from(saved)
     }
 
@@ -242,8 +255,9 @@ class NoticeService(
             notice.branchCode = null
         }
 
-        val saved = noticeRepository.save(notice)
-        return NoticeMutationResponse.Companion.from(saved)
+        // 영속 entity 변경은 dirty checking 으로 flush — 명시 save 불필요. backfill 은 같은 tx 내 auto-flush 로 정합.
+        backfillInlineImages(notice.id, notice.contents)
+        return NoticeMutationResponse.Companion.from(notice)
     }
 
     @Transactional
@@ -300,6 +314,61 @@ class NoticeService(
             url = storageService.getPresignedUrl(saved.uniqueKey!!, StorageConstants.NOTICE_PRESIGN_TTL_SECONDS),
             sortOrder = 0
         )
+    }
+
+    /**
+     * 공지 본문 인라인 이미지 업로드 (신규 작성/수정 화면 Quill 드래그앤드롭).
+     *
+     * 첨부 업로드([uploadNoticeImage])와 달리:
+     * - parent_id 는 아직 미정(신규 작성 시 noticeId 부재) → null 로 저장하고 공지 저장 시 [backfillInlineImages] 가 채운다.
+     *   (수정 화면은 noticeId 가 있어도 일관성을 위해 동일하게 backfill 경로를 탄다.)
+     * - upload_kbn=INLINE 으로 표기 → 조회 시 하단 첨부 목록에서 제외(본문에만 렌더링).
+     * - 응답으로 placeholder(`<img data-refid="{id}">`)와 미리보기 presigned URL 을 함께 반환 → 클라이언트가 본문엔
+     *   placeholder 를, 에디터엔 presigned 로 보여준다.
+     *
+     * refid = upload_file.id (Long). 마이그레이션분(refid=sfid)과 충돌하지 않으며 조회측 rewrite 는 두 키를 모두 매칭한다.
+     */
+    @Transactional
+    fun uploadNoticeInlineImage(file: MultipartFile): NoticeInlineImageResponse {
+        val key = fileStorageService.uploadNoticeImage(file, 0L)
+
+        val uploadFile = UploadFile(
+            name = file.originalFilename,
+            uniqueKey = key,
+            fileSize = formatFileSize(file.size),
+            parentType = UploadFileParentTypes.NOTICE,
+            parentId = null,
+            uploadKbn = UPLOAD_KBN_INLINE,
+            isDeleted = false
+        )
+        val saved = uploadFileRepository.save(uploadFile)
+
+        val refid = saved.id.toString()
+        return NoticeInlineImageResponse(
+            refid = refid,
+            placeholder = NoticeImagePlaceholder.build(refid, file.originalFilename ?: ""),
+            previewUrl = storageService.getPresignedUrl(saved.uniqueKey!!, StorageConstants.NOTICE_PRESIGN_TTL_SECONDS)
+        )
+    }
+
+    /**
+     * 본문 content 가 참조하는 인라인 이미지(placeholder refid = upload_file.id)의 parent_id 를 noticeId 로 backfill 한다.
+     * - 신규 업로드분(INLINE)만 대상 — 마이그레이션 refid(sfid, 비숫자)는 toLongOrNull 에서 자연 제외.
+     * - 본문에서 빠진(사용자가 삭제한) 이미지는 backfill 하지 않아 parent_id=null 고아로 남는다 (S3 정리는 별도 배치 영역, 본 스펙 범위 외).
+     * create/update 양쪽 끝에서 호출.
+     *
+     * 보안: backfill 대상은 **아직 부모가 없는(parent_id=null) 임시 INLINE 업로드분**으로만 한정한다.
+     * refid 는 클라이언트가 보낸 본문 HTML 에서 추출되므로, 이미 다른 공지에 소속된 파일(parent_id != null)을 무차별
+     * 재부모화하면 본문에 타 공지의 upload_file.id 를 심어 그 이미지를 자기 공지로 탈취할 수 있다(IDOR). 이를 차단한다.
+     */
+    private fun backfillInlineImages(noticeId: Long, content: String?) {
+        val ids = NoticeImagePlaceholder.extractRefids(content ?: "")
+            .mapNotNull { it.toLongOrNull() }.distinct()
+        if (ids.isEmpty()) return
+
+        uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(ids, UploadFileParentTypes.NOTICE)
+            .filter { it.uploadKbn == UPLOAD_KBN_INLINE && it.parentId == null }
+            .forEach { it.parentId = noticeId }
     }
 
     /**

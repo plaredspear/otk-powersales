@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.support.notice.dto.request.NoticeCreateReques
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeFormMetaResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeImageResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticeInlineImageResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostListResponse
@@ -82,6 +83,15 @@ class AdminNoticeController(
     ): ResponseEntity<ApiResponse<Any?>> {
         noticeService.deleteNotice(noticeId)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "공지사항이 삭제되었습니다"))
+    }
+
+    @PostMapping("/images/inline", consumes = ["multipart/form-data"])
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.CREATE)
+    fun uploadNoticeInlineImage(
+        @RequestParam("image") image: MultipartFile
+    ): ResponseEntity<ApiResponse<NoticeInlineImageResponse>> {
+        val response = noticeService.uploadNoticeInlineImage(image)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 
     @PostMapping("/{noticeId}/images", consumes = ["multipart/form-data"])

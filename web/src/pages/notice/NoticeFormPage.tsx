@@ -1,4 +1,4 @@
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Col, Form, Input, Row, Select, Space, Spin, message } from 'antd';
 import type { FormInstance } from 'antd';
@@ -8,16 +8,12 @@ import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutation';
 import { useAuth } from '@/hooks/useAuth';
+import { uploadNoticeInlineImage } from '@/api/notice';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
-const QUILL_MODULES = {
-  toolbar: [
-    ['bold', 'italic', 'underline'],
-    [{ header: 1 }, { header: 2 }],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['link'],
-  ],
-};
+// 본문 인라인 이미지 허용 타입/용량 (백엔드 StorageConstants 와 정합).
+const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20MB
 
 interface FormValues {
   title: string;
@@ -58,6 +54,11 @@ export default function NoticeFormPage() {
 
   const [form] = Form.useForm<FormValues>();
 
+  // 에디터에는 만료되는 presigned previewUrl 을 보여주되, 저장 본문에는 placeholder 가 들어가야 한다.
+  // previewUrl → placeholder 매핑을 보관했다가 submit 직전에 본문 HTML 을 치환한다.
+  const previewToPlaceholder = useRef<Map<string, string>>(new Map());
+  const quillRef = useRef<ReactQuill>(null);
+
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { user } = useAuth();
   const { data: formMeta, isLoading: metaLoading } = useNoticeFormMeta();
@@ -93,13 +94,99 @@ export default function NoticeFormPage() {
     }
   }, [isEdit, notice, form]);
 
+  // 파일 1건 업로드 → 에디터 현재 커서 위치에 presigned 이미지 삽입 + placeholder 매핑 보관.
+  const uploadAndInsert = async (file: File) => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      message.error('이미지 파일(PNG, JPG, GIF, WEBP)만 첨부할 수 있습니다');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      message.error('이미지 용량은 최대 20MB까지 가능합니다');
+      return;
+    }
+    const editor = quillRef.current?.getEditor();
+    if (!editor) return;
+
+    const hide = message.loading('이미지 업로드 중...', 0);
+    try {
+      const result = await uploadNoticeInlineImage(file);
+      previewToPlaceholder.current.set(result.previewUrl, result.placeholder);
+      const range = editor.getSelection(true);
+      const index = range ? range.index : editor.getLength();
+      editor.insertEmbed(index, 'image', result.previewUrl, 'user');
+      editor.setSelection(index + 1, 0);
+    } catch (e) {
+      message.error(e instanceof Error ? e.message : '이미지 업로드에 실패했습니다');
+    } finally {
+      hide();
+    }
+  };
+
+  // Quill toolbar 이미지 버튼 핸들러 — 파일 선택 다이얼로그.
+  const imageHandler = () => {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (file) await uploadAndInsert(file);
+    };
+    input.click();
+  };
+
+  // 드래그앤드롭 / 붙여넣기 핸들러.
+  const handleDrop = async (e: React.DragEvent) => {
+    const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    for (const file of files) await uploadAndInsert(file);
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
+    if (files.length === 0) return;
+    e.preventDefault();
+    for (const file of files) await uploadAndInsert(file);
+  };
+
+  const quillModules = useMemo(
+    () => ({
+      toolbar: {
+        container: [
+          ['bold', 'italic', 'underline'],
+          [{ header: 1 }, { header: 2 }],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          ['link', 'image'],
+        ],
+        handlers: { image: imageHandler },
+      },
+    }),
+    // imageHandler 는 ref 만 참조하므로 재생성 불필요.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // 저장 직전 본문의 presigned previewUrl 을 placeholder 로 치환 (만료 URL 영구 저장 방지).
+  const replacePreviewsWithPlaceholders = (html: string): string => {
+    let result = html;
+    for (const [previewUrl, placeholder] of previewToPlaceholder.current) {
+      // Quill 이 src 에 넣은 previewUrl 을 포함한 <img ...> 태그 전체를 placeholder 로 교체.
+      const escaped = previewUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const imgTagRegex = new RegExp(`<img[^>]*src="${escaped}"[^>]*>`, 'g');
+      result = result.replace(imgTagRegex, placeholder);
+    }
+    return result;
+  };
+
   const handleSubmit = async (values: FormValues) => {
     // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제하므로 전송하지 않는다.
     const payload = {
       title: values.title,
       scope: values.scope,
       category: values.category,
-      content: values.content,
+      content: replacePreviewsWithPlaceholders(values.content),
+      // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제하므로 전송하지 않는다.
       branch: null,
       branchCode: null,
     };
@@ -186,9 +273,12 @@ export default function NoticeFormPage() {
             <Form.Item
               name="content"
               label="내용"
+              extra="이미지는 툴바 버튼, 드래그앤드롭, 붙여넣기로 본문에 넣을 수 있습니다."
               rules={[{ required: true, message: '내용을 입력해주세요' }]}
             >
-              <ReactQuill theme="snow" modules={QUILL_MODULES} style={{ minHeight: 200 }} />
+              <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} onPaste={handlePaste}>
+                <ReactQuill ref={quillRef} theme="snow" modules={quillModules} style={{ minHeight: 200 }} />
+              </div>
             </Form.Item>
           </Col>
         </Row>

@@ -43,4 +43,14 @@ object NoticeImagePlaceholder {
     fun build(refid: String, alt: String): String =
         "<img src=\"$SCHEME$refid\" data-refid=\"${escapeAttr(refid)}\"" +
             (if (alt.isNotEmpty()) " alt=\"${escapeAttr(alt)}\"" else "") + ">"
+
+    /**
+     * 본문 HTML 에서 placeholder 인라인 이미지의 refid 목록을 추출한다.
+     * 신규 업로드 경로는 refid = upload_file.id (Long) 를 쓰므로, 공지 저장 시 본문이 참조하는
+     * 임시 업로드 이미지의 parent_id 를 backfill 하기 위해 사용한다 (마이그레이션분의 sfid refid 는 Long 변환 실패로 자연 제외).
+     */
+    fun extractRefids(html: String): List<String> {
+        if (!html.contains("data-refid")) return emptyList()
+        return PLACEHOLDER_IMG_REGEX.findAll(html).map { it.groupValues[1] }.toList()
+    }
 }

@@ -19,4 +19,10 @@ interface UploadFileRepository : JpaRepository<UploadFile, Long> {
         parentType: String,
         parentId: Long
     ): UploadFile?
+
+    // 본문 인라인 이미지 backfill 용 — placeholder 의 refid(=upload_file.id) 목록으로 일괄 조회.
+    fun findByIdInAndParentTypeAndIsDeletedFalse(
+        ids: Collection<Long>,
+        parentType: String
+    ): List<UploadFile>
 }

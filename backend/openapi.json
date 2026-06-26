@@ -7695,6 +7695,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseNoticeInlineImageResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NoticeInlineImageResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseNoticeMutationResponse" : {
         "properties" : {
           "data" : {
@@ -16823,6 +16852,20 @@
             "type" : "integer"
           },
           "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "NoticeInlineImageResponse" : {
+        "properties" : {
+          "placeholder" : {
+            "type" : "string"
+          },
+          "previewUrl" : {
+            "type" : "string"
+          },
+          "refid" : {
             "type" : "string"
           }
         },
@@ -29650,6 +29693,40 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseNoticeFormMetaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-notice-controller" ]
+      }
+    },
+    "/api/v1/admin/notices/images/inline" : {
+      "post" : {
+        "operationId" : "uploadNoticeInlineImage",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "image" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "image" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseNoticeInlineImageResponse"
                 }
               }
             },

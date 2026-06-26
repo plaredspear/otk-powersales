@@ -251,6 +251,28 @@ class NoticeServiceTest {
         }
 
         @Test
+        @DisplayName("신규 인라인 이미지 - refid=upload_file.id 로 매칭하여 presigned 치환 + 첨부 목록에서 제외")
+        fun getNoticeDetail_rewriteInlineImage_byId() {
+            val notice = createNotice(
+                id = 1L, category = NoticeCategory.COMPANY,
+                contents = """<p>본문</p><img src="notice-image://777" data-refid="777">"""
+            )
+            every { noticeRepository.findById(1L) } returns Optional.of(notice)
+            // 신규 업로드분: sfid 없음, upload_kbn=INLINE, refid 는 id(777) 로 매칭되어야 한다.
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns listOf(
+                createUploadFile(id = 777L, sfid = null, uniqueKey = "uploads/notice/2026/06/26/inline.png", uploadKbn = "INLINE")
+            )
+
+            val result = noticeService.getNoticeDetail(1L)
+
+            // 본문은 id 기반 매칭으로 presigned 치환
+            assertThat(result.content).contains("private/uploads/notice/2026/06/26/inline.png")
+            assertThat(result.content).doesNotContain("notice-image://")
+            // INLINE 은 하단 첨부 목록에서 제외
+            assertThat(result.images).isEmpty()
+        }
+
+        @Test
         @DisplayName("data-refid 없는 본문 - 무변경 (빠른 경로)")
         fun getNoticeDetail_rewriteNoPlaceholder() {
             val notice = createNotice(
@@ -887,6 +909,135 @@ class NoticeServiceTest {
     }
 
     @Nested
+    @DisplayName("uploadNoticeInlineImage - 본문 인라인 이미지 업로드 (신규)")
+    inner class UploadNoticeInlineImageTests {
+
+        private fun mockImage(name: String = "inline.png"): MultipartFile =
+            MockMultipartFile("image", name, "image/png", ByteArray(1024))
+
+        @Test
+        @DisplayName("정상 업로드 - parent_id null + upload_kbn=INLINE 로 적재 + placeholder/previewUrl 반환")
+        fun uploadInlineImage_success() {
+            every { fileStorageService.uploadNoticeImage(any(), 0L) } returns "uploads/notice/2026/06/26/inline-uuid.png"
+            every { uploadFileRepository.save(any<UploadFile>()) } answers {
+                val arg = firstArg<UploadFile>()
+                // 신규 INLINE 업로드는 parent_id 미정(null), upload_kbn=INLINE 이어야 한다.
+                assertThat(arg.parentId).isNull()
+                assertThat(arg.uploadKbn).isEqualTo("INLINE")
+                UploadFile(
+                    id = 777L,
+                    name = arg.name,
+                    uniqueKey = arg.uniqueKey,
+                    parentType = arg.parentType,
+                    parentId = arg.parentId,
+                    uploadKbn = arg.uploadKbn,
+                    isDeleted = arg.isDeleted
+                )
+            }
+
+            val result = noticeService.uploadNoticeInlineImage(mockImage())
+
+            assertThat(result.refid).isEqualTo("777")
+            // placeholder 는 refid=id 로 생성, src 는 만료되는 previewUrl 이 아니라 placeholder 스킴이어야 한다.
+            assertThat(result.placeholder).contains("""data-refid="777"""")
+            assertThat(result.placeholder).contains("notice-image://777")
+            assertThat(result.previewUrl).contains("inline-uuid.png")
+        }
+    }
+
+    @Nested
+    @DisplayName("본문 인라인 이미지 backfill (신규 업로드분 parent_id 채움)")
+    inner class BackfillInlineImageTests {
+
+        @BeforeEach
+        fun stubEmployeeReference() {
+            // createNotice 가 등록자 소속 지점 권위 적용을 위해 findById 로 조회한다 (회사공지는 지점 불요).
+            every { employeeRepository.findById(1L) } returns Optional.of(
+                Employee(id = 1L, employeeCode = "10000001", name = "작성자", orgName = "작성자소속", costCenterCode = "1101")
+            )
+        }
+
+        @Test
+        @DisplayName("create - 본문이 참조하는 INLINE 이미지의 parent_id 를 신규 noticeId 로 채운다")
+        fun create_backfillsInlineParentId() {
+            val request = NoticeCreateRequest(
+                title = "이미지 공지",
+                scope = "영업사원",
+                category = "COMPANY",
+                content = """<p>안내</p><img src="notice-image://777" data-refid="777">"""
+            )
+            every { noticeRepository.save(any<Notice>()) } answers {
+                createNotice(id = 321L, contents = firstArg<Notice>().contents)
+            }
+            val inlineFile = createUploadFile(id = 777L, parentId = null, uploadKbn = "INLINE")
+            every {
+                uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(777L), "Notice")
+            } returns listOf(inlineFile)
+
+            noticeService.createNotice(request, 1L)
+
+            assertThat(inlineFile.parentId).isEqualTo(321L)
+        }
+
+        @Test
+        @DisplayName("보안 - 이미 다른 공지에 소속된 이미지(parent_id != null)는 본문에 refid 를 심어도 탈취되지 않는다")
+        fun create_doesNotStealOwnedImage() {
+            val request = NoticeCreateRequest(
+                title = "탈취 시도", scope = "영업사원", category = "COMPANY",
+                content = """<img src="notice-image://999" data-refid="999">"""
+            )
+            every { noticeRepository.save(any<Notice>()) } answers {
+                createNotice(id = 500L, contents = firstArg<Notice>().contents)
+            }
+            // 999 는 이미 공지 42 에 소속된 INLINE 이미지 — 재부모화 금지 대상.
+            val ownedFile = createUploadFile(id = 999L, parentId = 42L, uploadKbn = "INLINE")
+            every {
+                uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(999L), "Notice")
+            } returns listOf(ownedFile)
+
+            noticeService.createNotice(request, 1L)
+
+            // parent_id 가 원래 공지(42)에서 바뀌지 않아야 한다.
+            assertThat(ownedFile.parentId).isEqualTo(42L)
+        }
+
+        @Test
+        @DisplayName("보안 - INLINE 이 아닌 첨부 이미지(parent_id=null)는 backfill 대상이 아니다")
+        fun create_doesNotBackfillNonInline() {
+            val request = NoticeCreateRequest(
+                title = "공지", scope = "영업사원", category = "COMPANY",
+                content = """<img src="notice-image://888" data-refid="888">"""
+            )
+            every { noticeRepository.save(any<Notice>()) } answers {
+                createNotice(id = 600L, contents = firstArg<Notice>().contents)
+            }
+            // 888 은 parent_id=null 이지만 upload_kbn 이 INLINE 이 아님 → 대상 제외.
+            val attachFile = createUploadFile(id = 888L, parentId = null, uploadKbn = null)
+            every {
+                uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(888L), "Notice")
+            } returns listOf(attachFile)
+
+            noticeService.createNotice(request, 1L)
+
+            assertThat(attachFile.parentId).isNull()
+        }
+
+        @Test
+        @DisplayName("create - 본문에 인라인 placeholder 없으면 backfill 조회 자체를 하지 않는다")
+        fun create_noInline_skipsBackfill() {
+            val request = NoticeCreateRequest(
+                title = "텍스트 공지", scope = "영업사원", category = "COMPANY", content = "<p>이미지 없음</p>"
+            )
+            every { noticeRepository.save(any<Notice>()) } answers {
+                createNotice(id = 1L, contents = firstArg<Notice>().contents)
+            }
+
+            noticeService.createNotice(request, 1L)
+            // findByIdIn... 스텁을 두지 않았으므로, 호출되면 MockKException 으로 실패한다 (= 미호출 검증).
+        }
+    }
+
+    @Nested
     @DisplayName("deleteNoticeImage - 첨부 이미지 삭제")
     inner class DeleteNoticeImageTests {
 
@@ -988,13 +1139,15 @@ class NoticeServiceTest {
         uniqueKey: String? = "test/file.jpg",
         parentType: String = "Notice",
         parentId: Long? = null,
+        uploadKbn: String? = null,
         createdDate: LocalDateTime? = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): UploadFile = UploadFile(
         id = id,
         sfid = sfid,
         uniqueKey = uniqueKey,
         parentType = parentType,
-        parentId = parentId
+        parentId = parentId,
+        uploadKbn = uploadKbn
     ).apply {
         if (createdDate != null) createdAt = createdDate
     }

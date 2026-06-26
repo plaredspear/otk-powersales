@@ -66,7 +66,7 @@ class UploadFile(
 
     @FieldName("부모ID")
     @Column(name = "parent_id")
-    val parentId: Long? = null,
+    var parentId: Long? = null,
 
     // --- Spec #616: SF 누락 비수식 3개 도입 ---
 

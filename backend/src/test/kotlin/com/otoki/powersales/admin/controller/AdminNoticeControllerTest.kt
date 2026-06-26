@@ -11,6 +11,7 @@ import com.otoki.powersales.domain.support.notice.dto.response.ScopeOption
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeImageResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticeInlineImageResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostListResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostSummaryResponse
 import com.otoki.powersales.domain.support.notice.exception.BranchRequiredException
@@ -354,6 +355,33 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
             mockMvc.perform(multipart("/api/v1/admin/notices/999/images").file(file))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("NOTICE_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/v1/admin/notices/images/inline - 본문 인라인 업로드")
+    inner class UploadNoticeInlineImage {
+
+        @Test
+        @DisplayName("성공 - multipart 파일 업로드 + 201 + refid/placeholder/previewUrl 반환")
+        fun uploadNoticeInlineImage_success() {
+            val response = NoticeInlineImageResponse(
+                refid = "777",
+                placeholder = """<img src="notice-image://777" data-refid="777" alt="photo.png">""",
+                previewUrl = "https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/uploads/notice/2026/06/26/inline.png?X-Amz-Signature=test"
+            )
+            every { noticeService.uploadNoticeInlineImage(any()) } returns response
+
+            val file = MockMultipartFile("image", "photo.png", "image/png", ByteArray(1024))
+
+            mockMvc.perform(
+                multipart("/api/v1/admin/notices/images/inline").file(file)
+            )
+                .andExpect(status().isCreated)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.refid").value("777"))
+                .andExpect(jsonPath("$.data.placeholder").value("""<img src="notice-image://777" data-refid="777" alt="photo.png">"""))
+                .andExpect(jsonPath("$.data.previewUrl").value(response.previewUrl))
         }
     }
 
