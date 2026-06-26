@@ -10310,6 +10310,9 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "accountStatusCode" : {
+            "type" : [ "string", "null" ]
+          },
           "accountType" : {
             "type" : [ "string", "null" ]
           },

@@ -30,6 +30,8 @@ data class EmployeeWorkHistoryItem(
     val abcType: String?,
     /** ABC유형코드 (SF Account.ABCTypeCode__c). */
     val abcTypeCode: String?,
+    /** 거래처상태코드 (SF Account.AccountStatusCode__c) — 유통형태 표시용. */
+    val accountStatusCode: String?,
     val isClockIn: Boolean,
     val refAccountName: String?,
     val costCenterCode: String?,
@@ -51,6 +53,7 @@ data class EmployeeWorkHistoryItem(
             accountType = schedule.account?.accountType?.displayName,
             abcType = schedule.account?.abcType,
             abcTypeCode = schedule.account?.abcTypeCode,
+            accountStatusCode = schedule.account?.accountStatusCode,
             isClockIn = schedule.attendanceLog != null,
             refAccountName = schedule.refAccountName,
             costCenterCode = schedule.costCenterCode,
