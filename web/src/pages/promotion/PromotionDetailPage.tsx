@@ -4,6 +4,7 @@ import {
   Button,
   Collapse,
   DatePicker,
+  Divider,
   InputNumber,
   Modal,
   Popconfirm,
@@ -1323,6 +1324,14 @@ export default function PromotionDetailPage() {
                     <span style={{ display: 'inline-block', width: 12, height: 12, backgroundColor: '#e6f4ff', border: '1px solid #91caff', verticalAlign: 'middle', marginRight: 4 }} />
                     일정이 확정된 행
                   </div>
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div style={{ fontWeight: 'bold', marginBottom: 4 }}>근무유형3 출근 등록 가능 조건</div>
+                  <div style={{ color: '#888', marginBottom: 4 }}>같은 사원·같은 날짜 기준</div>
+                  <ul style={{ paddingLeft: 18, margin: 0 }}>
+                    <li><b>고정</b>: 그 날 다른 일정(고정/격고/순회)이 없어야 등록 가능</li>
+                    <li><b>격고</b>: 같은 날 최대 2건까지 가능. 단, 고정이 있거나 순회가 함께 있으면 불가</li>
+                    <li><b>순회</b>: 고정이 있거나 격고가 2건이면 불가</li>
+                  </ul>
                 </div>
               }
             >
