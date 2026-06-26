@@ -13928,6 +13928,12 @@
       },
       "EmployeeWorkHistoryItem" : {
         "properties" : {
+          "abcType" : {
+            "type" : [ "string", "null" ]
+          },
+          "abcTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
           "accountExternalKey" : {
             "type" : [ "string", "null" ]
           },
