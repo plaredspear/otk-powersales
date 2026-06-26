@@ -26,6 +26,10 @@ data class EmployeeWorkHistoryItem(
     val accountExternalKey: String?,
     /** 거래처유형 (SF Account.Type) — 대형마트(3대)/체인/C.V.S 등. */
     val accountType: String?,
+    /** ABC유형 (SF Account.ABCType__c). */
+    val abcType: String?,
+    /** ABC유형코드 (SF Account.ABCTypeCode__c). */
+    val abcTypeCode: String?,
     val isClockIn: Boolean,
     val refAccountName: String?,
     val costCenterCode: String?,
@@ -45,6 +49,8 @@ data class EmployeeWorkHistoryItem(
             accountName = schedule.account?.name,
             accountExternalKey = schedule.account?.externalKey,
             accountType = schedule.account?.accountType?.displayName,
+            abcType = schedule.account?.abcType,
+            abcTypeCode = schedule.account?.abcTypeCode,
             isClockIn = schedule.attendanceLog != null,
             refAccountName = schedule.refAccountName,
             costCenterCode = schedule.costCenterCode,
