@@ -1,0 +1,56 @@
+/* 진열사원 배치 적합성 검색 조건의 다중 선택 목록.
+   체크박스 아이콘을 숨기고 선택 여부를 행 배경색으로 표시하는 1단계 선택 UI. */
+
+/* 목록 컨테이너: 항목을 세로로 나열하고 보더로 영역을 감싼다.
+   스크롤이 필요한 조건(지점/거래처유형)은 인라인 maxHeight 와 함께 사용된다. */
+.deployment-filter-list {
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.deployment-filter-list.deployment-filter-list--scroll {
+  overflow-y: auto;
+}
+
+/* Checkbox.Group 을 항목별 전폭 행으로 배치. 항목 간 구분선으로 목록임을 명확히 한다. */
+.deployment-filter-list .ant-checkbox-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.deployment-filter-list .ant-checkbox-wrapper {
+  margin: 0;
+  padding: 4px 8px;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.15s ease;
+}
+
+.deployment-filter-list .ant-checkbox-wrapper:last-child {
+  border-bottom: none;
+}
+
+.deployment-filter-list .ant-checkbox-wrapper:hover {
+  background-color: #f5f5f5;
+}
+
+/* 체크박스 아이콘(네모 박스)을 숨기고 라벨만 노출 — 선택 여부는 배경색으로 표현. */
+.deployment-filter-list .ant-checkbox {
+  display: none;
+}
+
+/* 선택된 항목: 배경색으로 강조. AntD primary 톤의 옅은 배경. */
+.deployment-filter-list .ant-checkbox-wrapper-checked {
+  background-color: #e6f4ff;
+}
+
+.deployment-filter-list .ant-checkbox-wrapper-checked:hover {
+  background-color: #bae0ff;
+}
+
+.deployment-filter-list .ant-checkbox-wrapper-checked .ant-checkbox + span {
+  font-weight: 600;
+}

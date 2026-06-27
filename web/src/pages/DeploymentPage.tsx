@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -8,10 +8,18 @@ import {
   Radio,
   Space,
   Spin,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
-import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  BorderOutlined,
+  CheckSquareOutlined,
+  ClearOutlined,
+  DownloadOutlined,
+  MinusSquareOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -31,6 +39,7 @@ import {
 } from '@/api/salesComparison';
 import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
 import ResizableTable from '@/components/common/ResizableTable';
+import './DeploymentPage.css';
 
 const { Title, Text } = Typography;
 
@@ -71,28 +80,52 @@ function suitabilityCellStyle(suitability: string): React.CSSProperties {
   }
 }
 
-// 체크박스 그룹 항목 전체를 토글하는 "전체" 체크박스. 일부만 선택 시 indeterminate 표시.
-function SelectAllCheckbox({
+// 검색조건 라벨 + 전체선택 토글 아이콘을 한 줄에 배치.
+// 필수 조건은 붉은색 '*', 전체선택 아이콘은 3-state(전체/일부/없음)로 현재 선택 상태를 표시한다.
+function FilterLabel({
+  label,
+  required,
   allValues,
   selected,
   onChange,
+  disabled: disabledProp,
 }: {
+  label: string;
+  required?: boolean;
   allValues: string[];
   selected: string[];
   onChange: (vals: string[]) => void;
+  disabled?: boolean;
 }) {
   const checkedCount = selected.filter((v) => allValues.includes(v)).length;
   const allChecked = allValues.length > 0 && checkedCount === allValues.length;
   const indeterminate = checkedCount > 0 && checkedCount < allValues.length;
+  const disabled = disabledProp || allValues.length === 0;
+  const toggleAll = () => onChange(allChecked ? [] : [...allValues]);
+  const icon = allChecked ? (
+    <CheckSquareOutlined style={{ color: '#1677ff' }} />
+  ) : indeterminate ? (
+    <MinusSquareOutlined style={{ color: '#1677ff' }} />
+  ) : (
+    <BorderOutlined />
+  );
   return (
-    <Checkbox
-      checked={allChecked}
-      indeterminate={indeterminate}
-      disabled={allValues.length === 0}
-      onChange={(e) => onChange(e.target.checked ? [...allValues] : [])}
-    >
-      전체
-    </Checkbox>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Text strong>
+        {label}
+        {required && <span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span>}
+      </Text>
+      <Tooltip title={allChecked ? '전체해제' : '전체선택'}>
+        <Button
+          type="text"
+          size="small"
+          icon={icon}
+          disabled={disabled}
+          onClick={toggleAll}
+          style={{ padding: 0, height: 'auto', backgroundColor: '#fff' }}
+        />
+      </Tooltip>
+    </div>
   );
 }
 
@@ -131,6 +164,17 @@ export default function DeploymentPage() {
   const [clickedAccountForDetail, setClickedAccountForDetail] = useState<number | null>(null);
 
   const { data: branches = [] } = useDashboardBranches();
+
+  // 접근 가능한 지점이 1개뿐이면 항상 그 지점으로 고정 — 선택 변경 불가.
+  const singleBranch = branches.length === 1;
+
+  // 지점이 1개일 때는 해당 지점을 자동 선택해 사용자가 따로 고를 필요 없도록 한다.
+  useEffect(() => {
+    if (singleBranch) {
+      const onlyCode = branches[0].branchCode;
+      setSelectedCodes((prev) => (prev.length === 1 && prev[0] === onlyCode ? prev : [onlyCode]));
+    }
+  }, [singleBranch, branches]);
 
   // 거래처유형 필터는 결과 테이블 컬럼과 동일한 SF 고정 10개(AccountCategoryColumn) 로 노출 — 좌측 필터 ↔ 컬럼 헤더 일치.
   const categoryLabels = useMemo(() => [...SUMMARY_CATEGORY_COLUMNS], []);
@@ -207,7 +251,8 @@ export default function DeploymentPage() {
     const dft = getDefaultYearMonth();
     setYear(dft.year);
     setMonth(dft.month);
-    setSelectedCodes([]);
+    // 지점이 1개뿐이면 항상 그 지점으로 고정 — 초기화해도 선택을 유지한다.
+    setSelectedCodes(singleBranch ? [branches[0].branchCode] : []);
     setSelectedSuitabilities([]);
     setSelectedCategories([]);
     setSelectedWc3([]);
@@ -276,14 +321,13 @@ export default function DeploymentPage() {
       {
         title: '구분',
         dataIndex: 'suitability',
-        width: 100,
-        fixed: 'left',
+        width: 72,
         onCell: (record) => ({ style: suitabilityCellStyle(record.suitability) }),
       },
       {
         title: '전체',
         dataIndex: 'totalCount',
-        width: 100,
+        width: 64,
         align: 'right',
         render: (v: number, row) => (
           <a onClick={() => v > 0 && handleSummaryCellClick(row, 'totalCount')}>{formatNumber(v)}</a>
@@ -296,7 +340,7 @@ export default function DeploymentPage() {
       ...SUMMARY_CATEGORY_COLUMNS.map((label) => ({
         title: categoryColumnLabel(label),
         dataIndex: ['countsByCategory', label],
-        width: 90,
+        width: 72,
         align: 'right' as const,
         render: (_: unknown, row: SalesComparisonSummaryRow & { isTotal?: boolean }) => {
           const value = row.countsByCategory[label] ?? 0;
@@ -314,65 +358,65 @@ export default function DeploymentPage() {
   }, []);
 
   const middleColumns: ColumnsType<SalesComparisonMiddleItem> = [
-    { title: '거래처지점명', dataIndex: 'accountBranchName', width: 110, render: (v) => v ?? '-' },
+    { title: '거래처지점명', dataIndex: 'accountBranchName', width: 84, render: (v) => v ?? '-' },
     {
       title: '배치적합성',
       dataIndex: 'suitability',
-      width: 100,
+      width: 72,
       onCell: (r) => ({ style: suitabilityCellStyle(r.suitability) }),
     },
-    { title: '월평균매출', dataIndex: 'avgClosingAmount', width: 110, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: '총 진열인원', dataIndex: 'totalDisplayHeadcount', width: 100, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: '총 진열환산인원', dataIndex: 'totalDisplayConvertedHeadcount', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
-    { title: '총 행사환산인원', dataIndex: 'totalEventConvertedHeadcount', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
-    { title: '거래처유형', dataIndex: 'accountCategory', width: 100 },
+    { title: '월평균매출', dataIndex: 'avgClosingAmount', width: 92, align: 'right', render: (v: number) => formatNumber(v) },
+    { title: '총 진열인원', dataIndex: 'totalDisplayHeadcount', width: 72, align: 'right', render: (v: number) => formatNumber(v) },
+    { title: '총 진열환산인원', dataIndex: 'totalDisplayConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '총 행사환산인원', dataIndex: 'totalEventConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '거래처유형', dataIndex: 'accountCategory', width: 76 },
     {
       title: '거래처명',
       dataIndex: 'accountName',
-      width: 140,
+      width: 120,
       render: (v: string, row) => (
         <a onClick={() => handleMiddleAccountClick(row)}>{v}</a>
       ),
     },
-    { title: '거래처코드', dataIndex: 'accountCode', width: 110 },
-    { title: '고정배치기준', dataIndex: 'fixedStandardAmount', width: 110, align: 'right', render: (v: number | null) => formatNumber(v ?? 0) },
-    { title: '격고배치기준', dataIndex: 'bifurcationHalfStandardAmount', width: 110, align: 'right', render: (v: number | null) => formatNumber(v ?? 0) },
-    { title: '총 투입횟수', dataIndex: 'totalInputCount', width: 100, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: '총 환산일수', dataIndex: 'totalEquivalentWorkingDays', width: 100, align: 'right', render: (v: number) => formatDecimal3(v) },
-    { title: '당월매출', dataIndex: 'thisMonthSalesAmount', width: 110, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: 'EDI/POS', dataIndex: 'ediPos', width: 80, render: (v) => v ?? '-' },
+    { title: '거래처코드', dataIndex: 'accountCode', width: 84, align: 'right' },
+    { title: '고정배치기준', dataIndex: 'fixedStandardAmount', width: 92, align: 'right', render: (v: number | null) => formatNumber(v ?? 0) },
+    { title: '격고배치기준', dataIndex: 'bifurcationHalfStandardAmount', width: 92, align: 'right', render: (v: number | null) => formatNumber(v ?? 0) },
+    { title: '총 투입횟수', dataIndex: 'totalInputCount', width: 72, align: 'right', render: (v: number) => formatNumber(v) },
+    { title: '총 환산일수', dataIndex: 'totalEquivalentWorkingDays', width: 72, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '당월매출', dataIndex: 'thisMonthSalesAmount', width: 92, align: 'right', render: (v: number) => formatNumber(v) },
+    { title: 'EDI/POS', dataIndex: 'ediPos', width: 72, render: (v) => v ?? '-' },
   ];
 
   const detailColumns: ColumnsType<SalesComparisonDetailItem> = [
-    { title: '거래처지점명', dataIndex: 'accountBranchName', width: 110, render: (v) => v ?? '-' },
+    { title: '거래처지점명', dataIndex: 'accountBranchName', width: 84, render: (v) => v ?? '-' },
     {
       title: '배치적합성',
       dataIndex: 'suitability',
-      width: 100,
+      width: 72,
       onCell: (r) => ({ style: suitabilityCellStyle(r.suitability) }),
     },
-    { title: '월평균매출', dataIndex: 'avgClosingAmount', width: 110, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: '총 진열인원', dataIndex: 'totalDisplayHeadcount', width: 100, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: '총 진열환산인원', dataIndex: 'totalDisplayConvertedHeadcount', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
-    { title: '총 행사환산인원', dataIndex: 'totalEventConvertedHeadcount', width: 110, align: 'right', render: (v: number) => formatDecimal3(v) },
-    { title: '거래처유형', dataIndex: 'accountCategory', width: 100 },
-    { title: '거래처유형코드', dataIndex: 'accountCategoryCode', width: 100, render: (v) => v ?? '-' },
-    { title: '거래처명', dataIndex: 'accountName', width: 140 },
-    { title: '거래처코드', dataIndex: 'accountCode', width: 110 },
-    { title: '사원명', dataIndex: 'employeeName', width: 90 },
-    { title: '사번', dataIndex: 'employeeCode', width: 90 },
-    { title: '직위', dataIndex: 'title', width: 70, render: (v) => v ?? '-' },
-    { title: '근무형태1', dataIndex: 'workingCategory1', width: 90 },
-    { title: '근무형태3', dataIndex: 'workingCategory3', width: 90, render: (v) => v ?? '-' },
-    { title: '근무형태4', dataIndex: 'workingCategory4', width: 90, render: (v) => v ?? '-' },
-    { title: '근무형태5', dataIndex: 'workingCategory5', width: 90, render: (v) => v ?? '-' },
-    { title: '고정배치기준', dataIndex: 'fixedStandardAmount', width: 110, align: 'right', render: (v: number | null) => formatNumber(v ?? 0) },
-    { title: '격고배치기준', dataIndex: 'bifurcationHalfStandardAmount', width: 110, align: 'right', render: (v: number | null) => formatNumber(v ?? 0) },
-    { title: '투입횟수', dataIndex: 'inputCount', width: 90, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: '환산일수', dataIndex: 'equivalentWorkingDays', width: 90, align: 'right', render: (v: number) => formatDecimal3(v) },
-    { title: '환산인원', dataIndex: 'convertedHeadcount', width: 90, align: 'right', render: (v: number) => formatDecimal3(v) },
-    { title: '당월매출', dataIndex: 'thisMonthSalesAmount', width: 110, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: 'EDI/POS', dataIndex: 'ediPos', width: 80, render: (v) => v ?? '-' },
+    { title: '월평균매출', dataIndex: 'avgClosingAmount', width: 92, align: 'right', render: (v: number) => formatNumber(v) },
+    { title: '총 진열인원', dataIndex: 'totalDisplayHeadcount', width: 72, align: 'right', render: (v: number) => formatNumber(v) },
+    { title: '총 진열환산인원', dataIndex: 'totalDisplayConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '총 행사환산인원', dataIndex: 'totalEventConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '거래처유형', dataIndex: 'accountCategory', width: 76 },
+    { title: '거래처유형코드', dataIndex: 'accountCategoryCode', width: 80, align: 'right', render: (v) => v ?? '-' },
+    { title: '거래처명', dataIndex: 'accountName', width: 120 },
+    { title: '거래처코드', dataIndex: 'accountCode', width: 84, align: 'right' },
+    { title: '사원명', dataIndex: 'employeeName', width: 72 },
+    { title: '사번', dataIndex: 'employeeCode', width: 72, align: 'right' },
+    { title: '직위', dataIndex: 'title', width: 60, render: (v) => v ?? '-' },
+    { title: '근무형태1', dataIndex: 'workingCategory1', width: 72 },
+    { title: '근무형태3', dataIndex: 'workingCategory3', width: 72, render: (v) => v ?? '-' },
+    { title: '근무형태4', dataIndex: 'workingCategory4', width: 72, render: (v) => v ?? '-' },
+    { title: '근무형태5', dataIndex: 'workingCategory5', width: 72, render: (v) => v ?? '-' },
+    { title: '고정배치기준', dataIndex: 'fixedStandardAmount', width: 92, align: 'right', render: (v: number | null) => formatNumber(v ?? 0) },
+    { title: '격고배치기준', dataIndex: 'bifurcationHalfStandardAmount', width: 92, align: 'right', render: (v: number | null) => formatNumber(v ?? 0) },
+    { title: '투입횟수', dataIndex: 'inputCount', width: 72, align: 'right', render: (v: number) => formatNumber(v) },
+    { title: '환산일수', dataIndex: 'equivalentWorkingDays', width: 72, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '환산인원', dataIndex: 'convertedHeadcount', width: 72, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '당월매출', dataIndex: 'thisMonthSalesAmount', width: 92, align: 'right', render: (v: number) => formatNumber(v) },
+    { title: 'EDI/POS', dataIndex: 'ediPos', width: 72, render: (v) => v ?? '-' },
   ];
 
   const handleExportSummary = async () => {
@@ -408,29 +452,39 @@ export default function DeploymentPage() {
 
   return (
     <div style={{ display: 'flex', height: '100%', minHeight: 600 }}>
-      <div style={{ width: 280, padding: 16, borderRight: '1px solid #f0f0f0', overflowY: 'auto' }}>
+      <div
+        style={{
+          width: 160,
+          padding: 16,
+          borderRight: '1px solid #f0f0f0',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          textAlign: 'center',
+        }}
+      >
         <Title level={5}>검색 조건</Title>
 
         <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
           <Button type="primary" icon={<SearchOutlined />} block onClick={handleSearch}>
             조회하기
           </Button>
-          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-            <Button size="small" onClick={handleSelectAllConditions}>
-              모든조건선택
-            </Button>
-            <Button size="small" onClick={handleResetCondition}>
-              조건초기화
-            </Button>
+          <Space>
+            <Tooltip title="모든조건선택" placement="bottom">
+              <Button size="small" icon={<CheckSquareOutlined />} onClick={handleSelectAllConditions} />
+            </Tooltip>
+            <Tooltip title="조건초기화" placement="bottom">
+              <Button size="small" icon={<ClearOutlined />} onClick={handleResetCondition} />
+            </Tooltip>
           </Space>
         </Space>
 
         <div style={{ marginBottom: 12 }}>
-          <Text strong>검색유형</Text>
           <Radio.Group
             value={mode}
             onChange={(e) => handleModeChange(e.target.value)}
-            style={{ marginTop: 4, display: 'block' }}
+            style={{ display: 'block' }}
           >
             <Radio value="summary">집계</Radio>
             <Radio value="detail">상세</Radio>
@@ -438,70 +492,85 @@ export default function DeploymentPage() {
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <Text strong>년도 / 월</Text>
-          <Space style={{ display: 'flex', marginTop: 4 }}>
-            <InputNumber value={year} min={2020} max={2099} onChange={(v) => v != null && setYear(v)} style={{ width: 100 }} />
-            <InputNumber value={month} min={1} max={12} onChange={(v) => v != null && setMonth(v)} style={{ width: 70 }} />
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <InputNumber
+              value={year}
+              min={2020}
+              max={2099}
+              onChange={(v) => v != null && setYear(v)}
+              addonAfter="년"
+              style={{ width: '100%' }}
+            />
+            <InputNumber
+              value={month}
+              min={1}
+              max={12}
+              onChange={(v) => v != null && setMonth(v)}
+              addonAfter="월"
+              style={{ width: '100%' }}
+            />
           </Space>
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <Text strong>지점</Text>
-          <div style={{ marginTop: 4 }}>
-            <SelectAllCheckbox
-              allValues={branches.map((b) => b.branchCode)}
-              selected={selectedCodes}
-              onChange={setSelectedCodes}
-            />
-          </div>
-          <div style={{ marginTop: 4, maxHeight: 160, overflowY: 'auto', border: '1px solid #f0f0f0', padding: 4 }}>
+          <FilterLabel
+            label="지점"
+            required
+            allValues={branches.map((b) => b.branchCode)}
+            selected={selectedCodes}
+            onChange={setSelectedCodes}
+            disabled={singleBranch}
+          />
+          <div
+            className="deployment-filter-list deployment-filter-list--scroll"
+            style={{ marginTop: 4, maxHeight: 160 }}
+          >
             <Checkbox.Group
               value={selectedCodes}
               onChange={(vals) => setSelectedCodes(vals as string[])}
-              style={{ display: 'flex', flexDirection: 'column' }}
-            >
-              {branches.map((b) => (
-                <Checkbox key={b.branchCode} value={b.branchCode}>
-                  {b.branchName}
-                </Checkbox>
-              ))}
-            </Checkbox.Group>
+              options={branches.map((b) => ({
+                label: b.branchName,
+                value: b.branchCode,
+                disabled: singleBranch,
+              }))}
+            />
           </div>
         </div>
 
         {mode === 'summary' && (
           <>
             <div style={{ marginBottom: 12 }}>
-              <Text strong>배치적합성</Text>
-              <div style={{ marginTop: 4 }}>
-                <SelectAllCheckbox
-                  allValues={SUITABILITY_OPTIONS}
-                  selected={selectedSuitabilities}
-                  onChange={setSelectedSuitabilities}
+              <FilterLabel
+                label="배치적합성"
+                required
+                allValues={SUITABILITY_OPTIONS}
+                selected={selectedSuitabilities}
+                onChange={setSelectedSuitabilities}
+              />
+              <div className="deployment-filter-list" style={{ marginTop: 4 }}>
+                <Checkbox.Group
+                  value={selectedSuitabilities}
+                  onChange={(vals) => setSelectedSuitabilities(vals as string[])}
+                  options={SUITABILITY_OPTIONS}
                 />
               </div>
-              <Checkbox.Group
-                value={selectedSuitabilities}
-                onChange={(vals) => setSelectedSuitabilities(vals as string[])}
-                options={SUITABILITY_OPTIONS}
-                style={{ display: 'flex', flexDirection: 'column', marginTop: 4 }}
-              />
             </div>
             <div style={{ marginBottom: 12 }}>
-              <Text strong>거래처유형</Text>
-              <div style={{ marginTop: 4 }}>
-                <SelectAllCheckbox
-                  allValues={categoryLabels}
-                  selected={selectedCategories}
-                  onChange={setSelectedCategories}
-                />
-              </div>
-              <div style={{ marginTop: 4, maxHeight: 140, overflowY: 'auto', border: '1px solid #f0f0f0', padding: 4 }}>
+              <FilterLabel
+                label="거래처유형"
+                required
+                allValues={categoryLabels}
+                selected={selectedCategories}
+                onChange={setSelectedCategories}
+              />
+              <div
+                className="deployment-filter-list deployment-filter-list--scroll"
+                style={{ marginTop: 4, maxHeight: 140 }}
+              >
                 <Checkbox.Group
                   value={selectedCategories}
                   onChange={(vals) => setSelectedCategories(vals as string[])}
                   options={categoryLabels.map((col) => ({ label: categoryColumnLabel(col), value: col }))}
-                  style={{ display: 'flex', flexDirection: 'column' }}
                 />
               </div>
             </div>
@@ -536,20 +605,20 @@ export default function DeploymentPage() {
         )}
 
         <div style={{ marginBottom: 12 }}>
-          <Text strong>근무형태3</Text>
-          <div style={{ marginTop: 4 }}>
-            <SelectAllCheckbox
-              allValues={WORKING_CATEGORY_3_OPTIONS}
-              selected={selectedWc3}
-              onChange={setSelectedWc3}
+          <FilterLabel
+            label="근무형태3"
+            required
+            allValues={WORKING_CATEGORY_3_OPTIONS}
+            selected={selectedWc3}
+            onChange={setSelectedWc3}
+          />
+          <div className="deployment-filter-list" style={{ marginTop: 4 }}>
+            <Checkbox.Group
+              value={selectedWc3}
+              onChange={(vals) => setSelectedWc3(vals as string[])}
+              options={WORKING_CATEGORY_3_OPTIONS}
             />
           </div>
-          <Checkbox.Group
-            value={selectedWc3}
-            onChange={(vals) => setSelectedWc3(vals as string[])}
-            options={WORKING_CATEGORY_3_OPTIONS}
-            style={{ display: 'flex', flexDirection: 'column', marginTop: 4 }}
-          />
         </div>
       </div>
 
@@ -575,7 +644,6 @@ export default function DeploymentPage() {
                 columns={summaryColumns}
                 dataSource={summaryRows}
                 pagination={false}
-                scroll={{ x: 'max-content' }}
               />
             )}
 
