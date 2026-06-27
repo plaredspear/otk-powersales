@@ -205,9 +205,7 @@ class SharingPolicyQueryRepository(
     private fun resolveUserSfidToId(sfids: List<String>): Map<String, Long> {
         val distinct = sfids.toSet()
         if (distinct.isEmpty()) return emptyMap()
-        return userRepository.findIdsBySfidIn(distinct).associate { row ->
-            (row[0] as String) to (row[1] as Long)
-        }
+        return userRepository.findIdsBySfidIn(distinct).toMap()
     }
 
     /**

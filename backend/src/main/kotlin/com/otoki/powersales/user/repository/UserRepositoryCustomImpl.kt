@@ -112,4 +112,18 @@ class UserRepositoryCustomImpl(
             countQuery.fetchOne() ?: 0L
         }
     }
+
+    override fun findIdsBySfidIn(sfids: Collection<String>): List<Pair<String, Long>> {
+        if (sfids.isEmpty()) return emptyList()
+        return queryFactory
+            .select(user.sfid, user.id)
+            .from(user)
+            .where(user.sfid.`in`(sfids))
+            .fetch()
+            .mapNotNull { tuple ->
+                val sfid = tuple.get(user.sfid) ?: return@mapNotNull null
+                val id = tuple.get(user.id) ?: return@mapNotNull null
+                sfid to id
+            }
+    }
 }

@@ -140,4 +140,35 @@ class PromotionEmployeeRepositoryCustomImpl(
             .orderBy(promotion.promotionNumber.asc())
             .fetch()
     }
+
+    override fun findByPromotionId(promotionId: Long): List<PromotionEmployee> {
+        return queryFactory
+            .selectFrom(promotionEmployee)
+            .where(promotionEmployee.promotionId.eq(promotionId), notDeleted)
+            .fetch()
+    }
+
+    override fun existsByPromotionIdAndPromoCloseByTmTrue(promotionId: Long): Boolean {
+        return queryFactory
+            .selectOne()
+            .from(promotionEmployee)
+            .where(
+                promotionEmployee.promotionId.eq(promotionId),
+                promotionEmployee.promoCloseByTm.isTrue,
+                notDeleted,
+            )
+            .fetchFirst() != null
+    }
+
+    override fun existsByPromotionIdAndEmployeeId(promotionId: Long, employeeId: Long): Boolean {
+        return queryFactory
+            .selectOne()
+            .from(promotionEmployee)
+            .where(
+                promotionEmployee.promotionId.eq(promotionId),
+                promotionEmployee.employeeId.eq(employeeId),
+                notDeleted,
+            )
+            .fetchFirst() != null
+    }
 }

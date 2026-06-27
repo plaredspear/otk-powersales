@@ -31,4 +31,12 @@ interface UserRepositoryCustom {
      * - keyword 가 있으면 employee_code / name 부분 일치
      */
     fun findUsersByPermissionSetFlagsId(permissionSetFlagsId: Long, keyword: String?, pageable: Pageable): Page<User>
+
+    /**
+     * SF user sfid → 신규 User PK 일괄 매핑 (sfid, id) 쌍 목록.
+     *
+     * SharingPolicyQueryRepository 가 sharing rule condition 의 audit/owner field value (SF user sfid) 를
+     * snapshot 적재 시점에 신규 User.id 로 pre-resolve 하는 용도.
+     */
+    fun findIdsBySfidIn(sfids: Collection<String>): List<Pair<String, Long>>
 }
