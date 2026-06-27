@@ -41,7 +41,8 @@ export default function PromotionListPage() {
   // 작성자 → 사용자 상세(/users/:id) 링크는 user READ 권한 보유자(시스템 관리자급)에게만.
   // SF 레거시 동등 + 신규 user 조회가 관리자 전용이라, 미보유자(조장/사원)는 이름 텍스트만 노출.
   const canReadUser = hasEntityPermission('user', 'READ');
-  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
+  // page/필터/페이지 사이즈를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침/링크 공유 시 직전 조건 복원.
+  // size 는 검색 조건이 아니라 표시 옵션이므로 savedFilters(저장된 검색)에는 포함하지 않는다.
   const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
     defaultFilters: {
       promotionType: '',
@@ -54,8 +55,13 @@ export default function PromotionListPage() {
       primaryProduct: '',
       employeeKeyword: '',
       ownerOnly: '',
+      size: '50',
     },
   });
+  // 페이지 사이즈 — URL 보관값을 숫자로 파싱(허용 옵션 외/비정상은 기본 50).
+  const PAGE_SIZE_OPTIONS = [20, 50, 100];
+  const parsedSize = Number.parseInt(filters.size ?? '', 10);
+  const pageSize = PAGE_SIZE_OPTIONS.includes(parsedSize) ? parsedSize : 50;
   const {
     promotionType,
     startDate,
@@ -136,7 +142,7 @@ export default function PromotionListPage() {
     employeeKeyword: employeeKeyword || undefined,
     ownerOnly: ownerOnly === 'true' || undefined,
     page,
-    size: 20,
+    size: pageSize,
   });
 
   const promotionTypeOptions = [
@@ -421,10 +427,18 @@ export default function PromotionListPage() {
         pagination={{
           current: (data?.page ?? 0) + 1,
           total: data?.totalElements ?? 0,
-          pageSize: 20,
-          showSizeChanger: false,
+          pageSize,
+          showSizeChanger: true,
+          pageSizeOptions: PAGE_SIZE_OPTIONS,
           showTotal: (total) => `총 ${total}건`,
-          onChange: (p) => setPage(p - 1),
+          onChange: (p, size) => {
+            // 페이지 사이즈 변경 시 setFilter 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+            if (size !== pageSize) {
+              setFilter('size', String(size));
+            } else {
+              setPage(p - 1);
+            }
+          },
         }}
       />
     </div>
