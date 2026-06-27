@@ -90,6 +90,8 @@ function renderMonthlyBreakdown(record: WorkHistoryPeriodSummaryItem) {
       columns={MONTHLY_COLUMNS}
       dataSource={record.monthlyBreakdown}
       pagination={false}
+      // 부모 헤더와 중복이므로 자식 헤더는 숨김 (년월 값은 헤더 없이도 인식 가능).
+      showHeader={false}
       tableLayout="fixed"
       scroll={{ x: 'max-content' }}
       // 부모의 펼침 아이콘 컬럼 폭만큼 들여써 데이터 컬럼이 부모와 세로 정렬되게 한다.
