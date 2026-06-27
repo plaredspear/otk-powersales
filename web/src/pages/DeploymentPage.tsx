@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Button,
@@ -125,6 +125,85 @@ function FilterLabel({
           style={{ padding: 0, height: 'auto', backgroundColor: '#fff' }}
         />
       </Tooltip>
+    </div>
+  );
+}
+
+// 가로 스크롤이 필요한 넓은 테이블을 감싸고, 콘텐츠 상단에 sticky 로 고정된 커스텀 가로
+// 스크롤바를 항상 노출한다. 실제 스크롤은 antd 가 scroll.x 로 만든 .ant-table-content 가
+// 담당하며, 그 요소의 scrollLeft 를 커스텀 바와 양방향 동기화한다. antd 의 sticky 스크롤바가
+// "테이블 높이 > 윈도우 높이" 일 때만 보이는 제약(ant-design#30271)을 우회한다.
+function ScrollXContainer({ children }: { children: React.ReactNode }) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const barInnerRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const scrollElRef = useRef<HTMLElement | null>(null);
+  const [overflow, setOverflow] = useState(false);
+  const syncing = useRef(false);
+
+  // antd 가 만든 가로 스크롤 요소(.ant-table-content)를 찾아 폭을 측정하고,
+  // 그 scrollLeft 변화를 커스텀 바에 반영한다.
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    const barInner = barInnerRef.current;
+    if (!wrap || !barInner) return;
+    // antd 5(rc-table)는 scroll.x 만 있으면 .ant-table-content, fixed header/column 이
+    // 있으면 .ant-table-body 에 가로 스크롤을 만든다. 둘 다 대응한다.
+    const scrollEl =
+      wrap.querySelector<HTMLElement>('.ant-table-content') ??
+      wrap.querySelector<HTMLElement>('.ant-table-body');
+    scrollElRef.current = scrollEl;
+    if (!scrollEl) return;
+
+    const measure = () => {
+      const sw = scrollEl.scrollWidth;
+      const cw = scrollEl.clientWidth;
+      barInner.style.width = `${sw}px`;
+      setOverflow(sw > cw + 1);
+    };
+    measure();
+
+    // 테이블이 가로 스크롤되면 커스텀 바도 같은 위치로 이동.
+    const onScrollEl = () => {
+      if (syncing.current) { syncing.current = false; return; }
+      if (barRef.current) {
+        syncing.current = true;
+        barRef.current.scrollLeft = scrollEl.scrollLeft;
+      }
+    };
+    scrollEl.addEventListener('scroll', onScrollEl, { passive: true });
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(scrollEl);
+    const innerTable = scrollEl.querySelector('table');
+    if (innerTable) ro.observe(innerTable);
+
+    return () => {
+      scrollEl.removeEventListener('scroll', onScrollEl);
+      ro.disconnect();
+    };
+  });
+
+  // 커스텀 바를 움직이면 테이블을 같은 위치로 이동.
+  const onBarScroll = () => {
+    if (syncing.current) { syncing.current = false; return; }
+    if (scrollElRef.current && barRef.current) {
+      syncing.current = true;
+      scrollElRef.current.scrollLeft = barRef.current.scrollLeft;
+    }
+  };
+
+  return (
+    <div ref={wrapRef} className="deployment-scroll-content">
+      {children}
+      <div
+        ref={barRef}
+        className="deployment-scrollbar"
+        onScroll={onBarScroll}
+        style={{ display: overflow ? 'block' : 'none' }}
+      >
+        <div ref={barInnerRef} style={{ height: 1 }} />
+      </div>
     </div>
   );
 }
@@ -498,7 +577,7 @@ export default function DeploymentPage() {
               min={2020}
               max={2099}
               onChange={(v) => v != null && setYear(v)}
-              addonAfter="년"
+              suffix="년"
               style={{ width: '100%' }}
             />
             <InputNumber
@@ -506,7 +585,7 @@ export default function DeploymentPage() {
               min={1}
               max={12}
               onChange={(v) => v != null && setMonth(v)}
-              addonAfter="월"
+              suffix="월"
               style={{ width: '100%' }}
             />
           </Space>
@@ -658,13 +737,14 @@ export default function DeploymentPage() {
                 {middleQuery.isLoading && <Spin />}
                 {middleQuery.isError && <Alert type="error" message={(middleQuery.error as Error)?.message ?? '조회 실패'} />}
                 {middleQuery.data && (
-                  <div className="deployment-scroll-x">
+                  <ScrollXContainer>
                   <ResizableTable
                     rowKey="accountId"
                     size="small"
                     columns={middleColumns}
                     dataSource={middleQuery.data.items}
                     pagination={false}
+                    scroll={{ x: 'max-content' }}
                     summary={() =>
                       middleQuery.data ? (
                         <ResizableTable.Summary>
@@ -690,7 +770,7 @@ export default function DeploymentPage() {
                       ) : null
                     }
                   />
-                  </div>
+                  </ScrollXContainer>
                 )}
               </div>
             )}
@@ -706,15 +786,16 @@ export default function DeploymentPage() {
                 {detailQuery.isLoading && <Spin />}
                 {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
                 {detailQuery.data && (
-                  <div className="deployment-scroll-x">
+                  <ScrollXContainer>
                   <ResizableTable
                     rowKey={(r, i) => `${r.accountId}-${r.employeeCode}-${i}`}
                     size="small"
                     columns={detailColumns}
                     dataSource={detailQuery.data.items}
                     pagination={false}
+                    scroll={{ x: 'max-content' }}
                   />
-                  </div>
+                  </ScrollXContainer>
                 )}
               </div>
             )}
@@ -732,15 +813,16 @@ export default function DeploymentPage() {
             {detailQuery.isLoading && <Spin />}
             {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
             {detailQuery.data && (
-              <div className="deployment-scroll-x">
+              <ScrollXContainer>
               <ResizableTable
                 rowKey={(r, i) => `${r.accountId}-${r.employeeCode}-${i}`}
                 size="small"
                 columns={detailColumns}
                 dataSource={detailQuery.data.items}
                 pagination={false}
+                scroll={{ x: 'max-content' }}
               />
-              </div>
+              </ScrollXContainer>
             )}
           </>
         )}

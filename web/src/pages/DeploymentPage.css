@@ -55,33 +55,52 @@
   font-weight: 600;
 }
 
-/* 결과 테이블 가로 스크롤 래퍼.
-   테이블을 이 래퍼로 감싸 래퍼가 가로 스크롤을 담당하고, 테이블 바로 아래에
-   항상 보이는 가로 스크롤바를 노출한다. (macOS 의 스크롤바 자동숨김은 webkit
-   스크롤바를 명시 스타일링(height 지정)하면 무력화되어 상시 표시된다.) */
-.deployment-scroll-x {
-  overflow-x: auto;
+/* ScrollXContainer — 커스텀 가로 스크롤바.
+   가로 스크롤 자체는 antd 가 scroll.x 로 만든 .ant-table-content 가 담당한다(ellipsis 와
+   무관하게 max-content 로 펼쳐져 항상 오버플로 발생). 그 네이티브 스크롤바는 숨기고,
+   콘텐츠 상단에 sticky 로 고정된 커스텀 .deployment-scrollbar 를 항상 노출하여
+   둘의 scrollLeft 를 JS 로 양방향 동기화한다.
+   (antd 의 sticky 스크롤바는 "테이블 높이 > 윈도우 높이" 일 때만 보이는 제약이 있어
+    ant-design/ant-design#30271, 이를 우회하기 위해 직접 구현한다.) */
+
+/* 콘텐츠 위 sticky 커스텀 스크롤바. JS 가 내부 div 폭을 .ant-table-content 의 scrollWidth 로
+   설정해 thumb 비율을 맞춘다. macOS 자동숨김을 피하기 위해 webkit 스크롤바를 명시 표시한다. */
+.deployment-scrollbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 11; /* antd sticky 헤더(z-index 2~3)보다 위 */
+  overflow-x: scroll;
   overflow-y: hidden;
-  scrollbar-width: thin; /* Firefox */
+  height: 14px;
+  margin-top: 2px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  scrollbar-width: auto; /* Firefox: 항상 표시 */
 }
 
-.deployment-scroll-x::-webkit-scrollbar {
-  height: 10px;
+.deployment-scrollbar::-webkit-scrollbar {
+  height: 12px;
   -webkit-appearance: none;
 }
 
-.deployment-scroll-x::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-radius: 5px;
+.deployment-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  border: 2px solid #fafafa;
 }
 
-.deployment-scroll-x::-webkit-scrollbar-track {
+.deployment-scrollbar::-webkit-scrollbar-track {
   background-color: rgba(0, 0, 0, 0.06);
-  border-radius: 5px;
 }
 
-/* 래퍼가 가로 스크롤을 담당하려면 내부 테이블이 컬럼 폭 합만큼 펼쳐져야 한다.
-   antd Table 의 scroll.x 를 쓰지 않으므로, 테이블 자체에 콘텐츠 기준 최소폭을 준다. */
-.deployment-scroll-x .ant-table {
-  min-width: max-content;
+/* antd 가 만든 가로 스크롤 영역(.ant-table-content 또는 .ant-table-body)의
+   네이티브 스크롤바는 숨긴다. 스크롤 기능은 유지되고, 커스텀 바가 시각적으로 대신한다. */
+.deployment-scroll-content .ant-table-content,
+.deployment-scroll-content .ant-table-body {
+  scrollbar-width: none; /* Firefox: 숨김 */
+}
+
+.deployment-scroll-content .ant-table-content::-webkit-scrollbar,
+.deployment-scroll-content .ant-table-body::-webkit-scrollbar {
+  display: none; /* WebKit: 숨김 */
 }
