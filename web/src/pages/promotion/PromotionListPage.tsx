@@ -260,13 +260,6 @@ export default function PromotionListPage() {
       render: (val: string | null) => val ?? '-',
     },
     {
-      title: 'CC Code',
-      dataIndex: 'costCenterCode',
-      width: 100,
-      align: 'center',
-      render: (val: string | null) => val ?? '-',
-    },
-    {
       title: '목표금액',
       dataIndex: 'targetAmount',
       width: 120,
@@ -405,7 +398,7 @@ export default function PromotionListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        scroll={{ x: 2030 }}
+        scroll={{ x: 1930 }}
         pagination={{
           current: (data?.page ?? 0) + 1,
           total: data?.totalElements ?? 0,
