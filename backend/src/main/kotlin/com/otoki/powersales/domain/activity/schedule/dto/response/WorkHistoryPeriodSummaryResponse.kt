@@ -31,6 +31,27 @@ data class WorkHistoryPeriodSummaryItem(
     val annualLeaveDays: Int,
     /** 구분(WorkingType)별 일수 — 대휴. */
     val altHolidayDays: Int,
+    /**
+     * 월별 통계 분해 (yyyy-MM 오름차순). 합계 행을 펼치면 표시.
+     * 조회 기간이 단일 월이면 빈 리스트 (펼칠 분해가 없음).
+     */
+    val monthlyBreakdown: List<WorkHistoryMonthlyStat> = emptyList(),
+)
+
+/**
+ * 여사원별 월 단위 근무 통계 — [WorkHistoryPeriodSummaryItem] 의 월별 분해 행.
+ * 컬럼은 합계 항목과 동일하며 `yearMonth` 로 어느 달인지 구분한다.
+ */
+data class WorkHistoryMonthlyStat(
+    /** 대상 년월 (yyyy-MM). */
+    val yearMonth: String,
+    val totalWorkingDays: Int,
+    val workingAccountCount: Int,
+    val displayDays: Int,
+    val eventDays: Int,
+    val workDays: Int,
+    val annualLeaveDays: Int,
+    val altHolidayDays: Int,
 )
 
 data class WorkHistoryPeriodSummaryResponse(

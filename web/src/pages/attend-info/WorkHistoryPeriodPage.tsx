@@ -10,6 +10,7 @@ import {
   Select,
   Space,
   Spin,
+  Table,
   Tag,
   Typography,
 } from 'antd';
@@ -21,7 +22,7 @@ import {
   useWorkHistoryPeriodSummary,
   useWorkHistoryPeriodSummaryExport,
 } from '@/hooks/attend-info/useAttendInfo';
-import type { WorkHistoryPeriodSummaryItem } from '@/api/attendInfo';
+import type { WorkHistoryMonthlyStat, WorkHistoryPeriodSummaryItem } from '@/api/attendInfo';
 import ResizableTable from '@/components/common/ResizableTable';
 
 const { Text } = Typography;
@@ -56,6 +57,31 @@ const COLUMNS: ColumnsType<WorkHistoryPeriodSummaryItem> = [
   { title: '연차', dataIndex: 'annualLeaveDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
   { title: '대휴', dataIndex: 'altHolidayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
 ];
+
+// 펼침(월별 통계) 행 컬럼 — 합계 행과 동일 지표 + 좌측에 년월 라벨.
+const MONTHLY_COLUMNS: ColumnsType<WorkHistoryMonthlyStat> = [
+  { title: '년월', dataIndex: 'yearMonth', width: 100 },
+  { title: '총 근무일수', dataIndex: 'totalWorkingDays', width: 110, align: 'right', render: (v: number) => formatNumber(v) },
+  { title: '근무 거래처 수', dataIndex: 'workingAccountCount', width: 120, align: 'right', render: (v: number) => formatNumber(v) },
+  { title: '진열', dataIndex: 'displayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
+  { title: '행사', dataIndex: 'eventDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
+  { title: '근무', dataIndex: 'workDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
+  { title: '연차', dataIndex: 'annualLeaveDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
+  { title: '대휴', dataIndex: 'altHolidayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
+];
+
+function renderMonthlyBreakdown(record: WorkHistoryPeriodSummaryItem) {
+  return (
+    <Table<WorkHistoryMonthlyStat>
+      rowKey="yearMonth"
+      size="small"
+      columns={MONTHLY_COLUMNS}
+      dataSource={record.monthlyBreakdown}
+      pagination={false}
+      style={{ margin: '0 0 0 24px' }}
+    />
+  );
+}
 
 interface QueryParams {
   fromYearMonth: string;
@@ -271,6 +297,11 @@ export default function WorkHistoryPeriodPage() {
             size="small"
             sticky
             scroll={{ x: 'max-content' }}
+            expandable={{
+              // 월별 분해가 있는 행(2개월 이상 조회)만 펼침 가능. 단일 월 조회는 분해가 비어 펼침 아이콘 숨김.
+              expandedRowRender: renderMonthlyBreakdown,
+              rowExpandable: (record) => record.monthlyBreakdown.length > 0,
+            }}
             locale={{
               emptyText:
                 queryParams == null ? (

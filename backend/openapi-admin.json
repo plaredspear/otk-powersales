@@ -17255,6 +17255,42 @@
         },
         "type" : "object"
       },
+      "WorkHistoryMonthlyStat" : {
+        "properties" : {
+          "altHolidayDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "annualLeaveDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "displayDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "eventDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalWorkingDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workingAccountCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "yearMonth" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "WorkHistoryPeriodSummaryItem" : {
         "properties" : {
           "altHolidayDays" : {
@@ -17278,6 +17314,12 @@
           "eventDays" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "monthlyBreakdown" : {
+            "items" : {
+              "$ref" : "#/components/schemas/WorkHistoryMonthlyStat"
+            },
+            "type" : "array"
           },
           "orgName" : {
             "type" : [ "string", "null" ]

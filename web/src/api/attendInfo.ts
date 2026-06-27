@@ -206,6 +206,21 @@ export interface WorkHistoryPeriodSummaryItem {
   annualLeaveDays: number;
   /** 구분별 일수 — 대휴 */
   altHolidayDays: number;
+  /** 월별 통계 분해 (yyyy-MM 오름차순). 단일 월 조회 시 빈 배열. */
+  monthlyBreakdown: WorkHistoryMonthlyStat[];
+}
+
+/** 여사원별 월 단위 근무 통계 — 합계 행의 월별 분해. */
+export interface WorkHistoryMonthlyStat {
+  /** 대상 년월 (yyyy-MM) */
+  yearMonth: string;
+  totalWorkingDays: number;
+  workingAccountCount: number;
+  displayDays: number;
+  eventDays: number;
+  workDays: number;
+  annualLeaveDays: number;
+  altHolidayDays: number;
 }
 
 export interface WorkHistoryPeriodSummaryResponse {

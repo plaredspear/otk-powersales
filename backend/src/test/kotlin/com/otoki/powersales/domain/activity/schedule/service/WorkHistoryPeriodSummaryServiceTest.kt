@@ -106,6 +106,44 @@ class WorkHistoryPeriodSummaryServiceTest {
         }
 
         @Test
+        @DisplayName("2개월 이상 조회 시 월별 분해(monthlyBreakdown)를 yyyy-MM 오름차순으로 채운다")
+        fun fillsMonthlyBreakdown() {
+            val emp = employee()
+            every { repository.findWorkHistoryForPeriod(any(), any(), any(), any()) } returns listOf(
+                schedule(emp, account(1), LocalDate.of(2026, 6, 3), WorkingType.WORK, WorkingCategory1.EVENT),
+                schedule(emp, account(1), LocalDate.of(2026, 5, 1), WorkingType.WORK, WorkingCategory1.DISPLAY),
+                schedule(emp, account(2), LocalDate.of(2026, 5, 2), WorkingType.ANNUAL_LEAVE, WorkingCategory1.DISPLAY),
+            )
+
+            val res = service.getSummary(allScope, "2026-05", "2026-06", emptyList(), null)
+
+            val item = res.items.single()
+            assertThat(item.monthlyBreakdown).hasSize(2)
+            val may = item.monthlyBreakdown[0]
+            assertThat(may.yearMonth).isEqualTo("2026-05")
+            assertThat(may.totalWorkingDays).isEqualTo(2)
+            assertThat(may.displayDays).isEqualTo(2)
+            assertThat(may.annualLeaveDays).isEqualTo(1)
+            val jun = item.monthlyBreakdown[1]
+            assertThat(jun.yearMonth).isEqualTo("2026-06")
+            assertThat(jun.totalWorkingDays).isEqualTo(1)
+            assertThat(jun.eventDays).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("단일 월 조회 시 monthlyBreakdown 은 비어 있다")
+        fun noBreakdownForSingleMonth() {
+            val emp = employee()
+            every { repository.findWorkHistoryForPeriod(any(), any(), any(), any()) } returns listOf(
+                schedule(emp, account(1), LocalDate.of(2026, 5, 1)),
+            )
+
+            val res = service.getSummary(allScope, "2026-05", "2026-05", emptyList(), null)
+
+            assertThat(res.items.single().monthlyBreakdown).isEmpty()
+        }
+
+        @Test
         @DisplayName("사번이 없는 행은 집계 대상에서 제외한다")
         fun excludesBlankEmployeeCode() {
             val noCode = Employee(employeeCode = null, name = "사번없음")

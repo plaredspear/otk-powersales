@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryMonthlyStat
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryPeriodSummaryItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryPeriodSummaryResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
@@ -68,7 +69,7 @@ class WorkHistoryPeriodSummaryService(
             keyword = keyword?.trim()?.takeIf { it.isNotEmpty() },
         )
 
-        val items = aggregate(schedules)
+        val items = aggregate(schedules, fromYm, toYm)
         return WorkHistoryPeriodSummaryResponse(
             fromYearMonth = fromYm.format(YEAR_MONTH_FORMAT),
             toYearMonth = toYm.format(YEAR_MONTH_FORMAT),
@@ -131,29 +132,84 @@ class WorkHistoryPeriodSummaryService(
      * 일정 행을 여사원(사번)별로 집계.
      * 사번 미보유(null) 행은 집계 대상에서 제외 (여사원 식별 불가).
      * 정렬은 repository orderBy (orgName, employeeCode) 를 그룹 첫 등장 순서로 보존.
+     *
+     * 조회 기간이 2개월 이상이면 각 여사원의 월별 분해(monthlyBreakdown)를 함께 채운다 (yyyy-MM 오름차순,
+     * 데이터 있는 월만). 단일 월이면 분해가 합계와 동일하므로 빈 리스트.
      */
-    private fun aggregate(schedules: List<TeamMemberSchedule>): List<WorkHistoryPeriodSummaryItem> {
+    private fun aggregate(
+        schedules: List<TeamMemberSchedule>,
+        fromYm: YearMonth,
+        toYm: YearMonth,
+    ): List<WorkHistoryPeriodSummaryItem> {
+        val multiMonth = fromYm.isBefore(toYm)
         val grouped = schedules
             .filter { !it.employee?.employeeCode.isNullOrBlank() }
             .groupBy { it.employee?.employeeCode!! }
 
         return grouped.map { (_, rows) ->
             val emp = rows.first().employee
+            val total = stat(rows)
+            val breakdown = if (multiMonth) {
+                rows.groupBy { yearMonthOf(it) }
+                    .toSortedMap()
+                    .map { (ym, monthRows) ->
+                        val s = stat(monthRows)
+                        WorkHistoryMonthlyStat(
+                            yearMonth = ym,
+                            totalWorkingDays = s.totalWorkingDays,
+                            workingAccountCount = s.workingAccountCount,
+                            displayDays = s.displayDays,
+                            eventDays = s.eventDays,
+                            workDays = s.workDays,
+                            annualLeaveDays = s.annualLeaveDays,
+                            altHolidayDays = s.altHolidayDays,
+                        )
+                    }
+            } else {
+                emptyList()
+            }
+
             WorkHistoryPeriodSummaryItem(
                 orgName = emp?.orgName,
                 employeeCode = emp?.employeeCode,
                 employeeName = emp?.name,
                 title = emp?.jikwee,
-                totalWorkingDays = rows.size,
-                workingAccountCount = rows.mapNotNull { it.account?.id }.distinct().size,
-                displayDays = rows.count { it.workingCategory1 == WorkingCategory1.DISPLAY },
-                eventDays = rows.count { it.workingCategory1 == WorkingCategory1.EVENT },
-                workDays = rows.count { it.workingType == WorkingType.WORK },
-                annualLeaveDays = rows.count { it.workingType == WorkingType.ANNUAL_LEAVE },
-                altHolidayDays = rows.count { it.workingType == WorkingType.ALT_HOLIDAY },
+                totalWorkingDays = total.totalWorkingDays,
+                workingAccountCount = total.workingAccountCount,
+                displayDays = total.displayDays,
+                eventDays = total.eventDays,
+                workDays = total.workDays,
+                annualLeaveDays = total.annualLeaveDays,
+                altHolidayDays = total.altHolidayDays,
+                monthlyBreakdown = breakdown,
             )
         }
     }
+
+    /** 일정 행 집합의 근무 통계 산출 (합계/월별 공통). */
+    private fun stat(rows: List<TeamMemberSchedule>): Stat = Stat(
+        totalWorkingDays = rows.size,
+        workingAccountCount = rows.mapNotNull { it.account?.id }.distinct().size,
+        displayDays = rows.count { it.workingCategory1 == WorkingCategory1.DISPLAY },
+        eventDays = rows.count { it.workingCategory1 == WorkingCategory1.EVENT },
+        workDays = rows.count { it.workingType == WorkingType.WORK },
+        annualLeaveDays = rows.count { it.workingType == WorkingType.ANNUAL_LEAVE },
+        altHolidayDays = rows.count { it.workingType == WorkingType.ALT_HOLIDAY },
+    )
+
+    /** 일정의 근무일자 → yyyy-MM 문자열. workingDate null 은 "unknown" 으로 묶어 분해에 노출. */
+    private fun yearMonthOf(schedule: TeamMemberSchedule): String =
+        schedule.workingDate?.let { YearMonth.from(it).format(YEAR_MONTH_FORMAT) } ?: "unknown"
+
+    private data class Stat(
+        val totalWorkingDays: Int,
+        val workingAccountCount: Int,
+        val displayDays: Int,
+        val eventDays: Int,
+        val workDays: Int,
+        val annualLeaveDays: Int,
+        val altHolidayDays: Int,
+    )
 
     /**
      * 조회 대상 지점 코드(costCenterCode) 산출.
