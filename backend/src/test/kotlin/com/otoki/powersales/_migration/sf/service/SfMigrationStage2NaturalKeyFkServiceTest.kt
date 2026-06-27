@@ -80,6 +80,44 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
     }
 
     @Nested
+    @DisplayName("resolveSharingRuleConditionUserFk — audit field condition_value(sfid) → resolved_user_id")
+    inner class SharingRuleConditionUserFk {
+
+        @Test
+        @DisplayName("UPDATE SQL — audit field IN + 005 prefix + IS NULL(멱등) + user.sfid join")
+        fun updateSqlPredicates() {
+            // 캡처: runNaturalKeyFkResolve 내 본 substep 의 UPDATE SQL 본문 검증.
+            val capturedSqls = mutableListOf<String>()
+            val updateQuery = mockk<Query>()
+            every { updateQuery.executeUpdate() } returns 0
+            val countQuery = mockk<Query>()
+            every { countQuery.singleResult } returns 0L
+
+            every {
+                em.createNativeQuery(
+                    match<String> {
+                        capturedSqls += it
+                        it.trimStart().startsWith("UPDATE")
+                    },
+                )
+            } returns updateQuery
+            every { em.createNativeQuery(match<String> { it.trimStart().startsWith("SELECT") }) } returns countQuery
+
+            service.runNaturalKeyFkResolve()
+
+            val sql = capturedSqls.single { it.contains("sharing_rule_condition s") && it.contains("condition_resolved_user_id") }
+            assertThat(sql).contains("UPDATE powersales.sharing_rule_condition s")
+            assertThat(sql).contains("SET condition_resolved_user_id = u.user_id")
+            assertThat(sql).contains("FROM powersales.\"user\" u")
+            assertThat(sql).contains("WHERE u.sfid = s.condition_value")
+            assertThat(sql).contains("s.field IN ('CreatedById', 'LastModifiedById', 'OwnerId')")
+            assertThat(sql).contains("s.condition_value LIKE '005%'")
+            // 멱등성
+            assertThat(sql).contains("AND s.condition_resolved_user_id IS NULL")
+        }
+    }
+
+    @Nested
     @DisplayName("runNaturalKeyFkResolve — 전체 substep 일괄 적용")
     inner class RunNaturalKeyFkResolve {
 
@@ -89,9 +127,10 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
         //   - resolveSharingRuleTarget: ROLE* + GROUP = 2
         //   - resolveRecordTypeVisibilityFk: permission_set_record_type + profile_record_type = 2
         //   - resolveGroupMemberUserOrGroupFk: User + Group = 2
+        //   - resolveSharingRuleConditionUserFk: 1
         //   - resolvePermissionSetFlagsSfid: 1
-        // = NATURAL_KEY_FK_MAPPINGS.size + 9
-        private val expectedExtraSubsteps = 9
+        // = NATURAL_KEY_FK_MAPPINGS.size + 10
+        private val expectedExtraSubsteps = 10
 
         @Test
         @DisplayName("NATURAL_KEY_FK_MAPPINGS 8 entry + sharing_rule subtable 2 + sharing_rule_target 2 + record_type_visibility 2 + group_member polymorphic 2 + permission_set_flags.sfid 1")
@@ -121,8 +160,9 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
             //   - resolveSharingRuleTarget unmatched WARN: 1 (전체)
             //   - resolveRecordTypeVisibilityFk unmatched WARN: 2 (psrt/prt)
             //   - resolveGroupMemberUserOrGroupFk unmatched WARN: 1
+            //   - resolveSharingRuleConditionUserFk unmatched WARN: 1
             //   - resolvePermissionSetFlagsSfid unmatched WARN: 1
-            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 7) {
+            verify(exactly = NATURAL_KEY_FK_MAPPINGS.size * 2 + 8) {
                 em.createNativeQuery(match<String> { it.trimStart().startsWith("SELECT") })
             }
         }
@@ -153,6 +193,7 @@ class SfMigrationStage2NaturalKeyFkServiceTest {
                 "profile_record_type.(sobject_name, record_type_developer_name) → record_type.record_type_id",
                 "group_member.user_or_group_sfid (prefix=005) → user.user_id (type=User)",
                 "group_member.user_or_group_sfid (prefix=00G) → group.group_id (type=Group)",
+                "sharing_rule_condition.condition_value (audit field, prefix=005) → user.user_id",
                 "permission_set_flags.permission_set_name → permission_set.sfid",
             )
         }

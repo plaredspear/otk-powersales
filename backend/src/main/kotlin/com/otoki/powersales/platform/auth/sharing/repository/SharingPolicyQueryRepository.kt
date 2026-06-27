@@ -5,7 +5,6 @@ import com.otoki.powersales.platform.auth.sharing.entity.QSharingRule.Companion.
 import com.otoki.powersales.platform.auth.sharing.entity.QSharingRuleCondition.Companion.sharingRuleCondition
 import com.otoki.powersales.platform.auth.sharing.entity.QSharingRuleTarget.Companion.sharingRuleTarget
 import com.otoki.powersales.platform.common.config.CacheConfig
-import com.otoki.powersales.user.repository.UserRepository
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.cache.annotation.Cacheable
@@ -34,12 +33,18 @@ import org.springframework.transaction.annotation.Transactional
  * 이전 구현은 native SQL 이었으나 `value` (entity field) ↔ `condition_value` (DB 컬럼) 매핑 오류가
  * 컴파일에서 잡히지 않아 잠복했다. QueryDSL 로 전환하여 entity property 기반 type-safe 쿼리 사용 —
  * 컬럼명 변경 시 컴파일 깨짐으로 즉시 발견.
+ *
+ * ## sfid 직접 매칭 금지 정책 정합
+ * audit/owner field (CreatedById / LastModifiedById / OwnerId) condition 의 `condition_value` 는
+ * SF user sfid 다. 본 Repository 는 런타임에 sfid 를 일절 매칭하지 않는다 — Stage2 FK Resolve 가
+ * 적재 시점에 `condition_resolved_user_id` (신규 User.id) 를 미리 채워두므로, 그 FK 컬럼을 그대로
+ * SELECT 해 [SharingRuleSnapshot.ConditionSnapshot.resolvedUserId] 로 전달한다. evaluator 는 그
+ * Long 값과 entity FK relation (`createdBy.id` / `ownerUser.id`) 을 비교한다.
  */
 @Repository
 @Transactional(readOnly = true)
 class SharingPolicyQueryRepository(
     private val queryFactory: JPAQueryFactory,
-    private val userRepository: UserRepository,
 ) {
 
     /**
@@ -106,7 +111,10 @@ class SharingPolicyQueryRepository(
             )
         }
 
-        // 2) condition 일괄 조회 — entity property `value` 가 DB 컬럼 `condition_value` 로 자동 매핑
+        // 2) condition 일괄 조회 — entity property `value` 가 DB 컬럼 `condition_value` 로 자동 매핑.
+        // audit/owner field (CreatedById/LastModifiedById/OwnerId) 의 신규 User.id 는
+        // Stage2 FK Resolve 가 미리 채운 `condition_resolved_user_id` 컬럼에서 그대로 읽는다 —
+        // 런타임 sfid 매칭 없음 (sfid 직접 매칭 금지 정책).
         val conditionRows = queryFactory
             .select(
                 sharingRuleCondition.sharingRuleId,
@@ -115,6 +123,7 @@ class SharingPolicyQueryRepository(
                 sharingRuleCondition.value,
                 sharingRuleCondition.conditionOrder,
                 sharingRuleCondition.logicConnector,
+                sharingRuleCondition.resolvedUserId,
             )
             .from(sharingRuleCondition)
             .where(sharingRuleCondition.sharingRuleId.`in`(ruleMap.keys))
@@ -124,29 +133,16 @@ class SharingPolicyQueryRepository(
             )
             .fetch()
 
-        // audit/owner field 의 SF user sfid → 신규 User.id 일괄 pre-resolve.
-        // application 로직은 신규 PK 만 사용 — sfid 비교 금지 정책 정합.
-        val sfidByUserId: Map<String, Long> = resolveUserSfidToId(conditionRows.mapNotNull { row ->
-            val field = row.get(sharingRuleCondition.field)!!
-            if (field !in AUDIT_OWNER_FIELDS) return@mapNotNull null
-            row.get(sharingRuleCondition.value)?.takeIf { isLikelyUserSfid(it) }
-        })
-
         val conditionsByRule = conditionRows.groupBy(
             { it.get(sharingRuleCondition.sharingRuleId)!! },
             {
-                val field = it.get(sharingRuleCondition.field)!!
-                val rawValue = it.get(sharingRuleCondition.value)
-                val resolvedId: Long? = if (field in AUDIT_OWNER_FIELDS && rawValue != null) {
-                    sfidByUserId[rawValue]
-                } else null
                 SharingRuleSnapshot.ConditionSnapshot(
-                    field = field,
+                    field = it.get(sharingRuleCondition.field)!!,
                     operator = it.get(sharingRuleCondition.operator)!!,
-                    value = rawValue,
+                    value = it.get(sharingRuleCondition.value),
                     conditionOrder = it.get(sharingRuleCondition.conditionOrder)!!,
                     logicConnector = it.get(sharingRuleCondition.logicConnector),
-                    resolvedUserId = resolvedId,
+                    resolvedUserId = it.get(sharingRuleCondition.resolvedUserId),
                 )
             },
         )
@@ -199,22 +195,6 @@ class SharingPolicyQueryRepository(
         return branches.reduce { acc, b -> acc.or(b) }
     }
 
-    /**
-     * SF user sfid 일람 → 신규 User.id 매핑. 매칭 실패 sfid 는 결과에서 누락 (caller 가 null fallback 처리).
-     */
-    private fun resolveUserSfidToId(sfids: List<String>): Map<String, Long> {
-        val distinct = sfids.toSet()
-        if (distinct.isEmpty()) return emptyMap()
-        return userRepository.findIdsBySfidIn(distinct).toMap()
-    }
-
-    /**
-     * SF user Id 18자 패턴 — `005` prefix + 12자 alphanumeric + 3자 (가능 시 case-insensitive checksum suffix).
-     * sharing rule condition value 가 user sfid 인지 1차 필터링용. (loose check — DB 매칭이 권위)
-     */
-    private fun isLikelyUserSfid(value: String): Boolean =
-        value.length == 18 && value.startsWith("005")
-
     private data class RuleHeader(
         val sharingRuleId: Long,
         val developerName: String,
@@ -231,11 +211,6 @@ class SharingPolicyQueryRepository(
         private val TARGET_TYPES_ROLE_AND_SUBORDINATES: List<String> = listOf(
             "ROLE_AND_SUBORDINATES",
             "ROLE_AND_SUBORDINATES_INTERNAL",
-        )
-        private val AUDIT_OWNER_FIELDS: Set<String> = setOf(
-            "CreatedById",
-            "LastModifiedById",
-            "OwnerId",
         )
     }
 }

@@ -57,4 +57,12 @@ class SharingRuleCondition(
     @FieldName("논리연결자")
     @Column(name = "logic_connector", length = 255)
     var logicConnector: String? = null,
+
+    // audit/owner field (CreatedById / LastModifiedById / OwnerId) condition 의 condition_value 는
+    // SF user sfid 다. application 정책상 sfid 직접 매칭 금지 — Stage2 FK Resolve 가 user.sfid lookup 으로
+    // 신규 User.id 를 미리 채운다. 런타임 evaluator 는 본 FK Long 만 비교 (sfid 런타임 resolve 제거).
+    // 비-audit field 또는 sfid 매칭 실패 시 NULL.
+    @FieldName("해소된사용자ID")
+    @Column(name = "condition_resolved_user_id")
+    var resolvedUserId: Long? = null,
 )

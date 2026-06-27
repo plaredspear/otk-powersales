@@ -100,6 +100,11 @@ class SfMigrationStage2NaturalKeyFkService(
         // dev: 349행 100% NULL 사고).
         totalUpdated += resolveGroupMemberUserOrGroupFk(results)
 
+        // sharing_rule_condition 의 audit/owner field condition_value(SF user sfid) → resolved_user_id.
+        // application 정책상 sfid 직접 매칭 금지 — 적재 시점에 신규 User.id 로 미리 변환해
+        // 런타임 SharingRulePolicyEvaluator 가 FK Long 만 비교하도록 한다.
+        totalUpdated += resolveSharingRuleConditionUserFk(results)
+
         log.info("[fk-natural-key] done — total {} rows updated", totalUpdated)
 
         return SfMigrationStage2Response(
@@ -386,6 +391,52 @@ class SfMigrationStage2NaturalKeyFkService(
         }
 
         return totalUpdated
+    }
+
+    /**
+     * sharing_rule_condition 의 audit/owner field condition_value(SF user sfid) → resolved_user_id 채움.
+     *
+     * audit/owner field (CreatedById / LastModifiedById / OwnerId) condition 의 condition_value 는
+     * SF user sfid (18자, prefix `005`) 다. application 정책상 sfid 직접 매칭 금지 —
+     * 적재 시점에 user.sfid lookup 으로 신규 User.id 를 condition_resolved_user_id 에 미리 채워
+     * 런타임 SharingRulePolicyEvaluator 는 본 FK Long 만 비교한다 (sfid 런타임 resolve 제거).
+     *
+     * 비-audit field 또는 prefix 가 005 가 아닌 condition 은 매칭 대상이 아니므로 NULL 유지.
+     * field IN 목록은 SharingRulePolicyEvaluator.AUDIT_OWNER_FIELDS 와 동일.
+     */
+    private fun resolveSharingRuleConditionUserFk(results: MutableList<SubstepResult>): Int {
+        val sql = """
+            UPDATE powersales.sharing_rule_condition s
+            SET condition_resolved_user_id = u.user_id
+            FROM powersales."user" u
+            WHERE u.sfid = s.condition_value
+              AND s.field IN ('CreatedById', 'LastModifiedById', 'OwnerId')
+              AND s.condition_value LIKE '005%'
+              AND s.condition_resolved_user_id IS NULL
+        """.trimIndent()
+        val updated = em.createNativeQuery(sql).executeUpdate()
+        results += SubstepResult(
+            label = "sharing_rule_condition.condition_value (audit field, prefix=005) → user.user_id",
+            rowsAffected = updated,
+        )
+        log.info("[fk-natural-key] sharing_rule_condition.condition_resolved_user_id : updated={}", updated)
+
+        // 매칭 부재 — audit field + 005 prefix value 인데 user.sfid 에 없는 row
+        val unmatchedSql = """
+            SELECT COUNT(*) FROM powersales.sharing_rule_condition
+            WHERE condition_resolved_user_id IS NULL
+              AND field IN ('CreatedById', 'LastModifiedById', 'OwnerId')
+              AND condition_value LIKE '005%'
+        """.trimIndent()
+        val unmatched = (em.createNativeQuery(unmatchedSql).singleResult as Number).toLong()
+        if (unmatched > 0) {
+            log.warn(
+                "[fk-natural-key] sharing_rule_condition : {} row 매칭 실패 — audit field condition_value(005…) 가 user.sfid 에 없음",
+                unmatched,
+            )
+        }
+
+        return updated
     }
 
     /**
