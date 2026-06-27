@@ -187,11 +187,33 @@ export default function PromotionListPage() {
       render: (val: string | null) => val ?? '-',
     },
     {
+      title: '제품유형',
+      dataIndex: 'category1',
+      width: 100,
+      align: 'center',
+      render: (val: string | null) => val ?? '-',
+    },
+    {
       title: '거래처',
       dataIndex: 'accountName',
       width: 160,
       ellipsis: true,
       render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '거래처코드',
+      dataIndex: 'accountCode',
+      width: 120,
+      align: 'center',
+      render: (val: string | null) =>
+        val ? (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            {val}
+            <Typography.Text copyable={{ text: val, tooltips: ['거래처코드 복사', '복사됨'] }} />
+          </span>
+        ) : (
+          '-'
+        ),
     },
     {
       title: '대표제품',
@@ -220,19 +242,30 @@ export default function PromotionListPage() {
       render: formatDate,
     },
     {
-      title: '거래처코드',
-      dataIndex: 'accountCode',
+      title: '목표금액',
+      dataIndex: 'targetAmount',
       width: 120,
-      align: 'center',
-      render: (val: string | null) =>
-        val ? (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            {val}
-            <Typography.Text copyable={{ text: val, tooltips: ['거래처코드 복사', '복사됨'] }} />
-          </span>
-        ) : (
-          '-'
-        ),
+      align: 'right',
+      render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
+    },
+    {
+      title: '실적금액 (원)',
+      dataIndex: 'actualAmount',
+      width: 120,
+      align: 'right',
+      render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
+    },
+    {
+      // 진도율 = 실적금액 / 목표금액 × 100. 목표가 0/null 이면 산출 불가('-').
+      title: '진도율',
+      key: 'progressRate',
+      width: 90,
+      align: 'right',
+      render: (_: unknown, record) => {
+        const { targetAmount, actualAmount } = record;
+        if (targetAmount == null || targetAmount === 0 || actualAmount == null) return '-';
+        return `${((actualAmount / targetAmount) * 100).toFixed(1)}%`;
+      },
     },
     {
       title: '행사유형',
@@ -251,27 +284,6 @@ export default function PromotionListPage() {
       width: 100,
       align: 'center',
       render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '제품유형',
-      dataIndex: 'category1',
-      width: 100,
-      align: 'center',
-      render: (val: string | null) => val ?? '-',
-    },
-    {
-      title: '목표금액',
-      dataIndex: 'targetAmount',
-      width: 120,
-      align: 'right',
-      render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
-    },
-    {
-      title: '실적금액 (원)',
-      dataIndex: 'actualAmount',
-      width: 120,
-      align: 'right',
-      render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
     },
     {
       title: '작성 일자',
@@ -398,7 +410,7 @@ export default function PromotionListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        scroll={{ x: 1930 }}
+        scroll={{ x: 2020 }}
         pagination={{
           current: (data?.page ?? 0) + 1,
           total: data?.totalElements ?? 0,
