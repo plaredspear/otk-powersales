@@ -204,8 +204,8 @@ describe('WorkHistoryPeriodPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /조회/ }));
     const nameCell = await screen.findByText('홍길동');
     fireEvent.click(nameCell);
-    // 월별 분해가 없으므로 펼침 행(년월 헤더)이 나타나지 않는다.
-    expect(screen.queryByText('년월')).not.toBeInTheDocument();
+    // 월별 분해가 없으므로 클릭해도 월별(yyyy-MM) 행이 추가되지 않는다.
+    expect(screen.queryByText('2026-05')).not.toBeInTheDocument();
   });
 
   it('조회 결과가 있으면 엑셀 다운로드 버튼이 활성화되고 클릭 시 export API 를 호출한다', async () => {
