@@ -10,7 +10,11 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInf
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoDetailResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoListItemResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryPeriodSummaryResponse
 import com.otoki.powersales.domain.activity.schedule.service.AdminAttendInfoService
+import com.otoki.powersales.domain.activity.schedule.service.WorkHistoryPeriodSummaryService
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
@@ -34,7 +38,33 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/attend-info")
 class AdminAttendInfoController(
     private val service: AdminAttendInfoService,
+    private val workHistoryPeriodSummaryService: WorkHistoryPeriodSummaryService,
 ) {
+
+    /**
+     * 기간별 근무내역(개인) — 지점 스코프 내 전체 여사원의 기간(시작년월~종료년월) 근무 집계.
+     *
+     * 근무기간 조회(월별근무내역 목록)와 동일하게 TeamMemberSchedule(출근 등록 기준)을 원천으로 하되,
+     * 단일 월이 아닌 기간 전체를 여사원(사번)별 1행으로 집계해 통합일정과 유사한 레이아웃으로 제공한다.
+     */
+    @GetMapping("/period-summary")
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
+    fun getPeriodSummary(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam fromYearMonth: String,
+        @RequestParam toYearMonth: String,
+        @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
+        @RequestParam(required = false) keyword: String?,
+    ): ResponseEntity<ApiResponse<WorkHistoryPeriodSummaryResponse>> {
+        val response = workHistoryPeriodSummaryService.getSummary(
+            scope = scope,
+            fromYearMonth = fromYearMonth,
+            toYearMonth = toYearMonth,
+            costCenterCodes = costCenterCodes,
+            keyword = keyword,
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
 
     /**
      * 근무기간 조회 화면 "지점 선택" 드롭다운 옵션 — 권한별 조회 허용 지점.

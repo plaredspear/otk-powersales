@@ -162,6 +162,21 @@ interface TeamMemberScheduleRepositoryCustom {
     ): List<TeamMemberSchedule>
 
     /**
+     * 기간별 근무내역(개인) 집계용 조회 — 지점 스코프 내 전체 여사원의 기간 근무 행.
+     * `team_member_schedule` ⋈ employee ⋈ account.
+     * 필터: workingDate ∈ [from, to], attendance_log_id IS NOT NULL (출근 등록 기준 — 월별근무내역 목록과 정합),
+     *       branchCodes 비어있지 않으면 teamMemberSchedule.costCenterCode ∈ branchCodes (사원 소속 지점),
+     *       keyword 있으면 employee.employeeCode 정확일치 OR employee.name 부분일치.
+     * 여사원별 집계는 서비스 레이어에서 수행 (employee.employeeCode 기준 그룹핑).
+     */
+    fun findWorkHistoryForPeriod(
+        from: LocalDate,
+        to: LocalDate,
+        branchCodes: List<String>,
+        keyword: String?,
+    ): List<TeamMemberSchedule>
+
+    /**
      * 판매여사원 일일 안전점검 현황 조회 (Spec #841 — SF Report `new_report_wce`/`new_report_oJO` 이식).
      * `team_member_schedule` ⋈ employee ⋈ account.
      * 필터: workingDate = date, traversalFlag='O' (순회/점검 대상), yesChkCnt IS NOT NULL (점검 완료),

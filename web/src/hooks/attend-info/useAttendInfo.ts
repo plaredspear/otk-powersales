@@ -4,11 +4,13 @@ import {
   deleteAttendInfo,
   fetchAttendInfoBranches,
   fetchAttendInfoMembers,
+  fetchWorkHistoryPeriodSummary,
   getAttendInfo,
   searchAttendInfo,
   updateAttendInfo,
   type CreateAttendInfoRequest,
   type FetchAttendInfoParams,
+  type FetchWorkHistoryPeriodSummaryParams,
   type UpdateAttendInfoRequest,
 } from '@/api/attendInfo';
 import { useAuthStore } from '@/stores/authStore';
@@ -45,6 +47,17 @@ export function useAttendInfoMembers(branchCode?: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'members', branchCode ?? ''],
     queryFn: () => fetchAttendInfoMembers(branchCode),
+  });
+}
+
+/**
+ * 기간별 근무내역(개인) 집계 조회. params 가 null 이면 비활성 (조회 버튼 클릭 전).
+ */
+export function useWorkHistoryPeriodSummary(params: FetchWorkHistoryPeriodSummaryParams | null) {
+  return useQuery({
+    queryKey: [...QUERY_KEY, 'period-summary', params],
+    queryFn: () => fetchWorkHistoryPeriodSummary(params!),
+    enabled: params != null,
   });
 }
 

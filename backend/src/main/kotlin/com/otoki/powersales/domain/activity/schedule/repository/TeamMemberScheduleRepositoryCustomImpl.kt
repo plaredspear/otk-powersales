@@ -527,6 +527,31 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findWorkHistoryForPeriod(
+        from: LocalDate,
+        to: LocalDate,
+        branchCodes: List<String>,
+        keyword: String?,
+    ): List<TeamMemberSchedule> {
+        val trimmedKeyword = keyword?.trim()?.takeIf { it.isNotEmpty() }
+        val keywordPredicate = trimmedKeyword?.let {
+            employee.employeeCode.eq(it).or(employee.name.containsIgnoreCase(it))
+        }
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .where(
+                teamMemberSchedule.workingDate.between(from, to),
+                teamMemberSchedule.attendanceLog.isNotNull,
+                costCenterCodeIn(branchCodes),
+                keywordPredicate,
+                isNotDeleted(),
+            )
+            .orderBy(employee.orgName.asc(), employee.employeeCode.asc(), teamMemberSchedule.workingDate.asc())
+            .fetch()
+    }
+
     override fun findSafetyCheckReport(
         date: LocalDate,
         branchCodes: List<String>,
