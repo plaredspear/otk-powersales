@@ -183,6 +183,7 @@ export default function PromotionListPage() {
       title: '행사명',
       dataIndex: 'promotionName',
       width: 200,
+      fixed: 'left',
       ellipsis: true,
       render: (val: string | null) => val ?? '-',
     },
@@ -190,6 +191,7 @@ export default function PromotionListPage() {
       title: '제품유형',
       dataIndex: 'category1',
       width: 100,
+      fixed: 'left',
       align: 'center',
       render: (val: string | null) => val ?? '-',
     },
@@ -197,6 +199,7 @@ export default function PromotionListPage() {
       title: '거래처',
       dataIndex: 'accountName',
       width: 160,
+      fixed: 'left',
       ellipsis: true,
       render: (val: string | null) => val ?? '-',
     },
@@ -204,6 +207,7 @@ export default function PromotionListPage() {
       title: '거래처코드',
       dataIndex: 'accountCode',
       width: 120,
+      fixed: 'left',
       align: 'center',
       render: (val: string | null) =>
         val ? (
@@ -219,6 +223,7 @@ export default function PromotionListPage() {
       title: '대표제품',
       dataIndex: 'primaryProductName',
       width: 180,
+      fixed: 'left',
       ellipsis: true,
       render: (val: string | null, record) =>
         val && record.primaryProductCode ? (
@@ -231,6 +236,7 @@ export default function PromotionListPage() {
       title: '시작일',
       dataIndex: 'startDate',
       width: 110,
+      fixed: 'left',
       align: 'center',
       render: formatDate,
     },
@@ -238,6 +244,7 @@ export default function PromotionListPage() {
       title: '종료일',
       dataIndex: 'endDate',
       width: 110,
+      fixed: 'left',
       align: 'center',
       render: formatDate,
     },
