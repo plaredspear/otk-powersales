@@ -78,7 +78,7 @@ const previewColumns: ColumnsType<RowPreview> = [
 ];
 
 /** 거래처상태 (SF `Account.AccountStatusName__c`) 중 빨간색으로 강조할 값. */
-const ALERT_ACCOUNT_STATUS = new Set(['폐업', '출고정지']);
+const ALERT_ACCOUNT_STATUS = new Set(['폐업', '출고중지']);
 
 /**
  * 유효 신호등 색상 (SF formula `Valid__c` 의 IMAGE() Greenlight/Yellowlight/Redlight 대체).
