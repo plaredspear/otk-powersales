@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, Checkbox, DatePicker, Input, Select, Space, Tag, Typography } from 'antd';
+import { Button, DatePicker, Input, Select, Space, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -382,13 +382,7 @@ export default function PromotionListPage() {
           style={{ width: 180 }}
           onSearch={(val) => setFilter('primaryProduct', val)}
         />
-        <Checkbox
-          checked={ownerOnly === 'true'}
-          onChange={(e) => setFilter('ownerOnly', e.target.checked ? 'true' : '')}
-          style={{ alignSelf: 'center' }}
-        >
-          내 행사만
-        </Checkbox>
+        {/* "내 행사만" 체크박스 UI 는 임시 제거 (ownerOnly state/API/backend 로직은 유지 — 추후 재노출 대비). */}
       </div>
 
       <ResizableTable
