@@ -174,8 +174,8 @@ export default function WorkHistoryPeriodPage() {
     return rows;
   }, [data, expandedKeys]);
 
-  // 단일 컬럼 정의 — summary/monthly 행을 같은 컬럼으로 렌더. 월별 행은 식별부(소속지점~직위)를
-  // 회색 배경의 빈 칸으로 두되, 년월(yyyy-MM) 만 두 번째 컬럼(사번 자리)에 표시한다.
+  // 단일 컬럼 정의 — summary/monthly 행을 같은 컬럼으로 렌더. 월별 행은 식별부(소속지점/사번/이름)를
+  // 회색 배경의 빈 칸으로 두고, 년월(yyyy-MM) 은 직위 컬럼(4번째)에 흰색 배경으로 표시한다.
   const columns: ColumnsType<TableRow> = [
     {
       title: '소속지점',
@@ -184,7 +184,7 @@ export default function WorkHistoryPeriodPage() {
       ellipsis: true,
       onCell: monthlyIdentityCell,
       render: (_v, record) => {
-        if (!isSummary(record)) return null; // 월별 행: 빈 칸 (년월은 사번 컬럼에 표시)
+        if (!isSummary(record)) return null; // 월별 행: 빈 칸 (년월은 직위 컬럼에 표시)
         const expandable = record.monthlyBreakdown.length > 0;
         const expanded = expandedKeys.has(record.__key);
         return (
@@ -210,8 +210,7 @@ export default function WorkHistoryPeriodPage() {
       width: 100,
       ellipsis: true,
       onCell: monthlyIdentityCell,
-      // summary: 사번 / monthly: 년월(yyyy-MM)
-      render: (_v, record) => (isSummary(record) ? record.employeeCode ?? '-' : record.yearMonth),
+      render: (_v, record) => (isSummary(record) ? record.employeeCode ?? '-' : null),
     },
     {
       title: '이름',
@@ -226,8 +225,8 @@ export default function WorkHistoryPeriodPage() {
       dataIndex: 'title',
       width: 90,
       ellipsis: true,
-      onCell: monthlyIdentityCell,
-      render: (_v, record) => (isSummary(record) ? record.title ?? '-' : null),
+      // 직위 컬럼은 월별 행에서 년월을 표시하며 배경은 흰색(회색 onCell 미적용).
+      render: (_v, record) => (isSummary(record) ? record.title ?? '-' : record.yearMonth),
     },
     numericColumn('총 근무일수', 'totalWorkingDays', 110),
     numericColumn('근무 거래처 수', 'workingAccountCount', 120),
