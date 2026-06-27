@@ -52,6 +52,10 @@ export interface ScheduleListItem {
   branchName: string | null;
   /** 재직상태 (SF formula ValidConditionData__c) — 재직/휴직/퇴직YYYY-MM-DD/퇴직예정YYYY-MM-DD */
   employmentStatus: string | null;
+  /** 유효데이터 (SF formula ValidData__c) — 유효/예정/종료/null */
+  validData: string | null;
+  /** 유효 신호등 (SF formula Valid__c) — GREEN/YELLOW/RED/null */
+  valid: 'GREEN' | 'YELLOW' | 'RED' | null;
   accountId: number | null;
   accountCode: string | null;
   accountName: string | null;

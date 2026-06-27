@@ -23,6 +23,8 @@ class ScheduleListExcelExporterTest {
         employeeName = "홍길동",
         branchName = "서울지점",
         employmentStatus = "재직",
+        validData = "유효",
+        valid = "GREEN",
         accountId = 100L,
         accountCode = "ACC001",
         accountName = "이마트 강남점",

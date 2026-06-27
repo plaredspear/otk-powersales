@@ -44,6 +44,10 @@ data class ScheduleListItemDto(
     val branchName: String?,
     // 재직상태 (SF formula `ValidConditionData__c`) — 상세와 동일 계산값
     val employmentStatus: String?,
+    // 유효데이터 (SF formula `ValidData__c`) — "유효" / "예정" / "종료" / null
+    val validData: String?,
+    // 유효 신호등 (SF formula `Valid__c`) — "GREEN" / "YELLOW" / "RED" / null
+    val valid: String?,
     val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,

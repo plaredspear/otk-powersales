@@ -427,8 +427,17 @@ class AdminDisplayWorkScheduleService(
      * [com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow] projection → [ScheduleListItemDto] 매핑.
      * 목록 조회와 검색결과 엑셀 export 가 동일 매핑(재직상태 계산 포함)을 공유한다.
      */
-    private fun toListItemDto(row: com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow): ScheduleListItemDto =
-        ScheduleListItemDto(
+    private fun toListItemDto(row: com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow): ScheduleListItemDto {
+        // 유효데이터 (`ValidData__c`) + 유효 신호등 (`Valid__c`) — 상세와 동일 계산식, projection raw 필드 사용
+        val validData = if (row.employeeId != null) {
+            displayStatusCalculator.validData(
+                row.employeeStatus, row.employeeAppLoginActive, row.employeeEndDate,
+                row.startDate, row.endDate
+            )
+        } else {
+            null
+        }
+        return ScheduleListItemDto(
             id = row.id,
             employeeId = row.employeeId,
             employeeCode = row.employeeCode ?: "",
@@ -441,6 +450,8 @@ class AdminDisplayWorkScheduleService(
             } else {
                 null
             },
+            validData = validData,
+            valid = displayStatusCalculator.validLight(validData)?.name,
             accountId = row.accountId,
             accountCode = row.accountCode,
             accountName = row.accountName,
@@ -455,6 +466,7 @@ class AdminDisplayWorkScheduleService(
             costCenterCode = row.costCenterCode,
             lastMonthRevenue = row.lastMonthRevenue?.toLong()
         )
+    }
 
     /**
      * UC-03 단건 편집 모달 상세 조회 — SF 「진열사원 스케줄 마스터」 레이아웃 정합.

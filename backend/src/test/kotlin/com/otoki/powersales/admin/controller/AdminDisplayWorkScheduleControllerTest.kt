@@ -93,6 +93,8 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                     employeeName = "홍길동",
                     branchName = "성수지점",
                     employmentStatus = "재직",
+                    validData = "유효",
+                    valid = "GREEN",
                     accountId = 100,
                     accountCode = "SAP001",
                     accountName = "이마트 성수점",

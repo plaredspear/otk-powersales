@@ -18,6 +18,7 @@ import {
   DatePicker,
   Tag,
   Modal,
+  Tooltip,
 } from 'antd';
 import { DownloadOutlined, UploadOutlined, SearchOutlined, UndoOutlined, PlusOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -75,6 +76,35 @@ const previewColumns: ColumnsType<RowPreview> = [
   { title: '종료일', dataIndex: 'endDate', key: 'endDate', width: 110, render: (v) => v ?? '-' },
 ];
 
+/**
+ * 유효 신호등 색상 (SF formula `Valid__c` 의 IMAGE() Greenlight/Yellowlight/Redlight 대체).
+ * GREEN=유효 / YELLOW=예정 / RED=종료.
+ */
+const VALID_LIGHT_COLOR: Record<string, string> = {
+  GREEN: '#52c41a',
+  YELLOW: '#faad14',
+  RED: '#ff4d4f',
+};
+
+/** 유효 신호등 circle 렌더 — 색상 dot + 유효데이터 텍스트 tooltip. */
+function renderValidLight(valid: string | null, validData: string | null) {
+  if (!valid) return <span>-</span>;
+  const color = VALID_LIGHT_COLOR[valid] ?? '#d9d9d9';
+  return (
+    <Tooltip title={validData ?? ''}>
+      <span
+        style={{
+          display: 'inline-block',
+          width: 14,
+          height: 14,
+          borderRadius: '50%',
+          backgroundColor: color,
+        }}
+      />
+    </Tooltip>
+  );
+}
+
 function buildListColumns(
   onEdit: (row: ScheduleListItem) => void,
   onConfirm: (row: ScheduleListItem) => void,
@@ -82,9 +112,17 @@ function buildListColumns(
   navigate: NavigateFunction,
 ): ColumnsType<ScheduleListItem> {
   // SF 「진열사원 스케줄 마스터」 List View 컬럼 순서 정합:
-  // 지점명 · 사번 · 성명 · 재직상태 · 거래처코드 · 거래명 · 거래처유형 · 근무형태3 · 근무형태5
+  // 유효 · 지점명 · 사번 · 성명 · 재직상태 · 거래처코드 · 거래명 · 거래처유형 · 근무형태3 · 근무형태5
   // · 시작일 · 종료일 · 거래처상태 · 전월매출 · 확정.
   return [
+    {
+      title: '유효',
+      dataIndex: 'valid',
+      key: 'valid',
+      width: 60,
+      align: 'center',
+      render: (_: string | null, row) => renderValidLight(row.valid, row.validData),
+    },
     { title: '지점명', dataIndex: 'branchName', key: 'branchName', width: 110, render: (v) => v ?? '-' },
     { title: '사번', dataIndex: 'employeeCode', key: 'employeeCode', width: 100 },
     {
