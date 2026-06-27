@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.productexpiration.dto.response.Admin
 import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpiration
 import com.otoki.powersales.domain.activity.productexpiration.entity.QProductExpiration.Companion.productExpiration
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.domain.org.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.CaseBuilder
@@ -89,6 +90,21 @@ class ProductExpirationRepositoryCustomImpl(
             imminentCount = result?.get(2, Long::class.java) ?: 0L,
             normalCount = result?.get(3, Long::class.java) ?: 0L
         )
+    }
+
+    override fun findDistinctFcmTokensByAlarmDate(alarmDate: LocalDate): List<String> {
+        return queryFactory
+            .select(employeeInfo.fcmToken)
+            .distinct()
+            .from(productExpiration)
+            .join(productExpiration.employee, employee)
+            .join(employee.employeeInfo, employeeInfo)
+            .where(
+                productExpiration.alarmDate.eq(alarmDate),
+                employeeInfo.fcmToken.isNotNull,
+                employeeInfo.fcmToken.ne(""),
+            )
+            .fetch()
     }
 
     private fun buildDateRangeCondition(fromDate: LocalDate?, toDate: LocalDate?): Predicate? {

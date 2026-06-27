@@ -80,8 +80,35 @@ class ErpOrderRepositoryTest {
             .containsExactly("0300000001")
     }
 
+    @Test
+    @DisplayName("deleteByOrderDateBefore - cutoff 이전 order_date 헤더만 삭제하고 order_date null 은 보존한다")
+    fun deleteByOrderDateBefore_deletesOldKeepsNull() {
+        // 기본 픽스처(3건)는 order_date 미지정(null) — 삭제 대상 아님.
+        persistOrderWithOrderDate("0300000010", LocalDate.of(2026, 1, 1)) // cutoff 이전 → 삭제
+        persistOrderWithOrderDate("0300000011", LocalDate.of(2026, 3, 1)) // cutoff 당일 → 보존(< 비교)
+        persistOrderWithOrderDate("0300000012", LocalDate.of(2026, 5, 1)) // cutoff 이후 → 보존
+        testEntityManager.clear()
+
+        val deleted = erpOrderRepository.deleteByOrderDateBefore(LocalDate.of(2026, 3, 1))
+        testEntityManager.clear()
+
+        assertThat(deleted).isEqualTo(1)
+        val remaining = erpOrderRepository.findAll().map { it.sapOrderNumber }
+        // null 3건 + 당일/이후 2건 = 5건 보존, cutoff 이전 1건만 삭제
+        assertThat(remaining).containsExactlyInAnyOrder(
+            "0300000001", "0300000002", "0300000003", "0300000011", "0300000012"
+        )
+    }
+
     private fun persistOrder(sapOrderNumber: String, deliveryRequestDate: LocalDate?) {
         val order = ErpOrder(sapOrderNumber = sapOrderNumber, deliveryRequestDate = deliveryRequestDate).apply {
+            account = this@ErpOrderRepositoryTest.account
+        }
+        testEntityManager.persistAndFlush(order)
+    }
+
+    private fun persistOrderWithOrderDate(sapOrderNumber: String, orderDate: LocalDate) {
+        val order = ErpOrder(sapOrderNumber = sapOrderNumber, orderDate = orderDate).apply {
             account = this@ErpOrderRepositoryTest.account
         }
         testEntityManager.persistAndFlush(order)
