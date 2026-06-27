@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, DatePicker, Input, Select, Space, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
@@ -118,13 +118,8 @@ export default function PromotionListPage() {
   ];
 
   const { data: formMeta } = usePromotionFormMeta();
-  // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
-  const goToDetail = useThrottleClick((id: number) =>
-    navigate(`/promotions/${id}`, { state: { listSearch: location.search } }),
-  );
-  const goToProduct = useThrottleClick((productCode: string) =>
-    navigate(`/product/${encodeURIComponent(productCode)}`, { state: { listSearch: location.search } }),
-  );
+  // 행사번호/대표제품 링크는 <Link>(href 부여)로 직접 이동 — Ctrl/Cmd/중간클릭 새 탭 지원.
+  // state.listSearch 로 현재 목록 query string 을 넘겨 상세의 "목록으로" 가 직전 조건으로 복귀하게 한다.
   const goToUser = useThrottleClick((userId: number) =>
     navigate(`/users/${userId}`, { state: { listSearch: location.search } }),
   );
@@ -180,7 +175,10 @@ export default function PromotionListPage() {
       fixed: 'left',
       render: (val: string, record) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          <a onClick={() => goToDetail(record.id)}>{val}</a>
+          {/* Link 로 실제 href 부여 — Ctrl/Cmd/중간클릭은 브라우저가 새 탭으로, 일반 클릭은 SPA 이동. */}
+          <Link to={`/promotions/${record.id}`} state={{ listSearch: location.search }}>
+            {val}
+          </Link>
           <Typography.Text copyable={{ text: val, tooltips: ['행사번호 복사', '복사됨'] }} />
         </span>
       ),
@@ -233,7 +231,13 @@ export default function PromotionListPage() {
       ellipsis: true,
       render: (val: string | null, record) =>
         val && record.primaryProductCode ? (
-          <a onClick={() => goToProduct(record.primaryProductCode!)}>{val}</a>
+          // Link 로 실제 href 부여 — Ctrl/Cmd/중간클릭은 새 탭, 일반 클릭은 SPA 이동.
+          <Link
+            to={`/product/${encodeURIComponent(record.primaryProductCode)}`}
+            state={{ listSearch: location.search }}
+          >
+            {val}
+          </Link>
         ) : (
           val ?? '-'
         ),
