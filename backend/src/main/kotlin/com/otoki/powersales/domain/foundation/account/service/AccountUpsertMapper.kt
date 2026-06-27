@@ -94,6 +94,10 @@ class AccountUpsertMapper {
     }
 
     private fun applyTypeAndStatus(account: Account, command: AccountUpsertCommand) {
+        // SAP inbound 는 거래처유형(accountType)을 raw 값 그대로 수용한다 — 거래처유형마스터
+        // (AccountCategoryMaster) 검증을 의도적으로 하지 않는다. SAP 가 거래처 마스터의 권위 소스이고
+        // 신규 유형이 마스터보다 먼저 SAP 에서 내려올 수 있으므로, 검증으로 막으면 동기화가 누락된다.
+        // (web 수정 흐름 AccountUpdateTxService 만 마스터 검증으로 사용자 입력 오류를 차단.)
         account.accountType = command.accountType
         account.accountStatusName = command.accountStatusName
         account.accountStatusCode = command.accountStatusCode
