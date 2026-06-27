@@ -76,6 +76,9 @@ const previewColumns: ColumnsType<RowPreview> = [
   { title: '종료일', dataIndex: 'endDate', key: 'endDate', width: 110, render: (v) => v ?? '-' },
 ];
 
+/** 거래처상태 (SF `Account.AccountStatusName__c`) 중 빨간색으로 강조할 값. */
+const ALERT_ACCOUNT_STATUS = new Set(['폐업', '출고정지']);
+
 /**
  * 유효 신호등 색상 (SF formula `Valid__c` 의 IMAGE() Greenlight/Yellowlight/Redlight 대체).
  * GREEN=유효 / YELLOW=예정 / RED=종료.
@@ -186,7 +189,15 @@ function buildListColumns(
       sorter: true,
       render: (v) => v ?? '-',
     },
-    { title: '거래처상태', dataIndex: 'accountStatus', key: 'accountStatus', width: 100, align: 'center', render: (v) => v ?? '-' },
+    {
+      title: '거래처상태',
+      dataIndex: 'accountStatus',
+      key: 'accountStatus',
+      width: 100,
+      align: 'center',
+      render: (v: string | null) =>
+        v == null ? '-' : <span style={ALERT_ACCOUNT_STATUS.has(v) ? { color: '#ff4d4f' } : undefined}>{v}</span>,
+    },
     {
       title: '전월매출',
       dataIndex: 'lastMonthRevenue',
@@ -204,7 +215,7 @@ function buildListColumns(
       align: 'center',
       sorter: true,
       render: (confirmed: boolean | null) =>
-        confirmed ? <Tag color="green">확정</Tag> : <Tag>미확정</Tag>,
+        confirmed ? <Tag color="green">확정</Tag> : <Tag color="red">미확정</Tag>,
     },
     {
       title: '액션',
@@ -244,6 +255,7 @@ export default function DisplaySchedulePage() {
 
   // Schedule list state
   const [listPage, setListPage] = useState(0);
+  const [listSize, setListSize] = useState(50);
   const [filterEmployeeCode, setFilterEmployeeCode] = useState('');
   const [filterAccountName, setFilterAccountName] = useState('');
   const [filterAccountType, setFilterAccountType] = useState('');
@@ -273,7 +285,7 @@ export default function DisplaySchedulePage() {
 
   const scheduleListQuery = useScheduleList({
     page: listPage,
-    size: 20,
+    size: listSize,
     ...appliedFilters,
     sortBy,
     sortDir,
@@ -746,11 +758,19 @@ export default function DisplaySchedulePage() {
           }}
           pagination={{
             current: listPage + 1,
-            pageSize: 20,
+            pageSize: listSize,
             total: scheduleListQuery.data?.totalElements ?? 0,
             showTotal: (total) => `총 ${total}건`,
-            onChange: (page) => {
-              setListPage(page - 1);
+            showSizeChanger: true,
+            pageSizeOptions: [20, 50, 100],
+            onChange: (page, size) => {
+              // 페이지 크기 변경 시 1페이지로 이동 (antd 가 page 를 보정하나 명시적으로 리셋)
+              if (size !== listSize) {
+                setListSize(size);
+                setListPage(0);
+              } else {
+                setListPage(page - 1);
+              }
               setSelectedRowKeys([]);
             },
           }}
