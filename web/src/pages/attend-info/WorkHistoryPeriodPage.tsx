@@ -82,22 +82,18 @@ const MONTHLY_COLUMNS: ColumnsType<WorkHistoryMonthlyStat> = [
   { title: '대휴', dataIndex: 'altHolidayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
 ];
 
-function renderMonthlyBreakdown(record: WorkHistoryPeriodSummaryItem) {
-  return (
-    <Table<WorkHistoryMonthlyStat>
-      rowKey="yearMonth"
-      size="small"
-      columns={MONTHLY_COLUMNS}
-      dataSource={record.monthlyBreakdown}
-      pagination={false}
-      // 부모 헤더와 중복이므로 자식 헤더는 숨김 (년월 값은 헤더 없이도 인식 가능).
-      showHeader={false}
-      tableLayout="fixed"
-      scroll={{ x: 'max-content' }}
-      // 부모의 펼침 아이콘 컬럼 폭만큼 들여써 데이터 컬럼이 부모와 세로 정렬되게 한다.
-      style={{ margin: `0 0 0 ${EXPAND_COLUMN_WIDTH}px` }}
-    />
-  );
+/**
+ * 부모 컬럼 리사이즈 결과(columnWidths: leaf path → px)를 자식(월별) 컬럼 폭에 반영.
+ * 부모/자식 컬럼은 인덱스가 1:1 대응하므로 path "0"~"10" 을 그대로 자식 i 번째 폭으로 덮어쓴다.
+ * 드래그 전(맵에 키 없음) 컬럼은 base 정의 폭을 유지.
+ */
+function buildMonthlyColumns(
+  columnWidths: Record<string, number>,
+): ColumnsType<WorkHistoryMonthlyStat> {
+  return MONTHLY_COLUMNS.map((col, index) => {
+    const overridden = columnWidths[`${index}`];
+    return overridden != null ? { ...col, width: overridden } : col;
+  });
 }
 
 interface QueryParams {
@@ -126,6 +122,8 @@ export default function WorkHistoryPeriodPage() {
   const [keyword, setKeyword] = useState('');
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<readonly Key[]>([]);
+  // 부모 테이블 컬럼 리사이즈 결과 (leaf path "0"~"10" → 폭px). 자식(월별) 테이블 폭 동기화에 사용.
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
 
   const { data: branches = [] } = useAttendInfoBranches();
   const branchOptions = useMemo(
@@ -188,6 +186,25 @@ export default function WorkHistoryPeriodPage() {
   };
 
   const exportDisabled = queryParams == null || !data || data.items.length === 0;
+
+  // 부모 컬럼 리사이즈 폭을 반영한 자식(월별) 테이블 컬럼.
+  const monthlyColumns = useMemo(() => buildMonthlyColumns(columnWidths), [columnWidths]);
+
+  const renderMonthlyBreakdown = (record: WorkHistoryPeriodSummaryItem) => (
+    <Table<WorkHistoryMonthlyStat>
+      rowKey="yearMonth"
+      size="small"
+      columns={monthlyColumns}
+      dataSource={record.monthlyBreakdown}
+      pagination={false}
+      // 부모 헤더와 중복이므로 자식 헤더는 숨김 (년월 값은 헤더 없이도 인식 가능).
+      showHeader={false}
+      tableLayout="fixed"
+      scroll={{ x: 'max-content' }}
+      // 부모의 펼침 아이콘 컬럼 폭만큼 들여써 데이터 컬럼이 부모와 세로 정렬되게 한다.
+      style={{ margin: `0 0 0 ${EXPAND_COLUMN_WIDTH}px` }}
+    />
+  );
 
   return (
     <div style={{ padding: 16 }}>
@@ -351,6 +368,8 @@ export default function WorkHistoryPeriodPage() {
             size="small"
             sticky
             scroll={{ x: 'max-content' }}
+            // 컬럼 리사이즈 시 폭을 받아 펼침(월별) 테이블 컬럼에 동기화.
+            onColumnWidthsChange={setColumnWidths}
             // 펼침 가능한 행은 row 어디를 클릭해도 확장 토글 + 포인터 커서.
             onRow={(record) => ({
               onClick: () => toggleRow(record),

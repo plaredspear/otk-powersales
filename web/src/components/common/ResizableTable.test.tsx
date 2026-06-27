@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from './ResizableTable';
@@ -66,6 +66,40 @@ describe('ResizableTable', () => {
     fireEvent.mouseUp(handle, { clientX: 180 });
     expect(guideLine.style.opacity).toBe('0');
     expect(document.body.classList.contains('resizable-table-resizing')).toBe(false);
+  });
+
+  it('드래그로 컬럼 폭을 바꾸면 onColumnWidthsChange 로 leaf path → 폭 맵을 통지한다', () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <ResizableTable<Row>
+        rowKey="key"
+        columns={COLUMNS}
+        dataSource={DATA}
+        pagination={false}
+        onColumnWidthsChange={onChange}
+      />,
+    );
+    const handle = container.querySelector('.resizable-handle') as HTMLElement;
+    // 첫 컬럼(이름, path "0") 헤더 핸들을 드래그.
+    fireEvent.mouseDown(handle, { clientX: 120 });
+    fireEvent.mouseMove(handle, { clientX: 200 });
+    fireEvent.mouseUp(handle, { clientX: 200 });
+
+    expect(onChange).toHaveBeenCalled();
+    const lastArg = onChange.mock.calls[onChange.mock.calls.length - 1][0];
+    // 드래그한 첫 컬럼("0") 폭이 맵에 기록된다.
+    expect(lastArg).toHaveProperty('0');
+    expect(typeof lastArg['0']).toBe('number');
+  });
+
+  it('onColumnWidthsChange 미지정 시에도 드래그가 정상 동작한다 (예외 없음)', () => {
+    const { container } = renderTable();
+    const handle = container.querySelector('.resizable-handle') as HTMLElement;
+    expect(() => {
+      fireEvent.mouseDown(handle, { clientX: 120 });
+      fireEvent.mouseMove(handle, { clientX: 200 });
+      fireEvent.mouseUp(handle, { clientX: 200 });
+    }).not.toThrow();
   });
 
   describe('그룹 헤더(children) 구조', () => {
