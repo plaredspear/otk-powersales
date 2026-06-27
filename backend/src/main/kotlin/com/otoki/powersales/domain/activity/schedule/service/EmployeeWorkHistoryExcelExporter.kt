@@ -29,7 +29,7 @@ class EmployeeWorkHistoryExcelExporter : BaseExcelExporter<EmployeeWorkHistoryIt
         row.createCell(col++).setCellValue(resolveWorkplace(item))
         row.createCell(col++).setCellValue(item.accountExternalKey ?: "")
         row.createCell(col++).setCellValue(item.distributionChannelLabel ?: "")
-        row.createCell(col++).setCellValue(item.accountType ?: "")
+        row.createCell(col++).setCellValue(item.abcTypeLabel ?: "")
         row.createCell(col++).setCellValue(item.workingCategory1 ?: "")
         row.createCell(col++).setCellValue(item.professionalPromotionTeam ?: "")
         row.createCell(col++).setCellValue(item.workingCategory3 ?: "")

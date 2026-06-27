@@ -158,7 +158,7 @@ class Account(
 
     @SFField("Type")
     @Convert(converter = AccountTypeConverter::class)
-    @FieldName("거래처유형")
+    @FieldName("거래처타입")
     @Column(name = "account_type", length = 255)
     var accountType: AccountType? = null,
 
@@ -413,6 +413,19 @@ class Account(
      */
     fun distributionChannelLabel(): String? =
         listOfNotNull(accountStatusCode, accountType?.displayName)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .ifBlank { null }
+
+    /**
+     * 거래처유형 — ABC유형코드(ABCTypeCode__c) + ABC유형(ABCType__c) 을 공백으로 조합한 표시 문자열.
+     *
+     * 예: "6111 이마트", "2001 슈퍼". 두 값이 모두 비어 있으면 null.
+     * (거래처타입 enum 필드 [accountType] 과는 별개 — 화면 "거래처유형" 컬럼의 원천.)
+     * 표시용 폴백("-" 등)은 호출 측(web/엑셀)에서 처리한다.
+     */
+    fun abcTypeLabel(): String? =
+        listOfNotNull(abcTypeCode, abcType)
             .filter { it.isNotBlank() }
             .joinToString(" ")
             .ifBlank { null }

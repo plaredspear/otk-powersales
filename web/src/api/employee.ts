@@ -313,6 +313,8 @@ export interface EmployeeWorkHistoryItem {
   abcType: string | null;
   /** ABC유형코드 */
   abcTypeCode: string | null;
+  /** 거래처유형 — ABC유형코드 + ABC유형 조합 (예: "6111 이마트") */
+  abcTypeLabel: string | null;
   /** 거래처상태코드 (유통형태 표시용) */
   accountStatusCode: string | null;
   /** 유통형태 — 거래처상태코드 + 거래처유형 조합 (예: "02 슈퍼") */

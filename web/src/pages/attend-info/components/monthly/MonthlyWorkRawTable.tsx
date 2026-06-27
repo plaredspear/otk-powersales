@@ -66,12 +66,9 @@ const COLUMNS: ColumnsType<EmployeeWorkHistoryItem> = [
   },
   {
     title: '거래처유형',
-    dataIndex: 'abcTypeCode',
+    dataIndex: 'abcTypeLabel',
     width: 110,
-    render: (_v, row) => {
-      const text = [row.abcTypeCode, row.abcType].filter(Boolean).join(' ');
-      return text || '-';
-    },
+    render: (v: string | null) => v ?? '-',
   },
   {
     title: '근무유형',
