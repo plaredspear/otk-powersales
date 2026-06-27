@@ -65,9 +65,13 @@ export async function fetchMonthlyIntegrationSchedule(
   costCenterCodes: string[],
   keyword?: string,
   accountKeyword?: string,
+  distributionKeyword?: string,
+  accountTypeKeyword?: string,
 ): Promise<MonthlyIntegrationScheduleResponse> {
   const trimmedKeyword = keyword?.trim();
   const trimmedAccountKeyword = accountKeyword?.trim();
+  const trimmedDistribution = distributionKeyword?.trim();
+  const trimmedAccountType = accountTypeKeyword?.trim();
   const res = await client.get<ApiResponse<MonthlyIntegrationScheduleResponse>>(
     '/api/v1/admin/schedules/monthly-integration',
     {
@@ -77,6 +81,8 @@ export async function fetchMonthlyIntegrationSchedule(
         costCenterCodes: costCenterCodes.join(','),
         ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
         ...(trimmedAccountKeyword ? { accountKeyword: trimmedAccountKeyword } : {}),
+        ...(trimmedDistribution ? { distributionKeyword: trimmedDistribution } : {}),
+        ...(trimmedAccountType ? { accountTypeKeyword: trimmedAccountType } : {}),
       },
     },
   );
@@ -93,9 +99,13 @@ export async function fetchMonthlyIntegrationExport(
   costCenterCodes: string[],
   keyword?: string,
   accountKeyword?: string,
+  distributionKeyword?: string,
+  accountTypeKeyword?: string,
 ): Promise<void> {
   const trimmedKeyword = keyword?.trim();
   const trimmedAccountKeyword = accountKeyword?.trim();
+  const trimmedDistribution = distributionKeyword?.trim();
+  const trimmedAccountType = accountTypeKeyword?.trim();
   await downloadExcel(
     '/api/v1/admin/schedules/monthly-integration/export',
     `${year}년${month}월_여사원_통합일정.xlsx`,
@@ -106,6 +116,8 @@ export async function fetchMonthlyIntegrationExport(
         costCenterCodes: costCenterCodes.join(','),
         ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
         ...(trimmedAccountKeyword ? { accountKeyword: trimmedAccountKeyword } : {}),
+        ...(trimmedDistribution ? { distributionKeyword: trimmedDistribution } : {}),
+        ...(trimmedAccountType ? { accountTypeKeyword: trimmedAccountType } : {}),
       },
     },
   );

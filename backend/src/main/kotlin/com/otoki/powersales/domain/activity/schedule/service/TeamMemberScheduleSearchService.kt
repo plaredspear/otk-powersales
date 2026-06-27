@@ -49,6 +49,8 @@ class TeamMemberScheduleSearchService(
         orgValues: List<String>,
         keyword: String? = null,
         accountKeyword: String? = null,
+        distributionKeyword: String? = null,
+        accountTypeKeyword: String? = null,
     ): TeamMemberScheduleSearchResult {
         val normMonth = month.toInt().toString()
         val expandedCodes = expander.expand(orgValues)
@@ -56,7 +58,9 @@ class TeamMemberScheduleSearchService(
             return TeamMemberScheduleSearchResult(resultCode = "S", resultMsg = "검색결과가 없습니다.", result = emptyList())
         }
 
-        val rows = fetchMfeisOrdered(year, normMonth, expandedCodes, keyword, accountKeyword)
+        val rows = fetchMfeisOrdered(
+            year, normMonth, expandedCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
+        )
         val avgSalesByAccountId = computeSixMonthAverageSales(rows, year, normMonth)
 
         val items = rows.map { toResultItem(it, avgSalesByAccountId) }
@@ -78,6 +82,8 @@ class TeamMemberScheduleSearchService(
         costCenterCodes: Collection<String>,
         keyword: String? = null,
         accountKeyword: String? = null,
+        distributionKeyword: String? = null,
+        accountTypeKeyword: String? = null,
     ): List<TeamMemberScheduleRow> {
         val q = monthlyFemaleEmployeeIntegrationSchedule
         // 사번 또는 이름 통합 검색어 — 사번 정확일치 OR 이름 부분일치(대소문자/공백 무시).
@@ -92,6 +98,20 @@ class TeamMemberScheduleSearchService(
         val trimmedAccountKeyword = accountKeyword?.trim()?.takeIf { it.isNotEmpty() }
         val accountKeywordPredicate = trimmedAccountKeyword?.let {
             q.account.externalKey.eq(it).or(q.account.name.containsIgnoreCase(it))
+        }
+        // 유통형태 검색어 — 화면 표시값(거래처상태코드 + 거래처유형명) 부분일치.
+        // accountStatusCode like OR accountType(enum) IN (displayName 에 검색어 포함된 enum 집합).
+        // accountType 은 enum 이라 like 불가 → displayName 매칭 enum 을 미리 골라 IN 으로 환원.
+        val trimmedDistribution = distributionKeyword?.trim()?.takeIf { it.isNotEmpty() }
+        val distributionPredicate = trimmedDistribution?.let { kw ->
+            val matchedTypes = AccountType.entries.filter { it.displayName.contains(kw, ignoreCase = true) }
+            val codePredicate = q.account.accountStatusCode.containsIgnoreCase(kw)
+            if (matchedTypes.isEmpty()) codePredicate else codePredicate.or(q.account.accountType.`in`(matchedTypes))
+        }
+        // 거래처유형 검색어 — 화면 표시값(ABC유형코드 + ABC유형) 부분일치.
+        val trimmedAccountType = accountTypeKeyword?.trim()?.takeIf { it.isNotEmpty() }
+        val accountTypePredicate = trimmedAccountType?.let {
+            q.account.abcTypeCode.containsIgnoreCase(it).or(q.account.abcType.containsIgnoreCase(it))
         }
         // DTO projection — MFEIS + employee/account 의 필요 컬럼만 select.
         // 엔티티(특히 Employee) 를 hydrate 하지 않으므로 Employee.employeeInfo @OneToOne 강제 로딩
@@ -132,6 +152,8 @@ class TeamMemberScheduleSearchService(
                     .and(q.costCenterCode.`in`(costCenterCodes))
                     .and(keywordPredicate)
                     .and(accountKeywordPredicate)
+                    .and(distributionPredicate)
+                    .and(accountTypePredicate)
             )
             // SF ORDER BY BranchName__c, AccountCode__c, EmployeeNumber__c (모두 formula)
             // backend lazy join 컬럼으로 동등 정렬

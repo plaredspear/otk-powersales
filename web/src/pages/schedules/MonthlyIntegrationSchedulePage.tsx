@@ -110,12 +110,16 @@ export default function MonthlyIntegrationSchedulePage() {
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
   const [accountKeyword, setAccountKeyword] = useState('');
+  const [distributionKeyword, setDistributionKeyword] = useState('');
+  const [accountTypeKeyword, setAccountTypeKeyword] = useState('');
   const [queryParams, setQueryParams] = useState<{
     year: number;
     month: number;
     codes: string[];
     keyword: string;
     accountKeyword: string;
+    distributionKeyword: string;
+    accountTypeKeyword: string;
   } | null>(null);
 
   const screens = useBreakpoint();
@@ -128,6 +132,8 @@ export default function MonthlyIntegrationSchedulePage() {
     queryParams != null,
     queryParams?.keyword,
     queryParams?.accountKeyword,
+    queryParams?.distributionKeyword,
+    queryParams?.accountTypeKeyword,
   );
 
   const exportMutation = useMonthlyIntegrationExport();
@@ -141,8 +147,10 @@ export default function MonthlyIntegrationSchedulePage() {
     if (autoSearchedRef.current) return;
     if (selectedCodes.length === 0) return;
     autoSearchedRef.current = true;
-    setQueryParams({ year, month, codes: selectedCodes, keyword, accountKeyword });
-  }, [selectedCodes, year, month, keyword, accountKeyword]);
+    setQueryParams({
+      year, month, codes: selectedCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
+    });
+  }, [selectedCodes, year, month, keyword, accountKeyword, distributionKeyword, accountTypeKeyword]);
 
   useEffect(() => {
     if (isLoading || isError) return;
@@ -159,7 +167,9 @@ export default function MonthlyIntegrationSchedulePage() {
       message.warning('년도와 월을 입력해주세요');
       return;
     }
-    setQueryParams({ year, month, codes: selectedCodes, keyword, accountKeyword });
+    setQueryParams({
+      year, month, codes: selectedCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
+    });
   };
 
   const handleExport = () => {
@@ -170,6 +180,8 @@ export default function MonthlyIntegrationSchedulePage() {
       costCenterCodes: queryParams.codes,
       keyword: queryParams.keyword,
       accountKeyword: queryParams.accountKeyword,
+      distributionKeyword: queryParams.distributionKeyword,
+      accountTypeKeyword: queryParams.accountTypeKeyword,
     });
   };
 
@@ -199,6 +211,28 @@ export default function MonthlyIntegrationSchedulePage() {
                 onChange={(e) => setAccountKeyword(e.target.value)}
                 onPressEnter={handleSearch}
                 style={{ width: 160 }}
+              />
+            </Space>
+            <Space direction="vertical" size={4}>
+              <span>유통형태:</span>
+              <Input
+                allowClear
+                placeholder="유통형태 (예: 슈퍼)"
+                value={distributionKeyword}
+                onChange={(e) => setDistributionKeyword(e.target.value)}
+                onPressEnter={handleSearch}
+                style={{ width: 150 }}
+              />
+            </Space>
+            <Space direction="vertical" size={4}>
+              <span>거래처유형:</span>
+              <Input
+                allowClear
+                placeholder="거래처유형 (예: 이마트)"
+                value={accountTypeKeyword}
+                onChange={(e) => setAccountTypeKeyword(e.target.value)}
+                onPressEnter={handleSearch}
+                style={{ width: 150 }}
               />
             </Space>
             <Space direction="vertical" size={4}>
