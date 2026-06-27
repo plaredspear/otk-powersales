@@ -1,4 +1,4 @@
-import { useMemo, useState, type Key } from 'react';
+import { useEffect, useMemo, useRef, useState, type Key } from 'react';
 import {
   Alert,
   Button,
@@ -133,6 +133,15 @@ export default function WorkHistoryPeriodPage() {
     const codes = singleBranch && selectedCodes.length === 0 ? allCodes : selectedCodes;
     setQueryParams({ fromYearMonth: fromYm, toYearMonth: toYm, costCenterCodes: codes, keyword });
   };
+
+  // 지점이 하나뿐인 사용자는 선택할 지점이 없으므로 페이지 진입 시(지점 목록 로드 후) 현재 년월로 1회 자동 조회.
+  const autoSearchedRef = useRef(false);
+  useEffect(() => {
+    if (autoSearchedRef.current) return;
+    if (!singleBranch || rangeInvalid) return;
+    autoSearchedRef.current = true;
+    setQueryParams({ fromYearMonth: fromYm, toYearMonth: toYm, costCenterCodes: allCodes, keyword });
+  }, [singleBranch, rangeInvalid, fromYm, toYm, allCodes, keyword]);
 
   const handleToggleAll = () => {
     setSelectedCodes(allSelected ? [] : allCodes);

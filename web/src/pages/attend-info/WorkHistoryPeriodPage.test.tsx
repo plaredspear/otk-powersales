@@ -18,6 +18,7 @@ vi.mock('@/api/attendInfo', async () => {
 
 const mockedSummary = vi.mocked(api.fetchWorkHistoryPeriodSummary);
 const mockedExport = vi.mocked(api.fetchWorkHistoryPeriodSummaryExport);
+const mockedBranches = vi.mocked(api.fetchAttendInfoBranches);
 
 function renderPage() {
   const client = new QueryClient({
@@ -33,6 +34,9 @@ function renderPage() {
 describe('WorkHistoryPeriodPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // 기본값: 지점 없음(빈 배열) — 자동 조회 미트리거. 단일/다중 지점 케이스는 테스트별 재설정.
+    mockedBranches.mockResolvedValue([]);
+    mockedExport.mockResolvedValue(undefined);
     useAuthStore.setState({
       user: {
         id: 1,
@@ -54,6 +58,33 @@ describe('WorkHistoryPeriodPage', () => {
     expect(screen.getByText('시작 년월:')).toBeInTheDocument();
     expect(screen.getByText('종료 년월:')).toBeInTheDocument();
     expect(screen.getByText('조회 조건을 설정하고 조회 버튼을 눌러주세요')).toBeInTheDocument();
+    expect(mockedSummary).not.toHaveBeenCalled();
+  });
+
+  it('지점이 하나뿐인 사용자는 진입 시 본인 지점으로 자동 조회한다', async () => {
+    mockedBranches.mockResolvedValue([{ branchCode: 'B001', branchName: '원주1지점' }]);
+    mockedSummary.mockResolvedValue({
+      fromYearMonth: '2026-06',
+      toYearMonth: '2026-06',
+      totalCount: 0,
+      items: [],
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(mockedSummary).toHaveBeenCalled();
+    });
+    // 자동 조회 시 단일 지점 코드가 전달된다.
+    expect(mockedSummary.mock.calls[0][0]).toMatchObject({ costCenterCodes: ['B001'] });
+  });
+
+  it('지점이 여러 개인 사용자는 진입 시 자동 조회하지 않는다', async () => {
+    mockedBranches.mockResolvedValue([
+      { branchCode: 'B001', branchName: '원주1지점' },
+      { branchCode: 'B002', branchName: '원주2지점' },
+    ]);
+    renderPage();
+    // 지점 목록 로드 후에도 자동 조회가 트리거되지 않음을 확인.
+    await screen.findByText('조회 조건을 설정하고 조회 버튼을 눌러주세요');
     expect(mockedSummary).not.toHaveBeenCalled();
   });
 
