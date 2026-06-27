@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberSche
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleSearchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.AccountType
+import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
@@ -35,6 +36,7 @@ class TeamMemberScheduleSearchService(
     private val expander: BranchCodeExpander,
     private val queryFactory: JPAQueryFactory,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository,
 ) {
 
     /**
@@ -100,11 +102,14 @@ class TeamMemberScheduleSearchService(
             q.account.externalKey.eq(it).or(q.account.name.containsIgnoreCase(it))
         }
         // 유통형태 검색어 — 화면 표시값(거래처상태코드 + 거래처유형명) 부분일치.
-        // accountStatusCode like OR accountType(enum) IN (displayName 에 검색어 포함된 enum 집합).
-        // accountType 은 enum 이라 like 불가 → displayName 매칭 enum 을 미리 골라 IN 으로 환원.
+        // accountStatusCode like OR accountType(enum) IN (검색어 매칭 거래처유형마스터 → AccountType 환원).
+        // accountType 은 enum 이라 like 불가 → 거래처유형마스터(AccountCategoryMaster.name) 에서 검색어
+        // 부분일치 + useSearch 항목을 조회한 뒤 displayName 정합으로 AccountType 으로 환원해 IN 으로 건다.
         val trimmedDistribution = distributionKeyword?.trim()?.takeIf { it.isNotEmpty() }
         val distributionPredicate = trimmedDistribution?.let { kw ->
-            val matchedTypes = AccountType.entries.filter { it.displayName.contains(kw, ignoreCase = true) }
+            val matchedTypes = accountCategoryMasterRepository
+                .findByNameContainingIgnoreCaseAndUseSearchTrueAndIsDeletedNot(kw, true)
+                .mapNotNull { AccountType.fromDisplayNameOrNull(it.name) }
             val codePredicate = q.account.accountStatusCode.containsIgnoreCase(kw)
             if (matchedTypes.isEmpty()) codePredicate else codePredicate.or(q.account.accountType.`in`(matchedTypes))
         }
