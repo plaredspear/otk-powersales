@@ -253,4 +253,18 @@ describe('WorkHistoryPeriodPage', () => {
       expect(screen.getByText('조회 결과가 없습니다')).toBeInTheDocument();
     });
   });
+
+  it('조회 기간이 6개월을 초과하면 경고를 표시하고 조회 버튼이 비활성화된다', async () => {
+    renderPage();
+    // 시작/종료 년월 입력은 [시작년, 시작월, 종료년, 종료월] 순의 spinbutton.
+    // 시작 년도를 1년 낮춰 12개월 차이를 만들어 6개월 초과 상태로 만든다.
+    const spinButtons = screen.getAllByRole('spinbutton');
+    const fromYearInput = spinButtons[0];
+    const current = Number((fromYearInput as HTMLInputElement).value);
+    fireEvent.change(fromYearInput, { target: { value: String(current - 1) } });
+
+    expect(screen.getByText('조회 기간은 최대 6개월까지 가능합니다')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /조회/ })).toBeDisabled();
+    expect(mockedSummary).not.toHaveBeenCalled();
+  });
 });

@@ -290,5 +290,25 @@ class WorkHistoryPeriodSummaryServiceTest {
             assertThatThrownBy { service.getSummary(allScope, "2026-06", "2026-05", emptyList(), null) }
                 .isInstanceOf(InvalidParameterException::class.java)
         }
+
+        @Test
+        @DisplayName("포함 6개월(경계)은 정상 조회된다")
+        fun exactlySixMonthsAllowed() {
+            every { repository.findWorkHistoryForPeriod(any(), any(), any(), any()) } returns emptyList()
+
+            // 2026-01 ~ 2026-06 = 포함 6개월
+            val res = service.getSummary(allScope, "2026-01", "2026-06", emptyList(), null)
+
+            assertThat(res.fromYearMonth).isEqualTo("2026-01")
+            assertThat(res.toYearMonth).isEqualTo("2026-06")
+        }
+
+        @Test
+        @DisplayName("포함 7개월이면 InvalidParameterException (최대 6개월 초과)")
+        fun moreThanSixMonthsRejected() {
+            // 2026-01 ~ 2026-07 = 포함 7개월
+            assertThatThrownBy { service.getSummary(allScope, "2026-01", "2026-07", emptyList(), null) }
+                .isInstanceOf(InvalidParameterException::class.java)
+        }
     }
 }
