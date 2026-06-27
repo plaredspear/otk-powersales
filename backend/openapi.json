@@ -13985,6 +13985,9 @@
           "costCenterCode" : {
             "type" : [ "string", "null" ]
           },
+          "distributionChannelLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
