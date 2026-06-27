@@ -182,7 +182,7 @@ export default function ProductExpirationPage() {
       ),
     },
     {
-      title: '유통기한',
+      title: '소비기한',
       dataIndex: 'expirationDate',
       width: 110,
     },

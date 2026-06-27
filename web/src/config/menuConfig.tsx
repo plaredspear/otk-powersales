@@ -267,7 +267,7 @@ export const menuRoute: MenuRoute = {
         { path: '/inspection-themes', name: '현장점검 테마 관리', entity: 'inspection_theme', operation: 'READ' },
         { path: '/field-inspection', name: '현장점검', entity: 'site_activity', operation: 'READ' },
         { path: '/safety-check', name: '안전점검', entity: 'team_member_schedule', operation: 'READ' },
-        { path: '/product-expiration', name: '유통기한 관리', entity: 'product', operation: 'READ' },
+        { path: '/product-expiration', name: '소비기한 관리', entity: 'product', operation: 'READ' },
         {
           path: '/claims',
           name: '제품 클레임',
