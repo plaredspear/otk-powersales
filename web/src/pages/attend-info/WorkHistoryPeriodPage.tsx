@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type Key } from 'react';
 import {
   Alert,
   Button,
@@ -14,7 +14,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { CaretRightOutlined, DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
@@ -94,6 +94,11 @@ function toYearMonth(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
+/** 집계 행 식별 키 — 테이블 rowKey / 확장 상태 / row 클릭에서 동일하게 사용. */
+function rowKeyOf(record: WorkHistoryPeriodSummaryItem): string {
+  return record.employeeCode ?? record.employeeName ?? '';
+}
+
 export default function WorkHistoryPeriodPage() {
   const now = dayjs();
   const [fromYear, setFromYear] = useState(now.year());
@@ -103,6 +108,7 @@ export default function WorkHistoryPeriodPage() {
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
+  const [expandedKeys, setExpandedKeys] = useState<readonly Key[]>([]);
 
   const { data: branches = [] } = useAttendInfoBranches();
   const branchOptions = useMemo(
@@ -130,6 +136,15 @@ export default function WorkHistoryPeriodPage() {
 
   const handleToggleAll = () => {
     setSelectedCodes(allSelected ? [] : allCodes);
+  };
+
+  // 펼침 가능한(월별 분해가 있는) 행 클릭 시 확장 토글.
+  const toggleRow = (record: WorkHistoryPeriodSummaryItem) => {
+    if (record.monthlyBreakdown.length === 0) return;
+    const key = rowKeyOf(record);
+    setExpandedKeys((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
   };
 
   const handleExport = () => {
@@ -290,17 +305,35 @@ export default function WorkHistoryPeriodPage() {
             <Text style={{ marginBottom: 8, display: 'block' }}>총 {formatNumber(data.totalCount)}명</Text>
           )}
           <ResizableTable
-            rowKey={(record) => record.employeeCode ?? record.employeeName ?? ''}
+            rowKey={rowKeyOf}
             columns={COLUMNS}
             dataSource={data?.items ?? []}
             pagination={false}
             size="small"
             sticky
             scroll={{ x: 'max-content' }}
+            // 펼침 가능한 행은 row 어디를 클릭해도 확장 토글 + 포인터 커서.
+            onRow={(record) => ({
+              onClick: () => toggleRow(record),
+              style: record.monthlyBreakdown.length > 0 ? { cursor: 'pointer' } : undefined,
+            })}
             expandable={{
               // 월별 분해가 있는 행(2개월 이상 조회)만 펼침 가능. 단일 월 조회는 분해가 비어 펼침 아이콘 숨김.
               expandedRowRender: renderMonthlyBreakdown,
               rowExpandable: (record) => record.monthlyBreakdown.length > 0,
+              expandedRowKeys: expandedKeys,
+              // + 아이콘 대신 삼각형(▶). 펼쳐지면 90° 회전. 펼침 불가 행은 아이콘 없음.
+              // 클릭 토글은 onRow.onClick 이 처리하므로 아이콘은 시각 표현만 담당.
+              expandIcon: ({ expandable, expanded }) =>
+                expandable ? (
+                  <CaretRightOutlined
+                    style={{
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s',
+                      transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                    }}
+                  />
+                ) : null,
             }}
             locale={{
               emptyText:
