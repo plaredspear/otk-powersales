@@ -14,6 +14,10 @@ data class MonthlyIntegrationScheduleItem(
     val accountBranchName: String?,
     val accountCode: String,
     val accountName: String,
+    /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). */
+    val distributionChannelLabel: String?,
+    /** 거래처유형 — ABC유형코드 + ABC유형 조합 (예: "6111 이마트"). */
+    val abcTypeLabel: String?,
     val employeeCode: String,
     val title: String?,
     val employeeName: String,

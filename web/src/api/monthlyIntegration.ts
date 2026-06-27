@@ -8,6 +8,10 @@ export interface MonthlyIntegrationScheduleItem {
   accountBranchName: string | null;
   accountCode: string;
   accountName: string;
+  /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼") */
+  distributionChannelLabel: string | null;
+  /** 거래처유형 — ABC유형코드 + ABC유형 조합 (예: "6111 이마트") */
+  abcTypeLabel: string | null;
   employeeCode: string;
   title: string | null;
   employeeName: string;

@@ -41,6 +41,8 @@ class AdminMonthlyIntegrationControllerTest : AdminControllerTestSupport() {
                         accountBranchName = "강남지점",
                         accountCode = "1234567",
                         accountName = "이마트 강남점",
+                        distributionChannelLabel = "02 대형마트(3대)",
+                        abcTypeLabel = "6111 이마트",
                         employeeCode = "200001",
                         title = null,
                         employeeName = "김영희",
@@ -71,6 +73,8 @@ class AdminMonthlyIntegrationControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.totalCount").value(1))
                 .andExpect(jsonPath("$.data.items[0].branchName").value("서울1지점"))
                 .andExpect(jsonPath("$.data.items[0].employeeCode").value("200001"))
+                .andExpect(jsonPath("$.data.items[0].distributionChannelLabel").value("02 대형마트(3대)"))
+                .andExpect(jsonPath("$.data.items[0].abcTypeLabel").value("6111 이마트"))
                 .andExpect(jsonPath("$.data.items[0].totalInputCount").value(22))
         }
 

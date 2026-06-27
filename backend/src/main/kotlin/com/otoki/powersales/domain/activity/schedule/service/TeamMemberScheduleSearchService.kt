@@ -2,6 +2,8 @@ package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleSearchResult
+import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
@@ -106,6 +108,10 @@ class TeamMemberScheduleSearchService(
                     q.account.externalKey,
                     q.account.branchName,
                     q.account.name,
+                    q.account.accountStatusCode,
+                    q.account.accountType,
+                    q.account.abcTypeCode,
+                    q.account.abcType,
                     q.employee.orgName,
                     q.employee.employeeCode,
                     q.employee.jikwee,
@@ -234,6 +240,12 @@ class TeamMemberScheduleSearchService(
             accountName = row.accountName,
             // D4=(a): SF formula AccountCode__c = Account__r.ExternalKey__c
             accountCode = row.accountExternalKey,
+            // 유통형태/거래처유형 라벨 — Account 조합 규칙 정본(companion) 재사용 (projection 이라 인스턴스 없음)
+            distributionChannelLabel = Account.distributionChannelLabel(
+                row.accountStatusCode,
+                row.accountType?.displayName,
+            ),
+            abcTypeLabel = Account.abcTypeLabel(row.abcTypeCode, row.abcType),
             // D4=(a): SF formula BranchName__c = FullName__r.DKRetail__OrgName__c
             orgName = row.employeeOrgName,
             // D4=(a): SF formula EmployeeNumber__c = FullName__r.DKRetail__EmpCode__c
@@ -267,6 +279,10 @@ data class TeamMemberScheduleRow(
     val accountExternalKey: String?,
     val accountBranchName: String?,
     val accountName: String?,
+    val accountStatusCode: String?,
+    val accountType: AccountType?,
+    val abcTypeCode: String?,
+    val abcType: String?,
     val employeeOrgName: String?,
     val employeeCode: String?,
     val employeeJikwee: String?,

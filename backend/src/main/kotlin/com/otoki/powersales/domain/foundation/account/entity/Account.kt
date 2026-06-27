@@ -412,10 +412,7 @@ class Account(
      * 표시용 폴백("-" 등)은 호출 측(web/엑셀)에서 처리한다.
      */
     fun distributionChannelLabel(): String? =
-        listOfNotNull(accountStatusCode, accountType?.displayName)
-            .filter { it.isNotBlank() }
-            .joinToString(" ")
-            .ifBlank { null }
+        distributionChannelLabel(accountStatusCode, accountType?.displayName)
 
     /**
      * 거래처유형 — ABC유형코드(ABCTypeCode__c) + ABC유형(ABCType__c) 을 공백으로 조합한 표시 문자열.
@@ -424,9 +421,32 @@ class Account(
      * (거래처타입 enum 필드 [accountType] 과는 별개 — 화면 "거래처유형" 컬럼의 원천.)
      * 표시용 폴백("-" 등)은 호출 측(web/엑셀)에서 처리한다.
      */
-    fun abcTypeLabel(): String? =
-        listOfNotNull(abcTypeCode, abcType)
-            .filter { it.isNotBlank() }
-            .joinToString(" ")
-            .ifBlank { null }
+    fun abcTypeLabel(): String? = abcTypeLabel(abcTypeCode, abcType)
+
+    companion object {
+        /**
+         * 유통형태 라벨 조합 — 거래처상태코드 + 거래처유형명(displayName) 을 공백으로 조합.
+         *
+         * Account 엔티티를 hydrate 하지 않는 projection 조회(예: 월별 통합일정)에서도
+         * 동일 조합 규칙을 재사용하도록 companion 으로 분리. 인스턴스 메서드
+         * [distributionChannelLabel] 도 이 함수를 위임 호출한다.
+         */
+        fun distributionChannelLabel(accountStatusCode: String?, accountTypeName: String?): String? =
+            listOfNotNull(accountStatusCode, accountTypeName)
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
+                .ifBlank { null }
+
+        /**
+         * 거래처유형 라벨 조합 — ABC유형코드 + ABC유형 을 공백으로 조합.
+         *
+         * projection 조회에서 재사용하도록 companion 으로 분리. 인스턴스 메서드
+         * [abcTypeLabel] 도 이 함수를 위임 호출한다.
+         */
+        fun abcTypeLabel(abcTypeCode: String?, abcType: String?): String? =
+            listOfNotNull(abcTypeCode, abcType)
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
+                .ifBlank { null }
+    }
 }

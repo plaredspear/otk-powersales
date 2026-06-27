@@ -401,6 +401,8 @@ class AdminSalesComparisonService(
             accountBranchName = accountBranchName,
             accountCode = accountCode ?: "",
             accountName = accountName ?: "",
+            distributionChannelLabel = distributionChannelLabel,
+            abcTypeLabel = abcTypeLabel,
             employeeCode = employeeNumber ?: "",
             title = title,
             employeeName = employeeName ?: "",

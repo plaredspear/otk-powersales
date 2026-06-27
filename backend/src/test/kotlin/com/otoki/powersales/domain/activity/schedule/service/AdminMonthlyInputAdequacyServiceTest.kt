@@ -51,6 +51,8 @@ class AdminMonthlyInputAdequacyServiceTest {
         accountBranchName = "지점A",
         accountCode = accountCode,
         accountName = accountName,
+        distributionChannelLabel = null,
+        abcTypeLabel = null,
         employeeCode = employeeCode,
         title = null,
         employeeName = employeeName,

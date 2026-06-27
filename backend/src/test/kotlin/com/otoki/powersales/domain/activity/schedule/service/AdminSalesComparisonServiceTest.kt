@@ -79,6 +79,8 @@ class AdminSalesComparisonServiceTest {
         accountBranchName = "지점A",
         accountName = accountName,
         accountCode = accountCode,
+        distributionChannelLabel = null,
+        abcTypeLabel = null,
         orgName = "지점A",
         employeeNumber = employeeCode,
         title = null,

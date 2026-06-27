@@ -63,6 +63,10 @@ data class TeamMemberScheduleResultItem(
     val accountName: String?,
     /** 거래처 코드. SF formula `Account__r.ExternalKey__c`. */
     val accountCode: String?,
+    /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). */
+    val distributionChannelLabel: String?,
+    /** 거래처유형 — ABC유형코드 + ABC유형 조합 (예: "6111 이마트"). */
+    val abcTypeLabel: String?,
     /** 사원 조직명. SF formula `FullName__r.DKRetail__OrgName__c`. */
     val orgName: String?,
     /** 사번. SF formula `FullName__r.DKRetail__EmpCode__c`. */

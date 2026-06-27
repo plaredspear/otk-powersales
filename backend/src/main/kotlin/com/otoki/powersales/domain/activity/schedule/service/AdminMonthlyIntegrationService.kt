@@ -101,7 +101,7 @@ class AdminMonthlyIntegrationService(
         val sheet = workbook.createSheet("통합일정")
 
         val headers = listOf(
-            "소속", "거래처지점명", "거래처코드", "거래처명", "사번", "직위", "이름",
+            "소속", "거래처지점명", "거래처코드", "거래처명", "유통형태", "거래처유형", "사번", "직위", "이름",
             "근무형태1", "근무형태3", "근무형태4", "근무형태5",
             "총 투입횟수", "총 환산근무일수", "총 환산인원", "ABC마감실적"
         )
@@ -129,26 +129,28 @@ class AdminMonthlyIntegrationService(
             row.createCell(1).setCellValue(item.accountBranchName ?: "")
             row.createCell(2).setCellValue(item.accountCode)
             row.createCell(3).setCellValue(item.accountName)
-            row.createCell(4).setCellValue(item.employeeCode)
-            row.createCell(5).setCellValue(item.title ?: "")
-            row.createCell(6).setCellValue(item.employeeName)
-            row.createCell(7).setCellValue(item.workingCategory1)
-            row.createCell(8).setCellValue(item.workingCategory3 ?: "")
-            row.createCell(9).setCellValue(item.workingCategory4 ?: "")
-            row.createCell(10).setCellValue(item.workingCategory5 ?: "")
-            row.createCell(11).apply {
+            row.createCell(4).setCellValue(item.distributionChannelLabel ?: "")
+            row.createCell(5).setCellValue(item.abcTypeLabel ?: "")
+            row.createCell(6).setCellValue(item.employeeCode)
+            row.createCell(7).setCellValue(item.title ?: "")
+            row.createCell(8).setCellValue(item.employeeName)
+            row.createCell(9).setCellValue(item.workingCategory1)
+            row.createCell(10).setCellValue(item.workingCategory3 ?: "")
+            row.createCell(11).setCellValue(item.workingCategory4 ?: "")
+            row.createCell(12).setCellValue(item.workingCategory5 ?: "")
+            row.createCell(13).apply {
                 setCellValue(item.totalInputCount.toDouble())
                 cellStyle = intStyle
             }
-            row.createCell(12).apply {
+            row.createCell(14).apply {
                 setCellValue(item.equivalentWorkingDays.toDouble())
                 cellStyle = decimal3Style
             }
-            row.createCell(13).apply {
+            row.createCell(15).apply {
                 setCellValue(item.convertedHeadcount.toDouble())
                 cellStyle = decimal3Style
             }
-            row.createCell(14).apply {
+            row.createCell(16).apply {
                 setCellValue(item.avgClosingAmount.toDouble())
                 cellStyle = intStyle
             }
@@ -510,6 +512,8 @@ class AdminMonthlyIntegrationService(
                 accountBranchName = account?.branchName,
                 accountCode = account?.externalKey ?: "",
                 accountName = account?.name ?: "",
+                distributionChannelLabel = account?.distributionChannelLabel(),
+                abcTypeLabel = account?.abcTypeLabel(),
                 employeeCode = employee?.employeeCode ?: "",
                 title = null,
                 employeeName = employee?.name ?: "",
@@ -717,6 +721,8 @@ private fun TeamMemberScheduleResultItem.toMonthlyIntegrationItem(): MonthlyInte
         accountBranchName = accountBranchName,
         accountCode = accountCode ?: "",
         accountName = accountName ?: "",
+        distributionChannelLabel = distributionChannelLabel,
+        abcTypeLabel = abcTypeLabel,
         employeeCode = employeeNumber ?: "",
         title = title,
         employeeName = employeeName ?: "",
