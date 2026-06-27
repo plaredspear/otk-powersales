@@ -42,6 +42,17 @@ interface AccountRepository : JpaRepository<Account, Long>, AccountRepositoryCus
     fun findByNameContainingIgnoreCase(name: String): List<Account>
 
     /**
+     * 거래처명 또는 거래처코드(외부키) 부분 일치 조회 (진열스케줄 목록 필터).
+     *
+     * 단일 입력값을 거래처명/거래처코드 양쪽에 OR 매칭 — 사용자가 거래처명 input 에
+     * 거래처코드를 입력해도 동일하게 조회되도록 한다.
+     */
+    fun findByNameContainingIgnoreCaseOrExternalKeyContainingIgnoreCase(
+        name: String,
+        externalKey: String,
+    ): List<Account>
+
+    /**
      * 지점 코드 + 거래처 그룹 + 삭제되지 않은 거래처 조회 (조장용)
      */
     fun findByBranchCodeAndAccountGroupInAndIsDeletedNot(

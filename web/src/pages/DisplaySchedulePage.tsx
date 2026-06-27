@@ -573,11 +573,11 @@ export default function DisplaySchedulePage() {
             allowClear
           />
           <Input
-            placeholder="거래처명"
+            placeholder="거래처명/거래처코드"
             value={filterAccountName}
             onChange={(e) => setFilterAccountName(e.target.value)}
             onPressEnter={handleSearch}
-            style={{ width: 140 }}
+            style={{ width: 180 }}
             allowClear
           />
           <Select

@@ -365,7 +365,10 @@ class AdminDisplayWorkScheduleService(
         val pageable = PageRequest.of(page, pageSize, sort)
 
         val accountIds = if (!accountName.isNullOrBlank()) {
-            accountRepository.findByNameContainingIgnoreCase(accountName).map { it.id }
+            // 거래처명 input 에 거래처코드(externalKey)를 입력해도 조회되도록 OR 매칭
+            accountRepository
+                .findByNameContainingIgnoreCaseOrExternalKeyContainingIgnoreCase(accountName, accountName)
+                .map { it.id }
         } else {
             null
         }
@@ -400,7 +403,10 @@ class AdminDisplayWorkScheduleService(
         sort: Sort,
     ): ExcelResult {
         val accountIds = if (!accountName.isNullOrBlank()) {
-            accountRepository.findByNameContainingIgnoreCase(accountName).map { it.id }
+            // 거래처명 input 에 거래처코드(externalKey)를 입력해도 조회되도록 OR 매칭
+            accountRepository
+                .findByNameContainingIgnoreCaseOrExternalKeyContainingIgnoreCase(accountName, accountName)
+                .map { it.id }
         } else {
             null
         }
