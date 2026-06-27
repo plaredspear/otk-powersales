@@ -19,6 +19,9 @@ interface PromotionRepositoryCustom {
      *
      * `ownerOnly` 가 true 면 가시 범위 안에서 다시 `ownerUser.id = currentUserId` 로 좁힌다
      * (SF 웹 ListView 의 filterScope=Mine 대응). `currentUserId` 가 null 이면 매칭 0건이 되도록 한다.
+     *
+     * `accountName` 은 거래처명/거래처코드(`Account.externalKey`) OR like 검색 (진열스케줄마스터 정합),
+     * `accountNumber` 는 거래처번호(`Account.accountNumber`, SF `AccountNumber`) like 검색. 둘 다 AND 합성.
      */
     fun searchForAdmin(
         policyPredicate: Predicate,
@@ -26,6 +29,8 @@ interface PromotionRepositoryCustom {
         promotionType: PromotionType?,
         startDate: String?,
         endDate: String?,
+        accountName: String?,
+        accountNumber: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
         pageable: Pageable

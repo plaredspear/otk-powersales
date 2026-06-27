@@ -24924,6 +24924,24 @@
           }
         }, {
           "in" : "query",
+          "name" : "accountName",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountNumber",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 40,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "ownerOnly",
           "required" : false,
           "schema" : {
@@ -25031,6 +25049,24 @@
           "name" : "endDate",
           "required" : false,
           "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountName",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountNumber",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 40,
+            "minLength" : 1,
             "type" : "string"
           }
         }, {

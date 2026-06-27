@@ -64,7 +64,6 @@
             "type" : [ "string", "null" ]
           },
           "accountType" : {
-            "enum" : [ "대형마트(3대)", "체인", "백화점", "C.V.S", "농협", "슈퍼", "대리점", "홀세일", "편의점", "식자재", "단체급식", "유지베이커리", "외식", "제조", "군납", "기타", "온라인", "수출" ],
             "type" : [ "string", "null" ]
           },
           "address1" : {
@@ -405,7 +404,8 @@
             "type" : [ "string", "null" ]
           },
           "accountType" : {
-            "enum" : [ "대형마트(3대)", "체인", "백화점", "C.V.S", "농협", "슈퍼", "대리점", "홀세일", "편의점", "식자재", "단체급식", "유지베이커리", "외식", "제조", "군납", "기타", "온라인", "수출" ],
+            "maxLength" : 255,
+            "minLength" : 0,
             "type" : [ "string", "null" ]
           },
           "address1" : {
@@ -593,7 +593,6 @@
             "type" : [ "string", "null" ]
           },
           "accountType" : {
-            "enum" : [ "대형마트(3대)", "체인", "백화점", "C.V.S", "농협", "슈퍼", "대리점", "홀세일", "편의점", "식자재", "단체급식", "유지베이커리", "외식", "제조", "군납", "기타", "온라인", "수출" ],
             "type" : [ "string", "null" ]
           },
           "address1" : {
@@ -9779,6 +9778,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseScheduleBatchUnconfirmResultDto" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduleBatchUnconfirmResultDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseScheduleConfirmResultDto" : {
         "properties" : {
           "data" : {
@@ -13992,6 +14020,9 @@
           "abcTypeCode" : {
             "type" : [ "string", "null" ]
           },
+          "abcTypeLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "accountExternalKey" : {
             "type" : [ "string", "null" ]
           },
@@ -16273,6 +16304,9 @@
       },
       "MonthlyIntegrationScheduleItem" : {
         "properties" : {
+          "abcTypeLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "accountBranchName" : {
             "type" : [ "string", "null" ]
           },
@@ -16291,6 +16325,9 @@
           },
           "convertedHeadcount" : {
             "type" : "number"
+          },
+          "distributionChannelLabel" : {
+            "type" : [ "string", "null" ]
           },
           "employeeCode" : {
             "type" : "string"
@@ -18116,7 +18153,6 @@
             "type" : [ "string", "null" ]
           },
           "accountType" : {
-            "enum" : [ "대형마트(3대)", "체인", "백화점", "C.V.S", "농협", "슈퍼", "대리점", "홀세일", "편의점", "식자재", "단체급식", "유지베이커리", "외식", "제조", "군납", "기타", "온라인", "수출" ],
             "type" : [ "string", "null" ]
           },
           "branchCode" : {
@@ -22139,6 +22175,40 @@
         },
         "type" : "object"
       },
+      "ScheduleBatchUnconfirmFailure" : {
+        "properties" : {
+          "errorCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduleBatchUnconfirmResultDto" : {
+        "properties" : {
+          "failedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "failures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ScheduleBatchUnconfirmFailure"
+            },
+            "type" : "array"
+          },
+          "updatedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "ScheduleConfirmRequest" : {
         "properties" : {
           "uploadId" : {
@@ -22344,6 +22414,10 @@
           "accountType" : {
             "type" : [ "string", "null" ]
           },
+          "attendanceCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "branchName" : {
             "type" : [ "string", "null" ]
           },
@@ -22389,6 +22463,12 @@
             "type" : [ "string", "null" ]
           },
           "typeOfWork5" : {
+            "type" : [ "string", "null" ]
+          },
+          "valid" : {
+            "type" : [ "string", "null" ]
+          },
+          "validData" : {
             "type" : [ "string", "null" ]
           }
         },
@@ -23435,6 +23515,9 @@
       },
       "TeamMemberScheduleResultItem" : {
         "properties" : {
+          "abcTypeLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "accountBranchName" : {
             "type" : [ "string", "null" ]
           },
@@ -23449,6 +23532,9 @@
           },
           "convertedHeadcount" : {
             "type" : "number"
+          },
+          "distributionChannelLabel" : {
+            "type" : [ "string", "null" ]
           },
           "employeeName" : {
             "type" : [ "string", "null" ]
@@ -26460,6 +26546,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "accountType",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "confirmed",
           "required" : false,
           "schema" : {
@@ -26571,6 +26664,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "accountType",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "confirmed",
           "required" : false,
           "schema" : {
@@ -26667,6 +26767,14 @@
     "/api/v1/admin/display-work-schedule/unconfirm" : {
       "patch" : {
         "operationId" : "batchUnconfirm",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -26682,7 +26790,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchConfirmResultDto"
+                  "$ref" : "#/components/schemas/ApiResponseScheduleBatchUnconfirmResultDto"
                 }
               }
             },
@@ -31702,6 +31810,24 @@
           }
         }, {
           "in" : "query",
+          "name" : "accountName",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountNumber",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 40,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "ownerOnly",
           "required" : false,
           "schema" : {
@@ -31809,6 +31935,24 @@
           "name" : "endDate",
           "required" : false,
           "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountName",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountNumber",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 40,
+            "minLength" : 1,
             "type" : "string"
           }
         }, {
@@ -34437,6 +34581,20 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "distributionKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypeKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -34583,6 +34741,20 @@
         }, {
           "in" : "query",
           "name" : "accountKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "distributionKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypeKeyword",
           "required" : false,
           "schema" : {
             "type" : "string"

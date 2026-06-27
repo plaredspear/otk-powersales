@@ -43,9 +43,17 @@ export default function PromotionListPage() {
   const canReadUser = hasEntityPermission('user', 'READ');
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
   const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
-    defaultFilters: { promotionType: '', startDate: '', endDate: '', keyword: '', ownerOnly: '' },
+    defaultFilters: {
+      promotionType: '',
+      startDate: '',
+      endDate: '',
+      keyword: '',
+      accountName: '',
+      accountNumber: '',
+      ownerOnly: '',
+    },
   });
-  const { promotionType, startDate, endDate, keyword, ownerOnly } = filters;
+  const { promotionType, startDate, endDate, keyword, accountName, accountNumber, ownerOnly } = filters;
 
   // 저장된 검색 적용 — 모든 필터 키를 명시적으로 덮어써 이전 조건 잔존을 막는다.
   const applySavedSearch = (saved: Record<string, string>) => {
@@ -54,17 +62,29 @@ export default function PromotionListPage() {
       startDate: saved.startDate ?? '',
       endDate: saved.endDate ?? '',
       keyword: saved.keyword ?? '',
+      accountName: saved.accountName ?? '',
+      accountNumber: saved.accountNumber ?? '',
       ownerOnly: saved.ownerOnly ?? '',
     });
   };
 
   // 저장 대상 필터 + 사람이 읽는 미리보기.
-  const savedFilters: Record<string, string> = { promotionType, startDate, endDate, keyword, ownerOnly };
+  const savedFilters: Record<string, string> = {
+    promotionType,
+    startDate,
+    endDate,
+    keyword,
+    accountName,
+    accountNumber,
+    ownerOnly,
+  };
   const savedPreview = [
     { label: '행사유형', value: promotionType || '전체' },
     { label: '시작일', value: startDate },
     { label: '종료일', value: endDate },
     { label: '검색어', value: keyword },
+    { label: '거래처', value: accountName },
+    { label: '거래처번호', value: accountNumber },
     { label: '범위', value: ownerOnly === 'true' ? '내 행사만' : '전체' },
   ];
 
@@ -86,6 +106,8 @@ export default function PromotionListPage() {
     promotionType: promotionType || undefined,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
+    accountName: accountName || undefined,
+    accountNumber: accountNumber || undefined,
     ownerOnly: ownerOnly === 'true' || undefined,
     page,
     size: 20,
@@ -106,6 +128,8 @@ export default function PromotionListPage() {
           promotionType: promotionType || undefined,
           startDate: startDate || undefined,
           endDate: endDate || undefined,
+          accountName: accountName || undefined,
+          accountNumber: accountNumber || undefined,
           ownerOnly: ownerOnly === 'true' || undefined,
         }),
         totalCount: data?.totalElements ?? 0,
@@ -303,6 +327,22 @@ export default function PromotionListPage() {
           defaultValue={keyword ?? ''}
           style={{ width: 250 }}
           onSearch={(val) => setFilter('keyword', val)}
+        />
+        <Input.Search
+          key={`account-${accountName}`}
+          placeholder="거래처명/거래처코드"
+          allowClear
+          defaultValue={accountName ?? ''}
+          style={{ width: 180 }}
+          onSearch={(val) => setFilter('accountName', val)}
+        />
+        <Input.Search
+          key={`accountNumber-${accountNumber}`}
+          placeholder="거래처번호"
+          allowClear
+          defaultValue={accountNumber ?? ''}
+          style={{ width: 150 }}
+          onSearch={(val) => setFilter('accountNumber', val)}
         />
         <Checkbox
           checked={ownerOnly === 'true'}

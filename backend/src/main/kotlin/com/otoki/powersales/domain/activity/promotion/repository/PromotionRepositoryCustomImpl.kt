@@ -37,6 +37,8 @@ class PromotionRepositoryCustomImpl(
         promotionType: PromotionType?,
         startDate: String?,
         endDate: String?,
+        accountName: String?,
+        accountNumber: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
         pageable: Pageable
@@ -50,6 +52,22 @@ class PromotionRepositoryCustomImpl(
             val lowerPattern = "%${keyword.lowercase()}%"
             builder.and(
                 promotion.promotionNumber.lower().like(lowerPattern)
+            )
+        }
+
+        // 거래처 필터 — 진열스케줄마스터 정합. 거래처명/거래처코드(externalKey) OR like 검색.
+        if (!accountName.isNullOrBlank()) {
+            val lowerPattern = "%${accountName.lowercase()}%"
+            builder.and(
+                account.name.lower().like(lowerPattern)
+                    .or(account.externalKey.lower().like(lowerPattern))
+            )
+        }
+
+        // 거래처번호(accountNumber, SF AccountNumber) like 검색 — 거래처코드(externalKey)와 별개 필드.
+        if (!accountNumber.isNullOrBlank()) {
+            builder.and(
+                account.accountNumber.lower().like("%${accountNumber.lowercase()}%")
             )
         }
 
@@ -97,6 +115,8 @@ class PromotionRepositoryCustomImpl(
         val countQuery = queryFactory
             .select(promotion.count())
             .from(promotion)
+            // 거래처 필터(account.name/externalKey/accountNumber) 가 builder 에 포함될 수 있으므로 count 에도 account join.
+            .leftJoin(promotion.account, account)
             .leftJoin(promotion.ownerUser)
             .where(builder)
 
