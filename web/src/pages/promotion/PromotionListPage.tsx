@@ -51,10 +51,21 @@ export default function PromotionListPage() {
       accountName: '',
       accountNumber: '',
       category1: '',
+      primaryProduct: '',
       ownerOnly: '',
     },
   });
-  const { promotionType, startDate, endDate, keyword, accountName, accountNumber, category1, ownerOnly } = filters;
+  const {
+    promotionType,
+    startDate,
+    endDate,
+    keyword,
+    accountName,
+    accountNumber,
+    category1,
+    primaryProduct,
+    ownerOnly,
+  } = filters;
 
   // 저장된 검색 적용 — 모든 필터 키를 명시적으로 덮어써 이전 조건 잔존을 막는다.
   const applySavedSearch = (saved: Record<string, string>) => {
@@ -66,6 +77,7 @@ export default function PromotionListPage() {
       accountName: saved.accountName ?? '',
       accountNumber: saved.accountNumber ?? '',
       category1: saved.category1 ?? '',
+      primaryProduct: saved.primaryProduct ?? '',
       ownerOnly: saved.ownerOnly ?? '',
     });
   };
@@ -79,6 +91,7 @@ export default function PromotionListPage() {
     accountName,
     accountNumber,
     category1,
+    primaryProduct,
     ownerOnly,
   };
   const savedPreview = [
@@ -89,6 +102,7 @@ export default function PromotionListPage() {
     { label: '거래처', value: accountName },
     { label: '거래처번호', value: accountNumber },
     { label: '제품유형', value: category1 },
+    { label: '대표제품', value: primaryProduct },
     { label: '범위', value: ownerOnly === 'true' ? '내 행사만' : '전체' },
   ];
 
@@ -113,6 +127,7 @@ export default function PromotionListPage() {
     accountName: accountName || undefined,
     accountNumber: accountNumber || undefined,
     category1: category1 || undefined,
+    primaryProduct: primaryProduct || undefined,
     ownerOnly: ownerOnly === 'true' || undefined,
     page,
     size: 20,
@@ -136,6 +151,7 @@ export default function PromotionListPage() {
           accountName: accountName || undefined,
           accountNumber: accountNumber || undefined,
           category1: category1 || undefined,
+          primaryProduct: primaryProduct || undefined,
           ownerOnly: ownerOnly === 'true' || undefined,
         }),
         totalCount: data?.totalElements ?? 0,
@@ -357,6 +373,14 @@ export default function PromotionListPage() {
           defaultValue={category1 ?? ''}
           style={{ width: 150 }}
           onSearch={(val) => setFilter('category1', val)}
+        />
+        <Input.Search
+          key={`primaryProduct-${primaryProduct}`}
+          placeholder="제품명/제품코드"
+          allowClear
+          defaultValue={primaryProduct ?? ''}
+          style={{ width: 180 }}
+          onSearch={(val) => setFilter('primaryProduct', val)}
         />
         <Checkbox
           checked={ownerOnly === 'true'}

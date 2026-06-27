@@ -40,6 +40,7 @@ class PromotionRepositoryCustomImpl(
         accountName: String?,
         accountNumber: String?,
         category1: String?,
+        primaryProduct: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
         pageable: Pageable
@@ -78,6 +79,15 @@ class PromotionRepositoryCustomImpl(
         if (!category1.isNullOrBlank()) {
             builder.and(
                 product.storeConditionText.lower().like("%${category1.lowercase()}%")
+            )
+        }
+
+        // 대표제품 필터 — 제품명(name)/제품코드(productCode) OR like 검색.
+        if (!primaryProduct.isNullOrBlank()) {
+            val lowerPattern = "%${primaryProduct.lowercase()}%"
+            builder.and(
+                product.name.lower().like(lowerPattern)
+                    .or(product.productCode.lower().like(lowerPattern))
             )
         }
 
