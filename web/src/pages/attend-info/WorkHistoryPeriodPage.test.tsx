@@ -12,10 +12,12 @@ vi.mock('@/api/attendInfo', async () => {
     ...actual,
     fetchAttendInfoBranches: vi.fn().mockResolvedValue([]),
     fetchWorkHistoryPeriodSummary: vi.fn(),
+    fetchWorkHistoryPeriodSummaryExport: vi.fn().mockResolvedValue(undefined),
   };
 });
 
 const mockedSummary = vi.mocked(api.fetchWorkHistoryPeriodSummary);
+const mockedExport = vi.mocked(api.fetchWorkHistoryPeriodSummaryExport);
 
 function renderPage() {
   const client = new QueryClient({
@@ -85,6 +87,40 @@ describe('WorkHistoryPeriodPage', () => {
       expect(screen.getByText('총 1명')).toBeInTheDocument();
     });
     expect(mockedSummary).toHaveBeenCalled();
+  });
+
+  it('조회 결과가 있으면 엑셀 다운로드 버튼이 활성화되고 클릭 시 export API 를 호출한다', async () => {
+    mockedSummary.mockResolvedValue({
+      fromYearMonth: '2026-05',
+      toYearMonth: '2026-06',
+      totalCount: 1,
+      items: [
+        {
+          orgName: '강남지점',
+          employeeCode: '20230016',
+          employeeName: '홍길동',
+          title: '사원',
+          totalWorkingDays: 12,
+          workingAccountCount: 3,
+          displayDays: 8,
+          eventDays: 4,
+          workDays: 10,
+          annualLeaveDays: 1,
+          altHolidayDays: 1,
+        },
+      ],
+    });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /조회/ }));
+    const exportBtn = await screen.findByRole('button', { name: /엑셀 다운로드/ });
+    await waitFor(() => expect(exportBtn).not.toBeDisabled());
+    fireEvent.click(exportBtn);
+    await waitFor(() => expect(mockedExport).toHaveBeenCalled());
+  });
+
+  it('조회 전에는 엑셀 다운로드 버튼이 비활성화된다', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: /엑셀 다운로드/ })).toBeDisabled();
   });
 
   it('조회 결과가 없으면 빈 메시지를 표시한다', async () => {

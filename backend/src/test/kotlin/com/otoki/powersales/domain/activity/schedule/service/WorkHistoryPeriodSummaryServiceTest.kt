@@ -211,6 +211,24 @@ class WorkHistoryPeriodSummaryServiceTest {
     }
 
     @Nested
+    @DisplayName("엑셀 export")
+    inner class Export {
+
+        @Test
+        @DisplayName("11컬럼 xlsx 생성 + 파일명 기간별근무내역_from_to")
+        fun exportsXlsx() {
+            every { repository.findWorkHistoryForPeriod(any(), any(), any(), any()) } returns listOf(
+                schedule(employee()),
+            )
+
+            val result = service.exportSummary(allScope, "2026-05", "2026-06", emptyList(), null)
+
+            assertThat(result.filename).isEqualTo("기간별근무내역_2026-05_2026-06.xlsx")
+            assertThat(result.bytes).isNotEmpty()
+        }
+    }
+
+    @Nested
     @DisplayName("파라미터 검증")
     inner class Validation {
 

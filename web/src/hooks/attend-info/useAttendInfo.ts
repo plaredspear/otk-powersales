@@ -5,6 +5,7 @@ import {
   fetchAttendInfoBranches,
   fetchAttendInfoMembers,
   fetchWorkHistoryPeriodSummary,
+  fetchWorkHistoryPeriodSummaryExport,
   getAttendInfo,
   searchAttendInfo,
   updateAttendInfo,
@@ -58,6 +59,13 @@ export function useWorkHistoryPeriodSummary(params: FetchWorkHistoryPeriodSummar
     queryKey: [...QUERY_KEY, 'period-summary', params],
     queryFn: () => fetchWorkHistoryPeriodSummary(params!),
     enabled: params != null,
+  });
+}
+
+/** 기간별 근무내역(개인) 엑셀 다운로드. */
+export function useWorkHistoryPeriodSummaryExport() {
+  return useMutation({
+    mutationFn: (params: FetchWorkHistoryPeriodSummaryParams) => fetchWorkHistoryPeriodSummaryExport(params),
   });
 }
 

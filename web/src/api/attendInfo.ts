@@ -1,4 +1,5 @@
 import client from './client';
+import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 import type { Branch, TeamMember } from './team-schedule';
 
@@ -245,4 +246,23 @@ export async function fetchWorkHistoryPeriodSummary(
     throw new Error(res.data.error?.message || res.data.message || '기간별 근무내역 조회에 실패했습니다');
   }
   return res.data.data;
+}
+
+/** 기간별 근무내역(개인) 엑셀 다운로드 — 조회와 동일 필터/스코프. */
+export async function fetchWorkHistoryPeriodSummaryExport(
+  params: FetchWorkHistoryPeriodSummaryParams,
+): Promise<void> {
+  const trimmedKeyword = params.keyword?.trim();
+  await downloadExcel(
+    `${BASE}/period-summary/export`,
+    `기간별근무내역_${params.fromYearMonth}_${params.toYearMonth}.xlsx`,
+    {
+      params: {
+        fromYearMonth: params.fromYearMonth,
+        toYearMonth: params.toYearMonth,
+        costCenterCodes: params.costCenterCodes.join(','),
+        ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
+      },
+    },
+  );
 }

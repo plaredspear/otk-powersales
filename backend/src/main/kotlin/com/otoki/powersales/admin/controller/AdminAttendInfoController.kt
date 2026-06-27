@@ -16,6 +16,7 @@ import com.otoki.powersales.domain.activity.schedule.service.WorkHistoryPeriodSu
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
+import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
@@ -64,6 +65,28 @@ class AdminAttendInfoController(
             keyword = keyword,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 기간별 근무내역(개인) 엑셀 export — 조회와 동일 필터/스코프.
+     */
+    @GetMapping("/period-summary/export")
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
+    fun exportPeriodSummary(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam fromYearMonth: String,
+        @RequestParam toYearMonth: String,
+        @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
+        @RequestParam(required = false) keyword: String?,
+    ): ResponseEntity<ByteArray> {
+        val result = workHistoryPeriodSummaryService.exportSummary(
+            scope = scope,
+            fromYearMonth = fromYearMonth,
+            toYearMonth = toYearMonth,
+            costCenterCodes = costCenterCodes,
+            keyword = keyword,
+        )
+        return ExcelResponseUtils.build(result)
     }
 
     /**

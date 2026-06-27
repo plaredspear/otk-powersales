@@ -7,6 +7,9 @@ import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
+import com.otoki.powersales.platform.common.util.excel.ExcelResult
+import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.YearMonth
@@ -72,6 +75,56 @@ class WorkHistoryPeriodSummaryService(
             items = items,
             totalCount = items.size,
         )
+    }
+
+    /**
+     * 기간별 근무내역 집계 엑셀 export — 조회와 동일 필터/스코프.
+     */
+    fun exportSummary(
+        scope: DataScope,
+        fromYearMonth: String,
+        toYearMonth: String,
+        costCenterCodes: List<String>,
+        keyword: String?,
+    ): ExcelResult {
+        val response = getSummary(scope, fromYearMonth, toYearMonth, costCenterCodes, keyword)
+
+        val workbook = XSSFWorkbook()
+        val sheet = workbook.createSheet("기간별근무내역")
+        val headerStyle = ExcelStyleSupport.primaryHeaderStyle(workbook)
+
+        val headers = listOf(
+            "소속지점", "사번", "이름", "직위",
+            "총 근무일수", "근무 거래처 수", "진열", "행사", "근무", "연차", "대휴",
+        )
+        val headerRow = sheet.createRow(0)
+        headers.forEachIndexed { i, h ->
+            headerRow.createCell(i).apply {
+                setCellValue(h)
+                cellStyle = headerStyle
+            }
+        }
+        sheet.createFreezePane(0, 1)
+
+        response.items.forEachIndexed { idx, item ->
+            val row = sheet.createRow(idx + 1)
+            row.createCell(0).setCellValue(item.orgName ?: "")
+            row.createCell(1).setCellValue(item.employeeCode ?: "")
+            row.createCell(2).setCellValue(item.employeeName ?: "")
+            row.createCell(3).setCellValue(item.title ?: "")
+            row.createCell(4).setCellValue(item.totalWorkingDays.toDouble())
+            row.createCell(5).setCellValue(item.workingAccountCount.toDouble())
+            row.createCell(6).setCellValue(item.displayDays.toDouble())
+            row.createCell(7).setCellValue(item.eventDays.toDouble())
+            row.createCell(8).setCellValue(item.workDays.toDouble())
+            row.createCell(9).setCellValue(item.annualLeaveDays.toDouble())
+            row.createCell(10).setCellValue(item.altHolidayDays.toDouble())
+        }
+        headers.indices.forEach { sheet.autoSizeColumn(it) }
+
+        val bytes = ExcelStyleSupport.workbookToBytes(workbook)
+        val filename = "기간별근무내역_%s_%s.xlsx".format(response.fromYearMonth, response.toYearMonth)
+        return ExcelResult(bytes, filename)
     }
 
     /**

@@ -6,16 +6,21 @@ import {
   Empty,
   Input,
   InputNumber,
+  message,
   Select,
   Space,
   Spin,
   Tag,
   Typography,
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
-import { useAttendInfoBranches, useWorkHistoryPeriodSummary } from '@/hooks/attend-info/useAttendInfo';
+import {
+  useAttendInfoBranches,
+  useWorkHistoryPeriodSummary,
+  useWorkHistoryPeriodSummaryExport,
+} from '@/hooks/attend-info/useAttendInfo';
 import type { WorkHistoryPeriodSummaryItem } from '@/api/attendInfo';
 import ResizableTable from '@/components/common/ResizableTable';
 
@@ -84,6 +89,7 @@ export default function WorkHistoryPeriodPage() {
   const singleBranch = branches.length === 1;
 
   const { data, isLoading, isError, error } = useWorkHistoryPeriodSummary(queryParams);
+  const exportMutation = useWorkHistoryPeriodSummaryExport();
 
   const fromYm = toYearMonth(fromYear, fromMonth);
   const toYm = toYearMonth(toYear, toMonth);
@@ -99,6 +105,16 @@ export default function WorkHistoryPeriodPage() {
   const handleToggleAll = () => {
     setSelectedCodes(allSelected ? [] : allCodes);
   };
+
+  const handleExport = () => {
+    if (!queryParams) return;
+    exportMutation.mutate(queryParams, {
+      onError: (e) =>
+        message.error(e instanceof Error ? e.message : '엑셀 다운로드에 실패했습니다'),
+    });
+  };
+
+  const exportDisabled = queryParams == null || !data || data.items.length === 0;
 
   return (
     <div style={{ padding: 16 }}>
@@ -209,6 +225,14 @@ export default function WorkHistoryPeriodPage() {
             loading={isLoading}
           >
             조회
+          </Button>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={handleExport}
+            disabled={exportDisabled}
+            loading={exportMutation.isPending}
+          >
+            엑셀 다운로드
           </Button>
         </Space>
       </div>
