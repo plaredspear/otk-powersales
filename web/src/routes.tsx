@@ -59,6 +59,7 @@ const EmployeeInputCriteriaMasterListPage = lazy(
   () => import('@/pages/employee-input-criteria-masters/EmployeeInputCriteriaMasterListPage'),
 );
 const AttendInfoPage = lazy(() => import('@/pages/attend-info/AttendInfoPage'));
+const WorkHistoryPeriodPage = lazy(() => import('@/pages/attend-info/WorkHistoryPeriodPage'));
 const MonthlyIntegrationSchedulePage = lazy(() => import('@/pages/schedules/MonthlyIntegrationSchedulePage'));
 const CategorySchedulePage = lazy(() => import('@/pages/schedules/CategorySchedulePage'));
 const MonthlyInputAdequacyPage = lazy(() => import('@/pages/MonthlyInputAdequacyPage'));
@@ -158,6 +159,7 @@ export const router = createBrowserRouter(
                   element: <PermissionRoute entity="attend_info" operation="READ" />,
                   children: [
                     { path: '/attend-info', element: <LazyWrapper><AttendInfoPage /></LazyWrapper> },
+                    { path: '/work-history-period', element: <LazyWrapper><WorkHistoryPeriodPage /></LazyWrapper> },
                   ],
                 },
                 { path: '/claims', element: <LazyWrapper><ClaimListPage /></LazyWrapper> },

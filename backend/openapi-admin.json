@@ -8454,6 +8454,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseWorkHistoryPeriodSummaryResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WorkHistoryPeriodSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseWorkingDayMasterListResponse" : {
         "properties" : {
           "data" : {
@@ -17226,6 +17255,72 @@
         },
         "type" : "object"
       },
+      "WorkHistoryPeriodSummaryItem" : {
+        "properties" : {
+          "altHolidayDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "annualLeaveDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "displayDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "eventDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalWorkingDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workingAccountCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "WorkHistoryPeriodSummaryResponse" : {
+        "properties" : {
+          "fromYearMonth" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/WorkHistoryPeriodSummaryItem"
+            },
+            "type" : "array"
+          },
+          "toYearMonth" : {
+            "type" : "string"
+          },
+          "totalCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "WorkTypeCount" : {
         "properties" : {
           "convertedHeadcount" : {
@@ -18443,6 +18538,123 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListTeamMemberDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-attend-info-controller" ]
+      }
+    },
+    "/api/v1/admin/attend-info/period-summary" : {
+      "get" : {
+        "operationId" : "getPeriodSummary",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "fromYearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "toYearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : false,
+          "schema" : {
+            "default" : [ ],
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseWorkHistoryPeriodSummaryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-attend-info-controller" ]
+      }
+    },
+    "/api/v1/admin/attend-info/period-summary/export" : {
+      "get" : {
+        "operationId" : "exportPeriodSummary",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "fromYearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "toYearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : false,
+          "schema" : {
+            "default" : [ ],
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
                 }
               }
             },
