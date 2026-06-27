@@ -35,6 +35,9 @@ function formatNumber(value: number): string {
 // 부모의 데이터 컬럼 시작점과 자식 컬럼 시작점을 정렬한다.
 const EXPAND_COLUMN_WIDTH = 48;
 
+// 조회 가능한 최대 기간(개월). backend WorkHistoryPeriodSummaryService.MAX_RANGE_MONTHS 와 정합.
+const MAX_RANGE_MONTHS = 6;
+
 // 각 컬럼에 기본 width 를 지정해야 ResizableTable 의 헤더 리사이즈 핸들이 활성화된다.
 const COLUMNS: ColumnsType<WorkHistoryPeriodSummaryItem> = [
   { title: '소속지점', dataIndex: 'orgName', width: 120, ellipsis: true, render: (v: string | null) => v ?? '-' },
@@ -137,7 +140,13 @@ export default function WorkHistoryPeriodPage() {
 
   const fromYm = toYearMonth(fromYear, fromMonth);
   const toYm = toYearMonth(toYear, toMonth);
-  const rangeInvalid = fromYm > toYm;
+  const reversed = fromYm > toYm;
+  // 시작~종료 포함 개월 수 (예: 2026-01 ~ 2026-06 = 6). 역순일 땐 의미 없으므로 0 처리.
+  const inclusiveMonths = reversed
+    ? 0
+    : (toYear - fromYear) * 12 + (toMonth - fromMonth) + 1;
+  const exceedsMax = inclusiveMonths > MAX_RANGE_MONTHS;
+  const rangeInvalid = reversed || exceedsMax;
 
   const handleSearch = () => {
     if (rangeInvalid) return;
@@ -299,10 +308,17 @@ export default function WorkHistoryPeriodPage() {
         </Space>
       </div>
 
-      {rangeInvalid && (
+      {reversed && (
         <Alert
           type="warning"
           message="시작 년월은 종료 년월보다 이후일 수 없습니다"
+          style={{ marginBottom: 16 }}
+        />
+      )}
+      {!reversed && exceedsMax && (
+        <Alert
+          type="warning"
+          message={`조회 기간은 최대 ${MAX_RANGE_MONTHS}개월까지 가능합니다`}
           style={{ marginBottom: 16 }}
         />
       )}

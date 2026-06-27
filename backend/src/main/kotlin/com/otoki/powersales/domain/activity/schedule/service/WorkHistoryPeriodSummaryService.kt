@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import java.time.temporal.ChronoUnit
 
 /**
  * 기간별 근무내역(개인) 집계 서비스.
@@ -240,9 +241,15 @@ class WorkHistoryPeriodSummaryService(
         if (from.isAfter(to)) {
             throw InvalidParameterException("시작년월은 종료년월보다 이후일 수 없습니다")
         }
+        // 시작~종료 포함 최대 MAX_RANGE_MONTHS 개월. (차이 개월 수 + 1 = 포함 개월 수)
+        val inclusiveMonths = ChronoUnit.MONTHS.between(from, to) + 1
+        if (inclusiveMonths > MAX_RANGE_MONTHS) {
+            throw InvalidParameterException("조회 기간은 최대 ${MAX_RANGE_MONTHS}개월까지 가능합니다")
+        }
     }
 
     companion object {
         private val YEAR_MONTH_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM")
+        private const val MAX_RANGE_MONTHS = 6L
     }
 }
