@@ -75,6 +75,7 @@ describe('WorkHistoryPeriodPage', () => {
           workDays: 10,
           annualLeaveDays: 1,
           altHolidayDays: 1,
+          monthlyBreakdown: [],
         },
       ],
     });
@@ -87,6 +88,61 @@ describe('WorkHistoryPeriodPage', () => {
       expect(screen.getByText('총 1명')).toBeInTheDocument();
     });
     expect(mockedSummary).toHaveBeenCalled();
+  });
+
+  it('월별 분해가 있는 행은 펼치면 각 월 통계가 표시된다', async () => {
+    mockedSummary.mockResolvedValue({
+      fromYearMonth: '2026-05',
+      toYearMonth: '2026-06',
+      totalCount: 1,
+      items: [
+        {
+          orgName: '강남지점',
+          employeeCode: '20230016',
+          employeeName: '홍길동',
+          title: '사원',
+          totalWorkingDays: 12,
+          workingAccountCount: 3,
+          displayDays: 8,
+          eventDays: 4,
+          workDays: 10,
+          annualLeaveDays: 1,
+          altHolidayDays: 1,
+          monthlyBreakdown: [
+            {
+              yearMonth: '2026-05',
+              totalWorkingDays: 5,
+              workingAccountCount: 2,
+              displayDays: 3,
+              eventDays: 2,
+              workDays: 5,
+              annualLeaveDays: 0,
+              altHolidayDays: 0,
+            },
+            {
+              yearMonth: '2026-06',
+              totalWorkingDays: 7,
+              workingAccountCount: 3,
+              displayDays: 5,
+              eventDays: 2,
+              workDays: 5,
+              annualLeaveDays: 1,
+              altHolidayDays: 1,
+            },
+          ],
+        },
+      ],
+    });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /조회/ }));
+    // 집계 행이 먼저 렌더된 뒤에 펼침(expand) 버튼이 나타난다.
+    await screen.findByText('홍길동');
+    const expandBtn = await screen.findByRole('button', { name: /Expand row/i });
+    fireEvent.click(expandBtn);
+    await waitFor(() => {
+      expect(screen.getByText('2026-05')).toBeInTheDocument();
+      expect(screen.getByText('2026-06')).toBeInTheDocument();
+    });
   });
 
   it('조회 결과가 있으면 엑셀 다운로드 버튼이 활성화되고 클릭 시 export API 를 호출한다', async () => {
@@ -107,6 +163,7 @@ describe('WorkHistoryPeriodPage', () => {
           workDays: 10,
           annualLeaveDays: 1,
           altHolidayDays: 1,
+          monthlyBreakdown: [],
         },
       ],
     });
