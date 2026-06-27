@@ -10,6 +10,15 @@ import java.time.LocalDateTime
 interface TeamMemberScheduleRepositoryCustom {
 
     /**
+     * 진열스케줄마스터 목록 출근등록 수 표시용 — 진열마스터 id 목록별 **실제 출근(commuteReportDatetime 채워짐)**
+     * 일정 건수를 페이지 단위 1쿼리로 집계 (id IN + GROUP BY, N+1 회피).
+     * 출근 0건 마스터는 결과에서 제외되므로, 반환 Map 에 키가 없으면 호출처가 0 으로 처리한다.
+     *
+     * @return Map<displayWorkScheduleId, attendanceCount> (출근 1건 이상인 마스터만 포함)
+     */
+    fun countAttendedByDisplayWorkScheduleIds(scheduleIds: List<Long>): Map<Long, Long>
+
+    /**
      * 출근 등록 시점의 attendance_log id-FK 채움 (Spec #789 — sfid 비즈니스 로직 사용 금지 정책 정합).
      * 운영에서는 HC sync 가 sfid 컬럼을 채우고 본 메서드는 application 레이어 backlink 보강 책임 (dev mock 측 동등 시뮬레이션 포함).
      */

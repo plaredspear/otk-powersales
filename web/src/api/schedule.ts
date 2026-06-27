@@ -71,6 +71,8 @@ export interface ScheduleListItem {
   confirmed: boolean | null;
   costCenterCode: string | null;
   lastMonthRevenue: number | null;
+  /** 연결 여사원일정 중 실제 출근(출근보고시각 채워짐)한 건수 — 1 이상이면 수정 불가 */
+  attendanceCount: number;
 }
 
 export interface ScheduleListResponse {
@@ -110,6 +112,19 @@ export interface ScheduleListParams {
 
 export interface ScheduleBatchConfirmResult {
   updatedCount: number;
+}
+
+export interface ScheduleBatchUnconfirmFailure {
+  id: number;
+  errorCode: string;
+  message: string;
+}
+
+/** 확정 해제 결과 — partial success (관리자 등급 / 사업소 scope / 출근 안전망 차단 건은 failures 기록). */
+export interface ScheduleBatchUnconfirmResult {
+  updatedCount: number;
+  failedCount: number;
+  failures: ScheduleBatchUnconfirmFailure[];
 }
 
 export interface ScheduleBatchDeleteFailure {
@@ -334,8 +349,8 @@ export async function batchDeleteSchedules(ids: number[]): Promise<ScheduleBatch
   return res.data.data;
 }
 
-export async function batchUnconfirmSchedules(ids: number[]): Promise<ScheduleBatchConfirmResult> {
-  const res = await client.patch<ApiResponse<ScheduleBatchConfirmResult>>(
+export async function batchUnconfirmSchedules(ids: number[]): Promise<ScheduleBatchUnconfirmResult> {
+  const res = await client.patch<ApiResponse<ScheduleBatchUnconfirmResult>>(
     '/api/v1/admin/display-work-schedule/unconfirm',
     { ids },
   );

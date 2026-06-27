@@ -33,6 +33,7 @@ import { PresetFilterSelect, type PresetOption } from '@/components/common/Prese
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { useAuthStore } from '@/stores/authStore';
 
 /**
  * 레거시 SF List View 10개 매핑 — `docs/plan/legacy-pages/진열사원스케줄마스터/UC-01.md` 참조.
@@ -111,7 +112,10 @@ function renderValidLight(valid: string | null, validData: string | null) {
 function buildListColumns(
   onEdit: (row: ScheduleListItem) => void,
   onConfirm: (row: ScheduleListItem) => void,
+  onUnconfirm: (row: ScheduleListItem) => void,
   confirming: boolean,
+  unconfirming: boolean,
+  canUnconfirm: boolean,
   navigate: NavigateFunction,
 ): ColumnsType<ScheduleListItem> {
   // SF 「진열사원 스케줄 마스터」 List View 컬럼 순서 정합:
@@ -225,19 +229,52 @@ function buildListColumns(
       fixed: 'right',
       render: (_, row) => (
         <Space size={4}>
-          <Button size="small" onClick={() => onEdit(row)}>
-            수정
-          </Button>
-          {!row.confirmed && (
-            <Button
-              size="small"
-              type="primary"
-              loading={confirming}
-              onClick={() => onConfirm(row)}
-            >
-              확정
+          {row.attendanceCount > 0 && row.endDate != null ? (
+            <Tooltip placement="left" title={`출근 등록(${row.attendanceCount}건)된 스케줄은 수정할 수 없습니다`}>
+              <Button size="small" disabled>
+                수정
+              </Button>
+            </Tooltip>
+          ) : row.attendanceCount > 0 ? (
+            // 출근 등록되어도 종료일이 없으면 종료일 입력을 위해 수정 허용 (모달에서 종료일만 편집 가능)
+            <Tooltip placement="left" title={`출근 등록 ${row.attendanceCount}건, 종료일만 수정 가능합니다`}>
+              <Button size="small" onClick={() => onEdit(row)}>
+                수정
+              </Button>
+            </Tooltip>
+          ) : row.confirmed ? (
+            // 확정된 스케줄은 출근 없어도 종료일만 수정 가능 (모달 잠금 정합)
+            <Tooltip placement="left" title="종료일만 수정 가능합니다">
+              <Button size="small" onClick={() => onEdit(row)}>
+                수정
+              </Button>
+            </Tooltip>
+          ) : (
+            <Button size="small" onClick={() => onEdit(row)}>
+              수정
             </Button>
           )}
+          {row.confirmed
+            ? canUnconfirm && (
+                <Button
+                  size="small"
+                  danger
+                  loading={unconfirming}
+                  onClick={() => onUnconfirm(row)}
+                >
+                  확정 해제
+                </Button>
+              )
+            : (
+                <Button
+                  size="small"
+                  type="primary"
+                  loading={confirming}
+                  onClick={() => onConfirm(row)}
+                >
+                  확정
+                </Button>
+              )}
         </Space>
       ),
     },
@@ -246,6 +283,9 @@ function buildListColumns(
 
 export default function DisplaySchedulePage() {
   const navigate = useNavigate();
+  // 확정 해제 권한 — backend isAdminGrade(시스템 관리자 OR 영업지원실) 정합. 비관리자는 버튼 미노출.
+  const user = useAuthStore((s) => s.user);
+  const canUnconfirm = user?.profileName === '시스템 관리자' || user?.isSalesSupport === true;
   const { run: runTemplate, downloading } = useExcelDownload();
   const { run: runExport, downloading: exporting } = useExcelDownload();
   const { run: runExportAll, downloading: exportingAll } = useExcelDownload();
@@ -298,7 +338,10 @@ export default function DisplaySchedulePage() {
   const listColumns = buildListColumns(
     (row) => setEditTarget(row),
     (row) => handleRowConfirm(row),
+    (row) => handleRowUnconfirm(row),
     batchConfirmMutation.isPending,
+    batchUnconfirmMutation.isPending,
+    canUnconfirm,
     navigate,
   );
 
@@ -421,15 +464,18 @@ export default function DisplaySchedulePage() {
     });
   };
 
-  const handleBatchUnconfirm = () => {
-    const ids = selectedRowKeys as number[];
+  const handleRowUnconfirm = (row: ScheduleListItem) => {
     Modal.confirm({
       title: '확정 해제',
-      content: `${ids.length}건의 확정을 해제하시겠습니까?`,
+      content: `${row.employeeName} · ${row.accountName ?? '-'} 1건의 확정을 해제하시겠습니까? (권한·사업소 범위 외 또는 출근 등록 건은 차단됩니다)`,
       onOk: () =>
-        batchUnconfirmMutation.mutateAsync(ids).then((result) => {
-          message.success(`${result.updatedCount}건이 확정 해제되었습니다`);
-          setSelectedRowKeys([]);
+        batchUnconfirmMutation.mutateAsync([row.id]).then((result) => {
+          if (result.failedCount === 0) {
+            message.success('확정 해제되었습니다');
+            return;
+          }
+          // 차단됨 — 사유 표시
+          message.error(result.failures[0]?.message ?? '확정 해제할 수 없습니다');
         }).catch((err) => {
           message.error(err instanceof Error ? err.message : '확정 해제에 실패했습니다');
         }),
@@ -706,15 +752,6 @@ export default function DisplaySchedulePage() {
             {selectedRowKeys.length > 0
               ? `일괄 확정 (${selectedRowKeys.length}건 선택)`
               : '일괄 확정'}
-          </Button>
-          <Button
-            disabled={selectedRowKeys.length === 0}
-            loading={batchUnconfirmMutation.isPending}
-            onClick={handleBatchUnconfirm}
-          >
-            {selectedRowKeys.length > 0
-              ? `확정 해제 (${selectedRowKeys.length}건 선택)`
-              : '확정 해제'}
           </Button>
           <Button
             danger

@@ -34,6 +34,8 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.RowPreview
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchDeleteFailure
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchDeleteResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchUnconfirmFailure
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchUnconfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleDetailDto
@@ -463,8 +465,8 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 2건 확정 해제")
         fun unconfirm_success() {
-            val result = ScheduleBatchConfirmResultDto(updatedCount = 2)
-            every { adminDisplayWorkScheduleService.batchUnconfirm(listOf(1L, 2L)) } returns result
+            val result = ScheduleBatchUnconfirmResultDto(updatedCount = 2, failedCount = 0, failures = emptyList())
+            every { adminDisplayWorkScheduleService.batchUnconfirm(any(), any(), listOf(1L, 2L)) } returns result
 
             mockMvc.perform(
                 patch("/api/v1/admin/display-work-schedule/unconfirm")
@@ -489,17 +491,26 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         }
 
         @Test
-        @DisplayName("실패 - 미존재 ID 포함")
-        fun unconfirm_notFound() {
-            every { adminDisplayWorkScheduleService.batchUnconfirm(listOf(1L, 999L)) } throws ScheduleNotFoundException()
+        @DisplayName("partial success - 차단 건은 failures 로 응답")
+        fun unconfirm_partialFail() {
+            val result = ScheduleBatchUnconfirmResultDto(
+                updatedCount = 1,
+                failedCount = 1,
+                failures = listOf(
+                    ScheduleBatchUnconfirmFailure(999L, "SCHEDULE_NOT_FOUND", "존재하지 않거나 삭제된 스케줄입니다")
+                )
+            )
+            every { adminDisplayWorkScheduleService.batchUnconfirm(any(), any(), listOf(1L, 999L)) } returns result
 
             mockMvc.perform(
                 patch("/api/v1/admin/display-work-schedule/unconfirm")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""{"ids": [1, 999]}""")
             )
-                .andExpect(status().isNotFound)
-                .andExpect(jsonPath("$.error.code").value("SCHEDULE_NOT_FOUND"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.updatedCount").value(1))
+                .andExpect(jsonPath("$.data.failedCount").value(1))
+                .andExpect(jsonPath("$.data.failures[0].errorCode").value("SCHEDULE_NOT_FOUND"))
         }
     }
 

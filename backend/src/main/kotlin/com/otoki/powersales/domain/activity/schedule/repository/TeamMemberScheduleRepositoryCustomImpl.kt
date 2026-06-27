@@ -26,6 +26,23 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : TeamMemberScheduleRepositoryCustom {
 
+    override fun countAttendedByDisplayWorkScheduleIds(scheduleIds: List<Long>): Map<Long, Long> {
+        if (scheduleIds.isEmpty()) return emptyMap()
+        val scheduleIdPath = teamMemberSchedule.displayWorkSchedule.id
+        return queryFactory
+            .select(scheduleIdPath, teamMemberSchedule.count())
+            .from(teamMemberSchedule)
+            .where(
+                scheduleIdPath.`in`(scheduleIds),
+                teamMemberSchedule.commuteReportDatetime.isNotNull,
+            )
+            .groupBy(scheduleIdPath)
+            .fetch()
+            .associate { tuple ->
+                tuple.get(scheduleIdPath)!! to (tuple.get(teamMemberSchedule.count()) ?: 0L)
+            }
+    }
+
     @Transactional
     override fun updateAttendanceLog(id: Long, attendanceLogId: Long) {
         queryFactory

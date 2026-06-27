@@ -13,6 +13,7 @@ function setUser(opts: { profileName: string | null; permissions: string[] }) {
       orgName: null,
       role: null,
       profileName: opts.profileName,
+      isSalesSupport: false,
       costCenterCode: null,
       permissions: opts.permissions,
     },

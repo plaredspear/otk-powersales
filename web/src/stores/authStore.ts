@@ -19,6 +19,8 @@ export interface AuthUser {
   role: AppAuthority | null;
   /** SF Profile.Name (시스템 관리자 / 5.영업사원 / 4.지점장 등). 라우터 가드 입력. */
   profileName?: string | null;
+  /** SF User.isSalesSupport (영업지원실). 관리자 등급 판정 입력 (profileName=시스템 관리자 와 OR). */
+  isSalesSupport: boolean;
   costCenterCode: string | null;
   permissions: string[];
 }
@@ -47,6 +49,7 @@ function toAuthUser(info: AdminUserInfo): AuthUser {
     orgName: info.orgName,
     role: info.role,
     profileName: info.profileName,
+    isSalesSupport: info.isSalesSupport,
     costCenterCode: info.costCenterCode,
     permissions: info.permissions ?? [],
   };

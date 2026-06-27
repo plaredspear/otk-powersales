@@ -27,6 +27,7 @@ function setProfileName(profileName: string | null) {
       orgName: null,
       role: null,
       profileName,
+      isSalesSupport: false,
       costCenterCode: null,
       permissions: [],
     },

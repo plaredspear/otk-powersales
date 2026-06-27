@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.request.ScheduleConfirm
 import com.otoki.powersales.domain.activity.schedule.dto.request.ScheduleExportRequest
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchDeleteResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchUnconfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleDetailDto
@@ -107,9 +108,11 @@ class AdminDisplayWorkScheduleController(
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.EDIT)
     @PatchMapping("/unconfirm")
     fun batchUnconfirm(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
         @Valid @RequestBody request: ScheduleBatchConfirmRequest
-    ): ResponseEntity<ApiResponse<ScheduleBatchConfirmResultDto>> {
-        val result = adminDisplayWorkScheduleService.batchUnconfirm(request.ids)
+    ): ResponseEntity<ApiResponse<ScheduleBatchUnconfirmResultDto>> {
+        val result = adminDisplayWorkScheduleService.batchUnconfirm(scope, principal.requireEmployeeId(), request.ids)
         return ResponseEntity.ok(ApiResponse.success(result, "${result.updatedCount}건이 확정 해제되었습니다"))
     }
 

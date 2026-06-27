@@ -45,6 +45,7 @@ describe('WorkHistoryPeriodPage', () => {
         name: 'admin',
         orgName: null,
         role: null,
+        isSalesSupport: false,
         costCenterCode: null,
         permissions: [entityPermissionKey('attend_info', 'READ')],
       },

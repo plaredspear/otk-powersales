@@ -1028,6 +1028,7 @@ class AdminDisplayWorkScheduleServiceTest {
             val page = PageImpl(listOf(row), PageRequest.of(0, 20), 1)
 
             every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any(), any()) } returns page
+            every { teamMemberScheduleRepository.countAttendedByDisplayWorkScheduleIds(listOf(1L)) } returns emptyMap()
 
             val result = adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, Sort.unsorted())
 
@@ -1212,44 +1213,120 @@ class AdminDisplayWorkScheduleServiceTest {
     @DisplayName("batchUnconfirm - 확정 해제")
     inner class BatchUnconfirmTests {
 
-        @Test
-        @DisplayName("정상 해제 - confirmed=true 2건 → updated_count: 2")
-        fun batchUnconfirm_success() {
-            val schedules = listOf(
-                createSchedule(id = 1L, confirmed = true),
-                createSchedule(id = 2L, confirmed = true)
-            )
-            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns schedules
+        private val userId = 1L
 
-            val result = adminDisplayWorkScheduleService.batchUnconfirm(listOf(1L, 2L))
+        private fun mockAdminScope(): DataScope =
+            DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        private fun adminUser() = createEmployee(id = userId, employeeCode = "ADMIN001", role = null).also {
+            every { userRepository.findByEmployeeCode("ADMIN001") } returns User(
+                username = "admin", employeeCode = "ADMIN001", password = "x", isSalesSupport = true,
+            )
+            every { employeeRepository.findById(userId) } returns Optional.of(it)
+        }
+
+        @Test
+        @DisplayName("ADMIN_GRADE - confirmed=true 2건 + 출근 없음 → updated_count: 2")
+        fun batchUnconfirm_adminSuccess() {
+            adminUser()
+            val scope = mockAdminScope()
+            val s1 = createSchedule(id = 1L, confirmed = true)
+            val s2 = createSchedule(id = 2L, confirmed = true)
+            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns listOf(s1, s2)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(any()) } returns false
+
+            val result = adminDisplayWorkScheduleService.batchUnconfirm(scope, userId, listOf(1L, 2L))
 
             assertThat(result.updatedCount).isEqualTo(2)
-            assertThat(schedules.all { it.confirmed == false }).isTrue()
+            assertThat(result.failedCount).isEqualTo(0)
+            assertThat(s1.confirmed).isFalse()
+            assertThat(s2.confirmed).isFalse()
         }
 
         @Test
-        @DisplayName("이미 미확정 포함 - 1건 true + 1건 false → updated_count: 1")
+        @DisplayName("ADMIN_GRADE - 이미 미확정 포함 → updated_count: 1")
         fun batchUnconfirm_alreadyUnconfirmed() {
-            val schedules = listOf(
-                createSchedule(id = 1L, confirmed = true),
-                createSchedule(id = 2L, confirmed = false)
-            )
-            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns schedules
+            adminUser()
+            val scope = mockAdminScope()
+            val s1 = createSchedule(id = 1L, confirmed = true)
+            val s2 = createSchedule(id = 2L, confirmed = false)
+            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns listOf(s1, s2)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(any()) } returns false
 
-            val result = adminDisplayWorkScheduleService.batchUnconfirm(listOf(1L, 2L))
+            val result = adminDisplayWorkScheduleService.batchUnconfirm(scope, userId, listOf(1L, 2L))
 
             assertThat(result.updatedCount).isEqualTo(1)
+            assertThat(result.failedCount).isEqualTo(0)
         }
 
         @Test
-        @DisplayName("미존재 ID 포함 - ScheduleNotFoundException")
-        fun batchUnconfirm_notFound() {
-            every { scheduleRepository.findAllById(listOf(1L, 999L)) } returns 
-                listOf(createSchedule(id = 1L))
-            
+        @DisplayName("관리자 게이트 - LEADER 는 SCHEDULE_UNCONFIRM_FORBIDDEN 로 전건 차단")
+        fun batchUnconfirm_nonAdminForbidden() {
+            val leader = createEmployee(id = userId, role = AppAuthority.LEADER)
+            every { employeeRepository.findById(userId) } returns Optional.of(leader)
+            val scope = mockAdminScope()
+            val s1 = createSchedule(id = 1L, confirmed = true)
+            every { scheduleRepository.findAllById(listOf(1L)) } returns listOf(s1)
 
-            assertThatThrownBy { adminDisplayWorkScheduleService.batchUnconfirm(listOf(1L, 999L)) }
-                .isInstanceOf(ScheduleNotFoundException::class.java)
+            val result = adminDisplayWorkScheduleService.batchUnconfirm(scope, userId, listOf(1L))
+
+            assertThat(result.updatedCount).isEqualTo(0)
+            assertThat(result.failedCount).isEqualTo(1)
+            assertThat(result.failures[0].errorCode).isEqualTo("SCHEDULE_UNCONFIRM_FORBIDDEN")
+            assertThat(s1.confirmed).isTrue()
+        }
+
+        @Test
+        @DisplayName("출근 안전망 - ADMIN 이라도 출근 등록 건은 SCHEDULE_UNCONFIRM_ATTENDANCE 차단")
+        fun batchUnconfirm_attendanceBlocked() {
+            adminUser()
+            val scope = mockAdminScope()
+            val attended = createSchedule(id = 1L, confirmed = true)
+            val free = createSchedule(id = 2L, confirmed = true)
+            every { scheduleRepository.findAllById(listOf(1L, 2L)) } returns listOf(attended, free)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(attended)) } returns true
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(free)) } returns false
+
+            val result = adminDisplayWorkScheduleService.batchUnconfirm(scope, userId, listOf(1L, 2L))
+
+            assertThat(result.updatedCount).isEqualTo(1)
+            assertThat(result.failedCount).isEqualTo(1)
+            assertThat(result.failures[0].id).isEqualTo(1L)
+            assertThat(result.failures[0].errorCode).isEqualTo("SCHEDULE_UNCONFIRM_ATTENDANCE")
+            assertThat(attended.confirmed).isTrue()
+            assertThat(free.confirmed).isFalse()
+        }
+
+        @Test
+        @DisplayName("사업소 scope 위반 - SCHEDULE_FORBIDDEN 로 차단")
+        fun batchUnconfirm_scopeForbidden() {
+            adminUser()
+            val scope = mockAdminScope()
+            val s1 = createSchedule(id = 1L, confirmed = true)
+            every { scheduleRepository.findAllById(listOf(1L)) } returns listOf(s1)
+            every { scheduleRepository.existsVisibleById(1L, any()) } returns false
+
+            val result = adminDisplayWorkScheduleService.batchUnconfirm(scope, userId, listOf(1L))
+
+            assertThat(result.failedCount).isEqualTo(1)
+            assertThat(result.failures[0].errorCode).isEqualTo("SCHEDULE_FORBIDDEN")
+        }
+
+        @Test
+        @DisplayName("미존재 ID 포함 - SCHEDULE_NOT_FOUND 로 partial fail")
+        fun batchUnconfirm_notFound() {
+            adminUser()
+            val scope = mockAdminScope()
+            val s1 = createSchedule(id = 1L, confirmed = true)
+            every { scheduleRepository.findAllById(listOf(1L, 999L)) } returns listOf(s1)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(any()) } returns false
+
+            val result = adminDisplayWorkScheduleService.batchUnconfirm(scope, userId, listOf(1L, 999L))
+
+            assertThat(result.updatedCount).isEqualTo(1)
+            assertThat(result.failedCount).isEqualTo(1)
+            assertThat(result.failures[0].id).isEqualTo(999L)
+            assertThat(result.failures[0].errorCode).isEqualTo("SCHEDULE_NOT_FOUND")
         }
     }
 
@@ -1294,6 +1371,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
             every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
             every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(baseRequest.startDate), eq(baseRequest.endDate!!),
@@ -1322,6 +1400,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(user)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
 
             assertThatThrownBy {
                 adminDisplayWorkScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest.copy(accountCode = "ACC001"))
@@ -1402,6 +1481,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
             every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
             every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(baseRequest.startDate), eq(LocalDate.of(2026, 5, 31)),
@@ -1441,6 +1521,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
             every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
             every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(baseRequest.startDate), eq(baseRequest.endDate!!),

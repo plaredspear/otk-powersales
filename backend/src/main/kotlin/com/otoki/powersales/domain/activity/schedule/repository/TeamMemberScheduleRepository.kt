@@ -42,6 +42,13 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
      */
     fun existsByDisplayWorkSchedule(displayWorkSchedule: DisplayWorkSchedule): Boolean
 
+    /**
+     * 진열마스터 수정 차단 — 연결 여사원일정 중 **실제 출근한 건**(출근보고시각 `commuteReportDatetime` 채워짐)이
+     * 1건이라도 있으면 true. 단순 FK 매칭(행사확정 등 미출근 연결)과 구분하기 위해 출근보고시각 NOT NULL 조건 추가.
+     * SF 의 출근(commute) semantics (`CommuteReportDateTime__c`/`CommuteLogId__c` 채워짐) 정합.
+     */
+    fun existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(displayWorkSchedule: DisplayWorkSchedule): Boolean
+
     /** 진열 마스터 삭제 시 연결 TMS 의 FK SetNull 처리용 (SF deleteConstraint=SetNull 동등). */
     fun findByDisplayWorkSchedule(displayWorkSchedule: DisplayWorkSchedule): List<TeamMemberSchedule>
 

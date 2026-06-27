@@ -8,6 +8,8 @@ import com.otoki.powersales.domain.activity.schedule.dto.request.AdminScheduleUp
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchConfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchDeleteFailure
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchDeleteResultDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchUnconfirmFailure
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchUnconfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleDetailDto
@@ -21,6 +23,7 @@ import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteConstraintException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteForbiddenException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterAttendanceException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterConfirmException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEmptyFileException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
@@ -382,7 +385,10 @@ class AdminDisplayWorkScheduleService(
             employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
         )
 
-        return schedulePage.map { toListItemDto(it) }
+        // 페이지 단위 출근등록 수 집계 (N+1 회피 — id IN + GROUP BY 1쿼리)
+        val attendanceCountById = buildAttendanceCountMap(schedulePage.content.map { it.id })
+
+        return schedulePage.map { toListItemDto(it, attendanceCountById) }
     }
 
     /**
@@ -429,7 +435,10 @@ class AdminDisplayWorkScheduleService(
      * [com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow] projection → [ScheduleListItemDto] 매핑.
      * 목록 조회와 검색결과 엑셀 export 가 동일 매핑(재직상태 계산 포함)을 공유한다.
      */
-    private fun toListItemDto(row: com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow): ScheduleListItemDto {
+    private fun toListItemDto(
+        row: com.otoki.powersales.domain.activity.schedule.repository.ScheduleListRow,
+        attendanceCountById: Map<Long, Long> = emptyMap(),
+    ): ScheduleListItemDto {
         // 유효데이터 (`ValidData__c`) + 유효 신호등 (`Valid__c`) — 상세와 동일 계산식, projection raw 필드 사용
         val validData = if (row.employeeId != null) {
             displayStatusCalculator.validData(
@@ -466,8 +475,18 @@ class AdminDisplayWorkScheduleService(
             endDate = row.endDate,
             confirmed = row.confirmed,
             costCenterCode = row.costCenterCode,
-            lastMonthRevenue = row.lastMonthRevenue?.toLong()
+            lastMonthRevenue = row.lastMonthRevenue?.toLong(),
+            attendanceCount = attendanceCountById[row.id] ?: 0
         )
+    }
+
+    /**
+     * 진열마스터 id 목록의 출근등록 수 집계 Map (페이지 단위 1쿼리, N+1 회피 — QueryDSL).
+     * 출근 0건 마스터는 Map 에 없으므로 호출처에서 `?: 0` 으로 기본 처리.
+     */
+    private fun buildAttendanceCountMap(scheduleIds: List<Long>): Map<Long, Long> {
+        if (scheduleIds.isEmpty()) return emptyMap()
+        return teamMemberScheduleRepository.countAttendedByDisplayWorkScheduleIds(scheduleIds)
     }
 
     /**
@@ -537,20 +556,76 @@ class AdminDisplayWorkScheduleService(
         return ScheduleBatchConfirmResultDto(updatedCount = updatedCount)
     }
 
+    /**
+     * 확정 해제 — partial success. SF 레거시 정합 가드 적용:
+     *  - 관리자 등급 게이트: SF Validation Rule `EditDisableForDisplayMaster` (ISCHANGED(Confirmed__c) 차단,
+     *    영업지원실/시스템관리자 예외) 정합 — ADMIN_GRADE 외 사용자는 확정 해제 차단.
+     *  - 사업소 가시 범위: SF OWD Private + CostCenterCode Sharing 정합 — 본인 담당 사업소 외 레코드 차단.
+     *  - 출근 안전망 (SF 보다 엄격): 출근 등록(connected 여사원일정 commuteReportDatetime 채워짐)된 건은
+     *    관리자라도 확정 해제 차단 — 해제 후 "미확정인데 출근 데이터 존재" 모순 방지.
+     * 차단된 건은 failures 로 기록하고 나머지는 해제 진행.
+     */
     @Transactional
-    fun batchUnconfirm(ids: List<Long>): ScheduleBatchConfirmResultDto {
-        val schedules = scheduleRepository.findAllById(ids)
-        validateScheduleIds(ids, schedules)
+    fun batchUnconfirm(scope: DataScope, userId: Long, ids: List<Long>): ScheduleBatchUnconfirmResultDto {
+        val user = employeeRepository.findById(userId)
+            .orElseThrow { EmployeeNotFoundException() }
+        val isAdmin = isAdminGrade(user.employeeCode)
+
+        val schedules = scheduleRepository.findAllById(ids).associateBy { it.id }
+        // SF 가시 범위 — 목록과 동일한 evaluator Predicate (루프 밖 1회 산출)
+        val policyPredicate = schedulePolicyPredicate(scope)
 
         var updatedCount = 0
-        for (schedule in schedules) {
+        val failures = mutableListOf<ScheduleBatchUnconfirmFailure>()
+
+        for (id in ids) {
+            val schedule = schedules[id]
+            if (schedule == null || schedule.isDeleted == true) {
+                failures.add(
+                    ScheduleBatchUnconfirmFailure(id, "SCHEDULE_NOT_FOUND", "존재하지 않거나 삭제된 스케줄입니다")
+                )
+                continue
+            }
+
+            // 사업소 가시 범위 검증 — 가시 범위 외 레코드는 partial fail
+            if (!scheduleRepository.existsVisibleById(schedule.id, policyPredicate)) {
+                failures.add(
+                    ScheduleBatchUnconfirmFailure(id, "SCHEDULE_FORBIDDEN", "본인 담당 사업소 외 레코드는 접근할 수 없습니다")
+                )
+                continue
+            }
+
+            // 관리자 등급 게이트 — SF Validation Rule 정합 (영업지원실/시스템관리자만 확정 해제 가능)
+            if (!isAdmin) {
+                failures.add(
+                    ScheduleBatchUnconfirmFailure(
+                        id, "SCHEDULE_UNCONFIRM_FORBIDDEN", "확정 해제 권한이 없습니다. 시스템 관리자에게 문의하십시오"
+                    )
+                )
+                continue
+            }
+
+            // 출근 안전망 — 출근 등록된 건은 확정 해제 차단 (모순 방지)
+            if (teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule)) {
+                failures.add(
+                    ScheduleBatchUnconfirmFailure(
+                        id, "SCHEDULE_UNCONFIRM_ATTENDANCE", "출근 등록된 스케줄은 확정 해제할 수 없습니다"
+                    )
+                )
+                continue
+            }
+
             if (schedule.confirmed == true) {
                 schedule.confirmed = false
                 updatedCount++
             }
         }
 
-        return ScheduleBatchConfirmResultDto(updatedCount = updatedCount)
+        return ScheduleBatchUnconfirmResultDto(
+            updatedCount = updatedCount,
+            failedCount = failures.size,
+            failures = failures
+        )
     }
 
     /**
@@ -667,26 +742,39 @@ class AdminDisplayWorkScheduleService(
         // UC-12 기존 schedule 의 costCenterCode 가 사용자 scope 내인지 먼저 검증.
         requireScheduleScope(scope, schedule)
 
-        // UC-05 차단 룰: 확정 후 ADMIN_GRADE 외 사용자가 종료일 외 필드 변경 시도하면 차단.
-        if (schedule.confirmed == true && !isAdminGrade(user.employeeCode)) {
-            val originalEmployeeCode = schedule.employee?.employeeCode
-            val originalAccountCode = schedule.account?.externalKey
-            val originalType1 = schedule.typeOfWork1?.displayName
-            val originalType3 = schedule.typeOfWork3?.displayName
-            val originalType4 = schedule.typeOfWork4?.displayName
-            val originalType5 = schedule.typeOfWork5?.displayName
-            val originalStart = schedule.startDate
+        // 수정 차단 룰 (ADMIN_GRADE 외 사용자 + 종료일 외 키 필드 변경 시):
+        //  - UC-05: 확정(Confirmed) 된 스케줄
+        //  - 출근 차단: 연결 여사원일정 중 실제 출근(commuteReportDatetime 채워짐)한 건이 있는 스케줄
+        // 둘 중 하나라도 해당되면 종료일을 제외한 키 필드 변경을 차단한다.
+        if (!isAdminGrade(user.employeeCode)) {
+            val attendanceReported =
+                teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule)
 
-            val blockedFieldChanged =
-                originalEmployeeCode != request.employeeCode ||
-                    originalAccountCode != request.accountCode ||
-                    originalType1 != request.typeOfWork1 ||
-                    originalType3 != request.typeOfWork3 ||
-                    originalType4 != request.typeOfWork4 ||
-                    originalType5 != request.typeOfWork5 ||
-                    originalStart != request.startDate
-            if (blockedFieldChanged) {
-                throw ScheduleEditBlockedAfterConfirmException()
+            if (schedule.confirmed == true || attendanceReported) {
+                val originalEmployeeCode = schedule.employee?.employeeCode
+                val originalAccountCode = schedule.account?.externalKey
+                val originalType1 = schedule.typeOfWork1?.displayName
+                val originalType3 = schedule.typeOfWork3?.displayName
+                val originalType4 = schedule.typeOfWork4?.displayName
+                val originalType5 = schedule.typeOfWork5?.displayName
+                val originalStart = schedule.startDate
+
+                val blockedFieldChanged =
+                    originalEmployeeCode != request.employeeCode ||
+                        originalAccountCode != request.accountCode ||
+                        originalType1 != request.typeOfWork1 ||
+                        originalType3 != request.typeOfWork3 ||
+                        originalType4 != request.typeOfWork4 ||
+                        originalType5 != request.typeOfWork5 ||
+                        originalStart != request.startDate
+                if (blockedFieldChanged) {
+                    // 확정 사유 우선, 확정 아닌데 출근만으로 막힌 경우 출근 메시지로 안내
+                    if (schedule.confirmed == true) {
+                        throw ScheduleEditBlockedAfterConfirmException()
+                    } else {
+                        throw ScheduleEditBlockedAfterAttendanceException()
+                    }
+                }
             }
         }
 

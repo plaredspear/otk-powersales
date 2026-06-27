@@ -46,6 +46,7 @@ function setPermissions(permissions: string[]) {
       name: '테스트',
       orgName: null,
       role: null,
+      isSalesSupport: false,
       costCenterCode: null,
       permissions,
     },

@@ -62,11 +62,29 @@ data class ScheduleListItemDto(
     val endDate: LocalDate?,
     val confirmed: Boolean?,
     val costCenterCode: String?,
-    val lastMonthRevenue: Long?
+    val lastMonthRevenue: Long?,
+    // 연결 여사원일정 중 실제 출근(commuteReportDatetime 채워짐)한 건수 — 0 이면 수정 가능
+    val attendanceCount: Long = 0
 )
 
 data class ScheduleBatchConfirmResultDto(
     val updatedCount: Int
+)
+
+/**
+ * 확정 해제 결과 — partial success 지원 (SF 정합 가드: 관리자 등급 / 사업소 scope / 출근 안전망).
+ * 차단된 건은 [failures] 에 사유와 함께 기록하고 나머지는 해제 진행.
+ */
+data class ScheduleBatchUnconfirmResultDto(
+    val updatedCount: Int,
+    val failedCount: Int,
+    val failures: List<ScheduleBatchUnconfirmFailure>
+)
+
+data class ScheduleBatchUnconfirmFailure(
+    val id: Long,
+    val errorCode: String,
+    val message: String
 )
 
 /**

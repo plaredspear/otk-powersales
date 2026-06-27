@@ -80,6 +80,15 @@ class ScheduleEditBlockedAfterConfirmException : BusinessException(
 )
 
 /**
+ * 연결된 여사원일정이 출근 등록(출근보고)된 스케줄에서 종료일 외 필드를 변경 시도하면 차단.
+ */
+class ScheduleEditBlockedAfterAttendanceException : BusinessException(
+    errorCode = "SCHEDULE_EDIT_BLOCKED_AFTER_ATTENDANCE",
+    message = "출근 등록된 스케줄은 종료일 이외는 편집할 수 없습니다. 시스템 관리자에게 문의하십시오",
+    httpStatus = HttpStatus.CONFLICT
+)
+
+/**
  * UC-12 사업소 가시 범위 위반 — 조장이 본인 담당 사업소 외 레코드 접근 시도 시 차단.
  * 레거시 SF Sharing Rule 50+ 룰 (CostCenterCode 기준) 의 신규 매핑.
  */

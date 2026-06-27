@@ -46,6 +46,7 @@ describe('AttendInfoPage', () => {
         name: 'admin',
         orgName: null,
         role: null,
+        isSalesSupport: false,
         costCenterCode: null,
         permissions: [
           entityPermissionKey('attend_info', 'READ'),
@@ -95,6 +96,7 @@ describe('AttendInfoPage', () => {
         name: 'reader',
         orgName: null,
         role: null,
+        isSalesSupport: false,
         costCenterCode: null,
         permissions: [entityPermissionKey('attend_info', 'READ')],
       },
