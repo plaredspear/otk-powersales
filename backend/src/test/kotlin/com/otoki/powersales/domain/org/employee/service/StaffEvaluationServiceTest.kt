@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.org.employee.service
 
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.entity.StaffReview
 import com.otoki.powersales.domain.org.employee.repository.StaffReviewRepository
@@ -37,7 +36,7 @@ class StaffEvaluationServiceTest {
 
     private val employeeId = 7L
 
-    private fun account(id: Long, code: String, name: String, type: AccountType) =
+    private fun account(id: Long, code: String, name: String, type: String) =
         Account(id = id, externalKey = code, name = name, accountType = type)
 
     private fun salesRow(accountId: Long, closing: Long) = MonthlySalesRow(
@@ -74,7 +73,7 @@ class StaffEvaluationServiceTest {
         } returns listOf(salesRow(accountId = 1L, closing = 8_000_000L))
 
         every { accountRepository.findByIdIn(listOf(1L)) } returns
-            listOf(account(1L, "A001", "행복마트", AccountType.SUPER))
+            listOf(account(1L, "A001", "행복마트", "슈퍼"))
 
         every {
             salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2026")
@@ -108,7 +107,7 @@ class StaffEvaluationServiceTest {
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns
             listOf(salesRow(accountId = 1L, closing = 5_000_000L))
         every { accountRepository.findByIdIn(listOf(1L)) } returns
-            listOf(account(1L, "A001", "행복마트", AccountType.SUPER))
+            listOf(account(1L, "A001", "행복마트", "슈퍼"))
         every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), any()) } returns emptyList()
         every { staffReviewRepository.findByEmployeeIdAndFirstDayOfMonth(any(), any()) } returns emptyList()
 

@@ -4,7 +4,6 @@ import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromoti
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterSearchResult
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -29,8 +28,8 @@ data class PPTMasterResponse(
     val employeeStatus: String?,
     val employeeAppLoginActive: Boolean?,
     val employeeEndDate: LocalDate?,
-    // SF AccountType__c — 거래처유형 (Account.Type, 한국어 displayName 직렬화)
-    val accountType: AccountType?,
+    // SF AccountType__c — 거래처유형 (Account.Type, 한국어 raw 값)
+    val accountType: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 ) {
@@ -71,7 +70,7 @@ data class PPTMasterResponse(
             employeeStatus: String? = null,
             employeeAppLoginActive: Boolean? = null,
             employeeEndDate: LocalDate? = null,
-            accountType: AccountType? = null
+            accountType: String? = null
         ): PPTMasterResponse {
             return PPTMasterResponse(
                 id = master.id,

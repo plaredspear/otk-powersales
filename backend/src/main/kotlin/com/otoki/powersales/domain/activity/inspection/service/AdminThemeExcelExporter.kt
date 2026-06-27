@@ -110,7 +110,7 @@ class AdminThemeExcelExporter(
                     sa.employee?.name,
                     sa.account?.name,
                     sa.account?.externalKey,
-                    sa.account?.accountType?.displayName,
+                    sa.account?.accountType,
                     sa.product?.name,
                     sa.product?.productCategory2,
                     sa.product?.productCode,

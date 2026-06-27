@@ -474,7 +474,7 @@ class AdminSalesComparisonService(
             val account = accountByCode[accountCode] ?: return@mapNotNull null
 
             // SF 모집단 필터 — Account.Type 이 거래처유형마스터에 없으면 제외 (cls:168 SOQL 동등).
-            if (account.accountType?.displayName !in categoryNames) return@mapNotNull null
+            if (account.accountType !in categoryNames) return@mapNotNull null
 
             val displayItems = items.filter { it.workingCategory1 == "진열" && it.workingCategory5 == "상시" }
             val eventItems = items.filter { it.workingCategory1 == "행사" }
@@ -500,7 +500,7 @@ class AdminSalesComparisonService(
             // SF 는 `categoryMap.get(ABCType)` 결과를 fallback 없이 그대로 customerTypeCode 에 넣는다 (cls:367).
             // 운영 마스터에 체인4종 Name 이 없으므로 결과는 null → getCategory(null) → 기타(others) 로 분류된다.
             // (과거 `?: typeCode` fallback 은 체인4종 거래처를 Account.Type(체인02)으로 되돌려 체인 컬럼을 SF 보다 부풀렸다.)
-            val typeCode = account.accountType?.displayName?.let { categoryCodeByName[it] }
+            val typeCode = account.accountType?.let { categoryCodeByName[it] }
             val categoryColumnCode = if (account.abcType in chainAccountTypeNames) {
                 categoryCodeByName[account.abcType]
             } else {

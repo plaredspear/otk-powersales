@@ -3,7 +3,6 @@ package com.otoki.powersales.domain.activity.schedule.service
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleSearchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
@@ -102,16 +101,16 @@ class TeamMemberScheduleSearchService(
             q.account.externalKey.eq(it).or(q.account.name.containsIgnoreCase(it))
         }
         // 유통형태 검색어 — 화면 표시값(거래처상태코드 + 거래처유형명) 부분일치.
-        // accountStatusCode like OR accountType(enum) IN (검색어 매칭 거래처유형마스터 → AccountType 환원).
-        // accountType 은 enum 이라 like 불가 → 거래처유형마스터(AccountCategoryMaster.name) 에서 검색어
-        // 부분일치 + useSearch 항목을 조회한 뒤 displayName 정합으로 AccountType 으로 환원해 IN 으로 건다.
+        // accountStatusCode like OR accountType IN (검색어 매칭 거래처유형마스터 Name).
+        // accountType 은 거래처유형마스터 Name(raw String) 을 그대로 보관하므로, 마스터에서 검색어
+        // 부분일치 + useSearch 항목의 Name 을 조회해 직접 IN 으로 건다 (enum 환원 불필요).
         val trimmedDistribution = distributionKeyword?.trim()?.takeIf { it.isNotEmpty() }
         val distributionPredicate = trimmedDistribution?.let { kw ->
-            val matchedTypes = accountCategoryMasterRepository
+            val matchedTypeNames = accountCategoryMasterRepository
                 .findByNameContainingIgnoreCaseAndUseSearchTrueAndIsDeletedNot(kw, true)
-                .mapNotNull { AccountType.fromDisplayNameOrNull(it.name) }
+                .map { it.name }
             val codePredicate = q.account.accountStatusCode.containsIgnoreCase(kw)
-            if (matchedTypes.isEmpty()) codePredicate else codePredicate.or(q.account.accountType.`in`(matchedTypes))
+            if (matchedTypeNames.isEmpty()) codePredicate else codePredicate.or(q.account.accountType.`in`(matchedTypeNames))
         }
         // 거래처유형 검색어 — 화면 표시값(ABC유형코드 + ABC유형) 부분일치.
         val trimmedAccountType = accountTypeKeyword?.trim()?.takeIf { it.isNotEmpty() }
@@ -270,7 +269,7 @@ class TeamMemberScheduleSearchService(
             // 유통형태/거래처유형 라벨 — Account 조합 규칙 정본(companion) 재사용 (projection 이라 인스턴스 없음)
             distributionChannelLabel = Account.distributionChannelLabel(
                 row.accountStatusCode,
-                row.accountType?.displayName,
+                row.accountType,
             ),
             abcTypeLabel = Account.abcTypeLabel(row.abcTypeCode, row.abcType),
             // D4=(a): SF formula BranchName__c = FullName__r.DKRetail__OrgName__c
@@ -307,7 +306,7 @@ data class TeamMemberScheduleRow(
     val accountBranchName: String?,
     val accountName: String?,
     val accountStatusCode: String?,
-    val accountType: AccountType?,
+    val accountType: String?,
     val abcTypeCode: String?,
     val abcType: String?,
     val employeeOrgName: String?,

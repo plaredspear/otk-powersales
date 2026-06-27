@@ -114,7 +114,7 @@ class AdminFemaleEmployeeSafetyCheckReportService(
             employeeCode = emp?.employeeCode ?: "",
             ladyName = emp?.name ?: "",
             employeeOrgName = emp?.orgName,
-            accountType = acc?.accountType?.displayName,
+            accountType = acc?.accountType,
             accountBranchCode = acc?.branchCode,
             accountName = acc?.name,
             workingCategory1 = s.workingCategory1?.displayName,

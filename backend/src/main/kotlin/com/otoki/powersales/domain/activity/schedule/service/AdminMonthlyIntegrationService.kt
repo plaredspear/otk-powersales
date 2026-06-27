@@ -359,7 +359,7 @@ class AdminMonthlyIntegrationService(
         // (legacy 는 본 Trigger 호출 시점의 sysdate 기반 currentDate 산출 — 신규는 검색 대상 월 기준이 정확)
         val employeeInputCriteriaMaster: EmployeeInputCriteriaMaster? =
             if (applyThreeFields && account != null) {
-                val accountTypeName = account.accountType?.displayName
+                val accountTypeName = account.accountType
                 if (accountTypeName != null) {
                     val category = accountCategoryMasterRepository.findByName(accountTypeName)
                     if (category != null) {

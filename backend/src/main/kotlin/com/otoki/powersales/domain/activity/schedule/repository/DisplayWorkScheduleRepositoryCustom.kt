@@ -5,7 +5,6 @@ import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
 import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.querydsl.core.types.Predicate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -32,7 +31,7 @@ data class ScheduleListRow(
     val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,
-    val accountType: AccountType?,
+    val accountType: String?,
     val accountStatusName: String?,
     val typeOfWork3: TypeOfWork3?,
     val typeOfWork4: SecondWorkType?,

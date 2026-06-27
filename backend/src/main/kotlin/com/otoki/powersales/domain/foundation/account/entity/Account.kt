@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.foundation.account.entity
 
 import com.otoki.powersales.domain.foundation.account.entity.converter.AccountSourceConverter
-import com.otoki.powersales.domain.foundation.account.entity.converter.AccountTypeConverter
 import com.otoki.powersales.domain.foundation.account.entity.converter.FreezerTypeConverter
 import com.otoki.powersales.domain.foundation.account.entity.converter.IndustryConverter
 import com.otoki.powersales.domain.foundation.account.entity.converter.OwnershipConverter
@@ -156,11 +155,13 @@ class Account(
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
 
+    // 거래처유형(=거래처유형마스터 Name, 운영 실제 raw 값). 운영 마스터(AccountCategoryMaster)에서
+    // 유형이 추가/변경될 수 있어 enum 으로 고정하지 않고 String 으로 보관 — 마스터에 없는 새 값이 와도
+    // DB read 시 null 로 소실되지 않는다(과거 AccountType enum + AccountTypeConverter 의 silent null 장애 제거).
     @SFField("Type")
-    @Convert(converter = AccountTypeConverter::class)
     @FieldName("거래처타입")
     @Column(name = "account_type", length = 255)
-    var accountType: AccountType? = null,
+    var accountType: String? = null,
 
     @SFField("AccountStatusName__c")
     @FieldName("거래처상태명")
@@ -412,7 +413,7 @@ class Account(
      * 표시용 폴백("-" 등)은 호출 측(web/엑셀)에서 처리한다.
      */
     fun distributionChannelLabel(): String? =
-        distributionChannelLabel(accountStatusCode, accountType?.displayName)
+        distributionChannelLabel(accountStatusCode, accountType)
 
     /**
      * 거래처유형 — ABC유형코드(ABCTypeCode__c) + ABC유형(ABCType__c) 을 공백으로 조합한 표시 문자열.

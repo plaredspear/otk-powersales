@@ -85,3 +85,16 @@ class EmployeeNotFoundException(employeeCode: String) : BusinessException(
     message = "담당 영업사원을 찾을 수 없습니다: $employeeCode",
     httpStatus = HttpStatus.NOT_FOUND
 )
+
+/**
+ * 거래처 수정 시 거래처유형(accountType) 이 거래처유형마스터(AccountCategoryMaster.name) 에
+ * 존재하지 않을 때의 검증 예외.
+ *
+ * accountType 을 enum 에서 String 으로 전환하면서 enum 역직렬화가 담당하던 입력 검증을
+ * 마스터 조회 검증으로 대체한다 — 운영 마스터에 정의된 유형명만 허용.
+ */
+class AccountTypeInvalidException(accountType: String) : BusinessException(
+    errorCode = "ACCOUNT_TYPE_INVALID",
+    message = "유효하지 않은 거래처유형입니다: $accountType",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

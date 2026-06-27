@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.promotion.sap
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
@@ -23,7 +22,7 @@ class PPTMasterPayloadFactoryTest {
     @DisplayName("기본 매핑 — 17개 키가 레거시 SF 필드 출처와 정합")
     fun build_basicMapping() {
         val emp = employee(name = "홍길동", code = "100123", status = "재직", appLogin = true, jikwee = "사원", org = "강남지점")
-        val acc = account(externalKey = "AK001", statusName = "정상", type = AccountType.DISCOUNT_STORE)
+        val acc = account(externalKey = "AK001", statusName = "정상", type = "대형마트(3대)")
         val master = master(
             id = 1L,
             name = "PM0000001",
@@ -44,7 +43,7 @@ class PPTMasterPayloadFactoryTest {
         assertThat(row.FullName).isEqualTo("홍길동")
         assertThat(row.EmployeeNumber).isEqualTo("100123")
         assertThat(row.AccountStatus).isEqualTo("정상")
-        assertThat(row.AccountType).isEqualTo(AccountType.DISCOUNT_STORE.displayName)
+        assertThat(row.AccountType).isEqualTo("대형마트(3대)")
         // 레거시 Account__c(sfid) 자리 → 신규 Account.id 문자열.
         assertThat(row.Account).isEqualTo("7001")
         assertThat(row.AccountCode).isEqualTo("AK001")
@@ -186,7 +185,7 @@ class PPTMasterPayloadFactoryTest {
         id: Long = 7001L,
         externalKey: String? = "AK",
         statusName: String? = "정상",
-        type: AccountType? = AccountType.DISCOUNT_STORE
+        type: String? = "대형마트(3대)"
     ): Account {
         val mock: Account = mockk()
         every { mock.id } returns id

@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyInputAdequacyService
@@ -31,7 +30,7 @@ class AdminMonthlyInputAdequacyServiceTest {
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
 
-    private fun account(id: Long, code: String, name: String, type: AccountType?): Account {
+    private fun account(id: Long, code: String, name: String, type: String?): Account {
         val acc = Account(id = id, externalKey = code)
         acc.name = name
         acc.accountType = type
@@ -133,7 +132,7 @@ class AdminMonthlyInputAdequacyServiceTest {
 
         @Test
         fun `진열 상시 사원 1건 + 1월만 적합 데이터 → 1월=적합 + 나머지=공백`() {
-            val acc = account(1, "ACC001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "ACC001", "거래처A", "대형마트(3대)")
             val empItem = item(
                 accountCode = "ACC001",
                 accountName = "거래처A",
@@ -177,7 +176,7 @@ class AdminMonthlyInputAdequacyServiceTest {
 
         @Test
         fun `진열 상시 아닌 사원은 매트릭스 행으로 채택되지 않음`() {
-            val acc = account(1, "ACC001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "ACC001", "거래처A", "대형마트(3대)")
             val eventItem = item(
                 accountCode = "ACC001",
                 accountName = "거래처A",
@@ -198,7 +197,7 @@ class AdminMonthlyInputAdequacyServiceTest {
 
         @Test
         fun `동일 사원·거래처 × 다른 workingCategory3 는 행 분리 (레거시 동등 — 행 키에 workingCategory3 포함)`() {
-            val acc = account(1, "ACC001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "ACC001", "거래처A", "대형마트(3대)")
             // 같은 사원 E001 이 1월=고정 / 2월=격고 로 동일 거래처에 투입 (운영 데이터 변동 케이스)
             val janFixedItem = item(
                 accountCode = "ACC001",
@@ -252,7 +251,7 @@ class AdminMonthlyInputAdequacyServiceTest {
 
         @Test
         fun `workingCategory3 필터 — 고정만 선택하면 격고 사원 제외`() {
-            val acc = account(1, "ACC001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "ACC001", "거래처A", "대형마트(3대)")
             val fixedItem = item(
                 accountCode = "ACC001",
                 accountName = "거래처A",
@@ -300,7 +299,7 @@ class AdminMonthlyInputAdequacyServiceTest {
 
         @Test
         fun `매트릭스 export 결과는 xlsx 파일명 + 비어있지 않은 바이트`() {
-            val acc = account(1, "ACC001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "ACC001", "거래처A", "대형마트(3대)")
             val empItem = item(
                 accountCode = "ACC001",
                 accountName = "거래처A",

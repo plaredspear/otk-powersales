@@ -3,7 +3,6 @@ package com.otoki.powersales.domain.activity.schedule.service
 import com.otoki.powersales.domain.activity.schedule.service.AdminConvertedHeadcountReportService
 import com.otoki.powersales.domain.activity.schedule.service.ConvertedHeadcountReportVariant
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import io.mockk.every
@@ -21,8 +20,8 @@ class AdminConvertedHeadcountReportServiceTest {
     private val repository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk()
     private val service = AdminConvertedHeadcountReportService(repository)
 
-    private fun account(type: AccountType, branchName: String?, abcType: String? = null): Account {
-        val acc = Account(id = (type.ordinal + 1).toLong())
+    private fun account(type: String, branchName: String?, abcType: String? = null): Account {
+        val acc = Account(id = (kotlin.math.abs(type.hashCode()) % 1000 + 1).toLong())
         acc.accountType = type
         acc.branchName = branchName
         acc.abcType = abcType
@@ -30,7 +29,7 @@ class AdminConvertedHeadcountReportServiceTest {
     }
 
     private fun row(
-        accountType: AccountType,
+        accountType: String,
         accountBranchName: String? = "거래처지점",
         empBranchName: String? = "서울지점",
         workingCategory1: String? = "근무A",
@@ -206,8 +205,8 @@ class AdminConvertedHeadcountReportServiceTest {
         fun sumsSameKey() {
             stubReport(
                 listOf(
-                    row(AccountType.DISCOUNT_STORE, convertedHeadcount = BigDecimal("1.5")),
-                    row(AccountType.DISCOUNT_STORE, convertedHeadcount = BigDecimal("0.5")),
+                    row("대형마트(3대)", convertedHeadcount = BigDecimal("1.5")),
+                    row("대형마트(3대)", convertedHeadcount = BigDecimal("0.5")),
                 ),
             )
 
@@ -223,8 +222,8 @@ class AdminConvertedHeadcountReportServiceTest {
         fun groupsByAccountTypeWithSubtotal() {
             stubReport(
                 listOf(
-                    row(AccountType.DISCOUNT_STORE, convertedHeadcount = BigDecimal("2.0")),
-                    row(AccountType.SUPER, convertedHeadcount = BigDecimal("3.0")),
+                    row("대형마트(3대)", convertedHeadcount = BigDecimal("2.0")),
+                    row("슈퍼", convertedHeadcount = BigDecimal("3.0")),
                 ),
             )
 
@@ -241,8 +240,8 @@ class AdminConvertedHeadcountReportServiceTest {
         fun totalIsSumOfSubtotals() {
             stubReport(
                 listOf(
-                    row(AccountType.DISCOUNT_STORE, convertedHeadcount = BigDecimal("2.0")),
-                    row(AccountType.SUPER, convertedHeadcount = BigDecimal("3.0")),
+                    row("대형마트(3대)", convertedHeadcount = BigDecimal("2.0")),
+                    row("슈퍼", convertedHeadcount = BigDecimal("3.0")),
                 ),
             )
 
@@ -254,7 +253,7 @@ class AdminConvertedHeadcountReportServiceTest {
         @Test
         @DisplayName("연월은 month 를 2자리로 패딩하여 year-month 로 구성한다")
         fun composesYearMonth() {
-            stubReport(listOf(row(AccountType.SUPER, year = "2026", month = "5")))
+            stubReport(listOf(row("슈퍼", year = "2026", month = "5")))
 
             val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
 
@@ -266,8 +265,8 @@ class AdminConvertedHeadcountReportServiceTest {
         fun splitsByWorkingCategory3WhenIncluded() {
             stubReport(
                 listOf(
-                    row(AccountType.AGENCY, workingCategory3 = "WC3-A", convertedHeadcount = BigDecimal("1.0")),
-                    row(AccountType.AGENCY, workingCategory3 = "WC3-B", convertedHeadcount = BigDecimal("2.0")),
+                    row("대리점", workingCategory3 = "WC3-A", convertedHeadcount = BigDecimal("1.0")),
+                    row("대리점", workingCategory3 = "WC3-B", convertedHeadcount = BigDecimal("2.0")),
                 ),
             )
 
@@ -284,8 +283,8 @@ class AdminConvertedHeadcountReportServiceTest {
         fun ignoresWorkingCategory3WhenExcluded() {
             stubReport(
                 listOf(
-                    row(AccountType.SUPER, workingCategory3 = "WC3-A", convertedHeadcount = BigDecimal("1.0")),
-                    row(AccountType.SUPER, workingCategory3 = "WC3-B", convertedHeadcount = BigDecimal("2.0")),
+                    row("슈퍼", workingCategory3 = "WC3-A", convertedHeadcount = BigDecimal("1.0")),
+                    row("슈퍼", workingCategory3 = "WC3-B", convertedHeadcount = BigDecimal("2.0")),
                 ),
             )
 
@@ -302,9 +301,9 @@ class AdminConvertedHeadcountReportServiceTest {
         fun groupsByAbcTypeWhenSegmented() {
             stubReport(
                 listOf(
-                    row(AccountType.SUPER, abcType = "A", convertedHeadcount = BigDecimal("1.0")),
-                    row(AccountType.DISCOUNT_STORE, abcType = "A", convertedHeadcount = BigDecimal("2.0")),
-                    row(AccountType.SUPER, abcType = "B", convertedHeadcount = BigDecimal("3.0")),
+                    row("슈퍼", abcType = "A", convertedHeadcount = BigDecimal("1.0")),
+                    row("대형마트(3대)", abcType = "A", convertedHeadcount = BigDecimal("2.0")),
+                    row("슈퍼", abcType = "B", convertedHeadcount = BigDecimal("3.0")),
                 ),
             )
 
@@ -327,7 +326,7 @@ class AdminConvertedHeadcountReportServiceTest {
         @DisplayName("1-x variant 는 여사원 소속(empBranchName) 을 지점으로 쓴다")
         fun usesEmpBranchForTeam1() {
             stubReport(
-                listOf(row(AccountType.SUPER, empBranchName = "서울지점", accountBranchName = "거래처지점")),
+                listOf(row("슈퍼", empBranchName = "서울지점", accountBranchName = "거래처지점")),
             )
 
             val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
@@ -339,7 +338,7 @@ class AdminConvertedHeadcountReportServiceTest {
         @DisplayName("2-1 variant 는 거래처 지점(account.branchName) 을 지점으로 쓴다")
         fun usesAccountBranchForTeam2() {
             stubReport(
-                listOf(row(AccountType.SUPER, empBranchName = "서울지점", accountBranchName = "거래처지점")),
+                listOf(row("슈퍼", empBranchName = "서울지점", accountBranchName = "거래처지점")),
             )
 
             val res = service.getReport(ConvertedHeadcountReportVariant.TEAM2_PERMANENT_TEMP_ALL, "2026", "5")
@@ -355,7 +354,7 @@ class AdminConvertedHeadcountReportServiceTest {
         @Test
         @DisplayName("variant 한글명 + 연-월 파일명 xlsx 생성")
         fun exportsXlsx() {
-            stubReport(listOf(row(AccountType.SUPER)))
+            stubReport(listOf(row("슈퍼")))
 
             val result = service.exportReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
 

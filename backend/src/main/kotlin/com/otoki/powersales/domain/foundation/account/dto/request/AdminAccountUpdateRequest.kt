@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.foundation.account.dto.request
 
 import com.otoki.powersales.domain.foundation.account.entity.AccountSource
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.foundation.account.entity.FreezerType
 import com.otoki.powersales.domain.foundation.account.entity.Industry
 import com.otoki.powersales.domain.foundation.account.entity.Ownership
@@ -112,7 +111,8 @@ data class AdminAccountUpdateRequest(
     @field:Size(max = 1, message = "유통 구분은 1자 이하여야 합니다.")
     val distribution: String? = null,
 
-    val accountType: AccountType? = null,
+    @field:Size(max = 255, message = "거래처유형은 255자 이하여야 합니다.")
+    val accountType: String? = null,
 
     val freezerType: FreezerType? = null,
 

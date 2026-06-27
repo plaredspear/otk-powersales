@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -32,7 +31,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         val acc = Account(id = 1, externalKey = "B0123")
         acc.name = "○○마트 강남점"
         acc.branchCode = "B0123"
-        acc.accountType = AccountType.DISCOUNT_STORE
+        acc.accountType = "대형마트(3대)"
         return acc
     }
 

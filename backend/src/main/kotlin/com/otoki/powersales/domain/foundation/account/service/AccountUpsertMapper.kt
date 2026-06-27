@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.foundation.account.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertCommand
 import com.otoki.powersales.domain.org.organization.entity.Organization
 import com.otoki.powersales.user.entity.User
@@ -95,7 +94,7 @@ class AccountUpsertMapper {
     }
 
     private fun applyTypeAndStatus(account: Account, command: AccountUpsertCommand) {
-        account.accountType = AccountType.Companion.fromDisplayNameOrNull(command.accountType)
+        account.accountType = command.accountType
         account.accountStatusName = command.accountStatusName
         account.accountStatusCode = command.accountStatusCode
         account.accountGroup = command.accountGroup

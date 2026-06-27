@@ -54,7 +54,7 @@ data class EmployeeWorkHistoryItem(
             professionalPromotionTeam = schedule.professionalPromotionTeam,
             accountName = schedule.account?.name,
             accountExternalKey = schedule.account?.externalKey,
-            accountType = schedule.account?.accountType?.displayName,
+            accountType = schedule.account?.accountType,
             abcType = schedule.account?.abcType,
             abcTypeCode = schedule.account?.abcTypeCode,
             abcTypeLabel = schedule.account?.abcTypeLabel(),

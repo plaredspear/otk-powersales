@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
@@ -67,7 +66,7 @@ class AdminSalesProgressRateMasterServiceTest {
             val account = Account(id = 7, name = "GS25 역삼점").also {
                 it.branchName = "강남53지점"
                 it.externalKey = "1025008"
-                it.accountType = AccountType.CVS
+                it.accountType = "C.V.S"
             }
             val entity = createEntity(account = account)
             every {

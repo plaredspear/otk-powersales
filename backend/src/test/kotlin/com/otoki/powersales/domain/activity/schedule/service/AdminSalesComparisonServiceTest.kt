@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
@@ -53,7 +52,7 @@ class AdminSalesComparisonServiceTest {
     private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
     private fun branchScope(vararg codes: String) = DataScope(branchCodes = codes.toList(), isAllBranches = false)
 
-    private fun account(id: Long, code: String, name: String, type: AccountType?): Account {
+    private fun account(id: Long, code: String, name: String, type: String?): Account {
         val acc = Account(id = id, externalKey = code)
         acc.name = name
         acc.accountType = type
@@ -371,7 +370,7 @@ class AdminSalesComparisonServiceTest {
                 convertedHeadcount = BigDecimal.ONE,
                 avgClosingAmount = 1_500_000L
             )
-            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
             // SF 판정 마스터 매칭은 Account.Type("대형마트(3대)") → categoryMap → "01" → criteria.accountCategorizedCode 와 일치.
             val cm = categoryMaster("대형마트(3대)", "01")
             val crit = EmployeeInputCriteriaMaster(
@@ -407,7 +406,7 @@ class AdminSalesComparisonServiceTest {
             //  → worst-case = 경계
             val fixedEmp = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
             val altEmp = item("A001", "거래처A", "E002", "사원B", "진열", "격고", "상시", BigDecimal.ONE, 2_000_000L)
-            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
             val crit = EmployeeInputCriteriaMaster(
                 typeOfWork1 = TypeOfWork1.DISPLAY,
                 fixed1PersonStandardAmount = BigDecimal(1_500_000),
@@ -436,8 +435,8 @@ class AdminSalesComparisonServiceTest {
             // 거래처A: 진열·상시 1명 (적합) / 거래처B: 행사만 (진열·상시 없음 → 공백)
             val fitEmp = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
             val eventOnly = item("B001", "거래처B", "E002", "사원B", "행사", null, null, BigDecimal.ONE, 2_000_000L)
-            val accA = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
-            val accB = account(2, "B001", "거래처B", AccountType.DISCOUNT_STORE)
+            val accA = account(1, "A001", "거래처A", "대형마트(3대)")
+            val accB = account(2, "B001", "거래처B", "대형마트(3대)")
             val crit = EmployeeInputCriteriaMaster(
                 typeOfWork1 = TypeOfWork1.DISPLAY,
                 fixed1PersonStandardAmount = BigDecimal(1_000_000),
@@ -469,8 +468,8 @@ class AdminSalesComparisonServiceTest {
         private fun twoCategoryAccounts() {
             val itmA = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
             val itmB = item("B001", "거래처B", "E002", "사원B", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
-            val accA = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)            // Type 대형마트(3대) → 01
-            val accB = account(2, "B001", "거래처B", AccountType.CHAIN)                     // Type 체인 → 02
+            val accA = account(1, "A001", "거래처A", "대형마트(3대)")            // Type 대형마트(3대) → 01
+            val accB = account(2, "B001", "거래처B", "체인")                     // Type 체인 → 02
             val crit = criteria(fixed = BigDecimal(1_000_000), bifurcation = BigDecimal(600_000), boundary = BigDecimal(20), accountCategoryCode = "01")
             val crit2 = criteria(fixed = BigDecimal(1_000_000), bifurcation = BigDecimal(600_000), boundary = BigDecimal(20), accountCategoryCode = "02")
 
@@ -514,7 +513,7 @@ class AdminSalesComparisonServiceTest {
             // 근무형태3=[격고]만 선택하면 고정 행 제외 → 후보는 격고(적합) 뿐 → 적합 으로 바뀐다.
             val fixedEmp = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
             val altEmp = item("A001", "거래처A", "E002", "사원B", "진열", "격고", "상시", BigDecimal.ONE, 2_000_000L)
-            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
             val crit = criteria(fixed = BigDecimal(1_500_000), bifurcation = BigDecimal(600_000), boundary = BigDecimal(40), accountCategoryCode = "01")
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
@@ -533,7 +532,7 @@ class AdminSalesComparisonServiceTest {
             // 동일 거래처A worst-case=경계 케이스. 배치적합성=[적합]만 선택하면 경계 거래처는 카운트에서 빠진다.
             val fixedEmp = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 2_000_000L)
             val altEmp = item("A001", "거래처A", "E002", "사원B", "진열", "격고", "상시", BigDecimal.ONE, 2_000_000L)
-            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
             val crit = criteria(fixed = BigDecimal(1_500_000), bifurcation = BigDecimal(600_000), boundary = BigDecimal(40), accountCategoryCode = "01")
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(fixedEmp, altEmp))
@@ -557,8 +556,8 @@ class AdminSalesComparisonServiceTest {
         fun `accountIds 필터링 적용`() {
             val itmA = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
             val itmB = item("B001", "거래처B", "E002", "사원B", "진열", "고정", "상시", BigDecimal.ONE, 800_000L)
-            val accA = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
-            val accB = account(2, "B001", "거래처B", AccountType.DISCOUNT_STORE)
+            val accA = account(1, "A001", "거래처A", "대형마트(3대)")
+            val accB = account(2, "B001", "거래처B", "대형마트(3대)")
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(itmA, itmB))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(accA, accB)
@@ -585,7 +584,7 @@ class AdminSalesComparisonServiceTest {
                 "A001", "거래처A", "E003", "사원C", "행사", null, null,
                 BigDecimal.ONE, 1_500_000L, totalInputCount = 12, equivalentWorkingDays = BigDecimal("10.75")
             )
-            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(displayItm, eventItm1, eventItm2))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
@@ -606,7 +605,7 @@ class AdminSalesComparisonServiceTest {
         fun `근무형태 필터 적용 - 진열만 선택 시 행사 제외`() {
             val displayItm = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
             val eventItm = item("A001", "거래처A", "E002", "사원B", "행사", null, null, BigDecimal.ONE, 1_500_000L)
-            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(displayItm, eventItm))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
@@ -621,7 +620,7 @@ class AdminSalesComparisonServiceTest {
         fun `accountIds 비어있고 필터 없으면 모든 행 반환`() {
             val displayItm = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
             val eventItm = item("A001", "거래처A", "E002", "사원B", "행사", null, null, BigDecimal.ONE, 1_500_000L)
-            val acc = account(1, "A001", "거래처A", AccountType.DISCOUNT_STORE)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
 
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(displayItm, eventItm))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)

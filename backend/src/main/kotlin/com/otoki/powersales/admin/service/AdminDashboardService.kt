@@ -171,7 +171,7 @@ class AdminDashboardService(
     /** 거래처유형(유통)별 환산인원 SUM — accountType displayName 기준 (결정 D1). */
     private fun sumByAccountType(rows: List<DashboardDeploymentRow>): List<AccountTypeCount> {
         return rows
-            .groupBy { it.accountType?.displayName ?: ACCOUNT_TYPE_UNKNOWN }
+            .groupBy { it.accountType ?: ACCOUNT_TYPE_UNKNOWN }
             .map { (accountType, group) ->
                 AccountTypeCount(
                     accountType = accountType,
@@ -201,7 +201,7 @@ class AdminDashboardService(
         rows: List<DashboardDeploymentRow>,
     ): List<ChannelWorkTypeItem> {
         return rows
-            .groupBy { it.accountType?.displayName ?: ACCOUNT_TYPE_UNKNOWN }
+            .groupBy { it.accountType ?: ACCOUNT_TYPE_UNKNOWN }
             .map { (channelName, group) ->
                 val byWc3 = group.groupBy { it.workingCategory3 }
                 ChannelWorkTypeItem(

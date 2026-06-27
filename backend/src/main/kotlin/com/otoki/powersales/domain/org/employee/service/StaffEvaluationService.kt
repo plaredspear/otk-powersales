@@ -98,7 +98,7 @@ class StaffEvaluationService(
                 StaffEvaluationResponse.AccountEvaluationInfo(
                     accountCode = account.externalKey ?: "",
                     accountName = account.name ?: "",
-                    accountType = account.accountType?.displayName,
+                    accountType = account.accountType,
                     targetAmount = target,
                     performanceAmount = performance,
                     attainmentRate = rate(performance, target),

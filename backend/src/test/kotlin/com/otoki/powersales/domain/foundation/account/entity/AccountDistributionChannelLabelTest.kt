@@ -12,10 +12,10 @@ class AccountDistributionChannelLabelTest {
     fun combinesStatusCodeAndType() {
         val account = Account(
             accountStatusCode = "02",
-            accountType = AccountType.SUPER,
+            accountType = "슈퍼",
         )
 
-        assertThat(account.distributionChannelLabel()).isEqualTo("02 ${AccountType.SUPER.displayName}")
+        assertThat(account.distributionChannelLabel()).isEqualTo("02 슈퍼")
     }
 
     @Test
@@ -29,9 +29,9 @@ class AccountDistributionChannelLabelTest {
     @Test
     @DisplayName("거래처유형만 있으면 라벨만 반환")
     fun typeOnly() {
-        val account = Account(accountStatusCode = null, accountType = AccountType.CHAIN)
+        val account = Account(accountStatusCode = null, accountType = "체인")
 
-        assertThat(account.distributionChannelLabel()).isEqualTo(AccountType.CHAIN.displayName)
+        assertThat(account.distributionChannelLabel()).isEqualTo("체인")
     }
 
     @Test
@@ -45,8 +45,8 @@ class AccountDistributionChannelLabelTest {
     @Test
     @DisplayName("빈 문자열 거래처상태코드는 제외")
     fun blankStatusCode_excluded() {
-        val account = Account(accountStatusCode = "  ", accountType = AccountType.CHAIN)
+        val account = Account(accountStatusCode = "  ", accountType = "체인")
 
-        assertThat(account.distributionChannelLabel()).isEqualTo(AccountType.CHAIN.displayName)
+        assertThat(account.distributionChannelLabel()).isEqualTo("체인")
     }
 }

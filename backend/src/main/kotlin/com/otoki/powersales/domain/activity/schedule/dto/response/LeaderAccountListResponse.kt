@@ -21,7 +21,7 @@ data class LeaderAccountListResponse(
                 address1 = entity.address1,
                 branchCode = entity.branchCode,
                 accountGroup = entity.accountGroup,
-                accountType = entity.accountType?.displayName
+                accountType = entity.accountType
             )
     }
 }

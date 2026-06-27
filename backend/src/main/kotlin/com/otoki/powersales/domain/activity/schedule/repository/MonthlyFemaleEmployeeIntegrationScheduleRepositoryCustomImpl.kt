@@ -1,12 +1,10 @@
 package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.domain.activity.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule.Companion.monthlyFemaleEmployeeIntegrationSchedule
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
-import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 
 /**
@@ -56,22 +54,14 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
         }
 
         // 구분(거래처유형) equals 필터 — 대리점 3종 = "대리점". SF AccountType__c = TEXT(Account.Type) 정합.
-        // 대형마트(3대) 처럼 Account.Type picklist 에 없는 값은 매칭 enum 부재 → 0건 강제 (SF 죽은 필터 동작 정합).
+        // accountType 은 거래처유형마스터 Name(raw String) 을 그대로 보관하므로 직접 eq 비교한다.
         if (accountTypeFilter != null) {
-            val type = AccountType.fromDisplayNameOrNull(accountTypeFilter)
-            if (type != null) {
-                where.and(account.accountType.eq(type))
-            } else {
-                where.and(Expressions.FALSE)
-            }
+            where.and(account.accountType.eq(accountTypeFilter))
         }
 
-        // 구분(거래처유형) notIn 제외 — 2팀분리 = 대리점·백화점 제외. 매칭 enum 만 제외 (부재 displayName 은 무시).
+        // 구분(거래처유형) notIn 제외 — 2팀분리 = 대리점·백화점 제외. raw String 직접 notIn.
         if (accountTypeNotIn.isNotEmpty()) {
-            val excludeTypes = accountTypeNotIn.mapNotNull { AccountType.fromDisplayNameOrNull(it) }
-            if (excludeTypes.isNotEmpty()) {
-                where.and(account.accountType.notIn(excludeTypes))
-            }
+            where.and(account.accountType.notIn(accountTypeNotIn))
         }
 
         // 사원지점명(EmpBranchName) notEqual 제외 — 2팀분리 = 영업지원2팀 제외 (SF notEqual: NULL 행도 제외).

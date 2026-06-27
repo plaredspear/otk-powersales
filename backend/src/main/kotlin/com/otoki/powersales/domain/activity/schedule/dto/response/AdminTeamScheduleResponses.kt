@@ -76,7 +76,7 @@ data class TeamScheduleDto(
                 accountId = schedule.account?.id,
                 accountName = schedule.account?.name,
                 accountExternalKey = schedule.account?.externalKey,
-                accountType = schedule.account?.accountType?.displayName,
+                accountType = schedule.account?.accountType,
                 accountBranchName = schedule.account?.branchName,
                 isClockIn = schedule.attendanceLog != null,
                 promotionId = schedule.promotionEmployee?.promotionId

@@ -1,6 +1,5 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
@@ -32,14 +31,14 @@ class AdminDashboardServiceTest {
     // -- fixtures --
 
     /** 투입 거래처 식별 — (id, accountType) 쌍. externalKey 는 "SAP{id}" 규칙. */
-    private fun account(id: Long, type: AccountType): Pair<Long, AccountType> = id to type
+    private fun account(id: Long, type: String): Pair<Long, String> = id to type
 
     private fun mfeis(
-        accountType: AccountType? = AccountType.SUPER,
+        accountType: String? = "슈퍼",
         wc1: String? = "진열",
         wc3: String? = "고정",
         headcount: BigDecimal = BigDecimal.ONE,
-        acc: Pair<Long, AccountType>? = null,
+        acc: Pair<Long, String>? = null,
     ): DashboardDeploymentRow {
         val resolved = acc ?: accountType?.let { account(1, it) }
         return DashboardDeploymentRow(
@@ -81,8 +80,8 @@ class AdminDashboardServiceTest {
     @Test
     @DisplayName("T1 환산인원 SUM (거래처유형별) — 슈퍼 100.5+50.0 / 농협 30.0, scale=4")
     fun sumByAccountType() {
-        val superAcc = account(1, AccountType.SUPER)
-        val nhAcc = account(2, AccountType.NONGHYUP)
+        val superAcc = account(1, "슈퍼")
+        val nhAcc = account(2, "농협")
         val rows = listOf(
             mfeis(headcount = BigDecimal("100.5"), acc = superAcc),
             mfeis(headcount = BigDecimal("50.0"), acc = superAcc),
@@ -101,10 +100,10 @@ class AdminDashboardServiceTest {
         val result = service.getDashboard(allScope, "2026-05", null)
         val byType = result.staffDeployment.byAccountType.associateBy { it.accountType }
 
-        assertThat(byType[AccountType.SUPER.displayName]!!.convertedHeadcount)
+        assertThat(byType["슈퍼"]!!.convertedHeadcount)
             .isEqualByComparingTo(BigDecimal("150.5000"))
-        assertThat(byType[AccountType.SUPER.displayName]!!.convertedHeadcount.scale()).isEqualTo(4)
-        assertThat(byType[AccountType.NONGHYUP.displayName]!!.convertedHeadcount)
+        assertThat(byType["슈퍼"]!!.convertedHeadcount.scale()).isEqualTo(4)
+        assertThat(byType["농협"]!!.convertedHeadcount)
             .isEqualByComparingTo(BigDecimal("30.0000"))
     }
 
@@ -134,7 +133,7 @@ class AdminDashboardServiceTest {
     @Test
     @DisplayName("T3 유통×근무형태 — 슈퍼 고정 400 / 순회 54.9")
     fun sumByChannelAndWorkType() {
-        val superAcc = account(1, AccountType.SUPER)
+        val superAcc = account(1, "슈퍼")
         val rows = listOf(
             mfeis(wc3 = "고정", headcount = BigDecimal("400"), acc = superAcc),
             mfeis(wc3 = "순회", headcount = BigDecimal("54.9"), acc = superAcc),
@@ -150,7 +149,7 @@ class AdminDashboardServiceTest {
 
         val result = service.getDashboard(allScope, "2026-05", null)
         val superItem = result.staffDeployment.byChannelAndWorkType
-            .first { it.channelName == AccountType.SUPER.displayName }
+            .first { it.channelName == "슈퍼" }
 
         assertThat(superItem.fixedHeadcount).isEqualByComparingTo(BigDecimal("400.0000"))
         assertThat(superItem.alternatingHeadcount).isEqualByComparingTo(BigDecimal("0.0000"))
@@ -187,7 +186,7 @@ class AdminDashboardServiceTest {
     @Test
     @DisplayName("T4/T6 매출 실적 + 전년 대비 — actual 800, lastYear 760 -> ratio ≈ 105.3")
     fun salesActualAndLastYearRatio() {
-        val acc = account(1, AccountType.SUPER)
+        val acc = account(1, "슈퍼")
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns
             listOf(mfeis(acc = acc))
         every { employeeRepository.findProjectedBy() } returns emptyList()
@@ -216,7 +215,7 @@ class AdminDashboardServiceTest {
     @Test
     @DisplayName("T4-2 당월 목표 미등록 — targetAmount 0 + hasTargetData false + progressRate 0 (계산은 목표 0)")
     fun salesTargetNotRegistered() {
-        val acc = account(1, AccountType.SUPER)
+        val acc = account(1, "슈퍼")
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns
             listOf(mfeis(acc = acc))
         every { employeeRepository.findProjectedBy() } returns emptyList()

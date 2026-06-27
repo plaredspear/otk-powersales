@@ -36,7 +36,7 @@ class PPTMasterPayloadFactory {
             FullName = emp?.name,
             EmployeeNumber = emp?.employeeCode,
             AccountStatus = acc?.accountStatusName,
-            AccountType = acc?.accountType?.displayName,
+            AccountType = acc?.accountType,
             AccountCode = acc?.externalKey,
             StartDate = master.startDate.toString(),
             EndDate = master.endDate?.toString() ?: LEGACY_NULL_DATE,

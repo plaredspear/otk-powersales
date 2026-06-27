@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeePlacementCheckService
@@ -55,7 +54,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
         acc.name = name
         acc.branchCode = branchCode
         acc.branchName = branchName
-        acc.accountType = AccountType.DISCOUNT_STORE
+        acc.accountType = "대형마트(3대)"
         return acc
     }
 

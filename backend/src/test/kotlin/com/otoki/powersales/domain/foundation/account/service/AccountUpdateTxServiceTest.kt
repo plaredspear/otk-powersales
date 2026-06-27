@@ -7,6 +7,9 @@ import com.otoki.powersales.domain.foundation.account.exception.AccountNameDupli
 import com.otoki.powersales.domain.foundation.account.exception.AccountNamePrefixRequiredForUpdateException
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
 import com.otoki.powersales.domain.foundation.account.exception.EmployeeNotFoundException
+import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
+import com.otoki.powersales.domain.foundation.account.exception.AccountTypeInvalidException
+import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -28,10 +31,12 @@ class AccountUpdateTxServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository = mockk()
 
     private val service = AccountUpdateTxService(
         accountRepository,
         employeeRepository,
+        accountCategoryMasterRepository,
     )
 
     private val accountId = 1234L
@@ -516,6 +521,44 @@ class AccountUpdateTxServiceTest {
 
             assertThatThrownBy { service.findResponse(9999) }
                 .isInstanceOf(AccountNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("거래처유형(accountType) 마스터 검증")
+    inner class AccountTypeValidation {
+
+        @Test
+        @DisplayName("T28 거래처유형이 거래처유형마스터에 존재하면 갱신 성공")
+        fun t28_validAccountType() {
+            val account = nativeAccount()
+            every { accountRepository.findActiveById(accountId) } returns account
+            every { accountCategoryMasterRepository.findByName("슈퍼") } returns
+                AccountCategoryMaster(accountCode = "06", name = "슈퍼")
+
+            service.applyUpdate(
+                id = accountId,
+                principal = branchManagerPrincipal,
+                request = AdminAccountUpdateRequest(accountType = "슈퍼")
+            )
+
+            assertThat(account.accountType).isEqualTo("슈퍼")
+        }
+
+        @Test
+        @DisplayName("T29 거래처유형이 마스터에 없으면 ACCOUNT_TYPE_INVALID (enum 역직렬화 검증 대체)")
+        fun t29_invalidAccountType() {
+            val account = nativeAccount()
+            every { accountRepository.findActiveById(accountId) } returns account
+            every { accountCategoryMasterRepository.findByName("존재하지않는유형") } returns null
+
+            assertThatThrownBy {
+                service.applyUpdate(
+                    id = accountId,
+                    principal = branchManagerPrincipal,
+                    request = AdminAccountUpdateRequest(accountType = "존재하지않는유형")
+                )
+            }.isInstanceOf(AccountTypeInvalidException::class.java)
         }
     }
 }

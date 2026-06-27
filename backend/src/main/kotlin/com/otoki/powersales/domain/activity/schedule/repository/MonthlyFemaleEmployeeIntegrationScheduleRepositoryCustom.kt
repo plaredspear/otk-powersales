@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import java.math.BigDecimal
 
 /**
@@ -20,7 +19,7 @@ data class DashboardDeploymentRow(
     val workingCategory3: String?,
     val accountId: Long?,
     val accountExternalKey: String?,
-    val accountType: AccountType?,
+    val accountType: String?,
 )
 
 /**

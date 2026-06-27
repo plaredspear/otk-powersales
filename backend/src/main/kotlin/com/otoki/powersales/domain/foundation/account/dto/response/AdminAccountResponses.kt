@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.foundation.account.dto.response
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.entity.AccountSource
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.domain.foundation.account.entity.FreezerType
 import com.otoki.powersales.domain.foundation.account.entity.Industry
 import com.otoki.powersales.domain.foundation.account.entity.Ownership
@@ -83,7 +82,7 @@ data class AccountDetailResponse(
     val businessCategory: String?,
     val abcType: String?,
     val abcTypeCode: String?,
-    val accountType: AccountType?,
+    val accountType: String?,
     val accountStatusName: String?,
     val accountStatusCode: String?,
     val accountNumber: String?,
@@ -218,7 +217,7 @@ data class AdminAccountUpdateResponse(
     val businessCategory: String?,
     val abcType: String?,
     val abcTypeCode: String?,
-    val accountType: AccountType?,
+    val accountType: String?,
     val accountStatusName: String?,
     val accountStatusCode: String?,
     val accountNumber: String?,

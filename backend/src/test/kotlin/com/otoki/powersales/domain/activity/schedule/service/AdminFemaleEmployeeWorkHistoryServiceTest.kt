@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.entity.AccountType
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.activity.schedule.service.AdminFemaleEmployeeWorkHistoryService
 import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterException
@@ -40,7 +39,7 @@ class AdminFemaleEmployeeWorkHistoryServiceTest {
         acc.name = "○○마트 강남점"
         acc.branchCode = "B0123"
         acc.branchName = "강남지점"
-        acc.accountType = AccountType.DISCOUNT_STORE
+        acc.accountType = "대형마트(3대)"
         return acc
     }
 

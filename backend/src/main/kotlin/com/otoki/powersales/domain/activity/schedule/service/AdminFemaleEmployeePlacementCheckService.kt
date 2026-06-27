@@ -146,7 +146,7 @@ class AdminFemaleEmployeePlacementCheckService(
             name = emp?.name ?: "",
             professionalPromotionTeam = emp?.professionalPromotionTeam?.displayName,
             employmentStatus = emp?.status,
-            accountType = acc?.accountType?.displayName,
+            accountType = acc?.accountType,
             accountName = acc?.name,
             accountBranchCode = acc?.branchCode,
             accountBranchName = acc?.branchName,

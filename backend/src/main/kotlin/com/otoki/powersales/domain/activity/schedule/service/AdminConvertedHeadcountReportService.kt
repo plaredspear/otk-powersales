@@ -163,7 +163,7 @@ class AdminConvertedHeadcountReportService(
 
     /** variant 별 그룹 기준 — 세분화(groupByAbcType): 거래처 ABC유형 / 그 외: 구분(거래처유형 displayName). */
     private fun groupKeyOf(m: MonthlyFemaleEmployeeIntegrationSchedule, variant: ConvertedHeadcountReportVariant): String? =
-        if (variant.groupByAbcType) m.account?.abcType else m.account?.accountType?.displayName
+        if (variant.groupByAbcType) m.account?.abcType else m.account?.accountType
 
     /** SF DateForReport__c (Month) = year-month 재구성. */
     private fun yearMonthOf(m: MonthlyFemaleEmployeeIntegrationSchedule): String? {

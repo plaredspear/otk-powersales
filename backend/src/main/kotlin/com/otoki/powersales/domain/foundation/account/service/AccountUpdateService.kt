@@ -7,8 +7,10 @@ import com.otoki.powersales.domain.foundation.account.exception.AccountNameBlank
 import com.otoki.powersales.domain.foundation.account.exception.AccountNameDuplicateException
 import com.otoki.powersales.domain.foundation.account.exception.AccountNamePrefixRequiredForUpdateException
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
+import com.otoki.powersales.domain.foundation.account.exception.AccountTypeInvalidException
 import com.otoki.powersales.domain.foundation.account.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.foundation.account.policy.AccountNamePrefix
+import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -93,7 +95,8 @@ class AccountUpdateService(
 @Service
 class AccountUpdateTxService(
     private val accountRepository: AccountRepository,
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository
 ) {
 
     /**
@@ -194,7 +197,14 @@ class AccountUpdateTxService(
         request.businessLicenseNumber?.let { account.businessLicenseNumber = it }
         request.consignmentAcc?.let { account.consignmentAcc = it }
         request.distribution?.let { account.distribution = it }
-        request.accountType?.let { account.accountType = it }
+        request.accountType?.let {
+            // accountType 은 거래처유형마스터(AccountCategoryMaster.name) 의 raw 값. enum 역직렬화가
+            // 담당하던 입력 검증을 마스터 조회로 대체 — 마스터에 정의된 유형명만 허용.
+            if (accountCategoryMasterRepository.findByName(it) == null) {
+                throw AccountTypeInvalidException(it)
+            }
+            account.accountType = it
+        }
         request.freezerType?.let { account.freezerType = it }
         request.freezerInstalled?.let { account.freezerInstalled = it }
         request.firstInstalled?.let { account.firstInstalled = it }

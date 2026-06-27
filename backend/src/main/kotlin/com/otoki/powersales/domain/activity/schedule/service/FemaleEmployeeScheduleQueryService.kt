@@ -206,7 +206,7 @@ class FemaleEmployeeScheduleQueryService(
                 append(acc?.name.orEmpty())
                 append("(")
                 append(acc?.externalKey.orEmpty()).append(",")
-                append(acc?.accountType?.displayName.orEmpty()).append(",")
+                append(acc?.accountType.orEmpty()).append(",")
                 append(acc?.branchName.orEmpty())
                 append(")")
                 if (workingCategory1 == WorkingCategory1.EVENT) {
