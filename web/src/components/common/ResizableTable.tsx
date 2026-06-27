@@ -108,6 +108,11 @@ export interface ResizableTableProps<T> extends Omit<TableProps<T>, 'columns'> {
   columns: ColumnsType<T>;
   /** 드래그로 줄일 수 있는 컬럼 최소 폭 (px). 기본 60 */
   minColumnWidth?: number;
+  /**
+   * 컬럼 폭이 사용자 드래그로 바뀔 때마다 leaf 컬럼 path("0", "1", "1.2" 등) → 현재 폭(px) 맵을 통지.
+   * 펼침 행 등 외부 요소가 본 테이블의 컬럼 폭을 따라가야 할 때 사용한다. 미지정 시 영향 없음.
+   */
+  onColumnWidthsChange?: (widths: Record<string, number>) => void;
 }
 
 /**
@@ -127,6 +132,7 @@ function ResizableTable<T extends object>({
   minColumnWidth = 60,
   components,
   size = 'small',
+  onColumnWidthsChange,
   ...rest
 }: ResizableTableProps<T>) {
   // leaf 컬럼 경로 키별 width override. 사용자가 드래그를 마친 컬럼만 항목이 채워진다.
@@ -169,7 +175,11 @@ function ResizableTable<T extends object>({
   };
 
   const handleResizeStop = (key: string) => (width: number) => {
-    setWidthOverrides((prev) => ({ ...prev, [key]: width }));
+    setWidthOverrides((prev) => {
+      const next = { ...prev, [key]: width };
+      onColumnWidthsChange?.(next);
+      return next;
+    });
   };
 
   // children(그룹 헤더) 을 가진 컬럼인지 판별. 그룹 헤더 셀에는 리사이즈 핸들을 달지 않고,
