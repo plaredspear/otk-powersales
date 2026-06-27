@@ -31,6 +31,10 @@ function formatNumber(value: number): string {
   return value.toLocaleString('ko-KR');
 }
 
+// 부모 테이블 맨 왼쪽 펼침(expand) 아이콘 컬럼 폭. 자식(월별) 테이블을 이만큼 들여써
+// 부모의 데이터 컬럼 시작점과 자식 컬럼 시작점을 정렬한다.
+const EXPAND_COLUMN_WIDTH = 48;
+
 // 각 컬럼에 기본 width 를 지정해야 ResizableTable 의 헤더 리사이즈 핸들이 활성화된다.
 const COLUMNS: ColumnsType<WorkHistoryPeriodSummaryItem> = [
   { title: '소속지점', dataIndex: 'orgName', width: 120, ellipsis: true, render: (v: string | null) => v ?? '-' },
@@ -58,9 +62,14 @@ const COLUMNS: ColumnsType<WorkHistoryPeriodSummaryItem> = [
   { title: '대휴', dataIndex: 'altHolidayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
 ];
 
-// 펼침(월별 통계) 행 컬럼 — 합계 행과 동일 지표 + 좌측에 년월 라벨.
+// 펼침(월별 통계) 행 컬럼 — 부모 테이블과 컬럼 폭을 1:1 로 맞춰 지표 컬럼이 세로로 정렬되게 한다.
+// 부모의 식별부(소속지점/사번/이름/직위 = 120+100+100+90) 자리에는 '년월'(소속지점 폭) +
+// 나머지 식별 컬럼 폭만큼의 빈 컬럼을 두어 총 폭을 동일하게 유지한다.
 const MONTHLY_COLUMNS: ColumnsType<WorkHistoryMonthlyStat> = [
-  { title: '년월', dataIndex: 'yearMonth', width: 100 },
+  { title: '년월', dataIndex: 'yearMonth', width: 120 },
+  { title: '', dataIndex: 'employeeCodeSpacer', width: 100, render: () => null },
+  { title: '', dataIndex: 'employeeNameSpacer', width: 100, render: () => null },
+  { title: '', dataIndex: 'titleSpacer', width: 90, render: () => null },
   { title: '총 근무일수', dataIndex: 'totalWorkingDays', width: 110, align: 'right', render: (v: number) => formatNumber(v) },
   { title: '근무 거래처 수', dataIndex: 'workingAccountCount', width: 120, align: 'right', render: (v: number) => formatNumber(v) },
   { title: '진열', dataIndex: 'displayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
@@ -78,7 +87,10 @@ function renderMonthlyBreakdown(record: WorkHistoryPeriodSummaryItem) {
       columns={MONTHLY_COLUMNS}
       dataSource={record.monthlyBreakdown}
       pagination={false}
-      style={{ margin: '0 0 0 24px' }}
+      tableLayout="fixed"
+      scroll={{ x: 'max-content' }}
+      // 부모의 펼침 아이콘 컬럼 폭만큼 들여써 데이터 컬럼이 부모와 세로 정렬되게 한다.
+      style={{ margin: `0 0 0 ${EXPAND_COLUMN_WIDTH}px` }}
     />
   );
 }
@@ -331,6 +343,8 @@ export default function WorkHistoryPeriodPage() {
               expandedRowRender: renderMonthlyBreakdown,
               rowExpandable: (record) => record.monthlyBreakdown.length > 0,
               expandedRowKeys: expandedKeys,
+              // 펼침 아이콘 컬럼 폭 고정 — 자식 테이블 들여쓰기(EXPAND_COLUMN_WIDTH)와 정합.
+              columnWidth: EXPAND_COLUMN_WIDTH,
               // + 아이콘 대신 삼각형(▶). 펼쳐지면 90° 회전. 펼침 불가 행은 아이콘 없음.
               // 클릭 토글은 onRow.onClick 이 처리하므로 아이콘은 시각 표현만 담당.
               expandIcon: ({ expandable, expanded }) =>
