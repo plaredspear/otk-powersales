@@ -65,11 +65,16 @@ const COLUMNS: ColumnsType<WorkHistoryPeriodSummaryItem> = [
   { title: '대휴', dataIndex: 'altHolidayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
 ];
 
-// 펼침(월별 통계) 행 컬럼 — 부모 테이블과 컬럼 폭을 1:1 로 맞춰 지표 컬럼이 세로로 정렬되게 한다.
-// 부모의 식별부(소속지점/사번/이름/직위 = 120+100+100+90) 자리에는 '년월'(소속지점 폭) +
-// 나머지 식별 컬럼 폭만큼의 빈 컬럼을 두어 총 폭을 동일하게 유지한다.
+// 펼침(월별 통계) 행 컬럼 — 부모 테이블과 컬럼 수/폭/정렬을 1:1 로 일치시킨다.
+// 부모의 식별부(소속지점/사번/이름/직위) 자리: 첫 컬럼(소속지점 폭)에 '년도-월'(yyyy-MM) 을 회색 배경으로
+// 표시하고, 나머지 식별 컬럼(사번/이름/직위 폭)은 빈 칸으로 두어 지표 컬럼이 부모와 세로 정렬되게 한다.
 const MONTHLY_COLUMNS: ColumnsType<WorkHistoryMonthlyStat> = [
-  { title: '년월', dataIndex: 'yearMonth', width: 120 },
+  {
+    title: '년월',
+    dataIndex: 'yearMonth',
+    width: 120,
+    onCell: () => ({ style: { backgroundColor: '#fafafa' } }),
+  },
   { title: '', dataIndex: 'employeeCodeSpacer', width: 100, render: () => null },
   { title: '', dataIndex: 'employeeNameSpacer', width: 100, render: () => null },
   { title: '', dataIndex: 'titleSpacer', width: 90, render: () => null },

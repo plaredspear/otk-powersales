@@ -173,6 +173,9 @@ describe('WorkHistoryPeriodPage', () => {
       expect(screen.getByText('2026-05')).toBeInTheDocument();
       expect(screen.getByText('2026-06')).toBeInTheDocument();
     });
+    // 월별 통계 첫 컬럼(년월) 셀에 회색 배경이 적용된다.
+    const ymCell = screen.getByText('2026-05').closest('td');
+    expect(ymCell).toHaveStyle({ backgroundColor: '#fafafa' });
   });
 
   it('단일 월 조회(월별 분해 없음) 행은 클릭해도 펼쳐지지 않는다', async () => {
