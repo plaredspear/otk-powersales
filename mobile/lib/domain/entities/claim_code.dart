@@ -4,8 +4,8 @@
 
 /// 기한 종류 Enum
 enum ClaimDateType {
-  /// 유통기한
-  expiryDate('EXPIRY_DATE', '유통기한'),
+  /// 소비기한
+  expiryDate('EXPIRY_DATE', '소비기한'),
 
   /// 제조일자
   manufactureDate('MANUFACTURE_DATE', '제조일자');

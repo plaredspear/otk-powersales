@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../claim/claim_form_row.dart';
 
-/// 유통기한 등록/수정 폼의 날짜 선택 행
+/// 소비기한 등록/수정 폼의 날짜 선택 행
 ///
 /// 레거시 리스트형 폼 행(라벨 + 하단 날짜 + 우측 달력 아이콘)을 따른다.
 /// 행을 탭하면 달력이 열린다.

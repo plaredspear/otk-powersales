@@ -7,9 +7,9 @@ import '../../domain/entities/product_expiration_item.dart';
 import '../providers/product_expiration_form_provider.dart';
 import '../widgets/product_expiration/product_expiration_edit_form.dart';
 
-/// 유통기한 수정 페이지
+/// 소비기한 수정 페이지
 ///
-/// 기존 유통기한 항목의 유통기한/알림일/설명을 수정합니다.
+/// 기존 소비기한 항목의 소비기한/알림일/설명을 수정합니다.
 /// 거래처/제품은 읽기 전용으로 표시됩니다.
 /// 수정 화면에서 단건 삭제도 가능합니다.
 class ProductExpirationEditPage extends ConsumerStatefulWidget {
@@ -41,13 +41,13 @@ class _ProductExpirationEditPageState extends ConsumerState<ProductExpirationEdi
     ref.listen(productExpirationFormProvider, (previous, next) {
       if (next.isSaved && !(previous?.isSaved ?? false)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('유통기한이 수정되었습니다')),
+          const SnackBar(content: Text('소비기한이 수정되었습니다')),
         );
         AppRouter.goBack(context, result: true);
       }
       if (next.isDeleted && !(previous?.isDeleted ?? false)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('유통기한이 삭제되었습니다')),
+          const SnackBar(content: Text('소비기한이 삭제되었습니다')),
         );
         AppRouter.goBack(context, result: true);
       }
@@ -61,7 +61,7 @@ class _ProductExpirationEditPageState extends ConsumerState<ProductExpirationEdi
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('유통기한 수정'),
+        title: const Text('소비기한 수정'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => AppRouter.goBack(context),
@@ -134,8 +134,8 @@ class _ProductExpirationEditPageState extends ConsumerState<ProductExpirationEdi
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('유통기한 삭제'),
-        content: const Text('이 유통기한 항목을 삭제하시겠습니까?'),
+        title: const Text('소비기한 삭제'),
+        content: const Text('이 소비기한 항목을 삭제하시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),

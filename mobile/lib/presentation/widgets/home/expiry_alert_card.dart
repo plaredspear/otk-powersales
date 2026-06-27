@@ -4,20 +4,20 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/expiry_alert.dart';
 
-/// 유통기한 알림 카드 위젯
+/// 소비기한 알림 카드 위젯
 ///
-/// 홈 화면의 #2 영역: 유통기한 임박제품 알림을 표시한다.
+/// 홈 화면의 #2 영역: 소비기한 임박제품 알림을 표시한다.
 /// - expiryAlert != null: 카드 표시 (0건이어도 표시)
 /// - expiryAlert == null: 카드 숨김 (API 미응답)
 class ExpiryAlertCard extends StatelessWidget {
-  /// 유통기한 알림 데이터 (null이면 카드 숨김)
+  /// 소비기한 알림 데이터 (null이면 카드 숨김)
   final ExpiryAlert? expiryAlert;
 
-  /// 카드 탭 콜백 (유통기한 관리 화면으로 이동)
+  /// 카드 탭 콜백 (소비기한 관리 화면으로 이동)
   final VoidCallback? onTap;
 
-  /// 유통기한 임박제품 라인 노출 여부.
-  /// 조장(LEADER)·지점장(ADMIN)은 유통기한 기능을 사용하지 않으므로 false로
+  /// 소비기한 임박제품 라인 노출 여부.
+  /// 조장(LEADER)·지점장(ADMIN)은 소비기한 기능을 사용하지 않으므로 false로
   /// 전달해 라인을 숨기고 프로필(지점/이름) 행만 표시한다.
   final bool showExpiryCount;
 
@@ -38,7 +38,7 @@ class ExpiryAlertCard extends StatelessWidget {
     final alert = expiryAlert!;
 
     return InkWell(
-      // 유통기한 라인을 숨긴 경우(조장·지점장) 유통기한 화면 이동도 비활성화한다.
+      // 소비기한 라인을 숨긴 경우(조장·지점장) 소비기한 화면 이동도 비활성화한다.
       onTap: showExpiryCount ? onTap : null,
       borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
       child: Padding(
@@ -55,7 +55,7 @@ class ExpiryAlertCard extends StatelessWidget {
             ),
             const SizedBox(width: 10),
 
-            // 지점/이름 + 유통기한 알림
+            // 지점/이름 + 소비기한 알림
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +77,7 @@ class ExpiryAlertCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '유통기한 임박제품 : ',
+                          '소비기한 임박제품 : ',
                           style: AppTypography.legacyBody,
                         ),
                         Text(

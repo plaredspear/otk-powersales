@@ -1,6 +1,6 @@
 import '../../domain/entities/product_expiration_item.dart';
 
-/// 유통기한 관리 메인 화면 상태
+/// 소비기한 관리 메인 화면 상태
 class ProductExpirationListState {
   /// 로딩 상태
   final bool isLoading;
@@ -8,7 +8,7 @@ class ProductExpirationListState {
   /// 에러 메시지
   final String? errorMessage;
 
-  /// 유통기한 목록
+  /// 소비기한 목록
   final List<ProductExpirationItem> items;
 
   /// 검색 완료 여부

@@ -1,4 +1,4 @@
-/// 유통기한 등록/수정 폼 상태
+/// 소비기한 등록/수정 폼 상태
 ///
 /// 등록과 수정 화면에서 공유하는 폼 상태 클래스입니다.
 /// 등록 시에는 거래처/제품 선택이 필요하고, 수정 시에는 읽기 전용으로 표시됩니다.
@@ -24,7 +24,7 @@ class ProductExpirationFormState {
   final String? selectedProductName;
 
   // ── 날짜 정보 ──
-  /// 유통기한
+  /// 소비기한
   final DateTime expiryDate;
 
   /// 마감 전 알림 날짜
@@ -35,7 +35,7 @@ class ProductExpirationFormState {
   final String description;
 
   // ── 수정 모드 전용 ──
-  /// 수정 대상 유통기한 시퀀스 (null이면 등록 모드)
+  /// 수정 대상 소비기한 시퀀스 (null이면 등록 모드)
   final int? editSeq;
 
   // ── 결과 상태 ──
@@ -94,7 +94,7 @@ class ProductExpirationFormState {
     if (isRegisterMode) {
       return hasAccount && hasProduct;
     }
-    return true; // 수정 모드는 유통기한/알림이 이미 설정됨
+    return true; // 수정 모드는 소비기한/알림이 이미 설정됨
   }
 
   /// 저장 버튼 활성화 여부

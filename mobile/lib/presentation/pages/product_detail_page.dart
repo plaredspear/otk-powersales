@@ -12,7 +12,7 @@ import '../widgets/common/loading_indicator.dart';
 
 /// 제품 상세 화면
 ///
-/// 제품의 이미지·코드·품목 그룹·단위·출시일·유통기한·바코드·박스규격·출고가·
+/// 제품의 이미지·코드·품목 그룹·단위·출시일·소비기한·바코드·박스규격·출고가·
 /// 셀링포인트·용도·타겟거래유형·알러지·교차오염을 표시합니다.
 /// 레거시 `product/search/detail.jsp` 대응 화면.
 class ProductDetailPage extends ConsumerWidget {
@@ -59,7 +59,7 @@ class ProductDetailPage extends ConsumerWidget {
       _InfoEntry('품목 그룹명', detail.categoryPath),
       _InfoEntry('단위', detail.unit ?? '-'),
       _InfoEntry('출시일', detail.launchDate ?? '-'),
-      _InfoEntry('유통기한', detail.shelfLifeDisplay),
+      _InfoEntry('소비기한', detail.shelfLifeDisplay),
       _InfoEntry('바코드', detail.barcode ?? '-'),
       _InfoEntry('박스규격', _formatNumber(detail.boxReceivingQuantity)),
       _InfoEntry('출고가', _formatNumber(detail.standardUnitPrice)),

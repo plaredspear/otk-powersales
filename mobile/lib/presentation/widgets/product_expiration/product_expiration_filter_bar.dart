@@ -7,11 +7,11 @@ import '../../../domain/repositories/my_account_repository.dart';
 import '../account/account_selector_field.dart';
 import '../common/range_calendar_picker.dart';
 
-/// 유통기한 검색 필터 바
+/// 소비기한 검색 필터 바
 ///
 /// 레거시(otg_PowerSales `product/expiration/list.jsp`)의 `search_top` 정합:
 /// - 거래처 전체 선택 (공용 [AccountSelectorField] 바텀시트, flat full-width 행)
-/// - "유통기한 [기간]" 한 줄 + 우측 노란 pill `검색` 버튼
+/// - "소비기한 [기간]" 한 줄 + 우측 노란 pill `검색` 버튼
 class ProductExpirationFilterBar extends StatelessWidget {
   /// 선택된 거래처명 (미선택 시 전체)
   final String? selectedAccountName;
@@ -58,7 +58,7 @@ class ProductExpirationFilterBar extends StatelessWidget {
         children: [
           // 거래처 전체 (flat 행 + 우측 chevron)
           _buildAccountRow(),
-          // 유통기한 기간 + 검색 (한 줄, 상단 구분선)
+          // 소비기한 기간 + 검색 (한 줄, 상단 구분선)
           _buildDateSearchRow(context),
         ],
       ),
@@ -90,7 +90,7 @@ class ProductExpirationFilterBar extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            '유통기한',
+            '소비기한',
             style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
           ),
           const SizedBox(width: 12),
@@ -131,8 +131,8 @@ class ProductExpirationFilterBar extends StatelessWidget {
     );
   }
 
-  /// 유통기한 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
-  /// 조회 가능 기간은 유통기한 조건(2020 ~ 2030)에 맞춘다. 범위 일수 제한은 없다.
+  /// 소비기한 시작일~종료일을 클레임 현황과 동일한 달력 UI 로 선택한다.
+  /// 조회 가능 기간은 소비기한 조건(2020 ~ 2030)에 맞춘다. 범위 일수 제한은 없다.
   Future<void> _selectDateRange(BuildContext context) async {
     final picked = await showRangeCalendar(
       context,

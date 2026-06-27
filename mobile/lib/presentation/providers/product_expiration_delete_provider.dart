@@ -21,7 +21,7 @@ final deleteProductExpirationBatchUseCaseProvider =
 // 2. StateNotifier Implementation
 // ============================================
 
-/// 유통기한 삭제 상태 관리 Notifier
+/// 소비기한 삭제 상태 관리 Notifier
 class ProductExpirationDeleteNotifier extends StateNotifier<ProductExpirationDeleteState> {
   final DeleteProductExpirationBatch _deleteBatch;
 

@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 
-/// 제품추가(유통기한) 팝업 전용 원격 데이터소스.
+/// 제품추가(소비기한) 팝업 전용 원격 데이터소스.
 ///
 /// 레거시 제품추가 팝업(productPop.jsp)의 3개 호출을 묶는다.
 ///  - 중분류/소분류 카테고리 목록 (`/products/categories`)

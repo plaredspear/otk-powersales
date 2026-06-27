@@ -10,9 +10,9 @@ import '../providers/product_expiration_delete_provider.dart';
 import '../providers/product_expiration_delete_state.dart';
 import '../widgets/product_expiration/product_expiration_delete_card.dart';
 
-/// 유통기한 삭제 페이지
+/// 소비기한 삭제 페이지
 ///
-/// 관리 화면에서 전달받은 유통기한 목록에서 선택적으로 삭제합니다.
+/// 관리 화면에서 전달받은 소비기한 목록에서 선택적으로 삭제합니다.
 /// 전체/그룹/개별 선택 기능을 제공합니다.
 class ProductExpirationDeletePage extends ConsumerStatefulWidget {
   final List<ProductExpirationItem> items;
@@ -57,7 +57,7 @@ class _ProductExpirationDeletePageState extends ConsumerState<ProductExpirationD
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('유통기한 삭제'),
+        title: const Text('소비기한 삭제'),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => AppRouter.goBack(context),
@@ -128,7 +128,7 @@ class _ProductExpirationDeletePageState extends ConsumerState<ProductExpirationD
 
     return ListView(
       children: [
-        // 유통기한 지남 그룹
+        // 소비기한 지남 그룹
         if (state.expiredItems.isNotEmpty) ...[
           _buildGroupCheckbox(
             isExpired: true,
@@ -145,7 +145,7 @@ class _ProductExpirationDeletePageState extends ConsumerState<ProductExpirationD
           const SizedBox(height: AppSpacing.md),
         ],
 
-        // 유통기한 전 그룹
+        // 소비기한 전 그룹
         if (state.activeItems.isNotEmpty) ...[
           _buildGroupCheckbox(
             isExpired: false,
@@ -206,7 +206,7 @@ class _ProductExpirationDeletePageState extends ConsumerState<ProductExpirationD
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
-              isExpired ? '유통기한 지남' : '유통기한 전',
+              isExpired ? '소비기한 지남' : '소비기한 전',
               style: AppTypography.headlineSmall.copyWith(
                 color: isExpired ? AppColors.error : AppColors.warning,
               ),

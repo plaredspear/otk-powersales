@@ -91,7 +91,7 @@ class ProductCardForAdd extends StatelessWidget {
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Text(
-                          '유통기한 ${product.shelfLife}',
+                          '소비기한 ${product.shelfLife}',
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.textSecondary,
                           ),

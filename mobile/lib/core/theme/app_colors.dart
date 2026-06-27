@@ -117,7 +117,7 @@ abstract final class AppColors {
   /// 내일정 등록탭 조원 배너 배경 (레거시 myDaily.jsp .list_title #7C91A7)
   static const Color legacySlate = Color(0xFF7C91A7);
 
-  /// 유통기한 카운트 강조, NEW 배지 배경 (레거시 #DC2C34)
+  /// 소비기한 카운트 강조, NEW 배지 배경 (레거시 #DC2C34)
   static const Color legacyDanger = Color(0xFFDC2C34);
 
   /// 퀵 메뉴 라벨, 공지 본문 (레거시 #333)

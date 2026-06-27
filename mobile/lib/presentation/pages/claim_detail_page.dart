@@ -150,7 +150,7 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
         _row('제조일자',
             d.manufacturingDate != null ? _fmtDate(d.manufacturingDate!) : null),
         _row('출고처', d.logisticsCenter),
-        _row('유통기한',
+        _row('소비기한',
             d.expirationDate != null ? _fmtDate(d.expirationDate!) : null),
       ]);
 

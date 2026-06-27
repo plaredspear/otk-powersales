@@ -1,4 +1,4 @@
-/// 제품추가(유통기한) 팝업 탭.
+/// 제품추가(소비기한) 팝업 탭.
 enum ProductAddTab {
   search('제품 검색'),
   orderHistory('주문 이력');
@@ -56,7 +56,7 @@ class ProductAddItem {
     );
   }
 
-  /// "9개월" 형태의 유통기한 표시값 (없으면 null).
+  /// "9개월" 형태의 소비기한 표시값 (없으면 null).
   String? get shelfLifeText {
     if (shelfLife == null || shelfLife!.isEmpty) return null;
     return '$shelfLife${shelfLifeUnit ?? ''}';

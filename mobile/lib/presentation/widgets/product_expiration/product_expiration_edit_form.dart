@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../claim/claim_form_row.dart';
 import 'product_expiration_date_row.dart';
 
-/// 유통기한 수정 폼 위젯
+/// 소비기한 수정 폼 위젯
 ///
 /// 레거시(otg_PowerSales product/expiration/write.jsp, type='U') UI 기준 정합.
-/// 거래처/제품은 읽기 전용(회색 배경), 유통기한/마감 전 푸시 메세지 알림/설명만
+/// 거래처/제품은 읽기 전용(회색 배경), 소비기한/마감 전 푸시 메세지 알림/설명만
 /// 수정 가능하다.
 class ProductExpirationEditForm extends StatelessWidget {
   /// 거래처명 (읽기 전용)
@@ -18,7 +18,7 @@ class ProductExpirationEditForm extends StatelessWidget {
   /// 제품 코드 (읽기 전용)
   final String productCode;
 
-  /// 유통기한
+  /// 소비기한
   final DateTime expiryDate;
 
   /// 마감 전 푸시 메세지 알림 날짜
@@ -27,7 +27,7 @@ class ProductExpirationEditForm extends StatelessWidget {
   /// 설명
   final String description;
 
-  /// 유통기한 변경 콜백
+  /// 소비기한 변경 콜백
   final ValueChanged<DateTime> onExpiryDateChanged;
 
   /// 마감 전 푸시 메세지 알림 변경 콜백
@@ -73,9 +73,9 @@ class ProductExpirationEditForm extends StatelessWidget {
             ),
           ),
 
-          // 유통기한
+          // 소비기한
           ProductExpirationDateRow(
-            label: '유통기한',
+            label: '소비기한',
             date: expiryDate,
             onDateChanged: onExpiryDateChanged,
           ),

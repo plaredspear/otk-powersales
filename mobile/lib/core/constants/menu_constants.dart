@@ -41,7 +41,7 @@ abstract final class MenuConstants {
       iconAsset: 'assets/images/icon_nav3.png',
       label: '제품',
       items: [
-        MenuItem(id: 'expiry', label: '유통기한 관리', route: '/product-expiration'),
+        MenuItem(id: 'expiry', label: '소비기한 관리', route: '/product-expiration'),
       ],
     ),
     // 4. 매출 현황

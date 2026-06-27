@@ -35,7 +35,7 @@ final deleteProductExpirationUseCaseProvider = Provider<DeleteProductExpiration>
 // 2. StateNotifier Implementation
 // ============================================
 
-/// 유통기한 등록/수정 폼 상태 관리 Notifier
+/// 소비기한 등록/수정 폼 상태 관리 Notifier
 class ProductExpirationFormNotifier extends StateNotifier<ProductExpirationFormState> {
   final RegisterProductExpiration _registerProductExpiration;
   final UpdateProductExpiration _updateProductExpiration;
@@ -90,7 +90,7 @@ class ProductExpirationFormNotifier extends StateNotifier<ProductExpirationFormS
     );
   }
 
-  /// 유통기한 변경 (알림일도 자동 연동: 유통기한 - 1일)
+  /// 소비기한 변경 (알림일도 자동 연동: 소비기한 - 1일)
   void updateExpiryDate(DateTime date) {
     final alertDate = date.subtract(const Duration(days: 1));
     state = state.copyWith(
@@ -109,7 +109,7 @@ class ProductExpirationFormNotifier extends StateNotifier<ProductExpirationFormS
     state = state.copyWith(description: description);
   }
 
-  /// 유통기한 등록
+  /// 소비기한 등록
   Future<void> register() async {
     if (!state.isValid) return;
 
@@ -136,7 +136,7 @@ class ProductExpirationFormNotifier extends StateNotifier<ProductExpirationFormS
     }
   }
 
-  /// 유통기한 수정
+  /// 소비기한 수정
   Future<void> update() async {
     if (state.editSeq == null) return;
 
@@ -159,7 +159,7 @@ class ProductExpirationFormNotifier extends StateNotifier<ProductExpirationFormS
     }
   }
 
-  /// 유통기한 단건 삭제 (수정 화면에서)
+  /// 소비기한 단건 삭제 (수정 화면에서)
   Future<void> delete() async {
     if (state.editSeq == null) return;
 

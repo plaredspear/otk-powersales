@@ -65,7 +65,7 @@ class ProductModel {
     );
   }
 
-  /// 유통기한 표시값: 숫자(shelfLife) + 단위(shelfLifeUnit) 결합 → "9개월".
+  /// 소비기한 표시값: 숫자(shelfLife) + 단위(shelfLifeUnit) 결합 → "9개월".
   /// 레거시 selectProduct 의 expiration + shelflifeunit 결합 표시와 동일.
   String _composeShelfLife() {
     final value = shelfLife ?? '';

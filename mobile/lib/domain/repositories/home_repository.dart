@@ -70,6 +70,6 @@ class HomeData {
 abstract class HomeRepository {
   /// 홈 화면에 필요한 통합 데이터를 조회한다.
   ///
-  /// 오늘 일정, 유통기한 알림, 공지사항을 한 번에 조회.
+  /// 오늘 일정, 소비기한 알림, 공지사항을 한 번에 조회.
   Future<HomeData> getHomeData();
 }

@@ -5,7 +5,7 @@ import '../datasources/product_expiration_remote_datasource.dart';
 import '../models/product_expiration_register_request.dart';
 import '../models/product_expiration_update_request.dart';
 
-/// 유통기한 Repository 구현체
+/// 소비기한 Repository 구현체
 ///
 /// ProductExpirationRemoteDataSource를 사용하여 API를 호출하고,
 /// 응답 데이터를 도메인 엔티티로 변환합니다.

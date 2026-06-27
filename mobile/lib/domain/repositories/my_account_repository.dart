@@ -3,7 +3,7 @@ import '../entities/my_account.dart';
 /// 내 거래처 조회 범위 — 레거시 화면 유형별 거래처 조회 기준 차이.
 ///
 /// - [sales] : 매출 계열(POS/전산/월매출). 부서장(AccountViewAll)이면 전체 거래처를 노출.
-/// - [field] : 현장 활동 계열(판촉/점검/유통기한/클레임). 부서장 전체조회 분기 없음.
+/// - [field] : 현장 활동 계열(판촉/점검/소비기한/클레임). 부서장 전체조회 분기 없음.
 /// - [order] : 주문 작성 계열. 진열 일정 union + 주문가능 abctypecode 필터(레거시 accountSelectList order=order).
 ///
 /// 여사원/조장 경로는 sales/field 두 유형이 동일하다.

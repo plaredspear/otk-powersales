@@ -16,7 +16,7 @@ class ProductForOrder {
   /// 보관 조건 (냉장/냉동/상온)
   final String storageType;
 
-  /// 유통기한 기간
+  /// 소비기한 기간
   final String shelfLife;
 
   /// 제품 단가 (원)

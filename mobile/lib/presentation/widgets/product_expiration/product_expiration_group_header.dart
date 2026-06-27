@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 
-/// 유통기한 그룹 헤더 위젯
+/// 소비기한 그룹 헤더 위젯
 ///
 /// 레거시(`product/expiration/list.jsp` `bull_circle`) 정합:
-/// "유통기한 지남" (빨간 점·빨강 #DC2C34) / "유통기한 전" (회색 점·회색 #999)
+/// "소비기한 지남" (빨간 점·빨강 #DC2C34) / "소비기한 전" (회색 점·회색 #999)
 class ProductExpirationGroupHeader extends StatelessWidget {
   /// 만료 그룹인지 여부
   final bool isExpired;
@@ -51,7 +51,7 @@ class ProductExpirationGroupHeader extends StatelessWidget {
           const SizedBox(width: 6),
           // 그룹명 + 개수
           Text(
-            isExpired ? '유통기한 지남 ($count)' : '유통기한 전 ($count)',
+            isExpired ? '소비기한 지남 ($count)' : '소비기한 전 ($count)',
             style: AppTypography.headlineSmall.copyWith(color: color),
           ),
         ],

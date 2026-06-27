@@ -1,6 +1,6 @@
 import '../../domain/entities/product_expiration_item.dart';
 
-/// 유통기한 항목 API 모델 (DTO)
+/// 소비기한 항목 API 모델 (DTO)
 ///
 /// Backend API의 snake_case JSON을 파싱하여 ProductExpirationItem 엔티티로 변환합니다.
 class ProductExpirationItemModel {

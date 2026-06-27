@@ -12,10 +12,10 @@ import '../widgets/product_expiration/product_expiration_filter_bar.dart';
 import '../widgets/product_expiration/product_expiration_group_header.dart';
 import '../widgets/product_expiration/product_expiration_product_card.dart';
 
-/// 유통기한 관리 메인 페이지
+/// 소비기한 관리 메인 페이지
 ///
-/// 거래처/기간 필터로 유통기한 목록을 조회하고,
-/// "유통기한 지남" / "유통기한 전" 그룹으로 표시합니다.
+/// 거래처/기간 필터로 소비기한 목록을 조회하고,
+/// "소비기한 지남" / "소비기한 전" 그룹으로 표시합니다.
 class ProductExpirationListPage extends ConsumerStatefulWidget {
   const ProductExpirationListPage({super.key});
 
@@ -85,7 +85,7 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('유통기한 관리'),
+        title: const Text('소비기한 관리'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => AppRouter.goBack(context),
@@ -230,7 +230,7 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
         _buildSectTop(state),
         _band(),
 
-        // 유통기한 지남 그룹
+        // 소비기한 지남 그룹
         ProductExpirationGroupHeader(
           isExpired: true,
           count: state.expiredItems.length,
@@ -243,7 +243,7 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
         // 그룹 구분 띠 (레거시 bline mt20)
         _band(marginTop: true),
 
-        // 유통기한 전 그룹
+        // 소비기한 전 그룹
         ProductExpirationGroupHeader(
           isExpired: false,
           count: state.activeItems.length,

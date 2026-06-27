@@ -20,7 +20,7 @@ import '../providers/safety_check_provider.dart';
 
 /// 홈 화면
 ///
-/// 오늘 일정, 유통기한 알림, 공지사항, 제품 검색, 빠른 메뉴를 표시한다.
+/// 오늘 일정, 소비기한 알림, 공지사항, 제품 검색, 빠른 메뉴를 표시한다.
 /// Pull-to-refresh로 전체 데이터를 새로고침할 수 있다.
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -189,7 +189,7 @@ class _HomePageState extends ConsumerState<HomePage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // #2 프로필 / 유통기한 알림
+              // #2 프로필 / 소비기한 알림
               // 프로필 행(아바타+텍스트)을 통째로 끌어올려 세로 정렬을 유지한 채
               // ① 노란 영역에 겹친다. 키가 큰 아바타 상단만 노랑에 걸치고
               // 텍스트는 그라데이션(흰색) 위에 놓인다.
@@ -199,7 +199,7 @@ class _HomePageState extends ConsumerState<HomePage>
                   padding: horizontalGutter,
                   child: ExpiryAlertCard(
                     expiryAlert: homeData.expiryAlert,
-                    // 조장(LEADER)·지점장(ADMIN)은 유통기한 임박제품 라인을 숨긴다.
+                    // 조장(LEADER)·지점장(ADMIN)은 소비기한 임박제품 라인을 숨긴다.
                     showExpiryCount:
                         userRole != 'LEADER' && userRole != 'ADMIN',
                     onTap: () {

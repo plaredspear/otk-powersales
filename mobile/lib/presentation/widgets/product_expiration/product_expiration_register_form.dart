@@ -4,11 +4,11 @@ import '../claim/claim_form_row.dart';
 import '../claim/claim_product_field.dart';
 import 'product_expiration_date_row.dart';
 
-/// 유통기한 등록 폼 위젯
+/// 소비기한 등록 폼 위젯
 ///
 /// 레거시(otg_PowerSales product/expiration/write.jsp) UI 기준 정합.
 /// 테두리 박스 없이 라벨 + 하단 값/플레이스홀더 행으로 구성하고 행마다 얇은
-/// 구분선을 둔다. 거래처/제품/유통기한/마감 전 푸시 메세지 알림/설명 순.
+/// 구분선을 둔다. 거래처/제품/소비기한/마감 전 푸시 메세지 알림/설명 순.
 class ProductExpirationRegisterForm extends StatelessWidget {
   /// 선택된 거래처명
   final String? accountName;
@@ -19,7 +19,7 @@ class ProductExpirationRegisterForm extends StatelessWidget {
   /// 선택된 제품명
   final String? productName;
 
-  /// 유통기한
+  /// 소비기한
   final DateTime expiryDate;
 
   /// 마감 전 푸시 메세지 알림 날짜
@@ -37,7 +37,7 @@ class ProductExpirationRegisterForm extends StatelessWidget {
   /// 바코드 스캔 버튼 콜백
   final VoidCallback onScanBarcode;
 
-  /// 유통기한 변경 콜백
+  /// 소비기한 변경 콜백
   final ValueChanged<DateTime> onExpiryDateChanged;
 
   /// 마감 전 푸시 메세지 알림 변경 콜백
@@ -90,9 +90,9 @@ class ProductExpirationRegisterForm extends StatelessWidget {
               onProductSelectPressed: onSelectProduct,
             ),
 
-            // 유통기한
+            // 소비기한
             ProductExpirationDateRow(
-              label: '유통기한',
+              label: '소비기한',
               date: expiryDate,
               onDateChanged: onExpiryDateChanged,
             ),

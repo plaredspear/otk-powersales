@@ -43,7 +43,7 @@ class ClaimDateField extends StatelessWidget {
   }
 }
 
-/// 기한 종류 드롭다운 (유통기한/제조일자)
+/// 기한 종류 드롭다운 (소비기한/제조일자)
 class _DateTypeDropdown extends StatelessWidget {
   const _DateTypeDropdown({
     required this.dateType,
@@ -67,7 +67,7 @@ class _DateTypeDropdown extends StatelessWidget {
       items: const [
         DropdownMenuItem(
           value: ClaimDateType.expiryDate,
-          child: Text('유통기한'),
+          child: Text('소비기한'),
         ),
         DropdownMenuItem(
           value: ClaimDateType.manufactureDate,

@@ -1,6 +1,6 @@
 import '../../domain/entities/product_expiration_item.dart';
 
-/// 유통기한 삭제 화면 상태
+/// 소비기한 삭제 화면 상태
 class ProductExpirationDeleteState {
   /// 로딩 상태
   final bool isLoading;
@@ -8,7 +8,7 @@ class ProductExpirationDeleteState {
   /// 에러 메시지
   final String? errorMessage;
 
-  /// 삭제할 유통기한 목록 (관리 화면에서 전달받은 목록)
+  /// 삭제할 소비기한 목록 (관리 화면에서 전달받은 목록)
   final List<ProductExpirationItem> items;
 
   /// 선택된 항목 시퀀스 목록

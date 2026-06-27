@@ -20,7 +20,7 @@ class ProductSelection {
   });
 }
 
-/// 유통기한 "제품 추가" 화면
+/// 소비기한 "제품 추가" 화면
 ///
 /// 레거시(Heroku productPop.jsp / poplayer.js, type=product) 정합 — 풀스크린 2탭
 /// (제품 검색 / 주문 이력) 구성. 단일 제품 선택 전용으로, 제품을 선택하면 즉시
@@ -334,7 +334,7 @@ class _ProductResultListState extends State<_ProductResultList> {
   }
 }
 
-/// 제품 1건 행 — 제품명(bold) + 상세(코드/바코드/보관/유통기한) + 선택 버튼.
+/// 제품 1건 행 — 제품명(bold) + 상세(코드/바코드/보관/소비기한) + 선택 버튼.
 class _ProductRow extends StatelessWidget {
   final ProductAddItem product;
   final ValueChanged<ProductAddItem> onSelect;
@@ -350,7 +350,7 @@ class _ProductRow extends StatelessWidget {
       if (product.storageCondition != null &&
           product.storageCondition!.isNotEmpty)
         '보관방법 : ${product.storageCondition}',
-      if (product.shelfLifeText != null) '유통기한 : ${product.shelfLifeText}',
+      if (product.shelfLifeText != null) '소비기한 : ${product.shelfLifeText}',
     ];
 
     return InkWell(

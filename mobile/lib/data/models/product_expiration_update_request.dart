@@ -1,6 +1,6 @@
 import '../../domain/entities/product_expiration_form.dart';
 
-/// 유통기한 수정 API 요청 모델
+/// 소비기한 수정 API 요청 모델
 ///
 /// PUT /api/v1/mobile/product-expiration/{seq} 요청 바디를 snake_case JSON으로 직렬화합니다.
 class ProductExpirationUpdateRequest {

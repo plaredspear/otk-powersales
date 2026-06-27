@@ -61,7 +61,7 @@ class ProductDetail {
   String get categoryPath =>
       [category1, category2, category3].whereType<String>().join(' / ');
 
-  /// 유통기한 표시 문자열 (보관조건 + 기간 + 단위), 정보 없으면 빈 문자열
+  /// 소비기한 표시 문자열 (보관조건 + 기간 + 단위), 정보 없으면 빈 문자열
   String get shelfLifeDisplay {
     final parts = <String>[
       if (storageCondition != null && storageCondition!.isNotEmpty)
@@ -72,7 +72,7 @@ class ProductDetail {
     return parts.join(' ');
   }
 
-  /// 유통기한 단위 picklist 코드(연도/월/일자)를 레거시 표시형(년/개월/일)으로 변환.
+  /// 소비기한 단위 picklist 코드(연도/월/일자)를 레거시 표시형(년/개월/일)으로 변환.
   /// (레거시 `product/search/detail.jsp` 119~127행 분기와 정합)
   /// 매핑되지 않는 값은 원본을 그대로 사용한다.
   static String _shelfLifeUnitLabel(String? unit) {

@@ -1,6 +1,6 @@
-/// 유통기한 등록 폼
+/// 소비기한 등록 폼
 ///
-/// 유통기한 신규 등록 시 입력 데이터를 담는 값 객체입니다.
+/// 소비기한 신규 등록 시 입력 데이터를 담는 값 객체입니다.
 class ProductExpirationRegisterForm {
   /// 거래처 코드
   final String accountCode;
@@ -14,7 +14,7 @@ class ProductExpirationRegisterForm {
   /// 제품명
   final String productName;
 
-  /// 유통기한
+  /// 소비기한
   final DateTime expiryDate;
 
   /// 마감 전 알림 날짜
@@ -105,12 +105,12 @@ class ProductExpirationRegisterForm {
   }
 }
 
-/// 유통기한 수정 폼
+/// 소비기한 수정 폼
 ///
-/// 유통기한 수정 시 입력 데이터를 담는 값 객체입니다.
+/// 소비기한 수정 시 입력 데이터를 담는 값 객체입니다.
 /// 거래처와 제품은 수정 불가하므로 포함하지 않습니다.
 class ProductExpirationUpdateForm {
-  /// 유통기한
+  /// 소비기한
   final DateTime expiryDate;
 
   /// 마감 전 알림 날짜

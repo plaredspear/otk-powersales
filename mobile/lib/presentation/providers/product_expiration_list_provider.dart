@@ -31,7 +31,7 @@ final getProductExpirationListUseCaseProvider =
 // 2. StateNotifier Implementation
 // ============================================
 
-/// 유통기한 관리 목록 상태 관리 Notifier
+/// 소비기한 관리 목록 상태 관리 Notifier
 class ProductExpirationListNotifier extends StateNotifier<ProductExpirationListState> {
   final GetProductExpirationList _getProductExpirationList;
 
@@ -69,7 +69,7 @@ class ProductExpirationListNotifier extends StateNotifier<ProductExpirationListS
     state = state.copyWith(toDate: date);
   }
 
-  /// 유통기한 목록 검색
+  /// 소비기한 목록 검색
   Future<void> searchProductExpiration() async {
     final filter = ProductExpirationFilter(
       accountCode: state.selectedAccountCode,

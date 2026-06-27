@@ -30,7 +30,7 @@ class ActivityMenuItem {
 /// 활동등록 팝업 위젯
 ///
 /// 영업사원이 현장 활동을 등록하기 위한 진입점.
-/// 6개의 메뉴(유통기한 관리, 현장 점검 등록, 제안하기, 클레임 등록,
+/// 6개의 메뉴(소비기한 관리, 현장 점검 등록, 제안하기, 클레임 등록,
 /// 내 클레임 조회, 내 물류클레임 조회)를 BottomSheet 형태로 제공하며,
 /// 각 메뉴 선택 시 해당 화면으로 이동한다. (레거시 GNB "활동 등록" 정합)
 class ActivityRegistrationPopup extends StatelessWidget {
@@ -45,12 +45,12 @@ class ActivityRegistrationPopup extends StatelessWidget {
   /// 기본 메뉴 목록 (6개, 레거시 GNB "활동 등록" 순서 정합)
   ///
   /// 아이콘은 레거시 GNB(gnb.jsp `.active_navN`)의 PNG(ico_activeN.png)를
-  /// 그대로 가져와 적용한다. (active_nav 매핑: 유통기한=2, 현장점검=4,
+  /// 그대로 가져와 적용한다. (active_nav 매핑: 소비기한=2, 현장점검=4,
   /// 제안하기=5, 클레임등록=3, 내클레임/내물류클레임=1)
   static const List<ActivityMenuItem> defaultMenuItems = [
     ActivityMenuItem(
       iconAsset: 'assets/images/ico_active2.png',
-      label: '유통기한 관리',
+      label: '소비기한 관리',
       route: AppRouter.productExpiration,
     ),
     ActivityMenuItem(

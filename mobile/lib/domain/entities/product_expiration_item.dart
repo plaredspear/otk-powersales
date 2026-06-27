@@ -1,8 +1,8 @@
-/// 유통기한 항목 엔티티
+/// 소비기한 항목 엔티티
 ///
-/// 유통기한 관리 화면에서 표시되는 제품의 유통기한 정보를 담는 도메인 엔티티입니다.
+/// 소비기한 관리 화면에서 표시되는 제품의 소비기한 정보를 담는 도메인 엔티티입니다.
 class ProductExpirationItem {
-  /// 유통기한 항목 시퀀스 (PK)
+  /// 소비기한 항목 시퀀스 (PK)
   final int seq;
 
   /// 제품 코드
@@ -17,7 +17,7 @@ class ProductExpirationItem {
   /// 거래처명
   final String accountName;
 
-  /// 유통기한 (만료 날짜)
+  /// 소비기한 (만료 날짜)
   final DateTime expiryDate;
 
   /// 마감 전 푸시 알림 날짜
@@ -29,7 +29,7 @@ class ProductExpirationItem {
   /// 설명 (선택 입력)
   final String description;
 
-  /// 유통기한 경과 여부 (D-DAY <= 0)
+  /// 소비기한 경과 여부 (D-DAY <= 0)
   final bool isExpired;
 
   const ProductExpirationItem({
@@ -143,9 +143,9 @@ class ProductExpirationItem {
   }
 }
 
-/// 유통기한 검색 필터
+/// 소비기한 검색 필터
 ///
-/// 유통기한 목록 조회 시 사용하는 검색 조건을 담는 값 객체입니다.
+/// 소비기한 목록 조회 시 사용하는 검색 조건을 담는 값 객체입니다.
 class ProductExpirationFilter {
   /// 거래처 코드 (null이면 전체)
   final String? accountCode;

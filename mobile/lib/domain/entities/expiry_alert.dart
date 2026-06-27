@@ -1,6 +1,6 @@
-/// 유통기한 알림 엔티티
+/// 소비기한 알림 엔티티
 ///
-/// 홈화면에 표시되는 유통기한 임박 제품 알림 정보를 나타낸다.
+/// 홈화면에 표시되는 소비기한 임박 제품 알림 정보를 나타낸다.
 class ExpiryAlert {
   final String branchName;
   final String employeeName;

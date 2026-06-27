@@ -6,7 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/product_expiration_item.dart';
 
-/// 유통기한 삭제용 제품 카드 위젯
+/// 소비기한 삭제용 제품 카드 위젯
 ///
 /// 체크박스 + 제품 정보 표시. 삭제 화면에서 사용.
 class ProductExpirationDeleteCard extends StatelessWidget {
@@ -70,7 +70,7 @@ class ProductExpirationDeleteCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
 
-                  // 거래처명 | 유통기한 날짜
+                  // 거래처명 | 소비기한 날짜
                   Text(
                     '${item.accountName} | ${dateFormat.format(item.expiryDate)}까지',
                     style: AppTypography.bodySmall.copyWith(

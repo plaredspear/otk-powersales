@@ -10,7 +10,7 @@ final productAddDataSourceProvider = Provider<ProductAddRemoteDataSource>((ref) 
   return ProductAddRemoteDataSource(ref.watch(dioProvider));
 });
 
-/// 제품추가(유통기한) 팝업 상태 관리 Notifier.
+/// 제품추가(소비기한) 팝업 상태 관리 Notifier.
 ///
 /// 제품 검색(필터)과 거래처 주문이력 조회를 담당한다. 단일 선택 전용이므로
 /// 선택 상태는 보유하지 않고, 화면에서 탭하면 즉시 반환한다.

@@ -6,9 +6,9 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/product_expiration_item.dart';
 
-/// 유통기한 제품 카드 위젯
+/// 소비기한 제품 카드 위젯
 ///
-/// 제품명, 제품코드, 거래처명, 유통기한 날짜, 알림일, D-DAY 표시.
+/// 제품명, 제품코드, 거래처명, 소비기한 날짜, 알림일, D-DAY 표시.
 /// 탭 시 수정 화면으로 이동.
 class ProductExpirationProductCard extends StatelessWidget {
   final ProductExpirationItem item;
@@ -52,7 +52,7 @@ class ProductExpirationProductCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xs),
 
-              // 거래처명 | 유통기한 날짜
+              // 거래처명 | 소비기한 날짜
               Row(
                 children: [
                   Expanded(

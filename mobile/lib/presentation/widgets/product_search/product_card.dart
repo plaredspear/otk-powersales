@@ -78,7 +78,7 @@ class ProductCard extends StatelessWidget {
                   _buildInfoRow('바코드', product.barcode),
                   const SizedBox(height: AppSpacing.xxs),
 
-                  // 보관조건 | 유통기한
+                  // 보관조건 | 소비기한
                   _buildInfoRow(
                     '보관',
                     '${product.storageType} | ${product.shelfLife}',

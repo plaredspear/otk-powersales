@@ -5,7 +5,7 @@ import '../models/product_expiration_register_request.dart';
 import '../models/product_expiration_update_request.dart';
 import 'product_expiration_remote_datasource.dart';
 
-/// 유통기한 API DataSource 구현체
+/// 소비기한 API DataSource 구현체
 ///
 /// Dio HTTP 클라이언트를 사용하여 실제 Backend API와 통신합니다.
 class ProductExpirationApiDataSource implements ProductExpirationRemoteDataSource {

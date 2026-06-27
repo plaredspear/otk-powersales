@@ -10,9 +10,9 @@ import '../screens/barcode_scanner_screen.dart';
 import '../widgets/product_expiration/product_expiration_add_product_sheet.dart';
 import '../widgets/product_expiration/product_expiration_register_form.dart';
 
-/// 유통기한 등록 페이지
+/// 소비기한 등록 페이지
 ///
-/// 거래처/제품 선택, 유통기한/알림일 입력, 설명 입력을 통해 유통기한을 등록합니다.
+/// 거래처/제품 선택, 소비기한/알림일 입력, 설명 입력을 통해 소비기한을 등록합니다.
 /// 등록 완료 시 이전 화면(관리 화면)으로 복귀합니다.
 class ProductExpirationRegisterPage extends ConsumerStatefulWidget {
   const ProductExpirationRegisterPage({super.key});
@@ -40,7 +40,7 @@ class _ProductExpirationRegisterPageState
     ref.listen(productExpirationFormProvider, (previous, next) {
       if (next.isSaved && !(previous?.isSaved ?? false)) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('유통기한이 등록되었습니다')),
+          const SnackBar(content: Text('소비기한이 등록되었습니다')),
         );
         AppRouter.goBack(context, result: true);
       }
@@ -54,7 +54,7 @@ class _ProductExpirationRegisterPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('유통기한 등록'),
+        title: const Text('소비기한 등록'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => AppRouter.goBack(context),
@@ -112,7 +112,7 @@ class _ProductExpirationRegisterPageState
     );
   }
 
-  /// 바코드 스캔 — 카메라로 제품 바코드를 스캔해 유통기한 등록 대상 제품을 선택한다.
+  /// 바코드 스캔 — 카메라로 제품 바코드를 스캔해 소비기한 등록 대상 제품을 선택한다.
   Future<void> _handleBarcodeScan() async {
     final barcode = await BarcodeScannerScreen.show(context);
     if (barcode == null || !mounted) return;
