@@ -15,6 +15,8 @@ export interface PromotionListParams {
   category1?: string;
   /** 대표제품명(Product.name)/제품코드(Product.productCode) OR like 검색. */
   primaryProduct?: string;
+  /** 배정된 행사사원의 사번(Employee.employeeCode)/성명(Employee.name) OR like EXISTS 필터. */
+  employeeKeyword?: string;
   /** true 면 내가 owner 인 행사만 (SF ListView filterScope=Mine 대응). */
   ownerOnly?: boolean;
   page: number;
@@ -128,6 +130,7 @@ export async function fetchPromotions(params: PromotionListParams): Promise<Prom
   if (params.accountNumber) queryParams.accountNumber = params.accountNumber;
   if (params.category1) queryParams.category1 = params.category1;
   if (params.primaryProduct) queryParams.primaryProduct = params.primaryProduct;
+  if (params.employeeKeyword) queryParams.employeeKeyword = params.employeeKeyword;
   if (params.ownerOnly) queryParams.ownerOnly = 'true';
 
   const res = await client.get<ApiResponse<PromotionListData>>('/api/v1/admin/promotions', {
@@ -155,6 +158,7 @@ export function promotionExportParams(
   if (params.accountNumber) queryParams.accountNumber = params.accountNumber;
   if (params.category1) queryParams.category1 = params.category1;
   if (params.primaryProduct) queryParams.primaryProduct = params.primaryProduct;
+  if (params.employeeKeyword) queryParams.employeeKeyword = params.employeeKeyword;
   if (params.ownerOnly) queryParams.ownerOnly = 'true';
   return queryParams;
 }

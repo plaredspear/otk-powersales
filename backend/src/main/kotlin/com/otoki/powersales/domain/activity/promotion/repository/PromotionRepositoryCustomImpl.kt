@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.promotion.entity.QPromotion.Companio
 import com.otoki.powersales.domain.activity.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
+import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.Expressions
@@ -41,6 +42,7 @@ class PromotionRepositoryCustomImpl(
         accountNumber: String?,
         category1: String?,
         primaryProduct: String?,
+        employeeKeyword: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
         pageable: Pageable
@@ -88,6 +90,26 @@ class PromotionRepositoryCustomImpl(
             builder.and(
                 product.name.lower().like(lowerPattern)
                     .or(product.productCode.lower().like(lowerPattern))
+            )
+        }
+
+        // 행사사원 필터 — 해당 행사에 (사번/성명 like 매칭되는) 행사사원이 1명이라도 배정돼 있으면 통과.
+        // EXISTS 상관 서브쿼리: promotion row 중복(1:N JOIN 의 fan-out)을 만들지 않아 페이징/count 정합 유지.
+        // 서브쿼리는 promotion_id 상관조건(idx_promotion_employee_promotion_id) + employee PK 조인으로 인덱스 탐.
+        // 행사사원 soft-delete(is_deleted nullable) 제외 — NULL 도 미삭제로 통과.
+        if (!employeeKeyword.isNullOrBlank()) {
+            val lowerPattern = "%${employeeKeyword.lowercase()}%"
+            builder.and(
+                JPAExpressions.selectOne()
+                    .from(promotionEmployee)
+                    .join(promotionEmployee.employee, employee)
+                    .where(
+                        promotionEmployee.promotionId.eq(promotion.id),
+                        promotionEmployee.isDeleted.isNull.or(promotionEmployee.isDeleted.isFalse),
+                        employee.employeeCode.lower().like(lowerPattern)
+                            .or(employee.name.lower().like(lowerPattern)),
+                    )
+                    .exists()
             )
         }
 

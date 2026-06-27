@@ -82,6 +82,7 @@ class AdminPromotionController(
         @RequestParam(required = false) @Size(min = 1, max = 40) accountNumber: String?,
         @RequestParam(required = false) @Size(min = 1, max = 255) category1: String?,
         @RequestParam(required = false) @Size(min = 1, max = 100) primaryProduct: String?,
+        @RequestParam(required = false) @Size(min = 1, max = 100) employeeKeyword: String?,
         @RequestParam(required = false, defaultValue = "false") ownerOnly: Boolean,
     ): ResponseEntity<ByteArray> {
         val result = adminPromotionService.exportPromotions(
@@ -94,6 +95,7 @@ class AdminPromotionController(
             accountNumber = accountNumber,
             category1 = category1,
             primaryProduct = primaryProduct,
+            employeeKeyword = employeeKeyword,
             ownerOnly = ownerOnly
         )
         return ExcelResponseUtils.build(result)
@@ -112,6 +114,7 @@ class AdminPromotionController(
         @RequestParam(required = false) @Size(min = 1, max = 40) accountNumber: String?,
         @RequestParam(required = false) @Size(min = 1, max = 255) category1: String?,
         @RequestParam(required = false) @Size(min = 1, max = 100) primaryProduct: String?,
+        @RequestParam(required = false) @Size(min = 1, max = 100) employeeKeyword: String?,
         @RequestParam(required = false, defaultValue = "false") ownerOnly: Boolean,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
@@ -126,6 +129,7 @@ class AdminPromotionController(
             accountNumber = accountNumber,
             category1 = category1,
             primaryProduct = primaryProduct,
+            employeeKeyword = employeeKeyword,
             ownerOnly = ownerOnly,
             page = page,
             size = size

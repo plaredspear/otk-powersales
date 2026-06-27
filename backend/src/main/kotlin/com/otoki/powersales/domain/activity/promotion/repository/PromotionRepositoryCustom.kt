@@ -23,7 +23,10 @@ interface PromotionRepositoryCustom {
      * `accountName` 은 거래처명/거래처코드(`Account.externalKey`) OR like 검색 (진열스케줄마스터 정합),
      * `accountNumber` 는 거래처번호(`Account.accountNumber`, SF `AccountNumber`) like 검색,
      * `category1` 은 제품유형(화면 "제품유형" 컬럼 = 대표제품 `Product.storeConditionText` 파생값) like 검색,
-     * `primaryProduct` 는 대표제품명(`Product.name`)/제품코드(`Product.productCode`) OR like 검색. 모두 AND 합성.
+     * `primaryProduct` 는 대표제품명(`Product.name`)/제품코드(`Product.productCode`) OR like 검색,
+     * `employeeKeyword` 는 배정된 행사사원의 사번(`Employee.employeeCode`)/성명(`Employee.name`) OR like
+     * EXISTS 필터(해당 키워드 매칭 행사사원이 1명 이상 배정된 행사만 — promotion row 중복 없이 페이징/count 정합 유지).
+     * 모두 AND 합성.
      */
     fun searchForAdmin(
         policyPredicate: Predicate,
@@ -35,6 +38,7 @@ interface PromotionRepositoryCustom {
         accountNumber: String?,
         category1: String?,
         primaryProduct: String?,
+        employeeKeyword: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
         pageable: Pageable

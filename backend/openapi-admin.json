@@ -24960,6 +24960,15 @@
           }
         }, {
           "in" : "query",
+          "name" : "employeeKeyword",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "ownerOnly",
           "required" : false,
           "schema" : {
@@ -25099,6 +25108,15 @@
         }, {
           "in" : "query",
           "name" : "primaryProduct",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeKeyword",
           "required" : false,
           "schema" : {
             "maxLength" : 100,

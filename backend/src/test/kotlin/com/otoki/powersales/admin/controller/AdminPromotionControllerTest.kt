@@ -128,7 +128,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
                 page = 0, size = 20, totalElements = 1, totalPages = 1
             )
             every { adminPromotionService.getPromotions(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
             ) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions"))
@@ -145,7 +145,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
                 content = emptyList(), page = 0, size = 20, totalElements = 0, totalPages = 0
             )
             every { adminPromotionService.getPromotions(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
             ) } returns response
 
             mockMvc.perform(get("/api/v1/admin/promotions"))
@@ -162,7 +162,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - xlsx 바이트 + attachment 헤더 반환")
         fun exportPromotions_success() {
             every {
-                adminPromotionService.exportPromotions(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+                adminPromotionService.exportPromotions(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
             } returns ExcelResult(
                 bytes = byteArrayOf(0x50, 0x4B, 0x03, 0x04), // "PK.." (xlsx ZIP magic)
                 filename = "행사마스터.xlsx",

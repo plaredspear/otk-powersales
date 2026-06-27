@@ -96,6 +96,7 @@ class AdminPromotionService(
         accountNumber: String?,
         category1: String?,
         primaryProduct: String?,
+        employeeKeyword: String?,
         ownerOnly: Boolean,
         page: Int,
         size: Int
@@ -119,6 +120,7 @@ class AdminPromotionService(
             accountNumber = accountNumber,
             category1 = category1,
             primaryProduct = primaryProduct,
+            employeeKeyword = employeeKeyword,
             ownerOnly = ownerOnly,
             currentUserId = scope.userId,
             pageable = pageable
@@ -150,6 +152,7 @@ class AdminPromotionService(
         accountNumber: String?,
         category1: String?,
         primaryProduct: String?,
+        employeeKeyword: String?,
         ownerOnly: Boolean
     ): ExcelResult {
         val policyPredicate = policyEvaluator.buildPredicate(
@@ -169,6 +172,7 @@ class AdminPromotionService(
             accountNumber = accountNumber,
             category1 = category1,
             primaryProduct = primaryProduct,
+            employeeKeyword = employeeKeyword,
             ownerOnly = ownerOnly,
             currentUserId = scope.userId,
             pageable = pageable

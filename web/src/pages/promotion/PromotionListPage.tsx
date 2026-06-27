@@ -52,6 +52,7 @@ export default function PromotionListPage() {
       accountNumber: '',
       category1: '',
       primaryProduct: '',
+      employeeKeyword: '',
       ownerOnly: '',
     },
   });
@@ -64,6 +65,7 @@ export default function PromotionListPage() {
     accountNumber,
     category1,
     primaryProduct,
+    employeeKeyword,
     ownerOnly,
   } = filters;
 
@@ -78,6 +80,7 @@ export default function PromotionListPage() {
       accountNumber: saved.accountNumber ?? '',
       category1: saved.category1 ?? '',
       primaryProduct: saved.primaryProduct ?? '',
+      employeeKeyword: saved.employeeKeyword ?? '',
       ownerOnly: saved.ownerOnly ?? '',
     });
   };
@@ -92,6 +95,7 @@ export default function PromotionListPage() {
     accountNumber,
     category1,
     primaryProduct,
+    employeeKeyword,
     ownerOnly,
   };
   const savedPreview = [
@@ -103,6 +107,7 @@ export default function PromotionListPage() {
     { label: '거래처번호', value: accountNumber },
     { label: '제품유형', value: category1 },
     { label: '대표제품', value: primaryProduct },
+    { label: '행사사원', value: employeeKeyword },
     { label: '범위', value: ownerOnly === 'true' ? '내 행사만' : '전체' },
   ];
 
@@ -128,6 +133,7 @@ export default function PromotionListPage() {
     accountNumber: accountNumber || undefined,
     category1: category1 || undefined,
     primaryProduct: primaryProduct || undefined,
+    employeeKeyword: employeeKeyword || undefined,
     ownerOnly: ownerOnly === 'true' || undefined,
     page,
     size: 20,
@@ -152,6 +158,7 @@ export default function PromotionListPage() {
           accountNumber: accountNumber || undefined,
           category1: category1 || undefined,
           primaryProduct: primaryProduct || undefined,
+          employeeKeyword: employeeKeyword || undefined,
           ownerOnly: ownerOnly === 'true' || undefined,
         }),
         totalCount: data?.totalElements ?? 0,
@@ -381,6 +388,14 @@ export default function PromotionListPage() {
           defaultValue={primaryProduct ?? ''}
           style={{ width: 180 }}
           onSearch={(val) => setFilter('primaryProduct', val)}
+        />
+        <Input.Search
+          key={`employeeKeyword-${employeeKeyword}`}
+          placeholder="행사사원(사번/성명)"
+          allowClear
+          defaultValue={employeeKeyword ?? ''}
+          style={{ width: 180 }}
+          onSearch={(val) => setFilter('employeeKeyword', val)}
         />
         {/* "내 행사만" 체크박스 UI 는 임시 제거 (ownerOnly state/API/backend 로직은 유지 — 추후 재노출 대비). */}
       </div>
