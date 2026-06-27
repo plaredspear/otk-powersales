@@ -174,8 +174,8 @@ export default function WorkHistoryPeriodPage() {
     return rows;
   }, [data, expandedKeys]);
 
-  // 단일 컬럼 정의 — summary/monthly 행을 같은 컬럼으로 렌더. 식별부 첫 컬럼은 행 종류에 따라
-  // (summary) 펼침 삼각형+소속지점 / (monthly) 회색 배경의 년월 을 표시한다.
+  // 단일 컬럼 정의 — summary/monthly 행을 같은 컬럼으로 렌더. 월별 행은 식별부(소속지점~직위)를
+  // 회색 배경의 빈 칸으로 두되, 년월(yyyy-MM) 만 두 번째 컬럼(사번 자리)에 표시한다.
   const columns: ColumnsType<TableRow> = [
     {
       title: '소속지점',
@@ -184,7 +184,7 @@ export default function WorkHistoryPeriodPage() {
       ellipsis: true,
       onCell: monthlyIdentityCell,
       render: (_v, record) => {
-        if (!isSummary(record)) return record.yearMonth; // 월별 행: 년월(yyyy-MM)
+        if (!isSummary(record)) return null; // 월별 행: 빈 칸 (년월은 사번 컬럼에 표시)
         const expandable = record.monthlyBreakdown.length > 0;
         const expanded = expandedKeys.has(record.__key);
         return (
@@ -210,7 +210,8 @@ export default function WorkHistoryPeriodPage() {
       width: 100,
       ellipsis: true,
       onCell: monthlyIdentityCell,
-      render: (_v, record) => (isSummary(record) ? record.employeeCode ?? '-' : null),
+      // summary: 사번 / monthly: 년월(yyyy-MM)
+      render: (_v, record) => (isSummary(record) ? record.employeeCode ?? '-' : record.yearMonth),
     },
     {
       title: '이름',
