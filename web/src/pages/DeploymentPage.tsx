@@ -622,7 +622,7 @@ export default function DeploymentPage() {
         </div>
       </div>
 
-      <div style={{ flex: 1, padding: 16, overflowX: 'auto', minWidth: 0 }}>
+      <div className="deployment-result" style={{ flex: 1, padding: 16, overflowX: 'hidden', minWidth: 0 }}>
         <Title level={4}>거래처별 진열사원 배치적합성 현황 (월 평균매출 대비)</Title>
 
         {queryParams == null && <Empty description="좌측에서 조건을 선택한 뒤 조회하기를 눌러주세요." />}
@@ -658,16 +658,16 @@ export default function DeploymentPage() {
                 {middleQuery.isLoading && <Spin />}
                 {middleQuery.isError && <Alert type="error" message={(middleQuery.error as Error)?.message ?? '조회 실패'} />}
                 {middleQuery.data && (
+                  <div className="deployment-scroll-x">
                   <ResizableTable
                     rowKey="accountId"
                     size="small"
                     columns={middleColumns}
                     dataSource={middleQuery.data.items}
                     pagination={false}
-                    scroll={{ x: 'max-content' }}
                     summary={() =>
                       middleQuery.data ? (
-                        <ResizableTable.Summary fixed>
+                        <ResizableTable.Summary>
                           {middleQuery.data.subtotals.map((sub) => (
                             <ResizableTable.Summary.Row key={`sub-${sub.suitability}`}>
                               <ResizableTable.Summary.Cell index={0} colSpan={6}>
@@ -690,6 +690,7 @@ export default function DeploymentPage() {
                       ) : null
                     }
                   />
+                  </div>
                 )}
               </div>
             )}
@@ -705,14 +706,15 @@ export default function DeploymentPage() {
                 {detailQuery.isLoading && <Spin />}
                 {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
                 {detailQuery.data && (
+                  <div className="deployment-scroll-x">
                   <ResizableTable
                     rowKey={(r, i) => `${r.accountId}-${r.employeeCode}-${i}`}
                     size="small"
                     columns={detailColumns}
                     dataSource={detailQuery.data.items}
                     pagination={false}
-                    scroll={{ x: 'max-content' }}
                   />
+                  </div>
                 )}
               </div>
             )}
@@ -730,14 +732,15 @@ export default function DeploymentPage() {
             {detailQuery.isLoading && <Spin />}
             {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
             {detailQuery.data && (
+              <div className="deployment-scroll-x">
               <ResizableTable
                 rowKey={(r, i) => `${r.accountId}-${r.employeeCode}-${i}`}
                 size="small"
                 columns={detailColumns}
                 dataSource={detailQuery.data.items}
                 pagination={false}
-                scroll={{ x: 'max-content' }}
               />
+              </div>
             )}
           </>
         )}

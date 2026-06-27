@@ -54,3 +54,34 @@
 .deployment-filter-list .ant-checkbox-wrapper-checked .ant-checkbox + span {
   font-weight: 600;
 }
+
+/* 결과 테이블 가로 스크롤 래퍼.
+   테이블을 이 래퍼로 감싸 래퍼가 가로 스크롤을 담당하고, 테이블 바로 아래에
+   항상 보이는 가로 스크롤바를 노출한다. (macOS 의 스크롤바 자동숨김은 webkit
+   스크롤바를 명시 스타일링(height 지정)하면 무력화되어 상시 표시된다.) */
+.deployment-scroll-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin; /* Firefox */
+}
+
+.deployment-scroll-x::-webkit-scrollbar {
+  height: 10px;
+  -webkit-appearance: none;
+}
+
+.deployment-scroll-x::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+}
+
+.deployment-scroll-x::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.06);
+  border-radius: 5px;
+}
+
+/* 래퍼가 가로 스크롤을 담당하려면 내부 테이블이 컬럼 폭 합만큼 펼쳐져야 한다.
+   antd Table 의 scroll.x 를 쓰지 않으므로, 테이블 자체에 콘텐츠 기준 최소폭을 준다. */
+.deployment-scroll-x .ant-table {
+  min-width: max-content;
+}
