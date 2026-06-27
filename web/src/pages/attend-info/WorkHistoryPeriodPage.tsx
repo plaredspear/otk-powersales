@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type Key } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Button,
@@ -10,7 +10,6 @@ import {
   Select,
   Space,
   Spin,
-  Table,
   Tag,
   Typography,
 } from 'antd';
@@ -31,74 +30,38 @@ function formatNumber(value: number): string {
   return value.toLocaleString('ko-KR');
 }
 
-// 부모 테이블 맨 왼쪽 펼침(expand) 아이콘 컬럼 폭. 자식(월별) 테이블을 이만큼 들여써
-// 부모의 데이터 컬럼 시작점과 자식 컬럼 시작점을 정렬한다.
-const EXPAND_COLUMN_WIDTH = 48;
-
 // 조회 가능한 최대 기간(개월). backend WorkHistoryPeriodSummaryService.MAX_RANGE_MONTHS 와 정합.
 const MAX_RANGE_MONTHS = 6;
 
-// 각 컬럼에 기본 width 를 지정해야 ResizableTable 의 헤더 리사이즈 핸들이 활성화된다.
-const COLUMNS: ColumnsType<WorkHistoryPeriodSummaryItem> = [
-  { title: '소속지점', dataIndex: 'orgName', width: 120, ellipsis: true, render: (v: string | null) => v ?? '-' },
-  { title: '사번', dataIndex: 'employeeCode', width: 100, ellipsis: true, render: (v: string | null) => v ?? '-' },
-  { title: '이름', dataIndex: 'employeeName', width: 100, ellipsis: true, render: (v: string | null) => v ?? '-' },
-  { title: '직위', dataIndex: 'title', width: 90, ellipsis: true, render: (v: string | null) => v ?? '-' },
-  {
-    title: '총 근무일수',
-    dataIndex: 'totalWorkingDays',
-    width: 110,
-    align: 'right',
-    render: (v: number) => formatNumber(v),
-  },
-  {
-    title: '근무 거래처 수',
-    dataIndex: 'workingAccountCount',
-    width: 120,
-    align: 'right',
-    render: (v: number) => formatNumber(v),
-  },
-  { title: '진열', dataIndex: 'displayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '행사', dataIndex: 'eventDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '근무', dataIndex: 'workDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '연차', dataIndex: 'annualLeaveDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '대휴', dataIndex: 'altHolidayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-];
-
-// 펼침(월별 통계) 행 컬럼 — 부모 테이블과 컬럼 수/폭/정렬을 1:1 로 일치시킨다.
-// 부모의 식별부(소속지점/사번/이름/직위) 자리: 첫 컬럼(소속지점 폭)에 '년도-월'(yyyy-MM) 을 회색 배경으로
-// 표시하고, 나머지 식별 컬럼(사번/이름/직위 폭)은 빈 칸으로 두어 지표 컬럼이 부모와 세로 정렬되게 한다.
-const MONTHLY_COLUMNS: ColumnsType<WorkHistoryMonthlyStat> = [
-  {
-    title: '년월',
-    dataIndex: 'yearMonth',
-    width: 120,
-    onCell: () => ({ style: { backgroundColor: '#fafafa' } }),
-  },
-  { title: '', dataIndex: 'employeeCodeSpacer', width: 100, render: () => null },
-  { title: '', dataIndex: 'employeeNameSpacer', width: 100, render: () => null },
-  { title: '', dataIndex: 'titleSpacer', width: 90, render: () => null },
-  { title: '총 근무일수', dataIndex: 'totalWorkingDays', width: 110, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '근무 거래처 수', dataIndex: 'workingAccountCount', width: 120, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '진열', dataIndex: 'displayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '행사', dataIndex: 'eventDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '근무', dataIndex: 'workDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '연차', dataIndex: 'annualLeaveDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-  { title: '대휴', dataIndex: 'altHolidayDays', width: 80, align: 'right', render: (v: number) => formatNumber(v) },
-];
+const MONTHLY_CELL_BG = '#fafafa';
 
 /**
- * 부모 컬럼 리사이즈 결과(columnWidths: leaf path → px)를 자식(월별) 컬럼 폭에 반영.
- * 부모/자식 컬럼은 인덱스가 1:1 대응하므로 path "0"~"10" 을 그대로 자식 i 번째 폭으로 덮어쓴다.
- * 드래그 전(맵에 키 없음) 컬럼은 base 정의 폭을 유지.
+ * 단일 테이블의 통합 행 — 여사원 합계 행(summary) 과, 그 아래 끼워 넣는 월별 통계 행(monthly).
+ * 별도 자식 테이블 대신 같은 테이블의 일반 행으로 편입해 컬럼 정렬을 구조적으로 일치시킨다.
  */
-function buildMonthlyColumns(
-  columnWidths: Record<string, number>,
-): ColumnsType<WorkHistoryMonthlyStat> {
-  return MONTHLY_COLUMNS.map((col, index) => {
-    const overridden = columnWidths[`${index}`];
-    return overridden != null ? { ...col, width: overridden } : col;
-  });
+type SummaryRow = WorkHistoryPeriodSummaryItem & { __kind: 'summary'; __key: string };
+type MonthlyRow = WorkHistoryMonthlyStat & { __kind: 'monthly'; __key: string };
+type TableRow = SummaryRow | MonthlyRow;
+
+const isSummary = (r: TableRow): r is SummaryRow => r.__kind === 'summary';
+
+// 월별(monthly) 행에서 식별부(소속지점~직위) 자리를 회색 배경으로 표시하기 위한 onCell.
+const monthlyIdentityCell = (record: TableRow) =>
+  isSummary(record) ? {} : { style: { backgroundColor: MONTHLY_CELL_BG } };
+
+// 숫자 지표 컬럼 정의 생성 — summary/monthly 양쪽 동일 dataIndex 라 render 분기 불필요.
+function numericColumn(
+  title: string,
+  dataIndex: keyof WorkHistoryMonthlyStat,
+  width: number,
+): ColumnsType<TableRow>[number] {
+  return {
+    title,
+    dataIndex,
+    width,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  };
 }
 
 interface QueryParams {
@@ -112,9 +75,9 @@ function toYearMonth(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
 }
 
-/** 집계 행 식별 키 — 테이블 rowKey / 확장 상태 / row 클릭에서 동일하게 사용. */
-function rowKeyOf(record: WorkHistoryPeriodSummaryItem): string {
-  return record.employeeCode ?? record.employeeName ?? '';
+/** 여사원 합계 행 식별 키 — 확장 상태 / 월별 행 부모 매칭에 사용. */
+function summaryKeyOf(item: WorkHistoryPeriodSummaryItem): string {
+  return item.employeeCode ?? item.employeeName ?? '';
 }
 
 export default function WorkHistoryPeriodPage() {
@@ -126,9 +89,8 @@ export default function WorkHistoryPeriodPage() {
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
-  const [expandedKeys, setExpandedKeys] = useState<readonly Key[]>([]);
-  // 부모 테이블 컬럼 리사이즈 결과 (leaf path "0"~"10" → 폭px). 자식(월별) 테이블 폭 동기화에 사용.
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  // 펼쳐진 여사원 합계 행 키 집합 (월별 통계 행 노출 대상).
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
   const { data: branches = [] } = useAttendInfoBranches();
   const branchOptions = useMemo(
@@ -174,12 +136,15 @@ export default function WorkHistoryPeriodPage() {
   };
 
   // 펼침 가능한(월별 분해가 있는) 행 클릭 시 확장 토글.
-  const toggleRow = (record: WorkHistoryPeriodSummaryItem) => {
-    if (record.monthlyBreakdown.length === 0) return;
-    const key = rowKeyOf(record);
-    setExpandedKeys((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
-    );
+  const toggleRow = (item: WorkHistoryPeriodSummaryItem) => {
+    if (item.monthlyBreakdown.length === 0) return;
+    const key = summaryKeyOf(item);
+    setExpandedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
 
   const handleExport = () => {
@@ -192,24 +157,85 @@ export default function WorkHistoryPeriodPage() {
 
   const exportDisabled = queryParams == null || !data || data.items.length === 0;
 
-  // 부모 컬럼 리사이즈 폭을 반영한 자식(월별) 테이블 컬럼.
-  const monthlyColumns = useMemo(() => buildMonthlyColumns(columnWidths), [columnWidths]);
+  // 펼친 여사원 합계 행 뒤에 그 월별 통계 행을 끼워 넣은 단일 테이블 데이터.
+  // 별도 자식 테이블이 아니라 같은 테이블의 일반 행이라 컬럼 정렬이 구조적으로 항상 일치한다.
+  const tableRows = useMemo<TableRow[]>(() => {
+    const items = data?.items ?? [];
+    const rows: TableRow[] = [];
+    for (const item of items) {
+      const key = summaryKeyOf(item);
+      rows.push({ ...item, __kind: 'summary', __key: key });
+      if (expandedKeys.has(key)) {
+        for (const m of item.monthlyBreakdown) {
+          rows.push({ ...m, __kind: 'monthly', __key: `${key}__${m.yearMonth}` });
+        }
+      }
+    }
+    return rows;
+  }, [data, expandedKeys]);
 
-  const renderMonthlyBreakdown = (record: WorkHistoryPeriodSummaryItem) => (
-    <Table<WorkHistoryMonthlyStat>
-      rowKey="yearMonth"
-      size="small"
-      columns={monthlyColumns}
-      dataSource={record.monthlyBreakdown}
-      pagination={false}
-      // 부모 헤더와 중복이므로 자식 헤더는 숨김 (년월 값은 헤더 없이도 인식 가능).
-      showHeader={false}
-      tableLayout="fixed"
-      scroll={{ x: 'max-content' }}
-      // 부모의 펼침 아이콘 컬럼 폭만큼 들여써 데이터 컬럼이 부모와 세로 정렬되게 한다.
-      style={{ margin: `0 0 0 ${EXPAND_COLUMN_WIDTH}px` }}
-    />
-  );
+  // 단일 컬럼 정의 — summary/monthly 행을 같은 컬럼으로 렌더. 식별부 첫 컬럼은 행 종류에 따라
+  // (summary) 펼침 삼각형+소속지점 / (monthly) 회색 배경의 년월 을 표시한다.
+  const columns: ColumnsType<TableRow> = [
+    {
+      title: '소속지점',
+      dataIndex: 'orgName',
+      width: 120,
+      ellipsis: true,
+      onCell: monthlyIdentityCell,
+      render: (_v, record) => {
+        if (!isSummary(record)) return record.yearMonth; // 월별 행: 년월(yyyy-MM)
+        const expandable = record.monthlyBreakdown.length > 0;
+        const expanded = expandedKeys.has(record.__key);
+        return (
+          <Space size={4}>
+            {expandable ? (
+              <CaretRightOutlined
+                style={{
+                  transition: 'transform 0.2s',
+                  transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                }}
+              />
+            ) : (
+              <span style={{ display: 'inline-block', width: 14 }} />
+            )}
+            <span>{record.orgName ?? '-'}</span>
+          </Space>
+        );
+      },
+    },
+    {
+      title: '사번',
+      dataIndex: 'employeeCode',
+      width: 100,
+      ellipsis: true,
+      onCell: monthlyIdentityCell,
+      render: (_v, record) => (isSummary(record) ? record.employeeCode ?? '-' : null),
+    },
+    {
+      title: '이름',
+      dataIndex: 'employeeName',
+      width: 100,
+      ellipsis: true,
+      onCell: monthlyIdentityCell,
+      render: (_v, record) => (isSummary(record) ? record.employeeName ?? '-' : null),
+    },
+    {
+      title: '직위',
+      dataIndex: 'title',
+      width: 90,
+      ellipsis: true,
+      onCell: monthlyIdentityCell,
+      render: (_v, record) => (isSummary(record) ? record.title ?? '-' : null),
+    },
+    numericColumn('총 근무일수', 'totalWorkingDays', 110),
+    numericColumn('근무 거래처 수', 'workingAccountCount', 120),
+    numericColumn('진열', 'displayDays', 80),
+    numericColumn('행사', 'eventDays', 80),
+    numericColumn('근무', 'workDays', 80),
+    numericColumn('연차', 'annualLeaveDays', 80),
+    numericColumn('대휴', 'altHolidayDays', 80),
+  ];
 
   return (
     <div style={{ padding: 16 }}>
@@ -366,40 +392,19 @@ export default function WorkHistoryPeriodPage() {
             <Text style={{ marginBottom: 8, display: 'block' }}>총 {formatNumber(data.totalCount)}명</Text>
           )}
           <ResizableTable
-            rowKey={rowKeyOf}
-            columns={COLUMNS}
-            dataSource={data?.items ?? []}
+            rowKey="__key"
+            columns={columns}
+            dataSource={tableRows}
             pagination={false}
             size="small"
             sticky
             scroll={{ x: 'max-content' }}
-            // 컬럼 리사이즈 시 폭을 받아 펼침(월별) 테이블 컬럼에 동기화.
-            onColumnWidthsChange={setColumnWidths}
-            // 펼침 가능한 행은 row 어디를 클릭해도 확장 토글 + 포인터 커서.
-            onRow={(record) => ({
-              onClick: () => toggleRow(record),
-              style: record.monthlyBreakdown.length > 0 ? { cursor: 'pointer' } : undefined,
-            })}
-            expandable={{
-              // 월별 분해가 있는 행(2개월 이상 조회)만 펼침 가능. 단일 월 조회는 분해가 비어 펼침 아이콘 숨김.
-              expandedRowRender: renderMonthlyBreakdown,
-              rowExpandable: (record) => record.monthlyBreakdown.length > 0,
-              expandedRowKeys: expandedKeys,
-              // 펼침 아이콘 컬럼 폭 고정 — 자식 테이블 들여쓰기(EXPAND_COLUMN_WIDTH)와 정합.
-              columnWidth: EXPAND_COLUMN_WIDTH,
-              // + 아이콘 대신 삼각형(▶). 펼쳐지면 90° 회전. 펼침 불가 행은 아이콘 없음.
-              // 클릭 토글은 onRow.onClick 이 처리하므로 아이콘은 시각 표현만 담당.
-              expandIcon: ({ expandable, expanded }) =>
-                expandable ? (
-                  <CaretRightOutlined
-                    style={{
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s',
-                      transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                    }}
-                  />
-                ) : null,
-            }}
+            // summary 행(월별 분해 보유) 클릭 시 확장 토글 + 포인터 커서. monthly 행은 클릭 무반응.
+            onRow={(record) =>
+              isSummary(record) && record.monthlyBreakdown.length > 0
+                ? { onClick: () => toggleRow(record), style: { cursor: 'pointer' } }
+                : {}
+            }
             locale={{
               emptyText:
                 queryParams == null ? (
