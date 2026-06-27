@@ -21,7 +21,8 @@ interface PromotionRepositoryCustom {
      * (SF 웹 ListView 의 filterScope=Mine 대응). `currentUserId` 가 null 이면 매칭 0건이 되도록 한다.
      *
      * `accountName` 은 거래처명/거래처코드(`Account.externalKey`) OR like 검색 (진열스케줄마스터 정합),
-     * `accountNumber` 는 거래처번호(`Account.accountNumber`, SF `AccountNumber`) like 검색. 둘 다 AND 합성.
+     * `accountNumber` 는 거래처번호(`Account.accountNumber`, SF `AccountNumber`) like 검색,
+     * `category1` 은 제품유형(화면 "제품유형" 컬럼 = 대표제품 `Product.storeConditionText` 파생값) like 검색. 모두 AND 합성.
      */
     fun searchForAdmin(
         policyPredicate: Predicate,
@@ -31,6 +32,7 @@ interface PromotionRepositoryCustom {
         endDate: String?,
         accountName: String?,
         accountNumber: String?,
+        category1: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
         pageable: Pageable

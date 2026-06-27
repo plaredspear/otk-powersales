@@ -94,6 +94,7 @@ class AdminPromotionService(
         endDate: String?,
         accountName: String?,
         accountNumber: String?,
+        category1: String?,
         ownerOnly: Boolean,
         page: Int,
         size: Int
@@ -115,6 +116,7 @@ class AdminPromotionService(
             endDate = endDate,
             accountName = accountName,
             accountNumber = accountNumber,
+            category1 = category1,
             ownerOnly = ownerOnly,
             currentUserId = scope.userId,
             pageable = pageable
@@ -144,6 +146,7 @@ class AdminPromotionService(
         endDate: String?,
         accountName: String?,
         accountNumber: String?,
+        category1: String?,
         ownerOnly: Boolean
     ): ExcelResult {
         val policyPredicate = policyEvaluator.buildPredicate(
@@ -161,6 +164,7 @@ class AdminPromotionService(
             endDate = endDate,
             accountName = accountName,
             accountNumber = accountNumber,
+            category1 = category1,
             ownerOnly = ownerOnly,
             currentUserId = scope.userId,
             pageable = pageable

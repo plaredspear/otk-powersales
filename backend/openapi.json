@@ -31828,6 +31828,15 @@
           }
         }, {
           "in" : "query",
+          "name" : "category1",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 255,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "ownerOnly",
           "required" : false,
           "schema" : {
@@ -31952,6 +31961,15 @@
           "required" : false,
           "schema" : {
             "maxLength" : 40,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category1",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 255,
             "minLength" : 1,
             "type" : "string"
           }

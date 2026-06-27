@@ -39,6 +39,7 @@ class PromotionRepositoryCustomImpl(
         endDate: String?,
         accountName: String?,
         accountNumber: String?,
+        category1: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
         pageable: Pageable
@@ -68,6 +69,15 @@ class PromotionRepositoryCustomImpl(
         if (!accountNumber.isNullOrBlank()) {
             builder.and(
                 account.accountNumber.lower().like("%${accountNumber.lowercase()}%")
+            )
+        }
+
+        // 제품유형(화면 "제품유형" 컬럼 = category1) like 검색.
+        // category1 은 promotion 의 저장 컬럼이 아니라 대표제품(primaryProduct)의 storeConditionText 파생값이므로
+        // product.storeConditionText 로 필터 (Promotion.category1 getter 와 동일 출처).
+        if (!category1.isNullOrBlank()) {
+            builder.and(
+                product.storeConditionText.lower().like("%${category1.lowercase()}%")
             )
         }
 
@@ -117,6 +127,8 @@ class PromotionRepositoryCustomImpl(
             .from(promotion)
             // 거래처 필터(account.name/externalKey/accountNumber) 가 builder 에 포함될 수 있으므로 count 에도 account join.
             .leftJoin(promotion.account, account)
+            // 제품유형(category1) 필터가 product.storeConditionText 를 참조하므로 count 에도 product join.
+            .leftJoin(promotion.primaryProduct, product)
             .leftJoin(promotion.ownerUser)
             .where(builder)
 
