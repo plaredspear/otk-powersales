@@ -89,6 +89,7 @@ interface DisplayWorkScheduleRepositoryCustom {
     fun findScheduleList(
         employeeCode: String?,
         accountIds: List<Long>?,
+        accountType: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,

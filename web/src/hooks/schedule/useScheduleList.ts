@@ -12,6 +12,7 @@ export function useScheduleList(params: ScheduleListParams) {
       params.size,
       params.employeeCode,
       params.accountName,
+      params.accountType,
       params.confirmed,
       params.typeOfWork3,
       params.startDateFrom,

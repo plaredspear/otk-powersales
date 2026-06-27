@@ -112,7 +112,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             )
             val page = PageImpl(items, PageRequest.of(0, 20), 1)
             every { adminDisplayWorkScheduleService.listSchedules(
-                any(), eq(0), eq(20), null, null, null, null, null, null, null, any()
+                any(), eq(0), eq(20), null, null, null, null, null, null, null, null, any()
             ) } returns page
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/list"))
@@ -127,7 +127,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         fun list_withFilters() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             every { adminDisplayWorkScheduleService.listSchedules(
-                any(), eq(0), eq(20), eq("123"), null, eq(true), null, null, null, null, any()
+                any(), eq(0), eq(20), eq("123"), null, null, eq(true), null, null, null, null, any()
             ) } returns emptyPage
 
             mockMvc.perform(
@@ -144,7 +144,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         fun list_empty() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             every { adminDisplayWorkScheduleService.listSchedules(
-                any(), eq(0), eq(20), null, null, null, null, null, null, null, any()
+                any(), eq(0), eq(20), null, null, null, null, null, null, null, null, any()
             ) } returns emptyPage
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/list"))
@@ -158,7 +158,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         fun list_withPreset() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             every { adminDisplayWorkScheduleService.listSchedules(
-                any(), eq(0), eq(20), null, null, null, null, null, null,
+                any(), eq(0), eq(20), null, null, null, null, null, null, null,
                 eq(SchedulePreset.END), any()
             ) } returns emptyPage
 
@@ -174,7 +174,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         fun list_withSort() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             every { adminDisplayWorkScheduleService.listSchedules(
-                any(), eq(0), eq(20), null, null, null, null, null, null, null,
+                any(), eq(0), eq(20), null, null, null, null, null, null, null, null,
                 match { it.getOrderFor("endDate")?.direction == Sort.Direction.ASC }
             ) } returns emptyPage
 
@@ -555,7 +555,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 filename = "진열스케줄_20260516_120000.xlsx"
             )
             every {
-                adminDisplayWorkScheduleService.exportAllSchedules(any(), any(), any(), any(), any(), any(), any(), any(), any())
+                adminDisplayWorkScheduleService.exportAllSchedules(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
             } returns result
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/export-all"))
@@ -575,7 +575,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             val result = ExcelResult(bytes = ByteArray(10), filename = "진열스케줄.xlsx")
             every {
                 adminDisplayWorkScheduleService.exportAllSchedules(
-                    any(), eq("2003"), eq("이마트"), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
+                    any(), eq("2003"), eq("이마트"), any(), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
                 )
             } returns result
 
@@ -591,7 +591,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
 
             verify {
                 adminDisplayWorkScheduleService.exportAllSchedules(
-                    any(), eq("2003"), eq("이마트"), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
+                    any(), eq("2003"), eq("이마트"), any(), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
                 )
             }
         }

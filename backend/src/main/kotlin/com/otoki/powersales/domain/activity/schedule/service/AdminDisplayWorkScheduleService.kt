@@ -354,6 +354,7 @@ class AdminDisplayWorkScheduleService(
         size: Int,
         employeeCode: String?,
         accountName: String?,
+        accountType: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
@@ -378,7 +379,7 @@ class AdminDisplayWorkScheduleService(
         val policyPredicate = schedulePolicyPredicate(scope)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
+            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
         )
 
         return schedulePage.map { toListItemDto(it) }
@@ -395,6 +396,7 @@ class AdminDisplayWorkScheduleService(
         scope: DataScope,
         employeeCode: String?,
         accountName: String?,
+        accountType: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
@@ -415,7 +417,7 @@ class AdminDisplayWorkScheduleService(
         val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, sort)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
+            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
         )
 
         val items = schedulePage.content.map { toListItemDto(it) }

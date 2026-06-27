@@ -47,6 +47,7 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) accountName: String?,
+        @RequestParam(required = false) accountType: String?,
         @RequestParam(required = false) confirmed: Boolean?,
         @RequestParam(required = false) typeOfWork3: String?,
         @RequestParam(required = false) startDateFrom: LocalDate?,
@@ -57,7 +58,7 @@ class AdminDisplayWorkScheduleController(
     ): ResponseEntity<ApiResponse<Page<ScheduleListItemDto>>> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.listSchedules(
-            scope, page, size, employeeCode, accountName, confirmed,
+            scope, page, size, employeeCode, accountName, accountType, confirmed,
             typeOfWork3, startDateFrom, startDateTo, preset, sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
@@ -71,6 +72,7 @@ class AdminDisplayWorkScheduleController(
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) accountName: String?,
+        @RequestParam(required = false) accountType: String?,
         @RequestParam(required = false) confirmed: Boolean?,
         @RequestParam(required = false) typeOfWork3: String?,
         @RequestParam(required = false) startDateFrom: LocalDate?,
@@ -81,7 +83,7 @@ class AdminDisplayWorkScheduleController(
     ): ResponseEntity<ByteArray> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.exportAllSchedules(
-            scope, employeeCode, accountName, confirmed,
+            scope, employeeCode, accountName, accountType, confirmed,
             typeOfWork3, startDateFrom, startDateTo, preset, sort
         )
         return ExcelResponseUtils.build(result)

@@ -118,6 +118,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     override fun findScheduleList(
         employeeCode: String?,
         accountIds: List<Long>?,
+        accountType: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
@@ -132,6 +133,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(policyPredicate)
             .and(buildEmployeeCodeCondition(employeeCode))
             .and(buildAccountIdsCondition(accountIds))
+            .and(buildAccountTypeCondition(accountType))
             .and(buildConfirmedCondition(confirmed))
             .and(buildTypeOfWork3Condition(typeOfWork3))
             .and(buildStartDateFromCondition(startDateFrom))
@@ -505,6 +507,21 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         if (accountIds == null) return null
         if (accountIds.isEmpty()) return displayWorkSchedule.account.id.eq(-1) // no match
         return displayWorkSchedule.account.id.`in`(accountIds)
+    }
+
+    /**
+     * 거래처유형 (`Account.Type`) 부분 일치 필터.
+     *
+     * countQuery 가 account 를 join 하지 않으므로, [buildEmployeeCodeCondition] 와 동일하게
+     * 매칭 account id 서브쿼리 IN 으로 구성 (implicit join 회피).
+     */
+    private fun buildAccountTypeCondition(accountType: String?): BooleanExpression? {
+        if (accountType.isNullOrBlank()) return null
+        val matchingIds = JPAExpressions
+            .select(account.id)
+            .from(account)
+            .where(account.accountType.containsIgnoreCase(accountType))
+        return displayWorkSchedule.account.id.`in`(matchingIds)
     }
 
     private fun buildConfirmedCondition(confirmed: Boolean?): BooleanExpression? {

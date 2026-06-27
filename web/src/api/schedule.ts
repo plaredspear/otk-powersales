@@ -98,6 +98,7 @@ export interface ScheduleListParams {
   size?: number;
   employeeCode?: string;
   accountName?: string;
+  accountType?: string;
   confirmed?: boolean;
   typeOfWork3?: string;
   startDateFrom?: string;
@@ -204,6 +205,7 @@ export function scheduleExportParams(
   const queryParams: Record<string, string> = {};
   if (params.employeeCode) queryParams.employeeCode = params.employeeCode;
   if (params.accountName) queryParams.accountName = params.accountName;
+  if (params.accountType) queryParams.accountType = params.accountType;
   if (params.confirmed != null) queryParams.confirmed = String(params.confirmed);
   if (params.typeOfWork3) queryParams.typeOfWork3 = params.typeOfWork3;
   if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
@@ -250,6 +252,7 @@ export async function fetchScheduleList(params: ScheduleListParams): Promise<Sch
   if (params.size != null) queryParams.size = String(params.size);
   if (params.employeeCode) queryParams.employeeCode = params.employeeCode;
   if (params.accountName) queryParams.accountName = params.accountName;
+  if (params.accountType) queryParams.accountType = params.accountType;
   if (params.confirmed != null) queryParams.confirmed = String(params.confirmed);
   if (params.typeOfWork3) queryParams.typeOfWork3 = params.typeOfWork3;
   if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;

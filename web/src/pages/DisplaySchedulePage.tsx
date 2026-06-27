@@ -246,6 +246,7 @@ export default function DisplaySchedulePage() {
   const [listPage, setListPage] = useState(0);
   const [filterEmployeeCode, setFilterEmployeeCode] = useState('');
   const [filterAccountName, setFilterAccountName] = useState('');
+  const [filterAccountType, setFilterAccountType] = useState('');
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
   const [filterStartDateRange, setFilterStartDateRange] = useState<[string, string] | null>(null);
@@ -257,6 +258,7 @@ export default function DisplaySchedulePage() {
   const [appliedFilters, setAppliedFilters] = useState<{
     employeeCode?: string;
     accountName?: string;
+    accountType?: string;
     typeOfWork3?: string;
     confirmed?: boolean;
     startDateFrom?: string;
@@ -334,6 +336,7 @@ export default function DisplaySchedulePage() {
     setAppliedFilters({
       employeeCode: filterEmployeeCode || undefined,
       accountName: filterAccountName || undefined,
+      accountType: filterAccountType || undefined,
       typeOfWork3: filterTypeOfWork3,
       confirmed: filterConfirmed,
       startDateFrom: filterStartDateRange?.[0],
@@ -345,6 +348,7 @@ export default function DisplaySchedulePage() {
   const handleReset = () => {
     setFilterEmployeeCode('');
     setFilterAccountName('');
+    setFilterAccountType('');
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
     setFilterStartDateRange(null);
@@ -367,6 +371,7 @@ export default function DisplaySchedulePage() {
     setAppliedFilters({
       employeeCode: filterEmployeeCode || undefined,
       accountName: filterAccountName || undefined,
+      accountType: filterAccountType || undefined,
       typeOfWork3: filterTypeOfWork3,
       confirmed: filterConfirmed,
       startDateFrom: filterStartDateRange?.[0],
@@ -616,6 +621,14 @@ export default function DisplaySchedulePage() {
             onChange={(e) => setFilterAccountName(e.target.value)}
             onPressEnter={handleSearch}
             style={{ width: 180 }}
+            allowClear
+          />
+          <Input
+            placeholder="거래처유형"
+            value={filterAccountType}
+            onChange={(e) => setFilterAccountType(e.target.value)}
+            onPressEnter={handleSearch}
+            style={{ width: 140 }}
             allowClear
           />
           <Select
