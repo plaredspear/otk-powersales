@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter
 /**
  * 근무기간 조회 월별 근무내역(개인) 엑셀 export — 목록 탭 컬럼 순서/라벨 정합.
  *
- * "유통형태" 는 SF 메타에 원천 필드가 없어 web 목록과 동일하게 "(TODO)" placeholder 로 둔다.
+ * "유통형태" 는 Account.distributionChannelLabel() (거래처상태코드 + 거래처유형) 정본을 그대로 사용 — web 목록과 동일.
  */
 @Component
 class EmployeeWorkHistoryExcelExporter : BaseExcelExporter<EmployeeWorkHistoryItem>() {
@@ -28,7 +28,7 @@ class EmployeeWorkHistoryExcelExporter : BaseExcelExporter<EmployeeWorkHistoryIt
         row.createCell(col++).setCellValue(item.workingType ?: "")
         row.createCell(col++).setCellValue(resolveWorkplace(item))
         row.createCell(col++).setCellValue(item.accountExternalKey ?: "")
-        row.createCell(col++).setCellValue("(TODO)")
+        row.createCell(col++).setCellValue(item.distributionChannelLabel ?: "")
         row.createCell(col++).setCellValue(item.accountType ?: "")
         row.createCell(col++).setCellValue(item.workingCategory1 ?: "")
         row.createCell(col++).setCellValue(item.professionalPromotionTeam ?: "")

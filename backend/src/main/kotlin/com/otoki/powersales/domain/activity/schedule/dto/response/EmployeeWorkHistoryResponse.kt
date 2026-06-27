@@ -32,6 +32,8 @@ data class EmployeeWorkHistoryItem(
     val abcTypeCode: String?,
     /** 거래처상태코드 (SF Account.AccountStatusCode__c) — 유통형태 표시용. */
     val accountStatusCode: String?,
+    /** 유통형태 — 거래처상태코드 + 거래처유형 조합 (예: "02 슈퍼"). Account.distributionChannelLabel() 정본. */
+    val distributionChannelLabel: String?,
     val isClockIn: Boolean,
     val refAccountName: String?,
     val costCenterCode: String?,
@@ -54,6 +56,7 @@ data class EmployeeWorkHistoryItem(
             abcType = schedule.account?.abcType,
             abcTypeCode = schedule.account?.abcTypeCode,
             accountStatusCode = schedule.account?.accountStatusCode,
+            distributionChannelLabel = schedule.account?.distributionChannelLabel(),
             isClockIn = schedule.attendanceLog != null,
             refAccountName = schedule.refAccountName,
             costCenterCode = schedule.costCenterCode,

@@ -60,12 +60,9 @@ const COLUMNS: ColumnsType<EmployeeWorkHistoryItem> = [
   },
   {
     title: '유통형태',
-    dataIndex: 'accountStatusCode',
+    dataIndex: 'distributionChannelLabel',
     width: 100,
-    render: (_v, row) => {
-      const text = [row.accountStatusCode, row.accountType].filter(Boolean).join(' ');
-      return text || '-';
-    },
+    render: (v: string | null) => v ?? '-',
   },
   {
     title: '거래처유형',

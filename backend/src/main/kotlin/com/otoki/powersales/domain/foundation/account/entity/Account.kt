@@ -403,4 +403,17 @@ class Account(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     var parent: Account? = null
-) : BaseEntity()
+) : BaseEntity() {
+
+    /**
+     * 유통형태 — 거래처상태코드(AccountStatusCode__c) + 거래처유형(Type) 을 공백으로 조합한 표시 문자열.
+     *
+     * 예: "02 슈퍼", "01 체인". 두 값이 모두 비어 있으면 null.
+     * 표시용 폴백("-" 등)은 호출 측(web/엑셀)에서 처리한다.
+     */
+    fun distributionChannelLabel(): String? =
+        listOfNotNull(accountStatusCode, accountType?.displayName)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .ifBlank { null }
+}
