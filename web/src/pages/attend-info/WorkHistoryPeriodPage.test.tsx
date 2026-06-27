@@ -18,6 +18,7 @@ vi.mock('@/api/attendInfo', async () => {
 
 const mockedSummary = vi.mocked(api.fetchWorkHistoryPeriodSummary);
 const mockedExport = vi.mocked(api.fetchWorkHistoryPeriodSummaryExport);
+const mockedBranches = vi.mocked(api.fetchAttendInfoBranches);
 
 function renderPage() {
   const client = new QueryClient({
@@ -33,6 +34,9 @@ function renderPage() {
 describe('WorkHistoryPeriodPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // 기본값: 지점 없음(빈 배열) — 자동 조회 미트리거. 단일/다중 지점 케이스는 테스트별 재설정.
+    mockedBranches.mockResolvedValue([]);
+    mockedExport.mockResolvedValue(undefined);
     useAuthStore.setState({
       user: {
         id: 1,
@@ -54,6 +58,33 @@ describe('WorkHistoryPeriodPage', () => {
     expect(screen.getByText('시작 년월:')).toBeInTheDocument();
     expect(screen.getByText('종료 년월:')).toBeInTheDocument();
     expect(screen.getByText('조회 조건을 설정하고 조회 버튼을 눌러주세요')).toBeInTheDocument();
+    expect(mockedSummary).not.toHaveBeenCalled();
+  });
+
+  it('지점이 하나뿐인 사용자는 진입 시 본인 지점으로 자동 조회한다', async () => {
+    mockedBranches.mockResolvedValue([{ branchCode: 'B001', branchName: '원주1지점' }]);
+    mockedSummary.mockResolvedValue({
+      fromYearMonth: '2026-06',
+      toYearMonth: '2026-06',
+      totalCount: 0,
+      items: [],
+    });
+    renderPage();
+    await waitFor(() => {
+      expect(mockedSummary).toHaveBeenCalled();
+    });
+    // 자동 조회 시 단일 지점 코드가 전달된다.
+    expect(mockedSummary.mock.calls[0][0]).toMatchObject({ costCenterCodes: ['B001'] });
+  });
+
+  it('지점이 여러 개인 사용자는 진입 시 자동 조회하지 않는다', async () => {
+    mockedBranches.mockResolvedValue([
+      { branchCode: 'B001', branchName: '원주1지점' },
+      { branchCode: 'B002', branchName: '원주2지점' },
+    ]);
+    renderPage();
+    // 지점 목록 로드 후에도 자동 조회가 트리거되지 않음을 확인.
+    await screen.findByText('조회 조건을 설정하고 조회 버튼을 눌러주세요');
     expect(mockedSummary).not.toHaveBeenCalled();
   });
 
@@ -135,14 +166,43 @@ describe('WorkHistoryPeriodPage', () => {
     });
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: /조회/ }));
-    // 집계 행이 먼저 렌더된 뒤에 펼침(expand) 버튼이 나타난다.
-    await screen.findByText('홍길동');
-    const expandBtn = await screen.findByRole('button', { name: /Expand row/i });
-    fireEvent.click(expandBtn);
+    // 집계 행이 먼저 렌더된 뒤, 행(이름 셀)을 클릭하면 월별 통계가 펼쳐진다.
+    const nameCell = await screen.findByText('홍길동');
+    fireEvent.click(nameCell);
     await waitFor(() => {
       expect(screen.getByText('2026-05')).toBeInTheDocument();
       expect(screen.getByText('2026-06')).toBeInTheDocument();
     });
+  });
+
+  it('단일 월 조회(월별 분해 없음) 행은 클릭해도 펼쳐지지 않는다', async () => {
+    mockedSummary.mockResolvedValue({
+      fromYearMonth: '2026-05',
+      toYearMonth: '2026-05',
+      totalCount: 1,
+      items: [
+        {
+          orgName: '강남지점',
+          employeeCode: '20230016',
+          employeeName: '홍길동',
+          title: '사원',
+          totalWorkingDays: 5,
+          workingAccountCount: 2,
+          displayDays: 3,
+          eventDays: 2,
+          workDays: 5,
+          annualLeaveDays: 0,
+          altHolidayDays: 0,
+          monthlyBreakdown: [],
+        },
+      ],
+    });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: /조회/ }));
+    const nameCell = await screen.findByText('홍길동');
+    fireEvent.click(nameCell);
+    // 월별 분해가 없으므로 펼침 행(년월 헤더)이 나타나지 않는다.
+    expect(screen.queryByText('년월')).not.toBeInTheDocument();
   });
 
   it('조회 결과가 있으면 엑셀 다운로드 버튼이 활성화되고 클릭 시 export API 를 호출한다', async () => {
