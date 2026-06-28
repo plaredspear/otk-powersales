@@ -34,13 +34,16 @@ const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 const DATE_FORMAT = 'YYYY-MM-DD';
+/** 레거시 `posmain.jsp` daterangepicker `maxSpan: { days: 31 }` 정합 — 두 끝점 일수 차이 최대 31. */
+const MAX_RANGE_DAYS = 31;
 
 /**
  * POS매출 — web admin 조회 페이지.
  *
  * 거래처 1곳 + 기간(시작/종료일) 선택 → POS DB(`live_pos_sales_dh`) 제품별 매출 명세 + 합계.
  * 레거시 `promotion/month/posmain.jsp` 의 daterangepicker 정합 (Backend `GET /api/v1/admin/sales/pos`).
- * 최초 진입 시 기본값은 당월 1일 ~ 오늘.
+ * 최초 진입 시 기본값은 당월 1일 ~ 오늘. 조회기간은 레거시 `maxSpan: { days: 31 }` 정합으로 최대 31일
+ * (UI 제약만 — 레거시처럼 서버측 기간 검증은 없음).
  */
 export default function SalesQueryPage() {
   // 검색 조건(거래처 + 조회기간)을 URL query string 에 보관 — 새로고침/뒤로가기/링크 공유 시 직전 조회 복원.
@@ -63,6 +66,16 @@ export default function SalesQueryPage() {
       ? [start, end]
       : [dayjs().startOf('month'), dayjs()];
   });
+  // 31일 제약(disabledDate)을 한쪽 끝 선택 시점 기준으로 계산하기 위한, 캘린더에서 "지금까지 찍은" 임시 값.
+  // 시작/종료 중 하나만 찍힌 상태에서 그 기준으로 ±31일 밖을 비활성화한다 (레거시 maxSpan 정합).
+  const [pickerHalf, setPickerHalf] = useState<Dayjs | null>(null);
+
+  // 레거시 maxSpan: { days: 31 } 정합 — 한쪽 끝이 선택된 동안 그 기준에서 일수 차이가 31 을 넘는
+  // 날짜를 비활성화한다. daterangepicker 의 maxSpan 은 "두 끝점의 day diff ≤ 31" 이므로 동일하게 둔다.
+  const disabledRangeDate = (current: Dayjs): boolean => {
+    if (!current || !pickerHalf) return false;
+    return Math.abs(current.diff(pickerHalf, 'day')) > MAX_RANGE_DAYS;
+  };
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조 PPTMasterPage 정합).
   //  - 다중 지점: Select 로 선택 → 거래처 lookup 검색을 해당 지점으로 스코프
@@ -211,6 +224,14 @@ export default function SalesQueryPage() {
           />
           <RangePicker
             value={range}
+            // 캘린더에서 한쪽 끝만 찍힌 동안 그 기준으로 31일 밖을 비활성화하기 위해 임시 끝값을 추적.
+            onCalendarChange={(dates) => {
+              setPickerHalf(dates?.[0] ?? dates?.[1] ?? null);
+            }}
+            onOpenChange={(open) => {
+              if (!open) setPickerHalf(null); // 닫히면 제약 기준 해제 (다음 열림에서 새로 추적).
+            }}
+            disabledDate={disabledRangeDate}
             onChange={(v) => {
               // allowClear=false 라 null 가능성은 없으나 양끝 모두 존재할 때만 반영.
               if (v && v[0] && v[1]) setRange([v[0], v[1]]);
