@@ -16758,9 +16758,26 @@
             },
             "type" : "array"
           },
+          "meta" : {
+            "$ref" : "#/components/schemas/MyAccountMeta"
+          },
           "totalCount" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "MyAccountMeta" : {
+        "properties" : {
+          "criteriaLines" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "searchHint" : {
+            "type" : "string"
           }
         },
         "type" : "object"
