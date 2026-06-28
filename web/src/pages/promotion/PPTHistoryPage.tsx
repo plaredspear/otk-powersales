@@ -15,6 +15,7 @@ import {
 import PPTHistoryDetailModal from './components/PPTHistoryDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const TEAM_TYPE_FILTER_OPTIONS = [
   { value: '', label: '전체' },
@@ -210,20 +211,14 @@ export default function PPTHistoryPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        pagination={{
-          current: page + 1,
+        pagination={buildListPagination({
+          page,
           pageSize: size,
           total: data?.totalElements ?? 0,
-          showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
-          onChange: (nextPage, pageSize) => {
-            if (pageSize !== size) {
-              setFilters({ size: String(pageSize) });
-            } else {
-              setPage(nextPage - 1);
-            }
-          },
-        }}
+          // 사이즈 변경 시 setFilters 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => setFilters({ size: String(nextSize) }),
+        })}
         onRow={(record) => ({
           onClick: () => handleRowClick(record),
           style: { cursor: 'pointer' },
