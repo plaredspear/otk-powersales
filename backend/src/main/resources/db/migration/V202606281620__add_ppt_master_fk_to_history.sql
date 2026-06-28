@@ -10,8 +10,3 @@ ALTER TABLE professional_promotion_team_history
         FOREIGN KEY (professional_promotion_team_master_id)
             REFERENCES professional_promotion_team_master (professional_promotion_team_master_id)
             ON DELETE SET NULL;
-
--- FK join(이력→마스터→거래처) + ON DELETE SET NULL 자식 탐색 커버.
--- 무인덱스 FK 는 마스터 삭제마다 이력 풀스캔을 유발하므로 데이터 규모와 무관하게 부여한다.
-CREATE INDEX idx_ppt_history_master_id
-    ON professional_promotion_team_history (professional_promotion_team_master_id);
