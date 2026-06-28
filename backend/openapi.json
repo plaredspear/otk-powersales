@@ -24617,6 +24617,24 @@
         "tags" : [ "admin-account-controller" ]
       }
     },
+    "/api/v1/admin/accounts/branches" : {
+      "get" : {
+        "operationId" : "getBranches_5",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-account-controller" ]
+      }
+    },
     "/api/v1/admin/accounts/lookup" : {
       "get" : {
         "operationId" : "lookupAccounts",

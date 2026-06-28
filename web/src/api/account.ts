@@ -99,6 +99,24 @@ export async function fetchAccounts(params: FetchAccountsParams): Promise<Accoun
   return res.data.data;
 }
 
+export interface AccountBranch {
+  branchCode: string;
+  branchName: string;
+}
+
+/**
+ * 거래처 화면 지점 셀렉터 옵션 (`GET /api/v1/admin/accounts/branches`, `ACCOUNT_READ` 권한 필요).
+ *
+ * 권한 주체별 조회 허용 지점 화이트리스트를 반환 (여사원 일정/전문행사조와 동일 출처).
+ */
+export async function getAccountBranches(): Promise<AccountBranch[]> {
+  const res = await client.get<ApiResponse<AccountBranch[]>>('/api/v1/admin/accounts/branches');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 /**
  * 거래처 상세 조회 (`GET /api/v1/admin/accounts/{id}`, `ACCOUNT_READ` 권한 필요).
  *

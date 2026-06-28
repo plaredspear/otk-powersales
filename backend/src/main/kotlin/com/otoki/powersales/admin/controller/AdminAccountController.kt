@@ -12,9 +12,11 @@ import com.otoki.powersales.domain.foundation.account.service.AccountCreateServi
 import com.otoki.powersales.domain.foundation.account.service.AccountDeleteService
 import com.otoki.powersales.domain.foundation.account.service.AccountUpdateService
 import com.otoki.powersales.domain.foundation.account.service.AdminAccountService
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
@@ -42,7 +44,24 @@ class AdminAccountController(
     private val accountCreateService: AccountCreateService,
     private val accountUpdateService: AccountUpdateService,
     private val accountDeleteService: AccountDeleteService,
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
 ) {
+
+    /**
+     * 거래처 화면 지점 셀렉터 옵션 — 여사원 일정/전문행사조와 동일하게
+     * [WomenScheduleBranchResolver] 로 권한별 지점 화이트리스트를 산출한다 (단일 출처).
+     *
+     * 목록은 곧 해당 사용자가 조회 허용된 지점이며, [getAccounts] 의 branchCode 필터는
+     * DataScope(sharing policy) 와 AND 합성되어 권한 외 지점 요청 시 자연히 0건 반환된다(IDOR 자연 차단).
+     */
+    @GetMapping("/branches")
+    @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.READ)
+    fun getBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        val result = womenScheduleBranchResolver.resolveBranches(principal)
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
 
     @GetMapping
     @RequiresSfPermission(entity = "account", operation = SfPermissionOperation.READ)

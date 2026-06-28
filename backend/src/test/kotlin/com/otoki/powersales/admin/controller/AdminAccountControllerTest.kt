@@ -16,9 +16,11 @@ import com.otoki.powersales.domain.foundation.account.service.AccountCreateServi
 import com.otoki.powersales.domain.foundation.account.service.AccountDeleteService
 import com.otoki.powersales.domain.foundation.account.service.AccountUpdateService
 import com.otoki.powersales.domain.foundation.account.service.AdminAccountService
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import tools.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
@@ -58,6 +60,7 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
     @MockkBean private lateinit var accountCreateService: AccountCreateService
     @MockkBean private lateinit var accountUpdateService: AccountUpdateService
     @MockkBean private lateinit var accountDeleteService: AccountDeleteService
+    @MockkBean private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
 
     // controller 의 @CurrentDataScope 파라미터를 채우는 ArgumentResolver 를 mock 으로 교체.
     @MockkBean
@@ -70,6 +73,39 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/accounts/branches - 지점 셀렉터 옵션")
+    inner class GetBranches {
+
+        @Test
+        @DisplayName("성공 - 권한별 지점 목록 반환")
+        fun getBranches_success() {
+            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+                BranchResponse(branchCode = "1100", branchName = "강남지점"),
+                BranchResponse(branchCode = "1200", branchName = "서초지점"),
+            )
+
+            mockMvc.perform(get("/api/v1/admin/accounts/branches"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].branchCode").value("1100"))
+                .andExpect(jsonPath("$.data[0].branchName").value("강남지점"))
+                .andExpect(jsonPath("$.data[1].branchCode").value("1200"))
+        }
+
+        @Test
+        @DisplayName("라우팅 - /branches 리터럴 경로가 /{id}(Long) 보다 우선 매칭")
+        fun getBranches_literalPathTakesPriorityOverIdPathVariable() {
+            // /branches 가 @GetMapping("/{id}") 로 잘못 라우팅되면 "branches" → Long 변환 실패로 400 이 된다.
+            // 리터럴 경로 우선 매칭이 보장되어 200 + 지점 목록이 반환되는지 검증 (회귀 가드).
+            every { womenScheduleBranchResolver.resolveBranches(any()) } returns emptyList()
+
+            mockMvc.perform(get("/api/v1/admin/accounts/branches"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+        }
     }
 
     @Nested

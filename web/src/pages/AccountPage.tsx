@@ -5,6 +5,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useAccounts } from '@/hooks/account/useAccounts';
+import { useAccountBranches } from '@/hooks/account/useAccountBranches';
 import { usePermission } from '@/hooks/usePermission';
 import type { Account } from '@/api/account';
 import AdminAccountCreateModal from './admin/accounts/AdminAccountCreateModal';
@@ -57,6 +58,11 @@ export default function AccountPage() {
   });
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const navigate = useNavigate();
+  const { data: branches } = useAccountBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
+
   const { hasEntityPermission } = usePermission();
   const canCreateAccount = hasEntityPermission('account', 'EDIT');
   const canDeleteAccount = hasEntityPermission('account', 'DELETE');
@@ -162,13 +168,23 @@ export default function AccountPage() {
             options={ABC_TYPE_OPTIONS}
             onChange={(val) => { setAbcType(val || undefined); setPage(0); }}
           />
-          <Input
-            placeholder="지점코드"
-            allowClear
-            style={{ width: 140 }}
-            value={branchCode ?? ''}
-            onChange={(e) => { setBranchCode(e.target.value || undefined); setPage(0); }}
-          />
+          {isMultiBranch && (
+            <Select
+              placeholder="지점 (전체)"
+              style={{ width: 160 }}
+              value={branchCode || undefined}
+              options={branchOptions}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              onChange={(val) => { setBranchCode(val || undefined); setPage(0); }}
+            />
+          )}
+          {singleBranch && (
+            <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+              지점: {singleBranch.branchName}
+            </Tag>
+          )}
           <Select
             style={{ width: 140 }}
             value={accountStatusName ?? ''}
