@@ -54,18 +54,57 @@ export async function getPosSalesBranches(): Promise<PosSalesBranch[]> {
 }
 
 /**
- * 거래처 1곳 + 기간(시작/종료일 YYYY-MM-DD) 의 제품별 POS매출 조회.
+ * 거래처 1곳 + 기간(시작/종료일 YYYY-MM-DD) + 선택 바코드 목록의 제품별 POS매출 조회.
+ *
+ * `barcodes` 가 비면 거래처 전체 제품 집계, 1건 이상이면 해당 바코드 제품만 집계 (mobile 정합).
+ * 쉼표 구분 문자열로 전송한다 (`PosSalesRangeRequest.barcodes`).
  */
 export async function fetchPosSales(
   customerId: number,
   startDate: string,
   endDate: string,
+  barcodes?: string[],
 ): Promise<PosSalesResponse> {
   const res = await client.get<ApiResponse<PosSalesResponse>>('/api/v1/admin/sales/pos', {
-    params: { customerId, startDate, endDate },
+    params: {
+      customerId,
+      startDate,
+      endDate,
+      ...(barcodes && barcodes.length > 0 ? { barcodes: barcodes.join(',') } : {}),
+    },
   });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || 'POS매출 조회에 실패했습니다');
   }
   return res.data.data;
+}
+
+/** POS매출 매출 조회 제품 검색 결과 항목 (제품명/제품코드/바코드 — Backend ProductDto). */
+export interface PosSalesProductSearchItem {
+  productCode: string | null;
+  productName: string | null;
+  barcode: string | null;
+}
+
+/**
+ * POS매출 매출 조회 제품 검색 — 제품명/제품코드/바코드 통합 검색.
+ *
+ * Backend `GET /api/v1/admin/sales/pos/products` (`monthly_sales_history` READ 권한 필요).
+ * 모바일 POS매출 제품 검색과 동일하게 바코드 포함 제품 목록을 반환한다.
+ *
+ * @param type 'text'(기본, 제품명/제품코드/바코드 통합) 또는 'barcode'(바코드 정확 조회).
+ */
+export async function searchPosSalesProducts(
+  query: string,
+  type: 'text' | 'barcode' = 'text',
+  size = 30,
+): Promise<PosSalesProductSearchItem[]> {
+  const res = await client.get<ApiResponse<{ content: PosSalesProductSearchItem[] }>>(
+    '/api/v1/admin/sales/pos/products',
+    { params: { query, type, page: 0, size } },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '제품 검색에 실패했습니다');
+  }
+  return res.data.data.content ?? [];
 }

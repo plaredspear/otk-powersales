@@ -138,4 +138,89 @@ class PosSalesServiceTest {
 		assertThat(workbook.getSheetAt(0).lastRowNum).isEqualTo(0) // 헤더 행만
 		workbook.close()
 	}
+
+	// ── getPosSalesByRange (기간 + 바코드 필터) ───────────────────────────
+
+	@Test
+	@DisplayName("getPosSalesByRange - barcodes 비면 전체 제품 집계(aggregateByProduct) + 합계 서버 산출")
+	fun getPosSalesByRange_noBarcodes() {
+		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		val custSlot = slot<String>()
+		val startSlot = slot<String>()
+		val endSlot = slot<String>()
+		every {
+			livePosSalesDailyRepository.aggregateByProduct(capture(custSlot), capture(startSlot), capture(endSlot))
+		} returns listOf(
+			row("01101123", "갈릭 아이올리소스 240g", "8801045123456", 3500, 10),
+			row("01101222", "오뚜기 3분 카레 100g", "8801045222333", 1500, 5),
+		)
+
+		val res = service.getPosSalesByRange(1, "2026-02-01", "2026-02-15", emptyList())
+
+		assertThat(custSlot.captured).isEqualTo("00012345")
+		assertThat(startSlot.captured).isEqualTo("2026-02-01")
+		assertThat(endSlot.captured).isEqualTo("2026-02-15")
+		// 바코드 미지정 → 바코드 필터 메서드는 호출되지 않음.
+		verify(exactly = 0) {
+			livePosSalesDailyRepository.aggregateByProductAndBarcodes(any(), any(), any(), any())
+		}
+		assertThat(res.items).hasSize(2)
+		// 합계는 서버 산출분 (명세 합산).
+		assertThat(res.totalAmount).isEqualTo(5000L)
+		assertThat(res.totalQuantity).isEqualTo(15L)
+	}
+
+	@Test
+	@DisplayName("getPosSalesByRange - barcodes 1건+ 이면 바코드 필터 집계 + 공백/중복 정제 후 전달")
+	fun getPosSalesByRange_withBarcodes() {
+		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		val barcodeSlot = slot<List<String>>()
+		every {
+			livePosSalesDailyRepository.aggregateByProductAndBarcodes(any(), any(), any(), capture(barcodeSlot))
+		} returns listOf(
+			row("01101123", "갈릭 아이올리소스 240g", "8801045123456", 3500, 10),
+		)
+
+		// 공백 패딩 + 빈 값 + 중복 포함 입력 → trim/blank 제외/distinct 정제되어 전달되어야 한다.
+		val res = service.getPosSalesByRange(
+			1, "2026-02-01", "2026-02-15",
+			listOf(" 8801045123456 ", "", "8801045123456", "8801045999999"),
+		)
+
+		assertThat(barcodeSlot.captured).containsExactly("8801045123456", "8801045999999")
+		verify(exactly = 0) {
+			livePosSalesDailyRepository.aggregateByProduct(any(), any(), any())
+		}
+		assertThat(res.items).hasSize(1)
+		assertThat(res.totalAmount).isEqualTo(3500L)
+		assertThat(res.totalQuantity).isEqualTo(10L)
+	}
+
+	@Test
+	@DisplayName("getPosSalesByRange - POS DB 장애 시 빈 명세로 fallback")
+	fun getPosSalesByRange_emptyFallback() {
+		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = "12345"))
+		every {
+			livePosSalesDailyRepository.aggregateByProduct(any(), any(), any())
+		} throws RuntimeException("POS down")
+
+		val res = service.getPosSalesByRange(1, "2026-02-01", "2026-02-15", emptyList())
+
+		assertThat(res.items).isEmpty()
+		assertThat(res.totalAmount).isEqualTo(0L)
+		assertThat(res.totalQuantity).isEqualTo(0L)
+	}
+
+	@Test
+	@DisplayName("getPosSalesByRange - 거래처 SAP 코드 없으면 빈 명세 (POS 조회 미수행)")
+	fun getPosSalesByRange_noSapCode() {
+		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = null))
+
+		val res = service.getPosSalesByRange(1, "2026-02-01", "2026-02-15", listOf("8801045123456"))
+
+		assertThat(res.items).isEmpty()
+		verify(exactly = 0) {
+			livePosSalesDailyRepository.aggregateByProductAndBarcodes(any(), any(), any(), any())
+		}
+	}
 }

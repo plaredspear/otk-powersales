@@ -6749,6 +6749,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePageProductDto" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PageProductDto"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePageScheduleListItemDto" : {
         "properties" : {
           "data" : {
@@ -12967,6 +12996,52 @@
         },
         "type" : "object"
       },
+      "PageProductDto" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProductDto"
+            },
+            "type" : "array"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "numberOfElements" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "PageScheduleListItemDto" : {
         "properties" : {
           "content" : {
@@ -13686,6 +13761,38 @@
             "type" : [ "string", "null" ]
           },
           "unit" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ProductDto" : {
+        "properties" : {
+          "barcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "category1" : {
+            "type" : [ "string", "null" ]
+          },
+          "category2" : {
+            "type" : [ "string", "null" ]
+          },
+          "logisticsBarcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "shelfLife" : {
+            "type" : [ "string", "null" ]
+          },
+          "shelfLifeUnit" : {
+            "type" : [ "string", "null" ]
+          },
+          "storageCondition" : {
             "type" : [ "string", "null" ]
           }
         },
@@ -26554,6 +26661,60 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-pos-sales-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/pos/products" : {
+      "get" : {
+        "operationId" : "searchProducts",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "query",
+          "required" : true,
+          "schema" : {
+            "maxLength" : 50,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "default" : "text",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 30,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePageProductDto"
                 }
               }
             },

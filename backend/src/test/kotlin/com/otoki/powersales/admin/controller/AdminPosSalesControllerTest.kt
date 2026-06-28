@@ -2,6 +2,8 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.domain.foundation.product.dto.response.ProductDto
+import com.otoki.powersales.domain.foundation.product.service.ProductService
 import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
 import com.otoki.powersales.domain.sales.service.PosSalesService
@@ -10,6 +12,8 @@ import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.verify
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -31,9 +35,42 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
     @MockkBean
     private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
 
+    @MockkBean
+    private lateinit var productService: ProductService
+
     @BeforeEach
     fun setUpAdmin() {
         authenticateAsAdmin(role = null)
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/sales/pos/products - 제품명/제품코드/바코드 통합 검색")
+    fun searchProducts_success() {
+        every { productService.searchProducts("갈릭", "text", 0, 30) } returns PageImpl(
+            listOf(
+                ProductDto(
+                    productCode = "01101123",
+                    productName = "갈릭 아이올리소스 240g",
+                    barcode = "8801045123456",
+                    logisticsBarcode = null,
+                    storageCondition = null,
+                    shelfLife = null,
+                    shelfLifeUnit = null,
+                    category1 = null,
+                    category2 = null,
+                ),
+            ),
+            PageRequest.of(0, 30),
+            1,
+        )
+
+        mockMvc.perform(
+            get("/api/v1/admin/sales/pos/products").param("query", "갈릭"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.content[0].productCode").value("01101123"))
+            .andExpect(jsonPath("$.data.content[0].barcode").value("8801045123456"))
     }
 
     @Test
@@ -89,9 +126,46 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
+    @DisplayName("GET /api/v1/admin/sales/pos - barcodes 지정 시 바코드 목록으로 필터")
+    fun getPosSales_withBarcodes() {
+        every {
+            posSalesService.getPosSalesByRange(
+                1L, "2026-02-01", "2026-02-28", listOf("8801045123456", "8801045999999"),
+            )
+        } returns PosSalesRangeResponse(
+            customerId = 1L,
+            customerName = "사과마을",
+            sapAccountCode = "12345",
+            startDate = "2026-02-01",
+            endDate = "2026-02-28",
+            totalAmount = 3500L,
+            totalQuantity = 10L,
+            items = emptyList(),
+        )
+
+        mockMvc.perform(
+            get("/api/v1/admin/sales/pos")
+                .param("customerId", "1")
+                .param("startDate", "2026-02-01")
+                .param("endDate", "2026-02-28")
+                .param("barcodes", "8801045123456,8801045999999"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+
+        verify {
+            posSalesService.getPosSalesByRange(
+                1L, "2026-02-01", "2026-02-28", listOf("8801045123456", "8801045999999"),
+            )
+        }
+    }
+
+    @Test
     @DisplayName("GET /api/v1/admin/sales/pos/export - Excel byte 응답 + Content-Disposition")
     fun exportPosSales_success() {
-        every { posSalesService.exportPosSalesByRange(1L, "2026-02-01", "2026-02-28") } returns ExcelResult(
+        every {
+            posSalesService.exportPosSalesByRange(1L, "2026-02-01", "2026-02-28", emptyList())
+        } returns ExcelResult(
             bytes = ByteArray(800),
             filename = "POS매출_사과마을_2026-02-01_2026-02-28.xlsx",
         )
@@ -111,7 +185,7 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
             )
             .andExpect(header().exists("Content-Disposition"))
 
-        verify { posSalesService.exportPosSalesByRange(1L, "2026-02-01", "2026-02-28") }
+        verify { posSalesService.exportPosSalesByRange(1L, "2026-02-01", "2026-02-28", emptyList()) }
     }
 
     @Test
