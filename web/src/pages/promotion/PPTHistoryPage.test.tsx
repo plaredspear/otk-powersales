@@ -15,6 +15,8 @@ const sampleHistory: PPTHistory = {
   oldValue: '라면세일조',
   newValue: '카레행사조',
   changedAt: '2026-05-18T14:30:00',
+  accountCode: 'SAP001',
+  accountName: '이마트 강남점',
 };
 
 const deletedEmployeeHistory: PPTHistory = {
@@ -27,6 +29,9 @@ const deletedEmployeeHistory: PPTHistory = {
   oldValue: null,
   newValue: '라면세일조',
   changedAt: '2026-05-17T09:00:00',
+  // masterId 없는 이력 — 거래처도 null.
+  accountCode: null,
+  accountName: null,
 };
 
 const mockHook = vi.fn();
@@ -67,6 +72,9 @@ describe('PPTHistoryPage', () => {
     expect(screen.getByText('EMP005')).toBeInTheDocument();
     expect(screen.getByText('서울지점')).toBeInTheDocument();
     expect(screen.getByText('카레행사조')).toBeInTheDocument();
+    // 원인 마스터(masterId) 거래처가 행에 표시된다.
+    expect(screen.getByText('이마트 강남점')).toBeInTheDocument();
+    expect(screen.getByText('SAP001')).toBeInTheDocument();
   });
 
   it('사원이 deleted 인 row 는 "-" 로 표시', () => {

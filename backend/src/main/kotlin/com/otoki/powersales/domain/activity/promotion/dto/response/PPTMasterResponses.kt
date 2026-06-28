@@ -107,14 +107,19 @@ data class PPTMasterHistoryResponse(
     val orgName: String?,
     val oldValue: ProfessionalPromotionTeamType?,
     val newValue: ProfessionalPromotionTeamType?,
-    val changedAt: LocalDateTime?
+    val changedAt: LocalDateTime?,
+    // 이력을 유발한 마스터(masterId)의 거래처 — masterId 가 null 인 이력은 두 값 모두 null.
+    val accountCode: String? = null,
+    val accountName: String? = null
 ) {
     companion object {
         fun from(
             history: ProfessionalPromotionTeamHistory,
             employeeName: String?,
             employeeCode: String?,
-            orgName: String?
+            orgName: String?,
+            accountCode: String? = null,
+            accountName: String? = null
         ): PPTMasterHistoryResponse {
             return PPTMasterHistoryResponse(
                 id = history.id,
@@ -125,7 +130,9 @@ data class PPTMasterHistoryResponse(
                 orgName = orgName,
                 oldValue = history.oldValue,
                 newValue = history.newValue,
-                changedAt = history.changedAt
+                changedAt = history.changedAt,
+                accountCode = accountCode,
+                accountName = accountName
             )
         }
     }

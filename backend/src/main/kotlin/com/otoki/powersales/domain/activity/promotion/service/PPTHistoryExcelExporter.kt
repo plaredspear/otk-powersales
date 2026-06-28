@@ -18,9 +18,10 @@ class PPTHistoryExcelExporter : BaseExcelExporter<PPTMasterHistoryResponse>() {
     override val sheetName = "전문행사조이력"
     override val defaultFilename = "전문행사조이력.xlsx"
 
-    // 목록 테이블 컬럼 순서 정합 (이력번호 ~ 변경 시점).
+    // 목록 테이블 컬럼 순서 정합 (이력번호 ~ 변경 시점 ~ 거래처명 / 거래처코드).
     override val headers = listOf(
         "전문행사조 이력번호", "소속", "사번", "사원", "변경 전", "변경 후", "변경 시점",
+        "거래처명", "거래처코드",
     )
 
     override fun writeRow(row: Row, item: PPTMasterHistoryResponse) {
@@ -31,6 +32,8 @@ class PPTHistoryExcelExporter : BaseExcelExporter<PPTMasterHistoryResponse>() {
         row.createCell(4).setCellValue(item.oldValue?.displayName ?: "")
         row.createCell(5).setCellValue(item.newValue?.displayName ?: "")
         row.createCell(6).setCellValue(item.changedAt?.format(DATETIME_FORMAT) ?: "")
+        row.createCell(7).setCellValue(item.accountName ?: "")
+        row.createCell(8).setCellValue(item.accountCode ?: "")
     }
 
     companion object {

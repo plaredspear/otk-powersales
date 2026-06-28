@@ -205,6 +205,9 @@ export interface PPTHistory {
   oldValue: string | null;
   newValue: string;
   changedAt: string;
+  // 이력을 유발한 마스터의 거래처 — masterId 가 없는 이력(만료/삭제 해제·구 데이터)은 null.
+  accountCode: string | null;
+  accountName: string | null;
 }
 
 export interface PPTHistoryListData {

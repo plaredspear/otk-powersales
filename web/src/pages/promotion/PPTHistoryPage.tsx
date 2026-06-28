@@ -179,6 +179,20 @@ export default function PPTHistoryPage() {
       align: 'center',
       render: (val: string) => dayjs(val).format('YYYY-MM-DD HH:mm'),
     },
+    {
+      title: '거래처명',
+      dataIndex: 'accountName',
+      width: 160,
+      ellipsis: true,
+      render: (val: string | null) => val ?? '-',
+    },
+    {
+      title: '거래처코드',
+      dataIndex: 'accountCode',
+      width: 120,
+      align: 'center',
+      render: (val: string | null) => val ?? '-',
+    },
   ];
 
   return (
