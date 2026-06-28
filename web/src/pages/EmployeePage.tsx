@@ -6,6 +6,7 @@ import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { buildListPagination } from '@/lib/listPagination';
 import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
 import { useFemaleEmployeeBranches } from '@/hooks/employee/useFemaleEmployeeBranches';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
@@ -30,7 +31,7 @@ const STATUS_OPTIONS = [
   { value: '퇴직', label: '퇴직' },
 ];
 
-const PAGE_SIZE = 20;
+const DEFAULT_SIZE = 20;
 
 
 const DEVICE_TOOLTIP =
@@ -46,10 +47,12 @@ export default function EmployeePage() {
   const goToDetail = (id: number) =>
     navigate(`/female-employee/${id}`, { state: { listSearch: location.search } });
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
-  const { page, setPage, filters, setFilter } = useListQueryParams({
-    defaultFilters: { status: '', costCenterCode: '', keyword: '' },
+  const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
+    defaultFilters: { status: '', costCenterCode: '', keyword: '', size: String(DEFAULT_SIZE) },
   });
   const { status, costCenterCode, keyword } = filters;
+  // size 는 URL 보관을 위해 string 으로 직렬화 — 사용처에서 number 로 역변환.
+  const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조와 동일 backend resolver).
   //  - 다중 지점: Select 로 선택 → costCenterCode 필터로 전송
@@ -74,7 +77,7 @@ export default function EmployeePage() {
     costCenterCode: costCenterCode || undefined,
     keyword: keyword || undefined,
     page,
-    size: PAGE_SIZE,
+    size: pageSize,
   });
 
   const { run: runExport, downloading: exporting } = useExcelDownload();
@@ -296,14 +299,14 @@ export default function EmployeePage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        pagination={{
-          current: (data?.page ?? 0) + 1,
+        pagination={buildListPagination({
+          page: data?.page ?? page,
+          pageSize,
           total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: (p) => setPage(p - 1),
-        }}
+          // 사이즈 변경 시 setFilters 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+          onPageChange: setPage,
+          onSizeChange: (size) => setFilters({ size: String(size) }),
+        })}
       />
       {deviceTarget && (
         <DeviceResetModal
