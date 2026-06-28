@@ -22,14 +22,20 @@ function failureMessage(label: string, res: { data: ApiResponse<unknown> }): str
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
 }
 
-/** 전문행사조 확정 인원 조회 (isConfirmed=true, 전사). */
-export async function fetchPptConfirmedReport(): Promise<PptConfirmedReportResponse> {
-  const res = await client.get<ApiResponse<PptConfirmedReportResponse>>(BASE);
+/** 전문행사조 확정 인원 조회 (isConfirmed=true). `branchCode` 지정 시 해당 지점만. */
+export async function fetchPptConfirmedReport(
+  branchCode?: string,
+): Promise<PptConfirmedReportResponse> {
+  const res = await client.get<ApiResponse<PptConfirmedReportResponse>>(BASE, {
+    params: branchCode ? { branchCode } : undefined,
+  });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('전문행사조 확정 인원', res));
   return res.data.data;
 }
 
-/** 전문행사조 확정 인원 엑셀 다운로드. */
-export async function exportPptConfirmedReport(): Promise<void> {
-  await downloadExcel(`${BASE}/export`, '전문행사조확정인원.xlsx');
+/** 전문행사조 확정 인원 엑셀 다운로드. `branchCode` 지정 시 해당 지점만. */
+export async function exportPptConfirmedReport(branchCode?: string): Promise<void> {
+  await downloadExcel(`${BASE}/export`, '전문행사조확정인원.xlsx', {
+    params: branchCode ? { branchCode } : undefined,
+  });
 }

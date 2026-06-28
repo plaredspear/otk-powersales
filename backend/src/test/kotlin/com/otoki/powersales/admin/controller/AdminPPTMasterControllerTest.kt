@@ -7,6 +7,8 @@ import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterCreateRequest
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTConfirmedReportService
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTMasterService
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterDuplicateException
@@ -46,6 +48,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
     @Autowired private lateinit var objectMapper: ObjectMapper
     @MockkBean private lateinit var adminPPTMasterService: AdminPPTMasterService
     @MockkBean private lateinit var pptConfirmedReportService: AdminPPTConfirmedReportService
+    @MockkBean private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
@@ -100,6 +103,27 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].teamType").value("라면세일조"))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/ppt-masters/branches - 지점 셀렉터 옵션")
+    inner class GetBranches {
+
+        @Test
+        @DisplayName("성공 - 권한별 지점 목록 반환")
+        fun getBranches_success() {
+            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+                BranchResponse(branchCode = "1100", branchName = "강남지점"),
+                BranchResponse(branchCode = "1200", branchName = "서초지점"),
+            )
+
+            mockMvc.perform(get("/api/v1/admin/ppt-masters/branches"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].branchCode").value("1100"))
+                .andExpect(jsonPath("$.data[0].branchName").value("강남지점"))
+                .andExpect(jsonPath("$.data[1].branchCode").value("1200"))
         }
     }
 
@@ -307,7 +331,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any(), any()) } returns historyResponse
+            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any(), any(), any()) } returns historyResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-histories"))
                 .andExpect(status().isOk)
@@ -327,7 +351,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 content = emptyList(), totalElements = 0, totalPages = 0, number = 0, size = 20
             )
             every { adminPPTMasterService.getAllHistory(
-                any(), eq("홍"), eq("EMP001"), eq("라면세일조"),
+                any(), eq("홍"), eq("EMP001"), eq("라면세일조"), any(),
                 eq(LocalDate.of(2026, 5, 1)), eq(LocalDate.of(2026, 5, 31)), any()
             ) } returns historyResponse
 
@@ -356,7 +380,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
             )
-            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any(), any()) } returns historyResponse
+            every { adminPPTMasterService.getAllHistory(any(), any(), any(), any(), any(), any(), any(), any()) } returns historyResponse
 
             mockMvc.perform(get("/api/v1/admin/ppt-histories"))
                 .andExpect(status().isOk)
@@ -378,7 +402,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 filename = "전문행사조이력_20260518.xlsx"
             )
             every {
-                adminPPTMasterService.exportHistoryToExcel(any(), any(), any(), any(), any(), any())
+                adminPPTMasterService.exportHistoryToExcel(any(), any(), any(), any(), any(), any(), any())
             } returns result
 
             mockMvc.perform(get("/api/v1/admin/ppt-histories/export"))
@@ -398,7 +422,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
             val result = ExcelResult(bytes = ByteArray(10), filename = "전문행사조이력.xlsx")
             every {
                 adminPPTMasterService.exportHistoryToExcel(
-                    any(), eq("홍"), eq("EMP001"), eq("라면세일조"),
+                    any(), eq("홍"), eq("EMP001"), eq("라면세일조"), any(),
                     eq(LocalDate.of(2026, 5, 1)), eq(LocalDate.of(2026, 5, 31))
                 )
             } returns result
@@ -415,7 +439,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
 
             verify {
                 adminPPTMasterService.exportHistoryToExcel(
-                    any(), eq("홍"), eq("EMP001"), eq("라면세일조"),
+                    any(), eq("홍"), eq("EMP001"), eq("라면세일조"), any(),
                     eq(LocalDate.of(2026, 5, 1)), eq(LocalDate.of(2026, 5, 31))
                 )
             }

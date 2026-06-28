@@ -266,13 +266,15 @@ class AdminPPTMasterService(
         employeeName: String?,
         employeeCode: String?,
         teamType: String?,
+        branchCode: String?,
         changedAtFrom: LocalDate?,
         changedAtTo: LocalDate?,
         pageable: Pageable
     ): PPTMasterHistoryListResponse {
         // 지점 스코프 — 전문행사조 마스터 조회와 동일하게 본인 소속 지점만 노출 (전사 권한은 전체).
         // 데이터의 branch_code 컬럼은 비어 있으므로 사원 소속 지점(costCenterCode) 기준으로 평가한다.
-        val branchCodeFilter = when (val result = scope.effectiveBranchCodes(null)) {
+        // branchCode 지정 시(다중지점 사용자가 지점 선택) 해당 지점만 — 권한 밖이면 NoAccess.
+        val branchCodeFilter = when (val result = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })) {
             is EffectiveBranchResult.All -> null
             is EffectiveBranchResult.Filtered -> result.codes
             is EffectiveBranchResult.NoAccess -> return emptyHistoryList(pageable)
@@ -308,10 +310,11 @@ class AdminPPTMasterService(
         employeeName: String?,
         employeeCode: String?,
         teamType: String?,
+        branchCode: String?,
         changedAtFrom: LocalDate?,
         changedAtTo: LocalDate?
     ): ExcelResult {
-        val rows = when (val result = scope.effectiveBranchCodes(null)) {
+        val rows = when (val result = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })) {
             is EffectiveBranchResult.NoAccess -> emptyList()
             else -> {
                 val branchCodeFilter = when (result) {

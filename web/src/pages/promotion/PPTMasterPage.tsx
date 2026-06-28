@@ -9,6 +9,7 @@ import {
   useDeletePPTMaster,
   useConfirmPPTMastersByIds,
 } from '@/hooks/promotion/usePPTMasters';
+import { usePPTBranches } from '@/hooks/promotion/usePPTBranches';
 import { PPT_MASTER_TEMPLATE_PATH, PPT_MASTER_EXPORT_PATH } from '@/api/pptMaster';
 import type { PPTMaster } from '@/api/pptMaster';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
@@ -68,6 +69,7 @@ export default function PPTMasterPage() {
       employeeName: '',
       employeeCode: '',
       teamType: '',
+      branchCode: '',
       validOnly: 'true',
       size: String(DEFAULT_SIZE),
     },
@@ -75,11 +77,18 @@ export default function PPTMasterPage() {
   const validOnly = filters.validOnly !== 'false';
   const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
 
+  // 지점 셀렉터 — 권한별 지점 화이트리스트. 지점이 하나면 셀렉터를 숨기고 그 지점이 자동 적용됨
+  // (backend 가 단일지점 사용자의 소속 지점으로 자동 스코프).
+  const { data: branches } = usePPTBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const isSingleBranch = (branches?.length ?? 0) <= 1;
+
   // 검색버튼 분리형: 입력 위젯은 로컬 편집 버퍼, URL filters 가 source of truth.
   // 마운트 시 URL 값으로 1회 초기화하여 새로고침/복귀 시 위젯 표시가 맞도록 한다.
   const [filterEmployeeName, setFilterEmployeeName] = useState(filters.employeeName);
   const [filterEmployeeNumber, setFilterEmployeeNumber] = useState(filters.employeeCode);
   const [filterTeamType, setFilterTeamType] = useState(filters.teamType);
+  const [filterBranchCode, setFilterBranchCode] = useState(filters.branchCode);
   const [filterValidOnly, setFilterValidOnly] = useState(validOnly);
 
   const { data, isLoading, refetch, isFetching } = usePPTMasters({
@@ -88,6 +97,7 @@ export default function PPTMasterPage() {
     employeeName: filters.employeeName || undefined,
     employeeCode: filters.employeeCode || undefined,
     teamType: filters.teamType || undefined,
+    branchCode: filters.branchCode || undefined,
     validOnly,
   });
   const deleteMutation = useDeletePPTMaster();
@@ -105,6 +115,7 @@ export default function PPTMasterPage() {
       employeeName: filterEmployeeName,
       employeeCode: filterEmployeeNumber,
       teamType: filterTeamType,
+      branchCode: filterBranchCode,
       validOnly: String(filterValidOnly),
     });
   };
@@ -113,11 +124,13 @@ export default function PPTMasterPage() {
     setFilterEmployeeName('');
     setFilterEmployeeNumber('');
     setFilterTeamType('');
+    setFilterBranchCode('');
     setFilterValidOnly(true);
     setFilters({
       employeeName: '',
       employeeCode: '',
       teamType: '',
+      branchCode: '',
       validOnly: 'true',
       size: String(DEFAULT_SIZE),
     });
@@ -187,6 +200,7 @@ export default function PPTMasterPage() {
         ...(filters.employeeName ? { employeeName: filters.employeeName } : {}),
         ...(filters.employeeCode ? { employeeCode: filters.employeeCode } : {}),
         ...(filters.teamType ? { teamType: filters.teamType } : {}),
+        ...(filters.branchCode ? { branchCode: filters.branchCode } : {}),
         validOnly,
       },
       totalCount: data?.totalElements,
@@ -312,6 +326,18 @@ export default function PPTMasterPage() {
     <div>
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space wrap>
+          {!isSingleBranch && (
+            <Select
+              placeholder="지점 (전체)"
+              value={filterBranchCode || undefined}
+              onChange={(v) => setFilterBranchCode(v ?? '')}
+              style={{ width: 160 }}
+              options={branchOptions}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+            />
+          )}
           <Input
             placeholder="사원명"
             value={filterEmployeeName}

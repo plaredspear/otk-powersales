@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Alert, Button, Space, Spin, Typography, message } from 'antd';
+import { useMemo, useState } from 'react';
+import { Alert, Button, Select, Space, Spin, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -7,6 +7,7 @@ import {
   exportPptConfirmedReport as apiExport,
   type PptConfirmedReportItem,
 } from '@/api/pptConfirmedReport';
+import { usePPTBranches } from '@/hooks/promotion/usePPTBranches';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 
@@ -19,14 +20,22 @@ const { Text } = Typography;
  * 기존 /promotion/ppt-masters 화면과 별개 (역할 분리).
  */
 export default function PptConfirmedReportPage() {
+  // 지점 셀렉터 — 권한별 지점 화이트리스트. 지점이 하나면 셀렉터를 숨기고 그 지점이 자동 적용됨.
+  const { data: branches } = usePPTBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const isSingleBranch = (branches?.length ?? 0) <= 1;
+
+  // 선택한 지점 — 조회 버튼/엑셀에 그대로 적용. 변경 즉시 queryKey 가 바뀌어 재조회된다.
+  const [branchCode, setBranchCode] = useState<string>('');
+
   const query = useQuery({
-    queryKey: ['pptConfirmedReport'],
-    queryFn: fetchPptConfirmedReport,
+    queryKey: ['pptConfirmedReport', branchCode],
+    queryFn: () => fetchPptConfirmedReport(branchCode || undefined),
   });
 
   const handleExport = async () => {
     try {
-      await apiExport();
+      await apiExport(branchCode || undefined);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }
@@ -47,6 +56,18 @@ export default function PptConfirmedReportPage() {
   return (
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 12 }} wrap>
+        {!isSingleBranch && (
+          <Select
+            placeholder="지점 (전체)"
+            value={branchCode || undefined}
+            onChange={(v) => setBranchCode(v ?? '')}
+            style={{ width: 160 }}
+            options={branchOptions}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+          />
+        )}
         <Button type="primary" onClick={() => query.refetch()} loading={query.isFetching}>
           조회
         </Button>

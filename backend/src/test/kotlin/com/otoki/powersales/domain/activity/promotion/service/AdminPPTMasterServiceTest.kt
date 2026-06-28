@@ -944,7 +944,7 @@ class AdminPPTMasterServiceTest {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val result = service.getAllHistory(allBranchesScope(), null, null, null, null, null, PageRequest.of(0, 20))
+            val result = service.getAllHistory(allBranchesScope(), null, null, null, null, null, null, PageRequest.of(0, 20))
 
             assertThat(result.content).hasSize(1)
             val row = result.content[0]
@@ -964,7 +964,7 @@ class AdminPPTMasterServiceTest {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
-            service.getAllHistory(allBranchesScope(), null, null, "라면세일조", null, null, PageRequest.of(0, 20))
+            service.getAllHistory(allBranchesScope(), null, null, "라면세일조", null, null, null, PageRequest.of(0, 20))
 
             verify {
                 pptHistoryRepository.searchHistories(
@@ -982,7 +982,7 @@ class AdminPPTMasterServiceTest {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
-            service.getAllHistory(allBranchesScope(), null, null, "잘못된값", null, null, PageRequest.of(0, 20))
+            service.getAllHistory(allBranchesScope(), null, null, "잘못된값", null, null, null, PageRequest.of(0, 20))
 
             verify {
                 pptHistoryRepository.searchHistories(
@@ -1007,7 +1007,7 @@ class AdminPPTMasterServiceTest {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns page
 
-            val result = service.getAllHistory(allBranchesScope(), null, null, null, null, null, PageRequest.of(0, 20))
+            val result = service.getAllHistory(allBranchesScope(), null, null, null, null, null, null, PageRequest.of(0, 20))
 
             assertThat(result.content[0].employeeName).isNull()
             assertThat(result.content[0].employeeCode).isNull()
@@ -1023,7 +1023,7 @@ class AdminPPTMasterServiceTest {
 
             // 본인 지점 "3233" 단일 권한 (전사 아님)
             val scope = DataScope(branchCodes = listOf("3233"), isAllBranches = false)
-            service.getAllHistory(scope, null, null, null, null, null, PageRequest.of(0, 20))
+            service.getAllHistory(scope, null, null, null, null, null, null, PageRequest.of(0, 20))
 
             // branchCodeFilter 인자(6번째)에 본인 지점 코드가 전달되어야 한다
             verify {
@@ -1036,7 +1036,7 @@ class AdminPPTMasterServiceTest {
         fun getAllHistory_noAccess() {
             // 권한 지점 목록이 비어 전사도 아님 -> NoAccess
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
-            val result = service.getAllHistory(scope, null, null, null, null, null, PageRequest.of(0, 20))
+            val result = service.getAllHistory(scope, null, null, null, null, null, null, PageRequest.of(0, 20))
 
             assertThat(result.content).isEmpty()
             assertThat(result.totalElements).isEqualTo(0)
@@ -1066,7 +1066,7 @@ class AdminPPTMasterServiceTest {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns PageImpl(listOf(history), PageRequest.of(0, 50_000), 1)
 
-            val result = service.exportHistoryToExcel(allBranchesScope(), null, null, null, null, null)
+            val result = service.exportHistoryToExcel(allBranchesScope(), null, null, null, null, null, null)
 
             assertThat(result.filename).startsWith("전문행사조이력_").endsWith(".xlsx")
             val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
@@ -1093,7 +1093,7 @@ class AdminPPTMasterServiceTest {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList(), PageRequest.of(0, 50_000), 0)
 
-            service.exportHistoryToExcel(allBranchesScope(), "홍", "123", "라면세일조", null, null)
+            service.exportHistoryToExcel(allBranchesScope(), "홍", "123", "라면세일조", null, null, null)
 
             verify {
                 pptHistoryRepository.searchHistories(
@@ -1110,7 +1110,7 @@ class AdminPPTMasterServiceTest {
         fun exportHistory_noAccess() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
 
-            val result = service.exportHistoryToExcel(scope, null, null, null, null, null)
+            val result = service.exportHistoryToExcel(scope, null, null, null, null, null, null)
 
             val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
             assertThat(workbook.getSheetAt(0).lastRowNum).isEqualTo(0) // 헤더 행만

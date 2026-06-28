@@ -56,6 +56,12 @@ export interface PPTMasterSearchParams {
   validOnly?: boolean;
 }
 
+/** 전문행사조 화면 지점 셀렉터 옵션 (마스터/이력/확정인원 공용). */
+export interface PPTBranch {
+  branchCode: string;
+  branchName: string;
+}
+
 export interface PPTMasterBulkItem {
   employeeCode: string;
   accountCode: string;
@@ -89,6 +95,19 @@ export interface ConfirmByIdsResult {
 
 
 // --- API functions ---
+
+/**
+ * 전문행사조 화면 지점 셀렉터 옵션 조회.
+ *
+ * 여사원 일정/대시보드와 동일하게 권한별 지점 화이트리스트를 반환한다. 마스터/이력/확정인원 3화면 공용.
+ */
+export async function getPPTBranches(): Promise<PPTBranch[]> {
+  const res = await client.get<ApiResponse<PPTBranch[]>>('/api/v1/admin/ppt-masters/branches');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
 
 export async function getPPTMasters(params: PPTMasterSearchParams): Promise<PPTMasterListData> {
   const res = await client.get<ApiResponse<PPTMasterListData>>('/api/v1/admin/ppt-masters', {
@@ -202,6 +221,7 @@ export interface PPTHistorySearchParams {
   employeeName?: string;
   employeeCode?: string;
   teamType?: string;
+  branchCode?: string;
   changedAtFrom?: string;
   changedAtTo?: string;
 }
