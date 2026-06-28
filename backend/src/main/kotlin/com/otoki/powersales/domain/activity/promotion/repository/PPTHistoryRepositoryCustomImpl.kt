@@ -104,7 +104,8 @@ class PPTHistoryRepositoryCustomImpl(
             .on(professionalPromotionTeamHistory.masterId.eq(professionalPromotionTeamMaster.id))
             .leftJoin(account).on(professionalPromotionTeamMaster.accountId.eq(account.id))
             .where(builder)
-            .orderBy(professionalPromotionTeamHistory.changedAt.desc())
+            // 1차: 사번 오름차순(null 사번은 DB 기본 NULLS LAST), 2차: 변경 시점 최근 우선.
+            .orderBy(employee.employeeCode.asc(), professionalPromotionTeamHistory.changedAt.desc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
