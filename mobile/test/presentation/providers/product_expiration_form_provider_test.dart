@@ -71,7 +71,7 @@ void main() {
     });
 
     group('updateExpiryDate', () {
-      test('유통기한을 변경하면 알림일도 자동 변경되어야 한다', () {
+      test('소비기한을 변경하면 알림일도 자동 변경되어야 한다', () {
         final newExpiry = DateTime(2026, 5, 10);
 
         notifier.updateExpiryDate(newExpiry);
@@ -121,14 +121,14 @@ void main() {
       });
 
       test('등록 실패 시 에러 메시지를 설정해야 한다', () async {
-        fakeRepository.exceptionToThrow = Exception('이미 등록된 유통기한입니다');
+        fakeRepository.exceptionToThrow = Exception('이미 등록된 소비기한입니다');
         notifier.selectAccount('ACC001', '이마트');
         notifier.selectProduct('P001', '진라면');
 
         await notifier.register();
 
         expect(notifier.state.isLoading, false);
-        expect(notifier.state.errorMessage, '이미 등록된 유통기한입니다');
+        expect(notifier.state.errorMessage, '이미 등록된 소비기한입니다');
         expect(notifier.state.isSaved, false);
       });
 

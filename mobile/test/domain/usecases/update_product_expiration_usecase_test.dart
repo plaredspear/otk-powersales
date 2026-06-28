@@ -76,7 +76,7 @@ void main() {
   });
 
   group('UpdateProductExpiration', () {
-    test('유통기한을 성공적으로 수정한다', () async {
+    test('소비기한을 성공적으로 수정한다', () async {
       // Given
       const itemSeq = 1;
       final form = ProductExpirationUpdateForm(
@@ -118,7 +118,7 @@ void main() {
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',
-          contains('유효하지 않은 유통기한 시퀀스입니다'),
+          contains('유효하지 않은 소비기한 시퀀스입니다'),
         )),
       );
     });

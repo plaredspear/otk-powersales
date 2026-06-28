@@ -55,7 +55,7 @@ void main() {
       useCase = DeleteProductExpiration(repository);
     });
 
-    test('유통기한을 성공적으로 삭제한다', () async {
+    test('소비기한을 성공적으로 삭제한다', () async {
       // Given
       const itemSeq = 1;
 
@@ -76,7 +76,7 @@ void main() {
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
           'message',
-          contains('유효하지 않은 유통기한 시퀀스입니다'),
+          contains('유효하지 않은 소비기한 시퀀스입니다'),
         )),
       );
     });
@@ -105,7 +105,7 @@ void main() {
       useCase = DeleteProductExpirationBatch(repository);
     });
 
-    test('유통기한을 성공적으로 일괄 삭제한다', () async {
+    test('소비기한을 성공적으로 일괄 삭제한다', () async {
       // Given
       final seqs = [1, 2, 3];
       repository.deleteCount = 3;

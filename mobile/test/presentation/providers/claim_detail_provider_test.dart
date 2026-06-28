@@ -99,7 +99,7 @@ final _sampleDetail = ClaimDetail(
   productName: '진라면(매운맛)멀티',
   productCode: '12345678',
   dateType: 'EXPIRY_DATE',
-  dateTypeLabel: '유통기한',
+  dateTypeLabel: '소비기한',
   date: DateTime(2026, 8, 19),
   categoryLabel: '포장불량',
   subcategoryLabel: '누수/누유',

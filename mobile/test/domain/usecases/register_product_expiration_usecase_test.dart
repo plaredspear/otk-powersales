@@ -76,7 +76,7 @@ void main() {
   });
 
   group('RegisterProductExpiration', () {
-    test('유통기한을 성공적으로 등록한다', () async {
+    test('소비기한을 성공적으로 등록한다', () async {
       // Given
       final form = ProductExpirationRegisterForm(
         accountCode: 'ACC1025',

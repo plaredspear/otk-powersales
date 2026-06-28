@@ -11,7 +11,7 @@ void main() {
     test('레거시와 동일한 순서/라벨/라우트를 가져야 한다', () {
       final items = ActivityRegistrationPopup.defaultMenuItems;
 
-      expect(items[0].label, '유통기한 관리');
+      expect(items[0].label, '소비기한 관리');
       expect(items[0].route, AppRouter.productExpiration);
 
       expect(items[1].label, '현장 점검 등록');

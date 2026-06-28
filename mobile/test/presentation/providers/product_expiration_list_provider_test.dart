@@ -82,12 +82,12 @@ void main() {
 
       test('검색 실패 시 에러 메시지를 설정해야 한다', () async {
         fakeRepository.exceptionToThrow =
-            Exception('유통기한 검색 기간은 최대 6개월입니다');
+            Exception('소비기한 검색 기간은 최대 6개월입니다');
 
         await notifier.searchProductExpiration();
 
         expect(notifier.state.isLoading, false);
-        expect(notifier.state.errorMessage, '유통기한 검색 기간은 최대 6개월입니다');
+        expect(notifier.state.errorMessage, '소비기한 검색 기간은 최대 6개월입니다');
       });
 
       test('검색 중에는 로딩 상태여야 한다', () async {

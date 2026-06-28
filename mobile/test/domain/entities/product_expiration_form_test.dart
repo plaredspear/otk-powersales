@@ -13,7 +13,7 @@ void main() {
       productName: '진라면',
       expiryDate: testExpiryDate,
       alertDate: testAlertDate,
-      description: '유통기한 주의',
+      description: '소비기한 주의',
     );
 
     final testJson = {
@@ -23,7 +23,7 @@ void main() {
       'productName': '진라면',
       'expiryDate': '2025-03-15',
       'alertDate': '2025-03-10',
-      'description': '유통기한 주의',
+      'description': '소비기한 주의',
     };
 
     group('생성', () {
@@ -53,7 +53,7 @@ void main() {
         expect(testForm.productName, '진라면');
         expect(testForm.expiryDate, testExpiryDate);
         expect(testForm.alertDate, testAlertDate);
-        expect(testForm.description, '유통기한 주의');
+        expect(testForm.description, '소비기한 주의');
       });
     });
 
@@ -112,7 +112,7 @@ void main() {
         expect(result['productName'], '진라면');
         expect(result['expiryDate'], '2025-03-15');
         expect(result['alertDate'], '2025-03-10');
-        expect(result['description'], '유통기한 주의');
+        expect(result['description'], '소비기한 주의');
       });
 
       test('날짜가 YYYY-MM-DD 형식으로 직렬화된다', () {
@@ -201,7 +201,7 @@ void main() {
           productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
-          description: '유통기한 주의',
+          description: '소비기한 주의',
         );
 
         final form2 = ProductExpirationRegisterForm(
@@ -211,7 +211,7 @@ void main() {
           productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
-          description: '유통기한 주의',
+          description: '소비기한 주의',
         );
 
         expect(form1, form2);
@@ -241,7 +241,7 @@ void main() {
           productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
-          description: '유통기한 주의',
+          description: '소비기한 주의',
         );
 
         final form2 = ProductExpirationRegisterForm(
@@ -251,7 +251,7 @@ void main() {
           productName: '진라면',
           expiryDate: testExpiryDate,
           alertDate: testAlertDate,
-          description: '유통기한 주의',
+          description: '소비기한 주의',
         );
 
         expect(form1.hashCode, form2.hashCode);
@@ -265,7 +265,7 @@ void main() {
         expect(result, contains('ProductExpirationRegisterForm'));
         expect(result, contains('accountCode: ACC101'));
         expect(result, contains('productCode: P001'));
-        expect(result, contains('description: 유통기한 주의'));
+        expect(result, contains('description: 소비기한 주의'));
       });
     });
   });

@@ -31,7 +31,7 @@ void main() {
       ));
 
       expect(find.text('0건'), findsOneWidget);
-      expect(find.text('유통기한 임박제품 : '), findsOneWidget);
+      expect(find.text('소비기한 임박제품 : '), findsOneWidget);
     });
 
     testWidgets('T1: 0건일 때도 건수 텍스트가 legacyDanger 색상이어야 한다 (레거시 정렬)',
@@ -71,7 +71,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(expiryAlert: null));
 
       expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.text('유통기한 임박제품 : '), findsNothing);
+      expect(find.text('소비기한 임박제품 : '), findsNothing);
     });
 
     testWidgets('T4: 지점명+사원명(사번) 형식으로 표시되어야 한다', (tester) async {
