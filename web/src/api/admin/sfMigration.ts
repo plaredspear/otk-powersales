@@ -182,7 +182,7 @@ export async function runNoticeRtaPlaceholder(
  * Employee.role / Employee.professional_promotion_team / User.profile_type 변환은 폐기됨
  * (SF picklist value 가 곧 저장값 — 변환 substep 자체가 불요).
  */
-export type PicklistColumn = 'user_cost_center_code';
+export type PicklistColumn = 'user_cost_center_code' | 'ppt_master_branch_code';
 
 export interface PicklistSubstepResult {
   label: string;
@@ -193,6 +193,20 @@ export interface PicklistResponse {
   substep: string;
   results: PicklistSubstepResult[];
   totalRowsAffected: number;
+}
+
+/**
+ * Stage 2-B picklist 전체 실행 — User.cost_center_code + ProfessionalPromotionTeamMaster.branch_code
+ * 두 derived 동기화를 한 번에 수행한다 (각각 멱등).
+ */
+export async function runPicklistAll(): Promise<PicklistResponse> {
+  const res = await client.post<ApiResponse<PicklistResponse>>(
+    '/api/v1/admin/sf-migration/stage2/picklist',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Picklist (전체) 실행에 실패했습니다');
+  }
+  return res.data.data;
 }
 
 export async function runPicklistColumn(column: PicklistColumn): Promise<PicklistResponse> {

@@ -4,6 +4,7 @@ import {
   getFkResolveProgress,
   runNaturalKeyFkResolve,
   runNoticeRtaPlaceholder,
+  runPicklistAll,
   runPicklistColumn,
   runUploadFilePolymorphicParent,
   runUserRoleHierarchyRecalc,
@@ -66,6 +67,12 @@ export function useStartFkResolve() {
       recentStartAt = Date.now();
       void queryClient.invalidateQueries({ queryKey: PROGRESS_KEY });
     },
+  });
+}
+
+export function useRunPicklistAll() {
+  return useMutation<PicklistResponse, Error, void>({
+    mutationFn: runPicklistAll,
   });
 }
 

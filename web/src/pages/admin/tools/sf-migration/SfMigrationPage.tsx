@@ -20,6 +20,7 @@ import {
   useFkResolveProgress,
   useRunNaturalKeyFkResolve,
   useRunNoticeRtaPlaceholder,
+  useRunPicklistAll,
   useRunPicklistColumn,
   useRunUploadFilePolymorphicParent,
   useRunUserRoleHierarchyRecalc,
@@ -83,6 +84,7 @@ export default function SfMigrationPage() {
 
   // 단일 테이블 실행용 선택값 (미선택 시 undefined → '전체 실행' 만 가능).
   const [selectedTable, setSelectedTable] = useState<string | undefined>(undefined);
+  const runPicklistAllMutation = useRunPicklistAll();
   const runPicklistColumnMutation = useRunPicklistColumn();
   const runNaturalKeyFkMutation = useRunNaturalKeyFkResolve();
   const runUploadFileParentMutation = useRunUploadFilePolymorphicParent();
@@ -98,9 +100,14 @@ export default function SfMigrationPage() {
     ? (STATUS_TAG[progress.status] ?? UNKNOWN_STATUS_TAG)
     : STATUS_TAG.IDLE;
 
-  const picklistResult = runPicklistColumnMutation.data;
-  const picklistError = runPicklistColumnMutation.error as Error | null;
-  const picklistPending = runPicklistColumnMutation.isPending;
+  // Stage 2-B 는 전체 실행(picklistAll) + 개별 컬럼 실행(picklistColumn) 두 경로를 공유한다.
+  // 가장 최근에 끝난 mutation 의 결과를 표시 (submittedAt 비교 — 0 이면 미실행).
+  const lastAllAt = runPicklistAllMutation.submittedAt ?? 0;
+  const lastColumnAt = runPicklistColumnMutation.submittedAt ?? 0;
+  const latestPicklist = lastAllAt >= lastColumnAt ? runPicklistAllMutation : runPicklistColumnMutation;
+  const picklistResult = latestPicklist.data;
+  const picklistError = latestPicklist.error as Error | null;
+  const picklistPending = runPicklistAllMutation.isPending || runPicklistColumnMutation.isPending;
 
   const naturalKeyResult = runNaturalKeyFkMutation.data;
   const naturalKeyError = runNaturalKeyFkMutation.error as Error | null;
@@ -570,7 +577,10 @@ export default function SfMigrationPage() {
 
       <Card title="Stage 2-B — Derived 캐시 동기화" style={{ marginTop: 24 }}>
         <Paragraph type="secondary">
-          User.cost_center_code derived 캐시를 Employee.cost_center_code 기준으로 동기화한다.
+          Employee.cost_center_code 를 기준으로 derived 캐시를 동기화한다 — <Text code>User.cost_center_code</Text>
+          (employee_code 조인) + <Text code>ProfessionalPromotionTeamMaster.branch_code</Text> (employee_id 조인).
+          후자는 SF <Text code>CostCenterCode__c</Text>(라벨 "조직유형") 가 운영 dead field 라 사원 소속 지점으로 백필하며,
+          멱등(branch_code IS NULL 한정)이라 신규 등록분은 건드리지 않는다.
           한글 picklist → enum 변환 substep (Employee.role / Employee.professional_promotion_team /
           User.profile_type) 은 폐기 — SF picklist value 가 곧 저장값이라 변환 자체가 불요.
           본 작업은 동기 실행 — 보통 수 초 내 완료.
@@ -578,18 +588,39 @@ export default function SfMigrationPage() {
 
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            대상: <Text code>User.cost_center_code</Text> (Employee 캐시 동기화)
+            대상: <Text code>User.cost_center_code</Text> + <Text code>ProfessionalPromotionTeamMaster.branch_code</Text>
           </Paragraph>
-          <Space>
+          <Space wrap>
             <Button
               type="primary"
               loading={picklistPending}
               disabled={picklistPending}
               onClick={() => {
+                runPicklistColumnMutation.reset();
+                runPicklistAllMutation.mutate();
+              }}
+            >
+              전체 실행
+            </Button>
+            <Button
+              loading={picklistPending}
+              disabled={picklistPending}
+              onClick={() => {
+                runPicklistAllMutation.reset();
                 runPicklistColumnMutation.mutate('user_cost_center_code');
               }}
             >
-              실행
+              User.cost_center_code 만
+            </Button>
+            <Button
+              loading={picklistPending}
+              disabled={picklistPending}
+              onClick={() => {
+                runPicklistAllMutation.reset();
+                runPicklistColumnMutation.mutate('ppt_master_branch_code');
+              }}
+            >
+              전문행사조 branch_code 만
             </Button>
           </Space>
         </Space>
@@ -603,6 +634,7 @@ export default function SfMigrationPage() {
             description={picklistError.message}
             closable
             onClose={() => {
+              runPicklistAllMutation.reset();
               runPicklistColumnMutation.reset();
             }}
           />
