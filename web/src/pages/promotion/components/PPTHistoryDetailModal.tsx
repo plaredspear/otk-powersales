@@ -36,6 +36,8 @@ export default function PPTHistoryDetailModal({ open, history, onClose }: Props)
           <Descriptions.Item label="변경 시점">
             {dayjs(history.changedAt).format('YYYY-MM-DD HH:mm')}
           </Descriptions.Item>
+          <Descriptions.Item label="거래처명">{history.accountName ?? '-'}</Descriptions.Item>
+          <Descriptions.Item label="거래처코드">{history.accountCode ?? '-'}</Descriptions.Item>
         </Descriptions>
       )}
     </Modal>

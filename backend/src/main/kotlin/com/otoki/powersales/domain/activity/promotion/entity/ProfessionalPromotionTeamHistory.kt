@@ -41,6 +41,12 @@ class ProfessionalPromotionTeamHistory(
     @Column(name = "employee_id")
     val employeeId: Long? = null,
 
+    // 변경을 유발한 전문행사조 마스터 FK. 생성/수정/확정/sync/만료 경로는 채우고,
+    // 삭제로 인한 해제 경로는 마스터가 이미 제거되므로 null (DB FK ON DELETE SET NULL 로 보호).
+    @FieldName("전문행사조마스터ID")
+    @Column(name = "professional_promotion_team_master_id")
+    val masterId: Long? = null,
+
     @SFField("EmployeeId__c")
     @Column(name = "employee_sfid", length = 18)
     val employeeSfid: String? = null,

@@ -31,7 +31,7 @@ class PPTMasterBatchService(
         for (master in validMasters) {
             val employee = employeeMap[master.employeeId] ?: continue
             if (employee.professionalPromotionTeam != master.teamType) {
-                adminPPTMasterService.updateEmployeeTeam(employee, master.teamType)
+                adminPPTMasterService.updateEmployeeTeam(employee, master.teamType, masterId = master.id)
                 updated++
             }
         }

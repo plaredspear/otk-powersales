@@ -2,9 +2,12 @@ package com.otoki.powersales.domain.activity.promotion.repository
 
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamHistory
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
+import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.activity.promotion.entity.QProfessionalPromotionTeamHistory.Companion.professionalPromotionTeamHistory
+import com.otoki.powersales.domain.activity.promotion.entity.QProfessionalPromotionTeamMaster.Companion.professionalPromotionTeamMaster
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -25,7 +28,7 @@ class PPTHistoryRepositoryCustomImpl(
         changedAtTo: LocalDate?,
         branchCodeFilter: List<String>?,
         pageable: Pageable
-    ): Page<ProfessionalPromotionTeamHistory> {
+    ): Page<PPTHistorySearchResult> {
         val builder = BooleanBuilder()
 
         if (!employeeName.isNullOrBlank()) {
@@ -65,11 +68,44 @@ class PPTHistoryRepositoryCustomImpl(
 
         builder.and(isNotDeleted())
 
+        return fetchHistoryPage(builder, pageable)
+    }
+
+    override fun findHistoriesByEmployeeId(employeeId: Long, pageable: Pageable): Page<PPTHistorySearchResult> {
+        val builder = BooleanBuilder()
+        builder.and(professionalPromotionTeamHistory.employeeId.eq(employeeId))
+        builder.and(isNotDeleted())
+
+        return fetchHistoryPage(builder, pageable)
+    }
+
+    /**
+     * 이력 + 사원 컨텍스트 + 원인 마스터(masterId) 거래처 projection 을 공통 조회한다.
+     *
+     * 이력 → 원인 마스터(masterId) → 거래처(account) 를 left join 하여, masterId 가 null 인 이력은
+     * master/account 조인이 매칭되지 않아 거래처 두 필드가 null 이 된다. 정렬은 변경 시점 역순.
+     */
+    private fun fetchHistoryPage(builder: BooleanBuilder, pageable: Pageable): Page<PPTHistorySearchResult> {
         val content = queryFactory
-            .selectFrom(professionalPromotionTeamHistory)
-            .leftJoin(professionalPromotionTeamHistory.employee, employee).fetchJoin()
+            .select(
+                Projections.constructor(
+                    PPTHistorySearchResult::class.java,
+                    professionalPromotionTeamHistory,
+                    employee.name,
+                    employee.employeeCode,
+                    employee.orgName,
+                    account.externalKey,
+                    account.name,
+                )
+            )
+            .from(professionalPromotionTeamHistory)
+            .leftJoin(employee).on(professionalPromotionTeamHistory.employeeId.eq(employee.id))
+            .leftJoin(professionalPromotionTeamMaster)
+            .on(professionalPromotionTeamHistory.masterId.eq(professionalPromotionTeamMaster.id))
+            .leftJoin(account).on(professionalPromotionTeamMaster.accountId.eq(account.id))
             .where(builder)
-            .orderBy(professionalPromotionTeamHistory.changedAt.desc())
+            // 1차: 사번 오름차순(null 사번은 DB 기본 NULLS LAST), 2차: 변경 시점 최근 우선.
+            .orderBy(employee.employeeCode.asc(), professionalPromotionTeamHistory.changedAt.desc())
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
             .fetch()
@@ -77,7 +113,7 @@ class PPTHistoryRepositoryCustomImpl(
         val countQuery = queryFactory
             .select(professionalPromotionTeamHistory.count())
             .from(professionalPromotionTeamHistory)
-            .leftJoin(professionalPromotionTeamHistory.employee, employee)
+            .leftJoin(employee).on(professionalPromotionTeamHistory.employeeId.eq(employee.id))
             .where(builder)
 
         return PageableExecutionUtils.getPage(content, pageable) { countQuery.fetchOne() ?: 0L }

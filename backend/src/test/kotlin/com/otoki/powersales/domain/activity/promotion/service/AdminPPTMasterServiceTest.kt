@@ -16,6 +16,7 @@ import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterInvalid
 import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterNotFoundException
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.promotion.repository.PPTHistoryRepository
+import com.otoki.powersales.domain.activity.promotion.repository.PPTHistorySearchResult
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterSearchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
@@ -927,18 +928,25 @@ class AdminPPTMasterServiceTest {
     inner class GetAllHistoryTests {
 
         @Test
-        @DisplayName("성공 - 필터 없이 호출 → repository searchHistories 호출 + 응답 사원 컨텍스트 정상")
+        @DisplayName("성공 - 필터 없이 호출 → repository searchHistories 호출 + 응답 사원/거래처 컨텍스트 정상")
         fun getAllHistory_noFilter_success() {
-            val employee = createEmployee()
             val history = ProfessionalPromotionTeamHistory(
                 id = 1L,
                 name = "PH0000001",
-                employeeId = employee.id,
+                employeeId = 1L,
+                masterId = 50L,
                 oldValue = ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
                 newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
-                employee = employee
             )
-            val page = PageImpl(listOf(history), PageRequest.of(0, 20), 1)
+            val projection = PPTHistorySearchResult(
+                history = history,
+                employeeName = "홍길동",
+                employeeCode = "12345678",
+                orgName = "서울지점",
+                accountCode = "SAP001",
+                accountName = "이마트 강남점",
+            )
+            val page = PageImpl(listOf(projection), PageRequest.of(0, 20), 1)
 
             every {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
@@ -949,12 +957,15 @@ class AdminPPTMasterServiceTest {
             assertThat(result.content).hasSize(1)
             val row = result.content[0]
             assertThat(row.name).isEqualTo("PH0000001")
-            assertThat(row.employeeId).isEqualTo(employee.id)
+            assertThat(row.employeeId).isEqualTo(1L)
             assertThat(row.employeeName).isEqualTo("홍길동")
             assertThat(row.employeeCode).isEqualTo("12345678")
             assertThat(row.orgName).isEqualTo("서울지점")
             assertThat(row.oldValue).isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING)
             assertThat(row.newValue).isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+            // 원인 마스터(masterId) 거래처가 응답에 적재된다.
+            assertThat(row.accountCode).isEqualTo("SAP001")
+            assertThat(row.accountName).isEqualTo("이마트 강남점")
         }
 
         @Test
@@ -993,15 +1004,23 @@ class AdminPPTMasterServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 사원 lookup 결과가 null 인 row → 사원 컨텍스트 3 필드 null")
+        @DisplayName("성공 - 사원/거래처 lookup 결과가 null 인 row → 컨텍스트 필드 null (masterId 없는 이력)")
         fun getAllHistory_deletedEmployee_nullContext() {
             val history = ProfessionalPromotionTeamHistory(
                 id = 99L,
                 employeeId = 999L,
+                masterId = null,
                 newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
-                employee = null
             )
-            val page = PageImpl(listOf(history), PageRequest.of(0, 20), 1)
+            val projection = PPTHistorySearchResult(
+                history = history,
+                employeeName = null,
+                employeeCode = null,
+                orgName = null,
+                accountCode = null,
+                accountName = null,
+            )
+            val page = PageImpl(listOf(projection), PageRequest.of(0, 20), 1)
 
             every {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
@@ -1012,6 +1031,9 @@ class AdminPPTMasterServiceTest {
             assertThat(result.content[0].employeeName).isNull()
             assertThat(result.content[0].employeeCode).isNull()
             assertThat(result.content[0].orgName).isNull()
+            // masterId 가 null 인 이력은 거래처도 null.
+            assertThat(result.content[0].accountCode).isNull()
+            assertThat(result.content[0].accountName).isNull()
         }
 
         @Test
@@ -1051,20 +1073,27 @@ class AdminPPTMasterServiceTest {
     inner class ExportHistoryToExcelTests {
 
         @Test
-        @DisplayName("성공 - 검색결과 전량을 헤더 7컬럼 + 데이터 행으로 출력 + 파일명 패턴")
+        @DisplayName("성공 - 검색결과 전량을 헤더 9컬럼(거래처명/코드 포함) + 데이터 행으로 출력 + 파일명 패턴")
         fun exportHistory_success() {
-            val employee = createEmployee()
             val history = ProfessionalPromotionTeamHistory(
                 id = 1L,
                 name = "PH0000001",
-                employeeId = employee.id,
+                employeeId = 1L,
+                masterId = 50L,
                 oldValue = ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
                 newValue = ProfessionalPromotionTeamType.RAMEN_SALE,
-                employee = employee
+            )
+            val projection = PPTHistorySearchResult(
+                history = history,
+                employeeName = "홍길동",
+                employeeCode = "12345678",
+                orgName = "서울지점",
+                accountCode = "SAP001",
+                accountName = "이마트 강남점",
             )
             every {
                 pptHistoryRepository.searchHistories(any(), any(), any(), any(), any(), any(), any())
-            } returns PageImpl(listOf(history), PageRequest.of(0, 50_000), 1)
+            } returns PageImpl(listOf(projection), PageRequest.of(0, 50_000), 1)
 
             val result = service.exportHistoryToExcel(allBranchesScope(), null, null, null, null, null, null)
 
@@ -1074,6 +1103,8 @@ class AdminPPTMasterServiceTest {
             assertThat(sheet.sheetName).isEqualTo("전문행사조이력")
             assertThat(sheet.getRow(0).getCell(0).stringCellValue).isEqualTo("전문행사조 이력번호")
             assertThat(sheet.getRow(0).getCell(6).stringCellValue).isEqualTo("변경 시점")
+            assertThat(sheet.getRow(0).getCell(7).stringCellValue).isEqualTo("거래처명")
+            assertThat(sheet.getRow(0).getCell(8).stringCellValue).isEqualTo("거래처코드")
             val dataRow = sheet.getRow(1)
             assertThat(dataRow.getCell(0).stringCellValue).isEqualTo("PH0000001")
             assertThat(dataRow.getCell(1).stringCellValue).isEqualTo("서울지점")
@@ -1083,6 +1114,8 @@ class AdminPPTMasterServiceTest {
                 .isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING.displayName)
             assertThat(dataRow.getCell(5).stringCellValue)
                 .isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE.displayName)
+            assertThat(dataRow.getCell(7).stringCellValue).isEqualTo("이마트 강남점")
+            assertThat(dataRow.getCell(8).stringCellValue).isEqualTo("SAP001")
             workbook.close()
         }
 
@@ -1122,27 +1155,141 @@ class AdminPPTMasterServiceTest {
     }
 
     @Nested
+    @DisplayName("이력 masterId - 원인 마스터 FK 기록")
+    inner class HistoryMasterIdTests {
+
+        @Test
+        @DisplayName("createMaster 즉시 반영 -> 이력에 원인 마스터 id 기록")
+        fun createMaster_recordsMasterId() {
+            val today = LocalDate.now()
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+                startDate = today, isConfirmed = true
+            )
+            val employee = createEmployee(professionalPromotionTeam = null)
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            // 저장된 마스터에 id=42 부여 (채번 대신 직접 set)
+            every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers {
+                ProfessionalPromotionTeamMaster(
+                    id = 42L, employeeId = 1L, accountId = 1,
+                    teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+                    startDate = today, isConfirmed = true, branchCode = "1100"
+                )
+            }
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            val saved = slot<ProfessionalPromotionTeamHistory>()
+            every { pptHistoryRepository.save(capture(saved)) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
+
+            service.createMaster(request)
+
+            assertThat(saved.captured.masterId).isEqualTo(42L)
+        }
+
+        @Test
+        @DisplayName("confirmByIds 즉시 반영 -> 이력에 원인 마스터 id 기록")
+        fun confirmByIds_recordsMasterId() {
+            val today = LocalDate.now()
+            val master = createMaster(id = 7L, startDate = today, isConfirmed = false)
+            val employee = createEmployee(professionalPromotionTeam = null)
+            every { pptMasterRepository.findAllById(listOf(7L)) } returns listOf(master)
+            every { pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>()) } answers { firstArg() }
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            val saved = slot<ProfessionalPromotionTeamHistory>()
+            every { pptHistoryRepository.save(capture(saved)) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
+
+            service.confirmByIds(PPTMasterConfirmByIdsRequest(ids = listOf(7L)))
+
+            assertThat(saved.captured.masterId).isEqualTo(7L)
+        }
+
+        @Test
+        @DisplayName("syncValidMasters 배치 -> 이력에 원인 마스터 id 기록")
+        fun syncValidMasters_recordsMasterId() {
+            val master = createMaster(id = 13L, employeeId = 1L, teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
+            val employee = createEmployee(professionalPromotionTeam = null)
+            every { pptMasterRepository.findValidMasters(LocalDate.now()) } returns listOf(master)
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            val saved = slot<ProfessionalPromotionTeamHistory>()
+            every { pptHistoryRepository.save(capture(saved)) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
+
+            batchService.syncValidMasters()
+
+            assertThat(saved.captured.masterId).isEqualTo(13L)
+        }
+
+        @Test
+        @DisplayName("expireMasters 해제 -> 이력 자체 미기록 (masterId 전달 무의미)")
+        fun expireMasters_noHistory() {
+            val today = LocalDate.now()
+            val master = createMaster(employeeId = 1L, endDate = today)
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+            every { pptMasterRepository.findExpiringMasters(today) } returns listOf(master)
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
+
+            batchService.expireMasters()
+
+            // 해제(→null)는 기존 정책대로 이력을 남기지 않는다.
+            verify(exactly = 0) { pptHistoryRepository.save(any()) }
+        }
+
+        @Test
+        @DisplayName("deleteMaster 해제 -> 이력 자체 미기록")
+        fun deleteMaster_noHistory() {
+            val master = createMaster()
+            val employee = createEmployee(professionalPromotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+            every { pptMasterRepository.findById(1L) } returns Optional.of(master)
+            every { pptMasterRepository.findValidMastersByEmployeeId(1L, LocalDate.now()) } returns emptyList()
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
+
+            service.deleteMaster(1L)
+
+            verify(exactly = 0) { pptHistoryRepository.save(any()) }
+        }
+    }
+
+    @Nested
     @DisplayName("getHistory - 사원 컨텍스트 3 필드 보강")
     inner class GetHistoryEnrichmentTests {
 
         @Test
-        @DisplayName("성공 - getHistory 응답에 name/employeeCode/orgName 포함")
+        @DisplayName("성공 - getHistory 응답에 name/employeeCode/orgName + 원인 마스터 거래처 포함")
         fun getHistory_includesEmployeeContext() {
             val master = createMaster(employeeId = 1L)
-            val employee = createEmployee()
             val history = ProfessionalPromotionTeamHistory(
                 id = 1L,
                 name = "PH0000001",
                 employeeId = 1L,
+                masterId = 1L,
                 oldValue = null,
                 newValue = ProfessionalPromotionTeamType.RAMEN_SALE
+            )
+            val projection = PPTHistorySearchResult(
+                history = history,
+                employeeName = "홍길동",
+                employeeCode = "12345678",
+                orgName = "서울지점",
+                accountCode = "SAP001",
+                accountName = "이마트 강남점",
             )
 
             every { pptMasterRepository.findById(1L) } returns Optional.of(master)
             every {
-                pptHistoryRepository.findByEmployeeIdOrderByChangedAtDesc(1L, any())
-            } returns PageImpl(listOf(history), PageRequest.of(0, 20), 1)
-            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+                pptHistoryRepository.findHistoriesByEmployeeId(1L, any())
+            } returns PageImpl(listOf(projection), PageRequest.of(0, 20), 1)
 
             val result = service.getHistory(1L, PageRequest.of(0, 20))
 
@@ -1150,6 +1297,8 @@ class AdminPPTMasterServiceTest {
             assertThat(result.content[0].employeeName).isEqualTo("홍길동")
             assertThat(result.content[0].employeeCode).isEqualTo("12345678")
             assertThat(result.content[0].orgName).isEqualTo("서울지점")
+            assertThat(result.content[0].accountCode).isEqualTo("SAP001")
+            assertThat(result.content[0].accountName).isEqualTo("이마트 강남점")
         }
     }
 }

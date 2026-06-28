@@ -25,6 +25,7 @@ import com.otoki.powersales.domain.activity.promotion.exception.PPTMasterNotFoun
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.promotion.repository.PPTHistoryRepository
+import com.otoki.powersales.domain.activity.promotion.repository.PPTHistorySearchResult
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
@@ -147,7 +148,7 @@ class AdminPPTMasterService(
 
         // 즉시 반영: startDate가 오늘이고 확정된 경우
         if (request.startDate == LocalDate.now() && request.isConfirmed) {
-            updateEmployeeTeam(employee, request.teamType)
+            updateEmployeeTeam(employee, request.teamType, masterId = master.id)
         }
 
         return PPTMasterResponse.from(
@@ -207,7 +208,7 @@ class AdminPPTMasterService(
 
         // 즉시 반영
         if (request.startDate == LocalDate.now() && request.isConfirmed) {
-            updateEmployeeTeam(employee, request.teamType)
+            updateEmployeeTeam(employee, request.teamType, masterId = master.id)
         }
 
         return PPTMasterResponse.from(
@@ -245,21 +246,22 @@ class AdminPPTMasterService(
         val master = findMasterById(masterId)
         val employeeId = master.employeeId
             ?: return PPTMasterHistoryListResponse(emptyList(), 0L, 0, pageable.pageNumber, pageable.pageSize)
-        val page = pptHistoryRepository.findByEmployeeIdOrderByChangedAtDesc(employeeId, pageable)
-        val employee = employeeRepository.findById(employeeId).orElse(null)
+        val page = pptHistoryRepository.findHistoriesByEmployeeId(employeeId, pageable)
 
         return PPTMasterHistoryListResponse(
-            content = page.content.map {
-                PPTMasterHistoryResponse.from(
-                    it, employee?.name, employee?.employeeCode, employee?.orgName
-                )
-            },
+            content = page.content.map { it.toResponse() },
             totalElements = page.totalElements,
             totalPages = page.totalPages,
             number = page.number,
             size = page.size
         )
     }
+
+    /** [PPTHistorySearchResult] projection → 응답 DTO (사원 컨텍스트 + 원인 마스터 거래처 포함). */
+    private fun PPTHistorySearchResult.toResponse(): PPTMasterHistoryResponse =
+        PPTMasterHistoryResponse.from(
+            history, employeeName, employeeCode, orgName, accountCode, accountName
+        )
 
     fun getAllHistory(
         scope: DataScope,
@@ -285,12 +287,7 @@ class AdminPPTMasterService(
         )
 
         return PPTMasterHistoryListResponse(
-            content = page.content.map { history ->
-                val emp = history.employee
-                PPTMasterHistoryResponse.from(
-                    history, emp?.name, emp?.employeeCode, emp?.orgName
-                )
-            },
+            content = page.content.map { it.toResponse() },
             totalElements = page.totalElements,
             totalPages = page.totalPages,
             number = page.number,
@@ -326,10 +323,7 @@ class AdminPPTMasterService(
                 pptHistoryRepository.searchHistories(
                     employeeName, employeeCode, teamTypeEnum, changedAtFrom, changedAtTo,
                     branchCodeFilter, PageRequest.of(0, EXPORT_MAX_ROWS)
-                ).content.map { history ->
-                    val emp = history.employee
-                    PPTMasterHistoryResponse.from(history, emp?.name, emp?.employeeCode, emp?.orgName)
-                }
+                ).content.map { it.toResponse() }
             }
         }
 
@@ -535,7 +529,7 @@ class AdminPPTMasterService(
             if (master.startDate == today) {
                 val employee = employeeRepository.findById(master.employeeId!!).orElse(null)
                 if (employee != null) {
-                    updateEmployeeTeam(employee, master.teamType)
+                    updateEmployeeTeam(employee, master.teamType, masterId = master.id)
                 }
             }
         }
@@ -591,7 +585,16 @@ class AdminPPTMasterService(
         }
     }
 
-    internal fun updateEmployeeTeam(employee: Employee, newTeamType: ProfessionalPromotionTeamType?) {
+    /**
+     * @param masterId 변경을 유발한 전문행사조 마스터 id. 원인 마스터를 특정할 수 있는 경로
+     *   (생성/수정/확정/sync/만료)는 마스터 id 를 넘기고, 삭제로 인한 해제 경로는 마스터가
+     *   이미 제거되었으므로 `null` 을 넘긴다.
+     */
+    internal fun updateEmployeeTeam(
+        employee: Employee,
+        newTeamType: ProfessionalPromotionTeamType?,
+        masterId: Long? = null,
+    ) {
         val oldValue = employee.professionalPromotionTeam
         employee.professionalPromotionTeam = newTeamType
         employeeRepository.save(employee)
@@ -606,6 +609,7 @@ class AdminPPTMasterService(
             pptHistoryRepository.save(
                 ProfessionalPromotionTeamHistory(
                     employeeId = employee.id,
+                    masterId = masterId,
                     oldValue = oldValue,
                     newValue = newTeamType
                 )
