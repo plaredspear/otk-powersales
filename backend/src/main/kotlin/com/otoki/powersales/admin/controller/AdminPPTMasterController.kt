@@ -37,7 +37,7 @@ class AdminPPTMasterController(
 ) {
 
     @GetMapping("/api/v1/admin/ppt-masters")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun getMasters(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -58,7 +58,7 @@ class AdminPPTMasterController(
 
     /** 전문행사조 확정 인원 보고서 조회 (Spec #846). isConfirmed=true 전사. */
     @GetMapping("/api/v1/admin/ppt-masters/confirmed-report")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun getConfirmedReport(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<PPTConfirmedReportResponse>> {
@@ -68,7 +68,7 @@ class AdminPPTMasterController(
 
     /** 전문행사조 확정 인원 엑셀 다운로드. */
     @GetMapping("/api/v1/admin/ppt-masters/confirmed-report/export")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun exportConfirmedReport(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ByteArray> {
@@ -77,7 +77,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/{id}")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun getMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
@@ -87,7 +87,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
     fun createMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterCreateRequest
@@ -97,7 +97,7 @@ class AdminPPTMasterController(
     }
 
     @PutMapping("/api/v1/admin/ppt-masters/{id}")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
     fun updateMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
@@ -108,7 +108,7 @@ class AdminPPTMasterController(
     }
 
     @DeleteMapping("/api/v1/admin/ppt-masters/{id}")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
     fun deleteMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long
@@ -118,7 +118,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/export")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun exportMasters(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -135,7 +135,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/excel-template")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun downloadExcelTemplate(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ByteArray> {
@@ -145,7 +145,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/bulk")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
     fun validateBulk(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterBulkValidateRequest
@@ -155,7 +155,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/bulk/confirm")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
     fun confirmBulk(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterBulkValidateRequest
@@ -165,7 +165,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/confirm-by-ids")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
     fun confirmByIds(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterConfirmByIdsRequest
@@ -175,7 +175,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-masters/{masterId}/history")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun getHistory(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable masterId: Long,
@@ -187,7 +187,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-histories/export")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun exportHistories(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
@@ -204,7 +204,7 @@ class AdminPPTMasterController(
     }
 
     @GetMapping("/api/v1/admin/ppt-histories")
-    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun getAllHistory(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,

@@ -219,8 +219,13 @@ export const router = createBrowserRouter(
                     { path: '/monthly-input-adequacy', element: <LazyWrapper><MonthlyInputAdequacyPage /></LazyWrapper> },
                   ],
                 },
-                { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
-                { path: '/promotion/ppt-master-history', element: <LazyWrapper><PPTHistoryPage /></LazyWrapper> },
+                {
+                  element: <PermissionRoute entity="professional_promotion_team_master" operation="READ" />,
+                  children: [
+                    { path: '/promotion/ppt-masters', element: <LazyWrapper><PPTMasterPage /></LazyWrapper> },
+                    { path: '/promotion/ppt-master-history', element: <LazyWrapper><PPTHistoryPage /></LazyWrapper> },
+                  ],
+                },
                 {
                   element: <PermissionRoute entity="product" operation="READ" />,
                   children: [
@@ -316,6 +321,11 @@ export const router = createBrowserRouter(
                   element: <PermissionRoute entity="promotion" operation="READ" />,
                   children: [
                     { path: '/promotion-target-actual-report', element: <LazyWrapper><PromotionTargetActualReportPage /></LazyWrapper> },
+                  ],
+                },
+                {
+                  element: <PermissionRoute entity="professional_promotion_team_master" operation="READ" />,
+                  children: [
                     { path: '/ppt-confirmed-members-report', element: <LazyWrapper><PptConfirmedReportPage /></LazyWrapper> },
                   ],
                 },

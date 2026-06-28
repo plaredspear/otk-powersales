@@ -67,8 +67,8 @@ export const menuRoute: MenuRoute = {
       name: '전문행사조',
       icon: <UsergroupAddOutlined />,
       children: [
-        { path: '/promotion/ppt-masters', name: '전문행사조' },
-        { path: '/promotion/ppt-master-history', name: '전문행사조 이력', entity: 'promotion', operation: 'READ' },
+        { path: '/promotion/ppt-masters', name: '전문행사조', entity: 'professional_promotion_team_master', operation: 'READ' },
+        { path: '/promotion/ppt-master-history', name: '전문행사조 이력', entity: 'professional_promotion_team_master', operation: 'READ' },
       ],
     },
     {
@@ -177,7 +177,7 @@ export const menuRoute: MenuRoute = {
         {
           path: '/ppt-confirmed-members-report',
           name: '전문행사조 확정 인원',
-          entity: 'promotion',
+          entity: 'professional_promotion_team_master',
           operation: 'READ',
         },
         {

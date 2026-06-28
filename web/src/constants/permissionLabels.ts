@@ -27,6 +27,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   notice_post: '공지사항',
   permission_set: '권한 세트',
   product: '제품',
+  professional_promotion_team_master: '전문행사조',
   profile: '프로파일',
   promotion: '행사',
   suggestion: '물류 클레임',
