@@ -22,6 +22,7 @@ import {
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { buildListPagination } from '@/lib/listPagination';
 
 const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
 
@@ -394,19 +395,14 @@ export default function PPTMasterPage() {
           onChange: (keys) => setSelectedIds(keys as number[]),
           getCheckboxProps: (record) => ({ disabled: record.isConfirmed }),
         }}
-        pagination={{
-          current: page + 1,
+        pagination={buildListPagination({
+          page,
           pageSize,
           total: data?.totalElements ?? 0,
-          showSizeChanger: true,
-          onChange: (nextPage, nextPageSize) => {
-            if (nextPageSize !== pageSize) {
-              setFilters({ size: String(nextPageSize) });
-            } else {
-              setPage(nextPage - 1);
-            }
-          },
-        }}
+          // 사이즈 변경 시 setFilters 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+          onPageChange: setPage,
+          onSizeChange: (size) => setFilters({ size: String(size) }),
+        })}
         scroll={{ x: 1870 }}
         size="middle"
       />
