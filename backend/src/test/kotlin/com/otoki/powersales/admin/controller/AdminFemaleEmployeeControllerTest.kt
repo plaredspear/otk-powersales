@@ -85,6 +85,7 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                     phone = "01012345678",
                     age = "45살",
                     yearsOfService = "5년",
+                    professionalPromotionTeam = "라면세일조",
                 ),
             ),
             page = 0,

@@ -15,17 +15,20 @@ class EmployeeListExcelExporterTest {
     private fun item(
         employeeCode: String? = "10000001",
         appLoginActive: Boolean? = true,
+        status: String? = "재직",
+        endDate: String? = null,
+        professionalPromotionTeam: String = "일반",
     ) = EmployeeListItem(
         id = 1L,
         employeeCode = employeeCode,
         name = "홍길동",
-        status = "재직",
+        status = status,
         gender = "여",
         orgName = "서울지점",
         costCenterCode = "A001",
         role = "여사원",
         startDate = "2020-01-01",
-        endDate = null,
+        endDate = endDate,
         appLoginActive = appLoginActive,
         workPhone = "02-123-4567",
         jikchak = "팀원",
@@ -39,12 +42,13 @@ class EmployeeListExcelExporterTest {
         phone = "010-1234-5678",
         age = "30",
         yearsOfService = "6",
+        professionalPromotionTeam = professionalPromotionTeam,
     )
 
     @Test
-    @DisplayName("헤더 20개 + 데이터 행이 목록 컬럼 순서대로 생성")
+    @DisplayName("헤더 19개 + 데이터 행이 목록 컬럼 순서대로 생성")
     fun export_headersAndRows() {
-        val result = exporter.export(listOf(item()), "여사원현황.xlsx")
+        val result = exporter.export(listOf(item(professionalPromotionTeam = "라면세일조")), "여사원현황.xlsx")
 
         assertThat(result.filename).isEqualTo("여사원현황.xlsx")
 
@@ -55,22 +59,45 @@ class EmployeeListExcelExporterTest {
         val header = sheet.getRow(0)
         assertThat(header.getCell(0).stringCellValue).isEqualTo("사번")
         assertThat(header.getCell(1).stringCellValue).isEqualTo("이름")
-        assertThat(header.getCell(11).stringCellValue).isEqualTo("이메일(회사)")
-        assertThat(header.getCell(12).stringCellValue).isEqualTo("전화번호(HP)")
-        assertThat(header.getCell(17).stringCellValue).isEqualTo("만나이")
-        assertThat(header.getCell(18).stringCellValue).isEqualTo("근속년수")
-        assertThat(header.getCell(19).stringCellValue).isEqualTo("앱활성")
+        assertThat(header.getCell(2).stringCellValue).isEqualTo("상태")
+        assertThat(header.getCell(3).stringCellValue).isEqualTo("소속")
+        assertThat(header.getCell(4).stringCellValue).isEqualTo("전문행사조")
+        assertThat(header.getCell(5).stringCellValue).isEqualTo("권한")
+        assertThat(header.getCell(10).stringCellValue).isEqualTo("이메일(회사)")
+        assertThat(header.getCell(11).stringCellValue).isEqualTo("전화번호(HP)")
+        assertThat(header.getCell(16).stringCellValue).isEqualTo("만나이")
+        assertThat(header.getCell(17).stringCellValue).isEqualTo("근속년수")
+        assertThat(header.getCell(18).stringCellValue).isEqualTo("앱활성")
 
         val row = sheet.getRow(1)
         assertThat(row.getCell(0).stringCellValue).isEqualTo("10000001")
         assertThat(row.getCell(1).stringCellValue).isEqualTo("홍길동")
-        assertThat(row.getCell(2).stringCellValue).isEqualTo("여")
-        assertThat(row.getCell(3).stringCellValue).isEqualTo("재직")
-        assertThat(row.getCell(11).stringCellValue).isEqualTo("hong@otoki.com")
-        assertThat(row.getCell(12).stringCellValue).isEqualTo("010-1234-5678")
-        assertThat(row.getCell(17).stringCellValue).isEqualTo("30")
-        assertThat(row.getCell(18).stringCellValue).isEqualTo("6")
-        assertThat(row.getCell(19).stringCellValue).isEqualTo("활성")
+        assertThat(row.getCell(2).stringCellValue).isEqualTo("재직")
+        assertThat(row.getCell(3).stringCellValue).isEqualTo("서울지점")
+        assertThat(row.getCell(4).stringCellValue).isEqualTo("라면세일조")
+        assertThat(row.getCell(10).stringCellValue).isEqualTo("hong@otoki.com")
+        assertThat(row.getCell(11).stringCellValue).isEqualTo("010-1234-5678")
+        assertThat(row.getCell(16).stringCellValue).isEqualTo("30")
+        assertThat(row.getCell(17).stringCellValue).isEqualTo("6")
+        assertThat(row.getCell(18).stringCellValue).isEqualTo("활성")
+        workbook.close()
+    }
+
+    @Test
+    @DisplayName("재직 사원은 퇴사일 미표시 / 퇴직 사원은 퇴사일 표시")
+    fun export_endDateHiddenWhenActive() {
+        val result = exporter.export(
+            listOf(
+                item(status = "재직", endDate = "2025-12-31"),
+                item(status = "퇴직", endDate = "2025-12-31"),
+            ),
+        )
+
+        val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
+        val sheet = workbook.getSheetAt(0)
+        // 퇴사일은 15번 컬럼
+        assertThat(sheet.getRow(1).getCell(15).stringCellValue).isEmpty()
+        assertThat(sheet.getRow(2).getCell(15).stringCellValue).isEqualTo("2025-12-31")
         workbook.close()
     }
 
@@ -92,7 +119,7 @@ class EmployeeListExcelExporterTest {
         val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
         val row = workbook.getSheetAt(0).getRow(1)
         assertThat(row.getCell(0).stringCellValue).isEmpty()
-        assertThat(row.getCell(19).stringCellValue).isEqualTo("비활성")
+        assertThat(row.getCell(18).stringCellValue).isEqualTo("비활성")
         workbook.close()
     }
 }

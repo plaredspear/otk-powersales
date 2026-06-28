@@ -49,6 +49,9 @@ export interface Employee {
   phone: string | null;
   age: string | null;
   yearsOfService: string | null;
+  // 전문행사조 (라면세일조/프레시세일조_만두 등). 여사원 현황 목록 응답에서 backend 가 항상
+  // 채워 보내며(미배정은 '일반'), 다른 목록 응답에는 없을 수 있어 optional.
+  professionalPromotionTeam?: string;
 }
 
 export interface EmployeeListData {

@@ -8,6 +8,7 @@ import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
 import { useFemaleEmployeeBranches } from '@/hooks/employee/useFemaleEmployeeBranches';
+import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import { FEMALE_EMPLOYEE_EXPORT_PATH, type Employee } from '@/api/employee';
@@ -123,6 +124,17 @@ export default function EmployeePage() {
         val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
     },
     { title: '소속', dataIndex: 'orgName', width: 150, render: (val: string | null) => val ?? '-' },
+    {
+      title: '전문행사조',
+      dataIndex: 'professionalPromotionTeam',
+      width: 130,
+      align: 'center',
+      // 전문행사조 배정 사원은 조명(라면세일조 등), 미배정은 '일반' — backend 가 null 을 '일반' 으로 채워 보낸다.
+      render: (val: string | undefined) => {
+        const label = val ?? '일반';
+        return <Tag color={getPPTTeamTypeColor(label)}>{label}</Tag>;
+      },
+    },
     {
       title: '권한',
       dataIndex: "role",

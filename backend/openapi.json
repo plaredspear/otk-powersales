@@ -13849,6 +13849,9 @@
           "phone" : {
             "type" : [ "string", "null" ]
           },
+          "professionalPromotionTeam" : {
+            "type" : "string"
+          },
           "role" : {
             "type" : [ "string", "null" ]
           },

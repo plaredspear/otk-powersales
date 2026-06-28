@@ -35,7 +35,9 @@ data class EmployeeListItem(
     val workEmail: String?,
     val phone: String?,
     val age: String?,
-    val yearsOfService: String?
+    val yearsOfService: String?,
+    // 전문행사조 — 미배정(enum null) 사원은 '일반' 으로 표기.
+    val professionalPromotionTeam: String
 ) {
     companion object {
         fun from(employee: Employee, today: LocalDate): EmployeeListItem = EmployeeListItem(
@@ -61,7 +63,8 @@ data class EmployeeListItem(
             workEmail = employee.workEmail,
             phone = employee.phone,
             age = employee.calculateAge(today),
-            yearsOfService = employee.calculateYearsOfService(today)
+            yearsOfService = employee.calculateYearsOfService(today),
+            professionalPromotionTeam = employee.professionalPromotionTeam?.displayName ?: "일반"
         )
     }
 }
