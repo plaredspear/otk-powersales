@@ -33,6 +33,7 @@ import { PresetFilterSelect, type PresetOption } from '@/components/common/Prese
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 import { useAuthStore } from '@/stores/authStore';
 
 /**
@@ -793,24 +794,21 @@ export default function DisplaySchedulePage() {
             selectedRowKeys,
             onChange: (keys) => setSelectedRowKeys(keys),
           }}
-          pagination={{
-            current: listPage + 1,
+          pagination={buildListPagination({
+            page: listPage,
             pageSize: listSize,
             total: scheduleListQuery.data?.totalElements ?? 0,
-            showTotal: (total) => `총 ${total}건`,
-            showSizeChanger: true,
-            pageSizeOptions: [20, 50, 100],
-            onChange: (page, size) => {
-              // 페이지 크기 변경 시 1페이지로 이동 (antd 가 page 를 보정하나 명시적으로 리셋)
-              if (size !== listSize) {
-                setListSize(size);
-                setListPage(0);
-              } else {
-                setListPage(page - 1);
-              }
+            onPageChange: (page) => {
+              setListPage(page);
               setSelectedRowKeys([]);
             },
-          }}
+            onSizeChange: (size) => {
+              // 페이지 크기 변경 시 1페이지로 이동 (antd 가 page 를 보정하나 명시적으로 리셋)
+              setListSize(size);
+              setListPage(0);
+              setSelectedRowKeys([]);
+            },
+          })}
           onChange={(_pagination, _filters, sorter, extra) => {
             // 페이지 이동(paginate)은 pagination.onChange 가 처리. 여기서 listPage 를 0 으로
             // 리셋하면 페이지 클릭이 항상 1페이지로 되돌아가므로, 정렬 변경일 때만 처리한다.

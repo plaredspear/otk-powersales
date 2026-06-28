@@ -9,6 +9,7 @@ import { usePermission } from '@/hooks/usePermission';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { buildListPagination, PAGE_SIZE_OPTIONS } from '@/lib/listPagination';
 import { promotionExportParams, type PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
@@ -59,7 +60,6 @@ export default function PromotionListPage() {
     },
   });
   // 페이지 사이즈 — URL 보관값을 숫자로 파싱(허용 옵션 외/비정상은 기본 50).
-  const PAGE_SIZE_OPTIONS = [20, 50, 100];
   const parsedSize = Number.parseInt(filters.size ?? '', 10);
   const pageSize = PAGE_SIZE_OPTIONS.includes(parsedSize) ? parsedSize : 50;
   const {
@@ -428,22 +428,15 @@ export default function PromotionListPage() {
         dataSource={data?.content}
         loading={isLoading}
         scroll={{ x: 2020 }}
-        pagination={{
-          current: (data?.page ?? 0) + 1,
-          total: data?.totalElements ?? 0,
+        pagination={buildListPagination({
+          // current 는 data?.page 기준이라 헬퍼의 page 인자에 data?.page 를 그대로 넘긴다.
+          page: data?.page ?? 0,
           pageSize,
-          showSizeChanger: true,
-          pageSizeOptions: PAGE_SIZE_OPTIONS,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: (p, size) => {
-            // 페이지 사이즈 변경 시 setFilter 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
-            if (size !== pageSize) {
-              setFilter('size', String(size));
-            } else {
-              setPage(p - 1);
-            }
-          },
-        }}
+          total: data?.totalElements ?? 0,
+          // 사이즈 변경 시 setFilter 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+          onPageChange: setPage,
+          onSizeChange: (size) => setFilter('size', String(size)),
+        })}
       />
     </div>
   );
