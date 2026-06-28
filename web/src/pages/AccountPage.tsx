@@ -162,12 +162,6 @@ export default function AccountPage() {
 
       <Space style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap' }}>
         <Space wrap>
-          <Select
-            style={{ width: 140 }}
-            value={abcType ?? ''}
-            options={ABC_TYPE_OPTIONS}
-            onChange={(val) => { setAbcType(val || undefined); setPage(0); }}
-          />
           {isMultiBranch && (
             <Select
               placeholder="지점 (전체)"
@@ -185,6 +179,12 @@ export default function AccountPage() {
               지점: {singleBranch.branchName}
             </Tag>
           )}
+          <Select
+            style={{ width: 140 }}
+            value={abcType ?? ''}
+            options={ABC_TYPE_OPTIONS}
+            onChange={(val) => { setAbcType(val || undefined); setPage(0); }}
+          />
           <Select
             style={{ width: 140 }}
             value={accountStatusName ?? ''}
