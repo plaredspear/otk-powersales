@@ -160,6 +160,9 @@
           "orderEndTime" : {
             "type" : [ "string", "null" ]
           },
+          "orderableType" : {
+            "type" : "boolean"
+          },
           "ownership" : {
             "enum" : [ "Public", "Private", "Subsidiary", "Other" ],
             "type" : [ "string", "null" ]
@@ -14575,13 +14578,13 @@
       },
       "FemaleEmployeePlacementCheckItem" : {
         "properties" : {
-          "accountBranchCode" : {
-            "type" : [ "string", "null" ]
-          },
           "accountBranchName" : {
             "type" : [ "string", "null" ]
           },
           "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountSapCode" : {
             "type" : [ "string", "null" ]
           },
           "accountType" : {
