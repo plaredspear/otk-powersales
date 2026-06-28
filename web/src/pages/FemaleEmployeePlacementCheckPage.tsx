@@ -68,14 +68,13 @@ export default function FemaleEmployeePlacementCheckPage() {
       { title: '재직상태', dataIndex: 'employmentStatus', width: 80, render: (v) => v ?? '-' },
       { title: '거래처유형', dataIndex: 'accountType', width: 100, render: (v) => v ?? '-' },
       { title: '거래처명', dataIndex: 'accountName', width: 160, render: (v) => v ?? '-' },
-      { title: '거래처코드', dataIndex: 'accountBranchCode', width: 110, render: (v) => v ?? '-' },
+      { title: 'SAP거래처코드', dataIndex: 'accountSapCode', width: 120, render: (v) => v ?? '-' },
       { title: '거래처지점명', dataIndex: 'accountBranchName', width: 120, render: (v) => v ?? '-' },
       { title: '근무구분1', dataIndex: 'workingCategory1', width: 90, render: (v) => v ?? '-' },
       { title: '근무구분2', dataIndex: 'workingCategory2', width: 90, render: (v) => v ?? '-' },
       { title: '근무구분3', dataIndex: 'workingCategory3', width: 90, render: (v) => v ?? '-' },
       { title: '부근무유형', dataIndex: 'secondWorkType', width: 100, render: (v) => v ?? '-' },
       { title: '근무구분5', dataIndex: 'workingCategory5', width: 90, render: (v) => v ?? '-' },
-      { title: '출근일자', dataIndex: 'commuteDate', width: 160, render: (v) => v ?? '-' },
       { title: '근무보고여부', dataIndex: 'isWorkReport', width: 110, render: (v) => v || '-' },
       { title: '입사일', dataIndex: 'startDate', width: 110, render: (v) => v ?? '-' },
       { title: '나이', dataIndex: 'age', width: 70, align: 'right', render: (v) => v ?? '-' },
@@ -128,12 +127,12 @@ export default function FemaleEmployeePlacementCheckPage() {
         </div>
       ) : (
         <ResizableTable
-          rowKey={(r, idx) => `${r.employeeCode}-${r.accountBranchCode ?? ''}-${r.workingDate ?? ''}-${idx}`}
+          rowKey={(r, idx) => `${r.employeeCode}-${r.accountSapCode ?? ''}-${r.workingDate ?? ''}-${idx}`}
           size="small"
           columns={columns}
           dataSource={query.data?.items ?? []}
           pagination={false}
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 320px)' }}
           locale={{
             emptyText:
               queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',

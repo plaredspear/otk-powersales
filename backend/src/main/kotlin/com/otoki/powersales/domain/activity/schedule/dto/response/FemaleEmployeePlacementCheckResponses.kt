@@ -28,7 +28,7 @@ data class FemaleEmployeePlacementCheckItem(
     val employmentStatus: String?,
     val accountType: String?,
     val accountName: String?,
-    val accountBranchCode: String?,
+    val accountSapCode: String?,
     val accountBranchName: String?,
     val workingCategory1: String?,
     val workingCategory2: String?,

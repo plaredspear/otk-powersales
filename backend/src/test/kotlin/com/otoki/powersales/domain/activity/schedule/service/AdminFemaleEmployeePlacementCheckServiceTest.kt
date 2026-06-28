@@ -50,7 +50,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
     )
 
     private fun account(name: String, branchCode: String, branchName: String): Account {
-        val acc = Account(id = 1, externalKey = branchCode)
+        val acc = Account(id = 1, externalKey = "SAP$branchCode")
         acc.name = name
         acc.branchCode = branchCode
         acc.branchName = branchName
@@ -101,7 +101,7 @@ class AdminFemaleEmployeePlacementCheckServiceTest {
             assertThat(item.employmentStatus).isEqualTo("재직")
             assertThat(item.accountType).isEqualTo("대형마트(3대)")
             assertThat(item.accountName).isEqualTo("○○마트 강남점")
-            assertThat(item.accountBranchCode).isEqualTo("B0123")
+            assertThat(item.accountSapCode).isEqualTo("SAPB0123")
             assertThat(item.accountBranchName).isEqualTo("강남지점")
             assertThat(item.workingCategory1).isEqualTo("진열")
             assertThat(item.workingCategory5).isEqualTo("상시")

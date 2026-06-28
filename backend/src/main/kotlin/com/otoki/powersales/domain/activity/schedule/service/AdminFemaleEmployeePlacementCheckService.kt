@@ -90,7 +90,7 @@ class AdminFemaleEmployeePlacementCheckService(
 
         val headers = listOf(
             "근무일자", "소속", "사번", "직위", "성명", "전문행사조", "재직상태",
-            "거래처유형", "거래처명", "거래처코드", "거래처지점명",
+            "거래처유형", "거래처명", "SAP거래처코드", "거래처지점명",
             "근무구분1", "근무구분2", "근무구분3", "부근무유형", "근무구분5",
             "출근일자", "근무보고여부", "입사일", "나이", "근속연수",
         )
@@ -114,7 +114,7 @@ class AdminFemaleEmployeePlacementCheckService(
             row.createCell(6).setCellValue(item.employmentStatus ?: "")
             row.createCell(7).setCellValue(item.accountType ?: "")
             row.createCell(8).setCellValue(item.accountName ?: "")
-            row.createCell(9).setCellValue(item.accountBranchCode ?: "")
+            row.createCell(9).setCellValue(item.accountSapCode ?: "")
             row.createCell(10).setCellValue(item.accountBranchName ?: "")
             row.createCell(11).setCellValue(item.workingCategory1 ?: "")
             row.createCell(12).setCellValue(item.workingCategory2 ?: "")
@@ -148,7 +148,7 @@ class AdminFemaleEmployeePlacementCheckService(
             employmentStatus = emp?.status,
             accountType = acc?.accountType,
             accountName = acc?.name,
-            accountBranchCode = acc?.branchCode,
+            accountSapCode = acc?.externalKey,
             accountBranchName = acc?.branchName,
             workingCategory1 = schedule.workingCategory1?.displayName,
             workingCategory2 = schedule.workingCategory2?.displayName,

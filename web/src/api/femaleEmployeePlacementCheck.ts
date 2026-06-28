@@ -13,7 +13,7 @@ export interface FemaleEmployeePlacementCheckItem {
   employmentStatus: string | null;
   accountType: string | null;
   accountName: string | null;
-  accountBranchCode: string | null;
+  accountSapCode: string | null;
   accountBranchName: string | null;
   workingCategory1: string | null;
   workingCategory2: string | null;
