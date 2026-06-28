@@ -6,6 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/my_account.dart';
 import '../../../domain/repositories/my_account_repository.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/my_accounts_provider.dart';
 
 /// 거래처 선택 바텀시트
@@ -112,6 +113,77 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
     _load(keyword: keyword.isEmpty ? null : keyword);
   }
 
+  /// 표시 기준(어떤 거래처가 목록에 나오는지) 안내 팝업.
+  ///
+  /// 백엔드(`GET /accounts/my`)가 로그인 사원의 권한·[MyAccountScope] 별로 거래처를 분기 조회하므로,
+  /// 사용자가 "왜 이 거래처들만 보이는지" 알기 어렵다. scope 에 맞는 기준을 사용자 문구로 안내한다.
+  void _showCriteriaInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('표시 기준'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final line in _criteriaLines)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                child: Text('• $line', style: AppTypography.bodyMedium),
+              ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '검색은 표시된 목록 안에서 이름·코드로 찾습니다.',
+              style: AppTypography.bodySmall
+                  .copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 현재 로그인 사원이 조장(LEADER)인지 여부.
+  ///
+  /// 백엔드 거래처 조회는 조장(`teamleaderAccList`: 소속 지점 거래처)과
+  /// 그 외(`selectMyAccount`: 본인 담당 스케줄 거래처)로 분기하므로, 그에 맞춰 안내 문구를 나눈다.
+  /// 부서장 전체조회(`ACCOUNT_VIEW_ALL`)는 모바일 도메인 role 이 `USER` 로 합쳐져 여사원과 구분되지 않으나,
+  /// 주문/현장 화면에는 부서장 전용 분기가 없어 영향이 없고, 매출(sales) 화면에서만 안내에 함께 표기한다.
+  bool get _isLeader => ref.read(authProvider).user?.role == 'LEADER';
+
+  /// scope × 역할 별 표시 기준 안내 문구 (현재 로그인 사원에게 적용되는 기준만 노출).
+  List<String> get _criteriaLines => switch (widget.scope) {
+        MyAccountScope.order => _isLeader
+            ? const [
+                '소속 지점의 거래처가 표시됩니다',
+              ]
+            : const [
+                '이번 달(전월 25일~당월 말일) 본인이 담당·진열하는 거래처',
+                '그중 주문 가능한 거래처 유형만 표시됩니다',
+              ],
+        MyAccountScope.sales => _isLeader
+            ? const [
+                '소속 지점의 거래처가 표시됩니다',
+              ]
+            : const [
+                '이번 달(전월 25일~당월 말일) 본인이 담당하는 거래처',
+                '부서장은 전체 거래처를 검색할 수 있습니다',
+              ],
+        MyAccountScope.field => _isLeader
+            ? const [
+                '소속 지점의 거래처가 표시됩니다',
+              ]
+            : const [
+                '이번 달(전월 25일~당월 말일) 본인이 담당하는 거래처',
+              ],
+      };
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -131,12 +203,35 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
               ),
             ),
             const SizedBox(height: AppSpacing.md),
-            // 제목
+            // 제목 + 표시 기준 안내(ⓘ)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('거래처 선택', style: AppTypography.headlineSmall),
+              child: Row(
+                children: [
+                  Text('거래처 선택', style: AppTypography.headlineSmall),
+                  const Spacer(),
+                  // 조회된 거래처 수 (검색 시 재조회되어 자동 갱신)
+                  if (!_loading && _error == null)
+                    Text(
+                      '${_accounts.length}곳',
+                      style: AppTypography.bodyMedium
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  const SizedBox(width: AppSpacing.xs),
+                  // 어떤 거래처가 목록에 나오는지(표시 기준) 안내 팝업
+                  GestureDetector(
+                    onTap: _showCriteriaInfo,
+                    behavior: HitTestBehavior.opaque,
+                    child: const Padding(
+                      padding: EdgeInsets.all(AppSpacing.xs),
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
