@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Select, Space, Spin, Typography, message } from 'antd';
+import { Alert, Button, Select, Space, Spin, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -20,10 +20,13 @@ const { Text } = Typography;
  * 기존 /promotion/ppt-masters 화면과 별개 (역할 분리).
  */
 export default function PptConfirmedReportPage() {
-  // 지점 셀렉터 — 권한별 지점 화이트리스트. 지점이 하나면 셀렉터를 숨기고 그 지점이 자동 적용됨.
+  // 지점 셀렉터 — 권한별 지점 화이트리스트.
+  //  - 다중 지점: Select 로 선택
+  //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시 (PeriodBranchFilterBar 정합).
   const { data: branches } = usePPTBranches();
   const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
-  const isSingleBranch = (branches?.length ?? 0) <= 1;
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
 
   // 선택한 지점 — 조회 버튼/엑셀에 그대로 적용. 변경 즉시 queryKey 가 바뀌어 재조회된다.
   const [branchCode, setBranchCode] = useState<string>('');
@@ -56,7 +59,7 @@ export default function PptConfirmedReportPage() {
   return (
     <div style={{ padding: 16 }}>
       <Space style={{ marginBottom: 12 }} wrap>
-        {!isSingleBranch && (
+        {isMultiBranch && (
           <Select
             placeholder="지점 (전체)"
             value={branchCode || undefined}
@@ -67,6 +70,11 @@ export default function PptConfirmedReportPage() {
             showSearch
             optionFilterProp="label"
           />
+        )}
+        {singleBranch && (
+          <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+            지점: {singleBranch.branchName}
+          </Tag>
         )}
         <Button type="primary" onClick={() => query.refetch()} loading={query.isFetching}>
           조회

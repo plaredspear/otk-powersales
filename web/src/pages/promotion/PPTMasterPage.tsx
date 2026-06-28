@@ -77,11 +77,14 @@ export default function PPTMasterPage() {
   const validOnly = filters.validOnly !== 'false';
   const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
 
-  // 지점 셀렉터 — 권한별 지점 화이트리스트. 지점이 하나면 셀렉터를 숨기고 그 지점이 자동 적용됨
-  // (backend 가 단일지점 사용자의 소속 지점으로 자동 스코프).
+  // 지점 셀렉터 — 권한별 지점 화이트리스트.
+  //  - 다중 지점: Select 로 선택
+  //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시 (PeriodBranchFilterBar 정합). branchCode 는 빈 값이라
+  //    backend 가 본인 소속 지점으로 자동 스코프하므로 별도 전송 불필요.
   const { data: branches } = usePPTBranches();
   const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
-  const isSingleBranch = (branches?.length ?? 0) <= 1;
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
 
   // 검색버튼 분리형: 입력 위젯은 로컬 편집 버퍼, URL filters 가 source of truth.
   // 마운트 시 URL 값으로 1회 초기화하여 새로고침/복귀 시 위젯 표시가 맞도록 한다.
@@ -326,7 +329,7 @@ export default function PPTMasterPage() {
     <div>
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space wrap>
-          {!isSingleBranch && (
+          {isMultiBranch && (
             <Select
               placeholder="지점 (전체)"
               value={filterBranchCode || undefined}
@@ -337,6 +340,11 @@ export default function PPTMasterPage() {
               showSearch
               optionFilterProp="label"
             />
+          )}
+          {singleBranch && (
+            <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+              지점: {singleBranch.branchName}
+            </Tag>
           )}
           <Input
             placeholder="사원명"
