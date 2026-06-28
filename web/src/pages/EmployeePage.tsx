@@ -114,7 +114,6 @@ export default function EmployeePage() {
       width: 120,
       render: (val: string | null) => val ?? '-',
     },
-    { title: '성별', dataIndex: 'gender', width: 60, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '상태',
       dataIndex: 'status',
@@ -209,12 +208,6 @@ export default function EmployeePage() {
     <div style={{ padding: 16 }}>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Select
-          style={{ width: 140 }}
-          value={status ?? ''}
-          options={STATUS_OPTIONS}
-          onChange={(val) => setFilter('status', val)}
-        />
         {isMultiBranch && (
           <Select
             placeholder="지점 (전체)"
@@ -232,6 +225,12 @@ export default function EmployeePage() {
             지점: {singleBranch.branchName}
           </Tag>
         )}
+        <Select
+          style={{ width: 140 }}
+          value={status ?? ''}
+          options={STATUS_OPTIONS}
+          onChange={(val) => setFilter('status', val)}
+        />
         <Input.Search
           placeholder="사번 또는 이름 검색"
           allowClear
