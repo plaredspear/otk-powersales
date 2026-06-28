@@ -40,10 +40,13 @@ export default function PPTHistoryPage() {
   });
   const size = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
 
-  // 지점 셀렉터 — 권한별 지점 화이트리스트. 지점이 하나면 셀렉터를 숨기고 그 지점이 자동 적용됨.
+  // 지점 셀렉터 — 권한별 지점 화이트리스트.
+  //  - 다중 지점: Select 로 선택
+  //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시 (PeriodBranchFilterBar 정합).
   const { data: branches } = usePPTBranches();
   const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
-  const isSingleBranch = (branches?.length ?? 0) <= 1;
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
 
   // 입력 위젯은 편집 버퍼 — URL 이 source of truth. 마운트 시 URL 값으로 초기화.
   const [filterEmployeeName, setFilterEmployeeName] = useState(filters.employeeName);
@@ -182,7 +185,7 @@ export default function PPTHistoryPage() {
     <div>
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space wrap>
-          {!isSingleBranch && (
+          {isMultiBranch && (
             <Select
               placeholder="지점 (전체)"
               value={filterBranchCode || undefined}
@@ -193,6 +196,11 @@ export default function PPTHistoryPage() {
               showSearch
               optionFilterProp="label"
             />
+          )}
+          {singleBranch && (
+            <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+              지점: {singleBranch.branchName}
+            </Tag>
           )}
           <Input
             placeholder="사원명"
