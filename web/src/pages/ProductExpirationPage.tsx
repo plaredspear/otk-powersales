@@ -52,6 +52,7 @@ export default function ProductExpirationPage() {
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
+  const [size, setSize] = useState(20);
 
   // Applied filter (only updates on search click)
   const [appliedFilter, setAppliedFilter] = useState({
@@ -76,7 +77,7 @@ export default function ProductExpirationPage() {
     employeeKeyword: appliedFilter.employeeKeyword || undefined,
     accountKeyword: appliedFilter.accountKeyword || undefined,
     page: page - 1,
-    size: 20,
+    size,
   });
   const { data: summary } = useProductExpirationSummary();
 
@@ -346,10 +347,15 @@ export default function ProductExpirationPage() {
         }}
         pagination={{
           current: page,
-          pageSize: 20,
+          pageSize: size,
           total: data?.totalElements,
+          showSizeChanger: true,
+          pageSizeOptions: [10, 20, 50, 100],
           showTotal: (total) => `총 ${total}건`,
-          onChange: setPage,
+          onChange: (p, ps) => {
+            setPage(p);
+            setSize(ps);
+          },
         }}
         scroll={{ x: 1200 }}
       />
