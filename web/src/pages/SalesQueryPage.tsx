@@ -9,6 +9,7 @@ import {
   Select,
   Space,
   Statistic,
+  Tag,
   Typography,
   message,
 } from 'antd';
@@ -17,11 +18,17 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAccountsForPosSalesLookup } from '@/api/account';
-import { fetchPosSales, POS_SALES_EXPORT_PATH, type PosSalesProduct } from '@/api/posSales';
+import {
+  fetchPosSales,
+  getPosSalesBranches,
+  POS_SALES_EXPORT_PATH,
+  type PosSalesProduct,
+} from '@/api/posSales';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { useAuthStore } from '@/stores/authStore';
 
 const { Text } = Typography;
 
@@ -50,10 +57,31 @@ export default function SalesQueryPage() {
       : dayjs(),
   );
 
+  // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조 PPTMasterPage 정합).
+  //  - 다중 지점: Select 로 선택 → 거래처 lookup 검색을 해당 지점으로 스코프
+  //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. branchCode 빈 값이면 backend sharing policy 가
+  //    본인 소속 지점으로 자동 스코프하므로 별도 전송 불필요.
+  // 지점은 거래처 검색을 좁히는 보조 필터라 로컬 state 로 두고 lookup 쿼리 키에 포함한다.
+  const userId = useAuthStore((state) => state.user?.id);
+  const branchesQuery = useQuery({
+    queryKey: ['admin', 'sales', 'pos', 'branches', userId],
+    queryFn: getPosSalesBranches,
+  });
+  const branches = branchesQuery.data;
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
+  const [branchCode, setBranchCode] = useState<string>('');
+
   const accountQuery = useQuery({
-    queryKey: ['admin', 'accounts', 'pos-sales-lookup', accountKeyword],
+    queryKey: ['admin', 'accounts', 'pos-sales-lookup', accountKeyword, branchCode],
     queryFn: () =>
-      fetchAccountsForPosSalesLookup({ keyword: accountKeyword || undefined, page: 0, size: 50 }),
+      fetchAccountsForPosSalesLookup({
+        keyword: accountKeyword || undefined,
+        branchCode: branchCode || undefined,
+        page: 0,
+        size: 50,
+      }),
   });
 
   // 조회는 URL filters 기반 (검색 버튼 클릭 시 setFilters 로 URL 반영 → 아래 query 가 재실행).
@@ -128,6 +156,27 @@ export default function SalesQueryPage() {
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
       <Card>
         <Space wrap>
+          {isMultiBranch && (
+            <Select
+              placeholder="지점 (전체)"
+              value={branchCode || undefined}
+              onChange={(v) => {
+                setBranchCode(v ?? '');
+                // 새 지점 범위 밖일 수 있는 기존 거래처 선택은 초기화.
+                setAccountId(undefined);
+              }}
+              style={{ width: 160 }}
+              options={branchOptions}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+            />
+          )}
+          {singleBranch && (
+            <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+              지점: {singleBranch.branchName}
+            </Tag>
+          )}
           <Select
             showSearch
             placeholder="거래처 검색"

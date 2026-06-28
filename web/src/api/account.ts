@@ -184,7 +184,7 @@ export async function fetchAccountsForProductLookup(
  * product 전용 lookup(`lookup-for-product`)을 빌려 쓰면 product:R 미보유자에게 403 이 나던 사례 해소.
  */
 export async function fetchAccountsForPosSalesLookup(
-  params: Pick<FetchAccountsParams, 'keyword' | 'page' | 'size'>,
+  params: Pick<FetchAccountsParams, 'keyword' | 'branchCode' | 'page' | 'size'>,
 ): Promise<AccountListData> {
   const res = await client.get<ApiResponse<AccountListData>>('/api/v1/admin/accounts/lookup-for-pos-sales', { params });
   if (!res.data.success || !res.data.data) {

@@ -200,6 +200,7 @@ class AdminAccountController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<AccountListResponse>> {
@@ -207,7 +208,7 @@ class AdminAccountController(
             scope = scope,
             keyword = keyword,
             abcType = null,
-            branchCode = null,
+            branchCode = branchCode,
             accountStatusName = null,
             page = page,
             size = size

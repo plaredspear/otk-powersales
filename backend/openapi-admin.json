@@ -17920,6 +17920,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -18697,7 +18704,7 @@
     },
     "/api/v1/admin/attend-info/branches" : {
       "get" : {
-        "operationId" : "getBranches_3",
+        "operationId" : "getBranches_4",
         "responses" : {
           "200" : {
             "content" : {
@@ -19499,7 +19506,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_2",
+        "operationId" : "getBranches_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -23916,7 +23923,7 @@
     },
     "/api/v1/admin/ppt-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_1",
+        "operationId" : "getBranches_2",
         "responses" : {
           "200" : {
             "content" : {
@@ -26483,6 +26490,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePosSalesResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-pos-sales-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/pos/branches" : {
+      "get" : {
+        "operationId" : "getBranches_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
                 }
               }
             },

@@ -1,8 +1,10 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
 import com.otoki.powersales.domain.sales.service.PosSalesService
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
@@ -25,9 +27,28 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
     @MockkBean
     private lateinit var posSalesService: PosSalesService
 
+    @MockkBean
+    private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
+
     @BeforeEach
     fun setUpAdmin() {
         authenticateAsAdmin(role = null)
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/sales/pos/branches - 권한별 지점 셀렉터 옵션")
+    fun getBranches_success() {
+        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "1100", branchName = "강남지점"),
+            BranchResponse(branchCode = "1200", branchName = "서초지점"),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/sales/pos/branches"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].branchCode").value("1100"))
+            .andExpect(jsonPath("$.data[0].branchName").value("강남지점"))
+            .andExpect(jsonPath("$.data[1].branchCode").value("1200"))
     }
 
     @Test
