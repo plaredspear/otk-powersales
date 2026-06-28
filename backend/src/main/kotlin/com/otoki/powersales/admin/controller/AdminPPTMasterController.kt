@@ -17,7 +17,9 @@ import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterCreat
 import com.otoki.powersales.domain.activity.promotion.dto.request.PPTMasterUpdateRequest
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTConfirmedReportService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPPTMasterService
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
@@ -34,7 +36,24 @@ import java.time.format.DateTimeFormatter
 class AdminPPTMasterController(
     private val adminPPTMasterService: AdminPPTMasterService,
     private val pptConfirmedReportService: AdminPPTConfirmedReportService,
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
 ) {
+
+    /**
+     * 전문행사조 화면 지점 셀렉터 옵션 — 마스터/이력/확정인원 3화면 공용.
+     *
+     * 여사원 일정/대시보드와 동일하게 [WomenScheduleBranchResolver] 로 권한별 지점 화이트리스트를 산출한다
+     * (단일 출처). 목록은 곧 해당 사용자가 조회 허용된 지점이며, 각 목록 조회 endpoint 는 DataScope 로
+     * 동일 화이트리스트를 재적용해 임의 branchCode 조회(IDOR) 를 차단한다.
+     */
+    @GetMapping("/api/v1/admin/ppt-masters/branches")
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
+    fun getBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        val result = womenScheduleBranchResolver.resolveBranches(principal)
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
 
     @GetMapping("/api/v1/admin/ppt-masters")
     @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
@@ -56,13 +75,20 @@ class AdminPPTMasterController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
-    /** 전문행사조 확정 인원 보고서 조회 (Spec #846). isConfirmed=true 전사. */
+    /**
+     * 전문행사조 확정 인원 보고서 조회 (Spec #846). isConfirmed=true.
+     *
+     * 지점 스코프 — 마스터/이력 조회와 동일하게 본인 소속 지점만 노출하며, 전사 권한은 전체를 본다.
+     * `branchCode` 지정 시(다중지점 사용자가 지점 선택) 해당 지점만 필터.
+     */
     @GetMapping("/api/v1/admin/ppt-masters/confirmed-report")
     @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun getConfirmedReport(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<PPTConfirmedReportResponse>> {
-        val response = pptConfirmedReportService.getReport()
+        val response = pptConfirmedReportService.getReport(scope, branchCode)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -71,8 +97,10 @@ class AdminPPTMasterController(
     @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
     fun exportConfirmedReport(
         @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = pptConfirmedReportService.exportReport()
+        val result = pptConfirmedReportService.exportReport(scope, branchCode)
         return ExcelResponseUtils.build(result)
     }
 
@@ -194,11 +222,12 @@ class AdminPPTMasterController(
         @RequestParam(required = false) employeeName: String?,
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) teamType: String?,
+        @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtFrom: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtTo: LocalDate?
     ): ResponseEntity<ByteArray> {
         val result = adminPPTMasterService.exportHistoryToExcel(
-            scope, employeeName, employeeCode, teamType, changedAtFrom, changedAtTo
+            scope, employeeName, employeeCode, teamType, branchCode, changedAtFrom, changedAtTo
         )
         return ExcelResponseUtils.build(result)
     }
@@ -213,11 +242,12 @@ class AdminPPTMasterController(
         @RequestParam(required = false) employeeName: String?,
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) teamType: String?,
+        @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtFrom: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) changedAtTo: LocalDate?
     ): ResponseEntity<ApiResponse<PPTMasterHistoryListResponse>> {
         val response = adminPPTMasterService.getAllHistory(
-            scope, employeeName, employeeCode, teamType, changedAtFrom, changedAtTo,
+            scope, employeeName, employeeCode, teamType, branchCode, changedAtFrom, changedAtTo,
             PageRequest.of(page, size)
         )
         return ResponseEntity.ok(ApiResponse.success(response))

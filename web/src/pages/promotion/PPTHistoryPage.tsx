@@ -4,6 +4,7 @@ import { DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { usePPTHistories } from '@/hooks/promotion/usePPTHistories';
+import { usePPTBranches } from '@/hooks/promotion/usePPTBranches';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
@@ -31,6 +32,7 @@ export default function PPTHistoryPage() {
       employeeName: '',
       employeeCode: '',
       teamType: '',
+      branchCode: '',
       changedAtFrom: '',
       changedAtTo: '',
       size: String(DEFAULT_SIZE),
@@ -38,10 +40,16 @@ export default function PPTHistoryPage() {
   });
   const size = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
 
+  // 지점 셀렉터 — 권한별 지점 화이트리스트. 지점이 하나면 셀렉터를 숨기고 그 지점이 자동 적용됨.
+  const { data: branches } = usePPTBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const isSingleBranch = (branches?.length ?? 0) <= 1;
+
   // 입력 위젯은 편집 버퍼 — URL 이 source of truth. 마운트 시 URL 값으로 초기화.
   const [filterEmployeeName, setFilterEmployeeName] = useState(filters.employeeName);
   const [filterEmployeeCode, setFilterEmployeeCode] = useState(filters.employeeCode);
   const [filterTeamType, setFilterTeamType] = useState(filters.teamType);
+  const [filterBranchCode, setFilterBranchCode] = useState(filters.branchCode);
   const [filterChangedRange, setFilterChangedRange] = useState<[Dayjs | null, Dayjs | null] | null>(
     () =>
       filters.changedAtFrom || filters.changedAtTo
@@ -63,6 +71,7 @@ export default function PPTHistoryPage() {
     employeeName: filters.employeeName || undefined,
     employeeCode: filters.employeeCode || undefined,
     teamType: filters.teamType || undefined,
+    branchCode: filters.branchCode || undefined,
     changedAtFrom: filters.changedAtFrom || undefined,
     changedAtTo: filters.changedAtTo || undefined,
   });
@@ -72,6 +81,7 @@ export default function PPTHistoryPage() {
       employeeName: filterEmployeeName,
       employeeCode: filterEmployeeCode,
       teamType: filterTeamType,
+      branchCode: filterBranchCode,
       changedAtFrom: filterChangedRange?.[0]?.format('YYYY-MM-DD') ?? '',
       changedAtTo: filterChangedRange?.[1]?.format('YYYY-MM-DD') ?? '',
     });
@@ -81,11 +91,13 @@ export default function PPTHistoryPage() {
     setFilterEmployeeName('');
     setFilterEmployeeCode('');
     setFilterTeamType('');
+    setFilterBranchCode('');
     setFilterChangedRange(null);
     setFilters({
       employeeName: '',
       employeeCode: '',
       teamType: '',
+      branchCode: '',
       changedAtFrom: '',
       changedAtTo: '',
       size: String(DEFAULT_SIZE),
@@ -104,6 +116,7 @@ export default function PPTHistoryPage() {
         ...(filters.employeeName ? { employeeName: filters.employeeName } : {}),
         ...(filters.employeeCode ? { employeeCode: filters.employeeCode } : {}),
         ...(filters.teamType ? { teamType: filters.teamType } : {}),
+        ...(filters.branchCode ? { branchCode: filters.branchCode } : {}),
         ...(filters.changedAtFrom ? { changedAtFrom: filters.changedAtFrom } : {}),
         ...(filters.changedAtTo ? { changedAtTo: filters.changedAtTo } : {}),
       },
@@ -169,6 +182,18 @@ export default function PPTHistoryPage() {
     <div>
       <Card size="small" style={{ marginBottom: 16 }}>
         <Space wrap>
+          {!isSingleBranch && (
+            <Select
+              placeholder="지점 (전체)"
+              value={filterBranchCode || undefined}
+              onChange={(v) => setFilterBranchCode(v ?? '')}
+              style={{ width: 160 }}
+              options={branchOptions}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+            />
+          )}
           <Input
             placeholder="사원명"
             value={filterEmployeeName}

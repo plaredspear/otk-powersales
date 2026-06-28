@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.promotion.service
 
+import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
@@ -7,6 +8,8 @@ import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotio
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -18,6 +21,9 @@ class AdminPPTConfirmedReportServiceTest {
 
     private val repository: PPTMasterRepository = mockk()
     private val service = AdminPPTConfirmedReportService(repository)
+
+    private fun allBranchesScope(): DataScope =
+        DataScope(branchCodes = emptyList(), isAllBranches = true)
 
     private fun employee(): Employee =
         Employee(employeeCode = "20230016", name = "홍길동", orgName = "영업1팀")
@@ -46,9 +52,9 @@ class AdminPPTConfirmedReportServiceTest {
         @Test
         @DisplayName("확정 인원을 6컬럼으로 매핑한다")
         fun mapsRows() {
-            every { repository.findConfirmedReport() } returns listOf(master())
+            every { repository.findConfirmedReport(any()) } returns listOf(master())
 
-            val res = service.getReport()
+            val res = service.getReport(allBranchesScope(), null)
 
             assertThat(res.items).hasSize(1)
             val item = res.items[0]
@@ -63,11 +69,44 @@ class AdminPPTConfirmedReportServiceTest {
         @Test
         @DisplayName("결과 0건이면 빈 items")
         fun emptyResult() {
-            every { repository.findConfirmedReport() } returns emptyList()
+            every { repository.findConfirmedReport(any()) } returns emptyList()
 
-            val res = service.getReport()
+            val res = service.getReport(allBranchesScope(), null)
 
             assertThat(res.items).isEmpty()
+        }
+
+        @Test
+        @DisplayName("전사 권한 + branchCode 지정 시 해당 지점만 필터로 전달")
+        fun allBranchesWithBranchCode() {
+            val slot = slot<List<String>>()
+            every { repository.findConfirmedReport(capture(slot)) } returns emptyList()
+
+            service.getReport(allBranchesScope(), "3233")
+
+            assertThat(slot.captured).containsExactly("3233")
+        }
+
+        @Test
+        @DisplayName("지점 권한 사용자는 본인 지점으로 필터")
+        fun branchScopedUser() {
+            val slot = slot<List<String>>()
+            every { repository.findConfirmedReport(capture(slot)) } returns emptyList()
+
+            service.getReport(DataScope(branchCodes = listOf("3233"), isAllBranches = false), null)
+
+            assertThat(slot.captured).containsExactly("3233")
+        }
+
+        @Test
+        @DisplayName("권한 밖 지점 요청은 빈 결과 + repository 미호출")
+        fun noAccessReturnsEmpty() {
+            val res = service.getReport(
+                DataScope(branchCodes = listOf("3233"), isAllBranches = false), "9999"
+            )
+
+            assertThat(res.items).isEmpty()
+            verify(exactly = 0) { repository.findConfirmedReport(any()) }
         }
     }
 
@@ -78,9 +117,9 @@ class AdminPPTConfirmedReportServiceTest {
         @Test
         @DisplayName("6컬럼 xlsx + 고정 파일명")
         fun exportsXlsx() {
-            every { repository.findConfirmedReport() } returns listOf(master())
+            every { repository.findConfirmedReport(any()) } returns listOf(master())
 
-            val result = service.exportReport()
+            val result = service.exportReport(allBranchesScope(), null)
 
             assertThat(result.filename).isEqualTo("전문행사조확정인원.xlsx")
             assertThat(result.bytes).isNotEmpty()

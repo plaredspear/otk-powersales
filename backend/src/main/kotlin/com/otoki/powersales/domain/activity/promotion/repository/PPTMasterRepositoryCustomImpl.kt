@@ -100,19 +100,25 @@ class PPTMasterRepositoryCustomImpl(
         return PageableExecutionUtils.getPage(content, pageable) { countQuery.fetchOne() ?: 0L }
     }
 
-    override fun findConfirmedReport(): List<ProfessionalPromotionTeamMaster> {
+    override fun findConfirmedReport(branchCodeFilter: List<String>?): List<ProfessionalPromotionTeamMaster> {
+        val builder = BooleanBuilder()
+        // 확정 인원만 (SF Confirmed__c = 1)
+        builder.and(professionalPromotionTeamMaster.isConfirmed.isTrue)
+        // soft-delete 제외
+        builder.and(
+            professionalPromotionTeamMaster.isDeleted.isNull
+                .or(professionalPromotionTeamMaster.isDeleted.isFalse)
+        )
+        // 지점 스코프 — 데이터의 branch_code 컬럼(빈값)이 아니라 사원 소속 지점(costCenterCode) 기준.
+        // null 이면 전사 (SF scope=organization 동등), 비어있지 않으면 해당 지점들로 제한.
+        if (!branchCodeFilter.isNullOrEmpty()) {
+            builder.and(employee.costCenterCode.`in`(branchCodeFilter))
+        }
         return queryFactory
             .selectFrom(professionalPromotionTeamMaster)
             .leftJoin(professionalPromotionTeamMaster.employee, employee).fetchJoin()
             .leftJoin(professionalPromotionTeamMaster.account, account).fetchJoin()
-            .where(
-                // 확정 인원만 (SF Confirmed__c = 1)
-                professionalPromotionTeamMaster.isConfirmed.isTrue,
-                // soft-delete 제외
-                professionalPromotionTeamMaster.isDeleted.isNull
-                    .or(professionalPromotionTeamMaster.isDeleted.isFalse),
-                // 전사 — SF scope=organization (지점 스코프 없음)
-            )
+            .where(builder)
             .orderBy(professionalPromotionTeamMaster.branchCode.asc())
             .fetch()
     }

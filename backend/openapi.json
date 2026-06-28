@@ -25565,7 +25565,7 @@
     },
     "/api/v1/admin/attend-info/branches" : {
       "get" : {
-        "operationId" : "getBranches_2",
+        "operationId" : "getBranches_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -26367,7 +26367,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_1",
+        "operationId" : "getBranches_2",
         "responses" : {
           "200" : {
             "content" : {
@@ -30568,6 +30568,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "changedAtFrom",
           "required" : false,
           "schema" : {
@@ -30625,6 +30632,13 @@
         }, {
           "in" : "query",
           "name" : "teamType",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -30768,6 +30782,24 @@
         "tags" : [ "admin-ppt-master-controller" ]
       }
     },
+    "/api/v1/admin/ppt-masters/branches" : {
+      "get" : {
+        "operationId" : "getBranches_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-master-controller" ]
+      }
+    },
     "/api/v1/admin/ppt-masters/bulk" : {
       "post" : {
         "operationId" : "validateBulk",
@@ -30855,6 +30887,21 @@
     "/api/v1/admin/ppt-masters/confirmed-report" : {
       "get" : {
         "operationId" : "getConfirmedReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
@@ -30873,6 +30920,21 @@
     "/api/v1/admin/ppt-masters/confirmed-report/export" : {
       "get" : {
         "operationId" : "exportConfirmedReport",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {

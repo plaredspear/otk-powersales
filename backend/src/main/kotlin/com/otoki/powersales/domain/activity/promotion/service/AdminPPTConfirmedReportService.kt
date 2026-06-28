@@ -1,5 +1,7 @@
 package com.otoki.powersales.domain.activity.promotion.service
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTConfirmedReportItem
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTConfirmedReportResponse
 import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
@@ -18,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional
  * 부수 효과: 없음 (조회 전용).
  *
  * 신규 차이: 기존 [AdminPPTMasterService] 목록(확정/미확정 전체·페이지네이션)과 별개 보고서 —
- *   확정만 + 전량 추출 + 엑셀. SF scope=organization = 전사.
+ *   확정만 + 전량 추출 + 엑셀. SF scope=organization = 전사이나, 신규는 마스터/이력 조회와 동일하게
+ *   DataScope 지점 가시 범위(본인 소속 지점)를 적용하고 지점 선택(branchCode) 을 허용한다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -27,18 +30,26 @@ class AdminPPTConfirmedReportService(
 ) {
 
     /**
-     * 전문행사조 확정 인원 조회 (전사, isConfirmed=true).
+     * 전문행사조 확정 인원 조회 (isConfirmed=true).
+     *
+     * 지점 스코프 — 사원 소속 지점(costCenterCode) 기준. 전사 권한은 전체, 그 외는 본인 지점만.
+     * `branchCode` 지정 시 해당 지점만. 권한 밖 지점 요청(NoAccess)은 빈 결과.
      */
-    fun getReport(): PPTConfirmedReportResponse {
-        val masters = pptMasterRepository.findConfirmedReport()
+    fun getReport(scope: DataScope, branchCode: String?): PPTConfirmedReportResponse {
+        val branchCodeFilter = when (val result = scope.effectiveBranchCodes(branchCode?.takeIf { it.isNotBlank() })) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> return PPTConfirmedReportResponse(emptyList())
+        }
+        val masters = pptMasterRepository.findConfirmedReport(branchCodeFilter)
         return PPTConfirmedReportResponse(masters.map { toItem(it) })
     }
 
     /**
      * 확정 인원 엑셀 export — 6컬럼 시트 (조회와 동일 필터).
      */
-    fun exportReport(): ExcelResult {
-        val response = getReport()
+    fun exportReport(scope: DataScope, branchCode: String?): ExcelResult {
+        val response = getReport(scope, branchCode)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("전문행사조확정인원")
