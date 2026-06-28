@@ -17,8 +17,8 @@ const ABC_TYPE_TAG: Record<string, string> = {
 };
 
 const STATUS_TAG: Record<string, string> = {
-  활성: 'green',
-  비활성: 'red',
+  거래: 'green',
+  폐업: 'red',
 };
 
 const ABC_TYPE_OPTIONS = [
@@ -30,8 +30,8 @@ const ABC_TYPE_OPTIONS = [
 
 const STATUS_OPTIONS = [
   { value: '', label: '상태 전체' },
-  { value: '활성', label: '활성' },
-  { value: '비활성', label: '비활성' },
+  { value: '거래', label: '활성' },
+  { value: '폐업', label: '비활성' },
 ];
 
 const PAGE_SIZE = 20;
