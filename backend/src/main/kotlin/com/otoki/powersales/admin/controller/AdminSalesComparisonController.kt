@@ -73,8 +73,8 @@ class AdminSalesComparisonController(
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
         @RequestParam(required = false) accountIds: List<Long>?,
-        @RequestParam(required = false) workingCategory1: String?,
-        @RequestParam(required = false) workingCategory5: String?
+        @RequestParam(required = false) workingCategory1: List<String>?,
+        @RequestParam(required = false) workingCategory5: List<String>?
     ): ResponseEntity<ApiResponse<SalesComparisonDetailResponse>> {
         val response = adminSalesComparisonService.getDetail(
             scope, year, month, costCenterCodes,
@@ -125,8 +125,8 @@ class AdminSalesComparisonController(
         @RequestParam month: Int,
         @RequestParam costCenterCodes: List<String>,
         @RequestParam(required = false) accountIds: List<Long>?,
-        @RequestParam(required = false) workingCategory1: String?,
-        @RequestParam(required = false) workingCategory5: String?
+        @RequestParam(required = false) workingCategory1: List<String>?,
+        @RequestParam(required = false) workingCategory5: List<String>?
     ): ResponseEntity<ByteArray> = ExcelResponseUtils.build(
         adminSalesComparisonService.exportDetail(
             scope, year, month, costCenterCodes,

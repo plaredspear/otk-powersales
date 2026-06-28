@@ -28014,14 +28014,20 @@
           "name" : "workingCategory1",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
           "name" : "workingCategory5",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         } ],
         "responses" : {
@@ -28091,14 +28097,20 @@
           "name" : "workingCategory1",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
           "name" : "workingCategory5",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         } ],
         "responses" : {

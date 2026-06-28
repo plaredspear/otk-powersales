@@ -610,10 +610,38 @@ class AdminSalesComparisonServiceTest {
             every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(displayItm, eventItm))
             every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
 
-            val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), "진열", null)
+            val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), listOf("진열"), null)
 
             assertThat(response.items).hasSize(1)
             assertThat(response.items.first().workingCategory1).isEqualTo("진열")
+        }
+
+        @Test
+        fun `근무형태 다중 선택 - 진열+행사 모두 선택 시 둘 다 포함`() {
+            val displayItm = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
+            val eventItm = item("A001", "거래처A", "E002", "사원B", "행사", null, null, BigDecimal.ONE, 1_500_000L)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(displayItm, eventItm))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+
+            val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), listOf("진열", "행사"), null)
+
+            assertThat(response.items).hasSize(2)
+        }
+
+        @Test
+        fun `근무형태 빈 리스트는 무필터 - 전체 반환`() {
+            val displayItm = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
+            val eventItm = item("A001", "거래처A", "E002", "사원B", "행사", null, null, BigDecimal.ONE, 1_500_000L)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(displayItm, eventItm))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+
+            val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), emptyList(), emptyList())
+
+            assertThat(response.items).hasSize(2)
         }
 
         @Test

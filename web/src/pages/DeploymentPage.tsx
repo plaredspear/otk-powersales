@@ -223,8 +223,8 @@ interface QueryParams {
   suitabilities: string[];
   categories: string[];
   wc3: string[];
-  wc1: string;
-  wc5: string;
+  wc1: string[];
+  wc5: string[];
 }
 
 export default function DeploymentPage() {
@@ -236,8 +236,9 @@ export default function DeploymentPage() {
   const [selectedSuitabilities, setSelectedSuitabilities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedWc3, setSelectedWc3] = useState<string[]>([]);
-  const [wc1, setWc1] = useState<string>('모두');
-  const [wc5, setWc5] = useState<string>('모두');
+  // 근무형태1/5 — 근무형태3 과 동일한 다중 선택. 빈 배열 = 전체(무필터).
+  const [wc1, setWc1] = useState<string[]>([]);
+  const [wc5, setWc5] = useState<string[]>([]);
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
   const [clickedAccountIds, setClickedAccountIds] = useState<number[]>([]);
   const [clickedAccountForDetail, setClickedAccountForDetail] = useState<number | null>(null);
@@ -292,8 +293,8 @@ export default function DeploymentPage() {
     queryFn: () => {
       const p = queryParams!;
       const accIds = p.mode === 'summary' && clickedAccountForDetail != null ? [clickedAccountForDetail] : [];
-      const filter1 = p.mode === 'detail' && p.wc1 !== '모두' ? p.wc1 : undefined;
-      const filter5 = p.mode === 'detail' && p.wc5 !== '모두' ? p.wc5 : undefined;
+      const filter1 = p.mode === 'detail' && p.wc1.length > 0 ? p.wc1 : undefined;
+      const filter5 = p.mode === 'detail' && p.wc5.length > 0 ? p.wc5 : undefined;
       return fetchDetail(p.year, p.month, p.codes, accIds, filter1, filter5);
     },
     enabled:
@@ -335,13 +336,8 @@ export default function DeploymentPage() {
     setSelectedSuitabilities([]);
     setSelectedCategories([]);
     setSelectedWc3([]);
-    if (mode === 'detail') {
-      setWc1('모두');
-      setWc5('모두');
-    } else {
-      setWc1('모두');
-      setWc5('모두');
-    }
+    setWc1([]);
+    setWc5([]);
   };
 
   const handleSelectAllConditions = () => {
@@ -350,8 +346,8 @@ export default function DeploymentPage() {
     setSelectedCategories([...categoryLabels]);
     setSelectedWc3([...WORKING_CATEGORY_3_OPTIONS]);
     if (mode === 'detail') {
-      setWc1('모두');
-      setWc5('모두');
+      setWc1([...WORKING_CATEGORY_1_OPTIONS]);
+      setWc5([...WORKING_CATEGORY_5_OPTIONS]);
     }
   };
 
@@ -359,13 +355,8 @@ export default function DeploymentPage() {
     setMode(newMode);
     setSelectedSuitabilities([]);
     setSelectedCategories([]);
-    if (newMode === 'detail') {
-      setWc1('모두');
-      setWc5('모두');
-    } else {
-      setWc1('모두');
-      setWc5('모두');
-    }
+    setWc1([]);
+    setWc5([]);
     setQueryParams(null);
     setClickedAccountIds([]);
     setClickedAccountForDetail(null);
@@ -521,8 +512,8 @@ export default function DeploymentPage() {
     try {
       const isDrilldown = queryParams.mode === 'summary' && clickedAccountForDetail != null;
       const accIds = isDrilldown ? [clickedAccountForDetail as number] : [];
-      const filter1 = queryParams.mode === 'detail' && queryParams.wc1 !== '모두' ? queryParams.wc1 : undefined;
-      const filter5 = queryParams.mode === 'detail' && queryParams.wc5 !== '모두' ? queryParams.wc5 : undefined;
+      const filter1 = queryParams.mode === 'detail' && queryParams.wc1.length > 0 ? queryParams.wc1 : undefined;
+      const filter5 = queryParams.mode === 'detail' && queryParams.wc5.length > 0 ? queryParams.wc5 : undefined;
       await apiExportDetail(queryParams.year, queryParams.month, queryParams.codes, accIds, filter1, filter5);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
@@ -659,26 +650,34 @@ export default function DeploymentPage() {
         {mode === 'detail' && (
           <>
             <div style={{ marginBottom: 12 }}>
-              <Text strong>근무형태1</Text>
-              <Radio.Group value={wc1} onChange={(e) => setWc1(e.target.value)} style={{ marginTop: 4, display: 'block' }}>
-                <Radio value="모두">모두</Radio>
-                {WORKING_CATEGORY_1_OPTIONS.map((v) => (
-                  <Radio key={v} value={v}>
-                    {v}
-                  </Radio>
-                ))}
-              </Radio.Group>
+              <FilterLabel
+                label="근무형태1"
+                allValues={WORKING_CATEGORY_1_OPTIONS}
+                selected={wc1}
+                onChange={setWc1}
+              />
+              <div className="deployment-filter-list" style={{ marginTop: 4 }}>
+                <Checkbox.Group
+                  value={wc1}
+                  onChange={(vals) => setWc1(vals as string[])}
+                  options={WORKING_CATEGORY_1_OPTIONS}
+                />
+              </div>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <Text strong>근무형태5</Text>
-              <Radio.Group value={wc5} onChange={(e) => setWc5(e.target.value)} style={{ marginTop: 4, display: 'block' }}>
-                <Radio value="모두">모두</Radio>
-                {WORKING_CATEGORY_5_OPTIONS.map((v) => (
-                  <Radio key={v} value={v}>
-                    {v}
-                  </Radio>
-                ))}
-              </Radio.Group>
+              <FilterLabel
+                label="근무형태5"
+                allValues={WORKING_CATEGORY_5_OPTIONS}
+                selected={wc5}
+                onChange={setWc5}
+              />
+              <div className="deployment-filter-list" style={{ marginTop: 4 }}>
+                <Checkbox.Group
+                  value={wc5}
+                  onChange={(vals) => setWc5(vals as string[])}
+                  options={WORKING_CATEGORY_5_OPTIONS}
+                />
+              </div>
             </div>
           </>
         )}

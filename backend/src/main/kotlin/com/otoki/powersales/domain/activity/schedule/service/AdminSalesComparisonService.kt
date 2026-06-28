@@ -127,7 +127,7 @@ class AdminSalesComparisonService(
      * 상세 모드 조회 — 사원별 행 + 총계.
      *
      * accountIds 가 비어있으면 전체 (상세 모드 단일 그리드). accountIds 지정 시 해당 거래처의 사원만 (집계 → 중간집계 → 상세 드릴다운 최하위).
-     * workingCategory1Filter / workingCategory5Filter 가 지정되면 사원 단위 추가 필터.
+     * workingCategory1Filter / workingCategory5Filter 가 지정되면 사원 단위 추가 필터 (다중 선택 — 선택값 중 하나라도 일치하면 통과).
      */
     fun getDetail(
         scope: DataScope,
@@ -135,21 +135,24 @@ class AdminSalesComparisonService(
         month: Int,
         costCenterCodes: List<String>,
         accountIds: List<Long>,
-        workingCategory1Filter: String?,
-        workingCategory5Filter: String?
+        workingCategory1Filter: List<String>?,
+        workingCategory5Filter: List<String>?
     ): SalesComparisonDetailResponse {
         validateParams(year, month, costCenterCodes)
         val effectiveCodes = applyScope(scope, costCenterCodes)
 
         val accountSuitabilities = computeAccountSuitabilities(year, month, effectiveCodes)
         val accountIdSet = accountIds.toSet()
+        // 빈/null 이면 전체 통과 (근무형태3 패턴과 동일한 멤버십 필터).
+        val wc1Set = workingCategory1Filter?.filter { it.isNotBlank() }?.toSet().orEmpty()
+        val wc5Set = workingCategory5Filter?.filter { it.isNotBlank() }?.toSet().orEmpty()
 
         val items = accountSuitabilities
             .filter { accountIdSet.isEmpty() || it.account.id in accountIdSet }
             .flatMap { suit -> suit.allEmployeeItems.map { suit to it } }
             .filter { (_, item) ->
-                (workingCategory1Filter.isNullOrBlank() || item.workingCategory1 == workingCategory1Filter) &&
-                    (workingCategory5Filter.isNullOrBlank() || item.workingCategory5 == workingCategory5Filter)
+                (wc1Set.isEmpty() || item.workingCategory1 in wc1Set) &&
+                    (wc5Set.isEmpty() || item.workingCategory5 in wc5Set)
             }
             .map { (suit, item) -> suit.toDetailItem(item) }
             .sortedWith(
@@ -313,8 +316,8 @@ class AdminSalesComparisonService(
         month: Int,
         costCenterCodes: List<String>,
         accountIds: List<Long>,
-        workingCategory1Filter: String?,
-        workingCategory5Filter: String?
+        workingCategory1Filter: List<String>?,
+        workingCategory5Filter: List<String>?
     ): ExcelResult {
         val response = getDetail(scope, year, month, costCenterCodes, accountIds, workingCategory1Filter, workingCategory5Filter)
         val workbook = XSSFWorkbook()

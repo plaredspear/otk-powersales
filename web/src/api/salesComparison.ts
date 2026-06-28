@@ -214,8 +214,8 @@ export async function fetchDetail(
   month: number,
   costCenterCodes: string[],
   accountIds: number[],
-  workingCategory1?: string,
-  workingCategory5?: string,
+  workingCategory1?: string[],
+  workingCategory5?: string[],
 ): Promise<SalesComparisonDetailResponse> {
   const res = await client.get<ApiResponse<SalesComparisonDetailResponse>>(`${BASE}/detail`, {
     params: {
@@ -223,8 +223,8 @@ export async function fetchDetail(
       month,
       costCenterCodes: costCenterCodes.join(','),
       ...(accountIds.length > 0 ? { accountIds: accountIds.join(',') } : {}),
-      ...(workingCategory1 ? { workingCategory1 } : {}),
-      ...(workingCategory5 ? { workingCategory5 } : {}),
+      ...(workingCategory1 && workingCategory1.length > 0 ? { workingCategory1: workingCategory1.join(',') } : {}),
+      ...(workingCategory5 && workingCategory5.length > 0 ? { workingCategory5: workingCategory5.join(',') } : {}),
     },
   });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('상세', res));
@@ -272,8 +272,8 @@ export async function exportDetail(
   month: number,
   costCenterCodes: string[],
   accountIds: number[],
-  workingCategory1?: string,
-  workingCategory5?: string,
+  workingCategory1?: string[],
+  workingCategory5?: string[],
 ): Promise<void> {
   await downloadExcel(
     `${BASE}/detail/export`,
@@ -284,8 +284,8 @@ export async function exportDetail(
         month,
         costCenterCodes: costCenterCodes.join(','),
         ...(accountIds.length > 0 ? { accountIds: accountIds.join(',') } : {}),
-        ...(workingCategory1 ? { workingCategory1 } : {}),
-        ...(workingCategory5 ? { workingCategory5 } : {}),
+        ...(workingCategory1 && workingCategory1.length > 0 ? { workingCategory1: workingCategory1.join(',') } : {}),
+        ...(workingCategory5 && workingCategory5.length > 0 ? { workingCategory5: workingCategory5.join(',') } : {}),
       },
     },
   );
