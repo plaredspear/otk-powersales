@@ -55,6 +55,9 @@ export interface Employee {
   // 근무형태 — 가장 최근 출근등록 1건의 진열/행사 + 고정/격고/순회 조합 (예: '진열/고정').
   // 출근등록 이력이 없으면 null (UI '-').
   workType?: string | null;
+  // 근무거래처 — 가장 최근 출근등록 1건의 거래처명 / 거래처코드(SAP거래처코드). 이력/거래처 없으면 null.
+  workAccountName?: string | null;
+  workAccountCode?: string | null;
 }
 
 export interface EmployeeListData {

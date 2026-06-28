@@ -87,6 +87,8 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                     yearsOfService = "5년",
                     professionalPromotionTeam = "라면세일조",
                     workType = "진열/고정",
+                    workAccountName = "테스트마트",
+                    workAccountCode = "ACC001",
                 ),
             ),
             page = 0,

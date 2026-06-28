@@ -13861,6 +13861,12 @@
           "status" : {
             "type" : [ "string", "null" ]
           },
+          "workAccountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "workAccountName" : {
+            "type" : [ "string", "null" ]
+          },
           "workEmail" : {
             "type" : [ "string", "null" ]
           },

@@ -43,9 +43,9 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             }
     }
 
-    override fun findLatestAttendanceCategoriesByEmployeeIds(
+    override fun findLatestAttendanceInfoByEmployeeIds(
         employeeIds: List<Long>
-    ): Map<Long, LatestAttendanceCategory> {
+    ): Map<Long, LatestAttendanceInfo> {
         if (employeeIds.isEmpty()) return emptyMap()
 
         val employeeIdPath = teamMemberSchedule.employee.id
@@ -73,6 +73,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
 
         // [쿼리2] (사원, 최근일자) 쌍에 해당하는 출근등록 행만 조회 — 행 수 = 사원당 그날 등록 건수(극소).
         // 동일 일자에 여러 건이면 id 가 가장 큰(=가장 마지막 등록) 1건을 채택(tie-break).
+        // 근무거래처는 같은 행의 account(LEFT JOIN — 거래처 미연결 일정 보존)에서 거래처명/코드를 추출.
         val pairRows = queryFactory
             .select(
                 employeeIdPath,
@@ -80,8 +81,11 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 teamMemberSchedule.workingDate,
                 teamMemberSchedule.workingCategory1,
                 teamMemberSchedule.workingCategory3,
+                account.name,
+                account.externalKey,
             )
             .from(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.account, account)
             .where(
                 employeeIdPath.`in`(latestDateByEmployee.keys),
                 teamMemberSchedule.workingDate.`in`(latestDateByEmployee.values),
@@ -90,7 +94,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
 
         // 사원별로 (최근일자 일치) + (id 최대) 1건 선택.
-        data class Picked(val id: Long, val category: LatestAttendanceCategory)
+        data class Picked(val id: Long, val info: LatestAttendanceInfo)
         val pickedByEmployee = HashMap<Long, Picked>()
         for (tuple in pairRows) {
             val empId = tuple.get(employeeIdPath) ?: continue
@@ -103,14 +107,16 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             if (existing != null && existing.id >= rowId) continue
             pickedByEmployee[empId] = Picked(
                 id = rowId,
-                category = LatestAttendanceCategory(
+                info = LatestAttendanceInfo(
                     employeeId = empId,
                     workingCategory1 = tuple.get(teamMemberSchedule.workingCategory1)?.displayName,
                     workingCategory3 = tuple.get(teamMemberSchedule.workingCategory3)?.displayName,
+                    accountName = tuple.get(account.name),
+                    accountCode = tuple.get(account.externalKey),
                 ),
             )
         }
-        return pickedByEmployee.mapValues { it.value.category }
+        return pickedByEmployee.mapValues { it.value.info }
     }
 
     @Transactional

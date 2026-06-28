@@ -8,13 +8,16 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
- * 사원의 가장 최근 출근(근무)등록 1건의 근무 분류 (여사원 현황 근무형태 컬럼용).
- * workingCategory1(진열/행사) + workingCategory3(고정/격고/순회) 의 displayName 조합 표시는 서비스 레이어 책임.
+ * 사원의 가장 최근 출근(근무)등록 1건의 정보 (여사원 현황 근무형태/근무거래처 컬럼용).
+ * - 근무형태: workingCategory1(진열/행사) + workingCategory3(고정/격고/순회) 의 displayName 조합 — 서비스 레이어 책임.
+ * - 근무거래처: 해당 일정의 거래처명(account.name) / 거래처코드(account.externalKey, SAP거래처코드).
  */
-data class LatestAttendanceCategory(
+data class LatestAttendanceInfo(
     val employeeId: Long,
     val workingCategory1: String?,
     val workingCategory3: String?,
+    val accountName: String?,
+    val accountCode: String?,
 )
 
 interface TeamMemberScheduleRepositoryCustom {
@@ -29,20 +32,21 @@ interface TeamMemberScheduleRepositoryCustom {
     fun countAttendedByDisplayWorkScheduleIds(scheduleIds: List<Long>): Map<Long, Long>
 
     /**
-     * 여사원 현황 "근무형태" 컬럼용 — 사원별 **가장 최근 출근(근무)등록 1건**의
-     * workingCategory1(진열/행사) + workingCategory3(고정/격고/순회) 를 페이지 단위 1쿼리로 조회.
+     * 여사원 현황 "근무형태/근무거래처" 컬럼용 — 사원별 **가장 최근 출근(근무)등록 1건**의
+     * workingCategory1(진열/행사) + workingCategory3(고정/격고/순회) + 거래처명/거래처코드를 조회.
      *
      * "출근등록한 내용" 판정: `attendance_log_id IS NOT NULL` (출퇴근 로그가 연결된 일정 = `isWorkReport` 정합).
      * "가장 최근" 판정: 사원별 MAX(working_date), 동일 일자 다건이면 id 최대(=마지막 등록) 1건.
      *
      * 성능: 전체 이력을 메모리로 가져오지 않도록 2쿼리로 분리한다 — (1) 사원별 MAX(working_date) GROUP BY
      * (부분 covering index idx_team_member_schedule_employee_id_working_date 로 index-only scan),
-     * (2) (사원, 최근일자) 쌍에 해당하는 소수 행만 조회해 category1/3 추출. employeeId IN 으로 현재
-     * 페이지 사원만 조회(N+1 없음, 전송 행 수 ≈ 사원 수). 출근등록 0건 사원은 반환 Map 에 키가 없다.
+     * (2) (사원, 최근일자) 쌍에 해당하는 소수 행만 조회해 category1/3 + 거래처(account JOIN) 추출.
+     * employeeId IN 으로 현재 페이지 사원만 조회(N+1 없음, 전송 행 수 ≈ 사원 수). 출근등록 0건 사원은
+     * 반환 Map 에 키가 없다.
      *
-     * @return Map<employeeId, LatestAttendanceCategory> (출근등록 1건 이상인 사원만 포함)
+     * @return Map<employeeId, LatestAttendanceInfo> (출근등록 1건 이상인 사원만 포함)
      */
-    fun findLatestAttendanceCategoriesByEmployeeIds(employeeIds: List<Long>): Map<Long, LatestAttendanceCategory>
+    fun findLatestAttendanceInfoByEmployeeIds(employeeIds: List<Long>): Map<Long, LatestAttendanceInfo>
 
     /**
      * 출근 등록 시점의 attendance_log id-FK 채움 (Spec #789 — sfid 비즈니스 로직 사용 금지 정책 정합).

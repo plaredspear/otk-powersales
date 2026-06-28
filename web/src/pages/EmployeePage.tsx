@@ -144,6 +144,20 @@ export default function EmployeePage() {
       render: (val: string | null | undefined) => val ?? '-',
     },
     {
+      title: '근무거래처',
+      dataIndex: 'workAccountName',
+      width: 160,
+      // 가장 최근 출근등록 1건의 거래처명. 이력/거래처 없으면 '-'.
+      render: (val: string | null | undefined) => val ?? '-',
+    },
+    {
+      title: '거래처코드',
+      dataIndex: 'workAccountCode',
+      width: 110,
+      align: 'center',
+      render: (val: string | null | undefined) => val ?? '-',
+    },
+    {
       title: '권한',
       dataIndex: "role",
       width: 100,

@@ -7,7 +7,7 @@ import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailRespo
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceCategory
+import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.springframework.data.domain.PageRequest
@@ -34,17 +34,18 @@ class AdminEmployeeService(
      * 근무형태 표시 문자열 — 근무유형1(진열/행사) / 근무유형3(고정/격고/순회) 조합.
      * 둘 다 있으면 "진열/고정", 하나만 있으면 그 값, 둘 다 없으면 null(UI '-').
      */
-    private fun formatWorkType(category: LatestAttendanceCategory): String? {
-        val parts = listOfNotNull(category.workingCategory1, category.workingCategory3)
+    private fun formatWorkType(info: LatestAttendanceInfo): String? {
+        val parts = listOfNotNull(info.workingCategory1, info.workingCategory3)
         return parts.takeIf { it.isNotEmpty() }?.joinToString("/")
     }
 
-    /** 현재 페이지 사원들의 최근 출근등록 근무형태 Map<employeeId, 표시문자열> 조회 (이력 0건 사원은 키 없음). */
-    private fun loadWorkTypes(employeeIds: List<Long>): Map<Long, String> {
+    /**
+     * 현재 페이지 사원들의 최근 출근등록 1건 정보(근무형태/근무거래처) Map<employeeId, info> 조회.
+     * 출근등록 이력 0건 사원은 키가 없다.
+     */
+    private fun loadAttendanceInfo(employeeIds: List<Long>): Map<Long, LatestAttendanceInfo> {
         if (employeeIds.isEmpty()) return emptyMap()
-        return teamMemberScheduleRepository.findLatestAttendanceCategoriesByEmployeeIds(employeeIds)
-            .mapNotNull { (empId, cat) -> formatWorkType(cat)?.let { empId to it } }
-            .toMap()
+        return teamMemberScheduleRepository.findLatestAttendanceInfoByEmployeeIds(employeeIds)
     }
 
     /**
@@ -101,10 +102,13 @@ class AdminEmployeeService(
 
         // 만나이 / 근속년수 계산 기준일 — 페이지 전체에 동일 적용
         val today = LocalDate.now()
-        // 근무형태 — 현재 페이지 사원들의 최근 출근등록 1건을 단일 쿼리로 조회 (N+1 회피)
-        val workTypes = loadWorkTypes(userPage.content.map { it.id })
+        // 근무형태/근무거래처 — 현재 페이지 사원들의 최근 출근등록 1건을 조회 (N+1 없음)
+        val attendanceInfo = loadAttendanceInfo(userPage.content.map { it.id })
         return EmployeeListResponse(
-            content = userPage.content.map { EmployeeListItem.from(it, today, workTypes[it.id]) },
+            content = userPage.content.map { emp ->
+                val info = attendanceInfo[emp.id]
+                EmployeeListItem.from(emp, today, info?.let { formatWorkType(it) }, info?.accountName, info?.accountCode)
+            },
             page = page,
             size = size,
             totalElements = userPage.totalElements,
@@ -146,8 +150,11 @@ class AdminEmployeeService(
             val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("name").ascending())
             val today = LocalDate.now()
             val employees = employeeRepository.findEmployees(status, branchFilter, keyword, role, pageable).content
-            val workTypes = loadWorkTypes(employees.map { it.id })
-            employees.map { EmployeeListItem.from(it, today, workTypes[it.id]) }
+            val attendanceInfo = loadAttendanceInfo(employees.map { it.id })
+            employees.map { emp ->
+                val info = attendanceInfo[emp.id]
+                EmployeeListItem.from(emp, today, info?.let { formatWorkType(it) }, info?.accountName, info?.accountCode)
+            }
         }
 
         val timestamp = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)

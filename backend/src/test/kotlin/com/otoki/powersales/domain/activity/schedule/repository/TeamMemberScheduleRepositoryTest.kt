@@ -543,7 +543,7 @@ class TeamMemberScheduleRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findLatestAttendanceCategoriesByEmployeeIds - 최근 출근등록 근무형태")
+    @DisplayName("findLatestAttendanceInfoByEmployeeIds - 최근 출근등록 근무형태")
     inner class FindLatestAttendanceCategories {
 
         /** attendanceLog 가 연결된(=출근등록된) TMS 1건을 persist 한다. */
@@ -552,6 +552,7 @@ class TeamMemberScheduleRepositoryTest {
             workingDate: LocalDate,
             category1: WorkingCategory1?,
             category3: WorkingCategory3?,
+            account: Account? = null,
         ): TeamMemberSchedule {
             val attendanceLog = testEntityManager.persistAndFlush(AttendanceLog())
             val schedule = testEntityManager.persistAndFlush(
@@ -561,6 +562,7 @@ class TeamMemberScheduleRepositoryTest {
                     workingType = WorkingType.WORK,
                     workingCategory1 = category1,
                     workingCategory3 = category3,
+                    account = account,
                 )
             )
             teamMemberScheduleRepository.updateAttendanceLog(schedule.id, attendanceLog.id)
@@ -578,11 +580,42 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             val result = teamMemberScheduleRepository
-                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+                .findLatestAttendanceInfoByEmployeeIds(listOf(testEmployee.id))
 
             assertThat(result).containsKey(testEmployee.id)
             assertThat(result[testEmployee.id]!!.workingCategory1).isEqualTo("행사")
             assertThat(result[testEmployee.id]!!.workingCategory3).isEqualTo("순회")
+        }
+
+        @Test
+        @DisplayName("가장 최근 출근등록 1건의 거래처명/거래처코드를 반환한다")
+        fun returnsAccountOfLatest() {
+            val today = LocalDate.now()
+            val oldAccount = testEntityManager.persistAndFlush(Account(name = "옛거래처", externalKey = "1000001"))
+            val recentAccount = testEntityManager.persistAndFlush(Account(name = "최근거래처", externalKey = "1000002"))
+            persistAttendedSchedule(testEmployee, today.minusDays(2), WorkingCategory1.DISPLAY, WorkingCategory3.FIXED, oldAccount)
+            persistAttendedSchedule(testEmployee, today, WorkingCategory1.EVENT, WorkingCategory3.PATROL, recentAccount)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceInfoByEmployeeIds(listOf(testEmployee.id))
+
+            // 최근 일정의 거래처가 반영되어야 한다 (옛 거래처 아님)
+            assertThat(result[testEmployee.id]!!.accountName).isEqualTo("최근거래처")
+            assertThat(result[testEmployee.id]!!.accountCode).isEqualTo("1000002")
+        }
+
+        @Test
+        @DisplayName("거래처 미연결 일정은 거래처명/코드가 null")
+        fun nullAccountWhenUnlinked() {
+            persistAttendedSchedule(testEmployee, LocalDate.now(), WorkingCategory1.DISPLAY, WorkingCategory3.FIXED, null)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceInfoByEmployeeIds(listOf(testEmployee.id))
+
+            assertThat(result[testEmployee.id]!!.accountName).isNull()
+            assertThat(result[testEmployee.id]!!.accountCode).isNull()
         }
 
         @Test
@@ -595,7 +628,7 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             val result = teamMemberScheduleRepository
-                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+                .findLatestAttendanceInfoByEmployeeIds(listOf(testEmployee.id))
 
             assertThat(result[testEmployee.id]!!.workingCategory1).isEqualTo("행사")
             assertThat(result[testEmployee.id]!!.workingCategory3).isEqualTo("순회")
@@ -620,7 +653,7 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             val result = teamMemberScheduleRepository
-                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+                .findLatestAttendanceInfoByEmployeeIds(listOf(testEmployee.id))
 
             // attendanceLog 있는 과거 건(진열/고정)이 반영되어야 한다
             assertThat(result[testEmployee.id]!!.workingCategory1).isEqualTo("진열")
@@ -639,7 +672,7 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             val result = teamMemberScheduleRepository
-                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+                .findLatestAttendanceInfoByEmployeeIds(listOf(testEmployee.id))
 
             assertThat(result.keys).containsExactly(testEmployee.id)
         }
@@ -659,7 +692,7 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             val result = teamMemberScheduleRepository
-                .findLatestAttendanceCategoriesByEmployeeIds(listOf(empA.id, empB.id))
+                .findLatestAttendanceInfoByEmployeeIds(listOf(empA.id, empB.id))
 
             // A 는 today 의 진열/고정 (day-2 행사/순회 가 아님)
             assertThat(result[empA.id]!!.workingCategory1).isEqualTo("진열")
@@ -684,7 +717,7 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
 
             val result = teamMemberScheduleRepository
-                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+                .findLatestAttendanceInfoByEmployeeIds(listOf(testEmployee.id))
 
             assertThat(result).doesNotContainKey(testEmployee.id)
         }
@@ -693,7 +726,7 @@ class TeamMemberScheduleRepositoryTest {
         @DisplayName("빈 employeeIds -> 빈 Map")
         fun emptyInput() {
             val result = teamMemberScheduleRepository
-                .findLatestAttendanceCategoriesByEmployeeIds(emptyList())
+                .findLatestAttendanceInfoByEmployeeIds(emptyList())
 
             assertThat(result).isEmpty()
         }
