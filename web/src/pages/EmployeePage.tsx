@@ -139,7 +139,14 @@ export default function EmployeePage() {
     { title: '발령일', dataIndex: 'appointmentDate', width: 110, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '발령명', dataIndex: 'ordDetailNode', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '입사일', dataIndex: 'startDate', width: 110, align: 'center', render: (val: string | null) => val ?? '-' },
-    { title: '퇴사일', dataIndex: 'endDate', width: 110, align: 'center', render: (val: string | null) => val ?? '-' },
+    {
+      title: '퇴사일',
+      dataIndex: 'endDate',
+      width: 110,
+      align: 'center',
+      // 재직 중인 사원은 퇴사일을 표시하지 않는다.
+      render: (val: string | null, record: Employee) => (record.status === '재직' ? '-' : (val ?? '-')),
+    },
     { title: '만나이', dataIndex: 'age', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '근속년수', dataIndex: 'yearsOfService', width: 90, align: 'center', render: (val: string | null) => val ?? '-' },
     {
