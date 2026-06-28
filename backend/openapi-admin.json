@@ -12612,6 +12612,12 @@
       },
       "PPTMasterHistoryResponse" : {
         "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
           "changedAt" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]
