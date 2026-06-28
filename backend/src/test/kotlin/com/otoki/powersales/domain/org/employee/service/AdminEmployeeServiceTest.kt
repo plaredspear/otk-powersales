@@ -5,6 +5,8 @@ import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceCategory
+import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -23,11 +25,20 @@ import java.io.ByteArrayInputStream
 class AdminEmployeeServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
 
     private val adminEmployeeService = AdminEmployeeService(
         employeeRepository,
         EmployeeListExcelExporter(),
+        teamMemberScheduleRepository,
     )
+
+    init {
+        // 근무형태 조회 — 본 테스트들은 근무형태 컬럼을 검증하지 않으므로 기본 빈 결과로 stub.
+        every {
+            teamMemberScheduleRepository.findLatestAttendanceCategoriesByEmployeeIds(any())
+        } returns emptyMap<Long, LatestAttendanceCategory>()
+    }
 
     @Nested
     @DisplayName("getEmployees - 사원 목록 조회")
@@ -285,6 +296,8 @@ class AdminEmployeeServiceTest {
             val sheet = workbook.getSheetAt(0)
             assertThat(sheet.sheetName).isEqualTo("여사원현황")
             assertThat(sheet.getRow(0).getCell(0).stringCellValue).isEqualTo("사번")
+            assertThat(sheet.getRow(0).getCell(4).stringCellValue).isEqualTo("전문행사조")
+            assertThat(sheet.getRow(0).getCell(5).stringCellValue).isEqualTo("근무형태")
             assertThat(sheet.getRow(0).getCell(19).stringCellValue).isEqualTo("앱활성")
             assertThat(sheet.getRow(1).getCell(0).stringCellValue).isEqualTo("10000001")
             assertThat(sheet.getRow(1).getCell(1).stringCellValue).isEqualTo("홍길동")

@@ -136,6 +136,14 @@ export default function EmployeePage() {
       },
     },
     {
+      title: '근무형태',
+      dataIndex: 'workType',
+      width: 110,
+      align: 'center',
+      // 가장 최근 출근등록 1건의 진열/행사 + 고정/격고/순회 조합. 이력 없으면 '-'.
+      render: (val: string | null | undefined) => val ?? '-',
+    },
+    {
       title: '권한',
       dataIndex: "role",
       width: 100,

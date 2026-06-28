@@ -37,10 +37,17 @@ data class EmployeeListItem(
     val age: String?,
     val yearsOfService: String?,
     // 전문행사조 — 미배정(enum null) 사원은 '일반' 으로 표기.
-    val professionalPromotionTeam: String
+    val professionalPromotionTeam: String,
+    // 근무형태 — 가장 최근 출근(근무)등록 1건의 근무유형1(진열/행사)/근무유형3(고정/격고/순회) 조합.
+    // 출근등록 이력이 없으면 null (UI '-' 표기).
+    val workType: String?
 ) {
     companion object {
-        fun from(employee: Employee, today: LocalDate): EmployeeListItem = EmployeeListItem(
+        fun from(
+            employee: Employee,
+            today: LocalDate,
+            workType: String? = null,
+        ): EmployeeListItem = EmployeeListItem(
             id = employee.id,
             employeeCode = employee.employeeCode,
             name = employee.name,
@@ -64,7 +71,8 @@ data class EmployeeListItem(
             phone = employee.phone,
             age = employee.calculateAge(today),
             yearsOfService = employee.calculateYearsOfService(today),
-            professionalPromotionTeam = employee.professionalPromotionTeam?.displayName ?: "일반"
+            professionalPromotionTeam = employee.professionalPromotionTeam?.displayName ?: "일반",
+            workType = workType
         )
     }
 }

@@ -7,6 +7,16 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+/**
+ * 사원의 가장 최근 출근(근무)등록 1건의 근무 분류 (여사원 현황 근무형태 컬럼용).
+ * workingCategory1(진열/행사) + workingCategory3(고정/격고/순회) 의 displayName 조합 표시는 서비스 레이어 책임.
+ */
+data class LatestAttendanceCategory(
+    val employeeId: Long,
+    val workingCategory1: String?,
+    val workingCategory3: String?,
+)
+
 interface TeamMemberScheduleRepositoryCustom {
 
     /**
@@ -17,6 +27,18 @@ interface TeamMemberScheduleRepositoryCustom {
      * @return Map<displayWorkScheduleId, attendanceCount> (출근 1건 이상인 마스터만 포함)
      */
     fun countAttendedByDisplayWorkScheduleIds(scheduleIds: List<Long>): Map<Long, Long>
+
+    /**
+     * 여사원 현황 "근무형태" 컬럼용 — 사원별 **가장 최근 출근(근무)등록 1건**의
+     * workingCategory1(진열/행사) + workingCategory3(고정/격고/순회) 를 페이지 단위 1쿼리로 조회.
+     *
+     * "출근등록한 내용" 판정: `attendance_log_id IS NOT NULL` (출퇴근 로그가 연결된 일정 = `isWorkReport` 정합).
+     * "가장 최근" 판정: working_date DESC, created_at DESC, id DESC 정렬 후 사원별 첫 행.
+     * employeeId IN 으로 현재 페이지 사원만 조회(N+1 회피). 출근등록 0건 사원은 반환 Map 에 키가 없다.
+     *
+     * @return Map<employeeId, LatestAttendanceCategory> (출근등록 1건 이상인 사원만 포함)
+     */
+    fun findLatestAttendanceCategoriesByEmployeeIds(employeeIds: List<Long>): Map<Long, LatestAttendanceCategory>
 
     /**
      * 출근 등록 시점의 attendance_log id-FK 채움 (Spec #789 — sfid 비즈니스 로직 사용 금지 정책 정합).

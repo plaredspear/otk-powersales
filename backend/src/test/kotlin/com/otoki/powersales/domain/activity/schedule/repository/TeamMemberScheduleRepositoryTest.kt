@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
@@ -538,6 +539,122 @@ class TeamMemberScheduleRepositoryTest {
 
             assertThat(result).hasSize(1)
             assertThat(result[0].promotionEmployee?.promotionId).isEqualTo(promotion.id)
+        }
+    }
+
+    @Nested
+    @DisplayName("findLatestAttendanceCategoriesByEmployeeIds - 최근 출근등록 근무형태")
+    inner class FindLatestAttendanceCategories {
+
+        /** attendanceLog 가 연결된(=출근등록된) TMS 1건을 persist 한다. */
+        private fun persistAttendedSchedule(
+            employee: Employee,
+            workingDate: LocalDate,
+            category1: WorkingCategory1?,
+            category3: WorkingCategory3?,
+        ): TeamMemberSchedule {
+            val attendanceLog = testEntityManager.persistAndFlush(AttendanceLog())
+            val schedule = testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = employee,
+                    workingDate = workingDate,
+                    workingType = WorkingType.WORK,
+                    workingCategory1 = category1,
+                    workingCategory3 = category3,
+                )
+            )
+            teamMemberScheduleRepository.updateAttendanceLog(schedule.id, attendanceLog.id)
+            return schedule
+        }
+
+        @Test
+        @DisplayName("사원별 가장 최근(workingDate 최신) 출근등록 1건의 category1/3 을 반환한다")
+        fun returnsLatestPerEmployee() {
+            val today = LocalDate.now()
+            // 더 오래된 건
+            persistAttendedSchedule(testEmployee, today.minusDays(3), WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
+            // 더 최근 건 — 이게 반영되어야 한다
+            persistAttendedSchedule(testEmployee, today, WorkingCategory1.EVENT, WorkingCategory3.PATROL)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+
+            assertThat(result).containsKey(testEmployee.id)
+            assertThat(result[testEmployee.id]!!.workingCategory1).isEqualTo("행사")
+            assertThat(result[testEmployee.id]!!.workingCategory3).isEqualTo("순회")
+        }
+
+        @Test
+        @DisplayName("attendanceLog 가 없는(출근등록 안 된) 일정은 더 최근이어도 무시한다")
+        fun ignoresSchedulesWithoutAttendanceLog() {
+            val today = LocalDate.now()
+            // 출근등록된 과거 건
+            persistAttendedSchedule(testEmployee, today.minusDays(5), WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
+            // attendanceLog 없는 더 최근 일정 (예약만 된 미래/오늘 일정) — 무시되어야 한다
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = today,
+                    workingType = WorkingType.WORK,
+                    workingCategory1 = WorkingCategory1.EVENT,
+                    workingCategory3 = WorkingCategory3.PATROL,
+                )
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+
+            // attendanceLog 있는 과거 건(진열/고정)이 반영되어야 한다
+            assertThat(result[testEmployee.id]!!.workingCategory1).isEqualTo("진열")
+            assertThat(result[testEmployee.id]!!.workingCategory3).isEqualTo("고정")
+        }
+
+        @Test
+        @DisplayName("employeeIds 에 포함되지 않은 사원은 결과에서 제외된다")
+        fun filtersByEmployeeIds() {
+            val today = LocalDate.now()
+            val otherEmployee = testEntityManager.persistAndFlush(
+                Employee(employeeCode = "EMP999", name = "다른사원")
+            )
+            persistAttendedSchedule(testEmployee, today, WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
+            persistAttendedSchedule(otherEmployee, today, WorkingCategory1.EVENT, WorkingCategory3.PATROL)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+
+            assertThat(result.keys).containsExactly(testEmployee.id)
+        }
+
+        @Test
+        @DisplayName("출근등록 이력이 없는 사원은 Map 에 키가 없다")
+        fun noKeyWhenNoAttendance() {
+            // 출근등록 없는 일정만 존재
+            testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = testEmployee,
+                    workingDate = LocalDate.now(),
+                    workingType = WorkingType.WORK,
+                    workingCategory1 = WorkingCategory1.DISPLAY,
+                )
+            )
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+
+            assertThat(result).doesNotContainKey(testEmployee.id)
+        }
+
+        @Test
+        @DisplayName("빈 employeeIds -> 빈 Map")
+        fun emptyInput() {
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceCategoriesByEmployeeIds(emptyList())
+
+            assertThat(result).isEmpty()
         }
     }
 }

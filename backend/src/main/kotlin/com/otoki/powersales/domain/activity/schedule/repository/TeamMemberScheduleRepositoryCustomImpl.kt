@@ -43,6 +43,46 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             }
     }
 
+    override fun findLatestAttendanceCategoriesByEmployeeIds(
+        employeeIds: List<Long>
+    ): Map<Long, LatestAttendanceCategory> {
+        if (employeeIds.isEmpty()) return emptyMap()
+
+        val employeeIdPath = teamMemberSchedule.employee.id
+        // 출근(근무)등록된 일정만(attendance_log_id IS NOT NULL) 대상으로, 사원별 최근순 정렬로 전량 조회한 뒤
+        // 사원별 첫(=가장 최근) 1건만 취한다. 정렬: 근무일자 DESC → 생성시각 DESC → id DESC (동일 일자 tie-break).
+        val rows = queryFactory
+            .select(
+                employeeIdPath,
+                teamMemberSchedule.workingCategory1,
+                teamMemberSchedule.workingCategory3,
+            )
+            .from(teamMemberSchedule)
+            .where(
+                employeeIdPath.`in`(employeeIds),
+                teamMemberSchedule.attendanceLog.id.isNotNull,
+            )
+            .orderBy(
+                teamMemberSchedule.workingDate.desc(),
+                teamMemberSchedule.createdAt.desc(),
+                teamMemberSchedule.id.desc(),
+            )
+            .fetch()
+
+        val result = LinkedHashMap<Long, LatestAttendanceCategory>()
+        for (tuple in rows) {
+            val empId = tuple.get(employeeIdPath) ?: continue
+            // 정렬상 먼저 등장한 행이 가장 최근 — 이미 담긴 사원은 건너뛴다.
+            if (result.containsKey(empId)) continue
+            result[empId] = LatestAttendanceCategory(
+                employeeId = empId,
+                workingCategory1 = tuple.get(teamMemberSchedule.workingCategory1)?.displayName,
+                workingCategory3 = tuple.get(teamMemberSchedule.workingCategory3)?.displayName,
+            )
+        }
+        return result
+    }
+
     @Transactional
     override fun updateAttendanceLog(id: Long, attendanceLogId: Long) {
         queryFactory

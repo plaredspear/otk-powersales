@@ -94,7 +94,8 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
                         phone = null,
                         age = null,
                         yearsOfService = null,
-                        professionalPromotionTeam = "일반"
+                        professionalPromotionTeam = "일반",
+                        workType = null
                     )
                 ),
                 page = 0,

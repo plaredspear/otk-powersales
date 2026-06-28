@@ -52,6 +52,9 @@ export interface Employee {
   // 전문행사조 (라면세일조/프레시세일조_만두 등). 여사원 현황 목록 응답에서 backend 가 항상
   // 채워 보내며(미배정은 '일반'), 다른 목록 응답에는 없을 수 있어 optional.
   professionalPromotionTeam?: string;
+  // 근무형태 — 가장 최근 출근등록 1건의 진열/행사 + 고정/격고/순회 조합 (예: '진열/고정').
+  // 출근등록 이력이 없으면 null (UI '-').
+  workType?: string | null;
 }
 
 export interface EmployeeListData {

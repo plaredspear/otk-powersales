@@ -18,9 +18,9 @@ class EmployeeListExcelExporter : BaseExcelExporter<EmployeeListItem>() {
     override val sheetName = "여사원현황"
     override val defaultFilename = "여사원현황.xlsx"
 
-    // 목록 테이블 컬럼 순서 정합 (사번 ~ 앱활성). 화면과 동일하게 성별·지점코드 미포함, 전문행사조 포함.
+    // 목록 테이블 컬럼 순서 정합 (사번 ~ 앱활성). 화면과 동일하게 성별·지점코드 미포함, 전문행사조·근무형태 포함.
     override val headers = listOf(
-        "사번", "이름", "상태", "소속", "전문행사조", "권한",
+        "사번", "이름", "상태", "소속", "전문행사조", "근무형태", "권한",
         "직종명", "직책", "직위", "직급", "이메일(회사)", "전화번호(HP)",
         "발령일", "발령명", "입사일", "퇴사일", "만나이", "근속년수", "앱활성",
     )
@@ -31,20 +31,21 @@ class EmployeeListExcelExporter : BaseExcelExporter<EmployeeListItem>() {
         row.createCell(2).setCellValue(item.status ?: "")
         row.createCell(3).setCellValue(item.orgName ?: "")
         row.createCell(4).setCellValue(item.professionalPromotionTeam)
-        row.createCell(5).setCellValue(item.role ?: "")
-        row.createCell(6).setCellValue(item.jikjong ?: "")
-        row.createCell(7).setCellValue(item.jikchak ?: "")
-        row.createCell(8).setCellValue(item.jikwee ?: "")
-        row.createCell(9).setCellValue(item.jikgub ?: "")
-        row.createCell(10).setCellValue(item.workEmail ?: "")
-        row.createCell(11).setCellValue(item.phone ?: "")
-        row.createCell(12).setCellValue(item.appointmentDate ?: "")
-        row.createCell(13).setCellValue(item.ordDetailNode ?: "")
-        row.createCell(14).setCellValue(item.startDate ?: "")
+        row.createCell(5).setCellValue(item.workType ?: "-")
+        row.createCell(6).setCellValue(item.role ?: "")
+        row.createCell(7).setCellValue(item.jikjong ?: "")
+        row.createCell(8).setCellValue(item.jikchak ?: "")
+        row.createCell(9).setCellValue(item.jikwee ?: "")
+        row.createCell(10).setCellValue(item.jikgub ?: "")
+        row.createCell(11).setCellValue(item.workEmail ?: "")
+        row.createCell(12).setCellValue(item.phone ?: "")
+        row.createCell(13).setCellValue(item.appointmentDate ?: "")
+        row.createCell(14).setCellValue(item.ordDetailNode ?: "")
+        row.createCell(15).setCellValue(item.startDate ?: "")
         // 재직 중인 사원은 퇴사일을 표시하지 않는다 (화면 정합).
-        row.createCell(15).setCellValue(if (item.status == "재직") "" else (item.endDate ?: ""))
-        row.createCell(16).setCellValue(item.age ?: "")
-        row.createCell(17).setCellValue(item.yearsOfService ?: "")
-        row.createCell(18).setCellValue(if (item.appLoginActive == true) "활성" else "비활성")
+        row.createCell(16).setCellValue(if (item.status == "재직") "" else (item.endDate ?: ""))
+        row.createCell(17).setCellValue(item.age ?: "")
+        row.createCell(18).setCellValue(item.yearsOfService ?: "")
+        row.createCell(19).setCellValue(if (item.appLoginActive == true) "활성" else "비활성")
     }
 }
