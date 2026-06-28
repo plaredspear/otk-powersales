@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../providers/auth_provider.dart';
 
 /// 활동등록 메뉴 아이템 데이터
 class ActivityMenuItem {
@@ -33,7 +35,7 @@ class ActivityMenuItem {
 /// 6개의 메뉴(소비기한 관리, 현장 점검 등록, 제안하기, 클레임 등록,
 /// 내 클레임 조회, 내 물류클레임 조회)를 BottomSheet 형태로 제공하며,
 /// 각 메뉴 선택 시 해당 화면으로 이동한다. (레거시 GNB "활동 등록" 정합)
-class ActivityRegistrationPopup extends StatelessWidget {
+class ActivityRegistrationPopup extends ConsumerWidget {
   /// 메뉴 아이템 탭 콜백
   final void Function(ActivityMenuItem item)? onMenuTap;
 
@@ -101,7 +103,16 @@ class ActivityRegistrationPopup extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 소비기한 관리는 여사원(role == 'USER')에게만 노출.
+    // 조장(LEADER)/지점장(ADMIN)에게는 숨긴다. (드로워 hideExpiry 정합)
+    final isFemaleStaff = ref.watch(authProvider).user?.role == 'USER';
+    final menuItems = isFemaleStaff
+        ? defaultMenuItems
+        : defaultMenuItems
+            .where((item) => item.route != AppRouter.productExpiration)
+            .toList();
+
     return Container(
       color: AppColors.background,
       child: Column(
@@ -124,7 +135,7 @@ class ActivityRegistrationPopup extends StatelessWidget {
           ),
 
           // 메뉴 리스트 (레거시 정합: 구분선 없이 넉넉한 간격)
-          for (final item in defaultMenuItems)
+          for (final item in menuItems)
             _buildMenuItem(context, item),
 
           // SafeArea 하단 여백
