@@ -123,7 +123,6 @@ export default function EmployeePage() {
         val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
     },
     { title: '소속', dataIndex: 'orgName', width: 150, render: (val: string | null) => val ?? '-' },
-    { title: '지점코드', dataIndex: 'costCenterCode', width: 100, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '권한',
       dataIndex: "role",
