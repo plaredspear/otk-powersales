@@ -424,7 +424,22 @@ class Account(
      */
     fun abcTypeLabel(): String? = abcTypeLabel(abcTypeCode, abcType)
 
+    /**
+     * 주문가능 거래처유형 여부 — ABC유형코드(ABCTypeCode__c)가 주문 셀렉터 허용 코드 집합에 속하는지.
+     * 모바일 주문 거래처 조회 필터([ORDER_ABC_TYPE_CODES])와 동일 기준.
+     */
+    fun isOrderableType(): Boolean = abcTypeCode in ORDER_ABC_TYPE_CODES
+
     companion object {
+        /**
+         * 주문가능 거래처유형(ABC유형코드) 집합 — 레거시 주문 셀렉터(`accountSelectList` with `order=order`)의
+         * `abctypecode__c IN (...)` 와 동일. 모바일 주문 거래처 조회 필터의 단일 진실원천.
+         */
+        val ORDER_ABC_TYPE_CODES: Set<String> = setOf(
+            "2001", "2002", "2513", "3061", "6112", "3025", "5900",
+            "5012", "5108", "5101", "5106", "5102", "5104"
+        )
+
         /**
          * 유통형태 라벨 조합 — 거래처상태코드 + 거래처유형명(displayName) 을 공백으로 조합.
          *

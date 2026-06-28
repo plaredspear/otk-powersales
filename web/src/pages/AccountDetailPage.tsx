@@ -156,6 +156,13 @@ function AccountInfoTab({ account, canEdit }: { account: AccountDetail; canEdit:
               '-'
             )}
           </Descriptions.Item>
+          <Descriptions.Item label="주문가능 거래처유형">
+            {account.orderableType ? (
+              <Tag color="green">주문가능</Tag>
+            ) : (
+              <Tag>주문불가</Tag>
+            )}
+          </Descriptions.Item>
           <Descriptions.Item label="거래처 그룹">{dash(account.accountGroup)}</Descriptions.Item>
           <Descriptions.Item label="지점코드">{dash(account.branchCode)}</Descriptions.Item>
           <Descriptions.Item label="지점명">{dash(account.branchName)}</Descriptions.Item>

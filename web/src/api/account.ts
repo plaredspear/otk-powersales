@@ -64,6 +64,8 @@ export interface AccountDetail {
   businessCategory: string | null;
   abcType: string | null;
   abcTypeCode: string | null;
+  /** 주문가능 거래처유형 여부 — abcTypeCode 가 주문 셀렉터 허용 코드에 속하는지 (백엔드 파생). */
+  orderableType: boolean;
   accountType: string | null;
   accountStatusName: string | null;
   accountStatusCode: string | null;

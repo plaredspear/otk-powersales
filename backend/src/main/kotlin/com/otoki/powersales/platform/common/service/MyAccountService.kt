@@ -168,7 +168,7 @@ class MyAccountService(
         if (accountIds.isEmpty()) return emptyList()
         val accounts = accountRepository.findByIdInAndIsDeletedNot(accountIds, true)
         val filtered = if (scope == MyAccountScope.ORDER) {
-            accounts.filter { it.abcTypeCode in ORDER_ABC_TYPE_CODES }
+            accounts.filter { it.isOrderableType() }
         } else {
             accounts
         }
@@ -193,12 +193,5 @@ class MyAccountService(
 
         // 부서장 전체조회 결과 상한 — 모바일 드롭다운 과대 응답(broken pipe) 방지. keyword 검색과 함께 사용.
         private const val ALL_ACCOUNTS_LIMIT = 100
-
-        // 레거시 주문 셀렉터(`order=order`) 의 주문가능 거래처유형 필터
-        // (accountMapper.xml selectMyAccount/selectDisplayMyAccount `abctypecode__c IN (...)`).
-        private val ORDER_ABC_TYPE_CODES = setOf(
-            "2001", "2002", "2513", "3061", "6112", "3025", "5900",
-            "5012", "5108", "5101", "5106", "5102", "5104"
-        )
     }
 }

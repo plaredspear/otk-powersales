@@ -82,6 +82,8 @@ data class AccountDetailResponse(
     val businessCategory: String?,
     val abcType: String?,
     val abcTypeCode: String?,
+    /** 주문가능 거래처유형 여부 — abcTypeCode 가 주문 셀렉터 허용 코드([Account.ORDER_ABC_TYPE_CODES])에 속하는지. */
+    val orderableType: Boolean,
     val accountType: String?,
     val accountStatusName: String?,
     val accountStatusCode: String?,
@@ -132,6 +134,7 @@ data class AccountDetailResponse(
             businessCategory = account.businessCategory,
             abcType = account.abcType,
             abcTypeCode = account.abcTypeCode,
+            orderableType = account.isOrderableType(),
             accountType = account.accountType,
             accountStatusName = account.accountStatusName,
             accountStatusCode = account.accountStatusCode,
