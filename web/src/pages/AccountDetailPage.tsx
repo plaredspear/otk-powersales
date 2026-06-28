@@ -12,9 +12,11 @@ import {
   Spin,
   Tabs,
   Tag,
+  Tooltip,
   notification,
 } from 'antd';
 import type { TabsProps } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import { isAxiosError } from 'axios';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -156,7 +158,16 @@ function AccountInfoTab({ account, canEdit }: { account: AccountDetail; canEdit:
               '-'
             )}
           </Descriptions.Item>
-          <Descriptions.Item label="주문가능 거래처유형">
+          <Descriptions.Item
+            label={
+              <span>
+                모바일앱 &gt; 주문가능여부{' '}
+                <Tooltip title="거래처의 ABC유형이 주문 가능 유형에 속하는 경우, 모바일앱에서 주문 거래처로 선택할 수 있습니다.">
+                  <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help', fontSize: 14 }} />
+                </Tooltip>
+              </span>
+            }
+          >
             {account.orderableType ? (
               <Tag color="green">주문가능</Tag>
             ) : (
