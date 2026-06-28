@@ -1,0 +1,147 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import PPTMasterPage from './PPTMasterPage';
+import type { PPTMaster } from '@/api/pptMaster';
+import { useAuthStore } from '@/stores/authStore';
+
+const sampleMaster: PPTMaster = {
+  id: 1,
+  name: 'PM0010001',
+  branchName: '서울지점',
+  employeeId: 100,
+  employeeName: '백은경',
+  employeeCode: 'EMP005',
+  employeeStatus: '재직',
+  employeeAppLoginActive: true,
+  employeeEndDate: null,
+  accountId: 200,
+  accountCode: 'ACC001',
+  accountName: '롯데마트',
+  accountType: '대형마트',
+  teamType: '라면세일조',
+  startDate: '2026-01-01',
+  endDate: null,
+  isConfirmed: false,
+} as PPTMaster;
+
+vi.mock('@/hooks/promotion/usePPTMasters', () => ({
+  usePPTMasters: () => ({
+    data: { content: [sampleMaster], totalElements: 1, totalPages: 1, number: 0, size: 20 },
+    isLoading: false,
+    refetch: vi.fn(),
+    isFetching: false,
+  }),
+  useCreatePPTMaster: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdatePPTMaster: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeletePPTMaster: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useConfirmPPTMastersByIds: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
+vi.mock('@/hooks/common/useExcelDownload', () => ({
+  useExcelDownload: () => ({ run: vi.fn(), downloading: false }),
+}));
+
+function setPermissions(permissions: string[], profileName: string | null = '5.영업사원') {
+  useAuthStore.setState({
+    user: {
+      id: 1,
+      employeeCode: 'TEST-001',
+      username: 'test@otoki.local',
+      name: '테스트',
+      orgName: null,
+      role: null,
+      profileName,
+      isSalesSupport: false,
+      costCenterCode: null,
+      permissions,
+    },
+    accessToken: 'token',
+    isAuthenticated: true,
+  });
+}
+
+function renderPage() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <PPTMasterPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe('PPTMasterPage 권한 게이팅', () => {
+  beforeEach(() => {
+    // READ 만 보유 (페이지 진입자 기본). EDIT 미보유.
+    setPermissions(['professional_promotion_team_master:R']);
+  });
+
+  describe('EDIT 권한 미보유 (READ only)', () => {
+    it('마스터 등록 버튼은 비활성으로 표시된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeDisabled();
+    });
+
+    it('엑셀 업로드 버튼은 비활성으로 표시된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /엑셀 업로드/ })).toBeDisabled();
+    });
+
+    it('행 액션(수정/복제/삭제) 버튼은 숨겨진다', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '복제' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+    });
+
+    it('선택 일괄 확정 버튼은 숨겨진다', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: /선택 일괄 확정/ })).not.toBeInTheDocument();
+    });
+
+    it('엑셀 다운로드(READ) 버튼은 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /엑셀 다운로드/ })).toBeEnabled();
+    });
+  });
+
+  describe('EDIT 권한 보유', () => {
+    beforeEach(() => {
+      setPermissions(['professional_promotion_team_master:R', 'professional_promotion_team_master:E']);
+    });
+
+    it('마스터 등록 버튼이 활성으로 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeEnabled();
+    });
+
+    it('엑셀 업로드 버튼이 활성으로 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /엑셀 업로드/ })).toBeEnabled();
+    });
+
+    it('행 액션(수정/복제/삭제) 버튼이 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '복제' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    });
+
+    it('선택 일괄 확정 버튼이 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /선택 일괄 확정/ })).toBeInTheDocument();
+    });
+  });
+
+  describe('시스템 관리자', () => {
+    it('권한 set 이 비어도 EDIT 버튼이 노출된다', () => {
+      setPermissions([], '시스템 관리자');
+      renderPage();
+      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeEnabled();
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
+    });
+  });
+});

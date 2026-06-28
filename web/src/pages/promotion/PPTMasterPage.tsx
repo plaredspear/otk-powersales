@@ -21,6 +21,9 @@ import {
 } from '@/constants/pptTeamType';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import PermissionGate from '@/components/PermissionGate';
+
+const PPT_ENTITY = 'professional_promotion_team_master';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { buildListPagination } from '@/lib/listPagination';
 
@@ -281,24 +284,26 @@ export default function PPTMasterPage() {
       align: 'center',
       fixed: 'right',
       render: (_, record) => (
-        <Space size={4}>
-          <Button size="small" onClick={() => handleEdit(record)}>
-            수정
-          </Button>
-          <Button size="small" onClick={() => handleClone(record)}>
-            복제
-          </Button>
-          <Popconfirm
-            title="이 마스터를 삭제하시겠습니까?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="확인"
-            cancelText="취소"
-          >
-            <Button size="small" danger>
-              삭제
+        <PermissionGate entity={PPT_ENTITY} operation="EDIT" fallback={<span>-</span>}>
+          <Space size={4}>
+            <Button size="small" onClick={() => handleEdit(record)}>
+              수정
             </Button>
-          </Popconfirm>
-        </Space>
+            <Button size="small" onClick={() => handleClone(record)}>
+              복제
+            </Button>
+            <Popconfirm
+              title="이 마스터를 삭제하시겠습니까?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="확인"
+              cancelText="취소"
+            >
+              <Button size="small" danger>
+                삭제
+              </Button>
+            </Popconfirm>
+          </Space>
+        </PermissionGate>
       ),
     },
   ];
@@ -351,37 +356,53 @@ export default function PPTMasterPage() {
       </Card>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 16 }}>
-        <Popconfirm
-          title={`선택한 ${selectedIds.length}건을 일괄 확정하시겠습니까?`}
-          onConfirm={handleConfirmSelected}
-          okText="확인"
-          cancelText="취소"
-          disabled={selectedIds.length === 0}
-        >
-          <Button
-            icon={<CheckOutlined />}
-            type="primary"
-            ghost
+        <PermissionGate entity={PPT_ENTITY} operation="EDIT" fallback={<span />}>
+          <Popconfirm
+            title={`선택한 ${selectedIds.length}건을 일괄 확정하시겠습니까?`}
+            onConfirm={handleConfirmSelected}
+            okText="확인"
+            cancelText="취소"
             disabled={selectedIds.length === 0}
-            loading={confirmByIdsMutation.isPending}
           >
-            선택 일괄 확정 ({selectedIds.length})
-          </Button>
-        </Popconfirm>
+            <Button
+              icon={<CheckOutlined />}
+              type="primary"
+              ghost
+              disabled={selectedIds.length === 0}
+              loading={confirmByIdsMutation.isPending}
+            >
+              선택 일괄 확정 ({selectedIds.length})
+            </Button>
+          </Popconfirm>
+        </PermissionGate>
         <Space>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-          <Button icon={<PlusOutlined />} type="primary" onClick={handleAdd}>
-            마스터 등록
-          </Button>
+          <PermissionGate
+            entity={PPT_ENTITY}
+            operation="EDIT"
+            mode="disable"
+            deniedTooltip="전문행사조 등록 권한이 없습니다"
+          >
+            <Button icon={<PlusOutlined />} type="primary" onClick={handleAdd}>
+              마스터 등록
+            </Button>
+          </PermissionGate>
           <Button icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
             엑셀 다운로드
           </Button>
           <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate} loading={templateDownloading}>
             엑셀 템플릿 다운로드
           </Button>
-          <Button icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
-            엑셀 업로드
-          </Button>
+          <PermissionGate
+            entity={PPT_ENTITY}
+            operation="EDIT"
+            mode="disable"
+            deniedTooltip="전문행사조 업로드 권한이 없습니다"
+          >
+            <Button icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
+              엑셀 업로드
+            </Button>
+          </PermissionGate>
         </Space>
       </div>
 
