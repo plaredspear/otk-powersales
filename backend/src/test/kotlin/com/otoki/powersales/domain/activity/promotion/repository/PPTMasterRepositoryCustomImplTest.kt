@@ -143,6 +143,47 @@ class PPTMasterRepositoryCustomImplTest {
         assertThat(ids).doesNotContain(unconfirmed.id)
     }
 
+    private fun persistType(teamType: ProfessionalPromotionTeamType): ProfessionalPromotionTeamMaster {
+        val master = ProfessionalPromotionTeamMaster(
+            employeeId = null,
+            teamType = teamType,
+            startDate = today.minusDays(1),
+            endDate = today.plusDays(10),
+            isConfirmed = true,
+        )
+        em.persistAndFlush(master)
+        return master
+    }
+
+    @Test
+    @DisplayName("searchMasters 정렬 - 전문행사조 유형(SF picklist 정의 순서) 우선, 가나다순 아님")
+    fun searchMasters_orderByTeamTypeDefinitionOrder() {
+        // 입력 순서를 정의 순서와 다르게 (카레 → 라면 → 프레시만두) 넣어, 결과가 정의 순서로 재정렬되는지 확인.
+        persistType(ProfessionalPromotionTeamType.CURRY_PROMOTION)
+        persistType(ProfessionalPromotionTeamType.RAMEN_SALE)
+        persistType(ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING)
+        persistType(ProfessionalPromotionTeamType.FRESH_SALE_FROZEN)
+        em.clear()
+
+        val result = repository.searchMasters(
+            employeeName = null,
+            employeeCode = null,
+            teamType = null,
+            branchCodeFilter = null,
+            validOnly = false,
+            today = today,
+            pageable = PageRequest.of(0, 20),
+        )
+
+        // enum 선언 순서: 라면 → 프레시_냉동 → 프레시_냉장 → 프레시_만두 → 카레
+        assertThat(result.content.map { it.master.teamType }).containsExactly(
+            ProfessionalPromotionTeamType.RAMEN_SALE,
+            ProfessionalPromotionTeamType.FRESH_SALE_FROZEN,
+            ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
+            ProfessionalPromotionTeamType.CURRY_PROMOTION,
+        )
+    }
+
     @Test
     @DisplayName("searchMasters validOnly=false - 미확정/날짜범위 밖 마스터도 모두 포함")
     fun searchMasters_validOnlyFalse_includesAll() {

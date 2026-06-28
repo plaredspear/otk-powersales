@@ -10,6 +10,7 @@ import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.CaseBuilder
 import com.querydsl.core.types.dsl.Expressions
+import com.querydsl.core.types.dsl.NumberExpression
 import com.querydsl.core.types.dsl.StringExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -83,8 +84,13 @@ class PPTMasterRepositoryCustomImpl(
             .leftJoin(account).on(professionalPromotionTeamMaster.accountId.eq(account.id))
             .where(builder)
             .orderBy(
-                professionalPromotionTeamMaster.createdAt.desc(),
-                professionalPromotionTeamMaster.id.desc()
+                // 1) 전문행사조 유형 — SF picklist 정의 순서 (enum 선언 순서). team_type 은 한글 displayName 으로
+                //    저장돼 단순 컬럼 정렬 시 가나다순이 되므로, CASE 로 enum ordinal 을 부여해 정의 순서를 보장.
+                teamTypeSortOrder().asc(),
+                // 2) 사번 오름차순
+                employee.employeeCode.asc(),
+                // 동률 안정 정렬 — id
+                professionalPromotionTeamMaster.id.asc()
             )
             .offset(pageable.offset)
             .limit(pageable.pageSize.toLong())
@@ -229,6 +235,21 @@ class PPTMasterRepositoryCustomImpl(
      * 산출하지 않는다. 따라서 그 수식을 CASE 로 재현한 결과는 어떤 행에서도 `'미확정'` 이 되지 않아 본 절은
      * 항상 참(dead filter) 이다. SOQL 구조 동등성을 위해 수식 자체를 SQL 로 풀어 `!= '미확정'` 을 적용한다.
      */
+    /**
+     * 전문행사조 유형 정렬용 CASE 식 — enum 선언 순서(= SF picklist 정의 순서)를 ordinal 로 부여한다.
+     *
+     * team_type 컬럼은 한글 displayName 으로 저장돼 단순 컬럼 정렬 시 가나다순이 되므로,
+     * 각 유형에 선언 순서 번호를 매핑해 "라면세일조 → 프레시세일조_냉동 → _냉장 → _만두 → 카레행사조"
+     * 순서를 보장한다. 신규 유형 추가 시 enum 에만 추가하면 자동 반영(매핑 누락분은 맨 뒤).
+     */
+    private fun teamTypeSortOrder(): NumberExpression<Int> {
+        var case = CaseBuilder().`when`(professionalPromotionTeamMaster.teamType.isNull).then(Int.MAX_VALUE)
+        ProfessionalPromotionTeamType.entries.forEachIndexed { index, type ->
+            case = case.`when`(professionalPromotionTeamMaster.teamType.eq(type)).then(index)
+        }
+        return case.otherwise(Int.MAX_VALUE)
+    }
+
     private fun validConditionDataNotUnconfirmed(): BooleanExpression {
         val today = LocalDate.now()
         val isResigned = employee.status.eq("퇴직").or(employee.appLoginActive.isFalse)
