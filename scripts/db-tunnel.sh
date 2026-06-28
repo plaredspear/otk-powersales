@@ -77,13 +77,21 @@ if [[ "$PRINT_PASSWORD" -eq 1 ]]; then
   exit 0
 fi
 
+# 실행 중인 EB 인스턴스 ID 를 조회 (tag 필터). 인스턴스 교체(재배포/오토스케일링)
+# 시 ID 가 바뀌므로, 시작 시 1회가 아니라 재연결 루프 안에서 매번 재조회한다.
+# 롤링 배포 중 old+new 가 잠깐 공존할 수 있어, LaunchTime 최신 1대를 선택한다
+# (Reservations[].Instances[0] 은 순서 보장이 없어 옛 인스턴스를 집을 수 있음).
+lookup_eb_instance() {
+  aws_ ec2 describe-instances \
+    --filters "Name=tag:Project,Values=$PROJECT" \
+              "Name=tag:Stage,Values=$STAGE" \
+              "Name=instance-state-name,Values=running" \
+    --query 'sort_by(Reservations[].Instances[], &LaunchTime)[-1].InstanceId' \
+    --output text | awk '{print $1}'
+}
+
 echo "==> EB 인스턴스 조회 (tag: Project=$PROJECT, Stage=$STAGE)..."
-EB_INSTANCE=$(aws_ ec2 describe-instances \
-  --filters "Name=tag:Project,Values=$PROJECT" \
-            "Name=tag:Stage,Values=$STAGE" \
-            "Name=instance-state-name,Values=running" \
-  --query 'Reservations[].Instances[0].InstanceId' \
-  --output text | awk '{print $1}')
+EB_INSTANCE=$(lookup_eb_instance)
 
 if [[ -z "$EB_INSTANCE" || "$EB_INSTANCE" == "None" ]]; then
   echo "Error: 실행 중인 EB 인스턴스를 찾을 수 없습니다." >&2
@@ -127,4 +135,11 @@ while true; do
   echo ""
   echo "==> 세션이 끊어졌습니다. 2초 후 재연결..." >&2
   sleep 2
+
+  # 인스턴스 교체(재배포/오토스케일링) 시 ID 가 바뀌므로 재연결마다 재조회.
+  NEW_INSTANCE=$(lookup_eb_instance)
+  if [[ -n "$NEW_INSTANCE" && "$NEW_INSTANCE" != "None" && "$NEW_INSTANCE" != "$EB_INSTANCE" ]]; then
+    echo "==> EB 인스턴스 변경 감지: $EB_INSTANCE -> $NEW_INSTANCE" >&2
+    EB_INSTANCE="$NEW_INSTANCE"
+  fi
 done
