@@ -31,18 +31,22 @@ import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { useAuthStore } from '@/stores/authStore';
 
 const { Text } = Typography;
+const { RangePicker } = DatePicker;
+
+const DATE_FORMAT = 'YYYY-MM-DD';
 
 /**
  * POS매출 — web admin 조회 페이지.
  *
- * 거래처 1곳 + 연월 선택 → POS DB(`live_pos_sales_dh`) 제품별 매출 명세 + 합계.
- * 레거시 `promotion/month/posmain.jsp` 의 web admin 이관 (Backend `GET /api/v1/admin/sales/pos`).
+ * 거래처 1곳 + 기간(시작/종료일) 선택 → POS DB(`live_pos_sales_dh`) 제품별 매출 명세 + 합계.
+ * 레거시 `promotion/month/posmain.jsp` 의 daterangepicker 정합 (Backend `GET /api/v1/admin/sales/pos`).
+ * 최초 진입 시 기본값은 당월 1일 ~ 오늘.
  */
 export default function SalesQueryPage() {
-  // 검색 조건(거래처 + 조회월)을 URL query string 에 보관 — 새로고침/뒤로가기/링크 공유 시 직전 조회 복원.
+  // 검색 조건(거래처 + 조회기간)을 URL query string 에 보관 — 새로고침/뒤로가기/링크 공유 시 직전 조회 복원.
   // (테이블 pagination 은 client-side 비제어라 page 는 URL 보관 대상 아님.)
   const { filters, setFilters } = useListQueryParams({
-    defaultFilters: { customerId: '', yearMonth: '' },
+    defaultFilters: { customerId: '', startDate: '', endDate: '' },
   });
 
   // 입력 위젯의 로컬 편집 버퍼. URL filters 를 source of truth 로 두고 마운트 시 1회 초기화.
@@ -50,12 +54,15 @@ export default function SalesQueryPage() {
     filters.customerId ? Number(filters.customerId) : undefined,
   );
   const [accountKeyword, setAccountKeyword] = useState<string>('');
-  const [month, setMonth] = useState<Dayjs>(() =>
-    // customParseFormat 플러그인 미사용 → YYYYMM(6자리) 을 ISO 형태로 변환해 파싱.
-    filters.yearMonth && filters.yearMonth.length === 6
-      ? dayjs(`${filters.yearMonth.slice(0, 4)}-${filters.yearMonth.slice(4, 6)}-01`)
-      : dayjs(),
-  );
+  // 조회기간 — 최초 화면 기본값은 당월 1일 ~ 오늘. URL 에 직전 기간이 있으면 그 값으로 복원하되,
+  // 손상된 URL(파싱 불가 날짜) 은 기본값으로 fallback 해 Invalid Date 가 쿼리/URL 로 새는 것을 막는다.
+  const [range, setRange] = useState<[Dayjs, Dayjs]>(() => {
+    const start = filters.startDate ? dayjs(filters.startDate) : null;
+    const end = filters.endDate ? dayjs(filters.endDate) : null;
+    return start?.isValid() && end?.isValid()
+      ? [start, end]
+      : [dayjs().startOf('month'), dayjs()];
+  });
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조 PPTMasterPage 정합).
   //  - 다중 지점: Select 로 선택 → 거래처 lookup 검색을 해당 지점으로 스코프
@@ -86,12 +93,19 @@ export default function SalesQueryPage() {
 
   // 조회는 URL filters 기반 (검색 버튼 클릭 시 setFilters 로 URL 반영 → 아래 query 가 재실행).
   const customerId = filters.customerId ? Number(filters.customerId) : undefined;
-  const yearMonth = filters.yearMonth || undefined;
-  const hasQuery = customerId != null && yearMonth != null;
+  const startDate = filters.startDate || undefined;
+  const endDate = filters.endDate || undefined;
+  // 손상된 URL 로 잘못된 fetch 가 나가지 않도록 날짜 유효성까지 확인.
+  const hasQuery =
+    customerId != null &&
+    startDate != null &&
+    endDate != null &&
+    dayjs(startDate).isValid() &&
+    dayjs(endDate).isValid();
 
   const posSalesQuery = useQuery({
-    queryKey: ['posSales', customerId, yearMonth],
-    queryFn: () => fetchPosSales(customerId!, yearMonth!),
+    queryKey: ['admin', 'sales', 'pos', customerId, startDate, endDate],
+    queryFn: () => fetchPosSales(customerId!, startDate!, endDate!),
     enabled: hasQuery,
     placeholderData: (prev) => prev,
   });
@@ -106,20 +120,25 @@ export default function SalesQueryPage() {
       message.warning('거래처는 필수항목입니다.');
       return;
     }
-    setFilters({ customerId: String(accountId), yearMonth: month.format('YYYYMM') });
+    setFilters({
+      customerId: String(accountId),
+      startDate: range[0].format(DATE_FORMAT),
+      endDate: range[1].format(DATE_FORMAT),
+    });
   };
 
   const items = posSalesQuery.data?.items ?? [];
-  const totalAmount = items.reduce((sum, it) => sum + it.amount, 0);
-  const totalQuantity = items.reduce((sum, it) => sum + it.quantity, 0);
+  // 합계는 서버 산출분(totalAmount/totalQuantity) 사용 — 명세 행 합산과 동일하나 단일 출처로 유지.
+  const totalAmount = posSalesQuery.data?.totalAmount ?? 0;
+  const totalQuantity = posSalesQuery.data?.totalQuantity ?? 0;
 
   const { run: runExport, downloading: exporting } = useExcelDownload();
 
-  // 조회 화면과 동일한 거래처 + 연월의 제품별 명세를 엑셀로 export.
+  // 조회 화면과 동일한 거래처 + 기간의 제품별 명세를 엑셀로 export.
   const handleExport = () => {
     if (!hasQuery) return;
     runExport(POS_SALES_EXPORT_PATH, 'POS매출.xlsx', {
-      params: { customerId: customerId!, yearMonth: yearMonth! },
+      params: { customerId: customerId!, startDate: startDate!, endDate: endDate! },
       totalCount: items.length,
     });
   };
@@ -190,12 +209,15 @@ export default function SalesQueryPage() {
             allowClear
             onClear={() => setAccountId(undefined)}
           />
-          <DatePicker
-            picker="month"
-            value={month}
-            onChange={(v) => v && setMonth(v)}
+          <RangePicker
+            value={range}
+            onChange={(v) => {
+              // allowClear=false 라 null 가능성은 없으나 양끝 모두 존재할 때만 반영.
+              if (v && v[0] && v[1]) setRange([v[0], v[1]]);
+            }}
             allowClear={false}
-            placeholder="조회월"
+            format={DATE_FORMAT}
+            placeholder={['시작일', '종료일']}
           />
           <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
             조회

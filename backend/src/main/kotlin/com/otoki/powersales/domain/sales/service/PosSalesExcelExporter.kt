@@ -29,6 +29,20 @@ class PosSalesExcelExporter : BaseExcelExporter<PosSalesResponse.ProductSales>()
         return export(items, "POS매출_${safeName}_${yearMonth}.xlsx")
     }
 
+    /**
+     * 엑셀 워크북 생성 + 바이트 + 파일명 반환. 파일명 형식: `POS매출_{거래처명}_{시작일}_{종료일}.xlsx`.
+     * web admin 기간 조회 다운로드용. 빈 items 일 경우 헤더 행만 존재.
+     */
+    fun exportByRange(
+        customerName: String,
+        startDate: String,
+        endDate: String,
+        items: List<PosSalesResponse.ProductSales>,
+    ): ExcelResult {
+        val safeName = customerName.ifBlank { "거래처" }.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        return export(items, "POS매출_${safeName}_${startDate}_${endDate}.xlsx")
+    }
+
     override fun writeRow(row: Row, item: PosSalesResponse.ProductSales) {
         row.createCell(0).setCellValue(item.productCode)
         row.createCell(1).setCellValue(item.productName)

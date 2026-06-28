@@ -8,8 +8,8 @@ import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
-import com.otoki.powersales.domain.sales.dto.request.PosSalesRequest
-import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
+import com.otoki.powersales.domain.sales.dto.request.PosSalesRangeRequest
+import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.domain.sales.service.PosSalesService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -50,28 +50,35 @@ class AdminPosSalesController(
     }
 
     /**
-     * POS매출 조회 (거래처 1곳 + 연월, 제품별 실적)
+     * POS매출 조회 (거래처 1곳 + 기간(시작/종료일), 제품별 실적)
      * GET /api/v1/admin/sales/pos
+     *
+     * 레거시 `posmain.jsp` 의 daterangepicker 정합 — 기간(YYYY-MM-DD ~ YYYY-MM-DD) 단위 조회.
+     * 합계금액/수량은 [PosSalesRangeResponse] 가 서버 산출분으로 제공.
      */
     @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping
     fun getPosSales(
-        @Valid request: PosSalesRequest,
-    ): ResponseEntity<ApiResponse<PosSalesResponse>> {
-        val response = posSalesService.getPosSales(request.customerId, request.yearMonth)
+        @Valid request: PosSalesRangeRequest,
+    ): ResponseEntity<ApiResponse<PosSalesRangeResponse>> {
+        val response = posSalesService.getPosSalesByRange(
+            request.customerId, request.startDate, request.endDate, emptyList(),
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     /**
-     * POS매출 제품별 명세 엑셀 다운로드 (거래처 1곳 + 연월) — 조회와 동일 데이터.
+     * POS매출 제품별 명세 엑셀 다운로드 (거래처 1곳 + 기간(시작/종료일)) — 조회와 동일 데이터.
      * GET /api/v1/admin/sales/pos/export
      */
     @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/export")
     fun exportPosSales(
-        @Valid request: PosSalesRequest,
+        @Valid request: PosSalesRangeRequest,
     ): ResponseEntity<ByteArray> {
-        val result = posSalesService.exportPosSales(request.customerId, request.yearMonth)
+        val result = posSalesService.exportPosSalesByRange(
+            request.customerId, request.startDate, request.endDate,
+        )
         return ExcelResponseUtils.build(result)
     }
 }

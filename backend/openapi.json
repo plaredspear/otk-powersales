@@ -33367,7 +33367,7 @@
           "name" : "request",
           "required" : true,
           "schema" : {
-            "$ref" : "#/components/schemas/PosSalesRequest"
+            "$ref" : "#/components/schemas/PosSalesRangeRequest"
           }
         } ],
         "responses" : {
@@ -33375,7 +33375,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePosSalesResponse"
+                  "$ref" : "#/components/schemas/ApiResponsePosSalesRangeResponse"
                 }
               }
             },
@@ -33411,7 +33411,7 @@
           "name" : "request",
           "required" : true,
           "schema" : {
-            "$ref" : "#/components/schemas/PosSalesRequest"
+            "$ref" : "#/components/schemas/PosSalesRangeRequest"
           }
         } ],
         "responses" : {

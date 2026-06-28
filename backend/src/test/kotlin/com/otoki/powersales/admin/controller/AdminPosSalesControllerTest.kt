@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
 import com.otoki.powersales.domain.sales.service.PosSalesService
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
@@ -52,47 +53,54 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("GET /api/v1/admin/sales/pos - 제품별 명세 조회")
+    @DisplayName("GET /api/v1/admin/sales/pos - 기간 제품별 명세 조회")
     fun getPosSales_success() {
-        every { posSalesService.getPosSales(1L, "202602") } returns PosSalesResponse(
-            customerId = 1L,
-            customerName = "사과마을",
-            sapAccountCode = "12345",
-            yearMonth = "202602",
-            items = listOf(
-                PosSalesResponse.ProductSales(
-                    productCode = "01101123",
-                    productName = "갈릭 아이올리소스 240g",
-                    barcode = "8801045123456",
-                    amount = 3500L,
-                    quantity = 10L,
+        every { posSalesService.getPosSalesByRange(1L, "2026-02-01", "2026-02-28", emptyList()) } returns
+            PosSalesRangeResponse(
+                customerId = 1L,
+                customerName = "사과마을",
+                sapAccountCode = "12345",
+                startDate = "2026-02-01",
+                endDate = "2026-02-28",
+                totalAmount = 3500L,
+                totalQuantity = 10L,
+                items = listOf(
+                    PosSalesResponse.ProductSales(
+                        productCode = "01101123",
+                        productName = "갈릭 아이올리소스 240g",
+                        barcode = "8801045123456",
+                        amount = 3500L,
+                        quantity = 10L,
+                    ),
                 ),
-            ),
-        )
+            )
 
         mockMvc.perform(
             get("/api/v1/admin/sales/pos")
                 .param("customerId", "1")
-                .param("yearMonth", "202602"),
+                .param("startDate", "2026-02-01")
+                .param("endDate", "2026-02-28"),
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.customerName").value("사과마을"))
+            .andExpect(jsonPath("$.data.totalAmount").value(3500))
             .andExpect(jsonPath("$.data.items[0].productCode").value("01101123"))
     }
 
     @Test
     @DisplayName("GET /api/v1/admin/sales/pos/export - Excel byte 응답 + Content-Disposition")
     fun exportPosSales_success() {
-        every { posSalesService.exportPosSales(1L, "202602") } returns ExcelResult(
+        every { posSalesService.exportPosSalesByRange(1L, "2026-02-01", "2026-02-28") } returns ExcelResult(
             bytes = ByteArray(800),
-            filename = "POS매출_사과마을_202602.xlsx",
+            filename = "POS매출_사과마을_2026-02-01_2026-02-28.xlsx",
         )
 
         mockMvc.perform(
             get("/api/v1/admin/sales/pos/export")
                 .param("customerId", "1")
-                .param("yearMonth", "202602"),
+                .param("startDate", "2026-02-01")
+                .param("endDate", "2026-02-28"),
         )
             .andExpect(status().isOk)
             .andExpect(
@@ -103,16 +111,17 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
             )
             .andExpect(header().exists("Content-Disposition"))
 
-        verify { posSalesService.exportPosSales(1L, "202602") }
+        verify { posSalesService.exportPosSalesByRange(1L, "2026-02-01", "2026-02-28") }
     }
 
     @Test
-    @DisplayName("GET /api/v1/admin/sales/pos/export - yearMonth 형식 위반 시 400")
-    fun exportPosSales_invalidYearMonth() {
+    @DisplayName("GET /api/v1/admin/sales/pos/export - 날짜 형식 위반 시 400")
+    fun exportPosSales_invalidDate() {
         mockMvc.perform(
             get("/api/v1/admin/sales/pos/export")
                 .param("customerId", "1")
-                .param("yearMonth", "2026"),
+                .param("startDate", "2026-02")
+                .param("endDate", "2026-02-28"),
         )
             .andExpect(status().isBadRequest)
     }

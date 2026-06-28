@@ -6923,11 +6923,11 @@
         },
         "type" : "object"
       },
-      "ApiResponsePosSalesResponse" : {
+      "ApiResponsePosSalesRangeResponse" : {
         "properties" : {
           "data" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/PosSalesResponse"
+              "$ref" : "#/components/schemas/PosSalesRangeResponse"
             }, {
               "type" : "null"
             } ]
@@ -13474,28 +13474,39 @@
         },
         "type" : "object"
       },
-      "PosSalesRequest" : {
+      "PosSalesRangeRequest" : {
         "properties" : {
+          "barcodes" : {
+            "type" : [ "string", "null" ]
+          },
           "customerId" : {
             "format" : "int64",
             "type" : "integer"
           },
-          "yearMonth" : {
+          "endDate" : {
             "minLength" : 1,
-            "pattern" : "^\\d{6}$",
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
+            "type" : "string"
+          },
+          "startDate" : {
+            "minLength" : 1,
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}$",
             "type" : "string"
           }
         },
-        "required" : [ "customerId", "yearMonth" ],
+        "required" : [ "customerId", "endDate", "startDate" ],
         "type" : "object"
       },
-      "PosSalesResponse" : {
+      "PosSalesRangeResponse" : {
         "properties" : {
           "customerId" : {
             "format" : "int64",
             "type" : "integer"
           },
           "customerName" : {
+            "type" : "string"
+          },
+          "endDate" : {
             "type" : "string"
           },
           "items" : {
@@ -13507,8 +13518,16 @@
           "sapAccountCode" : {
             "type" : "string"
           },
-          "yearMonth" : {
+          "startDate" : {
             "type" : "string"
+          },
+          "totalAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalQuantity" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -26481,7 +26500,7 @@
           "name" : "request",
           "required" : true,
           "schema" : {
-            "$ref" : "#/components/schemas/PosSalesRequest"
+            "$ref" : "#/components/schemas/PosSalesRangeRequest"
           }
         } ],
         "responses" : {
@@ -26489,7 +26508,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePosSalesResponse"
+                  "$ref" : "#/components/schemas/ApiResponsePosSalesRangeResponse"
                 }
               }
             },
@@ -26525,7 +26544,7 @@
           "name" : "request",
           "required" : true,
           "schema" : {
-            "$ref" : "#/components/schemas/PosSalesRequest"
+            "$ref" : "#/components/schemas/PosSalesRangeRequest"
           }
         } ],
         "responses" : {
