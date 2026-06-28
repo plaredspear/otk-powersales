@@ -586,6 +586,22 @@ class TeamMemberScheduleRepositoryTest {
         }
 
         @Test
+        @DisplayName("동일 working_date 에 출근등록 다건이면 가장 마지막 등록(id 최대) 1건을 채택한다")
+        fun tieBreakByIdOnSameDate() {
+            val today = LocalDate.now()
+            // 같은 날 두 건 출근등록 — 나중에 persist 된(=id 큰) 행이 채택되어야 한다.
+            persistAttendedSchedule(testEmployee, today, WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
+            persistAttendedSchedule(testEmployee, today, WorkingCategory1.EVENT, WorkingCategory3.PATROL)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
+
+            assertThat(result[testEmployee.id]!!.workingCategory1).isEqualTo("행사")
+            assertThat(result[testEmployee.id]!!.workingCategory3).isEqualTo("순회")
+        }
+
+        @Test
         @DisplayName("attendanceLog 가 없는(출근등록 안 된) 일정은 더 최근이어도 무시한다")
         fun ignoresSchedulesWithoutAttendanceLog() {
             val today = LocalDate.now()
@@ -626,6 +642,31 @@ class TeamMemberScheduleRepositoryTest {
                 .findLatestAttendanceCategoriesByEmployeeIds(listOf(testEmployee.id))
 
             assertThat(result.keys).containsExactly(testEmployee.id)
+        }
+
+        @Test
+        @DisplayName("두 사원의 최근일자가 서로 다를 때 날짜 교차 오염 없이 각자 최근 1건을 반환한다")
+        fun noCrossContaminationBetweenEmployees() {
+            val today = LocalDate.now()
+            val empA = testEmployee
+            val empB = testEntityManager.persistAndFlush(Employee(employeeCode = "EMPB", name = "사원B"))
+
+            // A: 최근일자 = today (진열/고정). A 는 day-2 에도 출근등록(행사/순회) 이 있음.
+            persistAttendedSchedule(empA, today.minusDays(2), WorkingCategory1.EVENT, WorkingCategory3.PATROL)
+            persistAttendedSchedule(empA, today, WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
+            // B: 최근일자 = today.minusDays(2) (행사/격고) — A 의 과거일자와 겹치는 날짜.
+            persistAttendedSchedule(empB, today.minusDays(2), WorkingCategory1.EVENT, WorkingCategory3.ALTERNATE)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository
+                .findLatestAttendanceCategoriesByEmployeeIds(listOf(empA.id, empB.id))
+
+            // A 는 today 의 진열/고정 (day-2 행사/순회 가 아님)
+            assertThat(result[empA.id]!!.workingCategory1).isEqualTo("진열")
+            assertThat(result[empA.id]!!.workingCategory3).isEqualTo("고정")
+            // B 는 day-2 의 행사/격고
+            assertThat(result[empB.id]!!.workingCategory1).isEqualTo("행사")
+            assertThat(result[empB.id]!!.workingCategory3).isEqualTo("격고")
         }
 
         @Test

@@ -33,8 +33,12 @@ interface TeamMemberScheduleRepositoryCustom {
      * workingCategory1(진열/행사) + workingCategory3(고정/격고/순회) 를 페이지 단위 1쿼리로 조회.
      *
      * "출근등록한 내용" 판정: `attendance_log_id IS NOT NULL` (출퇴근 로그가 연결된 일정 = `isWorkReport` 정합).
-     * "가장 최근" 판정: working_date DESC, created_at DESC, id DESC 정렬 후 사원별 첫 행.
-     * employeeId IN 으로 현재 페이지 사원만 조회(N+1 회피). 출근등록 0건 사원은 반환 Map 에 키가 없다.
+     * "가장 최근" 판정: 사원별 MAX(working_date), 동일 일자 다건이면 id 최대(=마지막 등록) 1건.
+     *
+     * 성능: 전체 이력을 메모리로 가져오지 않도록 2쿼리로 분리한다 — (1) 사원별 MAX(working_date) GROUP BY
+     * (부분 covering index idx_team_member_schedule_employee_id_working_date 로 index-only scan),
+     * (2) (사원, 최근일자) 쌍에 해당하는 소수 행만 조회해 category1/3 추출. employeeId IN 으로 현재
+     * 페이지 사원만 조회(N+1 없음, 전송 행 수 ≈ 사원 수). 출근등록 0건 사원은 반환 Map 에 키가 없다.
      *
      * @return Map<employeeId, LatestAttendanceCategory> (출근등록 1건 이상인 사원만 포함)
      */

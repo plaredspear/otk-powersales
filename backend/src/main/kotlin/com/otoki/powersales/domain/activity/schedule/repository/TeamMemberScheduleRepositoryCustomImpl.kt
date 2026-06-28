@@ -49,38 +49,68 @@ open class TeamMemberScheduleRepositoryCustomImpl(
         if (employeeIds.isEmpty()) return emptyMap()
 
         val employeeIdPath = teamMemberSchedule.employee.id
-        // 출근(근무)등록된 일정만(attendance_log_id IS NOT NULL) 대상으로, 사원별 최근순 정렬로 전량 조회한 뒤
-        // 사원별 첫(=가장 최근) 1건만 취한다. 정렬: 근무일자 DESC → 생성시각 DESC → id DESC (동일 일자 tie-break).
-        val rows = queryFactory
-            .select(
-                employeeIdPath,
-                teamMemberSchedule.workingCategory1,
-                teamMemberSchedule.workingCategory3,
-            )
+
+        // [쿼리1] 사원별 가장 최근 출근(근무)등록 일자 — attendance_log_id IS NOT NULL 인 행만.
+        // 부분 covering index idx_team_member_schedule_employee_id_working_date
+        //   (employee_id, working_date) INCLUDE (..., attendance_log_id) 로 index-only scan 가능 → 전송 행 수 = 사원 수.
+        val maxDateRows = queryFactory
+            .select(employeeIdPath, teamMemberSchedule.workingDate.max())
             .from(teamMemberSchedule)
             .where(
                 employeeIdPath.`in`(employeeIds),
                 teamMemberSchedule.attendanceLog.id.isNotNull,
             )
-            .orderBy(
-                teamMemberSchedule.workingDate.desc(),
-                teamMemberSchedule.createdAt.desc(),
-                teamMemberSchedule.id.desc(),
+            .groupBy(employeeIdPath)
+            .fetch()
+
+        // (employeeId -> 최근 근무일자) — 출근등록 이력 있는 사원만.
+        val latestDateByEmployee: Map<Long, LocalDate> = maxDateRows.mapNotNull { tuple ->
+            val empId = tuple.get(employeeIdPath) ?: return@mapNotNull null
+            val maxDate = tuple.get(teamMemberSchedule.workingDate.max()) ?: return@mapNotNull null
+            empId to maxDate
+        }.toMap()
+        if (latestDateByEmployee.isEmpty()) return emptyMap()
+
+        // [쿼리2] (사원, 최근일자) 쌍에 해당하는 출근등록 행만 조회 — 행 수 = 사원당 그날 등록 건수(극소).
+        // 동일 일자에 여러 건이면 id 가 가장 큰(=가장 마지막 등록) 1건을 채택(tie-break).
+        val pairRows = queryFactory
+            .select(
+                employeeIdPath,
+                teamMemberSchedule.id,
+                teamMemberSchedule.workingDate,
+                teamMemberSchedule.workingCategory1,
+                teamMemberSchedule.workingCategory3,
+            )
+            .from(teamMemberSchedule)
+            .where(
+                employeeIdPath.`in`(latestDateByEmployee.keys),
+                teamMemberSchedule.workingDate.`in`(latestDateByEmployee.values),
+                teamMemberSchedule.attendanceLog.id.isNotNull,
             )
             .fetch()
 
-        val result = LinkedHashMap<Long, LatestAttendanceCategory>()
-        for (tuple in rows) {
+        // 사원별로 (최근일자 일치) + (id 최대) 1건 선택.
+        data class Picked(val id: Long, val category: LatestAttendanceCategory)
+        val pickedByEmployee = HashMap<Long, Picked>()
+        for (tuple in pairRows) {
             val empId = tuple.get(employeeIdPath) ?: continue
-            // 정렬상 먼저 등장한 행이 가장 최근 — 이미 담긴 사원은 건너뛴다.
-            if (result.containsKey(empId)) continue
-            result[empId] = LatestAttendanceCategory(
-                employeeId = empId,
-                workingCategory1 = tuple.get(teamMemberSchedule.workingCategory1)?.displayName,
-                workingCategory3 = tuple.get(teamMemberSchedule.workingCategory3)?.displayName,
+            val rowDate = tuple.get(teamMemberSchedule.workingDate) ?: continue
+            // 쿼리2는 working_date IN <전체 최근일자 집합> 이라 타 사원의 최근일자 행도 섞일 수 있으므로
+            // 본인 최근일자와 일치하는 행만 채택.
+            if (latestDateByEmployee[empId] != rowDate) continue
+            val rowId = tuple.get(teamMemberSchedule.id) ?: continue
+            val existing = pickedByEmployee[empId]
+            if (existing != null && existing.id >= rowId) continue
+            pickedByEmployee[empId] = Picked(
+                id = rowId,
+                category = LatestAttendanceCategory(
+                    employeeId = empId,
+                    workingCategory1 = tuple.get(teamMemberSchedule.workingCategory1)?.displayName,
+                    workingCategory3 = tuple.get(teamMemberSchedule.workingCategory3)?.displayName,
+                ),
             )
         }
-        return result
+        return pickedByEmployee.mapValues { it.value.category }
     }
 
     @Transactional
