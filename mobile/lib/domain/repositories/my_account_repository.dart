@@ -1,4 +1,5 @@
 import '../entities/my_account.dart';
+import '../entities/my_account_meta.dart';
 
 /// 내 거래처 조회 범위 — 레거시 화면 유형별 거래처 조회 기준 차이.
 ///
@@ -30,9 +31,13 @@ class MyAccountListResult {
   /// 총 거래처 수
   final int totalCount;
 
+  /// 거래처 표시 기준 안내 (서버 제공). 구버전 서버 응답 등 미제공 시 null.
+  final MyAccountMeta? meta;
+
   const MyAccountListResult({
     required this.accounts,
     required this.totalCount,
+    this.meta,
   });
 
   @override
@@ -40,6 +45,7 @@ class MyAccountListResult {
     if (identical(this, other)) return true;
     if (other is! MyAccountListResult) return false;
     if (other.totalCount != totalCount) return false;
+    if (other.meta != meta) return false;
     if (other.accounts.length != accounts.length) return false;
     for (var i = 0; i < accounts.length; i++) {
       if (other.accounts[i] != accounts[i]) return false;
@@ -52,13 +58,14 @@ class MyAccountListResult {
     return Object.hash(
       Object.hashAll(accounts),
       totalCount,
+      meta,
     );
   }
 
   @override
   String toString() {
     return 'MyAccountListResult(accounts: ${accounts.length}, '
-        'totalCount: $totalCount)';
+        'totalCount: $totalCount, meta: $meta)';
   }
 }
 

@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/my_account.dart';
+import 'package:mobile/domain/entities/my_account_meta.dart';
 import 'package:mobile/domain/repositories/my_account_repository.dart';
 import 'package:mobile/domain/usecases/get_my_accounts.dart';
 import 'package:mobile/presentation/providers/my_accounts_provider.dart';
 import 'package:mobile/presentation/widgets/account/account_selector_sheet.dart';
 
 class _FakeMyAccountRepository implements MyAccountRepository {
+  _FakeMyAccountRepository({this.meta});
+
+  /// 서버 표시 기준 메타 (null 이면 미제공 — 클라이언트 폴백 경로).
+  final MyAccountMeta? meta;
+
   static const _all = [
     MyAccount(accountId: 1, accountName: '이마트 부산점', accountCode: '00001'),
     MyAccount(accountId: 2, accountName: '홈플러스 해운대점', accountCode: '00002'),
@@ -25,7 +31,11 @@ class _FakeMyAccountRepository implements MyAccountRepository {
                 a.accountName.contains(keyword) ||
                 a.accountCode.contains(keyword))
             .toList();
-    return MyAccountListResult(accounts: filtered, totalCount: filtered.length);
+    return MyAccountListResult(
+      accounts: filtered,
+      totalCount: filtered.length,
+      meta: meta,
+    );
   }
 }
 
@@ -142,6 +152,44 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(AccountSelectorSheet.isAllOption(result), isTrue);
+    });
+
+    testWidgets('표시 기준(ⓘ)은 서버 meta 문구를 그대로 보여준다', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            getMyAccountsUseCaseProvider.overrideWithValue(
+              GetMyAccounts(
+                _FakeMyAccountRepository(
+                  meta: const MyAccountMeta(
+                    criteriaLines: ['서버가 내려준 표시 기준'],
+                    searchHint: '서버 검색 안내',
+                  ),
+                ),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => AccountSelectorSheet.show(context),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      // 표시 기준 안내(ⓘ) 탭
+      await tester.tap(find.byIcon(Icons.info_outline));
+      await tester.pumpAndSettle();
+
+      expect(find.text('• 서버가 내려준 표시 기준'), findsOneWidget);
+      expect(find.text('서버 검색 안내'), findsOneWidget);
     });
   });
 }

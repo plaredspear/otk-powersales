@@ -4,6 +4,7 @@ import tools.jackson.databind.ObjectMapper
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.dto.response.MyAccountInfo
 import com.otoki.powersales.platform.common.dto.response.MyAccountListResponse
+import com.otoki.powersales.platform.common.dto.response.MyAccountMeta
 import com.otoki.powersales.platform.common.exception.AccountInvalidParameterException
 import com.otoki.powersales.platform.common.service.MyAccountService
 import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
@@ -58,7 +59,7 @@ class AccountControllerTest : MobileControllerTestSupport() {
                     phoneNumber = "053-234-5678"
                 )
             )
-            val response = MyAccountListResponse(accounts = accounts, totalCount = 2)
+            val response = MyAccountListResponse(accounts = accounts, totalCount = 2, meta = TEST_META)
 
             every { myAccountService.getMyAccounts(1L, null) } returns response
 
@@ -96,7 +97,7 @@ class AccountControllerTest : MobileControllerTestSupport() {
                     phoneNumber = "053-123-4567"
                 )
             )
-            val response = MyAccountListResponse(accounts = accounts, totalCount = 1)
+            val response = MyAccountListResponse(accounts = accounts, totalCount = 1, meta = TEST_META)
 
             every { myAccountService.getMyAccounts(1L, keyword) } returns response
 
@@ -114,7 +115,7 @@ class AccountControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("결과 없음 - 빈 목록 반환")
         fun getMyAccounts_EmptyResult() {
-            val response = MyAccountListResponse(accounts = emptyList(), totalCount = 0)
+            val response = MyAccountListResponse(accounts = emptyList(), totalCount = 0, meta = TEST_META)
 
             every { myAccountService.getMyAccounts(1L, null) } returns response
 
@@ -157,5 +158,12 @@ class AccountControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.error.code").value("INVALID_PARAMETER"))
         }
+    }
+
+    companion object {
+        private val TEST_META = MyAccountMeta(
+            criteriaLines = listOf("이번 달(전월 25일~당월 말일) 본인이 담당하는 거래처"),
+            searchHint = "검색은 표시된 목록 안에서 이름·코드로 찾습니다."
+        )
     }
 }

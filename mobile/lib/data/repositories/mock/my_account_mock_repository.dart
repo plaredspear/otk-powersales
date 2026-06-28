@@ -1,4 +1,5 @@
 import '../../../domain/entities/my_account.dart';
+import '../../../domain/entities/my_account_meta.dart';
 import '../../../domain/repositories/my_account_repository.dart';
 
 /// 내 거래처 Mock Repository
@@ -120,6 +121,25 @@ class MyAccountMockRepository implements MyAccountRepository {
     return MyAccountListResult(
       accounts: List.unmodifiable(_mockAccounts),
       totalCount: _mockAccounts.length,
+      meta: _mockMeta(scope),
     );
+  }
+
+  /// 여사원 기준 표시 기준 안내 (서버 buildMeta 의 여사원 분기와 동일).
+  MyAccountMeta _mockMeta(MyAccountScope scope) {
+    const searchHint = '검색은 표시된 목록 안에서 이름·코드로 찾습니다.';
+    return switch (scope) {
+      MyAccountScope.order => const MyAccountMeta(
+          criteriaLines: [
+            '이번 달(전월 25일~당월 말일) 본인이 담당·진열하는 거래처',
+            '그중 주문 가능한 거래처 유형만 표시됩니다',
+          ],
+          searchHint: searchHint,
+        ),
+      MyAccountScope.sales || MyAccountScope.field => const MyAccountMeta(
+          criteriaLines: ['이번 달(전월 25일~당월 말일) 본인이 담당하는 거래처'],
+          searchHint: searchHint,
+        ),
+    };
   }
 }

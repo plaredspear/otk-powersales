@@ -363,6 +363,73 @@ class MyAccountServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getMyAccounts - 표시 기준 메타(meta)")
+    inner class MetaTests {
+
+        @Test
+        @DisplayName("여사원 + ORDER -> 담당·진열 + 주문가능 유형 안내")
+        fun meta_employee_order() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns emptyList()
+            every { displayWorkScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns emptyList()
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
+
+            assertThat(result.meta.criteriaLines).containsExactly(
+                "이번 달(전월 25일~당월 말일) 본인이 담당·진열하는 거래처",
+                "그중 주문 가능한 거래처 유형만 표시됩니다"
+            )
+            assertThat(result.meta.searchHint).isEqualTo("검색은 표시된 목록 안에서 이름·코드로 찾습니다.")
+        }
+
+        @Test
+        @DisplayName("여사원 + FIELD -> 담당 거래처 단일 안내")
+        fun meta_employee_field() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", sfid = "SF001")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(userId, any(), any()) } returns emptyList()
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.FIELD)
+
+            assertThat(result.meta.criteriaLines).containsExactly("이번 달(전월 25일~당월 말일) 본인이 담당하는 거래처")
+        }
+
+        @Test
+        @DisplayName("일반 조장 -> 소속 지점 안내 (scope 무관)")
+        fun meta_leader() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = AppAuthority.LEADER, costCenterCode = "1100")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot(any(), any(), true) } returns emptyList()
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.ORDER)
+
+            assertThat(result.meta.criteriaLines).containsExactly("소속 지점의 거래처가 표시됩니다")
+        }
+
+        @Test
+        @DisplayName("부서장 + SALES -> 전체 거래처 + 전체 검색 안내")
+        fun meta_accountViewAll_sales() {
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20030117", role = AppAuthority.ACCOUNT_VIEW_ALL)
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findDistinctScheduledAccounts(null, any()) } returns emptyList()
+
+            val result = myAccountService.getMyAccounts(userId, null, MyAccountScope.SALES)
+
+            assertThat(result.meta.criteriaLines).containsExactly("일정이 등록된 전체 거래처가 표시됩니다")
+            assertThat(result.meta.searchHint).contains("거래처명·코드로 검색")
+        }
+    }
+
     private fun createEmployee(
         id: Long = 1L,
         employeeCode: String = "12345678",

@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/my_account.dart';
+import '../../../domain/entities/my_account_meta.dart';
 import '../../../domain/repositories/my_account_repository.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/my_accounts_provider.dart';
@@ -70,6 +71,7 @@ class AccountSelectorSheet extends ConsumerStatefulWidget {
 class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
   final TextEditingController _searchController = TextEditingController();
   List<MyAccount> _accounts = [];
+  MyAccountMeta? _meta;
   bool _loading = true;
   String? _error;
 
@@ -97,6 +99,7 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
       if (!mounted) return;
       setState(() {
         _accounts = result.accounts;
+        _meta = result.meta;
         _loading = false;
       });
     } catch (_) {
@@ -116,7 +119,8 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
   /// 표시 기준(어떤 거래처가 목록에 나오는지) 안내 팝업.
   ///
   /// 백엔드(`GET /accounts/my`)가 로그인 사원의 권한·[MyAccountScope] 별로 거래처를 분기 조회하므로,
-  /// 사용자가 "왜 이 거래처들만 보이는지" 알기 어렵다. scope 에 맞는 기준을 사용자 문구로 안내한다.
+  /// 사용자가 "왜 이 거래처들만 보이는지" 알기 어렵다. 동일 분기로 서버가 내려준 [MyAccountMeta] 문구를
+  /// 그대로 표시한다(구버전 서버 응답 등 meta 미제공 시 [_fallbackCriteriaLines] 로 대체).
   void _showCriteriaInfo() {
     showDialog<void>(
       context: context,
@@ -133,7 +137,7 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
               ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              '검색은 표시된 목록 안에서 이름·코드로 찾습니다.',
+              _searchHint,
               style: AppTypography.bodySmall
                   .copyWith(color: AppColors.textSecondary),
             ),
@@ -149,16 +153,19 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
     );
   }
 
-  /// 현재 로그인 사원이 조장(LEADER)인지 여부.
-  ///
-  /// 백엔드 거래처 조회는 조장(`teamleaderAccList`: 소속 지점 거래처)과
-  /// 그 외(`selectMyAccount`: 본인 담당 스케줄 거래처)로 분기하므로, 그에 맞춰 안내 문구를 나눈다.
-  /// 부서장 전체조회(`ACCOUNT_VIEW_ALL`)는 모바일 도메인 role 이 `USER` 로 합쳐져 여사원과 구분되지 않으나,
-  /// 주문/현장 화면에는 부서장 전용 분기가 없어 영향이 없고, 매출(sales) 화면에서만 안내에 함께 표기한다.
+  /// 표시 기준 본문 — 서버 [MyAccountMeta] 우선, 없으면 로컬 폴백.
+  List<String> get _criteriaLines =>
+      _meta?.criteriaLines ?? _fallbackCriteriaLines;
+
+  /// 검색 동작 안내 — 서버 [MyAccountMeta] 우선, 없으면 기본 문구.
+  String get _searchHint =>
+      _meta?.searchHint ?? '검색은 표시된 목록 안에서 이름·코드로 찾습니다.';
+
+  /// 현재 로그인 사원이 조장(LEADER)인지 여부 (서버 meta 미제공 시 폴백 분기에만 사용).
   bool get _isLeader => ref.read(authProvider).user?.role == 'LEADER';
 
-  /// scope × 역할 별 표시 기준 안내 문구 (현재 로그인 사원에게 적용되는 기준만 노출).
-  List<String> get _criteriaLines => switch (widget.scope) {
+  /// 서버 meta 미제공 시 폴백: scope × 역할 별 표시 기준 문구.
+  List<String> get _fallbackCriteriaLines => switch (widget.scope) {
         MyAccountScope.order => _isLeader
             ? const [
                 '소속 지점의 거래처가 표시됩니다',

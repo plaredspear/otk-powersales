@@ -24,6 +24,7 @@ class MyAccountRepositoryImpl implements MyAccountRepository {
     return MyAccountListResult(
       accounts: accounts,
       totalCount: response.totalCount,
+      meta: response.meta,
     );
   }
 }

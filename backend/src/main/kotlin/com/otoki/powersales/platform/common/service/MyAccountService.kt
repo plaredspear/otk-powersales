@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.common.service
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.dto.response.MyAccountInfo
 import com.otoki.powersales.platform.common.dto.response.MyAccountListResponse
+import com.otoki.powersales.platform.common.dto.response.MyAccountMeta
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.exception.AccountInvalidParameterException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
@@ -46,24 +47,25 @@ class MyAccountService(
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
 
+        // C형(매출 계열) 부서장: 일정이 잡힌 전체 거래처 (레거시 selectAllAccount)
+        val isAllScheduled = scope == MyAccountScope.SALES && employee.role == AppAuthority.ACCOUNT_VIEW_ALL
+        // 조장 중 레거시 person-specific 예외(yang_sfid): 팀장 기준 스케줄 거래처 (레거시 selectMyAccount 조장 분기)
+        val isLeaderScheduleException = employee.role == AppAuthority.LEADER && employee.sfid == LEGACY_SCHEDULE_LEADER_SFID
+        // 조장 일반: 지점코드 + 거래처 그룹 1000/1010 (레거시 teamleaderAccList)
+        val isLeader = employee.role == AppAuthority.LEADER && !isLeaderScheduleException
+
         val accounts = when {
-            // C형(매출 계열) 부서장: 일정이 잡힌 전체 거래처 (레거시 selectAllAccount)
             // 전사 거래처는 수천 건이라 keyword 필터 + 상한을 DB 레벨로 푸시다운 (레거시 검색+페이지네이션 정합).
-            scope == MyAccountScope.SALES && employee.role == AppAuthority.ACCOUNT_VIEW_ALL ->
-                getAllScheduledAccounts(keyword)
+            isAllScheduled -> getAllScheduledAccounts(keyword)
 
-            // 조장 중 레거시 person-specific 예외(yang_sfid): 팀장 기준 스케줄 거래처 (레거시 selectMyAccount 조장 분기)
-            employee.role == AppAuthority.LEADER && employee.sfid == LEGACY_SCHEDULE_LEADER_SFID ->
-                getLeaderScheduleAccounts(employee.id, scope)
+            // yang 예외: 본인이 팀장으로 배정된 스케줄 거래처
+            isLeaderScheduleException -> getLeaderScheduleAccounts(employee.id, scope)
 
-            // 조장 일반: 지점코드 + 거래처 그룹 1000/1010 (레거시 teamleaderAccList).
-            // 레거시 주문 셀렉터에서도 abctype 필터가 주석 처리되어 있어 ORDER 여도 분기 동일.
-            employee.role == AppAuthority.LEADER ->
-                getLeaderAccounts(employee.costCenterCode)
+            // 조장 일반. 레거시 주문 셀렉터에서도 abctype 필터가 주석 처리되어 있어 ORDER 여도 분기 동일.
+            isLeader -> getLeaderAccounts(employee.costCenterCode)
 
-            // 여사원/그 외: 본인 팀멤버스케줄 기반 (레거시 selectMyAccount 여사원 분기)
-            else ->
-                getEmployeeAccounts(employee.id, scope)
+            // 여사원/그 외(yang 예외 제외): 본인 팀멤버스케줄 기반 (레거시 selectMyAccount 여사원 분기)
+            else -> getEmployeeAccounts(employee.id, scope)
         }
 
         val filteredList = if (!keyword.isNullOrBlank()) {
@@ -80,7 +82,43 @@ class MyAccountService(
 
         return MyAccountListResponse(
             accounts = sortedList,
-            totalCount = sortedList.size
+            totalCount = sortedList.size,
+            meta = buildMeta(isAllScheduled = isAllScheduled, isLeader = isLeader, scope = scope)
+        )
+    }
+
+    /**
+     * 거래처 표시 기준 안내 문구 생성.
+     *
+     * 실제 거래처 조회에 사용한 권한·scope 분기와 동일한 기준으로 사용자 문구를 만든다(모바일 하드코딩 분기 대체).
+     * yang 예외([isLeaderScheduleException])는 본인 담당 스케줄 기반이라 여사원과 동일 문구로 안내한다.
+     */
+    private fun buildMeta(isAllScheduled: Boolean, isLeader: Boolean, scope: MyAccountScope): MyAccountMeta = when {
+        // 부서장 매출 전체조회: 전사 거래처를 DB 검색(최대 ALL_ACCOUNTS_LIMIT 건)으로 노출
+        isAllScheduled -> MyAccountMeta(
+            criteriaLines = listOf("일정이 등록된 전체 거래처가 표시됩니다"),
+            searchHint = "거래처명·코드로 검색하세요 (최대 ${ALL_ACCOUNTS_LIMIT}건 표시)"
+        )
+
+        // 조장: 소속 지점 거래처 (기간·주문가능유형 필터 없음)
+        isLeader -> MyAccountMeta(
+            criteriaLines = listOf("소속 지점의 거래처가 표시됩니다"),
+            searchHint = DEFAULT_SEARCH_HINT
+        )
+
+        // 여사원/yang 예외 + 주문 화면: 담당·진열 거래처 중 주문 가능 유형만
+        scope == MyAccountScope.ORDER -> MyAccountMeta(
+            criteriaLines = listOf(
+                "이번 달(전월 25일~당월 말일) 본인이 담당·진열하는 거래처",
+                "그중 주문 가능한 거래처 유형만 표시됩니다"
+            ),
+            searchHint = DEFAULT_SEARCH_HINT
+        )
+
+        // 여사원/yang 예외 + 매출/현장 화면: 담당 거래처
+        else -> MyAccountMeta(
+            criteriaLines = listOf("이번 달(전월 25일~당월 말일) 본인이 담당하는 거래처"),
+            searchHint = DEFAULT_SEARCH_HINT
         )
     }
 
@@ -193,5 +231,8 @@ class MyAccountService(
 
         // 부서장 전체조회 결과 상한 — 모바일 드롭다운 과대 응답(broken pipe) 방지. keyword 검색과 함께 사용.
         private const val ALL_ACCOUNTS_LIMIT = 100
+
+        // 기본 검색 안내 — 이미 표시된 목록 내에서 클라이언트 검색하는 경우(부서장 전체조회 제외 전 분기).
+        private const val DEFAULT_SEARCH_HINT = "검색은 표시된 목록 안에서 이름·코드로 찾습니다."
     }
 }
