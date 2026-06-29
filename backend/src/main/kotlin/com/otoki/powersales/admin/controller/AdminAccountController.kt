@@ -117,11 +117,10 @@ class AdminAccountController(
             page = page,
             size = size,
             excludeClosedAccount = true,
-            // SF "내 지점 거래처"(myBranchAccount listView) 동등 — owner 가 아닌 조직코드 매칭으로 가시성
-            // 평가. sharing policy(owner.user_role_id 계층) 로 평가하면 본인 지점 거래처가 owner 불일치로
-            // 전부 누락된다(조장이 본인 지점 이마트 등 검색 시 0건). 행사마스터 등록은 본인 지점 거래처를
-            // owner 무관하게 선택할 수 있어야 한다.
-            applyMyBranchScope = true
+            // SF 행사마스터(PPTMaster) 거래처 lookup 정합 — sharing policy(owner.user_role_id 계층) 대신
+            // CurrentUserBranchNameList 동등 지점 화이트리스트 → branch_code IN 매칭으로 평가. owner 기준이면
+            // 본인 지점 거래처가 owner 불일치로 전부 누락된다(조장이 본인 지점 거래처 검색 시 0건).
+            myBranchScopePrincipal = principal
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }

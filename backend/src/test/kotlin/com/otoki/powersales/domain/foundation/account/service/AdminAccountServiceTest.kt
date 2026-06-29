@@ -4,6 +4,10 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.EntityPathBase
@@ -34,6 +38,8 @@ class AdminAccountServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
     private val policyEvaluator: SharingRulePolicyEvaluator = mockk()
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver = mockk()
+    private val branchCodeExpander: BranchCodeExpander = mockk()
     // 실제 BooleanExpression 인스턴스 — mockk(relaxed=true) 는 BooleanBuilder.and() 의 cast 가 실패하므로
     // QueryDSL Expressions 의 실 인스턴스를 사용해 BooleanBuilder 합성이 동작하도록 한다.
     private val stubPolicyPredicate: Predicate = Expressions.asBoolean(true).isTrue
@@ -41,6 +47,8 @@ class AdminAccountServiceTest {
     private val adminAccountService = AdminAccountService(
         accountRepository,
         policyEvaluator,
+        womenScheduleBranchResolver,
+        branchCodeExpander,
     )
 
     @Nested
@@ -231,13 +239,20 @@ class AdminAccountServiceTest {
     }
 
     @Nested
-    @DisplayName("getAccounts — applyMyBranchScope (SF myAccount__c listView 동등)")
+    @DisplayName("getAccounts — myBranchScopePrincipal (SF 행사마스터 lookup 동등: 지점 화이트리스트 → branch_code IN)")
     inner class MyBranchScopeTests {
 
+        private val principal: WebUserPrincipal = mockk()
+
         @Test
-        @DisplayName("비-전사 사용자 → 조직코드 3단 OR 매칭 (division/salesDept/branch IN branchCodes), buildPredicate 미호출")
-        fun myBranchScopeUsesOrgCodeMatch() {
-            val scope = DataScope(branchCodes = listOf("5832"), isAllBranches = false)
+        @DisplayName("지점 화이트리스트 → BranchCodeExpander 확장 → branch_code IN 매칭, buildPredicate 미호출")
+        fun myBranchScopeUsesBranchCodeIn() {
+            // resolver 가 SF CurrentUserBranchNameList 정합으로 허용 지점 산출
+            every { womenScheduleBranchResolver.resolveBranches(principal) } returns
+                listOf(BranchResponse(branchCode = "5832", branchName = "원주1지점"))
+            // BranchCodeExpander 가 이력 코드까지 확장 (여기선 단순 pass-through + 1개 이력)
+            every { branchCodeExpander.expand(setOf("5832")) } returns setOf("5832", "E5832")
+
             val composedSlot = slot<Predicate>()
             every {
                 accountRepository.findAllAccessibleByPolicy(
@@ -252,16 +267,17 @@ class AdminAccountServiceTest {
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
 
             adminAccountService.getAccounts(
-                scope, null, null, null, null, 0, 20, applyMyBranchScope = true
+                DataScope(branchCodes = emptyList(), isAllBranches = false),
+                null, null, null, null, 0, 20, myBranchScopePrincipal = principal
             )
 
-            // owner 가 아닌 조직코드 3단 OR 매칭 (SF myAccount__c formula 동등)
-            // 단일 코드라 QueryDSL 이 `in [x]` 대신 `= x` 로 최적화 — OR 합성 3절 모두 포함 확인
+            // branch_code IN (확장집합) 단일 필드 매칭 — owner/조직코드 OR 아님
             val predicateStr = composedSlot.captured.toString()
-            assertThat(predicateStr).contains("account.divisionCode = 5832")
-            assertThat(predicateStr).contains("account.salesDeptCode = 5832")
-            assertThat(predicateStr).contains("account.branchCode = 5832")
-            assertThat(predicateStr).contains("||")
+            assertThat(predicateStr).contains("account.branchCode in [")
+            assertThat(predicateStr).contains("5832")
+            assertThat(predicateStr).contains("E5832")
+            assertThat(predicateStr).doesNotContain("account.divisionCode")
+            assertThat(predicateStr).doesNotContain("account.salesDeptCode")
             // sharing policy(owner/hierarchy) 경로는 타지 않음
             verify(exactly = 0) {
                 policyEvaluator.buildPredicate(any(), any(), any())
@@ -269,9 +285,10 @@ class AdminAccountServiceTest {
         }
 
         @Test
-        @DisplayName("전사 권한자(isAllBranches) → 전체 가시 (true predicate), buildPredicate 미호출")
-        fun myBranchScopeAllBranchesSeesAll() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+        @DisplayName("허용 지점 없음 → 매칭 0건 (false predicate)")
+        fun myBranchScopeNoBranchBlocksAll() {
+            every { womenScheduleBranchResolver.resolveBranches(principal) } returns emptyList()
+
             val composedSlot = slot<Predicate>()
             every {
                 accountRepository.findAllAccessibleByPolicy(
@@ -286,42 +303,16 @@ class AdminAccountServiceTest {
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
 
             adminAccountService.getAccounts(
-                scope, null, null, null, null, 0, 20, applyMyBranchScope = true
+                DataScope(branchCodes = emptyList(), isAllBranches = false),
+                null, null, null, null, 0, 20, myBranchScopePrincipal = principal
             )
 
-            // 전사 권한자는 조직코드 매칭 없이 전체 — true predicate
-            assertThat(composedSlot.captured.toString()).doesNotContain("account.divisionCode")
-            verify(exactly = 0) {
-                policyEvaluator.buildPredicate(any(), any(), any())
-            }
+            assertThat(composedSlot.captured.toString()).doesNotContain("account.branchCode in")
+            verify(exactly = 0) { branchCodeExpander.expand(any()) }
         }
 
         @Test
-        @DisplayName("코드 미보유 비-전사 사용자 → 매칭 0건 (false predicate)")
-        fun myBranchScopeNoCodeBlocksAll() {
-            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
-            val composedSlot = slot<Predicate>()
-            every {
-                accountRepository.findAllAccessibleByPolicy(
-                    policyPredicate = capture(composedSlot),
-                    keyword = any(),
-                    abcType = any(),
-                    accountStatusName = any(),
-                    applyPromotionFilter = any(),
-                    excludeClosedAccount = any(),
-                    pageable = any(),
-                )
-            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
-
-            adminAccountService.getAccounts(
-                scope, null, null, null, null, 0, 20, applyMyBranchScope = true
-            )
-
-            assertThat(composedSlot.captured.toString()).doesNotContain("account.divisionCode")
-        }
-
-        @Test
-        @DisplayName("applyMyBranchScope=false (기본) → 기존 sharing policy 경로 유지 (buildPredicate 호출)")
+        @DisplayName("myBranchScopePrincipal=null (기본) → 기존 sharing policy 경로 유지 (buildPredicate 호출)")
         fun defaultStillUsesSharingPolicy() {
             val scope = DataScope(branchCodes = listOf("5832"), isAllBranches = false)
             stubEvaluator(scope)
@@ -336,6 +327,7 @@ class AdminAccountServiceTest {
                     entityPath = any<EntityPathBase<*>>(),
                 )
             }
+            verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
         }
     }
 

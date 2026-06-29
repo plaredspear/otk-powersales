@@ -8,6 +8,9 @@ import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundE
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.dsl.Expressions
@@ -21,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional
 class AdminAccountService(
     private val accountRepository: AccountRepository,
     private val policyEvaluator: SharingRulePolicyEvaluator,
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     /**
@@ -45,13 +50,14 @@ class AdminAccountService(
      *              추가 필터 없음 — lookupFilter 를 메인 목록에 적용하면 과소노출 GAP).
      * @param excludeClosedAccount 폐업 거래처 완전 제외 여부. 진열사원스케줄 마스터 등록 거래처 lookup
      *              진입점만 true — 폐업 거래처는 등록 자체가 차단되므로 조회 후보에서도 제외한다.
-     * @param applyMyBranchScope SF Account "내 지점 거래처"(`myBranchAccount` listView, `myAccount__c=1`)
-     *              동등 — owner 무관 조직코드 매칭으로 가시성을 평가할지 여부. true 면 sharing policy
-     *              (owner/hierarchy) 를 [myBranchScopePredicate] 로 대체한다. 행사마스터 거래처 lookup
-     *              진입점 전용 — SF 레거시 listView 필터(`$User.HR_Code__c == DivisionCode__c OR
-     *              SalesDeptCode__c OR BranchCode__c`)가 owner 가 아닌 조직코드 매칭이라, sharing policy
-     *              (owner.user_role_id 계층) 로 평가하면 본인 지점 거래처가 owner 불일치로 전부 누락되는
-     *              GAP 을 막는다.
+     * @param myBranchScopePrincipal 비-null 이면 SF 행사마스터(PPTMaster) 거래처 lookup 정합 —
+     *              sharing policy(owner/hierarchy) 대신 [myBranchScopePredicate] (지점 화이트리스트 →
+     *              `branch_code IN`) 로 가시성을 평가한다. 행사마스터 거래처 lookup 진입점 전용.
+     *              SF 레거시(`UplExcelBtnPPTMasterController` → `CurrentUserBranchNameList` →
+     *              `Account.BranchCode__c IN (조직트리 지점코드)`)는 owner 가 아닌 지점코드 IN 매칭이라,
+     *              sharing policy(owner.user_role_id 계층) 로 평가하면 본인 지점 거래처가 owner 불일치로
+     *              전부 누락되는 GAP 을 막는다. resolver 가 principal 의 지점 화이트리스트를 산출하므로
+     *              [scope] 가 아닌 principal 이 필요.
      */
     fun getAccounts(
         scope: DataScope,
@@ -63,10 +69,10 @@ class AdminAccountService(
         size: Int,
         applyPromotionFilter: Boolean = true,
         excludeClosedAccount: Boolean = false,
-        applyMyBranchScope: Boolean = false
+        myBranchScopePrincipal: WebUserPrincipal? = null
     ): AccountListResponse {
-        val visibilityPredicate = if (applyMyBranchScope) {
-            myBranchScopePredicate(scope)
+        val visibilityPredicate = if (myBranchScopePrincipal != null) {
+            myBranchScopePredicate(myBranchScopePrincipal)
         } else {
             policyEvaluator.buildPredicate(
                 scope = scope,
@@ -105,34 +111,34 @@ class AdminAccountService(
     }
 
     /**
-     * SF Account `myBranchAccount` listView 의 `myAccount__c = 1` 동등 가시성 predicate.
+     * SF 행사마스터(PPTMaster) 거래처 lookup 의 지점 가시성 동등 predicate.
      *
-     * SF formula (`myAccount__c.field-meta.xml`):
-     * ```
-     * IF($User.HR_Code__c == DivisionCode__c, TRUE,
-     *   IF($User.HR_Code__c == SalesDeptCode__c, TRUE,
-     *     IF($User.HR_Code__c == BranchCode__c, TRUE, FALSE)))
-     * ```
-     * 즉 로그인 사용자의 HR_Code (= Employee.costCenterCode = [DataScope.branchCodes]) 가 거래처의
-     * 조직코드 3종 (사업부 `division_code` / 영업부 `sales_dept_code` / 지점 `branch_code`) 중 하나라도
-     * 일치하면 노출 — owner 무관. [scope.branchCodes] 가 단일 코드라도 `in` 으로 합성해 다중 코드 권한자
-     * (영업지원 등 비-전사 다중지점) 도 동일 식으로 커버한다.
+     * SF 레거시 경로 (`UplExcelBtnPPTMaster` 엑셀 업로드 → 거래처 인라인 lookup):
+     * - `UplExcelBtnPPTMasterController.js` doInit → `CurrentUserBranchNameList.getBranchNames()` 가
+     *   사용자 `CostCenterCode__c`(hrCode) 로 `Org__c` 조직 트리를 펼쳐 휘하 지점/영업부 코드 집합 산출
+     *   (`OrgNameLevel3 IN ('Retail/제1/CVS사업부')` 화이트리스트 + 전사는 UserRole `%영업지원%`/`영업본부`
+     *   기준 제한 사업부). 전사라도 전체가 아니라 특정 사업부 Org 로 제한.
+     * - `whereStr = "BranchCode__c IN (<코드집합>) AND AccountGroup__c IN ('1010','1000')"`
+     * - `LookupController` `with sharing` 동적 SOQL → Account OWD=Private sharing 교집합.
      *
-     * 전사 권한자 ([scope.isAllBranches] = 시스템 관리자 / 본부장·사업부장·영업부장 / 영업지원) 는
-     * 무조건 전체 가시 — SF 에서 상위 조직코드 (OrgCodeLevel3 등) 가 광범위 매칭되는 동작의 단순화.
-     * branchCodes 가 비어있으면 (코드 미보유) 매칭 0건.
+     * 신규 정합: [WomenScheduleBranchResolver.resolveBranches] 가 SF `CurrentUserBranchNameList` 정합으로
+     * 산출한 지점 화이트리스트 (SYSTEM_ADMIN=전체 / 전사=제한 사업부 / 그 외=본인 조직트리) 를
+     * [BranchCodeExpander] (SF `Util.getIncludedBranchCode` 정합) 로 이력 코드 확장한 뒤
+     * `account.branchCode IN (확장집합)` 단일 필드 매칭. 여사원일정 거래처 조회
+     * ([AdminTeamScheduleService.getAccounts]) 와 동일 계열. `AccountGroup__c IN (1000,1010)` 행사필터는
+     * [getAccounts] 의 `applyPromotionFilter` 가 별도 적용.
+     *
+     * 화이트리스트가 비면 매칭 0건 (지점 미보유 사용자).
      */
-    private fun myBranchScopePredicate(scope: DataScope): Predicate {
-        if (scope.isAllBranches) {
-            return Expressions.asBoolean(true).isTrue
-        }
-        if (scope.branchCodes.isEmpty()) {
+    private fun myBranchScopePredicate(principal: WebUserPrincipal): Predicate {
+        val allowedBranchCodes = womenScheduleBranchResolver.resolveBranches(principal)
+            .mapNotNull { it.branchCode }
+            .toSet()
+        if (allowedBranchCodes.isEmpty()) {
             return Expressions.asBoolean(false).isTrue
         }
-        val codes = scope.branchCodes
-        return account.divisionCode.`in`(codes)
-            .or(account.salesDeptCode.`in`(codes))
-            .or(account.branchCode.`in`(codes))
+        val expanded = branchCodeExpander.expand(allowedBranchCodes)
+        return account.branchCode.`in`(expanded)
     }
 
     /**
