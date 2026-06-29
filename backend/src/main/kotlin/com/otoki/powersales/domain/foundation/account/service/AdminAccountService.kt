@@ -9,6 +9,8 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.dsl.Expressions
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -43,6 +45,13 @@ class AdminAccountService(
      *              추가 필터 없음 — lookupFilter 를 메인 목록에 적용하면 과소노출 GAP).
      * @param excludeClosedAccount 폐업 거래처 완전 제외 여부. 진열사원스케줄 마스터 등록 거래처 lookup
      *              진입점만 true — 폐업 거래처는 등록 자체가 차단되므로 조회 후보에서도 제외한다.
+     * @param applyMyBranchScope SF Account "내 지점 거래처"(`myBranchAccount` listView, `myAccount__c=1`)
+     *              동등 — owner 무관 조직코드 매칭으로 가시성을 평가할지 여부. true 면 sharing policy
+     *              (owner/hierarchy) 를 [myBranchScopePredicate] 로 대체한다. 행사마스터 거래처 lookup
+     *              진입점 전용 — SF 레거시 listView 필터(`$User.HR_Code__c == DivisionCode__c OR
+     *              SalesDeptCode__c OR BranchCode__c`)가 owner 가 아닌 조직코드 매칭이라, sharing policy
+     *              (owner.user_role_id 계층) 로 평가하면 본인 지점 거래처가 owner 불일치로 전부 누락되는
+     *              GAP 을 막는다.
      */
     fun getAccounts(
         scope: DataScope,
@@ -53,17 +62,22 @@ class AdminAccountService(
         page: Int,
         size: Int,
         applyPromotionFilter: Boolean = true,
-        excludeClosedAccount: Boolean = false
+        excludeClosedAccount: Boolean = false,
+        applyMyBranchScope: Boolean = false
     ): AccountListResponse {
-        val policyPredicate = policyEvaluator.buildPredicate(
-            scope = scope,
-            sObjectName = "Account",
-            entityPath = account,
-        )
+        val visibilityPredicate = if (applyMyBranchScope) {
+            myBranchScopePredicate(scope)
+        } else {
+            policyEvaluator.buildPredicate(
+                scope = scope,
+                sObjectName = "Account",
+                entityPath = account,
+            )
+        }
 
         // branchCode request param 은 별도 추가 필터로 AND 합성 — BooleanBuilder 합성.
         // sharing policy 가 가시성 평가 → branchCode 가 가시 범위 외면 매칭 0건 (자연 처리).
-        val composedPolicyPredicate = BooleanBuilder().and(policyPredicate).also {
+        val composedPolicyPredicate = BooleanBuilder().and(visibilityPredicate).also {
             if (!branchCode.isNullOrBlank()) {
                 it.and(account.branchCode.eq(branchCode))
             }
@@ -88,6 +102,37 @@ class AdminAccountService(
             totalElements = accountPage.totalElements,
             totalPages = accountPage.totalPages
         )
+    }
+
+    /**
+     * SF Account `myBranchAccount` listView 의 `myAccount__c = 1` 동등 가시성 predicate.
+     *
+     * SF formula (`myAccount__c.field-meta.xml`):
+     * ```
+     * IF($User.HR_Code__c == DivisionCode__c, TRUE,
+     *   IF($User.HR_Code__c == SalesDeptCode__c, TRUE,
+     *     IF($User.HR_Code__c == BranchCode__c, TRUE, FALSE)))
+     * ```
+     * 즉 로그인 사용자의 HR_Code (= Employee.costCenterCode = [DataScope.branchCodes]) 가 거래처의
+     * 조직코드 3종 (사업부 `division_code` / 영업부 `sales_dept_code` / 지점 `branch_code`) 중 하나라도
+     * 일치하면 노출 — owner 무관. [scope.branchCodes] 가 단일 코드라도 `in` 으로 합성해 다중 코드 권한자
+     * (영업지원 등 비-전사 다중지점) 도 동일 식으로 커버한다.
+     *
+     * 전사 권한자 ([scope.isAllBranches] = 시스템 관리자 / 본부장·사업부장·영업부장 / 영업지원) 는
+     * 무조건 전체 가시 — SF 에서 상위 조직코드 (OrgCodeLevel3 등) 가 광범위 매칭되는 동작의 단순화.
+     * branchCodes 가 비어있으면 (코드 미보유) 매칭 0건.
+     */
+    private fun myBranchScopePredicate(scope: DataScope): Predicate {
+        if (scope.isAllBranches) {
+            return Expressions.asBoolean(true).isTrue
+        }
+        if (scope.branchCodes.isEmpty()) {
+            return Expressions.asBoolean(false).isTrue
+        }
+        val codes = scope.branchCodes
+        return account.divisionCode.`in`(codes)
+            .or(account.salesDeptCode.`in`(codes))
+            .or(account.branchCode.`in`(codes))
     }
 
     /**

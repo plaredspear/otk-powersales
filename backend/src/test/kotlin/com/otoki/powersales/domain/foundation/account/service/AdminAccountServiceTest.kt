@@ -231,6 +231,115 @@ class AdminAccountServiceTest {
     }
 
     @Nested
+    @DisplayName("getAccounts — applyMyBranchScope (SF myAccount__c listView 동등)")
+    inner class MyBranchScopeTests {
+
+        @Test
+        @DisplayName("비-전사 사용자 → 조직코드 3단 OR 매칭 (division/salesDept/branch IN branchCodes), buildPredicate 미호출")
+        fun myBranchScopeUsesOrgCodeMatch() {
+            val scope = DataScope(branchCodes = listOf("5832"), isAllBranches = false)
+            val composedSlot = slot<Predicate>()
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = capture(composedSlot),
+                    keyword = any(),
+                    abcType = any(),
+                    accountStatusName = any(),
+                    applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
+                    pageable = any(),
+                )
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+
+            adminAccountService.getAccounts(
+                scope, null, null, null, null, 0, 20, applyMyBranchScope = true
+            )
+
+            // owner 가 아닌 조직코드 3단 OR 매칭 (SF myAccount__c formula 동등)
+            // 단일 코드라 QueryDSL 이 `in [x]` 대신 `= x` 로 최적화 — OR 합성 3절 모두 포함 확인
+            val predicateStr = composedSlot.captured.toString()
+            assertThat(predicateStr).contains("account.divisionCode = 5832")
+            assertThat(predicateStr).contains("account.salesDeptCode = 5832")
+            assertThat(predicateStr).contains("account.branchCode = 5832")
+            assertThat(predicateStr).contains("||")
+            // sharing policy(owner/hierarchy) 경로는 타지 않음
+            verify(exactly = 0) {
+                policyEvaluator.buildPredicate(any(), any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("전사 권한자(isAllBranches) → 전체 가시 (true predicate), buildPredicate 미호출")
+        fun myBranchScopeAllBranchesSeesAll() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val composedSlot = slot<Predicate>()
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = capture(composedSlot),
+                    keyword = any(),
+                    abcType = any(),
+                    accountStatusName = any(),
+                    applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
+                    pageable = any(),
+                )
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+
+            adminAccountService.getAccounts(
+                scope, null, null, null, null, 0, 20, applyMyBranchScope = true
+            )
+
+            // 전사 권한자는 조직코드 매칭 없이 전체 — true predicate
+            assertThat(composedSlot.captured.toString()).doesNotContain("account.divisionCode")
+            verify(exactly = 0) {
+                policyEvaluator.buildPredicate(any(), any(), any())
+            }
+        }
+
+        @Test
+        @DisplayName("코드 미보유 비-전사 사용자 → 매칭 0건 (false predicate)")
+        fun myBranchScopeNoCodeBlocksAll() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = false)
+            val composedSlot = slot<Predicate>()
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = capture(composedSlot),
+                    keyword = any(),
+                    abcType = any(),
+                    accountStatusName = any(),
+                    applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
+                    pageable = any(),
+                )
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+
+            adminAccountService.getAccounts(
+                scope, null, null, null, null, 0, 20, applyMyBranchScope = true
+            )
+
+            assertThat(composedSlot.captured.toString()).doesNotContain("account.divisionCode")
+        }
+
+        @Test
+        @DisplayName("applyMyBranchScope=false (기본) → 기존 sharing policy 경로 유지 (buildPredicate 호출)")
+        fun defaultStillUsesSharingPolicy() {
+            val scope = DataScope(branchCodes = listOf("5832"), isAllBranches = false)
+            stubEvaluator(scope)
+            stubFindAllAccessibleByPolicy(emptyList())
+
+            adminAccountService.getAccounts(scope, null, null, null, null, 0, 20)
+
+            verify(exactly = 1) {
+                policyEvaluator.buildPredicate(
+                    scope = scope,
+                    sObjectName = "Account",
+                    entityPath = any<EntityPathBase<*>>(),
+                )
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("getAccountDetail — sharing policy 단건 조회")
     inner class GetAccountDetailTests {
 
