@@ -72,8 +72,9 @@ class EmployeeUpsertService(
             .asSequence()
             .filter { it.companyCode == OTOKI_COMPANY_CODE }
             .mapNotNull { entry ->
+                val code = entry.detailCode ?: return@mapNotNull null
                 val name = entry.detailCodeName ?: return@mapNotNull null
-                entry.detailCode to name
+                code to name
             }
             .toMap()
 

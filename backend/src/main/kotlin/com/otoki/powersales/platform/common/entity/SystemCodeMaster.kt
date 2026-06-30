@@ -11,17 +11,19 @@ class SystemCodeMaster(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
+    // SF nillable=true 정합 — SAP inbound 무검증 raw 적재 (IF_REST_SAP_SystemCodeMaster).
+    // 식별은 합성 키 external_key(NOT NULL+UNIQUE)가 담당한다.
     @FieldName("회사코드")
-    @Column(name = "company_code", nullable = false, length = 10)
-    var companyCode: String,
+    @Column(name = "company_code", length = 10)
+    var companyCode: String? = null,
 
     @FieldName("그룹코드")
-    @Column(name = "group_code", nullable = false, length = 20)
-    var groupCode: String,
+    @Column(name = "group_code", length = 20)
+    var groupCode: String? = null,
 
     @FieldName("상세코드")
-    @Column(name = "detail_code", nullable = false, length = 20)
-    var detailCode: String,
+    @Column(name = "detail_code", length = 20)
+    var detailCode: String? = null,
 
     @FieldName("그룹코드명")
     @Column(name = "group_code_name", length = 100)

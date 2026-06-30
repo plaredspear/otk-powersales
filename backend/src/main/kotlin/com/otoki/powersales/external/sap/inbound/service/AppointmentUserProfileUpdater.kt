@@ -178,7 +178,7 @@ class AppointmentUserProfileUpdater(
     internal fun loadSystemCodeMap(): Map<String, String> {
         val groupCodes = CODE_GROUP_MAP.values.toList()
         val codes = systemCodeMasterRepository.findByGroupCodeIn(groupCodes)
-        return codes.associate { "${it.groupCode}:${it.detailCode}" to (it.detailCodeName ?: it.detailCode) }
+        return codes.associate { "${it.groupCode}:${it.detailCode}" to (it.detailCodeName ?: it.detailCode.orEmpty()) }
     }
 
     /**
