@@ -52,7 +52,7 @@ val describeDir: File? = args.firstOrNull { it.startsWith("--describe-dir=") }
  */
 val EXPECTED_META_ONLY: Set<String> = setOf(
     "Organization:Id", "Account:Id", "Product:Id", "Promotion:Id",
-    "Group:Id", "Employee:Id", "StaffReview:Id", "User:Id", "Notice:Id",
+    "Group:Id", "Employee:Id", "User:Id", "Notice:Id",
     "AccountCategoryMaster:Id", "AgreementHistory:Id", "AgreementWord:Id", "AlternativeHoliday:Id",
     "Appointment:Id", "AttendanceLog:Id", "AttendInfo:Id",
     "Claim:Id", "DisplayWorkSchedule:Id", "EmployeeInputCriteriaMaster:Id", "ErpOrder:Id",

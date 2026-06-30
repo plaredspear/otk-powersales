@@ -370,26 +370,6 @@ FROM DKRetail__Promotion__c
 EOF
 )
 
-# StaffReview__c — OwnerId 필드 없음 (SF describe). audit (CreatedById/LastModifiedById) = User.
-# BranchReviews__c 는 buffer 만 (BranchReview 도메인 미복원). Formula 필드 (Branch/CostCenterCode/
-# EmployeeName/EmployeeNumber/EmployeeTotalScore/EmployeeType/EntryDate/Jikwee) 는 SOQL 로 읽어 캐시 컬럼에 적재.
-STAFF_REVIEW_SOQL=$(cat <<'EOF'
-SELECT
-    Id, Name,
-    DKRetail_EmployeeId__c, EmployeeName__c, EmployeeNumber__c,
-    Branch__c, BranchReviews__c, CostCenterCode__c,
-    EmployeeTotalScore__c,
-    Attendance__c, InstructionsDefault__c, Priority_EventItemManage__c,
-    DisplayManageEventGoals__c, BusinessPartnerTies__c, ClothesSatellite__c,
-    ProductManageCallment__c, EducationalEvaluation__c,
-    DKRetail_WorkingCategory1__c, DKRetail_WorkingCategory2__c, DKRetail_WorkingCategory3__c,
-    JobCode__c, FirstDayofMonth__c,
-    EmployeeType__c, EntryDate__c, Jikwee__c,
-    IsDeleted, CreatedById, LastModifiedById, CreatedDate, LastModifiedDate
-FROM StaffReview__c
-EOF
-)
-
 NOTICE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, Title__c, EmployeeId__c,
@@ -1095,10 +1075,6 @@ fi
 
 if contains_target "Employee"; then
     run_query "Employee (DKRetail__Employee__c)" "$EMPLOYEE_SOQL" "$OUT_DIR/employees.csv"
-fi
-
-if contains_target "StaffReview"; then
-    run_query "StaffReview (StaffReview__c)" "$STAFF_REVIEW_SOQL" "$OUT_DIR/staff_reviews.csv"
 fi
 
 if contains_target "User"; then
