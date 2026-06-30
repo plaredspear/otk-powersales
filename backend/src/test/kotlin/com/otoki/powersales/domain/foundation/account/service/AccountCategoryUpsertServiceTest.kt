@@ -3,29 +3,29 @@ package com.otoki.powersales.domain.foundation.account.service
 import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountCategoryUpsertCommand
-import com.otoki.powersales.domain.foundation.account.service.AccountCategoryUpsertService
 import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.dao.DataIntegrityViolationException
 
 @DisplayName("AccountCategoryUpsertService 테스트")
 class AccountCategoryUpsertServiceTest {
 
     private val accountCategoryMasterRepository: AccountCategoryMasterRepository = mockk()
 
-    private val service = AccountCategoryUpsertService(
-        accountCategoryMasterRepository,
-    )
+    // 행 단위 트랜잭션 빈 — 테스트에서는 실제 빈을 mock repository 로 구성 (REQUIRES_NEW 는 단위 테스트 무관).
+    private val rowUpsertService = AccountCategoryRowUpsertService(accountCategoryMasterRepository)
 
-    private fun stubSaveAllCapture(): CapturingSlot<List<AccountCategoryMaster>> {
-        val slot = slot<List<AccountCategoryMaster>>()
-        every { accountCategoryMasterRepository.saveAll(capture(slot)) } answers { firstArg<List<AccountCategoryMaster>>() }
+    private val service = AccountCategoryUpsertService(rowUpsertService)
+
+    private fun stubSaveAndFlushCapture(): CapturingSlot<AccountCategoryMaster> {
+        val slot = slot<AccountCategoryMaster>()
+        every { accountCategoryMasterRepository.saveAndFlush(capture(slot)) } answers { firstArg<AccountCategoryMaster>() }
         return slot
     }
 
@@ -37,13 +37,12 @@ class AccountCategoryUpsertServiceTest {
         @DisplayName("신규 카테고리 1건 - INSERT, success_count=1")
         fun upsert_insertNew() {
             every { accountCategoryMasterRepository.findByAccountCode("Z001") } returns null
-            val savedSlot = stubSaveAllCapture()
+            val savedSlot = stubSaveAndFlushCapture()
 
             val result = service.upsert(listOf(AccountCategoryUpsertCommand(accountCode = "Z001", name = "일반거래처")))
 
-            assertThat(savedSlot.captured).hasSize(1)
-            assertThat(savedSlot.captured[0].accountCode).isEqualTo("Z001")
-            assertThat(savedSlot.captured[0].name).isEqualTo("일반거래처")
+            assertThat(savedSlot.captured.accountCode).isEqualTo("Z001")
+            assertThat(savedSlot.captured.name).isEqualTo("일반거래처")
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
         }
@@ -53,11 +52,11 @@ class AccountCategoryUpsertServiceTest {
         fun upsert_updateExisting() {
             val existing = AccountCategoryMaster(accountCode = "Z001", name = "기존이름")
             every { accountCategoryMasterRepository.findByAccountCode("Z001") } returns existing
-            val savedSlot = stubSaveAllCapture()
+            val savedSlot = stubSaveAndFlushCapture()
 
             service.upsert(listOf(AccountCategoryUpsertCommand(accountCode = "Z001", name = "새이름")))
 
-            val saved = savedSlot.captured.single()
+            val saved = savedSlot.captured
             assertThat(saved).isSameAs(existing)
             assertThat(saved.name).isEqualTo("새이름")
         }
@@ -66,7 +65,7 @@ class AccountCategoryUpsertServiceTest {
         @DisplayName("다중 행 - 모두 적재")
         fun upsert_multipleItems() {
             every { accountCategoryMasterRepository.findByAccountCode(any()) } returns null
-            stubSaveAllCapture()
+            stubSaveAndFlushCapture()
 
             val result = service.upsert(
                 listOf(
@@ -81,51 +80,61 @@ class AccountCategoryUpsertServiceTest {
     }
 
     @Nested
-    @DisplayName("upsert - Error Path")
-    inner class UpsertError {
+    @DisplayName("upsert - 레거시 정합 (필수 검증 제거 — AccountCode/Name nillable raw 적재)")
+    inner class UpsertLegacyAlignment {
 
         @Test
-        @DisplayName("AccountCode 누락 - failures 기록, identifier null, 적재 스킵")
-        fun upsert_missingAccountCode() {
-            val result = service.upsert(listOf(AccountCategoryUpsertCommand(accountCode = null, name = "일반거래처")))
-
-            assertThat(result.successCount).isEqualTo(0)
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().identifier).isNull()
-            assertThat(result.failures.single().reason).contains("AccountCode 필수")
-            verify(exactly = 0) { accountCategoryMasterRepository.saveAll(any<List<AccountCategoryMaster>>()) }
-        }
-
-        @Test
-        @DisplayName("Name 누락 - failures 에 accountCode 와 함께 기록")
-        fun upsert_missingName() {
+        @DisplayName("Name 누락 - 검증 없이 name=null 로 적재 (SF nillable=true 정합)")
+        fun upsert_missingName_rawStored() {
             every { accountCategoryMasterRepository.findByAccountCode("Z001") } returns null
-            every { accountCategoryMasterRepository.saveAll(any<List<AccountCategoryMaster>>()) } answers { firstArg<List<AccountCategoryMaster>>() }
+            val savedSlot = stubSaveAndFlushCapture()
 
             val result = service.upsert(listOf(AccountCategoryUpsertCommand(accountCode = "Z001", name = null)))
 
-            assertThat(result.successCount).isEqualTo(0)
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().identifier).isEqualTo("Z001")
-            assertThat(result.failures.single().reason).contains("Name 필수")
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(savedSlot.captured.accountCode).isEqualTo("Z001")
+            assertThat(savedSlot.captured.name).isNull()
         }
 
         @Test
-        @DisplayName("일부 행 실패 - 성공 행은 적재, 실패 행은 failures 누적")
-        fun upsert_partialFailure() {
+        @DisplayName("AccountCode 누락 - 검증 없이 accountCode=null 로 적재 (SF required=false 정합)")
+        fun upsert_missingAccountCode_rawStored() {
+            val savedSlot = stubSaveAndFlushCapture()
+
+            val result = service.upsert(listOf(AccountCategoryUpsertCommand(accountCode = null, name = "일반거래처")))
+
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(savedSlot.captured.accountCode).isNull()
+            assertThat(savedSlot.captured.name).isEqualTo("일반거래처")
+        }
+    }
+
+    @Nested
+    @DisplayName("upsert - Error Path (UNIQUE 충돌 행 격리)")
+    inner class UpsertError {
+
+        @Test
+        @DisplayName("account_code UNIQUE 충돌 - 그 행만 failures, 트랜잭션 전체 롤백 안 함")
+        fun upsert_uniqueViolation_isolatedAsFailure() {
             every { accountCategoryMasterRepository.findByAccountCode(any()) } returns null
-            stubSaveAllCapture()
+            // Z001 정상, Z002 는 UNIQUE 충돌 (saveAndFlush 시 DataIntegrityViolationException)
+            every { accountCategoryMasterRepository.saveAndFlush(match { it.accountCode == "Z001" }) } answers { firstArg() }
+            every { accountCategoryMasterRepository.saveAndFlush(match { it.accountCode == "Z002" }) } throws
+                DataIntegrityViolationException("duplicate key value violates unique constraint")
 
             val result = service.upsert(
                 listOf(
                     AccountCategoryUpsertCommand(accountCode = "Z001", name = "정상"),
-                    AccountCategoryUpsertCommand(accountCode = "Z002", name = null)
+                    AccountCategoryUpsertCommand(accountCode = "Z002", name = "중복")
                 )
             )
 
             assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isEqualTo("Z002")
+            assertThat(result.failures.single().reason).contains("적재 실패")
         }
     }
 }

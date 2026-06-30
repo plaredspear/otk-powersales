@@ -55,8 +55,9 @@ class AccountCategoryMaster(
 
     @SFField("Name")
     @FieldName("이름")
-    @Column(name = "name", nullable = false, length = 80)
-    var name: String,
+    // SF nillable=true 정합 — SAP inbound 무검증 raw 적재 + 마이그레이션 SF NULL row 보존.
+    @Column(name = "name", length = 80)
+    var name: String? = null,
 
     @SFField("useSearch__c")
     @FieldName("조회화면이용")

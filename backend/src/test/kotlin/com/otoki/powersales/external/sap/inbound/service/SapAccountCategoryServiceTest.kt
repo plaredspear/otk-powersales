@@ -47,13 +47,13 @@ class SapAccountCategoryServiceTest {
         fun partialFailure_failureRowsMapped() {
             val items = listOf(
                 AccountCategoryRequestItem(accountCode = "Z001", name = "정상"),
-                AccountCategoryRequestItem(accountCode = "Z002", name = null)
+                AccountCategoryRequestItem(accountCode = "Z002", name = "중복")
             )
             every { accountCategoryUpsertService.upsert(any()) } returns
                 AccountCategoryUpsertResult(
                     successCount = 1,
                     failureCount = 1,
-                    failures = listOf(AccountCategoryUpsertFailedRow(identifier = "Z002", reason = "Name 필수"))
+                    failures = listOf(AccountCategoryUpsertFailedRow(identifier = "Z002", reason = "적재 실패: duplicate key"))
                 )
 
             val detail = service.upsert(items)
@@ -62,7 +62,7 @@ class SapAccountCategoryServiceTest {
             assertThat(detail.failureCount).isEqualTo(1)
             assertThat(detail.failures).hasSize(1)
             assertThat(detail.failures.single().identifier).isEqualTo("Z002")
-            assertThat(detail.failures.single().reason).isEqualTo("Name 필수")
+            assertThat(detail.failures.single().reason).isEqualTo("적재 실패: duplicate key")
         }
 
         @Test
