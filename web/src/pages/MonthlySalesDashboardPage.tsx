@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Card, Col, Empty, Input, Row, Spin, Statistic, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
@@ -84,6 +84,21 @@ export default function MonthlySalesDashboardPage() {
       customerKeyword: customerKeyword.trim() || undefined,
     });
   };
+
+  // 단일지점 사용자는 PeriodBranchFilterBar 가 본인 지점을 자동 선택하므로,
+  // 최초 진입 시(아직 조회 전) 별도 조회 버튼 클릭 없이 바로 결과를 보여준다.
+  useEffect(() => {
+    if (queryParams === null && selectedCodes.length === 1) {
+      setQueryParams({
+        year,
+        month,
+        codes: selectedCodes,
+        customerKeyword: customerKeyword.trim() || undefined,
+      });
+    }
+    // 최초 자동 조회만 담당 — queryParams 가 채워진 뒤의 재조회는 사용자 조작에 맡긴다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCodes, queryParams]);
 
   const { run: runExport, downloading: exporting } = useExcelDownload();
 
