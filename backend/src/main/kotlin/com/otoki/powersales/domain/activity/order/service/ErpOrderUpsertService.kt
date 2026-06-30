@@ -26,9 +26,11 @@ import java.time.format.DateTimeFormatter
  *
  * ## 레거시 동작 요약
  * 1. 입력: `List<ErpOrderUpsertCommand>` (헤더 + 라인 중첩 모델).
- * 2. cross-domain lookup: [AccountRepository.findByExternalKeyIn] (Account 매칭 검증, 미존재 → 행 단위 failure).
+ * 2. cross-domain lookup: [AccountRepository.findByExternalKeyIn] (Account 매칭 — 미존재 시 FK null 로 적재, 거부 안 함).
  * 3. 헤더 UPSERT 키 ([ErpOrder.sapOrderNumber]) 로 [ErpOrderRepository.findBySapOrderNumber] 조회 후 entity 갱신/생성.
- * 4. 행 단위 검증 (필수값 누락 / Account 매칭 실패) → failures 누적, 적재 제외 (트랜잭션 롤백 없음).
+ * 4. 레거시 정합 — 수신 필드 명시 필수/형식 검증으로 행을 거부하지 않는다 (레거시 IF_REST_SAP_ClientOrderReceive
+ *    에 그런 게이트 없음). 헤더 upsert 키 [ErpOrder.sapOrderNumber](NOT NULL+UNIQUE, SF `Name` 정합)만
+ *    누락 행이 saveAllAndFlush 단계 DB 제약에서 행 격리된다 (allOrNone=false 동등).
  * 5. 단일 `@Transactional` 안에서 다단 saveAll:
  *    - [ErpOrderRepository.saveAllAndFlush] (헤더)
  *    - 라인 entity 빌드 (헤더 ID 참조 + externalKey 도출)
@@ -73,21 +75,19 @@ class ErpOrderUpsertService(
         val acceptedLinesByHeader = mutableMapOf<String, List<ErpOrderLineCommand>>()
 
         commands.forEach { command ->
+            // 레거시 IF_REST_SAP_ClientOrderReceive 정합 — 수신 필드에 대한 명시적 필수/형식 검증으로
+            // 행을 거부하는 코드가 레거시에 전무하다. SAPOrderNumber/SAPAccountCode 누락도 그대로 적재하고,
+            // 거래처 미존재 시에도 (레거시는 NPE 로 배치 전체가 ERROR 가 되는 우발 동작이나, 그 버그성 전체
+            // 실패는 재현하지 않고) account FK 를 null 로 둔 채 헤더를 적재해 행 격리를 유지한다.
+            // 단 헤더 upsert 키(sap_order_number, NOT NULL+UNIQUE)는 SF `Name` upsert 키 정합으로
+            // 누락 행만 DB 제약에서 격리되도록 둔다 — 빈 키 헤더는 saveAllAndFlush 단계에서 행 단위 실패.
             val sapOrderNumber = command.sapOrderNumber?.takeIf { it.isNotBlank() }
-            val sapAccountCode = command.sapAccountCode?.takeIf { it.isNotBlank() }
             if (sapOrderNumber == null) {
-                failures += ErpOrderUpsertFailedRow(command.sapOrderNumber, "SAPOrderNumber 필수")
+                failures += ErpOrderUpsertFailedRow(command.sapOrderNumber, "SAPOrderNumber 필수 (헤더 upsert 키)")
                 return@forEach
             }
-            if (sapAccountCode == null) {
-                failures += ErpOrderUpsertFailedRow(sapOrderNumber, "SAPAccountCode 필수")
-                return@forEach
-            }
-            val account = accountByCode[sapAccountCode]
-            if (account == null) {
-                failures += ErpOrderUpsertFailedRow(sapOrderNumber, "account not found")
-                return@forEach
-            }
+            val sapAccountCode = command.sapAccountCode?.takeIf { it.isNotBlank() }
+            val account = sapAccountCode?.let { accountByCode[it] }
 
             val entity = existingHeaders[sapOrderNumber]?.also { applyHeaderFields(it, command, account) }
                 ?: ErpOrder(sapOrderNumber = sapOrderNumber).also {
@@ -127,11 +127,12 @@ class ErpOrderUpsertService(
         )
     }
 
-    private fun applyHeaderFields(entity: ErpOrder, command: ErpOrderUpsertCommand, account: Account) {
-        // 레거시 ERP_Order__c.AccountId__c (MasterDetail→Account) 정합:
+    private fun applyHeaderFields(entity: ErpOrder, command: ErpOrderUpsertCommand, account: Account?) {
+        // 레거시 ERP_Order__c.AccountId__c (lookup→Account) 정합:
         // SAPAccountCode → Account.externalKey 로 resolve 한 거래처를 FK + SF Id 양쪽에 연결.
+        // 거래처 미존재(또는 SAPAccountCode 누락) 시 account=null → FK/SFId 미연결로 적재 (레거시 검증 부재 정합).
         entity.account = account
-        entity.accountSfid = account.sfid
+        entity.accountSfid = account?.sfid
         entity.sapAccountCode = command.sapAccountCode
         entity.sapAccountName = command.sapAccountName
         entity.deliveryRequestDate = parseDate(command.deliveryRequestDate)

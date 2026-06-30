@@ -363,53 +363,59 @@ class ErpOrderUpsertServiceTest {
     }
 
     @Nested
-    @DisplayName("upsert - Error Path")
-    inner class UpsertError {
+    @DisplayName("upsert - 레거시 정합 (수신 필드 명시 필수/거래처 검증 제거)")
+    inner class UpsertLegacyAlignment {
 
         @Test
-        @DisplayName("Account 매칭 실패 - 헤더 failure, 라인도 미적재")
-        fun upsert_accountNotFound() {
+        @DisplayName("Account 매칭 실패 - 검증 없이 account FK null 로 헤더+라인 적재 (레거시 검증 부재 정합)")
+        fun upsert_accountNotFound_storedWithNullFk() {
             every { accountRepository.findByExternalKeyIn(listOf("9999999")) } returns emptyList()
             every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
+            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            mockHeaderSave()
+            val headerCaptor = slot<List<ErpOrder>>()
+            every { erpOrderRepository.saveAllAndFlush(capture(headerCaptor)) } answers { firstArg<List<ErpOrder>>() }
+            every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
 
             val result = service.upsert(listOf(command(sapAccountCode = "9999999")))
 
-            assertThat(result.headerSuccessCount).isEqualTo(0)
-            assertThat(result.lineSuccessCount).isEqualTo(0)
-            assertThat(result.failures.single().identifier).isEqualTo("0010012345")
-            assertThat(result.failures.single().reason).isEqualTo("account not found")
-            verify(exactly = 0) { erpOrderRepository.saveAllAndFlush(any<List<ErpOrder>>()) }
-            verify(exactly = 0) { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) }
+            assertThat(result.headerSuccessCount).isEqualTo(1)
+            assertThat(result.lineSuccessCount).isEqualTo(1)
+            assertThat(result.failures).isEmpty()
+            val saved = headerCaptor.captured.single()
+            // 거래처 미존재 → FK/SFId 미연결, sapAccountCode 원본은 보존 (레거시 raw 적재 정합).
+            assertThat(saved.account).isNull()
+            assertThat(saved.accountSfid).isNull()
+            assertThat(saved.sapAccountCode).isEqualTo("9999999")
         }
 
         @Test
-        @DisplayName("SAPOrderNumber 누락 - failures 기록")
-        fun upsert_missingOrderNumber() {
-            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-
-            val result = service.upsert(listOf(command(sapOrderNumber = null)))
-
-            assertThat(result.failures.single().reason).contains("SAPOrderNumber 필수")
-        }
-
-        @Test
-        @DisplayName("SAPAccountCode 누락 - failures 기록")
-        fun upsert_missingAccountCode() {
+        @DisplayName("SAPAccountCode 누락 - 검증 없이 account FK null 로 적재")
+        fun upsert_missingAccountCode_storedWithNullFk() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
             every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
+            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            mockHeaderSave()
+            val headerCaptor = slot<List<ErpOrder>>()
+            every { erpOrderRepository.saveAllAndFlush(capture(headerCaptor)) } answers { firstArg<List<ErpOrder>>() }
+            every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
 
             val result = service.upsert(listOf(command(sapAccountCode = null)))
 
-            assertThat(result.failures.single().reason).contains("SAPAccountCode 필수")
+            assertThat(result.headerSuccessCount).isEqualTo(1)
+            assertThat(result.failures).isEmpty()
+            assertThat(headerCaptor.captured.single().account).isNull()
         }
 
         @Test
-        @DisplayName("부분 실패 - 1건 성공 + 1건 Account 매칭 실패")
-        fun upsert_partialAccountMatch() {
+        @DisplayName("부분 처리 - 거래처 있는 행/없는 행 모두 적재 (없는 행은 FK null)")
+        fun upsert_partialAccountMatch_bothStored() {
             every { accountRepository.findByExternalKeyIn(listOf("1032619", "9999999")) } returns listOf(account("1032619"))
             every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
             every { erpOrderProductRepository.findByExternalKey(any()) } returns null
             mockHeaderSave()
+            val headerCaptor = slot<List<ErpOrder>>()
+            every { erpOrderRepository.saveAllAndFlush(capture(headerCaptor)) } answers { firstArg<List<ErpOrder>>() }
             every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
 
             val result = service.upsert(
@@ -419,9 +425,28 @@ class ErpOrderUpsertServiceTest {
                 )
             )
 
-            assertThat(result.headerSuccessCount).isEqualTo(1)
-            assertThat(result.failures.single().identifier).isEqualTo("0010000002")
-            assertThat(result.failures.single().reason).isEqualTo("account not found")
+            assertThat(result.headerSuccessCount).isEqualTo(2)
+            assertThat(result.failures).isEmpty()
+            val byNumber = headerCaptor.captured.associateBy { it.sapOrderNumber }
+            assertThat(byNumber["0010000001"]?.account?.externalKey).isEqualTo("1032619")
+            assertThat(byNumber["0010000002"]?.account).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("upsert - Error Path")
+    inner class UpsertError {
+
+        @Test
+        @DisplayName("SAPOrderNumber 누락 - 헤더 upsert 키 부재라 failures 기록 (SF Name 키 정합)")
+        fun upsert_missingOrderNumber() {
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
+
+            val result = service.upsert(listOf(command(sapOrderNumber = null)))
+
+            assertThat(result.headerSuccessCount).isEqualTo(0)
+            assertThat(result.failures.single().reason).contains("SAPOrderNumber 필수")
+            verify(exactly = 0) { erpOrderRepository.saveAllAndFlush(any<List<ErpOrder>>()) }
         }
 
         @Test

@@ -113,37 +113,48 @@ class AppointmentInsertServiceTest {
     }
 
     @Nested
-    @DisplayName("insert - Error Path")
-    inner class InsertError {
+    @DisplayName("insert - 레거시 정합 (수신 필드 명시 필수/형식 검증 제거 — 전 행 raw INSERT)")
+    inner class InsertLegacyAlignment {
 
         @Test
-        @DisplayName("EmployeeCode 누락 - failures, INSERT 안 함")
-        fun insert_missingEmployeeCode() {
+        @DisplayName("EmployeeCode 누락 - 검증 없이 raw 적재 (empCodeExist=false), employeeCode=null")
+        fun insert_missingEmployeeCode_stored() {
+            val savedSlot = slot<List<Appointment>>()
+            every { appointmentRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<Appointment>>() }
+
             val result = service.insert(listOf(command(employeeCode = null)))
 
-            assertThat(result.successCount).isEqualTo(0)
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().identifier).isNull()
-            assertThat(result.failures.single().reason).contains("EmployeeCode 필수")
-            verify(exactly = 0) { appointmentRepository.saveAll(any<List<Appointment>>()) }
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            val saved = savedSlot.captured.single()
+            assertThat(saved.employeeCode).isNull()
+            assertThat(saved.empCodeExist).isFalse()
         }
 
         @Test
-        @DisplayName("JobCode 누락 - failures")
-        fun insert_missingJobCode() {
+        @DisplayName("JobCode 누락 - 검증 없이 raw 적재, jobCode=null")
+        fun insert_missingJobCode_stored() {
+            val savedSlot = slot<List<Appointment>>()
+            every { appointmentRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<Appointment>>() }
+
             val result = service.insert(listOf(command(jobCode = null)))
 
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().reason).contains("JobCode 필수")
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(savedSlot.captured.single().jobCode).isNull()
         }
 
         @Test
-        @DisplayName("AppointDate 형식 오류 - failures")
-        fun insert_invalidAppointDate() {
+        @DisplayName("AppointDate 형식 오류 - 거부하지 않고 2999-12-31 센티넬로 흡수 (레거시 전체실패 버그 미재현)")
+        fun insert_invalidAppointDate_sentinel() {
+            val savedSlot = slot<List<Appointment>>()
+            every { appointmentRepository.saveAll(capture(savedSlot)) } answers { firstArg<List<Appointment>>() }
+
             val result = service.insert(listOf(command(appointDate = "2026-04-01")))
 
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().reason).contains("AppointDate YYYYMMDD 형식 오류")
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(savedSlot.captured.single().appointDate).isEqualTo(LocalDate.of(2999, 12, 31))
         }
 
         @Test
@@ -166,15 +177,16 @@ class AppointmentInsertServiceTest {
         }
 
         @Test
-        @DisplayName("부분 실패 - 정상 1건 + JobCode 누락 1건")
-        fun insert_partialFailure() {
-            every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(employee("100123"))
+        @DisplayName("필수 필드 모두 누락 행도 전부 적재 (검증 게이트 없음)")
+        fun insert_allMissing_allStored() {
             mockSaveAll()
 
-            val result = service.insert(listOf(command(), command(employeeCode = "100456", jobCode = null)))
+            val result = service.insert(
+                listOf(command(), command(employeeCode = null, jobCode = null, appointDate = "bad"))
+            )
 
-            assertThat(result.successCount).isEqualTo(1)
-            assertThat(result.failureCount).isEqualTo(1)
+            assertThat(result.successCount).isEqualTo(2)
+            assertThat(result.failureCount).isEqualTo(0)
         }
     }
 }

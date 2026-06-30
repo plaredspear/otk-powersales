@@ -22,11 +22,10 @@ import java.time.format.DateTimeParseException
  * ## 레거시 동작 요약
  * 1. 입력: `List<AppointmentInsertCommand>` — INSERT only, 멱등성 미보장 (후속 스펙 #567).
  * 2. cross-domain lookup: [EmployeeRepository.findByEmployeeCodeIn] (직원 매칭 — 매칭 실패는 행 진행 + `empCodeExist=false`).
- * 3. 행 단위 검증:
- *    - 필수값 (`employeeCode`/`jobCode`) 누락 → failures.
- *    - AppointDate (`yyyyMMdd`. 빈값/null/`00000000` → `2999-12-31` 센티넬) 형식 위반만 → failures.
- *    - 정상 행: 신규 [Appointment] 생성 (empCodeExist 매칭 결과 적용).
- * 4. 외부 호출: [AppointmentRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 트랜잭션 롤백하지 않음.
+ * 3. 레거시 정합 — 수신 필드 명시 필수/형식 검증으로 행을 거부하지 않는다 (레거시 IF_REST_SAP_Appointment 에
+ *    검증 게이트 없음, 검증 없이 전 행 INSERT). EmployeeCode/JobCode 누락도 그대로 적재하고, AppointDate 는
+ *    빈값/null/`00000000`/형식오류를 모두 `2999-12-31` 센티넬로 흡수 ([parseAppointDate]).
+ * 4. 외부 호출: [AppointmentRepository.saveAll] (전 행 일괄).
  *    적재된 entity 는 [AppointmentInsertResult.savedAppointments] 로 return — 어댑터가 후처리 트리거 호출 시 사용.
  *
  * ## 신규 차이 — 동등 (생략)
@@ -55,31 +54,19 @@ class AppointmentInsertService(
         val toSave = mutableListOf<Appointment>()
 
         commands.forEach { command ->
+            // 레거시 IF_REST_SAP_Appointment 정합 — 수신 필드(EmployeeCode/JobCode 등)에 대한 명시적
+            // 필수/형식 검증으로 행을 거부하는 코드가 레거시에 전무하다 (검증 없이 전 행 INSERT,
+            // Database.insert allOrNone=false). EmployeeCode/JobCode 누락도 그대로 적재하고, AppointDate 는
+            // Util.convertStringToDate 정합으로 빈값/null/00000000/형식오류를 모두 2999-12-31 센티넬로 흡수한다
+            // (레거시는 형식 오류 시 Date.valueOf 예외가 배치 전체를 ERROR 로 만드는 우발 버그이나, 그 전체
+            // 실패는 재현하지 않고 센티넬 흡수로 행 격리를 유지).
             val employeeCode = command.employeeCode?.takeIf { it.isNotBlank() }
             val jobCode = command.jobCode?.takeIf { it.isNotBlank() }
-
-            if (employeeCode == null) {
-                failures += AppointmentInsertFailedRow(null, "EmployeeCode 필수")
-                return@forEach
-            }
-            if (jobCode == null) {
-                failures += AppointmentInsertFailedRow(employeeCode, "JobCode 필수")
-                return@forEach
-            }
-            // 레거시 IF_REST_SAP_Appointment 정합 — AppointDate 는 Util.convertStringToDate 로 파싱.
-            // 빈값/null/00000000 → 2999-12-31 센티넬 (발령일 미정), 형식 오류만 행 failure.
             val parsedAppointDate = parseAppointDate(command.appointDate)
-            if (parsedAppointDate == null) {
-                failures += AppointmentInsertFailedRow(
-                    employeeCode + command.appointDate.orEmpty(),
-                    "AppointDate YYYYMMDD 형식 오류: ${command.appointDate}"
-                )
-                return@forEach
-            }
 
             toSave += Appointment(
                 employeeCode = employeeCode,
-                empCodeExist = employeeCode in existingEmpCodes,
+                empCodeExist = employeeCode != null && employeeCode in existingEmpCodes,
                 afterOrgCode = command.afterOrgCode,
                 afterOrgName = command.afterOrgName,
                 jikchak = command.jikchak,
@@ -113,15 +100,17 @@ class AppointmentInsertService(
 
     /**
      * SF `Util.convertStringToDate` 정합 — 빈값/`null`/`"00000000"` → `2999-12-31` 센티넬 (발령일 미정).
-     * 형식 오류(8자리 yyyyMMdd 가 아님) → null (행 failure).
+     * 형식 오류(8자리 yyyyMMdd 가 아님) 도 행을 거부하지 않고 동일 센티넬로 흡수한다 — 레거시는 명시적
+     * 형식 검증 게이트가 없고(검증 없이 전 행 INSERT), `Date.valueOf` 우발 예외로 배치 전체를 ERROR 로
+     * 만드는 버그성 동작만 있으므로, 그 전체 실패를 재현하지 않고 센티넬 흡수로 행 격리를 유지한다.
      */
-    private fun parseAppointDate(value: String?): LocalDate? {
+    private fun parseAppointDate(value: String?): LocalDate {
         val trimmed = value?.trim()
         if (trimmed.isNullOrEmpty() || trimmed == "00000000") return DATE_SENTINEL
         return try {
             LocalDate.parse(trimmed, DATE_FORMAT)
         } catch (_: DateTimeParseException) {
-            null
+            DATE_SENTINEL
         }
     }
 
