@@ -450,3 +450,37 @@ export const menuRoute: MenuRoute = {
     },
   ],
 };
+
+/** 메뉴 검색어 정규화: 공백 제거 + 소문자화. 검색창과 필터가 동일 규칙을 쓰도록 단일 소유. */
+export function normalizeMenuKeyword(keyword: string): string {
+  return keyword.replace(/\s+/g, '').toLowerCase();
+}
+
+/**
+ * 메뉴 트리를 검색어로 필터링한다. (사이드바 검색 전용)
+ * - 한글 부분일치 (대소문자/공백 무시). 매칭 항목 + 매칭된 자식을 가진 부모 카테고리를 유지한다.
+ * - subRoutes 는 사이드바 비노출이므로 검색 대상에서 제외한다.
+ * - 부모 자신의 name 이 매칭되면 자식 전체를 그대로 보존한다 (카테고리 단위 탐색).
+ */
+export function filterMenuByKeyword(items: MenuItem[], keyword: string): MenuItem[] {
+  const normalized = normalizeMenuKeyword(keyword);
+  if (!normalized) return items;
+  const matches = (name: string) => normalizeMenuKeyword(name).includes(normalized);
+
+  const walk = (list: MenuItem[]): MenuItem[] =>
+    list.reduce<MenuItem[]>((acc, item) => {
+      const selfMatch = matches(item.name);
+      if (item.children) {
+        // 부모 자신이 매칭되면 자식 전체 보존, 아니면 매칭된 자식만 남긴다.
+        const nextChildren = selfMatch ? item.children : walk(item.children);
+        if (selfMatch || nextChildren.length > 0) {
+          acc.push({ ...item, children: nextChildren });
+        }
+      } else if (selfMatch) {
+        acc.push(item);
+      }
+      return acc;
+    }, []);
+
+  return walk(items);
+}

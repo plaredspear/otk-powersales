@@ -2,10 +2,10 @@ import './AdminLayout.css';
 import { useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import ProLayout from '@ant-design/pro-layout';
-import { Dropdown, Typography, type MenuProps } from 'antd';
-import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { Dropdown, Input, Typography, type MenuProps } from 'antd';
+import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
-import { menuRoute, type MenuItem } from '@/config/menuConfig';
+import { filterMenuByKeyword, normalizeMenuKeyword, menuRoute, type MenuItem } from '@/config/menuConfig';
 import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
@@ -27,6 +27,8 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     return localStorage.getItem(SIDER_COLLAPSED_KEY) === 'true';
   });
+  const [menuKeyword, setMenuKeyword] = useState('');
+  const isSearching = normalizeMenuKeyword(menuKeyword).length > 0;
 
   const handleCollapse = (next: boolean) => {
     setCollapsed(next);
@@ -54,6 +56,15 @@ export default function AdminLayout() {
     return { ...menuRoute, children: filterItems(menuRoute.children) };
   }, [hasEntityPermission, hasSystemPermission, profileName]);
 
+  // 권한 필터된 트리를 검색어로 한 번 더 좁힌다. 검색어 없으면 그대로 통과.
+  const searchedMenuRoute = useMemo(
+    () => ({
+      ...filteredMenuRoute,
+      children: filterMenuByKeyword(filteredMenuRoute.children, menuKeyword),
+    }),
+    [filteredMenuRoute, menuKeyword],
+  );
+
   const handleLogout = () => {
     queryClient.clear();
     logout();
@@ -65,13 +76,38 @@ export default function AdminLayout() {
       <ProLayout
         title="판매여사원관리시스템"
         logo="/favicon.svg"
-        route={filteredMenuRoute}
+        route={searchedMenuRoute}
         location={{ pathname: location.pathname }}
         fixSiderbar
         layout="side"
         collapsed={collapsed}
         onCollapse={handleCollapse}
         collapsedButtonRender={false}
+        menu={{
+          // 검색 중에는 매칭된 트리를 전부 펼쳐 결과가 접힌 채 숨지 않도록 한다.
+          // openKeys 직접 제어 대신 defaultOpenAll 을 쓰는 이유: ProLayout 의 submenu key 는
+          // path 없는 카테고리의 경우 객체 해시로 파생되어 외부에서 안정적으로 지정할 수 없다.
+          // 검색 토글 시 아래 menuContentRender 의 key 변경으로 메뉴를 재마운트해 적용한다.
+          defaultOpenAll: isSearching,
+        }}
+        menuContentRender={(_props, defaultDom) => (
+          // 검색 진입/이탈 시 key 를 바꿔 메뉴를 재마운트 → defaultOpenAll 재적용.
+          <div key={isSearching ? 'menu-search' : 'menu-normal'}>{defaultDom}</div>
+        )}
+        menuExtraRender={({ collapsed: menuCollapsed }) =>
+          menuCollapsed ? null : (
+            <div className="admin-sider-search">
+              <Input
+                allowClear
+                size="small"
+                prefix={<SearchOutlined />}
+                placeholder="메뉴 검색"
+                value={menuKeyword}
+                onChange={(e) => setMenuKeyword(e.target.value)}
+              />
+            </div>
+          )
+        }
         menuFooterRender={() => (
           <div
             className={`admin-sider-collapse-footer${collapsed ? ' admin-sider-collapse-footer--collapsed' : ''}`}
