@@ -7,7 +7,9 @@ import com.otoki.powersales.domain.foundation.product.repository.ProductReposito
 import com.otoki.powersales.domain.foundation.product.service.dto.ProductBarcodeUpsertCommand
 import com.otoki.powersales.domain.foundation.product.service.dto.ProductBarcodeUpsertFailedRow
 import com.otoki.powersales.domain.foundation.product.service.dto.ProductBarcodeUpsertResult
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 /**
@@ -18,26 +20,27 @@ import org.springframework.transaction.annotation.Transactional
  * - origin spec: #559 (SAP 제품 마스터 인바운드) — 어댑터/도메인 분리: #635 P1-B
  *
  * ## 레거시 동작 요약
- * 1. 입력: `List<ProductBarcodeUpsertCommand>` — UPSERT 키 (`productCode + productUnit + productSequence` 단순 연결).
- * 2. 캐시 빌드: [ProductRepository.findByProductCodeIn] (FK lookup) / [ProductBarcodeRepository.findByCustomKey] (개별 조회 — 기존 동작 보존).
- * 3. 행 단위 검증/적용:
- *    - 필수값 (`productCode`/`productUnit`/`productSequence`/`productBarcode`) 누락 → failures.
+ * 1. 입력: `List<ProductBarcodeUpsertCommand>` — UPSERT 키 `customKey = productCode + productUnit + productSequence` (단순 연결).
+ * 2. 캐시 빌드: [ProductRepository.findByProductCodeIn] (FK lookup).
+ * 3. 행 단위 적재: 레거시 `IF_REST_SAP_BarcodeMaster` 정합 — `ProductCode`/`ProductUnit`/`ProductSequence`/
+ *    `ProductBarcode` 모두 SF `nillable=true` (`required=false`) 라 **명시 필수 검증을 두지 않고 raw 적재**한다.
+ *    blank 는 null 로 정규화하되, customKey 합성은 레거시 `obj.ProductCode + obj.ProductUnit + obj.ProductSequence`
+ *    동등하게 null 을 빈 문자열로 이어붙인다.
  *    - Product 매칭 실패 → orphan 저장 (productId=null, product_code 평문 보존). 레거시 SF 가 Product__c=null 로
- *      그대로 upsert 하는 동작 정합 — 행 failure 처리하지 않는다.
- *    - 정상 행: 신규 [ProductBarcode] 생성 또는 기존 entity 의 mutable 필드 갱신.
- * 4. 외부 호출: [ProductBarcodeRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 트랜잭션 롤백하지 않음.
- *
- * ## 신규 차이 — 동등 (생략)
+ *      그대로 upsert 하는 동작 정합.
+ *    - `custom_key` 는 SF external key 이자 신규 UNIQUE 제약이므로, 행마다 별도 트랜잭션([Propagation.REQUIRES_NEW])
+ *      에서 flush 해 UNIQUE 충돌이 나면 그 행만 failure 로 격리한다 (레거시 `Database.upsert(CustomKey__c, false)` 동등).
+ * 4. 외부 호출: [ProductBarcodeRowUpsertService.persistRow] (행 단위 saveAndFlush).
  *
  * `sap.*` 패키지 의존 0건 — SAP audit / `ClientIpResolver` / `RequestContextHolder` / `SapResultWrapper` 침투 금지.
  */
 @Service
 class ProductBarcodeUpsertService(
-    private val productBarcodeRepository: ProductBarcodeRepository,
-    private val productRepository: ProductRepository
+    private val productRepository: ProductRepository,
+    private val rowUpsertService: ProductBarcodeRowUpsertService
 ) {
 
-    @Transactional
+    @Transactional(readOnly = true)
     fun upsert(commands: List<ProductBarcodeUpsertCommand>): ProductBarcodeUpsertResult {
         val productCodes = commands.mapNotNull { it.productCode?.takeIf { code -> code.isNotBlank() } }
         val productCache: Map<String, Product> = if (productCodes.isEmpty()) {
@@ -48,97 +51,61 @@ class ProductBarcodeUpsertService(
                 .toMap()
         }
 
-        val customKeys = commands.mapNotNull { customKey(it) }
-        val barcodeCache: MutableMap<String, ProductBarcode> = if (customKeys.isEmpty()) {
-            mutableMapOf()
-        } else {
-            customKeys.distinct()
-                .mapNotNull { key -> productBarcodeRepository.findByCustomKey(key)?.let { key to it } }
-                .toMap()
-                .toMutableMap()
-        }
-
         val failures = mutableListOf<ProductBarcodeUpsertFailedRow>()
-        val toSave = mutableListOf<ProductBarcode>()
+        var successCount = 0
 
         commands.forEach { command ->
+            // 레거시 IF_REST_SAP_BarcodeMaster 정합 — 네 필드 명시 검증 없이 raw 적재 (blank → null).
             val productCode = command.productCode?.takeIf { it.isNotBlank() }
             val productUnit = command.productUnit?.takeIf { it.isNotBlank() }
             val productSequence = command.productSequence?.takeIf { it.isNotBlank() }
             val barcode = command.productBarcode?.takeIf { it.isNotBlank() }
 
-            if (productCode == null) {
-                failures += ProductBarcodeUpsertFailedRow(null, "ProductCode 필수")
-                return@forEach
-            }
-            if (productUnit == null) {
-                failures += ProductBarcodeUpsertFailedRow(null, "ProductUnit 필수")
-                return@forEach
-            }
-            if (productSequence == null) {
-                failures += ProductBarcodeUpsertFailedRow(null, "ProductSequence 필수")
-                return@forEach
-            }
-            if (barcode == null) {
-                failures += ProductBarcodeUpsertFailedRow(
-                    productCode + productUnit + productSequence,
-                    "ProductBarcode 필수"
-                )
-                return@forEach
-            }
+            // 레거시 `obj.ProductCode + obj.ProductUnit + obj.ProductSequence` 동등 — null 은 빈 문자열로 연결.
+            val key = productCode.orEmpty() + productUnit.orEmpty() + productSequence.orEmpty()
+            val matchedProduct = productCode?.let { productCache[it] }
 
-            val key = productCode + productUnit + productSequence
-            // 레거시 IF_REST_SAP_BarcodeMaster 정합 — Product 미매칭 시에도 orphan 으로 저장한다.
-            // (SF 는 prdMap.get(ProductCode) 가 null 이면 Product__c=null 로 그대로 upsert. 제품 마스터가
-            //  바코드보다 늦게 도착해도 바코드 유실 없음. product_code 평문 컬럼에 코드 보존.)
-            val matchedProduct = productCache[productCode]
-
-            val entity = barcodeCache[key]?.also {
-                applyToEntity(it, command, key, matchedProduct, productCode, productUnit, barcode)
-            } ?: createBarcode(key, command, matchedProduct, productCode, productUnit, barcode)
-                .also { barcodeCache[key] = it }
-            toSave += entity
-        }
-
-        if (toSave.isNotEmpty()) {
-            productBarcodeRepository.saveAll(toSave)
+            try {
+                rowUpsertService.persistRow(command, key, matchedProduct, productCode, productUnit, barcode)
+                successCount++
+            } catch (ex: DataIntegrityViolationException) {
+                failures += ProductBarcodeUpsertFailedRow(key, "적재 실패: ${ex.mostSpecificCauseText()}")
+            }
         }
 
         return ProductBarcodeUpsertResult(
-            successCount = toSave.size,
+            successCount = successCount,
             failureCount = failures.size,
             failures = failures
         )
     }
+}
 
-    private fun customKey(command: ProductBarcodeUpsertCommand): String? {
-        val pc = command.productCode?.takeIf { it.isNotBlank() } ?: return null
-        val pu = command.productUnit?.takeIf { it.isNotBlank() } ?: return null
-        val ps = command.productSequence?.takeIf { it.isNotBlank() } ?: return null
-        return pc + pu + ps
-    }
+/**
+ * [ProductBarcodeUpsertService] 의 행 단위 트랜잭션 경계 빈.
+ *
+ * 한 요청 안의 여러 행 중 `custom_key` UNIQUE 충돌이 난 행만 격리하기 위해 행마다 [Propagation.REQUIRES_NEW]
+ * 로 별도 트랜잭션을 연다 (같은 빈 내 self-invocation 은 Spring AOP 프록시를 우회해 트랜잭션 경계가 적용되지
+ * 않으므로 별도 빈으로 분리). 충돌 시 본 트랜잭션만 롤백되고 호출 루프는 다음 행을 계속 처리한다.
+ */
+@Service
+class ProductBarcodeRowUpsertService(
+    private val productBarcodeRepository: ProductBarcodeRepository
+) {
 
-    private fun createBarcode(
-        key: String,
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun persistRow(
         command: ProductBarcodeUpsertCommand,
+        key: String,
         matchedProduct: Product?,
-        productCode: String,
-        productUnit: String,
-        barcode: String
-    ): ProductBarcode {
-        val entity = ProductBarcode(
-            customKey = key,
-            name = productUnit,
-            unit = productUnit,
-            barcode = barcode,
-            // 레거시 정합 — Product 미매칭이면 null (orphan 허용).
-            productId = matchedProduct?.id
-        )
-        // 레거시 ProductCode__c 평문 보존 — lookup 실패해도 코드 추적 가능.
-        entity.productCode = productCode
-        entity.productName = command.productName
-        entity.sortOrder = command.productSequence
-        return entity
+        productCode: String?,
+        productUnit: String?,
+        barcode: String?
+    ) {
+        val existing = productBarcodeRepository.findByCustomKey(key)
+        val entity = existing ?: ProductBarcode(customKey = key)
+        applyToEntity(entity, command, key, matchedProduct, productCode, productUnit, barcode)
+        productBarcodeRepository.saveAndFlush(entity)
     }
 
     private fun applyToEntity(
@@ -146,9 +113,9 @@ class ProductBarcodeUpsertService(
         command: ProductBarcodeUpsertCommand,
         key: String,
         matchedProduct: Product?,
-        productCode: String,
-        productUnit: String,
-        barcode: String
+        productCode: String?,
+        productUnit: String?,
+        barcode: String?
     ) {
         entity.customKey = key
         entity.name = productUnit
@@ -156,10 +123,15 @@ class ProductBarcodeUpsertService(
         entity.barcode = barcode
         entity.sortOrder = command.productSequence
         entity.productName = command.productName
-        // 레거시 ProductCode__c 평문 보존.
+        // 레거시 ProductCode__c 평문 보존 — lookup 실패해도 코드 추적 가능.
         entity.productCode = productCode
-        // sfid 는 SF 데이터 마이그레이션 보조 필드 — runtime 에서 박지 않음 (정책).
         // 레거시 정합 — Product 미매칭이면 null (orphan 허용).
         entity.productId = matchedProduct?.id
     }
+}
+
+private fun Throwable.mostSpecificCauseText(): String {
+    var cause: Throwable = this
+    while (cause.cause != null && cause.cause !== cause) cause = cause.cause!!
+    return cause.message ?: cause::class.simpleName ?: "unknown"
 }
