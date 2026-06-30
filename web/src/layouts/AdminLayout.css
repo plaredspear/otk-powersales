@@ -43,6 +43,10 @@
   color: rgba(0, 0, 0, 0.45);
 }
 
+.admin-sider-search {
+  padding: 8px 12px;
+}
+
 .admin-sider-collapse-footer {
   display: flex;
   align-items: center;
