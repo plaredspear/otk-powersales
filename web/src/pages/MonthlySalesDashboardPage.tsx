@@ -125,8 +125,9 @@ export default function MonthlySalesDashboardPage() {
   const summary = summaryQuery.data;
   const list = listQuery.data;
 
-  const formatWon = (v: number | null | undefined) =>
-    v == null ? '-' : `${v.toLocaleString()}원`;
+  // 금액은 천원 단위로 표시 — 1000 으로 나눈 뒤 정수(반올림)로 표기.
+  const formatThousandWon = (v: number | null | undefined) =>
+    v == null ? '-' : Math.round(v / 1000).toLocaleString();
   const formatPct = (v: number | null | undefined) =>
     v == null ? '-' : `${v.toFixed(1)}%`;
 
@@ -146,20 +147,20 @@ export default function MonthlySalesDashboardPage() {
       { title: 'SAP코드', dataIndex: 'sapAccountCode', width: 110, render: (v) => v ?? '-' },
       { title: '지점', dataIndex: 'branchName', width: 120, render: (v) => v ?? '-' },
       {
-        title: '목표',
+        title: '목표(천원)',
         dataIndex: 'targetAmount',
         width: 130,
         sorter: true,
         align: 'right',
-        render: (v) => formatWon(v),
+        render: (v) => formatThousandWon(v),
       },
       {
-        title: '실적',
+        title: '실적(천원)',
         dataIndex: 'totalAchievedAmount',
         width: 130,
         sorter: true,
         align: 'right',
-        render: (v) => formatWon(v),
+        render: (v) => formatThousandWon(v),
       },
       {
         title: '진도율',
@@ -175,34 +176,34 @@ export default function MonthlySalesDashboardPage() {
         },
       },
       {
-        title: '상온',
+        title: '상온(천원)',
         children: [
-          { title: '목표', dataIndex: 'ambientTargetAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
-          { title: '실적', dataIndex: 'ambientAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+          { title: '목표', dataIndex: 'ambientTargetAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
+          { title: '실적', dataIndex: 'ambientAchievedAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
         ],
       },
       {
-        title: '라면',
+        title: '라면(천원)',
         children: [
-          { title: '목표', dataIndex: 'noodleTargetAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
-          { title: '실적', dataIndex: 'noodleAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+          { title: '목표', dataIndex: 'noodleTargetAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
+          { title: '실적', dataIndex: 'noodleAchievedAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
         ],
       },
       {
-        title: '냉동/냉장',
+        title: '냉동/냉장(천원)',
         children: [
-          { title: '목표', dataIndex: 'frozenRefrigeratedTargetAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
-          { title: '실적', dataIndex: 'frozenRefrigeratedAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+          { title: '목표', dataIndex: 'frozenRefrigeratedTargetAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
+          { title: '실적', dataIndex: 'frozenRefrigeratedAchievedAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
         ],
       },
       {
-        title: '유지류',
+        title: '유지류(천원)',
         children: [
-          { title: '목표', dataIndex: 'oilFatTargetAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
-          { title: '실적', dataIndex: 'oilFatAchievedAmount', width: 110, align: 'right', render: (v) => formatWon(v) },
+          { title: '목표', dataIndex: 'oilFatTargetAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
+          { title: '실적', dataIndex: 'oilFatAchievedAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
         ],
       },
-      { title: '전년 동월', dataIndex: 'lastYearAchievedAmount', width: 130, align: 'right', render: (v) => formatWon(v) },
+      { title: '전년 동월(천원)', dataIndex: 'lastYearAchievedAmount', width: 130, align: 'right', render: (v) => formatThousandWon(v) },
       {
         title: '전년 대비',
         dataIndex: 'lastYearComparisonRatio',
@@ -263,10 +264,10 @@ export default function MonthlySalesDashboardPage() {
         <Card size="small" style={{ marginBottom: 12 }}>
           <Row gutter={16}>
             <Col span={5}>
-              <Statistic title="목표 합계" value={summary.totalTargetAmount.toLocaleString()} suffix="원" />
+              <Statistic title="목표 합계" value={formatThousandWon(summary.totalTargetAmount)} suffix="천원" />
             </Col>
             <Col span={5}>
-              <Statistic title="실적 합계" value={summary.totalAchievedAmount.toLocaleString()} suffix="원" />
+              <Statistic title="실적 합계" value={formatThousandWon(summary.totalAchievedAmount)} suffix="천원" />
             </Col>
             <Col span={5}>
               <Statistic
