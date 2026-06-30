@@ -3,6 +3,7 @@ package com.otoki.powersales.external.sap.inbound.toggle
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import tools.jackson.databind.ObjectMapper
@@ -12,6 +13,9 @@ import tools.jackson.databind.ObjectMapper
  *
  * 토큰 발급(`/api/v1/sap/oauth/token`)은 적재 처리가 아니므로 토글 대상에서 제외한다.
  *
+ * `@Profile("dev | prod")` — 인바운드 토글은 운영(dev/prod) 환경에서만 동작한다.
+ * local / test 프로파일에서는 인터셉터가 등록되지 않아 기존 흐름(항상 적재 처리)을 그대로 유지한다.
+ *
  * `@ConditionalOnBean(SapInboundToggleStore)` — 인바운드 토글 저장소 빈이 없는 슬라이스 테스트
  * (`@WebMvcTest` 등, 일반 `@Component` 미스캔)에서는 본 설정이 비활성화되어 인터셉터가 등록되지 않는다.
  * 그렇지 않으면 모든 MVC 슬라이스 테스트가 인터셉터 의존성을 요구하게 된다.
@@ -20,6 +24,7 @@ import tools.jackson.databind.ObjectMapper
  * `@WebMvcTest` 가 이를 자동 스캔하기 때문이다.
  */
 @Configuration
+@Profile("dev | prod")
 @ConditionalOnBean(SapInboundToggleStore::class)
 class SapInboundToggleWebConfig(
     private val toggleStore: SapInboundToggleStore,
