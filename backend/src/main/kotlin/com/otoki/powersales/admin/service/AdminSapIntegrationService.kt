@@ -17,6 +17,7 @@ import com.otoki.powersales.admin.sap.SapOutboundCatalog
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditRepository
+import com.otoki.powersales.external.sap.inbound.toggle.SapInboundToggleStore
 import com.otoki.powersales.external.sap.outbound.entity.SapOutboundLog
 import com.otoki.powersales.external.sap.outbound.repository.SapOutboundLogRepository
 import com.otoki.powersales.external.sap.outbox.SapOutbox
@@ -42,10 +43,12 @@ class AdminSapIntegrationService(
     private val sapInboundAuditRepository: SapInboundAuditRepository,
     private val sapOutboundLogRepository: SapOutboundLogRepository,
     private val sapOutboxRepository: SapOutboxRepository,
+    private val sapInboundToggleStore: SapInboundToggleStore,
 ) {
 
-    fun inboundCatalog(): List<SapInboundCatalogItemDto> =
-        SapInboundCatalog.ITEMS.map {
+    fun inboundCatalog(): List<SapInboundCatalogItemDto> {
+        val states = sapInboundToggleStore.getAllStates()
+        return SapInboundCatalog.ITEMS.map {
             SapInboundCatalogItemDto(
                 endpointPath = it.endpointPath,
                 koreanName = it.koreanName,
@@ -53,8 +56,25 @@ class AdminSapIntegrationService(
                 targetEntity = it.targetEntity,
                 controllerClass = it.controllerClass,
                 description = it.description,
+                enabled = states[it.endpointPath] ?: true,
             )
         }
+    }
+
+    /**
+     * SAP 인바운드 endpoint 의 처리 활성/비활성 설정. 카탈로그에 없는 endpoint 는 거절.
+     */
+    fun setInboundEnabled(endpointPath: String, enabled: Boolean) {
+        val exists = SapInboundCatalog.ITEMS.any { it.endpointPath == endpointPath }
+        if (!exists) {
+            throw BusinessException(
+                errorCode = "SAP_INBOUND_ENDPOINT_NOT_FOUND",
+                message = "존재하지 않는 SAP 인바운드 endpoint: $endpointPath",
+                httpStatus = HttpStatus.NOT_FOUND,
+            )
+        }
+        sapInboundToggleStore.setEnabled(endpointPath, enabled)
+    }
 
     fun searchInboundAudits(query: AdminSapInboundAuditQuery): SapInboundAuditListResponse {
         val page = (query.page - 1).coerceAtLeast(0)

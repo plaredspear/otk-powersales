@@ -12,6 +12,8 @@ data class SapInboundCatalogItemDto(
     val targetEntity: String,
     val controllerClass: String,
     val description: String,
+    /** 처리 활성 여부. false 면 요청 수신 시 적재 처리를 생략하고 정상 응답만 반환. */
+    val enabled: Boolean,
 )
 
 data class SapInboundAuditRow(

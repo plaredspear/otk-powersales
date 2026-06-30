@@ -9,6 +9,9 @@ object SapInboundAuditEventType {
     const val REQUEST_REJECTED_IP = "REQUEST_REJECTED_IP"
     const val REQUEST_REJECTED_SANITY = "REQUEST_REJECTED_SANITY"
 
+    /** endpoint 가 비활성 상태라 적재 처리를 생략하고 정상 응답만 반환한 경우 (SAP 인바운드 토글). */
+    const val REQUEST_SKIPPED = "REQUEST_SKIPPED"
+
     /** Spec #553: `attend_info` → `team_member_schedule` 변환 처리 결과 카운트 기록 */
     const val SCHEDULE_CONVERSION = "SCHEDULE_CONVERSION"
 

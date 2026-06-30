@@ -23,8 +23,10 @@ import io.mockk.every
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import com.ninjasquad.springmockk.MockkBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -46,6 +48,7 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
                     targetEntity = "Organization",
                     controllerClass = "SapOrganizationMasterController",
                     description = "조직 마스터 UPSERT.",
+                    enabled = true,
                 )
             )
 
@@ -55,6 +58,36 @@ class AdminSapIntegrationControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data[0].endpointPath").value("/api/v1/sap/organization"))
             .andExpect(jsonPath("$.data[0].requiredScope").value("sap.org.write"))
             .andExpect(jsonPath("$.data[0].targetEntity").value("Organization"))
+            .andExpect(jsonPath("$.data[0].enabled").value(true))
+    }
+
+    @Test
+    @DisplayName("PUT /inbound/toggle - service.setInboundEnabled 위임 + 최신 카탈로그 반환")
+    fun inboundToggle_ok() {
+        every { adminSapIntegrationService.setInboundEnabled("/api/v1/sap/account", false) } returns Unit
+        every { adminSapIntegrationService.inboundCatalog() } returns listOf(
+            SapInboundCatalogItemDto(
+                endpointPath = "/api/v1/sap/account",
+                koreanName = "거래처 마스터 수신",
+                requiredScope = "sap.account.write",
+                targetEntity = "Account",
+                controllerClass = "SapAccountMasterController",
+                description = "거래처 마스터 UPSERT.",
+                enabled = false,
+            )
+        )
+
+        mockMvc.perform(
+            put("/api/v1/admin/sap-integration/inbound/toggle")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"endpointPath":"/api/v1/sap/account","enabled":false}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].endpointPath").value("/api/v1/sap/account"))
+            .andExpect(jsonPath("$.data[0].enabled").value(false))
+
+        verify { adminSapIntegrationService.setInboundEnabled("/api/v1/sap/account", false) }
     }
 
     @Test

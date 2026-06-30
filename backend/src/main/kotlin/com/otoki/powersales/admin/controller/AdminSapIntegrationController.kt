@@ -5,6 +5,7 @@ import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.AdminSapInboundAuditQuery
 import com.otoki.powersales.admin.dto.request.AdminSapOutboundLogQuery
+import com.otoki.powersales.admin.dto.request.SapInboundToggleRequest
 import com.otoki.powersales.admin.dto.response.SapInboundAuditDetail
 import com.otoki.powersales.admin.dto.response.SapInboundAuditListResponse
 import com.otoki.powersales.admin.dto.response.SapInboundCatalogItemDto
@@ -18,6 +19,8 @@ import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
@@ -43,6 +46,16 @@ class AdminSapIntegrationController(
     @GetMapping("/api/v1/admin/sap-integration/inbound/catalog")
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getInboundCatalog(): ResponseEntity<ApiResponse<List<SapInboundCatalogItemDto>>> {
+        return ResponseEntity.ok(ApiResponse.success(adminSapIntegrationService.inboundCatalog()))
+    }
+
+    @PutMapping("/api/v1/admin/sap-integration/inbound/toggle")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun setInboundEnabled(
+        @RequestBody request: SapInboundToggleRequest,
+    ): ResponseEntity<ApiResponse<List<SapInboundCatalogItemDto>>> {
+        adminSapIntegrationService.setInboundEnabled(request.endpointPath, request.enabled)
+        // 변경 후 최신 카탈로그(활성 상태 포함)를 그대로 돌려주어 클라이언트가 재조회 없이 반영하도록 한다.
         return ResponseEntity.ok(ApiResponse.success(adminSapIntegrationService.inboundCatalog()))
     }
 

@@ -18,6 +18,8 @@ export interface SapInboundCatalogItem {
   targetEntity: string;
   controllerClass: string;
   description: string;
+  /** 처리 활성 여부. false 면 요청 수신 시 적재 처리를 생략하고 정상 응답만 반환. */
+  enabled: boolean;
 }
 
 export interface SapInboundAuditRow {
@@ -121,6 +123,24 @@ export async function getSapInboundCatalog(): Promise<SapInboundCatalogItem[]> {
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || 'SAP 인바운드 카탈로그 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * SAP 인바운드 endpoint 처리 활성/비활성 변경.
+ * 변경 후 최신 카탈로그(활성 상태 포함)를 반환한다. `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function setSapInboundEnabled(
+  endpointPath: string,
+  enabled: boolean,
+): Promise<SapInboundCatalogItem[]> {
+  const res = await client.put<ApiResponse<SapInboundCatalogItem[]>>(
+    '/api/v1/admin/sap-integration/inbound/toggle',
+    { endpointPath, enabled },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'SAP 인바운드 처리 활성/비활성 변경에 실패했습니다');
   }
   return res.data.data;
 }

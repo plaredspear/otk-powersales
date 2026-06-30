@@ -9,6 +9,7 @@ import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
 import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditRepository
+import com.otoki.powersales.external.sap.inbound.toggle.SapInboundToggleStore
 import com.otoki.powersales.external.sap.outbound.entity.SapOutboundLog
 import com.otoki.powersales.external.sap.outbound.repository.SapOutboundLogRepository
 import com.otoki.powersales.external.sap.outbox.SapOutbox
@@ -34,12 +35,20 @@ class AdminSapIntegrationServiceTest {
     private val inboundAuditRepository: SapInboundAuditRepository = mockk()
     private val outboundLogRepository: SapOutboundLogRepository = mockk()
     private val outboxRepository: SapOutboxRepository = mockk()
+    private val toggleStore: SapInboundToggleStore = mockk(relaxed = true)
 
     private val service = AdminSapIntegrationService(
         sapInboundAuditRepository = inboundAuditRepository,
         sapOutboundLogRepository = outboundLogRepository,
         sapOutboxRepository = outboxRepository,
+        sapInboundToggleStore = toggleStore,
     )
+
+    init {
+        // 기본: 카탈로그 조회 시 전부 활성 (개별 테스트에서 override).
+        every { toggleStore.getAllStates() } returns
+            SapInboundCatalog.ITEMS.associate { it.endpointPath to true }
+    }
 
     @Nested
     @DisplayName("inboundCatalog")
@@ -63,6 +72,52 @@ class AdminSapIntegrationServiceTest {
             assertThat(first.endpointPath).isEqualTo("/api/v1/sap/organization")
             assertThat(first.requiredScope).isEqualTo("sap.org.write")
             assertThat(first.controllerClass).isEqualTo("SapOrganizationMasterController")
+        }
+
+        @Test
+        @DisplayName("toggleStore 상태가 enabled 필드로 반영된다")
+        fun enabledReflectsToggleStore() {
+            val account = "/api/v1/sap/account"
+            every { toggleStore.getAllStates() } returns
+                SapInboundCatalog.ITEMS.associate { it.endpointPath to (it.endpointPath != account) }
+
+            val result = service.inboundCatalog()
+
+            assertThat(result.first { it.endpointPath == account }.enabled).isFalse()
+            assertThat(result.filter { it.endpointPath != account }).allMatch { it.enabled }
+        }
+
+        @Test
+        @DisplayName("toggleStore 에 없는 endpoint 는 기본 활성(true)")
+        fun missingStateDefaultsEnabled() {
+            every { toggleStore.getAllStates() } returns emptyMap()
+
+            assertThat(service.inboundCatalog()).allMatch { it.enabled }
+        }
+    }
+
+    @Nested
+    @DisplayName("setInboundEnabled")
+    inner class SetInboundEnabled {
+
+        @Test
+        @DisplayName("카탈로그 endpoint - toggleStore.setEnabled 위임")
+        fun delegatesToStore() {
+            service.setInboundEnabled("/api/v1/sap/account", false)
+
+            verify { toggleStore.setEnabled("/api/v1/sap/account", false) }
+        }
+
+        @Test
+        @DisplayName("미존재 endpoint - BusinessException NOT_FOUND + store 미호출")
+        fun unknownEndpoint() {
+            val ex = assertThrows<BusinessException> {
+                service.setInboundEnabled("/api/v1/sap/unknown", true)
+            }
+
+            assertThat(ex.errorCode).isEqualTo("SAP_INBOUND_ENDPOINT_NOT_FOUND")
+            assertThat(ex.httpStatus.value()).isEqualTo(404)
+            verify(exactly = 0) { toggleStore.setEnabled(any(), any()) }
         }
     }
 
