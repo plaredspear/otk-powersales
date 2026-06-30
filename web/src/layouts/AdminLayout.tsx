@@ -5,7 +5,7 @@ import ProLayout from '@ant-design/pro-layout';
 import { Dropdown, Input, Typography, type MenuProps } from 'antd';
 import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
-import { filterMenuByKeyword, normalizeMenuKeyword, menuRoute, type MenuItem } from '@/config/menuConfig';
+import { collectMenuOpenKeys, filterMenuByKeyword, normalizeMenuKeyword, menuRoute, type MenuItem } from '@/config/menuConfig';
 import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
@@ -65,6 +65,13 @@ export default function AdminLayout() {
     [filteredMenuRoute, menuKeyword],
   );
 
+  // 검색 중에는 매칭 카테고리를 전부 펼쳐 결과(item)가 접힌 채 숨지 않도록 openKeys 를 제어한다.
+  // 비검색 시 undefined 로 두어 ProLayout 기본 (현재 경로 자동 펼침) 동작을 보존.
+  const menuOpenKeys = useMemo(
+    () => (isSearching ? collectMenuOpenKeys(searchedMenuRoute.children) : undefined),
+    [isSearching, searchedMenuRoute],
+  );
+
   const handleLogout = () => {
     queryClient.clear();
     logout();
@@ -83,17 +90,12 @@ export default function AdminLayout() {
         collapsed={collapsed}
         onCollapse={handleCollapse}
         collapsedButtonRender={false}
-        menu={{
-          // 검색 중에는 매칭된 트리를 전부 펼쳐 결과가 접힌 채 숨지 않도록 한다.
-          // openKeys 직접 제어 대신 defaultOpenAll 을 쓰는 이유: ProLayout 의 submenu key 는
-          // path 없는 카테고리의 경우 객체 해시로 파생되어 외부에서 안정적으로 지정할 수 없다.
-          // 검색 토글 시 아래 menuContentRender 의 key 변경으로 메뉴를 재마운트해 적용한다.
-          defaultOpenAll: isSearching,
-        }}
-        menuContentRender={(_props, defaultDom) => (
-          // 검색 진입/이탈 시 key 를 바꿔 메뉴를 재마운트 → defaultOpenAll 재적용.
-          <div key={isSearching ? 'menu-search' : 'menu-normal'}>{defaultDom}</div>
-        )}
+        menuProps={
+          // 검색 중에만 openKeys 를 제어 (매칭 카테고리 전부 펼침). searchedMenuRoute 의 카테고리에
+          // 부여한 안정 key 와 동일 규칙으로 산출하므로 ProLayout submenu 와 정확히 매칭된다.
+          // 비검색 시 undefined 로 두어 제어 모드를 벗어나 기본 동작 복원.
+          menuOpenKeys ? { openKeys: menuOpenKeys } : undefined
+        }
         menuExtraRender={({ collapsed: menuCollapsed }) =>
           menuCollapsed ? null : (
             <div className="admin-sider-search">

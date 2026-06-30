@@ -19,6 +19,12 @@ import type { SfEntityOperation, SfSystemPermission } from '@/hooks/usePermissio
 export interface MenuItem {
   path?: string;
   name: string;
+  /**
+   * ProLayout submenu 식별 key. 지정 시 ProLayout 이 객체 해시 대신 이 값을 그대로 쓴다
+   * (@umijs/route-utils transformRoute: `key: item.key || getKeyByPath(item)`).
+   * 사이드바 검색 강제 펼침에서 openKeys 를 외부에서 안정적으로 지정하기 위해 카테고리에 부여한다.
+   */
+  key?: string;
   icon?: ReactNode;
   children?: MenuItem[];
   entity?: string;
@@ -462,6 +468,11 @@ export function normalizeMenuKeyword(keyword: string): string {
  * - subRoutes 는 사이드바 비노출이므로 검색 대상에서 제외한다.
  * - 부모 자신의 name 이 매칭되면 자식 전체를 그대로 보존한다 (카테고리 단위 탐색).
  */
+/** 카테고리(자식 보유 항목)에 부여할 안정 submenu key. name 은 메뉴 SoT 에서 고유하다. */
+function menuCategoryKey(item: MenuItem): string {
+  return item.key ?? item.path ?? `cat:${item.name}`;
+}
+
 export function filterMenuByKeyword(items: MenuItem[], keyword: string): MenuItem[] {
   const normalized = normalizeMenuKeyword(keyword);
   if (!normalized) return items;
@@ -474,7 +485,8 @@ export function filterMenuByKeyword(items: MenuItem[], keyword: string): MenuIte
         // 부모 자신이 매칭되면 자식 전체 보존, 아니면 매칭된 자식만 남긴다.
         const nextChildren = selfMatch ? item.children : walk(item.children);
         if (selfMatch || nextChildren.length > 0) {
-          acc.push({ ...item, children: nextChildren });
+          // 안정 key 부여 → ProLayout 이 해시 대신 이 key 로 submenu 를 식별, openKeys 제어 가능.
+          acc.push({ ...item, key: menuCategoryKey(item), children: nextChildren });
         }
       } else if (selfMatch) {
         acc.push(item);
@@ -483,4 +495,18 @@ export function filterMenuByKeyword(items: MenuItem[], keyword: string): MenuIte
     }, []);
 
   return walk(items);
+}
+
+/**
+ * 메뉴 트리에서 자식을 가진 카테고리들의 submenu key 목록을 모은다 (검색 시 강제 펼침용).
+ * filterMenuByKeyword 가 부여한 것과 동일한 key 규칙을 사용한다.
+ */
+export function collectMenuOpenKeys(items: MenuItem[]): string[] {
+  return items.reduce<string[]>((acc, item) => {
+    if (item.children && item.children.length > 0) {
+      acc.push(menuCategoryKey(item));
+      acc.push(...collectMenuOpenKeys(item.children));
+    }
+    return acc;
+  }, []);
 }
