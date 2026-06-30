@@ -4,9 +4,6 @@ import com.otoki.powersales.domain.org.employee.service.EmployeeUpsertService
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertCommand
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertFailedRow
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertResult
-import com.otoki.powersales.external.sap.auth.audit.SapInboundAudit
-import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditEventType
-import com.otoki.powersales.external.sap.auth.audit.SapInboundAuditService
 import com.otoki.powersales.external.sap.inbound.dto.employee.EmployeeMasterRequestItem
 import io.mockk.every
 import io.mockk.mockk
@@ -22,28 +19,26 @@ import org.junit.jupiter.api.Test
 class SapEmployeeMasterServiceTest {
 
     private val employeeUpsertService: EmployeeUpsertService = mockk()
-    private val auditService: SapInboundAuditService = mockk()
-    private val service = SapEmployeeMasterService(employeeUpsertService, auditService)
+    private val service = SapEmployeeMasterService(employeeUpsertService)
 
     @Nested
     @DisplayName("upsert - 어댑터 책임")
     inner class AdapterResponsibilities {
 
         @Test
-        @DisplayName("happy: 도메인 결과 (success=2) → EmployeeMasterDetail, MANUAL_ORIGIN_PROTECTED 미호출 (audit 0회)")
+        @DisplayName("happy: 도메인 결과 (success=2) → EmployeeMasterDetail")
         fun happy_domainResultMapped() {
             val items = listOf(
                 EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"),
                 EmployeeMasterRequestItem(employeeCode = "100124", employeeName = "임꺽정")
             )
             every { employeeUpsertService.upsert(any()) } returns
-                EmployeeUpsertResult(successCount = 2, failureCount = 0, failures = emptyList(), protectedManualCodes = emptyList())
+                EmployeeUpsertResult(successCount = 2, failureCount = 0, failures = emptyList())
 
             val detail = service.upsert(items)
 
             assertThat(detail.successCount).isEqualTo(2)
             assertThat(detail.failureCount).isEqualTo(0)
-            verify(exactly = 0) { auditService.record(any()) }
         }
 
         @Test
@@ -57,8 +52,7 @@ class SapEmployeeMasterServiceTest {
                 EmployeeUpsertResult(
                     successCount = 1,
                     failureCount = 1,
-                    failures = listOf(EmployeeUpsertFailedRow("100124", "EmployeeName 필수")),
-                    protectedManualCodes = emptyList()
+                    failures = listOf(EmployeeUpsertFailedRow("100124", "EmployeeName 필수"))
                 )
 
             val detail = service.upsert(items)
@@ -78,31 +72,6 @@ class SapEmployeeMasterServiceTest {
 
             assertThatThrownBy { service.upsert(items) }
                 .isInstanceOf(IllegalStateException::class.java)
-        }
-
-        @Test
-        @DisplayName("Spec #579 - protectedManualCodes 존재 시 MANUAL_ORIGIN_PROTECTED audit 호출 (1회)")
-        fun manualOriginProtected_extraAudit() {
-            val items = listOf(
-                EmployeeMasterRequestItem(employeeCode = "100123", employeeName = "홍길동"),
-                EmployeeMasterRequestItem(employeeCode = "M0001", employeeName = "수동등록")
-            )
-            every { employeeUpsertService.upsert(any()) } returns
-                EmployeeUpsertResult(
-                    successCount = 1,
-                    failureCount = 0,
-                    failures = emptyList(),
-                    protectedManualCodes = listOf("M0001")
-                )
-            every { auditService.record(any()) } answers { firstArg<SapInboundAudit>() }
-
-            service.upsert(items)
-
-            val auditCaptor = slot<SapInboundAudit>()
-            verify(exactly = 1) { auditService.record(capture(auditCaptor)) }
-            val audit = auditCaptor.captured
-            assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.MANUAL_ORIGIN_PROTECTED)
-            assertThat(audit.reason).isEqualTo("M0001")
         }
 
         @Test
@@ -126,7 +95,7 @@ class SapEmployeeMasterServiceTest {
                 )
             )
             every { employeeUpsertService.upsert(any()) } returns
-                EmployeeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList(), protectedManualCodes = emptyList())
+                EmployeeUpsertResult(successCount = 1, failureCount = 0, failures = emptyList())
 
             service.upsert(items)
 

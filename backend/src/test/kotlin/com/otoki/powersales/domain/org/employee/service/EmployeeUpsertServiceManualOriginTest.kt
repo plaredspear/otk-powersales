@@ -4,7 +4,6 @@ import com.otoki.powersales.platform.common.repository.SystemCodeMasterRepositor
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.domain.org.employee.service.EmployeeUpsertService
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertCommand
 import com.otoki.powersales.user.repository.UserRepository
 import io.mockk.CapturingSlot
@@ -19,12 +18,12 @@ import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
 
 /**
- * Spec #579 — EmployeeUpsertService 가 origin=MANUAL 직원을 보호하는지 검증.
+ * EmployeeUpsertService — origin 처리 검증.
  *
- * 어댑터 ↔ 도메인 분리(#635 P2-B) 후 보호 로직은 도메인 서비스로 이전. 어댑터 측 audit 트리거 검증은
- * [com.otoki.powersales.external.sap.inbound.service.SapEmployeeMasterServiceTest] 의 `manualOriginProtected_extraAudit` 케이스 참조.
+ * 레거시 IF_REST_SAP_EmployeeMaster 정합으로 origin=MANUAL 보호 게이트(구 Spec #579)를 제거했다.
+ * SAP 인바운드는 origin 구분 없이 EmpCode 기준으로 전 행을 upsert 하며, 신규 INSERT 시 origin 은 SAP default 를 유지한다.
  */
-@DisplayName("EmployeeUpsertService - MANUAL 보호 테스트")
+@DisplayName("EmployeeUpsertService - origin 처리 테스트")
 class EmployeeUpsertServiceManualOriginTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
@@ -66,42 +65,26 @@ class EmployeeUpsertServiceManualOriginTest {
     }
 
     @Nested
-    @DisplayName("origin=MANUAL 직원 보호")
-    inner class ManualProtection {
+    @DisplayName("origin 무관 전 행 upsert (보호 게이트 제거 — 레거시 정합)")
+    inner class OriginAgnostic {
 
         @Test
-        @DisplayName("MANUAL 직원 - 갱신 차단, save 호출 안 됨, 카운트 미반영")
-        fun manualOriginNotUpdated() {
+        @DisplayName("기존 origin=MANUAL 직원도 갱신됨 - save 호출, 카운트 반영")
+        fun manualOriginUpdated() {
             val manualEmployee = Employee(employeeCode = "ADMIN-001", name = "기존관리자").apply {
                 origin = EmployeeOrigin.MANUAL
                 appLoginActive = false
             }
             every { employeeRepository.findByEmployeeCodeIn(listOf("ADMIN-001")) } returns listOf(manualEmployee)
             every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            val savedSlot = stubSaveAllCapture()
 
-            val result = service.upsert(listOf(command(lockingFlag = "Y")))
+            val result = service.upsert(listOf(command(employeeName = "갱신된이름", lockingFlag = "Y")))
 
-            assertThat(manualEmployee.name).isEqualTo("기존관리자")
-            assertThat(manualEmployee.appLoginActive).isFalse
-            assertThat(result.successCount).isEqualTo(0)
+            assertThat(manualEmployee.name).isEqualTo("갱신된이름")
+            assertThat(result.successCount).isEqualTo(1)
             assertThat(result.failureCount).isEqualTo(0)
-            assertThat(result.failures).isEmpty()
-            assertThat(result.protectedManualCodes).containsExactly("ADMIN-001")
-            verify(exactly = 0) { employeeRepository.saveAll(any<List<Employee>>()) }
-        }
-
-        @Test
-        @DisplayName("MANUAL 보호 발생 - protectedManualCodes 에 사번 1건 누적")
-        fun manualOriginCodeRecorded() {
-            val manualEmployee = Employee(employeeCode = "ADMIN-001", name = "기존관리자").apply {
-                origin = EmployeeOrigin.MANUAL
-            }
-            every { employeeRepository.findByEmployeeCodeIn(listOf("ADMIN-001")) } returns listOf(manualEmployee)
-            every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
-
-            val result = service.upsert(listOf(command()))
-
-            assertThat(result.protectedManualCodes).containsExactly("ADMIN-001")
+            assertThat(savedSlot.captured.single().employeeCode).isEqualTo("ADMIN-001")
         }
 
         @Test
@@ -137,8 +120,8 @@ class EmployeeUpsertServiceManualOriginTest {
         }
 
         @Test
-        @DisplayName("응답 형식 불변 - 정상 1건 + MANUAL 1건 + 검증실패 1건 -> success=1, failure=1, protected=1")
-        fun responseShapeUnchanged() {
+        @DisplayName("정상 1건 + MANUAL 1건 + 검증실패 1건 -> success=2(MANUAL 포함), failure=1")
+        fun mixedRows() {
             val manualEmployee = Employee(employeeCode = "ADMIN-001", name = "관리자").apply {
                 origin = EmployeeOrigin.MANUAL
             }
@@ -152,15 +135,15 @@ class EmployeeUpsertServiceManualOriginTest {
             val result = service.upsert(
                 listOf(
                     command(employeeCode = "E001", employeeName = "변경된"),
-                    command(employeeCode = "ADMIN-001", employeeName = "공격이름"),
+                    command(employeeCode = "ADMIN-001", employeeName = "관리자갱신"),
                     command(employeeCode = "E002", employeeName = "")
                 )
             )
 
-            assertThat(result.successCount).isEqualTo(1)
+            // MANUAL(ADMIN-001) 도 이제 갱신 대상 → SAP 직원과 함께 success=2.
+            assertThat(result.successCount).isEqualTo(2)
             assertThat(result.failureCount).isEqualTo(1)
             assertThat(result.failures.single().identifier).isEqualTo("E002")
-            assertThat(result.protectedManualCodes).containsExactly("ADMIN-001")
         }
     }
 }

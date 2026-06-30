@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.org.employee.service
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
 import com.otoki.powersales.domain.org.employee.enums.Gender
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.employee.service.dto.EmployeeUpsertCommand
@@ -23,7 +22,7 @@ import java.time.format.DateTimeParseException
  *
  * ## 레거시 매핑
  * - 진입점: SAP 인바운드 어댑터 [com.otoki.powersales.external.sap.inbound.service.SapEmployeeMasterService]
- * - origin spec: #557 (SAP 직원 마스터 인바운드) + #579 (origin=MANUAL 보호) — 어댑터/도메인 분리: #635 P2-B
+ * - origin spec: #557 (SAP 직원 마스터 인바운드) — 어댑터/도메인 분리: #635 P2-B
  *
  * ## 레거시 동작 요약
  * 1. 입력: `List<EmployeeUpsertCommand>` (UPSERT 키 [EmployeeUpsertCommand.employeeCode]).
@@ -31,7 +30,7 @@ import java.time.format.DateTimeParseException
  *    `companyCode == "1000"` 필터).
  * 3. 행 단위 검증/변환/적용 (try/catch):
  *    - 필수값 (`employeeCode`/`employeeName`) 누락 → IllegalArgumentException → failures.
- *    - 기존 entity origin=MANUAL → 갱신 스킵 + [EmployeeUpsertResult.protectedManualCodes] 누적 (#579).
+ *    - 레거시 IF_REST_SAP_EmployeeMaster 정합 — origin 구분 없이 전 행 upsert (수기 등록 사원도 갱신 대상).
  *    - Gender 변환 (`"1"` → MALE / `"2"` → FEMALE / 그 외 → null), 날짜 (`yyyyMMdd`, 빈값/`"00000000"` → `2999-12-31` 센티넬), birthdate 정규화,
  *      status code map lookup (매칭 시 detailCodeName, 미매칭 시 raw), LockingFlag (`"Y"` → false / 그 외 → true) 적용.
  * 4. 외부 호출: [EmployeeRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 트랜잭션 롤백하지 않음.
@@ -80,7 +79,6 @@ class EmployeeUpsertService(
 
         val failures = mutableListOf<EmployeeUpsertFailedRow>()
         val toSave = mutableListOf<Employee>()
-        val protectedManualCodes = mutableListOf<String>()
 
         commands.forEach { command ->
             try {
@@ -89,13 +87,9 @@ class EmployeeUpsertService(
                 val employeeName = command.employeeName?.takeIf { it.isNotBlank() }
                     ?: throw IllegalArgumentException("EmployeeName 필수")
 
+                // 레거시 IF_REST_SAP_EmployeeMaster 정합 — origin 구분 없이 EmpCode 기준으로 전 행 upsert.
+                // (수기 등록 사원도 SAP 인바운드 갱신 대상. origin=MANUAL 보호 게이트는 제거.)
                 val existing = cache[employeeCode]
-                if (existing != null && existing.origin == EmployeeOrigin.MANUAL) {
-                    // Spec #579: origin=MANUAL 직원은 SAP 인바운드 갱신 대상에서 제외.
-                    // 응답·카운트에 영향 없음. 어댑터가 별도 audit 으로 기록.
-                    protectedManualCodes += employeeCode
-                    return@forEach
-                }
 
                 val convertedGender = Gender.fromSapCode(command.gender)
                 val startDate = parseDate(command.startDate, "StartDate")
@@ -175,8 +169,7 @@ class EmployeeUpsertService(
         return EmployeeUpsertResult(
             successCount = toSave.size,
             failureCount = failures.size,
-            failures = failures,
-            protectedManualCodes = protectedManualCodes
+            failures = failures
         )
     }
 

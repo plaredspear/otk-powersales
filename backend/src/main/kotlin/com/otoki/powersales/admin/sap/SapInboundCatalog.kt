@@ -36,7 +36,7 @@ object SapInboundCatalog {
             requiredScope = "sap.employee.write",
             targetEntity = "Employee",
             controllerClass = "SapEmployeeMasterController",
-            description = "사원 마스터 페이지 단위 UPSERT. origin=MANUAL 사원은 보호 차단(MANUAL_ORIGIN_PROTECTED).",
+            description = "사원 마스터 페이지 단위 UPSERT. origin 구분 없이 EmpCode 기준 전 행 갱신 (레거시 정합).",
         ),
         SapInboundCatalogItem(
             endpointPath = "/api/v1/sap/product",

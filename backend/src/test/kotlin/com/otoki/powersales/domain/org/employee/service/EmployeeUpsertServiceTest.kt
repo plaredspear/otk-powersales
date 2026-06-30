@@ -375,12 +375,12 @@ class EmployeeUpsertServiceTest {
     }
 
     @Nested
-    @DisplayName("upsert - Spec #579 origin=MANUAL 보호")
-    inner class ManualOriginProtection {
+    @DisplayName("upsert - origin 무관 전 행 갱신 (레거시 IF_REST_SAP_EmployeeMaster 정합)")
+    inner class OriginAgnosticUpsert {
 
         @Test
-        @DisplayName("기존 origin=MANUAL - 갱신 스킵 + protectedManualCodes 누적, successCount 영향 없음")
-        fun upsert_manualOriginProtected() {
+        @DisplayName("기존 origin=MANUAL 사원도 SAP 인바운드로 갱신됨 (보호 게이트 제거)")
+        fun upsert_manualOriginAlsoUpdated() {
             val manualEmp = Employee(employeeCode = "M0001", name = "수동등록", origin = EmployeeOrigin.MANUAL)
             val sapEmp = Employee(employeeCode = "100123", name = "SAP기존")
             every { employeeRepository.findByEmployeeCodeIn(listOf("M0001", "100123")) } returns listOf(manualEmp, sapEmp)
@@ -394,10 +394,11 @@ class EmployeeUpsertServiceTest {
                 )
             )
 
-            assertThat(result.successCount).isEqualTo(1) // SAP 직원만 갱신
-            assertThat(result.protectedManualCodes).containsExactly("M0001")
-            // SAP 직원만 saveAll 에 포함
-            assertThat(savedSlot.captured.single().employeeCode).isEqualTo("100123")
+            // MANUAL 사원도 갱신 대상 — 두 행 모두 적재.
+            assertThat(result.successCount).isEqualTo(2)
+            val savedByCode = savedSlot.captured.associateBy { it.employeeCode }
+            assertThat(savedByCode.keys).containsExactlyInAnyOrder("M0001", "100123")
+            assertThat(savedByCode["M0001"]!!.name).isEqualTo("갱신요청")
         }
     }
 
@@ -576,15 +577,19 @@ class EmployeeUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("E5 origin=MANUAL 기존 Employee - 이벤트 발행 안 함")
-        fun upsert_manualOriginExisting_doesNotPublish() {
+        @DisplayName("E5 origin=MANUAL 기존 Employee(User 부재) - 보호 게이트 제거로 갱신 + 프로비저닝 이벤트 발행")
+        fun upsert_manualOriginExisting_nowUpdatesAndPublishes() {
             val existing = Employee(employeeCode = "100123", name = "기존").apply { origin = EmployeeOrigin.MANUAL }
             every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(existing)
             every { systemCodeMasterRepository.findByGroupCodeIn(listOf("H10010")) } returns emptyList()
+            every { employeeRepository.saveAll(any<List<Employee>>()) } answers { firstArg<List<Employee>>() }
+            // User 가 없음 → MANUAL 사원도 갱신 대상이 되며 provisioning 이벤트 발행 대상.
+            every { userRepository.findByEmployeeCodeIn(listOf("100123")) } returns emptyList()
+            val eventSlot = stubEventCapture()
 
-            service.upsert(listOf(command(employeeCode = "100123", employeeName = "변경시도")))
+            service.upsert(listOf(command(employeeCode = "100123", employeeName = "변경시도", email = "m@otoki.com")))
 
-            verify(exactly = 0) { eventPublisher.publishEvent(any<EmployeesCreatedEvent>()) }
+            assertThat(eventSlot.captured.employees.map { it.employeeCode }).containsExactly("100123")
         }
 
         @Test
