@@ -4,6 +4,7 @@ import type { ApiResponse } from './types';
 export interface UserListParams {
   keyword?: string;
   isActive?: boolean;
+  profileId?: number;
   page: number;
   size: number;
 }
@@ -67,7 +68,7 @@ export interface UserPasswordResetResult {
 /**
  * web admin User 목록 조회.
  *
- * keyword (username/employeeCode/name 부분일치) + isActive 필터 + 페이지네이션 파라미터로 admin API 호출.
+ * keyword (username/employeeCode/name 부분일치) + isActive + profileId 필터 + 페이지네이션 파라미터로 admin API 호출.
  */
 export async function fetchUsers(params: UserListParams): Promise<UserListData> {
   const res = await client.get<ApiResponse<UserListData>>('/api/v1/admin/users', { params });

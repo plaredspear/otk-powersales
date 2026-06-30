@@ -36634,6 +36634,14 @@
           }
         }, {
           "in" : "query",
+          "name" : "profileId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {

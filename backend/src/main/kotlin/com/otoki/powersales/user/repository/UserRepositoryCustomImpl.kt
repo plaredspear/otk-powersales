@@ -13,7 +13,7 @@ class UserRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : UserRepositoryCustom {
 
-    override fun findUsers(keyword: String?, isActive: Boolean?, pageable: Pageable): Page<User> {
+    override fun findUsers(keyword: String?, isActive: Boolean?, profileId: Long?, pageable: Pageable): Page<User> {
         val where = BooleanBuilder()
             .and(user.isDeleted.isNull.or(user.isDeleted.isFalse))
 
@@ -26,6 +26,9 @@ class UserRepositoryCustomImpl(
         }
         if (isActive != null) {
             where.and(user.isActive.eq(isActive))
+        }
+        if (profileId != null) {
+            where.and(user.profileId.eq(profileId))
         }
 
         val content = queryFactory
