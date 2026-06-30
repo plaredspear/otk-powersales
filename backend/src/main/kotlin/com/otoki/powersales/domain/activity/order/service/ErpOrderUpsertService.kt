@@ -39,7 +39,7 @@ import java.time.format.DateTimeFormatter
  * - Account FK: SAPAccountCode → [AccountRepository.findByExternalKeyIn] resolve 거래처를 헤더의
  *   [ErpOrder.account] (account_id) + [ErpOrder.accountSfid] 에 연결 (레거시 `AccountId__c` MasterDetail 정합).
  * - 날짜: 빈값/`00000000`/파싱 실패 → `2999-12-31` 센티넬 ([parseDate], 레거시 `Util.convertStringToDate` 정합).
- * - 라인 externalKey: `ShippingVehicle` 을 키에서 제외 (의도적 개선, [computeExternalKey] 참조).
+ * - 라인 externalKey: `주문번호(선행 0 한 자리 제거)+라인번호 (+ShippingVehicle non-blank 시)` — 레거시 키 규격 정합 ([computeExternalKey] 참조).
  *
  * cross-domain 의존: [AccountRepository] (Account 매칭 lookup) — lookup 용도 read-only.
  * `sap.*` 패키지 의존 0건.
@@ -191,21 +191,19 @@ class ErpOrderUpsertService(
     }
 
     /**
-     * 라인 externalKey 도출 — `SAPOrderNumber(선행 0 한 자리 제거) + LineNumber`.
+     * 라인 externalKey 도출 — `SAPOrderNumber(선행 0 한 자리 제거) + LineNumber (+ ShippingVehicle)`.
      *
-     * 레거시 의도적 deviation (유지보수 우선): SF `IF_REST_SAP_ClientOrderReceive` 는 키 말미에
-     * `ShippingVehicle`(배송 차량번호) 도 조건부로 붙였다(non-blank 시). 그 결과 동일 (주문번호+라인번호)
-     * 라도 차량번호가 달라지면 별개 row 로 insert 되어 같은 주문 라인이 여러 레코드로 쪼개지는
-     * 부작용이 있었다(레거시 분석상 orphan/중복 라인 발생 경로). 신규는 ShippingVehicle 을 키에서
-     * 제외해 (주문번호+라인번호) 단일 키로 upsert 하므로, 차량 변경은 같은 라인의 갱신으로 수렴한다.
-     * ShippingVehicle 값 자체는 [applyLineFields] 에서 컬럼에 보존된다 (키에서만 뺀 것).
+     * 레거시 `IF_REST_SAP_ClientOrderReceive.cls:141-142` 정합 — 기본 키는 `주문번호+라인번호` 이고,
+     * `ShippingVehicle`(배송 차량번호) 이 비어있지 않으면 키 말미에 차량번호를 덧붙인다 (사전 협의된 키 규격).
      * 선행 0 제거는 한 자리만 — 레거시 `substring(1)` 동작 그대로 (0이 2개면 1개만 제거).
+     * ShippingVehicle 값 자체는 [applyLineFields] 에서 컬럼에도 적재된다.
      */
     private fun computeExternalKey(line: ErpOrderLineCommand): String? {
         val orderNumber = line.sapOrderNumber?.takeIf { it.isNotBlank() } ?: return null
         val lineNumber = line.lineNumber?.takeIf { it.isNotBlank() } ?: return null
         val trimmed = if (orderNumber.startsWith("0")) orderNumber.substring(1) else orderNumber
-        return trimmed + lineNumber
+        val shippingVehicle = line.shippingVehicle?.takeIf { it.isNotBlank() }.orEmpty()
+        return trimmed + lineNumber + shippingVehicle
     }
 
     private fun sanitizeTime(value: String?): String? {

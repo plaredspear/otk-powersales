@@ -269,18 +269,12 @@ class ErpOrderUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("차량 정보 후속 갱신 - 동일 externalKey 로 UPDATE, shippingVehicle 갱신")
-        fun upsert_subsequentVehicleUpdate() {
-            val existingLine = ErpOrderProduct(
-                erpOrder = ErpOrder(sapOrderNumber = "0010012345"),
-                sapOrderNumber = "0010012345",
-                lineNumber = "001",
-                externalKey = "010012345001"
-            ).also { it.shippingVehicle = null }
-
+        @DisplayName("ShippingVehicle 이 externalKey 말미에 포함 - 차량번호 있는 라인은 차량번호 포함 키로 적재 (레거시 키 규격)")
+        fun upsert_shippingVehicleAppendedToKey() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
             every { erpOrderRepository.findBySapOrderNumber("0010012345") } returns null
-            every { erpOrderProductRepository.findByExternalKey("010012345001") } returns existingLine
+            // 차량번호 포함 키로 조회 — 신규 row.
+            every { erpOrderProductRepository.findByExternalKey("01001234500112가3456") } returns null
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -290,7 +284,8 @@ class ErpOrderUpsertServiceTest {
             )
 
             val saved = captor.captured.single()
-            assertThat(saved).isSameAs(existingLine)
+            // 레거시 IF_REST_SAP_ClientOrderReceive.cls:142 정합 — 키 말미에 ShippingVehicle 덧붙임.
+            assertThat(saved.externalKey).isEqualTo("01001234500112가3456")
             assertThat(saved.shippingVehicle).isEqualTo("12가3456")
         }
 
