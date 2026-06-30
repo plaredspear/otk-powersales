@@ -426,6 +426,7 @@ export const menuRoute: MenuRoute = {
       name: '개발자 도구',
       icon: <ToolOutlined />,
       children: [
+        { path: '/admin/tools/dashboard', name: '대시보드', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/tools/external-api', name: '외부 API 테스트', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/scheduled-jobs', name: '스케줄 잡', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/tools/sap-integration', name: 'SAP 연동', systemPermission: 'VIEW_ALL_DATA' },

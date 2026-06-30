@@ -81,6 +81,7 @@ const NaverGeocodeTestPage = lazy(() => import('@/pages/admin/NaverGeocodeTestPa
 const ExternalApiTestPage = lazy(() => import('@/pages/admin/tools/external-api/ExternalApiTestPage'));
 const AppPackagePage = lazy(() => import('@/pages/admin/app-packages/AppPackagePage'));
 const ScheduledJobsPage = lazy(() => import('@/pages/admin/scheduled-jobs/ScheduledJobsPage'));
+const ToolsDashboardPage = lazy(() => import('@/pages/admin/tools/dashboard/ToolsDashboardPage'));
 const SapIntegrationPage = lazy(() => import('@/pages/admin/tools/sap-integration/SapIntegrationPage'));
 const SfMigrationPage = lazy(() => import('@/pages/admin/tools/sf-migration/SfMigrationPage'));
 const SfMigrationStage1Page = lazy(() => import('@/pages/admin/tools/sf-migration-stage1/SfMigrationStage1Page'));
@@ -347,6 +348,7 @@ export const router = createBrowserRouter(
                 {
                   element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
                   children: [
+                    { path: '/admin/tools/dashboard', element: <LazyWrapper><ToolsDashboardPage /></LazyWrapper> },
                     { path: '/admin/tools/scheduled-jobs', element: <LazyWrapper><ScheduledJobsPage /></LazyWrapper> },
                   ],
                 },
