@@ -11,7 +11,6 @@ import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -365,32 +364,31 @@ class AccountUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("Spec #575 - ConsignmentAcc 형식 위반 (소문자 'y') → 행 단위 부분 실패")
-        fun upsert_consignmentAccInvalidLowercase() {
+        @DisplayName("레거시 정합 - ConsignmentAcc 화이트리스트 외 값(소문자 'y')도 검증 없이 raw 저장")
+        fun upsert_consignmentAccNonWhitelistRawStored() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
             every { organizationRepository.findAll() } returns emptyList()
-            every { accountRepository.saveAll(any<List<Account>>()) } answers { firstArg<List<Account>>() }
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(consignmentAcc = "y")))
 
-            assertThat(result.successCount).isEqualTo(0)
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().identifier).isEqualTo("1032619")
-            assertThat(result.failures.single().reason).contains("ConsignmentAcc 형식 오류: y")
-            verify(exactly = 0) { accountRepository.saveAll(any<List<Account>>()) }
+            // 레거시 IF_REST_SAP_ClientMasterReceive.cls:127 정합 — Y/N/"" 외 값도 무검증 통과.
+            assertThat(result.successCount).isEqualTo(1)
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(savedSlot.captured.single().consignmentAcc).isEqualTo("y")
         }
 
         @Test
-        @DisplayName("Spec #575 - ConsignmentAcc 형식 위반 (2자) → 행 단위 부분 실패")
-        fun upsert_consignmentAccInvalidLength() {
+        @DisplayName("레거시 정합 - ConsignmentAcc 2자 값도 검증 없이 raw 저장")
+        fun upsert_consignmentAccMultiCharRawStored() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
             every { organizationRepository.findAll() } returns emptyList()
-            every { accountRepository.saveAll(any<List<Account>>()) } answers { firstArg<List<Account>>() }
+            val savedSlot = stubSaveAllCapture()
 
             val result = service.upsert(listOf(command(consignmentAcc = "YN")))
 
-            assertThat(result.failureCount).isEqualTo(1)
-            assertThat(result.failures.single().reason).contains("ConsignmentAcc 형식 오류: YN")
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(savedSlot.captured.single().consignmentAcc).isEqualTo("YN")
         }
 
         @Test

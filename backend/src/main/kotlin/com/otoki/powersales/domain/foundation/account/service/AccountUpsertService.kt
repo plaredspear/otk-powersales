@@ -21,8 +21,9 @@ import org.springframework.transaction.annotation.Transactional
  * ## 레거시 동작 요약
  * 1. 입력: `List<AccountUpsertCommand>` (외부 키 [AccountUpsertCommand.externalKey] = SAP 거래처 코드).
  * 2. 캐시 빌드: [AccountRepository.findByExternalKeyIn] / [EmployeeRepository.findByEmployeeCodeIn] / [OrganizationLookup.build].
- * 3. 행 단위 검증 (try/catch): 필수값(`externalKey`/`name`) → `consignmentAcc` 화이트리스트(`Y`/`N`/`""`) →
+ * 3. 행 단위 검증 (try/catch): 필수값(`externalKey`/`name`) →
  *    [OrganizationLookup.match] 폴백 lookup → [AccountUpsertMapper] 로 신규 생성 또는 기존 갱신.
+ *    `consignmentAcc` 는 레거시 정합으로 화이트리스트 검증 없이 raw 적재한다.
  *    `employeeCode` 는 미매칭이어도 owner=null 로 silent 저장 (레거시 정합 — row failure 아님).
  * 4. 외부 호출: [AccountRepository.saveAll] (성공 행만 일괄). 행 검증 실패는 [AccountUpsertResult.failures] 누적, 트랜잭션 롤백하지 않음.
  *
@@ -78,13 +79,9 @@ class AccountUpsertService(
                 // skip 하고 진행하는 동작 동등. 담당 사원 마스터가 거래처보다 늦게 도착해도 거래처 유실 없음.
                 // (employeeByCode 존재 검증은 row failure 로 막지 않는다 — owner=null 로 수렴.)
 
-                if (command.consignmentAcc != null && command.consignmentAcc !in CONSIGNMENT_ACC_ALLOWED) {
-                    failures += AccountUpsertFailedRow(
-                        externalKey,
-                        Reasons.consignmentAccInvalid(command.consignmentAcc)
-                    )
-                    return@forEach
-                }
+                // 레거시 정합 — ConsignmentAcc 는 화이트리스트 검증 없이 raw 그대로 적재한다.
+                // (IF_REST_SAP_ClientMasterReceive.cls:127 `acc.ConsignmentAcc__c = obj.ConsignmentAcc` —
+                //  Y/N/"" 외 값도 무검증 통과. SAP 가 거래처 마스터 권위 소스이므로 inbound 에서 막지 않는다.)
 
                 val matchedOrg = orgLookup.match(command)
                 val matchedUser = command.employeeCode?.let { userByEmployeeCode[it] }
@@ -109,13 +106,9 @@ class AccountUpsertService(
     }
 
     companion object {
-        // Spec #575: ConsignmentAcc 허용 값. null 은 미입력 → 검증 스킵.
-        private val CONSIGNMENT_ACC_ALLOWED = setOf("Y", "N", "")
-
         private object Reasons {
             const val EXTERNAL_KEY_REQUIRED = "SAPAccountCode 필수"
             const val NAME_REQUIRED = "Name 필수"
-            fun consignmentAccInvalid(value: String) = "ConsignmentAcc 형식 오류: $value"
         }
     }
 }
