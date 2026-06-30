@@ -10,7 +10,9 @@ import {
   triggerOroraMonthlyMaterialize,
   triggerOroraMonthlyMaterializeChunk,
   triggerPptMaster,
+  setScheduledJobRuntimeEnabled,
   type PptMasterTriggerAction,
+  type RegisteredScheduledJob,
   type ScheduledJobRunsQuery,
 } from '@/api/admin/scheduledJob';
 
@@ -29,6 +31,21 @@ export function useScheduledJobCatalog() {
     queryKey: [...KEY_BASE, 'catalog'],
     queryFn: getScheduledJobCatalog,
     staleTime: Infinity,
+  });
+}
+
+/**
+ * 스케줄 잡 런타임 활성/비활성 변경 mutation.
+ * 성공 시 서버가 돌려준 최신 카탈로그로 캐시를 직접 갱신한다 (catalog 는 staleTime: Infinity).
+ */
+export function useSetScheduledJobRuntimeEnabled() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobName, enabled }: { jobName: string; enabled: boolean }) =>
+      setScheduledJobRuntimeEnabled(jobName, enabled),
+    onSuccess: (catalog: RegisteredScheduledJob[]) => {
+      queryClient.setQueryData([...KEY_BASE, 'catalog'], catalog);
+    },
   });
 }
 

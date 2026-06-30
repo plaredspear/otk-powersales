@@ -17,7 +17,7 @@ class TeamMemberScheduleSapOutboundBatch(
     @Scheduled(cron = "\${app.sap.outbound.team-member-schedule.cron:0 0 1 * * *}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT10M", lockAtLeastFor = "PT30S")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             teamMemberScheduleSapBatchService.runDaily(ctx)
         }
     }

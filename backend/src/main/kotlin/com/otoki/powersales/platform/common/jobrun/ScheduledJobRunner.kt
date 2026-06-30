@@ -1,5 +1,6 @@
 package com.otoki.powersales.platform.common.jobrun
 
+import com.otoki.powersales.platform.batch.toggle.ScheduledJobToggleStore
 import tools.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -23,12 +24,31 @@ import java.time.LocalDateTime
 class ScheduledJobRunner(
     private val repository: ScheduledJobRunRepository,
     private val objectMapper: ObjectMapper,
+    private val toggleStore: ScheduledJobToggleStore,
     transactionManager: PlatformTransactionManager,
 ) {
     private val log = LoggerFactory.getLogger(ScheduledJobRunner::class.java)
 
     private val newTxTemplate = TransactionTemplate(transactionManager).apply {
         propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
+    }
+
+    /**
+     * 자동 스케줄(`@Scheduled`) 본문 실행 래퍼.
+     *
+     * 런타임 토글이 **비활성**이면 본문([block])을 실행하지 않고 `SKIPPED` 이력 1행만 남긴다.
+     * 활성(기본)이면 [run] 과 동일하게 본문을 실행하고 SUCCESS/FAILURE 이력을 남긴다.
+     *
+     * 운영자가 admin 화면에서 명시적으로 누르는 수동 트리거는 본 메서드가 아니라 [run] 을 사용해
+     * 토글과 무관하게 항상 실행되도록 한다.
+     */
+    fun runScheduled(jobName: String, block: (ScheduledJobRunContext) -> Unit) {
+        if (!toggleStore.isEnabled(jobName)) {
+            log.info("[SCHEDULED_JOB_TOGGLE] 비활성 잡 — 실행 생략(SKIPPED). jobName={}", jobName)
+            recordSkipped(jobName)
+            return
+        }
+        run(jobName, block)
     }
 
     fun <T> run(jobName: String, block: (ScheduledJobRunContext) -> T): T {
@@ -44,6 +64,26 @@ class ScheduledJobRunner(
         }
         recordSuccess(runId, jobName, context.pendingMetadata())
         return result
+    }
+
+    /** 비활성 토글로 건너뛴 잡의 SKIPPED 이력 1행 기록 (즉시 종료 상태). */
+    private fun recordSkipped(jobName: String) {
+        try {
+            newTxTemplate.executeWithoutResult {
+                val now = LocalDateTime.now()
+                repository.save(
+                    ScheduledJobRun(
+                        jobName = jobName,
+                        startedAt = now,
+                        endedAt = now,
+                        status = ScheduledJobRun.STATUS_SKIPPED,
+                        createdAt = now,
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            log.warn("ScheduledJobRunner INSERT(SKIPPED) 실패: jobName={}", jobName, e)
+        }
     }
 
     private fun insertRunningRow(jobName: String, startedAt: LocalDateTime): Long? = try {

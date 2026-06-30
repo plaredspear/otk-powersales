@@ -8,7 +8,7 @@ import type { ApiResponse } from '../types';
  * (`SYSTEM_ADMIN` role 만 보유).
  */
 
-export type ScheduledJobStatus = 'RUNNING' | 'SUCCESS' | 'FAILURE';
+export type ScheduledJobStatus = 'RUNNING' | 'SUCCESS' | 'FAILURE' | 'SKIPPED';
 
 export interface ScheduledJobRun {
   id: number;
@@ -44,6 +44,11 @@ export interface RegisteredScheduledJob {
   description: string;
   /** 현재 환경에서 해당 배치가 실제로 스케줄링 활성화되어 있는지 여부 (backend 빈 등록 기준). */
   enabled: boolean;
+  /**
+   * 런타임 토글 활성 여부 (Redis). 운영 중 끄고 켜는 토글로, 빈 등록 여부인 enabled 와 별개.
+   * false 면 자동 스케줄 발화 시 본문을 실행하지 않고 SKIPPED 이력만 남긴다.
+   */
+  runtimeEnabled: boolean;
 }
 
 export interface ScheduledJobRunsQuery {
@@ -74,6 +79,24 @@ export async function getScheduledJobCatalog(): Promise<RegisteredScheduledJob[]
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '등록된 작업 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 스케줄 잡 런타임 활성/비활성 변경.
+ * 변경 후 최신 카탈로그(런타임 활성 상태 포함)를 반환한다. `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function setScheduledJobRuntimeEnabled(
+  jobName: string,
+  enabled: boolean,
+): Promise<RegisteredScheduledJob[]> {
+  const res = await client.put<ApiResponse<RegisteredScheduledJob[]>>(
+    '/api/v1/admin/scheduled-jobs/toggle',
+    { jobName, enabled },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '스케줄 잡 활성/비활성 변경에 실패했습니다');
   }
   return res.data.data;
 }

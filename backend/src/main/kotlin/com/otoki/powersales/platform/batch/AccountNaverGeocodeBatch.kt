@@ -20,7 +20,7 @@ class AccountNaverGeocodeBatch(
     @Scheduled(cron = CRON)
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             val result = service.enrichCoordinatesMissingAccounts(BATCH_SIZE)
             log.info(
                 "ACCOUNT_NAVER_GEOCODE_BATCH scanned={} succeeded={} failed={}",

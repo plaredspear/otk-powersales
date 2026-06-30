@@ -27,7 +27,7 @@ class StaffReviewSyncBatch(
     @Scheduled(cron = CRON)
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT55M", lockAtLeastFor = "PT1M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             syncService.sync(ctx)
         }
     }

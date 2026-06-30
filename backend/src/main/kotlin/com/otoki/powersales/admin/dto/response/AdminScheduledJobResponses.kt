@@ -41,6 +41,12 @@ data class RegisteredScheduledJobDto(
      * (빈 등록 = 활성). local 등 프로필이나 enabled=false 설정으로 비활성화된 잡은 `false`.
      */
     val enabled: Boolean,
+    /**
+     * 런타임 토글 활성 여부 (Redis). 운영 중 끄고 켜는 토글로, 빈 등록 여부인 [enabled] 와 별개다.
+     * `false` 면 자동 스케줄 발화 시 본문을 실행하지 않고 `SKIPPED` 이력만 남긴다.
+     * 정적으로 비활성([enabled]=false)인 잡은 애초에 발화하지 않으므로 본 값의 영향을 받지 않는다.
+     */
+    val runtimeEnabled: Boolean,
 )
 
 /**

@@ -35,7 +35,7 @@ class OroraMonthlySalesMaterializeBatch(
     // 첫 운영 실행의 실측 소요시간(ORORA_MONTHLY_MATERIALIZE elapsedMs 로그) 기반으로 추후 조정.
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT2H", lockAtLeastFor = "PT30S")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             val result = facade.materializeMonthly()
             ctx.metadata(
                 mapOf(

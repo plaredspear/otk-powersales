@@ -98,8 +98,8 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
     @DisplayName("GET /catalog - 응답 매핑 + enabled 활성/비활성 플래그 직렬화")
     fun catalog_ok() {
         every { adminScheduledJobService.catalog() } returns listOf(
-                RegisteredScheduledJobDto("sap-outbox-worker", "*/30 * * * * *", "SAP outbox worker", enabled = true),
-                RegisteredScheduledJobDto("pptMaster.expire", "0 0 23 * * *", "전문행사조 만료", enabled = false),
+                RegisteredScheduledJobDto("sap-outbox-worker", "*/30 * * * * *", "SAP outbox worker", enabled = true, runtimeEnabled = true),
+                RegisteredScheduledJobDto("pptMaster.expire", "0 0 23 * * *", "전문행사조 만료", enabled = false, runtimeEnabled = true),
             )
 
         mockMvc.perform(get("/api/v1/admin/scheduled-jobs/catalog"))

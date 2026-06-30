@@ -11,6 +11,7 @@ const STATUS_TAG_COLOR: Record<ScheduledJobStatus, string> = {
   SUCCESS: 'green',
   FAILURE: 'red',
   RUNNING: 'blue',
+  SKIPPED: 'default',
 };
 
 interface Props {

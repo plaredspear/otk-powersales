@@ -17,7 +17,7 @@ class DisplayMasterSapOutboundBatch(
     @Scheduled(cron = "\${app.sap.outbound.display.cron:0 0 23 * * *}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT10M", lockAtLeastFor = "PT30S")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             displayMasterBatchService.runDaily(ctx)
         }
     }

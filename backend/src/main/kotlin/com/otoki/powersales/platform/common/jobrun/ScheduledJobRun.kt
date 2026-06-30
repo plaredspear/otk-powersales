@@ -58,6 +58,10 @@ class ScheduledJobRun(
         const val STATUS_RUNNING = "RUNNING"
         const val STATUS_SUCCESS = "SUCCESS"
         const val STATUS_FAILURE = "FAILURE"
+
+        /** 런타임 토글 비활성 상태라 본문을 실행하지 않고 건너뛴 경우 (스케줄 잡 토글). */
+        const val STATUS_SKIPPED = "SKIPPED"
+
         const val ERROR_MESSAGE_MAX_LENGTH = 4000
     }
 }

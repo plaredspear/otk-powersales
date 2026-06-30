@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
+import com.otoki.powersales.admin.dto.request.ScheduledJobToggleRequest
 import com.otoki.powersales.admin.dto.request.OroraDailyMaterializeChunkTriggerRequest
 import com.otoki.powersales.admin.dto.request.OroraDailyMaterializeTriggerRequest
 import com.otoki.powersales.admin.dto.request.OroraMonthlyMaterializeChunkTriggerRequest
@@ -24,6 +25,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -71,6 +73,16 @@ class AdminScheduledJobController(
     @GetMapping("/api/v1/admin/scheduled-jobs/catalog")
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
     fun getCatalog(): ResponseEntity<ApiResponse<List<RegisteredScheduledJobDto>>> {
+        return ResponseEntity.ok(ApiResponse.success(adminScheduledJobService.catalog()))
+    }
+
+    @PutMapping("/api/v1/admin/scheduled-jobs/toggle")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun setRuntimeEnabled(
+        @RequestBody request: ScheduledJobToggleRequest,
+    ): ResponseEntity<ApiResponse<List<RegisteredScheduledJobDto>>> {
+        adminScheduledJobService.setRuntimeEnabled(request.jobName, request.enabled)
+        // 변경 후 최신 카탈로그(런타임 활성 상태 포함)를 그대로 돌려준다.
         return ResponseEntity.ok(ApiResponse.success(adminScheduledJobService.catalog()))
     }
 

@@ -28,7 +28,7 @@ class ErpOrderRetentionBatch(
     @Scheduled(cron = "\${app.batch.erp-order-retention.cron:0 0 4 * * SUN}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             val result = erpOrderRetentionService.purgeExpired()
             ctx.metadata(
                 mapOf(

@@ -20,7 +20,7 @@ class AgreementWordCycleBatch(
     @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT30M", lockAtLeastFor = "PT5M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             val result = service.runCycle()
             log.info(
                 "AGREEMENT_WORD_CYCLE_BATCH branch={} resetCount={}",

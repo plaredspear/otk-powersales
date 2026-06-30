@@ -28,7 +28,7 @@ class JMartCoordinateBatch(
     @Scheduled(cron = "\${app.batch.jmart-coordinate.cron:0 30 3 * * *}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             val result = jMartCoordinateService.applyTodayCoordinate()
             ctx.metadata(
                 mapOf(

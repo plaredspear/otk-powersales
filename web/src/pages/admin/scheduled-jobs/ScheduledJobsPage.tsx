@@ -8,6 +8,7 @@ import {
   Popconfirm,
   Select,
   Space,
+  Switch,
   Tabs,
   Tag,
   Typography,
@@ -25,6 +26,7 @@ import {
   useTriggerOroraMonthlyMaterialize,
   useTriggerOroraMonthlyMaterializeChunk,
   useTriggerPptMaster,
+  useSetScheduledJobRuntimeEnabled,
 } from '@/hooks/admin/useScheduledJobs';
 import type {
   PptMasterTriggerAction,
@@ -44,12 +46,14 @@ const STATUS_TAG_COLOR: Record<ScheduledJobStatus, string> = {
   SUCCESS: 'green',
   FAILURE: 'red',
   RUNNING: 'blue',
+  SKIPPED: 'default',
 };
 
 const STATUS_OPTIONS: { label: string; value: ScheduledJobStatus }[] = [
   { label: 'SUCCESS', value: 'SUCCESS' },
   { label: 'FAILURE', value: 'FAILURE' },
   { label: 'RUNNING', value: 'RUNNING' },
+  { label: 'SKIPPED', value: 'SKIPPED' },
 ];
 
 /** 잡 이름 → 탭에 표시할 10자 이내 한글 라벨. 미매핑 잡은 원본 jobName 으로 폴백. */
@@ -518,6 +522,74 @@ function PptMasterTriggerPanel({
   );
 }
 
+/**
+ * 스케줄 잡 런타임 활성/비활성 토글 패널.
+ * - 활성: 자동 스케줄 발화 시 본문 실행 (기존 동작).
+ * - 비활성: 발화해도 본문을 실행하지 않고 SKIPPED 이력만 남긴다.
+ *
+ * 빈 등록 여부인 정적 활성(`staticEnabled`)이 false 인 잡은 애초에 발화하지 않으므로 스위치를 비활성화한다.
+ * `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function RuntimeTogglePanel({
+  jobName,
+  jobLabelText,
+  runtimeEnabled,
+  staticEnabled,
+}: {
+  jobName: string;
+  jobLabelText: string;
+  runtimeEnabled: boolean;
+  staticEnabled: boolean;
+}) {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const toggle = useSetScheduledJobRuntimeEnabled();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const handleToggle = (checked: boolean) => {
+    toggle.mutate(
+      { jobName, enabled: checked },
+      {
+        onSuccess: () => {
+          message.success(`'${jobLabelText}' 처리를 ${checked ? '활성화' : '비활성화'}했습니다.`);
+        },
+        onError: (err) => {
+          message.error(err instanceof Error ? err.message : '처리 상태 변경에 실패했습니다.');
+        },
+      },
+    );
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="런타임 처리 토글">
+      <Space wrap align="center">
+        <Text type="secondary">자동 실행 처리</Text>
+        <Switch
+          checked={runtimeEnabled}
+          disabled={!staticEnabled}
+          loading={toggle.isPending}
+          onChange={handleToggle}
+          checkedChildren="활성"
+          unCheckedChildren="비활성"
+        />
+        {!runtimeEnabled && staticEnabled && (
+          <Tag color="warning" style={{ marginInlineEnd: 0 }}>
+            발화 시 실행 생략 (SKIPPED 이력만 기록)
+          </Tag>
+        )}
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          {staticEnabled
+            ? '비활성화하면 자동 스케줄이 발화해도 본문을 실행하지 않고 SKIPPED 이력만 남깁니다. 수동 실행은 토글과 무관하게 항상 동작합니다.'
+            : '현재 환경에서 정적으로 비활성(빈 미등록)이라 토글 대상이 아닙니다.'}
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
 export default function ScheduledJobsPage() {
   const [activeTab, setActiveTab] = useState<string>(ALL_JOBS_KEY);
   const [status, setStatus] = useState<ScheduledJobStatus | undefined>(undefined);
@@ -564,6 +636,15 @@ export default function ScheduledJobsPage() {
     const map: Record<string, boolean> = {};
     (catalogQuery.data ?? []).forEach((entry) => {
       map[entry.jobName] = entry.enabled;
+    });
+    return map;
+  }, [catalogQuery.data]);
+
+  // 잡 이름 → 런타임 토글 활성 여부 (운영 중 끄고 켜기). catalog 미로딩 시 기본 활성 가정.
+  const runtimeEnabledByJob = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    (catalogQuery.data ?? []).forEach((entry) => {
+      map[entry.jobName] = entry.runtimeEnabled;
     });
     return map;
   }, [catalogQuery.data]);
@@ -747,6 +828,12 @@ export default function ScheduledJobsPage() {
                   )}
                 </>
               }
+            />
+            <RuntimeTogglePanel
+              jobName={name}
+              jobLabelText={jobLabel(name)}
+              runtimeEnabled={runtimeEnabledByJob[name] !== false}
+              staticEnabled={enabledByJob[name] !== false}
             />
             {name === ORORA_MONTHLY_JOB && (
               <>

@@ -1,6 +1,9 @@
 package com.otoki.powersales.platform.common.jobrun
 
+import com.ninjasquad.springmockk.MockkBean
+import io.mockk.every
 import tools.jackson.databind.ObjectMapper
+import com.otoki.powersales.platform.batch.toggle.ScheduledJobToggleStore
 import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRun
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunCleanupService
@@ -54,9 +57,14 @@ class ScheduledJobRunnerIntegrationTest {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
+    @MockkBean
+    private lateinit var toggleStore: ScheduledJobToggleStore
+
     @BeforeEach
     fun setUp() {
         repository.deleteAll()
+        // 기본: 모든 잡 런타임 활성 (개별 테스트에서 override).
+        every { toggleStore.isEnabled(any()) } returns true
     }
 
     @Nested
@@ -198,6 +206,40 @@ class ScheduledJobRunnerIntegrationTest {
             assertThat(cleanupRow.metadata).isNotNull
             val parsed = objectMapper.readValue(cleanupRow.metadata, Map::class.java)
             assertThat((parsed["deleted"] as Number).toInt()).isEqualTo(5)
+        }
+    }
+
+    @Nested
+    @DisplayName("runScheduled - 런타임 토글")
+    inner class RunScheduledToggle {
+
+        @Test
+        @DisplayName("활성 - 본문 실행 + SUCCESS 기록")
+        fun enabledRunsBody() {
+            every { toggleStore.isEnabled("test.toggle") } returns true
+            var executed = false
+
+            runner.runScheduled("test.toggle") { executed = true }
+
+            assertThat(executed).isTrue()
+            val row = repository.findAll().single()
+            assertThat(row.status).isEqualTo(ScheduledJobRun.STATUS_SUCCESS)
+        }
+
+        @Test
+        @DisplayName("비활성 - 본문 미실행 + SKIPPED row 1건 기록")
+        fun disabledSkipsBody() {
+            every { toggleStore.isEnabled("test.toggle") } returns false
+            var executed = false
+
+            runner.runScheduled("test.toggle") { executed = true }
+
+            assertThat(executed).isFalse()
+            val row = repository.findAll().single()
+            assertThat(row.jobName).isEqualTo("test.toggle")
+            assertThat(row.status).isEqualTo(ScheduledJobRun.STATUS_SKIPPED)
+            assertThat(row.endedAt).isNotNull
+            assertThat(row.errorMessage).isNull()
         }
     }
 

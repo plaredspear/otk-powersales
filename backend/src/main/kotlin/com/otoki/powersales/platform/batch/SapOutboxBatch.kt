@@ -21,7 +21,7 @@ class SapOutboxBatch(
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT5M", lockAtLeastFor = "PT10S")
     fun run() {
         try {
-            scheduledJobRunner.run(JOB_NAME) { ctx ->
+            scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
                 sapOutboxBatchService.execute(ctx)
             }
         } catch (ex: Exception) {

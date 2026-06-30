@@ -19,7 +19,7 @@ class PPTMasterExpireBatch(
     @Scheduled(cron = "0 30 23 * * *")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT15M", lockAtLeastFor = "PT1M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             pptMasterBatchService.expireMasters(ctx)
         }
     }

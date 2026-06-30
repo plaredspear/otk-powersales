@@ -23,7 +23,7 @@ class ScheduledJobRunCleanupBatch(
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT5M", lockAtLeastFor = "PT1M")
     fun run() {
         try {
-            scheduledJobRunner.run(JOB_NAME) { ctx ->
+            scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
                 cleanupService.cleanup(ctx)
             }
         } catch (e: Exception) {

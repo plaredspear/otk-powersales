@@ -30,7 +30,7 @@ class ProductExpirationAlertBatch(
     @Scheduled(cron = "\${app.batch.product-expiration-alert.cron:0 0 0 * * *}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             val result = productExpirationAlertService.sendDailyAlerts(LocalDate.now())
             ctx.metadata(
                 mapOf(

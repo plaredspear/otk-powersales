@@ -13,6 +13,7 @@ import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
 import com.otoki.powersales.platform.batch.OroraDailySalesMaterializeBatch
 import com.otoki.powersales.platform.batch.OroraMonthlySalesMaterializeBatch
 import com.otoki.powersales.platform.batch.ScheduledJobCatalog
+import com.otoki.powersales.platform.batch.toggle.ScheduledJobToggleStore
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRun
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunRepository
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
@@ -37,6 +38,7 @@ class AdminScheduledJobService(
     private val ororaSalesMaterializeFacade: OroraSalesMaterializeFacade,
     private val scheduledJobRunner: ScheduledJobRunner,
     private val beanFactory: ListableBeanFactory,
+    private val scheduledJobToggleStore: ScheduledJobToggleStore,
 ) {
 
     fun search(query: AdminScheduledJobQuery): ScheduledJobRunListResponse {
@@ -89,15 +91,27 @@ class AdminScheduledJobService(
      * `@ConditionalOnProperty(enabled)` + `@Profile(dev|prod)` 로 조건부 등록되므로, 빈 존재 여부가 곧
      * 현재 환경의 실제 스케줄링 활성 여부와 일치한다 (yml override 포함 반영).
      */
-    fun catalog(): List<RegisteredScheduledJobDto> =
-        ScheduledJobCatalog.ENTRIES.map {
+    fun catalog(): List<RegisteredScheduledJobDto> {
+        val runtimeStates = scheduledJobToggleStore.getAllStates()
+        return ScheduledJobCatalog.ENTRIES.map {
             RegisteredScheduledJobDto(
                 jobName = it.jobName,
                 cron = it.cron,
                 description = it.description,
                 enabled = beanFactory.getBeanNamesForType(it.beanType).isNotEmpty(),
+                runtimeEnabled = runtimeStates[it.jobName] ?: true,
             )
         }
+    }
+
+    /**
+     * 스케줄 잡의 런타임 활성/비활성 설정. 카탈로그에 없는 jobName 은 거절.
+     */
+    fun setRuntimeEnabled(jobName: String, enabled: Boolean) {
+        val exists = ScheduledJobCatalog.JOB_NAMES.contains(jobName)
+        require(exists) { "존재하지 않는 스케줄 잡: $jobName" }
+        scheduledJobToggleStore.setEnabled(jobName, enabled)
+    }
 
     /**
      * ORORA 월매출 적재를 특정 월(`YYYYMM`)로 수동 실행한다.

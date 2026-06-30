@@ -28,7 +28,7 @@ class DisplayMasterLastMonthRevenueBatch(
     @Scheduled(cron = "\${app.batch.display.last-month-revenue.cron:0 0 2 * * *}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT15M", lockAtLeastFor = "PT30S")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             batchService.runDaily(ctx)
         }
     }

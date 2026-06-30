@@ -29,7 +29,7 @@ class MfeisThisMonthRevenueBatch(
     @Scheduled(cron = "\${app.batch.mfeis.this-month-revenue.cron:0 0 3 1 * ?}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT30M", lockAtLeastFor = "PT5M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             batchService.runMonthly(ctx)
         }
     }

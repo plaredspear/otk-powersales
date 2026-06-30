@@ -17,7 +17,7 @@ class PostponedAppointmentBatch(
     @Scheduled(cron = "0 0 0 * * *")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     fun run() {
-        scheduledJobRunner.run(JOB_NAME) { ctx ->
+        scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             postponedAppointmentBatchService.process(ctx)
         }
     }
