@@ -47,6 +47,16 @@ class BranchRequiredException : BusinessException(
 )
 
 /**
+ * 조장/지점장 권한은 지점공지(BRANCH) 외 카테고리로 공지를 등록/수정할 수 없다.
+ * (프론트 UI 는 지점공지만 노출하나, API 직접 호출 우회를 서버에서도 차단)
+ */
+class BranchNoticeOnlyException : BusinessException(
+    errorCode = "BRANCH_NOTICE_ONLY",
+    message = "지점공지만 작성할 수 있습니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+/**
  * 유효하지 않은 첨부 이미지 ID — imageId 미존재 또는 parent 불일치
  */
 class InvalidImageIdException : BusinessException(

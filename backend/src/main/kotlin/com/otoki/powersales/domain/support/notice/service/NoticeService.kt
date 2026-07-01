@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.support.notice.service
 
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
@@ -22,6 +23,7 @@ import com.otoki.powersales.domain.support.notice.dto.response.ScopeOption
 import com.otoki.powersales.domain.support.notice.entity.Notice
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
+import com.otoki.powersales.domain.support.notice.exception.BranchNoticeOnlyException
 import com.otoki.powersales.domain.support.notice.exception.BranchRequiredException
 import com.otoki.powersales.domain.support.notice.exception.InvalidImageIdException
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeCategoryException
@@ -198,8 +200,9 @@ class NoticeService(
         )
 
     @Transactional
-    fun createNotice(request: NoticeCreateRequest, creatorId: Long): NoticeMutationResponse {
+    fun createNotice(request: NoticeCreateRequest, creatorId: Long, role: String?): NoticeMutationResponse {
         val cat = parseCategory(request.category)
+        requireBranchNoticeForLeader(role, cat)
         val noticeScope = parseScope(request.scope)
 
         // 지점공지(BRANCH) 의 지점/지점코드는 요청 값이 아니라 등록자(조장/지점장) 소속 지점을 권위로 사용한다.
@@ -223,11 +226,12 @@ class NoticeService(
     }
 
     @Transactional
-    fun updateNotice(noticeId: Long, request: NoticeUpdateRequest): NoticeMutationResponse {
+    fun updateNotice(noticeId: Long, request: NoticeUpdateRequest, role: String?): NoticeMutationResponse {
         if (noticeId <= 0) throw InvalidNoticeIdException()
         val notice = findActiveNotice(noticeId)
 
         val cat = parseCategory(request.category)
+        requireBranchNoticeForLeader(role, cat)
         val noticeScope = parseScope(request.scope)
 
         notice.name = request.title
@@ -402,18 +406,41 @@ class NoticeService(
         uploadFile.isDeleted = true
     }
 
-    fun getNoticeFormMeta(): NoticeFormMetaResponse {
+    fun getNoticeFormMeta(role: String?): NoticeFormMetaResponse {
         val scopes = NoticeScope.entries.map {
             ScopeOption(code = it.displayName, name = it.displayName)
         }
 
-        val categories = NoticeCategory.entries.map {
+        // 조장/지점장은 지점공지만 작성 가능 → 카테고리 옵션도 지점공지(BRANCH)만 노출한다.
+        // 프론트는 내려온 옵션을 그대로 렌더링하므로 UI 제한이 서버 권위로 통일된다.
+        val visibleCategories = if (isBranchNoticeOnlyRole(role)) {
+            listOf(NoticeCategory.BRANCH)
+        } else {
+            NoticeCategory.entries
+        }
+        val categories = visibleCategories.map {
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
         val branches = loadBranchOptions()
 
         return NoticeFormMetaResponse(scopes = scopes, categories = categories, branches = branches)
+    }
+
+    /**
+     * 조장/지점장 여부 판별. Employee.role(= SF DKRetail__AppAuthority__c) picklist value 기준.
+     * 이 두 권한은 지점공지(BRANCH)만 작성 가능하다.
+     */
+    private fun isBranchNoticeOnlyRole(role: String?): Boolean =
+        role == AppAuthority.LEADER || role == AppAuthority.BRANCH_MANAGER
+
+    /**
+     * 조장/지점장이 지점공지(BRANCH) 외 카테고리로 등록/수정을 시도하면 차단한다.
+     */
+    private fun requireBranchNoticeForLeader(role: String?, category: NoticeCategory) {
+        if (isBranchNoticeOnlyRole(role) && category != NoticeCategory.BRANCH) {
+            throw BranchNoticeOnlyException()
+        }
     }
 
     /**

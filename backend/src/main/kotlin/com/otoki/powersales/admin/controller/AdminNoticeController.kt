@@ -41,8 +41,10 @@ class AdminNoticeController(
 
     @GetMapping("/form-meta")
     @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.READ)
-    fun getNoticeFormMeta(): ResponseEntity<ApiResponse<NoticeFormMetaResponse>> {
-        val response = noticeService.getNoticeFormMeta()
+    fun getNoticeFormMeta(
+        @AuthenticationPrincipal principal: WebUserPrincipal
+    ): ResponseEntity<ApiResponse<NoticeFormMetaResponse>> {
+        val response = noticeService.getNoticeFormMeta(principal.role)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -62,17 +64,18 @@ class AdminNoticeController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: NoticeCreateRequest
     ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
-        val response = noticeService.createNotice(request, principal.requireEmployeeId())
+        val response = noticeService.createNotice(request, principal.requireEmployeeId(), principal.role)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 
     @PutMapping("/{noticeId}")
     @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.EDIT)
     fun updateNotice(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable noticeId: Long,
         @Valid @RequestBody request: NoticeUpdateRequest
     ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
-        val response = noticeService.updateNotice(noticeId, request)
+        val response = noticeService.updateNotice(noticeId, request, principal.role)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
