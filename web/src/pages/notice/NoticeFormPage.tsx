@@ -4,6 +4,7 @@ import { Button, Col, Form, Input, Row, Select, Space, Spin, message } from 'ant
 import type { FormInstance } from 'antd';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import './NoticeContentEditor.css';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutation';
@@ -47,12 +48,16 @@ function ContentEditor({
   onPaste: (e: React.ClipboardEvent) => void;
 }) {
   return (
-    <div onDrop={onDrop} onDragOver={(e) => e.preventDefault()} onPaste={onPaste}>
+    <div
+      className="notice-content-editor"
+      onDrop={onDrop}
+      onDragOver={(e) => e.preventDefault()}
+      onPaste={onPaste}
+    >
       <ReactQuill
         ref={quillRef}
         theme="snow"
         modules={modules}
-        style={{ minHeight: 200 }}
         value={value ?? ''}
         onChange={(html) => onChange?.(html)}
       />
