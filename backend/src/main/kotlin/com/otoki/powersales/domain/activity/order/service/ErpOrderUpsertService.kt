@@ -27,7 +27,9 @@ import java.time.format.DateTimeFormatter
  * ## 레거시 동작 요약
  * 1. 입력: `List<ErpOrderUpsertCommand>` (헤더 + 라인 중첩 모델).
  * 2. cross-domain lookup: [AccountRepository.findByExternalKeyIn] (Account 매칭 — 미존재 시 FK null 로 적재, 거부 안 함).
- * 3. 헤더 UPSERT 키 ([ErpOrder.sapOrderNumber]) 로 [ErpOrderRepository.findBySapOrderNumber] 조회 후 entity 갱신/생성.
+ * 3. 헤더/라인 기존 행은 UPSERT 키로 **IN 절 일괄 조회** 후 메모리 맵으로 매칭한다
+ *    ([ErpOrderRepository.findBySapOrderNumberIn] / [ErpOrderProductRepository.findByExternalKeyIn]).
+ *    건별 개별 조회는 대량 페이로드에서 N+1 로 처리 시간이 폭증해 전송단 timeout(연결 끊김)을 유발했다.
  * 4. 레거시 정합 — 수신 필드 명시 필수/형식 검증으로 행을 거부하지 않는다 (레거시 IF_REST_SAP_ClientOrderReceive
  *    에 그런 게이트 없음). 헤더 upsert 키 [ErpOrder.sapOrderNumber](NOT NULL+UNIQUE, SF `Name` 정합)만
  *    누락 행이 saveAllAndFlush 단계 DB 제약에서 행 격리된다 (allOrNone=false 동등).
@@ -64,11 +66,15 @@ class ErpOrderUpsertService(
                 .toMap()
         }
 
+        // 헤더 기존 행 일괄 조회 (IN 절 1회) — 건별 findBySapOrderNumber 반복(N+1) 제거.
         val orderNumbers = commands.mapNotNull { it.sapOrderNumber?.takeIf { n -> n.isNotBlank() } }.distinct()
-        val existingHeaders: MutableMap<String, ErpOrder> = orderNumbers
-            .mapNotNull { erpOrderRepository.findBySapOrderNumber(it) }
-            .associateBy { it.sapOrderNumber }
-            .toMutableMap()
+        val existingHeaders: MutableMap<String, ErpOrder> = if (orderNumbers.isEmpty()) {
+            mutableMapOf()
+        } else {
+            erpOrderRepository.findBySapOrderNumberIn(orderNumbers)
+                .associateBy { it.sapOrderNumber }
+                .toMutableMap()
+        }
 
         val failures = mutableListOf<ErpOrderUpsertFailedRow>()
         val acceptedHeaders = mutableListOf<ErpOrder>()
@@ -105,15 +111,31 @@ class ErpOrderUpsertService(
         }
         val headerByNumber = savedHeaders.associateBy { it.sapOrderNumber }
 
+        // 1차 패스: 적재 대상 라인 (header + line + externalKey) 을 수집하며 요청 내 중복 키를 제거한다.
+        // (기존엔 라인마다 findByExternalKey 개별 조회 → 대량 페이로드에서 N+1 로 처리 시간 폭증)
+        data class PendingLine(val header: ErpOrder, val line: ErpOrderLineCommand, val key: String)
         val lineExternalKeys = mutableSetOf<String>()
-        val lineEntities = mutableListOf<ErpOrderProduct>()
+        val pendingLines = mutableListOf<PendingLine>()
         acceptedLinesByHeader.forEach { (sapOrderNumber, lines) ->
             val header = headerByNumber[sapOrderNumber] ?: return@forEach
             lines.forEach { line ->
                 val key = computeExternalKey(line) ?: return@forEach
                 if (!lineExternalKeys.add(key)) return@forEach
-                lineEntities += buildOrUpdateLine(header, line, key)
+                pendingLines += PendingLine(header, line, key)
             }
+        }
+
+        // 라인 기존 행 일괄 조회 (IN 절 1회) — 건별 findByExternalKey 반복(N+1) 제거.
+        val existingLinesByKey: Map<String, ErpOrderProduct> = if (lineExternalKeys.isEmpty()) {
+            emptyMap()
+        } else {
+            erpOrderProductRepository.findByExternalKeyIn(lineExternalKeys)
+                .mapNotNull { entity -> entity.externalKey?.let { it to entity } }
+                .toMap()
+        }
+
+        val lineEntities = pendingLines.map { (header, line, key) ->
+            buildOrUpdateLine(header, line, key, existingLinesByKey[key])
         }
 
         if (lineEntities.isNotEmpty()) {
@@ -149,9 +171,9 @@ class ErpOrderUpsertService(
     private fun buildOrUpdateLine(
         header: ErpOrder,
         line: ErpOrderLineCommand,
-        externalKey: String
+        externalKey: String,
+        existing: ErpOrderProduct?
     ): ErpOrderProduct {
-        val existing = erpOrderProductRepository.findByExternalKey(externalKey)
         val entity = existing?.also { it.erpOrder = header } ?: ErpOrderProduct(
             erpOrder = header,
             sapOrderNumber = line.sapOrderNumber!!,

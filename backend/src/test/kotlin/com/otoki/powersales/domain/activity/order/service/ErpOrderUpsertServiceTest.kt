@@ -105,8 +105,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("신규 헤더 1건 + 라인 1건 - 다단 saveAll, headerSuccessCount=1, lineSuccessCount=1")
         fun upsert_insertNewHeaderAndLine() {
             every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber("0010012345") } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val headerCaptor = slot<List<ErpOrder>>()
             val lineCaptor = slot<List<ErpOrderProduct>>()
@@ -133,8 +133,8 @@ class ErpOrderUpsertServiceTest {
                 it.orderSalesAmount = BigDecimal.valueOf(0L)
             }
             every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber("0010012345") } returns existing
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns listOf(existing)
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
             val captor = slot<List<ErpOrder>>()
             every { erpOrderRepository.saveAllAndFlush(capture(captor)) } answers { firstArg<List<ErpOrder>>() }
@@ -151,8 +151,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("orderStatus = 결품 - DefaultReason 있고 ShippingScheduleTime 000000")
         fun upsert_deliveryStatusOutOfStock() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -168,8 +168,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("orderStatus = 배송중 - ShippingScheduleTime 유효 + ShippingCompleteTime 000000")
         fun upsert_deliveryStatusShipping() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -185,8 +185,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("orderStatus = 배송 완료 - ShippingCompleteTime 유효")
         fun upsert_deliveryStatusDelivered() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -202,8 +202,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("orderStatus = 대기 - 모든 시간 필드 비어있거나 000000")
         fun upsert_deliveryStatusPending() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -224,8 +224,8 @@ class ErpOrderUpsertServiceTest {
             // 레거시 cls:156 대기 조건은 LineItemStatus 공백도 요구. LineItemStatus 가 채워지면 대기 if 불성립 →
             // 어떤 if 도 안 잡혀 status='' → OrderStatus__c 미설정. 신규 deliveryStatus 도 null 유지여야 한다.
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -249,8 +249,8 @@ class ErpOrderUpsertServiceTest {
             // 레거시 cls:158(배송완료) → cls:159(결품) 순서로 평가되어, CompleteTime 이 채워졌어도
             // DefaultReason 설정 + ScheduleTime 미설정이면 마지막 결품 if 가 배송완료를 덮어쓴다.
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -272,9 +272,9 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("ShippingVehicle 이 externalKey 말미에 포함 - 차량번호 있는 라인은 차량번호 포함 키로 적재 (레거시 키 규격)")
         fun upsert_shippingVehicleAppendedToKey() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber("0010012345") } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
             // 차량번호 포함 키로 조회 — 신규 row.
-            every { erpOrderProductRepository.findByExternalKey("01001234500112가3456") } returns null
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -294,8 +294,8 @@ class ErpOrderUpsertServiceTest {
         fun upsert_linksAccountFk() {
             every { accountRepository.findByExternalKeyIn(listOf("1032619")) } returns
                 listOf(account("1032619", sfid = "001A000000ABCDE"))
-            every { erpOrderRepository.findBySapOrderNumber("0010012345") } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
             val captor = slot<List<ErpOrder>>()
             every { erpOrderRepository.saveAllAndFlush(capture(captor)) } answers { firstArg<List<ErpOrder>>() }
@@ -311,8 +311,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("날짜 센티넬 - 빈 OrderDate/DeliveryRequestDate 및 00000000 은 2999-12-31 로 저장 (레거시 convertStringToDate 정합)")
         fun upsert_dateSentinel() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
             val captor = slot<List<ErpOrder>>()
             every { erpOrderRepository.saveAllAndFlush(capture(captor)) } answers { firstArg<List<ErpOrder>>() }
@@ -333,8 +333,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("날짜 정상 파싱 - yyyyMMdd 유효 입력은 그대로 LocalDate 변환")
         fun upsert_dateParsedNormally() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } answers { firstArg<List<ErpOrderProduct>>() }
             val captor = slot<List<ErpOrder>>()
             every { erpOrderRepository.saveAllAndFlush(capture(captor)) } answers { firstArg<List<ErpOrder>>() }
@@ -348,8 +348,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("externalKey 키 도출 - SAPOrderNumber 선두 0 1자 제거 + LineNumber 결합")
         fun upsert_externalKeyDerivation() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val captor = slot<List<ErpOrderProduct>>()
             every { erpOrderProductRepository.saveAll(capture(captor)) } answers { firstArg<List<ErpOrderProduct>>() }
@@ -370,8 +370,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("Account 매칭 실패 - 검증 없이 account FK null 로 헤더+라인 적재 (레거시 검증 부재 정합)")
         fun upsert_accountNotFound_storedWithNullFk() {
             every { accountRepository.findByExternalKeyIn(listOf("9999999")) } returns emptyList()
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val headerCaptor = slot<List<ErpOrder>>()
             every { erpOrderRepository.saveAllAndFlush(capture(headerCaptor)) } answers { firstArg<List<ErpOrder>>() }
@@ -393,8 +393,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("SAPAccountCode 누락 - 검증 없이 account FK null 로 적재")
         fun upsert_missingAccountCode_storedWithNullFk() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns emptyList()
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val headerCaptor = slot<List<ErpOrder>>()
             every { erpOrderRepository.saveAllAndFlush(capture(headerCaptor)) } answers { firstArg<List<ErpOrder>>() }
@@ -411,8 +411,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("부분 처리 - 거래처 있는 행/없는 행 모두 적재 (없는 행은 FK null)")
         fun upsert_partialAccountMatch_bothStored() {
             every { accountRepository.findByExternalKeyIn(listOf("1032619", "9999999")) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             val headerCaptor = slot<List<ErpOrder>>()
             every { erpOrderRepository.saveAllAndFlush(capture(headerCaptor)) } answers { firstArg<List<ErpOrder>>() }
@@ -453,8 +453,8 @@ class ErpOrderUpsertServiceTest {
         @DisplayName("라인 ConstraintViolation - 예외 재전파 (트랜잭션 전체 롤백은 @Transactional 책임)")
         fun upsert_lineConstraintViolation() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
-            every { erpOrderRepository.findBySapOrderNumber(any()) } returns null
-            every { erpOrderProductRepository.findByExternalKey(any()) } returns null
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
             mockHeaderSave()
             every { erpOrderProductRepository.saveAll(any<List<ErpOrderProduct>>()) } throws RuntimeException("constraint violation")
 

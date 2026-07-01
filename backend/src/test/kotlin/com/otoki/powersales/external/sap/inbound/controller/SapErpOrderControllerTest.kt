@@ -183,6 +183,41 @@ class SapErpOrderControllerTest {
 
             verify(exactly = 1) { sapErpOrderService.upsert(any()) }
         }
+
+        @Test
+        @DisplayName("성공 - SAP 실제 페이로드: 숫자 타입 필드(EmployeeCode/OrderSalesAmount/ProductCode/OrderQuantity)를 String 필드로 흡수")
+        fun upsert_numericFieldsCoercedToString() {
+            every { sapErpOrderService.upsert(any()) } returns
+                ErpOrderDetail(successCount = 1, failureCount = 0, failures = emptyList())
+
+            // SAP RESTAdapter 는 코드/수량/금액을 JSON number 로 전송한다 (DTO 는 String?).
+            // 레거시 SF 는 모든 필드가 String 이라 관대했으므로, 신규도 number→String 강제 변환을 허용해야 한다.
+            val payload = """
+                {
+                  "reqItemList": [
+                    {
+                      "SAPOrderNumber": "332641782",
+                      "SAPAccountCode": "1051980",
+                      "EmployeeCode": 20180030,
+                      "OrderSalesAmount": 105681,
+                      "ItemDetailList": [
+                        { "SAPOrderNumber": "332641782", "LineNumber": "000010", "ProductCode": 24010246, "OrderQuantity": 4 }
+                      ]
+                    }
+                  ]
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/sap/erp-order")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(payload)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.RESULT_CODE").value("200"))
+
+            verify(exactly = 1) { sapErpOrderService.upsert(any()) }
+        }
     }
 
     companion object {
