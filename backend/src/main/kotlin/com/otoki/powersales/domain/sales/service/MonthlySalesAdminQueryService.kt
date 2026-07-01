@@ -281,6 +281,8 @@ class MonthlySalesAdminQueryService(
             MonthlySalesDashboardListItem(
                 accountId = account.id,
                 accountName = account.name,
+                distributionChannelLabel = Account.distributionChannelLabel(account.accountStatusCode, account.accountType),
+                abcTypeLabel = Account.abcTypeLabel(account.abcTypeCode, account.abcType),
                 sapAccountCode = account.externalKey,
                 branchCode = account.branchCode,
                 branchName = account.branchName,

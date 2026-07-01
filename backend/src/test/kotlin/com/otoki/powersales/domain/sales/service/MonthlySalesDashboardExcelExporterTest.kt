@@ -16,6 +16,8 @@ class MonthlySalesDashboardExcelExporterTest {
     private fun item(id: Long, name: String, isConfirmed: Boolean) = MonthlySalesDashboardListItem(
         accountId = id,
         accountName = name,
+        distributionChannelLabel = "02 슈퍼",
+        abcTypeLabel = "6111 이마트",
         sapAccountCode = "SAP$id",
         branchCode = "1000",
         branchName = "서울지점",
@@ -62,13 +64,16 @@ class MonthlySalesDashboardExcelExporterTest {
             val wb = WorkbookFactory.create(input)
             val sheet = wb.getSheetAt(0)
             assertThat(sheet.lastRowNum).isEqualTo(3) // 헤더 1 + 데이터 3 = 마지막 인덱스 3
-            // 마감 컬럼 인덱스 19 (카테고리 4종 목표/실적 쌍 배치 후)
-            assertThat(sheet.getRow(1).getCell(19).stringCellValue).isEqualTo("마감")
-            assertThat(sheet.getRow(2).getCell(19).stringCellValue).isEqualTo("미마감")
-            // 환산인원 3컬럼 (인덱스 20~22 — 마감 뒤)
-            assertThat(sheet.getRow(1).getCell(20).numericCellValue).isEqualTo(2.5)
-            assertThat(sheet.getRow(1).getCell(21).numericCellValue).isEqualTo(1.0)
-            assertThat(sheet.getRow(1).getCell(22).numericCellValue).isEqualTo(3.5)
+            // 유통형태/거래처유형 2컬럼 (거래처명 뒤 인덱스 1~2)
+            assertThat(sheet.getRow(1).getCell(1).stringCellValue).isEqualTo("02 슈퍼")
+            assertThat(sheet.getRow(1).getCell(2).stringCellValue).isEqualTo("6111 이마트")
+            // 마감 컬럼 인덱스 21 (거래처명 뒤 2컬럼 삽입 + 카테고리 4종 목표/실적 쌍 배치 후)
+            assertThat(sheet.getRow(1).getCell(21).stringCellValue).isEqualTo("마감")
+            assertThat(sheet.getRow(2).getCell(21).stringCellValue).isEqualTo("미마감")
+            // 환산인원 3컬럼 (인덱스 22~24 — 마감 뒤)
+            assertThat(sheet.getRow(1).getCell(22).numericCellValue).isEqualTo(2.5)
+            assertThat(sheet.getRow(1).getCell(23).numericCellValue).isEqualTo(1.0)
+            assertThat(sheet.getRow(1).getCell(24).numericCellValue).isEqualTo(3.5)
             wb.close()
         }
     }

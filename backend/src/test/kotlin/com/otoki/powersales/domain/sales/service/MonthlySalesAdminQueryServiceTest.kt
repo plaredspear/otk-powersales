@@ -47,13 +47,20 @@ class MonthlySalesAdminQueryServiceTest {
             accountType = null,
         )
 
-    private fun account(id: Long, externalKey: String?, branchCode: String? = "B001"): Account = mockk {
-        every { this@mockk.id } returns id
-        every { this@mockk.externalKey } returns externalKey
-        every { this@mockk.name } returns "거래처$id"
-        every { this@mockk.branchCode } returns branchCode
-        every { this@mockk.branchName } returns "지점"
-    }
+    // 실제 Account 인스턴스 사용 — mockk mock 에서 accountType 프로퍼티를 read 하면
+    // (JPA enum-변환 이력이 얽힌 프로퍼티라) 힙이 폭증하므로, 유통형태/거래처유형 라벨 필드를 읽는
+    // getList 경로에서는 실인스턴스로 채운다.
+    private fun account(id: Long, externalKey: String?, branchCode: String? = "B001"): Account = Account(
+        id = id,
+        externalKey = externalKey,
+        name = "거래처$id",
+        branchCode = branchCode,
+        branchName = "지점",
+        accountStatusCode = "02",
+        accountType = "슈퍼",
+        abcTypeCode = "6111",
+        abcType = "이마트",
+    )
 
     /** 실적 row — `account_id` FK 조인 키. closingAmountSum = ABC합 + Ship합 (모바일 「월 매출」 정합). */
     private fun row(

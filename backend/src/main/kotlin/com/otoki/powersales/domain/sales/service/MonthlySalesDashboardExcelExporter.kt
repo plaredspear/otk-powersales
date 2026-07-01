@@ -22,7 +22,7 @@ class MonthlySalesDashboardExcelExporter : BaseExcelExporter<MonthlySalesDashboa
     override val freezeHeader = false
 
     override val headers = listOf(
-        "거래처명", "SAP코드", "지점코드", "지점명",
+        "거래처명", "유통형태", "거래처유형", "SAP코드", "지점코드", "지점명",
         "매출연도", "매출월",
         "목표", "실적", "진도율(%)",
         "상온 목표", "상온 실적",
@@ -43,6 +43,8 @@ class MonthlySalesDashboardExcelExporter : BaseExcelExporter<MonthlySalesDashboa
     override fun writeRow(row: Row, item: MonthlySalesDashboardListItem) {
         var col = 0
         row.createCell(col++).setCellValue(item.accountName ?: "")
+        row.createCell(col++).setCellValue(item.distributionChannelLabel ?: "")
+        row.createCell(col++).setCellValue(item.abcTypeLabel ?: "")
         row.createCell(col++).setCellValue(item.sapAccountCode ?: "")
         row.createCell(col++).setCellValue(item.branchCode ?: "")
         row.createCell(col++).setCellValue(item.branchName ?: "")

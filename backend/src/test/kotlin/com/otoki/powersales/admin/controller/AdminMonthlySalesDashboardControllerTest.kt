@@ -77,6 +77,7 @@ class AdminMonthlySalesDashboardControllerTest : AdminControllerTestSupport() {
             items = listOf(
                 MonthlySalesDashboardListItem(
                     accountId = 1, accountName = "거래처A",
+                    distributionChannelLabel = "02 슈퍼", abcTypeLabel = "6111 이마트",
                     sapAccountCode = "SAP1", branchCode = "1000", branchName = "서울지점",
                     salesYear = 2026, salesMonth = 5,
                     targetAmount = 1_000_000L, totalAchievedAmount = 800_000L, achievementRate = 80.0,

@@ -23,6 +23,18 @@ data class MonthlySalesDashboardListResponse(
 data class MonthlySalesDashboardListItem(
     val accountId: Long,
     val accountName: String?,
+    /**
+     * 유통형태 — 거래처상태코드(AccountStatusCode__c) + 거래처유형(Type) 조합 (예: "02 슈퍼").
+     * 월별 여사원 통합일정 화면의 "유통형태" 컬럼과 동일 산식 (`Account.distributionChannelLabel()`).
+     * 화면 테이블에는 미표시, 엑셀 다운로드 전용. 두 값 모두 비어있으면 null.
+     */
+    val distributionChannelLabel: String?,
+    /**
+     * 거래처유형 — ABC유형코드(ABCTypeCode__c) + ABC유형(ABCType__c) 조합 (예: "6111 이마트").
+     * `Account.abcTypeLabel()` 산식 (거래처타입 [accountType] enum 필드와는 별개).
+     * 화면 테이블에는 미표시, 엑셀 다운로드 전용. 두 값 모두 비어있으면 null.
+     */
+    val abcTypeLabel: String?,
     val sapAccountCode: String?,
     val branchCode: String?,
     val branchName: String?,
