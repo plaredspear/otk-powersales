@@ -13,6 +13,8 @@ export interface NoticeSummary {
   id: number;
   category: string;
   categoryName: string;
+  status: string; // DRAFT | PUBLISHED
+  statusName: string; // 임시저장 | 발행
   scope: string | null;
   title: string;
   branch: string | null;
@@ -34,6 +36,8 @@ export interface NoticeDetail {
   scope: string | null;
   category: string;
   categoryName: string;
+  status: string; // DRAFT | PUBLISHED
+  statusName: string; // 임시저장 | 발행
   title: string;
   content: string;
   branch: string | null;
@@ -58,6 +62,8 @@ export interface NoticeFormData {
   /** 이번 편집 세션에서 본문에 삽입 목적으로 업로드한 인라인 이미지 refid 목록.
    *  저장 시 본문에서 빠진 이미지를 서버가 정리하는 대상 판별에 쓰인다. */
   sessionUploadedRefids?: string[];
+  /** true=발행(PUBLISHED), false=임시저장(DRAFT). 발행/임시저장 버튼 분리. */
+  publish?: boolean;
 }
 
 export interface NoticeFormMeta {
@@ -118,6 +124,20 @@ export async function deleteNotice(id: number): Promise<void> {
   const res = await client.delete<ApiResponse<unknown>>(`/api/v1/admin/notices/${id}`);
   if (!res.data.success) {
     throw new Error(res.data.message || '공지사항 삭제에 실패했습니다');
+  }
+}
+
+export async function publishNotice(id: number): Promise<void> {
+  const res = await client.patch<ApiResponse<unknown>>(`/api/v1/admin/notices/${id}/publish`);
+  if (!res.data.success) {
+    throw new Error(res.data.message || '공지사항 발행에 실패했습니다');
+  }
+}
+
+export async function unpublishNotice(id: number): Promise<void> {
+  const res = await client.patch<ApiResponse<unknown>>(`/api/v1/admin/notices/${id}/unpublish`);
+  if (!res.data.success) {
+    throw new Error(res.data.message || '공지사항 발행취소에 실패했습니다');
   }
 }
 

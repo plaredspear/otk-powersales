@@ -15,6 +15,11 @@ const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   BRANCH: { color: 'green', label: '지점공지' },
 };
 
+const STATUS_TAG: Record<string, { color: string; label: string }> = {
+  DRAFT: { color: 'default', label: '임시저장' },
+  PUBLISHED: { color: 'success', label: '발행' },
+};
+
 export default function NoticeListPage() {
   const navigate = useNavigate();
   const [category, setCategory] = useState<string | undefined>();
@@ -35,6 +40,15 @@ export default function NoticeListPage() {
     {
       title: '제목',
       dataIndex: 'title',
+    },
+    {
+      title: '상태',
+      dataIndex: 'status',
+      width: 90,
+      render: (status: string) => {
+        const tag = STATUS_TAG[status];
+        return tag ? <Tag color={tag.color}>{tag.label}</Tag> : <Tag>{status}</Tag>;
+      },
     },
     {
       title: '공개범위',

@@ -54,7 +54,8 @@ class AdminNoticeController(
         @PathVariable noticeId: Long
     ): ResponseEntity<ApiResponse<NoticePostDetailResponse>> {
         if (noticeId <= 0) throw InvalidNoticeIdException()
-        val response = noticeService.getNoticeDetail(noticeId)
+        // admin 상세는 임시저장(DRAFT)도 조회 가능 (발행 전 미리보기/편집).
+        val response = noticeService.getNoticeDetail(noticeId, publishedOnly = false)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -86,6 +87,24 @@ class AdminNoticeController(
     ): ResponseEntity<ApiResponse<Any?>> {
         noticeService.deleteNotice(noticeId)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "공지사항이 삭제되었습니다"))
+    }
+
+    @PatchMapping("/{noticeId}/publish")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.EDIT)
+    fun publishNotice(
+        @PathVariable noticeId: Long
+    ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
+        val response = noticeService.publishNotice(noticeId)
+        return ResponseEntity.ok(ApiResponse.success(response, "공지사항이 발행되었습니다"))
+    }
+
+    @PatchMapping("/{noticeId}/unpublish")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.EDIT)
+    fun unpublishNotice(
+        @PathVariable noticeId: Long
+    ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
+        val response = noticeService.unpublishNotice(noticeId)
+        return ResponseEntity.ok(ApiResponse.success(response, "공지사항 발행이 취소되었습니다"))
     }
 
     @PostMapping("/images/inline", consumes = ["multipart/form-data"])

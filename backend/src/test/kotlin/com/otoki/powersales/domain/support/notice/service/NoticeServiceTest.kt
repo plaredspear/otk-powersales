@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.support.notice.dto.request.NoticeCreateReques
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.domain.support.notice.entity.Notice
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
+import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.domain.support.notice.exception.BranchRequiredException
 import com.otoki.powersales.domain.support.notice.exception.InvalidImageIdException
 import com.otoki.powersales.domain.support.notice.exception.BranchNoticeOnlyException
@@ -24,6 +25,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -88,7 +90,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(42L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 42L) } returns files
 
-            val result = noticeService.getNoticeDetail(42L)
+            val result = noticeService.getNoticeDetail(42L, publishedOnly = false)
 
             assertThat(result.id).isEqualTo(42L)
             assertThat(result.category).isEqualTo("COMPANY")
@@ -112,7 +114,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(10L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 10L) } returns emptyList()
 
-            val result = noticeService.getNoticeDetail(10L)
+            val result = noticeService.getNoticeDetail(10L, publishedOnly = false)
 
             assertThat(result.images).isEmpty()
         }
@@ -131,7 +133,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(10L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 10L) } returns files
 
-            val result = noticeService.getNoticeDetail(10L)
+            val result = noticeService.getNoticeDetail(10L, publishedOnly = false)
 
             assertThat(result.images).hasSize(2)
             assertThat(result.images[0].id).isEqualTo(1L)
@@ -143,7 +145,7 @@ class NoticeServiceTest {
         fun getNoticeDetail_notFound() {
             every { noticeRepository.findById(999L) } returns Optional.empty()
 
-            assertThatThrownBy { noticeService.getNoticeDetail(999L) }
+            assertThatThrownBy { noticeService.getNoticeDetail(999L, publishedOnly = false) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
         }
 
@@ -154,7 +156,7 @@ class NoticeServiceTest {
 
             every { noticeRepository.findById(10L) } returns Optional.of(notice)
 
-            assertThatThrownBy { noticeService.getNoticeDetail(10L) }
+            assertThatThrownBy { noticeService.getNoticeDetail(10L, publishedOnly = false) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
         }
 
@@ -165,7 +167,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns emptyList()
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             assertThat(result.category).isEqualTo("COMPANY")
             assertThat(result.categoryName).isEqualTo("회사공지")
@@ -178,7 +180,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns emptyList()
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             assertThat(result.category).isEqualTo("BRANCH")
             assertThat(result.categoryName).isEqualTo("지점공지")
@@ -191,7 +193,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns emptyList()
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             assertThat(result.category).isEqualTo("EDUCATION")
             assertThat(result.categoryName).isEqualTo("교육")
@@ -209,7 +211,7 @@ class NoticeServiceTest {
                 createUploadFile(id = 1L, sfid = "0EM001", uniqueKey = "uploads/notice/migrated/0EM001.png")
             )
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             // src 는 presigned 로 교체, data-refid 는 보존 (mobile cacheKey 용), placeholder/rtaImage 잔존 없음
             assertThat(result.content).contains("""src="https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/uploads/notice/migrated/0EM001.png?X-Amz-Signature=test"""")
@@ -230,7 +232,7 @@ class NoticeServiceTest {
                 createUploadFile(id = 2L, sfid = "B", uniqueKey = "uploads/notice/migrated/B.jpg")
             )
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             assertThat(result.content).contains("private/uploads/notice/migrated/A.png")
             assertThat(result.content).contains("private/uploads/notice/migrated/B.jpg")
@@ -247,7 +249,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns emptyList()
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             // 미적재 refid → placeholder 그대로 (깨진 이미지로 노출되되 본문 오염 없음)
             assertThat(result.content).isEqualTo("""<img src="notice-image://MISSING" data-refid="MISSING">""")
@@ -266,7 +268,7 @@ class NoticeServiceTest {
                 createUploadFile(id = 777L, sfid = null, uniqueKey = "uploads/notice/2026/06/26/inline.png", uploadKbn = "INLINE")
             )
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             // 본문은 id 기반 매칭으로 presigned 치환
             assertThat(result.content).contains("private/uploads/notice/2026/06/26/inline.png")
@@ -285,7 +287,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns emptyList()
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             assertThat(result.content).isEqualTo("<p>이미지 없는 본문</p>")
         }
@@ -297,7 +299,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(1L) } returns Optional.of(notice)
             every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 1L) } returns emptyList()
 
-            val result = noticeService.getNoticeDetail(1L)
+            val result = noticeService.getNoticeDetail(1L, publishedOnly = false)
 
             assertThat(result.category).isEqualTo("")
             assertThat(result.categoryName).isEqualTo("")
@@ -634,6 +636,30 @@ class NoticeServiceTest {
 
             assertThat(result.category).isEqualTo("BRANCH")
         }
+
+        @Test
+        @DisplayName("임시저장(publish=false) 작성 -> status=DRAFT 로 저장")
+        fun createNotice_draftByDefault() {
+            val request = NoticeCreateRequest(title = "임시", scope = "영업사원", category = "COMPANY", content = "내용", publish = false)
+            val saved = slot<Notice>()
+            every { noticeRepository.save(capture(saved)) } answers { firstArg() }
+
+            noticeService.createNotice(request, 1L, null)
+
+            assertThat(saved.captured.status).isEqualTo(NoticeStatus.DRAFT)
+        }
+
+        @Test
+        @DisplayName("발행(publish=true) 작성 -> status=PUBLISHED 로 저장")
+        fun createNotice_publish() {
+            val request = NoticeCreateRequest(title = "발행", scope = "영업사원", category = "COMPANY", content = "내용", publish = true)
+            val saved = slot<Notice>()
+            every { noticeRepository.save(capture(saved)) } answers { firstArg() }
+
+            noticeService.createNotice(request, 1L, null)
+
+            assertThat(saved.captured.status).isEqualTo(NoticeStatus.PUBLISHED)
+        }
     }
 
     @Nested
@@ -770,6 +796,89 @@ class NoticeServiceTest {
 
             assertThatThrownBy { noticeService.updateNotice(10L, request, AppAuthority.LEADER) }
                 .isInstanceOf(BranchNoticeOnlyException::class.java)
+        }
+
+        @Test
+        @DisplayName("발행된 공지 수정 시 임시저장(publish=false) -> status=DRAFT 로 되돌림")
+        fun updateNotice_draftUnpublishesPublished() {
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY, status = NoticeStatus.PUBLISHED)
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
+            val request = NoticeUpdateRequest(title = "수정", scope = "영업사원", category = "COMPANY", content = "내용", publish = false)
+
+            noticeService.updateNotice(10L, request, null)
+
+            assertThat(existing.status).isEqualTo(NoticeStatus.DRAFT)
+        }
+
+        @Test
+        @DisplayName("수정 시 발행(publish=true) -> status=PUBLISHED")
+        fun updateNotice_publish() {
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY, status = NoticeStatus.DRAFT)
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
+            val request = NoticeUpdateRequest(title = "수정", scope = "영업사원", category = "COMPANY", content = "내용", publish = true)
+
+            noticeService.updateNotice(10L, request, null)
+
+            assertThat(existing.status).isEqualTo(NoticeStatus.PUBLISHED)
+        }
+    }
+
+    @Nested
+    @DisplayName("발행 상태 필터 및 publish/unpublish")
+    inner class PublishStatusTests {
+
+        @Test
+        @DisplayName("모바일 상세(publishedOnly=true) - DRAFT 공지 조회 시 NoticePostNotFoundException")
+        fun mobileDetail_draftHidden() {
+            val draft = createNotice(id = 30L, status = NoticeStatus.DRAFT)
+            every { noticeRepository.findById(30L) } returns Optional.of(draft)
+
+            assertThatThrownBy { noticeService.getNoticeDetail(30L, publishedOnly = true) }
+                .isInstanceOf(NoticePostNotFoundException::class.java)
+        }
+
+        @Test
+        @DisplayName("admin 상세(publishedOnly=false) - DRAFT 공지도 조회 성공")
+        fun adminDetail_draftVisible() {
+            val draft = createNotice(id = 31L, status = NoticeStatus.DRAFT)
+            every { noticeRepository.findById(31L) } returns Optional.of(draft)
+            every { uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 31L) } returns emptyList()
+
+            val result = noticeService.getNoticeDetail(31L, publishedOnly = false)
+
+            assertThat(result.status).isEqualTo("DRAFT")
+            assertThat(result.statusName).isEqualTo("임시저장")
+        }
+
+        @Test
+        @DisplayName("publishNotice - status=PUBLISHED 로 전환")
+        fun publishNotice_success() {
+            val draft = createNotice(id = 40L, status = NoticeStatus.DRAFT)
+            every { noticeRepository.findById(40L) } returns Optional.of(draft)
+
+            noticeService.publishNotice(40L)
+
+            assertThat(draft.status).isEqualTo(NoticeStatus.PUBLISHED)
+        }
+
+        @Test
+        @DisplayName("unpublishNotice - status=DRAFT 로 전환")
+        fun unpublishNotice_success() {
+            val published = createNotice(id = 41L, status = NoticeStatus.PUBLISHED)
+            every { noticeRepository.findById(41L) } returns Optional.of(published)
+
+            noticeService.unpublishNotice(41L)
+
+            assertThat(published.status).isEqualTo(NoticeStatus.DRAFT)
+        }
+
+        @Test
+        @DisplayName("publishNotice - 0 이하 ID -> InvalidNoticeIdException")
+        fun publishNotice_invalidId() {
+            assertThatThrownBy { noticeService.publishNotice(0L) }
+                .isInstanceOf(InvalidNoticeIdException::class.java)
         }
     }
 
@@ -1290,6 +1399,7 @@ class NoticeServiceTest {
         branchCode: String? = null,
         employee: Employee? = null,
         isDeleted: Boolean? = false,
+        status: NoticeStatus? = NoticeStatus.PUBLISHED,
         createdDate: LocalDateTime? = LocalDateTime.of(2026, 1, 1, 0, 0, 0)
     ): Notice = Notice(
         id = id,
@@ -1300,7 +1410,8 @@ class NoticeServiceTest {
         branch = branch,
         branchCode = branchCode,
         employee = employee,
-        isDeleted = isDeleted
+        isDeleted = isDeleted,
+        status = status
     ).apply {
         if (createdDate != null) createdAt = createdDate
     }

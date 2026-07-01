@@ -1,5 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createNotice, updateNotice, deleteNotice, type NoticeFormData } from '@/api/notice';
+import {
+  createNotice,
+  updateNotice,
+  deleteNotice,
+  publishNotice,
+  unpublishNotice,
+  type NoticeFormData,
+} from '@/api/notice';
 
 export function useCreateNotice() {
   const queryClient = useQueryClient();
@@ -25,6 +32,26 @@ export function useDeleteNotice() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => deleteNotice(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'notices'] });
+    },
+  });
+}
+
+export function usePublishNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => publishNotice(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'notices'] });
+    },
+  });
+}
+
+export function useUnpublishNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => unpublishNotice(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'notices'] });
     },

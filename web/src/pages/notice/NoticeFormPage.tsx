@@ -238,32 +238,42 @@ export default function NoticeFormPage() {
     return result;
   };
 
-  const handleSubmit = async (values: FormValues) => {
+  // 저장/발행 버튼 공통 제출. publish=false 임시저장(DRAFT), true 발행(PUBLISHED).
+  // antd onFinish 는 인자를 넘길 수 없어, 버튼 onClick 에서 validateFields 후 직접 호출한다.
+  const submit = async (publish: boolean) => {
+    let values: FormValues;
+    try {
+      values = await form.validateFields();
+    } catch {
+      return; // 검증 실패 시 antd 가 필드 에러 표시
+    }
+
     // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제하므로 전송하지 않는다.
     const payload = {
       title: values.title,
       scope: values.scope,
       category: values.category,
       content: replacePreviewsWithPlaceholders(values.content),
-      // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제하므로 전송하지 않는다.
       branch: null,
       branchCode: null,
       // 이번 세션 업로드분 중 최종 본문에서 빠진 이미지를 서버가 정리하도록 전달.
       sessionUploadedRefids: Array.from(sessionUploadedRefids.current),
+      publish,
     };
 
+    const savedMsg = publish ? '발행되었습니다' : '임시저장되었습니다';
     try {
       if (isEdit) {
         await updateMutation.mutateAsync({ id: noticeId, data: payload });
-        message.success('공지사항이 수정되었습니다');
+        message.success(`공지사항이 ${savedMsg}`);
         navigate(`/notices/${noticeId}`);
       } else {
         await createMutation.mutateAsync(payload);
-        message.success('공지사항이 등록되었습니다');
+        message.success(`공지사항이 ${savedMsg}`);
         navigate('/notices');
       }
     } catch {
-      message.error(isEdit ? '공지사항 수정에 실패했습니다' : '공지사항 등록에 실패했습니다');
+      message.error(isEdit ? '공지사항 저장에 실패했습니다' : '공지사항 등록에 실패했습니다');
     }
   };
 
@@ -290,7 +300,6 @@ export default function NoticeFormPage() {
       <Form
         form={form}
         layout="vertical"
-        onFinish={handleSubmit}
         initialValues={{ scope: '현장여사원', category: defaultCategory }}
         style={{ flex: 1, minWidth: 0, maxWidth: 820 }}
       >
@@ -361,8 +370,11 @@ export default function NoticeFormPage() {
             <Button onClick={() => navigate(isEdit ? `/notices/${noticeId}` : '/notices')}>
               취소
             </Button>
-            <Button type="primary" htmlType="submit" loading={isSubmitting}>
-              저장
+            <Button onClick={() => submit(false)} loading={isSubmitting}>
+              임시저장
+            </Button>
+            <Button type="primary" onClick={() => submit(true)} loading={isSubmitting}>
+              발행
             </Button>
           </Space>
         </Form.Item>

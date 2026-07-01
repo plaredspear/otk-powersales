@@ -10,6 +10,8 @@ data class NoticePostDetailResponse(
     val scope: String?,
     val category: String,
     val categoryName: String,
+    val status: String,             // 발행 상태 apiCode (DRAFT/PUBLISHED)
+    val statusName: String,         // 발행 상태 표시명 (임시저장/발행)
     val title: String,
     val content: String,
     val branch: String?,

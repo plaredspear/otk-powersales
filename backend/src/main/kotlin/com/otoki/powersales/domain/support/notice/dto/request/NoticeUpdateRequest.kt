@@ -26,5 +26,8 @@ data class NoticeUpdateRequest(
      * 서버는 이 목록에 든 파일만 정리 후보로 보므로, 타 세션이 올린 미저장 파일에는 간섭하지 않는다.
      * 미전송(null) 시 세션 업로드분 정리를 수행하지 않는다(하위호환). 수정 시 이 공지 소속분 정리는 별도 수행.
      */
-    val sessionUploadedRefids: List<String>? = null
+    val sessionUploadedRefids: List<String>? = null,
+
+    /** true=발행(PUBLISHED), false=임시저장(DRAFT). 임시저장은 무조건 DRAFT 로 전환(발행취소 효과). */
+    val publish: Boolean = false
 )

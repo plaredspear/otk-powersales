@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.support.notice.repository
 import com.otoki.powersales.domain.support.notice.entity.Notice
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
+import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.domain.support.notice.entity.QNotice.Companion.notice
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
@@ -23,6 +24,7 @@ class NoticeRepositoryCustomImpl(
     ): Page<Notice> {
         val where = BooleanBuilder()
             .and(buildDeletedCondition())
+            .and(buildPublishedCondition())
             .and(buildScopeCondition())
             .and(buildCategoryCondition(category, branchCode))
             .and(buildSearchCondition(search))
@@ -84,6 +86,7 @@ class NoticeRepositoryCustomImpl(
             .selectFrom(notice)
             .where(
                 buildDeletedCondition(),
+                buildPublishedCondition(),
                 buildScopeCondition(),
                 notice.category.eq(NoticeCategory.COMPANY)
                     .or(notice.category.eq(NoticeCategory.BRANCH).and(notice.branchCode.eq(branchCode)))
@@ -96,6 +99,14 @@ class NoticeRepositoryCustomImpl(
 
     private fun buildDeletedCondition(): Predicate {
         return notice.isDeleted.isNull.or(notice.isDeleted.eq(false))
+    }
+
+    /**
+     * 발행 노출 조건 — 모바일/홈 사용자용 조회는 발행(PUBLISHED)된 공지만 노출한다.
+     * 임시저장(DRAFT)은 관리자 전용. (admin 목록 findAllNotices 에는 적용하지 않아 draft 포함 조회.)
+     */
+    private fun buildPublishedCondition(): Predicate {
+        return notice.status.eq(NoticeStatus.PUBLISHED)
     }
 
     /**

@@ -3,12 +3,21 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Descriptions, Modal, Space, Spin, Tag, message } from 'antd';
 import DOMPurify from 'dompurify';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
-import { useDeleteNotice } from '@/hooks/notice/useNoticeMutation';
+import {
+  useDeleteNotice,
+  usePublishNotice,
+  useUnpublishNotice,
+} from '@/hooks/notice/useNoticeMutation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPANY: { color: 'blue', label: '회사공지' },
   BRANCH: { color: 'green', label: '지점공지' },
+};
+
+const STATUS_TAG: Record<string, { color: string; label: string }> = {
+  DRAFT: { color: 'default', label: '임시저장' },
+  PUBLISHED: { color: 'success', label: '발행' },
 };
 
 export default function NoticeDetailPage() {
@@ -18,12 +27,32 @@ export default function NoticeDetailPage() {
 
   const { data: notice, isLoading, error } = useNoticeDetail(noticeId);
   const deleteMutation = useDeleteNotice();
+  const publishMutation = usePublishNotice();
+  const unpublishMutation = useUnpublishNotice();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
 
   useEffect(() => {
     setDynamicTitle(notice?.title ?? null);
     return () => setDynamicTitle(null);
   }, [notice?.title, setDynamicTitle]);
+
+  const handlePublish = async () => {
+    try {
+      await publishMutation.mutateAsync(noticeId);
+      message.success('공지사항이 발행되었습니다');
+    } catch {
+      message.error('공지사항 발행에 실패했습니다');
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      await unpublishMutation.mutateAsync(noticeId);
+      message.success('공지사항 발행이 취소되었습니다');
+    } catch {
+      message.error('공지사항 발행취소에 실패했습니다');
+    }
+  };
 
   const handleDelete = () => {
     Modal.confirm({
@@ -64,6 +93,7 @@ export default function NoticeDetailPage() {
   }
 
   const tag = CATEGORY_TAG[notice.category];
+  const statusTag = STATUS_TAG[notice.status];
 
   return (
     <div style={{ padding: 16 }}>
@@ -72,13 +102,29 @@ export default function NoticeDetailPage() {
           ← 목록으로
         </Button>
         <Space>
+          {notice.status === 'PUBLISHED' ? (
+            <Button onClick={handleUnpublish} loading={unpublishMutation.isPending}>
+              발행취소
+            </Button>
+          ) : (
+            <Button type="primary" onClick={handlePublish} loading={publishMutation.isPending}>
+              발행
+            </Button>
+          )}
           <Button onClick={() => navigate(`/notices/${noticeId}/edit`)}>수정</Button>
           <Button danger onClick={handleDelete}>삭제</Button>
         </Space>
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        {tag ? <Tag color={tag.color}>{tag.label}</Tag> : <Tag>{notice.categoryName}</Tag>}
+        <Space>
+          {statusTag ? (
+            <Tag color={statusTag.color}>{statusTag.label}</Tag>
+          ) : (
+            <Tag>{notice.statusName}</Tag>
+          )}
+          {tag ? <Tag color={tag.color}>{tag.label}</Tag> : <Tag>{notice.categoryName}</Tag>}
+        </Space>
       </div>
 
       <Descriptions column={1} style={{ marginBottom: 24 }}>
