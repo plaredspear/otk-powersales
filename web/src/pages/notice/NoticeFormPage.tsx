@@ -23,6 +23,43 @@ interface FormValues {
   content: string;
 }
 
+/**
+ * 본문 리치텍스트 에디터 — antd Form.Item 의 controlled 필드로 동작.
+ *
+ * Form.Item 이 주입하는 value(현재 HTML)/onChange 를 ReactQuill 에 연결한다.
+ * (직전에는 ReactQuill 을 <div> 로 감싸 Form.Item 의 value/onChange 가 에디터로
+ *  전달되지 않아, 본문이 폼 값으로 수집되지 못하고 미리보기/저장에 누락되던 버그가 있었다.)
+ * 드래그앤드롭/붙여넣기 이미지 삽입은 wrapper div 의 이벤트로 처리한다.
+ */
+function ContentEditor({
+  value,
+  onChange,
+  quillRef,
+  modules,
+  onDrop,
+  onPaste,
+}: {
+  value?: string;
+  onChange?: (html: string) => void;
+  quillRef: React.RefObject<ReactQuill | null>;
+  modules: Record<string, unknown>;
+  onDrop: (e: React.DragEvent) => void;
+  onPaste: (e: React.ClipboardEvent) => void;
+}) {
+  return (
+    <div onDrop={onDrop} onDragOver={(e) => e.preventDefault()} onPaste={onPaste}>
+      <ReactQuill
+        ref={quillRef}
+        theme="snow"
+        modules={modules}
+        style={{ minHeight: 200 }}
+        value={value ?? ''}
+        onChange={(html) => onChange?.(html)}
+      />
+    </div>
+  );
+}
+
 function BranchField({
   form,
   branchName,
@@ -298,9 +335,12 @@ export default function NoticeFormPage() {
               extra="이미지는 툴바 버튼, 드래그앤드롭, 붙여넣기로 본문에 넣을 수 있습니다."
               rules={[{ required: true, message: '내용을 입력해주세요' }]}
             >
-              <div onDrop={handleDrop} onDragOver={(e) => e.preventDefault()} onPaste={handlePaste}>
-                <ReactQuill ref={quillRef} theme="snow" modules={quillModules} style={{ minHeight: 200 }} />
-              </div>
+              <ContentEditor
+                quillRef={quillRef}
+                modules={quillModules}
+                onDrop={handleDrop}
+                onPaste={handlePaste}
+              />
             </Form.Item>
           </Col>
         </Row>
