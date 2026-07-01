@@ -39,10 +39,11 @@ class AdminUserController(
     fun getUsers(
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) isActive: Boolean?,
+        @RequestParam(required = false) profileId: Long?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<AdminUserListResponse>> {
-        val response = adminUserService.findUsers(keyword, isActive, page, size)
+        val response = adminUserService.findUsers(keyword, isActive, profileId, page, size)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

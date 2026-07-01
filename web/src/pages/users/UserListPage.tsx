@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { UserSummary } from '@/api/user';
+import { fetchProfiles } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 
@@ -20,14 +22,26 @@ export default function UserListPage() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState<string | undefined>();
   const [isActive, setIsActive] = useState<boolean | undefined>();
+  const [profileId, setProfileId] = useState<number | undefined>();
   const [page, setPage] = useState(0);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useUsers({
     keyword,
     isActive,
+    profileId,
     page,
     size: PAGE_SIZE,
   });
+
+  const { data: profiles } = useQuery({
+    queryKey: ['admin', 'permissions', 'profiles'],
+    queryFn: fetchProfiles,
+  });
+
+  const profileOptions = [
+    { value: '', label: '프로파일 전체' },
+    ...(profiles ?? []).map((p) => ({ value: String(p.profileId), label: p.name })),
+  ];
 
   const handleRowClick = useThrottleClick((id: number) => navigate(`/users/${id}`));
 
@@ -76,6 +90,15 @@ export default function UserListPage() {
           options={ACTIVE_OPTIONS}
           onChange={(val) => {
             setIsActive(val === '' ? undefined : val === 'true');
+            setPage(0);
+          }}
+        />
+        <Select
+          style={{ width: 200 }}
+          value={profileId === undefined ? '' : String(profileId)}
+          options={profileOptions}
+          onChange={(val) => {
+            setProfileId(val === '' ? undefined : Number(val));
             setPage(0);
           }}
         />

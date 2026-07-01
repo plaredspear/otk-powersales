@@ -6,6 +6,7 @@ import com.otoki.powersales.admin.dto.AdminUserListResponse
 import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
 import com.otoki.powersales.admin.exception.AdminUserNotFoundException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
+import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.slf4j.LoggerFactory
@@ -28,17 +29,21 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class AdminUserService(
     private val userRepository: UserRepository,
+    private val profileRepository: ProfileRepository,
     private val passwordEncoder: PasswordEncoder
 ) {
 
     private val logger = LoggerFactory.getLogger(AdminUserService::class.java)
 
-    fun findUsers(keyword: String?, isActive: Boolean?, page: Int, size: Int): AdminUserListResponse {
+    fun findUsers(keyword: String?, isActive: Boolean?, profileId: Long?, page: Int, size: Int): AdminUserListResponse {
         val pageable = PageRequest.of(page, size)
-        val userPage = userRepository.findUsers(keyword, isActive, pageable)
+        val userPage = userRepository.findUsers(keyword, isActive, profileId, pageable)
+
+        // 페이지 내 distinct profileId 만 한 번에 lookup (N+1 회피).
+        val profileNames = resolveProfileNames(userPage.content)
 
         return AdminUserListResponse(
-            content = userPage.content.map { AdminUserListItem.from(it) },
+            content = userPage.content.map { AdminUserListItem.from(it, profileNames[it.profileId]) },
             page = page,
             size = size,
             totalElements = userPage.totalElements,
@@ -49,7 +54,15 @@ class AdminUserService(
     fun findUserDetail(userId: Long): AdminUserDetailResponse {
         val user = userRepository.findById(userId)
             .orElseThrow { AdminUserNotFoundException(userId) }
-        return AdminUserDetailResponse.from(user)
+        val profileName = user.profileId?.let { profileRepository.findById(it).orElse(null)?.name }
+        return AdminUserDetailResponse.from(user, profileName)
+    }
+
+    /** 사용자 목록의 profileId 집합을 Profile.name 으로 일괄 변환. */
+    private fun resolveProfileNames(users: List<User>): Map<Long, String> {
+        val profileIds = users.mapNotNull { it.profileId }.toSet()
+        if (profileIds.isEmpty()) return emptyMap()
+        return profileRepository.findAllById(profileIds).associate { it.id to it.name }
     }
 
     @Transactional

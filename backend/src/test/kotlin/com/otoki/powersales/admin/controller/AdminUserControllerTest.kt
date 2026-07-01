@@ -73,7 +73,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                 totalElements = 1,
                 totalPages = 1
             )
-            every { adminUserService.findUsers(any(), any(), eq(0), eq(20)) } returns response
+            every { adminUserService.findUsers(any(), any(), any(), eq(0), eq(20)) } returns response
 
             mockMvc.perform(get("/api/v1/admin/users"))
                 .andExpect(status().isOk)
@@ -89,7 +89,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                 content = emptyList(),
                 page = 0, size = 10, totalElements = 0, totalPages = 0
             )
-            every { adminUserService.findUsers(eq("kim"), eq(false), eq(0), eq(10)) } returns response
+            every { adminUserService.findUsers(eq("kim"), eq(false), any(), eq(0), eq(10)) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/users")
@@ -97,6 +97,23 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
                     .param("isActive", "false")
                     .param("page", "0")
                     .param("size", "10")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.content").isEmpty)
+        }
+
+        @Test
+        @DisplayName("성공 - profileId 프로파일 필터")
+        fun getUsers_withProfileId() {
+            val response = AdminUserListResponse(
+                content = emptyList(),
+                page = 0, size = 20, totalElements = 0, totalPages = 0
+            )
+            every { adminUserService.findUsers(any(), any(), eq(7L), eq(0), eq(20)) } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/users")
+                    .param("profileId", "7")
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty)
