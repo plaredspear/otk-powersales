@@ -80,7 +80,7 @@ class ActivityRegistrationPopup extends ConsumerWidget {
       route: AppRouter.claimList,
     ),
     ActivityMenuItem(
-      iconAsset: 'assets/images/ico_active5.png',
+      iconAsset: 'assets/images/ico_active3.png',
       label: '물류 클레임 등록',
       route: AppRouter.suggestionRegister,
       // 물류 클레임 전용 진입 — 기본 분류 물류 클레임.

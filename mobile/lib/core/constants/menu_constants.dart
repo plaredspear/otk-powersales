@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/menu_item.dart';
+import '../../domain/entities/suggestion_form.dart';
 
 /// 전체메뉴 상수 데이터
 ///
@@ -76,6 +77,13 @@ abstract final class MenuConstants {
       label: '현장톡',
       items: [
         MenuItem(id: 'field-check', label: '현장 점검', route: '/inspection-list'),
+        // 제안하기 진입 — 기본 분류를 신제품 제안으로 연다(물류 클레임 제외).
+        MenuItem(
+          id: 'proposals',
+          label: '제안하기',
+          route: '/suggestion/register',
+          arguments: SuggestionCategory.newProduct,
+        ),
         MenuItem(id: 'claims', label: '제품 클레임 등록', route: '/claim/register'),
         MenuItem(id: 'claim-list', label: '제품 클레임 조회', route: '/claim/list'),
         MenuItem(
