@@ -2,6 +2,8 @@ package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.domain.sales.dto.request.MonthlySalesDashboardListRequest
@@ -49,6 +51,7 @@ class MonthlySalesAdminQueryService(
     private val accountRepository: AccountRepository,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
     private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository,
+    private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
 ) {
 
     /**
@@ -258,6 +261,9 @@ class MonthlySalesAdminQueryService(
         // 목표 — 거래처 N건의 (연, 월) SalesProgressRateMaster 1행 일괄 조회 (account_id 별 batch, N+1 회피)
         val targetByAccountId = findTargetMap(accountIds, request.year, request.month)
 
+        // 환산인원 — 거래처별 진열/행사 환산인원 map (MFEIS 1 trip 배치 조회, N+1 회피)
+        val headcountByAccountId = findHeadcountMap(request.year, request.month)
+
         return accounts.map { account ->
             val currentOro = oroByKey[account.id to currentSalesDate]
             val lastYearOro = oroByKey[account.id to lastYearSalesDate]
@@ -269,6 +275,8 @@ class MonthlySalesAdminQueryService(
 
             val target = targetByAccountId[account.id]
             val targetSum = target?.let { targetSumOf(it) } ?: 0L
+
+            val headcount = headcountByAccountId[account.id] ?: HeadcountSummary.ZERO
 
             MonthlySalesDashboardListItem(
                 accountId = account.id,
@@ -292,6 +300,9 @@ class MonthlySalesAdminQueryService(
                 lastYearAchievedAmount = lastYearAchieved,
                 lastYearComparisonRatio = lastYearRatio,
                 isConfirmed = false,
+                displayHeadcount = headcount.display,
+                eventHeadcount = headcount.event,
+                totalHeadcount = headcount.total,
             )
         }
     }
@@ -481,6 +492,58 @@ class MonthlySalesAdminQueryService(
             .filter { it.targetMonth?.trim()?.toIntOrNull() == month }
             .groupBy { it.account!!.id }
             .mapValues { (_, rows) -> rows.first() }
+
+    /**
+     * 거래처별 진열/행사 환산인원 map — MFEIS(월별 여사원 통합일정) 1 trip 배치 조회.
+     *
+     * [MonthlyFemaleEmployeeIntegrationScheduleRepository.findDeploymentDashboardRows] 로 해당 (연, 월) 의
+     * MFEIS row 를 전사 조회(costCenterCodes 빈 목록 = 전체) 후, `account_id` 로 group + `workingCategory1`
+     * (진열/행사) 별 `convertedHeadcount` 합산. 거래처 기준 스코프이므로 지점 필터는 걸지 않고, 매핑은
+     * 호출 측이 조회 거래처 account_id 로만 lookup 한다.
+     *
+     * 사용자 결정 (레거시 미존재 신규 조합):
+     * - 상시/임시(workingCategory5) 필터 미적용 — 전체 포함.
+     * - 위탁(consignmentAcc) 제외 미적용 — 전체 포함.
+     * - 진열 = workingCategory1='진열' 합, 행사 = '행사' 합, 총인원 = 진열 + 행사.
+     */
+    private fun findHeadcountMap(year: Int, month: Int): Map<Long, HeadcountSummary> {
+        val rows = mfeisRepository.findDeploymentDashboardRows(
+            year = year.toString(),
+            month = month.toString(),
+            costCenterCodes = emptyList(),
+        )
+        return rows
+            .asSequence()
+            .filter { it.accountId != null && it.convertedHeadcount != null }
+            .groupBy { it.accountId!! }
+            .mapValues { (_, accRows) ->
+                var display = BigDecimal.ZERO
+                var event = BigDecimal.ZERO
+                for (r in accRows) {
+                    val hc = r.convertedHeadcount ?: BigDecimal.ZERO
+                    when (WorkingCategory1.fromDisplayNameOrNull(r.workingCategory1)) {
+                        WorkingCategory1.DISPLAY -> display = display.add(hc)
+                        WorkingCategory1.EVENT -> event = event.add(hc)
+                        null -> Unit // 진열/행사 외 값은 진열·행사·총인원 어디에도 포함하지 않음
+                    }
+                }
+                HeadcountSummary(display = display, event = event)
+            }
+    }
+
+    /**
+     * 거래처별 진열/행사 환산인원 집계 결과. total = display + event.
+     */
+    data class HeadcountSummary(
+        val display: BigDecimal,
+        val event: BigDecimal,
+    ) {
+        val total: BigDecimal get() = display.add(event)
+
+        companion object {
+            val ZERO = HeadcountSummary(BigDecimal.ZERO, BigDecimal.ZERO)
+        }
+    }
 
     /** 카테고리별 목표 — SF `RT/RM/FR/FO TargetAmount__c` 정합. */
     private fun categoryTarget(target: SalesProgressRateMaster, category: SalesCategory): Long {

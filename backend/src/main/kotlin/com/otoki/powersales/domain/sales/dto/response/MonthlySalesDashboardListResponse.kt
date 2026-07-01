@@ -1,5 +1,7 @@
 package com.otoki.powersales.domain.sales.dto.response
 
+import java.math.BigDecimal
+
 /**
  * 월매출 대시보드 하단 거래처 명세 응답.
  *
@@ -40,4 +42,20 @@ data class MonthlySalesDashboardListItem(
     val lastYearAchievedAmount: Long?,
     val lastYearComparisonRatio: Double?,
     val isConfirmed: Boolean,
+    /**
+     * 해당 월 거래처에 투입된 판매여사원 진열 환산인원 (월 통합일정 기준).
+     * MFEIS(월별 여사원 통합일정) `workingCategory1 = '진열'` row 의 `convertedHeadcount` 합.
+     * 상시/임시·위탁 필터 미적용 (전체 포함), 거래처(account_id) 기준. 투입 없으면 0.
+     */
+    val displayHeadcount: BigDecimal,
+    /**
+     * 해당 월 거래처에 투입된 판매여사원 행사 환산인원.
+     * MFEIS `workingCategory1 = '행사'` row 의 `convertedHeadcount` 합. 투입 없으면 0.
+     */
+    val eventHeadcount: BigDecimal,
+    /**
+     * 총 환산인원 = 진열 + 행사 (`displayHeadcount + eventHeadcount`).
+     * SF 레거시에 월매출 화면 환산인원 결합 선례 없는 신규 조합 (배치적합성 화면 산식 이식).
+     */
+    val totalHeadcount: BigDecimal,
 )

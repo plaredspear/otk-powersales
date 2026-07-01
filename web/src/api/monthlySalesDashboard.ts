@@ -46,6 +46,12 @@ export interface MonthlySalesDashboardListItem {
   lastYearAchievedAmount: number | null;
   lastYearComparisonRatio: number | null;
   isConfirmed: boolean;
+  /** 진열 환산인원 (월 통합일정 기준, 상시/임시·위탁 무필터). 투입 없으면 0. */
+  displayHeadcount: number;
+  /** 행사 환산인원. 투입 없으면 0. */
+  eventHeadcount: number;
+  /** 총 환산인원 = 진열 + 행사. */
+  totalHeadcount: number;
 }
 
 export interface PageInfo {

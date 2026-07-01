@@ -2,6 +2,8 @@ package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
+import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.sales.dto.request.MonthlySalesDashboardListRequest
 import com.otoki.powersales.domain.sales.entity.SalesProgressRateMaster
@@ -19,13 +21,31 @@ class MonthlySalesAdminQueryServiceTest {
     private val accountRepository: AccountRepository = mockk()
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
     private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository = mockk()
+    private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk()
     private val service = MonthlySalesAdminQueryService(
         accountRepository,
         monthlySalesHistoryGateway,
         salesProgressRateMasterRepository,
+        mfeisRepository,
     )
 
     private val allBranchesScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+    init {
+        // 환산인원 조회 기본 stub — 개별 테스트가 override.
+        every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
+    }
+
+    /** MFEIS 투입 row — accountId + workingCategory1(진열/행사) + convertedHeadcount. */
+    private fun deploymentRow(accountId: Long, workingCategory1: String, headcount: String) =
+        DashboardDeploymentRow(
+            convertedHeadcount = BigDecimal(headcount),
+            workingCategory1 = workingCategory1,
+            workingCategory3 = null,
+            accountId = accountId,
+            accountExternalKey = "S00$accountId",
+            accountType = null,
+        )
 
     private fun account(id: Long, externalKey: String?, branchCode: String? = "B001"): Account = mockk {
         every { this@mockk.id } returns id
@@ -174,6 +194,69 @@ class MonthlySalesAdminQueryServiceTest {
         assertThat(result.totalTargetAmount).isEqualTo(2000L)
         assertThat(result.totalAchievedAmount).isEqualTo(1000L)
         assertThat(result.overallAchievementRate).isEqualTo(50.0)
+    }
+
+    @Test
+    @DisplayName("getList — 진열/행사 환산인원 workingCategory1 별 합산 + 총인원 = 진열 + 행사")
+    fun listAggregatesHeadcountByCategory() {
+        val acc = account(1, "S001")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2026") } returns emptyList()
+        // 진열 1.5 + 1.0 = 2.5, 행사 0.75 → 상시/임시·위탁 무필터 전체 합산
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", emptyList()) } returns listOf(
+            deploymentRow(1, "진열", "1.5"),
+            deploymentRow(1, "진열", "1.0"),
+            deploymentRow(1, "행사", "0.75"),
+        )
+
+        val request = MonthlySalesDashboardListRequest(year = 2026, month = 4, costCenterCodes = listOf("B001"))
+        val item = service.getList(allBranchesScope, request).items.single()
+
+        assertThat(item.displayHeadcount).isEqualByComparingTo("2.5")
+        assertThat(item.eventHeadcount).isEqualByComparingTo("0.75")
+        assertThat(item.totalHeadcount).isEqualByComparingTo("3.25")
+    }
+
+    @Test
+    @DisplayName("getList — 여사원 투입 없는 거래처는 진열/행사/총인원 모두 0")
+    fun listHeadcountZeroWhenNoDeployment() {
+        val acc = account(2, "S002")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(2L)) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(2L), "2026") } returns emptyList()
+        // 다른 거래처(1) 투입만 존재 → 조회 거래처(2)는 매핑 없음
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", emptyList()) } returns listOf(
+            deploymentRow(1, "진열", "1.0"),
+        )
+
+        val request = MonthlySalesDashboardListRequest(year = 2026, month = 4, costCenterCodes = listOf("B001"))
+        val item = service.getList(allBranchesScope, request).items.single()
+
+        assertThat(item.displayHeadcount).isEqualByComparingTo("0")
+        assertThat(item.eventHeadcount).isEqualByComparingTo("0")
+        assertThat(item.totalHeadcount).isEqualByComparingTo("0")
+    }
+
+    @Test
+    @DisplayName("getList — 진열/행사 외 workingCategory1 값은 진열·행사·총인원 어디에도 포함하지 않음")
+    fun listHeadcountIgnoresUnknownCategory() {
+        val acc = account(1, "S001")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2026") } returns emptyList()
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", emptyList()) } returns listOf(
+            deploymentRow(1, "진열", "1.0"),
+            deploymentRow(1, "기타", "9.0"),
+            deploymentRow(1, "", "9.0"),
+        )
+
+        val request = MonthlySalesDashboardListRequest(year = 2026, month = 4, costCenterCodes = listOf("B001"))
+        val item = service.getList(allBranchesScope, request).items.single()
+
+        assertThat(item.displayHeadcount).isEqualByComparingTo("1.0")
+        assertThat(item.eventHeadcount).isEqualByComparingTo("0")
+        assertThat(item.totalHeadcount).isEqualByComparingTo("1.0")
     }
 
     @Test

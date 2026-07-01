@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
+import java.math.BigDecimal
 
 @DisplayName("MonthlySalesDashboardExcelExporter 테스트")
 class MonthlySalesDashboardExcelExporterTest {
@@ -34,6 +35,9 @@ class MonthlySalesDashboardExcelExporterTest {
         lastYearAchievedAmount = 700_000L,
         lastYearComparisonRatio = 114.3,
         isConfirmed = isConfirmed,
+        displayHeadcount = BigDecimal("2.5"),
+        eventHeadcount = BigDecimal("1.0"),
+        totalHeadcount = BigDecimal("3.5"),
     )
 
     @Test
@@ -58,9 +62,13 @@ class MonthlySalesDashboardExcelExporterTest {
             val wb = WorkbookFactory.create(input)
             val sheet = wb.getSheetAt(0)
             assertThat(sheet.lastRowNum).isEqualTo(3) // 헤더 1 + 데이터 3 = 마지막 인덱스 3
-            // 마감 컬럼은 마지막 (인덱스 19 — 카테고리 4종 목표/실적 쌍 배치 후)
+            // 마감 컬럼 인덱스 19 (카테고리 4종 목표/실적 쌍 배치 후)
             assertThat(sheet.getRow(1).getCell(19).stringCellValue).isEqualTo("마감")
             assertThat(sheet.getRow(2).getCell(19).stringCellValue).isEqualTo("미마감")
+            // 환산인원 3컬럼 (인덱스 20~22 — 마감 뒤)
+            assertThat(sheet.getRow(1).getCell(20).numericCellValue).isEqualTo(2.5)
+            assertThat(sheet.getRow(1).getCell(21).numericCellValue).isEqualTo(1.0)
+            assertThat(sheet.getRow(1).getCell(22).numericCellValue).isEqualTo(3.5)
             wb.close()
         }
     }

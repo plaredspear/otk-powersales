@@ -130,6 +130,9 @@ export default function MonthlySalesDashboardPage() {
     v == null ? '-' : Math.round(v / 1000).toLocaleString();
   const formatPct = (v: number | null | undefined) =>
     v == null ? '-' : `${v.toFixed(1)}%`;
+  // 환산인원(FTE) — 소수 1자리 표시. 투입 없음(0)도 명확히 0.0 으로 표기.
+  const formatHeadcount = (v: number | null | undefined) =>
+    v == null ? '-' : v.toFixed(1);
 
   const columns: ColumnsType<MonthlySalesDashboardListItem> = useMemo(
     () => [
@@ -217,6 +220,14 @@ export default function MonthlySalesDashboardPage() {
         width: 80,
         render: (v: boolean) =>
           v ? <Tag color="green">마감</Tag> : <Tag color="red">미마감</Tag>,
+      },
+      {
+        title: '판매여사원(환산인원)',
+        children: [
+          { title: '진열', dataIndex: 'displayHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
+          { title: '행사', dataIndex: 'eventHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
+          { title: '총인원', dataIndex: 'totalHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
+        ],
       },
     ],
     [summary?.referenceAchievementRate],

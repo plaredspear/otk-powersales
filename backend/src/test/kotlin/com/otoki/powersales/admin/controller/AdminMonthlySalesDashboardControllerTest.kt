@@ -86,6 +86,9 @@ class AdminMonthlySalesDashboardControllerTest : AdminControllerTestSupport() {
                     oilFatTargetAmount = 250_000L, oilFatAchievedAmount = 200_000L,
                     lastYearAchievedAmount = 700_000L, lastYearComparisonRatio = 114.3,
                     isConfirmed = true,
+                    displayHeadcount = java.math.BigDecimal("2.5"),
+                    eventHeadcount = java.math.BigDecimal("1.0"),
+                    totalHeadcount = java.math.BigDecimal("3.5"),
                 )
             ),
             pageInfo = MonthlySalesDashboardListResponse.PageInfo(0, 20, 1L, 1),

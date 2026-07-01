@@ -30,6 +30,7 @@ class MonthlySalesDashboardExcelExporter : BaseExcelExporter<MonthlySalesDashboa
         "냉동냉장 목표", "냉동냉장 실적",
         "유지 목표", "유지 실적",
         "전년 동월 실적", "전년 대비(%)", "마감",
+        "진열인원", "행사인원", "총인원",
     )
 
     /**
@@ -60,6 +61,9 @@ class MonthlySalesDashboardExcelExporter : BaseExcelExporter<MonthlySalesDashboa
         row.createCell(col++).setCellValue(item.oilFatAchievedAmount?.toDouble() ?: 0.0)
         row.createCell(col++).setCellValue(item.lastYearAchievedAmount?.toDouble() ?: 0.0)
         row.createCell(col++).setCellValue(item.lastYearComparisonRatio ?: 0.0)
-        row.createCell(col).setCellValue(if (item.isConfirmed) "마감" else "미마감")
+        row.createCell(col++).setCellValue(if (item.isConfirmed) "마감" else "미마감")
+        row.createCell(col++).setCellValue(item.displayHeadcount.toDouble())
+        row.createCell(col++).setCellValue(item.eventHeadcount.toDouble())
+        row.createCell(col).setCellValue(item.totalHeadcount.toDouble())
     }
 }
