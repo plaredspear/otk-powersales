@@ -10,6 +10,7 @@ import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutati
 import { useAuth } from '@/hooks/useAuth';
 import { uploadNoticeInlineImage } from '@/api/notice';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import MobileNoticePreview from './MobileNoticePreview';
 
 // 본문 인라인 이미지 허용 타입/용량 (백엔드 StorageConstants 와 정합).
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
@@ -71,6 +72,13 @@ export default function NoticeFormPage() {
   // (카테고리 옵션 자체도 서버 form-meta 가 role 기준으로 지점공지만 내려준다.)
   const isBranchNoticeOnly = user?.role === '조장' || user?.role === '지점장';
   const defaultCategory = isBranchNoticeOnly ? 'BRANCH' : 'COMPANY';
+
+  // 모바일 미리보기용 실시간 폼 값 watch (제목/카테고리/본문).
+  const watchedTitle = Form.useWatch('title', form) ?? '';
+  const watchedCategory = Form.useWatch('category', form);
+  const watchedContent = Form.useWatch('content', form) ?? '';
+  const watchedCategoryName =
+    formMeta?.categories.find((c) => c.code === watchedCategory)?.name ?? '';
 
   // 지점공지 폼에 표시할 지점명.
   // - 수정: 공지에 이미 저장된 지점(소유자 지점)을 그대로 표시
@@ -222,12 +230,21 @@ export default function NoticeFormPage() {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div style={{ padding: 16, maxWidth: 1200 }}>
+    <div
+      style={{
+        padding: 16,
+        maxWidth: 1280,
+        display: 'flex',
+        gap: 24,
+        alignItems: 'flex-start',
+      }}
+    >
       <Form
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
         initialValues={{ scope: '현장여사원', category: defaultCategory }}
+        style={{ flex: 1, minWidth: 0, maxWidth: 820 }}
       >
         <Row gutter={24}>
           <Col xs={24} sm={12}>
@@ -299,6 +316,15 @@ export default function NoticeFormPage() {
           </Space>
         </Form.Item>
       </Form>
+
+      <div style={{ position: 'sticky', top: 16, flexShrink: 0 }}>
+        <MobileNoticePreview
+          title={watchedTitle}
+          categoryName={watchedCategoryName}
+          isCompanyCategory={watchedCategory === 'COMPANY'}
+          content={watchedContent}
+        />
+      </div>
     </div>
   );
 }
