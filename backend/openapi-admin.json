@@ -14895,6 +14895,9 @@
           },
           "jobName" : {
             "type" : "string"
+          },
+          "runtimeEnabled" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -15691,6 +15694,9 @@
           "description" : {
             "type" : "string"
           },
+          "enabled" : {
+            "type" : "boolean"
+          },
           "endpointPath" : {
             "type" : "string"
           },
@@ -15701,6 +15707,17 @@
             "type" : "string"
           },
           "targetEntity" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SapInboundToggleRequest" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "endpointPath" : {
             "type" : "string"
           }
         },
@@ -16530,6 +16547,17 @@
           },
           "windowTo" : {
             "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduledJobToggleRequest" : {
+        "properties" : {
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "jobName" : {
             "type" : "string"
           }
         },
@@ -26864,6 +26892,34 @@
         "tags" : [ "admin-sap-integration-controller" ]
       }
     },
+    "/api/v1/admin/sap-integration/inbound/toggle" : {
+      "put" : {
+        "operationId" : "setInboundEnabled",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SapInboundToggleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSapInboundCatalogItemDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-integration-controller" ]
+      }
+    },
     "/api/v1/admin/sap-integration/outbound/catalog" : {
       "get" : {
         "operationId" : "getOutboundCatalog",
@@ -27900,6 +27956,34 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseScheduledJobSummaryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/toggle" : {
+      "put" : {
+        "operationId" : "setRuntimeEnabled",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduledJobToggleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListRegisteredScheduledJobDto"
                 }
               }
             },

@@ -157,6 +157,32 @@ class SapErpOrderControllerTest {
 
             verify(exactly = 0) { sapErpOrderService.upsert(any()) }
         }
+
+        @ParameterizedTest(name = "reqItemList 키 대소문자 변형: {0} → 200, upsert 호출")
+        @MethodSource("com.otoki.powersales.external.sap.inbound.controller.SapErpOrderControllerTest#reqItemListAliasCases")
+        @DisplayName("성공 - 레거시 deserializeStrict 정합: reqItemList 대소문자 변형을 @JsonAlias 로 흡수")
+        fun upsert_reqItemListCaseAlias(topLevelKey: String) {
+            every { sapErpOrderService.upsert(any()) } returns
+                ErpOrderDetail(successCount = 1, failureCount = 0, failures = emptyList())
+
+            val payload = """
+                {
+                  "$topLevelKey": [
+                    { "SAPOrderNumber": "0010012345", "SAPAccountCode": "1032619" }
+                  ]
+                }
+            """.trimIndent()
+
+            mockMvc.perform(
+                post("/api/v1/sap/erp-order")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(payload)
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.RESULT_CODE").value("200"))
+
+            verify(exactly = 1) { sapErpOrderService.upsert(any()) }
+        }
     }
 
     companion object {
@@ -168,6 +194,17 @@ class SapErpOrderControllerTest {
             Arguments.of("reqItemList 빈 배열", 422, """{"reqItemList": []}"""),
             Arguments.of("malformed JSON", 400, """{"reqItemList": ["""),
             Arguments.of("reqItemList 가 array 아닌 type", 400, """{"reqItemList": "not-array"}""")
+        )
+
+        // 레거시 SF JSON.deserializeStrict 는 키 대소문자를 구분하지 않아 SAP 가 아래 변형으로 보내도
+        // 매핑에 성공했다. @JsonAlias 로 동등 흡수됨을 검증한다 (canonical 은 reqItemList).
+        @JvmStatic
+        fun reqItemListAliasCases(): List<String> = listOf(
+            "reqItemList",   // canonical
+            "ReqItemList",   // PascalCase
+            "reqitemlist",   // 전부 소문자
+            "REQITEMLIST",   // 전부 대문자
+            "REQ_ITEM_LIST"  // snake + 대문자
         )
     }
 }
