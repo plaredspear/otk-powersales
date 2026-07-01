@@ -75,10 +75,16 @@ class MonthlySalesAdminQueryService(
         accountGroup: String?,
         distributionKeyword: String? = null,
         accountTypeKeyword: String? = null,
+        targetRegistration: String? = null,
     ): MonthlySalesDashboardSummaryResponse {
         validateParams(year, month, costCenterCodes)
         val effectiveCodes = applyScope(scope, costCenterCodes)
-        val accounts = findAccounts(effectiveCodes, accountGroup, customerKeyword, distributionKeyword, accountTypeKeyword)
+        val candidateAccounts = findAccounts(effectiveCodes, accountGroup, customerKeyword, distributionKeyword, accountTypeKeyword)
+
+        // 목표등록 구분 필터 — 목표 map(row 존재유무) 조회 후 accounts 필터 (목록/추이와 정합).
+        val candidateIds = candidateAccounts.map { it.id }
+        val targetByAccountId = findTargetMap(candidateIds, year, month)
+        val accounts = filterByTargetRegistration(candidateAccounts, targetByAccountId, targetRegistration)
 
         if (accounts.isEmpty()) {
             return MonthlySalesDashboardSummaryResponse(
@@ -111,9 +117,8 @@ class MonthlySalesAdminQueryService(
         val lastYearRatio = if (totalLastYearAchieved == null || totalLastYearAchieved == 0L) null
         else (totalAchieved.toDouble() / totalLastYearAchieved.toDouble()) * 100.0
 
-        // 목표 합계 — 거래처별 (연, 월) SalesProgressRateMaster 1행의 합계를 총합 (미등록 거래처는 0)
-        val targetByAccountId = findTargetMap(accountIds, year, month)
-        val totalTarget = targetByAccountId.values.sumOf { targetSumOf(it) }
+        // 목표 합계 — 필터된 거래처별 (연, 월) SalesProgressRateMaster 1행의 합계를 총합 (미등록 거래처는 0)
+        val totalTarget = accountIds.mapNotNull { targetByAccountId[it] }.sumOf { targetSumOf(it) }
 
         return MonthlySalesDashboardSummaryResponse(
             salesYear = year,
@@ -268,10 +273,14 @@ class MonthlySalesAdminQueryService(
         // 목표 — 거래처 N건의 (연, 월) SalesProgressRateMaster 1행 일괄 조회 (account_id 별 batch, N+1 회피)
         val targetByAccountId = findTargetMap(accountIds, request.year, request.month)
 
+        // 목표등록 구분 필터 — 거래처목표등록마스터 row 존재유무 기준 (registered/unregistered).
+        val filteredAccounts = filterByTargetRegistration(accounts, targetByAccountId, request.targetRegistration)
+        if (filteredAccounts.isEmpty()) return emptyList()
+
         // 환산인원 — 거래처별 진열/행사 환산인원 map (MFEIS 1 trip 배치 조회, N+1 회피)
         val headcountByAccountId = findHeadcountMap(request.year, request.month)
 
-        return accounts.map { account ->
+        return filteredAccounts.map { account ->
             val currentOro = oroByKey[account.id to currentSalesDate]
             val lastYearOro = oroByKey[account.id to lastYearSalesDate]
 
@@ -429,6 +438,23 @@ class MonthlySalesAdminQueryService(
                 account.abcType?.contains(accountTypeKw, ignoreCase = true) == true
             customerMatch && distributionMatch && accountTypeMatch
         }
+    }
+
+    /**
+     * 목표등록 구분 필터 — 거래처목표등록마스터(SalesProgressRateMaster) row 존재유무 기준.
+     *
+     * `targetByAccountId` 는 (거래처, 연, 월) 목표 row 가 존재하는 account_id 만 key 로 가진다
+     * ([findTargetMap]). "registered"=key 존재, "unregistered"=key 미존재. null/기타 값=전체(무필터).
+     * 판정은 목표 금액(targetSum)이 아니라 row 존재유무 — 금액 0원이어도 row 있으면 "등록".
+     */
+    private fun filterByTargetRegistration(
+        accounts: List<Account>,
+        targetByAccountId: Map<Long, SalesProgressRateMaster>,
+        targetRegistration: String?,
+    ): List<Account> = when (targetRegistration?.trim()?.lowercase()) {
+        "registered" -> accounts.filter { targetByAccountId.containsKey(it.id) }
+        "unregistered" -> accounts.filter { !targetByAccountId.containsKey(it.id) }
+        else -> accounts
     }
 
     private fun buildCategorySales(

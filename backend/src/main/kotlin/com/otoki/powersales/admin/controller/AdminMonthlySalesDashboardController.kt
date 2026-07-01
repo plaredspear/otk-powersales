@@ -40,10 +40,11 @@ class AdminMonthlySalesDashboardController(
         @RequestParam(required = false) accountGroup: String?,
         @RequestParam(required = false) distributionKeyword: String?,
         @RequestParam(required = false) accountTypeKeyword: String?,
+        @RequestParam(required = false) targetRegistration: String?,
     ): ResponseEntity<ApiResponse<MonthlySalesDashboardSummaryResponse>> {
         val response = queryService.getSummary(
             scope, year, month, costCenterCodes, customerKeyword, accountGroup,
-            distributionKeyword, accountTypeKeyword,
+            distributionKeyword, accountTypeKeyword, targetRegistration,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -61,6 +62,7 @@ class AdminMonthlySalesDashboardController(
         @RequestParam(required = false) customerKeyword: String?,
         @RequestParam(required = false) distributionKeyword: String?,
         @RequestParam(required = false) accountTypeKeyword: String?,
+        @RequestParam(required = false) targetRegistration: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int,
         @RequestParam(required = false) sort: String?,
@@ -70,6 +72,7 @@ class AdminMonthlySalesDashboardController(
             accountIds = accountIds ?: emptyList(),
             accountGroup = accountGroup, customerKeyword = customerKeyword,
             distributionKeyword = distributionKeyword, accountTypeKeyword = accountTypeKeyword,
+            targetRegistration = targetRegistration,
             page = page, size = size, sort = sort,
         )
         val response = queryService.getList(scope, request)
@@ -89,6 +92,7 @@ class AdminMonthlySalesDashboardController(
         @RequestParam(required = false) customerKeyword: String?,
         @RequestParam(required = false) distributionKeyword: String?,
         @RequestParam(required = false) accountTypeKeyword: String?,
+        @RequestParam(required = false) targetRegistration: String?,
         @RequestParam(required = false) sort: String?,
     ): ResponseEntity<ByteArray> {
         val request = MonthlySalesDashboardListRequest(
@@ -96,6 +100,7 @@ class AdminMonthlySalesDashboardController(
             accountIds = accountIds ?: emptyList(),
             accountGroup = accountGroup, customerKeyword = customerKeyword,
             distributionKeyword = distributionKeyword, accountTypeKeyword = accountTypeKeyword,
+            targetRegistration = targetRegistration,
             page = 0, size = Int.MAX_VALUE, sort = sort,
         )
         val items = queryService.getListForExport(scope, request)

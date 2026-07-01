@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Card, Col, Empty, Input, Row, Spin, Statistic, Tag, Typography, message } from 'antd';
+import { Alert, Card, Col, Empty, Input, Row, Select, Spin, Statistic, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -26,6 +26,7 @@ interface QueryParams {
   customerKeyword?: string;
   distributionKeyword?: string;
   accountTypeKeyword?: string;
+  targetRegistration?: 'registered' | 'unregistered';
 }
 
 /**
@@ -42,6 +43,7 @@ export default function MonthlySalesDashboardPage() {
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionKeyword, setDistributionKeyword] = useState<string>('');
   const [accountTypeKeyword, setAccountTypeKeyword] = useState<string>('');
+  const [targetRegistration, setTargetRegistration] = useState<'registered' | 'unregistered' | undefined>(undefined);
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
   const [page, setPage] = useState<number>(0);
   const [pageSize, setPageSize] = useState<number>(20);
@@ -54,7 +56,7 @@ export default function MonthlySalesDashboardPage() {
       const p = queryParams!;
       return fetchSummary(
         p.year, p.month, p.codes, p.customerKeyword, undefined,
-        p.distributionKeyword, p.accountTypeKeyword,
+        p.distributionKeyword, p.accountTypeKeyword, p.targetRegistration,
       );
     },
     enabled: queryParams != null,
@@ -71,6 +73,7 @@ export default function MonthlySalesDashboardPage() {
         customerKeyword: p.customerKeyword,
         distributionKeyword: p.distributionKeyword,
         accountTypeKeyword: p.accountTypeKeyword,
+        targetRegistration: p.targetRegistration,
         page,
         size: pageSize,
         sort,
@@ -93,6 +96,7 @@ export default function MonthlySalesDashboardPage() {
       customerKeyword: customerKeyword.trim() || undefined,
       distributionKeyword: distributionKeyword.trim() || undefined,
       accountTypeKeyword: accountTypeKeyword.trim() || undefined,
+      targetRegistration,
     });
   };
 
@@ -107,6 +111,7 @@ export default function MonthlySalesDashboardPage() {
         customerKeyword: customerKeyword.trim() || undefined,
         distributionKeyword: distributionKeyword.trim() || undefined,
         accountTypeKeyword: accountTypeKeyword.trim() || undefined,
+        targetRegistration,
       });
     }
     // 최초 자동 조회만 담당 — queryParams 가 채워진 뒤의 재조회는 사용자 조작에 맡긴다.
@@ -129,6 +134,7 @@ export default function MonthlySalesDashboardPage() {
           customerKeyword: queryParams.customerKeyword,
           distributionKeyword: queryParams.distributionKeyword,
           accountTypeKeyword: queryParams.accountTypeKeyword,
+          targetRegistration: queryParams.targetRegistration,
           sort,
         }),
         totalCount: list?.pageInfo.totalElements,
@@ -303,6 +309,22 @@ export default function MonthlySalesDashboardPage() {
                 />
               </div>
             </div>
+            <div>
+              <span>목표등록:</span>
+              <div style={{ marginTop: 4 }}>
+                <Select
+                  value={targetRegistration}
+                  onChange={(v) => setTargetRegistration(v)}
+                  style={{ width: 120 }}
+                  allowClear
+                  placeholder="전체"
+                  options={[
+                    { value: 'registered', label: '등록' },
+                    { value: 'unregistered', label: '미등록' },
+                  ]}
+                />
+              </div>
+            </div>
           </div>
         }
       />
@@ -375,6 +397,8 @@ export default function MonthlySalesDashboardPage() {
             {queryParams.customerKeyword && ` · 거래처: ${queryParams.customerKeyword}`}
             {queryParams.distributionKeyword && ` · 유통형태: ${queryParams.distributionKeyword}`}
             {queryParams.accountTypeKeyword && ` · 거래처유형: ${queryParams.accountTypeKeyword}`}
+            {queryParams.targetRegistration &&
+              ` · 목표등록: ${queryParams.targetRegistration === 'registered' ? '등록' : '미등록'}`}
           </Text>
           <RefreshButton
             onRefresh={() => {

@@ -374,4 +374,36 @@ class MonthlySalesAdminQueryServiceTest {
         )
         assertThat(byName.items.map { it.accountId }).containsExactly(1L)
     }
+
+    @Test
+    @DisplayName("getList — targetRegistration 은 목표 row 존재유무 기준 (registered/unregistered)")
+    fun listFiltersByTargetRegistration() {
+        val accWithTarget = account(1, "S001")
+        val accNoTarget = account(2, "S002")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(accWithTarget, accNoTarget)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
+        // 거래처 1 만 (2026, 4) 목표 row 존재 — 거래처 2 는 목표 미등록. 금액 0 이어도 row 있으면 등록.
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), "2026") } returns listOf(
+            target(month = 4, rt = 0.0, accountId = 1),
+        )
+
+        val registered = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), targetRegistration = "registered"),
+        )
+        assertThat(registered.items.map { it.accountId }).containsExactly(1L)
+
+        val unregistered = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), targetRegistration = "unregistered"),
+        )
+        assertThat(unregistered.items.map { it.accountId }).containsExactly(2L)
+
+        // 필터 없으면 전체
+        val all = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001")),
+        )
+        assertThat(all.items.map { it.accountId }).containsExactlyInAnyOrder(1L, 2L)
+    }
 }

@@ -115,6 +115,8 @@ export interface MonthlySalesDashboardListRequest {
   distributionKeyword?: string;
   /** 거래처유형 — ABC유형코드 OR ABC유형 부분일치 (통합일정 정합). */
   accountTypeKeyword?: string;
+  /** 목표등록 구분 — 'registered'(목표 row 존재) | 'unregistered'(미존재) | undefined(전체). */
+  targetRegistration?: 'registered' | 'unregistered';
   page?: number;
   size?: number;
   sort?: string;
@@ -137,6 +139,7 @@ export async function fetchSummary(
   accountGroup?: string,
   distributionKeyword?: string,
   accountTypeKeyword?: string,
+  targetRegistration?: 'registered' | 'unregistered',
 ): Promise<MonthlySalesDashboardSummary> {
   const res = await client.get<ApiResponse<MonthlySalesDashboardSummary>>(`${BASE}/summary`, {
     params: {
@@ -147,6 +150,7 @@ export async function fetchSummary(
       ...(accountGroup ? { accountGroup } : {}),
       ...(distributionKeyword ? { distributionKeyword } : {}),
       ...(accountTypeKeyword ? { accountTypeKeyword } : {}),
+      ...(targetRegistration ? { targetRegistration } : {}),
     },
   });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('월매출 요약', res));
@@ -171,6 +175,7 @@ export async function fetchList(
       ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
       ...(request.distributionKeyword ? { distributionKeyword: request.distributionKeyword } : {}),
       ...(request.accountTypeKeyword ? { accountTypeKeyword: request.accountTypeKeyword } : {}),
+      ...(request.targetRegistration ? { targetRegistration: request.targetRegistration } : {}),
       ...(request.page !== undefined ? { page: request.page } : {}),
       ...(request.size !== undefined ? { size: request.size } : {}),
       ...(request.sort ? { sort: request.sort } : {}),
@@ -193,6 +198,7 @@ export function exportListParams(request: MonthlySalesDashboardListRequest): Rec
     ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
     ...(request.distributionKeyword ? { distributionKeyword: request.distributionKeyword } : {}),
     ...(request.accountTypeKeyword ? { accountTypeKeyword: request.accountTypeKeyword } : {}),
+    ...(request.targetRegistration ? { targetRegistration: request.targetRegistration } : {}),
     ...(request.sort ? { sort: request.sort } : {}),
   };
 }
