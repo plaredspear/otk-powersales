@@ -74,7 +74,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<GpsConsentTerms> getGpsConsentTerms() async {
     final data = await _remoteDataSource.getGpsConsentTerms();
     return GpsConsentTerms(
-      agreementNumber: data['agreement_number'] as String,
+      agreementNumber: data['agreementNumber'] as String,
       contents: data['contents'] as String,
     );
   }
@@ -83,7 +83,7 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<GpsConsentStatus> getGpsConsentStatus() async {
     final data = await _remoteDataSource.getGpsConsentStatus();
     return GpsConsentStatus(
-      requiresGpsConsent: data['requires_gps_consent'] as bool,
+      requiresGpsConsent: data['requiresGpsConsent'] as bool,
     );
   }
 
@@ -93,8 +93,8 @@ class AuthRepositoryImpl implements AuthRepository {
       agreementNumber: agreementNumber,
     );
     final result = GpsConsentRecordResult(
-      accessToken: data['access_token'] as String,
-      expiresIn: data['expires_in'] as int,
+      accessToken: data['accessToken'] as String,
+      expiresIn: data['expiresIn'] as int,
     );
     await _localDataSource.saveAccessToken(result.accessToken);
     return result;
