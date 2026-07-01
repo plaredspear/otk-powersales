@@ -33,7 +33,7 @@ class ActivityMenuItem {
 /// 활동등록 팝업 위젯
 ///
 /// 영업사원이 현장 활동을 등록하기 위한 진입점.
-/// 7개의 메뉴(소비기한 관리, 현장 점검 등록, 제안하기(신제품 제안 등),
+/// 7개의 메뉴(소비기한 관리, 현장 점검 등록, 제안하기,
 /// 제품 클레임 등록, 제품 클레임 조회, 물류 클레임 등록, 물류 클레임 조회)를
 /// BottomSheet 형태로 제공하며, 각 메뉴 선택 시 해당 화면으로 이동한다.
 /// (레거시 GNB "활동 등록" 정합)
@@ -64,7 +64,7 @@ class ActivityRegistrationPopup extends ConsumerWidget {
     ),
     ActivityMenuItem(
       iconAsset: 'assets/images/ico_active5.png',
-      label: '제안하기(신제품 제안 등)',
+      label: '제안하기',
       route: AppRouter.suggestionRegister,
       // 제안하기 진입 — 기본 분류를 신제품 제안으로 연다(물류 클레임 제외).
       arguments: SuggestionCategory.newProduct,

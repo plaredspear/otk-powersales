@@ -18,7 +18,7 @@ void main() {
       expect(items[1].label, '현장 점검 등록');
       expect(items[1].route, AppRouter.inspectionRegister);
 
-      expect(items[2].label, '제안하기(신제품 제안 등)');
+      expect(items[2].label, '제안하기');
       expect(items[2].route, AppRouter.suggestionRegister);
       expect(items[2].arguments, SuggestionCategory.newProduct);
 
