@@ -124,7 +124,7 @@ class _SuggestionRegisterPageState
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          '제안하기',
+          '물류 클레임 등록',
           style: TextStyle(fontWeight: FontWeight.w700, color: Colors.black),
         ),
         centerTitle: true,

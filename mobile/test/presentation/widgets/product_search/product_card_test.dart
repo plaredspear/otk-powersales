@@ -19,7 +19,7 @@ void main() {
     testWidgets('기본(showActions=true)이면 클레임/주문서 버튼이 보인다', (tester) async {
       await tester.pumpWidget(wrap(const ProductCard(product: product)));
 
-      expect(find.text('클레임 등록'), findsOneWidget);
+      expect(find.text('제품 클레임 등록'), findsOneWidget);
       expect(find.text('주문서 등록'), findsOneWidget);
     });
 
@@ -28,7 +28,7 @@ void main() {
         wrap(const ProductCard(product: product, showActions: false)),
       );
 
-      expect(find.text('클레임 등록'), findsNothing);
+      expect(find.text('제품 클레임 등록'), findsNothing);
       expect(find.text('주문서 등록'), findsNothing);
       // 제품 정보는 그대로 표시
       expect(find.text('진라면'), findsOneWidget);

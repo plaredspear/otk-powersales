@@ -114,7 +114,7 @@ class ProductCard extends StatelessWidget {
                           ),
                           const SizedBox(width: AppSpacing.xxs),
                           Text(
-                            '클레임 등록',
+                            '제품 클레임 등록',
                             style: AppTypography.labelMedium.copyWith(
                               color: onClaimTap != null
                                   ? AppColors.textSecondary

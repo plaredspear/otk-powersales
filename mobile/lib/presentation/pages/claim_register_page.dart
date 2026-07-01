@@ -110,7 +110,7 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('클레임 등록'),
+        title: const Text('제품 클레임 등록'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),

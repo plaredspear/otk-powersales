@@ -65,7 +65,7 @@ class _ClaimListPageState extends ConsumerState<ClaimListPage>
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('클레임 현황')),
+      appBar: AppBar(title: const Text('제품 클레임 조회')),
       body: Column(
         children: [
           _buildAccountFilter(state),

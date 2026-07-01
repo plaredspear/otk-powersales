@@ -76,18 +76,18 @@ abstract final class MenuConstants {
       label: '현장톡',
       items: [
         MenuItem(id: 'field-check', label: '현장 점검', route: '/inspection-list'),
-        MenuItem(id: 'claim-list', label: '클레임 현황', route: '/claim/list'),
-        MenuItem(id: 'claims', label: '클레임 등록', route: '/claim/register'),
+        MenuItem(id: 'claims', label: '제품 클레임 등록', route: '/claim/register'),
+        MenuItem(id: 'claim-list', label: '제품 클레임 조회', route: '/claim/list'),
         MenuItem(
           id: 'suggestions',
-          label: '제안하기',
+          label: '물류 클레임 등록',
           route: '/suggestion/register',
         ),
         // 레거시 GNB "내 물류클레임 조회"(logisticsclaimlist) 정합 — 물류클레임 전용 목록.
         // (레거시에는 제안/물류클레임 통합 목록이 없음)
         MenuItem(
           id: 'logistics-claim-list',
-          label: '내 물류클레임 조회',
+          label: '물류 클레임 조회',
           route: '/suggestion/list',
         ),
       ],

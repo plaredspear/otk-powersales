@@ -66,7 +66,7 @@ class _SuggestionListPageState extends ConsumerState<SuggestionListPage>
     });
   }
 
-  String get _title => '내 물류클레임 조회';
+  String get _title => '물류 클레임 조회';
 
   String get _emptyMessage => '등록된 물류클레임이 없습니다';
 

@@ -17,16 +17,16 @@ void main() {
       expect(items[1].label, '현장 점검 등록');
       expect(items[1].route, AppRouter.inspectionRegister);
 
-      expect(items[2].label, '제안하기(물류클레임, 신제품 제안 등)');
-      expect(items[2].route, AppRouter.suggestionRegister);
+      expect(items[2].label, '제품 클레임 등록');
+      expect(items[2].route, AppRouter.claimRegister);
 
-      expect(items[3].label, '클레임 등록');
-      expect(items[3].route, AppRouter.claimRegister);
+      expect(items[3].label, '제품 클레임 조회');
+      expect(items[3].route, AppRouter.claimList);
 
-      expect(items[4].label, '내 클레임 조회');
-      expect(items[4].route, AppRouter.claimList);
+      expect(items[4].label, '물류 클레임 등록');
+      expect(items[4].route, AppRouter.suggestionRegister);
 
-      expect(items[5].label, '내 물류클레임 조회');
+      expect(items[5].label, '물류 클레임 조회');
       expect(items[5].route, AppRouter.suggestionList);
     });
 
