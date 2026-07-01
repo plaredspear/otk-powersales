@@ -36,7 +36,8 @@ class NoticeController(
         if (noticeId <= 0) {
             throw InvalidNoticeIdException()
         }
-        val response = noticeService.getNoticeDetail(noticeId)
+        // 모바일/사용자용 상세는 발행(PUBLISHED)된 공지만 — 임시저장(DRAFT)은 URL 직접 접근으로도 차단.
+        val response = noticeService.getNoticeDetail(noticeId, publishedOnly = true)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

@@ -15,6 +15,8 @@ data class NoticePostSummaryResponse(
     val id: Long,
     val category: String,           // enum name (e.g., "COMPANY")
     val categoryName: String,       // enum displayName (e.g., "회사공지")
+    val status: String,             // 발행 상태 apiCode (DRAFT/PUBLISHED)
+    val statusName: String,         // 발행 상태 표시명 (임시저장/발행)
     val scope: String?,             // 공개범위 (e.g., "영업사원")
     val title: String,
     val branch: String?,            // 지점 (지점공지일 때만 값 존재)

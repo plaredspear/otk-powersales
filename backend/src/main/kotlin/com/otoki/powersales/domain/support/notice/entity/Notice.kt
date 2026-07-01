@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.entity.Group
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
+import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import org.springframework.data.annotation.CreatedBy
@@ -82,6 +83,12 @@ class Notice(
     @FieldName("삭제여부")
     @Column(name = "is_deleted")
     var isDeleted: Boolean? = null,
+
+    // 발행 상태 — SF 메타에 없는 신규 로컬 컬럼(저장/발행 분리). DB 저장은 enum name(DRAFT/PUBLISHED).
+    @FieldName("발행상태")
+    @Column(name = "status", length = 20)
+    @Convert(converter = NoticeStatusConverter::class)
+    var status: NoticeStatus? = null,
 
     // -- Relations --
 

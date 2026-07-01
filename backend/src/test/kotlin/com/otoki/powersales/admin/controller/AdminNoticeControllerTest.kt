@@ -63,6 +63,8 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                         id = 1L,
                         category = "COMPANY",
                         categoryName = "회사공지",
+                        status = "PUBLISHED",
+                        statusName = "발행",
                         scope = "영업사원",
                         title = "테스트 공지",
                         branch = null,
@@ -134,6 +136,8 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 scope = "영업사원",
                 category = "COMPANY",
                 categoryName = "회사공지",
+                status = "PUBLISHED",
+                statusName = "발행",
                 title = "공지 제목",
                 content = "<p>본문</p>",
                 branch = null,
@@ -141,7 +145,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 createdAt = LocalDateTime.parse("2026-03-04T10:00:00"),
                 images = emptyList()
             )
-            every { noticeService.getNoticeDetail(1L) } returns response
+            every { noticeService.getNoticeDetail(1L, any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/notices/1"))
                 .andExpect(status().isOk)
@@ -316,6 +320,43 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
             mockMvc.perform(delete("/api/v1/admin/notices/999"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.error.code").value("NOTICE_NOT_FOUND"))
+        }
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/v1/admin/notices/{noticeId}/publish|unpublish - 발행/발행취소")
+    inner class PublishNotice {
+
+        private fun mutationResponse() = NoticeMutationResponse(
+            id = 10L,
+            category = "COMPANY",
+            categoryName = "회사공지",
+            title = "공지",
+            content = "<p>내용</p>",
+            branch = null,
+            branchCode = null,
+            createdAt = LocalDateTime.parse("2026-03-04T10:00:00")
+        )
+
+        @Test
+        @DisplayName("발행 성공")
+        fun publishNotice_success() {
+            every { noticeService.publishNotice(10L) } returns mutationResponse()
+
+            mockMvc.perform(patch("/api/v1/admin/notices/10/publish"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("공지사항이 발행되었습니다"))
+        }
+
+        @Test
+        @DisplayName("발행취소 성공")
+        fun unpublishNotice_success() {
+            every { noticeService.unpublishNotice(10L) } returns mutationResponse()
+
+            mockMvc.perform(patch("/api/v1/admin/notices/10/unpublish"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.message").value("공지사항 발행이 취소되었습니다"))
         }
     }
 

@@ -16861,6 +16861,9 @@
             "minLength" : 1,
             "type" : "string"
           },
+          "publish" : {
+            "type" : "boolean"
+          },
           "scope" : {
             "minLength" : 1,
             "type" : "string"
@@ -17020,6 +17023,12 @@
           "scope" : {
             "type" : [ "string", "null" ]
           },
+          "status" : {
+            "type" : "string"
+          },
+          "statusName" : {
+            "type" : "string"
+          },
           "title" : {
             "type" : "string"
           }
@@ -17081,6 +17090,12 @@
           "scope" : {
             "type" : [ "string", "null" ]
           },
+          "status" : {
+            "type" : "string"
+          },
+          "statusName" : {
+            "type" : "string"
+          },
           "title" : {
             "type" : "string"
           }
@@ -17102,6 +17117,9 @@
           "content" : {
             "minLength" : 1,
             "type" : "string"
+          },
+          "publish" : {
+            "type" : "boolean"
           },
           "scope" : {
             "minLength" : 1,
@@ -30112,6 +30130,60 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseObject"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-notice-controller" ]
+      }
+    },
+    "/api/v1/admin/notices/{noticeId}/publish" : {
+      "patch" : {
+        "operationId" : "publishNotice",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "noticeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseNoticeMutationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-notice-controller" ]
+      }
+    },
+    "/api/v1/admin/notices/{noticeId}/unpublish" : {
+      "patch" : {
+        "operationId" : "unpublishNotice",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "noticeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseNoticeMutationResponse"
                 }
               }
             },

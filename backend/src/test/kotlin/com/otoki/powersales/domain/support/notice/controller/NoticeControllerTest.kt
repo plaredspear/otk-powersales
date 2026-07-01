@@ -39,8 +39,8 @@ class NoticeControllerTest : MobileControllerTestSupport() {
         fun getPosts_success() {
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(id = 42L, category = "COMPANY", categoryName = "회사공지", scope = "영업사원", title = "전체공지 제목", branch = null, department = "판매전략실", authorName = "판매전략실", createdAt = LocalDateTime.parse("2026-02-28T10:30:00")),
-                    NoticePostSummaryResponse(id = 41L, category = "BRANCH", categoryName = "지점공지", scope = "영업사원", title = "지점공지 제목", branch = "[제1사업부] 1영업부-강서1지점", department = "강서1지점", authorName = "홍길동", createdAt = LocalDateTime.parse("2026-02-27T09:00:00"))
+                    NoticePostSummaryResponse(id = 42L, category = "COMPANY", categoryName = "회사공지", status = "PUBLISHED", statusName = "발행", scope = "영업사원", title = "전체공지 제목", branch = null, department = "판매전략실", authorName = "판매전략실", createdAt = LocalDateTime.parse("2026-02-28T10:30:00")),
+                    NoticePostSummaryResponse(id = 41L, category = "BRANCH", categoryName = "지점공지", status = "PUBLISHED", statusName = "발행", scope = "영업사원", title = "지점공지 제목", branch = "[제1사업부] 1영업부-강서1지점", department = "강서1지점", authorName = "홍길동", createdAt = LocalDateTime.parse("2026-02-27T09:00:00"))
                 ),
                 totalCount = 5,
                 totalPages = 1,
@@ -62,7 +62,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
         fun getPosts_withParams() {
             val response = NoticePostListResponse(
                 content = listOf(
-                    NoticePostSummaryResponse(id = 1L, category = "COMPANY", categoryName = "회사공지", scope = "영업사원", title = "영업 목표", branch = null, department = "판매전략실", authorName = "판매전략실", createdAt = LocalDateTime.parse("2026-02-28T10:30:00"))
+                    NoticePostSummaryResponse(id = 1L, category = "COMPANY", categoryName = "회사공지", status = "PUBLISHED", statusName = "발행", scope = "영업사원", title = "영업 목표", branch = null, department = "판매전략실", authorName = "판매전략실", createdAt = LocalDateTime.parse("2026-02-28T10:30:00"))
                 ),
                 totalCount = 1,
                 totalPages = 1,
@@ -133,6 +133,8 @@ class NoticeControllerTest : MobileControllerTestSupport() {
                 scope = "영업사원",
                 category = "COMPANY",
                 categoryName = "회사공지",
+                status = "PUBLISHED",
+                statusName = "발행",
                 title = "테스트 공지",
                 content = "본문 내용입니다.",
                 branch = null,
@@ -142,7 +144,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
                     NoticeImageResponse(id = 101L, url = "https://bucket.s3.ap-northeast-2.amazonaws.com/img.jpg", sortOrder = 0)
                 )
             )
-            every { noticeService.getNoticeDetail(42L) } returns response
+            every { noticeService.getNoticeDetail(42L, any()) } returns response
 
             mockMvc.perform(
                 get("/api/v1/mobile/notices/42").contentType(MediaType.APPLICATION_JSON)
@@ -160,6 +162,8 @@ class NoticeControllerTest : MobileControllerTestSupport() {
                 scope = "현장여사원",
                 category = "BRANCH",
                 categoryName = "지점공지",
+                status = "PUBLISHED",
+                statusName = "발행",
                 title = "지점 안내",
                 content = "지점 공지 본문",
                 branch = "서울1지점",
@@ -167,7 +171,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
                 createdAt = LocalDateTime.parse("2026-01-01T00:00:00"),
                 images = emptyList()
             )
-            every { noticeService.getNoticeDetail(10L) } returns response
+            every { noticeService.getNoticeDetail(10L, any()) } returns response
 
             mockMvc.perform(
                 get("/api/v1/mobile/notices/10").contentType(MediaType.APPLICATION_JSON)
@@ -179,7 +183,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
         @Test
         @DisplayName("실패 - 존재하지 않는 공지 ID -> 404")
         fun getNoticeDetail_notFound() {
-            every { noticeService.getNoticeDetail(999L) } throws NoticePostNotFoundException()
+            every { noticeService.getNoticeDetail(999L, any()) } throws NoticePostNotFoundException()
 
             mockMvc.perform(
                 get("/api/v1/mobile/notices/999").contentType(MediaType.APPLICATION_JSON)

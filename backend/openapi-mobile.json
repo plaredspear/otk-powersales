@@ -4898,6 +4898,12 @@
           "scope" : {
             "type" : [ "string", "null" ]
           },
+          "status" : {
+            "type" : "string"
+          },
+          "statusName" : {
+            "type" : "string"
+          },
           "title" : {
             "type" : "string"
           }
@@ -4958,6 +4964,12 @@
           },
           "scope" : {
             "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "statusName" : {
+            "type" : "string"
           },
           "title" : {
             "type" : "string"

@@ -23,6 +23,7 @@ import com.otoki.powersales.domain.support.notice.dto.response.ScopeOption
 import com.otoki.powersales.domain.support.notice.entity.Notice
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
+import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.domain.support.notice.exception.BranchNoticeOnlyException
 import com.otoki.powersales.domain.support.notice.exception.BranchRequiredException
 import com.otoki.powersales.domain.support.notice.exception.InvalidImageIdException
@@ -70,9 +71,11 @@ class NoticeService(
      * 2. 첨부 images[] 의 url 을 presigned 로 발급.
      * presigned 는 만료(NOTICE_PRESIGN_TTL_SECONDS)되므로 본문 DB 에는 placeholder 만 영구 저장하고 조회 시점에 발급한다.
      */
-    fun getNoticeDetail(noticeId: Long): NoticePostDetailResponse {
+    fun getNoticeDetail(noticeId: Long, publishedOnly: Boolean): NoticePostDetailResponse {
         val notice = noticeRepository.findById(noticeId)
             .filter { it.isDeleted != true }
+            // 모바일/사용자용 조회(publishedOnly=true)는 임시저장(DRAFT) 상세를 URL 직접 접근으로도 볼 수 없다.
+            .filter { !publishedOnly || it.status == NoticeStatus.PUBLISHED }
             .orElseThrow { NoticePostNotFoundException() }
 
         val uploadFiles = uploadFileRepository
@@ -109,6 +112,8 @@ class NoticeService(
             scope = notice.scope?.displayName,
             category = notice.category?.apiCode ?: "",
             categoryName = notice.category?.displayName ?: "",
+            status = (notice.status ?: NoticeStatus.PUBLISHED).apiCode,
+            statusName = (notice.status ?: NoticeStatus.PUBLISHED).displayName,
             title = notice.name ?: "",
             content = content,
             branch = notice.branch,
@@ -191,6 +196,8 @@ class NoticeService(
             id = id,
             category = category?.apiCode ?: "",
             categoryName = category?.displayName ?: "",
+            status = (status ?: NoticeStatus.PUBLISHED).apiCode,
+            statusName = (status ?: NoticeStatus.PUBLISHED).displayName,
             scope = scope?.displayName,
             title = name ?: "",
             branch = branch,
@@ -218,7 +225,9 @@ class NoticeService(
             contents = request.content,
             branch = branch,
             branchCode = branchCode,
-            employee = creator
+            employee = creator,
+            // 발행 버튼=PUBLISHED, 임시저장 버튼=DRAFT.
+            status = if (request.publish) NoticeStatus.PUBLISHED else NoticeStatus.DRAFT
         )
         val saved = noticeRepository.save(notice)
         syncInlineImages(saved.id, saved.contents, request.sessionUploadedRefids)
@@ -238,6 +247,8 @@ class NoticeService(
         notice.scope = noticeScope
         notice.category = cat
         notice.contents = request.content
+        // 발행 버튼=PUBLISHED, 임시저장 버튼=DRAFT(발행취소 효과). "임시저장=무조건 DRAFT" 정책.
+        notice.status = if (request.publish) NoticeStatus.PUBLISHED else NoticeStatus.DRAFT
 
         // 등록(createNotice) 과 동일하게, 지점공지의 지점/지점코드는 요청 값이 아니라 공지 소유자(등록자)
         // 소속 지점을 권위로 강제한다. 이로써 등록 후 수정으로 타 지점 코드로 바꾸는 우회를 차단한다.
@@ -270,6 +281,24 @@ class NoticeService(
         val notice = findActiveNotice(noticeId)
         notice.isDeleted = true
         noticeRepository.save(notice)
+    }
+
+    /** 공지 발행 — status 를 PUBLISHED 로 전환(모바일 노출). 상세화면 발행 버튼용. */
+    @Transactional
+    fun publishNotice(noticeId: Long): NoticeMutationResponse {
+        if (noticeId <= 0) throw InvalidNoticeIdException()
+        val notice = findActiveNotice(noticeId)
+        notice.status = NoticeStatus.PUBLISHED
+        return NoticeMutationResponse.Companion.from(notice)
+    }
+
+    /** 공지 발행취소 — status 를 DRAFT 로 전환(모바일 미노출). 상세화면 발행취소 버튼용. */
+    @Transactional
+    fun unpublishNotice(noticeId: Long): NoticeMutationResponse {
+        if (noticeId <= 0) throw InvalidNoticeIdException()
+        val notice = findActiveNotice(noticeId)
+        notice.status = NoticeStatus.DRAFT
+        return NoticeMutationResponse.Companion.from(notice)
     }
 
     /**
