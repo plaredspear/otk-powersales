@@ -6,17 +6,22 @@ import 'suggestion_logistics_claim_fields.dart';
 /// 제안하기 분류 선택 위젯 (레거시 suggestWrite.jsp 정합)
 ///
 /// "분류 *" 라벨 + 컴팩트 라디오를 풀폭 하단 구분선으로 구획한다.
-/// 현재 운영 정책상 물류 클레임만 사용하므로 물류 클레임 1행만 항상 선택된
-/// 상태로 노출한다(신제품 제안 / 기존제품 상품가치향상 제외).
+/// 진입점에 따라 노출 분류가 달라진다.
+/// - 물류 클레임 등록: 물류 클레임 1행만
+/// - 제안하기(신제품 제안 등): 신제품 제안 / 기존제품 상품가치향상
 class SuggestionCategorySelector extends StatelessWidget {
   const SuggestionCategorySelector({
     super.key,
     required this.selectedCategory,
     required this.onCategoryChanged,
+    this.categories = const [SuggestionCategory.logisticsClaim],
   });
 
   final SuggestionCategory selectedCategory;
   final ValueChanged<SuggestionCategory> onCategoryChanged;
+
+  /// 노출할 분류 목록 (진입점별로 다름)
+  final List<SuggestionCategory> categories;
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +44,13 @@ class SuggestionCategorySelector extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _CategoryOption(
-                  label: '물류 클레임',
-                  value: SuggestionCategory.logisticsClaim,
-                  selectedCategory: selectedCategory,
-                  onChanged: onCategoryChanged,
-                ),
+                for (final category in categories)
+                  _CategoryOption(
+                    label: category.displayName,
+                    value: category,
+                    selectedCategory: selectedCategory,
+                    onChanged: onCategoryChanged,
+                  ),
               ],
             ),
           ),

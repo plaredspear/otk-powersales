@@ -35,11 +35,14 @@ class SuggestionRegisterState {
 
   /// 초기 상태
   ///
-  /// 레거시 suggestWrite.jsp 정합 — 진입 시 기본 분류는 물류 클레임.
-  factory SuggestionRegisterState.initial() {
+  /// 진입점에 따라 기본 분류가 달라진다. 물류 클레임 등록은 물류 클레임,
+  /// 제안하기(신제품 제안 등)는 신제품 제안을 기본으로 연다.
+  factory SuggestionRegisterState.initial({
+    SuggestionCategory category = SuggestionCategory.logisticsClaim,
+  }) {
     return SuggestionRegisterState(
       form: SuggestionRegisterForm(
-        category: SuggestionCategory.logisticsClaim,
+        category: category,
         title: '',
         content: '',
         photos: const [],

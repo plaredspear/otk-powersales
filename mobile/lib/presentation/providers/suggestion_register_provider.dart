@@ -300,8 +300,10 @@ class SuggestionRegisterNotifier
   }
 
   /// 폼 초기화
-  void reset() {
-    state = SuggestionRegisterState.initial();
+  ///
+  /// [category] 로 진입 기본 분류를 지정한다(물류 클레임 등록 vs 제안하기).
+  void reset({SuggestionCategory category = SuggestionCategory.logisticsClaim}) {
+    state = SuggestionRegisterState.initial(category: category);
   }
 
   /// 에러 메시지 지우기

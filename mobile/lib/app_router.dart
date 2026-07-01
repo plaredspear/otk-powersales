@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'domain/entities/attendance_result.dart';
 import 'domain/entities/education_category.dart';
 import 'domain/entities/product_expiration_item.dart';
+import 'domain/entities/suggestion_form.dart';
 import 'presentation/pages/app_info_page.dart';
 import 'presentation/pages/attendance_page.dart';
 import 'presentation/pages/attendance_complete_page.dart';
@@ -211,7 +212,14 @@ class AppRouter {
           }
           return const ClaimRegisterPage();
         },
-        suggestionRegister: (context) => const SuggestionRegisterPage(),
+        suggestionRegister: (context) {
+          // 진입점별 기본 분류 전달(물류 클레임 등록 vs 제안하기 신제품 제안)
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is SuggestionCategory) {
+            return SuggestionRegisterPage(entryCategory: args);
+          }
+          return const SuggestionRegisterPage();
+        },
         suggestionList: (context) => const SuggestionListPage(),
         suggestionDetail: (context) {
           final suggestionId =

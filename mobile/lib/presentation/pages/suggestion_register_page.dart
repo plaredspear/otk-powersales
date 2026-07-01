@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../domain/entities/suggestion_draft.dart';
+import '../../domain/entities/suggestion_form.dart';
 import '../providers/pos_sales_provider.dart';
 import '../providers/suggestion_register_provider.dart';
 import '../providers/suggestion_register_state.dart';
@@ -29,7 +30,19 @@ const int _maxPhotoSizeBytes = 20 * 1024 * 1024;
 /// - 사진 첨부 (최대 2장, 20MB 가드)
 /// - 임시저장(별 스펙 — 안내) / 전송
 class SuggestionRegisterPage extends ConsumerStatefulWidget {
-  const SuggestionRegisterPage({super.key});
+  const SuggestionRegisterPage({
+    super.key,
+    this.entryCategory = SuggestionCategory.logisticsClaim,
+  });
+
+  /// 진입 기본 분류.
+  /// - 물류 클레임 등록: [SuggestionCategory.logisticsClaim]
+  /// - 제안하기(신제품 제안 등): [SuggestionCategory.newProduct]
+  final SuggestionCategory entryCategory;
+
+  /// 제안하기(신제품 제안/기존제품 상품가치향상) 진입 여부.
+  bool get isProposalEntry =>
+      entryCategory != SuggestionCategory.logisticsClaim;
 
   @override
   ConsumerState<SuggestionRegisterPage> createState() =>
@@ -49,7 +62,9 @@ class _SuggestionRegisterPageState
       // 전역 provider 라 이전 등록 성공(successMessage) 등 종료 상태가 그대로
       // 남아 있다. 재진입 시 첫 상태 변화(임시저장 조회 등)에 listen 이 묵은
       // 성공 메시지를 감지해 곧바로 pop 되는 문제를 막기 위해 먼저 초기화한다.
-      ref.read(suggestionRegisterProvider.notifier).reset();
+      ref
+          .read(suggestionRegisterProvider.notifier)
+          .reset(category: widget.entryCategory);
       // 진입 후 첫 프레임에서 임시저장 이어쓰기 확인 (레거시 nullChk='N' 흐름 대응)
       _checkDraft();
     });
@@ -123,9 +138,12 @@ class _SuggestionRegisterPageState
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          '물류 클레임 등록',
-          style: TextStyle(fontWeight: FontWeight.w700, color: Colors.black),
+        title: Text(
+          widget.isProposalEntry ? '제안하기' : '물류 클레임 등록',
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -156,6 +174,12 @@ class _SuggestionRegisterPageState
                     SuggestionCategorySelector(
                       selectedCategory: state.form.category,
                       onCategoryChanged: notifier.changeCategory,
+                      categories: widget.isProposalEntry
+                          ? const [
+                              SuggestionCategory.newProduct,
+                              SuggestionCategory.existingProduct,
+                            ]
+                          : const [SuggestionCategory.logisticsClaim],
                     ),
                     ..._buildCategoryFields(state, notifier),
                     const SizedBox(height: 24),

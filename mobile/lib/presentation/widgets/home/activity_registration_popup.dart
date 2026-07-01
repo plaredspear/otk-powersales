@@ -5,6 +5,7 @@ import '../../../app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../domain/entities/suggestion_form.dart';
 import '../../providers/auth_provider.dart';
 
 /// 활동등록 메뉴 아이템 데이터
@@ -32,9 +33,10 @@ class ActivityMenuItem {
 /// 활동등록 팝업 위젯
 ///
 /// 영업사원이 현장 활동을 등록하기 위한 진입점.
-/// 6개의 메뉴(소비기한 관리, 현장 점검 등록, 제품 클레임 등록, 제품 클레임 조회,
-/// 물류 클레임 등록, 물류 클레임 조회)를 BottomSheet 형태로 제공하며,
-/// 각 메뉴 선택 시 해당 화면으로 이동한다. (레거시 GNB "활동 등록" 정합)
+/// 7개의 메뉴(소비기한 관리, 현장 점검 등록, 제안하기(신제품 제안 등),
+/// 제품 클레임 등록, 제품 클레임 조회, 물류 클레임 등록, 물류 클레임 조회)를
+/// BottomSheet 형태로 제공하며, 각 메뉴 선택 시 해당 화면으로 이동한다.
+/// (레거시 GNB "활동 등록" 정합)
 class ActivityRegistrationPopup extends ConsumerWidget {
   /// 메뉴 아이템 탭 콜백
   final void Function(ActivityMenuItem item)? onMenuTap;
@@ -44,7 +46,7 @@ class ActivityRegistrationPopup extends ConsumerWidget {
     this.onMenuTap,
   });
 
-  /// 기본 메뉴 목록 (6개, 레거시 GNB "활동 등록" 순서 정합)
+  /// 기본 메뉴 목록 (7개, 레거시 GNB "활동 등록" 순서 정합)
   ///
   /// 아이콘은 레거시 GNB(gnb.jsp `.active_navN`)의 PNG(ico_activeN.png)를
   /// 그대로 가져와 적용한다. (active_nav 매핑: 소비기한=2, 현장점검=4,
@@ -61,6 +63,13 @@ class ActivityRegistrationPopup extends ConsumerWidget {
       route: AppRouter.inspectionRegister,
     ),
     ActivityMenuItem(
+      iconAsset: 'assets/images/ico_active5.png',
+      label: '제안하기(신제품 제안 등)',
+      route: AppRouter.suggestionRegister,
+      // 제안하기 진입 — 기본 분류를 신제품 제안으로 연다(물류 클레임 제외).
+      arguments: SuggestionCategory.newProduct,
+    ),
+    ActivityMenuItem(
       iconAsset: 'assets/images/ico_active3.png',
       label: '제품 클레임 등록',
       route: AppRouter.claimRegister,
@@ -74,6 +83,8 @@ class ActivityRegistrationPopup extends ConsumerWidget {
       iconAsset: 'assets/images/ico_active5.png',
       label: '물류 클레임 등록',
       route: AppRouter.suggestionRegister,
+      // 물류 클레임 전용 진입 — 기본 분류 물류 클레임.
+      arguments: SuggestionCategory.logisticsClaim,
     ),
     ActivityMenuItem(
       iconAsset: 'assets/images/ico_active1.png',
