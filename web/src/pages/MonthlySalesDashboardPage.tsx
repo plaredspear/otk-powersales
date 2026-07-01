@@ -24,6 +24,8 @@ interface QueryParams {
   month: number;
   codes: string[];
   customerKeyword?: string;
+  distributionKeyword?: string;
+  accountTypeKeyword?: string;
 }
 
 /**
@@ -38,6 +40,8 @@ export default function MonthlySalesDashboardPage() {
   const [month, setMonth] = useState<number>(today.getMonth() + 1);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
+  const [distributionKeyword, setDistributionKeyword] = useState<string>('');
+  const [accountTypeKeyword, setAccountTypeKeyword] = useState<string>('');
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
   const [page, setPage] = useState<number>(0);
   const [pageSize, setPageSize] = useState<number>(20);
@@ -48,7 +52,10 @@ export default function MonthlySalesDashboardPage() {
     queryKey: ['monthlySalesDashboard', 'summary', queryParams],
     queryFn: () => {
       const p = queryParams!;
-      return fetchSummary(p.year, p.month, p.codes, p.customerKeyword);
+      return fetchSummary(
+        p.year, p.month, p.codes, p.customerKeyword, undefined,
+        p.distributionKeyword, p.accountTypeKeyword,
+      );
     },
     enabled: queryParams != null,
   });
@@ -62,6 +69,8 @@ export default function MonthlySalesDashboardPage() {
         month: p.month,
         costCenterCodes: p.codes,
         customerKeyword: p.customerKeyword,
+        distributionKeyword: p.distributionKeyword,
+        accountTypeKeyword: p.accountTypeKeyword,
         page,
         size: pageSize,
         sort,
@@ -82,6 +91,8 @@ export default function MonthlySalesDashboardPage() {
       month,
       codes: selectedCodes,
       customerKeyword: customerKeyword.trim() || undefined,
+      distributionKeyword: distributionKeyword.trim() || undefined,
+      accountTypeKeyword: accountTypeKeyword.trim() || undefined,
     });
   };
 
@@ -94,6 +105,8 @@ export default function MonthlySalesDashboardPage() {
         month,
         codes: selectedCodes,
         customerKeyword: customerKeyword.trim() || undefined,
+        distributionKeyword: distributionKeyword.trim() || undefined,
+        accountTypeKeyword: accountTypeKeyword.trim() || undefined,
       });
     }
     // 최초 자동 조회만 담당 — queryParams 가 채워진 뒤의 재조회는 사용자 조작에 맡긴다.
@@ -114,6 +127,8 @@ export default function MonthlySalesDashboardPage() {
           month: queryParams.month,
           costCenterCodes: queryParams.codes,
           customerKeyword: queryParams.customerKeyword,
+          distributionKeyword: queryParams.distributionKeyword,
+          accountTypeKeyword: queryParams.accountTypeKeyword,
           sort,
         }),
         totalCount: list?.pageInfo.totalElements,
@@ -248,16 +263,45 @@ export default function MonthlySalesDashboardPage() {
         exportLoading={exporting}
         searchLoading={summaryQuery.isLoading || listQuery.isLoading}
         extraFilters={
-          <div>
-            <span>거래처 검색:</span>
-            <div style={{ marginTop: 4 }}>
-              <Input
-                placeholder="거래처명 부분 일치"
-                value={customerKeyword}
-                onChange={(e) => setCustomerKeyword(e.target.value)}
-                style={{ width: 220 }}
-                allowClear
-              />
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <span>거래처 검색:</span>
+              <div style={{ marginTop: 4 }}>
+                <Input
+                  placeholder="거래처명/거래처코드"
+                  value={customerKeyword}
+                  onChange={(e) => setCustomerKeyword(e.target.value)}
+                  onPressEnter={handleSearch}
+                  style={{ width: 220 }}
+                  allowClear
+                />
+              </div>
+            </div>
+            <div>
+              <span>유통형태:</span>
+              <div style={{ marginTop: 4 }}>
+                <Input
+                  placeholder="유통형태 (예: 슈퍼)"
+                  value={distributionKeyword}
+                  onChange={(e) => setDistributionKeyword(e.target.value)}
+                  onPressEnter={handleSearch}
+                  style={{ width: 160 }}
+                  allowClear
+                />
+              </div>
+            </div>
+            <div>
+              <span>거래처유형:</span>
+              <div style={{ marginTop: 4 }}>
+                <Input
+                  placeholder="거래처유형 (예: 이마트)"
+                  value={accountTypeKeyword}
+                  onChange={(e) => setAccountTypeKeyword(e.target.value)}
+                  onPressEnter={handleSearch}
+                  style={{ width: 160 }}
+                  allowClear
+                />
+              </div>
             </div>
           </div>
         }
@@ -329,6 +373,8 @@ export default function MonthlySalesDashboardPage() {
           <Text type="secondary">
             {queryParams.year}-{String(queryParams.month).padStart(2, '0')} · {queryParams.codes.length}개 지점
             {queryParams.customerKeyword && ` · 거래처: ${queryParams.customerKeyword}`}
+            {queryParams.distributionKeyword && ` · 유통형태: ${queryParams.distributionKeyword}`}
+            {queryParams.accountTypeKeyword && ` · 거래처유형: ${queryParams.accountTypeKeyword}`}
           </Text>
           <RefreshButton
             onRefresh={() => {

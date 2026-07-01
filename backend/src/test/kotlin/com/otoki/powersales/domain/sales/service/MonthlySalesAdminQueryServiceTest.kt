@@ -1,6 +1,8 @@
 package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
+import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
@@ -19,11 +21,13 @@ import java.math.BigDecimal
 class MonthlySalesAdminQueryServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository = mockk()
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
     private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository = mockk()
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository = mockk()
     private val service = MonthlySalesAdminQueryService(
         accountRepository,
+        accountCategoryMasterRepository,
         monthlySalesHistoryGateway,
         salesProgressRateMasterRepository,
         mfeisRepository,
@@ -34,6 +38,10 @@ class MonthlySalesAdminQueryServiceTest {
     init {
         // 환산인원 조회 기본 stub — 개별 테스트가 override.
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
+        // 유통형태 검색어 미사용(대부분 테스트) 시 거래처유형마스터 조회 기본 stub — 개별 테스트가 override.
+        every {
+            accountCategoryMasterRepository.findByNameContainingIgnoreCaseAndUseSearchTrueAndIsDeletedNot(any(), any())
+        } returns emptyList()
     }
 
     /** MFEIS 투입 row — accountId + workingCategory1(진열/행사) + convertedHeadcount. */
@@ -50,17 +58,29 @@ class MonthlySalesAdminQueryServiceTest {
     // 실제 Account 인스턴스 사용 — mockk mock 에서 accountType 프로퍼티를 read 하면
     // (JPA enum-변환 이력이 얽힌 프로퍼티라) 힙이 폭증하므로, 유통형태/거래처유형 라벨 필드를 읽는
     // getList 경로에서는 실인스턴스로 채운다.
-    private fun account(id: Long, externalKey: String?, branchCode: String? = "B001"): Account = Account(
+    private fun account(
+        id: Long,
+        externalKey: String?,
+        branchCode: String? = "B001",
+        name: String = "거래처$id",
+        accountStatusCode: String? = "02",
+        accountType: String? = "슈퍼",
+        abcTypeCode: String? = "6111",
+        abcType: String? = "이마트",
+    ): Account = Account(
         id = id,
         externalKey = externalKey,
-        name = "거래처$id",
+        name = name,
         branchCode = branchCode,
         branchName = "지점",
-        accountStatusCode = "02",
-        accountType = "슈퍼",
-        abcTypeCode = "6111",
-        abcType = "이마트",
+        accountStatusCode = accountStatusCode,
+        accountType = accountType,
+        abcTypeCode = abcTypeCode,
+        abcType = abcType,
     )
+
+    /** 거래처유형마스터 — 유통형태 검색 시 accountType(Name) IN 매칭용. */
+    private fun accountCategoryMaster(name: String) = AccountCategoryMaster(name = name, useSearch = true)
 
     /** 실적 row — `account_id` FK 조인 키. closingAmountSum = ABC합 + Ship합 (모바일 「월 매출」 정합). */
     private fun row(
@@ -278,5 +298,80 @@ class MonthlySalesAdminQueryServiceTest {
         val result = service.getListForExport(allBranchesScope, request)
 
         assertThat(result).hasSize(50_000)
+    }
+
+    @Test
+    @DisplayName("getList — customerKeyword 는 거래처명 OR 거래처코드(externalKey) 부분일치")
+    fun listFiltersByCustomerNameOrCode() {
+        val accA = account(1, "SAP-ALPHA", name = "가나다마트")
+        val accB = account(2, "SAP-BETA", name = "라마바상점")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(accA, accB)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), any()) } returns emptyList()
+
+        // 거래처명 부분일치
+        val byName = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), customerKeyword = "가나다"),
+        )
+        assertThat(byName.items.map { it.accountId }).containsExactly(1L)
+
+        // 거래처코드(externalKey) 부분일치 (대소문자 무시)
+        val byCode = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), customerKeyword = "beta"),
+        )
+        assertThat(byCode.items.map { it.accountId }).containsExactly(2L)
+    }
+
+    @Test
+    @DisplayName("getList — distributionKeyword 는 거래처상태코드 부분일치 OR 거래처유형명 매칭")
+    fun listFiltersByDistribution() {
+        val accA = account(1, "S001", accountStatusCode = "02", accountType = "슈퍼")
+        val accB = account(2, "S002", accountStatusCode = "05", accountType = "체인")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(accA, accB)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), any()) } returns emptyList()
+
+        // 거래처상태코드 부분일치 — "05" → accB
+        val byStatusCode = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), distributionKeyword = "05"),
+        )
+        assertThat(byStatusCode.items.map { it.accountId }).containsExactly(2L)
+
+        // 거래처유형명 매칭 — 마스터 조회로 "슈퍼" Name 반환 시 accountType='슈퍼' 인 accA
+        every {
+            accountCategoryMasterRepository.findByNameContainingIgnoreCaseAndUseSearchTrueAndIsDeletedNot("슈퍼", true)
+        } returns listOf(accountCategoryMaster("슈퍼"))
+        val byTypeName = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), distributionKeyword = "슈퍼"),
+        )
+        assertThat(byTypeName.items.map { it.accountId }).containsExactly(1L)
+    }
+
+    @Test
+    @DisplayName("getList — accountTypeKeyword 는 ABC유형코드 OR ABC유형 부분일치")
+    fun listFiltersByAccountType() {
+        val accA = account(1, "S001", abcTypeCode = "6111", abcType = "이마트")
+        val accB = account(2, "S002", abcTypeCode = "2001", abcType = "일반슈퍼")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(accA, accB)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), any()) } returns emptyList()
+
+        // ABC유형코드 부분일치
+        val byCode = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), accountTypeKeyword = "2001"),
+        )
+        assertThat(byCode.items.map { it.accountId }).containsExactly(2L)
+
+        // ABC유형명 부분일치
+        val byName = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), accountTypeKeyword = "이마트"),
+        )
+        assertThat(byName.items.map { it.accountId }).containsExactly(1L)
     }
 }

@@ -109,7 +109,12 @@ export interface MonthlySalesDashboardListRequest {
   costCenterCodes: string[];
   accountIds?: number[];
   accountGroup?: string;
+  /** 거래처명 OR 거래처코드(externalKey) 통합 부분일치 (행사마스터 정합). */
   customerKeyword?: string;
+  /** 유통형태 — 거래처상태코드 부분일치 OR 거래처유형명 매칭 (통합일정 정합). */
+  distributionKeyword?: string;
+  /** 거래처유형 — ABC유형코드 OR ABC유형 부분일치 (통합일정 정합). */
+  accountTypeKeyword?: string;
   page?: number;
   size?: number;
   sort?: string;
@@ -130,6 +135,8 @@ export async function fetchSummary(
   costCenterCodes: string[],
   customerKeyword?: string,
   accountGroup?: string,
+  distributionKeyword?: string,
+  accountTypeKeyword?: string,
 ): Promise<MonthlySalesDashboardSummary> {
   const res = await client.get<ApiResponse<MonthlySalesDashboardSummary>>(`${BASE}/summary`, {
     params: {
@@ -138,6 +145,8 @@ export async function fetchSummary(
       costCenterCodes: costCenterCodes.join(','),
       ...(customerKeyword ? { customerKeyword } : {}),
       ...(accountGroup ? { accountGroup } : {}),
+      ...(distributionKeyword ? { distributionKeyword } : {}),
+      ...(accountTypeKeyword ? { accountTypeKeyword } : {}),
     },
   });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('월매출 요약', res));
@@ -160,6 +169,8 @@ export async function fetchList(
         : {}),
       ...(request.accountGroup ? { accountGroup: request.accountGroup } : {}),
       ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
+      ...(request.distributionKeyword ? { distributionKeyword: request.distributionKeyword } : {}),
+      ...(request.accountTypeKeyword ? { accountTypeKeyword: request.accountTypeKeyword } : {}),
       ...(request.page !== undefined ? { page: request.page } : {}),
       ...(request.size !== undefined ? { size: request.size } : {}),
       ...(request.sort ? { sort: request.sort } : {}),
@@ -180,6 +191,8 @@ export function exportListParams(request: MonthlySalesDashboardListRequest): Rec
       : {}),
     ...(request.accountGroup ? { accountGroup: request.accountGroup } : {}),
     ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
+    ...(request.distributionKeyword ? { distributionKeyword: request.distributionKeyword } : {}),
+    ...(request.accountTypeKeyword ? { accountTypeKeyword: request.accountTypeKeyword } : {}),
     ...(request.sort ? { sort: request.sort } : {}),
   };
 }

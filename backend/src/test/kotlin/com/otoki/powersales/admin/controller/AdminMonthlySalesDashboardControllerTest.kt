@@ -55,7 +55,7 @@ class AdminMonthlySalesDashboardControllerTest : AdminControllerTestSupport() {
             totalLastYearAchievedAmount = 1_000_000L, lastYearComparisonRatio = 120.0,
             monthlyTrend = emptyList(),
         )
-        every { queryService.getSummary(any(), any(), any(), any(), any(), any()) } returns response
+        every { queryService.getSummary(any(), any(), any(), any(), any(), any(), any(), any()) } returns response
 
         mockMvc.perform(
             get("/api/v1/admin/sales/monthly/summary")
