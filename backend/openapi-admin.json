@@ -11812,6 +11812,12 @@
           "confirmed" : {
             "type" : "boolean"
           },
+          "displayHeadcount" : {
+            "type" : "number"
+          },
+          "eventHeadcount" : {
+            "type" : "number"
+          },
           "frozenRefrigeratedAchievedAmount" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
@@ -11862,6 +11868,9 @@
           "totalAchievedAmount" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "totalHeadcount" : {
+            "type" : "number"
           }
         },
         "type" : "object"
