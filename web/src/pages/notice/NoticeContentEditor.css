@@ -1,0 +1,16 @@
+/*
+ * 공지 본문 리치텍스트 에디터(ReactQuill snow) 스타일 보정.
+ *
+ * 페이지 배경(회색)과 에디터 입력 영역이 같은 색이라 입력 가능 영역이 구분되지 않던 문제를
+ * 툴바/입력 영역을 흰색 배경으로 처리해 해소한다.
+ */
+
+.notice-content-editor .ql-toolbar,
+.notice-content-editor .ql-container {
+  background: #ffffff;
+}
+
+.notice-content-editor .ql-editor {
+  background: #ffffff;
+  min-height: 200px;
+}

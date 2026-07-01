@@ -4,6 +4,7 @@ import { Button, Col, Form, Input, Row, Select, Space, Spin, message } from 'ant
 import type { FormInstance } from 'antd';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import './NoticeContentEditor.css';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import { useNoticeFormMeta } from '@/hooks/notice/useNoticeFormMeta';
 import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutation';
@@ -47,12 +48,16 @@ function ContentEditor({
   onPaste: (e: React.ClipboardEvent) => void;
 }) {
   return (
-    <div onDrop={onDrop} onDragOver={(e) => e.preventDefault()} onPaste={onPaste}>
+    <div
+      className="notice-content-editor"
+      onDrop={onDrop}
+      onDragOver={(e) => e.preventDefault()}
+      onPaste={onPaste}
+    >
       <ReactQuill
         ref={quillRef}
         theme="snow"
         modules={modules}
-        style={{ minHeight: 200 }}
         value={value ?? ''}
         onChange={(html) => onChange?.(html)}
       />
@@ -95,6 +100,9 @@ export default function NoticeFormPage() {
   // 에디터에는 만료되는 presigned previewUrl 을 보여주되, 저장 본문에는 placeholder 가 들어가야 한다.
   // previewUrl → placeholder 매핑을 보관했다가 submit 직전에 본문 HTML 을 치환한다.
   const previewToPlaceholder = useRef<Map<string, string>>(new Map());
+  // 이번 편집 세션에서 업로드한 인라인 이미지 refid 누적. 저장 시 서버가 본문에서 빠진 이미지를
+  // 정리(S3+soft-delete)하는 대상 판별에 넘긴다. (삽입 후 삭제한 이미지의 고아 파일 방지)
+  const sessionUploadedRefids = useRef<Set<string>>(new Set());
   const quillRef = useRef<ReactQuill>(null);
 
   const { setDynamicTitle } = useContext(BreadcrumbContext);
@@ -161,6 +169,7 @@ export default function NoticeFormPage() {
     try {
       const result = await uploadNoticeInlineImage(file);
       previewToPlaceholder.current.set(result.previewUrl, result.placeholder);
+      sessionUploadedRefids.current.add(result.refid);
       const range = editor.getSelection(true);
       const index = range ? range.index : editor.getLength();
       editor.insertEmbed(index, 'image', result.previewUrl, 'user');
@@ -239,6 +248,8 @@ export default function NoticeFormPage() {
       // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제하므로 전송하지 않는다.
       branch: null,
       branchCode: null,
+      // 이번 세션 업로드분 중 최종 본문에서 빠진 이미지를 서버가 정리하도록 전달.
+      sessionUploadedRefids: Array.from(sessionUploadedRefids.current),
     };
 
     try {

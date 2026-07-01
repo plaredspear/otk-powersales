@@ -221,7 +221,7 @@ class NoticeService(
             employee = creator
         )
         val saved = noticeRepository.save(notice)
-        backfillInlineImages(saved.id, saved.contents)
+        syncInlineImages(saved.id, saved.contents, request.sessionUploadedRefids)
         return NoticeMutationResponse.Companion.from(saved)
     }
 
@@ -259,8 +259,8 @@ class NoticeService(
             notice.branchCode = null
         }
 
-        // 영속 entity 변경은 dirty checking 으로 flush — 명시 save 불필요. backfill 은 같은 tx 내 auto-flush 로 정합.
-        backfillInlineImages(notice.id, notice.contents)
+        // 영속 entity 변경은 dirty checking 으로 flush — 명시 save 불필요. sync 는 같은 tx 내 auto-flush 로 정합.
+        syncInlineImages(notice.id, notice.contents, request.sessionUploadedRefids)
         return NoticeMutationResponse.Companion.from(notice)
     }
 
@@ -356,23 +356,50 @@ class NoticeService(
     }
 
     /**
-     * 본문 content 가 참조하는 인라인 이미지(placeholder refid = upload_file.id)의 parent_id 를 noticeId 로 backfill 한다.
-     * - 신규 업로드분(INLINE)만 대상 — 마이그레이션 refid(sfid, 비숫자)는 toLongOrNull 에서 자연 제외.
-     * - 본문에서 빠진(사용자가 삭제한) 이미지는 backfill 하지 않아 parent_id=null 고아로 남는다 (S3 정리는 별도 배치 영역, 본 스펙 범위 외).
+     * 공지 저장 시 본문이 참조하는 인라인 이미지와 실제 upload_file 을 동기화한다.
+     * (1) backfill: 본문 refid 중 parent_id=null 인 임시 INLINE 업로드분을 이 공지로 소속시킨다.
+     * (2) cleanup: 본문에서 빠진(사용자가 삽입 후 삭제한) INLINE 이미지를 S3+soft-delete 로 정리한다.
      * create/update 양쪽 끝에서 호출.
      *
-     * 보안: backfill 대상은 **아직 부모가 없는(parent_id=null) 임시 INLINE 업로드분**으로만 한정한다.
+     * ## backfill 보안 (IDOR)
+     * backfill 대상은 **아직 부모가 없는(parent_id=null) 임시 INLINE 업로드분**으로만 한정한다.
      * refid 는 클라이언트가 보낸 본문 HTML 에서 추출되므로, 이미 다른 공지에 소속된 파일(parent_id != null)을 무차별
      * 재부모화하면 본문에 타 공지의 upload_file.id 를 심어 그 이미지를 자기 공지로 탈취할 수 있다(IDOR). 이를 차단한다.
+     *
+     * ## cleanup 대상 (동시 편집 간섭 차단)
+     * 삭제 후보 = 최종 본문 refid 에 없는 INLINE 이미지 중 다음 하나:
+     *  - sessionUploadedRefids 에 포함(이번 편집 세션에서 올렸다가 최종 본문에서 뺀 것) — 신규 작성 orphan 포함
+     *  - parent_id=noticeId (이 공지에 이미 소속된 것 — 수정 시 기존 본문에서 뺀 것). 소유가 확실.
+     * 세션 목록에도 없고 이 공지 소속도 아닌 parent_id=null 파일은 **타 세션 미저장분일 수 있어 건드리지 않는다**.
+     * (프론트가 sessionUploadedRefids 를 미전송하면 세션 기반 정리는 생략되고 parent_id=noticeId 정리만 수행 — 하위호환.)
      */
-    private fun backfillInlineImages(noticeId: Long, content: String?) {
-        val ids = NoticeImagePlaceholder.extractRefids(content ?: "")
-            .mapNotNull { it.toLongOrNull() }.distinct()
-        if (ids.isEmpty()) return
+    private fun syncInlineImages(noticeId: Long, content: String?, sessionUploadedRefids: List<String>?) {
+        val keptIds = NoticeImagePlaceholder.extractRefids(content ?: "")
+            .mapNotNull { it.toLongOrNull() }.toSet()
 
-        uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(ids, UploadFileParentTypes.NOTICE)
-            .filter { it.uploadKbn == UPLOAD_KBN_INLINE && it.parentId == null }
-            .forEach { it.parentId = noticeId }
+        // (1) backfill — 본문에 남아있는 refid 중 미소속 임시 업로드분을 이 공지로 연결.
+        if (keptIds.isNotEmpty()) {
+            uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(keptIds.toList(), UploadFileParentTypes.NOTICE)
+                .filter { it.uploadKbn == UPLOAD_KBN_INLINE && it.parentId == null }
+                .forEach { it.parentId = noticeId }
+        }
+
+        // (2) cleanup — 정리 후보 수집 (세션 업로드분 ∪ 이 공지 소속분) 후 본문에 없는 것만 삭제.
+        val sessionIds = sessionUploadedRefids.orEmpty().mapNotNull { it.toLongOrNull() }.toSet()
+        val candidates = buildList {
+            if (sessionIds.isNotEmpty()) {
+                addAll(uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(sessionIds.toList(), UploadFileParentTypes.NOTICE))
+            }
+            addAll(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.NOTICE, noticeId))
+        }.distinctBy { it.id }
+
+        candidates
+            .filter { it.uploadKbn == UPLOAD_KBN_INLINE && it.id !in keptIds }
+            .filter { it.parentId == noticeId || it.id in sessionIds }
+            .forEach { file ->
+                file.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.deletePrivate(it) }
+                file.isDeleted = true
+            }
     }
 
     /**
