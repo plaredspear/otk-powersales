@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Card, Col, Empty, Input, Row, Select, Spin, Statistic, Tag, Typography, message } from 'antd';
+import { Alert, Card, Col, Empty, Input, Row, Select, Spin, Statistic, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -157,6 +157,7 @@ export default function MonthlySalesDashboardPage() {
 
   const columns: ColumnsType<MonthlySalesDashboardListItem> = useMemo(
     () => [
+      { title: '지점', dataIndex: 'branchName', width: 120, fixed: 'left', render: (v) => v ?? '-' },
       {
         title: '거래처',
         dataIndex: 'accountName',
@@ -168,8 +169,15 @@ export default function MonthlySalesDashboardPage() {
           </a>
         ),
       },
-      { title: 'SAP코드', dataIndex: 'sapAccountCode', width: 110, render: (v) => v ?? '-' },
-      { title: '지점', dataIndex: 'branchName', width: 120, render: (v) => v ?? '-' },
+      { title: '거래처코드', dataIndex: 'sapAccountCode', width: 110, render: (v) => v ?? '-' },
+      {
+        title: '판매여사원(환산인원)',
+        children: [
+          { title: '진열', dataIndex: 'displayHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
+          { title: '행사', dataIndex: 'eventHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
+          { title: '총인원', dataIndex: 'totalHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
+        ],
+      },
       {
         title: '목표(천원)',
         dataIndex: 'targetAmount',
@@ -199,6 +207,14 @@ export default function MonthlySalesDashboardPage() {
           return <span style={{ color, fontWeight: 600 }}>{formatPct(v)}</span>;
         },
       },
+      { title: '전년 동월(천원)', dataIndex: 'lastYearAchievedAmount', width: 130, align: 'right', render: (v) => formatThousandWon(v) },
+      {
+        title: '전년 대비',
+        dataIndex: 'lastYearComparisonRatio',
+        width: 100,
+        align: 'right',
+        render: (v) => formatPct(v),
+      },
       {
         title: '상온(천원)',
         children: [
@@ -225,29 +241,6 @@ export default function MonthlySalesDashboardPage() {
         children: [
           { title: '목표', dataIndex: 'oilFatTargetAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
           { title: '실적', dataIndex: 'oilFatAchievedAmount', width: 110, align: 'right', render: (v) => formatThousandWon(v) },
-        ],
-      },
-      { title: '전년 동월(천원)', dataIndex: 'lastYearAchievedAmount', width: 130, align: 'right', render: (v) => formatThousandWon(v) },
-      {
-        title: '전년 대비',
-        dataIndex: 'lastYearComparisonRatio',
-        width: 100,
-        align: 'right',
-        render: (v) => formatPct(v),
-      },
-      {
-        title: '마감',
-        dataIndex: 'isConfirmed',
-        width: 80,
-        render: (v: boolean) =>
-          v ? <Tag color="green">마감</Tag> : <Tag color="red">미마감</Tag>,
-      },
-      {
-        title: '판매여사원(환산인원)',
-        children: [
-          { title: '진열', dataIndex: 'displayHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
-          { title: '행사', dataIndex: 'eventHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
-          { title: '총인원', dataIndex: 'totalHeadcount', width: 80, align: 'right', render: (v) => formatHeadcount(v) },
         ],
       },
     ],

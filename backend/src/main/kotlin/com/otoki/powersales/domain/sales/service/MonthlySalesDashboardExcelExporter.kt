@@ -21,16 +21,18 @@ class MonthlySalesDashboardExcelExporter : BaseExcelExporter<MonthlySalesDashboa
     // 기존 동작 정합 — 본 export 는 freeze pane 미적용이었음.
     override val freezeHeader = false
 
+    // 화면 테이블 컬럼 순서 정합 (지점→거래처→거래처코드→환산인원→목표/실적/진도율→전년→카테고리 4종).
+    // 엑셀 전용 컬럼(지점코드/매출연도/매출월/유통형태/거래처유형)은 뒤로 배치.
     override val headers = listOf(
-        "거래처명", "유통형태", "거래처유형", "SAP코드", "지점코드", "지점명",
-        "매출연도", "매출월",
+        "지점명", "거래처명", "거래처코드",
+        "진열인원", "행사인원", "총인원",
         "목표", "실적", "진도율(%)",
+        "전년 동월 실적", "전년 대비(%)",
         "상온 목표", "상온 실적",
         "라면 목표", "라면 실적",
         "냉동냉장 목표", "냉동냉장 실적",
         "유지 목표", "유지 실적",
-        "전년 동월 실적", "전년 대비(%)", "마감",
-        "진열인원", "행사인원", "총인원",
+        "지점코드", "매출연도", "매출월", "유통형태", "거래처유형",
     )
 
     /**
@@ -42,17 +44,17 @@ class MonthlySalesDashboardExcelExporter : BaseExcelExporter<MonthlySalesDashboa
 
     override fun writeRow(row: Row, item: MonthlySalesDashboardListItem) {
         var col = 0
-        row.createCell(col++).setCellValue(item.accountName ?: "")
-        row.createCell(col++).setCellValue(item.distributionChannelLabel ?: "")
-        row.createCell(col++).setCellValue(item.abcTypeLabel ?: "")
-        row.createCell(col++).setCellValue(item.sapAccountCode ?: "")
-        row.createCell(col++).setCellValue(item.branchCode ?: "")
         row.createCell(col++).setCellValue(item.branchName ?: "")
-        row.createCell(col++).setCellValue(item.salesYear.toDouble())
-        row.createCell(col++).setCellValue(item.salesMonth.toDouble())
+        row.createCell(col++).setCellValue(item.accountName ?: "")
+        row.createCell(col++).setCellValue(item.sapAccountCode ?: "")
+        row.createCell(col++).setCellValue(item.displayHeadcount.toDouble())
+        row.createCell(col++).setCellValue(item.eventHeadcount.toDouble())
+        row.createCell(col++).setCellValue(item.totalHeadcount.toDouble())
         row.createCell(col++).setCellValue(item.targetAmount?.toDouble() ?: 0.0)
         row.createCell(col++).setCellValue(item.totalAchievedAmount?.toDouble() ?: 0.0)
         row.createCell(col++).setCellValue(item.achievementRate ?: 0.0)
+        row.createCell(col++).setCellValue(item.lastYearAchievedAmount?.toDouble() ?: 0.0)
+        row.createCell(col++).setCellValue(item.lastYearComparisonRatio ?: 0.0)
         row.createCell(col++).setCellValue(item.ambientTargetAmount?.toDouble() ?: 0.0)
         row.createCell(col++).setCellValue(item.ambientAchievedAmount?.toDouble() ?: 0.0)
         row.createCell(col++).setCellValue(item.noodleTargetAmount?.toDouble() ?: 0.0)
@@ -61,11 +63,10 @@ class MonthlySalesDashboardExcelExporter : BaseExcelExporter<MonthlySalesDashboa
         row.createCell(col++).setCellValue(item.frozenRefrigeratedAchievedAmount?.toDouble() ?: 0.0)
         row.createCell(col++).setCellValue(item.oilFatTargetAmount?.toDouble() ?: 0.0)
         row.createCell(col++).setCellValue(item.oilFatAchievedAmount?.toDouble() ?: 0.0)
-        row.createCell(col++).setCellValue(item.lastYearAchievedAmount?.toDouble() ?: 0.0)
-        row.createCell(col++).setCellValue(item.lastYearComparisonRatio ?: 0.0)
-        row.createCell(col++).setCellValue(if (item.isConfirmed) "마감" else "미마감")
-        row.createCell(col++).setCellValue(item.displayHeadcount.toDouble())
-        row.createCell(col++).setCellValue(item.eventHeadcount.toDouble())
-        row.createCell(col).setCellValue(item.totalHeadcount.toDouble())
+        row.createCell(col++).setCellValue(item.branchCode ?: "")
+        row.createCell(col++).setCellValue(item.salesYear.toDouble())
+        row.createCell(col++).setCellValue(item.salesMonth.toDouble())
+        row.createCell(col++).setCellValue(item.distributionChannelLabel ?: "")
+        row.createCell(col).setCellValue(item.abcTypeLabel ?: "")
     }
 }
