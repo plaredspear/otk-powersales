@@ -24,6 +24,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -467,6 +468,10 @@ class NoticeServiceTest {
                 costCenterCode = "1101"
             )
             every { employeeRepository.findById(1L) } returns Optional.of(creator)
+            // syncInlineImages cleanup 단계의 이 공지 소속 INLINE 조회 — 기본은 정리 대상 없음.
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", any())
+            } returns emptyList()
         }
 
         @Test
@@ -634,6 +639,14 @@ class NoticeServiceTest {
     @Nested
     @DisplayName("updateNotice - 공지사항 수정")
     inner class UpdateNoticeTests {
+
+        // syncInlineImages cleanup 단계가 이 공지 소속 INLINE 조회를 수행한다 — 기본은 정리 대상 없음.
+        @BeforeEach
+        fun stubInlineCleanup() {
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", any())
+            } returns emptyList()
+        }
 
         @Test
         @DisplayName("수정 성공 - 제목/내용 변경")
@@ -1031,6 +1044,10 @@ class NoticeServiceTest {
             every { employeeRepository.findById(1L) } returns Optional.of(
                 Employee(id = 1L, employeeCode = "10000001", name = "작성자", orgName = "작성자소속", costCenterCode = "1101")
             )
+            // syncInlineImages cleanup 단계가 이 공지 소속 INLINE 조회를 수행한다 — 기본은 빈 목록(정리 대상 없음).
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", any())
+            } returns emptyList()
         }
 
         @Test
@@ -1099,7 +1116,7 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("create - 본문에 인라인 placeholder 없으면 backfill 조회 자체를 하지 않는다")
+        @DisplayName("create - 본문에 인라인 placeholder 없으면 backfill 조회(findByIdIn)를 하지 않는다")
         fun create_noInline_skipsBackfill() {
             val request = NoticeCreateRequest(
                 title = "텍스트 공지", scope = "영업사원", category = "COMPANY", content = "<p>이미지 없음</p>"
@@ -1109,7 +1126,86 @@ class NoticeServiceTest {
             }
 
             noticeService.createNotice(request, 1L, null)
-            // findByIdIn... 스텁을 두지 않았으므로, 호출되면 MockKException 으로 실패한다 (= 미호출 검증).
+            // backfill 조회(findByIdIn...) 스텁을 두지 않았으므로, 호출되면 MockKException 으로 실패한다 (= 미호출 검증).
+            // cleanup 조회(findByParentTypeAndParentId...)는 @BeforeEach 에서 빈 목록 stub — 항상 수행되나 정리 대상 없음.
+        }
+
+        @Test
+        @DisplayName("cleanup - 세션 업로드분 중 최종 본문에서 빠진 이미지는 S3+soft-delete 로 정리한다")
+        fun create_cleansUpDroppedSessionImage() {
+            // 세션에 700(본문 유지) + 701(삭제됨) 업로드. 최종 본문엔 700 만 남음.
+            val request = NoticeCreateRequest(
+                title = "공지", scope = "영업사원", category = "COMPANY",
+                content = """<img src="notice-image://700" data-refid="700">""",
+                sessionUploadedRefids = listOf("700", "701")
+            )
+            every { noticeRepository.save(any<Notice>()) } answers {
+                createNotice(id = 800L, contents = firstArg<Notice>().contents)
+            }
+            val kept = createUploadFile(id = 700L, parentId = null, uploadKbn = "INLINE")
+            val dropped = createUploadFile(id = 701L, uniqueKey = "uploads/notice/x/701.png", parentId = null, uploadKbn = "INLINE")
+            every {
+                uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(700L), "Notice")
+            } returns listOf(kept)
+            every {
+                uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(700L, 701L), "Notice")
+            } returns listOf(kept, dropped)
+            every { storageService.deletePrivate(any()) } just Runs
+
+            noticeService.createNotice(request, 1L, null)
+
+            // 700 은 본문 유지 → backfill 로 소속, 삭제 안 됨. 701 은 본문에서 빠짐 → 정리.
+            assertThat(kept.parentId).isEqualTo(800L)
+            assertThat(kept.isDeleted).isNotEqualTo(true)
+            assertThat(dropped.isDeleted).isTrue()
+            verify { storageService.deletePrivate("uploads/notice/x/701.png") }
+        }
+
+        @Test
+        @DisplayName("cleanup 안전 - 세션 목록에 없고 이 공지 소속도 아닌 파일(타 세션 미저장분)은 건드리지 않는다")
+        fun create_doesNotTouchForeignSessionImage() {
+            // 세션 업로드는 700 뿐. 본문엔 아무 이미지 없음. 902(타 세션 parent_id=null)는 정리 대상 아님.
+            val request = NoticeCreateRequest(
+                title = "공지", scope = "영업사원", category = "COMPANY",
+                content = "<p>본문 이미지 삭제됨</p>",
+                sessionUploadedRefids = listOf("700")
+            )
+            every { noticeRepository.save(any<Notice>()) } answers {
+                createNotice(id = 810L, contents = firstArg<Notice>().contents)
+            }
+            val myDropped = createUploadFile(id = 700L, uniqueKey = "uploads/notice/x/700.png", parentId = null, uploadKbn = "INLINE")
+            every {
+                uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(700L), "Notice")
+            } returns listOf(myDropped)
+            every { storageService.deletePrivate(any()) } just Runs
+
+            noticeService.createNotice(request, 1L, null)
+
+            // 내 세션 700 은 본문에서 빠졌으니 정리, 타 세션 902 는 조회 자체를 안 하므로 간섭 없음.
+            assertThat(myDropped.isDeleted).isTrue()
+            verify(exactly = 1) { storageService.deletePrivate(any()) }
+        }
+
+        @Test
+        @DisplayName("update cleanup - 수정 시 이 공지 소속(parent_id=noticeId) INLINE 중 본문에서 빠진 것을 정리한다")
+        fun update_cleansUpDroppedOwnedImage() {
+            val existing = createNotice(id = 50L, category = NoticeCategory.COMPANY, name = "원본")
+            every { noticeRepository.findById(50L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
+            // 수정 후 본문엔 이미지 없음. 기존 소속 605(parent_id=50)는 본문에서 빠졌으므로 정리 대상.
+            val ownedDropped = createUploadFile(id = 605L, uniqueKey = "uploads/notice/x/605.png", parentId = 50L, uploadKbn = "INLINE")
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 50L)
+            } returns listOf(ownedDropped)
+            every { storageService.deletePrivate(any()) } just Runs
+
+            val request = NoticeUpdateRequest(
+                title = "수정", scope = "영업사원", category = "COMPANY", content = "<p>이미지 제거</p>"
+            )
+            noticeService.updateNotice(50L, request, null)
+
+            assertThat(ownedDropped.isDeleted).isTrue()
+            verify { storageService.deletePrivate("uploads/notice/x/605.png") }
         }
     }
 

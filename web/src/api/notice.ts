@@ -55,6 +55,9 @@ export interface NoticeFormData {
   content: string;
   branch: string | null;
   branchCode: string | null;
+  /** 이번 편집 세션에서 본문에 삽입 목적으로 업로드한 인라인 이미지 refid 목록.
+   *  저장 시 본문에서 빠진 이미지를 서버가 정리하는 대상 판별에 쓰인다. */
+  sessionUploadedRefids?: string[];
 }
 
 export interface NoticeFormMeta {
