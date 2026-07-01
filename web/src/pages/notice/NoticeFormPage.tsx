@@ -67,6 +67,11 @@ export default function NoticeFormPage() {
   const createMutation = useCreateNotice();
   const updateMutation = useUpdateNotice();
 
+  // 조장/지점장은 지점공지만 작성 가능 → 신규 작성 시 카테고리 기본값을 지점공지(BRANCH)로.
+  // (카테고리 옵션 자체도 서버 form-meta 가 role 기준으로 지점공지만 내려준다.)
+  const isBranchNoticeOnly = user?.role === '조장' || user?.role === '지점장';
+  const defaultCategory = isBranchNoticeOnly ? 'BRANCH' : 'COMPANY';
+
   // 지점공지 폼에 표시할 지점명.
   // - 수정: 공지에 이미 저장된 지점(소유자 지점)을 그대로 표시
   // - 신규: 등록자(로그인 사용자) 소속 지점명 (백엔드 저장값과 동일하게 form-meta 에서 코드로 매칭)
@@ -222,7 +227,7 @@ export default function NoticeFormPage() {
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
-        initialValues={{ scope: '현장여사원', category: 'COMPANY' }}
+        initialValues={{ scope: '현장여사원', category: defaultCategory }}
       >
         <Row gutter={24}>
           <Col xs={24} sm={12}>

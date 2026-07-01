@@ -108,7 +108,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                     BranchOption("1102", "[제1사업부] 1영업부-서울2지점")
                 )
             )
-            every { noticeService.getNoticeFormMeta() } returns response
+            every { noticeService.getNoticeFormMeta(any()) } returns response
 
             mockMvc.perform(get("/api/v1/admin/notices/form-meta"))
                 .andExpect(status().isOk)
@@ -174,7 +174,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 branchCode = null,
                 createdAt = LocalDateTime.parse("2026-03-04T10:00:00")
             )
-            every { noticeService.createNotice(any(), eq(1L)) } returns mutationResponse
+            every { noticeService.createNotice(any(), eq(1L), any()) } returns mutationResponse
 
             val request = NoticeCreateRequest(
                 title = "새 공지",
@@ -217,7 +217,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
             exception: Throwable,
             expectedCode: String
         ) {
-            every { noticeService.createNotice(any(), eq(1L)) } throws exception
+            every { noticeService.createNotice(any(), eq(1L), any()) } throws exception
 
             val request = NoticeCreateRequest(
                 title = "공지",
@@ -253,7 +253,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 branchCode = null,
                 createdAt = LocalDateTime.parse("2026-03-04T10:00:00")
             )
-            every { noticeService.updateNotice(eq(10L), any()) } returns mutationResponse
+            every { noticeService.updateNotice(eq(10L), any(), any()) } returns mutationResponse
 
             val request = NoticeUpdateRequest(
                 title = "수정된 제목",
@@ -274,7 +274,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 미존재 공지")
         fun updateNotice_notFound() {
-            every { noticeService.updateNotice(eq(999L), any()) } throws NoticePostNotFoundException()
+            every { noticeService.updateNotice(eq(999L), any(), any()) } throws NoticePostNotFoundException()
 
             val request = NoticeUpdateRequest(
                 title = "제목",
