@@ -16,6 +16,15 @@ interface MonthlyTrendChartProps {
 export default function MonthlyTrendChart({ data, height = 300 }: MonthlyTrendChartProps) {
   const option = useMemo(() => {
     const categories = data.map((p) => `${p.salesYear}-${String(p.salesMonth).padStart(2, '0')}`);
+    const barLabel = {
+      show: true,
+      position: 'top' as const,
+      fontSize: 13,
+      formatter: (params: { value: number | null }) => {
+        if (params.value == null) return '';
+        return `${Math.round(params.value / 1000).toLocaleString()}천`;
+      },
+    };
     return {
       tooltip: {
         trigger: 'axis',
@@ -38,18 +47,21 @@ export default function MonthlyTrendChart({ data, height = 300 }: MonthlyTrendCh
           name: '목표',
           type: 'bar',
           itemStyle: { color: '#1677ff' },
+          label: barLabel,
           data: data.map((p) => p.targetAmount),
         },
         {
           name: '실적',
           type: 'bar',
           itemStyle: { color: '#52c41a' },
+          label: barLabel,
           data: data.map((p) => p.achievedAmount),
         },
         {
           name: '전년 동월',
           type: 'bar',
           itemStyle: { color: '#8c8c8c' },
+          label: barLabel,
           data: data.map((p) => p.lastYearAchievedAmount),
         },
       ],
