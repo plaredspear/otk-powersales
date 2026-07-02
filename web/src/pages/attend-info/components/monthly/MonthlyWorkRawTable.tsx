@@ -18,13 +18,6 @@ function workTypeColor(v: string | null): string | undefined {
   return undefined;
 }
 
-function timeRange(start: string | null, end: string | null): string {
-  if (!start && !end) return '-';
-  const s = start ? dayjs(start).format('HH:mm') : '··';
-  const e = end ? dayjs(end).format('HH:mm') : '··';
-  return `${s} ~ ${e}`;
-}
-
 /** 근무지: 거래처명 → ref 텍스트 → 소속지점코드 순 폴백. */
 function resolveWorkplace(row: EmployeeWorkHistoryItem): string {
   return row.accountName ?? row.refAccountName ?? row.costCenterCode ?? '-';
@@ -102,10 +95,10 @@ const COLUMNS: ColumnsType<EmployeeWorkHistoryItem> = [
     render: (v: boolean) => (v ? <Tag color="green">출근</Tag> : <Tag>미등록</Tag>),
   },
   {
-    title: '근무시간',
+    title: '출근등록시각',
     dataIndex: 'startTime',
     width: 130,
-    render: (_: unknown, row) => timeRange(row.startTime, row.completeTime),
+    render: (v: string | null) => (v ? dayjs(v).format('HH:mm') : '-'),
   },
 ];
 
