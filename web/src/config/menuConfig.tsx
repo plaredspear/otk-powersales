@@ -101,8 +101,6 @@ export const menuRoute: MenuRoute = {
             { path: '/female-employee/:employeeId', name: '여사원 상세', entity: 'female_employee', operation: 'READ' },
           ],
         },
-        { path: '/leave', name: '휴무관리' },
-        { path: '/alternative-holidays', name: '대체휴무' },
         { path: '/attend-info', name: '근무기간 조회', entity: 'attend_info', operation: 'READ' },
         { path: '/work-history-period', name: '기간별 근무내역', entity: 'attend_info', operation: 'READ' },
       ],
