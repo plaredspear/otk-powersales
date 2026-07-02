@@ -317,7 +317,7 @@ export default function ProductExpirationPage() {
             <Space>
               <Button onClick={handleReset}>초기화</Button>
               <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                검색
+                조회
               </Button>
             </Space>
           </Col>

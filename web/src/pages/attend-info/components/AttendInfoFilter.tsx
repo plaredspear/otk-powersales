@@ -78,7 +78,7 @@ export default function AttendInfoFilter({ onChange }: AttendInfoFilterProps) {
       <Form.Item>
         <Space>
           <Button type="primary" htmlType="submit">
-            검색
+            조회
           </Button>
           <Button onClick={reset}>초기화</Button>
         </Space>

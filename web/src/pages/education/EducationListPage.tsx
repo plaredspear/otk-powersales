@@ -91,6 +91,7 @@ export default function EducationListPage() {
         <Input.Search
           placeholder="제목 또는 내용 입력"
           allowClear
+          enterButton="조회"
           style={{ width: 300 }}
           onSearch={(val) => {
             setSearch(val);

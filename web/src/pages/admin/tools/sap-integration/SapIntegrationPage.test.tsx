@@ -79,6 +79,7 @@ const outboxState = { totalCount: 0 };
 
 vi.mock('@/hooks/admin/useSapInbound', () => ({
   useSapInboundCatalog: () => ({ data: inboundCatalog }),
+  useSetSapInboundEnabled: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock('@/hooks/admin/useSapOutbound', () => ({
   useSapOutboundCatalog: () => ({ data: outboundCatalog }),

@@ -55,10 +55,24 @@ export default function EmployeeListPage() {
     }
   };
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
-  const { page, setPage, filters, setFilter } = useListQueryParams({
+  const { page, setPage, filters, setFilters } = useListQueryParams({
     defaultFilters: { status: '', costCenterCode: '', keyword: '', role: '' },
   });
   const { status, costCenterCode, keyword, role } = filters;
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
+  const [statusInput, setStatusInput] = useState(status);
+  const [costCenterCodeInput, setCostCenterCodeInput] = useState(costCenterCode);
+  const [keywordInput, setKeywordInput] = useState(keyword);
+  const [roleInput, setRoleInput] = useState(role);
+
+  const handleSearch = () => {
+    setFilters({
+      status: statusInput,
+      costCenterCode: costCenterCodeInput,
+      keyword: keywordInput,
+      role: roleInput,
+    });
+  };
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -197,30 +211,35 @@ export default function EmployeeListPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <Select
           style={{ width: 140 }}
-          value={status ?? ''}
+          value={statusInput ?? ''}
           options={STATUS_OPTIONS}
-          onChange={(val) => setFilter('status', val || '')}
+          onChange={(val) => setStatusInput(val || '')}
         />
         <Input
           placeholder="지점코드"
           allowClear
           style={{ width: 140 }}
-          value={costCenterCode ?? ''}
-          onChange={(e) => setFilter('costCenterCode', e.target.value)}
+          value={costCenterCodeInput ?? ''}
+          onChange={(e) => setCostCenterCodeInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
         <Select
           style={{ width: 140 }}
-          value={role ?? ''}
+          value={roleInput ?? ''}
           options={ROLE_FILTER_OPTIONS}
-          onChange={(val) => setFilter('role', val || '')}
+          onChange={(val) => setRoleInput(val || '')}
         />
-        <Input.Search
+        <Input
           placeholder="사번 또는 이름 검색"
           allowClear
-          defaultValue={keyword ?? ''}
+          value={keywordInput ?? ''}
           style={{ width: 240 }}
-          onSearch={(val) => setFilter('keyword', val || '')}
+          onChange={(e) => setKeywordInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
+        <Button type="primary" onClick={handleSearch}>
+          조회
+        </Button>
         <Space style={{ marginLeft: 'auto' }}>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
           {canWrite && (

@@ -46,18 +46,24 @@ interface FilterState {
 }
 
 export default function AlternativeHolidayPage() {
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
   const [filters, setFilters] = useState<FilterState>({
     dateRange: [dayjs().startOf('month'), dayjs().endOf('month')],
     status: '',
     employeeCode: '',
   });
+  const [applied, setApplied] = useState<FilterState>(filters);
 
   const { data, isLoading, refetch, isFetching } = useAlternativeHolidays({
-    startDate: filters.dateRange[0].format('YYYY-MM-DD'),
-    endDate: filters.dateRange[1].format('YYYY-MM-DD'),
-    status: filters.status || undefined,
-    employeeCode: filters.employeeCode || undefined,
+    startDate: applied.dateRange[0].format('YYYY-MM-DD'),
+    endDate: applied.dateRange[1].format('YYYY-MM-DD'),
+    status: applied.status || undefined,
+    employeeCode: applied.employeeCode || undefined,
   });
+
+  const handleSearch = () => {
+    setApplied(filters);
+  };
 
   // Create modal
   const [createOpen, setCreateOpen] = useState(false);
@@ -218,10 +224,11 @@ export default function AlternativeHolidayPage() {
           placeholder="사번"
           value={filters.employeeCode}
           onChange={(e) => setFilters((prev) => ({ ...prev, employeeCode: e.target.value }))}
+          onPressEnter={handleSearch}
           allowClear
         />
-        <Button type="primary" icon={<SearchOutlined />}>
-          검색
+        <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+          조회
         </Button>
         <div style={{ flex: 1 }} />
         <RefreshButton onRefresh={refetch} refreshing={isFetching} />

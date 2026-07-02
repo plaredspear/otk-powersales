@@ -47,10 +47,16 @@ export default function ProductPage() {
   const goToDetail = (code: string) =>
     navigate(`/product/${encodeURIComponent(code)}`, { state: { listSearch: location.search } });
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
-  const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
+  const { page, setPage, filters, setFilters } = useListQueryParams({
     defaultFilters: { keyword: '', category1: '', category2: '', category3: '', productStatus: '' },
   });
   const { keyword, category1, category2, category3, productStatus } = filters;
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
+  const [keywordInput, setKeywordInput] = useState(keyword);
+  const [category1Input, setCategory1Input] = useState(category1);
+  const [category2Input, setCategory2Input] = useState(category2);
+  const [category3Input, setCategory3Input] = useState(category3);
+  const [productStatusInput, setProductStatusInput] = useState(productStatus);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
@@ -74,27 +80,40 @@ export default function ProductPage() {
     : [];
 
   const category2Options = useMemo(() => {
-    if (!categories || !category1) return [];
-    const node = categories.find((c) => c.category1 === category1);
+    if (!categories || !category1Input) return [];
+    const node = categories.find((c) => c.category1 === category1Input);
     if (!node) return [];
     return node.children.map((c) => ({ value: c.category2, label: c.category2 }));
-  }, [categories, category1]);
+  }, [categories, category1Input]);
 
   const category3Options = useMemo(() => {
-    if (!categories || !category1 || !category2) return [];
-    const node1 = categories.find((c) => c.category1 === category1);
+    if (!categories || !category1Input || !category2Input) return [];
+    const node1 = categories.find((c) => c.category1 === category1Input);
     if (!node1) return [];
-    const node2 = node1.children.find((c) => c.category2 === category2);
+    const node2 = node1.children.find((c) => c.category2 === category2Input);
     if (!node2) return [];
     return node2.children.map((v) => ({ value: v, label: v }));
-  }, [categories, category1, category2]);
+  }, [categories, category1Input, category2Input]);
 
   const handleCategory1Change = (val: string) => {
-    setFilters({ category1: val, category2: '', category3: '' });
+    setCategory1Input(val);
+    setCategory2Input('');
+    setCategory3Input('');
   };
 
   const handleCategory2Change = (val: string) => {
-    setFilters({ category2: val, category3: '' });
+    setCategory2Input(val);
+    setCategory3Input('');
+  };
+
+  const handleSearch = () => {
+    setFilters({
+      keyword: keywordInput,
+      category1: category1Input,
+      category2: category2Input,
+      category3: category3Input,
+      productStatus: productStatusInput,
+    });
   };
 
   const selectedProducts = useMemo(() => {
@@ -274,37 +293,41 @@ export default function ProductPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           style={{ width: 140 }}
-          value={category1}
+          value={category1Input}
           options={[{ value: '', label: '카테고리1 전체' }, ...category1Options]}
           onChange={handleCategory1Change}
         />
         <Select
           style={{ width: 140 }}
-          value={category2}
+          value={category2Input}
           options={[{ value: '', label: '카테고리2 전체' }, ...category2Options]}
-          disabled={!category1}
+          disabled={!category1Input}
           onChange={handleCategory2Change}
         />
         <Select
           style={{ width: 140 }}
-          value={category3}
+          value={category3Input}
           options={[{ value: '', label: '카테고리3 전체' }, ...category3Options]}
-          disabled={!category2}
-          onChange={(val) => setFilter('category3', val)}
+          disabled={!category2Input}
+          onChange={setCategory3Input}
         />
         <Select
           style={{ width: 140 }}
-          value={productStatus}
+          value={productStatusInput}
           options={STATUS_OPTIONS}
-          onChange={(val) => setFilter('productStatus', val)}
+          onChange={setProductStatusInput}
         />
-        <Input.Search
+        <Input
           placeholder="제품코드/제품명/바코드 검색"
           allowClear
-          defaultValue={keyword}
+          value={keywordInput}
           style={{ width: 280 }}
-          onSearch={(val) => setFilter('keyword', val)}
+          onChange={(e) => setKeywordInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
+        <Button type="primary" onClick={handleSearch}>
+          조회
+        </Button>
       </div>
 
       <Space style={{ marginBottom: 12 }}>

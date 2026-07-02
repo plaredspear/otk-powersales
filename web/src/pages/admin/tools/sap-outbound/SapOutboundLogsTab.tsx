@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, DatePicker, Select, Space, Tag, Tooltip, Typography } from 'antd';
+import { Button, Card, DatePicker, Select, Space, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
@@ -54,19 +54,36 @@ export default function SapOutboundLogsTab({
 }: {
   lockedInterfaceId?: string;
 } = {}) {
-  const [interfaceId, setInterfaceId] = useState<string | undefined>(undefined);
-  const [resultCode, setResultCode] = useState<SapOutboundResultCode | undefined>(undefined);
-  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  // 조회 조건 버퍼 — "조회" 버튼 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
+  const [interfaceIdInput, setInterfaceIdInput] = useState<string | undefined>(undefined);
+  const [resultCodeInput, setResultCodeInput] = useState<SapOutboundResultCode | undefined>(undefined);
+  const [rangeInput, setRangeInput] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [applied, setApplied] = useState<{
+    interfaceId?: string;
+    resultCode?: SapOutboundResultCode;
+    from?: string;
+    to?: string;
+  }>({});
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(20);
   const [selectedRow, setSelectedRow] = useState<SapOutboundLogRow | null>(null);
 
+  const handleSearch = () => {
+    setPage(1);
+    setApplied({
+      interfaceId: interfaceIdInput,
+      resultCode: resultCodeInput,
+      from: rangeInput?.[0]?.toISOString() ?? undefined,
+      to: rangeInput?.[1]?.toISOString() ?? undefined,
+    });
+  };
+
   const catalogQuery = useSapOutboundCatalog();
   const logsQuery = useSapOutboundLogs({
-    interfaceId: lockedInterfaceId ?? interfaceId,
-    resultCode,
-    from: range?.[0]?.toISOString() ?? undefined,
-    to: range?.[1]?.toISOString() ?? undefined,
+    interfaceId: lockedInterfaceId ?? applied.interfaceId,
+    resultCode: applied.resultCode,
+    from: applied.from,
+    to: applied.to,
     page,
     size,
   });
@@ -176,11 +193,8 @@ export default function SapOutboundLogsTab({
               allowClear
               placeholder="Interface"
               style={{ width: 360 }}
-              value={interfaceId}
-              onChange={(value) => {
-                setInterfaceId(value ?? undefined);
-                setPage(1);
-              }}
+              value={interfaceIdInput}
+              onChange={(value) => setInterfaceIdInput(value ?? undefined)}
               options={interfaceOptions}
               showSearch
               optionFilterProp="label"
@@ -190,20 +204,14 @@ export default function SapOutboundLogsTab({
             allowClear
             placeholder="Result"
             style={{ width: 180 }}
-            value={resultCode}
-            onChange={(value) => {
-              setResultCode(value ?? undefined);
-              setPage(1);
-            }}
+            value={resultCodeInput}
+            onChange={(value) => setResultCodeInput(value ?? undefined)}
             options={RESULT_CODE_OPTIONS}
           />
           <RangePicker
             showTime
-            value={range as [Dayjs, Dayjs] | null}
-            onChange={(value) => {
-              setRange(value as [Dayjs | null, Dayjs | null] | null);
-              setPage(1);
-            }}
+            value={rangeInput as [Dayjs, Dayjs] | null}
+            onChange={(value) => setRangeInput(value as [Dayjs | null, Dayjs | null] | null)}
           />
           <Select
             style={{ width: 100 }}
@@ -214,6 +222,9 @@ export default function SapOutboundLogsTab({
             }}
             options={PAGE_SIZE_OPTIONS}
           />
+          <Button type="primary" onClick={handleSearch}>
+            조회
+          </Button>
           </Space>
           <RefreshButton onRefresh={logsQuery.refetch} refreshing={logsQuery.isFetching} />
         </Space>

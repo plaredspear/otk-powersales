@@ -40,18 +40,30 @@ const PAGE_SIZE = 20;
 export default function AccountPage() {
   // 상세 → "목록으로" 복귀 시 query string 으로 전달된 직전 검색 조건을 초기 state 로 복원.
   const [searchParams] = useSearchParams();
-  const [abcType, setAbcType] = useState<string | undefined>(
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
+  const [abcTypeInput, setAbcTypeInput] = useState<string | undefined>(
     () => searchParams.get('abcType') ?? undefined,
   );
-  const [branchCode, setBranchCode] = useState<string | undefined>(
+  const [branchCodeInput, setBranchCodeInput] = useState<string | undefined>(
     () => searchParams.get('branchCode') ?? undefined,
   );
-  const [accountStatusName, setAccountStatusName] = useState<string | undefined>(
+  const [accountStatusNameInput, setAccountStatusNameInput] = useState<string | undefined>(
     () => searchParams.get('accountStatusName') ?? undefined,
   );
-  const [keyword, setKeyword] = useState<string | undefined>(
+  const [keywordInput, setKeywordInput] = useState<string | undefined>(
     () => searchParams.get('keyword') ?? undefined,
   );
+  const [applied, setApplied] = useState<{
+    abcType?: string;
+    branchCode?: string;
+    accountStatusName?: string;
+    keyword?: string;
+  }>(() => ({
+    abcType: searchParams.get('abcType') ?? undefined,
+    branchCode: searchParams.get('branchCode') ?? undefined,
+    accountStatusName: searchParams.get('accountStatusName') ?? undefined,
+    keyword: searchParams.get('keyword') ?? undefined,
+  }));
   const [page, setPage] = useState(() => {
     const p = Number(searchParams.get('page'));
     return Number.isFinite(p) && p > 0 ? p : 0;
@@ -69,13 +81,13 @@ export default function AccountPage() {
   // 거래처 수정(주소)은 상세 페이지로 일원화 — 목록 "관리" 컬럼은 삭제 액션만 담당.
   const showActionsColumn = canDeleteAccount;
 
-  // 상세 페이지에서 "목록으로" 복귀 시 직전 검색 조건을 복원하기 위한 query string.
+  // 상세 페이지에서 "목록으로" 복귀 시 직전 검색 조건(applied 기준)을 복원하기 위한 query string.
   const listSearch = (() => {
     const sp = new URLSearchParams();
-    if (keyword) sp.set('keyword', keyword);
-    if (abcType) sp.set('abcType', abcType);
-    if (branchCode) sp.set('branchCode', branchCode);
-    if (accountStatusName) sp.set('accountStatusName', accountStatusName);
+    if (applied.keyword) sp.set('keyword', applied.keyword);
+    if (applied.abcType) sp.set('abcType', applied.abcType);
+    if (applied.branchCode) sp.set('branchCode', applied.branchCode);
+    if (applied.accountStatusName) sp.set('accountStatusName', applied.accountStatusName);
     if (page > 0) sp.set('page', String(page));
     const qs = sp.toString();
     return qs ? `?${qs}` : '';
@@ -85,11 +97,21 @@ export default function AccountPage() {
     navigate(`/account/${id}`, { state: { listSearch } });
   };
 
+  const handleSearch = () => {
+    setPage(0);
+    setApplied({
+      abcType: abcTypeInput || undefined,
+      branchCode: branchCodeInput || undefined,
+      accountStatusName: accountStatusNameInput || undefined,
+      keyword: keywordInput || undefined,
+    });
+  };
+
   const { data, isLoading, isError, error, refetch, isFetching } = useAccounts({
-    keyword,
-    abcType,
-    branchCode,
-    accountStatusName,
+    keyword: applied.keyword,
+    abcType: applied.abcType,
+    branchCode: applied.branchCode,
+    accountStatusName: applied.accountStatusName,
     page,
     size: PAGE_SIZE,
   });
@@ -166,12 +188,12 @@ export default function AccountPage() {
             <Select
               placeholder="지점 (전체)"
               style={{ width: 160 }}
-              value={branchCode || undefined}
+              value={branchCodeInput || undefined}
               options={branchOptions}
               allowClear
               showSearch
               optionFilterProp="label"
-              onChange={(val) => { setBranchCode(val || undefined); setPage(0); }}
+              onChange={(val) => setBranchCodeInput(val || undefined)}
             />
           )}
           {singleBranch && (
@@ -181,23 +203,27 @@ export default function AccountPage() {
           )}
           <Select
             style={{ width: 140 }}
-            value={abcType ?? ''}
+            value={abcTypeInput ?? ''}
             options={ABC_TYPE_OPTIONS}
-            onChange={(val) => { setAbcType(val || undefined); setPage(0); }}
+            onChange={(val) => setAbcTypeInput(val || undefined)}
           />
           <Select
             style={{ width: 140 }}
-            value={accountStatusName ?? ''}
+            value={accountStatusNameInput ?? ''}
             options={STATUS_OPTIONS}
-            onChange={(val) => { setAccountStatusName(val || undefined); setPage(0); }}
+            onChange={(val) => setAccountStatusNameInput(val || undefined)}
           />
-          <Input.Search
+          <Input
             placeholder="거래처코드 또는 거래처명 검색"
             allowClear
             style={{ width: 280 }}
-            defaultValue={keyword ?? ''}
-            onSearch={(val) => { setKeyword(val || undefined); setPage(0); }}
+            value={keywordInput ?? ''}
+            onChange={(e) => setKeywordInput(e.target.value || undefined)}
+            onPressEnter={handleSearch}
           />
+          <Button type="primary" onClick={handleSearch}>
+            조회
+          </Button>
         </Space>
         <Space>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />

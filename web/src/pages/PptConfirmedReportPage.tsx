@@ -28,17 +28,30 @@ export default function PptConfirmedReportPage() {
   const singleBranch = branches?.length === 1 ? branches[0] : null;
   const isMultiBranch = (branches?.length ?? 0) > 1;
 
-  // 선택한 지점 — 조회 버튼/엑셀에 그대로 적용. 변경 즉시 queryKey 가 바뀌어 재조회된다.
+  // 지점 선택 버퍼 — "조회" 버튼 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음).
   const [branchCode, setBranchCode] = useState<string>('');
+  const [appliedBranchCode, setAppliedBranchCode] = useState<string>('');
+  // 마운트 자동 조회 없음 — 조회 버튼 클릭 시점에만 fetch.
+  const [requested, setRequested] = useState(false);
 
   const query = useQuery({
-    queryKey: ['pptConfirmedReport', branchCode],
-    queryFn: () => fetchPptConfirmedReport(branchCode || undefined),
+    queryKey: ['pptConfirmedReport', appliedBranchCode],
+    queryFn: () => fetchPptConfirmedReport(appliedBranchCode || undefined),
+    enabled: requested,
   });
+
+  const handleSearch = () => {
+    if (requested && appliedBranchCode === branchCode) {
+      query.refetch();
+    } else {
+      setAppliedBranchCode(branchCode);
+      setRequested(true);
+    }
+  };
 
   const handleExport = async () => {
     try {
-      await apiExport(branchCode || undefined);
+      await apiExport(appliedBranchCode || undefined);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }
@@ -76,7 +89,7 @@ export default function PptConfirmedReportPage() {
             지점: {singleBranch.branchName}
           </Tag>
         )}
-        <Button type="primary" onClick={() => query.refetch()} loading={query.isFetching}>
+        <Button type="primary" onClick={handleSearch} loading={query.isFetching}>
           조회
         </Button>
         {query.data && (
@@ -111,7 +124,9 @@ export default function PptConfirmedReportPage() {
           dataSource={query.data?.items ?? []}
           pagination={false}
           scroll={{ x: 'max-content' }}
-          locale={{ emptyText: '조회 결과가 없습니다' }}
+          locale={{
+            emptyText: requested ? '조회 결과가 없습니다' : '조회 버튼을 눌러주세요',
+          }}
         />
       )}
     </div>

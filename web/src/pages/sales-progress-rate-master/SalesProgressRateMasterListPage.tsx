@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Input, Typography } from 'antd';
+import { Button, Input, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useSalesProgressRateMasters } from '@/hooks/sales-progress-rate-master/useSalesProgressRateMasters';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
@@ -21,10 +22,18 @@ export default function SalesProgressRateMasterListPage() {
   const navigate = useNavigate();
   const location = useLocation();
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
-  const { page, setPage, filters, setFilter } = useListQueryParams({
+  const { page, setPage, filters, setFilters } = useListQueryParams({
     defaultFilters: { targetYear: '', targetMonth: '', keyword: '' },
   });
   const { targetYear, targetMonth, keyword } = filters;
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
+  const [targetYearInput, setTargetYearInput] = useState(targetYear);
+  const [targetMonthInput, setTargetMonthInput] = useState(targetMonth);
+  const [keywordInput, setKeywordInput] = useState(keyword);
+
+  const handleSearch = () => {
+    setFilters({ targetYear: targetYearInput, targetMonth: targetMonthInput, keyword: keywordInput });
+  };
 
   const goToDetail = useThrottleClick((id: number) =>
     navigate(`/sales-progress-rate-masters/${id}`, { state: { listSearch: location.search } }),
@@ -169,23 +178,29 @@ export default function SalesProgressRateMasterListPage() {
           placeholder="목표 년도"
           allowClear
           style={{ width: 110 }}
-          value={targetYear ?? ''}
-          onChange={(e) => setFilter('targetYear', e.target.value)}
+          value={targetYearInput ?? ''}
+          onChange={(e) => setTargetYearInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
         <Input
           placeholder="목표 월"
           allowClear
           style={{ width: 90 }}
-          value={targetMonth ?? ''}
-          onChange={(e) => setFilter('targetMonth', e.target.value)}
+          value={targetMonthInput ?? ''}
+          onChange={(e) => setTargetMonthInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
-        <Input.Search
+        <Input
           placeholder="이름/거래처명 검색"
           allowClear
-          defaultValue={keyword ?? ''}
+          value={keywordInput ?? ''}
           style={{ width: 250 }}
-          onSearch={(val) => setFilter('keyword', val)}
+          onChange={(e) => setKeywordInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
+        <Button type="primary" onClick={handleSearch}>
+          조회
+        </Button>
         <div style={{ marginLeft: 'auto' }}>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         </div>

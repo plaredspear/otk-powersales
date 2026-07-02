@@ -230,7 +230,7 @@ export default function SuggestionListPage() {
             style={{ width: 140 }}
             onPressEnter={handleSearch}
           />
-          <Button type="primary" onClick={handleSearch}>검색</Button>
+          <Button type="primary" onClick={handleSearch}>조회</Button>
           <Button onClick={handleReset}>초기화</Button>
           <Button type="default" onClick={() => navigate('/suggestion/new')}>신규 등록</Button>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />

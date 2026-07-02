@@ -228,7 +228,7 @@ export default function FieldInspectionPage() {
             style={{ width: 140 }}
             onPressEnter={handleSearch}
           />
-          <Button type="primary" onClick={handleSearch}>검색</Button>
+          <Button type="primary" onClick={handleSearch}>조회</Button>
           <Button onClick={handleReset}>초기화</Button>
         </Space>
         <Space>

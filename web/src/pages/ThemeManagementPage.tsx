@@ -257,7 +257,7 @@ export default function ThemeManagementPage() {
             allowClear
           />
           <Button type="primary" onClick={handleSearch}>
-            검색
+            조회
           </Button>
           <Button onClick={handleReset}>초기화</Button>
         </Space>

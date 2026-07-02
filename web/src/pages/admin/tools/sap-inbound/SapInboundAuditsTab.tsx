@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, DatePicker, Select, Space, Tag, Tooltip } from 'antd';
+import { Button, Card, DatePicker, Select, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
@@ -64,21 +64,40 @@ export default function SapInboundAuditsTab({
 }: {
   lockedEndpoint?: string;
 } = {}) {
-  const [clientId, setClientId] = useState<string | undefined>(undefined);
-  const [eventType, setEventType] = useState<string | undefined>(undefined);
-  const [endpoint, setEndpoint] = useState<string | undefined>(undefined);
-  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  // 조회 조건 버퍼 — "조회" 버튼 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
+  const [clientIdInput, setClientIdInput] = useState<string | undefined>(undefined);
+  const [eventTypeInput, setEventTypeInput] = useState<string | undefined>(undefined);
+  const [endpointInput, setEndpointInput] = useState<string | undefined>(undefined);
+  const [rangeInput, setRangeInput] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [applied, setApplied] = useState<{
+    clientId?: string;
+    eventType?: string;
+    endpoint?: string;
+    from?: string;
+    to?: string;
+  }>({});
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(20);
   const [selectedRow, setSelectedRow] = useState<SapInboundAuditRow | null>(null);
 
+  const handleSearch = () => {
+    setPage(1);
+    setApplied({
+      clientId: clientIdInput,
+      eventType: eventTypeInput,
+      endpoint: endpointInput,
+      from: rangeInput?.[0]?.toISOString() ?? undefined,
+      to: rangeInput?.[1]?.toISOString() ?? undefined,
+    });
+  };
+
   const catalogQuery = useSapInboundCatalog();
   const auditsQuery = useSapInboundAudits({
-    clientId,
-    eventType,
-    endpoint: lockedEndpoint ?? endpoint,
-    from: range?.[0]?.toISOString() ?? undefined,
-    to: range?.[1]?.toISOString() ?? undefined,
+    clientId: applied.clientId,
+    eventType: applied.eventType,
+    endpoint: lockedEndpoint ?? applied.endpoint,
+    from: applied.from,
+    to: applied.to,
     page,
     size,
   });
@@ -179,11 +198,8 @@ export default function SapInboundAuditsTab({
             allowClear
             placeholder="Client ID"
             style={{ width: 180 }}
-            value={clientId}
-            onChange={(value) => {
-              setClientId(value || undefined);
-              setPage(1);
-            }}
+            value={clientIdInput}
+            onChange={(value) => setClientIdInput(value || undefined)}
             mode="tags"
             maxCount={1}
           />
@@ -191,11 +207,8 @@ export default function SapInboundAuditsTab({
             allowClear
             placeholder="Event Type"
             style={{ width: 240 }}
-            value={eventType}
-            onChange={(value) => {
-              setEventType(value ?? undefined);
-              setPage(1);
-            }}
+            value={eventTypeInput}
+            onChange={(value) => setEventTypeInput(value ?? undefined)}
             options={EVENT_TYPE_OPTIONS}
           />
           {lockedEndpoint === undefined && (
@@ -203,11 +216,8 @@ export default function SapInboundAuditsTab({
               allowClear
               placeholder="Endpoint"
               style={{ width: 280 }}
-              value={endpoint}
-              onChange={(value) => {
-                setEndpoint(value ?? undefined);
-                setPage(1);
-              }}
+              value={endpointInput}
+              onChange={(value) => setEndpointInput(value ?? undefined)}
               options={endpointOptions}
               showSearch
               optionFilterProp="label"
@@ -215,11 +225,8 @@ export default function SapInboundAuditsTab({
           )}
           <RangePicker
             showTime
-            value={range as [Dayjs, Dayjs] | null}
-            onChange={(value) => {
-              setRange(value as [Dayjs | null, Dayjs | null] | null);
-              setPage(1);
-            }}
+            value={rangeInput as [Dayjs, Dayjs] | null}
+            onChange={(value) => setRangeInput(value as [Dayjs | null, Dayjs | null] | null)}
           />
           <Select
             style={{ width: 100 }}
@@ -230,6 +237,9 @@ export default function SapInboundAuditsTab({
             }}
             options={PAGE_SIZE_OPTIONS}
           />
+          <Button type="primary" onClick={handleSearch}>
+            조회
+          </Button>
           </Space>
           <RefreshButton onRefresh={auditsQuery.refetch} refreshing={auditsQuery.isFetching} />
         </Space>

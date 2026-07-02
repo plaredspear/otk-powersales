@@ -47,12 +47,20 @@ export default function EmployeePage() {
   const goToDetail = (id: number) =>
     navigate(`/female-employee/${id}`, { state: { listSearch: location.search } });
   // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
-  const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
+  const { page, setPage, filters, setFilters } = useListQueryParams({
     defaultFilters: { status: '', costCenterCode: '', keyword: '', size: String(DEFAULT_SIZE) },
   });
   const { status, costCenterCode, keyword } = filters;
   // size 는 URL 보관을 위해 string 으로 직렬화 — 사용처에서 number 로 역변환.
   const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
+  const [statusInput, setStatusInput] = useState(status);
+  const [costCenterCodeInput, setCostCenterCodeInput] = useState(costCenterCode);
+  const [keywordInput, setKeywordInput] = useState(keyword);
+
+  const handleSearch = () => {
+    setFilters({ status: statusInput, costCenterCode: costCenterCodeInput, keyword: keywordInput });
+  };
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조와 동일 backend resolver).
   //  - 다중 지점: Select 로 선택 → costCenterCode 필터로 전송
@@ -254,8 +262,8 @@ export default function EmployeePage() {
         {isMultiBranch && (
           <Select
             placeholder="지점 (전체)"
-            value={costCenterCode || undefined}
-            onChange={(v) => setFilter('costCenterCode', v ?? '')}
+            value={costCenterCodeInput || undefined}
+            onChange={(v) => setCostCenterCodeInput(v ?? '')}
             style={{ width: 160 }}
             options={branchOptions}
             allowClear
@@ -270,17 +278,21 @@ export default function EmployeePage() {
         )}
         <Select
           style={{ width: 140 }}
-          value={status ?? ''}
+          value={statusInput ?? ''}
           options={STATUS_OPTIONS}
-          onChange={(val) => setFilter('status', val)}
+          onChange={setStatusInput}
         />
-        <Input.Search
+        <Input
           placeholder="사번 또는 이름 검색"
           allowClear
-          defaultValue={keyword ?? ''}
+          value={keywordInput ?? ''}
           style={{ width: 240 }}
-          onSearch={(val) => setFilter('keyword', val)}
+          onChange={(e) => setKeywordInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
+        <Button type="primary" onClick={handleSearch}>
+          조회
+        </Button>
         <Space style={{ marginLeft: 'auto' }}>
           <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
             엑셀 다운로드

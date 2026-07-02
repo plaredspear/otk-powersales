@@ -16,11 +16,25 @@ const LEVEL_OPTIONS = [
 
 const renderNull = (val: string | null) => val ?? '-';
 
-export default function OrganizationPage() {
-  const [keyword, setKeyword] = useState<string | undefined>();
-  const [level, setLevel] = useState<string | undefined>();
+interface OrganizationAppliedFilters {
+  keyword?: string;
+  level?: string;
+}
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useOrganizations({ keyword, level });
+export default function OrganizationPage() {
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
+  const [keywordInput, setKeywordInput] = useState('');
+  const [levelInput, setLevelInput] = useState('');
+  const [applied, setApplied] = useState<OrganizationAppliedFilters>({});
+
+  const { data, isLoading, isError, error, refetch, isFetching } = useOrganizations(applied);
+
+  const handleSearch = () => {
+    setApplied({
+      keyword: keywordInput || undefined,
+      level: levelInput || undefined,
+    });
+  };
 
   const columns: ColumnsType<Organization> = [
     { title: 'L2 조직명', dataIndex: 'orgNameLevel2', width: 120, render: renderNull },
@@ -52,16 +66,21 @@ export default function OrganizationPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           style={{ width: 160 }}
-          value={level ?? ''}
+          value={levelInput}
           options={LEVEL_OPTIONS}
-          onChange={(val) => setLevel(val || undefined)}
+          onChange={setLevelInput}
         />
-        <Input.Search
+        <Input
           placeholder="조직명/조직코드/CC코드 검색"
           allowClear
           style={{ width: 280 }}
-          onSearch={(val) => setKeyword(val || undefined)}
+          value={keywordInput}
+          onChange={(e) => setKeywordInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
+        <Button type="primary" onClick={handleSearch}>
+          조회
+        </Button>
         <Space style={{ marginLeft: 'auto' }}>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         </Space>

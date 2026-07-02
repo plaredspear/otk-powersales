@@ -590,16 +590,30 @@ function RuntimeTogglePanel({
   );
 }
 
+interface RunsAppliedFilters {
+  status?: ScheduledJobStatus;
+  from?: string;
+  to?: string;
+}
+
 export default function ScheduledJobsPage() {
   const [activeTab, setActiveTab] = useState<string>(ALL_JOBS_KEY);
-  const [status, setStatus] = useState<ScheduledJobStatus | undefined>(undefined);
-  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  // 조회 조건 버퍼 — "조회" 버튼 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
+  const [statusInput, setStatusInput] = useState<ScheduledJobStatus | undefined>(undefined);
+  const [rangeInput, setRangeInput] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [applied, setApplied] = useState<RunsAppliedFilters>({});
   const [page, setPage] = useState(1);
   const [size] = useState(20);
   const [selectedRun, setSelectedRun] = useState<ScheduledJobRun | null>(null);
 
-  const from = range?.[0]?.toISOString() ?? undefined;
-  const to = range?.[1]?.toISOString() ?? undefined;
+  const handleSearch = () => {
+    setPage(1);
+    setApplied({
+      status: statusInput,
+      from: rangeInput?.[0]?.toISOString() ?? undefined,
+      to: rangeInput?.[1]?.toISOString() ?? undefined,
+    });
+  };
 
   // 잡 이름별 탭: '전체' 탭이면 jobName 필터 없음, 잡 탭이면 해당 잡 이름으로 필터.
   const jobName =
@@ -609,9 +623,7 @@ export default function ScheduledJobsPage() {
   const catalogQuery = useScheduledJobCatalog();
   const runsQuery = useScheduledJobRuns({
     jobName,
-    status,
-    from,
-    to,
+    ...applied,
     page,
     size,
   });
@@ -720,21 +732,18 @@ export default function ScheduledJobsPage() {
           allowClear
           placeholder="상태"
           style={{ width: 140 }}
-          value={status}
-          onChange={(value) => {
-            setStatus(value ?? undefined);
-            setPage(1);
-          }}
+          value={statusInput}
+          onChange={(value) => setStatusInput(value ?? undefined)}
           options={STATUS_OPTIONS}
         />
         <RangePicker
           showTime
-          value={range as [Dayjs, Dayjs] | null}
-          onChange={(value) => {
-            setRange(value as [Dayjs | null, Dayjs | null] | null);
-            setPage(1);
-          }}
+          value={rangeInput as [Dayjs, Dayjs] | null}
+          onChange={(value) => setRangeInput(value as [Dayjs | null, Dayjs | null] | null)}
         />
+        <Button type="primary" onClick={handleSearch}>
+          조회
+        </Button>
       </Space>
       <ResizableTable<ScheduledJobRun>
         rowKey="id"

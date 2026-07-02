@@ -190,7 +190,7 @@ export default function ClaimListPage() {
             onPressEnter={handleSearch}
           />
           <Button type="primary" onClick={handleSearch}>
-            검색
+            조회
           </Button>
         </Space>
       </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, DatePicker, Select, Space, Tag, Tooltip, Typography } from 'antd';
+import { Button, Card, DatePicker, Select, Space, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
@@ -59,21 +59,40 @@ export default function ExternalApiLogsTab({
 }: {
   lockedEndpointKey?: string;
 } = {}) {
-  const [targetSystem, setTargetSystem] = useState<ExternalApiTargetSystem | undefined>(undefined);
-  const [endpointKey, setEndpointKey] = useState<string | undefined>(undefined);
-  const [success, setSuccess] = useState<'true' | 'false' | undefined>(undefined);
-  const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  // 조회 조건 버퍼 — "조회" 버튼 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
+  const [targetSystemInput, setTargetSystemInput] = useState<ExternalApiTargetSystem | undefined>(undefined);
+  const [endpointKeyInput, setEndpointKeyInput] = useState<string | undefined>(undefined);
+  const [successInput, setSuccessInput] = useState<'true' | 'false' | undefined>(undefined);
+  const [rangeInput, setRangeInput] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [applied, setApplied] = useState<{
+    targetSystem?: ExternalApiTargetSystem;
+    endpointKey?: string;
+    success?: boolean;
+    from?: string;
+    to?: string;
+  }>({});
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(20);
   const [selectedRow, setSelectedRow] = useState<ExternalApiLogRow | null>(null);
 
+  const handleSearch = () => {
+    setPage(1);
+    setApplied({
+      targetSystem: targetSystemInput,
+      endpointKey: endpointKeyInput,
+      success: successInput === undefined ? undefined : successInput === 'true',
+      from: rangeInput?.[0]?.toISOString() ?? undefined,
+      to: rangeInput?.[1]?.toISOString() ?? undefined,
+    });
+  };
+
   const keysQuery = useExternalApiLogKeys();
   const logsQuery = useExternalApiLogs({
-    targetSystem: lockedEndpointKey === undefined ? targetSystem : undefined,
-    endpointKey: lockedEndpointKey ?? endpointKey,
-    success: success === undefined ? undefined : success === 'true',
-    from: range?.[0]?.toISOString() ?? undefined,
-    to: range?.[1]?.toISOString() ?? undefined,
+    targetSystem: lockedEndpointKey === undefined ? applied.targetSystem : undefined,
+    endpointKey: lockedEndpointKey ?? applied.endpointKey,
+    success: applied.success,
+    from: applied.from,
+    to: applied.to,
     page,
     size,
   });
@@ -169,22 +188,16 @@ export default function ExternalApiLogsTab({
                   allowClear
                   placeholder="System"
                   style={{ width: 140 }}
-                  value={targetSystem}
-                  onChange={(value) => {
-                    setTargetSystem(value ?? undefined);
-                    setPage(1);
-                  }}
+                  value={targetSystemInput}
+                  onChange={(value) => setTargetSystemInput(value ?? undefined)}
                   options={TARGET_OPTIONS}
                 />
                 <Select
                   allowClear
                   placeholder="Endpoint Key"
                   style={{ width: 320 }}
-                  value={endpointKey}
-                  onChange={(value) => {
-                    setEndpointKey(value ?? undefined);
-                    setPage(1);
-                  }}
+                  value={endpointKeyInput}
+                  onChange={(value) => setEndpointKeyInput(value ?? undefined)}
                   options={keyOptions}
                   showSearch
                   optionFilterProp="label"
@@ -195,20 +208,14 @@ export default function ExternalApiLogsTab({
               allowClear
               placeholder="결과"
               style={{ width: 120 }}
-              value={success}
-              onChange={(value) => {
-                setSuccess(value ?? undefined);
-                setPage(1);
-              }}
+              value={successInput}
+              onChange={(value) => setSuccessInput(value ?? undefined)}
               options={SUCCESS_OPTIONS}
             />
             <RangePicker
               showTime
-              value={range as [Dayjs, Dayjs] | null}
-              onChange={(value) => {
-                setRange(value as [Dayjs | null, Dayjs | null] | null);
-                setPage(1);
-              }}
+              value={rangeInput as [Dayjs, Dayjs] | null}
+              onChange={(value) => setRangeInput(value as [Dayjs | null, Dayjs | null] | null)}
             />
             <Select
               style={{ width: 100 }}
@@ -219,6 +226,9 @@ export default function ExternalApiLogsTab({
               }}
               options={PAGE_SIZE_OPTIONS}
             />
+            <Button type="primary" onClick={handleSearch}>
+              조회
+            </Button>
           </Space>
           <RefreshButton onRefresh={logsQuery.refetch} refreshing={logsQuery.isFetching} />
         </Space>

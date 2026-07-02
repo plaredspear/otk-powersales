@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button, DatePicker, Input, Select, Space, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -42,7 +43,7 @@ export default function PromotionListPage() {
   // SF 레거시 동등 + 신규 user 조회가 관리자 전용이라, 미보유자(조장/사원)는 이름 텍스트만 노출.
   const canReadUser = hasEntityPermission('user', 'READ');
   // page/필터/페이지 사이즈를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침/링크 공유 시 직전 조건 복원.
-  const { page, setPage, filters, setFilter } = useListQueryParams({
+  const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
     defaultFilters: {
       promotionType: '',
       startDate: '',
@@ -72,6 +73,32 @@ export default function PromotionListPage() {
     employeeKeyword,
     ownerOnly,
   } = filters;
+
+  // 조회버튼 분리형: 입력 위젯은 로컬 편집 버퍼, URL filters 가 source of truth.
+  // 마운트 시 URL 값으로 1회 초기화하여 새로고침/복귀 시 위젯 표시가 맞도록 한다.
+  const [filterPromotionType, setFilterPromotionType] = useState(promotionType ?? '');
+  const [filterStartDate, setFilterStartDate] = useState(startDate ?? '');
+  const [filterEndDate, setFilterEndDate] = useState(endDate ?? '');
+  const [filterKeyword, setFilterKeyword] = useState(keyword ?? '');
+  const [filterAccountName, setFilterAccountName] = useState(accountName ?? '');
+  const [filterAccountNumber, setFilterAccountNumber] = useState(accountNumber ?? '');
+  const [filterCategory1, setFilterCategory1] = useState(category1 ?? '');
+  const [filterPrimaryProduct, setFilterPrimaryProduct] = useState(primaryProduct ?? '');
+  const [filterEmployeeKeyword, setFilterEmployeeKeyword] = useState(employeeKeyword ?? '');
+
+  const handleSearch = () => {
+    setFilters({
+      promotionType: filterPromotionType,
+      startDate: filterStartDate,
+      endDate: filterEndDate,
+      keyword: filterKeyword,
+      accountName: filterAccountName,
+      accountNumber: filterAccountNumber,
+      category1: filterCategory1,
+      primaryProduct: filterPrimaryProduct,
+      employeeKeyword: filterEmployeeKeyword,
+    });
+  };
 
   const { data: formMeta } = usePromotionFormMeta();
   // 행사번호/대표제품 링크는 <Link>(href 부여)로 직접 이동 — Ctrl/Cmd/중간클릭 새 탭 지원.
@@ -305,67 +332,71 @@ export default function PromotionListPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           style={{ width: 130 }}
-          value={promotionType ?? ''}
+          value={filterPromotionType}
           options={promotionTypeOptions}
-          onChange={(val) => setFilter('promotionType', val || '')}
+          onChange={(val) => setFilterPromotionType(val || '')}
         />
         <DatePicker
           placeholder="시작일"
-          value={startDate ? dayjs(startDate) : null}
-          onChange={(date) => setFilter('startDate', date ? date.format('YYYY-MM-DD') : '')}
+          value={filterStartDate ? dayjs(filterStartDate) : null}
+          onChange={(date) => setFilterStartDate(date ? date.format('YYYY-MM-DD') : '')}
         />
         <DatePicker
           placeholder="종료일"
-          value={endDate ? dayjs(endDate) : null}
-          onChange={(date) => setFilter('endDate', date ? date.format('YYYY-MM-DD') : '')}
+          value={filterEndDate ? dayjs(filterEndDate) : null}
+          onChange={(date) => setFilterEndDate(date ? date.format('YYYY-MM-DD') : '')}
         />
-        <Input.Search
+        <Input
           placeholder="행사명/행사번호 검색"
           allowClear
-          defaultValue={keyword ?? ''}
+          value={filterKeyword}
+          onChange={(e) => setFilterKeyword(e.target.value)}
           style={{ width: 250 }}
-          onSearch={(val) => setFilter('keyword', val)}
+          onPressEnter={handleSearch}
         />
-        <Input.Search
-          key={`account-${accountName}`}
+        <Input
           placeholder="거래처명/거래처코드"
           allowClear
-          defaultValue={accountName ?? ''}
+          value={filterAccountName}
+          onChange={(e) => setFilterAccountName(e.target.value)}
           style={{ width: 180 }}
-          onSearch={(val) => setFilter('accountName', val)}
+          onPressEnter={handleSearch}
         />
-        <Input.Search
-          key={`accountNumber-${accountNumber}`}
+        <Input
           placeholder="거래처번호"
           allowClear
-          defaultValue={accountNumber ?? ''}
+          value={filterAccountNumber}
+          onChange={(e) => setFilterAccountNumber(e.target.value)}
           style={{ width: 150 }}
-          onSearch={(val) => setFilter('accountNumber', val)}
+          onPressEnter={handleSearch}
         />
-        <Input.Search
-          key={`category1-${category1}`}
+        <Input
           placeholder="제품유형"
           allowClear
-          defaultValue={category1 ?? ''}
+          value={filterCategory1}
+          onChange={(e) => setFilterCategory1(e.target.value)}
           style={{ width: 150 }}
-          onSearch={(val) => setFilter('category1', val)}
+          onPressEnter={handleSearch}
         />
-        <Input.Search
-          key={`primaryProduct-${primaryProduct}`}
+        <Input
           placeholder="제품명/제품코드"
           allowClear
-          defaultValue={primaryProduct ?? ''}
+          value={filterPrimaryProduct}
+          onChange={(e) => setFilterPrimaryProduct(e.target.value)}
           style={{ width: 180 }}
-          onSearch={(val) => setFilter('primaryProduct', val)}
+          onPressEnter={handleSearch}
         />
-        <Input.Search
-          key={`employeeKeyword-${employeeKeyword}`}
+        <Input
           placeholder="행사사원(사번/성명)"
           allowClear
-          defaultValue={employeeKeyword ?? ''}
+          value={filterEmployeeKeyword}
+          onChange={(e) => setFilterEmployeeKeyword(e.target.value)}
           style={{ width: 180 }}
-          onSearch={(val) => setFilter('employeeKeyword', val)}
+          onPressEnter={handleSearch}
         />
+        <Button type="primary" onClick={handleSearch}>
+          조회
+        </Button>
         {/* "내 행사만" 체크박스 UI 는 임시 제거 (ownerOnly state/API/backend 로직은 유지 — 추후 재노출 대비). */}
       </div>
 

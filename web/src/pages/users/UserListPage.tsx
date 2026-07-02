@@ -18,20 +18,35 @@ const ACTIVE_OPTIONS = [
   { value: 'false', label: '비활성' },
 ];
 
+interface UserListAppliedFilters {
+  keyword?: string;
+  isActive?: boolean;
+  profileId?: number;
+}
+
 export default function UserListPage() {
   const navigate = useNavigate();
-  const [keyword, setKeyword] = useState<string | undefined>();
-  const [isActive, setIsActive] = useState<boolean | undefined>();
-  const [profileId, setProfileId] = useState<number | undefined>();
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
+  const [keywordInput, setKeywordInput] = useState('');
+  const [isActiveInput, setIsActiveInput] = useState('');
+  const [profileIdInput, setProfileIdInput] = useState('');
+  const [applied, setApplied] = useState<UserListAppliedFilters>({});
   const [page, setPage] = useState(0);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useUsers({
-    keyword,
-    isActive,
-    profileId,
+    ...applied,
     page,
     size: PAGE_SIZE,
   });
+
+  const handleSearch = () => {
+    setPage(0);
+    setApplied({
+      keyword: keywordInput || undefined,
+      isActive: isActiveInput === '' ? undefined : isActiveInput === 'true',
+      profileId: profileIdInput === '' ? undefined : Number(profileIdInput),
+    });
+  };
 
   const { data: profiles } = useQuery({
     queryKey: ['admin', 'permissions', 'profiles'],
@@ -86,31 +101,27 @@ export default function UserListPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <Select
           style={{ width: 140 }}
-          value={isActive === undefined ? '' : String(isActive)}
+          value={isActiveInput}
           options={ACTIVE_OPTIONS}
-          onChange={(val) => {
-            setIsActive(val === '' ? undefined : val === 'true');
-            setPage(0);
-          }}
+          onChange={setIsActiveInput}
         />
         <Select
           style={{ width: 200 }}
-          value={profileId === undefined ? '' : String(profileId)}
+          value={profileIdInput}
           options={profileOptions}
-          onChange={(val) => {
-            setProfileId(val === '' ? undefined : Number(val));
-            setPage(0);
-          }}
+          onChange={setProfileIdInput}
         />
-        <Input.Search
+        <Input
           placeholder="username / 사번 / 이름 검색"
           allowClear
           style={{ width: 320 }}
-          onSearch={(val) => {
-            setKeyword(val || undefined);
-            setPage(0);
-          }}
+          value={keywordInput}
+          onChange={(e) => setKeywordInput(e.target.value)}
+          onPressEnter={handleSearch}
         />
+        <Button type="primary" onClick={handleSearch}>
+          조회
+        </Button>
         <Space style={{ marginLeft: 'auto' }}>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         </Space>
