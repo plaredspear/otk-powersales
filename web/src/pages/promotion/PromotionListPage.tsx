@@ -14,7 +14,6 @@ import { promotionExportParams, type PromotionListItem } from '@/api/promotion';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import ResizableTable from '@/components/common/ResizableTable';
-import SavedSearchBar from '@/components/savedSearch/SavedSearchBar';
 
 // 엑셀 다운로드 최대 건수 — 서버 export 상한(EXPORT_MAX_ROWS) 정합. 초과 시 안내 후 진행.
 const EXPORT_MAX_ROWS = 50000;
@@ -43,8 +42,7 @@ export default function PromotionListPage() {
   // SF 레거시 동등 + 신규 user 조회가 관리자 전용이라, 미보유자(조장/사원)는 이름 텍스트만 노출.
   const canReadUser = hasEntityPermission('user', 'READ');
   // page/필터/페이지 사이즈를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침/링크 공유 시 직전 조건 복원.
-  // size 는 검색 조건이 아니라 표시 옵션이므로 savedFilters(저장된 검색)에는 포함하지 않는다.
-  const { page, setPage, filters, setFilter, setFilters } = useListQueryParams({
+  const { page, setPage, filters, setFilter } = useListQueryParams({
     defaultFilters: {
       promotionType: '',
       startDate: '',
@@ -74,48 +72,6 @@ export default function PromotionListPage() {
     employeeKeyword,
     ownerOnly,
   } = filters;
-
-  // 저장된 검색 적용 — 모든 필터 키를 명시적으로 덮어써 이전 조건 잔존을 막는다.
-  const applySavedSearch = (saved: Record<string, string>) => {
-    setFilters({
-      promotionType: saved.promotionType ?? '',
-      startDate: saved.startDate ?? '',
-      endDate: saved.endDate ?? '',
-      keyword: saved.keyword ?? '',
-      accountName: saved.accountName ?? '',
-      accountNumber: saved.accountNumber ?? '',
-      category1: saved.category1 ?? '',
-      primaryProduct: saved.primaryProduct ?? '',
-      employeeKeyword: saved.employeeKeyword ?? '',
-      ownerOnly: saved.ownerOnly ?? '',
-    });
-  };
-
-  // 저장 대상 필터 + 사람이 읽는 미리보기.
-  const savedFilters: Record<string, string> = {
-    promotionType,
-    startDate,
-    endDate,
-    keyword,
-    accountName,
-    accountNumber,
-    category1,
-    primaryProduct,
-    employeeKeyword,
-    ownerOnly,
-  };
-  const savedPreview = [
-    { label: '행사유형', value: promotionType || '전체' },
-    { label: '시작일', value: startDate },
-    { label: '종료일', value: endDate },
-    { label: '검색어', value: keyword },
-    { label: '거래처', value: accountName },
-    { label: '거래처번호', value: accountNumber },
-    { label: '제품유형', value: category1 },
-    { label: '대표제품', value: primaryProduct },
-    { label: '행사사원', value: employeeKeyword },
-    { label: '범위', value: ownerOnly === 'true' ? '내 행사만' : '전체' },
-  ];
 
   const { data: formMeta } = usePromotionFormMeta();
   // 행사번호/대표제품 링크는 <Link>(href 부여)로 직접 이동 — Ctrl/Cmd/중간클릭 새 탭 지원.
@@ -344,15 +300,6 @@ export default function PromotionListPage() {
             </Button>
           )}
         </Space>
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <SavedSearchBar
-          resourceKey="promotion"
-          filters={savedFilters}
-          preview={savedPreview}
-          onApply={applySavedSearch}
-        />
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
