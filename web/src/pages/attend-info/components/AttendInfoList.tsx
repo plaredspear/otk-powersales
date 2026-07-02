@@ -1,8 +1,9 @@
-import { Dropdown, Pagination, Space, Tag } from 'antd';
+import { Dropdown, Space, Tag } from 'antd';
 import { MoreOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { AttendInfoListItem } from '@/api/attendInfo';
 import ResizableTable from '@/components/common/ResizableTable';
+import { buildListPagination } from '@/lib/listPagination';
 
 interface AttendInfoListProps {
   items: AttendInfoListItem[];
@@ -132,25 +133,19 @@ export default function AttendInfoList({
   ];
 
   return (
-    <>
-      <ResizableTable
-        rowKey="id"
-        size="middle"
-        loading={loading}
-        dataSource={items}
-        columns={columns}
-        pagination={false}
-      />
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-        <Pagination
-          current={page}
-          pageSize={pageSize}
-          total={totalElements}
-          showSizeChanger
-          pageSizeOptions={['20', '50', '100', '200']}
-          onChange={onPageChange}
-        />
-      </div>
-    </>
+    <ResizableTable
+      rowKey="id"
+      size="middle"
+      loading={loading}
+      dataSource={items}
+      columns={columns}
+      pagination={buildListPagination({
+        page: page - 1,
+        pageSize,
+        total: totalElements,
+        onPageChange: (nextPage) => onPageChange(nextPage + 1, pageSize),
+        onSizeChange: (size) => onPageChange(1, size),
+      })}
+    />
   );
 }

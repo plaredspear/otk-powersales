@@ -9,6 +9,7 @@ import type { UserSummary } from '@/api/user';
 import { fetchProfiles } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const PAGE_SIZE = 20;
 
@@ -32,11 +33,12 @@ export default function UserListPage() {
   const [profileIdInput, setProfileIdInput] = useState('');
   const [applied, setApplied] = useState<UserListAppliedFilters>({});
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(PAGE_SIZE);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useUsers({
     ...applied,
     page,
-    size: PAGE_SIZE,
+    size,
   });
 
   const handleSearch = () => {
@@ -61,7 +63,7 @@ export default function UserListPage() {
   const handleRowClick = useThrottleClick((id: number) => navigate(`/users/${id}`));
 
   const columns: ColumnsType<UserSummary> = [
-    { title: '#', width: 60, render: (_v, _r, index) => page * PAGE_SIZE + index + 1 },
+    { title: '#', width: 60, render: (_v, _r, index) => page * size + index + 1 },
     { title: 'username', dataIndex: 'username', width: 220 },
     { title: '사번', dataIndex: 'employeeCode', width: 120 },
     { title: '이름', dataIndex: 'name', width: 120, render: (val: string | null) => val ?? '-' },
@@ -132,14 +134,16 @@ export default function UserListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        pagination={{
-          current: (data?.page ?? 0) + 1,
+        pagination={buildListPagination({
+          page: data?.page ?? page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: (p) => setPage(p - 1),
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
         onRow={(record) => ({
           onClick: () => handleRowClick(record.id),
           style: { cursor: 'pointer' },

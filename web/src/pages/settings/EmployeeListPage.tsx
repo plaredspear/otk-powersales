@@ -13,6 +13,7 @@ import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import EmployeeRegisterModal from '@/pages/employee/components/EmployeeRegisterModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
@@ -73,6 +74,7 @@ export default function EmployeeListPage() {
       role: roleInput,
     });
   };
+  const [size, setSize] = useState(PAGE_SIZE);
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -86,7 +88,7 @@ export default function EmployeeListPage() {
     keyword: keyword || undefined,
     role: (role || undefined) as AppAuthority | undefined,
     page,
-    size: PAGE_SIZE,
+    size,
   });
 
   const columns: ColumnsType<Employee> = [
@@ -255,14 +257,16 @@ export default function EmployeeListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        pagination={{
-          current: (data?.page ?? 0) + 1,
+        pagination={buildListPagination({
+          page: data?.page ?? page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: (p) => setPage(p - 1),
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
       />
       {deviceTarget && (
         <DeviceResetModal

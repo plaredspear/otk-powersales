@@ -27,6 +27,7 @@ import type {
 } from '@/api/inspections';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const { RangePicker } = DatePicker;
 
@@ -80,6 +81,7 @@ export default function FieldInspectionPage() {
   );
   const [employeeName, setEmployeeName] = useState(() => filters.employeeName);
   const [accountCode, setAccountCode] = useState(() => filters.accountCode);
+  const [size, setSize] = useState(PAGE_SIZE);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -99,7 +101,7 @@ export default function FieldInspectionPage() {
     employeeName: filters.employeeName || undefined,
     accountCode: filters.accountCode || undefined,
     page,
-    size: PAGE_SIZE,
+    size,
   });
   const { data: detail, isLoading: detailLoading } = useInspectionDetail(detailId);
   const openDetail = useThrottleClick((id: number) => setDetailId(id));
@@ -123,10 +125,6 @@ export default function FieldInspectionPage() {
     setAccountCode('');
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage - 1);
-  };
-
   const handleDelete = async () => {
     if (detailId == null) return;
     try {
@@ -146,7 +144,7 @@ export default function FieldInspectionPage() {
       title: 'No',
       width: 60,
       fixed: 'left',
-      render: (_v, _r, index) => page * PAGE_SIZE + index + 1,
+      render: (_v, _r, index) => page * size + index + 1,
     },
     {
       title: '분류',
@@ -247,14 +245,16 @@ export default function FieldInspectionPage() {
         dataSource={data?.content}
         loading={isLoading}
         scroll={{ x: 1140 }}
-        pagination={{
-          current: page + 1,
+        pagination={buildListPagination({
+          page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: handlePageChange,
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
         onRow={(record) => ({
           onClick: () => openDetail(record.id),
           style: { cursor: 'pointer' },

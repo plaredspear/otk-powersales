@@ -28,6 +28,7 @@ import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { usePermission } from '@/hooks/usePermission';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const PAGE_SIZE = 20;
 
@@ -57,6 +58,7 @@ export default function ThemeManagementPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [ownerKeyword, setOwnerKeyword] = useState('');
   const [ownerOptionPatch, setOwnerOptionPatch] = useState<{ value: number; label: string }[]>([]);
+  const [size, setSize] = useState(PAGE_SIZE);
   const [form] = Form.useForm<ThemeFormValues>();
 
   const searchParams: ThemeListParams = {
@@ -64,7 +66,7 @@ export default function ThemeManagementPage() {
     department: filters.department || undefined,
     branchCode: filters.branchCode || undefined,
     page,
-    size: PAGE_SIZE,
+    size,
   };
 
   const { data, isLoading, refetch, isFetching } = useThemes(searchParams);
@@ -105,9 +107,6 @@ export default function ThemeManagementPage() {
     setFilters({ keyword: '', department: '', branchCode: '' });
   };
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage - 1);
-  };
 
   const openCreate = () => {
     setEditId(null);
@@ -277,14 +276,16 @@ export default function ThemeManagementPage() {
         dataSource={data?.content}
         loading={isLoading}
         scroll={{ x: 1100 }}
-        pagination={{
-          current: page + 1,
+        pagination={buildListPagination({
+          page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: handlePageChange,
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
       />
 
       <Modal

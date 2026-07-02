@@ -8,6 +8,7 @@ import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type { SalesProgressRateMasterListItem } from '@/api/salesProgressRateMaster';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 function formatAmount(value: number | null): string {
   return value != null ? value.toLocaleString() : '-';
@@ -30,6 +31,7 @@ export default function SalesProgressRateMasterListPage() {
   const [targetYearInput, setTargetYearInput] = useState(targetYear);
   const [targetMonthInput, setTargetMonthInput] = useState(targetMonth);
   const [keywordInput, setKeywordInput] = useState(keyword);
+  const [size, setSize] = useState(20);
 
   const handleSearch = () => {
     setFilters({ targetYear: targetYearInput, targetMonth: targetMonthInput, keyword: keywordInput });
@@ -44,7 +46,7 @@ export default function SalesProgressRateMasterListPage() {
     targetYear: targetYear || undefined,
     targetMonth: targetMonth || undefined,
     page,
-    size: 20,
+    size,
   });
 
   const columns: ColumnsType<SalesProgressRateMasterListItem> = [
@@ -212,14 +214,16 @@ export default function SalesProgressRateMasterListPage() {
         dataSource={data?.content}
         loading={isLoading}
         scroll={{ x: 1900 }}
-        pagination={{
-          current: (data?.page ?? 0) + 1,
+        pagination={buildListPagination({
+          page: data?.page ?? page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          pageSize: 20,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: (p) => setPage(p - 1),
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
       />
     </div>
   );

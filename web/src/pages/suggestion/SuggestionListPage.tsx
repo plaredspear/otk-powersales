@@ -12,6 +12,7 @@ import type {
 } from '@/api/suggestions';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const { RangePicker } = DatePicker;
 
@@ -43,6 +44,7 @@ export default function SuggestionListPage() {
   const [accountCode, setAccountCode] = useState('');
   const [productCode, setProductCode] = useState('');
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(PAGE_SIZE);
 
   const [searchParams, setSearchParams] = useState<SuggestionListParams>({
     startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
@@ -66,7 +68,7 @@ export default function SuggestionListPage() {
       accountCode: accountCode || undefined,
       productCode: productCode || undefined,
       page: 0,
-      size: PAGE_SIZE,
+      size,
     });
   };
 
@@ -78,10 +80,15 @@ export default function SuggestionListPage() {
     setProductCode('');
   };
 
-  const handlePageChange = (newPage: number) => {
-    const zeroIndexedPage = newPage - 1;
+  const handlePageChange = (zeroIndexedPage: number) => {
     setPage(zeroIndexedPage);
     setSearchParams((prev) => ({ ...prev, page: zeroIndexedPage }));
+  };
+
+  const handleSizeChange = (nextSize: number) => {
+    setSize(nextSize);
+    setPage(0);
+    setSearchParams((prev) => ({ ...prev, page: 0, size: nextSize }));
   };
 
   const dash = (val: string | null) => val ?? '-';
@@ -92,7 +99,7 @@ export default function SuggestionListPage() {
       title: 'No',
       width: 60,
       fixed: 'left',
-      render: (_v, _r, index) => (searchParams.page ?? 0) * PAGE_SIZE + index + 1,
+      render: (_v, _r, index) => (searchParams.page ?? 0) * (searchParams.size ?? PAGE_SIZE) + index + 1,
     },
     { title: '제안사항 번호', dataIndex: 'proposalNumber', width: 150, fixed: 'left' },
     {
@@ -243,14 +250,13 @@ export default function SuggestionListPage() {
         dataSource={data?.content}
         loading={isLoading}
         scroll={{ x: 2030 }}
-        pagination={{
-          current: page + 1,
+        pagination={buildListPagination({
+          page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: handlePageChange,
-        }}
+          onPageChange: handlePageChange,
+          onSizeChange: handleSizeChange,
+        })}
         onRow={(record) => ({
           onClick: () => handleRowClick(record.id),
           style: { cursor: 'pointer' },

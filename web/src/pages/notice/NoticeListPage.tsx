@@ -9,6 +9,7 @@ import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { NoticeSummary } from '@/api/notice';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPANY: { color: 'blue', label: '회사공지' },
@@ -25,8 +26,9 @@ export default function NoticeListPage() {
   const [category, setCategory] = useState<string | undefined>();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [size, setSize] = useState(20);
 
-  const { data, isLoading, refetch, isFetching } = useNotices({ category, search: search || undefined, page, size: 10 });
+  const { data, isLoading, refetch, isFetching } = useNotices({ category, search: search || undefined, page, size });
   const { data: formMeta } = useNoticeFormMeta();
   const handleRowClick = useThrottleClick((id: number) => navigate(`/notices/${id}`));
   const handleCreate = useThrottleClick(() => navigate('/notices/new'));
@@ -35,7 +37,7 @@ export default function NoticeListPage() {
     {
       title: '#',
       width: 60,
-      render: (_v, _r, index) => (page - 1) * 10 + index + 1,
+      render: (_v, _r, index) => (page - 1) * size + index + 1,
     },
     {
       title: '제목',
@@ -134,13 +136,16 @@ export default function NoticeListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        pagination={{
-          current: data?.currentPage ?? 1,
+        pagination={buildListPagination({
+          page: (data?.currentPage ?? page) - 1,
+          pageSize: size,
           total: data?.totalCount ?? 0,
-          pageSize: 10,
-          showSizeChanger: false,
-          onChange: (p) => setPage(p),
-        }}
+          onPageChange: (nextPage) => setPage(nextPage + 1),
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(1);
+          },
+        })}
         onRow={(record) => ({
           onClick: () => handleRowClick(record.id),
           style: { cursor: 'pointer' },

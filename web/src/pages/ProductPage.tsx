@@ -10,6 +10,7 @@ import InventorySearchModal from '@/components/product/InventorySearchModal';
 import SelectedProductsCompareModal from '@/components/product/SelectedProductsCompareModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const STATUS_TAG: Record<string, string> = {
   판매중: 'green',
@@ -57,6 +58,7 @@ export default function ProductPage() {
   const [category2Input, setCategory2Input] = useState(category2);
   const [category3Input, setCategory3Input] = useState(category3);
   const [productStatusInput, setProductStatusInput] = useState(productStatus);
+  const [size, setSize] = useState(PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
@@ -70,7 +72,7 @@ export default function ProductPage() {
     category3: category3 || undefined,
     productStatus: productStatus || undefined,
     page,
-    size: PAGE_SIZE,
+    size,
   });
 
   const { data: categories } = useProductCategories();
@@ -365,14 +367,16 @@ export default function ProductPage() {
           onChange: setSelectedRowKeys,
           preserveSelectedRowKeys: true,
         }}
-        pagination={{
-          current: page + 1,
+        pagination={buildListPagination({
+          page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: (p) => setPage(p - 1),
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
         scroll={{ x: 1500 }}
       />
 

@@ -33,6 +33,7 @@ import type { ProductExpiration, CreateProductExpirationRequest, UpdateProductEx
 import { useAuthStore } from '@/stores/authStore';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 
 const { RangePicker } = DatePicker;
 
@@ -345,18 +346,16 @@ export default function ProductExpirationPage() {
           selectedRowKeys,
           onChange: (keys) => setSelectedRowKeys(keys as number[]),
         }}
-        pagination={{
-          current: page,
+        pagination={buildListPagination({
+          page: page - 1,
           pageSize: size,
-          total: data?.totalElements,
-          showSizeChanger: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          showTotal: (total) => `총 ${total}건`,
-          onChange: (p, ps) => {
-            setPage(p);
-            setSize(ps);
+          total: data?.totalElements ?? 0,
+          onPageChange: (nextPage) => setPage(nextPage + 1),
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(1);
           },
-        }}
+        })}
         scroll={{ x: 1200 }}
       />
 

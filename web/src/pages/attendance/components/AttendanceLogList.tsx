@@ -1,8 +1,9 @@
-import { Pagination, Space, Tag } from 'antd';
+import { Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import type { AttendanceLogListItem, AttendanceTypeCode } from '@/api/attendanceLog';
 import ResizableTable from '@/components/common/ResizableTable';
+import { buildListPagination } from '@/lib/listPagination';
 
 interface AttendanceLogListProps {
   items: AttendanceLogListItem[];
@@ -117,29 +118,23 @@ export default function AttendanceLogList({
   ];
 
   return (
-    <>
-      <ResizableTable
-        rowKey="id"
-        size="middle"
-        loading={loading}
-        dataSource={items}
-        columns={columns}
-        pagination={false}
-        onRow={(record) => ({
-          onClick: () => onView(record),
-          style: { cursor: 'pointer' },
-        })}
-      />
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-        <Pagination
-          current={page}
-          pageSize={pageSize}
-          total={totalElements}
-          showSizeChanger
-          pageSizeOptions={['20', '50', '100', '200']}
-          onChange={onPageChange}
-        />
-      </div>
-    </>
+    <ResizableTable
+      rowKey="id"
+      size="middle"
+      loading={loading}
+      dataSource={items}
+      columns={columns}
+      pagination={buildListPagination({
+        page: page - 1,
+        pageSize,
+        total: totalElements,
+        onPageChange: (nextPage) => onPageChange(nextPage + 1, pageSize),
+        onSizeChange: (size) => onPageChange(1, size),
+      })}
+      onRow={(record) => ({
+        onClick: () => onView(record),
+        style: { cursor: 'pointer' },
+      })}
+    />
   );
 }

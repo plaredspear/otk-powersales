@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
 import { useAccounts } from '@/hooks/account/useAccounts';
 import { useAccountBranches } from '@/hooks/account/useAccountBranches';
 import { usePermission } from '@/hooks/usePermission';
@@ -68,6 +69,7 @@ export default function AccountPage() {
     const p = Number(searchParams.get('page'));
     return Number.isFinite(p) && p > 0 ? p : 0;
   });
+  const [size, setSize] = useState(PAGE_SIZE);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const navigate = useNavigate();
   const { data: branches } = useAccountBranches();
@@ -113,7 +115,7 @@ export default function AccountPage() {
     branchCode: applied.branchCode,
     accountStatusName: applied.accountStatusName,
     page,
-    size: PAGE_SIZE,
+    size,
   });
 
   const columns: ColumnsType<Account> = [
@@ -241,14 +243,16 @@ export default function AccountPage() {
         dataSource={data?.content}
         loading={isLoading}
         locale={{ emptyText: '검색 결과가 없습니다' }}
-        pagination={{
-          current: (data?.page ?? 0) + 1,
+        pagination={buildListPagination({
+          page: data?.page ?? page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          pageSize: PAGE_SIZE,
-          showSizeChanger: false,
-          showTotal: (total) => `총 ${total}건`,
-          onChange: (p) => setPage(p - 1),
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
       />
 
       <AdminAccountCreateModal

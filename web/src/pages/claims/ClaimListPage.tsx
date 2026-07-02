@@ -9,6 +9,7 @@ import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import type { ClaimListItem } from '@/api/claims';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination, PAGE_SIZE_OPTIONS } from '@/lib/listPagination';
 import ClaimCard from './components/ClaimCard';
 import { STATUS_TAG } from './claimDisplay';
 
@@ -34,6 +35,7 @@ export default function ClaimListPage() {
   const [employeeName, setEmployeeName] = useState('');
   const [storeName, setStoreName] = useState('');
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(PAGE_SIZE);
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
 
   // 검색 시 적용되는 파라미터 (검색 버튼 클릭 시 갱신)
@@ -59,21 +61,26 @@ export default function ClaimListPage() {
       employeeName: employeeName || undefined,
       storeName: storeName || undefined,
       page: 0,
-      size: PAGE_SIZE,
+      size,
     });
   };
 
-  const handlePageChange = (newPage: number) => {
-    const zeroIndexedPage = newPage - 1;
+  const handlePageChange = (zeroIndexedPage: number) => {
     setPage(zeroIndexedPage);
     setSearchParams((prev) => ({ ...prev, page: zeroIndexedPage }));
+  };
+
+  const handleSizeChange = (nextSize: number) => {
+    setSize(nextSize);
+    setPage(0);
+    setSearchParams((prev) => ({ ...prev, page: 0, size: nextSize }));
   };
 
   const columns: ColumnsType<ClaimListItem> = [
     {
       title: 'No',
       width: 60,
-      render: (_v, _r, index) => (searchParams.page) * PAGE_SIZE + index + 1,
+      render: (_v, _r, index) => searchParams.page * searchParams.size + index + 1,
     },
     {
       title: '사원명',
@@ -201,14 +208,13 @@ export default function ClaimListPage() {
           columns={columns}
           dataSource={data?.content}
           loading={isLoading}
-          pagination={{
-            current: page + 1,
+          pagination={buildListPagination({
+            page,
+            pageSize: size,
             total: data?.totalElements ?? 0,
-            pageSize: PAGE_SIZE,
-            showSizeChanger: false,
-            showTotal: (total) => `총 ${total}건`,
-            onChange: handlePageChange,
-          }}
+            onPageChange: handlePageChange,
+            onSizeChange: handleSizeChange,
+          })}
           onRow={(record) => ({
             onClick: () => handleRowClick(record.claimId),
             style: { cursor: 'pointer' },
@@ -235,10 +241,17 @@ export default function ClaimListPage() {
             <Pagination
               current={page + 1}
               total={data?.totalElements ?? 0}
-              pageSize={PAGE_SIZE}
-              showSizeChanger={false}
+              pageSize={size}
+              showSizeChanger
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
               showTotal={(total) => `총 ${total}건`}
-              onChange={handlePageChange}
+              onChange={(nextPage, nextSize) => {
+                if (nextSize !== size) {
+                  handleSizeChange(nextSize);
+                } else {
+                  handlePageChange(nextPage - 1);
+                }
+              }}
             />
           </div>
         </Spin>
