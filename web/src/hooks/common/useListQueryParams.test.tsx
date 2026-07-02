@@ -97,4 +97,39 @@ describe('useListQueryParams', () => {
     const wStr = renderHook(useHarness, { wrapper: makeWrapper('/list?page=abc') });
     expect(wStr.result.current.page).toBe(0);
   });
+
+  it('size 파라미터가 없으면 기본 20', () => {
+    const { result } = renderHook(useHarness, { wrapper: makeWrapper('/list') });
+    expect(result.current.size).toBe(20);
+  });
+
+  it('URL 의 size 를 복원', () => {
+    const { result } = renderHook(useHarness, { wrapper: makeWrapper('/list?size=50') });
+    expect(result.current.size).toBe(50);
+  });
+
+  it('setSize 는 URL 에 size 를 기록하고 page 를 0 으로 리셋', () => {
+    const { result } = renderHook(useHarness, { wrapper: makeWrapper('/list?page=4') });
+    act(() => result.current.setSize(100));
+    expect(result.current.size).toBe(100);
+    expect(result.current.page).toBe(0);
+    expect(result.current.search).toContain('size=100');
+    expect(result.current.search).not.toContain('page=');
+  });
+
+  it('setSize 에 기본값(20) 을 주면 URL 에서 제거', () => {
+    const { result } = renderHook(useHarness, { wrapper: makeWrapper('/list?size=50') });
+    act(() => result.current.setSize(20));
+    expect(result.current.size).toBe(20);
+    expect(result.current.search).not.toContain('size=');
+  });
+
+  it('비정상 size 값(0, 음수, 문자) 은 기본 20 으로 처리', () => {
+    const w0 = renderHook(useHarness, { wrapper: makeWrapper('/list?size=0') });
+    expect(w0.result.current.size).toBe(20);
+    const wNeg = renderHook(useHarness, { wrapper: makeWrapper('/list?size=-10') });
+    expect(wNeg.result.current.size).toBe(20);
+    const wStr = renderHook(useHarness, { wrapper: makeWrapper('/list?size=abc') });
+    expect(wStr.result.current.size).toBe(20);
+  });
 });
