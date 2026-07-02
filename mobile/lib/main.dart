@@ -41,6 +41,27 @@ void main() async {
   runApp(const AppBootstrap());
 }
 
+/// FCM 알림 탭(백그라운드/종료 상태)으로 앱이 열렸을 때 딥링크 라우팅을 수행한다.
+///
+/// data payload 의 `type` 이 `notice` 이면 `noticeId` 를 읽어 공지 상세로 이동한다.
+/// 전역 [navigatorKey] 로 라우팅하므로 UI 트리 밖(top-level)에서 호출 가능하다.
+/// Navigator 미부착(앱 초기화 중)이거나 payload 가 유효하지 않으면 조용히 무시한다.
+void _handlePushOpened(RemoteMessage message) {
+  final data = message.data;
+  if (data['type'] != 'notice') return;
+
+  final noticeId = int.tryParse(data['noticeId']?.toString() ?? '');
+  if (noticeId == null) return;
+
+  // 알림 탭 시점에 Navigator 가 아직 준비되지 않았을 수 있으므로 다음 프레임에 라우팅.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    navigatorKey.currentState?.pushNamed(
+      AppRouter.noticeDetail,
+      arguments: noticeId,
+    );
+  });
+}
+
 /// 루트 부트스트랩 위젯.
 ///
 /// [SessionResetController] 의 신호를 받아 루트 `ProviderScope` 를 새 인스턴스로
@@ -169,7 +190,7 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     Future.microtask(() {
       // FCM 권한 요청 + 토큰/리스너 등록 (설정 파일 없으면 내부에서 skip)
       final push = ref.read(pushNotificationServiceProvider);
-      push.initialize();
+      push.initialize(onMessageOpened: _handlePushOpened);
 
       // FCM 토큰 갱신 시 인증 상태면 서버에 재등록 (Firebase 초기화된 경우만 구독)
       if (push.isAvailable) {

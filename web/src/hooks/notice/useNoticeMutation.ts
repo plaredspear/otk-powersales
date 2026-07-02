@@ -5,6 +5,7 @@ import {
   deleteNotice,
   publishNotice,
   unpublishNotice,
+  sendNoticePush,
   type NoticeFormData,
 } from '@/api/notice';
 
@@ -54,6 +55,17 @@ export function useUnpublishNotice() {
     mutationFn: (id: number) => unpublishNotice(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'notices'] });
+    },
+  });
+}
+
+export function useSendNoticePush() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => sendNoticePush(id),
+    onSuccess: (_data, id) => {
+      // 상세 발송 이력(pushSentCount/lastPush) 갱신을 위해 해당 공지 상세를 무효화.
+      queryClient.invalidateQueries({ queryKey: ['admin', 'notices', id] });
     },
   });
 }
