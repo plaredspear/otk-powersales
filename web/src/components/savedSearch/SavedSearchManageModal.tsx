@@ -1,5 +1,6 @@
-import { Modal, Table, Tag, Button, Popconfirm, message } from 'antd';
+import { Modal, Tag, Button, Popconfirm, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import { useSavedSearches } from '@/hooks/savedSearch/useSavedSearches';
 import { useDeleteSavedSearch } from '@/hooks/savedSearch/useSavedSearchMutation';
 import type { SavedSearch } from '@/api/savedSearch';
@@ -68,13 +69,12 @@ export default function SavedSearchManageModal({
       width={640}
       destroyOnClose
     >
-      <Table
+      <ResizableTable
         rowKey="id"
         columns={columns}
         dataSource={data}
         loading={isLoading}
         pagination={false}
-        size="small"
       />
     </Modal>
   );

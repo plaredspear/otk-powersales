@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Empty, Input, Modal, Table, Typography } from 'antd';
+import { Empty, Input, Modal, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import ResizableTable from '@/components/common/ResizableTable';
 import { useQuery } from '@tanstack/react-query';
 import {
   searchPosSalesProducts,
@@ -79,9 +80,8 @@ export default function PosProductSearchModal({ open, onClose, onAdd }: Props) {
         onChange={(e) => setKeyword(e.target.value)}
         style={{ marginBottom: 12 }}
       />
-      <Table
+      <ResizableTable
         rowKey={rowKey}
-        size="small"
         columns={columns}
         dataSource={results}
         loading={searchQuery.isFetching}

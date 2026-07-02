@@ -5,7 +5,6 @@ import {
   DatePicker,
   Form,
   Space,
-  Table,
   Tag,
   Typography,
   notification,
@@ -13,6 +12,8 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { useMutation } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
+import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 import {
   testStaffReviewSync,
   type StaffReviewSyncTestInput,
@@ -235,13 +236,16 @@ export default function StaffReviewSyncTab() {
             )}
 
             {rows.length > 0 && (
-              <Table
-                rowKey={(_, index) => String(index)}
+              <ResizableTable
+                // 사원평가No(Name) + 사번(EmployeeNumber) 조합 도메인 키.
+                rowKey={(row) =>
+                  `${cellText(row.Name)}|${cellText(row.EmployeeNumber)}`
+                }
                 columns={columns}
                 dataSource={rows}
-                size="small"
                 scroll={{ x: 'max-content', y: 400 }}
                 pagination={{ pageSize: 20, showSizeChanger: true }}
+                locale={listTableLocale()}
               />
             )}
 

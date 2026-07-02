@@ -5,7 +5,6 @@ import {
   DatePicker,
   Form,
   Space,
-  Table,
   Tag,
   Typography,
   notification,
@@ -13,6 +12,8 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { useMutation } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
+import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 import { testClaimMasterSync } from '@/api/claims';
 import type {
   ClaimMasterSyncTestInput,
@@ -234,13 +235,16 @@ export default function ClaimStatusUpdateTab() {
             )}
 
             {rows.length > 0 && (
-              <Table
-                rowKey={(_, index) => String(index)}
+              <ResizableTable
+                // 클레임 접수번호(Name) + 제품 코드 + 조치 코드 조합 도메인 키.
+                rowKey={(row) =>
+                  `${cellText(row.Name)}|${cellText(row.ProoductCode)}|${cellText(row.ActionCode)}`
+                }
                 columns={columns}
                 dataSource={rows}
-                size="small"
                 scroll={{ x: 'max-content', y: 400 }}
                 pagination={{ pageSize: 20, showSizeChanger: true }}
+                locale={listTableLocale()}
               />
             )}
 

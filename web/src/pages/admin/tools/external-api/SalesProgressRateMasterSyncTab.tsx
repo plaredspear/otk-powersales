@@ -5,7 +5,6 @@ import {
   DatePicker,
   Form,
   Space,
-  Table,
   Tag,
   Typography,
   notification,
@@ -13,6 +12,8 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { useMutation } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
+import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 import {
   testSalesProgressRateMasterSync,
   type SalesProgressRateMasterSyncTestInput,
@@ -220,13 +221,16 @@ export default function SalesProgressRateMasterSyncTab() {
             )}
 
             {rows.length > 0 && (
-              <Table
-                rowKey={(_, index) => String(index)}
+              <ResizableTable
+                // 레코드명(Name) + 거래처 코드 + 목표 연도/월 조합 도메인 키.
+                rowKey={(row) =>
+                  `${cellText(row.Name)}|${cellText(row.AccountCode)}|${cellText(row.TargetYear)}-${cellText(row.TargetMonth)}`
+                }
                 columns={columns}
                 dataSource={rows}
-                size="small"
                 scroll={{ x: 'max-content', y: 400 }}
                 pagination={{ pageSize: 20, showSizeChanger: true }}
+                locale={listTableLocale()}
               />
             )}
 

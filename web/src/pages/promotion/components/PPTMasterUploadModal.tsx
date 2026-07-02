@@ -130,13 +130,13 @@ export default function PPTMasterUploadModal({ open, onClose }: Props) {
 
   const columns: ColumnsType<ParsedRow> = [
     { title: '#', dataIndex: '_rowIndex', width: 50, align: 'center' },
-    { title: '사번', dataIndex: 'employee_code', width: 100, align: 'center' },
-    { title: '거래처코드', dataIndex: 'account_code', width: 120, align: 'center' },
-    { title: '전문행사조', dataIndex: 'team_type', width: 130, align: 'center' },
-    { title: '시작일', dataIndex: 'start_date', width: 120, align: 'center' },
+    { title: '사번', dataIndex: 'employeeCode', width: 100, align: 'center' },
+    { title: '거래처코드', dataIndex: 'accountCode', width: 120, align: 'center' },
+    { title: '전문행사조', dataIndex: 'teamType', width: 130, align: 'center' },
+    { title: '시작일', dataIndex: 'startDate', width: 120, align: 'center' },
     {
       title: '종료일',
-      dataIndex: 'end_date',
+      dataIndex: 'endDate',
       width: 120,
       align: 'center',
       render: (v: string | null) => v ?? '-',
