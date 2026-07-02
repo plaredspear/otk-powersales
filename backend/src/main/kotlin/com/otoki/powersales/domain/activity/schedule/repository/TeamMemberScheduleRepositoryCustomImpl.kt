@@ -222,6 +222,10 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             // 초기화되지 않아 promotionId 가 null 로 응답돼(행사 클릭 시 "연결된 행사를 찾을 수 없습니다")
             // fetch join 으로 명시 로딩한다.
             .leftJoin(teamMemberSchedule.promotionEmployee, promotionEmployee).fetchJoin()
+            // attendanceLog fetch join: TeamScheduleDto.from 이 commuteDate(=attendanceLog.attendanceDate)
+            // 로 출근 시각을 채운다. enhancement LAZY 환경에서 명시 로딩하지 않으면 tx 밖 접근 시 미초기화 →
+            // commuteTime null. FK만 읽는 isClockIn 과 달리 attendanceDate 는 프록시 초기화가 필요하다.
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
             .where(
                 teamMemberSchedule.employee.id.`in`(employeeIds),
                 teamMemberSchedule.workingDate.between(from, to),
@@ -245,6 +249,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             // promotionEmployee fetch join (findMonthlyByEmployeeIds 와 동일 사유 — enhancement LAZY 미초기화로
             // promotionId null 응답 회피)
             .leftJoin(teamMemberSchedule.promotionEmployee, promotionEmployee).fetchJoin()
+            // attendanceLog fetch join (findMonthlyByEmployeeIds 와 동일 사유 — commuteTime 출근 시각 로딩)
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
             .where(
                 teamMemberSchedule.account.id.`in`(accountIds),
                 teamMemberSchedule.workingDate.between(from, to),

@@ -47,6 +47,8 @@ export interface TeamSchedule {
   accountType: string | null;
   accountBranchName: string | null;
   isClockIn: boolean;
+  /** 출근 시각 (HH:mm) — 미출근 시 null. */
+  commuteTime: string | null;
   promotionId: number | null;
 }
 

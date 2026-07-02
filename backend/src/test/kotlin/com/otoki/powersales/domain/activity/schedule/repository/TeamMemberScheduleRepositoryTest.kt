@@ -24,6 +24,7 @@ import org.springframework.test.context.ActiveProfiles
 import com.otoki.powersales.platform.common.config.QueryDslConfig
 import org.springframework.data.domain.PageRequest
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 /**
@@ -539,6 +540,64 @@ class TeamMemberScheduleRepositoryTest {
 
             assertThat(result).hasSize(1)
             assertThat(result[0].promotionEmployee?.promotionId).isEqualTo(promotion.id)
+        }
+
+        // 출근로그를 fetch join 으로 즉시 로딩해 TeamScheduleDto.from 이 commuteDate
+        // (=attendanceLog.attendanceDate) 로 출근 시각을 채울 수 있어야 한다.
+        // em.clear() 로 detach 한 뒤 attendanceDate 를 읽어도 LazyInitializationException 없이
+        // 값이 나오면 fetch join 이 동작한 것이다.
+        @Test
+        @DisplayName("findMonthlyByEmployeeIds - 출근등록 일정의 commuteDate(출근 시각) 가 채워진다")
+        fun findMonthlyByEmployeeIds_fetchesAttendanceLog() {
+            val today = LocalDate.now()
+            val commuteAt = today.atTime(8, 30)
+            val attendanceLog = testEntityManager.persistAndFlush(
+                AttendanceLog(attendanceDate = commuteAt)
+            )
+            val schedule = TeamMemberSchedule(
+                employee = testEmployee,
+                workingDate = today,
+                workingType = WorkingType.WORK,
+                workingCategory1 = WorkingCategory1.DISPLAY,
+                attendanceLog = attendanceLog
+            )
+            testEntityManager.persistAndFlush(schedule)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                listOf(testEmployee.id), today, today, null
+            )
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].commuteDate).isEqualTo(commuteAt)
+        }
+
+        @Test
+        @DisplayName("findMonthlyByAccountIds - 출근등록 일정의 commuteDate(출근 시각) 가 채워진다")
+        fun findMonthlyByAccountIds_fetchesAttendanceLog() {
+            val today = LocalDate.now()
+            val account = testEntityManager.persistAndFlush(Account(name = "출근거래처", externalKey = "CMT1"))
+            val commuteAt = today.atTime(9, 5)
+            val attendanceLog = testEntityManager.persistAndFlush(
+                AttendanceLog(attendanceDate = commuteAt)
+            )
+            val schedule = TeamMemberSchedule(
+                employee = testEmployee,
+                account = account,
+                workingDate = today,
+                workingType = WorkingType.WORK,
+                workingCategory1 = WorkingCategory1.DISPLAY,
+                attendanceLog = attendanceLog
+            )
+            testEntityManager.persistAndFlush(schedule)
+            testEntityManager.clear()
+
+            val result = teamMemberScheduleRepository.findMonthlyByAccountIds(
+                listOf(account.id), today, today, null
+            )
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].commuteDate).isEqualTo(commuteAt)
         }
     }
 

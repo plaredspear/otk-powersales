@@ -154,6 +154,7 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                         accountType = "슈퍼",
                         accountBranchName = "원주1지점",
                         isClockIn = true,
+                        commuteTime = "08:30",
                         promotionId = null
                     )
                 ),
@@ -190,6 +191,7 @@ class AdminTeamScheduleControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.schedules.length()").value(1))
                 .andExpect(jsonPath("$.data.schedules[0].id").value(1))
+                .andExpect(jsonPath("$.data.schedules[0].commuteTime").value("08:30"))
                 .andExpect(jsonPath("$.data.dailySummary.length()").value(1))
                 .andExpect(jsonPath("$.data.dailySummary[0].date").value("2026-03-15"))
         }

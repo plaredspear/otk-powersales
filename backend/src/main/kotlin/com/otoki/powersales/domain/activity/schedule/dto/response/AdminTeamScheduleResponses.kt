@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import java.time.format.DateTimeFormatter
 
 data class TeamMemberDto(
     val employeeId: Long,
@@ -42,6 +43,8 @@ data class TeamScheduleAccountDto(
     }
 }
 
+private val COMMUTE_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
 data class TeamScheduleDto(
     val id: Long,
     val employeeCode: String,
@@ -60,6 +63,8 @@ data class TeamScheduleDto(
     val accountType: String?,
     val accountBranchName: String?,
     val isClockIn: Boolean,
+    /** 출근 시각 (HH:mm) — 출근로그 미연결(미출근) 시 null. attendanceLog.attendanceDate 유래. */
+    val commuteTime: String?,
     val promotionId: Long?
 ) {
     companion object {
@@ -79,6 +84,7 @@ data class TeamScheduleDto(
                 accountType = schedule.account?.accountType,
                 accountBranchName = schedule.account?.branchName,
                 isClockIn = schedule.attendanceLog != null,
+                commuteTime = schedule.commuteDate?.format(COMMUTE_TIME_FORMATTER),
                 promotionId = schedule.promotionEmployee?.promotionId
             )
         }
