@@ -263,6 +263,59 @@ export async function fetchWorkHistoryPeriodSummary(
   return res.data.data;
 }
 
+/**
+ * 기간별 근무내역(개인) — 특정 여사원 1명의 거래처별 근무 집계 행.
+ * 좌측 패널에서 여사원을 선택하면 선택 기간 내 근무 행을 거래처 단위로 그룹핑해 표시.
+ * 거래처 미연결 행(연차/대휴 등)은 accountName=null 1행으로 묶인다.
+ */
+export interface WorkHistoryAccountStat {
+  /** 거래처명. 거래처 미연결 행 묶음이면 null. */
+  accountName: string | null;
+  /** 거래처 코드 (externalKey). 거래처 미연결이면 null. */
+  accountExternalKey: string | null;
+  totalWorkingDays: number;
+  displayDays: number;
+  eventDays: number;
+  workDays: number;
+  annualLeaveDays: number;
+  altHolidayDays: number;
+}
+
+export interface WorkHistoryEmployeeAccountResponse {
+  fromYearMonth: string;
+  toYearMonth: string;
+  employeeCode: string;
+  employeeName: string | null;
+  items: WorkHistoryAccountStat[];
+  totalCount: number;
+}
+
+export interface FetchWorkHistoryEmployeeAccountParams {
+  /** 조회 대상 여사원 사번 */
+  employeeCode: string;
+  /** 시작년월 (yyyy-MM) */
+  fromYearMonth: string;
+  /** 종료년월 (yyyy-MM) */
+  toYearMonth: string;
+}
+
+/**
+ * 기간별 근무내역(개인) — 여사원 1명의 거래처별 집계 조회.
+ * 지점 스코프 밖 사번을 지정하면 백엔드가 빈 결과를 반환.
+ */
+export async function fetchWorkHistoryEmployeeAccounts(
+  params: FetchWorkHistoryEmployeeAccountParams,
+): Promise<WorkHistoryEmployeeAccountResponse> {
+  const res = await client.get<ApiResponse<WorkHistoryEmployeeAccountResponse>>(
+    `${BASE}/period-summary/accounts`,
+    { params },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '거래처별 근무내역 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 /** 기간별 근무내역(개인) 엑셀 다운로드 — 조회와 동일 필터/스코프. */
 export async function fetchWorkHistoryPeriodSummaryExport(
   params: FetchWorkHistoryPeriodSummaryParams,

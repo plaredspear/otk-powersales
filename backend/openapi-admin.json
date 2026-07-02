@@ -8543,6 +8543,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseWorkHistoryEmployeeAccountResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/WorkHistoryEmployeeAccountResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseWorkHistoryPeriodSummaryResponse" : {
         "properties" : {
           "data" : {
@@ -17610,6 +17639,68 @@
         },
         "type" : "object"
       },
+      "WorkHistoryAccountStat" : {
+        "properties" : {
+          "accountExternalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "altHolidayDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "annualLeaveDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "displayDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "eventDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalWorkingDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "WorkHistoryEmployeeAccountResponse" : {
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "fromYearMonth" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/WorkHistoryAccountStat"
+            },
+            "type" : "array"
+          },
+          "toYearMonth" : {
+            "type" : "string"
+          },
+          "totalCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "WorkHistoryMonthlyStat" : {
         "properties" : {
           "altHolidayDays" : {
@@ -19018,6 +19109,53 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseWorkHistoryPeriodSummaryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-attend-info-controller" ]
+      }
+    },
+    "/api/v1/admin/attend-info/period-summary/accounts" : {
+      "get" : {
+        "operationId" : "getPeriodAccountSummary",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "employeeCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "fromYearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "toYearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseWorkHistoryEmployeeAccountResponse"
                 }
               }
             },

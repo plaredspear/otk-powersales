@@ -1,6 +1,8 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryAccountStat
+import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryEmployeeAccountResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryMonthlyStat
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryPeriodSummaryItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryPeriodSummaryResponse
@@ -74,6 +76,74 @@ class WorkHistoryPeriodSummaryService(
         return WorkHistoryPeriodSummaryResponse(
             fromYearMonth = fromYm.format(YEAR_MONTH_FORMAT),
             toYearMonth = toYm.format(YEAR_MONTH_FORMAT),
+            items = items,
+            totalCount = items.size,
+        )
+    }
+
+    /**
+     * 특정 여사원 1명의 기간 내 거래처별 근무 집계 조회.
+     *
+     * 기간 검증은 [getSummary] 와 동일 (yyyy-MM / 2020~2099 / 순서 / 최대 6개월).
+     * 지점 스코프: scope.isAllBranches 면 무제한, 아니면 scope.branchCodes 로 제한 —
+     * 스코프 밖 여사원의 사번을 지정해도 조회 행이 없어 빈 결과가 된다.
+     * 거래처 미연결 행(연차/대휴 등)은 accountName=null 1행으로 묶는다.
+     * 정렬: 총 근무일수 내림차순 → 거래처명 오름차순, 거래처 미연결 행은 맨 뒤.
+     */
+    fun getAccountSummary(
+        scope: DataScope,
+        employeeCode: String,
+        fromYearMonth: String,
+        toYearMonth: String,
+    ): WorkHistoryEmployeeAccountResponse {
+        val fromYm = parseYearMonth(fromYearMonth, "fromYearMonth")
+        val toYm = parseYearMonth(toYearMonth, "toYearMonth")
+        validateRange(fromYm, toYm)
+
+        val trimmedCode = employeeCode.trim()
+        if (trimmedCode.isEmpty()) {
+            throw InvalidParameterException("employeeCode 는 필수입니다")
+        }
+
+        val branchCodes = if (scope.isAllBranches) emptyList() else scope.branchCodes
+        val schedules = if (!scope.isAllBranches && branchCodes.isEmpty()) {
+            emptyList()
+        } else {
+            teamMemberScheduleRepository.findWorkHistoryForPeriodByEmployee(
+                employeeCode = trimmedCode,
+                from = fromYm.atDay(1),
+                to = toYm.atEndOfMonth(),
+                branchCodes = branchCodes,
+            )
+        }
+
+        val items = schedules
+            .groupBy { it.account?.id }
+            .map { (_, rows) ->
+                val acc = rows.first().account
+                val s = stat(rows)
+                WorkHistoryAccountStat(
+                    accountName = acc?.name,
+                    accountExternalKey = acc?.externalKey,
+                    totalWorkingDays = s.totalWorkingDays,
+                    displayDays = s.displayDays,
+                    eventDays = s.eventDays,
+                    workDays = s.workDays,
+                    annualLeaveDays = s.annualLeaveDays,
+                    altHolidayDays = s.altHolidayDays,
+                )
+            }
+            .sortedWith(
+                compareBy<WorkHistoryAccountStat> { it.accountName == null && it.accountExternalKey == null }
+                    .thenByDescending { it.totalWorkingDays }
+                    .thenBy { it.accountName ?: "" },
+            )
+
+        return WorkHistoryEmployeeAccountResponse(
+            fromYearMonth = fromYm.format(YEAR_MONTH_FORMAT),
+            toYearMonth = toYm.format(YEAR_MONTH_FORMAT),
+            employeeCode = trimmedCode,
+            employeeName = schedules.firstOrNull()?.employee?.name,
             items = items,
             totalCount = items.size,
         )

@@ -60,3 +60,40 @@ data class WorkHistoryPeriodSummaryResponse(
     val items: List<WorkHistoryPeriodSummaryItem>,
     val totalCount: Int,
 )
+
+/**
+ * 기간별 근무내역(개인) — 특정 여사원 1명의 거래처별 근무 집계 행.
+ *
+ * 좌측 패널에서 여사원을 선택하면 선택한 기간(시작년월~종료년월) 내 근무 행을
+ * 거래처(account) 단위로 그룹핑해 제공한다. 거래처 미연결 행(연차/대휴 등)은
+ * accountName=null 1행으로 묶는다.
+ */
+data class WorkHistoryAccountStat(
+    /** 거래처명 (Account.name). 거래처 미연결 행 묶음이면 null. */
+    val accountName: String?,
+    /** 거래처 코드 (Account.externalKey). 거래처 미연결이면 null. */
+    val accountExternalKey: String?,
+    /** 총 근무일수 (출근 등록된 일정 행 수). */
+    val totalWorkingDays: Int,
+    /** 근무유형(WorkingCategory1)별 일수 — 진열. */
+    val displayDays: Int,
+    /** 근무유형(WorkingCategory1)별 일수 — 행사. */
+    val eventDays: Int,
+    /** 구분(WorkingType)별 일수 — 근무. */
+    val workDays: Int,
+    /** 구분(WorkingType)별 일수 — 연차. */
+    val annualLeaveDays: Int,
+    /** 구분(WorkingType)별 일수 — 대휴. */
+    val altHolidayDays: Int,
+)
+
+data class WorkHistoryEmployeeAccountResponse(
+    val fromYearMonth: String,
+    val toYearMonth: String,
+    /** 조회 대상 여사원 사번. */
+    val employeeCode: String,
+    /** 조회 대상 여사원 이름 (기간 내 근무 행이 없으면 null). */
+    val employeeName: String?,
+    val items: List<WorkHistoryAccountStat>,
+    val totalCount: Int,
+)

@@ -249,6 +249,129 @@ class WorkHistoryPeriodSummaryServiceTest {
     }
 
     @Nested
+    @DisplayName("거래처별 집계 (getAccountSummary)")
+    inner class AccountSummary {
+
+        private fun namedAccount(id: Long, name: String): Account {
+            val acc = Account(id = id, externalKey = "B$id")
+            acc.name = name
+            return acc
+        }
+
+        @Test
+        @DisplayName("같은 거래처의 여러 일정을 1행으로 합산한다")
+        fun aggregatesByAccount() {
+            val emp = employee()
+            val martA = namedAccount(1, "이마트 원주점")
+            val martB = namedAccount(2, "홈플러스 원주점")
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), any())
+            } returns listOf(
+                schedule(emp, martA, LocalDate.of(2026, 6, 1), WorkingType.WORK, WorkingCategory1.DISPLAY),
+                schedule(emp, martA, LocalDate.of(2026, 6, 2), WorkingType.WORK, WorkingCategory1.EVENT),
+                schedule(emp, martB, LocalDate.of(2026, 6, 3), WorkingType.WORK, WorkingCategory1.DISPLAY),
+            )
+
+            val res = service.getAccountSummary(allScope, "20230016", "2026-06", "2026-06")
+
+            assertThat(res.employeeCode).isEqualTo("20230016")
+            assertThat(res.employeeName).isEqualTo("홍길동")
+            assertThat(res.items).hasSize(2)
+            assertThat(res.totalCount).isEqualTo(2)
+            val itemA = res.items.first { it.accountName == "이마트 원주점" }
+            assertThat(itemA.totalWorkingDays).isEqualTo(2)
+            assertThat(itemA.displayDays).isEqualTo(1)
+            assertThat(itemA.eventDays).isEqualTo(1)
+            assertThat(itemA.workDays).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("거래처 미연결 행(연차 등)은 accountName=null 1행으로 묶어 맨 뒤에 둔다")
+        fun groupsNullAccountLast() {
+            val emp = employee()
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), any())
+            } returns listOf(
+                schedule(emp, null, LocalDate.of(2026, 6, 1), WorkingType.ANNUAL_LEAVE, null),
+                schedule(emp, null, LocalDate.of(2026, 6, 2), WorkingType.ALT_HOLIDAY, null),
+                schedule(emp, namedAccount(1, "이마트 원주점"), LocalDate.of(2026, 6, 3)),
+            )
+
+            val res = service.getAccountSummary(allScope, "20230016", "2026-06", "2026-06")
+
+            assertThat(res.items).hasSize(2)
+            assertThat(res.items.last().accountName).isNull()
+            assertThat(res.items.last().totalWorkingDays).isEqualTo(2)
+            assertThat(res.items.last().annualLeaveDays).isEqualTo(1)
+            assertThat(res.items.last().altHolidayDays).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("총 근무일수 내림차순 → 거래처명 오름차순으로 정렬한다")
+        fun sortsByWorkingDaysDescThenName() {
+            val emp = employee()
+            val one = namedAccount(1, "하나로마트")
+            val two = namedAccount(2, "농협마트")
+            val three = namedAccount(3, "이마트")
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), any())
+            } returns listOf(
+                schedule(emp, one, LocalDate.of(2026, 6, 1)),
+                schedule(emp, two, LocalDate.of(2026, 6, 2)),
+                schedule(emp, three, LocalDate.of(2026, 6, 3)),
+                schedule(emp, three, LocalDate.of(2026, 6, 4)),
+            )
+
+            val res = service.getAccountSummary(allScope, "20230016", "2026-06", "2026-06")
+
+            assertThat(res.items.map { it.accountName })
+                .containsExactly("이마트", "농협마트", "하나로마트")
+        }
+
+        @Test
+        @DisplayName("사번 공백을 trim 해 repository 에 전달한다")
+        fun trimsEmployeeCode() {
+            val codeSlot = slot<String>()
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(capture(codeSlot), any(), any(), any())
+            } returns emptyList()
+
+            val res = service.getAccountSummary(allScope, "  20230016  ", "2026-05", "2026-06")
+
+            assertThat(codeSlot.captured).isEqualTo("20230016")
+            assertThat(res.items).isEmpty()
+            assertThat(res.employeeName).isNull()
+        }
+
+        @Test
+        @DisplayName("사번이 공백뿐이면 InvalidParameterException")
+        fun blankEmployeeCodeRejected() {
+            assertThatThrownBy { service.getAccountSummary(allScope, "   ", "2026-05", "2026-06") }
+                .isInstanceOf(InvalidParameterException::class.java)
+        }
+
+        @Test
+        @DisplayName("지점 권한이면 권한 스코프 지점을 repository 에 전달한다")
+        fun passesBranchScope() {
+            val codesSlot = slot<List<String>>()
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), capture(codesSlot))
+            } returns emptyList()
+
+            service.getAccountSummary(branchScope("A001", "A002"), "20230016", "2026-05", "2026-05")
+
+            assertThat(codesSlot.captured).containsExactlyInAnyOrder("A001", "A002")
+        }
+
+        @Test
+        @DisplayName("기간 검증은 getSummary 와 동일 — 6개월 초과 시 InvalidParameterException")
+        fun validatesRange() {
+            assertThatThrownBy { service.getAccountSummary(allScope, "20230016", "2026-01", "2026-07") }
+                .isInstanceOf(InvalidParameterException::class.java)
+        }
+    }
+
+    @Nested
     @DisplayName("엑셀 export")
     inner class Export {
 

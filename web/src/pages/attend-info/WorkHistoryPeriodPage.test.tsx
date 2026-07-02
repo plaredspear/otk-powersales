@@ -11,14 +11,18 @@ vi.mock('@/api/attendInfo', async () => {
   return {
     ...actual,
     fetchAttendInfoBranches: vi.fn().mockResolvedValue([]),
+    fetchAttendInfoMembers: vi.fn().mockResolvedValue([]),
     fetchWorkHistoryPeriodSummary: vi.fn(),
     fetchWorkHistoryPeriodSummaryExport: vi.fn().mockResolvedValue(undefined),
+    fetchWorkHistoryEmployeeAccounts: vi.fn(),
   };
 });
 
 const mockedSummary = vi.mocked(api.fetchWorkHistoryPeriodSummary);
 const mockedExport = vi.mocked(api.fetchWorkHistoryPeriodSummaryExport);
 const mockedBranches = vi.mocked(api.fetchAttendInfoBranches);
+const mockedMembers = vi.mocked(api.fetchAttendInfoMembers);
+const mockedAccounts = vi.mocked(api.fetchWorkHistoryEmployeeAccounts);
 
 function renderPage() {
   const client = new QueryClient({
@@ -36,6 +40,7 @@ describe('WorkHistoryPeriodPage', () => {
     vi.clearAllMocks();
     // 기본값: 지점 없음(빈 배열) — 자동 조회 미트리거. 단일/다중 지점 케이스는 테스트별 재설정.
     mockedBranches.mockResolvedValue([]);
+    mockedMembers.mockResolvedValue([]);
     mockedExport.mockResolvedValue(undefined);
     useAuthStore.setState({
       user: {
@@ -258,6 +263,95 @@ describe('WorkHistoryPeriodPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /조회/ }));
     await waitFor(() => {
       expect(screen.getByText('조회 결과가 없습니다.')).toBeInTheDocument();
+    });
+  });
+
+  describe('여사원 선택 → 거래처별 집계', () => {
+    const member = {
+      employeeId: 10,
+      employeeCode: '20230016',
+      name: '홍길동',
+      orgName: '원주1지점',
+      jikwee: 'OSPM',
+      status: '재직',
+    };
+
+    beforeEach(() => {
+      mockedBranches.mockResolvedValue([{ branchCode: 'B001', branchName: '원주1지점' }]);
+      mockedMembers.mockResolvedValue([member]);
+      mockedSummary.mockResolvedValue({
+        fromYearMonth: '2026-06',
+        toYearMonth: '2026-06',
+        totalCount: 0,
+        items: [],
+      });
+      mockedAccounts.mockResolvedValue({
+        fromYearMonth: '2026-06',
+        toYearMonth: '2026-06',
+        employeeCode: '20230016',
+        employeeName: '홍길동',
+        totalCount: 2,
+        items: [
+          {
+            accountName: '이마트 원주점',
+            accountExternalKey: 'A0001',
+            totalWorkingDays: 3,
+            displayDays: 2,
+            eventDays: 1,
+            workDays: 3,
+            annualLeaveDays: 0,
+            altHolidayDays: 0,
+          },
+          {
+            accountName: null,
+            accountExternalKey: null,
+            totalWorkingDays: 1,
+            displayDays: 0,
+            eventDays: 0,
+            workDays: 0,
+            annualLeaveDays: 1,
+            altHolidayDays: 0,
+          },
+        ],
+      });
+    });
+
+    it('좌측 패널에 여사원 목록이 렌더된다', async () => {
+      renderPage();
+      expect(await screen.findByText('홍길동(20230016)')).toBeInTheDocument();
+    });
+
+    it('여사원 클릭 시 선택 기간의 거래처별 집계가 표시된다', async () => {
+      renderPage();
+      fireEvent.click(await screen.findByText('홍길동(20230016)'));
+      await waitFor(() => {
+        expect(screen.getByText('이마트 원주점')).toBeInTheDocument();
+        expect(screen.getByText('(거래처 미지정)')).toBeInTheDocument();
+        expect(screen.getByText('총 2개 거래처')).toBeInTheDocument();
+      });
+      // 화면의 시작/종료 년월 입력값이 그대로 전달된다 (사번 포함).
+      expect(mockedAccounts.mock.calls[0][0]).toMatchObject({ employeeCode: '20230016' });
+    });
+
+    it('전체 목록으로 버튼 클릭 시 전체 집계 목록으로 복귀한다', async () => {
+      renderPage();
+      fireEvent.click(await screen.findByText('홍길동(20230016)'));
+      const backBtn = await screen.findByRole('button', { name: /전체 목록으로/ });
+      fireEvent.click(backBtn);
+      await waitFor(() => {
+        expect(screen.queryByText('총 2개 거래처')).not.toBeInTheDocument();
+      });
+    });
+
+    it('선택된 여사원을 다시 클릭하면 선택이 해제된다', async () => {
+      renderPage();
+      const memberItem = await screen.findByText('홍길동(20230016)');
+      fireEvent.click(memberItem);
+      await screen.findByText('총 2개 거래처');
+      fireEvent.click(memberItem);
+      await waitFor(() => {
+        expect(screen.queryByText('총 2개 거래처')).not.toBeInTheDocument();
+      });
     });
   });
 

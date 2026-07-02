@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInf
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoDetailResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.AdminAttendInfoListItemResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryEmployeeAccountResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryPeriodSummaryResponse
 import com.otoki.powersales.domain.activity.schedule.service.AdminAttendInfoService
 import com.otoki.powersales.domain.activity.schedule.service.WorkHistoryPeriodSummaryService
@@ -63,6 +64,29 @@ class AdminAttendInfoController(
             toYearMonth = toYearMonth,
             costCenterCodes = costCenterCodes,
             keyword = keyword,
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 기간별 근무내역(개인) — 특정 여사원 1명의 기간 내 거래처별 근무 집계.
+     *
+     * 좌측 패널에서 여사원을 선택하면 선택 기간의 근무 행을 거래처 단위로 그룹핑해 반환.
+     * 지점 스코프 밖 여사원의 사번을 지정하면 빈 결과.
+     */
+    @GetMapping("/period-summary/accounts")
+    @RequiresSfPermission(entity = "attend_info", operation = SfPermissionOperation.READ)
+    fun getPeriodAccountSummary(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam employeeCode: String,
+        @RequestParam fromYearMonth: String,
+        @RequestParam toYearMonth: String,
+    ): ResponseEntity<ApiResponse<WorkHistoryEmployeeAccountResponse>> {
+        val response = workHistoryPeriodSummaryService.getAccountSummary(
+            scope = scope,
+            employeeCode = employeeCode,
+            fromYearMonth = fromYearMonth,
+            toYearMonth = toYearMonth,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }

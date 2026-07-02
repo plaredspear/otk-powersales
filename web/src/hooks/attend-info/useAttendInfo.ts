@@ -4,6 +4,7 @@ import {
   deleteAttendInfo,
   fetchAttendInfoBranches,
   fetchAttendInfoMembers,
+  fetchWorkHistoryEmployeeAccounts,
   fetchWorkHistoryPeriodSummary,
   fetchWorkHistoryPeriodSummaryExport,
   getAttendInfo,
@@ -11,6 +12,7 @@ import {
   updateAttendInfo,
   type CreateAttendInfoRequest,
   type FetchAttendInfoParams,
+  type FetchWorkHistoryEmployeeAccountParams,
   type FetchWorkHistoryPeriodSummaryParams,
   type UpdateAttendInfoRequest,
 } from '@/api/attendInfo';
@@ -44,11 +46,13 @@ export function useAttendInfoBranches() {
  * 근무기간 조회 좌측 여사원 선택 목록 (퇴사/휴직 포함, attend_info 권한 가드).
  *
  * `branchCode` 지정 시 해당 지점 여사원 조회 (다중/전사 권한자). 미지정 시 본인 지점 스코프.
+ * `options.enabled=false` 로 조회 지점 확정 전 불필요한 fetch 를 억제할 수 있다 (기본 활성).
  */
-export function useAttendInfoMembers(branchCode?: string) {
+export function useAttendInfoMembers(branchCode?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'members', branchCode ?? ''],
     queryFn: () => fetchAttendInfoMembers(branchCode),
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -59,6 +63,18 @@ export function useWorkHistoryPeriodSummary(params: FetchWorkHistoryPeriodSummar
   return useQuery({
     queryKey: [...QUERY_KEY, 'period-summary', params],
     queryFn: () => fetchWorkHistoryPeriodSummary(params!),
+    enabled: params != null,
+  });
+}
+
+/**
+ * 기간별 근무내역(개인) — 여사원 1명의 거래처별 집계 조회.
+ * params 가 null 이면 비활성 (여사원 미선택 또는 기간 입력 오류).
+ */
+export function useWorkHistoryEmployeeAccounts(params: FetchWorkHistoryEmployeeAccountParams | null) {
+  return useQuery({
+    queryKey: [...QUERY_KEY, 'period-summary-accounts', params],
+    queryFn: () => fetchWorkHistoryEmployeeAccounts(params!),
     enabled: params != null,
   });
 }
