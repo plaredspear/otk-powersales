@@ -11784,6 +11784,9 @@
       },
       "MonthlySalesDashboardListItem" : {
         "properties" : {
+          "abcTypeLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "accountId" : {
             "format" : "int64",
             "type" : "integer"
@@ -11814,6 +11817,9 @@
           },
           "displayHeadcount" : {
             "type" : "number"
+          },
+          "distributionChannelLabel" : {
+            "type" : [ "string", "null" ]
           },
           "eventHeadcount" : {
             "type" : "number"
@@ -17132,6 +17138,9 @@
           },
           "clockIn" : {
             "type" : "boolean"
+          },
+          "commuteTime" : {
+            "type" : [ "string", "null" ]
           },
           "employeeCode" : {
             "type" : "string"
@@ -26551,6 +26560,27 @@
           }
         }, {
           "in" : "query",
+          "name" : "distributionKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypeKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "targetRegistration",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -26653,6 +26683,27 @@
           }
         }, {
           "in" : "query",
+          "name" : "distributionKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypeKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "targetRegistration",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "sort",
           "required" : false,
           "schema" : {
@@ -26721,6 +26772,27 @@
         }, {
           "in" : "query",
           "name" : "accountGroup",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "distributionKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypeKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "targetRegistration",
           "required" : false,
           "schema" : {
             "type" : "string"
