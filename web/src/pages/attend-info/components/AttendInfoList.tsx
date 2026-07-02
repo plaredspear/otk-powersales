@@ -4,14 +4,18 @@ import type { ColumnsType } from 'antd/es/table';
 import type { AttendInfoListItem } from '@/api/attendInfo';
 import ResizableTable from '@/components/common/ResizableTable';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 interface AttendInfoListProps {
   items: AttendInfoListItem[];
   loading: boolean;
   totalElements: number;
+  /** 0-indexed 현재 페이지. */
   page: number;
   pageSize: number;
-  onPageChange: (page: number, size: number) => void;
+  /** 0-indexed 페이지로 이동. */
+  onPageChange: (page: number) => void;
+  onSizeChange: (size: number) => void;
   onView: (item: AttendInfoListItem) => void;
   onDelete?: (item: AttendInfoListItem) => void;
 }
@@ -37,6 +41,7 @@ export default function AttendInfoList({
   page,
   pageSize,
   onPageChange,
+  onSizeChange,
   onView,
   onDelete,
 }: AttendInfoListProps) {
@@ -139,12 +144,13 @@ export default function AttendInfoList({
       loading={loading}
       dataSource={items}
       columns={columns}
+      locale={listTableLocale()}
       pagination={buildListPagination({
-        page: page - 1,
+        page,
         pageSize,
         total: totalElements,
-        onPageChange: (nextPage) => onPageChange(nextPage + 1, pageSize),
-        onSizeChange: (size) => onPageChange(1, size),
+        onPageChange,
+        onSizeChange,
       })}
     />
   );

@@ -3,6 +3,7 @@ import { Alert, Button, Space, Spin, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 import { usePermissionSetChangeLog } from '@/hooks/admin/usePermissionSetChangeLog';
 import type { PermissionSetChangeLogEntry } from '@/api/admin/permission';
 import PermissionSetChangeLogDiffModal from './PermissionSetChangeLogDiffModal';
@@ -83,6 +84,7 @@ export default function PermissionSetChangeLogTab({ permissionSetId }: Props) {
           total: data?.totalElements ?? 0,
           onChange: (p) => setPage(p - 1),
         }}
+        locale={listTableLocale()}
       />
       <PermissionSetChangeLogDiffModal
         open={!!diffTarget}

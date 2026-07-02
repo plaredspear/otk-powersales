@@ -31,9 +31,11 @@ import { fetchAccountsForProductLookup } from '@/api/account';
 import { fetchProducts } from '@/api/product';
 import type { ProductExpiration, CreateProductExpirationRequest, UpdateProductExpirationRequest } from '@/api/productExpiration';
 import { useAuthStore } from '@/stores/authStore';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { RangePicker } = DatePicker;
 
@@ -47,22 +49,24 @@ const STATUS_OPTIONS = [
 export default function ProductExpirationPage() {
   const user = useAuthStore((s) => s.user);
 
-  // Filter state
-  const [employeeKeyword, setEmployeeKeyword] = useState('');
-  const [accountKeyword, setAccountKeyword] = useState('');
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
-  const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
-  const [size, setSize] = useState(20);
-
-  // Applied filter (only updates on search click)
-  const [appliedFilter, setAppliedFilter] = useState({
-    employeeKeyword: '',
-    accountKeyword: '',
-    fromDate: '',
-    toDate: '',
-    status: '',
+  // 적용된 필터/page/size 를 URL query string 에 보관 — 새로고침/링크 공유 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilter, setFilters } = useListQueryParams({
+    defaultFilters: {
+      employeeKeyword: '',
+      accountKeyword: '',
+      fromDate: '',
+      toDate: '',
+      status: '',
+    },
   });
+
+  // 입력 위젯의 로컬 편집 버퍼 (URL 이 source of truth, 조회 클릭 시 URL 로 반영).
+  const [employeeKeyword, setEmployeeKeyword] = useState(() => filters.employeeKeyword);
+  const [accountKeyword, setAccountKeyword] = useState(() => filters.accountKeyword);
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(() =>
+    filters.fromDate && filters.toDate ? [dayjs(filters.fromDate), dayjs(filters.toDate)] : null,
+  );
+  const [status, setStatus] = useState(() => filters.status);
 
   // Modal state
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -71,13 +75,12 @@ export default function ProductExpirationPage() {
 
   // Queries
   const { data, isLoading, refetch, isFetching } = useProductExpirations({
-    ...appliedFilter,
-    fromDate: appliedFilter.fromDate || undefined,
-    toDate: appliedFilter.toDate || undefined,
-    status: appliedFilter.status || undefined,
-    employeeKeyword: appliedFilter.employeeKeyword || undefined,
-    accountKeyword: appliedFilter.accountKeyword || undefined,
-    page: page - 1,
+    fromDate: filters.fromDate || undefined,
+    toDate: filters.toDate || undefined,
+    status: filters.status || undefined,
+    employeeKeyword: filters.employeeKeyword || undefined,
+    accountKeyword: filters.accountKeyword || undefined,
+    page,
     size,
   });
   const { data: summary } = useProductExpirationSummary();
@@ -89,10 +92,9 @@ export default function ProductExpirationPage() {
   const batchDeleteMutation = useBatchDeleteProductExpiration();
 
   const handleSearch = () => {
-    setPage(1);
-    setAppliedFilter({
-      employeeKeyword: employeeKeyword,
-      accountKeyword: accountKeyword,
+    setFilters({
+      employeeKeyword,
+      accountKeyword,
       fromDate: dateRange ? dateRange[0].format('YYYY-MM-DD') : '',
       toDate: dateRange ? dateRange[1].format('YYYY-MM-DD') : '',
       status,
@@ -104,8 +106,7 @@ export default function ProductExpirationPage() {
     setAccountKeyword('');
     setDateRange(null);
     setStatus('');
-    setPage(1);
-    setAppliedFilter({
+    setFilters({
       employeeKeyword: '',
       accountKeyword: '',
       fromDate: '',
@@ -114,10 +115,10 @@ export default function ProductExpirationPage() {
     });
   };
 
+  // Summary 카드 클릭 = 조회 의도 → 버퍼 갱신 + 즉시 적용 (조회 버튼 대기 예외).
   const handleSummaryClick = (statusValue: string) => {
     setStatus(statusValue);
-    setPage(1);
-    setAppliedFilter((prev) => ({ ...prev, status: statusValue }));
+    setFilter('status', statusValue);
   };
 
   const handleDelete = (id: number) => {
@@ -342,19 +343,17 @@ export default function ProductExpirationPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         rowSelection={{
           selectedRowKeys,
           onChange: (keys) => setSelectedRowKeys(keys as number[]),
         }}
         pagination={buildListPagination({
-          page: page - 1,
+          page,
           pageSize: size,
           total: data?.totalElements ?? 0,
-          onPageChange: (nextPage) => setPage(nextPage + 1),
-          onSizeChange: (nextSize) => {
-            setSize(nextSize);
-            setPage(1);
-          },
+          onPageChange: setPage,
+          onSizeChange: setSize,
         })}
         scroll={{ x: 1200 }}
       />

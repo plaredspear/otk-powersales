@@ -6,10 +6,12 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useClaims } from '@/hooks/claims/useClaims';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type { ClaimListItem } from '@/api/claims';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination, PAGE_SIZE_OPTIONS } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 import ClaimCard from './components/ClaimCard';
 import { STATUS_TAG } from './claimDisplay';
 
@@ -23,64 +25,58 @@ const STATUS_OPTIONS = [
   { value: 'SEND_FAILED', label: '전송실패' },
 ];
 
-const PAGE_SIZE = 20;
+const DEFAULT_START_DATE = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
+const DEFAULT_END_DATE = dayjs().format('YYYY-MM-DD');
 
 export default function ClaimListPage() {
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(30, 'day'),
-    dayjs(),
-  ]);
-  const [status, setStatus] = useState<string>('');
-  const [employeeName, setEmployeeName] = useState('');
-  const [storeName, setStoreName] = useState('');
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(PAGE_SIZE);
-  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
-
-  // 검색 시 적용되는 파라미터 (검색 버튼 클릭 시 갱신)
-  const [searchParams, setSearchParams] = useState({
-    startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
-    endDate: dayjs().format('YYYY-MM-DD'),
-    status: undefined as string | undefined,
-    employeeName: undefined as string | undefined,
-    storeName: undefined as string | undefined,
-    page: 0,
-    size: PAGE_SIZE,
+  // page/필터/사이즈를 URL query string 에 보관 — 상세 진입 후 복귀/새로고침/링크 공유 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
+    defaultFilters: {
+      startDate: DEFAULT_START_DATE,
+      endDate: DEFAULT_END_DATE,
+      status: '',
+      employeeName: '',
+      storeName: '',
+    },
   });
 
-  const { data, isLoading, refetch, isFetching } = useClaims(searchParams);
+  // 입력 위젯은 편집 버퍼(로컬 state). URL filters 가 source of truth → 마운트 시 URL 값으로 초기화.
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => [
+    dayjs(filters.startDate),
+    dayjs(filters.endDate),
+  ]);
+  const [status, setStatus] = useState<string>(() => filters.status);
+  const [employeeName, setEmployeeName] = useState(() => filters.employeeName);
+  const [storeName, setStoreName] = useState(() => filters.storeName);
+  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+
+  const { data, isLoading, refetch, isFetching } = useClaims({
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    status: filters.status || undefined,
+    employeeName: filters.employeeName || undefined,
+    storeName: filters.storeName || undefined,
+    page,
+    size,
+  });
   const handleRowClick = useThrottleClick((claimId: number) => navigate(`/claims/${claimId}`));
 
   const handleSearch = () => {
-    setPage(0);
-    setSearchParams({
+    setFilters({
       startDate: dateRange[0].format('YYYY-MM-DD'),
       endDate: dateRange[1].format('YYYY-MM-DD'),
-      status: status || undefined,
-      employeeName: employeeName || undefined,
-      storeName: storeName || undefined,
-      page: 0,
-      size,
+      status,
+      employeeName,
+      storeName,
     });
-  };
-
-  const handlePageChange = (zeroIndexedPage: number) => {
-    setPage(zeroIndexedPage);
-    setSearchParams((prev) => ({ ...prev, page: zeroIndexedPage }));
-  };
-
-  const handleSizeChange = (nextSize: number) => {
-    setSize(nextSize);
-    setPage(0);
-    setSearchParams((prev) => ({ ...prev, page: 0, size: nextSize }));
   };
 
   const columns: ColumnsType<ClaimListItem> = [
     {
       title: 'No',
       width: 60,
-      render: (_v, _r, index) => searchParams.page * searchParams.size + index + 1,
+      render: (_v, _r, index) => page * size + index + 1,
     },
     {
       title: '사원명',
@@ -208,12 +204,14 @@ export default function ClaimListPage() {
           columns={columns}
           dataSource={data?.content}
           loading={isLoading}
+          locale={listTableLocale()}
           pagination={buildListPagination({
             page,
             pageSize: size,
             total: data?.totalElements ?? 0,
-            onPageChange: handlePageChange,
-            onSizeChange: handleSizeChange,
+            // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+            onPageChange: setPage,
+            onSizeChange: setSize,
           })}
           onRow={(record) => ({
             onClick: () => handleRowClick(record.claimId),
@@ -247,9 +245,9 @@ export default function ClaimListPage() {
               showTotal={(total) => `총 ${total}건`}
               onChange={(nextPage, nextSize) => {
                 if (nextSize !== size) {
-                  handleSizeChange(nextSize);
+                  setSize(nextSize);
                 } else {
-                  handlePageChange(nextPage - 1);
+                  setPage(nextPage - 1);
                 }
               }}
             />

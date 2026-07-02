@@ -12,6 +12,7 @@ import {
 import type { HolidayMaster } from '@/api/holidayMaster';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const HOLIDAY_TYPES = ['법정공휴일', '대체공휴일', '임시공휴일'];
 
@@ -156,6 +157,7 @@ export default function HolidayMasterListPage() {
         dataSource={holidays}
         loading={isLoading}
         pagination={false}
+        locale={listTableLocale()}
       />
 
       <Modal

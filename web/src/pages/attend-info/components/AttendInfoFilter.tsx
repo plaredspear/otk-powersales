@@ -7,6 +7,13 @@ const { RangePicker } = DatePicker;
 
 interface AttendInfoFilterProps {
   onChange: (filter: FetchAttendInfoParams) => void;
+  /** URL 복원용 초기값 (마운트 시 1회 적용). */
+  initialEmployeeCode?: string;
+  initialKeyword?: string;
+  initialAttendType?: string;
+  initialStatus?: 'N' | 'Y' | '';
+  initialDateFrom?: string;
+  initialDateTo?: string;
 }
 
 interface FilterFormValues {
@@ -17,9 +24,22 @@ interface FilterFormValues {
   keyword?: string;
 }
 
-export default function AttendInfoFilter({ onChange }: AttendInfoFilterProps) {
+export default function AttendInfoFilter({
+  onChange,
+  initialEmployeeCode,
+  initialKeyword,
+  initialAttendType,
+  initialStatus,
+  initialDateFrom,
+  initialDateTo,
+}: AttendInfoFilterProps) {
   const [form] = Form.useForm<FilterFormValues>();
-  const [initialRange] = useState<[Dayjs, Dayjs]>([dayjs().subtract(30, 'day'), dayjs()]);
+  // URL 의 from/to 가 있으면 그 값으로, 없으면 기본 (최근 30일) 으로 복원.
+  const [initialRange] = useState<[Dayjs, Dayjs]>(() =>
+    initialDateFrom && initialDateTo
+      ? [dayjs(initialDateFrom), dayjs(initialDateTo)]
+      : [dayjs().subtract(30, 'day'), dayjs()],
+  );
 
   const submit = (values: FilterFormValues) => {
     const params: FetchAttendInfoParams = {
@@ -44,7 +64,13 @@ export default function AttendInfoFilter({ onChange }: AttendInfoFilterProps) {
     <Form
       form={form}
       layout="inline"
-      initialValues={{ status: '', range: initialRange }}
+      initialValues={{
+        employeeCode: initialEmployeeCode ?? '',
+        keyword: initialKeyword ?? '',
+        attendType: initialAttendType || undefined,
+        status: initialStatus ?? '',
+        range: initialRange,
+      }}
       onFinish={submit}
       style={{ marginBottom: 16 }}
     >

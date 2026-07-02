@@ -5,6 +5,8 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 import {
   useAppPackages,
   useDeleteAppPackage,
@@ -51,8 +53,9 @@ async function copyToClipboard(text: string): Promise<void> {
 
 function PlatformTable({ platform }: { platform: AppPlatform }) {
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(DEFAULT_SIZE);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const { data, isLoading, refetch, isFetching } = useAppPackages(platform, page, DEFAULT_SIZE);
+  const { data, isLoading, refetch, isFetching } = useAppPackages(platform, page, size);
   const isIos = platform === 'IOS';
   const { data: distributionUrls } = useDistributionUrls();
   const distributionUrl = isIos
@@ -303,12 +306,17 @@ function PlatformTable({ platform }: { platform: AppPlatform }) {
         loading={isLoading}
         columns={columns}
         dataSource={data?.content ?? []}
-        pagination={{
-          current: page + 1,
-          pageSize: DEFAULT_SIZE,
+        pagination={buildListPagination({
+          page,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          onChange: (p) => setPage(p - 1),
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
+        locale={listTableLocale()}
       />
       <AppPackageUploadModal
         open={uploadOpen}

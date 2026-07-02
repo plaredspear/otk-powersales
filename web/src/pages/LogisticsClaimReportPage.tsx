@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, DatePicker, Space, Spin, Typography, message } from 'antd';
+import { Alert, Button, DatePicker, Space, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
@@ -11,6 +11,7 @@ import {
 } from '@/api/logisticsClaimReport';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 
@@ -161,26 +162,16 @@ export default function LogisticsClaimReportPage({ period }: Props) {
         />
       )}
 
-      {query.isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : (
-        <ResizableTable
-          rowKey={(r, idx) => `${r.claimDate ?? ''}-${r.employeeCode ?? ''}-${idx}`}
-          size="small"
-          columns={columns}
-          dataSource={query.data?.items ?? []}
-          pagination={false}
-          scroll={{ x: 'max-content' }}
-          locale={{
-            emptyText:
-              isCustom && customRange == null
-                ? '조회 기간을 선택하고 조회 버튼을 눌러주세요'
-                : '조회 결과가 없습니다',
-          }}
-        />
-      )}
+      <ResizableTable
+        rowKey={(r, idx) => `${r.claimDate ?? ''}-${r.employeeCode ?? ''}-${idx}`}
+        size="small"
+        columns={columns}
+        dataSource={query.data?.items ?? []}
+        loading={query.isLoading}
+        pagination={false}
+        scroll={{ x: 'max-content' }}
+        locale={listTableLocale({ searched: !isCustom || customRange != null })}
+      />
     </div>
   );
 }

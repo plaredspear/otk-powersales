@@ -1,6 +1,7 @@
 import { Button, Modal, Space, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   evictAllCaches,
@@ -155,7 +156,7 @@ export default function CacheManagementPage() {
         columns={columns}
         loading={isLoading}
         pagination={false}
-        size="middle"
+        locale={listTableLocale()}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Card, DatePicker, Divider, Space, Spin, Typography, message } from 'antd';
+import { Alert, Button, Card, DatePicker, Divider, Space, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
@@ -11,6 +11,7 @@ import {
 import PromotionActualDonutChart from '@/components/charts/PromotionActualDonutChart';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 
@@ -121,11 +122,7 @@ export default function PromotionTargetActualReportPage() {
         />
       )}
 
-      {query.isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : query.data && query.data.groups.length > 0 ? (
+      {query.data && query.data.groups.length > 0 ? (
         <>
           <Card size="small" style={{ marginBottom: 16 }}>
             <PromotionActualDonutChart data={query.data.chart} />
@@ -164,12 +161,10 @@ export default function PromotionTargetActualReportPage() {
         <ResizableTable
           columns={columns}
           dataSource={[]}
+          loading={query.isLoading}
           pagination={false}
           scroll={{ x: 'max-content' }}
-          locale={{
-            emptyText:
-              range == null ? '조회 기간을 선택하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
-          }}
+          locale={listTableLocale({ searched: range != null })}
         />
       )}
     </div>

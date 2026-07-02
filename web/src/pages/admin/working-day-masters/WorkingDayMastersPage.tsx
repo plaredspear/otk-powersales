@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 import { useWorkingDayMasters } from '@/hooks/workingDayMaster/useWorkingDayMasters';
 import type { WorkingDayMasterListItem } from '@/api/workingDayMaster';
 
@@ -141,6 +142,7 @@ export default function WorkingDayMastersPage() {
           columns={columns}
           dataSource={data?.content ?? []}
           pagination={false}
+          locale={listTableLocale()}
         />
       )}
     </Card>

@@ -109,7 +109,7 @@ describe('PPTHistoryPage', () => {
     });
     renderPage();
     // scroll 테이블은 빈 상태 placeholder 를 본문 + sticky 로 중복 렌더하므로 getAllByText 로 검증
-    expect(screen.getAllByText(/No data|데이터 없음/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('조회 결과가 없습니다.').length).toBeGreaterThanOrEqual(1);
   });
 
   it('행 클릭 시 상세 모달 표시', () => {

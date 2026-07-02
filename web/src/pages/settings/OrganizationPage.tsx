@@ -5,6 +5,7 @@ import { useOrganizations } from '@/hooks/organization/useOrganizations';
 import type { Organization } from '@/api/organization';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const LEVEL_OPTIONS = [
   { value: '', label: '레벨 전체' },
@@ -91,7 +92,7 @@ export default function OrganizationPage() {
         columns={columns}
         dataSource={data}
         loading={isLoading}
-        locale={{ emptyText: '검색 결과가 없습니다' }}
+        locale={listTableLocale()}
         pagination={false}
         footer={() => `총 ${data?.length ?? 0}건`}
       />

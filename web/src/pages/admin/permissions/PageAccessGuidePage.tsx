@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   Alert,
   Card,
-  Empty,
   Input,
   Popover,
   Segmented,
@@ -21,6 +20,7 @@ import {
 import { menuRoute } from '@/config/menuConfig';
 import { buildRows, type PageAccessGuideRow, type RequirementKind } from './pageAccessGuide';
 import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -160,7 +160,7 @@ export default function PageAccessGuidePage() {
             columns={columns}
             pagination={{ pageSize: 50, showSizeChanger: true, pageSizeOptions: ['20', '50', '100'] }}
             size="small"
-            locale={{ emptyText: <Empty description="해당하는 페이지가 없습니다" /> }}
+            locale={listTableLocale({ emptyText: '해당하는 페이지가 없습니다' })}
           />
         </Space>
       </Card>

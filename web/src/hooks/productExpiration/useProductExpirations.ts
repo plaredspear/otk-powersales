@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchProductExpirations,
   fetchProductExpirationSummary,
@@ -17,6 +17,8 @@ export function useProductExpirations(params: FetchProductExpirationsParams) {
   return useQuery({
     queryKey: [...QUERY_KEY, params],
     queryFn: () => fetchProductExpirations(params),
+    // 페이지/필터 전환 중 직전 데이터 유지 — 테이블이 빈 상태로 깜빡이지 않게.
+    placeholderData: keepPreviousData,
   });
 }
 

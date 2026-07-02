@@ -8,6 +8,7 @@ import { useMonthlyIntegrationExport } from '@/hooks/schedules/useMonthlyIntegra
 import type { MonthlyIntegrationScheduleItem } from '@/api/monthlyIntegration';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -264,12 +265,12 @@ export default function MonthlyIntegrationSchedulePage() {
         />
       )}
 
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : isMobile ? (
-        queryParams == null ? null : data && data.items.length === 0 ? (
+      {isMobile ? (
+        isLoading ? (
+          <div style={{ textAlign: 'center', padding: 48 }}>
+            <Spin size="large" />
+          </div>
+        ) : queryParams == null ? null : data && data.items.length === 0 ? (
           <Empty description="조회 결과가 없습니다" />
         ) : data ? (
           <>
@@ -294,14 +295,12 @@ export default function MonthlyIntegrationSchedulePage() {
             rowKey={(record) => `${record.accountCode}-${record.employeeCode}`}
             columns={columns}
             dataSource={data?.items ?? []}
+            loading={isLoading}
             pagination={false}
             size="small"
             sticky
             tableLayout="fixed"
-            locale={{
-              emptyText:
-                queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
-            }}
+            locale={listTableLocale({ searched: queryParams != null })}
           />
         </>
       )}

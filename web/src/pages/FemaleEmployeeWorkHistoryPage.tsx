@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, DatePicker, Input, Space, Spin, Typography, message } from 'antd';
+import { Alert, Button, DatePicker, Input, Space, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -10,6 +10,7 @@ import {
 } from '@/api/femaleEmployeeWorkHistory';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 
@@ -131,24 +132,19 @@ export default function FemaleEmployeeWorkHistoryPage() {
         />
       )}
 
-      {query.isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : (
-        <ResizableTable
-          rowKey={(r, idx) => `${r.employeeCode}-${r.workingDate ?? ''}-${idx}`}
-          size="small"
-          columns={columns}
-          dataSource={query.data?.items ?? []}
-          pagination={false}
-          scroll={{ x: 'max-content' }}
-          locale={{
-            emptyText:
-              queryParams == null ? '사번과 년·월을 입력하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
-          }}
-        />
-      )}
+      <ResizableTable
+        rowKey={(r, idx) => `${r.employeeCode}-${r.workingDate ?? ''}-${idx}`}
+        size="small"
+        columns={columns}
+        dataSource={query.data?.items ?? []}
+        loading={query.isLoading}
+        pagination={false}
+        scroll={{ x: 'max-content' }}
+        locale={listTableLocale({
+          searched: queryParams != null,
+          beforeSearchText: '사번과 년·월을 입력한 후 조회 버튼을 눌러주세요.',
+        })}
+      />
     </div>
   );
 }

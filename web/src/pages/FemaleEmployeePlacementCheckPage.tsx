@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Spin, Typography, message } from 'antd';
+import { Alert, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -10,6 +10,7 @@ import {
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import RefreshButton from '@/components/common/RefreshButton';
 import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 
@@ -121,24 +122,16 @@ export default function FemaleEmployeePlacementCheckPage() {
         />
       )}
 
-      {query.isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : (
-        <ResizableTable
-          rowKey={(r, idx) => `${r.employeeCode}-${r.accountSapCode ?? ''}-${r.workingDate ?? ''}-${idx}`}
-          size="small"
-          columns={columns}
-          dataSource={query.data?.items ?? []}
-          pagination={false}
-          scroll={{ x: 'max-content', y: 'calc(100vh - 320px)' }}
-          locale={{
-            emptyText:
-              queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
-          }}
-        />
-      )}
+      <ResizableTable
+        rowKey={(r, idx) => `${r.employeeCode}-${r.accountSapCode ?? ''}-${r.workingDate ?? ''}-${idx}`}
+        size="small"
+        columns={columns}
+        dataSource={query.data?.items ?? []}
+        loading={query.isLoading}
+        pagination={false}
+        scroll={{ x: 'max-content', y: 'calc(100vh - 320px)' }}
+        locale={listTableLocale({ searched: queryParams != null })}
+      />
     </div>
   );
 }

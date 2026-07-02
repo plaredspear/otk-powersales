@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Alert, Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useAccounts } from '@/hooks/account/useAccounts';
 import { useAccountBranches } from '@/hooks/account/useAccountBranches';
 import { usePermission } from '@/hooks/usePermission';
@@ -36,40 +38,25 @@ const STATUS_OPTIONS = [
   { value: '폐업', label: '비활성' },
 ];
 
-const PAGE_SIZE = 20;
-
 export default function AccountPage() {
-  // 상세 → "목록으로" 복귀 시 query string 으로 전달된 직전 검색 조건을 초기 state 로 복원.
-  const [searchParams] = useSearchParams();
-  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
+  const location = useLocation();
+  // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
+    defaultFilters: { abcType: '', branchCode: '', accountStatusName: '', keyword: '' },
+  });
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
   const [abcTypeInput, setAbcTypeInput] = useState<string | undefined>(
-    () => searchParams.get('abcType') ?? undefined,
+    () => filters.abcType || undefined,
   );
   const [branchCodeInput, setBranchCodeInput] = useState<string | undefined>(
-    () => searchParams.get('branchCode') ?? undefined,
+    () => filters.branchCode || undefined,
   );
   const [accountStatusNameInput, setAccountStatusNameInput] = useState<string | undefined>(
-    () => searchParams.get('accountStatusName') ?? undefined,
+    () => filters.accountStatusName || undefined,
   );
   const [keywordInput, setKeywordInput] = useState<string | undefined>(
-    () => searchParams.get('keyword') ?? undefined,
+    () => filters.keyword || undefined,
   );
-  const [applied, setApplied] = useState<{
-    abcType?: string;
-    branchCode?: string;
-    accountStatusName?: string;
-    keyword?: string;
-  }>(() => ({
-    abcType: searchParams.get('abcType') ?? undefined,
-    branchCode: searchParams.get('branchCode') ?? undefined,
-    accountStatusName: searchParams.get('accountStatusName') ?? undefined,
-    keyword: searchParams.get('keyword') ?? undefined,
-  }));
-  const [page, setPage] = useState(() => {
-    const p = Number(searchParams.get('page'));
-    return Number.isFinite(p) && p > 0 ? p : 0;
-  });
-  const [size, setSize] = useState(PAGE_SIZE);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const navigate = useNavigate();
   const { data: branches } = useAccountBranches();
@@ -84,36 +71,25 @@ export default function AccountPage() {
   const showActionsColumn = canDeleteAccount;
 
   // 상세 페이지에서 "목록으로" 복귀 시 직전 검색 조건(applied 기준)을 복원하기 위한 query string.
-  const listSearch = (() => {
-    const sp = new URLSearchParams();
-    if (applied.keyword) sp.set('keyword', applied.keyword);
-    if (applied.abcType) sp.set('abcType', applied.abcType);
-    if (applied.branchCode) sp.set('branchCode', applied.branchCode);
-    if (applied.accountStatusName) sp.set('accountStatusName', applied.accountStatusName);
-    if (page > 0) sp.set('page', String(page));
-    const qs = sp.toString();
-    return qs ? `?${qs}` : '';
-  })();
-
+  // URL 에는 applied 필터/page/size 만 기록되므로 현재 query string 을 그대로 전달한다.
   const goToDetail = (id: number) => {
-    navigate(`/account/${id}`, { state: { listSearch } });
+    navigate(`/account/${id}`, { state: { listSearch: location.search } });
   };
 
   const handleSearch = () => {
-    setPage(0);
-    setApplied({
-      abcType: abcTypeInput || undefined,
-      branchCode: branchCodeInput || undefined,
-      accountStatusName: accountStatusNameInput || undefined,
-      keyword: keywordInput || undefined,
+    setFilters({
+      abcType: abcTypeInput ?? '',
+      branchCode: branchCodeInput ?? '',
+      accountStatusName: accountStatusNameInput ?? '',
+      keyword: keywordInput ?? '',
     });
   };
 
   const { data, isLoading, isError, error, refetch, isFetching } = useAccounts({
-    keyword: applied.keyword,
-    abcType: applied.abcType,
-    branchCode: applied.branchCode,
-    accountStatusName: applied.accountStatusName,
+    keyword: filters.keyword || undefined,
+    abcType: filters.abcType || undefined,
+    branchCode: filters.branchCode || undefined,
+    accountStatusName: filters.accountStatusName || undefined,
     page,
     size,
   });
@@ -242,16 +218,14 @@ export default function AccountPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        locale={{ emptyText: '검색 결과가 없습니다' }}
+        locale={listTableLocale()}
         pagination={buildListPagination({
           page: data?.page ?? page,
           pageSize: size,
           total: data?.totalElements ?? 0,
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
           onPageChange: setPage,
-          onSizeChange: (nextSize) => {
-            setSize(nextSize);
-            setPage(0);
-          },
+          onSizeChange: setSize,
         })}
       />
 

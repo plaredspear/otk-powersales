@@ -58,7 +58,7 @@ describe('WorkHistoryPeriodPage', () => {
     renderPage();
     expect(screen.getByText('시작 년월:')).toBeInTheDocument();
     expect(screen.getByText('종료 년월:')).toBeInTheDocument();
-    expect(screen.getByText('조회 조건을 설정하고 조회 버튼을 눌러주세요')).toBeInTheDocument();
+    expect(screen.getByText('조회 조건을 설정한 후 조회 버튼을 눌러주세요.')).toBeInTheDocument();
     expect(mockedSummary).not.toHaveBeenCalled();
   });
 
@@ -85,7 +85,7 @@ describe('WorkHistoryPeriodPage', () => {
     ]);
     renderPage();
     // 지점 목록 로드 후에도 자동 조회가 트리거되지 않음을 확인.
-    await screen.findByText('조회 조건을 설정하고 조회 버튼을 눌러주세요');
+    await screen.findByText('조회 조건을 설정한 후 조회 버튼을 눌러주세요.');
     expect(mockedSummary).not.toHaveBeenCalled();
   });
 
@@ -257,7 +257,7 @@ describe('WorkHistoryPeriodPage', () => {
     renderPage();
     fireEvent.click(screen.getByRole('button', { name: /조회/ }));
     await waitFor(() => {
-      expect(screen.getByText('조회 결과가 없습니다')).toBeInTheDocument();
+      expect(screen.getByText('조회 결과가 없습니다.')).toBeInTheDocument();
     });
   });
 

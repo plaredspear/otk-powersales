@@ -11,6 +11,7 @@ import SelectedProductsCompareModal from '@/components/product/SelectedProductsC
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const STATUS_TAG: Record<string, string> = {
   판매중: 'green',
@@ -24,7 +25,6 @@ const STATUS_OPTIONS = [
   { value: '단종', label: '단종' },
 ];
 
-const PAGE_SIZE = 20;
 const INVENTORY_SEARCH_MAX = 50;
 
 // SF ShelfLifeFull__c formula 동등 — 유통기한 단위 한글 접미사 변환 (월→개월, 일자→일, 연도→년)
@@ -47,8 +47,8 @@ export default function ProductPage() {
   // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
   const goToDetail = (code: string) =>
     navigate(`/product/${encodeURIComponent(code)}`, { state: { listSearch: location.search } });
-  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
-  const { page, setPage, filters, setFilters } = useListQueryParams({
+  // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: { keyword: '', category1: '', category2: '', category3: '', productStatus: '' },
   });
   const { keyword, category1, category2, category3, productStatus } = filters;
@@ -58,7 +58,6 @@ export default function ProductPage() {
   const [category2Input, setCategory2Input] = useState(category2);
   const [category3Input, setCategory3Input] = useState(category3);
   const [productStatusInput, setProductStatusInput] = useState(productStatus);
-  const [size, setSize] = useState(PAGE_SIZE);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [inventoryModalOpen, setInventoryModalOpen] = useState(false);
   const [compareModalOpen, setCompareModalOpen] = useState(false);
@@ -361,7 +360,7 @@ export default function ProductPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
-        locale={{ emptyText: '검색 결과가 없습니다' }}
+        locale={listTableLocale()}
         rowSelection={{
           selectedRowKeys,
           onChange: setSelectedRowKeys,
@@ -371,11 +370,9 @@ export default function ProductPage() {
           page,
           pageSize: size,
           total: data?.totalElements ?? 0,
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
           onPageChange: setPage,
-          onSizeChange: (nextSize) => {
-            setSize(nextSize);
-            setPage(0);
-          },
+          onSizeChange: setSize,
         })}
         scroll={{ x: 1500 }}
       />

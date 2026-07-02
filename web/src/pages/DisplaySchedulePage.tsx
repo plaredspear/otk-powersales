@@ -34,6 +34,7 @@ import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 import { useAuthStore } from '@/stores/authStore';
 
 /**
@@ -732,7 +733,7 @@ export default function DisplaySchedulePage() {
             placeholder={['시작일 from', '시작일 to']}
           />
           <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-            검색
+            조회
           </Button>
           <Button icon={<UndoOutlined />} onClick={handleReset}>
             초기화
@@ -789,6 +790,7 @@ export default function DisplaySchedulePage() {
           rowKey="id"
           size="small"
           loading={scheduleListQuery.isLoading}
+          locale={listTableLocale()}
           scroll={{ x: 1200 }}
           rowSelection={{
             selectedRowKeys,

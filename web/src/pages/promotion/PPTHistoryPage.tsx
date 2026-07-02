@@ -17,17 +17,16 @@ import PPTHistoryDetailModal from './components/PPTHistoryDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const TEAM_TYPE_FILTER_OPTIONS = [
   { value: '', label: '전체' },
   ...PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL,
 ];
 
-const DEFAULT_SIZE = 20;
-
 export default function PPTHistoryPage() {
-  // page/필터를 URL query string 에 보관 — 새로고침/뒤로가기/공유 시 직전 조건 복원.
-  const { page, setPage, filters, setFilters } = useListQueryParams({
+  // page/필터/사이즈를 URL query string 에 보관 — 새로고침/뒤로가기/공유 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
       employeeName: '',
       employeeCode: '',
@@ -35,10 +34,8 @@ export default function PPTHistoryPage() {
       branchCode: '',
       changedAtFrom: '',
       changedAtTo: '',
-      size: String(DEFAULT_SIZE),
     },
   });
-  const size = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트.
   //  - 다중 지점: Select 로 선택
@@ -103,7 +100,6 @@ export default function PPTHistoryPage() {
       branchCode: '',
       changedAtFrom: '',
       changedAtTo: '',
-      size: String(DEFAULT_SIZE),
     });
   };
 
@@ -258,20 +254,20 @@ export default function PPTHistoryPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         pagination={buildListPagination({
           page,
           pageSize: size,
           total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setFilters 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
           onPageChange: setPage,
-          onSizeChange: (nextSize) => setFilters({ size: String(nextSize) }),
+          onSizeChange: setSize,
         })}
         onRow={(record) => ({
           onClick: () => handleRowClick(record),
           style: { cursor: 'pointer' },
         })}
         scroll={{ x: 970 }}
-        size="middle"
       />
 
       <PPTHistoryDetailModal

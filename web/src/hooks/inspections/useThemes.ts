@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createTheme,
   deleteTheme,
@@ -15,6 +15,8 @@ export function useThemes(params: ThemeListParams) {
   return useQuery({
     queryKey: [...THEME_KEY, params.keyword, params.department, params.branchCode, params.page, params.size],
     queryFn: () => fetchThemes(params),
+    // 페이지/필터 전환 중 직전 데이터 유지 — 테이블이 빈 상태로 깜빡이지 않게.
+    placeholderData: keepPreviousData,
   });
 }
 

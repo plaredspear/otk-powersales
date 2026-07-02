@@ -6,6 +6,7 @@ import { useProfile } from '@/hooks/admin/useAdminPermission';
 import { usePermission } from '@/hooks/usePermission';
 import type { AssignedUserSummary, ObjectPermissionRow, CustomPermissionRow } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title } = Typography;
 
@@ -126,7 +127,7 @@ export default function ProfileDetailPage() {
           columns={objectColumns}
           size="small"
           pagination={false}
-          locale={{ emptyText: '부여된 객체권한 없음' }}
+          locale={listTableLocale({ emptyText: '부여된 객체권한 없음' })}
         />
       </Card>
 
@@ -138,6 +139,7 @@ export default function ProfileDetailPage() {
             columns={customColumns}
             size="small"
             pagination={false}
+            locale={listTableLocale()}
           />
         </Card>
       )}
@@ -165,6 +167,7 @@ export default function ProfileDetailPage() {
             total: data.assignedUsers.totalElements,
             onChange: (p) => setUserPage(p - 1),
           }}
+          locale={listTableLocale()}
         />
       </Card>
     </div>

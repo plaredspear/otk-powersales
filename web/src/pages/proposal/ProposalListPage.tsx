@@ -5,15 +5,16 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useSuggestions } from '@/hooks/suggestions/useSuggestions';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type {
   SuggestionActionStatus,
   SuggestionCategory,
   SuggestionListItem,
-  SuggestionListParams,
 } from '@/api/suggestions';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { RangePicker } = DatePicker;
 
@@ -45,44 +46,61 @@ const ACTION_STATUS_TAG: Record<SuggestionActionStatus, { color: string; label: 
   DUPLICATE_RECEPTION: { color: 'red', label: '중복접수' },
 };
 
-const PAGE_SIZE = 20;
+const DEFAULT_START_DATE = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
+const DEFAULT_END_DATE = dayjs().format('YYYY-MM-DD');
 
 export default function ProposalListPage() {
   const navigate = useNavigate();
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(30, 'day'),
-    dayjs(),
-  ]);
-  const [category, setCategory] = useState<SuggestionCategory | ''>('');
-  const [actionStatus, setActionStatus] = useState<SuggestionActionStatus | ''>('');
-  const [employeeName, setEmployeeName] = useState('');
-  const [accountCode, setAccountCode] = useState('');
-  const [productCode, setProductCode] = useState('');
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(PAGE_SIZE);
-
-  const [searchParams, setSearchParams] = useState<SuggestionListParams>({
-    startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
-    endDate: dayjs().format('YYYY-MM-DD'),
-    page: 0,
-    size: PAGE_SIZE,
+  // page/필터/사이즈를 URL query string 에 보관 — 상세 진입 후 복귀/새로고침/링크 공유 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
+    defaultFilters: {
+      startDate: DEFAULT_START_DATE,
+      endDate: DEFAULT_END_DATE,
+      category: '',
+      actionStatus: '',
+      employeeName: '',
+      accountCode: '',
+      productCode: '',
+    },
   });
 
-  const { data, isLoading, refetch, isFetching } = useSuggestions(searchParams);
+  // 입력 위젯은 편집 버퍼(로컬 state). URL filters 가 source of truth → 마운트 시 URL 값으로 초기화.
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>(() => [
+    dayjs(filters.startDate),
+    dayjs(filters.endDate),
+  ]);
+  const [category, setCategory] = useState<SuggestionCategory | ''>(
+    () => filters.category as SuggestionCategory | '',
+  );
+  const [actionStatus, setActionStatus] = useState<SuggestionActionStatus | ''>(
+    () => filters.actionStatus as SuggestionActionStatus | '',
+  );
+  const [employeeName, setEmployeeName] = useState(() => filters.employeeName);
+  const [accountCode, setAccountCode] = useState(() => filters.accountCode);
+  const [productCode, setProductCode] = useState(() => filters.productCode);
+
+  const { data, isLoading, refetch, isFetching } = useSuggestions({
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    category: (filters.category || undefined) as SuggestionCategory | undefined,
+    actionStatus: (filters.actionStatus || undefined) as SuggestionActionStatus | undefined,
+    employeeName: filters.employeeName || undefined,
+    accountCode: filters.accountCode || undefined,
+    productCode: filters.productCode || undefined,
+    page,
+    size,
+  });
   const handleRowClick = useThrottleClick((id: number) => navigate(`/proposal/${id}`));
 
   const handleSearch = () => {
-    setPage(0);
-    setSearchParams({
+    setFilters({
       startDate: dateRange[0].format('YYYY-MM-DD'),
       endDate: dateRange[1].format('YYYY-MM-DD'),
-      category: (category || undefined) as SuggestionCategory | undefined,
-      actionStatus: (actionStatus || undefined) as SuggestionActionStatus | undefined,
-      employeeName: employeeName || undefined,
-      accountCode: accountCode || undefined,
-      productCode: productCode || undefined,
-      page: 0,
-      size,
+      category,
+      actionStatus,
+      employeeName,
+      accountCode,
+      productCode,
     });
   };
 
@@ -95,17 +113,6 @@ export default function ProposalListPage() {
     setProductCode('');
   };
 
-  const handlePageChange = (zeroIndexedPage: number) => {
-    setPage(zeroIndexedPage);
-    setSearchParams((prev) => ({ ...prev, page: zeroIndexedPage }));
-  };
-
-  const handleSizeChange = (nextSize: number) => {
-    setSize(nextSize);
-    setPage(0);
-    setSearchParams((prev) => ({ ...prev, page: 0, size: nextSize }));
-  };
-
   const dash = (val: string | null) => val ?? '-';
 
   // SF `DKRetail__All` List View 컬럼 정합 (제안사항 번호 / 제목 / 접수사원 / 제품 /
@@ -115,7 +122,7 @@ export default function ProposalListPage() {
       title: 'No',
       width: 60,
       fixed: 'left',
-      render: (_v, _r, index) => (searchParams.page ?? 0) * (searchParams.size ?? PAGE_SIZE) + index + 1,
+      render: (_v, _r, index) => page * size + index + 1,
     },
     { title: '제안사항 번호', dataIndex: 'proposalNumber', width: 150, fixed: 'left' },
     {
@@ -234,13 +241,15 @@ export default function ProposalListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         scroll={{ x: 1320 }}
         pagination={buildListPagination({
           page,
           pageSize: size,
           total: data?.totalElements ?? 0,
-          onPageChange: handlePageChange,
-          onSizeChange: handleSizeChange,
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+          onPageChange: setPage,
+          onSizeChange: setSize,
         })}
         onRow={(record) => ({
           onClick: () => handleRowClick(record.id),

@@ -6,6 +6,8 @@ import { useSapOutboundOutboxPending } from '@/hooks/admin/useSapOutbound';
 import type { SapOutboxPendingRow } from '@/api/admin/sapIntegration';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 
@@ -28,9 +30,10 @@ function formatDateTime(value: string | null | undefined): string {
  * '호출 이력' 탭에 표시되며, 본 탭은 30초마다 자동 새로고침된다(hook 내부 설정).
  */
 export default function SapOutboundOutboxTab() {
-  const [page, setPage] = useState(1);
-  const [size] = useState(20);
-  const outboxQuery = useSapOutboundOutboxPending(page, size);
+  // 0-indexed 페이지 (buildListPagination 표준). 서버 조회 시 1-indexed 로 보정한다.
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(20);
+  const outboxQuery = useSapOutboundOutboxPending(page + 1, size);
 
   const outboxColumns: ColumnsType<SapOutboxPendingRow> = [
     {
@@ -112,13 +115,17 @@ export default function SapOutboundOutboxTab() {
         loading={outboxQuery.isLoading}
         dataSource={outboxQuery.data?.items ?? []}
         columns={outboxColumns}
-        pagination={{
-          current: page,
+        pagination={buildListPagination({
+          page,
           pageSize: size,
           total: outboxQuery.data?.totalCount ?? 0,
-          onChange: setPage,
-          showSizeChanger: false,
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
+        locale={listTableLocale()}
         scroll={{ x: 1400 }}
       />
     </>

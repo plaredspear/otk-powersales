@@ -38,6 +38,8 @@ import { usePermission } from '@/hooks/usePermission';
 import JobRunDetailModal from './JobRunDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -602,12 +604,13 @@ export default function ScheduledJobsPage() {
   const [statusInput, setStatusInput] = useState<ScheduledJobStatus | undefined>(undefined);
   const [rangeInput, setRangeInput] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [applied, setApplied] = useState<RunsAppliedFilters>({});
-  const [page, setPage] = useState(1);
-  const [size] = useState(20);
+  // 0-indexed 페이지 (buildListPagination 표준). 서버 조회 시 1-indexed 로 보정한다.
+  const [page, setPage] = useState(0);
+  const [size, setSize] = useState(20);
   const [selectedRun, setSelectedRun] = useState<ScheduledJobRun | null>(null);
 
   const handleSearch = () => {
-    setPage(1);
+    setPage(0);
     setApplied({
       status: statusInput,
       from: rangeInput?.[0]?.toISOString() ?? undefined,
@@ -624,7 +627,7 @@ export default function ScheduledJobsPage() {
   const runsQuery = useScheduledJobRuns({
     jobName,
     ...applied,
-    page,
+    page: page + 1,
     size,
   });
 
@@ -750,13 +753,17 @@ export default function ScheduledJobsPage() {
         loading={runsQuery.isLoading}
         dataSource={runsQuery.data?.items ?? []}
         columns={visibleRunColumns}
-        pagination={{
-          current: page,
+        pagination={buildListPagination({
+          page,
           pageSize: size,
           total: runsQuery.data?.totalCount ?? 0,
-          onChange: setPage,
-          showSizeChanger: false,
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
+        locale={listTableLocale()}
         onRow={(record) => ({
           onClick: () => setSelectedRun(record),
           style: { cursor: 'pointer' },
@@ -877,6 +884,7 @@ export default function ScheduledJobsPage() {
           dataSource={catalogQuery.data ?? []}
           columns={catalogColumns}
           pagination={false}
+          locale={listTableLocale()}
         />
       ),
     },
@@ -924,7 +932,7 @@ export default function ScheduledJobsPage() {
         activeKey={activeTab}
         onChange={(key) => {
           setActiveTab(key);
-          setPage(1);
+          setPage(0);
         }}
         items={tabItems}
       />

@@ -4,7 +4,6 @@ import {
   Card,
   Col,
   DatePicker,
-  Empty,
   Row,
   Select,
   Space,
@@ -29,6 +28,7 @@ import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { listTableLocale } from '@/lib/listTableLocale';
 import { useAuthStore } from '@/stores/authStore';
 import PosProductSearchModal from './pos/PosProductSearchModal';
 
@@ -389,7 +389,7 @@ export default function SalesQueryPage() {
               dataSource={items}
               loading={posSalesQuery.isFetching}
               pagination={{ pageSize: 20, showSizeChanger: true }}
-              locale={{ emptyText: <Empty description="조회된 POS매출이 없습니다." /> }}
+              locale={listTableLocale()}
             />
           </Card>
         </>

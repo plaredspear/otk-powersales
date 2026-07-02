@@ -17,18 +17,17 @@ const { Title } = Typography;
 const DEFAULT_PAGE_SIZE = 20;
 
 export default function AttendancePage() {
-  const { page, setPage, filters, setFilters } = useListQueryParams({
+  // 적용 필터/page/size 를 URL query string 에 보관 — 새로고침/링크 공유 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
       keyword: '',
       attendanceType: '',
       attendanceDateFrom: '',
       attendanceDateTo: '',
-      size: String(DEFAULT_PAGE_SIZE),
     },
+    defaultPageSize: DEFAULT_PAGE_SIZE,
   });
   const [detailId, setDetailId] = useState<number | null>(null);
-
-  const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_PAGE_SIZE;
 
   const queryParams: FetchAttendanceLogParams = {
     keyword: filters.keyword || undefined,
@@ -36,7 +35,7 @@ export default function AttendancePage() {
     attendanceDateFrom: filters.attendanceDateFrom || undefined,
     attendanceDateTo: filters.attendanceDateTo || undefined,
     page,
-    size: pageSize,
+    size,
   };
 
   const { data, isLoading, refetch, isFetching } = useAttendanceLogList(queryParams);
@@ -48,14 +47,6 @@ export default function AttendancePage() {
       attendanceDateFrom: next.attendanceDateFrom ?? '',
       attendanceDateTo: next.attendanceDateTo ?? '',
     });
-  };
-
-  const handlePageChange = (nextPage: number, size: number) => {
-    if (size !== pageSize) {
-      setFilters({ size: String(size) });
-    } else {
-      setPage(nextPage - 1);
-    }
   };
 
   return (
@@ -80,9 +71,10 @@ export default function AttendancePage() {
         loading={isLoading}
         items={data?.content ?? []}
         totalElements={data?.totalElements ?? 0}
-        page={(data?.number ?? page) + 1}
-        pageSize={pageSize}
-        onPageChange={handlePageChange}
+        page={data?.number ?? page}
+        pageSize={size}
+        onPageChange={setPage}
+        onSizeChange={setSize}
         onView={(item: AttendanceLogListItem) => setDetailId(item.id)}
       />
       {detailId != null && (

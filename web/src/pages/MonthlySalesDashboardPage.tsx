@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Card, Col, Empty, Input, Row, Select, Spin, Statistic, Typography, message } from 'antd';
+import { Alert, Card, Col, Input, Row, Select, Statistic, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -11,6 +11,8 @@ import {
 } from '@/api/monthlySalesDashboard';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
+import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import MonthlyTrendChart from '@/components/charts/MonthlyTrendChart';
 import MonthlySalesDashboardDetailModal from './MonthlySalesDashboardDetailModal';
@@ -411,43 +413,35 @@ export default function MonthlySalesDashboardPage() {
         />
       )}
 
-      {queryParams == null ? (
-        <Empty description="조회 조건을 설정하고 조회 버튼을 눌러주세요" />
-      ) : listQuery.isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : (
-        <ResizableTable
-          rowKey={(r) => r.accountId}
-          size="small"
-          columns={columns}
-          dataSource={list?.items ?? []}
-          pagination={{
-            current: page + 1,
-            pageSize,
-            total: list?.pageInfo.totalElements ?? 0,
-            showSizeChanger: true,
-            pageSizeOptions: [10, 20, 50, 100],
-            onChange: (p, ps) => {
-              setPage(p - 1);
-              setPageSize(ps);
-            },
-          }}
-          onChange={(_pagination, _filters, sorter) => {
-            if (!Array.isArray(sorter) && sorter.order && sorter.field) {
-              const field = String(sorter.field);
-              const direction = sorter.order === 'descend' ? 'desc' : 'asc';
-              setSort(`${field},${direction}`);
-              setPage(0);
-            } else {
-              setSort(undefined);
-            }
-          }}
-          scroll={{ x: 'max-content' }}
-          locale={{ emptyText: '조회 결과가 없습니다' }}
-        />
-      )}
+      <ResizableTable
+        rowKey={(r) => r.accountId}
+        size="small"
+        columns={columns}
+        dataSource={list?.items ?? []}
+        loading={queryParams != null && listQuery.isLoading}
+        pagination={buildListPagination({
+          page,
+          pageSize,
+          total: list?.pageInfo.totalElements ?? 0,
+          onPageChange: setPage,
+          onSizeChange: (size) => {
+            setPageSize(size);
+            setPage(0);
+          },
+        })}
+        onChange={(_pagination, _filters, sorter) => {
+          if (!Array.isArray(sorter) && sorter.order && sorter.field) {
+            const field = String(sorter.field);
+            const direction = sorter.order === 'descend' ? 'desc' : 'asc';
+            setSort(`${field},${direction}`);
+            setPage(0);
+          } else {
+            setSort(undefined);
+          }
+        }}
+        scroll={{ x: 'max-content' }}
+        locale={listTableLocale({ searched: queryParams != null })}
+      />
 
       <MonthlySalesDashboardDetailModal
         open={detailTarget != null}

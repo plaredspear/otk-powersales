@@ -3,13 +3,11 @@ import {
   Alert,
   Button,
   Checkbox,
-  Empty,
   Input,
   InputNumber,
   message,
   Select,
   Space,
-  Spin,
   Tag,
   Typography,
 } from 'antd';
@@ -23,6 +21,7 @@ import {
 } from '@/hooks/attend-info/useAttendInfo';
 import type { WorkHistoryMonthlyStat, WorkHistoryPeriodSummaryItem } from '@/api/attendInfo';
 import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 
@@ -382,40 +381,26 @@ export default function WorkHistoryPeriodPage() {
         />
       )}
 
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : (
-        <>
-          {queryParams != null && data && (
-            <Text style={{ marginBottom: 8, display: 'block' }}>총 {formatNumber(data.totalCount)}명</Text>
-          )}
-          <ResizableTable
-            rowKey="__key"
-            columns={columns}
-            dataSource={tableRows}
-            pagination={false}
-            size="small"
-            sticky
-            scroll={{ x: 'max-content' }}
-            // summary 행(월별 분해 보유) 클릭 시 확장 토글 + 포인터 커서. monthly 행은 클릭 무반응.
-            onRow={(record) =>
-              isSummary(record) && record.monthlyBreakdown.length > 0
-                ? { onClick: () => toggleRow(record), style: { cursor: 'pointer' } }
-                : {}
-            }
-            locale={{
-              emptyText:
-                queryParams == null ? (
-                  '조회 조건을 설정하고 조회 버튼을 눌러주세요'
-                ) : (
-                  <Empty description="조회 결과가 없습니다" />
-                ),
-            }}
-          />
-        </>
+      {queryParams != null && data && (
+        <Text style={{ marginBottom: 8, display: 'block' }}>총 {formatNumber(data.totalCount)}명</Text>
       )}
+      <ResizableTable
+        rowKey="__key"
+        columns={columns}
+        dataSource={tableRows}
+        loading={isLoading}
+        pagination={false}
+        size="small"
+        sticky
+        scroll={{ x: 'max-content' }}
+        // summary 행(월별 분해 보유) 클릭 시 확장 토글 + 포인터 커서. monthly 행은 클릭 무반응.
+        onRow={(record) =>
+          isSummary(record) && record.monthlyBreakdown.length > 0
+            ? { onClick: () => toggleRow(record), style: { cursor: 'pointer' } }
+            : {}
+        }
+        locale={listTableLocale({ searched: queryParams != null })}
+      />
     </div>
   );
 }

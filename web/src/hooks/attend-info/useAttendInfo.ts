@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createAttendInfo,
   deleteAttendInfo,
@@ -22,6 +22,7 @@ export function useAttendInfoList(params: FetchAttendInfoParams) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'list', params],
     queryFn: () => searchAttendInfo(params),
+    placeholderData: keepPreviousData,
   });
 }
 

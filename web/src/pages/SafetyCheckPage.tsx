@@ -10,6 +10,7 @@ import {
 } from '@/api/safetyCheck';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -172,26 +173,26 @@ export default function SafetyCheckPage() {
         </Text>
       </div>
 
-      <Spin spinning={isLoading}>
-        {isMobile ? (
-          data && data.totalCount === 0 ? (
+      {isMobile ? (
+        <Spin spinning={isLoading}>
+          {data && data.totalCount === 0 ? (
             <Empty description="해당 날짜에 근무 스케줄이 없습니다" />
           ) : (
             <MemberCardList members={data?.members ?? []} equipmentLabels={equipmentLabels} />
-          )
-        ) : (
-          <ResizableTable
-            rowKey="id"
-            columns={columns}
-            dataSource={data?.members}
-            loading={isLoading}
-            pagination={false}
-            scroll={{ x: 2000 }}
-            size="small"
-            locale={{ emptyText: '해당 날짜에 근무 스케줄이 없습니다' }}
-          />
-        )}
-      </Spin>
+          )}
+        </Spin>
+      ) : (
+        <ResizableTable
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.members}
+          loading={isLoading}
+          pagination={false}
+          scroll={{ x: 2000 }}
+          size="small"
+          locale={listTableLocale({ emptyText: '해당 날짜에 근무 스케줄이 없습니다' })}
+        />
+      )}
     </div>
   );
 }

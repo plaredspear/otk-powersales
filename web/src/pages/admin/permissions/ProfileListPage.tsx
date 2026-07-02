@@ -5,6 +5,7 @@ import { useProfiles } from '@/hooks/admin/useAdminPermission';
 import type { ProfileSummary } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title } = Typography;
 
@@ -67,6 +68,7 @@ export default function ProfileListPage() {
           rowKey="profileId"
           columns={columns}
           pagination={false}
+          locale={listTableLocale()}
           size="small"
           onRow={(row) => ({ onClick: () => navigate(`/admin/permissions/profiles/${row.profileId}`), style: { cursor: 'pointer' } })}
           footer={() => `총 부여 사용자 수: ${totalAssigned}`}

@@ -14,6 +14,7 @@ import EmployeeRegisterModal from '@/pages/employee/components/EmployeeRegisterM
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
@@ -32,8 +33,6 @@ const STATUS_OPTIONS = [
   { value: '휴직', label: '휴직' },
   { value: '퇴직', label: '퇴직' },
 ];
-
-const PAGE_SIZE = 20;
 
 const DEVICE_TOOLTIP =
   '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
@@ -55,8 +54,8 @@ export default function EmployeeListPage() {
       message.error('복사에 실패했습니다');
     }
   };
-  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
-  const { page, setPage, filters, setFilters } = useListQueryParams({
+  // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: { status: '', costCenterCode: '', keyword: '', role: '' },
   });
   const { status, costCenterCode, keyword, role } = filters;
@@ -74,7 +73,6 @@ export default function EmployeeListPage() {
       role: roleInput,
     });
   };
-  const [size, setSize] = useState(PAGE_SIZE);
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
@@ -257,15 +255,14 @@ export default function EmployeeListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         pagination={buildListPagination({
           page: data?.page ?? page,
           pageSize: size,
           total: data?.totalElements ?? 0,
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
           onPageChange: setPage,
-          onSizeChange: (nextSize) => {
-            setSize(nextSize);
-            setPage(0);
-          },
+          onSizeChange: setSize,
         })}
       />
       {deviceTarget && (

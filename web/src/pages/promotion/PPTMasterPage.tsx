@@ -27,10 +27,9 @@ import PermissionGate from '@/components/PermissionGate';
 const PPT_ENTITY = 'professional_promotion_team_master';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const TEAM_TYPE_FILTER_OPTIONS = [{ value: '', label: '전체' }, ...PPT_TEAM_TYPE_OPTIONS];
-
-const DEFAULT_SIZE = 20;
 
 // SF Valid__c / ValidData__c 정합 — 확정·시작일·종료일로 유효 상태(신호등) 산출.
 //   미확정(주황) / 유효(녹색) / 예정(노랑) / 종료(빨강)
@@ -62,20 +61,18 @@ function getEmployeeStatusLabel(record: PPTMaster): string {
 }
 
 export default function PPTMasterPage() {
-  // page/필터를 URL query string 에 보관 — 새로고침/링크 공유/복귀 시 직전 조건 복원.
-  // validOnly(boolean) 와 size(number) 는 URL 보관을 위해 string 으로 직렬화하고 사용처에서 역변환한다.
-  const { page, setPage, filters, setFilters } = useListQueryParams({
+  // page/필터/사이즈를 URL query string 에 보관 — 새로고침/링크 공유/복귀 시 직전 조건 복원.
+  // validOnly(boolean) 는 URL 보관을 위해 string 으로 직렬화하고 사용처에서 역변환한다.
+  const { page, setPage, size: pageSize, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
       employeeName: '',
       employeeCode: '',
       teamType: '',
       branchCode: '',
       validOnly: 'true',
-      size: String(DEFAULT_SIZE),
     },
   });
   const validOnly = filters.validOnly !== 'false';
-  const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트.
   //  - 다중 지점: Select 로 선택
@@ -135,7 +132,6 @@ export default function PPTMasterPage() {
       teamType: '',
       branchCode: '',
       validOnly: 'true',
-      size: String(DEFAULT_SIZE),
     });
   };
 
@@ -450,16 +446,16 @@ export default function PPTMasterPage() {
           onChange: (keys) => setSelectedIds(keys as number[]),
           getCheckboxProps: (record) => ({ disabled: record.isConfirmed }),
         }}
+        locale={listTableLocale()}
         pagination={buildListPagination({
           page,
           pageSize,
           total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setFilters 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
           onPageChange: setPage,
-          onSizeChange: (size) => setFilters({ size: String(size) }),
+          onSizeChange: setSize,
         })}
         scroll={{ x: 1870 }}
-        size="middle"
       />
 
       <PPTMasterFormModal

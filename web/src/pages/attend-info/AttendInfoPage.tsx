@@ -3,6 +3,7 @@ import { Button, Space, Tabs, Tag, Typography, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useAttendInfoList, useDeleteAttendInfo } from '@/hooks/attend-info/useAttendInfo';
 import { usePermission } from '@/hooks/usePermission';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type { AttendInfoListItem, FetchAttendInfoParams } from '@/api/attendInfo';
 import RefreshButton from '@/components/common/RefreshButton';
 import AttendInfoFilter from './components/AttendInfoFilter';
@@ -14,12 +15,17 @@ import MonthlyWorkDetailTab from './components/monthly/MonthlyWorkDetailTab';
 
 const { Title } = Typography;
 
-const DEFAULT_PAGE_SIZE = 20;
-
 export default function AttendInfoPage() {
-  const [filters, setFilters] = useState<FetchAttendInfoParams>({
-    page: 0,
-    size: DEFAULT_PAGE_SIZE,
+  // 적용 필터/page/size 를 URL query string 에 보관 — 새로고침/링크 공유 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
+    defaultFilters: {
+      employeeCode: '',
+      keyword: '',
+      attendType: '',
+      status: '',
+      startDateFrom: '',
+      startDateTo: '',
+    },
   });
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -29,15 +35,29 @@ export default function AttendInfoPage() {
   const canWrite = hasEntityPermission('attend_info', 'EDIT');
   const canDelete = hasEntityPermission('attend_info', 'DELETE');
 
-  const { data, isLoading, refetch, isFetching } = useAttendInfoList(filters);
+  const queryParams: FetchAttendInfoParams = {
+    employeeCode: filters.employeeCode || undefined,
+    keyword: filters.keyword || undefined,
+    attendType: filters.attendType || undefined,
+    status: (filters.status as 'N' | 'Y' | '') || undefined,
+    startDateFrom: filters.startDateFrom || undefined,
+    startDateTo: filters.startDateTo || undefined,
+    page,
+    size,
+  };
+
+  const { data, isLoading, refetch, isFetching } = useAttendInfoList(queryParams);
   const deleteMutation = useDeleteAttendInfo();
 
   const handleFilterChange = (next: FetchAttendInfoParams) => {
-    setFilters({ ...next, page: 0, size: filters.size ?? DEFAULT_PAGE_SIZE });
-  };
-
-  const handlePageChange = (page: number, size: number) => {
-    setFilters((prev) => ({ ...prev, page: page - 1, size }));
+    setFilters({
+      employeeCode: next.employeeCode ?? '',
+      keyword: next.keyword ?? '',
+      attendType: next.attendType ?? '',
+      status: next.status ?? '',
+      startDateFrom: next.startDateFrom ?? '',
+      startDateTo: next.startDateTo ?? '',
+    });
   };
 
   const handleDeleteConfirm = async () => {
@@ -66,14 +86,23 @@ export default function AttendInfoPage() {
       <Tag color="orange" style={{ marginBottom: 16 }}>
         SAP HR 인바운드 적재 근무기간 데이터 — admin 보정 입력 / 수정 / 삭제 시 연차 일정 자동 cascade
       </Tag>
-      <AttendInfoFilter onChange={handleFilterChange} />
+      <AttendInfoFilter
+        onChange={handleFilterChange}
+        initialEmployeeCode={filters.employeeCode}
+        initialKeyword={filters.keyword}
+        initialAttendType={filters.attendType}
+        initialStatus={filters.status as 'N' | 'Y' | ''}
+        initialDateFrom={filters.startDateFrom || undefined}
+        initialDateTo={filters.startDateTo || undefined}
+      />
       <AttendInfoList
         loading={isLoading}
         items={data?.content ?? []}
         totalElements={data?.totalElements ?? 0}
-        page={(data?.number ?? filters.page ?? 0) + 1}
-        pageSize={filters.size ?? DEFAULT_PAGE_SIZE}
-        onPageChange={handlePageChange}
+        page={data?.number ?? page}
+        pageSize={size}
+        onPageChange={setPage}
+        onSizeChange={setSize}
         onView={(item) => setDetailId(item.id)}
         onDelete={canDelete ? (item) => setDeleteTarget(item) : undefined}
       />

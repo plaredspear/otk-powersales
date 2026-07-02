@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   getAttendanceLog,
   searchAttendanceLog,
@@ -11,6 +11,7 @@ export function useAttendanceLogList(params: FetchAttendanceLogParams) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'list', params],
     queryFn: () => searchAttendanceLog(params),
+    placeholderData: keepPreviousData,
   });
 }
 

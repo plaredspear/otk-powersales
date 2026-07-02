@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import {
   fetchSalesProgressRateMasters,
   type SalesProgressRateMasterListParams,
@@ -16,5 +16,7 @@ export function useSalesProgressRateMasters(params: SalesProgressRateMasterListP
       params.size,
     ],
     queryFn: () => fetchSalesProgressRateMasters(params),
+    // 재조회(페이지 이동/필터 변경) 중 이전 결과를 유지해 빈 화면 깜빡임 방지.
+    placeholderData: keepPreviousData,
   });
 }

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Checkbox, Input, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 
@@ -128,6 +129,7 @@ export default function PermissionMatrixEditor({ resources, bits, value, onChang
         columns={columns}
         size="small"
         pagination={{ pageSize: 50, showSizeChanger: true }}
+        locale={listTableLocale()}
         rowClassName={(row) => (row.changed ? 'permission-matrix-row-changed' : '')}
       />
       <style>{`

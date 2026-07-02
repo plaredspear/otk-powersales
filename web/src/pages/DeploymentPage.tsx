@@ -7,7 +7,6 @@ import {
   InputNumber,
   Radio,
   Space,
-  Spin,
   Tooltip,
   Typography,
   message,
@@ -39,6 +38,7 @@ import {
 } from '@/api/salesComparison';
 import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
 import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 import './DeploymentPage.css';
 
 const { Title, Text } = Typography;
@@ -538,7 +538,7 @@ export default function DeploymentPage() {
 
         <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
           <Button type="primary" icon={<SearchOutlined />} block onClick={handleSearch}>
-            조회하기
+            조회
           </Button>
           <Space>
             <Tooltip title="모든조건선택" placement="bottom">
@@ -703,7 +703,7 @@ export default function DeploymentPage() {
       <div className="deployment-result" style={{ flex: 1, padding: 16, overflowX: 'hidden', minWidth: 0 }}>
         <Title level={4}>거래처별 진열사원 배치적합성 현황 (월 평균매출 대비)</Title>
 
-        {queryParams == null && <Empty description="좌측에서 조건을 선택한 뒤 조회하기를 눌러주세요." />}
+        {queryParams == null && <Empty description="좌측에서 조건을 선택한 뒤 조회 버튼을 눌러주세요." />}
 
         {queryParams?.mode === 'summary' && (
           <>
@@ -713,17 +713,16 @@ export default function DeploymentPage() {
                 엑셀다운로드
               </Button>
             </div>
-            {summaryQuery.isLoading && <Spin />}
             {summaryQuery.isError && <Alert type="error" message={(summaryQuery.error as Error)?.message ?? '조회 실패'} />}
-            {summaryQuery.data && (
-              <ResizableTable
-                rowKey="suitability"
-                size="small"
-                columns={summaryColumns}
-                dataSource={summaryRows}
-                pagination={false}
-              />
-            )}
+            <ResizableTable
+              rowKey="suitability"
+              size="small"
+              columns={summaryColumns}
+              dataSource={summaryRows}
+              loading={summaryQuery.isLoading}
+              pagination={false}
+              locale={listTableLocale()}
+            />
 
             {clickedAccountIds.length > 0 && (
               <div style={{ marginTop: 16 }}>
@@ -733,17 +732,17 @@ export default function DeploymentPage() {
                     엑셀다운로드
                   </Button>
                 </div>
-                {middleQuery.isLoading && <Spin />}
                 {middleQuery.isError && <Alert type="error" message={(middleQuery.error as Error)?.message ?? '조회 실패'} />}
-                {middleQuery.data && (
-                  <ScrollXContainer>
+                <ScrollXContainer>
                   <ResizableTable
                     rowKey="accountId"
                     size="small"
                     columns={middleColumns}
-                    dataSource={middleQuery.data.items}
+                    dataSource={middleQuery.data?.items ?? []}
+                    loading={middleQuery.isLoading}
                     pagination={false}
                     scroll={{ x: 'max-content' }}
+                    locale={listTableLocale()}
                     summary={() =>
                       middleQuery.data ? (
                         <ResizableTable.Summary>
@@ -769,8 +768,7 @@ export default function DeploymentPage() {
                       ) : null
                     }
                   />
-                  </ScrollXContainer>
-                )}
+                </ScrollXContainer>
               </div>
             )}
 
@@ -782,20 +780,19 @@ export default function DeploymentPage() {
                     엑셀다운로드
                   </Button>
                 </div>
-                {detailQuery.isLoading && <Spin />}
                 {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
-                {detailQuery.data && (
-                  <ScrollXContainer>
+                <ScrollXContainer>
                   <ResizableTable
                     rowKey={(r, i) => `${r.accountId}-${r.employeeCode}-${i}`}
                     size="small"
                     columns={detailColumns}
-                    dataSource={detailQuery.data.items}
+                    dataSource={detailQuery.data?.items ?? []}
+                    loading={detailQuery.isLoading}
                     pagination={false}
                     scroll={{ x: 'max-content' }}
+                    locale={listTableLocale()}
                   />
-                  </ScrollXContainer>
-                )}
+                </ScrollXContainer>
               </div>
             )}
           </>
@@ -809,20 +806,19 @@ export default function DeploymentPage() {
                 엑셀다운로드
               </Button>
             </div>
-            {detailQuery.isLoading && <Spin />}
             {detailQuery.isError && <Alert type="error" message={(detailQuery.error as Error)?.message ?? '조회 실패'} />}
-            {detailQuery.data && (
-              <ScrollXContainer>
+            <ScrollXContainer>
               <ResizableTable
                 rowKey={(r, i) => `${r.accountId}-${r.employeeCode}-${i}`}
                 size="small"
                 columns={detailColumns}
-                dataSource={detailQuery.data.items}
+                dataSource={detailQuery.data?.items ?? []}
+                loading={detailQuery.isLoading}
                 pagination={false}
                 scroll={{ x: 'max-content' }}
+                locale={listTableLocale()}
               />
-              </ScrollXContainer>
-            )}
+            </ScrollXContainer>
           </>
         )}
       </div>

@@ -34,6 +34,7 @@ import type {
 } from '@/api/employeeInputCriteriaMaster';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title, Text } = Typography;
 
@@ -341,6 +342,7 @@ export default function EmployeeInputCriteriaMasterListPage() {
         dataSource={items}
         loading={isLoading}
         pagination={false}
+        locale={listTableLocale()}
         rowSelection={{
           selectedRowKeys,
           onChange: setSelectedRowKeys,

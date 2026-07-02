@@ -28,6 +28,7 @@ import type {
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { RangePicker } = DatePicker;
 
@@ -50,14 +51,12 @@ const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
   COMPETITOR: { color: 'volcano', label: '경쟁사' },
 };
 
-const PAGE_SIZE = 20;
-
 const DEFAULT_START_DATE = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
 const DEFAULT_END_DATE = dayjs().format('YYYY-MM-DD');
 
 export default function FieldInspectionPage() {
-  // page/필터를 URL query string 에 보관 — 새로고침/링크 공유 시 직전 조건 복원.
-  const { page, setPage, filters, setFilters } = useListQueryParams({
+  // page/size/필터를 URL query string 에 보관 — 새로고침/링크 공유 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
       startDate: DEFAULT_START_DATE,
       endDate: DEFAULT_END_DATE,
@@ -81,7 +80,6 @@ export default function FieldInspectionPage() {
   );
   const [employeeName, setEmployeeName] = useState(() => filters.employeeName);
   const [accountCode, setAccountCode] = useState(() => filters.accountCode);
-  const [size, setSize] = useState(PAGE_SIZE);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -244,16 +242,14 @@ export default function FieldInspectionPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         scroll={{ x: 1140 }}
         pagination={buildListPagination({
           page,
           pageSize: size,
           total: data?.totalElements ?? 0,
           onPageChange: setPage,
-          onSizeChange: (nextSize) => {
-            setSize(nextSize);
-            setPage(0);
-          },
+          onSizeChange: setSize,
         })}
         onRow={(record) => ({
           onClick: () => openDetail(record.id),

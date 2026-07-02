@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, message, Spin } from 'antd';
+import { Alert, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useCategorySchedule } from '@/hooks/schedules/useCategorySchedule';
@@ -7,6 +7,7 @@ import { useCategoryExport } from '@/hooks/schedules/useCategoryExport';
 import type { CategoryScheduleItem } from '@/api/monthlyIntegration';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 function formatDecimal1(value: number): string {
   return value.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -146,26 +147,18 @@ export default function CategorySchedulePage() {
         />
       )}
 
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : (
-        <ResizableTable
-          rowKey="branchName"
-          columns={columns}
-          dataSource={data?.items ?? []}
-          pagination={false}
-          size="small"
-          sticky
-          bordered
-          tableLayout="fixed"
-          locale={{
-            emptyText:
-              queryParams == null ? '조회 조건을 설정하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
-          }}
-        />
-      )}
+      <ResizableTable
+        rowKey="branchName"
+        columns={columns}
+        dataSource={data?.items ?? []}
+        loading={isLoading}
+        pagination={false}
+        size="small"
+        sticky
+        bordered
+        tableLayout="fixed"
+        locale={listTableLocale({ searched: queryParams != null })}
+      />
     </div>
   );
 }

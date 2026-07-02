@@ -15,6 +15,7 @@ import PermissionSetChangeLogTab from './components/PermissionSetChangeLogTab';
 import PermissionSetDeleteConfirmModal from './components/PermissionSetDeleteConfirmModal';
 import RevokeAssignmentConfirmModal from './components/RevokeAssignmentConfirmModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title } = Typography;
 
@@ -187,6 +188,7 @@ export default function PermissionSetDetailPage() {
           columns={objectColumns}
           size="small"
           pagination={false}
+          locale={listTableLocale()}
         />
       </Card>
 
@@ -198,6 +200,7 @@ export default function PermissionSetDetailPage() {
             columns={customColumns}
             size="small"
             pagination={false}
+            locale={listTableLocale()}
           />
         </Card>
       )}
@@ -237,6 +240,7 @@ export default function PermissionSetDetailPage() {
                     total: data.assignedUsers.totalElements,
                     onChange: (p) => setUserPage(p - 1),
                   }}
+                  locale={listTableLocale()}
                 />
               </>
             ),

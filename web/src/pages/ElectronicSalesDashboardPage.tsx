@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Empty, Input, Spin, Typography, message } from 'antd';
+import { Alert, Input, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -10,6 +10,8 @@ import {
 } from '@/api/electronicSalesDashboard';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
+import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -161,6 +163,7 @@ export default function ElectronicSalesDashboardPage() {
                 placeholder="거래처명 부분 일치"
                 value={customerKeyword}
                 onChange={(e) => setCustomerKeyword(e.target.value)}
+                onPressEnter={handleSearch}
                 style={{ width: 220 }}
                 allowClear
               />
@@ -194,44 +197,36 @@ export default function ElectronicSalesDashboardPage() {
         />
       )}
 
-      {queryParams == null ? (
-        <Empty description="조회 조건을 설정하고 조회 버튼을 눌러주세요" />
-      ) : listQuery.isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : (
-        <ResizableTable
-          rowKey={(r) => r.accountId}
-          size="small"
-          columns={columns}
-          dataSource={list?.items ?? []}
-          pagination={{
-            current: page + 1,
-            pageSize,
-            total: list?.pageInfo.totalElements ?? 0,
-            showSizeChanger: true,
-            pageSizeOptions: [10, 20, 50, 100],
-            onChange: (p, ps) => {
-              setPage(p - 1);
-              setPageSize(ps);
-            },
-          }}
-          onChange={(_pagination, _filters, sorter) => {
-            if (!Array.isArray(sorter) && sorter.order && sorter.field) {
-              const field = String(sorter.field);
-              const direction = sorter.order === 'descend' ? 'desc' : 'asc';
-              setSort(`${field},${direction}`);
-              setPage(0);
-            } else {
-              setSort(undefined);
-            }
-          }}
-          // scroll 미지정 → ResizableTable 이 컬럼 width 합을 x 로 자동 계산하여
-          // tableLayout: fixed 로 전환, 리사이즈/ellipsis 가 동작한다 (기존 'max-content' 는 폭 고정을 막음).
-          locale={{ emptyText: '조회 결과가 없습니다' }}
-        />
-      )}
+      <ResizableTable
+        rowKey={(r) => r.accountId}
+        size="small"
+        columns={columns}
+        dataSource={list?.items ?? []}
+        loading={queryParams != null && listQuery.isLoading}
+        pagination={buildListPagination({
+          page,
+          pageSize,
+          total: list?.pageInfo.totalElements ?? 0,
+          onPageChange: setPage,
+          onSizeChange: (size) => {
+            setPageSize(size);
+            setPage(0);
+          },
+        })}
+        onChange={(_pagination, _filters, sorter) => {
+          if (!Array.isArray(sorter) && sorter.order && sorter.field) {
+            const field = String(sorter.field);
+            const direction = sorter.order === 'descend' ? 'desc' : 'asc';
+            setSort(`${field},${direction}`);
+            setPage(0);
+          } else {
+            setSort(undefined);
+          }
+        }}
+        // scroll 미지정 → ResizableTable 이 컬럼 width 합을 x 로 자동 계산하여
+        // tableLayout: fixed 로 전환, 리사이즈/ellipsis 가 동작한다 (기존 'max-content' 는 폭 고정을 막음).
+        locale={listTableLocale({ searched: queryParams != null })}
+      />
 
       <ElectronicSalesDashboardDetailModal
         open={detailTarget != null}

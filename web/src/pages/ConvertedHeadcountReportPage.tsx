@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, DatePicker, Divider, Space, Spin, Typography, message } from 'antd';
+import { Alert, Button, DatePicker, Divider, Space, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -11,6 +11,7 @@ import {
 } from '@/api/convertedHeadcountReport';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 
@@ -130,11 +131,7 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
         />
       )}
 
-      {reportQuery.isLoading ? (
-        <div style={{ textAlign: 'center', padding: 48 }}>
-          <Spin size="large" />
-        </div>
-      ) : hasResult ? (
+      {hasResult ? (
         <>
           {data.groups.map((group) => (
             <div key={group.accountType || '(미지정)'} style={{ marginBottom: 20 }}>
@@ -163,11 +160,10 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
         <ResizableTable
           columns={columns}
           dataSource={[]}
+          loading={reportQuery.isLoading}
           pagination={false}
           scroll={{ x: 'max-content' }}
-          locale={{
-            emptyText: query == null ? '조회 연월을 선택하고 조회 버튼을 눌러주세요' : '조회 결과가 없습니다',
-          }}
+          locale={listTableLocale({ searched: query != null })}
         />
       )}
     </div>

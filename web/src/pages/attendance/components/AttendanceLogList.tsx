@@ -4,14 +4,18 @@ import dayjs from 'dayjs';
 import type { AttendanceLogListItem, AttendanceTypeCode } from '@/api/attendanceLog';
 import ResizableTable from '@/components/common/ResizableTable';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 interface AttendanceLogListProps {
   items: AttendanceLogListItem[];
   loading: boolean;
   totalElements: number;
+  /** 0-indexed 현재 페이지. */
   page: number;
   pageSize: number;
-  onPageChange: (page: number, size: number) => void;
+  /** 0-indexed 페이지로 이동. */
+  onPageChange: (page: number) => void;
+  onSizeChange: (size: number) => void;
   onView: (item: AttendanceLogListItem) => void;
 }
 
@@ -40,6 +44,7 @@ export default function AttendanceLogList({
   page,
   pageSize,
   onPageChange,
+  onSizeChange,
   onView,
 }: AttendanceLogListProps) {
   const columns: ColumnsType<AttendanceLogListItem> = [
@@ -124,12 +129,13 @@ export default function AttendanceLogList({
       loading={loading}
       dataSource={items}
       columns={columns}
+      locale={listTableLocale()}
       pagination={buildListPagination({
-        page: page - 1,
+        page,
         pageSize,
         total: totalElements,
-        onPageChange: (nextPage) => onPageChange(nextPage + 1, pageSize),
-        onSizeChange: (size) => onPageChange(1, size),
+        onPageChange,
+        onSizeChange,
       })}
       onRow={(record) => ({
         onClick: () => onView(record),

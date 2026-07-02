@@ -5,6 +5,7 @@ import { usePermissionMatrix } from '@/hooks/admin/useAdminPermission';
 import type { EntityProfileRow } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title } = Typography;
 
@@ -108,6 +109,7 @@ export default function PermissionMatrixPage() {
           rowKey="entity"
           columns={columns}
           pagination={false}
+          locale={listTableLocale()}
           size="small"
           scroll={{ x: 'max-content', y: 600 }}
         />

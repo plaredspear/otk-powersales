@@ -23,6 +23,7 @@ import {
 import type { AlternativeHolidayItem } from '@/api/alternativeHoliday';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const STATUS_OPTIONS = [
   { label: '전체', value: '' },
@@ -244,7 +245,7 @@ export default function AlternativeHolidayPage() {
         dataSource={data}
         loading={isLoading}
         pagination={false}
-        size="middle"
+        locale={listTableLocale()}
         scroll={{ x: 1100 }}
       />
 

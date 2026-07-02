@@ -29,8 +29,7 @@ import { usePermission } from '@/hooks/usePermission';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
-
-const PAGE_SIZE = 20;
+import { listTableLocale } from '@/lib/listTableLocale';
 
 interface ThemeFormValues {
   title: string;
@@ -45,7 +44,7 @@ export default function ThemeManagementPage() {
   const canEdit = hasEntityPermission('inspection_theme', 'EDIT');
   const canDelete = hasEntityPermission('inspection_theme', 'DELETE');
 
-  const { page, setPage, filters, setFilters } = useListQueryParams({
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: { keyword: '', department: '', branchCode: '' },
   });
 
@@ -58,7 +57,6 @@ export default function ThemeManagementPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [ownerKeyword, setOwnerKeyword] = useState('');
   const [ownerOptionPatch, setOwnerOptionPatch] = useState<{ value: number; label: string }[]>([]);
-  const [size, setSize] = useState(PAGE_SIZE);
   const [form] = Form.useForm<ThemeFormValues>();
 
   const searchParams: ThemeListParams = {
@@ -275,16 +273,14 @@ export default function ThemeManagementPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         scroll={{ x: 1100 }}
         pagination={buildListPagination({
           page,
           pageSize: size,
           total: data?.totalElements ?? 0,
           onPageChange: setPage,
-          onSizeChange: (nextSize) => {
-            setSize(nextSize);
-            setPage(0);
-          },
+          onSizeChange: setSize,
         })}
       />
 

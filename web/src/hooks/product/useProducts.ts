@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import {
   fetchProducts,
   fetchProductCategories,
@@ -12,6 +12,8 @@ export function useProducts(params: FetchProductsParams) {
   return useQuery({
     queryKey: ['admin', 'products', params.keyword, params.category1, params.category2, params.category3, params.productStatus, params.page, params.size],
     queryFn: () => fetchProducts(params),
+    // 재조회(페이지 이동/필터 변경) 중 이전 결과를 유지해 빈 화면 깜빡임 방지.
+    placeholderData: keepPreviousData,
   });
 }
 

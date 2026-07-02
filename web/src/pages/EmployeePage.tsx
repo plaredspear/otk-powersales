@@ -7,6 +7,7 @@ import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
 import { useFemaleEmployeeBranches } from '@/hooks/employee/useFemaleEmployeeBranches';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
@@ -31,9 +32,6 @@ const STATUS_OPTIONS = [
   { value: '퇴직', label: '퇴직' },
 ];
 
-const DEFAULT_SIZE = 20;
-
-
 const DEVICE_TOOLTIP =
   '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
 const PASSWORD_TOOLTIP =
@@ -46,13 +44,11 @@ export default function EmployeePage() {
   // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
   const goToDetail = (id: number) =>
     navigate(`/female-employee/${id}`, { state: { listSearch: location.search } });
-  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
-  const { page, setPage, filters, setFilters } = useListQueryParams({
-    defaultFilters: { status: '', costCenterCode: '', keyword: '', size: String(DEFAULT_SIZE) },
+  // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
+    defaultFilters: { status: '', costCenterCode: '', keyword: '' },
   });
   const { status, costCenterCode, keyword } = filters;
-  // size 는 URL 보관을 위해 string 으로 직렬화 — 사용처에서 number 로 역변환.
-  const pageSize = Number.parseInt(filters.size, 10) || DEFAULT_SIZE;
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
   const [statusInput, setStatusInput] = useState(status);
   const [costCenterCodeInput, setCostCenterCodeInput] = useState(costCenterCode);
@@ -85,7 +81,7 @@ export default function EmployeePage() {
     costCenterCode: costCenterCode || undefined,
     keyword: keyword || undefined,
     page,
-    size: pageSize,
+    size,
   });
 
   const { run: runExport, downloading: exporting } = useExcelDownload();
@@ -311,13 +307,14 @@ export default function EmployeePage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         pagination={buildListPagination({
           page: data?.page ?? page,
-          pageSize,
+          pageSize: size,
           total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setFilters 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
           onPageChange: setPage,
-          onSizeChange: (size) => setFilters({ size: String(size) }),
+          onSizeChange: setSize,
         })}
       />
       {deviceTarget && (

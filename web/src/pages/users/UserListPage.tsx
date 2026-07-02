@@ -5,13 +5,13 @@ import { Alert, Button, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
+import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type { UserSummary } from '@/api/user';
 import { fetchProfiles } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
-
-const PAGE_SIZE = 20;
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const ACTIVE_OPTIONS = [
   { value: '', label: '활성 전체' },
@@ -19,34 +19,31 @@ const ACTIVE_OPTIONS = [
   { value: 'false', label: '비활성' },
 ];
 
-interface UserListAppliedFilters {
-  keyword?: string;
-  isActive?: boolean;
-  profileId?: number;
-}
-
 export default function UserListPage() {
   const navigate = useNavigate();
-  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
-  const [keywordInput, setKeywordInput] = useState('');
-  const [isActiveInput, setIsActiveInput] = useState('');
-  const [profileIdInput, setProfileIdInput] = useState('');
-  const [applied, setApplied] = useState<UserListAppliedFilters>({});
-  const [page, setPage] = useState(0);
-  const [size, setSize] = useState(PAGE_SIZE);
+  // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
+  // boolean/number 필터는 string 으로 직렬화 보관, 목록 query 구성 시점에 원 타입으로 변환.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
+    defaultFilters: { keyword: '', isActive: '', profileId: '' },
+  });
+  // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
+  const [keywordInput, setKeywordInput] = useState(() => filters.keyword);
+  const [isActiveInput, setIsActiveInput] = useState(() => filters.isActive);
+  const [profileIdInput, setProfileIdInput] = useState(() => filters.profileId);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useUsers({
-    ...applied,
+    keyword: filters.keyword || undefined,
+    isActive: filters.isActive === '' ? undefined : filters.isActive === 'true',
+    profileId: filters.profileId === '' ? undefined : Number(filters.profileId),
     page,
     size,
   });
 
   const handleSearch = () => {
-    setPage(0);
-    setApplied({
-      keyword: keywordInput || undefined,
-      isActive: isActiveInput === '' ? undefined : isActiveInput === 'true',
-      profileId: profileIdInput === '' ? undefined : Number(profileIdInput),
+    setFilters({
+      keyword: keywordInput,
+      isActive: isActiveInput,
+      profileId: profileIdInput,
     });
   };
 
@@ -134,15 +131,14 @@ export default function UserListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         pagination={buildListPagination({
           page: data?.page ?? page,
           pageSize: size,
           total: data?.totalElements ?? 0,
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
           onPageChange: setPage,
-          onSizeChange: (nextSize) => {
-            setSize(nextSize);
-            setPage(0);
-          },
+          onSizeChange: setSize,
         })}
         onRow={(record) => ({
           onClick: () => handleRowClick(record.id),

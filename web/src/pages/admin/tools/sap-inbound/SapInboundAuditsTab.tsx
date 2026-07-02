@@ -10,6 +10,8 @@ import type { SapInboundAuditRow } from '@/api/admin/sapIntegration';
 import SapInboundAuditDetailModal from './SapInboundAuditDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { RangePicker } = DatePicker;
 
@@ -24,12 +26,6 @@ const EVENT_TYPE_OPTIONS = [
   { label: 'SCHEDULE_CONVERSION', value: 'SCHEDULE_CONVERSION' },
   { label: 'SCHEDULE_CONVERSION_FAILED', value: 'SCHEDULE_CONVERSION_FAILED' },
   { label: 'MANUAL_ORIGIN_PROTECTED', value: 'MANUAL_ORIGIN_PROTECTED' },
-];
-
-const PAGE_SIZE_OPTIONS = [
-  { label: '20', value: 20 },
-  { label: '50', value: 50 },
-  { label: '100', value: 100 },
 ];
 
 const EVENT_TAG_COLOR: Record<string, string> = {
@@ -76,12 +72,13 @@ export default function SapInboundAuditsTab({
     from?: string;
     to?: string;
   }>({});
-  const [page, setPage] = useState(1);
+  // 0-indexed 페이지 (buildListPagination 표준). 서버 조회 시 1-indexed 로 보정한다.
+  const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
   const [selectedRow, setSelectedRow] = useState<SapInboundAuditRow | null>(null);
 
   const handleSearch = () => {
-    setPage(1);
+    setPage(0);
     setApplied({
       clientId: clientIdInput,
       eventType: eventTypeInput,
@@ -98,7 +95,7 @@ export default function SapInboundAuditsTab({
     endpoint: lockedEndpoint ?? applied.endpoint,
     from: applied.from,
     to: applied.to,
-    page,
+    page: page + 1,
     size,
   });
 
@@ -228,15 +225,6 @@ export default function SapInboundAuditsTab({
             value={rangeInput as [Dayjs, Dayjs] | null}
             onChange={(value) => setRangeInput(value as [Dayjs | null, Dayjs | null] | null)}
           />
-          <Select
-            style={{ width: 100 }}
-            value={size}
-            onChange={(value) => {
-              setSize(value);
-              setPage(1);
-            }}
-            options={PAGE_SIZE_OPTIONS}
-          />
           <Button type="primary" onClick={handleSearch}>
             조회
           </Button>
@@ -250,13 +238,17 @@ export default function SapInboundAuditsTab({
         loading={auditsQuery.isLoading}
         dataSource={auditsQuery.data?.items ?? []}
         columns={auditColumns}
-        pagination={{
-          current: page,
+        pagination={buildListPagination({
+          page,
           pageSize: size,
           total: auditsQuery.data?.totalCount ?? 0,
-          onChange: setPage,
-          showSizeChanger: false,
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
+        locale={listTableLocale()}
         onRow={(record) => ({
           onClick: () => setSelectedRow(record),
           style: { cursor: 'pointer' },

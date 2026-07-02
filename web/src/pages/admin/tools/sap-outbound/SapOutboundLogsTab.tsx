@@ -13,6 +13,8 @@ import type {
 import SapOutboundLogDetailModal from './SapOutboundLogDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -21,12 +23,6 @@ const RESULT_CODE_OPTIONS: { label: string; value: SapOutboundResultCode }[] = [
   { label: 'SUCCESS', value: 'SUCCESS' },
   { label: 'FAIL', value: 'FAIL' },
   { label: 'INVALID_RESPONSE', value: 'INVALID_RESPONSE' },
-];
-
-const PAGE_SIZE_OPTIONS = [
-  { label: '20', value: 20 },
-  { label: '50', value: 50 },
-  { label: '100', value: 100 },
 ];
 
 const RESULT_TAG_COLOR: Record<SapOutboundResultCode, string> = {
@@ -64,12 +60,13 @@ export default function SapOutboundLogsTab({
     from?: string;
     to?: string;
   }>({});
-  const [page, setPage] = useState(1);
+  // 0-indexed 페이지 (buildListPagination 표준). 서버 조회 시 1-indexed 로 보정한다.
+  const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
   const [selectedRow, setSelectedRow] = useState<SapOutboundLogRow | null>(null);
 
   const handleSearch = () => {
-    setPage(1);
+    setPage(0);
     setApplied({
       interfaceId: interfaceIdInput,
       resultCode: resultCodeInput,
@@ -84,7 +81,7 @@ export default function SapOutboundLogsTab({
     resultCode: applied.resultCode,
     from: applied.from,
     to: applied.to,
-    page,
+    page: page + 1,
     size,
   });
 
@@ -213,15 +210,6 @@ export default function SapOutboundLogsTab({
             value={rangeInput as [Dayjs, Dayjs] | null}
             onChange={(value) => setRangeInput(value as [Dayjs | null, Dayjs | null] | null)}
           />
-          <Select
-            style={{ width: 100 }}
-            value={size}
-            onChange={(value) => {
-              setSize(value);
-              setPage(1);
-            }}
-            options={PAGE_SIZE_OPTIONS}
-          />
           <Button type="primary" onClick={handleSearch}>
             조회
           </Button>
@@ -235,13 +223,17 @@ export default function SapOutboundLogsTab({
         loading={logsQuery.isLoading}
         dataSource={logsQuery.data?.items ?? []}
         columns={logColumns}
-        pagination={{
-          current: page,
+        pagination={buildListPagination({
+          page,
           pageSize: size,
           total: logsQuery.data?.totalCount ?? 0,
-          onChange: setPage,
-          showSizeChanger: false,
-        }}
+          onPageChange: setPage,
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          },
+        })}
+        locale={listTableLocale()}
         onRow={(record) => ({
           onClick: () => setSelectedRow(record),
           style: { cursor: 'pointer' },

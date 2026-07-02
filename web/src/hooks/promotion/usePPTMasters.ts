@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getPPTMasters,
   createPPTMaster,
@@ -15,6 +15,8 @@ export function usePPTMasters(params: PPTMasterSearchParams) {
   return useQuery({
     queryKey: [...QUERY_KEY, params],
     queryFn: () => getPPTMasters(params),
+    // 페이지/조건 변경 시 직전 데이터를 유지해 테이블 깜빡임(빈 상태 노출)을 방지.
+    placeholderData: keepPreviousData,
   });
 }
 

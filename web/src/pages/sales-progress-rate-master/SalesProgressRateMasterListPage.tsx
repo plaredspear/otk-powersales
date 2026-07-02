@@ -9,6 +9,7 @@ import type { SalesProgressRateMasterListItem } from '@/api/salesProgressRateMas
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 function formatAmount(value: number | null): string {
   return value != null ? value.toLocaleString() : '-';
@@ -22,8 +23,8 @@ function formatRate(value: number | null): string {
 export default function SalesProgressRateMasterListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  // page/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
-  const { page, setPage, filters, setFilters } = useListQueryParams({
+  // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
+  const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: { targetYear: '', targetMonth: '', keyword: '' },
   });
   const { targetYear, targetMonth, keyword } = filters;
@@ -31,7 +32,6 @@ export default function SalesProgressRateMasterListPage() {
   const [targetYearInput, setTargetYearInput] = useState(targetYear);
   const [targetMonthInput, setTargetMonthInput] = useState(targetMonth);
   const [keywordInput, setKeywordInput] = useState(keyword);
-  const [size, setSize] = useState(20);
 
   const handleSearch = () => {
     setFilters({ targetYear: targetYearInput, targetMonth: targetMonthInput, keyword: keywordInput });
@@ -213,16 +213,15 @@ export default function SalesProgressRateMasterListPage() {
         columns={columns}
         dataSource={data?.content}
         loading={isLoading}
+        locale={listTableLocale()}
         scroll={{ x: 1900 }}
         pagination={buildListPagination({
           page: data?.page ?? page,
           pageSize: size,
           total: data?.totalElements ?? 0,
+          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
           onPageChange: setPage,
-          onSizeChange: (nextSize) => {
-            setSize(nextSize);
-            setPage(0);
-          },
+          onSizeChange: setSize,
         })}
       />
     </div>

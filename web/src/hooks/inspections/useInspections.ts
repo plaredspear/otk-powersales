@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createInspection,
   deleteInspection,
@@ -24,6 +24,8 @@ export function useInspections(params: InspectionListParams) {
       params.size,
     ],
     queryFn: () => fetchInspections(params),
+    // 페이지/필터 전환 중 직전 데이터 유지 — 테이블이 빈 상태로 깜빡이지 않게.
+    placeholderData: keepPreviousData,
   });
 }
 

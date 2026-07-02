@@ -6,6 +6,7 @@ import { usePermission } from '@/hooks/usePermission';
 import type { PermissionSetSummary } from '@/api/admin/permission';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title } = Typography;
 
@@ -99,6 +100,7 @@ export default function PermissionSetListPage() {
           rowKey="permissionSetId"
           columns={columns}
           pagination={{ pageSize: 50 }}
+          locale={listTableLocale()}
           size="small"
           onRow={(row) => ({
             onClick: () => navigate(`/admin/permissions/permission-sets/${row.permissionSetId}`),

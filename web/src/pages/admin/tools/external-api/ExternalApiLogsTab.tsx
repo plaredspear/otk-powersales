@@ -13,6 +13,8 @@ import type {
 import ExternalApiLogDetailModal from './ExternalApiLogDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import { buildListPagination } from '@/lib/listPagination';
+import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -26,12 +28,6 @@ const TARGET_OPTIONS: { label: string; value: ExternalApiTargetSystem }[] = [
 const SUCCESS_OPTIONS: { label: string; value: 'true' | 'false' }[] = [
   { label: '성공', value: 'true' },
   { label: '실패', value: 'false' },
-];
-
-const PAGE_SIZE_OPTIONS = [
-  { label: '20', value: 20 },
-  { label: '50', value: 50 },
-  { label: '100', value: 100 },
 ];
 
 const TARGET_TAG_COLOR: Record<ExternalApiTargetSystem, string> = {
@@ -217,15 +213,6 @@ export default function ExternalApiLogsTab({
               value={rangeInput as [Dayjs, Dayjs] | null}
               onChange={(value) => setRangeInput(value as [Dayjs | null, Dayjs | null] | null)}
             />
-            <Select
-              style={{ width: 100 }}
-              value={size}
-              onChange={(value) => {
-                setSize(value);
-                setPage(1);
-              }}
-              options={PAGE_SIZE_OPTIONS}
-            />
             <Button type="primary" onClick={handleSearch}>
               조회
             </Button>
@@ -239,13 +226,18 @@ export default function ExternalApiLogsTab({
         loading={logsQuery.isLoading}
         dataSource={logsQuery.data?.items ?? []}
         columns={logColumns}
-        pagination={{
-          current: page,
+        pagination={buildListPagination({
+          // 백엔드 page 파라미터는 1-indexed — buildListPagination(0-indexed) 과 보정.
+          page: page - 1,
           pageSize: size,
           total: logsQuery.data?.totalCount ?? 0,
-          onChange: setPage,
-          showSizeChanger: false,
-        }}
+          onPageChange: (next) => setPage(next + 1),
+          onSizeChange: (nextSize) => {
+            setSize(nextSize);
+            setPage(1);
+          },
+        })}
+        locale={listTableLocale()}
         onRow={(record) => ({
           onClick: () => setSelectedRow(record),
           style: { cursor: 'pointer' },
