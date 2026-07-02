@@ -5,6 +5,7 @@ import com.otoki.powersales.platform.common.util.excel.BaseExcelExporter
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.apache.poi.ss.usermodel.Row
 import org.springframework.stereotype.Component
+import java.time.LocalDate
 
 /**
  * 전산실적 대시보드 명세 엑셀 export.
@@ -23,16 +24,16 @@ class ElectronicSalesDashboardExcelExporter : BaseExcelExporter<ElectronicSalesD
 
     override val headers = listOf(
         "거래처명", "SAP코드", "지점코드", "지점명",
-        "매출연도", "매출월",
         "전산매출 금액", "전산매출 수량",
     )
 
     /**
-     * 엑셀 워크북 생성 + 바이트 + 파일명 반환. 파일명 형식: `electronic-sales-{year}-{month:02}.xlsx`.
+     * 엑셀 워크북 생성 + 바이트 + 파일명 반환.
+     * 파일명 형식: `electronic-sales-{startDate}-{endDate}.xlsx` (일 단위 기간).
      * 빈 items 일 경우 헤더 행만 존재.
      */
-    fun export(year: Int, month: Int, items: List<ElectronicSalesDashboardListItem>): ExcelResult =
-        export(items, "electronic-sales-${year}-${month.toString().padStart(2, '0')}.xlsx")
+    fun export(startDate: LocalDate, endDate: LocalDate, items: List<ElectronicSalesDashboardListItem>): ExcelResult =
+        export(items, "electronic-sales-${startDate}-${endDate}.xlsx")
 
     override fun writeRow(row: Row, item: ElectronicSalesDashboardListItem) {
         var col = 0
@@ -40,8 +41,6 @@ class ElectronicSalesDashboardExcelExporter : BaseExcelExporter<ElectronicSalesD
         row.createCell(col++).setCellValue(item.sapAccountCode ?: "")
         row.createCell(col++).setCellValue(item.branchCode ?: "")
         row.createCell(col++).setCellValue(item.branchName ?: "")
-        row.createCell(col++).setCellValue(item.salesYear.toDouble())
-        row.createCell(col++).setCellValue(item.salesMonth.toDouble())
         row.createCell(col++).setCellValue(item.salesAmount.toDouble())
         row.createCell(col).setCellValue(item.salesQuantity.toDouble())
     }

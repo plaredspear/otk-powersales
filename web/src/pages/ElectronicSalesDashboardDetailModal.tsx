@@ -13,26 +13,45 @@ interface ElectronicSalesDashboardDetailModalProps {
   onClose: () => void;
   customerId: number | null;
   customerName: string | null;
-  year: number;
-  month: number;
+  /** 조회 시작일 (YYYY-MM-DD) */
+  startDate: string;
+  /** 조회 종료일 (YYYY-MM-DD) */
+  endDate: string;
+  /** 목록과 동일한 제품 필터 — 상세 합계가 목록 행 합계와 정합하도록 반영 */
+  productIds?: number[];
+  category2?: string;
+  category3?: string;
 }
 
 /**
  * 거래처 단건 전산실적 상세 모달 — 제품별 명세.
  *
  * 레거시 `abcmain.jsp` 의 제품별 조회 (`SelectAbcData` — `GROUP BY ITEM_CD`) 동등.
+ * 목록 조회의 기간/제품/분류 필터를 그대로 반영한다.
  */
 export default function ElectronicSalesDashboardDetailModal({
   open,
   onClose,
   customerId,
   customerName,
-  year,
-  month,
+  startDate,
+  endDate,
+  productIds = [],
+  category2,
+  category3,
 }: ElectronicSalesDashboardDetailModalProps) {
   const detailQuery = useQuery({
-    queryKey: ['electronicSalesDashboard', 'detail', customerId, year, month],
-    queryFn: () => fetchDetail(customerId!, year, month),
+    queryKey: [
+      'electronicSalesDashboard',
+      'detail',
+      customerId,
+      startDate,
+      endDate,
+      productIds,
+      category2,
+      category3,
+    ],
+    queryFn: () => fetchDetail(customerId!, startDate, endDate, { productIds, category2, category3 }),
     enabled: open && customerId != null,
   });
 
@@ -40,7 +59,7 @@ export default function ElectronicSalesDashboardDetailModal({
     <Modal
       open={open}
       onCancel={onClose}
-      title={`전산실적 상세 — ${customerName ?? ''} (${year}-${String(month).padStart(2, '0')})`}
+      title={`전산실적 상세 — ${customerName ?? ''} (${startDate} ~ ${endDate})`}
       width={760}
       footer={null}
       destroyOnClose

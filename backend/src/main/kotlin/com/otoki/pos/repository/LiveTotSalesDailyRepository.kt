@@ -84,6 +84,41 @@ interface LiveTotSalesDailyRepository : Repository<LiveTotSalesDaily, LiveTotSal
 	): List<ElectronicSalesProductRow>
 
 	/**
+	 * 거래처 N곳 + 기간 + 바코드 목록(`UPC_CD IN`) 의 거래처별 전산매출 합계 집계
+	 * (web admin 명세 테이블의 제품/분류 필터 분기).
+	 *
+	 * [aggregateByCustomer] 와 동일 형태에 `UPC_CD IN` predicate 1개만 추가 — 외부(POS) DB 에
+	 * 새로 추가되는 조회 조건은 이것뿐이며, 제품/중분류/소분류 필터는 모두 메인 DB(Product)에서
+	 * 바코드 목록으로 해소된 뒤 본 predicate 로 합류한다. IN 목록 비대화는 서비스 레이어가
+	 * 청크 분할로 보호한다.
+	 *
+	 * @param custCds 거래처 코드 목록 (legacy 패딩 `"000" + accountCode` 적용된 값)
+	 * @param startDate 조회 시작일 `YYYY-MM-DD`
+	 * @param endDate 조회 종료일 `YYYY-MM-DD`
+	 * @param barcodes 조회 제품의 바코드 목록 (`UPC_CD`)
+	 */
+	@Query(
+		nativeQuery = true,
+		value = """
+			SELECT "CUST_CD"           AS "custCd",
+			       SUM("SALES_RAMT")   AS "salesAmt",
+			       SUM("SALES_RQTY")   AS "salesQty"
+			FROM public.live_tot_sales_dh
+			WHERE "YMD_ID" BETWEEN to_date(:startDate, 'YYYY-MM-DD')
+			                   AND to_date(:endDate,   'YYYY-MM-DD')
+			  AND "CUST_CD" IN (:custCds)
+			  AND "UPC_CD" IN (:barcodes)
+			GROUP BY "CUST_CD"
+		"""
+	)
+	fun aggregateByCustomerAndBarcodes(
+		@Param("custCds") custCds: List<String>,
+		@Param("startDate") startDate: String,
+		@Param("endDate") endDate: String,
+		@Param("barcodes") barcodes: List<String>,
+	): List<ElectronicSalesCustomerRow>
+
+	/**
 	 * 거래처 N곳 + 기간의 거래처별 전산매출 합계 집계 (web admin 명세 테이블용).
 	 *
 	 * [aggregateByProduct] 가 제품별 집계인 반면, 본 query 는 `CUST_CD` 단위로 묶어

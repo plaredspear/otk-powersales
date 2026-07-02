@@ -4723,6 +4723,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseElectronicSalesDashboardFilterOptionsResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ElectronicSalesDashboardFilterOptionsResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseElectronicSalesDashboardListResponse" : {
         "properties" : {
           "data" : {
@@ -5361,6 +5390,34 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/EducationCategoryResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListElectronicSalesProductLookupItem" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ElectronicSalesProductLookupItem"
             },
             "type" : [ "array", "null" ]
           },
@@ -9207,6 +9264,20 @@
         },
         "type" : "object"
       },
+      "CategoryGroup" : {
+        "properties" : {
+          "category2" : {
+            "type" : "string"
+          },
+          "category3s" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "CategoryOption" : {
         "properties" : {
           "code" : {
@@ -9938,22 +10009,22 @@
           "customerName" : {
             "type" : [ "string", "null" ]
           },
+          "endDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "items" : {
             "items" : {
               "$ref" : "#/components/schemas/ProductSales"
             },
             "type" : "array"
           },
-          "salesMonth" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "salesYear" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
           "sapAccountCode" : {
             "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "format" : "date",
+            "type" : "string"
           },
           "totalAmount" : {
             "format" : "int64",
@@ -9962,6 +10033,29 @@
           "totalQuantity" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ElectronicSalesDashboardFilterOptionsResponse" : {
+        "properties" : {
+          "accountTypes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "categories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryGroup"
+            },
+            "type" : "array"
+          },
+          "distributionChannels" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -9985,16 +10079,8 @@
             "format" : "int64",
             "type" : "integer"
           },
-          "salesMonth" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
           "salesQuantity" : {
             "format" : "int64",
-            "type" : "integer"
-          },
-          "salesYear" : {
-            "format" : "int32",
             "type" : "integer"
           },
           "sapAccountCode" : {
@@ -10005,6 +10091,10 @@
       },
       "ElectronicSalesDashboardListResponse" : {
         "properties" : {
+          "endDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
           "items" : {
             "items" : {
               "$ref" : "#/components/schemas/ElectronicSalesDashboardListItem"
@@ -10013,6 +10103,36 @@
           },
           "pageInfo" : {
             "$ref" : "#/components/schemas/PageInfo"
+          },
+          "startDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "totalSalesAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalSalesQuantity" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ElectronicSalesProductLookupItem" : {
+        "properties" : {
+          "barcode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productId" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -25099,7 +25219,7 @@
     },
     "/api/v1/admin/products/lookup" : {
       "get" : {
-        "operationId" : "lookupProducts",
+        "operationId" : "lookupProducts_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "keyword",
@@ -26312,19 +26432,44 @@
           }
         }, {
           "in" : "query",
-          "name" : "year",
+          "name" : "startDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
-          "name" : "month",
+          "name" : "endDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -26333,6 +26478,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseElectronicSalesDashboardDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-electronic-sales-dashboard-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/electronic/filter-options" : {
+      "get" : {
+        "operationId" : "getFilterOptions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseElectronicSalesDashboardFilterOptionsResponse"
                 }
               }
             },
@@ -26354,19 +26517,19 @@
           }
         }, {
           "in" : "query",
-          "name" : "year",
+          "name" : "startDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
-          "name" : "month",
+          "name" : "endDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -26399,6 +26562,51 @@
         }, {
           "in" : "query",
           "name" : "customerKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "distributionChannels",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypes",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -26456,19 +26664,19 @@
           }
         }, {
           "in" : "query",
-          "name" : "year",
+          "name" : "startDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
-          "name" : "month",
+          "name" : "endDate",
           "required" : true,
           "schema" : {
-            "format" : "int32",
-            "type" : "integer"
+            "format" : "date",
+            "type" : "string"
           }
         }, {
           "in" : "query",
@@ -26507,6 +26715,51 @@
           }
         }, {
           "in" : "query",
+          "name" : "distributionChannels",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypes",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "sort",
           "required" : false,
           "schema" : {
@@ -26520,6 +26773,32 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-electronic-sales-dashboard-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/electronic/product-lookup" : {
+      "get" : {
+        "operationId" : "lookupProducts",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListElectronicSalesProductLookupItem"
                 }
               }
             },

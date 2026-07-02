@@ -60,7 +60,38 @@ interface ProductRepositoryCustom {
      * (제품 목록 검색은 별도로 orderable 필터를 유지하므로, 드롭다운의 일부 중분류는 선택 시 0건이 될 수 있다 — 레거시 동등.)
      */
     fun findCategoryGroups(): List<CategoryGroupRow>
+
+    /**
+     * 전산실적(월매출) 제품/분류 필터 → 소비자 바코드(ProductBarcode.barcode) 해소.
+     *
+     * POS `live_tot_sales_dh` 의 `UPC_CD` 는 소비자 바코드와 매칭되므로(레거시 `selectBarcodeList`
+     * → `productCd IN` 정합), 선택 제품/중분류/소분류에 해당하는 제품의 바코드 전체(단위 무관)를
+     * distinct 반환한다. productIds 가 비어 있으면 분류 조건만으로, 분류가 null 이면 제품 조건만으로
+     * 축소한다 (모두 지정 시 AND).
+     */
+    fun findBarcodesForElectronicSales(
+        productIds: List<Long>,
+        category2: String?,
+        category3: String?,
+    ): List<String>
+
+    /**
+     * 전산실적(월매출) 조회 조건의 제품 검색 — 제품명/제품코드/소비자 바코드 OR 부분일치.
+     *
+     * 소비자 바코드 보유 제품만 반환 (바코드가 없으면 POS `UPC_CD IN` 필터에 사용 불가).
+     * 모바일 제품검색과 달리 발주가능(가정/업소·활성) 필터는 적용하지 않는다 — 매출 조회는
+     * 단종/비발주 제품의 과거 실적도 대상.
+     */
+    fun searchForElectronicSales(keyword: String, limit: Long): List<ElectronicSalesProductLookupRow>
 }
+
+/** 전산실적 제품 검색 결과 1건 — 대표 바코드(min)와 함께 반환. */
+data class ElectronicSalesProductLookupRow(
+    val productId: Long,
+    val name: String?,
+    val productCode: String?,
+    val barcode: String?,
+)
 
 data class CategoryRow(
     val category1: String,

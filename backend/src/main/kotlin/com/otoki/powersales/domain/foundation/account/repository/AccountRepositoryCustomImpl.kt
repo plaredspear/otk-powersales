@@ -141,6 +141,38 @@ class AccountRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findDistinctDistributionChannelParts(): List<AccountLabelPartsRow> {
+        return queryFactory
+            .select(account.accountStatusCode, account.accountType)
+            .from(account)
+            .where(notDeleted())
+            .distinct()
+            .orderBy(account.accountStatusCode.asc(), account.accountType.asc())
+            .fetch()
+            .map { tuple ->
+                AccountLabelPartsRow(
+                    code = tuple.get(account.accountStatusCode),
+                    name = tuple.get(account.accountType),
+                )
+            }
+    }
+
+    override fun findDistinctAbcTypeParts(): List<AccountLabelPartsRow> {
+        return queryFactory
+            .select(account.abcTypeCode, account.abcType)
+            .from(account)
+            .where(notDeleted())
+            .distinct()
+            .orderBy(account.abcTypeCode.asc(), account.abcType.asc())
+            .fetch()
+            .map { tuple ->
+                AccountLabelPartsRow(
+                    code = tuple.get(account.abcTypeCode),
+                    name = tuple.get(account.abcType),
+                )
+            }
+    }
+
     private fun notDeleted() = account.isDeleted.isNull.or(account.isDeleted.eq(false))
 
     /**

@@ -5,10 +5,10 @@ import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
 
 interface PeriodBranchFilterBarProps {
-  year: number;
+  year?: number;
   month?: number;
   selectedCodes: string[];
-  onYearChange: (value: number) => void;
+  onYearChange?: (value: number) => void;
   onMonthChange?: (value: number) => void;
   onCodesChange: (codes: string[]) => void;
   onSearch: () => void;
@@ -21,6 +21,10 @@ interface PeriodBranchFilterBarProps {
   extraFilters?: ReactNode;
   /** 액션 버튼 행(조회/엑셀 다운로드)의 조회 버튼 왼쪽에 들어가는 추가 액션. 예: 새로고침 버튼. */
   extraActions?: ReactNode;
+  /** 년도/월 InputNumber 대신 렌더할 기간 UI (예: 일 단위 RangePicker). 지정 시 year/month 미사용. */
+  periodFilter?: ReactNode;
+  /** 지점 미선택 외의 추가 조회 차단 조건 (예: 기간 검증 실패). */
+  searchDisabled?: boolean;
 }
 
 export default function PeriodBranchFilterBar({
@@ -39,6 +43,8 @@ export default function PeriodBranchFilterBar({
   showMonth = true,
   extraFilters,
   extraActions,
+  periodFilter,
+  searchDisabled = false,
 }: PeriodBranchFilterBarProps) {
   const { data: branches = [] } = useTeamScheduleBranches();
 
@@ -77,7 +83,7 @@ export default function PeriodBranchFilterBar({
   // 년도/월 입력에서 엔터 시 조회 트리거. 단, 조회 버튼과 동일한 활성 조건(지점 선택 + 조회 중 아님)을
   // 만족할 때만 실행해 미선택 상태에서의 의도치 않은 조회를 막는다.
   const handleInputEnter = () => {
-    if (selectedCodes.length === 0 || searchLoading) return;
+    if (selectedCodes.length === 0 || searchDisabled || searchLoading) return;
     onSearch();
   };
 
@@ -132,31 +138,35 @@ export default function PeriodBranchFilterBar({
             />
           )}
         </Space>
-        <Space direction="vertical" size={4}>
-          <span>년도:</span>
-          <InputNumber
-            value={year}
-            min={2020}
-            max={2099}
-            onChange={(v) => v != null && onYearChange(v)}
-            onPressEnter={handleInputEnter}
-            style={{ width: 100 }}
-            parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
-          />
-        </Space>
-        {showMonth && (
-          <Space direction="vertical" size={4}>
-            <span>월:</span>
-            <InputNumber
-              value={month}
-              min={1}
-              max={12}
-              onChange={(v) => v != null && onMonthChange?.(v)}
-              onPressEnter={handleInputEnter}
-              style={{ width: 80 }}
-              parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
-            />
-          </Space>
+        {periodFilter ?? (
+          <>
+            <Space direction="vertical" size={4}>
+              <span>년도:</span>
+              <InputNumber
+                value={year}
+                min={2020}
+                max={2099}
+                onChange={(v) => v != null && onYearChange?.(v)}
+                onPressEnter={handleInputEnter}
+                style={{ width: 100 }}
+                parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
+              />
+            </Space>
+            {showMonth && (
+              <Space direction="vertical" size={4}>
+                <span>월:</span>
+                <InputNumber
+                  value={month}
+                  min={1}
+                  max={12}
+                  onChange={(v) => v != null && onMonthChange?.(v)}
+                  onPressEnter={handleInputEnter}
+                  style={{ width: 80 }}
+                  parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
+                />
+              </Space>
+            )}
+          </>
         )}
         {extraFilters}
       </Space>
@@ -166,7 +176,7 @@ export default function PeriodBranchFilterBar({
           type="primary"
           icon={<SearchOutlined />}
           onClick={onSearch}
-          disabled={selectedCodes.length === 0}
+          disabled={selectedCodes.length === 0 || searchDisabled}
           loading={searchLoading}
         >
           조회

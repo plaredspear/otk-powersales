@@ -4,14 +4,15 @@ package com.otoki.powersales.domain.sales.dto.response
  * 전산실적 대시보드 단건 거래처 상세 — 제품별 명세.
  *
  * 「월 매출(전산실적)」 명세 테이블 row 클릭 시 표시. 레거시 `abcmain.jsp` 의 제품별 조회
- * (`SelectAbcData` — `GROUP BY ITEM_CD`) 동등. 거래처 1곳의 해당 월 제품별 매출 금액/수량.
+ * (`SelectAbcData` — `GROUP BY ITEM_CD`) 동등. 거래처 1곳의 기간(startDate~endDate) 제품별 매출
+ * 금액/수량 — 목록의 제품/분류 필터가 지정된 경우 동일 필터를 반영해 목록 행 합계와 정합.
  */
 data class ElectronicSalesDashboardDetailResponse(
     val customerId: Long,
     val customerName: String?,
     val sapAccountCode: String?,
-    val salesYear: Int,
-    val salesMonth: Int,
+    val startDate: java.time.LocalDate,
+    val endDate: java.time.LocalDate,
     val totalAmount: Long,
     val totalQuantity: Long,
     val items: List<ProductSales>,

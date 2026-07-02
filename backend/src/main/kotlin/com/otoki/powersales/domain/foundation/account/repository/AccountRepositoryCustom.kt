@@ -97,4 +97,22 @@ interface AccountRepositoryCustom {
         branchCodes: Collection<String>,
         externalKeys: Collection<String>
     ): List<Account>
+
+    /**
+     * 활성(미삭제) 거래처의 유통형태 구성요소(거래처상태코드, 거래처타입) distinct 조합.
+     * 라벨 조합 규칙은 [Account.distributionChannelLabel] companion 이 정본 — 호출 측에서 조합.
+     */
+    fun findDistinctDistributionChannelParts(): List<AccountLabelPartsRow>
+
+    /**
+     * 활성(미삭제) 거래처의 거래처유형 구성요소(ABC유형코드, ABC유형) distinct 조합.
+     * 라벨 조합 규칙은 [Account.abcTypeLabel] companion 이 정본 — 호출 측에서 조합.
+     */
+    fun findDistinctAbcTypeParts(): List<AccountLabelPartsRow>
 }
+
+/** 거래처 라벨 구성요소 distinct 1건 — (코드, 명칭) 쌍. */
+data class AccountLabelPartsRow(
+    val code: String?,
+    val name: String?,
+)

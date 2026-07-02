@@ -316,6 +316,68 @@ class ProductRepositoryCustomImpl(
         return pagedSearch(where, pageable)
     }
 
+    override fun findBarcodesForElectronicSales(
+        productIds: List<Long>,
+        category2: String?,
+        category3: String?,
+    ): List<String> {
+        val builder = BooleanBuilder()
+        builder.and(product.isDeleted.isNull.or(product.isDeleted.eq(false)))
+        builder.and(productBarcode.barcode.isNotNull)
+        if (productIds.isNotEmpty()) {
+            builder.and(product.id.`in`(productIds))
+        }
+        if (!category2.isNullOrBlank()) {
+            builder.and(product.productCategory2.eq(category2))
+        }
+        if (!category3.isNullOrBlank()) {
+            builder.and(product.productCategory3.eq(category3))
+        }
+
+        return queryFactory
+            .select(productBarcode.barcode)
+            .from(productBarcode)
+            .join(product).on(product.id.eq(productBarcode.productId))
+            .where(builder)
+            .distinct()
+            .fetch()
+            .filterNotNull()
+            .filter { it.isNotBlank() }
+    }
+
+    override fun searchForElectronicSales(keyword: String, limit: Long): List<ElectronicSalesProductLookupRow> {
+        val lowerPattern = "%${keyword.lowercase()}%"
+        val rawPattern = "%$keyword%"
+
+        val representativeBarcode = productBarcode.barcode.min()
+
+        return queryFactory
+            .select(product.id, product.name, product.productCode, representativeBarcode)
+            .from(product)
+            .join(productBarcode).on(
+                productBarcode.productId.eq(product.id),
+                productBarcode.barcode.isNotNull,
+            )
+            .where(
+                product.isDeleted.isNull.or(product.isDeleted.eq(false)),
+                product.name.lower().like(lowerPattern)
+                    .or(product.productCode.lower().like(lowerPattern))
+                    .or(productBarcode.barcode.like(rawPattern)),
+            )
+            .groupBy(product.id, product.name, product.productCode)
+            .orderBy(product.name.asc(), product.productCode.asc())
+            .limit(limit)
+            .fetch()
+            .map { tuple ->
+                ElectronicSalesProductLookupRow(
+                    productId = tuple.get(product.id) ?: 0L,
+                    name = tuple.get(product.name),
+                    productCode = tuple.get(product.productCode),
+                    barcode = tuple.get(representativeBarcode),
+                )
+            }
+    }
+
     override fun findByBarcode(barcode: String, pageable: Pageable): Page<ProductSearchRow> {
         // 레거시 selectProduct: `b.productbarcode__c LIKE '%?%' AND a.dkretail__unit__c = b.productunit__c`.
         // 스캐너가 읽는 소비자 바코드는 ProductBarcode.barcode 에 저장되므로(물류 바코드 아님)
