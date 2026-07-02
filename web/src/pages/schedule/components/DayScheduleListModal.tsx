@@ -72,7 +72,7 @@ export function DayScheduleListModal({
                   cursor: isWork ? 'pointer' : 'default',
                 }}
               >
-                <ScheduleEventCard schedule={schedule} variant="month" />
+                <ScheduleEventCard schedule={schedule} variant="month" showCommuteTime />
               </div>
             );
           })}
