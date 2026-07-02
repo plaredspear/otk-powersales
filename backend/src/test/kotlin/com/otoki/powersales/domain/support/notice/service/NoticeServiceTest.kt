@@ -9,9 +9,16 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeCreateRequest
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeUpdateRequest
 import com.otoki.powersales.domain.support.notice.entity.Notice
+import com.otoki.powersales.domain.support.notice.entity.NoticePushLog
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
+import com.otoki.powersales.domain.support.notice.enums.NoticeScope
 import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.domain.support.notice.exception.BranchRequiredException
+import com.otoki.powersales.domain.support.notice.exception.NoticeNotPublishedException
+import com.otoki.powersales.domain.support.notice.exception.NoticeScopeNotPushableException
+import com.otoki.powersales.domain.support.notice.repository.NoticePushLogRepository
+import com.otoki.powersales.platform.push.sender.FcmSendResult
+import com.otoki.powersales.platform.push.sender.FcmSender
 import com.otoki.powersales.domain.support.notice.exception.InvalidImageIdException
 import com.otoki.powersales.domain.support.notice.exception.BranchNoticeOnlyException
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeCategoryException
@@ -44,11 +51,13 @@ import java.util.Optional
 class NoticeServiceTest {
 
     private val noticeRepository: NoticeRepository = mockk()
+    private val noticePushLogRepository: NoticePushLogRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val organizationRepository: OrganizationRepository = mockk()
     private val fileStorageService: FileStorageService = mockk()
     private val storageService: StorageService = mockk()
+    private val fcmSender: FcmSender = mockk()
 
     private lateinit var noticeService: NoticeService
 
@@ -56,16 +65,21 @@ class NoticeServiceTest {
     fun setUp() {
         noticeService = NoticeService(
             noticeRepository,
+            noticePushLogRepository,
             uploadFileRepository,
             employeeRepository,
             organizationRepository,
             fileStorageService,
-            storageService
+            storageService,
+            fcmSender
         )
         // 공지 이미지는 private presigned 조회 — uniqueKey 를 받아 presigned 형태 URL 반환 stub.
         every { storageService.getPresignedUrl(any(), any()) } answers {
             "https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/${firstArg<String>()}?X-Amz-Signature=test"
         }
+        // 상세 조회 시 발송 이력 조회 — 기본 미발송 stub (개별 테스트에서 override 가능).
+        every { noticePushLogRepository.countByNoticeId(any()) } returns 0L
+        every { noticePushLogRepository.findFirstByNoticeIdOrderByCreatedAtDesc(any()) } returns null
     }
 
     @Nested
@@ -1372,6 +1386,103 @@ class NoticeServiceTest {
             noticeService.deleteNoticeImage(42L, 200L)
 
             assertThat(uploadFile.isDeleted).isTrue()
+        }
+    }
+
+    @Nested
+    @DisplayName("sendPush - 공지 FCM push 즉시 발송")
+    inner class SendPushTests {
+
+        @Test
+        @DisplayName("회사공지는 대상 토큰을 모아 딥링크 payload 와 함께 발송하고 이력을 저장한다")
+        fun sendsCompanyNoticeToAllTokens() {
+            val notice = createNotice(id = 10L, name = "전사 공지", category = NoticeCategory.COMPANY)
+                .apply { scope = NoticeScope.FIELD_FEMALE_EMPLOYEE }
+            every { noticeRepository.findById(10L) } returns Optional.of(notice)
+            every { noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null) } returns
+                listOf("tok-a", "tok-b")
+            every { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) } returns
+                FcmSendResult(successCount = 2, failureCount = 0)
+            every { employeeRepository.findById(7L) } returns Optional.of(mockk(relaxed = true))
+            val logSlot = slot<NoticePushLog>()
+            every { noticePushLogRepository.save(capture(logSlot)) } answers { firstArg() }
+
+            val result = noticeService.sendPush(10L, senderId = 7L)
+
+            verify(exactly = 1) {
+                fcmSender.sendNotificationToTokens(
+                    listOf("tok-a", "tok-b"),
+                    "공지사항",
+                    "전사 공지",
+                    mapOf("type" to "notice", "noticeId" to "10"),
+                )
+            }
+            assertThat(result.targetCount).isEqualTo(2)
+            assertThat(result.successCount).isEqualTo(2)
+            assertThat(result.failureCount).isEqualTo(0)
+            assertThat(logSlot.captured.noticeId).isEqualTo(10L)
+            assertThat(logSlot.captured.targetCount).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("지점공지는 공지 지점코드로 대상 토큰을 조회한다")
+        fun sendsBranchNoticeByBranchCode() {
+            val notice = createNotice(
+                id = 11L, name = "지점 공지", category = NoticeCategory.BRANCH, branchCode = "B100"
+            ).apply { scope = NoticeScope.FIELD_FEMALE_EMPLOYEE }
+            every { noticeRepository.findById(11L) } returns Optional.of(notice)
+            every { noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, "B100") } returns listOf("tok-x")
+            every { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) } returns
+                FcmSendResult(successCount = 1, failureCount = 0)
+            every { employeeRepository.findById(any()) } returns Optional.of(mockk(relaxed = true))
+            every { noticePushLogRepository.save(any()) } answers { firstArg() }
+
+            val result = noticeService.sendPush(11L, senderId = 7L)
+
+            verify(exactly = 1) { noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, "B100") }
+            assertThat(result.targetCount).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("대상 토큰이 없으면 발송하지 않고 0 집계 이력을 저장한다")
+        fun noopWhenNoTokens() {
+            val notice = createNotice(id = 12L, category = NoticeCategory.COMPANY)
+                .apply { scope = NoticeScope.FIELD_FEMALE_EMPLOYEE }
+            every { noticeRepository.findById(12L) } returns Optional.of(notice)
+            every { noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null) } returns emptyList()
+            every { employeeRepository.findById(any()) } returns Optional.of(mockk(relaxed = true))
+            val logSlot = slot<NoticePushLog>()
+            every { noticePushLogRepository.save(capture(logSlot)) } answers { firstArg() }
+
+            val result = noticeService.sendPush(12L, senderId = 7L)
+
+            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+            assertThat(result.targetCount).isEqualTo(0)
+            assertThat(logSlot.captured.targetCount).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("임시저장(DRAFT) 공지는 발송할 수 없다")
+        fun rejectsDraftNotice() {
+            val notice = createNotice(id = 13L, status = NoticeStatus.DRAFT)
+                .apply { scope = NoticeScope.FIELD_FEMALE_EMPLOYEE }
+            every { noticeRepository.findById(13L) } returns Optional.of(notice)
+
+            assertThatThrownBy { noticeService.sendPush(13L, senderId = 7L) }
+                .isInstanceOf(NoticeNotPublishedException::class.java)
+            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("영업사원 scope 공지는 모바일 미노출이므로 발송할 수 없다")
+        fun rejectsSalesEmployeeScope() {
+            val notice = createNotice(id = 14L, category = NoticeCategory.COMPANY)
+                .apply { scope = NoticeScope.SALES_EMPLOYEE }
+            every { noticeRepository.findById(14L) } returns Optional.of(notice)
+
+            assertThatThrownBy { noticeService.sendPush(14L, senderId = 7L) }
+                .isInstanceOf(NoticeScopeNotPushableException::class.java)
+            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
         }
     }
 

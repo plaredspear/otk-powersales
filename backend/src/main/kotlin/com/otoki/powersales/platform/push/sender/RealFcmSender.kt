@@ -33,7 +33,12 @@ class RealFcmSender(
     @Volatile
     private var initialized = false
 
-    override fun sendNotificationToTokens(tokens: List<String>, title: String, body: String): FcmSendResult {
+    override fun sendNotificationToTokens(
+        tokens: List<String>,
+        title: String,
+        body: String,
+        data: Map<String, String>,
+    ): FcmSendResult {
         if (tokens.isEmpty()) return FcmSendResult.EMPTY
         val messaging = resolveMessaging() ?: return FcmSendResult.EMPTY
 
@@ -43,6 +48,7 @@ class RealFcmSender(
             try {
                 val message = MulticastMessage.builder()
                     .setNotification(Notification.builder().setTitle(title).setBody(body).build())
+                    .putAllData(data)
                     .addAllTokens(chunk)
                     .build()
                 val response = messaging.sendEachForMulticast(message)

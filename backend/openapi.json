@@ -7870,6 +7870,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseNoticePushResultResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NoticePushResultResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseObject" : {
         "properties" : {
           "data" : {
@@ -17204,6 +17233,17 @@
             },
             "type" : "array"
           },
+          "lastPush" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NoticePushInfo"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "pushSentCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "scope" : {
             "type" : [ "string", "null" ]
           },
@@ -17282,6 +17322,44 @@
           },
           "title" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "NoticePushInfo" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sentAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "targetCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "NoticePushResultResponse" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "targetCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -30449,6 +30527,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseNoticeMutationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-notice-controller" ]
+      }
+    },
+    "/api/v1/admin/notices/{noticeId}/push" : {
+      "post" : {
+        "operationId" : "sendNoticePush",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "noticeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseNoticePushResultResponse"
                 }
               }
             },
