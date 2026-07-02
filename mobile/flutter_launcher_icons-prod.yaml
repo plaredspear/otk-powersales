@@ -1,12 +1,12 @@
-# prod flavor 런처 아이콘 — 캐릭터(여사원) on 노란 배경(#ffe40c).
+# prod flavor 런처 아이콘 — 캐릭터(여사원) on 오뚜기 블루 배경(#0A309E, AppColors.otokiBlue).
 # 적용/갱신: `dart run flutter_launcher_icons` (dev/prod 파일을 함께 자동 처리)
 flutter_launcher_icons:
   image_path: assets/icon/app_icon_prod.png
   # iOS: alpha 없는 불투명 아이콘 (App Store 요구사항)
   ios: true
   remove_alpha_ios: true
-  # Android: 단일 비트맵 + adaptive(배경 노란색 + 캐릭터 전경) 동시 생성
+  # Android: 단일 비트맵 + adaptive(배경 블루 + 캐릭터 전경) 동시 생성
   android: true
-  adaptive_icon_background: "#ffe40c"
+  adaptive_icon_background: "#0A309E"
   adaptive_icon_foreground: assets/icon/app_icon_prod_fg.png
   adaptive_icon_foreground_inset: 20
