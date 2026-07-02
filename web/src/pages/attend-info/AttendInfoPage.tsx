@@ -12,6 +12,7 @@ import AttendInfoCreateModal from './components/AttendInfoCreateModal';
 import AttendInfoDetailModal from './components/AttendInfoDetailModal';
 import AttendInfoDeleteConfirmModal from './components/AttendInfoDeleteConfirmModal';
 import MonthlyWorkDetailTab from './components/monthly/MonthlyWorkDetailTab';
+import WorkHistoryPeriodPage from './WorkHistoryPeriodPage';
 
 const { Title } = Typography;
 
@@ -118,6 +119,7 @@ export default function AttendInfoPage() {
         defaultActiveKey="monthly"
         items={[
           { key: 'monthly', label: '월별 근무내역 (개인)', children: <MonthlyWorkDetailTab /> },
+          { key: 'period', label: '기간별 근무기간', children: <WorkHistoryPeriodPage /> },
           { key: 'hr', label: 'HR 적재 근무기간', children: hrTab },
         ]}
       />

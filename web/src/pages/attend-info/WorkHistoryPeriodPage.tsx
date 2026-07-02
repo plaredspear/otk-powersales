@@ -237,7 +237,7 @@ export default function WorkHistoryPeriodPage() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
+    <div>
       <div
         style={{
           marginBottom: 16,
