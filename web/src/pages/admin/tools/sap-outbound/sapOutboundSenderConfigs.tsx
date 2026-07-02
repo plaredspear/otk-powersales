@@ -2,6 +2,7 @@ import { type ReactNode } from 'react';
 import { Alert, DatePicker, Form, Input, InputNumber } from 'antd';
 import { type Dayjs } from 'dayjs';
 import { type SapOutboundTestKind } from '@/api/admin/sapOutboundTest';
+import BatchDateForm from './BatchDateForm';
 
 /**
  * SAP outbound 테스트 sender 설정 정의.
@@ -326,43 +327,6 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
     },
   },
 ];
-
-function BatchDateForm({
-  state,
-  update,
-  criteria,
-}: {
-  state: Record<string, unknown>;
-  update: (patch: Record<string, unknown>) => void;
-  /** 조회 대상 선별 조건을 자연어로 설명하는 안내(옵셔널). 폼 상단에 노출된다. */
-  criteria?: ReactNode;
-}) {
-  return (
-    <Form layout="vertical">
-      {criteria && (
-        <Form.Item>
-          <Alert showIcon type="info" message="조회 조건" description={criteria} />
-        </Form.Item>
-      )}
-      <Form.Item label="targetDate" required>
-        <DatePicker
-          style={{ width: '100%' }}
-          value={state.targetDate as Dayjs | undefined}
-          onChange={(v) => update({ targetDate: v ?? undefined })}
-        />
-      </Form.Item>
-      <Form.Item label="pageSize (기본 100)">
-        <InputNumber
-          style={{ width: '100%' }}
-          min={1}
-          max={1000}
-          value={state.pageSize as number | undefined}
-          onChange={(v) => update({ pageSize: v ?? undefined })}
-        />
-      </Form.Item>
-    </Form>
-  );
-}
 
 function batchDateToBody(state: Record<string, unknown>): Record<string, unknown> {
   const d = state.targetDate as Dayjs | undefined;
