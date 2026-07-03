@@ -111,6 +111,22 @@ data class EntityMetadata(
  *   추론하려면 인덱스 述語를 ON CONFLICT 에 그대로 명시해야 한다. 누락 시 런타임에
  *   `there is no unique or exclusion constraint matching the ON CONFLICT specification` 실패.
  *   predicate 문자열은 인덱스 정의의 WHERE 절과 정확히 일치해야 한다 (예: "sfid IS NOT NULL").
+ *
+ * ## 다중 UNIQUE 함정 (arbiter 선택 기준)
+ * ON CONFLICT (col) 은 **그 col 의 충돌만** 처리한다. 한 테이블에 UNIQUE 가 2개 이상이면,
+ * arbiter 아닌 다른 UNIQUE 를 위반하는 staging 행에서 그 위반이 안 잡혀 예외로 터진다
+ * (DO NOTHING 시절엔 어느 UNIQUE 든 조용히 skip 돼 감춰졌던 문제). 따라서 arbiter 는
+ * **항상 채워지는(NOT NULL) 자연키** 를 우선 택해, 충돌이 곧 '동일 레코드' dedup 이 되게 한다.
+ * 그래서 erp_order=sap_order_number / employee=employee_code / account=external_key /
+ * product=product_code 로 sfid 대신 자연키를 arbiter 로 쓴다.
+ *
+ * ## 알려진 잔여 다중 UNIQUE (arbiter 외 partial UNIQUE — 데이터 1:1 정합 전제로 무충돌)
+ * 아래 entity 는 arbiter 외에도 partial UNIQUE (WHERE ... IS NOT NULL) 를 하나 더 갖는다.
+ * arbiter 키와 이 컬럼이 정상 1:1 이면 충돌하지 않지만, 데이터에 불일치가 있으면 같은 예외 가능.
+ * 재적재 중 해당 제약명으로 duplicate key 가 나면 그 entity 도 자연키 arbiter 로 전환한다.
+ *   - team_member_schedule : promotion_emp_id_ext (대부분 NULL → 저위험)
+ *   - claim                : name (SF Name, 대개 유니크 → 저위험)
+ *   - employee / account / product / erp_order : sfid (자연키 arbiter 로 전환 후 sfid 가 잔여)
  */
 data class ConflictUpdate(
     val conflictColumn: String,
