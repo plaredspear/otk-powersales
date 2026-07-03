@@ -64,6 +64,13 @@ class ProfessionalPromotionTeamHistory(
     @Column(name = "new_value", length = 255)
     val newValue: ProfessionalPromotionTeamType? = null,
 
+    // new_value 컬럼의 raw 문자열 read-only 매핑 — 컨버터를 거치지 않은 원본 값.
+    // SF 원본에서 newValue__c 는 Text(255) 라 '일반'(미지정 해제) 등 enum 5종 밖의 문자열이
+    // 마이그레이션분에 실재한다. 컨버터가 걸린 [newValue] 로는 read 시 null 로 접히고 QueryDSL
+    // 문자열 비교도 불가하므로, "일반" 이력 검색을 위해 raw 컬럼을 직접 비교할 때만 쓴다 (쓰기 금지).
+    @Column(name = "new_value", length = 255, insertable = false, updatable = false)
+    val newValueRaw: String? = null,
+
     @SFField("updateTime__c")
     @FieldName("변경 시점")
     // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.

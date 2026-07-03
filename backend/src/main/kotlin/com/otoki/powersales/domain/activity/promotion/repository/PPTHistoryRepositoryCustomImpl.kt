@@ -40,9 +40,16 @@ class PPTHistoryRepositoryCustomImpl(
             builder.and(employee.employeeCode.containsIgnoreCase(employeeCode))
         }
 
-        // "일반" = 전문행사조 미지정 — 신규 시스템은 null 로 표현하므로 newValue IS NULL 로 평가.
+        // "일반" = 전문행사조 미지정 — 두 표현이 공존한다:
+        //  (1) 신규 시스템은 미지정을 null 로 저장 (컨버터가 null 로 write).
+        //  (2) SF 레거시 마이그레이션분은 문자열 '일반' 을 new_value 컬럼에 그대로 적재
+        //      (SF newValue__c 는 Text 라 enum 5종 밖의 '일반' 문자열이 컨버터를 우회한 COPY 로 들어옴).
+        // enum path(newValue) 로는 '일반' 문자열을 비교할 수 없어 raw 컬럼 매핑(newValueRaw)을 쓴다.
         if (teamTypeGeneral) {
-            builder.and(professionalPromotionTeamHistory.newValue.isNull)
+            builder.and(
+                professionalPromotionTeamHistory.newValueRaw.isNull
+                    .or(professionalPromotionTeamHistory.newValueRaw.eq(ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME))
+            )
         } else if (teamType != null) {
             builder.and(professionalPromotionTeamHistory.newValue.eq(teamType))
         }

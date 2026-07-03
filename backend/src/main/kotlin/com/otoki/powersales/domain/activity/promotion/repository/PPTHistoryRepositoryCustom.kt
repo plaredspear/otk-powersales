@@ -12,7 +12,8 @@ interface PPTHistoryRepositoryCustom {
      * 전문행사조 이력 검색.
      *
      * [teamType] 은 변경 후(newValue) 기준 필터. [teamTypeGeneral] true 면 "일반"(미지정 해제)
-     * 이력만 — newValue IS NULL 조건으로 평가하며 [teamType] 은 무시된다.
+     * 이력만 — new_value IS NULL 또는 raw 문자열 '일반'(SF 마이그레이션분) 조건으로 평가하며
+     * [teamType] 은 무시된다.
      */
     fun searchHistories(
         employeeName: String?,

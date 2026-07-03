@@ -281,7 +281,8 @@ class AdminPPTMasterService(
             is EffectiveBranchResult.Filtered -> result.codes
             is EffectiveBranchResult.NoAccess -> return emptyHistoryList(pageable)
         }
-        // "일반" 은 enum 값이 아니라 미지정(null) 상태 — newValue IS NULL 필터로 해석.
+        // "일반" 은 enum 값이 아니라 미지정(해제) 상태 — new_value IS NULL 또는 raw '일반'
+        // (SF 마이그레이션분 문자열) 필터로 해석 (repository 참조).
         val teamTypeGeneral = teamType == ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME
         val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
         val page = pptHistoryRepository.searchHistories(
@@ -322,7 +323,8 @@ class AdminPPTMasterService(
                     is EffectiveBranchResult.Filtered -> result.codes
                     is EffectiveBranchResult.NoAccess -> emptyList() // unreachable
                 }
-                // "일반" 은 enum 값이 아니라 미지정(null) 상태 — 목록 화면과 동일하게 newValue IS NULL 필터로 해석.
+                // "일반" 은 enum 값이 아니라 미지정(해제) 상태 — 목록 화면과 동일하게
+                // new_value IS NULL 또는 raw '일반'(SF 마이그레이션분) 필터로 해석.
                 val teamTypeGeneral = teamType == ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME
                 val teamTypeEnum = ProfessionalPromotionTeamType.fromDisplayNameOrNull(teamType)
                 pptHistoryRepository.searchHistories(
