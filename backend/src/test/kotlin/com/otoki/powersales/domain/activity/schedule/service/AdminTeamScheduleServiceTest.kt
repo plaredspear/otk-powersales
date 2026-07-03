@@ -1589,10 +1589,10 @@ class AdminTeamScheduleServiceTest {
             verify { teamMemberScheduleRepository.deleteAll(listOf(s100, s101, s102)) }
             // Q4 옵션 1 — 2개 그룹만 refresh 호출 (s100 + s101 동일 그룹 통합)
             verify(exactly = 1) {
-                adminMonthlyIntegrationService.refreshIntegration(11L, 21, YearMonth.of(2026, 5))
+                adminMonthlyIntegrationService.refreshIntegration(11L, YearMonth.of(2026, 5))
             }
             verify(exactly = 1) {
-                adminMonthlyIntegrationService.refreshIntegration(12L, 22, YearMonth.of(2026, 5))
+                adminMonthlyIntegrationService.refreshIntegration(12L, YearMonth.of(2026, 5))
             }
         }
 
@@ -1689,7 +1689,7 @@ class AdminTeamScheduleServiceTest {
                 .isInstanceOf(TeamScheduleWorkReportDeleteException::class.java)
             // Q5 옵션 1 — 가드 fail 시 deleteAll 미호출 (전체 rollback, legacy allOrNone=true 동등)
             verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any<List<TeamMemberSchedule>>()) }
-            verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any(), any()) }
+            verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any()) }
         }
 
         @Test

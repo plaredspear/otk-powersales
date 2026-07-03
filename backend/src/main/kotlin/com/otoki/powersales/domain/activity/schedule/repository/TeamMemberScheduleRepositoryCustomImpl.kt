@@ -478,9 +478,12 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findWorkSchedulesByEmployeeAndAccountAndMonth(
+    /**
+     * MFEIS 집계 모수 조회 — 사원+월의 출근등록(attendanceLog 연결)된 TMS row 전건.
+     * SF 레거시 모수 SOQL (`CommuteLogId != null AND AccountId != null`, workingType 무필터) 동등.
+     */
+    override fun findAttendedSchedulesByEmployeeAndMonth(
         employeeId: Long,
-        accountId: Long,
         from: LocalDate,
         to: LocalDate
     ): List<TeamMemberSchedule> {
@@ -490,50 +493,12 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
             .where(
                 teamMemberSchedule.employee.id.eq(employeeId),
-                teamMemberSchedule.account.id.eq(accountId),
                 teamMemberSchedule.workingDate.between(from, to),
-                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
-                isNotDeleted()
-            )
-            .fetch()
-    }
-
-    override fun countWorkScheduleRowsByEmployeeAndDate(
-        employeeId: Long,
-        workingDate: LocalDate
-    ): Int {
-        return queryFactory
-            .select(teamMemberSchedule.id)
-            .from(teamMemberSchedule)
-            .where(
-                teamMemberSchedule.employee.id.eq(employeeId),
-                teamMemberSchedule.workingDate.eq(workingDate),
-                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
+                teamMemberSchedule.attendanceLog.isNotNull,
                 teamMemberSchedule.account.isNotNull,
                 isNotDeleted()
             )
             .fetch()
-            .size
-    }
-
-    override fun countDistinctWorkingDatesByEmployeeAndCostCenterAndMonth(
-        employeeId: Long,
-        costCenterCode: String,
-        from: LocalDate,
-        to: LocalDate
-    ): Int {
-        return queryFactory
-            .select(teamMemberSchedule.workingDate).distinct()
-            .from(teamMemberSchedule)
-            .where(
-                teamMemberSchedule.employee.id.eq(employeeId),
-                teamMemberSchedule.costCenterCode.eq(costCenterCode),
-                teamMemberSchedule.workingDate.between(from, to),
-                teamMemberSchedule.workingType.eq(WORKING_TYPE_WORK),
-                isNotDeleted()
-            )
-            .fetch()
-            .size
     }
 
     override fun findRegularAttendancesForSapPaged(

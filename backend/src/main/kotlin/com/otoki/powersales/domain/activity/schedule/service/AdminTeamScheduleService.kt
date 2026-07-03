@@ -304,9 +304,7 @@ class AdminTeamScheduleService(
         val saved = teamMemberScheduleRepository.save(schedule)
 
         if (request.workingType == WorkingType.WORK && account != null) {
-            adminMonthlyIntegrationService.refreshIntegration(
-                employee.id, account.id, YearMonth.from(workingDate)
-            )
+            adminMonthlyIntegrationService.refreshIntegration(employee.id, YearMonth.from(workingDate))
         }
 
         return TeamScheduleCreateResultDto(id = saved.id)
@@ -360,17 +358,18 @@ class AdminTeamScheduleService(
         schedule.account = newAccount
 
         if (oldEmployeeId != null) {
-            val refreshTargets = mutableSetOf<Triple<Long, Long, YearMonth>>()
+            // 사원×월 단위 재집계 — 변경 전/후 월이 다르면 양쪽 모두 (레거시 trigger 가 old/new 양쪽 년월 조합을 재집계)
+            val refreshTargets = mutableSetOf<Pair<Long, YearMonth>>()
 
             if (oldWorkingDate != null && oldAccountId != null) {
-                refreshTargets.add(Triple(oldEmployeeId, oldAccountId, YearMonth.from(oldWorkingDate)))
+                refreshTargets.add(oldEmployeeId to YearMonth.from(oldWorkingDate))
             }
             if (request.workingType == WorkingType.WORK && newAccount != null) {
-                refreshTargets.add(Triple(oldEmployeeId, newAccount.id, YearMonth.from(newWorkingDate)))
+                refreshTargets.add(oldEmployeeId to YearMonth.from(newWorkingDate))
             }
 
-            for ((empId, accId, ym) in refreshTargets) {
-                adminMonthlyIntegrationService.refreshIntegration(empId, accId, ym)
+            for ((empId, ym) in refreshTargets) {
+                adminMonthlyIntegrationService.refreshIntegration(empId, ym)
             }
         }
     }
@@ -393,7 +392,7 @@ class AdminTeamScheduleService(
         teamMemberScheduleRepository.delete(schedule)
 
         if (employeeId != null && accountId != null && workingDate != null && schedule.workingType == WorkingType.WORK) {
-            adminMonthlyIntegrationService.refreshIntegration(employeeId, accountId, YearMonth.from(workingDate))
+            adminMonthlyIntegrationService.refreshIntegration(employeeId, YearMonth.from(workingDate))
         }
     }
 
@@ -407,7 +406,7 @@ class AdminTeamScheduleService(
      * 1건이라도 가드 fail 시 첫 실패 row 의 도메인 예외 throw → `@Transactional` 전체 rollback.
      *
      * **Q4 옵션 1 — MFEIS batch refresh**: 삭제된 schedule 들의 `workingType == WORK` 그룹을
-     * `(employeeId, accountId, YearMonth)` groupBy 후 그룹 당 1회만 `refreshIntegration` 호출.
+     * `(employeeId, YearMonth)` groupBy 후 그룹 당 1회만 `refreshIntegration` 호출 (사원×월 전체 재집계).
      */
     @Transactional
     fun massDelete(principal: WebUserPrincipal, ids: List<Long>): Int {
@@ -434,19 +433,18 @@ class AdminTeamScheduleService(
             .filter { it.workingType == WorkingType.WORK }
             .mapNotNull { schedule ->
                 val empId = schedule.employee?.id
-                val accId = schedule.account?.id
                 val date = schedule.workingDate
-                if (empId != null && accId != null && date != null) {
-                    Triple(empId, accId, YearMonth.from(date))
+                if (empId != null && schedule.account?.id != null && date != null) {
+                    empId to YearMonth.from(date)
                 } else null
             }
             .distinct()
 
         teamMemberScheduleRepository.deleteAll(schedules)
 
-        // Q4 옵션 1 — (employeeId × accountId × YearMonth) groupBy 후 그룹 당 1회 refresh
-        for ((empId, accId, yearMonth) in refreshTargets) {
-            adminMonthlyIntegrationService.refreshIntegration(empId, accId, yearMonth)
+        // Q4 옵션 1 — (employeeId × YearMonth) groupBy 후 그룹 당 1회 refresh (사원×월 전체 재집계)
+        for ((empId, yearMonth) in refreshTargets) {
+            adminMonthlyIntegrationService.refreshIntegration(empId, yearMonth)
         }
 
         return schedules.size

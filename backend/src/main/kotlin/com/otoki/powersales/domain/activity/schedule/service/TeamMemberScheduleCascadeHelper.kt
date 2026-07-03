@@ -82,19 +82,18 @@ class TeamMemberScheduleCascadeHelper(
             .filter { it.workingType == WorkingType.WORK }
             .mapNotNull { schedule ->
                 val empId = schedule.employee?.id
-                val accId = schedule.account?.id
                 val date = schedule.workingDate
-                if (empId != null && accId != null && date != null) {
-                    Triple(empId, accId, YearMonth.from(date))
+                if (empId != null && schedule.account?.id != null && date != null) {
+                    empId to YearMonth.from(date)
                 } else null
             }
             .distinct()
 
         teamMemberScheduleRepository.deleteAll(schedules)
 
-        // Q2 옵션 1 — DML 후 호출. (employeeId × accountId × YearMonth) groupBy 후 그룹 당 1회 refresh
-        for ((empId, accId, yearMonth) in refreshTargets) {
-            adminMonthlyIntegrationService.refreshIntegration(empId, accId, yearMonth)
+        // Q2 옵션 1 — DML 후 호출. (employeeId × YearMonth) groupBy 후 그룹 당 1회 refresh (사원×월 전체 재집계)
+        for ((empId, yearMonth) in refreshTargets) {
+            adminMonthlyIntegrationService.refreshIntegration(empId, yearMonth)
         }
     }
 

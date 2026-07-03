@@ -6,7 +6,9 @@ import com.otoki.powersales.platform.common.dto.response.AccountListResponse
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory2
 import com.otoki.powersales.platform.common.enums.WorkingCategory3
+import com.otoki.powersales.platform.common.enums.WorkingCategory5
 import com.otoki.powersales.platform.common.enums.WorkingType
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.platform.common.util.GeoUtils
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -319,19 +321,16 @@ class AttendanceService(
             )
         }
 
-        // 7. 출근 등록 후 월별여사원 통합일정(환산 일정) 갱신
-        // SF 레거시 동등: TeamMemberScheduleTrigger 가 beforeInsert(진열 신규)·beforeUpdate(행사/기존 일정 출근)
-        // 양쪽 모두에서 updateMonthlyFemaleEmployeeIntegrationSchedule 를 발화시킨다. 즉 신규 생성뿐 아니라
-        // 기존 일정에 출근만 찍는 경우(CommuteLogId__c null→not null)에도 환산 재집계가 돌아야 한다.
-        // 집계 모수 전제(CommuteLogId__c != null AND AccountId__c != null)는 여기서 attendanceLog 등록 완료 +
-        // account != null 로 충족된다. (이전 newlyCreated 한정은 행사/기존 분기 환산 누락 버그였음)
-        if (account != null) {
-            adminMonthlyIntegrationService.refreshIntegration(
-                employeeId = employee.id,
-                accountId = account.id,
-                yearMonth = YearMonth.from(today)
-            )
-        }
+        // 7. 레거시 WorkReport TMS 메타 stamp + 월별여사원 통합일정(환산 일정) 재집계
+        // SF 레거시 동등: IF_REST_MOBILE_WorkReport 가 upsert 시마다 CostCenterCode/전문판촉팀을 TMS 에
+        // 재기록(cls:89-90, 107-112)하고, TeamMemberScheduleTrigger 가 beforeInsert(진열 신규)·
+        // beforeUpdate(행사/기존 일정 출근) 양쪽에서 updateMonthlyFemaleEmployeeIntegrationSchedule 를 발화 —
+        // 사원+월 전체 조합 재집계 (같은 날 다른 거래처의 1/N 변화 포함).
+        stampLegacyWorkReportMeta(teamMemberSchedule, employee)
+        adminMonthlyIntegrationService.refreshIntegration(
+            employeeId = employee.id,
+            yearMonth = YearMonth.from(today)
+        )
 
         // 8. 출근 현황 집계
         val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
@@ -479,17 +478,15 @@ class AttendanceService(
             )
         }
 
-        // 출근 등록 후 월별여사원 통합일정(환산 일정) 갱신
-        // SF 레거시 동등: 신규 생성(진열)뿐 아니라 기존 일정 출근(CommuteLogId__c null→not null) 도 트리거 발화.
-        // 대리출근도 동일 출근 등록 경로이므로 account != null 이면 환산 재집계한다.
+        // 레거시 WorkReport TMS 메타 stamp + 월별여사원 통합일정(환산 일정) 재집계
+        // 대리출근도 레거시 mngDaily → SF WorkReport 동일 REST 경로 (EmployeeController.java:858) —
+        // 본인 출근과 동일하게 사원+월 전체 조합을 재집계한다.
         val account = teamMemberSchedule.account
-        if (account != null) {
-            adminMonthlyIntegrationService.refreshIntegration(
-                employeeId = targetEmployee.id,
-                accountId = account.id,
-                yearMonth = YearMonth.from(today)
-            )
-        }
+        stampLegacyWorkReportMeta(teamMemberSchedule, targetEmployee)
+        adminMonthlyIntegrationService.refreshIntegration(
+            employeeId = targetEmployee.id,
+            yearMonth = YearMonth.from(today)
+        )
 
         // 출근 현황 집계
         val todayTeamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(targetEmployee.id, today)
@@ -627,6 +624,10 @@ class AttendanceService(
             workingCategory1 = WorkingCategory1.DISPLAY,
             workingCategory2 = WorkingCategory2.fromDisplayNameOrNull(mapTypeOfWork5ToCategory2(master.typeOfWork5?.displayName)),
             workingCategory3 = master.typeOfWork3?.displayName?.let { WorkingCategory3.fromDisplayNameOrNull(it) },
+            // 레거시 IF_REST_MOBILE_WorkReport 진열 분기 (cls:102-103) — 마스터 근무형태4/5 를 TMS 에 카피.
+            // MFEIS 집계 키(ExternalKey) 컴포넌트라 출근 row 에 반드시 실려야 레거시 집계와 일치한다.
+            secondWorkType = master.typeOfWork4?.displayName,
+            workingCategory5 = WorkingCategory5.fromDisplayNameOrNull(master.typeOfWork5?.displayName),
             teamLeader = teamLeader,
             ownerUser = ownerUser,
             displayWorkSchedule = master,
@@ -709,6 +710,22 @@ class AttendanceService(
     /**
      * 사원의 조직코드 기반 조장 조회
      */
+    /**
+     * 레거시 `IF_REST_MOBILE_WorkReport.handleInboundData` 의 TMS 메타 재기록 동등 (cls:89-90, 107-112).
+     *
+     * 출근 upsert 시마다 사원의 현재 CostCenterCode 와 전문판촉팀을 TMS 에 stamp 한다. 두 값 모두
+     * MFEIS 집계 키(ExternalKey)·당월근무일수 그룹핑의 컴포넌트라, 출근 row 에 실려야 레거시 집계와 일치한다.
+     * 전문판촉팀 미지정은 레거시가 `ProfessionalPromotionTeam__c = '일반'` 문자열로 저장했으므로
+     * (신규 Employee 는 미지정=null) '일반' 으로 stamp 해 마이그레이션 row 의 키 포맷과 정합시킨다.
+     */
+    private fun stampLegacyWorkReportMeta(teamMemberSchedule: TeamMemberSchedule, employee: Employee) {
+        // managed entity — @Transactional dirty checking 으로 flush (별도 save 불필요)
+        teamMemberSchedule.costCenterCode = employee.costCenterCode
+        teamMemberSchedule.professionalPromotionTeam =
+            employee.professionalPromotionTeam?.displayName
+                ?: ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME
+    }
+
     private fun findTeamLeader(costCenterCode: String?): Employee? {
         if (costCenterCode.isNullOrBlank()) return null
         val leaders = employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(

@@ -1614,7 +1614,6 @@ class AttendanceServiceTest {
             verify { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
             verify { adminMonthlyIntegrationService.refreshIntegration(
                 employeeId = userId,
-                accountId = 8938,
                 yearMonth = YearMonth.from(today)
             ) }
         }
@@ -1673,7 +1672,7 @@ class AttendanceServiceTest {
             assertThat(result.scheduleId).isEqualTo(50L)
             verify(exactly = 0) { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) }
             // SF 레거시 동등: 기존 일정에 출근만 찍어도 환산 일정 재집계 (CommuteLogId__c null→not null = beforeUpdate 트리거)
-            verify { adminMonthlyIntegrationService.refreshIntegration(userId, 8938L, YearMonth.from(today)) }
+            verify { adminMonthlyIntegrationService.refreshIntegration(userId, YearMonth.from(today)) }
         }
 
         @Test
@@ -2106,7 +2105,7 @@ class AttendanceServiceTest {
             assertThat(result.displayWorkScheduleId).isNull()
             assertThat(result.scheduleStartDate).isNull()
             // SF 레거시 동등: 행사 일정 출근(기존 TMS update = beforeUpdate 트리거)도 환산 일정 재집계
-            verify { adminMonthlyIntegrationService.refreshIntegration(userId, 8938L, YearMonth.from(today)) }
+            verify { adminMonthlyIntegrationService.refreshIntegration(userId, YearMonth.from(today)) }
         }
 
         @Test
