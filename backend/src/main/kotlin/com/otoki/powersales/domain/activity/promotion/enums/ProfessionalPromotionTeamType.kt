@@ -23,6 +23,14 @@ enum class ProfessionalPromotionTeamType(
     fun toJson(): String = displayName
 
     companion object {
+        /**
+         * 전문행사조 미지정(해제) 상태의 표시명 — enum 값 아님.
+         *
+         * SF 레거시는 `ProfessionalPromotionTeam__c = '일반'` 문자열을 저장했지만,
+         * 신규 시스템은 미지정을 null 로 표현한다. 검색 필터에서 "일반" 선택을 해석할 때 사용.
+         */
+        const val GENERAL_DISPLAY_NAME = "일반"
+
         @JvmStatic
         @JsonCreator
         fun fromDisplayName(value: String): ProfessionalPromotionTeamType =

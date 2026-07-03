@@ -24,6 +24,7 @@ class PPTHistoryRepositoryCustomImpl(
         employeeName: String?,
         employeeCode: String?,
         teamType: ProfessionalPromotionTeamType?,
+        teamTypeGeneral: Boolean,
         changedAtFrom: LocalDate?,
         changedAtTo: LocalDate?,
         branchCodeFilter: List<String>?,
@@ -39,7 +40,10 @@ class PPTHistoryRepositoryCustomImpl(
             builder.and(employee.employeeCode.containsIgnoreCase(employeeCode))
         }
 
-        if (teamType != null) {
+        // "일반" = 전문행사조 미지정 — 신규 시스템은 null 로 표현하므로 newValue IS NULL 로 평가.
+        if (teamTypeGeneral) {
+            builder.and(professionalPromotionTeamHistory.newValue.isNull)
+        } else if (teamType != null) {
             builder.and(professionalPromotionTeamHistory.newValue.eq(teamType))
         }
 

@@ -8,10 +8,17 @@ import java.time.LocalDate
 
 interface PPTHistoryRepositoryCustom {
 
+    /**
+     * 전문행사조 이력 검색.
+     *
+     * [teamType] 은 변경 후(newValue) 기준 필터. [teamTypeGeneral] true 면 "일반"(미지정 해제)
+     * 이력만 — newValue IS NULL 조건으로 평가하며 [teamType] 은 무시된다.
+     */
     fun searchHistories(
         employeeName: String?,
         employeeCode: String?,
         teamType: ProfessionalPromotionTeamType?,
+        teamTypeGeneral: Boolean,
         changedAtFrom: LocalDate?,
         changedAtTo: LocalDate?,
         branchCodeFilter: List<String>?,
