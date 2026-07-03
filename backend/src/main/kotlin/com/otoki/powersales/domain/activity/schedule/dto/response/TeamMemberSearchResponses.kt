@@ -84,4 +84,6 @@ data class TeamMemberScheduleResultItem(
     val convertedHeadcount: BigDecimal,
     /** 6개월 평균 ABC 마감실적. */
     val actualAmount: BigDecimal,
+    /** MFEIS row PK — 상세 조회 진입 키. */
+    val mfeisId: Long? = null,
 )

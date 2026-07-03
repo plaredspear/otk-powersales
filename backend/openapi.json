@@ -7435,6 +7435,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseMonthlyIntegrationDetailResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlyIntegrationDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseMonthlyIntegrationScheduleResponse" : {
         "properties" : {
           "data" : {
@@ -16524,6 +16553,70 @@
         },
         "type" : "object"
       },
+      "MonthlyIntegrationDetailResponse" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "equivalentWorkingDays" : {
+            "type" : "number"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "month" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "schedules" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MonthlyIntegrationSourceScheduleItem"
+            },
+            "type" : "array"
+          },
+          "totalInputCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory4" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory5" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingDaysMonth" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "year" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "MonthlyIntegrationScheduleItem" : {
         "properties" : {
           "abcTypeLabel" : {
@@ -16559,6 +16652,10 @@
           },
           "equivalentWorkingDays" : {
             "type" : "number"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "title" : {
             "type" : [ "string", "null" ]
@@ -16601,6 +16698,48 @@
           "year" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "MonthlyIntegrationSourceScheduleItem" : {
+        "properties" : {
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "attendanceReportedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "dailyScheduleCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "equivalentContribution" : {
+            "type" : "number"
+          },
+          "scheduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory4" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory5" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingDate" : {
+            "format" : "date",
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -23970,6 +24109,10 @@
           },
           "equivalentNumberOfWorkingDays" : {
             "type" : "number"
+          },
+          "mfeisId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           },
           "month" : {
             "type" : [ "string", "null" ]
@@ -36175,6 +36318,33 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-monthly-integration-controller" ]
+      }
+    },
+    "/api/v1/admin/schedules/monthly-integration/{id}" : {
+      "get" : {
+        "operationId" : "getMonthlyIntegrationDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlyIntegrationDetailResponse"
                 }
               }
             },

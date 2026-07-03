@@ -3,12 +3,14 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.domain.activity.schedule.dto.response.CategoryScheduleResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationDetailResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleResponse
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -33,6 +35,16 @@ class AdminMonthlyIntegrationController(
         val response = adminMonthlyIntegrationService.getMonthlyIntegration(
             year, month, costCenterCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
         )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** MFEIS row 상세 — 집계 근거가 된 여사원일정 목록. */
+    @GetMapping("/{id}")
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    fun getMonthlyIntegrationDetail(
+        @PathVariable id: Long
+    ): ResponseEntity<ApiResponse<MonthlyIntegrationDetailResponse>> {
+        val response = adminMonthlyIntegrationService.getIntegrationDetail(id)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

@@ -2,8 +2,10 @@ package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.activity.schedule.dto.response.CategoryScheduleItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.CategoryScheduleResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationDetailResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationSourceScheduleItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberCategoryResultItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.domain.activity.schedule.entity.EmployeeInputCriteriaMaster
@@ -253,6 +255,73 @@ class AdminMonthlyIntegrationService(
         val timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
         val filename = "${year}년${month}월_근무형태별_인원현황_${timestamp}.xlsx"
         return ExcelResult(bytes, filename)
+    }
+
+    /**
+     * MFEIS row 상세 — 집계 근거가 된 여사원일정 목록.
+     *
+     * `refreshIntegration` 과 동일한 모수(사원+월 + 출근등록(attendanceLog 연결) + 거래처 존재)에서
+     * 본 row 의 집계 키(ExternalKey)에 속하는 일정만 추린다 — persist 된 집계값과 근거 목록의 정합 보장.
+     * TMS→MFEIS FK 역추적 대신 키 재도출을 쓰는 이유: FK 는 전 구간(마이그레이션 포함) 채움이 보장되지 않는다.
+     *
+     * `dailyScheduleCount`(N) 는 모수 전체(본 키 조합 외 포함) 기준 — 환산근무일수 1/N 의 분모와 동일.
+     */
+    fun getIntegrationDetail(id: Long): MonthlyIntegrationDetailResponse {
+        val mfeis = monthlyIntegrationScheduleRepository.findByIdWithEmployeeAndAccount(id)
+            ?: throw MonthlyIntegrationNotFoundException()
+        val employee = mfeis.employee
+        val account = mfeis.account
+        val year = mfeis.year?.toIntOrNull()
+        val month = mfeis.month?.toIntOrNull()
+
+        val schedules = if (employee != null && year != null && month != null) {
+            val ym = YearMonth.of(year, month)
+            val population = teamMemberScheduleRepository
+                .findAttendedSchedulesByEmployeeAndMonth(employee.id, ym.atDay(1), ym.atEndOfMonth())
+            val rowCountByDate: Map<LocalDate, Int> = population.groupingBy { it.workingDate!! }.eachCount()
+            population
+                .filter { buildLegacyExternalKey(it, mfeis.year!!, mfeis.month!!) == mfeis.externalKey }
+                .sortedWith(compareBy({ it.workingDate }, { it.id }))
+                .map { row ->
+                    val n = rowCountByDate[row.workingDate!!] ?: 1
+                    MonthlyIntegrationSourceScheduleItem(
+                        scheduleId = row.id,
+                        workingDate = row.workingDate!!,
+                        accountCode = row.account?.externalKey,
+                        accountName = row.account?.name,
+                        workingCategory1 = row.workingCategory1?.displayName,
+                        workingCategory3 = row.workingCategory3?.displayName,
+                        // MFEIS 근무유형4 = TMS.SecondWorkType (레거시 240304 정합)
+                        workingCategory4 = row.secondWorkType,
+                        workingCategory5 = row.workingCategory5?.displayName,
+                        attendanceReportedAt = row.commuteDate,
+                        dailyScheduleCount = n,
+                        equivalentContribution = BigDecimal.ONE.divide(BigDecimal(n), 4, RoundingMode.HALF_UP),
+                    )
+                }
+        } else {
+            emptyList()
+        }
+
+        return MonthlyIntegrationDetailResponse(
+            id = mfeis.id,
+            year = year ?: 0,
+            month = month ?: 0,
+            branchName = mfeis.empBranchName?.takeIf { it.isNotBlank() } ?: employee?.orgName,
+            employeeCode = employee?.employeeCode,
+            employeeName = employee?.name,
+            accountCode = account?.externalKey,
+            accountName = account?.name,
+            workingCategory1 = mfeis.workingCategory1,
+            workingCategory3 = mfeis.workingCategory3,
+            workingCategory4 = mfeis.workingCategory4,
+            workingCategory5 = mfeis.workingCategory5,
+            workingDaysMonth = mfeis.workingDaysMonth?.toInt() ?: 0,
+            totalInputCount = mfeis.numberOfInputs?.toInt() ?: 0,
+            equivalentWorkingDays = mfeis.equivalentNumberOfWorkingDays ?: BigDecimal.ZERO,
+            convertedHeadcount = mfeis.convertedHeadcount ?: BigDecimal.ZERO,
+            schedules = schedules,
+        )
     }
 
     /**
@@ -812,10 +881,17 @@ class InvalidParameterException(detail: String) : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
+class MonthlyIntegrationNotFoundException : BusinessException(
+    errorCode = "MONTHLY_INTEGRATION_NOT_FOUND",
+    message = "월별 여사원 통합일정을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)
+
 // SF `ScheduleSearchByTeamMember` row → web admin 화면 DTO 변환.
 // `numberOfInputs` 는 MFEIS 가 BigDecimal 로 보유, 화면은 Int 로 표시 (행 수 의미).
 private fun TeamMemberScheduleResultItem.toMonthlyIntegrationItem(): MonthlyIntegrationScheduleItem =
     MonthlyIntegrationScheduleItem(
+        id = mfeisId,
         branchName = orgName ?: "",
         accountBranchName = accountBranchName,
         accountCode = accountCode ?: "",

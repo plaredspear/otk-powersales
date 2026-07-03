@@ -491,6 +491,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .selectFrom(teamMemberSchedule)
             .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            // 상세(집계 근거) 응답의 출근보고 일시 — LAZY 미초기화 → DTO null 방지 (enhancement 환경)
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
             .where(
                 teamMemberSchedule.employee.id.eq(employeeId),
                 teamMemberSchedule.workingDate.between(from, to),

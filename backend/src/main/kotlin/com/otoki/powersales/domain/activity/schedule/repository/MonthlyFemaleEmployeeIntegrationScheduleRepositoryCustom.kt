@@ -28,6 +28,12 @@ data class DashboardDeploymentRow(
 interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
 
     /**
+     * MFEIS 단건 + employee/account fetch join — 상세(집계 근거) 조회용.
+     * LAZY 미초기화 → 응답 필드 null 방지 (enhancement 환경).
+     */
+    fun findByIdWithEmployeeAndAccount(id: Long): MonthlyFemaleEmployeeIntegrationSchedule?
+
+    /**
      * 거래처유형별 환산인원 현황 보고서 조회 (SF Report 5변형 베이스).
      *
      * @param year                연도 (entity year 가 String — 문자열 비교)
