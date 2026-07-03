@@ -66,7 +66,7 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
         fun mapsRows() {
             every { repository.findSafetyCheckReport(any(), any()) } returns listOf(schedule())
 
-            val res = service.getReport(allScope, LocalDate.of(2026, 5, 29))
+            val res = service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
 
             assertThat(res.date).isEqualTo("2026-05-29")
             assertThat(res.items).hasSize(1)
@@ -90,7 +90,7 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
         fun checkTimeNoOffset() {
             every { repository.findSafetyCheckReport(any(), any()) } returns listOf(schedule())
 
-            val res = service.getReport(allScope, LocalDate.of(2026, 5, 29))
+            val res = service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
 
             // startTime 09:05 그대로 (레거시 -9h 보정 미적용)
             assertThat(res.items[0].checkTime).isEqualTo("2026-05-29T09:05")
@@ -102,7 +102,7 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
             val dateSlot = slot<LocalDate>()
             every { repository.findSafetyCheckReport(capture(dateSlot), any()) } returns emptyList()
 
-            val res = service.getReport(allScope, null)
+            val res = service.getReport(allScope, null, null)
 
             val expectedYesterday = LocalDate.now(TimeZones.SEOUL_ZONE).minusDays(1)
             assertThat(dateSlot.captured).isEqualTo(expectedYesterday)
@@ -114,7 +114,7 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
         fun emptyResult() {
             every { repository.findSafetyCheckReport(any(), any()) } returns emptyList()
 
-            val res = service.getReport(allScope, LocalDate.of(2026, 5, 29))
+            val res = service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
 
             assertThat(res.items).isEmpty()
         }
@@ -125,25 +125,65 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
     inner class Scope {
 
         @Test
-        @DisplayName("isAllBranches=true 면 빈 리스트(전사) 전달")
-        fun allBranches() {
+        @DisplayName("전사 권한자 + 선택 없음 → 빈 리스트(전건) 전달")
+        fun allBranchesNoSelection() {
             val codesSlot = slot<List<String>>()
             every { repository.findSafetyCheckReport(any(), capture(codesSlot)) } returns emptyList()
 
-            service.getReport(allScope, LocalDate.of(2026, 5, 29))
+            service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
 
             assertThat(codesSlot.captured).isEmpty()
         }
 
         @Test
-        @DisplayName("isAllBranches=false 면 scope.branchCodes 전달")
-        fun branchScoped() {
+        @DisplayName("전사 권한자 + 지점 선택 → 그 지점으로 좁힘")
+        fun allBranchesWithSelection() {
             val codesSlot = slot<List<String>>()
             every { repository.findSafetyCheckReport(any(), capture(codesSlot)) } returns emptyList()
 
-            service.getReport(branchScope("A001", "A002"), LocalDate.of(2026, 5, 29))
+            service.getReport(allScope, "B999", LocalDate.of(2026, 5, 29))
+
+            assertThat(codesSlot.captured).containsExactly("B999")
+        }
+
+        @Test
+        @DisplayName("지점 사용자 + 선택 없음 → 본인 지점 전체 전달")
+        fun branchScopedNoSelection() {
+            val codesSlot = slot<List<String>>()
+            every { repository.findSafetyCheckReport(any(), capture(codesSlot)) } returns emptyList()
+
+            service.getReport(branchScope("A001", "A002"), null, LocalDate.of(2026, 5, 29))
 
             assertThat(codesSlot.captured).containsExactlyInAnyOrder("A001", "A002")
+        }
+
+        @Test
+        @DisplayName("지점 사용자 + 본인 지점 선택 → 그 지점으로 좁힘")
+        fun branchScopedWithOwnSelection() {
+            val codesSlot = slot<List<String>>()
+            every { repository.findSafetyCheckReport(any(), capture(codesSlot)) } returns emptyList()
+
+            service.getReport(branchScope("A001", "A002"), "A002", LocalDate.of(2026, 5, 29))
+
+            assertThat(codesSlot.captured).containsExactly("A002")
+        }
+
+        @Test
+        @DisplayName("지점 사용자 + 권한 밖 지점 선택 → IDOR 차단(빈 결과, repository 미호출)")
+        fun branchScopedIdorBlocked() {
+            val res = service.getReport(branchScope("A001"), "Z999", LocalDate.of(2026, 5, 29))
+
+            assertThat(res.items).isEmpty()
+            io.mockk.verify(exactly = 0) { repository.findSafetyCheckReport(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("권한 지점 없음(빈 scope) → NoAccess 빈 결과")
+        fun noAccess() {
+            val res = service.getReport(branchScope(), null, LocalDate.of(2026, 5, 29))
+
+            assertThat(res.items).isEmpty()
+            io.mockk.verify(exactly = 0) { repository.findSafetyCheckReport(any(), any()) }
         }
     }
 
@@ -156,7 +196,7 @@ class AdminFemaleEmployeeSafetyCheckReportServiceTest {
         fun exportsXlsx() {
             every { repository.findSafetyCheckReport(any(), any()) } returns listOf(schedule())
 
-            val result = service.exportReport(allScope, LocalDate.of(2026, 5, 29))
+            val result = service.exportReport(allScope, null, LocalDate.of(2026, 5, 29))
 
             assertThat(result.filename).isEqualTo("판매여사원안전점검_2026-05-29.xlsx")
             assertThat(result.bytes).isNotEmpty()

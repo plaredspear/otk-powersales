@@ -36,26 +36,46 @@ export interface FemaleEmployeeSafetyCheckReportResponse {
   items: FemaleEmployeeSafetyCheckReportItem[];
 }
 
+/** 지점 셀렉터 옵션 — 현재 사용자 권한별 조회 허용 지점 화이트리스트. */
+export interface ReportBranch {
+  branchCode: string;
+  branchName: string;
+}
+
 const BASE = '/api/v1/admin/female-employees/safety-check-report';
+/** 여사원 보고서 화면 공용 지점 셀렉터 옵션 엔드포인트 (안전점검·환산인원 공유, team_member_schedule READ 가드). */
+const BRANCHES_BASE = '/api/v1/admin/female-employees/report-branches';
 
 function failureMessage(label: string, res: { data: ApiResponse<unknown> }): string {
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
 }
 
-/** 일일 안전점검 현황 조회 (date 미지정 시 어제). */
+/**
+ * 여사원 보고서 화면 지점 셀렉터 옵션 조회.
+ *
+ * 전사 권한자는 전 지점, 그 외는 본인 지점 1건. 프론트는 응답 길이로 단일/다중을 판별해 UI 를 분기한다.
+ */
+export async function fetchReportBranches(): Promise<ReportBranch[]> {
+  const res = await client.get<ApiResponse<ReportBranch[]>>(BRANCHES_BASE);
+  if (!res.data.success || !res.data.data) throw new Error(failureMessage('지점 목록', res));
+  return res.data.data;
+}
+
+/** 일일 안전점검 현황 조회 (date 미지정 시 어제). branchCode 지정 시 그 지점으로 좁힘. */
 export async function fetchSafetyCheckReport(
   date: string,
+  branchCode?: string,
 ): Promise<FemaleEmployeeSafetyCheckReportResponse> {
   const res = await client.get<ApiResponse<FemaleEmployeeSafetyCheckReportResponse>>(BASE, {
-    params: { date },
+    params: { date, branchCode: branchCode || undefined },
   });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('판매여사원 안전점검 현황', res));
   return res.data.data;
 }
 
-/** 일일 안전점검 현황 엑셀 다운로드. */
-export async function exportSafetyCheckReport(date: string): Promise<void> {
+/** 일일 안전점검 현황 엑셀 다운로드. branchCode 지정 시 그 지점으로 좁힘. */
+export async function exportSafetyCheckReport(date: string, branchCode?: string): Promise<void> {
   await downloadExcel(`${BASE}/export`, `판매여사원안전점검_${date}.xlsx`, {
-    params: { date },
+    params: { date, branchCode: branchCode || undefined },
   });
 }

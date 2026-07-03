@@ -8,6 +8,8 @@ import {
   exportSafetyCheckReport as apiExport,
   type FemaleEmployeeSafetyCheckReportItem,
 } from '@/api/femaleEmployeeSafetyCheckReport';
+import { useReportBranches } from '@/hooks/female-employee/useReportBranches';
+import BranchSingleSelect from '@/components/common/BranchSingleSelect';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -23,11 +25,15 @@ const { Text } = Typography;
  */
 export default function FemaleEmployeeSafetyCheckReportPage() {
   const [date, setDate] = useState<Dayjs>(dayjs().subtract(1, 'day'));
+  const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
   const [queryDate, setQueryDate] = useState<string | null>(null);
+  const [queryBranchCode, setQueryBranchCode] = useState<string | undefined>(undefined);
+
+  const { data: branches = [] } = useReportBranches();
 
   const query = useQuery({
-    queryKey: ['femaleEmployeeSafetyCheckReport', queryDate],
-    queryFn: () => fetchSafetyCheckReport(queryDate!),
+    queryKey: ['femaleEmployeeSafetyCheckReport', queryDate, queryBranchCode],
+    queryFn: () => fetchSafetyCheckReport(queryDate!, queryBranchCode),
     enabled: queryDate != null,
   });
 
@@ -37,12 +43,13 @@ export default function FemaleEmployeeSafetyCheckReportPage() {
       return;
     }
     setQueryDate(date.format('YYYY-MM-DD'));
+    setQueryBranchCode(branchCode);
   };
 
   const handleExport = async () => {
     if (!queryDate) return;
     try {
-      await apiExport(queryDate);
+      await apiExport(queryDate, queryBranchCode);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }
@@ -81,9 +88,12 @@ export default function FemaleEmployeeSafetyCheckReportPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <span>조회일자:</span>
-        <DatePicker value={date} onChange={(v) => v && setDate(v)} allowClear={false} />
+      <Space style={{ marginBottom: 12 }} wrap align="end">
+        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        <Space direction="vertical" size={4}>
+          <span>조회일자:</span>
+          <DatePicker value={date} onChange={(v) => v && setDate(v)} allowClear={false} />
+        </Space>
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>

@@ -2,9 +2,12 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.service.ReportBranchScopeService
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeePlacementCheckResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckReportResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckRpaResponse
@@ -22,6 +25,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -43,7 +47,22 @@ class AdminFemaleEmployeePlacementCheckController(
     private val safetyCheckReportService: AdminFemaleEmployeeSafetyCheckReportService,
     private val safetyCheckRpaService: AdminFemaleEmployeeSafetyCheckRpaService,
     private val convertedHeadcountReportService: AdminConvertedHeadcountReportService,
+    private val reportBranchScopeService: ReportBranchScopeService,
 ) {
+
+    /**
+     * 여사원 보고서 화면 공용 지점 셀렉터 옵션.
+     *
+     * 안전점검·환산인원 등 이 컨트롤러의 보고서 화면이 공유하는 지점 화이트리스트. 전사 권한자는 전 지점,
+     * 그 외는 본인 costCenterCode 단일 지점. 화면 게이팅과 동일한 team_member_schedule READ 로 가드.
+     */
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/report-branches")
+    fun getReportBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+    }
 
     /** 월간 배치 점검 조회 (퇴직자 포함 · 여사원/조장). */
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
@@ -97,14 +116,15 @@ class AdminFemaleEmployeePlacementCheckController(
         return ExcelResponseUtils.build(result)
     }
 
-    /** 일일 안전점검 현황 조회 (Spec #841). date 미지정 시 어제. */
+    /** 일일 안전점검 현황 조회 (Spec #841). date 미지정 시 어제. branchCode 선택 시 그 지점으로 좁힘. */
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/safety-check-report")
     fun getSafetyCheckReport(
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) date: String?,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<FemaleEmployeeSafetyCheckReportResponse>> {
-        val response = safetyCheckReportService.getReport(scope, parseDate(date))
+        val response = safetyCheckReportService.getReport(scope, branchCode, parseDate(date))
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -114,8 +134,9 @@ class AdminFemaleEmployeePlacementCheckController(
     fun exportSafetyCheckReport(
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) date: String?,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = safetyCheckReportService.exportReport(scope, parseDate(date))
+        val result = safetyCheckReportService.exportReport(scope, branchCode, parseDate(date))
         return ExcelResponseUtils.build(result)
     }
 

@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckReportItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckReportResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
@@ -35,13 +36,18 @@ class AdminFemaleEmployeeSafetyCheckReportService(
      * 일일 안전점검 현황 조회.
      *
      * date 미지정 시 어제(KST). traversalFlag='O' + yesChkCnt≠null (점검 완료) 필터.
-     * 지점 스코프: scope.isAllBranches 면 무제한(전사), 아니면 scope.branchCodes (costCenterCode) 제한.
+     * 지점 스코프: requestedBranchCode(화면 지점 선택값)를 [DataScope.effectiveBranchCodes] 로 해석 —
+     * 전사 권한자는 선택 지점으로 좁히거나(미선택 시 전건), 지점 사용자는 본인 지점으로 강제(선택값 밖이면 무시).
+     * 권한 지점이 아예 없으면([EffectiveBranchResult.NoAccess]) 빈 결과.
      */
-    fun getReport(scope: DataScope, date: LocalDate?): FemaleEmployeeSafetyCheckReportResponse {
+    fun getReport(scope: DataScope, requestedBranchCode: String?, date: LocalDate?): FemaleEmployeeSafetyCheckReportResponse {
         val targetDate = date ?: LocalDate.now(TimeZones.SEOUL_ZONE).minusDays(1)
-        val branchCodes = if (scope.isAllBranches) emptyList() else scope.branchCodes
-
-        val schedules = teamMemberScheduleRepository.findSafetyCheckReport(targetDate, branchCodes)
+        val schedules = when (val effective = scope.effectiveBranchCodes(requestedBranchCode)) {
+            is EffectiveBranchResult.All -> teamMemberScheduleRepository.findSafetyCheckReport(targetDate, emptyList())
+            is EffectiveBranchResult.Filtered ->
+                teamMemberScheduleRepository.findSafetyCheckReport(targetDate, effective.codes)
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }
         val items = schedules.map { toItem(it) }
         return FemaleEmployeeSafetyCheckReportResponse(targetDate.toString(), items)
     }
@@ -49,8 +55,8 @@ class AdminFemaleEmployeeSafetyCheckReportService(
     /**
      * 안전점검 현황 엑셀 export — 24컬럼 시트 (조회와 동일 필터/스코프).
      */
-    fun exportReport(scope: DataScope, date: LocalDate?): ExcelResult {
-        val response = getReport(scope, date)
+    fun exportReport(scope: DataScope, requestedBranchCode: String?, date: LocalDate?): ExcelResult {
+        val response = getReport(scope, requestedBranchCode, date)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("판매여사원안전점검")
