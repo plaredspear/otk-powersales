@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.activity.schedule.entity.EmployeeInputCriteri
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -253,144 +255,225 @@ class AdminMonthlyIntegrationService(
         return ExcelResult(bytes, filename)
     }
 
+    /**
+     * MFEIS(월별여사원 통합일정) 실시간 재집계 — 사원×월 전체 조합.
+     *
+     * SF 레거시 `TeamMemberScheduleTriggerHandler.updateMonthlyFemaleEmployeeIntegrationSchedule`
+     * (insert/update 경로) 동등:
+     * - 모수: 사원+월의 출근등록(attendanceLog 연결)된 TMS row 전건 (`CommuteLogId != null AND AccountId != null`).
+     *   출근되지 않은 스케줄은 집계에 포함하지 않는다 (스케줄 기반 아님 — 출근 실적 기반).
+     * - 집계 키: 레거시 ExternalKey (년+월+거래처코드+costCenter+사번+근무유형1+근무유형3
+     *   +근무유형4(SecondWorkType)+근무유형5+전문판촉팀). null 컴포넌트는 Apex 문자열 연결 동등 "null" 리터럴,
+     *   월은 zero-pad 없음 — SF 마이그레이션 row 의 external_key 포맷과 일치시켜 upsert 연속성 유지.
+     * - 환산근무일수: row 별 1/N (N = 그날 사원의 출근 row 수, 거래처 무관) 전정밀도 누적 후 최종 4자리 HALF_UP.
+     * - 당월근무일수: 사원+costCenter 별 distinct 근무일 수 (거래처 무관).
+     * - 총투입횟수: 거래처+근무유형 조합(costCenter 무관) 별 distinct 근무일 수.
+     * - 환산인원: 미반올림 환산근무일수 / 당월근무일수 (4자리 HALF_UP).
+     * - 기존 row 는 ExternalKey 매칭 갱신 (EmpBranchName 비공백 값 유지 — 레거시 250409 지점이동 이력관리),
+     *   재집계 후 키 조합이 사라진 row 와 모수 0건 시 잔여 row 는 삭제 (레거시 deleteRecordsSet + NumberOfInputs=0 동등).
+     * - spec #680 §5.3 self-trigger 3필드 (accountConvertedHeadcount / thisMonthAmount /
+     *   employeeInputCriteriaMaster) 는 키 조합 row 단위로 기존 로직 유지.
+     *
+     * 사원×월 전체를 한 번에 재계산하므로, 같은 날 다른 거래처 조합의 1/N 기여 변화도 함께 반영된다
+     * (레거시 trigger 가 사원+월 전 조합을 재집계하는 것과 동일).
+     */
     @Transactional
-    fun refreshIntegration(employeeId: Long, accountId: Long, yearMonth: YearMonth) {
+    fun refreshIntegration(employeeId: Long, yearMonth: YearMonth) {
         val from = yearMonth.atDay(1)
         val to = yearMonth.atEndOfMonth()
-
-        val schedules = teamMemberScheduleRepository.findWorkSchedulesByEmployeeAndAccountAndMonth(
-            employeeId, accountId, from, to
-        )
-
         val yearStr = yearMonth.year.toString()
-        val monthStr = String.format("%02d", yearMonth.monthValue)
-        val existing = monthlyIntegrationScheduleRepository.findByEmployeeIdAndAccountIdAndYearAndMonth(
-            employeeId, accountId, yearStr, monthStr
+        // 레거시 Month__c = String.valueOf(month()) — zero-pad 없음 ("6"). 마이그레이션 row 포맷 정합.
+        val monthStr = yearMonth.monthValue.toString()
+
+        val population = teamMemberScheduleRepository.findAttendedSchedulesByEmployeeAndMonth(employeeId, from, to)
+        val existingRows = monthlyIntegrationScheduleRepository.findByEmployeeIdAndYearAndMonth(
+            employeeId, yearStr, monthStr
         )
 
-        if (schedules.isEmpty()) {
-            if (existing != null) {
-                monthlyIntegrationScheduleRepository.delete(existing)
-            }
+        if (population.isEmpty()) {
+            monthlyIntegrationScheduleRepository.deleteAll(existingRows)
             return
         }
 
-        val numberOfInputs = BigDecimal.valueOf(schedules.size.toLong())
+        // 그날 투입건수 N — 레거시 countMap (사원+근무일별 모수 row 수, 거래처 무관)
+        val rowCountByDate: Map<LocalDate, Int> = population.groupingBy { it.workingDate!! }.eachCount()
 
-        // 환산근무일수(분자) — SF 레거시 insert 경로(`TeamMemberScheduleTriggerHandler.getEquivalentNumberOfWorkingDays`)
-        // 동등. 근무유형3(고정/격고/순회) 구분 없이 그날 사원의 근무 TMS row 수 N 으로 1/N 일률 분할 후 누적.
-        var equivalentWorkingDays = BigDecimal.ZERO
-        for (schedule in schedules) {
-            val rowCountOnDate = teamMemberScheduleRepository.countWorkScheduleRowsByEmployeeAndDate(
-                employeeId, schedule.workingDate!!
-            )
-            val coefficient = if (rowCountOnDate > 0) {
-                BigDecimal.ONE.divide(BigDecimal(rowCountOnDate), 4, RoundingMode.HALF_UP)
+        // 당월근무일수 — 레거시 getWorkingDaysMonth (사원+costCenter 별 distinct 근무일, 거래처 무관)
+        val workingDaysByCostCenter: Map<String?, Int> = population
+            .groupBy { it.costCenterCode }
+            .mapValues { (_, rows) -> rows.mapNotNull { it.workingDate }.distinct().size }
+
+        // 총투입횟수 — 레거시 getNumberOfTradesEntered (거래처+근무유형 조합 별 distinct 근무일, costCenter 무관)
+        val inputDaysByCombo: Map<List<Any?>, Int> = population
+            .groupBy { inputsComboKey(it) }
+            .mapValues { (_, rows) -> rows.mapNotNull { it.workingDate }.distinct().size }
+
+        val groups = population.groupBy { buildLegacyExternalKey(it, yearStr, monthStr) }
+        val existingByKey = existingRows
+            .filter { it.externalKey != null }
+            .associateBy { it.externalKey!! }
+
+        for ((externalKey, rows) in groups) {
+            val rep = rows.first()
+            val employee = rep.employee
+            val account = rep.account
+
+            // 환산근무일수 — 전정밀도(스케일 16) 누적 후 최종 4자리 HALF_UP
+            // (레거시 Double 합산 + SF Number(18,4) 저장 반올림 동등 — row 별 선반올림 금지)
+            var equivalentRaw = BigDecimal.ZERO
+            for (row in rows) {
+                val n = rowCountByDate[row.workingDate!!] ?: 1
+                equivalentRaw = equivalentRaw.add(
+                    BigDecimal.ONE.divide(BigDecimal(n), 16, RoundingMode.HALF_UP)
+                )
+            }
+            val equivalentWorkingDays = equivalentRaw.setScale(4, RoundingMode.HALF_UP)
+
+            val workingDaysMonth = workingDaysByCostCenter[rep.costCenterCode] ?: 0
+            val convertedHeadcount = if (workingDaysMonth > 0) {
+                equivalentRaw.divide(BigDecimal(workingDaysMonth), 4, RoundingMode.HALF_UP)
             } else {
                 BigDecimal.ZERO
             }
-            equivalentWorkingDays = equivalentWorkingDays.add(coefficient)
-        }
-        equivalentWorkingDays = equivalentWorkingDays.setScale(4, RoundingMode.HALF_UP)
+            val numberOfInputs = BigDecimal.valueOf((inputDaysByCombo[inputsComboKey(rep)] ?: 0).toLong())
 
-        // 분모 — SF 레거시 `WorkingDaysMonth__c` 동등. 달력 영업일이 아니라
-        // 사원이 해당 지점(costCenterCode) 소속으로 그 달 실제 근무(WORK)한 거래처 무관 distinct 날짜 수.
-        val costCenterCode = schedules.first().costCenterCode
-        val workingDaysMonth = if (costCenterCode != null) {
-            teamMemberScheduleRepository.countDistinctWorkingDatesByEmployeeAndCostCenterAndMonth(
-                employeeId, costCenterCode, from, to
-            )
-        } else {
-            schedules.map { it.workingDate!! }.distinct().size
-        }
-        val convertedHeadcount = if (workingDaysMonth > 0) {
-            equivalentWorkingDays.divide(BigDecimal(workingDaysMonth), 4, RoundingMode.HALF_UP)
-        } else {
-            BigDecimal.ZERO
-        }
+            val workingCategory1 = rep.workingCategory1?.displayName
+            val workingCategory3 = rep.workingCategory3?.displayName
+            // 레거시 record 필드 동등 — WorkingCategory5__c 는 TMS 자체 컬럼 (DisplayWorkSchedule 유추 아님)
+            val workingCategory5 = rep.workingCategory5?.displayName
 
-        val employee = schedules.first().employee
-        val account = schedules.first().account
-        val first = schedules.first()
-        val workingCategory1 = first.workingCategory1?.displayName
-        val workingCategory3 = first.workingCategory3?.displayName
-        // workingCategory5 는 DisplayWorkSchedule.typeOfWork5 에서 representative 값 추출
-        // (기존 resolveWorkingCategory5 와 동일 매칭 룰 — confirmed=true + workingDate in [startDate, endDate])
-        val workingCategory5 = resolveWorkingCategory5(schedules).values.firstOrNull { it != null }
+            // spec #680 §5.3 — self-trigger 3필드 자동 set (legacy
+            // `MonthlyEmpIntegrationSchTriggerHandler.setAccountConvertedHeadcount` 동등).
+            // 가드: workingCategory5='상시' AND workingCategory1/3 not null. 그 외 row 는 3필드 모두 null.
+            val applyThreeFields = workingCategory5 == "상시" &&
+                workingCategory1 != null && workingCategory3 != null
+            val existing = existingByKey[externalKey]
 
-        // spec #680 §5.3 — self-trigger 3필드 자동 set (legacy
-        // `MonthlyEmpIntegrationSchTriggerHandler.setAccountConvertedHeadcount` 동등).
-        // 가드: workingCategory5='상시' AND workingCategory1/3 not null AND year/month not null
-        // 그 외 row 는 3필드 모두 null.
-        val applyThreeFields = workingCategory5 == "상시" &&
-            workingCategory1 != null && workingCategory3 != null
-
-        // accountConvertedHeadcount = 본 거래처+근무유형1+년월 의 (자기 자신 제외) 다른 MFEIS row 의
-        // convertedHeadcount 합산 + 본 row 의 새 convertedHeadcount.
-        // (legacy 는 listNew + 기존 DB row 합산 — bypass 로 다른 row 의 accountConvertedHeadcount
-        // 갱신은 미발생. 본 spec 도 동일하게 본 row 만 set, 다른 row 의 stale 갱신은 비범위)
-        val accountConvertedHeadcount: BigDecimal? = if (applyThreeFields && account != null) {
-            val others = monthlyIntegrationScheduleRepository
-                .findByAccountIdAndWorkingCategory1AndYearAndMonth(account.id, workingCategory1, yearStr, monthStr)
-                .filter { it.id != (existing?.id ?: -1L) }
-            val othersSum = others
-                .mapNotNull { it.convertedHeadcount }
-                .fold(BigDecimal.ZERO) { acc, v -> acc.add(v) }
-            othersSum.add(convertedHeadcount).setScale(4, RoundingMode.HALF_UP)
-        } else null
-
-        // thisMonthAmount — Q12 옵션 1: batch persist 결과 우선 + 동기 fallback
-        val thisMonthAmount: BigDecimal? = if (applyThreeFields && account != null) {
-            val batchPersisted = existing?.thisMonthAmount
-            if (batchPersisted != null) {
-                batchPersisted
-            } else {
-                val avgMap = calculateAvgClosingAmounts(
-                    yearMonth.year, yearMonth.monthValue, listOf(account)
-                )
-                avgMap[account.id]?.let { BigDecimal(it) }
-            }
-        } else null
-
-        // employeeInputCriteriaMaster lookup — 운영 정합 dev 검증 2026-05-26.
-        // legacy `MonthlyEmpIntegrationSchTriggerHandler.cls:73-80` 의 `criteriaMap.get(Account.Type + Year + Month)`
-        // 동등 — `Account.accountType.displayName` 으로 AccountCategoryMaster.name 매칭 후 EICM 활성 기간 lookup.
-        // 활성 기간 referenceDate 는 검색월 첫날 (yearMonth.atDay(1)) 사용.
-        // (legacy 는 본 Trigger 호출 시점의 sysdate 기반 currentDate 산출 — 신규는 검색 대상 월 기준이 정확)
-        val employeeInputCriteriaMaster: EmployeeInputCriteriaMaster? =
-            if (applyThreeFields && account != null) {
-                val accountTypeName = account.accountType
-                if (accountTypeName != null) {
-                    val category = accountCategoryMasterRepository.findByName(accountTypeName)
-                    if (category != null) {
-                        employeeInputCriteriaMasterRepository.findActiveByCategoryAndTypeOfWork1(
-                            categoryId = category.id,
-                            typeOfWork1 = TypeOfWork1.DISPLAY,
-                            referenceDate = yearMonth.atDay(1),
-                        )
-                    } else null
-                } else null
+            // accountConvertedHeadcount = 본 거래처+근무유형1+년월 의 (자기 자신 제외) 다른 MFEIS row 의
+            // convertedHeadcount 합산 + 본 row 의 새 convertedHeadcount.
+            // (legacy 는 listNew + 기존 DB row 합산 — bypass 로 다른 row 의 accountConvertedHeadcount
+            // 갱신은 미발생. 본 spec 도 동일하게 본 row 만 set, 다른 row 의 stale 갱신은 비범위)
+            val accountConvertedHeadcount: BigDecimal? = if (applyThreeFields && account != null) {
+                val others = monthlyIntegrationScheduleRepository
+                    .findByAccountIdAndWorkingCategory1AndYearAndMonth(account.id, workingCategory1, yearStr, monthStr)
+                    .filter { it.id != (existing?.id ?: -1L) }
+                val othersSum = others
+                    .mapNotNull { it.convertedHeadcount }
+                    .fold(BigDecimal.ZERO) { acc, v -> acc.add(v) }
+                othersSum.add(convertedHeadcount).setScale(4, RoundingMode.HALF_UP)
             } else null
 
-        if (existing != null) {
-            monthlyIntegrationScheduleRepository.delete(existing)
+            // thisMonthAmount — Q12 옵션 1: batch persist 결과 우선 + 동기 fallback
+            val thisMonthAmount: BigDecimal? = if (applyThreeFields && account != null) {
+                val batchPersisted = existing?.thisMonthAmount
+                if (batchPersisted != null) {
+                    batchPersisted
+                } else {
+                    val avgMap = calculateAvgClosingAmounts(
+                        yearMonth.year, yearMonth.monthValue, listOf(account)
+                    )
+                    avgMap[account.id]?.let { BigDecimal(it) }
+                }
+            } else null
+
+            // employeeInputCriteriaMaster lookup — 운영 정합 dev 검증 2026-05-26.
+            // legacy `MonthlyEmpIntegrationSchTriggerHandler.cls:73-80` 의 `criteriaMap.get(Account.Type + Year + Month)`
+            // 동등 — `Account.accountType.displayName` 으로 AccountCategoryMaster.name 매칭 후 EICM 활성 기간 lookup.
+            // 활성 기간 referenceDate 는 검색월 첫날 (yearMonth.atDay(1)) 사용.
+            // (legacy 는 본 Trigger 호출 시점의 sysdate 기반 currentDate 산출 — 신규는 검색 대상 월 기준이 정확)
+            val employeeInputCriteriaMaster: EmployeeInputCriteriaMaster? =
+                if (applyThreeFields && account != null) {
+                    val accountTypeName = account.accountType
+                    if (accountTypeName != null) {
+                        val category = accountCategoryMasterRepository.findByName(accountTypeName)
+                        if (category != null) {
+                            employeeInputCriteriaMasterRepository.findActiveByCategoryAndTypeOfWork1(
+                                categoryId = category.id,
+                                typeOfWork1 = TypeOfWork1.DISPLAY,
+                                referenceDate = yearMonth.atDay(1),
+                            )
+                        } else null
+                    } else null
+                } else null
+
+            if (existing != null) {
+                // 레거시 ExternalKey upsert 동등 — 집계 필드만 갱신, sfid/name/EDI_POS 등 미집계 필드 보존
+                existing.workingDaysMonth = BigDecimal(workingDaysMonth)
+                existing.numberOfInputs = numberOfInputs
+                existing.equivalentNumberOfWorkingDays = equivalentWorkingDays
+                existing.convertedHeadcount = convertedHeadcount
+                existing.accountConvertedHeadcount = accountConvertedHeadcount
+                existing.thisMonthAmount = thisMonthAmount
+                existing.employeeInputCriteriaMaster = employeeInputCriteriaMaster
+                if (existing.empBranchName.isNullOrBlank()) {
+                    // 레거시 250409 — 기존 비공백 EmpBranchName 은 유지 (지점 이동 이력관리), 공백/미설정만 채움
+                    existing.empBranchName = employee?.orgName
+                }
+                monthlyIntegrationScheduleRepository.save(existing)
+            } else {
+                val record = MonthlyFemaleEmployeeIntegrationSchedule(
+                    externalKey = externalKey,
+                    year = yearStr,
+                    month = monthStr,
+                    employee = employee,
+                    account = account,
+                    costCenterCode = rep.costCenterCode,
+                    workingCategory1 = workingCategory1,
+                    workingCategory3 = workingCategory3,
+                    // 레거시 WorkingCategory4__c = TMS.SecondWorkType__c (240304)
+                    workingCategory4 = rep.secondWorkType,
+                    workingCategory5 = workingCategory5,
+                    professionalPromotionTeam = ProfessionalPromotionTeamType.fromDisplayNameOrNull(
+                        rep.professionalPromotionTeam
+                    ),
+                    empBranchName = employee?.orgName,
+                    workingDaysMonth = BigDecimal(workingDaysMonth),
+                    numberOfInputs = numberOfInputs,
+                    equivalentNumberOfWorkingDays = equivalentWorkingDays,
+                    convertedHeadcount = convertedHeadcount,
+                    accountConvertedHeadcount = accountConvertedHeadcount,
+                    thisMonthAmount = thisMonthAmount,
+                    employeeInputCriteriaMaster = employeeInputCriteriaMaster,
+                )
+                monthlyIntegrationScheduleRepository.save(record)
+            }
         }
 
-        val record = MonthlyFemaleEmployeeIntegrationSchedule(
-            year = yearStr,
-            month = monthStr,
-            employee = employee,
-            account = account,
-            workingDaysMonth = BigDecimal(workingDaysMonth),
-            numberOfInputs = numberOfInputs,
-            equivalentNumberOfWorkingDays = equivalentWorkingDays,
-            convertedHeadcount = convertedHeadcount,
-            accountConvertedHeadcount = accountConvertedHeadcount,
-            thisMonthAmount = thisMonthAmount,
-            employeeInputCriteriaMaster = employeeInputCriteriaMaster,
-        )
-        monthlyIntegrationScheduleRepository.save(record)
+        // stale 삭제 — 재집계 후 키 조합이 사라진 기존 row (레거시 deleteRecordsSet + NumberOfInputs=0 동등)
+        val staleRows = existingRows.filter { it.externalKey == null || it.externalKey !in groups.keys }
+        monthlyIntegrationScheduleRepository.deleteAll(staleRows)
     }
+
+    /**
+     * 레거시 `TeamMemberScheduleTriggerHandler.getExternalKey` 동등 — MFEIS 집계 키.
+     * Apex 문자열 연결의 null 은 "null" 리터럴로 남는다 (마이그레이션 row 의 external_key 포맷 정합).
+     * 컴포넌트 순서: 년 + 월(무패딩) + 거래처코드 + costCenter + 사번 + 근무유형1 + 근무유형3
+     * + 근무유형4(SecondWorkType) + 근무유형5 + 전문판촉팀.
+     */
+    private fun buildLegacyExternalKey(schedule: TeamMemberSchedule, yearStr: String, monthStr: String): String {
+        return yearStr + monthStr +
+            (schedule.account?.externalKey ?: "null") +
+            (schedule.costCenterCode ?: "null") +
+            (schedule.employee?.employeeCode ?: "null") +
+            (schedule.workingCategory1?.displayName ?: "null") +
+            (schedule.workingCategory3?.displayName ?: "null") +
+            (schedule.secondWorkType ?: "null") +
+            (schedule.workingCategory5?.displayName ?: "null") +
+            (schedule.professionalPromotionTeam ?: "null")
+    }
+
+    /**
+     * 레거시 `getNumberOfTradesEntered` 의 countSet 키 — 거래처+근무유형 조합 (costCenter 미포함).
+     * 같은 조합의 같은 날 중복 row 는 distinct 날짜 집계로 1회만 계산된다.
+     */
+    private fun inputsComboKey(schedule: TeamMemberSchedule): List<Any?> = listOf(
+        schedule.account?.id,
+        schedule.workingCategory1,
+        schedule.workingCategory3,
+        schedule.secondWorkType,
+        schedule.workingCategory5,
+        schedule.professionalPromotionTeam,
+    )
 
     // --- Private helpers ---
 
@@ -475,14 +558,16 @@ class AdminMonthlyIntegrationService(
         // 본 조회 시점에 employee+account+year+month 의 MFEIS 가 존재 + thisMonthAmount not null 이면 그 값 사용,
         // 그 외 (당월 / persist 미적용 / 등) 는 calculateAvgClosingAmounts 동기 계산 fallback.
         val yearStr = year.toString()
-        val monthStr = String.format("%02d", month)
+        // MFEIS month 는 레거시 Month__c 포맷 (zero-pad 없음) — refreshIntegration 저장 포맷과 동일
+        val monthStr = month.toString()
         val employeeAccountPersistedAmounts: Map<Pair<Long, Long>, BigDecimal> = grouped.keys
             .map { it.employeeId to it.accountId }
             .distinct()
             .mapNotNull { (empId, accId) ->
-                val mfeis = monthlyIntegrationScheduleRepository
+                val amount = monthlyIntegrationScheduleRepository
                     .findByEmployeeIdAndAccountIdAndYearAndMonth(empId, accId, yearStr, monthStr)
-                val amount = mfeis?.thisMonthAmount ?: return@mapNotNull null
+                    .firstNotNullOfOrNull { it.thisMonthAmount }
+                    ?: return@mapNotNull null
                 (empId to accId) to amount
             }
             .toMap()

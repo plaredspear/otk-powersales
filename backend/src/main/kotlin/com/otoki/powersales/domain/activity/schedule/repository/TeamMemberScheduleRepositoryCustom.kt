@@ -141,25 +141,15 @@ interface TeamMemberScheduleRepositoryCustom {
 
     fun findIntegrationScheduleRecords(employeeIds: List<Long>, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
-    fun findWorkSchedulesByEmployeeAndAccountAndMonth(employeeId: Long, accountId: Long, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
-
     /**
-     * 사원의 특정 일자 근무(WORK) TMS row 개수.
-     * 환산근무일수 산정 시 그날 1/N 분할의 N — SF 레거시 insert 경로(`TeamMemberScheduleTriggerHandler.getEquivalentNumberOfWorkingDays`)
-     * 와 동일하게 거래처 distinct 가 아니라 TMS row 개수를 센다.
+     * MFEIS(월별여사원 통합일정) 집계 모수 — 사원+월의 **출근등록된** TMS row 전건.
+     *
+     * SF 레거시 `TeamMemberScheduleTriggerHandler.updateMonthlyFemaleEmployeeIntegrationSchedule` 의
+     * 모수 SOQL (`WHERE EmpCode IN … AND CALENDAR_YEAR/MONTH … AND DKRetail__CommuteLogId__c != null
+     * AND AccountId__c != null`) 동등. 레거시와 동일하게 workingType 필터는 없다 — 출근현황
+     * (attendanceLog) 연결 자체가 근무 필터 역할. soft-delete(isNotDeleted) 는 신규 시스템 자체 개념으로 유지.
      */
-    fun countWorkScheduleRowsByEmployeeAndDate(employeeId: Long, workingDate: LocalDate): Int
-
-    /**
-     * 사원이 해당 지점(costCenterCode) 소속으로 그 달 근무(WORK)한 서로 다른 날짜 수.
-     * 환산인원 산정 시 분모(SF 레거시 `WorkingDaysMonth__c`) — 거래처 무관, 사원+지점코드+년월 단위 distinct workingDate.
-     */
-    fun countDistinctWorkingDatesByEmployeeAndCostCenterAndMonth(
-        employeeId: Long,
-        costCenterCode: String,
-        from: LocalDate,
-        to: LocalDate
-    ): Int
+    fun findAttendedSchedulesByEmployeeAndMonth(employeeId: Long, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     /**
      * 일반 출근(REGULAR) SAP daily batch 용 페이지 조회.

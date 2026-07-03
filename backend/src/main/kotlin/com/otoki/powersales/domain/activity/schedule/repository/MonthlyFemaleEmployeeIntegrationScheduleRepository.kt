@@ -7,12 +7,25 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepository :
     JpaRepository<MonthlyFemaleEmployeeIntegrationSchedule, Long>,
     MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
 
+    /**
+     * 사원+거래처+년월 MFEIS row 목록 — 레거시 집계 키(ExternalKey) 가 근무유형 조합·costCenter 까지
+     * 포함하므로 같은 사원×거래처×년월에 복수 row 가 존재할 수 있다 (List 반환).
+     */
     fun findByEmployeeIdAndAccountIdAndYearAndMonth(
         employeeId: Long,
         accountId: Long,
         year: String,
         month: String
-    ): MonthlyFemaleEmployeeIntegrationSchedule?
+    ): List<MonthlyFemaleEmployeeIntegrationSchedule>
+
+    /**
+     * 사원+년월 MFEIS row 전건 — `refreshIntegration` 의 재집계 대상(기존 row upsert 매칭 + stale 키 삭제)용.
+     */
+    fun findByEmployeeIdAndYearAndMonth(
+        employeeId: Long,
+        year: String,
+        month: String
+    ): List<MonthlyFemaleEmployeeIntegrationSchedule>
 
     /**
      * MfeisThisMonthRevenueBatch 추출용 — 전월 + 상시 카테고리 row.

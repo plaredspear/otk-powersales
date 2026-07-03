@@ -66,7 +66,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
         val mfeis = mfeisRow(100L, account, BigDecimal.ZERO)
 
         every {
-            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "4", "%상시%")
         } returns listOf(mfeis)
         every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
             row("S001", 100_000),
@@ -91,7 +91,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
         val targetYm = YearMonth.of(2026, 4)
         val mfeis = mfeisRow(100L, account(1, externalKey = null), BigDecimal.ZERO)
         every {
-            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "4", "%상시%")
         } returns listOf(mfeis)
 
         service.runMonthly(targetYm)
@@ -108,7 +108,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
         val mfeis = mfeisRow(100L, account, BigDecimal.ZERO)
 
         every {
-            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "4", "%상시%")
         } returns listOf(mfeis)
         // closingAmountSum 과 abc1 을 다르게: 잘못된 컬럼(abc1) 평균이면 150_000 이 나와 검증 실패한다.
         every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
@@ -131,7 +131,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
         val account = account(1, "S001")
         val mfeis = mfeisRow(100L, account, BigDecimal("100000"))
         every {
-            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "4", "%상시%")
         } returns listOf(mfeis)
         every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
             row("S001", 100_000),
@@ -149,7 +149,7 @@ class MfeisThisMonthRevenueBatchServiceTest {
         val mfeisA = mfeisRow(100L, account(1, "S001"), BigDecimal.ZERO)
         val mfeisB = mfeisRow(200L, account(2, "S002"), BigDecimal.ZERO)
         every {
-            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "04", "%상시%")
+            mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing("2026", "4", "%상시%")
         } returns listOf(mfeisA, mfeisB)
         every { monthlySalesHistoryGateway.findBySalesDates(any(), any()) } returns listOf(
             row("S001", 100_000),

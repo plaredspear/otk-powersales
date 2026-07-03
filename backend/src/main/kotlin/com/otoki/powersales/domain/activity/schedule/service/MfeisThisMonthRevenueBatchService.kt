@@ -44,7 +44,8 @@ class MfeisThisMonthRevenueBatchService(
 
     internal fun runMonthly(targetYearMonth: YearMonth, context: ScheduledJobRunContext? = null) {
         val yearStr = targetYearMonth.year.toString()
-        val monthStr = String.format("%02d", targetYearMonth.monthValue)
+        // MFEIS month 는 레거시 Month__c 포맷 (zero-pad 없음) — refreshIntegration 저장/마이그레이션 row 포맷 정합
+        val monthStr = targetYearMonth.monthValue.toString()
 
         val targets = mfeisRepository.findByYearAndMonthAndWorkingCategory5Containing(
             yearStr, monthStr, "%상시%"

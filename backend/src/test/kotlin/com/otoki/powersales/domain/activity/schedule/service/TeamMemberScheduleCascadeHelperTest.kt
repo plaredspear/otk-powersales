@@ -58,7 +58,7 @@ class TeamMemberScheduleCascadeHelperTest {
         verify(exactly = 0) { teamMemberScheduleRepository.findAllById(any<List<Long>>()) }
         verify(exactly = 0) { teamScheduleValidator.validateDisplayMasterLink(any(), any()) }
         verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any()) }
-        verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any(), any()) }
+        verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any()) }
     }
 
     @Test
@@ -68,7 +68,7 @@ class TeamMemberScheduleCascadeHelperTest {
 
         verify(exactly = 0) { teamScheduleValidator.validateDisplayMasterLink(any(), any()) }
         verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any()) }
-        verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any(), any()) }
+        verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any()) }
     }
 
     @Test
@@ -82,12 +82,12 @@ class TeamMemberScheduleCascadeHelperTest {
         verify(exactly = 1) { teamScheduleValidator.validateDisplayMasterLink(false, schedule) }
         verify(exactly = 1) { teamMemberScheduleRepository.deleteAll(listOf(schedule)) }
         verify(exactly = 1) {
-            adminMonthlyIntegrationService.refreshIntegration(10L, 100, YearMonth.of(2026, 5))
+            adminMonthlyIntegrationService.refreshIntegration(10L, YearMonth.of(2026, 5))
         }
     }
 
     @Test
-    @DisplayName("MFEIS batch refresh — (employeeId × accountId × YearMonth) distinct 그룹 당 1회")
+    @DisplayName("MFEIS batch refresh — (employeeId × YearMonth) distinct 그룹 당 1회")
     fun mfeisBatchRefreshDistinct() {
         val s1 = makeSchedule(id = 1L, empId = 10L, accId = 100, date = LocalDate.of(2026, 5, 1))
         val s2 = makeSchedule(id = 2L, empId = 10L, accId = 100, date = LocalDate.of(2026, 5, 10)) // 동일 (emp,acc,YM)
@@ -96,9 +96,9 @@ class TeamMemberScheduleCascadeHelperTest {
 
         helper.cascadeDeleteSchedules(regularPrincipal, listOf(s1, s2, s3, s4))
 
-        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(10L, 100, YearMonth.of(2026, 5)) }
-        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(20L, 100, YearMonth.of(2026, 5)) }
-        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(10L, 100, YearMonth.of(2026, 6)) }
+        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(10L, YearMonth.of(2026, 5)) }
+        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(20L, YearMonth.of(2026, 5)) }
+        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(10L, YearMonth.of(2026, 6)) }
     }
 
     @Test
@@ -109,8 +109,8 @@ class TeamMemberScheduleCascadeHelperTest {
 
         helper.cascadeDeleteSchedules(regularPrincipal, listOf(workSchedule, leaveSchedule))
 
-        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(10L, 100, YearMonth.of(2026, 5)) }
-        verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(20L, 100, any()) }
+        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(10L, YearMonth.of(2026, 5)) }
+        verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(20L, any()) }
     }
 
     @Test
@@ -128,7 +128,7 @@ class TeamMemberScheduleCascadeHelperTest {
             .isInstanceOf(TeamScheduleDisplayMasterLinkException::class.java)
 
         verify(exactly = 0) { teamMemberScheduleRepository.deleteAll(any()) }
-        verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any(), any()) }
+        verify(exactly = 0) { adminMonthlyIntegrationService.refreshIntegration(any(), any()) }
     }
 
     @Test
@@ -166,9 +166,9 @@ class TeamMemberScheduleCascadeHelperTest {
 
         helper.cascadeDeleteSchedules(regularPrincipal, listOf(noEmployee, validSchedule))
 
-        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(10L, 100, YearMonth.of(2026, 5)) }
-        // null employee schedule 은 refresh 호출 0회 — 위 verify 의 (10, 100, 5월) 외 다른 호출 없음
-        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(any(), any(), any()) }
+        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(10L, YearMonth.of(2026, 5)) }
+        // null employee schedule 은 refresh 호출 0회 — 위 verify 의 (10, 5월) 외 다른 호출 없음
+        verify(exactly = 1) { adminMonthlyIntegrationService.refreshIntegration(any(), any()) }
     }
 
     // --- helpers ---

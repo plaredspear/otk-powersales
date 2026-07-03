@@ -92,7 +92,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @SFField("EmpBranchName__c")
     @FieldName("사원지점명")
     @Column(name = "emp_branch_name", length = 255)
-    val empBranchName: String? = null,
+    var empBranchName: String? = null,
 
     @SFField("ProfessionalPromotionTeam__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
@@ -103,22 +103,22 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @SFField("WorkingDaysMonth__c")
     @FieldName("당월 근무일수")
     @Column(name = "working_days_month", precision = 18, scale = 4)
-    val workingDaysMonth: BigDecimal? = null,
+    var workingDaysMonth: BigDecimal? = null,
 
     @SFField("NumberOfInputs__c")
     @FieldName("총 투입횟수")
     @Column(name = "number_of_inputs")
-    val numberOfInputs: BigDecimal? = null,
+    var numberOfInputs: BigDecimal? = null,
 
     @SFField("EquivalentNumberOfWorkingDays__c")
     @FieldName("총 환산근무일수")
     @Column(name = "equivalent_number_of_working_days", precision = 18, scale = 4)
-    val equivalentNumberOfWorkingDays: BigDecimal? = null,
+    var equivalentNumberOfWorkingDays: BigDecimal? = null,
 
     @SFField("ConvertedHeadcount__c")
     @FieldName("총 환산인원")
     @Column(name = "converted_headcount", precision = 18, scale = 4)
-    val convertedHeadcount: BigDecimal? = null,
+    var convertedHeadcount: BigDecimal? = null,
 
     @SFField("EDI_POS__c")
     @FieldName("EDI/POS")
