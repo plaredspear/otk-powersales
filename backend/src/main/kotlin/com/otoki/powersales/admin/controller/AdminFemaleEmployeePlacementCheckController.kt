@@ -169,11 +169,14 @@ class AdminFemaleEmployeePlacementCheckController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/converted-headcount-report/{variant}")
     fun getConvertedHeadcountReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable variant: String,
         @RequestParam year: String,
         @RequestParam month: String,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<ConvertedHeadcountReportResult>> {
-        val response = convertedHeadcountReportService.getReport(parseVariant(variant), year, month)
+        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val response = convertedHeadcountReportService.getReport(parseVariant(variant), year, month, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -181,11 +184,14 @@ class AdminFemaleEmployeePlacementCheckController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/converted-headcount-report/{variant}/export")
     fun exportConvertedHeadcountReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable variant: String,
         @RequestParam year: String,
         @RequestParam month: String,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = convertedHeadcountReportService.exportReport(parseVariant(variant), year, month)
+        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val result = convertedHeadcountReportService.exportReport(parseVariant(variant), year, month, branchScope)
         return ExcelResponseUtils.build(result)
     }
 
