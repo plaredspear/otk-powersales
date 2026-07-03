@@ -77,6 +77,12 @@ export interface ThemeMutationResult {
   name: string | null;
 }
 
+/** 지점 셀렉터 옵션 — 현재 사용자 권한별 조회 허용 지점 화이트리스트. */
+export interface ThemeBranch {
+  branchCode: string;
+  branchName: string;
+}
+
 // ─────────────────────────────────────────────────────
 // API 호출 함수
 // ─────────────────────────────────────────────────────
@@ -87,6 +93,20 @@ export async function fetchThemes(params: ThemeListParams): Promise<ThemeListDat
   const res = await client.get<ApiResponse<ThemeListData>>(BASE, { params });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '테마 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 현장점검 테마 관리 화면 지점 셀렉터 옵션 조회.
+ *
+ * 여사원 현황/여사원 일정과 동일한 권한별 지점 화이트리스트를 반환한다. 화면 게이팅과 동일한
+ * inspection_theme READ 로 가드된 전용 endpoint 라, 전문행사조 권한 없는 조장도 목록을 받는다.
+ */
+export async function fetchThemeBranches(): Promise<ThemeBranch[]> {
+  const res = await client.get<ApiResponse<ThemeBranch[]>>(`${BASE}/branches`);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
   }
   return res.data.data;
 }

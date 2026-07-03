@@ -2,14 +2,29 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import {
   createTheme,
   deleteTheme,
+  fetchThemeBranches,
   fetchThemeDetail,
   fetchThemes,
   updateTheme,
   type ThemeListParams,
   type ThemeMutationRequest,
 } from '@/api/inspectionThemes';
+import { useAuthStore } from '@/stores/authStore';
 
 const THEME_KEY = ['admin', 'inspection-themes'] as const;
+
+/**
+ * 현장점검 테마 관리 지점 셀렉터 옵션.
+ *
+ * 권한 주체별로 지점 목록이 다르므로 사용자 id 를 쿼리 키에 포함해 대행 전환 시 캐시를 분리한다.
+ */
+export function useThemeBranches() {
+  const userId = useAuthStore((state) => state.user?.id);
+  return useQuery({
+    queryKey: [...THEME_KEY, 'branches', userId],
+    queryFn: fetchThemeBranches,
+  });
+}
 
 export function useThemes(params: ThemeListParams) {
   return useQuery({

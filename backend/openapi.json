@@ -25092,7 +25092,7 @@
     },
     "/api/v1/admin/accounts/branches" : {
       "get" : {
-        "operationId" : "getBranches_5",
+        "operationId" : "getBranches_6",
         "responses" : {
           "200" : {
             "content" : {
@@ -26018,7 +26018,7 @@
     },
     "/api/v1/admin/attend-info/branches" : {
       "get" : {
-        "operationId" : "getBranches_4",
+        "operationId" : "getBranches_5",
         "responses" : {
           "200" : {
             "content" : {
@@ -26867,7 +26867,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_3",
+        "operationId" : "getBranches_4",
         "responses" : {
           "200" : {
             "content" : {
@@ -28025,7 +28025,7 @@
     },
     "/api/v1/admin/employees/branches" : {
       "get" : {
-        "operationId" : "getBranches_2",
+        "operationId" : "getBranches_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -29790,6 +29790,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseThemeMutationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-theme-controller" ]
+      }
+    },
+    "/api/v1/admin/inspection-themes/branches" : {
+      "get" : {
+        "operationId" : "getBranches_2",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
                 }
               }
             },

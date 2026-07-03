@@ -11,6 +11,7 @@ import {
   Popconfirm,
   Select,
   Space,
+  Tag,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -18,6 +19,7 @@ import { downloadThemeExcel, type ThemeListItem, type ThemeListParams } from '@/
 import {
   useCreateTheme,
   useDeleteTheme,
+  useThemeBranches,
   useThemeDetail,
   useThemes,
   useUpdateTheme,
@@ -66,6 +68,15 @@ export default function ThemeManagementPage() {
     page,
     size,
   };
+
+  // 지점 셀렉터 — 권한별 지점 화이트리스트 (여사원 현황과 동일 backend resolver).
+  //  - 다중 지점: Select 로 선택 → branchCode 필터로 전송
+  //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. branchCode 는 빈 값이라
+  //    backend 가 본인 소속 지점으로 자동 스코프하므로 별도 전송 불필요.
+  const { data: branches } = useThemeBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
 
   const { data, isLoading, refetch, isFetching } = useThemes(searchParams);
   const { data: detail, isLoading: detailLoading } = useThemeDetail(detailId);
@@ -245,14 +256,23 @@ export default function ThemeManagementPage() {
             style={{ width: 140 }}
             allowClear
           />
-          <Input
-            placeholder="지점코드"
-            value={branchCode}
-            onChange={(e) => setBranchCode(e.target.value)}
-            onPressEnter={handleSearch}
-            style={{ width: 120 }}
-            allowClear
-          />
+          {isMultiBranch && (
+            <Select
+              placeholder="지점 (전체)"
+              value={branchCode || undefined}
+              onChange={(v) => setBranchCode(v ?? '')}
+              style={{ width: 160 }}
+              options={branchOptions}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+            />
+          )}
+          {singleBranch && (
+            <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+              지점: {singleBranch.branchName}
+            </Tag>
+          )}
           <Button type="primary" onClick={handleSearch}>
             조회
           </Button>
