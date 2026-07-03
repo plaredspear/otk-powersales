@@ -42,3 +42,22 @@ export function hasEnoughCharacterTypes(password: string): boolean {
 export function isPasswordValid(password: string): boolean {
   return isLengthValid(password) && hasEnoughCharacterTypes(password);
 }
+
+/** 정책 규칙 1건 (실시간 체크리스트 UI 렌더링용). */
+export interface PasswordPolicyRule {
+  /** 규칙 라벨 (사용자에게 표시). */
+  label: string;
+  /** 해당 비밀번호가 이 규칙을 충족하는지. */
+  isValid: boolean;
+}
+
+/** 비밀번호에 대한 각 정책 규칙의 충족 여부 목록 (실시간 체크리스트용). */
+export function getPasswordPolicyRules(password: string): PasswordPolicyRule[] {
+  return [
+    { label: `${PASSWORD_MIN_LENGTH}자 이상`, isValid: isLengthValid(password) },
+    {
+      label: '영문 대/소문자·숫자·특수문자 중 3종 이상 조합',
+      isValid: hasEnoughCharacterTypes(password),
+    },
+  ];
+}

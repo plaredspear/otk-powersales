@@ -56,12 +56,46 @@ describe('ChangePasswordPage', () => {
     setAuth(true);
   });
 
-  it('강제 변경 화면에 새 비밀번호/확인 입력과 안내 문구가 표시된다', () => {
+  it('강제 변경 화면에 새 비밀번호/확인 입력과 정책 체크리스트가 표시된다', () => {
     renderPage();
     expect(screen.getByRole('heading', { name: '비밀번호 변경' })).toBeInTheDocument();
     expect(screen.getByText(/임시 비밀번호로 로그인하셨습니다/)).toBeInTheDocument();
     expect(screen.getByLabelText('새 비밀번호')).toBeInTheDocument();
     expect(screen.getByLabelText('새 비밀번호 확인')).toBeInTheDocument();
+    // 실시간 정책 체크리스트 규칙 표시
+    expect(screen.getByText('8자 이상')).toBeInTheDocument();
+    expect(
+      screen.getByText('영문 대/소문자·숫자·특수문자 중 3종 이상 조합'),
+    ).toBeInTheDocument();
+  });
+
+  it('입력에 따라 체크리스트 valid 상태가 실시간 반영된다', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const lengthColor = () =>
+      (screen.getByText('8자 이상').closest('li') as HTMLElement).style.color;
+    const typesColor = () =>
+      (
+        screen
+          .getByText('영문 대/소문자·숫자·특수문자 중 3종 이상 조합')
+          .closest('li') as HTMLElement
+      ).style.color;
+
+    // 2종·8자 → 길이 녹색, 종류 빨강
+    await user.type(screen.getByLabelText('새 비밀번호'), 'abcd1234');
+    await waitFor(() => {
+      expect(lengthColor()).toBe('rgb(82, 196, 26)');
+      expect(typesColor()).toBe('rgb(255, 77, 79)');
+    });
+
+    // 특수문자 추가로 3종 충족 → 종류도 녹색
+    await user.clear(screen.getByLabelText('새 비밀번호'));
+    await user.type(screen.getByLabelText('새 비밀번호'), 'Abcd123!');
+    await waitFor(() => {
+      expect(lengthColor()).toBe('rgb(82, 196, 26)');
+      expect(typesColor()).toBe('rgb(82, 196, 26)');
+    });
   });
 
   it('변경 성공 - 새 토큰 저장 + 강제 플래그 해제 + 대시보드 이동', async () => {

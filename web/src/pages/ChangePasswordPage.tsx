@@ -3,11 +3,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Alert, Typography, notification } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { changePassword } from '@/api/auth';
-import {
-  PASSWORD_MIN_LENGTH,
-  PASSWORD_POLICY_HINT,
-  hasEnoughCharacterTypes,
-} from '@/lib/passwordPolicy';
+import { PASSWORD_MIN_LENGTH, hasEnoughCharacterTypes } from '@/lib/passwordPolicy';
+import PasswordPolicyChecklist from '@/components/PasswordPolicyChecklist';
 
 const { Title, Paragraph } = Typography;
 
@@ -28,6 +25,8 @@ interface ChangePasswordForm {
  */
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
+  const [form] = Form.useForm<ChangePasswordForm>();
+  const newPassword = Form.useWatch('newPassword', form) ?? '';
   const passwordChangeRequired = useAuthStore((s) => s.passwordChangeRequired);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setTokens = useAuthStore((s) => s.setTokens);
@@ -93,11 +92,16 @@ export default function ChangePasswordPage() {
           />
         )}
 
-        <Form<ChangePasswordForm> onFinish={handleSubmit} layout="vertical" autoComplete="off">
+        <Form<ChangePasswordForm>
+          form={form}
+          onFinish={handleSubmit}
+          layout="vertical"
+          autoComplete="off"
+        >
           <Form.Item
             label="새 비밀번호"
             name="newPassword"
-            extra={PASSWORD_POLICY_HINT}
+            extra={<PasswordPolicyChecklist password={newPassword} />}
             rules={[
               { required: true, message: '새 비밀번호를 입력하세요' },
               {
@@ -113,7 +117,6 @@ export default function ChangePasswordPage() {
                       ),
               },
             ]}
-            hasFeedback
           >
             <Input.Password placeholder="새 비밀번호를 입력하세요" size="large" />
           </Form.Item>
