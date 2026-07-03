@@ -119,18 +119,20 @@ class AdminInspectionThemeController(
     @PutMapping("/{id}")
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.EDIT)
     fun updateTheme(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
         @RequestBody request: UpdateThemeRequest,
     ): ResponseEntity<ApiResponse<ThemeMutationResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(themeService.update(id, request)))
+        return ResponseEntity.ok(ApiResponse.success(themeService.update(principal, id, request)))
     }
 
     @DeleteMapping("/{id}")
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.DELETE)
     fun deleteTheme(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
     ): ResponseEntity<ApiResponse<Any?>> {
-        themeService.delete(id)
+        themeService.delete(principal, id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?, "테마가 삭제되었습니다"))
     }
 

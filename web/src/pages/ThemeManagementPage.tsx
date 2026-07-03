@@ -28,6 +28,7 @@ import {
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { usePermission } from '@/hooks/usePermission';
+import { useAuthStore } from '@/stores/authStore';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
@@ -41,10 +42,17 @@ interface ThemeFormValues {
 
 export default function ThemeManagementPage() {
   const { message } = App.useApp();
-  const { hasEntityPermission } = usePermission();
+  const { hasEntityPermission, hasSystemPermission } = usePermission();
   const canCreate = hasEntityPermission('inspection_theme', 'CREATE');
   const canEdit = hasEntityPermission('inspection_theme', 'EDIT');
   const canDelete = hasEntityPermission('inspection_theme', 'DELETE');
+
+  // 소유자 판정 — SF 레거시 정합: 소유자 본인 또는 MODIFY_ALL_DATA(전 테마 수정 가능) 만 수정/삭제.
+  // 그 외(타인 소유 테마)는 entity EDIT/DELETE 권한이 있어도 버튼 미노출. backend 도 동일 가드.
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const canModifyAll = hasSystemPermission('MODIFY_ALL_DATA');
+  const canManageTheme = (item: ThemeListItem) =>
+    canModifyAll || (currentUserId != null && item.ownerUserId === currentUserId);
 
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: { keyword: '', department: '', branchCode: '' },
@@ -206,30 +214,33 @@ export default function ThemeManagementPage() {
       key: 'actions',
       width: 220,
       fixed: 'right',
-      render: (_v, record) => (
-        <Space size="small">
-          <Button size="small" onClick={() => handleExport(record)}>
-            엑셀
-          </Button>
-          {canEdit && (
-            <Button size="small" onClick={() => openEdit(record)}>
-              수정
+      render: (_v, record) => {
+        const manageable = canManageTheme(record);
+        return (
+          <Space size="small">
+            <Button size="small" onClick={() => handleExport(record)}>
+              엑셀
             </Button>
-          )}
-          {canDelete && (
-            <Popconfirm
-              title="이 테마를 삭제하시겠습니까?"
-              onConfirm={() => handleDelete(record.id)}
-              okText="삭제"
-              cancelText="취소"
-            >
-              <Button size="small" danger>
-                삭제
+            {canEdit && manageable && (
+              <Button size="small" onClick={() => openEdit(record)}>
+                수정
               </Button>
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+            )}
+            {canDelete && manageable && (
+              <Popconfirm
+                title="이 테마를 삭제하시겠습니까?"
+                onConfirm={() => handleDelete(record.id)}
+                okText="삭제"
+                cancelText="취소"
+              >
+                <Button size="small" danger>
+                  삭제
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -237,22 +248,6 @@ export default function ThemeManagementPage() {
     <div style={{ padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 8 }}>
         <Space wrap>
-          <Input
-            placeholder="테마번호 / 테마이름 / 부서"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-            onPressEnter={handleSearch}
-            style={{ width: 240 }}
-            allowClear
-          />
-          <Input
-            placeholder="부서"
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            onPressEnter={handleSearch}
-            style={{ width: 140 }}
-            allowClear
-          />
           {isMultiBranch && (
             <Select
               placeholder="지점 (전체)"
@@ -270,6 +265,22 @@ export default function ThemeManagementPage() {
               지점: {singleBranch.branchName}
             </Tag>
           )}
+          <Input
+            placeholder="테마번호 / 테마이름 / 부서"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+            onPressEnter={handleSearch}
+            style={{ width: 240 }}
+            allowClear
+          />
+          <Input
+            placeholder="부서"
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            onPressEnter={handleSearch}
+            style={{ width: 140 }}
+            allowClear
+          />
           <Button type="primary" onClick={handleSearch}>
             조회
           </Button>

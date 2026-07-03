@@ -14,6 +14,8 @@ import com.otoki.powersales.domain.activity.inspection.repository.InspectionThem
 import com.otoki.powersales.domain.activity.inspection.repository.SiteActivityRepository
 import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import com.otoki.powersales.platform.auth.permission.SfPermissionResolver
+import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
@@ -182,10 +184,11 @@ class AdminInspectionThemeService(
         return ThemeMutationResponse.from(saved)
     }
 
-    /** 테마 수정 — 테마이름/시작일/종료일만 변경. 부서/지점/테마번호 불변. */
+    /** 테마 수정 — 테마이름/시작일/종료일만 변경. 부서/지점/테마번호 불변. 소유자/전권한자만 가능. */
     @Transactional
-    fun update(id: Long, request: UpdateThemeRequest): ThemeMutationResponse {
+    fun update(principal: WebUserPrincipal, id: Long, request: UpdateThemeRequest): ThemeMutationResponse {
         val theme = findActiveTheme(id)
+        requireThemeOwnerOrModifyAll(principal, theme)
 
         // 소유권 이전 — ownerUserId 가 현재 소유자와 다르면 새 소유자로 변경 + 부서 갱신.
         // 레거시 ThemeTriggerHandler.beforeUpdateTheme 동등: 새 소유자 Employee 의 orgName 으로
@@ -229,10 +232,11 @@ class AdminInspectionThemeService(
         return employeeRepository.findByEmployeeCode(code).orElse(null)?.orgName
     }
 
-    /** 테마 삭제 — soft delete. */
+    /** 테마 삭제 — soft delete. 소유자/전권한자만 가능. */
     @Transactional
-    fun delete(id: Long) {
+    fun delete(principal: WebUserPrincipal, id: Long) {
         val theme = findActiveTheme(id)
+        requireThemeOwnerOrModifyAll(principal, theme)
         val deleted = InspectionTheme(
             id = theme.id,
             sfid = theme.sfid,
@@ -279,6 +283,22 @@ class AdminInspectionThemeService(
         // fetchTeamScheduleBranches 규칙과 동일 — Level5(지점) 우선, 없으면 Level4.
         val name = org.orgNameLevel5?.takeIf { it.isNotBlank() } ?: org.orgNameLevel4 ?: return emptyList()
         return listOf(BranchResponse(branchCode = code, branchName = name))
+    }
+
+    /**
+     * 수정/삭제 가드 — 소유자 본인 또는 MODIFY_ALL_DATA(전 테마 수정) 만 허용. 그 외는 403.
+     *
+     * SF 레거시 정합: Theme__c 수정/소유자 변경은 소유자이거나 modifyAll 권한자만 가능(표준 record Edit 규칙).
+     * entity EDIT/DELETE 권한(@RequiresSfPermission) 통과 후, 타인 소유 테마는 여기서 차단한다.
+     */
+    private fun requireThemeOwnerOrModifyAll(principal: WebUserPrincipal, theme: InspectionTheme) {
+        val hasModifyAll = principal.permissions.contains(
+            SfPermissionResolver.systemKey(SfSystemPermission.MODIFY_ALL_DATA)
+        )
+        val isOwner = theme.ownerUser?.id != null && theme.ownerUser?.id == principal.userId
+        if (!hasModifyAll && !isOwner) {
+            throw InspectionThemeForbiddenException()
+        }
     }
 
     /** 목록 스코프와 동일 기준(본인 지점 + 전사공통 화이트리스트)으로 단건 가시성 검증. */

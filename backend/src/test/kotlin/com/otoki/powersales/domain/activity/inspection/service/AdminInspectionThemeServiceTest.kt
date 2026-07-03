@@ -5,6 +5,8 @@ import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.domain.activity.inspection.exception.InspectionThemeForbiddenException
 import com.otoki.powersales.domain.org.organization.entity.Organization
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import com.otoki.powersales.platform.auth.permission.SfPermissionResolver
+import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
@@ -54,7 +56,12 @@ class AdminInspectionThemeServiceTest {
         organizationRepository = organizationRepository,
     )
 
-    private fun theme(id: Long = 1L, deleted: Boolean = false, branchCode: String = "B001") = InspectionTheme(
+    private fun theme(
+        id: Long = 1L,
+        deleted: Boolean = false,
+        branchCode: String = "B001",
+        ownerUserId: Long? = null,
+    ) = InspectionTheme(
         id = id,
         name = "TM00000001",
         title = "1분기 점검",
@@ -64,7 +71,22 @@ class AdminInspectionThemeServiceTest {
         branchCode = branchCode,
         publicFlag = true,
         isDeleted = deleted,
+        ownerUser = ownerUserId?.let { User(id = it, username = "owner$it", employeeCode = "E$it", password = "x") },
     )
+
+    /** 수정/삭제 가드용 principal — MODIFY_ALL_DATA 권한 + userId 세팅. */
+    private fun asModifyAll(userId: Long = 999L) {
+        every { principal.userId } returns userId
+        every { principal.permissions } returns setOf(
+            SfPermissionResolver.systemKey(SfSystemPermission.MODIFY_ALL_DATA)
+        )
+    }
+
+    /** 수정/삭제 가드용 principal — 특정 userId 소유자(MODIFY_ALL_DATA 없음). */
+    private fun asOwner(userId: Long) {
+        every { principal.userId } returns userId
+        every { principal.permissions } returns emptySet()
+    }
 
     private val principal: WebUserPrincipal = mockk()
 
@@ -319,11 +341,12 @@ class AdminInspectionThemeServiceTest {
     inner class Update {
         @Test
         fun `테마이름·기간만 변경하고 테마번호·부서·지점은 보존한다`() {
+            asModifyAll()
             every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme())
             val saved = slot<InspectionTheme>()
             every { inspectionThemeRepository.save(capture(saved)) } answers { saved.captured }
 
-            service.update(1L, UpdateThemeRequest(title = "수정된 테마", startDate = "2026-02-01", endDate = "2026-04-30"))
+            service.update(principal, 1L, UpdateThemeRequest(title = "수정된 테마", startDate = "2026-02-01", endDate = "2026-04-30"))
 
             assertThat(saved.captured.name).isEqualTo("TM00000001")
             assertThat(saved.captured.department).isEqualTo("영업1팀")
@@ -334,6 +357,7 @@ class AdminInspectionThemeServiceTest {
 
         @Test
         fun `소유권 이전 시 새 소유자 소속으로 부서를 갱신하고 지점은 보존한다`() {
+            asModifyAll()
             every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme())
             every { userRepository.findById(200L) } returns Optional.of(
                 User(id = 200L, username = "newowner", employeeCode = "E200", password = "x")
@@ -345,6 +369,7 @@ class AdminInspectionThemeServiceTest {
             every { inspectionThemeRepository.save(capture(saved)) } answers { saved.captured }
 
             service.update(
+                principal,
                 1L,
                 UpdateThemeRequest(title = "1분기 점검", startDate = "2026-01-01", endDate = "2026-03-31", ownerUserId = 200L),
             )
@@ -354,6 +379,30 @@ class AdminInspectionThemeServiceTest {
             assertThat(saved.captured.branchCode).isEqualTo("B001")
             assertThat(saved.captured.ownerGroup).isNull()
         }
+
+        @Test
+        fun `MODIFY_ALL_DATA 없이 타인 소유 테마를 수정하면 403`() {
+            asOwner(userId = 100L)
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(ownerUserId = 200L))
+
+            assertThatThrownBy {
+                service.update(principal, 1L, UpdateThemeRequest(title = "수정", startDate = "2026-02-01", endDate = "2026-04-30"))
+            }.isInstanceOf(InspectionThemeForbiddenException::class.java)
+
+            verify(exactly = 0) { inspectionThemeRepository.save(any()) }
+        }
+
+        @Test
+        fun `소유자 본인은 MODIFY_ALL_DATA 없이도 수정할 수 있다`() {
+            asOwner(userId = 100L)
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(ownerUserId = 100L))
+            val saved = slot<InspectionTheme>()
+            every { inspectionThemeRepository.save(capture(saved)) } answers { saved.captured }
+
+            service.update(principal, 1L, UpdateThemeRequest(title = "수정된 테마", startDate = "2026-02-01", endDate = "2026-04-30"))
+
+            assertThat(saved.captured.title).isEqualTo("수정된 테마")
+        }
     }
 
     @Nested
@@ -361,11 +410,12 @@ class AdminInspectionThemeServiceTest {
     inner class Delete {
         @Test
         fun `soft delete 로 isDeleted 를 true 로 저장한다`() {
+            asModifyAll()
             every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme())
             val saved = slot<InspectionTheme>()
             every { inspectionThemeRepository.save(capture(saved)) } answers { saved.captured }
 
-            service.delete(1L)
+            service.delete(principal, 1L)
 
             assertThat(saved.captured.isDeleted).isTrue()
             verify { inspectionThemeRepository.save(any()) }
@@ -375,8 +425,31 @@ class AdminInspectionThemeServiceTest {
         fun `이미 삭제된 테마는 조회되지 않아 예외`() {
             every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(deleted = true))
 
-            assertThatThrownBy { service.delete(1L) }
+            assertThatThrownBy { service.delete(principal, 1L) }
                 .isInstanceOf(IllegalArgumentException::class.java)
+        }
+
+        @Test
+        fun `MODIFY_ALL_DATA 없이 타인 소유 테마를 삭제하면 403`() {
+            asOwner(userId = 100L)
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(ownerUserId = 200L))
+
+            assertThatThrownBy { service.delete(principal, 1L) }
+                .isInstanceOf(InspectionThemeForbiddenException::class.java)
+
+            verify(exactly = 0) { inspectionThemeRepository.save(any()) }
+        }
+
+        @Test
+        fun `소유자 본인은 MODIFY_ALL_DATA 없이도 삭제할 수 있다`() {
+            asOwner(userId = 100L)
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(ownerUserId = 100L))
+            val saved = slot<InspectionTheme>()
+            every { inspectionThemeRepository.save(capture(saved)) } answers { saved.captured }
+
+            service.delete(principal, 1L)
+
+            assertThat(saved.captured.isDeleted).isTrue()
         }
     }
 }
