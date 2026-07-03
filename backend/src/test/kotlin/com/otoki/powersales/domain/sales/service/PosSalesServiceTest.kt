@@ -11,10 +11,8 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import java.io.ByteArrayInputStream
 import java.math.BigDecimal
 
 @DisplayName("PosSalesService 테스트")
@@ -23,7 +21,7 @@ class PosSalesServiceTest {
 	private val accountRepository: AccountRepository = mockk()
 	private val livePosSalesDailyRepository: LivePosSalesDailyRepository = mockk()
 
-	private val service = PosSalesService(accountRepository, livePosSalesDailyRepository, PosSalesExcelExporter())
+	private val service = PosSalesService(accountRepository, livePosSalesDailyRepository)
 
 	private fun account(id: Long = 1L, name: String = "사과마을", externalKey: String? = "12345") =
 		Account(id = id, name = name, externalKey = externalKey)
@@ -100,43 +98,6 @@ class PosSalesServiceTest {
 		val res = service.getPosSales(1, "202602")
 
 		assertThat(res.items).isEmpty()
-	}
-
-	@Test
-	@DisplayName("exportPosSales - 조회와 동일 데이터를 헤더 5컬럼 + 데이터 행으로 출력 + 파일명에 거래처/연월")
-	fun exportPosSales_success() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(name = "사과마을"))
-		every { livePosSalesDailyRepository.aggregateByProduct(any(), any(), any()) } returns listOf(
-			row("01101123", "갈릭 아이올리소스 240g", "8801045123456", 3500, 10),
-		)
-
-		val result = service.exportPosSales(1, "202602")
-
-		assertThat(result.filename).isEqualTo("POS매출_사과마을_202602.xlsx")
-		val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
-		val sheet = workbook.getSheetAt(0)
-		assertThat(sheet.sheetName).isEqualTo("POS매출")
-		assertThat(sheet.getRow(0).getCell(0).stringCellValue).isEqualTo("제품코드")
-		assertThat(sheet.getRow(0).getCell(4).stringCellValue).isEqualTo("금액(원)")
-		val dataRow = sheet.getRow(1)
-		assertThat(dataRow.getCell(0).stringCellValue).isEqualTo("01101123")
-		assertThat(dataRow.getCell(1).stringCellValue).isEqualTo("갈릭 아이올리소스 240g")
-		assertThat(dataRow.getCell(2).stringCellValue).isEqualTo("8801045123456")
-		assertThat(dataRow.getCell(3).numericCellValue).isEqualTo(10.0)
-		assertThat(dataRow.getCell(4).numericCellValue).isEqualTo(3500.0)
-		workbook.close()
-	}
-
-	@Test
-	@DisplayName("exportPosSales - POS DB 장애 시 헤더만 있는 빈 엑셀로 fallback")
-	fun exportPosSales_emptyFallback() {
-		every { accountRepository.findByIdInAndIsDeletedNot(listOf(1), true) } returns listOf(account(externalKey = null))
-
-		val result = service.exportPosSales(1, "202602")
-
-		val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
-		assertThat(workbook.getSheetAt(0).lastRowNum).isEqualTo(0) // 헤더 행만
-		workbook.close()
 	}
 
 	// ── getPosSalesByRange (기간 + 바코드 필터) ───────────────────────────

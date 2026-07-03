@@ -5,7 +5,6 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesResponse
-import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -45,19 +44,8 @@ import java.time.format.DateTimeFormatter
 class PosSalesService(
 	private val accountRepository: AccountRepository,
 	private val livePosSalesDailyRepository: LivePosSalesDailyRepository,
-	private val posSalesExcelExporter: PosSalesExcelExporter,
 ) {
 	private val log = LoggerFactory.getLogger(javaClass)
-
-	/**
-	 * 거래처 1곳 + 연월의 제품별 POS매출 명세를 xlsx 로 export — 조회([getPosSales])와 동일 데이터.
-	 *
-	 * 조회와 동일하게 거래처 미존재 시 404, POS DB 장애 시 빈 명세로 fallback (헤더만 있는 엑셀).
-	 */
-	fun exportPosSales(customerId: Long, yearMonth: String): ExcelResult {
-		val response = getPosSales(customerId, yearMonth)
-		return posSalesExcelExporter.export(response.customerName, response.yearMonth, response.items)
-	}
 
 	/**
 	 * 거래처 1곳 + 연월의 제품별 POS매출 조회.
@@ -111,25 +99,6 @@ class PosSalesService(
             yearMonth = yearMonth,
             items = items,
         )
-	}
-
-	/**
-	 * 거래처 1곳 + 기간(시작/종료일) + 선택 바코드 목록의 제품별 POS매출 명세를 xlsx 로 export —
-	 * 조회([getPosSalesByRange])와 동일 데이터. web admin POS매출 화면의 기간 조회 엑셀 다운로드용.
-	 *
-	 * [barcodes] 가 비면 거래처 전체 제품, 1건 이상이면 해당 바코드 제품만 집계 (조회와 동일 규칙).
-	 * 조회와 동일하게 거래처 미존재 시 404, POS DB 장애 시 빈 명세로 fallback (헤더만 있는 엑셀).
-	 */
-	fun exportPosSalesByRange(
-		customerId: Long,
-		startDate: String,
-		endDate: String,
-		barcodes: List<String>?,
-	): ExcelResult {
-		val response = getPosSalesByRange(customerId, startDate, endDate, barcodes)
-		return posSalesExcelExporter.exportByRange(
-			response.customerName, response.startDate, response.endDate, response.items,
-		)
 	}
 
 	/**

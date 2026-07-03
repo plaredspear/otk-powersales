@@ -8736,6 +8736,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePosSalesDashboardListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PosSalesDashboardListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePosSalesRangeResponse" : {
         "properties" : {
           "data" : {
@@ -19338,6 +19367,65 @@
         },
         "type" : "object"
       },
+      "PosSalesDashboardListItem" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "salesAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "salesQuantity" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PosSalesDashboardListResponse" : {
+        "properties" : {
+          "endDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PosSalesDashboardListItem"
+            },
+            "type" : "array"
+          },
+          "pageInfo" : {
+            "$ref" : "#/components/schemas/PageInfo"
+          },
+          "startDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "totalSalesAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalSalesQuantity" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "PosSalesRangeRequest" : {
         "properties" : {
           "barcodes" : {
@@ -24926,7 +25014,7 @@
     },
     "/api/v1/admin/accounts/branches" : {
       "get" : {
-        "operationId" : "getBranches_5",
+        "operationId" : "getBranches_4",
         "responses" : {
           "200" : {
             "content" : {
@@ -25071,69 +25159,6 @@
           "schema" : {
             "maxLength" : 50,
             "minLength" : 1,
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "page",
-          "required" : false,
-          "schema" : {
-            "default" : 0,
-            "format" : "int32",
-            "minimum" : 0,
-            "type" : "integer"
-          }
-        }, {
-          "in" : "query",
-          "name" : "size",
-          "required" : false,
-          "schema" : {
-            "default" : 20,
-            "format" : "int32",
-            "maximum" : 100,
-            "minimum" : 1,
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseAccountListResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-account-controller" ]
-      }
-    },
-    "/api/v1/admin/accounts/lookup-for-pos-sales" : {
-      "get" : {
-        "operationId" : "lookupAccountsForPosSales",
-        "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
-          "name" : "keyword",
-          "required" : false,
-          "schema" : {
-            "maxLength" : 50,
-            "minLength" : 1,
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "branchCode",
-          "required" : false,
-          "schema" : {
             "type" : "string"
           }
         }, {
@@ -25915,7 +25940,7 @@
     },
     "/api/v1/admin/attend-info/branches" : {
       "get" : {
-        "operationId" : "getBranches_4",
+        "operationId" : "getBranches_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -26764,7 +26789,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_3",
+        "operationId" : "getBranches_2",
         "responses" : {
           "200" : {
             "content" : {
@@ -31235,7 +31260,7 @@
     },
     "/api/v1/admin/ppt-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_2",
+        "operationId" : "getBranches_1",
         "responses" : {
           "200" : {
             "content" : {
@@ -33087,7 +33112,7 @@
     },
     "/api/v1/admin/sales-progress-rate-masters" : {
       "get" : {
-        "operationId" : "getList_4",
+        "operationId" : "getList_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -33157,7 +33182,7 @@
     },
     "/api/v1/admin/sales-progress-rate-masters/{id}" : {
       "get" : {
-        "operationId" : "getDetail_6",
+        "operationId" : "getDetail_7",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -33191,7 +33216,7 @@
     },
     "/api/v1/admin/sales/electronic/detail/{customerId}" : {
       "get" : {
-        "operationId" : "getDetail_5",
+        "operationId" : "getDetail_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -33284,7 +33309,7 @@
     },
     "/api/v1/admin/sales/electronic/list" : {
       "get" : {
-        "operationId" : "getList_3",
+        "operationId" : "getList_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -33431,7 +33456,7 @@
     },
     "/api/v1/admin/sales/electronic/list/export" : {
       "get" : {
-        "operationId" : "exportList_1",
+        "operationId" : "exportList_2",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -33643,7 +33668,7 @@
     },
     "/api/v1/admin/sales/monthly/detail/{customerId}" : {
       "get" : {
-        "operationId" : "getDetail_4",
+        "operationId" : "getDetail_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -33693,7 +33718,7 @@
     },
     "/api/v1/admin/sales/monthly/list" : {
       "get" : {
-        "operationId" : "getList_2",
+        "operationId" : "getList_3",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -33816,7 +33841,7 @@
     },
     "/api/v1/admin/sales/monthly/list/export" : {
       "get" : {
-        "operationId" : "exportList",
+        "operationId" : "exportList_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "scope",
@@ -34007,15 +34032,64 @@
         "tags" : [ "admin-monthly-sales-dashboard-controller" ]
       }
     },
-    "/api/v1/admin/sales/pos" : {
+    "/api/v1/admin/sales/pos/detail/{customerId}" : {
       "get" : {
-        "operationId" : "getPosSales_1",
+        "operationId" : "getDetail_4",
         "parameters" : [ {
           "in" : "query",
-          "name" : "request",
+          "name" : "scope",
           "required" : true,
           "schema" : {
-            "$ref" : "#/components/schemas/PosSalesRangeRequest"
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "customerId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -34033,69 +34107,92 @@
         "tags" : [ "admin-pos-sales-controller" ]
       }
     },
-    "/api/v1/admin/sales/pos/branches" : {
+    "/api/v1/admin/sales/pos/list" : {
       "get" : {
-        "operationId" : "getBranches_1",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-pos-sales-controller" ]
-      }
-    },
-    "/api/v1/admin/sales/pos/export" : {
-      "get" : {
-        "operationId" : "exportPosSales",
+        "operationId" : "getList_2",
         "parameters" : [ {
           "in" : "query",
-          "name" : "request",
+          "name" : "scope",
           "required" : true,
           "schema" : {
-            "$ref" : "#/components/schemas/PosSalesRangeRequest"
+            "$ref" : "#/components/schemas/DataScope"
           }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "format" : "byte",
-                  "type" : "string"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-pos-sales-controller" ]
-      }
-    },
-    "/api/v1/admin/sales/pos/products" : {
-      "get" : {
-        "operationId" : "searchProducts_1",
-        "parameters" : [ {
+        }, {
           "in" : "query",
-          "name" : "query",
+          "name" : "startDate",
           "required" : true,
           "schema" : {
-            "maxLength" : 50,
-            "minLength" : 1,
+            "format" : "date",
             "type" : "string"
           }
         }, {
           "in" : "query",
-          "name" : "type",
+          "name" : "endDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : true,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "customerKeyword",
           "required" : false,
           "schema" : {
-            "default" : "text",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "distributionChannels",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypes",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
             "type" : "string"
           }
         }, {
@@ -34112,9 +34209,16 @@
           "name" : "size",
           "required" : false,
           "schema" : {
-            "default" : 30,
+            "default" : 20,
             "format" : "int32",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -34122,7 +34226,119 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponsePageProductDto"
+                  "$ref" : "#/components/schemas/ApiResponsePosSalesDashboardListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-pos-sales-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/pos/list/export" : {
+      "get" : {
+        "operationId" : "exportList",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "startDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "endDate",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : true,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "customerKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "distributionChannels",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypes",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productIds",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "sort",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
                 }
               }
             },

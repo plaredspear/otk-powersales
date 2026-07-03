@@ -87,6 +87,71 @@ interface LivePosSalesDailyRepository : Repository<LivePosSalesDaily, LivePosSal
 		@Param("endDate") endDate: String,
 		@Param("barcodes") barcodes: List<String>,
 	): List<PosSalesRow>
+
+	/**
+	 * 거래처 N곳 + 기간의 거래처별 POS매출 합계 집계 (web admin 거래처별 명세 테이블용).
+	 *
+	 * [aggregateByProduct] 가 제품별 집계인 반면, 본 query 는 `CUST_CD` 단위로 묶어 거래처당
+	 * `SUM(SALES_AMT)` / `SUM(SALES_QTY)` 1 row 를 반환한다. 권한 범위 거래처 다건을 1 trip 으로
+	 * 집계해 N+1 을 회피. 전산매출(`live_tot_sales_dh`)의 `aggregateByCustomer` 와 동일 형태.
+	 *
+	 * @param custCds 거래처 코드 목록 (legacy 패딩 `"000" + accountCode` 적용된 값)
+	 * @param startDate 조회 시작일 `YYYY-MM-DD`
+	 * @param endDate 조회 종료일 `YYYY-MM-DD`
+	 */
+	@Query(
+		nativeQuery = true,
+		value = """
+			SELECT "CUST_CD"           AS "custCd",
+			       SUM("SALES_AMT")    AS "salesAmt",
+			       SUM("SALES_QTY")    AS "salesQty"
+			FROM public.live_pos_sales_dh
+			WHERE "DATE" BETWEEN to_date(:startDate, 'YYYY-MM-DD')
+			                 AND to_date(:endDate,   'YYYY-MM-DD')
+			  AND "CUST_CD" IN (:custCds)
+			GROUP BY "CUST_CD"
+		"""
+	)
+	fun aggregateByCustomer(
+		@Param("custCds") custCds: List<String>,
+		@Param("startDate") startDate: String,
+		@Param("endDate") endDate: String,
+	): List<PosCustomerSalesRow>
+
+	/**
+	 * 거래처 N곳 + 기간 + 바코드 목록(`BARCODE IN`) 의 거래처별 POS매출 합계 집계
+	 * (web admin 거래처별 명세 테이블의 제품/분류 필터 분기).
+	 *
+	 * [aggregateByCustomer] 와 동일 형태에 기존 `BARCODE IN` predicate 만 결합 — 외부(POS) DB 에
+	 * 새로 추가되는 조회 조건 형태는 거래처별 GROUP BY 뿐이며, 제품/중분류/소분류 필터는 모두
+	 * 메인 DB(Product)에서 바코드 목록으로 해소된 뒤 본 predicate 로 합류한다. IN 목록 비대화는
+	 * 서비스 레이어가 청크 분할로 보호한다.
+	 *
+	 * @param custCds 거래처 코드 목록 (legacy 패딩 `"000" + accountCode` 적용된 값)
+	 * @param startDate 조회 시작일 `YYYY-MM-DD`
+	 * @param endDate 조회 종료일 `YYYY-MM-DD`
+	 * @param barcodes 조회 제품의 바코드 목록 (1건 이상 — 빈 목록으로 호출 금지)
+	 */
+	@Query(
+		nativeQuery = true,
+		value = """
+			SELECT "CUST_CD"           AS "custCd",
+			       SUM("SALES_AMT")    AS "salesAmt",
+			       SUM("SALES_QTY")    AS "salesQty"
+			FROM public.live_pos_sales_dh
+			WHERE "DATE" BETWEEN to_date(:startDate, 'YYYY-MM-DD')
+			                 AND to_date(:endDate,   'YYYY-MM-DD')
+			  AND "CUST_CD" IN (:custCds)
+			  AND "BARCODE" IN (:barcodes)
+			GROUP BY "CUST_CD"
+		"""
+	)
+	fun aggregateByCustomerAndBarcodes(
+		@Param("custCds") custCds: List<String>,
+		@Param("startDate") startDate: String,
+		@Param("endDate") endDate: String,
+		@Param("barcodes") barcodes: List<String>,
+	): List<PosCustomerSalesRow>
 }
 
 /**
@@ -97,6 +162,16 @@ interface PosSalesRow {
 	fun getItemCd(): String
 	fun getItemNm(): String?
 	fun getBarcode(): String?
+	fun getSalesAmt(): BigDecimal?
+	fun getSalesQty(): BigDecimal?
+}
+
+/**
+ * [LivePosSalesDailyRepository.aggregateByCustomer] native 집계 결과 projection.
+ * alias(`custCd`/`salesAmt`/`salesQty`) ↔ getter 매핑.
+ */
+interface PosCustomerSalesRow {
+	fun getCustCd(): String
 	fun getSalesAmt(): BigDecimal?
 	fun getSalesQty(): BigDecimal?
 }

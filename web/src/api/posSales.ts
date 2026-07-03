@@ -2,11 +2,42 @@ import client from './client';
 import type { ApiResponse } from './types';
 
 /**
- * POS매출 조회 — 거래처 1곳 + 기간(시작/종료일 YYYY-MM-DD) 제품별 실적.
+ * POS매출 — POS `live_pos_sales_dh` 거래처/제품별 POS 스캔 실적.
  *
- * Backend `GET /api/v1/admin/sales/pos` (`monthly_sales_history` READ 권한 필요).
- * 레거시 `promotion/month/posmain.jsp` (POS DB `live_pos_sales_dh`) 대응.
+ * 레거시 「POS매출 조회」(`/sales/posMain` → `posmain.jsp`) 의 거래처별 확장. 거래처별 합계 명세 +
+ * 제품별 상세. 기간은 일 단위(startDate~endDate, 레거시 daterangepicker `maxSpan` 정합 — 최대 31일).
+ * 전산실적(`electronicSalesDashboard.ts`) 과 동일한 API 구성이며, 유통형태/거래처유형/분류 옵션과
+ * 제품 검색은 전산실적의 filter-options / product-lookup 을 재사용한다 (동일 권한 가드).
  */
+
+export interface PosSalesDashboardListItem {
+  accountId: number;
+  accountName: string | null;
+  sapAccountCode: string | null;
+  branchCode: string | null;
+  branchName: string | null;
+  salesAmount: number;
+  salesQuantity: number;
+}
+
+export interface PosSalesPageInfo {
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+export interface PosSalesDashboardListResponse {
+  startDate: string;
+  endDate: string;
+  /** 조회 결과 전체(페이징 무관)의 POS매출 금액 합계 — 상단 합계 표시용 */
+  totalSalesAmount: number;
+  /** 조회 결과 전체(페이징 무관)의 POS매출 수량 합계 */
+  totalSalesQuantity: number;
+  items: PosSalesDashboardListItem[];
+  pageInfo: PosSalesPageInfo;
+}
+
 export interface PosSalesProduct {
   productCode: string;
   productName: string;
@@ -15,7 +46,7 @@ export interface PosSalesProduct {
   quantity: number;
 }
 
-export interface PosSalesResponse {
+export interface PosSalesDetail {
   customerId: number;
   customerName: string;
   sapAccountCode: string;
@@ -30,81 +61,109 @@ export interface PosSalesResponse {
   items: PosSalesProduct[];
 }
 
-/** POS매출 제품별 명세 엑셀 다운로드 경로 (GET, 조회와 동일 customerId/startDate/endDate 파라미터). */
-export const POS_SALES_EXPORT_PATH = '/api/v1/admin/sales/pos/export';
+/** 목록/엑셀 공용 필터 — 제품/분류 조건은 backend 가 바코드로 해소해 POS 에 전달. */
+export interface PosSalesDashboardListRequest {
+  /** 시작일 (YYYY-MM-DD) */
+  startDate: string;
+  /** 종료일 (YYYY-MM-DD) */
+  endDate: string;
+  costCenterCodes: string[];
+  customerKeyword?: string;
+  /** 유통형태 라벨 (예 "02 슈퍼") */
+  distributionChannels?: string[];
+  /** 거래처유형 라벨 (ABC유형, 예 "6111 이마트") */
+  accountTypes?: string[];
+  /** 조회 제품 (다중) */
+  productIds?: number[];
+  /** 제품 중분류 */
+  category2?: string;
+  /** 제품 소분류 */
+  category3?: string;
+  page?: number;
+  size?: number;
+  sort?: string;
+}
 
-/** POS매출 조회 화면 지점 셀렉터 옵션 (권한별 지점 화이트리스트). */
-export interface PosSalesBranch {
-  branchCode: string;
-  branchName: string;
+const BASE = '/api/v1/admin/sales/pos';
+
+function failureMessage(label: string, res: { data: ApiResponse<unknown> }): string {
+  return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
+}
+
+/** 공통 필터 파라미터 직렬화 (목록/엑셀 공용, 페이징 제외). */
+function buildFilterParams(request: PosSalesDashboardListRequest): Record<string, string> {
+  return {
+    startDate: request.startDate,
+    endDate: request.endDate,
+    costCenterCodes: request.costCenterCodes.join(','),
+    ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
+    ...(request.distributionChannels && request.distributionChannels.length > 0
+      ? { distributionChannels: request.distributionChannels.join(',') }
+      : {}),
+    ...(request.accountTypes && request.accountTypes.length > 0
+      ? { accountTypes: request.accountTypes.join(',') }
+      : {}),
+    ...(request.productIds && request.productIds.length > 0
+      ? { productIds: request.productIds.join(',') }
+      : {}),
+    ...(request.category2 ? { category2: request.category2 } : {}),
+    ...(request.category3 ? { category3: request.category3 } : {}),
+    ...(request.sort ? { sort: request.sort } : {}),
+  };
 }
 
 /**
- * POS매출 조회 화면의 지점 셀렉터 옵션 조회.
- *
- * Backend `GET /api/v1/admin/sales/pos/branches` (`monthly_sales_history` READ 권한 필요).
- * 전문행사조/여사원 일정과 동일하게 WomenScheduleBranchResolver 권한별 화이트리스트를 산출한다.
+ * 거래처별 POS매출 명세 — 페이징 + 정렬 + 필터 (+ 전체 합계).
  */
-export async function getPosSalesBranches(): Promise<PosSalesBranch[]> {
-  const res = await client.get<ApiResponse<PosSalesBranch[]>>('/api/v1/admin/sales/pos/branches');
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.error?.message || res.data.message || '지점 목록 조회에 실패했습니다');
-  }
+export async function fetchPosSalesList(
+  request: PosSalesDashboardListRequest,
+): Promise<PosSalesDashboardListResponse> {
+  const res = await client.get<ApiResponse<PosSalesDashboardListResponse>>(`${BASE}/list`, {
+    params: {
+      ...buildFilterParams(request),
+      ...(request.page !== undefined ? { page: request.page } : {}),
+      ...(request.size !== undefined ? { size: request.size } : {}),
+    },
+  });
+  if (!res.data.success || !res.data.data) throw new Error(failureMessage('POS매출 명세', res));
   return res.data.data;
 }
 
+/** 거래처별 POS매출 명세 엑셀 export 파라미터 (페이징 제외). */
+export function exportPosSalesListParams(request: PosSalesDashboardListRequest): Record<string, string> {
+  return buildFilterParams(request);
+}
+
+/** 거래처별 POS매출 명세 엑셀 다운로드 경로. */
+export const POS_SALES_EXPORT_LIST_PATH = `${BASE}/list/export`;
+
+/** 상세 조회의 제품/분류 필터 (목록과 동일 조건 반영 — 행 합계와 정합). */
+export interface PosSalesDetailFilter {
+  productIds?: number[];
+  category2?: string;
+  category3?: string;
+}
+
 /**
- * 거래처 1곳 + 기간(시작/종료일 YYYY-MM-DD) + 선택 바코드 목록의 제품별 POS매출 조회.
- *
- * `barcodes` 가 비면 거래처 전체 제품 집계, 1건 이상이면 해당 바코드 제품만 집계 (mobile 정합).
- * 쉼표 구분 문자열로 전송한다 (`PosSalesRangeRequest.barcodes`).
+ * 단건 거래처 상세 — 제품별 POS매출 명세 (기간 + 목록과 동일한 제품/분류 필터, 바코드 포함).
  */
-export async function fetchPosSales(
+export async function fetchPosSalesDetail(
   customerId: number,
   startDate: string,
   endDate: string,
-  barcodes?: string[],
-): Promise<PosSalesResponse> {
-  const res = await client.get<ApiResponse<PosSalesResponse>>('/api/v1/admin/sales/pos', {
+  filter: PosSalesDetailFilter = {},
+): Promise<PosSalesDetail> {
+  const res = await client.get<ApiResponse<PosSalesDetail>>(`${BASE}/detail/${customerId}`, {
     params: {
-      customerId,
       startDate,
       endDate,
-      ...(barcodes && barcodes.length > 0 ? { barcodes: barcodes.join(',') } : {}),
+      ...(filter.productIds && filter.productIds.length > 0
+        ? { productIds: filter.productIds.join(',') }
+        : {}),
+      ...(filter.category2 ? { category2: filter.category2 } : {}),
+      ...(filter.category3 ? { category3: filter.category3 } : {}),
     },
   });
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.error?.message || res.data.message || 'POS매출 조회에 실패했습니다');
-  }
+  if (!res.data.success || !res.data.data) throw new Error(failureMessage('POS매출 상세', res));
   return res.data.data;
-}
-
-/** POS매출 매출 조회 제품 검색 결과 항목 (제품명/제품코드/바코드 — Backend ProductDto). */
-export interface PosSalesProductSearchItem {
-  productCode: string | null;
-  productName: string | null;
-  barcode: string | null;
-}
-
-/**
- * POS매출 매출 조회 제품 검색 — 제품명/제품코드/바코드 통합 검색.
- *
- * Backend `GET /api/v1/admin/sales/pos/products` (`monthly_sales_history` READ 권한 필요).
- * 모바일 POS매출 제품 검색과 동일하게 바코드 포함 제품 목록을 반환한다.
- *
- * @param type 'text'(기본, 제품명/제품코드/바코드 통합) 또는 'barcode'(바코드 정확 조회).
- */
-export async function searchPosSalesProducts(
-  query: string,
-  type: 'text' | 'barcode' = 'text',
-  size = 30,
-): Promise<PosSalesProductSearchItem[]> {
-  const res = await client.get<ApiResponse<{ content: PosSalesProductSearchItem[] }>>(
-    '/api/v1/admin/sales/pos/products',
-    { params: { query, type, page: 0, size } },
-  );
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.error?.message || res.data.message || '제품 검색에 실패했습니다');
-  }
-  return res.data.data.content ?? [];
 }

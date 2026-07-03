@@ -207,45 +207,6 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/accounts/lookup-for-pos-sales - POS매출 거래처 검색 (monthly_sales_history:R 가드)")
-    inner class LookupForPosSales {
-
-        @Test
-        @DisplayName("성공 - 거래처 검색 결과 반환")
-        fun lookupForPosSales_success() {
-            val response = AccountListResponse(
-                content = listOf(
-                    AccountListItem(
-                        id = 1,
-                        externalKey = "AC001234",
-                        name = "GS25 역삼점",
-                        abcType = "편의점",
-                        branchCode = "A001",
-                        branchName = "서울1지점",
-                        employeeCode = "123456",
-                        address1 = "서울시 강남구 역삼동 123-4",
-                        phone = "02-1234-5678",
-                        accountStatusName = "활성"
-                    )
-                ),
-                page = 0,
-                size = 20,
-                totalElements = 1,
-                totalPages = 1
-            )
-            every { adminAccountService.getAccounts(any(), any(), any(), any(), any(), any(), any(), any()) } returns response
-
-            mockMvc.perform(
-                get("/api/v1/admin/accounts/lookup-for-pos-sales").param("keyword", "GS25")
-            )
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.content[0].name").value("GS25 역삼점"))
-                .andExpect(jsonPath("$.data.totalElements").value(1))
-        }
-    }
-
-    @Nested
     @DisplayName("POST /api/v1/admin/accounts - 신규 거래처 등록 (Spec #640)")
     inner class CreateAccount {
 

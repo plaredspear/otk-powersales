@@ -211,35 +211,6 @@ class AdminAccountController(
     }
 
     /**
-     * POS매출 조회 화면의 거래처 lookup search — monthly_sales_history 권한 보유자 호출용.
-     *
-     * POS매출 화면은 monthly_sales_history.READ 로 진입하므로, account.READ / product.READ 권한
-     * 없이도 거래처를 검색할 수 있도록 monthly_sales_history.READ 가드로 분리한다.
-     * ([lookupAccountsForProduct] 를 빌려 쓰면 product.READ 미보유자에게 403 이 발생하던 사례 해소.)
-     */
-    @GetMapping("/lookup-for-pos-sales")
-    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
-    fun lookupAccountsForPosSales(
-        @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentDataScope scope: DataScope,
-        @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
-        @RequestParam(required = false) branchCode: String?,
-        @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
-        @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
-    ): ResponseEntity<ApiResponse<AccountListResponse>> {
-        val response = adminAccountService.getAccounts(
-            scope = scope,
-            keyword = keyword,
-            abcType = null,
-            branchCode = branchCode,
-            accountStatusName = null,
-            page = page,
-            size = size
-        )
-        return ResponseEntity.ok(ApiResponse.success(response))
-    }
-
-    /**
      * 거래처 상세 조회 — 거래처 상세 페이지(`/account/:id`) 의 "기본 정보" 영역.
      *
      * 목록(`getAccounts`)과 동일한 `account.READ` + SF Sharing Rule 정책 적용. 가시 범위 밖 거래처는
