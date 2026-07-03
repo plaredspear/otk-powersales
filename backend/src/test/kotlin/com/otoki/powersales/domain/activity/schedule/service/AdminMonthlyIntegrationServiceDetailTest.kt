@@ -33,8 +33,9 @@ import java.time.YearMonth
 /**
  * `AdminMonthlyIntegrationService.getIntegrationDetail` — MFEIS row 상세(집계 근거 일정) 단위 테스트.
  *
- * 검증 축: `refreshIntegration` 과 동일한 모수에서 본 row 의 집계 키(ExternalKey) 매칭 필터,
- * 일별 1/N 기여분(분모 N 은 키 조합 외 일정 포함), 근무일자 정렬, 요약 필드 매핑, not-found 예외.
+ * 검증 축: 집계 근거 일정을 FK(monthly_female_employee_integration_schedule_id) 역참조로 조회,
+ * FK 미채움 시 externalKey 재매칭 폴백, 일별 1/N 기여분(분모 N 은 키 조합 외 일정 포함 — 월 모수 기준),
+ * 근무일자 정렬, 요약 필드 매핑, not-found 예외.
  */
 @DisplayName("AdminMonthlyIntegrationService.getIntegrationDetail — 집계 근거 일정 상세")
 class AdminMonthlyIntegrationServiceDetailTest {
@@ -130,7 +131,7 @@ class AdminMonthlyIntegrationServiceDetailTest {
         )
 
     @Test
-    @DisplayName("집계 키 매칭 일정만 반환 + 일별 1/N 기여분 (분모 N 은 다른 키 조합 일정 포함)")
+    @DisplayName("FK 미채움 폴백 — 집계 키 매칭 일정만 반환 + 일별 1/N 기여분 (분모 N 은 다른 키 조합 일정 포함)")
     fun sourceSchedulesFilteredByExternalKeyWithDailyContribution() {
         val accA = account(100L)
         val accB = account(200L)
@@ -162,6 +163,40 @@ class AdminMonthlyIntegrationServiceDetailTest {
         val second = detail.schedules[1]
         assertThat(second.dailyScheduleCount).isEqualTo(1)
         assertThat(second.equivalentContribution).isEqualByComparingTo(BigDecimal("1.0000"))
+    }
+
+    @Test
+    @DisplayName("FK 채워진 경우 — FK 역참조로 근거 일정 조회 (externalKey 재매칭 아님)")
+    fun sourceSchedulesResolvedByFk() {
+        val accA = account(100L)
+        val accB = account(200L)
+        val day1 = LocalDate.of(2026, 6, 15)
+        val day2 = LocalDate.of(2026, 6, 16)
+        // 분모 N 산출용 월 모수 (accA 6/15·6/16, accB 6/15 동시)
+        stubPopulation(
+            listOf(
+                schedule(2L, accB, day1),
+                schedule(1L, accA, day1, attendedAt = LocalDateTime.of(2026, 6, 15, 8, 30)),
+                schedule(3L, accA, day2),
+            )
+        )
+        every { monthlyIntegrationScheduleRepository.findByIdWithEmployeeAndAccount(77L) } returns
+            mfeis(legacyKey("EXT100"), accA)
+        // FK 로 연결된 근거 일정 — accA 2건만 (accB 는 다른 MFEIS 소속). externalKey 재매칭과 무관하게 이 결과 사용.
+        every { teamMemberScheduleRepository.findSchedulesByIntegrationScheduleId(77L) } returns
+            listOf(
+                schedule(1L, accA, day1, attendedAt = LocalDateTime.of(2026, 6, 15, 8, 30)),
+                schedule(3L, accA, day2),
+            )
+
+        val detail = service.getIntegrationDetail(77L)
+
+        assertThat(detail.schedules.map { it.scheduleId }).containsExactly(1L, 3L)
+        // 분모 N 은 여전히 월 모수 기준 — 6/15 는 accA+accB 로 N=2
+        assertThat(detail.schedules[0].dailyScheduleCount).isEqualTo(2)
+        assertThat(detail.schedules[0].equivalentContribution).isEqualByComparingTo(BigDecimal("0.5000"))
+        assertThat(detail.schedules[1].dailyScheduleCount).isEqualTo(1)
+        assertThat(detail.schedules[1].equivalentContribution).isEqualByComparingTo(BigDecimal("1.0000"))
     }
 
     @Test

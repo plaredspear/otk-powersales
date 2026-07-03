@@ -275,6 +275,66 @@ class AdminMonthlyIntegrationServiceRefreshTest {
     }
 
     @Test
+    @DisplayName("집계 근거 FK 세팅 — 각 근거 TMS row 를 해당 MFEIS row 로 연결 (상세 FK 역참조용)")
+    fun setsIntegrationFkOnSourceSchedules() {
+        val accA = account(100L)
+        val accB = account(200L)
+        val date = LocalDate.of(2026, 6, 15)
+        // accA / accB 는 서로 다른 집계 키 → 각각 별도 MFEIS row
+        val rowA = schedule(1L, accA, date)
+        val rowB = schedule(2L, accB, date)
+        stubPopulation(listOf(rowA, rowB))
+
+        service.refreshIntegration(10L, yearMonth)
+
+        // 각 근거 row 는 자신의 집계 키에 해당하는 MFEIS 로 FK 연결 (영속 entity dirty checking — 명시 save 아님)
+        assertThat(rowA.monthlyFemaleEmployeeIntegrationSchedule?.account?.id).isEqualTo(100L)
+        assertThat(rowB.monthlyFemaleEmployeeIntegrationSchedule?.account?.id).isEqualTo(200L)
+    }
+
+    @Test
+    @DisplayName("stale 삭제 전 FK detach — 삭제되는 MFEIS id 로 TMS FK 를 벌크 null 처리 후 삭제")
+    fun detachesFkBeforeStaleDelete() {
+        val acc = account(100L, "1234567")
+        val stale = MonthlyFemaleEmployeeIntegrationSchedule(
+            id = 88L, externalKey = "20266" + "OLDKEY", year = "2026", month = "6", employee = employee,
+        )
+        every {
+            monthlyIntegrationScheduleRepository.findByEmployeeIdAndYearAndMonth(10L, "2026", "6")
+        } returns listOf(stale)
+        stubPopulation(listOf(schedule(1L, acc, LocalDate.of(2026, 6, 15))))
+
+        service.refreshIntegration(10L, yearMonth)
+
+        // 삭제 대상 stale MFEIS id 로 벌크 detach 호출 (dangling FK 제거)
+        val detachIds = slot<List<Long>>()
+        verify { teamMemberScheduleRepository.detachIntegrationScheduleByIds(capture(detachIds)) }
+        assertThat(detachIds.captured).containsExactly(88L)
+        val deleted = slot<List<MonthlyFemaleEmployeeIntegrationSchedule>>()
+        verify { monthlyIntegrationScheduleRepository.deleteAll(capture(deleted)) }
+        assertThat(deleted.captured.map { it.id }).containsExactly(88L)
+    }
+
+    @Test
+    @DisplayName("모수 0건 — FK 벌크 detach 후 사원×월 기존 MFEIS row 전건 삭제")
+    fun emptyPopulationDetachesFkThenDeletesAll() {
+        val existing = MonthlyFemaleEmployeeIntegrationSchedule(
+            id = 99L, externalKey = "any", year = "2026", month = "6", employee = employee,
+        )
+        every {
+            monthlyIntegrationScheduleRepository.findByEmployeeIdAndYearAndMonth(10L, "2026", "6")
+        } returns listOf(existing)
+        stubPopulation(emptyList())
+
+        service.refreshIntegration(10L, yearMonth)
+
+        val detachIds = slot<List<Long>>()
+        verify { teamMemberScheduleRepository.detachIntegrationScheduleByIds(capture(detachIds)) }
+        assertThat(detachIds.captured).containsExactly(99L)
+        verify { monthlyIntegrationScheduleRepository.deleteAll(listOf(existing)) }
+    }
+
+    @Test
     @DisplayName("당월근무일수 — costCenter 가 다른 날은 해당 키 분모에서 제외 (사원+costCenter 단위)")
     fun workingDaysMonthPerCostCenter() {
         val acc = account(100L)

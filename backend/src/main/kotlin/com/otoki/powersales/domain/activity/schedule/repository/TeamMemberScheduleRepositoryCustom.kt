@@ -152,6 +152,21 @@ interface TeamMemberScheduleRepositoryCustom {
     fun findAttendedSchedulesByEmployeeAndMonth(employeeId: Long, from: LocalDate, to: LocalDate): List<TeamMemberSchedule>
 
     /**
+     * MFEIS row 의 집계 근거 일정 — `monthly_female_employee_integration_schedule_id` FK 기반 조회.
+     *
+     * `refreshIntegration` 재집계 시 각 근거 TMS row 에 세팅한 FK 로 역참조한다 (externalKey 문자열
+     * 재매칭 대신). 상세 응답에 필요한 employee/account/attendanceLog 는 fetch join 으로 선로딩한다.
+     */
+    fun findSchedulesByIntegrationScheduleId(integrationScheduleId: Long): List<TeamMemberSchedule>
+
+    /**
+     * 삭제 예정 MFEIS row 를 가리키던 TMS 의 FK(`monthly_female_employee_integration_schedule_id`) 를
+     * 일괄 null 처리한다 (dangling FK 방지). QueryDSL 벌크 update — 반환값은 갱신 row 수.
+     * 벌크 연산이라 영속 컨텍스트를 우회하므로, 같은 tx 에서 해당 TMS 를 이후 다시 읽지 않는 흐름에서만 사용.
+     */
+    fun detachIntegrationScheduleByIds(integrationScheduleIds: List<Long>): Long
+
+    /**
      * 일반 출근(REGULAR) SAP daily batch 용 페이지 조회.
      * `team_member_schedule` ⋈ `attendance_log` (attendance_log_id 단방향 FK JOIN, Spec #789) + employee + account.
      * 필터: attendanceType=REGULAR, workingType='근무', workingDate ∈ {today, yesterday}.

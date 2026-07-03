@@ -260,11 +260,13 @@ class AdminMonthlyIntegrationService(
     /**
      * MFEIS row 상세 — 집계 근거가 된 여사원일정 목록.
      *
-     * `refreshIntegration` 과 동일한 모수(사원+월 + 출근등록(attendanceLog 연결) + 거래처 존재)에서
-     * 본 row 의 집계 키(ExternalKey)에 속하는 일정만 추린다 — persist 된 집계값과 근거 목록의 정합 보장.
-     * TMS→MFEIS FK 역추적 대신 키 재도출을 쓰는 이유: FK 는 전 구간(마이그레이션 포함) 채움이 보장되지 않는다.
+     * 집계 근거는 `refreshIntegration` 이 각 근거 TMS row 에 세팅한 FK
+     * (`monthly_female_employee_integration_schedule_id`) 로 역참조한다 (FK 기반 조회).
+     * 단, FK 가 아직 채워지지 않은 row (재집계 미수행 / 마이그레이션 직후) 는 기존 externalKey
+     * 재매칭으로 폴백한다 — 재집계 1회 후에는 FK 경로로 수렴한다.
      *
      * `dailyScheduleCount`(N) 는 모수 전체(본 키 조합 외 포함) 기준 — 환산근무일수 1/N 의 분모와 동일.
+     * 따라서 근거 목록을 FK 로 얻더라도 N 분모 산출용 월 모수(사원+월 출근등록 전건) 는 별도로 조회한다.
      */
     fun getIntegrationDetail(id: Long): MonthlyIntegrationDetailResponse {
         val mfeis = monthlyIntegrationScheduleRepository.findByIdWithEmployeeAndAccount(id)
@@ -276,11 +278,17 @@ class AdminMonthlyIntegrationService(
 
         val schedules = if (employee != null && year != null && month != null) {
             val ym = YearMonth.of(year, month)
+            // N 분모(그날 사원 출근 row 수, 거래처 무관) 는 근거 조합 외 row 도 포함하는 월 전체 모수 기준.
             val population = teamMemberScheduleRepository
                 .findAttendedSchedulesByEmployeeAndMonth(employee.id, ym.atDay(1), ym.atEndOfMonth())
             val rowCountByDate: Map<LocalDate, Int> = population.groupingBy { it.workingDate!! }.eachCount()
-            population
-                .filter { buildLegacyExternalKey(it, mfeis.year!!, mfeis.month!!) == mfeis.externalKey }
+
+            // 근거 일정 — FK 역참조 우선, FK 미채움 row 는 externalKey 재매칭 폴백.
+            val byFk = teamMemberScheduleRepository.findSchedulesByIntegrationScheduleId(id)
+            val sourceRows = byFk.ifEmpty {
+                population.filter { buildLegacyExternalKey(it, mfeis.year!!, mfeis.month!!) == mfeis.externalKey }
+            }
+            sourceRows
                 .sortedWith(compareBy({ it.workingDate }, { it.id }))
                 .map { row ->
                     val n = rowCountByDate[row.workingDate!!] ?: 1
@@ -360,6 +368,7 @@ class AdminMonthlyIntegrationService(
         )
 
         if (population.isEmpty()) {
+            detachIntegrationFk(existingRows)
             monthlyIntegrationScheduleRepository.deleteAll(existingRows)
             return
         }
@@ -465,7 +474,7 @@ class AdminMonthlyIntegrationService(
                     } else null
                 } else null
 
-            if (existing != null) {
+            val persisted: MonthlyFemaleEmployeeIntegrationSchedule = if (existing != null) {
                 // 레거시 ExternalKey upsert 동등 — 집계 필드만 갱신, sfid/name/EDI_POS 등 미집계 필드 보존
                 existing.workingDaysMonth = BigDecimal(workingDaysMonth)
                 existing.numberOfInputs = numberOfInputs
@@ -506,11 +515,32 @@ class AdminMonthlyIntegrationService(
                 )
                 monthlyIntegrationScheduleRepository.save(record)
             }
+
+            // 집계 근거 FK 세팅 — 상세(집계 근거 일정) 조회를 externalKey 재매칭 대신 FK 역참조로 전환.
+            // 이 externalKey 그룹에 속한 근거 TMS row 전건을 본 MFEIS row 로 연결한다.
+            // rows 는 같은 트랜잭션에서 조회한 영속 entity 라 dirty checking 으로 commit 시 자동 UPDATE
+            // (명시적 save 불필요). persisted 는 save/upsert 를 거쳐 PK 확정된 managed entity.
+            rows.forEach { row ->
+                row.monthlyFemaleEmployeeIntegrationSchedule = persisted
+            }
         }
 
-        // stale 삭제 — 재집계 후 키 조합이 사라진 기존 row (레거시 deleteRecordsSet + NumberOfInputs=0 동등)
+        // stale 삭제 — 재집계 후 키 조합이 사라진 기존 row (레거시 deleteRecordsSet + NumberOfInputs=0 동등).
+        // 삭제 전, 해당 row 를 근거로 가리키던 TMS FK 를 끊는다 (dangling FK 방지).
+        // 벌크 detach 실행 시 auto-flush 로 위 FK 재세팅(dirty)이 먼저 DB 반영되므로, 이번 재집계에서
+        // 다른 MFEIS 로 옮겨간 row 는 stale id 매칭에서 빠져 잘못 detach 되지 않는다.
         val staleRows = existingRows.filter { it.externalKey == null || it.externalKey !in groups.keys }
+        detachIntegrationFk(staleRows)
         monthlyIntegrationScheduleRepository.deleteAll(staleRows)
+    }
+
+    /**
+     * 삭제 예정 MFEIS row 를 근거로 가리키던 TMS 의 FK 를 끊는다 (dangling FK 방지).
+     * QueryDSL 벌크 update 1쿼리로 일괄 null 처리 후 MFEIS 를 삭제해야 FK 제약 위반이 없다.
+     */
+    private fun detachIntegrationFk(mfeisRows: List<MonthlyFemaleEmployeeIntegrationSchedule>) {
+        if (mfeisRows.isEmpty()) return
+        teamMemberScheduleRepository.detachIntegrationScheduleByIds(mfeisRows.map { it.id })
     }
 
     /**

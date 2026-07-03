@@ -503,6 +503,33 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    /**
+     * MFEIS 집계 근거 일정 — `monthly_female_employee_integration_schedule_id` FK 기반 조회.
+     * 상세 응답의 출근보고 일시(attendanceLog.commuteDate) LAZY 미초기화 방지를 위해 fetch join.
+     */
+    override fun findSchedulesByIntegrationScheduleId(integrationScheduleId: Long): List<TeamMemberSchedule> {
+        return queryFactory
+            .selectFrom(teamMemberSchedule)
+            .leftJoin(teamMemberSchedule.employee, employee).fetchJoin()
+            .leftJoin(teamMemberSchedule.account, account).fetchJoin()
+            .leftJoin(teamMemberSchedule.attendanceLog, attendanceLog).fetchJoin()
+            .where(
+                teamMemberSchedule.monthlyFemaleEmployeeIntegrationSchedule.id.eq(integrationScheduleId),
+                isNotDeleted()
+            )
+            .fetch()
+    }
+
+    @Transactional
+    override fun detachIntegrationScheduleByIds(integrationScheduleIds: List<Long>): Long {
+        if (integrationScheduleIds.isEmpty()) return 0
+        return queryFactory
+            .update(teamMemberSchedule)
+            .setNull(teamMemberSchedule.monthlyFemaleEmployeeIntegrationSchedule)
+            .where(teamMemberSchedule.monthlyFemaleEmployeeIntegrationSchedule.id.`in`(integrationScheduleIds))
+            .execute()
+    }
+
     override fun findRegularAttendancesForSapPaged(
         today: LocalDate,
         yesterday: LocalDate,
