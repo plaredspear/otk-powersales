@@ -344,21 +344,31 @@ class Stage1S3CopyService(
     private fun quoteIdent(name: String): String =
         if (name == "user") "\"user\"" else name
 
-    /**
-     * INSERT 의 ON CONFLICT 절 생성.
-     *
-     * - conflictUpdate 미지정 → `ON CONFLICT DO NOTHING` (기존 동작 — 충돌 row drop).
-     * - 지정 → `ON CONFLICT (<col>) DO UPDATE SET <c> = COALESCE(EXCLUDED.<c>, <table>.<c>) ...`
-     *   로 기존 row 의 지정 컬럼을 staging 값으로 보강 (EXCLUDED 가 NULL 이면 기존값 보존).
-     *
-     * @param quotedTable COALESCE 의 기존값 참조에 쓰는 quote 된 target 테이블명.
-     */
-    private fun buildConflictClause(meta: EntityMetadata, quotedTable: String): String {
-        val cu = meta.conflictUpdate ?: return "ON CONFLICT DO NOTHING"
-        val setClause = cu.updateColumns.joinToString(", ") { col ->
-            "$col = COALESCE(EXCLUDED.$col, $quotedTable.$col)"
+    companion object {
+        /**
+         * INSERT 의 ON CONFLICT 절 생성.
+         *
+         * - conflictUpdate 미지정 → `ON CONFLICT DO NOTHING` (기존 동작 — 충돌 row drop).
+         * - 지정 → `ON CONFLICT (<col>) DO UPDATE SET <c> = COALESCE(EXCLUDED.<c>, <table>.<c>) ...`
+         *   로 기존 row 의 지정 컬럼을 staging 값으로 보강 (EXCLUDED 가 NULL 이면 기존값 보존).
+         * - conflictPredicate 지정 → `ON CONFLICT (<col>) WHERE <predicate> DO UPDATE ...`
+         *   partial unique index (V5/V57 의 `... (sfid) WHERE sfid IS NOT NULL`) 를 arbiter 로 쓰려면
+         *   인덱스 述語를 ON CONFLICT 에 명시해야 PostgreSQL 이 그 인덱스를 추론한다 (누락 시 런타임 실패).
+         *
+         * @param quotedTable COALESCE 의 기존값 참조에 쓰는 quote 된 target 테이블명.
+         */
+        internal fun buildConflictClause(meta: EntityMetadata, quotedTable: String): String {
+            val cu = meta.conflictUpdate ?: return "ON CONFLICT DO NOTHING"
+            val setClause = cu.updateColumns.joinToString(", ") { col ->
+                "$col = COALESCE(EXCLUDED.$col, $quotedTable.$col)"
+            }
+            val target = if (cu.conflictPredicate != null) {
+                "(${cu.conflictColumn}) WHERE ${cu.conflictPredicate}"
+            } else {
+                "(${cu.conflictColumn})"
+            }
+            return "ON CONFLICT $target DO UPDATE SET $setClause"
         }
-        return "ON CONFLICT (${cu.conflictColumn}) DO UPDATE SET $setClause"
     }
 
     /**

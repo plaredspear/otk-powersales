@@ -675,56 +675,115 @@ class Stage1TargetsTest {
     }
 
     @Nested
-    @DisplayName("TeamMemberSchedule — ON CONFLICT (sfid) DO UPDATE backfill 정합")
-    inner class TeamMemberScheduleConflictUpdate {
+    @DisplayName("Backfill entity — ON CONFLICT DO UPDATE 정합 (최초 적재 후 추가된 SF 컬럼 backfill)")
+    inner class ConflictUpdateBackfill {
 
-        private val meta = Stage1Targets.get("TeamMemberSchedule")
-            ?: error("TeamMemberSchedule 미등록")
+        // 최초 적재 후 뒤늦게 SF 컬럼(특히 *_sfid lookup)이 ADD COLUMN 된 entity 는, 재적재 시
+        // 기본 DO NOTHING 이면 충돌키 UNIQUE 충돌로 전건 skip 되어 backfill 이 안 된다. 이들은
+        // conflictUpdate 로 ON CONFLICT (key) DO UPDATE 를 지정해야 한다.
+        // key = 기대 충돌키. DailySalesHistory 만 sfid UNIQUE 가 없어 external_key 를 쓴다.
+        private val backfillEntities = mapOf(
+            "TeamMemberSchedule" to "sfid",
+            "Employee" to "sfid",
+            "Account" to "sfid",
+            "Product" to "sfid",
+            "Claim" to "sfid",
+            "AgreementHistory" to "sfid",
+            "ErpOrder" to "sfid",
+            "ErpOrderProduct" to "sfid",
+            "OrderRequestProduct" to "sfid",
+            "PromotionEmployee" to "sfid",
+            "DailySalesHistory" to "external_key",
+        )
+
+        // partial unique index (WHERE sfid IS NOT NULL, V5/V57) 를 arbiter 로 쓰는 entity 는
+        // conflictPredicate 를 반드시 지정해야 런타임 ON CONFLICT arbiter 추론이 성공한다.
+        private val partialUniqueEntities = setOf(
+            "Account", "Product", "Claim", "ErpOrder", "ErpOrderProduct", "PromotionEmployee",
+        )
 
         @Test
-        @DisplayName("conflictUpdate 는 sfid 충돌키로 지정 (DO NOTHING 아님)")
-        fun conflictUpdatePresent() {
-            val cu = meta.conflictUpdate
-            assertThat(cu)
-                .withFailMessage(
-                    "team_member_schedule 은 최초 적재 후 뒤늦게 추가된 SF 컬럼을 재적재로 backfill 해야 하므로 " +
-                        "ON CONFLICT (sfid) DO UPDATE 가 필요하다 (DO NOTHING 이면 sfid UNIQUE 충돌로 전건 skip).",
-                )
-                .isNotNull
-            assertThat(cu!!.conflictColumn).isEqualTo("sfid")
+        @DisplayName("각 backfill entity 는 기대 충돌키로 conflictUpdate 지정")
+        fun conflictUpdatePresentWithExpectedKey() {
+            backfillEntities.forEach { (target, expectedKey) ->
+                val meta = Stage1Targets.get(target) ?: error("$target 미등록")
+                assertThat(meta.conflictUpdate)
+                    .withFailMessage("$target 은 backfill 위해 ON CONFLICT DO UPDATE 필요 (DO NOTHING 이면 skip)")
+                    .isNotNull
+                assertThat(meta.conflictUpdate!!.conflictColumn)
+                    .withFailMessage("$target 충돌키 불일치")
+                    .isEqualTo(expectedKey)
+            }
         }
 
         @Test
         @DisplayName("updateColumns 는 fields 의 실제 dbColumnName 에만 존재 (오타/드리프트 방지)")
         fun updateColumnsExistInFields() {
-            val dbColumns = meta.fields.map { it.dbColumnName }.toSet()
-            val unknown = meta.conflictUpdate!!.updateColumns.filterNot { it in dbColumns }
-            assertThat(unknown)
-                .withFailMessage("updateColumns 에 fields 에 없는 컬럼: $unknown")
-                .isEmpty()
+            backfillEntities.keys.forEach { target ->
+                val meta = Stage1Targets.get(target)!!
+                val dbColumns = meta.fields.map { it.dbColumnName }.toSet()
+                val unknown = meta.conflictUpdate!!.updateColumns.filterNot { it in dbColumns }
+                assertThat(unknown)
+                    .withFailMessage("$target updateColumns 에 fields 에 없는 컬럼: $unknown")
+                    .isEmpty()
+            }
         }
 
         @Test
-        @DisplayName("충돌키 sfid 는 SET 대상에서 제외 (자기 자신 UPDATE 방지)")
+        @DisplayName("충돌키는 SET 대상에서 제외 (자기 자신 UPDATE 방지)")
         fun conflictKeyExcludedFromUpdate() {
-            assertThat(meta.conflictUpdate!!.updateColumns).doesNotContain("sfid")
+            backfillEntities.forEach { (target, key) ->
+                val meta = Stage1Targets.get(target)!!
+                assertThat(meta.conflictUpdate!!.updateColumns)
+                    .withFailMessage("$target 은 충돌키 $key 를 SET 대상에서 제외해야 함")
+                    .doesNotContain(key)
+            }
         }
 
         @Test
-        @DisplayName("backfill 대상은 sfid 제외 전체 매핑 컬럼 — 후행 추가 컬럼 누락 시 회귀 감지")
+        @DisplayName("backfill 대상은 충돌키 제외 전체 매핑 컬럼 — 후행 추가 컬럼 누락 시 회귀 감지")
         fun updateColumnsCoverAllMappedExceptKey() {
-            // PK(id) 는 GENERATED IDENTITY 라 FieldMapping 에 없고, sfid 는 충돌키라 제외.
+            // PK(id) 는 GENERATED IDENTITY 라 FieldMapping 에 없고, 충돌키만 제외.
             // 나머지 매핑 컬럼 전부가 backfill 대상이어야 "최초 적재 후 추가된 SF 컬럼" 을 빠짐없이 채운다.
-            val expected = meta.fields.map { it.dbColumnName }.filterNot { it == "sfid" }.toSet()
-            assertThat(meta.conflictUpdate!!.updateColumns.toSet())
-                .withFailMessage("새 FieldMapping 추가 시 updateColumns 에도 반영 필요")
-                .isEqualTo(expected)
+            backfillEntities.forEach { (target, key) ->
+                val meta = Stage1Targets.get(target)!!
+                val expected = meta.fields.map { it.dbColumnName }.filterNot { it == key }.toSet()
+                assertThat(meta.conflictUpdate!!.updateColumns.toSet())
+                    .withFailMessage("$target: 새 FieldMapping 추가 시 updateColumns 에도 반영 필요")
+                    .isEqualTo(expected)
+            }
         }
 
         @Test
-        @DisplayName("계산 근거 lookup — monthly_female_employee_integration_schedule_sfid 포함")
+        @DisplayName("partial unique index entity 는 conflictPredicate(sfid IS NOT NULL) 지정")
+        fun partialUniqueRequiresPredicate() {
+            partialUniqueEntities.forEach { target ->
+                val meta = Stage1Targets.get(target)!!
+                assertThat(meta.conflictUpdate!!.conflictPredicate)
+                    .withFailMessage(
+                        "$target 의 충돌키는 partial unique index (WHERE sfid IS NOT NULL) 라 " +
+                            "conflictPredicate 를 명시해야 arbiter 추론이 성공한다 (누락 시 런타임 실패).",
+                    )
+                    .isEqualTo("sfid IS NOT NULL")
+            }
+        }
+
+        @Test
+        @DisplayName("full unique index entity 는 conflictPredicate 불필요 (null)")
+        fun fullUniqueHasNoPredicate() {
+            val fullUnique = backfillEntities.keys - partialUniqueEntities
+            fullUnique.forEach { target ->
+                val meta = Stage1Targets.get(target)!!
+                assertThat(meta.conflictUpdate!!.conflictPredicate)
+                    .withFailMessage("$target 은 full unique 라 conflictPredicate 가 없어야 함")
+                    .isNull()
+            }
+        }
+
+        @Test
+        @DisplayName("계산 근거 lookup — TeamMemberSchedule.monthly_female_employee_integration_schedule_sfid 포함")
         fun mfeisSfidCovered() {
-            assertThat(meta.conflictUpdate!!.updateColumns)
+            assertThat(Stage1Targets.get("TeamMemberSchedule")!!.conflictUpdate!!.updateColumns)
                 .contains("monthly_female_employee_integration_schedule_sfid")
         }
     }

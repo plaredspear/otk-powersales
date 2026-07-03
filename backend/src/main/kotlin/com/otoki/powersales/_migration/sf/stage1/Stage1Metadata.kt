@@ -104,8 +104,16 @@ data class EntityMetadata(
  * @param conflictColumn 충돌 판정 기준 UNIQUE 컬럼 (단일).
  * @param updateColumns DO UPDATE SET 대상 컬럼들. 각 컬럼은
  *   `<c> = COALESCE(EXCLUDED.<c>, <table>.<c>)` 로 생성되어 EXCLUDED 가 NULL 이면 기존값 보존.
+ * @param conflictPredicate partial unique index 를 arbiter 로 지정할 때의 WHERE 술어.
+ *   null (기본) → 일반 UNIQUE 제약 (`ON CONFLICT (col) DO UPDATE`).
+ *   지정 시 → `ON CONFLICT (col) WHERE <predicate> DO UPDATE`. PostgreSQL 은 partial unique
+ *   index (예: `CREATE UNIQUE INDEX ... (sfid) WHERE sfid IS NOT NULL`, V5/V57) 를 arbiter 로
+ *   추론하려면 인덱스 述語를 ON CONFLICT 에 그대로 명시해야 한다. 누락 시 런타임에
+ *   `there is no unique or exclusion constraint matching the ON CONFLICT specification` 실패.
+ *   predicate 문자열은 인덱스 정의의 WHERE 절과 정확히 일치해야 한다 (예: "sfid IS NOT NULL").
  */
 data class ConflictUpdate(
     val conflictColumn: String,
     val updateColumns: List<String>,
+    val conflictPredicate: String? = null,
 )

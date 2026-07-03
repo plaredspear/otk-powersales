@@ -107,6 +107,22 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
+        // manager_sfid / postponed_appointment_sfid 등이 최초 적재 후 뒤늦게 ADD COLUMN (V36) 됐다.
+        // DO NOTHING 재적재는 sfid UNIQUE(V166 uk_employee_sfid) 충돌로 skip → backfill 안 됨.
+        // ON CONFLICT (sfid) DO UPDATE 로 보강. 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            updateColumns = listOf(
+                "employee_code", "name", "birth_date", "status", "app_login_active", "role", "org_name",
+                "cost_center_code", "work_phone", "phone", "home_phone", "work_email", "email", "gender",
+                "start_date", "end_date", "agreement_flag", "is_deleted", "professional_promotion_team",
+                "jikchak", "jikwee", "jikgub", "work_type", "job_code", "work_area", "jikjong",
+                "appointment_date", "ord_detail_node", "crm_work_start_date", "dk_cost_center_code",
+                "location_code", "total_annual_leave", "used_annual_leave", "manager_sfid",
+                "postponed_appointment_sfid", "locking_flag", "office_phone", "crm_work_type", "owner_sfid",
+                "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid",
+            ),
+        ),
     )
 
     private val USER = EntityMetadata(
@@ -223,6 +239,28 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
+        // parent_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V32) 됐다. DO NOTHING 재적재는 sfid 충돌로
+        // skip → backfill 안 됨. 충돌키는 partial unique (V5 idx_account_sfid_unique WHERE sfid IS
+        // NOT NULL) 라 conflictPredicate 로 述語 명시. 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
+            updateColumns = listOf(
+                "name", "phone", "mobile_phone", "address1", "address2", "representative", "abc_type",
+                "abc_type_code", "external_key", "account_group", "branch_code", "branch_name", "zip_code",
+                "latitude", "longitude", "closing_time1", "closing_time2", "closing_time3", "industry",
+                "werk1_tx", "werk2_tx", "werk3_tx", "is_deleted", "account_type", "account_status_name",
+                "employee_code", "distribution", "account_status_code", "business_type", "business_category",
+                "business_license_number", "email", "division_name", "sales_dept_name", "consignment_acc",
+                "werk1", "werk2", "werk3", "sales_dept_cost_center", "division_cost_center", "account_number",
+                "site", "account_source", "branch_cost_center", "division_code", "sales_dept_code",
+                "logistics_name", "logistics_code", "freezer_installed", "freezer_type", "remaining_credit",
+                "total_credit", "map_coordinate", "order_end_time", "first_installed", "description", "website",
+                "fax", "annual_revenue", "number_of_employees", "parent_sfid", "rating", "ownership",
+                "is_priority_record", "owner_sfid", "created_by_sfid", "created_at", "updated_at",
+                "last_modified_by_sfid",
+            ),
+        ),
     )
 
     private val PRODUCT = EntityMetadata(
@@ -277,6 +315,24 @@ object Stage1Targets {
             FieldMapping("CreatedDate", "created_at", nullable = false),
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+        ),
+        // new_product_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V40) 됐다. DO NOTHING 재적재는 sfid 충돌로
+        // skip → backfill 안 됨. 충돌키는 partial unique (V5 idx_product_sfid_unique WHERE sfid IS NOT
+        // NULL) 라 conflictPredicate 로 述語 명시. 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
+            updateColumns = listOf(
+                "name", "product_code", "product_type", "product_status", "storage_condition", "shelf_life",
+                "shelf_life_unit", "category1", "category2", "category3", "category_code1", "category_code2",
+                "category_code3", "unit", "ordering_unit", "conversion_quantity", "box_receiving_quantity",
+                "standard_unit_price", "super_tax", "launch_date", "logistics_barcode", "taste_gift",
+                "product_features", "selling_point", "purpose", "target_account_type", "allergen",
+                "cross_contamination", "img_ref_path", "img_ref_path_front", "img_ref_path_back",
+                "img_ref_path_txt", "is_deleted", "pallet", "barcode", "manufacture", "manufacture_detail",
+                "claim_management", "new_product_sfid", "store_condition_text", "owner_sfid", "created_by_sfid",
+                "created_at", "updated_at", "last_modified_by_sfid",
+            ),
         ),
     )
 
@@ -398,6 +454,16 @@ object Stage1Targets {
             FieldMapping("CreatedDate", "created_at", nullable = false),
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
+        ),
+        // employee_sfid / agreement_word_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V20) 됐다.
+        // DO NOTHING 재적재는 sfid UNIQUE(V20 idx_agreement_history_sfid) 충돌로 skip → backfill 안 됨.
+        // ON CONFLICT (sfid) DO UPDATE 로 기존 row 보강 (COALESCE 로 기존값 보존). 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            updateColumns = listOf(
+                "employee_sfid", "agreement_flag", "agreement_date", "agreement_word_sfid", "is_deleted",
+                "name", "owner_sfid", "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid",
+            ),
         ),
     )
 
@@ -570,6 +636,23 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
+        // product_sfid / cost_center_code 등이 최초 적재 후 뒤늦게 ADD COLUMN (V35) 됐다. DO NOTHING
+        // 재적재는 sfid 충돌로 skip → backfill 안 됨. 충돌키는 partial unique (V57 idx_claim_sfid WHERE
+        // sfid IS NOT NULL) 라 conflictPredicate 로 述語 명시. 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
+            updateColumns = listOf(
+                "employee_sfid", "account_sfid", "date", "claim_type1", "claim_type2", "defect_description",
+                "defect_quantity", "purchase_amount", "purchase_method_code", "request_type_code", "status",
+                "name", "counsel_number", "action_code", "action_status", "act_content", "reason_type",
+                "cosmos_key", "product_sfid", "customer_delivery_date", "return_order_number", "expiration_date",
+                "interface_date", "manufacturing_date", "initial_claim", "logistics_center", "claim_sequence",
+                "detail_sns_name", "cost_center_code", "division", "channel", "sample_collection_flag",
+                "image_count", "action_date", "is_deleted", "owner_sfid", "created_by_sfid", "created_at",
+                "updated_at", "last_modified_by_sfid",
+            ),
+        ),
     )
 
     private val DISPLAY_WORK_SCHEDULE = EntityMetadata(
@@ -651,6 +734,19 @@ object Stage1Targets {
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
             FieldMapping("IsDeleted", "is_deleted"),
         ),
+        // account_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V49) 됐다. DO NOTHING 재적재는 sfid 충돌로
+        // skip → backfill 안 됨. 충돌키는 partial unique (V57 idx_erp_order_sfid WHERE sfid IS NOT NULL)
+        // 라 conflictPredicate 로 述語를 명시해야 arbiter 추론이 된다. 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
+            updateColumns = listOf(
+                "sap_order_number", "sap_account_code", "sap_account_name", "delivery_request_date",
+                "order_date", "employee_code", "employee_name", "order_sales_amount", "order_channel",
+                "order_channel_nm", "order_type", "order_type_nm", "account_sfid",
+                "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid", "is_deleted",
+            ),
+        ),
     )
 
     private val ERP_ORDER_PRODUCT = EntityMetadata(
@@ -695,6 +791,22 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
             FieldMapping("IsDeleted", "is_deleted"),
+        ),
+        // erp_order_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V98) 됐다. DO NOTHING 재적재는 sfid 충돌로
+        // skip → backfill 안 됨. 충돌키는 partial unique (V57 idx_erp_order_product_sfid WHERE sfid IS
+        // NOT NULL) 라 conflictPredicate 로 述語 명시. 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
+            updateColumns = listOf(
+                "name", "erp_order_sfid", "sap_order_number", "line_number", "external_key", "product_code",
+                "product_name", "order_quantity", "unit", "confirm_quantity_box", "confirm_quantity",
+                "confirm_unit", "default_reason", "line_item_status", "delivery_status", "shipping_driver_name",
+                "shipping_vehicle", "shipping_driver_phone", "shipping_schedule_time", "shipping_complete_time",
+                "shipping_quantity_box", "shipping_quantity", "order_sales_line_amount", "shipping_amount",
+                "plant", "plant_nm", "release_quantity", "release_amount", "box_quantity", "owner_sfid",
+                "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid", "is_deleted",
+            ),
         ),
     )
 
@@ -898,6 +1010,19 @@ object Stage1Targets {
             FieldMapping("CreatedDate", "created_at", nullable = false),
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
         ),
+        // account_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V202606040154) 됐다. 충돌키는 sfid 가 아니라
+        // external_key (V1 daily_sales_history_external_key_key UNIQUE — 처음부터 채워짐) 이므로,
+        // DO NOTHING 재적재는 external_key 충돌로 skip → account_sfid backfill 안 됨. ON CONFLICT
+        // (external_key) DO UPDATE 로 보강. sfid 는 UNIQUE 제약 없어 충돌키 불가 → SET 대상에 포함.
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "external_key",
+            updateColumns = listOf(
+                "sfid", "sap_account_code", "sales_date", "account_sfid",
+                "erp_sales_amount1", "erp_sales_amount2", "erp_sales_amount3",
+                "erp_distribution_amount1", "erp_distribution_amount2", "erp_distribution_amount3",
+                "erp_sales_amount", "erp_distribution_amount", "ledger_amount", "created_at", "updated_at",
+            ),
+        ),
     )
 
     private val SALES_PROGRESS_RATE_MASTER = EntityMetadata(
@@ -1019,6 +1144,17 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
             FieldMapping("IsDeleted", "is_deleted"),
+        ),
+        // product_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V47) 됐다. DO NOTHING 재적재는 sfid UNIQUE
+        // (V166 uk_order_request_product_sfid) 충돌로 skip → backfill 안 됨. 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            updateColumns = listOf(
+                "order_request_sfid", "name", "line_number", "dk_line_number", "product_code",
+                "quantity_boxes", "quantity_pieces", "unit", "amount", "line_change_type", "status",
+                "product_sfid", "box", "piece", "box_quantity", "dk_total_count", "total_count",
+                "owner_sfid", "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid", "is_deleted",
+            ),
         ),
     )
 
@@ -1144,6 +1280,21 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
             FieldMapping("IsDeleted", "is_deleted"),
+        ),
+        // employee_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V98) 됐다. DO NOTHING 재적재는 sfid 충돌로
+        // skip → backfill 안 됨. 충돌키는 partial unique (V57 idx_promotion_employee_sfid WHERE sfid
+        // IS NOT NULL) 라 conflictPredicate 로 述語 명시. 상세 [TeamMemberSchedule 주석].
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
+            updateColumns = listOf(
+                "name", "promotion_sfid", "employee_sfid", "schedule_date", "work_status", "work_type1",
+                "work_type3", "team_member_schedule_sfid", "promo_close_by_tm", "base_price",
+                "daily_target_count", "primary_product_amount", "primary_sales_quantity", "primary_sales_price",
+                "other_sales_amount", "other_sales_quantity", "s3_image_unique_key", "description",
+                "dk_work_type2", "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid",
+                "is_deleted",
+            ),
         ),
     )
 
