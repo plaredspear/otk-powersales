@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios';
 import client from './client';
 import type { ApiResponse } from './types';
 
@@ -128,19 +129,30 @@ function buildFilterParams(request: ElectronicSalesDashboardListRequest): Record
 
 /**
  * 거래처별 전산매출 명세 — 페이징 + 정렬 + 필터 (+ 전체 합계).
+ *
+ * 400 응답(기간 상한/거래처 수 상한 등 서버 검증)은 backend 안내 메시지를 그대로 Error 로
+ * 승격해 화면 Alert 에 노출한다 (예: "조회 대상 거래처가 N건입니다 … 조건을 좁혀주세요").
  */
 export async function fetchList(
   request: ElectronicSalesDashboardListRequest,
 ): Promise<ElectronicSalesDashboardListResponse> {
-  const res = await client.get<ApiResponse<ElectronicSalesDashboardListResponse>>(`${BASE}/list`, {
-    params: {
-      ...buildFilterParams(request),
-      ...(request.page !== undefined ? { page: request.page } : {}),
-      ...(request.size !== undefined ? { size: request.size } : {}),
-    },
-  });
-  if (!res.data.success || !res.data.data) throw new Error(failureMessage('전산실적 명세', res));
-  return res.data.data;
+  try {
+    const res = await client.get<ApiResponse<ElectronicSalesDashboardListResponse>>(`${BASE}/list`, {
+      params: {
+        ...buildFilterParams(request),
+        ...(request.page !== undefined ? { page: request.page } : {}),
+        ...(request.size !== undefined ? { size: request.size } : {}),
+      },
+    });
+    if (!res.data.success || !res.data.data) throw new Error(failureMessage('전산실적 명세', res));
+    return res.data.data;
+  } catch (err) {
+    if (err instanceof AxiosError && err.response?.status === 400) {
+      const errorMessage = (err.response.data as ApiResponse<unknown>)?.error?.message;
+      throw new Error(errorMessage || '전산실적 명세 조회에 실패했습니다');
+    }
+    throw err;
+  }
 }
 
 /** 거래처별 전산매출 명세 엑셀 export 파라미터 (페이징 제외). */

@@ -177,6 +177,7 @@ class PosSalesAdminQueryService(
     ): List<PosSalesDashboardListItem> {
         val accounts = findAccounts(effectiveCodes, request)
         if (accounts.isEmpty()) return emptyList()
+        validateAccountCount(accounts.size)
 
         // 제품/분류 필터 → 소비자 바코드 해소 (메인 DB). 필터 지정 + 매칭 바코드 0건이면
         // POS 를 조회하지 않고 전 거래처 0 으로 응답 (매칭 제품 없음 = 매출 없음).
@@ -348,6 +349,22 @@ class PosSalesAdminQueryService(
         return intersect
     }
 
+    /**
+     * count 기반 외부 DB 보호 가드 — POS 를 조회하기 전에, 메인 DB 에서 이미 확보한 거래처 목록의
+     * 개수(추가 쿼리 없음)로 외부 DB 에 나갈 조회 규모를 확인하고 상한 초과 시 조건 좁힘을 안내한다.
+     * 상한까지만 잘라 조회하면 합계가 틀어지므로(silent truncation) 초과분 절단은 하지 않는다.
+     */
+    private fun validateAccountCount(count: Int) {
+        if (count > MAX_ACCOUNT_COUNT) {
+            throw BusinessException(
+                errorCode = "INVALID_PARAMETER",
+                message = "조회 대상 거래처가 ${count}건입니다. 최대 ${MAX_ACCOUNT_COUNT}건까지 조회할 수 있습니다. " +
+                    "지점/유통형태/거래처유형 조건을 좁혀주세요.",
+                httpStatus = HttpStatus.BAD_REQUEST,
+            )
+        }
+    }
+
     private fun validateParams(startDate: LocalDate, endDate: LocalDate, costCenterCodes: List<String>) {
         validateDateRange(startDate, endDate)
         if (costCenterCodes.isEmpty()) {
@@ -400,9 +417,15 @@ class PosSalesAdminQueryService(
         private const val BARCODE_CHUNK_SIZE = 1_000
 
         /**
-         * POS `CUST_CD IN` 청크 크기 — 지점별 거래처 목록이 전 지점 선택 시 수만 건이 될 수 있어
-         * bind parameter 비대(PostgreSQL 한계 65,535)/플랜 붕괴를 방지. 바코드 청크와 동일 상한.
+         * POS `CUST_CD IN` 청크 크기 — 쿼리 1회의 집계 부하를 레거시 단일 거래처 조회의 50배
+         * 이내로 상한 (실측 기준 1거래처×1달 ≈ 500행 → 쿼리 1회 ≈ 2.5만 행 상당).
          */
-        private const val CUST_CD_CHUNK_SIZE = 1_000
+        private const val CUST_CD_CHUNK_SIZE = 50
+
+        /**
+         * 1회 조회의 거래처 수 상한 — 메인 DB 에서 확보한 거래처 목록 count 로 사전 확인 (추가
+         * 쿼리 없음). 초과 시 POS 미조회 + 400 조건 좁힘 안내. 청크 50 기준 최악 50회 쿼리로 상한.
+         */
+        private const val MAX_ACCOUNT_COUNT = 2_500
     }
 }

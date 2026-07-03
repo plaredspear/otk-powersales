@@ -220,23 +220,40 @@ class ElectronicSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getList — 거래처(custCd)가 청크 크기(1000) 초과 시 분할 호출 + 병합 (전 지점 선택 보호)")
+    @DisplayName("getList — 거래처(custCd)가 청크 크기(50) 초과 시 분할 호출 + 병합 (외부 DB 쿼리 1회 부하 상한)")
     fun listChunksCustCds() {
-        val accounts = (1..1500L).map { account(it, "S%04d".format(it)) }
+        val accounts = (1..120L).map { account(it, "S%04d".format(it)) }
         every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
         val allCustCds = accounts.map { "000${it.externalKey}" }
         every {
-            posRepository.aggregateByCustomer(allCustCds.take(1000), any(), any())
+            posRepository.aggregateByCustomer(allCustCds.subList(0, 50), any(), any())
         } returns listOf(customerRow(allCustCds[0], amt = 1000, qty = 10))
         every {
-            posRepository.aggregateByCustomer(allCustCds.drop(1000), any(), any())
-        } returns listOf(customerRow(allCustCds[1400], amt = 500, qty = 5))
+            posRepository.aggregateByCustomer(allCustCds.subList(50, 100), any(), any())
+        } returns listOf(customerRow(allCustCds[60], amt = 500, qty = 5))
+        every {
+            posRepository.aggregateByCustomer(allCustCds.subList(100, 120), any(), any())
+        } returns emptyList()
 
         val result = service.getList(allBranchesScope, listRequest().copy(size = 100))
 
         assertThat(result.totalSalesAmount).isEqualTo(1500L)
         assertThat(result.totalSalesQuantity).isEqualTo(15L)
-        verify(exactly = 2) { posRepository.aggregateByCustomer(any(), any(), any()) }
+        verify(exactly = 3) { posRepository.aggregateByCustomer(any(), any(), any()) }
+    }
+
+    @Test
+    @DisplayName("getList — 거래처 수 상한(2500) 초과 시 POS 미조회 + 400 조건 좁힘 안내")
+    fun listRejectsTooManyAccounts() {
+        val accounts = (1..2_501L).map { account(it, "S$it") }
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
+
+        assertThatThrownBy { service.getList(allBranchesScope, listRequest()) }
+            .isInstanceOf(BusinessException::class.java)
+            .hasMessageContaining("2500건")
+
+        verify(exactly = 0) { posRepository.aggregateByCustomer(any(), any(), any()) }
+        verify(exactly = 0) { posRepository.aggregateByCustomerAndBarcodes(any(), any(), any(), any()) }
     }
 
     @Test
@@ -396,15 +413,15 @@ class ElectronicSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getListForExport — 결과가 EXPORT_MAX_ROWS(50000) 로 절단된다")
-    fun exportCapsAtMaxRows() {
-        val accounts = (1..50_001L).map { account(it, "S$it") }
+    @DisplayName("getListForExport — 거래처 수 상한(2500) 이 export 경로에도 동일 적용")
+    fun exportRejectsTooManyAccounts() {
+        val accounts = (1..2_501L).map { account(it, "S$it") }
         every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
-        every { posRepository.aggregateByCustomer(any(), any(), any()) } returns emptyList()
 
-        val result = service.getListForExport(allBranchesScope, listRequest())
+        assertThatThrownBy { service.getListForExport(allBranchesScope, listRequest()) }
+            .isInstanceOf(BusinessException::class.java)
 
-        assertThat(result).hasSize(50_000)
+        verify(exactly = 0) { posRepository.aggregateByCustomer(any(), any(), any()) }
     }
 
     @Test
