@@ -188,6 +188,26 @@ class PosSalesAdminQueryServiceTest {
     }
 
     @Test
+    @DisplayName("getList — 거래처(custCd)가 청크 크기(1000) 초과 시 분할 호출 + 병합 (전 지점 선택 보호)")
+    fun listChunksCustCds() {
+        val accounts = (1..1500L).map { account(it, "S%04d".format(it)) }
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
+        val allCustCds = accounts.map { "000${it.externalKey}" }
+        every {
+            posRepository.aggregateByCustomer(allCustCds.take(1000), any(), any())
+        } returns listOf(customerRow(allCustCds[0], amt = 1000, qty = 10))
+        every {
+            posRepository.aggregateByCustomer(allCustCds.drop(1000), any(), any())
+        } returns listOf(customerRow(allCustCds[1400], amt = 500, qty = 5))
+
+        val result = service.getList(allBranchesScope, listRequest().copy(size = 100))
+
+        assertThat(result.totalSalesAmount).isEqualTo(1500L)
+        assertThat(result.totalSalesQuantity).isEqualTo(15L)
+        verify(exactly = 2) { posRepository.aggregateByCustomer(any(), any(), any()) }
+    }
+
+    @Test
     @DisplayName("getList — 제품 필터 지정 + 매칭 바코드 0건이면 POS 미호출 + 전 거래처 0")
     fun listSkipsPosWhenNoBarcodeMatches() {
         val acc = account(1, "S001")

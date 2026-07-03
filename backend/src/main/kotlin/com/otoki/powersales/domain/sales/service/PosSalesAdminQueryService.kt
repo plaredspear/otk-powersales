@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.sales.service
 
 import com.otoki.pos.repository.LivePosSalesDailyRepository
+import com.otoki.pos.repository.PosCustomerSalesRow
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.domain.foundation.account.entity.Account
@@ -221,8 +222,12 @@ class PosSalesAdminQueryService(
     }
 
     /**
-     * 거래처별 POS 합계 집계 — 바코드 필터가 있으면 [BARCODE_CHUNK_SIZE] 청크로 분할 실행 후
-     * custCd 단위로 병합 (외부 POS DB 의 IN 목록 비대화 방지), 없으면 단일 조회.
+     * 거래처별 POS 합계 집계 — custCd 목록을 [CUST_CD_CHUNK_SIZE] 청크로 분할 실행 후 병합.
+     *
+     * 지점별 거래처 목록이 전 지점 선택 시 수만 건이 될 수 있어, 외부(POS) DB 에 전달하는
+     * `CUST_CD IN` 크기를 청크로 상한 (bind parameter 비대/플랜 붕괴 방지). 바코드 필터가 있으면
+     * [BARCODE_CHUNK_SIZE] 청크와 교차 실행하고 custCd 단위로 병합한다 — custCd 는 청크 간
+     * 중복이 없고, 동일 custCd 의 바코드 청크 분할분은 merge 로 합산된다.
      */
     private fun aggregateCustomers(
         custCds: List<String>,
@@ -230,25 +235,24 @@ class PosSalesAdminQueryService(
         to: String,
         barcodes: List<String>,
     ): Map<String, Pair<Long, Long>> {
-        if (barcodes.isEmpty()) {
-            return livePosSalesDailyRepository.aggregateByCustomer(custCds, from, to)
-                .associate { row ->
-                    row.getCustCd() to (
-                        (row.getSalesAmt() ?: BigDecimal.ZERO).toLong() to
-                            (row.getSalesQty() ?: BigDecimal.ZERO).toLong()
-                        )
-                }
-        }
         val merged = mutableMapOf<String, Pair<Long, Long>>()
-        barcodes.chunked(BARCODE_CHUNK_SIZE).forEach { chunk ->
-            livePosSalesDailyRepository.aggregateByCustomerAndBarcodes(custCds, from, to, chunk)
-                .forEach { row ->
-                    val amt = (row.getSalesAmt() ?: BigDecimal.ZERO).toLong()
-                    val qty = (row.getSalesQty() ?: BigDecimal.ZERO).toLong()
-                    merged.merge(row.getCustCd(), amt to qty) { prev, next ->
-                        (prev.first + next.first) to (prev.second + next.second)
-                    }
+        fun accumulate(rows: List<PosCustomerSalesRow>) = rows.forEach { row ->
+            val amt = (row.getSalesAmt() ?: BigDecimal.ZERO).toLong()
+            val qty = (row.getSalesQty() ?: BigDecimal.ZERO).toLong()
+            merged.merge(row.getCustCd(), amt to qty) { prev, next ->
+                (prev.first + next.first) to (prev.second + next.second)
+            }
+        }
+        custCds.chunked(CUST_CD_CHUNK_SIZE).forEach { custChunk ->
+            if (barcodes.isEmpty()) {
+                accumulate(livePosSalesDailyRepository.aggregateByCustomer(custChunk, from, to))
+            } else {
+                barcodes.chunked(BARCODE_CHUNK_SIZE).forEach { chunk ->
+                    accumulate(
+                        livePosSalesDailyRepository.aggregateByCustomerAndBarcodes(custChunk, from, to, chunk),
+                    )
                 }
+            }
         }
         return merged
     }
@@ -394,5 +398,11 @@ class PosSalesAdminQueryService(
 
         /** POS `BARCODE IN` 청크 크기 — 외부 DB 에 전달하는 IN 목록 비대화 방지. */
         private const val BARCODE_CHUNK_SIZE = 1_000
+
+        /**
+         * POS `CUST_CD IN` 청크 크기 — 지점별 거래처 목록이 전 지점 선택 시 수만 건이 될 수 있어
+         * bind parameter 비대(PostgreSQL 한계 65,535)/플랜 붕괴를 방지. 바코드 청크와 동일 상한.
+         */
+        private const val CUST_CD_CHUNK_SIZE = 1_000
     }
 }
