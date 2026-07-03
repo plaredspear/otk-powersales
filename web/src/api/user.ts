@@ -92,7 +92,7 @@ export async function fetchUserDetail(id: number): Promise<UserDetail> {
 /**
  * web admin User 비밀번호 임시 리셋.
  *
- * 임시 비밀번호 평문(`1234`) 은 응답에 포함되지 않으며, 화면에서 안내 메시지로 노출한다.
+ * 임시 비밀번호 평문(`pwrs1234!`) 은 응답에 포함되지 않으며, 화면에서 안내 메시지로 노출한다.
  */
 export async function resetUserPassword(id: number): Promise<UserPasswordResetResult> {
   const res = await client.post<ApiResponse<UserPasswordResetResult>>(

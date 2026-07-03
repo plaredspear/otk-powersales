@@ -24,7 +24,7 @@ import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
 const { Paragraph, Text } = Typography;
 
-const TEMPORARY_PASSWORD = '1234';
+const TEMPORARY_PASSWORD = 'pwrs1234!';
 const SELF_DEACTIVATE_TOOLTIP = '자기 자신 계정은 비활성화할 수 없습니다.';
 
 export default function UserDetailPage() {
