@@ -24,6 +24,7 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
         accountTypeFilter: String?,
         accountTypeNotIn: List<String>,
         excludeEmpBranchName: String?,
+        branchScopeCodes: List<String>,
     ): List<MonthlyFemaleEmployeeIntegrationSchedule> {
         val mfeis = monthlyFemaleEmployeeIntegrationSchedule
 
@@ -32,6 +33,12 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
             .and(mfeis.month.eq(month))
             // soft delete 제외 (SF 자동 제외 정합)
             .and(mfeis.isDeleted.isFalse.or(mfeis.isDeleted.isNull))
+
+        // 지점 스코프 — 여사원 소속 지점(costCenterCode) IN. 빈 목록이면 전사(미적용).
+        // 소속기준 variant 만 채워 넘어오며, 2팀 단일 costCenterCode.eq 필터와 AND 로 공존한다.
+        if (branchScopeCodes.isNotEmpty()) {
+            where.and(mfeis.costCenterCode.`in`(branchScopeCodes))
+        }
 
         // 근무유형5 필터 — SF multi-value equals: 선두 빈 값은 NULL/빈 포함 (includeNullWc5)
         if (workingCategory5In.isNotEmpty()) {

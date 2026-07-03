@@ -21,14 +21,16 @@ interface AdminClaimRepositoryCustom {
 
     /**
      * 기간별 클레임 보고서 조회 (Spec #843 — SF Report `X3_ONLY_veg`/`X4_3xv` 이식).
-     * `claim` ⋈ employee ⋈ account ⋈ product. 페이지네이션 없이 전량 추출 (전사).
+     * `claim` ⋈ employee ⋈ account ⋈ product. 페이지네이션 없이 전량 추출.
      * 필터: claim.date(ClaimDate) ∈ [startDate, endDate], status='전송완료'(SENT),
      *       claimType1 지정 시 해당 대분류만 (PACKAGING=A) / null 이면 전체(모든 클레임 = A,B,C).
+     * 지점 스코프: branchScopeCodes 비어있지 않으면 사원 소속 지점(employee.costCenterCode) IN. 빈 목록 = 전사.
      * 정렬: date 내림차순.
      */
     fun findPeriodReport(
         startDate: LocalDate,
         endDate: LocalDate,
         claimType1: ClaimType1?,
+        branchScopeCodes: List<String>,
     ): List<Claim>
 }

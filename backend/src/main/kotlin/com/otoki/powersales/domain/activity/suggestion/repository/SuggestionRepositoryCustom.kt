@@ -57,13 +57,15 @@ interface SuggestionRepositoryCustom {
 
     /**
      * 물류 클레임 보고서 조회 (Spec #844 — SF Report `OLS_dmK`/`new_report_6dy`/`OLS_NDx` 이식).
-     * `suggestion` ⋈ employee ⋈ account ⋈ product. 페이지네이션 없이 전량 추출 (전사 — SF scope=organization).
+     * `suggestion` ⋈ employee ⋈ account ⋈ product. 페이지네이션 없이 전량 추출.
      * 필터: category='물류 클레임'(LOGISTICS_CLAIM), claimDate ∈ [startDate, endDate], soft-delete 제외.
      *       SF WERK1_TX/WERK3_TX 의 'contains 빈값' 은 항상 참(no-op)이라 미구현.
+     * 지점 스코프: branchScopeCodes 비어있지 않으면 등록 사원 소속 지점(suggestion.orgCostCenterCode) IN. 빈 목록 = 전사.
      * 정렬: claimDate 내림차순.
      */
     fun findLogisticsClaimReport(
         startDate: LocalDate,
         endDate: LocalDate,
+        branchScopeCodes: List<String>,
     ): List<Suggestion>
 }

@@ -2,9 +2,12 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.service.ReportBranchScopeService
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.domain.activity.suggestion.dto.admin.AdminSuggestionCreateRequest
@@ -49,6 +52,7 @@ import java.time.LocalDate
 class AdminSuggestionController(
     private val adminSuggestionService: AdminSuggestionService,
     private val logisticsClaimReportService: AdminLogisticsClaimReportService,
+    private val reportBranchScopeService: ReportBranchScopeService,
 ) {
 
     @GetMapping
@@ -155,17 +159,33 @@ class AdminSuggestionController(
     }
 
     /**
-     * (영업본부) 물류 클레임 보고서 조회 (Spec #844). period=THIS_MONTH/LAST_MONTH/CUSTOM. 전사.
-     * CUSTOM 이면 startDate/endDate 필수.
+     * 물류 클레임 보고서 화면 지점 셀렉터 옵션.
+     *
+     * 전사 권한자는 전 지점, 그 외는 본인 지점 1건. 화면 게이팅과 동일한 suggestion READ 로 가드.
+     */
+    @GetMapping("/logistics-claim-report/branches")
+    @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
+    fun getLogisticsClaimReportBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+    }
+
+    /**
+     * (영업본부) 물류 클레임 보고서 조회 (Spec #844). period=THIS_MONTH/LAST_MONTH/CUSTOM.
+     * CUSTOM 이면 startDate/endDate 필수. branchCode 선택 시 그 지점(등록 사원 소속)으로 좁힘.
      */
     @GetMapping("/logistics-claim-report")
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
     fun getLogisticsClaimReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false, defaultValue = "THIS_MONTH") period: LogisticsClaimReportPeriod,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<LogisticsClaimReportResponse>> {
-        val response = logisticsClaimReportService.getReport(period, startDate, endDate)
+        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val response = logisticsClaimReportService.getReport(period, startDate, endDate, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -173,11 +193,14 @@ class AdminSuggestionController(
     @GetMapping("/logistics-claim-report/export")
     @RequiresSfPermission(entity = "suggestion", operation = SfPermissionOperation.READ)
     fun exportLogisticsClaimReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false, defaultValue = "THIS_MONTH") period: LogisticsClaimReportPeriod,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = logisticsClaimReportService.exportReport(period, startDate, endDate)
+        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val result = logisticsClaimReportService.exportReport(period, startDate, endDate, branchScope)
         return ExcelResponseUtils.build(result)
     }
 }

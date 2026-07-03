@@ -107,7 +107,11 @@ class PromotionEmployeeRepositoryCustomImpl(
             .fetchOne()
     }
 
-    override fun findTargetActualReport(startDate: LocalDate, endDate: LocalDate): List<PromotionEmployee> {
+    override fun findTargetActualReport(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        branchScopeCodes: List<String>,
+    ): List<PromotionEmployee> {
         return queryFactory
             .selectFrom(promotionEmployee)
             .join(promotionEmployee.promotion, promotion).fetchJoin()
@@ -119,7 +123,9 @@ class PromotionEmployeeRepositoryCustomImpl(
             .where(
                 promotionEmployee.scheduleDate.between(startDate, endDate),
                 notDeleted, // soft-delete 제외
-                // 전사 — SF scope=organization (영업지원실용)
+                // 지점 스코프 — 여사원일정 소속 지점(teamMemberSchedule.costCenterCode) IN. 빈 목록이면 전사(null → 미적용).
+                // teamMemberSchedule 미연결(null) 행은 IN 조건에서 제외됨 (지점 판별 불가).
+                branchScopeCodes.takeIf { it.isNotEmpty() }?.let { teamMemberSchedule.costCenterCode.`in`(it) },
             )
             // Summary 그룹 재현 — 행사명(promotion.Name = promotionNumber) 그룹 + 그룹 내 일자 오름차순
             .orderBy(promotion.promotionNumber.asc(), promotionEmployee.scheduleDate.asc())

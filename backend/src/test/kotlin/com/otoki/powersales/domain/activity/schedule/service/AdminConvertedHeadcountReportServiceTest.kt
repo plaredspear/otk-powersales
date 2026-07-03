@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.schedule.service.AdminConvertedHeadcountReportService
 import com.otoki.powersales.domain.activity.schedule.service.ConvertedHeadcountReportVariant
 import com.otoki.powersales.domain.foundation.account.entity.Account
@@ -62,6 +63,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 accountTypeFilter = any(),
                 accountTypeNotIn = any(),
                 excludeEmpBranchName = any(),
+                branchScopeCodes = any(),
             )
         } returns result
     }
@@ -88,10 +90,11 @@ class AdminConvertedHeadcountReportServiceTest {
                     accountTypeFilter = any(),
                     accountTypeNotIn = any(),
                     excludeEmpBranchName = any(),
+                    branchScopeCodes = any(),
                 )
             } returns emptyList()
 
-            service.getReport(ConvertedHeadcountReportVariant.TEAM2_PERMANENT_TEMP_ALL, "2026", "5")
+            service.getReport(ConvertedHeadcountReportVariant.TEAM2_PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(wc5Slot.captured).containsExactlyInAnyOrder("상시", "임시")
             assertThat(includeNullSlot.captured).isTrue()
@@ -114,10 +117,11 @@ class AdminConvertedHeadcountReportServiceTest {
                     accountTypeFilter = any(),
                     accountTypeNotIn = any(),
                     excludeEmpBranchName = any(),
+                    branchScopeCodes = any(),
                 )
             } returns emptyList()
 
-            service.getReport(ConvertedHeadcountReportVariant.PERMANENT_ONLY_EXCL_CONSIGN, "2026", "5")
+            service.getReport(ConvertedHeadcountReportVariant.PERMANENT_ONLY_EXCL_CONSIGN, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(excludeConsignSlot.captured).isTrue()
         }
@@ -138,10 +142,11 @@ class AdminConvertedHeadcountReportServiceTest {
                     accountTypeFilter = captureNullable(accountTypeSlot),
                     accountTypeNotIn = any(),
                     excludeEmpBranchName = any(),
+                    branchScopeCodes = any(),
                 )
             } returns emptyList()
 
-            service.getReport(ConvertedHeadcountReportVariant.AGENCY_PERMANENT_TEMP_ALL, "2026", "5")
+            service.getReport(ConvertedHeadcountReportVariant.AGENCY_PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(accountTypeSlot.captured).isEqualTo("대리점")
             assertThat(wc5Slot.captured).isEmpty()
@@ -162,10 +167,11 @@ class AdminConvertedHeadcountReportServiceTest {
                     accountTypeFilter = captureNullable(accountTypeSlot),
                     accountTypeNotIn = any(),
                     excludeEmpBranchName = any(),
+                    branchScopeCodes = any(),
                 )
             } returns emptyList()
 
-            service.getReport(ConvertedHeadcountReportVariant.HYPERMARKET_PERMANENT, "2026", "5")
+            service.getReport(ConvertedHeadcountReportVariant.HYPERMARKET_PERMANENT, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(accountTypeSlot.captured).isEqualTo("대형마트(3대)")
         }
@@ -186,10 +192,11 @@ class AdminConvertedHeadcountReportServiceTest {
                     accountTypeFilter = any(),
                     accountTypeNotIn = capture(notInSlot),
                     excludeEmpBranchName = captureNullable(excludeEmpBranchSlot),
+                    branchScopeCodes = any(),
                 )
             } returns emptyList()
 
-            service.getReport(ConvertedHeadcountReportVariant.TEAM2_SPLIT_CHECK, "2026", "5")
+            service.getReport(ConvertedHeadcountReportVariant.TEAM2_SPLIT_CHECK, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(notInSlot.captured).containsExactlyInAnyOrder("대리점", "백화점")
             assertThat(excludeEmpBranchSlot.captured).isEqualTo("영업지원2팀")
@@ -210,7 +217,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 ),
             )
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.groups).hasSize(1)
             assertThat(res.groups[0].rows).hasSize(1)
@@ -227,7 +234,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 ),
             )
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.groups).hasSize(2)
             val byType = res.groups.associateBy { it.accountType }
@@ -245,7 +252,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 ),
             )
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.totalHeadcount).isEqualByComparingTo("5.0")
         }
@@ -255,7 +262,7 @@ class AdminConvertedHeadcountReportServiceTest {
         fun composesYearMonth() {
             stubReport(listOf(row("슈퍼", year = "2026", month = "5")))
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.groups[0].rows[0].yearMonth).isEqualTo("2026-05")
         }
@@ -270,7 +277,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 ),
             )
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.AGENCY_PERMANENT_TEMP_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.AGENCY_PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.includeWorkingCategory3).isTrue()
             assertThat(res.groups[0].rows).hasSize(2)
@@ -288,7 +295,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 ),
             )
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.includeWorkingCategory3).isFalse()
             assertThat(res.groups[0].rows).hasSize(1)
@@ -307,7 +314,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 ),
             )
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.SEGMENTED_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.SEGMENTED_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.groupByAbcType).isTrue()
             // 구분(거래처유형)이 달라도 같은 ABC유형(A)이면 한 그룹으로 묶임
@@ -329,7 +336,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 listOf(row("슈퍼", empBranchName = "서울지점", accountBranchName = "거래처지점")),
             )
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.groups[0].rows[0].branchName).isEqualTo("서울지점")
         }
@@ -341,7 +348,7 @@ class AdminConvertedHeadcountReportServiceTest {
                 listOf(row("슈퍼", empBranchName = "서울지점", accountBranchName = "거래처지점")),
             )
 
-            val res = service.getReport(ConvertedHeadcountReportVariant.TEAM2_PERMANENT_TEMP_ALL, "2026", "5")
+            val res = service.getReport(ConvertedHeadcountReportVariant.TEAM2_PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(res.groups[0].rows[0].branchName).isEqualTo("거래처지점")
         }
@@ -356,7 +363,7 @@ class AdminConvertedHeadcountReportServiceTest {
         fun exportsXlsx() {
             stubReport(listOf(row("슈퍼")))
 
-            val result = service.exportReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5")
+            val result = service.exportReport(ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(result.filename).isEqualTo("거래처유형별환산인원(상시임시전체)_2026-5.xlsx")
             assertThat(result.bytes).isNotEmpty()
@@ -367,9 +374,105 @@ class AdminConvertedHeadcountReportServiceTest {
         fun exportsEmptyXlsx() {
             stubReport(emptyList())
 
-            val result = service.exportReport(ConvertedHeadcountReportVariant.TEMP_ALL, "2026", "5")
+            val result = service.exportReport(ConvertedHeadcountReportVariant.TEMP_ALL, "2026", "5", EffectiveBranchResult.All)
 
             assertThat(result.bytes).isNotEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("지점 스코프 필터 (costCenterCode)")
+    inner class BranchScopeFilter {
+
+        /** branchScopeCodes 를 캡처하도록 stub. */
+        private fun captureBranchScope(codesSlot: io.mockk.CapturingSlot<List<String>>) {
+            every {
+                repository.findConvertedHeadcountReport(
+                    year = any(),
+                    month = any(),
+                    workingCategory5In = any(),
+                    includeNullWc5 = any(),
+                    excludeConsignment = any(),
+                    costCenterCode = any(),
+                    accountTypeFilter = any(),
+                    accountTypeNotIn = any(),
+                    excludeEmpBranchName = any(),
+                    branchScopeCodes = capture(codesSlot),
+                )
+            } returns emptyList()
+        }
+
+        @Test
+        @DisplayName("소속기준 variant + Filtered → 선택 지점 코드를 branchScopeCodes 로 전달")
+        fun ownBranchFiltered() {
+            val codesSlot = slot<List<String>>()
+            captureBranchScope(codesSlot)
+
+            service.getReport(
+                ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5",
+                EffectiveBranchResult.Filtered(listOf("A001")),
+            )
+
+            assertThat(codesSlot.captured).containsExactly("A001")
+        }
+
+        @Test
+        @DisplayName("소속기준 variant + All(전사) → 빈 branchScopeCodes 전달")
+        fun ownBranchAll() {
+            val codesSlot = slot<List<String>>()
+            captureBranchScope(codesSlot)
+
+            service.getReport(
+                ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5",
+                EffectiveBranchResult.All,
+            )
+
+            assertThat(codesSlot.captured).isEmpty()
+        }
+
+        @Test
+        @DisplayName("거래처기준 variant 는 Filtered 여도 스코프 미적용(전사) — 빈 branchScopeCodes")
+        fun accountBranchIgnoresScope() {
+            val codesSlot = slot<List<String>>()
+            captureBranchScope(codesSlot)
+
+            service.getReport(
+                ConvertedHeadcountReportVariant.AGENCY_PERMANENT_TEMP_ALL, "2026", "5",
+                EffectiveBranchResult.Filtered(listOf("A001")),
+            )
+
+            assertThat(codesSlot.captured).isEmpty()
+        }
+
+        @Test
+        @DisplayName("소속기준 variant + NoAccess → repository 미호출 + 빈 결과")
+        fun ownBranchNoAccess() {
+            val res = service.getReport(
+                ConvertedHeadcountReportVariant.PERMANENT_TEMP_ALL, "2026", "5",
+                EffectiveBranchResult.NoAccess,
+            )
+
+            assertThat(res.groups).isEmpty()
+            assertThat(res.totalHeadcount).isEqualByComparingTo(BigDecimal.ZERO)
+            io.mockk.verify(exactly = 0) {
+                repository.findConvertedHeadcountReport(
+                    any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("거래처기준 variant + NoAccess → 스코프 무관하게 정상 조회(전사)")
+        fun accountBranchNoAccessStillQueries() {
+            val codesSlot = slot<List<String>>()
+            captureBranchScope(codesSlot)
+
+            service.getReport(
+                ConvertedHeadcountReportVariant.AGENCY_PERMANENT_TEMP_ALL, "2026", "5",
+                EffectiveBranchResult.NoAccess,
+            )
+
+            assertThat(codesSlot.captured).isEmpty()
         }
     }
 }

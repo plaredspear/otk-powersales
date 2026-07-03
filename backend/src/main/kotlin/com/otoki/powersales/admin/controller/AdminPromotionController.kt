@@ -11,9 +11,11 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionPosP
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportResponse
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.service.ReportBranchScopeService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionTargetActualReportService
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
@@ -34,7 +36,21 @@ import java.time.LocalDate
 class AdminPromotionController(
     private val adminPromotionService: AdminPromotionService,
     private val targetActualReportService: AdminPromotionTargetActualReportService,
+    private val reportBranchScopeService: ReportBranchScopeService,
 ) {
+
+    /**
+     * 행사사원 목표 대비 실적 보고서 화면 지점 셀렉터 옵션.
+     *
+     * 전사 권한자는 전 지점, 그 외는 본인 지점 1건. 화면 게이팅과 동일한 promotion READ 로 가드.
+     */
+    @GetMapping("/target-actual-report/branches")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun getTargetActualReportBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+    }
 
     @GetMapping("/form-meta")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
@@ -44,16 +60,19 @@ class AdminPromotionController(
     }
 
     /**
-     * 행사사원 목표 대비 실적 보고서 조회 (Spec #845). ScheduleDate 기간(필수) 전사 조회.
-     * 행사명 그룹 + 소계 + 전체 합계 + 도넛 차트 데이터.
+     * 행사사원 목표 대비 실적 보고서 조회 (Spec #845). ScheduleDate 기간(필수) 조회.
+     * 행사명 그룹 + 소계 + 전체 합계 + 도넛 차트 데이터. branchCode 선택 시 그 지점(여사원일정 소속)으로 좁힘.
      */
     @GetMapping("/target-actual-report")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getTargetActualReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate,
         @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<PromotionTargetActualReportResponse>> {
-        val response = targetActualReportService.getReport(startDate, endDate)
+        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val response = targetActualReportService.getReport(startDate, endDate, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -61,10 +80,13 @@ class AdminPromotionController(
     @GetMapping("/target-actual-report/export")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun exportTargetActualReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate,
         @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = targetActualReportService.exportReport(startDate, endDate)
+        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val result = targetActualReportService.exportReport(startDate, endDate, branchScope)
         return ExcelResponseUtils.build(result)
     }
 

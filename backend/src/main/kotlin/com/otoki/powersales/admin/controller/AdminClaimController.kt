@@ -1,7 +1,11 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.admin.service.ReportBranchScopeService
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimCreateResponse
 import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimDetailResponse
@@ -29,7 +33,21 @@ class AdminClaimController(
     private val adminClaimCreateService: AdminClaimCreateService,
     private val adminClaimResendService: AdminClaimResendService,
     private val adminClaimPeriodReportService: AdminClaimPeriodReportService,
+    private val reportBranchScopeService: ReportBranchScopeService,
 ) {
+
+    /**
+     * 기간별 클레임 보고서 화면 지점 셀렉터 옵션.
+     *
+     * 전사 권한자는 전 지점, 그 외는 본인 지점 1건. 화면 게이팅과 동일한 claim READ 로 가드.
+     */
+    @GetMapping("/period-report/branches")
+    @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
+    fun getPeriodReportBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+    }
 
     @GetMapping
     @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
@@ -94,17 +112,20 @@ class AdminClaimController(
     }
 
     /**
-     * 기간별 클레임 보고서 조회 (Spec #843). type=PACKAGING(포장불량만)/ALL(모든 클레임). 전사.
-     * 기간 미지정 시 당월 1일~오늘.
+     * 기간별 클레임 보고서 조회 (Spec #843). type=PACKAGING(포장불량만)/ALL(모든 클레임).
+     * 기간 미지정 시 당월 1일~오늘. branchCode 선택 시 그 지점(사원 소속)으로 좁힘.
      */
     @GetMapping("/period-report")
     @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
     fun getPeriodReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<ClaimPeriodReportResponse>> {
-        val response = adminClaimPeriodReportService.getReport(startDate, endDate, type)
+        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val response = adminClaimPeriodReportService.getReport(startDate, endDate, type, branchScope)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -112,11 +133,14 @@ class AdminClaimController(
     @GetMapping("/period-report/export")
     @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.READ)
     fun exportPeriodReport(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false, defaultValue = "ALL") type: ClaimPeriodReportType,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = adminClaimPeriodReportService.exportReport(startDate, endDate, type)
+        val branchScope = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)
+        val result = adminClaimPeriodReportService.exportReport(startDate, endDate, type, branchScope)
         return ExcelResponseUtils.build(result)
     }
 }

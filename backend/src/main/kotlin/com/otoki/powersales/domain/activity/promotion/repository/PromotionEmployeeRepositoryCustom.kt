@@ -35,10 +35,16 @@ interface PromotionEmployeeRepositoryCustom {
     /**
      * 행사사원 목표 대비 실적 보고서 조회 (Spec #845 — SF Report `new_report_AtQ` 이식).
      * `promotion_employee` ⋈ promotion ⋈ promotion.account ⋈ promotion.primaryProduct ⋈ employee ⋈ teamMemberSchedule.
-     * 전사 (SF scope=organization). 필터: scheduleDate ∈ [startDate, endDate], soft-delete 제외.
+     * 필터: scheduleDate ∈ [startDate, endDate], soft-delete 제외.
+     * 지점 스코프: branchScopeCodes 비어있지 않으면 여사원일정 소속 지점(teamMemberSchedule.costCenterCode) IN. 빈 목록 = 전사.
+     *   teamMemberSchedule 은 leftJoin 이라 미연결 행은 스코프 적용 시 제외된다(지점 판별 불가).
      * 정렬: 행사명(promotion.promotionNumber = SF Name) 오름차순 + scheduleDate 오름차순 (Summary 그룹 재현).
      */
-    fun findTargetActualReport(startDate: LocalDate, endDate: LocalDate): List<PromotionEmployee>
+    fun findTargetActualReport(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        branchScopeCodes: List<String>,
+    ): List<PromotionEmployee>
 
     /**
      * 로그인 여사원의 특정 일자 담당 행사 일람 (홈 "행사매출 등록" → 일 매출 등록 진입화면용).

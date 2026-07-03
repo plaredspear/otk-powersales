@@ -55,14 +55,31 @@ function failureMessage(label: string, res: { data: ApiResponse<unknown> }): str
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
 }
 
-/** 거래처유형별 환산인원 현황 조회. */
+/**
+ * 지점 스코프가 적용되는(여사원 소속 지점 기준) 소속기준 variant 판별.
+ *
+ * 거래처기준 variant(2-1/대리점 3종)는 지점 축이 거래처 소재지라 스코프를 적용하지 않는다(전사 유지).
+ * 소속기준 variant 에만 지점 셀렉터를 노출한다.
+ */
+export function isBranchScopedVariant(variant: ConvertedHeadcountReportVariant): boolean {
+  const accountBranchVariants: ConvertedHeadcountReportVariant[] = [
+    'TEAM2_PERMANENT_TEMP_ALL',
+    'AGENCY_PERMANENT_TEMP_ALL',
+    'AGENCY_PERMANENT_ONLY',
+    'AGENCY_TEMP_ONLY',
+  ];
+  return !accountBranchVariants.includes(variant);
+}
+
+/** 거래처유형별 환산인원 현황 조회. branchCode 지정 시 소속기준 variant 를 그 지점으로 좁힘. */
 export async function fetchConvertedHeadcountReport(
   variant: ConvertedHeadcountReportVariant,
   year: string,
   month: string,
+  branchCode?: string,
 ): Promise<ConvertedHeadcountReportResult> {
   const res = await client.get<ApiResponse<ConvertedHeadcountReportResult>>(`${BASE}/${variant}`, {
-    params: { year, month },
+    params: { year, month, branchCode: branchCode || undefined },
   });
   if (!res.data.success || !res.data.data) {
     throw new Error(failureMessage('거래처유형별 환산인원 현황', res));
@@ -70,13 +87,14 @@ export async function fetchConvertedHeadcountReport(
   return res.data.data;
 }
 
-/** 거래처유형별 환산인원 현황 엑셀 다운로드. */
+/** 거래처유형별 환산인원 현황 엑셀 다운로드. branchCode 지정 시 소속기준 variant 를 그 지점으로 좁힘. */
 export async function exportConvertedHeadcountReport(
   variant: ConvertedHeadcountReportVariant,
   year: string,
   month: string,
+  branchCode?: string,
 ): Promise<void> {
   await downloadExcel(`${BASE}/${variant}/export`, `거래처유형별환산인원_${year}-${month}.xlsx`, {
-    params: { year, month },
+    params: { year, month, branchCode: branchCode || undefined },
   });
 }

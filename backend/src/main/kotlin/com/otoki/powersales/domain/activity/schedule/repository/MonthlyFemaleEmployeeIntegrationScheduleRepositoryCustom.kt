@@ -39,8 +39,10 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
      * @param accountTypeFilter   구분(Account.accountType) equals 필터 displayName (대리점 3종 = "대리점" 등). null = 전체
      * @param accountTypeNotIn    구분(Account.accountType) notIn 제외 필터 displayName 목록 (2팀분리 = 대리점·백화점). 빈 목록 = 미적용
      * @param excludeEmpBranchName 사원지점명(EmpBranchName) notEqual 제외 필터 (2팀분리 = 영업지원2팀). null = 미적용
+     * @param branchScopeCodes    지점 스코프 코스트센터 코드 목록 (mfeis.costCenterCode IN). 빈 목록 = 전사(미적용).
+     *                            소속기준 variant 만 채워 넘긴다 (거래처기준 variant 는 빈 목록 = 전사 유지).
      *
-     * 전사 스코프 (DataScope 미적용). isDeleted 제외. account fetch join.
+     * isDeleted 제외. account fetch join. 지점 스코프는 여사원 소속 지점(costCenterCode) 기준.
      */
     fun findConvertedHeadcountReport(
         year: String,
@@ -52,6 +54,7 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
         accountTypeFilter: String?,
         accountTypeNotIn: List<String>,
         excludeEmpBranchName: String?,
+        branchScopeCodes: List<String>,
     ): List<MonthlyFemaleEmployeeIntegrationSchedule>
 
     /**

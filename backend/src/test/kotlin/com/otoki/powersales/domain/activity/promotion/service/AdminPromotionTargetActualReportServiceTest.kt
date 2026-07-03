@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.promotion.service
 
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.promotion.entity.Promotion
@@ -67,13 +68,13 @@ class AdminPromotionTargetActualReportServiceTest {
         @DisplayName("행사명별로 그룹핑하고 소계/합계를 산출한다")
         fun groupsAndSubtotals() {
             // A행사: 목표 100+200, 대표수량 2+3, 기타수량 1+1 / B행사: 목표 50
-            every { repository.findTargetActualReport(any(), any()) } returns listOf(
+            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
                 pe("A행사", LocalDate.of(2026, 3, 1), 100, BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
                 pe("A행사", LocalDate.of(2026, 3, 2), 200, BigDecimal.TEN, BigDecimal(3), BigDecimal.ONE),
                 pe("B행사", LocalDate.of(2026, 3, 3), 50, BigDecimal.TEN, BigDecimal(1), BigDecimal.ZERO),
             )
 
-            val res = service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31))
+            val res = service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
 
             assertThat(res.groups).hasSize(2)
             val a = res.groups.first { it.promotionName == "A행사" }
@@ -91,11 +92,11 @@ class AdminPromotionTargetActualReportServiceTest {
         @DisplayName("실적금액은 SF formula(dkDailyActualSalesAmount) 재현 — price*priQty + otherQty^2")
         fun actualAmountFormula() {
             // price=10, priQty=2, otherQty=3 → 10*2 + 3*3 = 29
-            every { repository.findTargetActualReport(any(), any()) } returns listOf(
+            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
                 pe("A행사", LocalDate.of(2026, 3, 1), 100, BigDecimal.TEN, BigDecimal(2), BigDecimal(3)),
             )
 
-            val res = service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31))
+            val res = service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
 
             assertThat(res.groups[0].rows[0].actualAmount).isEqualByComparingTo(BigDecimal(29))
             assertThat(res.groups[0].subtotalActualAmount).isEqualByComparingTo(BigDecimal(29))
@@ -105,7 +106,7 @@ class AdminPromotionTargetActualReportServiceTest {
         @DisplayName("기간 누락 시 IllegalArgumentException")
         fun missingPeriod() {
             assertThatThrownBy {
-                service.getReport(null, null)
+                service.getReport(null, null, EffectiveBranchResult.All)
             }.isInstanceOf(IllegalArgumentException::class.java)
         }
 
@@ -114,9 +115,9 @@ class AdminPromotionTargetActualReportServiceTest {
         fun passesPeriod() {
             val startSlot = slot<LocalDate>()
             val endSlot = slot<LocalDate>()
-            every { repository.findTargetActualReport(capture(startSlot), capture(endSlot)) } returns emptyList()
+            every { repository.findTargetActualReport(capture(startSlot), capture(endSlot), any()) } returns emptyList()
 
-            service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31))
+            service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
 
             assertThat(startSlot.captured).isEqualTo(LocalDate.of(2026, 3, 1))
             assertThat(endSlot.captured).isEqualTo(LocalDate.of(2026, 5, 31))
@@ -130,14 +131,56 @@ class AdminPromotionTargetActualReportServiceTest {
         @Test
         @DisplayName("그룹/소계/합계 행 포함 xlsx + 파일명")
         fun exportsXlsx() {
-            every { repository.findTargetActualReport(any(), any()) } returns listOf(
+            every { repository.findTargetActualReport(any(), any(), any()) } returns listOf(
                 pe("A행사", LocalDate.of(2026, 3, 1), 100, BigDecimal.TEN, BigDecimal(2), BigDecimal.ONE),
             )
 
-            val result = service.exportReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31))
+            val result = service.exportReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
 
             assertThat(result.filename).isEqualTo("행사사원목표대비실적_2026-03-01_2026-05-31.xlsx")
             assertThat(result.bytes).isNotEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("지점 스코프 (여사원일정 소속 costCenterCode)")
+    inner class BranchScope {
+
+        @Test
+        @DisplayName("Filtered → 선택 지점 코드를 branchScopeCodes 로 전달")
+        fun filtered() {
+            val codesSlot = slot<List<String>>()
+            every { repository.findTargetActualReport(any(), any(), capture(codesSlot)) } returns emptyList()
+
+            service.getReport(
+                LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31),
+                EffectiveBranchResult.Filtered(listOf("A001")),
+            )
+
+            assertThat(codesSlot.captured).containsExactly("A001")
+        }
+
+        @Test
+        @DisplayName("All(전사) → 빈 branchScopeCodes 전달")
+        fun all() {
+            val codesSlot = slot<List<String>>()
+            every { repository.findTargetActualReport(any(), any(), capture(codesSlot)) } returns emptyList()
+
+            service.getReport(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31), EffectiveBranchResult.All)
+
+            assertThat(codesSlot.captured).isEmpty()
+        }
+
+        @Test
+        @DisplayName("NoAccess → repository 미호출 + 빈 결과")
+        fun noAccess() {
+            val res = service.getReport(
+                LocalDate.of(2026, 3, 1), LocalDate.of(2026, 5, 31),
+                EffectiveBranchResult.NoAccess,
+            )
+
+            assertThat(res.groups).isEmpty()
+            io.mockk.verify(exactly = 0) { repository.findTargetActualReport(any(), any(), any()) }
         }
     }
 }

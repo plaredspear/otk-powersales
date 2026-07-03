@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.suggestion.service
 
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -62,9 +63,9 @@ class AdminLogisticsClaimReportServiceTest {
         fun thisMonth() {
             val startSlot = slot<LocalDate>()
             val endSlot = slot<LocalDate>()
-            every { repository.findLogisticsClaimReport(capture(startSlot), capture(endSlot)) } returns listOf(suggestion())
+            every { repository.findLogisticsClaimReport(capture(startSlot), capture(endSlot), any()) } returns listOf(suggestion())
 
-            val res = service.getReport(LogisticsClaimReportPeriod.THIS_MONTH, null, null)
+            val res = service.getReport(LogisticsClaimReportPeriod.THIS_MONTH, null, null, EffectiveBranchResult.All)
 
             val today = LocalDate.now(TimeZones.SEOUL_ZONE)
             assertThat(startSlot.captured).isEqualTo(today.withDayOfMonth(1))
@@ -81,9 +82,9 @@ class AdminLogisticsClaimReportServiceTest {
         fun lastMonth() {
             val startSlot = slot<LocalDate>()
             val endSlot = slot<LocalDate>()
-            every { repository.findLogisticsClaimReport(capture(startSlot), capture(endSlot)) } returns emptyList()
+            every { repository.findLogisticsClaimReport(capture(startSlot), capture(endSlot), any()) } returns emptyList()
 
-            service.getReport(LogisticsClaimReportPeriod.LAST_MONTH, null, null)
+            service.getReport(LogisticsClaimReportPeriod.LAST_MONTH, null, null, EffectiveBranchResult.All)
 
             val lastMonth = LocalDate.now(TimeZones.SEOUL_ZONE).minusMonths(1)
             assertThat(startSlot.captured).isEqualTo(lastMonth.withDayOfMonth(1))
@@ -95,12 +96,13 @@ class AdminLogisticsClaimReportServiceTest {
         fun custom() {
             val startSlot = slot<LocalDate>()
             val endSlot = slot<LocalDate>()
-            every { repository.findLogisticsClaimReport(capture(startSlot), capture(endSlot)) } returns emptyList()
+            every { repository.findLogisticsClaimReport(capture(startSlot), capture(endSlot), any()) } returns emptyList()
 
             service.getReport(
                 LogisticsClaimReportPeriod.CUSTOM,
                 LocalDate.of(2026, 3, 1),
                 LocalDate.of(2026, 3, 31),
+                EffectiveBranchResult.All,
             )
 
             assertThat(startSlot.captured).isEqualTo(LocalDate.of(2026, 3, 1))
@@ -111,7 +113,7 @@ class AdminLogisticsClaimReportServiceTest {
         @DisplayName("CUSTOM 인데 기간 누락 시 IllegalArgumentException")
         fun customMissing() {
             assertThatThrownBy {
-                service.getReport(LogisticsClaimReportPeriod.CUSTOM, null, null)
+                service.getReport(LogisticsClaimReportPeriod.CUSTOM, null, null, EffectiveBranchResult.All)
             }.isInstanceOf(IllegalArgumentException::class.java)
         }
     }
@@ -123,9 +125,9 @@ class AdminLogisticsClaimReportServiceTest {
         @Test
         @DisplayName("당월 파일명")
         fun exportThisMonth() {
-            every { repository.findLogisticsClaimReport(any(), any()) } returns listOf(suggestion())
+            every { repository.findLogisticsClaimReport(any(), any(), any()) } returns listOf(suggestion())
 
-            val result = service.exportReport(LogisticsClaimReportPeriod.THIS_MONTH, null, null)
+            val result = service.exportReport(LogisticsClaimReportPeriod.THIS_MONTH, null, null, EffectiveBranchResult.All)
 
             assertThat(result.filename).startsWith("물류클레임보고서_당월_")
             assertThat(result.bytes).isNotEmpty()
@@ -134,15 +136,58 @@ class AdminLogisticsClaimReportServiceTest {
         @Test
         @DisplayName("CUSTOM 파일명 — 기간별")
         fun exportCustom() {
-            every { repository.findLogisticsClaimReport(any(), any()) } returns listOf(suggestion())
+            every { repository.findLogisticsClaimReport(any(), any(), any()) } returns listOf(suggestion())
 
             val result = service.exportReport(
                 LogisticsClaimReportPeriod.CUSTOM,
                 LocalDate.of(2026, 3, 1),
                 LocalDate.of(2026, 3, 31),
+                EffectiveBranchResult.All,
             )
 
             assertThat(result.filename).isEqualTo("물류클레임보고서_기간별_2026-03-01_2026-03-31.xlsx")
+        }
+    }
+
+    @Nested
+    @DisplayName("지점 스코프 (등록 사원 소속 orgCostCenterCode)")
+    inner class BranchScope {
+
+        @Test
+        @DisplayName("Filtered → 선택 지점 코드를 branchScopeCodes 로 전달")
+        fun filtered() {
+            val codesSlot = slot<List<String>>()
+            every { repository.findLogisticsClaimReport(any(), any(), capture(codesSlot)) } returns emptyList()
+
+            service.getReport(
+                LogisticsClaimReportPeriod.THIS_MONTH, null, null,
+                EffectiveBranchResult.Filtered(listOf("A001")),
+            )
+
+            assertThat(codesSlot.captured).containsExactly("A001")
+        }
+
+        @Test
+        @DisplayName("All(전사) → 빈 branchScopeCodes 전달")
+        fun all() {
+            val codesSlot = slot<List<String>>()
+            every { repository.findLogisticsClaimReport(any(), any(), capture(codesSlot)) } returns emptyList()
+
+            service.getReport(LogisticsClaimReportPeriod.THIS_MONTH, null, null, EffectiveBranchResult.All)
+
+            assertThat(codesSlot.captured).isEmpty()
+        }
+
+        @Test
+        @DisplayName("NoAccess → repository 미호출 + 빈 결과")
+        fun noAccess() {
+            val res = service.getReport(
+                LogisticsClaimReportPeriod.THIS_MONTH, null, null,
+                EffectiveBranchResult.NoAccess,
+            )
+
+            assertThat(res.items).isEmpty()
+            io.mockk.verify(exactly = 0) { repository.findLogisticsClaimReport(any(), any(), any()) }
         }
     }
 }

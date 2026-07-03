@@ -6,9 +6,12 @@ import dayjs, { type Dayjs } from 'dayjs';
 import {
   fetchConvertedHeadcountReport,
   exportConvertedHeadcountReport as apiExport,
+  isBranchScopedVariant,
   type ConvertedHeadcountReportRow,
   type ConvertedHeadcountReportVariant,
 } from '@/api/convertedHeadcountReport';
+import { useReportBranches } from '@/hooks/female-employee/useReportBranches';
+import BranchSingleSelect from '@/components/common/BranchSingleSelect';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -25,6 +28,7 @@ interface Props {
 interface QueryYearMonth {
   year: string;
   month: string;
+  branchCode?: string;
 }
 
 const num = (v: number | null) => (v == null ? '-' : v.toLocaleString());
@@ -37,11 +41,16 @@ const num = (v: number | null) => (v == null ? '-' : v.toLocaleString());
  */
 export default function ConvertedHeadcountReportPage({ variant, title }: Props) {
   const [yearMonth, setYearMonth] = useState<Dayjs>(dayjs());
+  const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState<QueryYearMonth | null>(null);
 
+  // 소속기준 variant 만 지점 스코프가 적용되므로 그 경우에만 셀렉터 노출.
+  const branchScoped = isBranchScopedVariant(variant);
+  const { data: branches = [] } = useReportBranches();
+
   const reportQuery = useQuery({
-    queryKey: ['convertedHeadcountReport', variant, query?.year, query?.month],
-    queryFn: () => fetchConvertedHeadcountReport(variant, query!.year, query!.month),
+    queryKey: ['convertedHeadcountReport', variant, query?.year, query?.month, query?.branchCode],
+    queryFn: () => fetchConvertedHeadcountReport(variant, query!.year, query!.month, query!.branchCode),
     enabled: query != null,
   });
 
@@ -50,13 +59,17 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
       message.warning('조회 연월은 필수항목입니다.');
       return;
     }
-    setQuery({ year: yearMonth.format('YYYY'), month: String(yearMonth.month() + 1) });
+    setQuery({
+      year: yearMonth.format('YYYY'),
+      month: String(yearMonth.month() + 1),
+      branchCode: branchScoped ? branchCode : undefined,
+    });
   };
 
   const handleExport = async () => {
     if (!query) return;
     try {
-      await apiExport(variant, query.year, query.month);
+      await apiExport(variant, query.year, query.month, query.branchCode);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }
@@ -96,14 +109,19 @@ export default function ConvertedHeadcountReportPage({ variant, title }: Props) 
 
   return (
     <div style={{ padding: 16 }}>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <span>조회연월:</span>
-        <DatePicker
-          picker="month"
-          value={yearMonth}
-          onChange={(v) => v && setYearMonth(v)}
-          allowClear={false}
-        />
+      <Space style={{ marginBottom: 12 }} wrap align="end">
+        {branchScoped && (
+          <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        )}
+        <Space direction="vertical" size={4}>
+          <span>조회연월:</span>
+          <DatePicker
+            picker="month"
+            value={yearMonth}
+            onChange={(v) => v && setYearMonth(v)}
+            allowClear={false}
+          />
+        </Space>
         <Button type="primary" onClick={handleSearch} loading={reportQuery.isLoading}>
           조회
         </Button>

@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.promotion.service
 
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualChartItem
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportGroup
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportResponse
@@ -36,14 +37,25 @@ class AdminPromotionTargetActualReportService(
     /**
      * 행사사원 목표/실적 조회 — 행사명 그룹 + 소계 + 전체 합계 + 차트.
      *
-     * startDate/endDate 필수 (미입력 시 IllegalArgumentException). 전사 조회.
+     * startDate/endDate 필수 (미입력 시 IllegalArgumentException).
+     * 지점 스코프: branchScope(여사원일정 소속 지점 costCenterCode 기준)로 좁힘 — 전사 권한자 선택 지점/전건,
+     * 지점 사용자 본인 지점(선택값 밖이면 IDOR 차단 = NoAccess → 빈 결과).
      */
-    fun getReport(startDate: LocalDate?, endDate: LocalDate?): PromotionTargetActualReportResponse {
+    fun getReport(
+        startDate: LocalDate?,
+        endDate: LocalDate?,
+        branchScope: EffectiveBranchResult,
+    ): PromotionTargetActualReportResponse {
         require(startDate != null && endDate != null) {
             "조회 기간(startDate, endDate)은 필수입니다"
         }
 
-        val rows = promotionEmployeeRepository.findTargetActualReport(startDate, endDate)
+        val rows = when (branchScope) {
+            is EffectiveBranchResult.All -> promotionEmployeeRepository.findTargetActualReport(startDate, endDate, emptyList())
+            is EffectiveBranchResult.Filtered ->
+                promotionEmployeeRepository.findTargetActualReport(startDate, endDate, branchScope.codes)
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }
 
         // 행사명 그룹핑 (SF Promotion.Name = promotionNumber. 조회 정렬이 promotionNumber asc 이므로 순서 보존)
         val grouped = rows.groupBy { it.promotion?.promotionNumber }
@@ -76,8 +88,12 @@ class AdminPromotionTargetActualReportService(
     /**
      * 목표/실적 엑셀 export — 행사명 그룹 헤더/소계 행 포함 23컬럼 + 전체 합계 행 (Summary 재현).
      */
-    fun exportReport(startDate: LocalDate?, endDate: LocalDate?): ExcelResult {
-        val response = getReport(startDate, endDate)
+    fun exportReport(
+        startDate: LocalDate?,
+        endDate: LocalDate?,
+        branchScope: EffectiveBranchResult,
+    ): ExcelResult {
+        val response = getReport(startDate, endDate, branchScope)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("행사사원목표대비실적")

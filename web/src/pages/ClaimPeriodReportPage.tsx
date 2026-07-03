@@ -9,6 +9,8 @@ import {
   type ClaimPeriodReportItem,
   type ClaimPeriodReportType,
 } from '@/api/claimPeriodReport';
+import { useClaimReportBranches } from '@/hooks/claims/useClaimReportBranches';
+import BranchSingleSelect from '@/components/common/BranchSingleSelect';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -23,6 +25,7 @@ interface Props {
 interface QueryRange {
   startDate: string;
   endDate: string;
+  branchCode?: string;
 }
 
 /**
@@ -35,11 +38,14 @@ export default function ClaimPeriodReportPage({ type }: Props) {
   const isAll = type === 'ALL';
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
+  const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
   const [range, setRange] = useState<QueryRange | null>(null);
 
+  const { data: branches = [] } = useClaimReportBranches();
+
   const query = useQuery({
-    queryKey: ['claimPeriodReport', type, range?.startDate, range?.endDate],
-    queryFn: () => fetchClaimPeriodReport(range!.startDate, range!.endDate, type),
+    queryKey: ['claimPeriodReport', type, range?.startDate, range?.endDate, range?.branchCode],
+    queryFn: () => fetchClaimPeriodReport(range!.startDate, range!.endDate, type, range!.branchCode),
     enabled: range != null,
   });
 
@@ -52,13 +58,17 @@ export default function ClaimPeriodReportPage({ type }: Props) {
       message.warning('종료일은 시작일 이후여야 합니다.');
       return;
     }
-    setRange({ startDate: startDate.format('YYYY-MM-DD'), endDate: endDate.format('YYYY-MM-DD') });
+    setRange({
+      startDate: startDate.format('YYYY-MM-DD'),
+      endDate: endDate.format('YYYY-MM-DD'),
+      branchCode,
+    });
   };
 
   const handleExport = async () => {
     if (!range) return;
     try {
-      await apiExport(range.startDate, range.endDate, type);
+      await apiExport(range.startDate, range.endDate, type, range.branchCode);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }
@@ -99,11 +109,16 @@ export default function ClaimPeriodReportPage({ type }: Props) {
 
   return (
     <div style={{ padding: 16 }}>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <span>시작일:</span>
-        <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
-        <span>종료일:</span>
-        <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
+      <Space style={{ marginBottom: 12 }} wrap align="end">
+        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        <Space direction="vertical" size={4}>
+          <span>시작일:</span>
+          <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
+        </Space>
+        <Space direction="vertical" size={4}>
+          <span>종료일:</span>
+          <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
+        </Space>
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>

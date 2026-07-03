@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.schedule.dto.response.ConvertedHeadcountReportGroup
 import com.otoki.powersales.domain.activity.schedule.dto.response.ConvertedHeadcountReportResult
 import com.otoki.powersales.domain.activity.schedule.dto.response.ConvertedHeadcountReportRow
@@ -32,8 +33,27 @@ class AdminConvertedHeadcountReportService(
 
     /**
      * 환산인원 현황 조회 — variant 별 필터 + 구분×근무유형1×지점×연월 그룹핑 + SUM(환산인원) + 소계/총계.
+     *
+     * 지점 스코프: 소속기준 variant(useAccountBranch=false)만 여사원 소속 지점(costCenterCode) 으로 좁힌다.
+     * 거래처기준 variant(2-1/대리점 3종)는 지점 축이 거래처 소재지라 스코프를 적용하지 않고 전사 유지(제외 결정).
+     * 소속기준 + IDOR([EffectiveBranchResult.NoAccess]) 이면 빈 결과.
      */
-    fun getReport(variant: ConvertedHeadcountReportVariant, year: String, month: String): ConvertedHeadcountReportResult {
+    fun getReport(
+        variant: ConvertedHeadcountReportVariant,
+        year: String,
+        month: String,
+        branchScope: EffectiveBranchResult,
+    ): ConvertedHeadcountReportResult {
+        // 소속기준 variant + NoAccess(권한 밖 지점 선택/권한없음) → 빈 결과.
+        if (!variant.useAccountBranch && branchScope is EffectiveBranchResult.NoAccess) {
+            return emptyResult(variant, year, month)
+        }
+        // 거래처기준 variant 는 스코프 미적용(전사). 소속기준은 Filtered 코드만 IN, All 이면 전사(빈 목록).
+        val branchScopeCodes = when {
+            variant.useAccountBranch -> emptyList()
+            branchScope is EffectiveBranchResult.Filtered -> branchScope.codes
+            else -> emptyList()
+        }
         val rows = mfeisRepository.findConvertedHeadcountReport(
             year = year,
             month = month,
@@ -44,6 +64,7 @@ class AdminConvertedHeadcountReportService(
             accountTypeFilter = variant.accountTypeFilter,
             accountTypeNotIn = variant.accountTypeNotIn,
             excludeEmpBranchName = variant.excludeEmpBranchName,
+            branchScopeCodes = branchScopeCodes,
         )
 
         // 구분(또는 ABC유형) × 근무유형1 (× 근무유형3) × 지점 × 연월 단위 SUM(환산인원) 집계.
@@ -98,11 +119,28 @@ class AdminConvertedHeadcountReportService(
         )
     }
 
+    /** 지점 스코프 IDOR 차단 시의 빈 결과 (variant 메타는 유지). */
+    private fun emptyResult(variant: ConvertedHeadcountReportVariant, year: String, month: String) =
+        ConvertedHeadcountReportResult(
+            variant = variant.name,
+            year = year,
+            month = month,
+            includeWorkingCategory3 = variant.includeWorkingCategory3,
+            groupByAbcType = variant.groupByAbcType,
+            groups = emptyList(),
+            totalHeadcount = BigDecimal.ZERO,
+        )
+
     /**
      * 환산인원 현황 엑셀 export — 구분/근무유형1/지점/연월/환산인원 + 그룹 소계 + 총계.
      */
-    fun exportReport(variant: ConvertedHeadcountReportVariant, year: String, month: String): ExcelResult {
-        val report = getReport(variant, year, month)
+    fun exportReport(
+        variant: ConvertedHeadcountReportVariant,
+        year: String,
+        month: String,
+        branchScope: EffectiveBranchResult,
+    ): ExcelResult {
+        val report = getReport(variant, year, month, branchScope)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("환산인원현황")

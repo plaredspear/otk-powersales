@@ -125,6 +125,7 @@ class SuggestionRepositoryCustomImpl(
     override fun findLogisticsClaimReport(
         startDate: LocalDate,
         endDate: LocalDate,
+        branchScopeCodes: List<String>,
     ): List<Suggestion> {
         return queryFactory
             .selectFrom(suggestion)
@@ -139,7 +140,8 @@ class SuggestionRepositoryCustomImpl(
                 suggestion.claimDate.between(startDate, endDate),
                 suggestion.isDeleted.eq(false),
                 // SF WERK1_TX/WERK3_TX 'contains 빈값' 은 no-op (항상 참) — 미구현
-                // 전사 고정 — SF scope=organization (지점 스코프 없음)
+                // 지점 스코프 — 등록 사원 소속 지점(suggestion.orgCostCenterCode) IN. 빈 목록이면 전사(null → 미적용).
+                branchScopeCodes.takeIf { it.isNotEmpty() }?.let { suggestion.orgCostCenterCode.`in`(it) },
             )
             .orderBy(suggestion.claimDate.desc())
             .fetch()

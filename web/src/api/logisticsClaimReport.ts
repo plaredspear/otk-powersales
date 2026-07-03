@@ -39,32 +39,51 @@ export interface LogisticsClaimReportResponse {
   items: LogisticsClaimReportItem[];
 }
 
+/** 지점 셀렉터 옵션 — 현재 사용자 권한별 조회 허용 지점 화이트리스트. */
+export interface LogisticsClaimReportBranch {
+  branchCode: string;
+  branchName: string;
+}
+
 const BASE = '/api/v1/admin/suggestions/logistics-claim-report';
 
 function failureMessage(label: string, res: { data: ApiResponse<unknown> }): string {
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
 }
 
-/** 물류 클레임 조회 (category='물류 클레임' + period 기간). CUSTOM 이면 start/end 필요. */
+/**
+ * 물류 클레임 보고서 지점 셀렉터 옵션 조회.
+ *
+ * 전사 권한자는 전 지점, 그 외는 본인 지점 1건. 프론트는 응답 길이로 단일/다중을 판별한다.
+ */
+export async function fetchLogisticsClaimReportBranches(): Promise<LogisticsClaimReportBranch[]> {
+  const res = await client.get<ApiResponse<LogisticsClaimReportBranch[]>>(`${BASE}/branches`);
+  if (!res.data.success || !res.data.data) throw new Error(failureMessage('지점 목록', res));
+  return res.data.data;
+}
+
+/** 물류 클레임 조회 (category='물류 클레임' + period 기간). CUSTOM 이면 start/end 필요. branchCode 지정 시 그 지점(등록 사원 소속)으로 좁힘. */
 export async function fetchLogisticsClaimReport(
   period: LogisticsClaimReportPeriod,
   startDate?: string,
   endDate?: string,
+  branchCode?: string,
 ): Promise<LogisticsClaimReportResponse> {
   const res = await client.get<ApiResponse<LogisticsClaimReportResponse>>(BASE, {
-    params: { period, startDate, endDate },
+    params: { period, startDate, endDate, branchCode: branchCode || undefined },
   });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('물류 클레임', res));
   return res.data.data;
 }
 
-/** 물류 클레임 엑셀 다운로드. */
+/** 물류 클레임 엑셀 다운로드. branchCode 지정 시 그 지점(등록 사원 소속)으로 좁힘. */
 export async function exportLogisticsClaimReport(
   period: LogisticsClaimReportPeriod,
   startDate?: string,
   endDate?: string,
+  branchCode?: string,
 ): Promise<void> {
   await downloadExcel(`${BASE}/export`, `물류클레임보고서_${period}.xlsx`, {
-    params: { period, startDate, endDate },
+    params: { period, startDate, endDate, branchCode: branchCode || undefined },
   });
 }
