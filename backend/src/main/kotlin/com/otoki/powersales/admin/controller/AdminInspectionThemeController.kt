@@ -1,7 +1,5 @@
 package com.otoki.powersales.admin.controller
 
-import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -50,8 +48,8 @@ class AdminInspectionThemeController(
      * 현장점검 테마 관리 화면 지점 셀렉터 옵션 — 여사원 현황/여사원 일정과 동일하게
      * [WomenScheduleBranchResolver] 로 권한별 지점 화이트리스트를 산출한다(단일 출처).
      *
-     * 반환 목록은 곧 해당 사용자가 조회 허용된 지점이며, 목록 조회([getThemes]) 는 DataScope 로
-     * 동일 화이트리스트를 재적용해 임의 branchCode 조회(IDOR) 를 차단한다. 여사원 현황용
+     * 반환 목록은 곧 해당 사용자가 조회 허용된 지점이며, 목록 조회([getThemes]) 도 동일 resolver 로
+     * 산출한 화이트리스트를 재적용해 임의 branchCode 조회(IDOR) 를 차단한다. 여사원 현황용
      * `ppt-masters/branches`(professional_promotion_team_master 가드) 를 빌려쓰지 않고
      * 화면 게이팅과 동일한 `inspection_theme` READ 로 가드해, 전문행사조 권한 없는 조장도 지점 목록을 받는다.
      */
@@ -66,7 +64,7 @@ class AdminInspectionThemeController(
     @GetMapping
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
     fun getThemes(
-        @CurrentDataScope scope: DataScope,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) department: String?,
         @RequestParam(required = false) branchCode: String?,
@@ -74,17 +72,17 @@ class AdminInspectionThemeController(
         @RequestParam(required = false, defaultValue = "20") size: Int,
     ): ResponseEntity<ApiResponse<AdminThemeListResponse>> {
         return ResponseEntity.ok(
-            ApiResponse.success(themeService.search(scope, keyword, department, branchCode, page, size))
+            ApiResponse.success(themeService.search(principal, keyword, department, branchCode, page, size))
         )
     }
 
     @GetMapping("/{id}")
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
     fun getThemeDetail(
-        @CurrentDataScope scope: DataScope,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
     ): ResponseEntity<ApiResponse<AdminThemeDetailResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(themeService.getDetail(scope, id)))
+        return ResponseEntity.ok(ApiResponse.success(themeService.getDetail(principal, id)))
     }
 
     @PostMapping
@@ -119,11 +117,11 @@ class AdminInspectionThemeController(
     @GetMapping("/{id}/export")
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
     fun exportTheme(
-        @CurrentDataScope scope: DataScope,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long,
     ): ResponseEntity<ByteArray> {
         // 목록과 동일 지점 스코프 가드 — 스코프 밖 테마 export 차단(403)
-        themeService.validateThemeScope(scope, id)
+        themeService.validateThemeScope(principal, id)
         val result = excelExporter.export(id)
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(

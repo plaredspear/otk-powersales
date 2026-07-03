@@ -1,7 +1,5 @@
 package com.otoki.powersales.domain.activity.inspection.service
 
-import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.inspection.dto.admin.AdminThemeDetailResponse
 import com.otoki.powersales.domain.activity.inspection.dto.admin.AdminThemeListItem
 import com.otoki.powersales.domain.activity.inspection.dto.admin.AdminThemeListResponse
@@ -14,6 +12,7 @@ import com.otoki.powersales.domain.activity.inspection.exception.InspectionTheme
 import com.otoki.powersales.domain.activity.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.domain.activity.inspection.repository.InspectionThemeRepositoryCustomImpl
 import com.otoki.powersales.domain.activity.inspection.repository.SiteActivityRepository
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -41,9 +40,14 @@ import org.springframework.transaction.annotation.Transactional
  * ## 지점 스코프 (레거시 SF 대비 정책 강화 — deviation)
  * 레거시 SF `Theme__c` OWD = `Read` + ListView `filterScope=Everything` 으로 등록/관리 화면은 **전사 노출**이었다.
  * 신규는 모바일 현장점검 경로([InspectionThemeRepositoryCustom.findActiveThemesByDate])와 동일하게 **본인 지점 스코프**를
- * admin 목록/상세/엑셀에도 적용한다(`branch_code` 기준). 전사 권한자([DataScope.isAllBranches])는 무제한.
- * 스코프 지점 = 본인 costCenterCode + 전사공통 화이트리스트([InspectionThemeRepositoryCustomImpl] COMMON_BRANCH_CODES)
- * — 모바일 경로 정합. 진열사원 스케줄·여사원 현황 lookup 의 `applyBranchScope` 패턴과 동형.
+ * admin 목록/상세/엑셀에도 적용한다(`branch_code` 기준).
+ *
+ * 스코프 산출은 화면 지점 셀렉터와 **동일한 [WomenScheduleBranchResolver]** 를 쓴다 — 화면에 노출된 지점
+ * 화이트리스트가 곧 조회 스코프가 되어 UI 와 데이터가 일치한다. `DataScope` 를 쓰지 않는 이유: 시스템개발자
+ * 대행 등 `isAllBranches` 주체는 DataScope 상 전사(무제한)라 화면(원주1지점 Tag)과 데이터(전 부서)가 어긋난다.
+ * resolver 결과 지점(OrgCode) + 전사공통 화이트리스트([InspectionThemeRepositoryCustomImpl] COMMON_BRANCH_CODES)
+ * 로 `branch_code IN (...)` 제한 — 모바일 경로 정합. 진열사원 스케줄·여사원 현황 lookup 의 지점 스코프 패턴과 동형.
+ * 사용자가 Select 로 특정 지점을 고르면 그 지점으로 좁히되, resolver 화이트리스트 밖 값은 무시(IDOR 차단).
  */
 @Service
 @Transactional(readOnly = true)
@@ -53,6 +57,7 @@ class AdminInspectionThemeService(
     private val employeeRepository: EmployeeRepository,
     private val userRepository: UserRepository,
     private val uploadFileRepository: UploadFileRepository,
+    private val branchResolver: WomenScheduleBranchResolver,
 ) {
 
     companion object {
@@ -62,13 +67,14 @@ class AdminInspectionThemeService(
     }
 
     /**
-     * 테마 목록 — 키워드(테마번호/이름/부서) + 부서/지점코드 필터 + 본인 지점 스코프 + 페이징 + 하위 점검결과 수.
+     * 테마 목록 — 키워드(테마번호/이름/부서) + 부서 필터 + 지점 스코프 + 페이징 + 하위 점검결과 수.
      *
-     * 지점 스코프: 전사 권한자([EffectiveBranchResult.All])는 무제한, 그 외는 본인 지점([Filtered]) 으로 제한.
-     * 권한 밖 지점 요청([NoAccess])은 빈 목록. (사원 lookup `applyBranchScope` 패턴과 동형)
+     * 지점 스코프: [WomenScheduleBranchResolver] 가 반환하는 권한별 지점 화이트리스트(= 화면 셀렉터 목록)로 제한.
+     * 화이트리스트가 비면(권한 밖) 빈 목록. `branchCode` 파라미터(Select 선택값)가 화이트리스트 안이면 그 지점으로
+     * 좁히고, 밖이면 무시(IDOR 차단) — 화면 셀렉터 자체가 화이트리스트라 정상 흐름에선 항상 안에 든다.
      */
     fun search(
-        scope: DataScope,
+        principal: WebUserPrincipal,
         keyword: String?,
         department: String?,
         branchCode: String?,
@@ -78,15 +84,11 @@ class AdminInspectionThemeService(
         val pageSize = size.coerceIn(1, MAX_PAGE_SIZE)
         val pageable = PageRequest.of(page.coerceAtLeast(0), pageSize)
 
-        // 표시용 branchCode 입력은 사용자 필터(보안축 아님)로 그대로 두고, 보안 스코프는 scope 로 별도 산출.
-        val scopeBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
-            is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
-            is EffectiveBranchResult.NoAccess -> return AdminThemeListResponse(
+        val scopeBranchCodes = resolveScopeBranchCodes(principal, branchCode)
+            ?: return AdminThemeListResponse(
                 content = emptyList(), page = page, size = pageSize, totalElements = 0, totalPages = 0
             )
-        }
-        val result = inspectionThemeRepository.searchForAdmin(keyword, department, branchCode, scopeBranchCodes, pageable)
+        val result = inspectionThemeRepository.searchForAdmin(keyword, department, scopeBranchCodes, pageable)
 
         val counts = inspectionThemeRepository.countSiteActivitiesByThemeIds(result.content.map { it.id })
         val items = result.content.map { theme ->
@@ -114,9 +116,9 @@ class AdminInspectionThemeService(
     }
 
     /** 테마 상세 + 하위 현장점검 결과 관련목록. 지점 스코프 밖이면 403. */
-    fun getDetail(scope: DataScope, id: Long): AdminThemeDetailResponse {
+    fun getDetail(principal: WebUserPrincipal, id: Long): AdminThemeDetailResponse {
         val theme = findActiveTheme(id)
-        requireThemeInScope(scope, theme)
+        requireThemeInScope(principal, theme)
         val activities = siteActivityRepository.findByInspectionThemeIdForAdmin(id).map { sa ->
             AdminThemeSiteActivityItem(
                 id = sa.id,
@@ -250,19 +252,33 @@ class AdminInspectionThemeService(
      * 단건(엑셀 다운로드 등) 지점 스코프 가드 — 스코프 밖 테마면 [InspectionThemeForbiddenException] (403).
      * themeId 추측으로 타 지점 테마의 하위 점검결과를 들여다보는 것을 차단. 컨트롤러에서 직접 호출.
      */
-    fun validateThemeScope(scope: DataScope, id: Long) {
-        requireThemeInScope(scope, findActiveTheme(id))
+    fun validateThemeScope(principal: WebUserPrincipal, id: Long) {
+        requireThemeInScope(principal, findActiveTheme(id))
     }
 
-    /** 목록 스코프와 동일 기준(본인 지점 + 전사공통 화이트리스트)으로 단건 가시성 검증. */
-    private fun requireThemeInScope(scope: DataScope, theme: InspectionTheme) {
-        val scopeBranchCodes: List<String>? = when (val result = scope.effectiveBranchCodes(null)) {
-            is EffectiveBranchResult.All -> null
-            is EffectiveBranchResult.Filtered -> result.codes
-            is EffectiveBranchResult.NoAccess -> emptyList()
-        }
+    /** 목록 스코프와 동일 기준(resolver 화이트리스트 + 전사공통 화이트리스트)으로 단건 가시성 검증. */
+    private fun requireThemeInScope(principal: WebUserPrincipal, theme: InspectionTheme) {
+        // 단건 검증은 특정 지점 선택 없이 전체 스코프 기준 — branchCode 인자 없이 산출.
+        val scopeBranchCodes = resolveScopeBranchCodes(principal, null) ?: emptyList()
         if (!InspectionThemeRepositoryCustomImpl.isBranchInScope(theme.branchCode, scopeBranchCodes)) {
             throw InspectionThemeForbiddenException()
+        }
+    }
+
+    /**
+     * 조회 지점 스코프(OrgCode 목록) 산출 — [WomenScheduleBranchResolver] 화이트리스트 기준.
+     *
+     * @param requestedBranchCode Select 로 고른 특정 지점. 화이트리스트 안이면 그 지점만, 밖/미지정이면 전체 화이트리스트.
+     * @return `branch_code IN` 에 넣을 지점 코드 목록. 화이트리스트가 비면(권한 밖) `null`(호출부는 빈 결과 처리).
+     *   [InspectionThemeRepositoryCustomImpl.COMMON_BRANCH_CODES] 병합은 repository 가 담당.
+     */
+    private fun resolveScopeBranchCodes(principal: WebUserPrincipal, requestedBranchCode: String?): List<String>? {
+        val allowed = branchResolver.resolveBranches(principal).map { it.branchCode }
+        if (allowed.isEmpty()) return null
+        return if (!requestedBranchCode.isNullOrBlank() && requestedBranchCode in allowed) {
+            listOf(requestedBranchCode)
+        } else {
+            allowed
         }
     }
 

@@ -35,7 +35,6 @@ class InspectionThemeRepositoryCustomImpl(
     override fun searchForAdmin(
         keyword: String?,
         department: String?,
-        branchCode: String?,
         scopeBranchCodes: List<String>?,
         pageable: Pageable,
     ): Page<InspectionTheme> {
@@ -48,15 +47,12 @@ class InspectionThemeRepositoryCustomImpl(
                     .or(inspectionTheme.name.containsIgnoreCase(keyword))
             )
         }
-        // 부서 부분일치 / 지점코드 정확일치 — trigger 자동주입 값 기준 사용자 표시 필터.
+        // 부서 부분일치 — trigger 자동주입 값 기준 사용자 표시 필터.
         if (!department.isNullOrBlank()) {
             where.and(inspectionTheme.department.containsIgnoreCase(department))
         }
-        if (!branchCode.isNullOrBlank()) {
-            where.and(inspectionTheme.branchCode.eq(branchCode))
-        }
-        // 본인 지점 보안 스코프 — null 이면 전사. 비-null 이면 전사공통 화이트리스트와 합쳐 제한
-        // (모바일 findActiveThemesByDate 정합). 표시용 branchCode 와 AND — 권한 밖 지점 입력은 자연히 0건.
+        // 지점 스코프 — null 이면 전사. 비-null 이면 전사공통 화이트리스트와 합쳐 `branch_code IN (...)` 로 제한
+        // (모바일 findActiveThemesByDate 정합). 지점 Select 선택 시 호출부가 scopeBranchCodes 를 그 지점으로 좁혀 전달.
         if (scopeBranchCodes != null) {
             where.and(inspectionTheme.branchCode.`in`(COMMON_BRANCH_CODES + scopeBranchCodes))
         }
