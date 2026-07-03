@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.common.config.QueryDslConfig
 import com.otoki.powersales.domain.support.notice.entity.Notice
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
+import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -48,6 +49,9 @@ class NoticeRepositoryTest {
         contents: String? = null,
         isDeleted: Boolean? = null,
         scope: NoticeScope? = null,
+        // 사용자 노출 조회(findNotices/findRecentNotices)는 status=PUBLISHED 만 반환하므로
+        // 기본값을 PUBLISHED 로 둔다 (DRAFT 미노출 검증이 필요한 케이스만 명시적으로 DRAFT 전달).
+        status: NoticeStatus? = NoticeStatus.PUBLISHED,
         createdDate: LocalDateTime? = LocalDateTime.now()
     ): Notice {
         val notice = Notice(
@@ -56,7 +60,8 @@ class NoticeRepositoryTest {
             branchCode = branchCode,
             contents = contents,
             isDeleted = isDeleted,
-            scope = scope
+            scope = scope,
+            status = status
         )
         val persisted = testEntityManager.persistAndFlush(notice)
         if (createdDate != null) {
