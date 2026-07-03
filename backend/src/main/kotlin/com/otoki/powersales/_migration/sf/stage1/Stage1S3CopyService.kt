@@ -311,10 +311,16 @@ class Stage1S3CopyService(
 
                 val copyRowCount = copyIn.handledRowCount.toInt()
 
-                val insSql =
+                // updateOnly → INSERT 없이 UPDATE FROM staging 으로 기존 행만 backfill
+                // (arbiter 외 UNIQUE 를 가진 entity 의 신규 INSERT 충돌 회피). 그 외 → 기존 INSERT ... ON CONFLICT.
+                val cu = meta.conflictUpdate
+                val insSql = if (cu?.updateOnly == true) {
+                    buildUpdateFromStagingSql(meta, cu, fullyQualified, quotedTable, stagingTable)
+                } else {
                     "INSERT INTO $fullyQualified ($columnsList) " +
                         "SELECT $columnsList FROM $stagingTable " +
                         buildConflictClause(meta, quotedTable)
+                }
                 val inserted = conn.createStatement().use { st -> st.executeUpdate(insSql) }
                 conn.createStatement().use { st -> st.executeUpdate("DROP TABLE IF EXISTS $stagingTable") }
 
@@ -368,6 +374,33 @@ class Stage1S3CopyService(
                 "(${cu.conflictColumn})"
             }
             return "ON CONFLICT $target DO UPDATE SET $setClause"
+        }
+
+        /**
+         * updateOnly backfill 의 `UPDATE target SET ... FROM staging WHERE ...` 생성.
+         *
+         * INSERT 가 없어 arbiter 아닌 UNIQUE 를 건드리지 않는다. conflictColumn 을 조인 키로
+         * target 의 기존 행만 staging 값으로 보강한다 (COALESCE — staging 이 NULL 이면 기존값 보존).
+         * staging 에만 있는 신규 행(조인 미매칭)은 무시된다 — backfill 목적상 정상.
+         *
+         * - `s.<key> IS NOT NULL` 로 조인 키가 NULL 인 staging 행을 배제 (NULL 은 조인 불성립 + partial 키 정합).
+         * - conflictPredicate 지정 시 target 측 partial 조건(예: sfid IS NOT NULL)을 WHERE 에 추가한다.
+         */
+        internal fun buildUpdateFromStagingSql(
+            meta: EntityMetadata,
+            cu: ConflictUpdate,
+            fullyQualified: String,
+            quotedTable: String,
+            stagingTable: String,
+        ): String {
+            val key = cu.conflictColumn
+            val setClause = cu.updateColumns.joinToString(", ") { col ->
+                "$col = COALESCE(s.$col, $quotedTable.$col)"
+            }
+            val predicate = cu.conflictPredicate?.let { " AND $quotedTable.$it" } ?: ""
+            return "UPDATE $fullyQualified SET $setClause " +
+                "FROM $stagingTable s " +
+                "WHERE $quotedTable.$key = s.$key AND s.$key IS NOT NULL$predicate"
         }
     }
 

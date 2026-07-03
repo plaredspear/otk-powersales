@@ -115,6 +115,7 @@ object Stage1Targets {
         // employee_code 를 arbiter 로 삼아 '동일 사원' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "employee_code",
+            updateOnly = true,
             updateColumns = listOf(
                 "sfid", "name", "birth_date", "status", "app_login_active", "role", "org_name",
                 "cost_center_code", "work_phone", "phone", "home_phone", "work_email", "email", "gender",
@@ -248,6 +249,7 @@ object Stage1Targets {
         // external_key 를 arbiter 로 삼아 '동일 거래처' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "external_key",
+            updateOnly = true,
             updateColumns = listOf(
                 "sfid", "name", "phone", "mobile_phone", "address1", "address2", "representative", "abc_type",
                 "abc_type_code", "account_group", "branch_code", "branch_name", "zip_code",
@@ -325,6 +327,7 @@ object Stage1Targets {
         // product_code 를 arbiter 로 삼아 '동일 상품' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "product_code",
+            updateOnly = true,
             updateColumns = listOf(
                 "sfid", "name", "product_type", "product_status", "storage_condition", "shelf_life",
                 "shelf_life_unit", "category1", "category2", "category3", "category_code1", "category_code2",
@@ -646,6 +649,7 @@ object Stage1Targets {
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sfid",
             conflictPredicate = "sfid IS NOT NULL",
+            updateOnly = true,
             updateColumns = listOf(
                 "employee_sfid", "account_sfid", "date", "claim_type1", "claim_type2", "defect_description",
                 "defect_quantity", "purchase_amount", "purchase_method_code", "request_type_code", "status",
@@ -746,6 +750,7 @@ object Stage1Targets {
         // backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sap_order_number",
+            updateOnly = true,
             updateColumns = listOf(
                 "sfid", "sap_account_code", "sap_account_name", "delivery_request_date",
                 "order_date", "employee_code", "employee_name", "order_sales_amount", "order_channel",
@@ -1411,6 +1416,7 @@ object Stage1Targets {
         // 라 이미 채워진 값은 보존되고 NULL 인 컬럼만 채워진다. sfid(충돌키) 는 SET 대상에서 제외.
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sfid",
+            updateOnly = true,
             updateColumns = listOf(
                 "name", "employee_sfid", "working_date", "working_type",
                 "working_category1", "working_category2", "working_category3", "working_category4",

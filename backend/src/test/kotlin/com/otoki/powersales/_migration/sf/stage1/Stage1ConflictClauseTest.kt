@@ -62,4 +62,42 @@ class Stage1ConflictClauseTest {
             "ON CONFLICT (name) DO UPDATE SET sfid = COALESCE(EXCLUDED.sfid, \"user\".sfid)",
         )
     }
+
+    @Test
+    @DisplayName("updateOnly → UPDATE ... FROM staging (신규 INSERT 없음, arbiter 조인 + s.key NOT NULL)")
+    fun updateOnlyFromStaging() {
+        val cu = ConflictUpdate(
+            conflictColumn = "sfid",
+            updateOnly = true,
+            updateColumns = listOf("name", "account_sfid"),
+        )
+        val sql = Stage1S3CopyService.buildUpdateFromStagingSql(
+            meta(cu), cu, "powersales.t", "t", "powersales._copy_staging_t",
+        )
+        assertThat(sql).isEqualTo(
+            "UPDATE powersales.t SET " +
+                "name = COALESCE(s.name, t.name), account_sfid = COALESCE(s.account_sfid, t.account_sfid) " +
+                "FROM powersales._copy_staging_t s " +
+                "WHERE t.sfid = s.sfid AND s.sfid IS NOT NULL",
+        )
+    }
+
+    @Test
+    @DisplayName("updateOnly + conflictPredicate → target 측 partial 조건이 WHERE 에 AND 로 추가")
+    fun updateOnlyWithPredicate() {
+        val cu = ConflictUpdate(
+            conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
+            updateOnly = true,
+            updateColumns = listOf("name"),
+        )
+        val sql = Stage1S3CopyService.buildUpdateFromStagingSql(
+            meta(cu), cu, "powersales.t", "t", "powersales._copy_staging_t",
+        )
+        assertThat(sql).isEqualTo(
+            "UPDATE powersales.t SET name = COALESCE(s.name, t.name) " +
+                "FROM powersales._copy_staging_t s " +
+                "WHERE t.sfid = s.sfid AND s.sfid IS NOT NULL AND t.sfid IS NOT NULL",
+        )
+    }
 }

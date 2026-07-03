@@ -120,16 +120,22 @@ data class EntityMetadata(
  * 그래서 erp_order=sap_order_number / employee=employee_code / account=external_key /
  * product=product_code 로 sfid 대신 자연키를 arbiter 로 쓴다.
  *
- * ## 알려진 잔여 다중 UNIQUE (arbiter 외 partial UNIQUE — 데이터 1:1 정합 전제로 무충돌)
- * 아래 entity 는 arbiter 외에도 partial UNIQUE (WHERE ... IS NOT NULL) 를 하나 더 갖는다.
- * arbiter 키와 이 컬럼이 정상 1:1 이면 충돌하지 않지만, 데이터에 불일치가 있으면 같은 예외 가능.
- * 재적재 중 해당 제약명으로 duplicate key 가 나면 그 entity 도 자연키 arbiter 로 전환한다.
- *   - team_member_schedule : promotion_emp_id_ext (대부분 NULL → 저위험)
- *   - claim                : name (SF Name, 대개 유니크 → 저위험)
- *   - employee / account / product / erp_order : sfid (자연키 arbiter 로 전환 후 sfid 가 잔여)
+ * ## 다중 UNIQUE 근본 해결 — updateOnly (UPDATE FROM staging)
+ * arbiter 외 다른 UNIQUE 를 가진 entity 는, arbiter 로는 매칭 안 되는 staging 행(신규 sfid 등)이
+ * INSERT 될 때 그 다른 UNIQUE 를 위반해 터진다 (자연키 arbiter 로 못 피하는 케이스도 있음 —
+ * 예: team_member_schedule 은 sfid 가 유일 arbiter 인데 SF 원본에 promotion_emp_id_ext 진짜 중복
+ * 6쌍이 있어, 두 번째 sfid 행 INSERT 시 ext unique 위반). updateOnly=true 로 지정하면
+ * INSERT ... ON CONFLICT 대신 `UPDATE target SET ... FROM staging WHERE target.<key>=staging.<key>`
+ * 를 실행한다. 신규 INSERT 가 없어 arbiter 아닌 어떤 UNIQUE 도 건드리지 않고, 기존 행의 빈 컬럼만
+ * backfill 한다 (staging 에만 있는 신규 행은 무시 — backfill 목적상 정상). conflictColumn 을 조인 키로
+ * 쓰며, conflictPredicate 는 UPDATE 의 target 측 추가 WHERE 로 붙는다 (partial 키 조인 안전).
+ *
+ * @param updateOnly true → INSERT 대신 UPDATE FROM staging (backfill 전용, 신규 INSERT 없음).
+ *   arbiter 외 UNIQUE 를 가진 entity(team_member_schedule/claim 등)의 근본 해결.
  */
 data class ConflictUpdate(
     val conflictColumn: String,
     val updateColumns: List<String>,
     val conflictPredicate: String? = null,
+    val updateOnly: Boolean = false,
 )
