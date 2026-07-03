@@ -61,6 +61,7 @@ class AdminClaimRepositoryCustomImpl(
         startDate: LocalDate,
         endDate: LocalDate,
         claimType1: ClaimType1?,
+        branchScopeCodes: List<String>,
     ): List<Claim> {
         return queryFactory
             .selectFrom(claim)
@@ -74,6 +75,8 @@ class AdminClaimRepositoryCustomImpl(
                 claim.status.eq(ClaimStatus.SENT),
                 // PACKAGING → claimType1=A, ALL → 필터 없음 (A/B/C 전체)
                 claimType1?.let { claim.claimType1.eq(it) },
+                // 지점 스코프 — 사원 소속 지점(employee.costCenterCode) IN. 빈 목록이면 전사(null → 미적용).
+                branchScopeCodes.takeIf { it.isNotEmpty() }?.let { employee.costCenterCode.`in`(it) },
             )
             .orderBy(claim.date.desc())
             .fetch()

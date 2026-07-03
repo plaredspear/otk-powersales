@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.claim.service
 
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.claim.dto.response.ClaimPeriodReportItem
 import com.otoki.powersales.domain.activity.claim.dto.response.ClaimPeriodReportResponse
 import com.otoki.powersales.domain.activity.claim.entity.Claim
@@ -40,19 +41,27 @@ class AdminClaimPeriodReportService(
     /**
      * 기간별 클레임 조회.
      *
-     * 기간 미지정 시 당월 1일~오늘. type 에 따라 claimType1 필터(PACKAGING=A / ALL=전체). 전사.
+     * 기간 미지정 시 당월 1일~오늘. type 에 따라 claimType1 필터(PACKAGING=A / ALL=전체).
+     * 지점 스코프: branchScope(사원 소속 지점 costCenterCode 기준)로 좁힘 — 전사 권한자 선택 지점/전건,
+     * 지점 사용자 본인 지점(선택값 밖이면 IDOR 차단 = NoAccess → 빈 결과).
      */
     fun getReport(
         startDate: LocalDate?,
         endDate: LocalDate?,
         type: ClaimPeriodReportType,
+        branchScope: EffectiveBranchResult,
     ): ClaimPeriodReportResponse {
         val today = LocalDate.now(TimeZones.SEOUL_ZONE)
         val start = startDate ?: today.withDayOfMonth(1)
         val end = endDate ?: today
         val claimType1 = if (type == ClaimPeriodReportType.PACKAGING) ClaimType1.A else null
 
-        val claims = adminClaimRepository.findPeriodReport(start, end, claimType1)
+        val claims = when (branchScope) {
+            is EffectiveBranchResult.All -> adminClaimRepository.findPeriodReport(start, end, claimType1, emptyList())
+            is EffectiveBranchResult.Filtered ->
+                adminClaimRepository.findPeriodReport(start, end, claimType1, branchScope.codes)
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }
         val items = claims.map { toItem(it) }
         val totalQuantity = claims.fold(BigDecimal.ZERO) { acc, c -> acc + (c.defectQuantity ?: BigDecimal.ZERO) }
 
@@ -72,8 +81,9 @@ class AdminClaimPeriodReportService(
         startDate: LocalDate?,
         endDate: LocalDate?,
         type: ClaimPeriodReportType,
+        branchScope: EffectiveBranchResult,
     ): ExcelResult {
-        val response = getReport(startDate, endDate, type)
+        val response = getReport(startDate, endDate, type, branchScope)
         val isAll = type == ClaimPeriodReportType.ALL
 
         val workbook = XSSFWorkbook()

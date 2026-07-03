@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.claim.service
 
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
@@ -62,9 +63,9 @@ class AdminClaimPeriodReportServiceTest {
         @DisplayName("PACKAGING 이면 claimType1=A 필터를 전달한다")
         fun packagingFilter() {
             val type1Slot = slot<ClaimType1>()
-            every { repository.findPeriodReport(any(), any(), capture(type1Slot)) } returns listOf(claim())
+            every { repository.findPeriodReport(any(), any(), capture(type1Slot), any()) } returns listOf(claim())
 
-            val res = service.getReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.PACKAGING)
+            val res = service.getReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.PACKAGING, EffectiveBranchResult.All)
 
             assertThat(type1Slot.captured).isEqualTo(ClaimType1.A)
             assertThat(res.type).isEqualTo("PACKAGING")
@@ -79,10 +80,10 @@ class AdminClaimPeriodReportServiceTest {
         @Test
         @DisplayName("ALL 이면 claimType1 필터를 null(전체)로 전달한다")
         fun allNoTypeFilter() {
-            every { repository.findPeriodReport(any(), any(), isNull()) } returns
+            every { repository.findPeriodReport(any(), any(), isNull(), any()) } returns
                 listOf(claim(ClaimType1.A), claim(ClaimType1.B), claim(ClaimType1.C))
 
-            val res = service.getReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL)
+            val res = service.getReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL, EffectiveBranchResult.All)
 
             assertThat(res.type).isEqualTo("ALL")
             assertThat(res.items).hasSize(3)
@@ -91,10 +92,10 @@ class AdminClaimPeriodReportServiceTest {
         @Test
         @DisplayName("totalQuantity 는 수량 합계")
         fun totalQuantity() {
-            every { repository.findPeriodReport(any(), any(), any()) } returns
+            every { repository.findPeriodReport(any(), any(), any(), any()) } returns
                 listOf(claim(qty = 3), claim(qty = 5), claim(qty = 2))
 
-            val res = service.getReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL)
+            val res = service.getReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL, EffectiveBranchResult.All)
 
             assertThat(res.totalQuantity).isEqualByComparingTo(BigDecimal.valueOf(10))
         }
@@ -104,9 +105,9 @@ class AdminClaimPeriodReportServiceTest {
         fun defaultsToThisMonth() {
             val startSlot = slot<LocalDate>()
             val endSlot = slot<LocalDate>()
-            every { repository.findPeriodReport(capture(startSlot), capture(endSlot), any()) } returns emptyList()
+            every { repository.findPeriodReport(capture(startSlot), capture(endSlot), any(), any()) } returns emptyList()
 
-            service.getReport(null, null, ClaimPeriodReportType.ALL)
+            service.getReport(null, null, ClaimPeriodReportType.ALL, EffectiveBranchResult.All)
 
             val today = LocalDate.now(TimeZones.SEOUL_ZONE)
             assertThat(startSlot.captured).isEqualTo(today.withDayOfMonth(1))
@@ -121,9 +122,9 @@ class AdminClaimPeriodReportServiceTest {
         @Test
         @DisplayName("PACKAGING 파일명 + 합계 행")
         fun exportPackaging() {
-            every { repository.findPeriodReport(any(), any(), any()) } returns listOf(claim())
+            every { repository.findPeriodReport(any(), any(), any(), any()) } returns listOf(claim())
 
-            val result = service.exportReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.PACKAGING)
+            val result = service.exportReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.PACKAGING, EffectiveBranchResult.All)
 
             assertThat(result.filename).isEqualTo("기간별클레임_포장불량_2026-05-01_2026-05-31.xlsx")
             assertThat(result.bytes).isNotEmpty()
@@ -132,11 +133,57 @@ class AdminClaimPeriodReportServiceTest {
         @Test
         @DisplayName("ALL 파일명")
         fun exportAll() {
-            every { repository.findPeriodReport(any(), any(), any()) } returns listOf(claim())
+            every { repository.findPeriodReport(any(), any(), any(), any()) } returns listOf(claim())
 
-            val result = service.exportReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL)
+            val result = service.exportReport(LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL, EffectiveBranchResult.All)
 
             assertThat(result.filename).isEqualTo("기간별클레임_모든클레임_2026-05-01_2026-05-31.xlsx")
+        }
+    }
+
+    @Nested
+    @DisplayName("지점 스코프 (사원 소속 costCenterCode)")
+    inner class BranchScope {
+
+        @Test
+        @DisplayName("Filtered → 선택 지점 코드를 branchScopeCodes 로 전달")
+        fun filtered() {
+            val codesSlot = slot<List<String>>()
+            every { repository.findPeriodReport(any(), any(), any(), capture(codesSlot)) } returns emptyList()
+
+            service.getReport(
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL,
+                EffectiveBranchResult.Filtered(listOf("A001")),
+            )
+
+            assertThat(codesSlot.captured).containsExactly("A001")
+        }
+
+        @Test
+        @DisplayName("All(전사) → 빈 branchScopeCodes 전달")
+        fun all() {
+            val codesSlot = slot<List<String>>()
+            every { repository.findPeriodReport(any(), any(), any(), capture(codesSlot)) } returns emptyList()
+
+            service.getReport(
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL,
+                EffectiveBranchResult.All,
+            )
+
+            assertThat(codesSlot.captured).isEmpty()
+        }
+
+        @Test
+        @DisplayName("NoAccess → repository 미호출 + 빈 결과")
+        fun noAccess() {
+            val res = service.getReport(
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 31), ClaimPeriodReportType.ALL,
+                EffectiveBranchResult.NoAccess,
+            )
+
+            assertThat(res.items).isEmpty()
+            assertThat(res.totalQuantity).isEqualByComparingTo(BigDecimal.ZERO)
+            io.mockk.verify(exactly = 0) { repository.findPeriodReport(any(), any(), any(), any()) }
         }
     }
 }
