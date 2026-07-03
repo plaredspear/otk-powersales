@@ -25,6 +25,7 @@ import RefreshButton from '@/components/common/RefreshButton';
 import PermissionGate from '@/components/PermissionGate';
 
 const PPT_ENTITY = 'professional_promotion_team_master';
+import { usePermission } from '@/hooks/usePermission';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -73,6 +74,14 @@ export default function PPTMasterPage() {
     },
   });
   const validOnly = filters.validOnly !== 'false';
+
+  // 전문행사조 사원은 여사원이므로 사원명 클릭 시 여사원 상세(female_employee) 로 이동한다.
+  // 조장 등 여사원 권한만 가진 직책도 정상 조회되도록 female_employee READ 를 우선 판정하고,
+  // 전체 사원 관리(employee) 권한만 가진 관리자는 사원 상세로 진입시킨다 — 각 URL prefix 가
+  // 상세 페이지의 권한 자원/조회 endpoint 를 결정하기 때문.
+  const { hasEntityPermission } = usePermission();
+  const canReadFemaleEmployee = hasEntityPermission('female_employee', 'READ');
+  const employeeDetailBasePath = canReadFemaleEmployee ? '/female-employee' : '/employee';
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트.
   //  - 다중 지점: Select 로 선택
@@ -243,7 +252,11 @@ export default function PPTMasterPage() {
       width: 100,
       align: 'center',
       render: (val: string, record) =>
-        record.employeeId ? <Link to={`/employee/${record.employeeId}`}>{val}</Link> : val,
+        record.employeeId ? (
+          <Link to={`${employeeDetailBasePath}/${record.employeeId}`}>{val}</Link>
+        ) : (
+          val
+        ),
     },
     {
       title: '재직상태',

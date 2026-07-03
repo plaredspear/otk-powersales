@@ -140,11 +140,17 @@ export default function PromotionDetailPage() {
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { hasEntityPermission } = usePermission();
   const canWrite = hasEntityPermission('promotion', 'EDIT');
-  const canReadEmployee = hasEntityPermission('employee', 'READ');
+  // 행사사원은 여사원이므로 여사원 상세(female_employee) 로 이동한다. 조장 등 여사원 권한만
+  // 가진 직책도 링크를 볼 수 있도록 female_employee READ 를 우선 판정하고, 전체 사원 관리
+  // (employee) 권한만 가진 관리자도 링크가 보이도록 OR 로 확장한다.
+  const canReadFemaleEmployee = hasEntityPermission('female_employee', 'READ');
+  const canReadEmployee = canReadFemaleEmployee || hasEntityPermission('employee', 'READ');
 
-  // NO.(행사사원 코드) 클릭 시 해당 사원 상세로 이동 — SF 레거시의 행사사원 레코드 링크 대체
+  // NO.(행사사원 코드) 클릭 시 해당 사원 상세로 이동 — SF 레거시의 행사사원 레코드 링크 대체.
+  // female_employee 권한 보유 시 여사원 상세 URL 로, 그 외(employee 권한만) 는 사원 상세 URL 로
+  // 진입 — 각 URL prefix 가 상세 페이지의 권한 자원/조회 endpoint 를 결정하기 때문.
   const goToEmployee = useThrottleClick((employeeId: number) =>
-    navigate(`/employee/${employeeId}`),
+    navigate(canReadFemaleEmployee ? `/female-employee/${employeeId}` : `/employee/${employeeId}`),
   );
 
   // --- 행사 인라인 편집 상태 ---

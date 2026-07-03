@@ -144,4 +144,22 @@ describe('PPTMasterPage 권한 게이팅', () => {
       expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
     });
   });
+
+  // 전문행사조 사원은 여사원이므로 사원명 링크는 진입자 권한에 따라 상세 URL 이 갈린다.
+  // female_employee 권한 보유자(조장 등)는 여사원 상세로, employee 권한만 있는 관리자는 사원 상세로.
+  describe('사원명 상세 링크 분기', () => {
+    it('female_employee READ 보유 시 여사원 상세(/female-employee/:id) 로 링크된다', () => {
+      setPermissions(['professional_promotion_team_master:R', 'female_employee:R']);
+      renderPage();
+      const link = screen.getByRole('link', { name: '백은경' });
+      expect(link).toHaveAttribute('href', '/female-employee/100');
+    });
+
+    it('female_employee 미보유 + employee READ 시 사원 상세(/employee/:id) 로 링크된다', () => {
+      setPermissions(['professional_promotion_team_master:R', 'employee:R']);
+      renderPage();
+      const link = screen.getByRole('link', { name: '백은경' });
+      expect(link).toHaveAttribute('href', '/employee/100');
+    });
+  });
 });
