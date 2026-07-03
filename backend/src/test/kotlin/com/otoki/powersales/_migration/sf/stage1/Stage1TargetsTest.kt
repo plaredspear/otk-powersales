@@ -673,4 +673,59 @@ class Stage1TargetsTest {
             }
         }
     }
+
+    @Nested
+    @DisplayName("TeamMemberSchedule — ON CONFLICT (sfid) DO UPDATE backfill 정합")
+    inner class TeamMemberScheduleConflictUpdate {
+
+        private val meta = Stage1Targets.get("TeamMemberSchedule")
+            ?: error("TeamMemberSchedule 미등록")
+
+        @Test
+        @DisplayName("conflictUpdate 는 sfid 충돌키로 지정 (DO NOTHING 아님)")
+        fun conflictUpdatePresent() {
+            val cu = meta.conflictUpdate
+            assertThat(cu)
+                .withFailMessage(
+                    "team_member_schedule 은 최초 적재 후 뒤늦게 추가된 SF 컬럼을 재적재로 backfill 해야 하므로 " +
+                        "ON CONFLICT (sfid) DO UPDATE 가 필요하다 (DO NOTHING 이면 sfid UNIQUE 충돌로 전건 skip).",
+                )
+                .isNotNull
+            assertThat(cu!!.conflictColumn).isEqualTo("sfid")
+        }
+
+        @Test
+        @DisplayName("updateColumns 는 fields 의 실제 dbColumnName 에만 존재 (오타/드리프트 방지)")
+        fun updateColumnsExistInFields() {
+            val dbColumns = meta.fields.map { it.dbColumnName }.toSet()
+            val unknown = meta.conflictUpdate!!.updateColumns.filterNot { it in dbColumns }
+            assertThat(unknown)
+                .withFailMessage("updateColumns 에 fields 에 없는 컬럼: $unknown")
+                .isEmpty()
+        }
+
+        @Test
+        @DisplayName("충돌키 sfid 는 SET 대상에서 제외 (자기 자신 UPDATE 방지)")
+        fun conflictKeyExcludedFromUpdate() {
+            assertThat(meta.conflictUpdate!!.updateColumns).doesNotContain("sfid")
+        }
+
+        @Test
+        @DisplayName("backfill 대상은 sfid 제외 전체 매핑 컬럼 — 후행 추가 컬럼 누락 시 회귀 감지")
+        fun updateColumnsCoverAllMappedExceptKey() {
+            // PK(id) 는 GENERATED IDENTITY 라 FieldMapping 에 없고, sfid 는 충돌키라 제외.
+            // 나머지 매핑 컬럼 전부가 backfill 대상이어야 "최초 적재 후 추가된 SF 컬럼" 을 빠짐없이 채운다.
+            val expected = meta.fields.map { it.dbColumnName }.filterNot { it == "sfid" }.toSet()
+            assertThat(meta.conflictUpdate!!.updateColumns.toSet())
+                .withFailMessage("새 FieldMapping 추가 시 updateColumns 에도 반영 필요")
+                .isEqualTo(expected)
+        }
+
+        @Test
+        @DisplayName("계산 근거 lookup — monthly_female_employee_integration_schedule_sfid 포함")
+        fun mfeisSfidCovered() {
+            assertThat(meta.conflictUpdate!!.updateColumns)
+                .contains("monthly_female_employee_integration_schedule_sfid")
+        }
+    }
 }

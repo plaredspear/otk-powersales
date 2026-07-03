@@ -1243,6 +1243,33 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
+        // team_member_schedule 은 최초 적재 이후 여러 SF 정합 마이그레이션(V37/V89/V101/V102/
+        // V146/V202605312248 등)이 SF 컬럼을 뒤늦게 ADD COLUMN 했다. Flyway 의 ADD COLUMN 은
+        // 기존 row 를 backfill 하지 않으므로, 그 이전에 적재된 row 는 monthly_female_employee_
+        // integration_schedule_sfid 를 비롯한 후행 추가 컬럼이 전부 NULL 로 남는다.
+        // 기본 ON CONFLICT (sfid) DO NOTHING 으로 재적재하면 sfid UNIQUE(V166 uk_team_member_
+        // schedule_sfid) 충돌로 전건 skip 되어 값이 영영 채워지지 않는다 (특히 _sfid 미적재 시
+        // Stage2 FK Resolve 의 *_sfid ↔ ref.sfid JOIN 이 전건 실패).
+        // → ON CONFLICT (sfid) DO UPDATE 로 기존 row 를 CSV 값으로 보강한다. COALESCE(EXCLUDED, 기존)
+        // 라 이미 채워진 값은 보존되고 NULL 인 컬럼만 채워진다. sfid(충돌키) 는 SET 대상에서 제외.
+        conflictUpdate = ConflictUpdate(
+            conflictColumn = "sfid",
+            updateColumns = listOf(
+                "name", "employee_sfid", "working_date", "working_type",
+                "working_category1", "working_category2", "working_category3", "working_category4",
+                "account_sfid", "team_leader_sfid", "alt_holiday_sfid", "commute_log_sfid",
+                "promotion_employee_sfid", "display_work_schedule_sfid", "commute_report_datetime",
+                "id_field", "traversal_flag",
+                "equipment1", "equipment2", "equipment3", "equipment4", "equipment5",
+                "equipment6", "equipment7", "equipment8", "equipment9", "equipment10",
+                "yes_chk_cnt", "no_chk_cnt", "precaution_chk", "precaution",
+                "start_time", "complete_time", "is_deleted", "hr_code", "promotion_emp_id_ext",
+                "second_work_type", "working_category5", "ref_account_name",
+                "monthly_female_employee_integration_schedule_sfid",
+                "professional_promotion_team", "cost_center_code", "owner_sfid",
+                "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid",
+            ),
+        ),
     )
 
     private val UPLOAD_FILE = EntityMetadata(
