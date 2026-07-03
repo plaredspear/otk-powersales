@@ -4,6 +4,8 @@ import type { ApiResponse } from './types';
 
 
 export interface MonthlyIntegrationScheduleItem {
+  /** MFEIS row PK — 상세 조회 진입 키 */
+  id: number | null;
   branchName: string;
   accountBranchName: string | null;
   accountCode: string;
@@ -30,6 +32,44 @@ export interface MonthlyIntegrationScheduleResponse {
   month: number;
   items: MonthlyIntegrationScheduleItem[];
   totalCount: number;
+}
+
+/** 집계 근거 여사원일정 1건 — equivalentContribution = 1/dailyScheduleCount */
+export interface MonthlyIntegrationSourceScheduleItem {
+  scheduleId: number;
+  workingDate: string;
+  accountCode: string | null;
+  accountName: string | null;
+  workingCategory1: string | null;
+  workingCategory3: string | null;
+  workingCategory4: string | null;
+  workingCategory5: string | null;
+  /** 출근보고 일시 (ISO) */
+  attendanceReportedAt: string | null;
+  /** 그날 사원의 출근 일정 수 N (거래처 무관) */
+  dailyScheduleCount: number;
+  /** 환산근무일수 기여분 1/N */
+  equivalentContribution: number;
+}
+
+export interface MonthlyIntegrationDetailResponse {
+  id: number;
+  year: number;
+  month: number;
+  branchName: string | null;
+  employeeCode: string | null;
+  employeeName: string | null;
+  accountCode: string | null;
+  accountName: string | null;
+  workingCategory1: string | null;
+  workingCategory3: string | null;
+  workingCategory4: string | null;
+  workingCategory5: string | null;
+  workingDaysMonth: number;
+  totalInputCount: number;
+  equivalentWorkingDays: number;
+  convertedHeadcount: number;
+  schedules: MonthlyIntegrationSourceScheduleItem[];
 }
 
 export interface CategoryScheduleItem {
@@ -88,6 +128,19 @@ export async function fetchMonthlyIntegrationSchedule(
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || '통합일정 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/** MFEIS row 상세 — 집계 근거가 된 여사원일정 목록. */
+export async function fetchMonthlyIntegrationDetail(
+  id: number,
+): Promise<MonthlyIntegrationDetailResponse> {
+  const res = await client.get<ApiResponse<MonthlyIntegrationDetailResponse>>(
+    `/api/v1/admin/schedules/monthly-integration/${id}`,
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '통합일정 상세 조회에 실패했습니다');
   }
   return res.data.data;
 }

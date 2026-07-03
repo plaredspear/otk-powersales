@@ -147,6 +147,7 @@ class TeamMemberScheduleSearchService(
                     q.numberOfInputs,
                     q.equivalentNumberOfWorkingDays,
                     q.convertedHeadcount,
+                    q.id,
                 )
             )
             .from(q)
@@ -288,6 +289,7 @@ class TeamMemberScheduleSearchService(
             equivalentNumberOfWorkingDays = row.equivalentNumberOfWorkingDays ?: BigDecimal.ZERO,
             convertedHeadcount = row.convertedHeadcount ?: BigDecimal.ZERO,
             actualAmount = actualAmount,
+            mfeisId = row.mfeisId,
         )
     }
 }
@@ -320,4 +322,6 @@ data class TeamMemberScheduleRow(
     val numberOfInputs: BigDecimal?,
     val equivalentNumberOfWorkingDays: BigDecimal?,
     val convertedHeadcount: BigDecimal?,
+    /** MFEIS row PK — 상세 조회 진입 키. */
+    val mfeisId: Long? = null,
 )

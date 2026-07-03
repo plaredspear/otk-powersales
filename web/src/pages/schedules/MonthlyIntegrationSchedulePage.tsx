@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Card, Empty, Grid, Input, message, Space, Spin, Typography } from 'antd';
+import { Alert, Card, Descriptions, Drawer, Empty, Grid, Input, message, Space, Spin, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useMonthlyIntegrationSchedule } from '@/hooks/schedules/useMonthlyIntegrationSchedule';
 import { useMonthlyIntegrationExport } from '@/hooks/schedules/useMonthlyIntegrationExport';
-import type { MonthlyIntegrationScheduleItem } from '@/api/monthlyIntegration';
+import { useMonthlyIntegrationDetail } from '@/hooks/schedules/useMonthlyIntegrationDetail';
+import type { MonthlyIntegrationScheduleItem, MonthlyIntegrationSourceScheduleItem } from '@/api/monthlyIntegration';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -20,6 +21,38 @@ function formatNumber(value: number): string {
 function formatDecimal3(value: number): string {
   return value.toLocaleString('ko-KR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 }
+
+function formatDecimal4(value: number): string {
+  return value.toLocaleString('ko-KR', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+}
+
+// 상세 Drawer 의 집계 근거 일정 테이블 컬럼
+const sourceScheduleColumns: ColumnsType<MonthlyIntegrationSourceScheduleItem> = [
+  { title: '근무일자', dataIndex: 'workingDate', width: 100 },
+  { title: '거래처', dataIndex: 'accountName', width: 140, ellipsis: true, render: (v) => v ?? '-' },
+  { title: '근무형태1', dataIndex: 'workingCategory1', width: 90, ellipsis: true, render: (v) => v ?? '-' },
+  { title: '근무형태3', dataIndex: 'workingCategory3', width: 90, ellipsis: true, render: (v) => v ?? '-' },
+  {
+    title: '출근보고',
+    dataIndex: 'attendanceReportedAt',
+    width: 130,
+    render: (v: string | null) => (v ? v.substring(0, 16).replace('T', ' ') : '-'),
+  },
+  {
+    title: '당일 일정수',
+    dataIndex: 'dailyScheduleCount',
+    width: 90,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '환산 기여분',
+    dataIndex: 'equivalentContribution',
+    width: 100,
+    align: 'right',
+    render: (v: number) => formatDecimal4(v),
+  },
+];
 
 // 각 컬럼에 기본 width 를 지정해야 ResizableTable 의 헤더 우측 경계 드래그(리사이즈)가 활성화된다.
 // width 미지정 컬럼은 일반 <th> 로 렌더되어 리사이즈 핸들이 붙지 않는다.
@@ -72,7 +105,93 @@ const columns: ColumnsType<MonthlyIntegrationScheduleItem> = [
   },
 ];
 
-function MobileItemCard({ item }: { item: MonthlyIntegrationScheduleItem }) {
+function MonthlyIntegrationDetailDrawer({
+  detailId,
+  onClose,
+}: {
+  detailId: number | null;
+  onClose: () => void;
+}) {
+  const { data: detail, isLoading } = useMonthlyIntegrationDetail(detailId);
+
+  return (
+    <Drawer
+      title="통합일정 상세 — 계산 근거"
+      width={760}
+      open={detailId != null}
+      onClose={onClose}
+      loading={isLoading}
+    >
+      {detail && (
+        <>
+          <Descriptions column={2} bordered size="small" style={{ marginBottom: 16 }}>
+            <Descriptions.Item label="년월">{detail.year}년 {detail.month}월</Descriptions.Item>
+            <Descriptions.Item label="소속">{detail.branchName ?? '-'}</Descriptions.Item>
+            <Descriptions.Item label="사원">
+              {detail.employeeName ?? '-'} ({detail.employeeCode ?? '-'})
+            </Descriptions.Item>
+            <Descriptions.Item label="거래처">
+              {detail.accountName ?? '-'} ({detail.accountCode ?? '-'})
+            </Descriptions.Item>
+            <Descriptions.Item label="근무형태">
+              {[detail.workingCategory1, detail.workingCategory3, detail.workingCategory4, detail.workingCategory5]
+                .filter((v) => v != null && v !== '')
+                .join(' / ') || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="당월 근무일수">{formatNumber(detail.workingDaysMonth)}</Descriptions.Item>
+            <Descriptions.Item label="총 투입횟수">{formatNumber(detail.totalInputCount)}</Descriptions.Item>
+            <Descriptions.Item label="총 환산근무일수">{formatDecimal4(detail.equivalentWorkingDays)}</Descriptions.Item>
+            <Descriptions.Item label="총 환산인원">{formatDecimal4(detail.convertedHeadcount)}</Descriptions.Item>
+          </Descriptions>
+
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="계산 방식"
+            description={
+              <>
+                총 환산근무일수 = Σ(1 ÷ 당일 출근 일정수) · 당월 근무일수 = 사원 기준 출근한 날짜 수(거래처 무관) ·
+                총 환산인원 = 총 환산근무일수 ÷ 당월 근무일수 · 총 투입횟수 = 이 거래처+근무형태 조합으로 출근한 날짜 수.
+                아래 목록은 출근등록이 완료된 일정만 포함합니다 (미출근 일정은 집계 제외).
+              </>
+            }
+          />
+
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>
+            집계 근거 일정 ({formatNumber(detail.schedules.length)}건)
+          </Text>
+          {detail.schedules.length === 0 ? (
+            <Empty description="집계 근거 일정이 없습니다" />
+          ) : (
+            <Table
+              rowKey="scheduleId"
+              columns={sourceScheduleColumns}
+              dataSource={detail.schedules}
+              pagination={false}
+              size="small"
+              scroll={{ x: 740 }}
+              summary={(rows) => (
+                <Table.Summary.Row>
+                  <Table.Summary.Cell index={0} colSpan={6}>
+                    <Text strong>환산 기여분 합계</Text>
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={1} align="right">
+                    <Text strong>
+                      {formatDecimal4(rows.reduce((acc, r) => acc + r.equivalentContribution, 0))}
+                    </Text>
+                  </Table.Summary.Cell>
+                </Table.Summary.Row>
+              )}
+            />
+          )}
+        </>
+      )}
+    </Drawer>
+  );
+}
+
+function MobileItemCard({ item, onClick }: { item: MonthlyIntegrationScheduleItem; onClick?: () => void }) {
   const rows: Array<{ label: string; value: string }> = [
     { label: '거래처지점명', value: item.accountBranchName ?? '-' },
     { label: '거래처코드', value: item.accountCode },
@@ -90,7 +209,7 @@ function MobileItemCard({ item }: { item: MonthlyIntegrationScheduleItem }) {
   ];
 
   return (
-    <Card size="small" style={{ marginBottom: 8 }}>
+    <Card size="small" style={{ marginBottom: 8, cursor: onClick ? 'pointer' : undefined }} onClick={onClick}>
       <div style={{ fontWeight: 600, marginBottom: 8 }}>
         {item.branchName} / {item.employeeName} / {item.title ?? '-'} / {item.employeeCode}
       </div>
@@ -122,6 +241,7 @@ export default function MonthlyIntegrationSchedulePage() {
     distributionKeyword: string;
     accountTypeKeyword: string;
   } | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
 
   const screens = useBreakpoint();
   const isMobile = !screens.md;
@@ -279,7 +399,11 @@ export default function MonthlyIntegrationSchedulePage() {
             </Text>
             <Space direction="vertical" style={{ width: '100%' }} size={0}>
               {data.items.map((item, index) => (
-                <MobileItemCard key={index} item={item} />
+                <MobileItemCard
+                  key={index}
+                  item={item}
+                  onClick={item.id != null ? () => setDetailId(item.id) : undefined}
+                />
               ))}
             </Space>
           </>
@@ -301,9 +425,15 @@ export default function MonthlyIntegrationSchedulePage() {
             sticky
             tableLayout="fixed"
             locale={listTableLocale({ searched: queryParams != null })}
+            onRow={(record) => ({
+              onClick: record.id != null ? () => setDetailId(record.id) : undefined,
+              style: record.id != null ? { cursor: 'pointer' } : undefined,
+            })}
           />
         </>
       )}
+
+      <MonthlyIntegrationDetailDrawer detailId={detailId} onClose={() => setDetailId(null)} />
     </div>
   );
 }

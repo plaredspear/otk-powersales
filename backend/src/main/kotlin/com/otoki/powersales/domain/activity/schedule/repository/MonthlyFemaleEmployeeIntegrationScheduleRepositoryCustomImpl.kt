@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.schedule.repository
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.domain.activity.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule.Companion.monthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Projections
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -13,6 +14,16 @@ import com.querydsl.jpa.impl.JPAQueryFactory
 class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
 ) : MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
+
+    override fun findByIdWithEmployeeAndAccount(id: Long): MonthlyFemaleEmployeeIntegrationSchedule? {
+        val mfeis = monthlyFemaleEmployeeIntegrationSchedule
+        return queryFactory
+            .selectFrom(mfeis)
+            .leftJoin(mfeis.employee, employee).fetchJoin()
+            .leftJoin(mfeis.account, account).fetchJoin()
+            .where(mfeis.id.eq(id))
+            .fetchOne()
+    }
 
     override fun findConvertedHeadcountReport(
         year: String,
