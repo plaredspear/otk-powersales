@@ -9,7 +9,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-@DisplayName("PasswordPolicyValidator 테스트")
+@DisplayName("PasswordPolicyValidator 테스트 (8자 이상 + 3종 이상 조합)")
 class PasswordPolicyValidatorTest {
 
     private val validator = PasswordPolicyValidator()
@@ -19,30 +19,34 @@ class PasswordPolicyValidatorTest {
     inner class PassCases {
 
         @Test
-        @DisplayName("최소 길이 - 4자 영문 -> 통과")
-        fun pass_minLengthAlpha() {
-            assertThatCode { validator.validate("abcd") }.doesNotThrowAnyException()
+        @DisplayName("8자 + 소문자/숫자/특수 3종 -> 통과")
+        fun pass_lowerDigitSpecial() {
+            assertThatCode { validator.validate("abcd123!") }.doesNotThrowAnyException()
         }
 
         @Test
-        @DisplayName("한글/특수문자 혼합 - 정책 위반 없음 -> 통과")
-        fun pass_mixedKoreanSpecial() {
-            assertThatCode { validator.validate("abcd1234!@한") }.doesNotThrowAnyException()
+        @DisplayName("임시 비밀번호 pwrs1234! (9자, 소문자/숫자/특수 3종) -> 통과")
+        fun pass_temporaryPassword() {
+            assertThatCode { validator.validate("pwrs1234!") }.doesNotThrowAnyException()
         }
 
         @Test
-        @DisplayName("\"1234\" 입력 - 임시 비밀번호 동일 차단 제거됨 -> 통과")
-        fun pass_temporaryPasswordAllowed() {
-            assertThatCode { validator.validate("1234") }.doesNotThrowAnyException()
+        @DisplayName("대문자/소문자/숫자 3종 (특수 없음) -> 통과")
+        fun pass_upperLowerDigit() {
+            assertThatCode { validator.validate("Abcdefg1") }.doesNotThrowAnyException()
         }
 
         @Test
-        @DisplayName("최대 길이 - 32자, 반복 없음 -> 통과")
-        fun pass_maxLength() {
-            // 동일 문자 4회 연속 회피: abc 패턴 반복 (32자)
-            val pwd = (1..32).joinToString("") { ('a' + (it % 26)).toString() }
-            assertThat(pwd.length).isEqualTo(32)
-            assertThatCode { validator.validate(pwd) }.doesNotThrowAnyException()
+        @DisplayName("4종 모두 조합 -> 통과")
+        fun pass_allFourTypes() {
+            assertThatCode { validator.validate("Abcd123!") }.doesNotThrowAnyException()
+        }
+
+        @Test
+        @DisplayName("동일 문자 다수 반복이어도 (반복금지 제거됨) 길이/종류 충족 시 통과")
+        fun pass_repeatedAllowed() {
+            // 반복금지 규칙 제거 — aaaa 포함이어도 8자 + 3종이면 통과
+            assertThatCode { validator.validate("aaaaA1!x") }.doesNotThrowAnyException()
         }
     }
 
@@ -51,9 +55,9 @@ class PasswordPolicyValidatorTest {
     inner class LengthViolations {
 
         @Test
-        @DisplayName("3자 입력 -> LENGTH_TOO_SHORT")
+        @DisplayName("7자 (3종 충족) -> LENGTH_TOO_SHORT 단독")
         fun lengthTooShort() {
-            assertThatThrownBy { validator.validate("abc") }
+            assertThatThrownBy { validator.validate("Abc12!x") }
                 .isInstanceOf(NewPasswordPolicyViolationException::class.java)
                 .satisfies({
                     val ex = it as NewPasswordPolicyViolationException
@@ -62,92 +66,71 @@ class PasswordPolicyValidatorTest {
         }
 
         @Test
-        @DisplayName("33자 입력 -> LENGTH_TOO_LONG")
-        fun lengthTooLong() {
-            val pwd = "a".repeat(33)
-            // "a" 33회 반복 → REPEATED_CHARACTERS 도 함께 발생 (수집됨)
-            assertThatThrownBy { validator.validate(pwd) }
-                .isInstanceOf(NewPasswordPolicyViolationException::class.java)
-                .satisfies({
-                    val ex = it as NewPasswordPolicyViolationException
-                    assertThat(ex.violations).contains("LENGTH_TOO_LONG", "REPEATED_CHARACTERS")
-                })
+        @DisplayName("최대 길이 상한 없음 - 64자 (3종) -> 통과")
+        fun noMaxLength() {
+            val pwd = "Ab1!" + "c".repeat(60)
+            assertThat(pwd.length).isEqualTo(64)
+            assertThatCode { validator.validate(pwd) }.doesNotThrowAnyException()
         }
 
         @Test
-        @DisplayName("33자 단조 증가 (반복 없음) -> LENGTH_TOO_LONG 단독")
-        fun lengthTooLongOnly() {
-            val pwd = (1..33).joinToString("") { ('a' + (it % 26)).toString() }
-            assertThatThrownBy { validator.validate(pwd) }
+        @DisplayName("7자 + 종류 부족 -> LENGTH_TOO_SHORT + INSUFFICIENT_CHARACTER_TYPES")
+        fun shortAndInsufficient() {
+            assertThatThrownBy { validator.validate("abcdefg") }
                 .isInstanceOf(NewPasswordPolicyViolationException::class.java)
                 .satisfies({
                     val ex = it as NewPasswordPolicyViolationException
-                    assertThat(ex.violations).containsExactly("LENGTH_TOO_LONG")
+                    assertThat(ex.violations)
+                        .containsExactlyInAnyOrder("LENGTH_TOO_SHORT", "INSUFFICIENT_CHARACTER_TYPES")
                 })
         }
     }
 
     @Nested
-    @DisplayName("validate - 반복 문자 위반")
-    inner class RepeatedViolations {
+    @DisplayName("validate - 문자 종류 조합 위반")
+    inner class CharacterTypeViolations {
 
         @Test
-        @DisplayName("영문 4연속 -> REPEATED_CHARACTERS")
-        fun repeatedAlpha() {
-            assertThatThrownBy { validator.validate("aaaa") }
+        @DisplayName("소문자만 8자 (1종) -> INSUFFICIENT_CHARACTER_TYPES")
+        fun onlyLower() {
+            assertThatThrownBy { validator.validate("abcdefgh") }
                 .isInstanceOf(NewPasswordPolicyViolationException::class.java)
                 .satisfies({
                     val ex = it as NewPasswordPolicyViolationException
-                    assertThat(ex.violations).containsExactly("REPEATED_CHARACTERS")
+                    assertThat(ex.violations).containsExactly("INSUFFICIENT_CHARACTER_TYPES")
                 })
         }
 
         @Test
-        @DisplayName("한글 4연속 -> REPEATED_CHARACTERS")
-        fun repeatedKorean() {
-            assertThatThrownBy { validator.validate("가가가가") }
+        @DisplayName("소문자+숫자 8자 (2종) -> INSUFFICIENT_CHARACTER_TYPES")
+        fun lowerDigitOnly() {
+            assertThatThrownBy { validator.validate("abcd1234") }
                 .isInstanceOf(NewPasswordPolicyViolationException::class.java)
                 .satisfies({
                     val ex = it as NewPasswordPolicyViolationException
-                    assertThat(ex.violations).containsExactly("REPEATED_CHARACTERS")
+                    assertThat(ex.violations).containsExactly("INSUFFICIENT_CHARACTER_TYPES")
                 })
         }
 
         @Test
-        @DisplayName("특수문자 4연속 -> REPEATED_CHARACTERS")
-        fun repeatedSpecial() {
-            assertThatThrownBy { validator.validate("!!!!") }
+        @DisplayName("한글은 어느 카테고리도 아님 - 한글6+숫자2 (8자, 숫자 1종만) -> INSUFFICIENT_CHARACTER_TYPES")
+        fun koreanNotCounted() {
+            assertThatThrownBy { validator.validate("가나다라마바12") }
                 .isInstanceOf(NewPasswordPolicyViolationException::class.java)
                 .satisfies({
                     val ex = it as NewPasswordPolicyViolationException
-                    assertThat(ex.violations).containsExactly("REPEATED_CHARACTERS")
+                    assertThat(ex.violations).containsExactly("INSUFFICIENT_CHARACTER_TYPES")
                 })
         }
 
         @Test
-        @DisplayName("부분 반복 (abcaaaa) -> REPEATED_CHARACTERS")
-        fun partialRepeated() {
-            assertThatThrownBy { validator.validate("abcaaaa") }
+        @DisplayName("대문자+소문자 8자 (2종) -> INSUFFICIENT_CHARACTER_TYPES")
+        fun upperLowerOnly() {
+            assertThatThrownBy { validator.validate("AbcdEfgh") }
                 .isInstanceOf(NewPasswordPolicyViolationException::class.java)
                 .satisfies({
                     val ex = it as NewPasswordPolicyViolationException
-                    assertThat(ex.violations).containsExactly("REPEATED_CHARACTERS")
-                })
-        }
-    }
-
-    @Nested
-    @DisplayName("validate - 위반 우선순위")
-    inner class PriorityRules {
-
-        @Test
-        @DisplayName("\"123\" 입력 -> 길이 위반")
-        fun shortPassword() {
-            assertThatThrownBy { validator.validate("123") }
-                .isInstanceOf(NewPasswordPolicyViolationException::class.java)
-                .satisfies({
-                    val ex = it as NewPasswordPolicyViolationException
-                    assertThat(ex.violations).containsExactly("LENGTH_TOO_SHORT")
+                    assertThat(ex.violations).containsExactly("INSUFFICIENT_CHARACTER_TYPES")
                 })
         }
     }

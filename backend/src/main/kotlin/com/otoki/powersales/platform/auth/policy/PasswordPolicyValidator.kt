@@ -4,12 +4,11 @@ import com.otoki.powersales.platform.auth.exception.NewPasswordPolicyViolationEx
 import org.springframework.stereotype.Component
 
 /**
- * 비밀번호 정책 검증 (Spec #584 P1-B §2).
+ * 비밀번호 정책 검증 (로그인 후 비밀번호 변경 — web + mobile 공용).
  *
  * 정책:
- * - LENGTH_TOO_SHORT: 4자 미만
- * - LENGTH_TOO_LONG: 32자 초과
- * - REPEATED_CHARACTERS: 동일 문자 4회 연속 (한글/특수문자 포함 모든 문자)
+ * - LENGTH_TOO_SHORT: 8자 미만
+ * - INSUFFICIENT_CHARACTER_TYPES: 영문 대문자 / 영문 소문자 / 숫자 / 특수문자 중 3종 미만 조합
  *
  * 위반 규칙 1건 이상 발생 시 [NewPasswordPolicyViolationException] (`details.violations` 에 위반 규칙 코드 배열).
  */
@@ -27,27 +26,33 @@ class PasswordPolicyValidator {
     private fun collectViolations(newPassword: String): List<PasswordPolicyViolation> {
         val violations = mutableListOf<PasswordPolicyViolation>()
 
-        when {
-            newPassword.length < MIN_LENGTH -> violations += PasswordPolicyViolation.LENGTH_TOO_SHORT
-            newPassword.length > MAX_LENGTH -> violations += PasswordPolicyViolation.LENGTH_TOO_LONG
+        if (newPassword.length < MIN_LENGTH) {
+            violations += PasswordPolicyViolation.LENGTH_TOO_SHORT
         }
 
-        if (REPEATED_PATTERN.containsMatchIn(newPassword)) {
-            violations += PasswordPolicyViolation.REPEATED_CHARACTERS
+        if (countCharacterTypes(newPassword) < MIN_CHARACTER_TYPES) {
+            violations += PasswordPolicyViolation.INSUFFICIENT_CHARACTER_TYPES
         }
 
         return violations
     }
 
+    private fun countCharacterTypes(password: String): Int {
+        var types = 0
+        if (password.any { it in 'A'..'Z' }) types++
+        if (password.any { it in 'a'..'z' }) types++
+        if (password.any { it.isDigit() }) types++
+        if (password.any { !it.isLetterOrDigit() && !it.isWhitespace() }) types++
+        return types
+    }
+
     companion object {
-        const val MIN_LENGTH = 4
-        const val MAX_LENGTH = 32
-        private val REPEATED_PATTERN = Regex("(.)\\1\\1\\1")
+        const val MIN_LENGTH = 8
+        const val MIN_CHARACTER_TYPES = 3
     }
 }
 
 enum class PasswordPolicyViolation {
     LENGTH_TOO_SHORT,
-    LENGTH_TOO_LONG,
-    REPEATED_CHARACTERS
+    INSUFFICIENT_CHARACTER_TYPES
 }

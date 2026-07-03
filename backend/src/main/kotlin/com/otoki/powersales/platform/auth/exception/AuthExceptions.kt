@@ -37,9 +37,9 @@ class CurrentPasswordRequiredException : BusinessException(
 )
 
 /**
- * 새 비밀번호 정책 위반 (길이/반복).
+ * 새 비밀번호 정책 위반 (길이/문자 종류 조합).
  *
- * `violations` 는 위반 규칙 코드 배열 (예: ["LENGTH_TOO_SHORT", "REPEATED_CHARACTERS"]).
+ * `violations` 는 위반 규칙 코드 배열 (예: ["LENGTH_TOO_SHORT", "INSUFFICIENT_CHARACTER_TYPES"]).
  * GlobalExceptionHandler 가 `error.details.violations` 로 노출한다.
  */
 class NewPasswordPolicyViolationException(

@@ -18,30 +18,30 @@ void main() {
   });
 
   group('PasswordValidation (사용되는 로직)', () {
-    test('"1234" -> 모두 충족 (Spec #584)', () {
-      final validation = PasswordValidation.fromPassword('1234');
+    test('"abcd123!" (8자, 3종) -> 모두 충족', () {
+      final validation = PasswordValidation.fromPassword('abcd123!');
 
       expect(validation.isLengthValid, true);
-      expect(validation.isNotRepeating, true);
+      expect(validation.hasEnoughCharacterTypes, true);
       expect(validation.isValid, true);
     });
 
-    test('동일 문자 4연속 ("1111") -> 무효', () {
-      final validation = PasswordValidation.fromPassword('1111');
+    test('소문자+숫자 8자 (2종) -> 종류 무효', () {
+      final validation = PasswordValidation.fromPassword('abcd1234');
 
       expect(validation.isLengthValid, true);
-      expect(validation.isNotRepeating, false);
+      expect(validation.hasEnoughCharacterTypes, false);
       expect(validation.isValid, false);
     });
 
-    test('"abcd" -> 모두 충족', () {
-      final validation = PasswordValidation.fromPassword('abcd');
+    test('"Abcd123!" (4종) -> 모두 충족', () {
+      final validation = PasswordValidation.fromPassword('Abcd123!');
 
       expect(validation.isValid, true);
     });
 
-    test('3글자 이하 -> 길이 무효', () {
-      final validation = PasswordValidation.fromPassword('123');
+    test('7글자 이하 -> 길이 무효', () {
+      final validation = PasswordValidation.fromPassword('Abc12!x');
 
       expect(validation.isLengthValid, false);
       expect(validation.isValid, false);
@@ -118,12 +118,12 @@ void main() {
       );
 
       await notifier.changePassword(
-        currentPassword: 'old123',
-        newPassword: 'new456',
+        currentPassword: 'Old12345!',
+        newPassword: 'New45678!',
       );
 
-      expect(mockAuthRepository.lastCurrentPassword, 'old123');
-      expect(mockAuthRepository.lastNewPassword, 'new456');
+      expect(mockAuthRepository.lastCurrentPassword, 'Old12345!');
+      expect(mockAuthRepository.lastNewPassword, 'New45678!');
     });
 
     test('changePassword 유효성 검증 실패 시 ArgumentError 전파', () async {
@@ -131,11 +131,11 @@ void main() {
         changePasswordUseCase: ChangePasswordUseCase(mockAuthRepository),
       );
 
-      // 새 비밀번호가 3글자 이하 -> ArgumentError
+      // 새 비밀번호가 8자 미만 -> ArgumentError
       expect(
         () => notifier.changePassword(
-          currentPassword: 'old1',
-          newPassword: 'new', // 3글자
+          currentPassword: 'Old12345!',
+          newPassword: 'New1!', // 5글자
         ),
         throwsA(isA<ArgumentError>()),
       );
@@ -151,8 +151,8 @@ void main() {
       // 유효한 비밀번호지만 네트워크 에러 -> Exception
       expect(
         () => notifier.changePassword(
-          currentPassword: 'old123',
-          newPassword: 'new456',
+          currentPassword: 'Old12345!',
+          newPassword: 'New45678!',
         ),
         throwsA(isA<Exception>()),
       );

@@ -204,13 +204,13 @@ class AuthServiceTest {
         // Given
         val userId = 1L
         val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = false)
-        val request = ChangePasswordRequest("old_password", "newpass1")
+        val request = ChangePasswordRequest("old_password", "Newpass1!")
         val principal = principal(userId, passwordChangeRequired = false)
         val empSlot = slot<Employee>()
 
         every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
         every { passwordEncoder.matches("old_password", "encoded_old") } returns true
-        every { passwordEncoder.encode("newpass1") } returns "encoded_new"
+        every { passwordEncoder.encode("Newpass1!") } returns "encoded_new"
         every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
         every { jwtTokenProvider.createAccessToken(userId, any<String>(), any(), false) } returns "new-access"
         every { jwtTokenProvider.createRefreshToken(userId, any(), any()) } returns "new-refresh"
@@ -233,12 +233,12 @@ class AuthServiceTest {
         // Given
         val userId = 1L
         val employee = createTestEmployee(id = userId, password = "encoded_old", passwordChangeRequired = true)
-        val request = ChangePasswordRequest(currentPassword = null, newPassword = "newpass1")
+        val request = ChangePasswordRequest(currentPassword = null, newPassword = "Newpass1!")
         val principal = principal(userId, passwordChangeRequired = true)
         val empSlot = slot<Employee>()
 
         every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
-        every { passwordEncoder.encode("newpass1") } returns "encoded_new"
+        every { passwordEncoder.encode("Newpass1!") } returns "encoded_new"
         every { employeeRepository.save(capture(empSlot)) } answers { firstArg() }
         every { jwtTokenProvider.createAccessToken(userId, any<String>(), any(), false) } returns "new-access"
         every { jwtTokenProvider.createRefreshToken(userId, any(), any()) } returns "new-refresh"

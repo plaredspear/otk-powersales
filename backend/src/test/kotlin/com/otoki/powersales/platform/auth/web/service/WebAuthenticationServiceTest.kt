@@ -220,12 +220,12 @@ class WebAuthenticationServiceTest {
             val principal = principalFor(user)
             every { userRepository.findById(1L) } returns Optional.of(user)
             every { passwordEncoder.matches("oldpw", user.password) } returns true
-            every { passwordEncoder.encode("newpw123") } returns "encoded-new"
+            every { passwordEncoder.encode("Newpw123!") } returns "encoded-new"
             stubTokenIssuance()
 
             val response = service.changePassword(
                 principal,
-                WebChangePasswordRequest(currentPassword = "oldpw", newPassword = "newpw123")
+                WebChangePasswordRequest(currentPassword = "oldpw", newPassword = "Newpw123!")
             )
 
             assertThat(response.passwordChangeRequired).isFalse()
@@ -242,12 +242,12 @@ class WebAuthenticationServiceTest {
             val user = createUser(passwordChangeRequired = true)
             val principal = principalFor(user, passwordChangeRequired = true)
             every { userRepository.findById(1L) } returns Optional.of(user)
-            every { passwordEncoder.encode("newpw456") } returns "encoded-new-2"
+            every { passwordEncoder.encode("Newpw456!") } returns "encoded-new-2"
             stubTokenIssuance()
 
             val response = service.changePassword(
                 principal,
-                WebChangePasswordRequest(currentPassword = null, newPassword = "newpw456")
+                WebChangePasswordRequest(currentPassword = null, newPassword = "Newpw456!")
             )
 
             assertThat(response.passwordChangeRequired).isFalse()

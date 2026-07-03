@@ -3,6 +3,11 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Alert, Typography, notification } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 import { changePassword } from '@/api/auth';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_POLICY_HINT,
+  hasEnoughCharacterTypes,
+} from '@/lib/passwordPolicy';
 
 const { Title, Paragraph } = Typography;
 
@@ -92,15 +97,20 @@ export default function ChangePasswordPage() {
           <Form.Item
             label="새 비밀번호"
             name="newPassword"
+            extra={PASSWORD_POLICY_HINT}
             rules={[
               { required: true, message: '새 비밀번호를 입력하세요' },
-              { min: 4, message: '비밀번호는 4자 이상이어야 합니다' },
-              { max: 32, message: '비밀번호는 32자 이하여야 합니다' },
+              {
+                min: PASSWORD_MIN_LENGTH,
+                message: `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상이어야 합니다`,
+              },
               {
                 validator: (_, value) =>
-                  !value || !/(.)\1\1\1/.test(value)
+                  !value || hasEnoughCharacterTypes(value)
                     ? Promise.resolve()
-                    : Promise.reject(new Error('동일한 문자를 4회 연속 사용할 수 없습니다')),
+                    : Promise.reject(
+                        new Error('영문 대/소문자·숫자·특수문자 중 3종 이상을 조합해주세요'),
+                      ),
               },
             ]}
             hasFeedback

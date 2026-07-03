@@ -2,11 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/password_validation.dart';
 
 void main() {
-  group('PasswordValidation 엔티티 (Spec #584)', () {
+  group('PasswordValidation 엔티티 (8자 이상 + 3종 이상 조합)', () {
     test('모든 규칙 충족 -> isValid=true', () {
       const validation = PasswordValidation(
         isLengthValid: true,
-        isNotRepeating: true,
+        hasEnoughCharacterTypes: true,
       );
 
       expect(validation.isValid, true);
@@ -15,59 +15,67 @@ void main() {
     test('길이 미충족 -> isValid=false', () {
       const validation = PasswordValidation(
         isLengthValid: false,
-        isNotRepeating: true,
+        hasEnoughCharacterTypes: true,
       );
 
       expect(validation.isValid, false);
     });
 
-    test('반복 문자 위반 -> isValid=false', () {
+    test('문자 종류 부족 -> isValid=false', () {
       const validation = PasswordValidation(
         isLengthValid: true,
-        isNotRepeating: false,
+        hasEnoughCharacterTypes: false,
       );
 
       expect(validation.isValid, false);
     });
 
     group('fromPassword factory', () {
-      test('"abcd" -> 모두 충족', () {
-        final v = PasswordValidation.fromPassword('abcd');
+      test('"abcd123!" (8자, 소문자/숫자/특수 3종) -> 모두 충족', () {
+        final v = PasswordValidation.fromPassword('abcd123!');
         expect(v.isLengthValid, true);
-        expect(v.isNotRepeating, true);
+        expect(v.hasEnoughCharacterTypes, true);
         expect(v.isValid, true);
       });
 
-      test('"abc" -> 길이 부족', () {
-        final v = PasswordValidation.fromPassword('abc');
+      test('임시 비밀번호 "pwrs1234!" -> 모두 충족', () {
+        final v = PasswordValidation.fromPassword('pwrs1234!');
+        expect(v.isValid, true);
+      });
+
+      test('"Abc12!x" (7자) -> 길이 부족', () {
+        final v = PasswordValidation.fromPassword('Abc12!x');
         expect(v.isLengthValid, false);
         expect(v.isValid, false);
       });
 
-      test('33자 -> 길이 초과', () {
-        final v = PasswordValidation.fromPassword('a' * 33);
-        expect(v.isLengthValid, false);
-      });
-
-      test('32자 (반복 없음) -> 길이 충족', () {
-        final v = PasswordValidation.fromPassword(
-            List.generate(32, (i) => String.fromCharCode(0x61 + (i % 26))).join());
+      test('상한 없음 - 64자 (3종) -> 길이 충족', () {
+        final v = PasswordValidation.fromPassword('Ab1!${'c' * 60}');
         expect(v.isLengthValid, true);
+        expect(v.hasEnoughCharacterTypes, true);
       });
 
-      test('"aaaa" -> 동일 문자 4연속 위반', () {
-        final v = PasswordValidation.fromPassword('aaaa');
-        expect(v.isNotRepeating, false);
+      test('소문자만 8자 (1종) -> 종류 부족', () {
+        final v = PasswordValidation.fromPassword('abcdefgh');
+        expect(v.isLengthValid, true);
+        expect(v.hasEnoughCharacterTypes, false);
+        expect(v.isValid, false);
       });
 
-      test('"가가가가" -> 한글 4연속 위반', () {
-        final v = PasswordValidation.fromPassword('가가가가');
-        expect(v.isNotRepeating, false);
+      test('소문자+숫자 8자 (2종) -> 종류 부족', () {
+        final v = PasswordValidation.fromPassword('abcd1234');
+        expect(v.hasEnoughCharacterTypes, false);
       });
 
-      test('"!!!!" -> 특수문자 4연속 위반', () {
-        final v = PasswordValidation.fromPassword('!!!!');
-        expect(v.isNotRepeating, false);
+      test('한글은 카테고리 아님 - 한글6+숫자2 (숫자 1종) -> 종류 부족', () {
+        final v = PasswordValidation.fromPassword('가나다라마바12');
+        expect(v.hasEnoughCharacterTypes, false);
+      });
+
+      test('대문자+소문자+숫자 (3종) -> 종류 충족', () {
+        final v = PasswordValidation.fromPassword('Abcdefg1');
+        expect(v.hasEnoughCharacterTypes, true);
+        expect(v.isValid, true);
       });
 
       test('빈 문자열 -> 길이 부족', () {
@@ -75,8 +83,8 @@ void main() {
         expect(v.isLengthValid, false);
       });
 
-      test('한글/특수문자 혼합 -> 모두 충족', () {
-        final v = PasswordValidation.fromPassword('abcd1234!@한');
+      test('4종 모두 조합 -> 모두 충족', () {
+        final v = PasswordValidation.fromPassword('Abcd123!');
         expect(v.isValid, true);
       });
     });
@@ -84,27 +92,27 @@ void main() {
     test('copyWith 동작', () {
       const original = PasswordValidation(
         isLengthValid: true,
-        isNotRepeating: false,
+        hasEnoughCharacterTypes: false,
       );
-      final copied = original.copyWith(isNotRepeating: true);
+      final copied = original.copyWith(hasEnoughCharacterTypes: true);
 
       expect(copied.isLengthValid, true);
-      expect(copied.isNotRepeating, true);
+      expect(copied.hasEnoughCharacterTypes, true);
       expect(copied.isValid, true);
     });
 
     test('동등성 비교', () {
       const a = PasswordValidation(
         isLengthValid: true,
-        isNotRepeating: true,
+        hasEnoughCharacterTypes: true,
       );
       const b = PasswordValidation(
         isLengthValid: true,
-        isNotRepeating: true,
+        hasEnoughCharacterTypes: true,
       );
       const c = PasswordValidation(
         isLengthValid: false,
-        isNotRepeating: true,
+        hasEnoughCharacterTypes: true,
       );
 
       expect(a, b);
