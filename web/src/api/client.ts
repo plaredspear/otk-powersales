@@ -47,11 +47,23 @@ client.interceptors.response.use(
     // 페이지 진입 권한은 라우터 가드(PermissionRoute/RoleRoute)가 동기 판정하므로
     // 인터셉터가 받는 403 은 항상 "페이지 내부에서 권한 없는 데이터를 조회한 경우" 이다.
     if (status === 403) {
-      const data = error.response?.data as { message?: string } | undefined;
+      const data = error.response?.data as
+        | { message?: string; error?: { code?: string; message?: string } }
+        | undefined;
+      const code = data?.error?.code;
+      // 임시 비밀번호 상태에서 admin API 를 직접 호출한 경우(backend 강제 가드 필터) —
+      // 강제 변경 화면으로 유도한다. 라우터 가드가 이미 막지만, 잔존 토큰/직접 호출 대비 이중 방어.
+      if (code === 'AUTH_PASSWORD_CHANGE_REQUIRED') {
+        localStorage.setItem('passwordChangeRequired', 'true');
+        if (window.location.pathname !== '/change-password') {
+          window.location.href = '/change-password';
+        }
+        return Promise.reject(error);
+      }
       notification.warning({
         key: 'api-forbidden',
         message: '권한 없음',
-        description: data?.message ?? '요청한 데이터에 접근할 권한이 없습니다.',
+        description: data?.error?.message ?? data?.message ?? '요청한 데이터에 접근할 권한이 없습니다.',
         duration: 4,
       });
       return Promise.reject(error);

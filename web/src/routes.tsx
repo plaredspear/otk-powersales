@@ -8,6 +8,7 @@ import RoleRoute from '@/components/RoleRoute';
 import AdminLayout from '@/layouts/AdminLayout';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const ChangePasswordPage = lazy(() => import('@/pages/ChangePasswordPage'));
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
 const SalesQueryPage = lazy(() => import('@/pages/SalesQueryPage'));
 const MonthlySalesDashboardPage = lazy(() => import('@/pages/MonthlySalesDashboardPage'));
@@ -122,6 +123,17 @@ export const router = createBrowserRouter(
       element: (
         <LazyWrapper>
           <LoginPage />
+        </LazyWrapper>
+      ),
+      errorElement: <RouteErrorBoundary />,
+    },
+    {
+      // 강제 비밀번호 변경 화면 — ProtectedRoute(리다이렉트 루프 회피) 밖에 두되,
+      // 인증/강제상태 가드는 ChangePasswordPage 내부에서 자체 수행한다.
+      path: '/change-password',
+      element: (
+        <LazyWrapper>
+          <ChangePasswordPage />
         </LazyWrapper>
       ),
       errorElement: <RouteErrorBoundary />,

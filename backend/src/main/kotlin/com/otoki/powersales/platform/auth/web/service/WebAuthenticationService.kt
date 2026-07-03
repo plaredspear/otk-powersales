@@ -181,8 +181,10 @@ class WebAuthenticationService(
      * - true (강제): `currentPassword` 미검증
      * - false (자발): `currentPassword` 누락 시 `AUTH_CURRENT_PASSWORD_REQUIRED`, 불일치 시 `AUTH_CURRENT_PASSWORD_MISMATCH`
      *
-     * 처리: 새 비밀번호 정책 검증 → BCrypt 해시 → `User.changePassword(...)`.
-     * 토큰 재발급은 본 spec 범위 외 (frontend 가 다음 호출 전 재로그인 또는 별도 endpoint 사용).
+     * 처리: 새 비밀번호 정책 검증 → BCrypt 해시 → `User.changePassword(...)` (passwordChangeRequired=false 자동).
+     * 변경 성공 시 새 토큰 페어를 발급해 응답에 담는다 — 기존 access token 클레임의
+     * `password_change_required=true` 를 즉시 `false` 로 갱신하여, 강제 변경 사용자가 재로그인 없이
+     * 후속 요청을 이어갈 수 있게 한다 ([WebPasswordChangeRequiredFilter] 가드 통과).
      */
     @Transactional
     fun changePassword(
@@ -209,7 +211,14 @@ class WebAuthenticationService(
         val encoded = passwordEncoder.encode(request.newPassword)!!
         user.changePassword(encoded)
 
-        return WebChangePasswordResponse(passwordChangeRequired = false)
+        val tokens = issueTokensFor(user)
+
+        return WebChangePasswordResponse(
+            passwordChangeRequired = false,
+            accessToken = tokens.accessToken,
+            refreshToken = tokens.refreshToken,
+            expiresIn = tokens.expiresIn
+        )
     }
 
     /**

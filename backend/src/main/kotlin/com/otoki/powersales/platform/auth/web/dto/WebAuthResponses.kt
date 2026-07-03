@@ -47,7 +47,15 @@ data class WebTokenResponse(
 
 /**
  * Web 비밀번호 변경 응답 (Spec #760 §5.3).
+ *
+ * 변경 성공 시 새 토큰 페어를 함께 발급한다. 기존 access token 클레임에는 여전히
+ * `password_change_required=true` 가 박혀 있어, 재로그인 없이 강제 변경을 끝내려면
+ * 클레임이 `false` 로 갱신된 새 토큰이 필요하다 (모바일 [com.otoki.powersales.platform.auth.dto.response.ChangePasswordResponse] 정합).
+ * 대행(impersonation) 중에는 비밀번호 변경 자체가 차단되므로 토큰 재발급 경로도 대행과 무관하다.
  */
 data class WebChangePasswordResponse(
-    val passwordChangeRequired: Boolean
+    val passwordChangeRequired: Boolean,
+    val accessToken: String,
+    val refreshToken: String,
+    val expiresIn: Int
 )

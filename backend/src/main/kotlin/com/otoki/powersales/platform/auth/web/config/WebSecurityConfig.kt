@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.security.AdminDataScopeCache
 import com.otoki.powersales.admin.security.WebAdminContextFilter
 import com.otoki.powersales.platform.auth.web.WebJwtAuthenticationFilter
 import com.otoki.powersales.platform.auth.web.WebJwtService
+import com.otoki.powersales.platform.auth.web.WebPasswordChangeRequiredFilter
 import com.otoki.powersales.platform.auth.web.WebRefreshTokenStore
 import com.otoki.powersales.platform.common.security.JwtAuthenticationEntryPoint
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
@@ -57,6 +58,10 @@ class WebSecurityConfig(
         WebJwtAuthenticationFilter(webJwtService)
 
     @Bean
+    fun webPasswordChangeRequiredFilter(objectMapper: ObjectMapper): WebPasswordChangeRequiredFilter =
+        WebPasswordChangeRequiredFilter(objectMapper)
+
+    @Bean
     fun webAdminContextFilter(
         adminDataScopeCache: AdminDataScopeCache,
         requestMappingHandlerMapping: RequestMappingHandlerMapping,
@@ -76,6 +81,7 @@ class WebSecurityConfig(
     fun webSecurityFilterChain(
         http: HttpSecurity,
         webJwtAuthenticationFilter: WebJwtAuthenticationFilter,
+        webPasswordChangeRequiredFilter: WebPasswordChangeRequiredFilter,
         webAdminContextFilter: WebAdminContextFilter,
         jwtAuthenticationEntryPoint: JwtAuthenticationEntryPoint,
     ): SecurityFilterChain {
@@ -96,7 +102,8 @@ class WebSecurityConfig(
             }
             .exceptionHandling { it.authenticationEntryPoint(jwtAuthenticationEntryPoint) }
             .addFilterBefore(webJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
-            .addFilterAfter(webAdminContextFilter, WebJwtAuthenticationFilter::class.java)
+            .addFilterAfter(webPasswordChangeRequiredFilter, WebJwtAuthenticationFilter::class.java)
+            .addFilterAfter(webAdminContextFilter, WebPasswordChangeRequiredFilter::class.java)
 
         return http.build()
     }
