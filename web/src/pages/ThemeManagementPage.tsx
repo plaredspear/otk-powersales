@@ -21,10 +21,10 @@ import {
   useDeleteTheme,
   useThemeBranches,
   useThemeDetail,
+  useThemeOwnerCandidates,
   useThemes,
   useUpdateTheme,
 } from '@/hooks/inspections/useThemes';
-import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { usePermission } from '@/hooks/usePermission';
@@ -80,19 +80,16 @@ export default function ThemeManagementPage() {
 
   const { data, isLoading, refetch, isFetching } = useThemes(searchParams);
   const { data: detail, isLoading: detailLoading } = useThemeDetail(detailId);
-  const { data: ownerCandidates } = useUsers({
-    keyword: ownerKeyword || undefined,
-    isActive: true,
-    page: 0,
-    size: 20,
-  });
+  // 소유자 후보는 수정 모달(editId != null)이 열린 동안에만 조회 — 목록 전용 사용자가 페이지 진입만으로
+  // 소유자 lookup 을 호출하지 않게 한다(불필요한 403 회피).
+  const { data: ownerCandidates } = useThemeOwnerCandidates(ownerKeyword, modalOpen && editId != null);
   const createMutation = useCreateTheme();
   const updateMutation = useUpdateTheme();
   const deleteMutation = useDeleteTheme();
 
   // 소유자 Select 옵션 — 검색 결과 + 현재 소유자(검색 밖일 수 있어 patch 로 보존).
   const ownerOptions = (() => {
-    const fromSearch = (ownerCandidates?.content ?? []).map((u) => ({
+    const fromSearch = (ownerCandidates ?? []).map((u) => ({
       value: u.id,
       label: `${u.name ?? u.username} (${u.employeeCode})`,
     }));

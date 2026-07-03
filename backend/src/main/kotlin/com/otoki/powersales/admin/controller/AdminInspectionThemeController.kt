@@ -9,6 +9,8 @@ import com.otoki.powersales.domain.activity.inspection.dto.admin.AdminThemeListR
 import com.otoki.powersales.domain.activity.inspection.dto.admin.CreateThemeRequest
 import com.otoki.powersales.domain.activity.inspection.dto.admin.ThemeMutationResponse
 import com.otoki.powersales.domain.activity.inspection.dto.admin.UpdateThemeRequest
+import com.otoki.powersales.admin.dto.AdminUserListResponse
+import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.domain.activity.inspection.service.AdminInspectionThemeService
 import com.otoki.powersales.domain.activity.inspection.service.AdminThemeExcelExporter
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
@@ -40,6 +42,7 @@ import org.springframework.web.bind.annotation.RestController
 class AdminInspectionThemeController(
     private val themeService: AdminInspectionThemeService,
     private val excelExporter: AdminThemeExcelExporter,
+    private val adminUserService: AdminUserService,
 ) {
 
     /**
@@ -57,6 +60,26 @@ class AdminInspectionThemeController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
         return ResponseEntity.ok(ApiResponse.success(themeService.getBranches(principal)))
+    }
+
+    /**
+     * 테마 소유자 변경 Select 후보 lookup — 활성 User 검색.
+     *
+     * 레거시 SF `Theme__c` 는 표준 Edit 폼에서 OwnerId 를 전사 활성 User 전체에서 골라 변경했고(별도 권한 게이트 없음),
+     * 소유자 변경은 테마 Edit 권한자면 가능한 기능이었다. 신규가 이 후보 조회를 `user` READ 가드 `/admin/users` 로
+     * 채우면 테마 EDIT 만 있고 user READ 없는 사용자(예: 여사원 대행)가 403 → 레거시 대비 과다 제약.
+     * 화면 게이팅과 동일한 `inspection_theme` READ 로 가드한 전용 lookup 으로 제공해 레거시 정합을 복원한다.
+     */
+    @GetMapping("/owner-candidates")
+    @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
+    fun getOwnerCandidates(
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false, defaultValue = "20") size: Int,
+    ): ResponseEntity<ApiResponse<AdminUserListResponse>> {
+        // 활성 User 만, 소유자 후보 Select 용 소량(size). 레거시 정합 — 전사 범위(지점 제한 없음).
+        return ResponseEntity.ok(
+            ApiResponse.success(adminUserService.findUsers(keyword, isActive = true, profileId = null, page = 0, size = size))
+        )
     }
 
     @GetMapping

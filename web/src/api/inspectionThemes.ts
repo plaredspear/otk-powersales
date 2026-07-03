@@ -83,6 +83,14 @@ export interface ThemeBranch {
   branchName: string;
 }
 
+/** 소유자 변경 Select 후보 — 활성 User. */
+export interface ThemeOwnerCandidate {
+  id: number;
+  username: string;
+  employeeCode: string | null;
+  name: string | null;
+}
+
 // ─────────────────────────────────────────────────────
 // API 호출 함수
 // ─────────────────────────────────────────────────────
@@ -109,6 +117,22 @@ export async function fetchThemeBranches(): Promise<ThemeBranch[]> {
     throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
   }
   return res.data.data;
+}
+
+/**
+ * 테마 소유자 변경 Select 후보 조회 (활성 User).
+ *
+ * 화면 게이팅과 동일한 inspection_theme READ 로 가드된 전용 endpoint. `user` READ 권한 없는
+ * 테마 EDIT 사용자(여사원 대행 등)도 소유자 후보를 받을 수 있다(SF 레거시 정합 — 소유자 변경은 테마 Edit 권한 기능).
+ */
+export async function fetchThemeOwnerCandidates(keyword?: string): Promise<ThemeOwnerCandidate[]> {
+  const res = await client.get<ApiResponse<{ content: ThemeOwnerCandidate[] }>>(`${BASE}/owner-candidates`, {
+    params: { keyword: keyword || undefined, size: 20 },
+  });
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '소유자 후보 조회에 실패했습니다');
+  }
+  return res.data.data.content;
 }
 
 export async function fetchThemeDetail(id: number): Promise<ThemeDetail> {

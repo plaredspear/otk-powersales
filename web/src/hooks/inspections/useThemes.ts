@@ -4,6 +4,7 @@ import {
   deleteTheme,
   fetchThemeBranches,
   fetchThemeDetail,
+  fetchThemeOwnerCandidates,
   fetchThemes,
   updateTheme,
   type ThemeListParams,
@@ -23,6 +24,20 @@ export function useThemeBranches() {
   return useQuery({
     queryKey: [...THEME_KEY, 'branches', userId],
     queryFn: fetchThemeBranches,
+  });
+}
+
+/**
+ * 테마 소유자 변경 Select 후보 (활성 User).
+ *
+ * `enabled` 로 수정 모달이 열린 동안에만 조회 — 목록 조회 전용 사용자가 페이지 진입만으로
+ * 소유자 후보 lookup 을 호출하지 않게 한다.
+ */
+export function useThemeOwnerCandidates(keyword: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...THEME_KEY, 'owner-candidates', keyword],
+    queryFn: () => fetchThemeOwnerCandidates(keyword),
+    enabled,
   });
 }
 

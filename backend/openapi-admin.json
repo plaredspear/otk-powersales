@@ -22903,6 +22903,41 @@
         "tags" : [ "admin-inspection-theme-controller" ]
       }
     },
+    "/api/v1/admin/inspection-themes/owner-candidates" : {
+      "get" : {
+        "operationId" : "getOwnerCandidates",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminUserListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-inspection-theme-controller" ]
+      }
+    },
     "/api/v1/admin/inspection-themes/{id}" : {
       "delete" : {
         "operationId" : "deleteTheme",
