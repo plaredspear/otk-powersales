@@ -681,26 +681,28 @@ class Stage1TargetsTest {
         // 최초 적재 후 뒤늦게 SF 컬럼(특히 *_sfid lookup)이 ADD COLUMN 된 entity 는, 재적재 시
         // 기본 DO NOTHING 이면 충돌키 UNIQUE 충돌로 전건 skip 되어 backfill 이 안 된다. 이들은
         // conflictUpdate 로 ON CONFLICT (key) DO UPDATE 를 지정해야 한다.
-        // key = 기대 충돌키. DailySalesHistory 만 sfid UNIQUE 가 없어 external_key 를 쓴다.
+        // key = 기대 충돌키. sfid 외 자연키 UNIQUE 가 하나 더 있는 entity(Employee/Account/Product/
+        // ErpOrder)는 sfid arbiter 로는 그 자연키 UNIQUE 위반을 못 잡아 예외가 나므로, 항상 채워지는
+        // 자연키를 arbiter 로 삼는다. DailySalesHistory 는 sfid UNIQUE 가 없어 external_key 를 쓴다.
         private val backfillEntities = mapOf(
             "TeamMemberSchedule" to "sfid",
-            "Employee" to "sfid",
-            "Account" to "sfid",
-            "Product" to "sfid",
+            "Employee" to "employee_code",
+            "Account" to "external_key",
+            "Product" to "product_code",
             "Claim" to "sfid",
             "AgreementHistory" to "sfid",
-            "ErpOrder" to "sfid",
+            "ErpOrder" to "sap_order_number",
             "ErpOrderProduct" to "sfid",
             "OrderRequestProduct" to "sfid",
             "PromotionEmployee" to "sfid",
             "DailySalesHistory" to "external_key",
         )
 
-        // partial unique index (WHERE sfid IS NOT NULL, V5/V57) 를 arbiter 로 쓰는 entity 는
+        // 충돌키가 partial unique index (WHERE ... IS NOT NULL, V5/V57/V20) 인 entity 는
         // conflictPredicate 를 반드시 지정해야 런타임 ON CONFLICT arbiter 추론이 성공한다.
+        // (자연키 arbiter 로 전환한 4개는 full UNIQUE 라 여기서 제외.)
         private val partialUniqueEntities = setOf(
-            "Account", "Product", "Claim", "AgreementHistory",
-            "ErpOrder", "ErpOrderProduct", "PromotionEmployee",
+            "Claim", "AgreementHistory", "ErpOrderProduct", "PromotionEmployee",
         )
 
         @Test

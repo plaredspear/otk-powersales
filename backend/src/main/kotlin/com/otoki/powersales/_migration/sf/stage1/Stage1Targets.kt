@@ -108,12 +108,15 @@ object Stage1Targets {
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
         // manager_sfid / postponed_appointment_sfid 등이 최초 적재 후 뒤늦게 ADD COLUMN (V36) 됐다.
-        // DO NOTHING 재적재는 sfid UNIQUE(V166 uk_employee_sfid) 충돌로 skip → backfill 안 됨.
-        // ON CONFLICT (sfid) DO UPDATE 로 보강. 상세 [TeamMemberSchedule 주석].
+        // DO NOTHING 재적재는 UNIQUE 충돌로 skip → backfill 안 됨.
+        // employee 는 UNIQUE 가 2개(sfid + employee_code employee_employee_number_key). sfid 를 arbiter 로
+        // 쓰면 sfid 는 신규인데 employee_code 가 기존 다른 row 와 겹치는 staging 행에서 employee_code
+        // UNIQUE 위반이 ON CONFLICT (sfid) 로 안 잡혀 예외가 난다. 항상 채워지는(NOT NULL) 자연키
+        // employee_code 를 arbiter 로 삼아 '동일 사원' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
-            conflictColumn = "sfid",
+            conflictColumn = "employee_code",
             updateColumns = listOf(
-                "employee_code", "name", "birth_date", "status", "app_login_active", "role", "org_name",
+                "sfid", "name", "birth_date", "status", "app_login_active", "role", "org_name",
                 "cost_center_code", "work_phone", "phone", "home_phone", "work_email", "email", "gender",
                 "start_date", "end_date", "agreement_flag", "is_deleted", "professional_promotion_team",
                 "jikchak", "jikwee", "jikgub", "work_type", "job_code", "work_area", "jikjong",
@@ -239,15 +242,15 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
-        // parent_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V32) 됐다. DO NOTHING 재적재는 sfid 충돌로
-        // skip → backfill 안 됨. 충돌키는 partial unique (V5 idx_account_sfid_unique WHERE sfid IS
-        // NOT NULL) 라 conflictPredicate 로 述語 명시. 상세 [TeamMemberSchedule 주석].
+        // parent_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V32) 됐다. DO NOTHING 재적재는 UNIQUE 충돌로
+        // skip → backfill 안 됨. account 는 UNIQUE 가 2개(sfid partial + external_key account_external_key_key).
+        // sfid 를 arbiter 로 쓰면 external_key UNIQUE 위반이 안 잡혀 예외 → 항상 채워지는(NOT NULL) 자연키
+        // external_key 를 arbiter 로 삼아 '동일 거래처' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
-            conflictColumn = "sfid",
-            conflictPredicate = "sfid IS NOT NULL",
+            conflictColumn = "external_key",
             updateColumns = listOf(
-                "name", "phone", "mobile_phone", "address1", "address2", "representative", "abc_type",
-                "abc_type_code", "external_key", "account_group", "branch_code", "branch_name", "zip_code",
+                "sfid", "name", "phone", "mobile_phone", "address1", "address2", "representative", "abc_type",
+                "abc_type_code", "account_group", "branch_code", "branch_name", "zip_code",
                 "latitude", "longitude", "closing_time1", "closing_time2", "closing_time3", "industry",
                 "werk1_tx", "werk2_tx", "werk3_tx", "is_deleted", "account_type", "account_status_name",
                 "employee_code", "distribution", "account_status_code", "business_type", "business_category",
@@ -316,14 +319,14 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
-        // new_product_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V40) 됐다. DO NOTHING 재적재는 sfid 충돌로
-        // skip → backfill 안 됨. 충돌키는 partial unique (V5 idx_product_sfid_unique WHERE sfid IS NOT
-        // NULL) 라 conflictPredicate 로 述語 명시. 상세 [TeamMemberSchedule 주석].
+        // new_product_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V40) 됐다. DO NOTHING 재적재는 UNIQUE 충돌로
+        // skip → backfill 안 됨. product 는 UNIQUE 가 2개(sfid partial + product_code product_product_code_key).
+        // sfid arbiter 는 product_code UNIQUE 위반을 못 잡아 예외 → 항상 채워지는(NOT NULL) 자연키
+        // product_code 를 arbiter 로 삼아 '동일 상품' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
-            conflictColumn = "sfid",
-            conflictPredicate = "sfid IS NOT NULL",
+            conflictColumn = "product_code",
             updateColumns = listOf(
-                "name", "product_code", "product_type", "product_status", "storage_condition", "shelf_life",
+                "sfid", "name", "product_type", "product_status", "storage_condition", "shelf_life",
                 "shelf_life_unit", "category1", "category2", "category3", "category_code1", "category_code2",
                 "category_code3", "unit", "ordering_unit", "conversion_quantity", "box_receiving_quantity",
                 "standard_unit_price", "super_tax", "launch_date", "logistics_barcode", "taste_gift",
@@ -735,14 +738,16 @@ object Stage1Targets {
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
             FieldMapping("IsDeleted", "is_deleted"),
         ),
-        // account_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V49) 됐다. DO NOTHING 재적재는 sfid 충돌로
-        // skip → backfill 안 됨. 충돌키는 partial unique (V57 idx_erp_order_sfid WHERE sfid IS NOT NULL)
-        // 라 conflictPredicate 로 述語를 명시해야 arbiter 추론이 된다. 상세 [TeamMemberSchedule 주석].
+        // account_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V49) 됐다. DO NOTHING 재적재는 UNIQUE 충돌로
+        // skip → backfill 안 됨. erp_order 는 UNIQUE 가 2개(sfid partial + sap_order_number
+        // erp_order_sap_order_number_key). sfid arbiter 는 sap_order_number UNIQUE 위반을 못 잡아 예외
+        // (실측: PSQLException duplicate key erp_order_sap_order_number_key). 항상 채워지는(NOT NULL,
+        // SF Name) 자연키 sap_order_number 를 arbiter 로 삼아 '동일 주문' dedup 후 sfid 포함 전 컬럼
+        // backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
-            conflictColumn = "sfid",
-            conflictPredicate = "sfid IS NOT NULL",
+            conflictColumn = "sap_order_number",
             updateColumns = listOf(
-                "sap_order_number", "sap_account_code", "sap_account_name", "delivery_request_date",
+                "sfid", "sap_account_code", "sap_account_name", "delivery_request_date",
                 "order_date", "employee_code", "employee_name", "order_sales_amount", "order_channel",
                 "order_channel_nm", "order_type", "order_type_nm", "account_sfid",
                 "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid", "is_deleted",
