@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.suggestion.service
 
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.suggestion.dto.response.LogisticsClaimReportItem
 import com.otoki.powersales.domain.activity.suggestion.dto.response.LogisticsClaimReportResponse
 import com.otoki.powersales.domain.activity.suggestion.entity.Suggestion
@@ -42,27 +43,36 @@ class AdminLogisticsClaimReportService(
      * 물류 클레임 조회.
      *
      * period=THIS_MONTH/LAST_MONTH 면 서버가 기간 산출(start/end 인자 무시), CUSTOM 이면 start/end 필수(미입력 시 예외).
+     * 지점 스코프: branchScope(등록 사원 소속 지점 orgCostCenterCode 기준)로 좁힘 — 전사 권한자 선택 지점/전건,
+     * 지점 사용자 본인 지점(선택값 밖이면 IDOR 차단 = NoAccess → 빈 결과).
      */
     fun getReport(
         period: LogisticsClaimReportPeriod,
         startDate: LocalDate?,
         endDate: LocalDate?,
+        branchScope: EffectiveBranchResult,
     ): LogisticsClaimReportResponse {
         val (start, end) = resolvePeriod(period, startDate, endDate)
-        val suggestions = suggestionRepository.findLogisticsClaimReport(start, end)
+        val suggestions = when (branchScope) {
+            is EffectiveBranchResult.All -> suggestionRepository.findLogisticsClaimReport(start, end, emptyList())
+            is EffectiveBranchResult.Filtered ->
+                suggestionRepository.findLogisticsClaimReport(start, end, branchScope.codes)
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }
         val items = suggestions.map { toItem(it) }
         return LogisticsClaimReportResponse(period.name, start.toString(), end.toString(), items)
     }
 
     /**
-     * 물류 클레임 엑셀 export — 22컬럼 시트 (조회와 동일 필터).
+     * 물류 클레임 엑셀 export — 22컬럼 시트 (조회와 동일 필터/스코프).
      */
     fun exportReport(
         period: LogisticsClaimReportPeriod,
         startDate: LocalDate?,
         endDate: LocalDate?,
+        branchScope: EffectiveBranchResult,
     ): ExcelResult {
-        val response = getReport(period, startDate, endDate)
+        val response = getReport(period, startDate, endDate, branchScope)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("물류클레임")

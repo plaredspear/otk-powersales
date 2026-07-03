@@ -9,6 +9,8 @@ import {
   type LogisticsClaimReportItem,
   type LogisticsClaimReportPeriod,
 } from '@/api/logisticsClaimReport';
+import { useLogisticsClaimReportBranches } from '@/hooks/suggestions/useLogisticsClaimReportBranches';
+import BranchSingleSelect from '@/components/common/BranchSingleSelect';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -42,25 +44,32 @@ export default function LogisticsClaimReportPage({ period }: Props) {
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
   const [customRange, setCustomRange] = useState<CustomRange | null>(null);
+  // 지점 선택 — 버퍼(입력)와 적용값(조회에 반영) 분리. 조회 버튼 클릭 시에만 적용.
+  const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
+  const [appliedBranchCode, setAppliedBranchCode] = useState<string | undefined>(undefined);
   // 당월/전월은 진입 시 자동 조회 활성화
   const [autoEnabled, setAutoEnabled] = useState<boolean>(!isCustom);
+
+  const { data: branches = [] } = useLogisticsClaimReportBranches();
 
   // 메뉴(period) 전환 시 상태 초기화
   useEffect(() => {
     setStartDate(null);
     setEndDate(null);
     setCustomRange(null);
+    setBranchCode(undefined);
+    setAppliedBranchCode(undefined);
     setAutoEnabled(period !== 'CUSTOM');
   }, [period]);
 
   const enabled = isCustom ? customRange != null : autoEnabled;
 
   const query = useQuery({
-    queryKey: ['logisticsClaimReport', period, customRange?.startDate, customRange?.endDate],
+    queryKey: ['logisticsClaimReport', period, customRange?.startDate, customRange?.endDate, appliedBranchCode],
     queryFn: () =>
       isCustom
-        ? fetchLogisticsClaimReport(period, customRange!.startDate, customRange!.endDate)
-        : fetchLogisticsClaimReport(period),
+        ? fetchLogisticsClaimReport(period, customRange!.startDate, customRange!.endDate, appliedBranchCode)
+        : fetchLogisticsClaimReport(period, undefined, undefined, appliedBranchCode),
     enabled,
   });
 
@@ -74,8 +83,10 @@ export default function LogisticsClaimReportPage({ period }: Props) {
         message.warning('종료일은 시작일 이후여야 합니다.');
         return;
       }
+      setAppliedBranchCode(branchCode);
       setCustomRange({ startDate: startDate.format('YYYY-MM-DD'), endDate: endDate.format('YYYY-MM-DD') });
     } else {
+      setAppliedBranchCode(branchCode);
       setAutoEnabled(true);
       query.refetch();
     }
@@ -85,9 +96,9 @@ export default function LogisticsClaimReportPage({ period }: Props) {
     try {
       if (isCustom) {
         if (!customRange) return;
-        await apiExport(period, customRange.startDate, customRange.endDate);
+        await apiExport(period, customRange.startDate, customRange.endDate, appliedBranchCode);
       } else {
-        await apiExport(period);
+        await apiExport(period, undefined, undefined, appliedBranchCode);
       }
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
@@ -125,13 +136,18 @@ export default function LogisticsClaimReportPage({ period }: Props) {
 
   return (
     <div style={{ padding: 16 }}>
-      <Space style={{ marginBottom: 12 }} wrap>
+      <Space style={{ marginBottom: 12 }} wrap align="end">
+        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
         {isCustom ? (
           <>
-            <span>시작일:</span>
-            <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
-            <span>종료일:</span>
-            <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
+            <Space direction="vertical" size={4}>
+              <span>시작일:</span>
+              <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
+            </Space>
+            <Space direction="vertical" size={4}>
+              <span>종료일:</span>
+              <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
+            </Space>
           </>
         ) : (
           <span>
