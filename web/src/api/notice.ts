@@ -44,6 +44,23 @@ export interface NoticeDetail {
   branchCode: string | null;
   createdAt: string;
   images: NoticeImage[];
+  /** push 누적 발송 횟수 (0=미발송). 중복 발송 경고 판단용. */
+  pushSentCount: number;
+  /** 마지막 push 발송 이력 (미발송이면 null). */
+  lastPush: NoticePushInfo | null;
+}
+
+export interface NoticePushInfo {
+  sentAt: string | null;
+  targetCount: number;
+  successCount: number;
+  failureCount: number;
+}
+
+export interface NoticePushResult {
+  targetCount: number;
+  successCount: number;
+  failureCount: number;
 }
 
 export interface NoticeImage {
@@ -139,6 +156,18 @@ export async function unpublishNotice(id: number): Promise<void> {
   if (!res.data.success) {
     throw new Error(res.data.message || '공지사항 발행취소에 실패했습니다');
   }
+}
+
+/**
+ * 공지 FCM push 즉시 발송. 발행된 공지에만 가능하며, 대상은 그 공지가 앱에 노출되는 사용자와 동일.
+ * 응답으로 대상/성공/실패 건수를 반환한다.
+ */
+export async function sendNoticePush(id: number): Promise<NoticePushResult> {
+  const res = await client.post<ApiResponse<NoticePushResult>>(`/api/v1/admin/notices/${id}/push`);
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '푸시 알림 발송에 실패했습니다');
+  }
+  return res.data.data;
 }
 
 export interface NoticeInlineImage {

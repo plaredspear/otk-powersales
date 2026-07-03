@@ -7,6 +7,7 @@ import {
   useDeleteNotice,
   usePublishNotice,
   useUnpublishNotice,
+  useSendNoticePush,
 } from '@/hooks/notice/useNoticeMutation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
@@ -29,6 +30,7 @@ export default function NoticeDetailPage() {
   const deleteMutation = useDeleteNotice();
   const publishMutation = usePublishNotice();
   const unpublishMutation = useUnpublishNotice();
+  const pushMutation = useSendNoticePush();
   const { setDynamicTitle } = useContext(BreadcrumbContext);
 
   useEffect(() => {
@@ -52,6 +54,29 @@ export default function NoticeDetailPage() {
     } catch {
       message.error('공지사항 발행취소에 실패했습니다');
     }
+  };
+
+  const handleSendPush = () => {
+    const already = notice?.pushSentCount ?? 0;
+    Modal.confirm({
+      title: '푸시 알림 발송',
+      content:
+        already > 0
+          ? `이미 ${already}번 발송된 공지입니다. 대상자에게 다시 푸시 알림을 발송하시겠습니까?`
+          : '이 공지를 볼 수 있는 대상자에게 푸시 알림을 발송하시겠습니까?',
+      okText: '발송',
+      cancelText: '취소',
+      onOk: async () => {
+        try {
+          const result = await pushMutation.mutateAsync(noticeId);
+          message.success(
+            `푸시 알림 발송 완료 (대상 ${result.targetCount}건 / 성공 ${result.successCount}건 / 실패 ${result.failureCount}건)`,
+          );
+        } catch {
+          message.error('푸시 알림 발송에 실패했습니다');
+        }
+      },
+    });
   };
 
   const handleDelete = () => {
@@ -102,6 +127,11 @@ export default function NoticeDetailPage() {
           ← 목록으로
         </Button>
         <Space>
+          {notice.status === 'PUBLISHED' && notice.scope !== '영업사원' && (
+            <Button onClick={handleSendPush} loading={pushMutation.isPending}>
+              푸시 발송
+            </Button>
+          )}
           {notice.status === 'PUBLISHED' ? (
             <Button onClick={handleUnpublish} loading={unpublishMutation.isPending}>
               발행취소
@@ -131,6 +161,11 @@ export default function NoticeDetailPage() {
         <Descriptions.Item label="등록일">{notice.createdAt?.substring(0, 10)}</Descriptions.Item>
         <Descriptions.Item label="지점">
           {notice.category === 'BRANCH' && notice.branch ? notice.branch : '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label="푸시 발송">
+          {notice.lastPush
+            ? `${notice.lastPush.sentAt?.substring(0, 16).replace('T', ' ')} · 대상 ${notice.lastPush.targetCount}건 / 성공 ${notice.lastPush.successCount}건 (누적 ${notice.pushSentCount}회)`
+            : '미발송'}
         </Descriptions.Item>
       </Descriptions>
 

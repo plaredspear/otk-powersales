@@ -17,10 +17,13 @@ import com.otoki.powersales.domain.support.notice.dto.response.NoticeImageRespon
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeInlineImageResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostDetailResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticePushInfo
+import com.otoki.powersales.domain.support.notice.dto.response.NoticePushResultResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostListResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostSummaryResponse
 import com.otoki.powersales.domain.support.notice.dto.response.ScopeOption
 import com.otoki.powersales.domain.support.notice.entity.Notice
+import com.otoki.powersales.domain.support.notice.entity.NoticePushLog
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
 import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
@@ -30,8 +33,13 @@ import com.otoki.powersales.domain.support.notice.exception.InvalidImageIdExcept
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeCategoryException
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeScopeException
+import com.otoki.powersales.domain.support.notice.exception.NoticeNotPublishedException
 import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundException
+import com.otoki.powersales.domain.support.notice.exception.NoticeScopeNotPushableException
+import com.otoki.powersales.domain.support.notice.repository.NoticePushLogRepository
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
+import com.otoki.powersales.platform.push.sender.FcmSender
+import com.otoki.powersales.platform.push.sender.FcmSendResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
@@ -44,11 +52,13 @@ import org.springframework.web.multipart.MultipartFile
 @Transactional(readOnly = true)
 class NoticeService(
     private val noticeRepository: NoticeRepository,
+    private val noticePushLogRepository: NoticePushLogRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val employeeRepository: EmployeeRepository,
     private val organizationRepository: OrganizationRepository,
     private val fileStorageService: FileStorageService,
-    private val storageService: StorageService
+    private val storageService: StorageService,
+    private val fcmSender: FcmSender
 ) {
 
     companion object {
@@ -59,6 +69,10 @@ class NoticeService(
 
         // 본문 인라인 이미지 식별자 (upload_file.upload_kbn). 첨부 목록과 구분하기 위함.
         private const val UPLOAD_KBN_INLINE = "INLINE"
+
+        // 공지 push notification 제목 (본문은 공지 제목). 모바일 data payload 의 딥링크 타입.
+        private const val PUSH_TITLE = "공지사항"
+        private const val PUSH_TYPE_NOTICE = "notice"
     }
 
     /**
@@ -107,6 +121,18 @@ class NoticeService(
                 )
             }
 
+        // push 발송 이력 (admin 상세에서 중복 발송 경고/결과 표시용). publishedOnly(모바일)에는 노출 불필요하나
+        // 조회 1회 비용이라 공통 노출 — 모바일 응답은 필드를 사용하지 않는다.
+        val pushSentCount = noticePushLogRepository.countByNoticeId(notice.id)
+        val lastPush = noticePushLogRepository.findFirstByNoticeIdOrderByCreatedAtDesc(notice.id)?.let {
+            NoticePushInfo(
+                sentAt = it.createdAt,
+                targetCount = it.targetCount,
+                successCount = it.successCount,
+                failureCount = it.failureCount
+            )
+        }
+
         return NoticePostDetailResponse(
             id = notice.id,
             scope = notice.scope?.displayName,
@@ -119,7 +145,9 @@ class NoticeService(
             branch = notice.branch,
             branchCode = notice.branchCode,
             createdAt = notice.createdAt,
-            images = images
+            images = images,
+            pushSentCount = pushSentCount,
+            lastPush = lastPush
         )
     }
 
@@ -299,6 +327,61 @@ class NoticeService(
         val notice = findActiveNotice(noticeId)
         notice.status = NoticeStatus.DRAFT
         return NoticeMutationResponse.Companion.from(notice)
+    }
+
+    /**
+     * 공지 FCM push 즉시 발송 — web 관리자 상세화면 '푸시 발송' 버튼용.
+     *
+     * 발송 대상은 그 공지가 앱 목록에 노출되는 사용자와 동일하게 선별한다 (조회 노출 규칙 정합):
+     * - 회사공지(COMPANY)/교육(EDUCATION): FCM 토큰 보유 전 사용자
+     * - 지점공지(BRANCH): costCenterCode 가 공지 branchCode 와 일치하는 사용자만
+     * scope=영업사원 공지는 앱에 노출되지 않으므로 발송 대상이 아니다 (레거시 Heroku 조회 정합).
+     *
+     * 알림 탭 시 딥링크(해당 공지 상세 이동)를 위해 data payload({"type":"notice","noticeId":...})를 함께 실는다.
+     * 발송 결과는 notice_push_log 에 기록한다 (재발송/결과 확인 근거). 중복 발송 자체는 허용 —
+     * 재발송 여부 판단은 이력을 내려받은 클라이언트(경고 모달)가 담당한다.
+     */
+    @Transactional
+    fun sendPush(noticeId: Long, senderId: Long): NoticePushResultResponse {
+        if (noticeId <= 0) throw InvalidNoticeIdException()
+        val notice = findActiveNotice(noticeId)
+
+        // 발행된 공지만 발송 가능 (임시저장은 모바일 미노출).
+        if (notice.status != NoticeStatus.PUBLISHED) throw NoticeNotPublishedException()
+        // 영업사원 scope 공지는 모바일 미노출 → 발송 대상 아님.
+        if (notice.scope == NoticeScope.SALES_EMPLOYEE) throw NoticeScopeNotPushableException()
+
+        val category = notice.category ?: throw InvalidNoticeCategoryException()
+        val tokens = noticeRepository.findPushTargetTokens(category, notice.branchCode)
+
+        val result = if (tokens.isEmpty()) {
+            FcmSendResult.EMPTY
+        } else {
+            fcmSender.sendNotificationToTokens(
+                tokens = tokens,
+                title = PUSH_TITLE,
+                body = notice.name ?: "",
+                data = mapOf("type" to PUSH_TYPE_NOTICE, "noticeId" to notice.id.toString())
+            )
+        }
+
+        val sender = employeeRepository.findById(senderId).orElse(null)
+        noticePushLogRepository.save(
+            NoticePushLog(
+                noticeId = notice.id,
+                sentBy = sender,
+                targetScope = notice.scope?.displayName,
+                targetCount = tokens.size,
+                successCount = result.successCount,
+                failureCount = result.failureCount
+            )
+        )
+
+        return NoticePushResultResponse(
+            targetCount = tokens.size,
+            successCount = result.successCount,
+            failureCount = result.failureCount
+        )
     }
 
     /**

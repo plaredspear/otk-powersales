@@ -11,6 +11,7 @@ import com.otoki.powersales.domain.support.notice.dto.response.NoticeInlineImage
 import com.otoki.powersales.domain.support.notice.dto.response.NoticeMutationResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostDetailResponse
 import com.otoki.powersales.domain.support.notice.dto.response.NoticePostListResponse
+import com.otoki.powersales.domain.support.notice.dto.response.NoticePushResultResponse
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeIdException
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.domain.support.notice.service.NoticeService
@@ -105,6 +106,16 @@ class AdminNoticeController(
     ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
         val response = noticeService.unpublishNotice(noticeId)
         return ResponseEntity.ok(ApiResponse.success(response, "공지사항 발행이 취소되었습니다"))
+    }
+
+    @PostMapping("/{noticeId}/push")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.EDIT)
+    fun sendNoticePush(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @PathVariable noticeId: Long
+    ): ResponseEntity<ApiResponse<NoticePushResultResponse>> {
+        val response = noticeService.sendPush(noticeId, principal.requireEmployeeId())
+        return ResponseEntity.ok(ApiResponse.success(response, "푸시 알림을 발송했습니다"))
     }
 
     @PostMapping("/images/inline", consumes = ["multipart/form-data"])

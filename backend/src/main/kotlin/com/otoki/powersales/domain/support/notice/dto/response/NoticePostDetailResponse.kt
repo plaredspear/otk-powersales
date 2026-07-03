@@ -17,5 +17,19 @@ data class NoticePostDetailResponse(
     val branch: String?,
     val branchCode: String?,
     val createdAt: LocalDateTime?,
-    val images: List<NoticeImageResponse>
+    val images: List<NoticeImageResponse>,
+    /** push 누적 발송 횟수 (0=미발송). 중복 발송 경고 판단용. */
+    val pushSentCount: Long = 0,
+    /** 마지막 push 발송 이력 (미발송이면 null). */
+    val lastPush: NoticePushInfo? = null
+)
+
+/**
+ * 공지 push 발송 이력 요약 (상세 응답 내포).
+ */
+data class NoticePushInfo(
+    val sentAt: LocalDateTime?,
+    val targetCount: Int,
+    val successCount: Int,
+    val failureCount: Int
 )

@@ -4895,6 +4895,17 @@
             },
             "type" : "array"
           },
+          "lastPush" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NoticePushInfo"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "pushSentCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "scope" : {
             "type" : [ "string", "null" ]
           },
@@ -4973,6 +4984,27 @@
           },
           "title" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "NoticePushInfo" : {
+        "properties" : {
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sentAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "targetCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"

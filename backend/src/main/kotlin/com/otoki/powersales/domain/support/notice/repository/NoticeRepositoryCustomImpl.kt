@@ -5,6 +5,8 @@ import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
 import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.domain.support.notice.entity.QNotice.Companion.notice
+import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
+import com.otoki.powersales.domain.org.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
 import com.querydsl.jpa.impl.JPAQueryFactory
@@ -94,6 +96,32 @@ class NoticeRepositoryCustomImpl(
             )
             .orderBy(notice.createdAt.desc())
             .limit(5)
+            .fetch()
+    }
+
+    override fun findPushTargetTokens(
+        category: NoticeCategory,
+        branchCode: String?
+    ): List<String> {
+        // 지점공지는 지점코드 매칭 사용자만, 그 외(회사/교육)는 전 사용자.
+        // 지점공지인데 branchCode 가 비면 대상 없음 (오발송 방지).
+        val branchCondition = if (category == NoticeCategory.BRANCH) {
+            if (branchCode.isNullOrBlank()) return emptyList()
+            employee.costCenterCode.eq(branchCode)
+        } else {
+            null
+        }
+
+        return queryFactory
+            .select(employeeInfo.fcmToken)
+            .distinct()
+            .from(employee)
+            .join(employee.employeeInfo, employeeInfo)
+            .where(
+                employeeInfo.fcmToken.isNotNull,
+                employeeInfo.fcmToken.ne(""),
+                branchCondition,
+            )
             .fetch()
     }
 

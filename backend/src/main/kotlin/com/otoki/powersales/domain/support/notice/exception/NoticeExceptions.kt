@@ -57,6 +57,26 @@ class BranchNoticeOnlyException : BusinessException(
 )
 
 /**
+ * 발행되지 않은(임시저장) 공지는 push 발송할 수 없다.
+ * 임시저장 공지는 모바일에 노출되지 않으므로 push 대상이 될 수 없다.
+ */
+class NoticeNotPublishedException : BusinessException(
+    errorCode = "NOTICE_NOT_PUBLISHED",
+    message = "발행된 공지사항만 푸시 발송할 수 있습니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
+ * 영업사원 공개범위(scope) 공지는 모바일에 노출되지 않으므로 push 발송할 수 없다.
+ * (조회 노출 규칙과 정합 — 영업사원 scope 는 앱 목록에서 제외됨)
+ */
+class NoticeScopeNotPushableException : BusinessException(
+    errorCode = "NOTICE_SCOPE_NOT_PUSHABLE",
+    message = "이 공개범위의 공지사항은 푸시 발송 대상이 아닙니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
+/**
  * 유효하지 않은 첨부 이미지 ID — imageId 미존재 또는 parent 불일치
  */
 class InvalidImageIdException : BusinessException(

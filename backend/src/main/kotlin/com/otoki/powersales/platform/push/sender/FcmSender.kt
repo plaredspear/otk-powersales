@@ -14,9 +14,15 @@ interface FcmSender {
      * @param tokens 대상 FCM 디바이스 토큰 목록 (빈 목록이면 발송 없이 0 반환)
      * @param title notification 제목
      * @param body notification 본문
+     * @param data 알림 탭 시 딥링크 라우팅에 쓰이는 data payload (예: {"type":"notice","noticeId":"12"}). 기본 빈 맵.
      * @return 성공/실패 건수 집계
      */
-    fun sendNotificationToTokens(tokens: List<String>, title: String, body: String): FcmSendResult
+    fun sendNotificationToTokens(
+        tokens: List<String>,
+        title: String,
+        body: String,
+        data: Map<String, String> = emptyMap(),
+    ): FcmSendResult
 }
 
 /**
