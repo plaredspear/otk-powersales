@@ -19803,6 +19803,13 @@
             "enum" : [ "PACKAGING", "ALL" ],
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -19810,6 +19817,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseClaimPeriodReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-claim-controller" ]
+      }
+    },
+    "/api/v1/admin/claims/period-report/branches" : {
+      "get" : {
+        "operationId" : "getPeriodReportBranches",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
                 }
               }
             },
@@ -19845,6 +19870,13 @@
           "schema" : {
             "default" : "ALL",
             "enum" : [ "PACKAGING", "ALL" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
             "type" : "string"
           }
         } ],
@@ -21960,6 +21992,13 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -21997,6 +22036,13 @@
           "in" : "query",
           "name" : "month",
           "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
           "schema" : {
             "type" : "string"
           }
@@ -22172,6 +22218,24 @@
         "tags" : [ "admin-female-employee-placement-check-controller" ]
       }
     },
+    "/api/v1/admin/female-employees/report-branches" : {
+      "get" : {
+        "operationId" : "getReportBranches",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-placement-check-controller" ]
+      }
+    },
     "/api/v1/admin/female-employees/safety-check-report" : {
       "get" : {
         "operationId" : "getSafetyCheckReport",
@@ -22185,6 +22249,13 @@
         }, {
           "in" : "query",
           "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -22271,6 +22342,13 @@
         }, {
           "in" : "query",
           "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -25857,6 +25935,13 @@
             "format" : "date",
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -25864,6 +25949,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePromotionTargetActualReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-controller" ]
+      }
+    },
+    "/api/v1/admin/promotions/target-actual-report/branches" : {
+      "get" : {
+        "operationId" : "getTargetActualReportBranches",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
                 }
               }
             },
@@ -25890,6 +25993,13 @@
           "required" : true,
           "schema" : {
             "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
             "type" : "string"
           }
         } ],
@@ -30120,6 +30230,13 @@
             "format" : "date",
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -30127,6 +30244,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseLogisticsClaimReportResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-suggestion-controller" ]
+      }
+    },
+    "/api/v1/admin/suggestions/logistics-claim-report/branches" : {
+      "get" : {
+        "operationId" : "getLogisticsClaimReportBranches",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
                 }
               }
             },
@@ -30162,6 +30297,13 @@
           "required" : false,
           "schema" : {
             "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
             "type" : "string"
           }
         } ],

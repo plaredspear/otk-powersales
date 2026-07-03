@@ -8,6 +8,8 @@ import {
   exportPromotionTargetActualReport as apiExport,
   type PromotionTargetActualReportRow,
 } from '@/api/promotionTargetActualReport';
+import { usePromotionReportBranches } from '@/hooks/promotion/usePromotionReportBranches';
+import BranchSingleSelect from '@/components/common/BranchSingleSelect';
 import PromotionActualDonutChart from '@/components/charts/PromotionActualDonutChart';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -18,6 +20,7 @@ const { Text } = Typography;
 interface QueryRange {
   startDate: string;
   endDate: string;
+  branchCode?: string;
 }
 
 const num = (v: number | null) => (v == null ? '-' : v.toLocaleString());
@@ -31,11 +34,14 @@ const num = (v: number | null) => (v == null ? '-' : v.toLocaleString());
 export default function PromotionTargetActualReportPage() {
   const [startDate, setStartDate] = useState<Dayjs | null>(null);
   const [endDate, setEndDate] = useState<Dayjs | null>(null);
+  const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
   const [range, setRange] = useState<QueryRange | null>(null);
 
+  const { data: branches = [] } = usePromotionReportBranches();
+
   const query = useQuery({
-    queryKey: ['promotionTargetActualReport', range?.startDate, range?.endDate],
-    queryFn: () => fetchPromotionTargetActualReport(range!.startDate, range!.endDate),
+    queryKey: ['promotionTargetActualReport', range?.startDate, range?.endDate, range?.branchCode],
+    queryFn: () => fetchPromotionTargetActualReport(range!.startDate, range!.endDate, range!.branchCode),
     enabled: range != null,
   });
 
@@ -48,13 +54,17 @@ export default function PromotionTargetActualReportPage() {
       message.warning('종료일은 시작일 이후여야 합니다.');
       return;
     }
-    setRange({ startDate: startDate.format('YYYY-MM-DD'), endDate: endDate.format('YYYY-MM-DD') });
+    setRange({
+      startDate: startDate.format('YYYY-MM-DD'),
+      endDate: endDate.format('YYYY-MM-DD'),
+      branchCode,
+    });
   };
 
   const handleExport = async () => {
     if (!range) return;
     try {
-      await apiExport(range.startDate, range.endDate);
+      await apiExport(range.startDate, range.endDate, range.branchCode);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }
@@ -90,11 +100,16 @@ export default function PromotionTargetActualReportPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <span>시작일:</span>
-        <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
-        <span>종료일:</span>
-        <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
+      <Space style={{ marginBottom: 12 }} wrap align="end">
+        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        <Space direction="vertical" size={4}>
+          <span>시작일:</span>
+          <DatePicker value={startDate} onChange={(v) => setStartDate(v)} />
+        </Space>
+        <Space direction="vertical" size={4}>
+          <span>종료일:</span>
+          <DatePicker value={endDate} onChange={(v) => setEndDate(v)} />
+        </Space>
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>

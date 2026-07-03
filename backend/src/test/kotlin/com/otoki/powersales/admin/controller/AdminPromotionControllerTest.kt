@@ -53,6 +53,8 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
 
     @MockkBean private lateinit var targetActualReportService: AdminPromotionTargetActualReportService
 
+    @MockkBean private lateinit var reportBranchScopeService: com.otoki.powersales.admin.service.ReportBranchScopeService
+
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
