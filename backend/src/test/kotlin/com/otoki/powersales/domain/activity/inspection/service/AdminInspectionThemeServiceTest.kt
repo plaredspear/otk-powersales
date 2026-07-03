@@ -1,7 +1,10 @@
 package com.otoki.powersales.domain.activity.inspection.service
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.service.AdminDataScopeService
 import com.otoki.powersales.domain.activity.inspection.exception.InspectionThemeForbiddenException
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.domain.org.organization.entity.Organization
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
@@ -38,7 +41,8 @@ class AdminInspectionThemeServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val userRepository: UserRepository = mockk()
     private val uploadFileRepository: UploadFileRepository = mockk()
-    private val branchResolver: WomenScheduleBranchResolver = mockk()
+    private val dataScopeService: AdminDataScopeService = mockk()
+    private val organizationRepository: OrganizationRepository = mockk()
 
     private val service = AdminInspectionThemeService(
         inspectionThemeRepository = inspectionThemeRepository,
@@ -46,7 +50,8 @@ class AdminInspectionThemeServiceTest {
         employeeRepository = employeeRepository,
         userRepository = userRepository,
         uploadFileRepository = uploadFileRepository,
-        branchResolver = branchResolver,
+        dataScopeService = dataScopeService,
+        organizationRepository = organizationRepository,
     )
 
     private fun theme(id: Long = 1L, deleted: Boolean = false, branchCode: String = "B001") = InspectionTheme(
@@ -63,18 +68,36 @@ class AdminInspectionThemeServiceTest {
 
     private val principal: WebUserPrincipal = mockk()
 
-    /** resolver 가 반환할 지점 화이트리스트를 세팅 — 조회 스코프의 유일한 출처. */
-    private fun allowBranches(vararg codes: String) {
-        every { branchResolver.resolveBranches(principal) } returns
-            codes.map { BranchResponse(branchCode = it, branchName = "$it 지점") }
+    /** 본인 지점 스코프 세팅 — DataScope.branchCodes 로 조회 지점을 제한. */
+    private fun scopeBranches(vararg codes: String) {
+        every { dataScopeService.resolve(principal) } returns
+            DataScope(branchCodes = codes.toList(), isAllBranches = false)
     }
+
+    /** 전사 권한자 스코프 세팅 — 전건 조회. */
+    private fun scopeAllBranches() {
+        every { dataScopeService.resolve(principal) } returns
+            DataScope(branchCodes = emptyList(), isAllBranches = true)
+    }
+
+    private fun org(
+        orgCodeLevel5: String? = null,
+        orgNameLevel5: String? = null,
+        orgCodeLevel4: String? = null,
+        orgNameLevel4: String? = null,
+    ) = Organization(
+        orgCodeLevel5 = orgCodeLevel5,
+        orgNameLevel5 = orgNameLevel5,
+        orgCodeLevel4 = orgCodeLevel4,
+        orgNameLevel4 = orgNameLevel4,
+    )
 
     @Nested
     @DisplayName("목록 검색")
     inner class Search {
         @Test
         fun `검색 결과를 목록 항목으로 변환하고 하위 점검결과 수를 채운다`() {
-            allowBranches("B001")
+            scopeBranches("B001")
             every { inspectionThemeRepository.searchForAdmin(any(), any(), any(), any()) } returns
                 PageImpl(listOf(theme()), Pageable.ofSize(20), 1)
             every { inspectionThemeRepository.countSiteActivitiesByThemeIds(listOf(1L)) } returns
@@ -88,38 +111,36 @@ class AdminInspectionThemeServiceTest {
         }
 
         @Test
-        fun `부서 필터를 repository 에 전달하고 지점은 resolver 화이트리스트로 스코프한다`() {
-            allowBranches("B001", "B002")
+        fun `부서 필터를 repository 에 전달하고 지점은 본인 지점 스코프로 제한한다`() {
+            scopeBranches("B001")
             every {
-                inspectionThemeRepository.searchForAdmin(any(), "영업1팀", eq(listOf("B001", "B002")), any())
+                inspectionThemeRepository.searchForAdmin(any(), "영업1팀", eq(listOf("B001")), any())
             } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
             every { inspectionThemeRepository.countSiteActivitiesByThemeIds(emptyList()) } returns emptyMap()
 
             service.search(principal, keyword = null, department = "영업1팀", branchCode = null, page = 0, size = 20)
 
-            // 지점은 scopeBranchCodes(화이트리스트) 로만 제한 — 별도 표시용 branchCode 파라미터 없음.
             verify {
-                inspectionThemeRepository.searchForAdmin(null, "영업1팀", eq(listOf("B001", "B002")), any())
+                inspectionThemeRepository.searchForAdmin(null, "영업1팀", eq(listOf("B001")), any())
             }
         }
 
         @Test
-        fun `전 지점 권한자(시스템개발자)는 resolver 전체 지점 목록을 스코프로 전달한다`() {
-            // resolver 가 시스템개발자에게 전 조직 지점을 반환 — DataScope 무제한과 달리 화면 목록과 일치.
-            allowBranches("B001", "B002", "B003")
+        fun `전사 권한자는 지점 스코프를 null(전건)로 전달한다`() {
+            scopeAllBranches()
             every {
-                inspectionThemeRepository.searchForAdmin(any(), any(), eq(listOf("B001", "B002", "B003")), any())
+                inspectionThemeRepository.searchForAdmin(any(), any(), isNull(), any())
             } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
             every { inspectionThemeRepository.countSiteActivitiesByThemeIds(emptyList()) } returns emptyMap()
 
             service.search(principal, keyword = null, department = null, branchCode = null, page = 0, size = 20)
 
-            verify { inspectionThemeRepository.searchForAdmin(any(), any(), eq(listOf("B001", "B002", "B003")), any()) }
+            verify { inspectionThemeRepository.searchForAdmin(any(), any(), isNull(), any()) }
         }
 
         @Test
-        fun `Select 로 화이트리스트 안 지점을 고르면 그 지점으로 스코프를 좁힌다`() {
-            allowBranches("B001", "B002", "B003")
+        fun `Select 로 권한 지점 안 지점을 고르면 그 지점으로 스코프를 좁힌다`() {
+            scopeBranches("B001", "B002", "B003")
             every {
                 inspectionThemeRepository.searchForAdmin(any(), any(), eq(listOf("B002")), any())
             } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
@@ -131,8 +152,8 @@ class AdminInspectionThemeServiceTest {
         }
 
         @Test
-        fun `화이트리스트 밖 지점을 요청하면 무시하고 전체 화이트리스트로 스코프한다(IDOR 차단)`() {
-            allowBranches("B001", "B002")
+        fun `권한 지점 밖을 요청하면 무시하고 전체 권한 지점으로 스코프한다(IDOR 차단)`() {
+            scopeBranches("B001", "B002")
             every {
                 inspectionThemeRepository.searchForAdmin(any(), any(), eq(listOf("B001", "B002")), any())
             } returns PageImpl(emptyList(), Pageable.ofSize(20), 0)
@@ -145,7 +166,7 @@ class AdminInspectionThemeServiceTest {
 
         @Test
         fun `지점 권한이 비어 있으면 쿼리 없이 빈 목록을 반환한다`() {
-            allowBranches()
+            scopeBranches()
 
             val response = service.search(principal, keyword = null, department = null, branchCode = null, page = 0, size = 20)
 
@@ -159,8 +180,8 @@ class AdminInspectionThemeServiceTest {
     @DisplayName("상세 지점 스코프 가드")
     inner class DetailScope {
         @Test
-        fun `화이트리스트에 해당 지점이 있으면 상세를 조회한다`() {
-            allowBranches("Z999")
+        fun `본인 지점 스코프에 해당 지점이 있으면 상세를 조회한다`() {
+            scopeBranches("Z999")
             every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "Z999"))
             every { siteActivityRepository.findByInspectionThemeIdForAdmin(1L) } returns emptyList()
 
@@ -170,8 +191,19 @@ class AdminInspectionThemeServiceTest {
         }
 
         @Test
-        fun `화이트리스트 밖 지점 테마 상세를 조회하면 403`() {
-            allowBranches("B001")
+        fun `전사 권한자는 타 지점 테마 상세도 조회한다`() {
+            scopeAllBranches()
+            every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "Z999"))
+            every { siteActivityRepository.findByInspectionThemeIdForAdmin(1L) } returns emptyList()
+
+            val response = service.getDetail(principal, 1L)
+
+            assertThat(response.id).isEqualTo(1L)
+        }
+
+        @Test
+        fun `본인 지점 스코프 밖 지점 테마 상세를 조회하면 403`() {
+            scopeBranches("B001")
             every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "Z999"))
 
             assertThatThrownBy { service.getDetail(principal, 1L) }
@@ -179,9 +211,9 @@ class AdminInspectionThemeServiceTest {
         }
 
         @Test
-        fun `전사공통 화이트리스트 지점 테마는 화이트리스트 밖 사용자도 조회한다`() {
-            // 3473 은 COMMON_BRANCH_CODES(전사공통) 소속 — resolver 화이트리스트에 없어도 조회 가능.
-            allowBranches("B001")
+        fun `전사공통 화이트리스트 지점 테마는 스코프 밖 사용자도 조회한다`() {
+            // 3473 은 COMMON_BRANCH_CODES(전사공통) 소속 — 본인 지점 스코프에 없어도 조회 가능.
+            scopeBranches("B001")
             every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "3473"))
             every { siteActivityRepository.findByInspectionThemeIdForAdmin(1L) } returns emptyList()
 
@@ -192,11 +224,64 @@ class AdminInspectionThemeServiceTest {
 
         @Test
         fun `validateThemeScope 는 스코프 밖이면 403`() {
-            allowBranches("B001")
+            scopeBranches("B001")
             every { inspectionThemeRepository.findById(1L) } returns Optional.of(theme(branchCode = "Z999"))
 
             assertThatThrownBy { service.validateThemeScope(principal, 1L) }
                 .isInstanceOf(InspectionThemeForbiddenException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("지점 셀렉터 옵션")
+    inner class GetBranches {
+        @Test
+        fun `전사 권한자는 전 지점 목록을 반환한다`() {
+            scopeAllBranches()
+            every { organizationRepository.findAllTeamScheduleBranches() } returns listOf(
+                BranchResponse("5832", "원주1지점"),
+                BranchResponse("5481", "창원1지점"),
+            )
+
+            val result = service.getBranches(principal)
+
+            assertThat(result).hasSize(2)
+            assertThat(result.map { it.branchName }).contains("원주1지점", "창원1지점")
+        }
+
+        @Test
+        fun `일반 사용자는 본인 지점 단일만 반환한다(조직 트리 확장 없음)`() {
+            scopeBranches("5832")
+            every { principal.costCenterCode } returns "5832"
+            every { organizationRepository.findFirstByAnyOrgCodeLevel("5832") } returns
+                org(orgCodeLevel5 = "5832", orgNameLevel5 = "원주1지점")
+
+            val result = service.getBranches(principal)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].branchCode).isEqualTo("5832")
+            assertThat(result[0].branchName).isEqualTo("원주1지점")
+        }
+
+        @Test
+        fun `costCenterCode 가 없으면 빈 목록`() {
+            scopeBranches()
+            every { principal.costCenterCode } returns null
+
+            assertThat(service.getBranches(principal)).isEmpty()
+        }
+
+        @Test
+        fun `Level5 지점명이 없으면 Level4 명으로 대체한다`() {
+            scopeBranches("4888")
+            every { principal.costCenterCode } returns "4888"
+            every { organizationRepository.findFirstByAnyOrgCodeLevel("4888") } returns
+                org(orgCodeLevel5 = null, orgNameLevel5 = null, orgCodeLevel4 = "4888", orgNameLevel4 = "영업지원1팀")
+
+            val result = service.getBranches(principal)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].branchName).isEqualTo("영업지원1팀")
         }
     }
 

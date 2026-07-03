@@ -69,11 +69,10 @@ export default function ThemeManagementPage() {
     size,
   };
 
-  // 지점 셀렉터 — 권한별 지점 화이트리스트 (여사원 현황과 동일 backend resolver).
-  //  - 다중 지점: Select 로 선택 → branchCode 로 전송해 그 지점으로 스코프를 좁힘(미선택 시 전체 화이트리스트).
-  //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. branchCode 미전송이어도 backend 가 resolver 화이트리스트
-  //    (그 단일 지점) 로 항상 스코프를 강제하므로 그 지점 테마만 조회된다.
-  // 두 경우 모두 조회 스코프 = 화면에 보이는 지점과 일치.
+  // 지점 셀렉터 — 권한별 지점 목록. 일반 사용자는 본인 지점(costCenterCode) 1건, 전사 권한자는 전 지점.
+  //  - 다중 지점(전사 권한자): Select 로 선택 → branchCode 로 전송해 그 지점으로 스코프를 좁힘(미선택 시 전건).
+  //  - 단일 지점(일반 사용자): 고정 Tag 로 지점명 표시. branchCode 미전송이어도 backend 가 본인 지점
+  //    (costCenterCode) 으로 항상 스코프를 강제하므로 그 지점 + 전사공통 테마만 조회된다.
   const { data: branches } = useThemeBranches();
   const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
   const singleBranch = branches?.length === 1 ? branches[0] : null;

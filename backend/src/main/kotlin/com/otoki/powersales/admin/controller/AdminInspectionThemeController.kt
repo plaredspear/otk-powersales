@@ -11,7 +11,6 @@ import com.otoki.powersales.domain.activity.inspection.dto.admin.ThemeMutationRe
 import com.otoki.powersales.domain.activity.inspection.dto.admin.UpdateThemeRequest
 import com.otoki.powersales.domain.activity.inspection.service.AdminInspectionThemeService
 import com.otoki.powersales.domain.activity.inspection.service.AdminThemeExcelExporter
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -41,24 +40,23 @@ import org.springframework.web.bind.annotation.RestController
 class AdminInspectionThemeController(
     private val themeService: AdminInspectionThemeService,
     private val excelExporter: AdminThemeExcelExporter,
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
 ) {
 
     /**
-     * 현장점검 테마 관리 화면 지점 셀렉터 옵션 — 여사원 현황/여사원 일정과 동일하게
-     * [WomenScheduleBranchResolver] 로 권한별 지점 화이트리스트를 산출한다(단일 출처).
+     * 현장점검 테마 관리 화면 지점 셀렉터 옵션.
      *
-     * 반환 목록은 곧 해당 사용자가 조회 허용된 지점이며, 목록 조회([getThemes]) 도 동일 resolver 로
-     * 산출한 화이트리스트를 재적용해 임의 branchCode 조회(IDOR) 를 차단한다. 여사원 현황용
-     * `ppt-masters/branches`(professional_promotion_team_master 가드) 를 빌려쓰지 않고
-     * 화면 게이팅과 동일한 `inspection_theme` READ 로 가드해, 전문행사조 권한 없는 조장도 지점 목록을 받는다.
+     * 테마의 `branch_code` 는 생성자 사원의 `costCenterCode`(단일 지점) 로 적재되므로, 지점 스코프도
+     * 조직 트리 확장 없이 본인 `costCenterCode` 단일값 기준으로 판정한다([AdminInspectionThemeService.getBranches]).
+     * 여사원 일정용 조직 트리 확장(`findTeamScheduleBranches`) 은 상위 조직에 매칭되는 형제 지점까지 딸려와
+     * 테마 조회에는 과도하므로 쓰지 않는다. 전사 권한자(시스템개발자/영업지원/본부장) 는 전 지점을 받는다.
+     * 화면 게이팅과 동일한 `inspection_theme` READ 로 가드.
      */
     @GetMapping("/branches")
     @RequiresSfPermission(entity = "inspection_theme", operation = SfPermissionOperation.READ)
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(womenScheduleBranchResolver.resolveBranches(principal)))
+        return ResponseEntity.ok(ApiResponse.success(themeService.getBranches(principal)))
     }
 
     @GetMapping

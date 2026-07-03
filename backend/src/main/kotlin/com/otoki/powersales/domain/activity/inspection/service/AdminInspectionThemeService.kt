@@ -12,8 +12,10 @@ import com.otoki.powersales.domain.activity.inspection.exception.InspectionTheme
 import com.otoki.powersales.domain.activity.inspection.repository.InspectionThemeRepository
 import com.otoki.powersales.domain.activity.inspection.repository.InspectionThemeRepositoryCustomImpl
 import com.otoki.powersales.domain.activity.inspection.repository.SiteActivityRepository
-import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.admin.service.AdminDataScopeService
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.user.entity.User
@@ -38,16 +40,17 @@ import org.springframework.transaction.annotation.Transactional
  * - 삭제: soft delete (`isDeleted = true`)
  *
  * ## 지점 스코프 (레거시 SF 대비 정책 강화 — deviation)
- * 레거시 SF `Theme__c` OWD = `Read` + ListView `filterScope=Everything` 으로 등록/관리 화면은 **전사 노출**이었다.
- * 신규는 모바일 현장점검 경로([InspectionThemeRepositoryCustom.findActiveThemesByDate])와 동일하게 **본인 지점 스코프**를
- * admin 목록/상세/엑셀에도 적용한다(`branch_code` 기준).
+ * 레거시 SF `Theme__c` admin 조회는 지점 필터가 없는 **전사 노출**이었다(표준 UI, 커스텀 Apex 0건). 모바일 현장점검
+ * 등록의 `branchcode IN (공통코드 + 본인 costCenterId)` 화이트리스트는 **모바일 등록 UX 전용** 이라 admin 에는 근거 없음.
+ * 신규는 관리 편의를 위해 admin 목록/상세/엑셀에 **본인 지점 스코프**를 적용한다(`branch_code` 기준, deviation).
  *
- * 스코프 산출은 화면 지점 셀렉터와 **동일한 [WomenScheduleBranchResolver]** 를 쓴다 — 화면에 노출된 지점
- * 화이트리스트가 곧 조회 스코프가 되어 UI 와 데이터가 일치한다. `DataScope` 를 쓰지 않는 이유: 시스템개발자
- * 대행 등 `isAllBranches` 주체는 DataScope 상 전사(무제한)라 화면(원주1지점 Tag)과 데이터(전 부서)가 어긋난다.
- * resolver 결과 지점(OrgCode) + 전사공통 화이트리스트([InspectionThemeRepositoryCustomImpl] COMMON_BRANCH_CODES)
- * 로 `branch_code IN (...)` 제한 — 모바일 경로 정합. 진열사원 스케줄·여사원 현황 lookup 의 지점 스코프 패턴과 동형.
- * 사용자가 Select 로 특정 지점을 고르면 그 지점으로 좁히되, resolver 화이트리스트 밖 값은 무시(IDOR 차단).
+ * 스코프는 [AdminDataScopeService] 의 [DataScope] 로 판정한다 — 전사 권한자(시스템개발자/영업지원/본부장,
+ * `isAllBranches`)는 전건, 그 외는 **본인 `costCenterCode` 단일값** + 전사공통 화이트리스트
+ * ([InspectionThemeRepositoryCustomImpl] COMMON_BRANCH_CODES) 로 `branch_code IN (...)` 제한.
+ * 테마 `branch_code` 는 생성자 사원의 `costCenterCode`(단일 지점) 로 적재되므로, 조직 트리를 확장하는
+ * 여사원 일정용 `findTeamScheduleBranches`(상위 조직 매칭 시 형제 지점까지 딸려옴) 는 쓰지 않는다.
+ * 사용자가 Select 로 특정 지점을 고르면 그 지점으로 좁히되, 권한 스코프 밖 값은 무시(IDOR 차단).
+ * 대행(impersonation) 시 principal/DataScope 는 대행 대상 기준이라 대상의 본인 지점으로 정상 스코프된다.
  */
 @Service
 @Transactional(readOnly = true)
@@ -57,7 +60,8 @@ class AdminInspectionThemeService(
     private val employeeRepository: EmployeeRepository,
     private val userRepository: UserRepository,
     private val uploadFileRepository: UploadFileRepository,
-    private val branchResolver: WomenScheduleBranchResolver,
+    private val dataScopeService: AdminDataScopeService,
+    private val organizationRepository: OrganizationRepository,
 ) {
 
     companion object {
@@ -69,9 +73,9 @@ class AdminInspectionThemeService(
     /**
      * 테마 목록 — 키워드(테마번호/이름/부서) + 부서 필터 + 지점 스코프 + 페이징 + 하위 점검결과 수.
      *
-     * 지점 스코프: [WomenScheduleBranchResolver] 가 반환하는 권한별 지점 화이트리스트(= 화면 셀렉터 목록)로 제한.
-     * 화이트리스트가 비면(권한 밖) 빈 목록. `branchCode` 파라미터(Select 선택값)가 화이트리스트 안이면 그 지점으로
-     * 좁히고, 밖이면 무시(IDOR 차단) — 화면 셀렉터 자체가 화이트리스트라 정상 흐름에선 항상 안에 든다.
+     * 지점 스코프([ThemeScope]): 전사 권한자는 전건([ThemeScope.All]), 그 외는 본인 지점 + 전사공통
+     * ([ThemeScope.Branches]), 권한 없음은 빈 목록([ThemeScope.None]). `branchCode`(Select 선택값)가 권한
+     * 스코프 안이면 그 지점으로 좁히고, 밖이면 무시(IDOR 차단).
      */
     fun search(
         principal: WebUserPrincipal,
@@ -84,10 +88,13 @@ class AdminInspectionThemeService(
         val pageSize = size.coerceIn(1, MAX_PAGE_SIZE)
         val pageable = PageRequest.of(page.coerceAtLeast(0), pageSize)
 
-        val scopeBranchCodes = resolveScopeBranchCodes(principal, branchCode)
-            ?: return AdminThemeListResponse(
+        val scopeBranchCodes: List<String>? = when (val scope = resolveScope(principal, branchCode)) {
+            is ThemeScope.All -> null                    // 전사 — 스코프 미적용(전건)
+            is ThemeScope.Branches -> scope.codes        // 본인 지점 (repository 가 COMMON 병합)
+            is ThemeScope.None -> return AdminThemeListResponse(
                 content = emptyList(), page = page, size = pageSize, totalElements = 0, totalPages = 0
             )
+        }
         val result = inspectionThemeRepository.searchForAdmin(keyword, department, scopeBranchCodes, pageable)
 
         val counts = inspectionThemeRepository.countSiteActivitiesByThemeIds(result.content.map { it.id })
@@ -256,30 +263,62 @@ class AdminInspectionThemeService(
         requireThemeInScope(principal, findActiveTheme(id))
     }
 
-    /** 목록 스코프와 동일 기준(resolver 화이트리스트 + 전사공통 화이트리스트)으로 단건 가시성 검증. */
+    /**
+     * 현장점검 테마 관리 화면 지점 셀렉터 옵션.
+     *
+     * 전사 권한자(시스템개발자/영업지원/본부장) 는 전 지점([OrganizationRepository.findAllTeamScheduleBranches]),
+     * 그 외는 본인 `costCenterCode` 단일 지점 1건. 여사원 일정용 조직 트리 확장을 쓰지 않아 형제 지점이 딸려오지 않는다.
+     */
+    fun getBranches(principal: WebUserPrincipal): List<BranchResponse> {
+        val scope = dataScopeService.resolve(principal)
+        if (scope.isAllBranches) {
+            return organizationRepository.findAllTeamScheduleBranches()
+        }
+        val code = principal.costCenterCode?.takeIf { it.isNotBlank() } ?: return emptyList()
+        val org = organizationRepository.findFirstByAnyOrgCodeLevel(code) ?: return emptyList()
+        // fetchTeamScheduleBranches 규칙과 동일 — Level5(지점) 우선, 없으면 Level4.
+        val name = org.orgNameLevel5?.takeIf { it.isNotBlank() } ?: org.orgNameLevel4 ?: return emptyList()
+        return listOf(BranchResponse(branchCode = code, branchName = name))
+    }
+
+    /** 목록 스코프와 동일 기준(본인 지점 + 전사공통 화이트리스트)으로 단건 가시성 검증. */
     private fun requireThemeInScope(principal: WebUserPrincipal, theme: InspectionTheme) {
-        // 단건 검증은 특정 지점 선택 없이 전체 스코프 기준 — branchCode 인자 없이 산출.
-        val scopeBranchCodes = resolveScopeBranchCodes(principal, null) ?: emptyList()
+        // 단건 검증은 특정 지점 선택 없이 전체 스코프 기준. 전사면 항상 통과.
+        val scopeBranchCodes: List<String> = when (val scope = resolveScope(principal, null)) {
+            is ThemeScope.All -> return                  // 전사 — 모든 테마 통과
+            is ThemeScope.Branches -> scope.codes
+            is ThemeScope.None -> emptyList()            // 권한 없음 — COMMON 만 통과, 나머지 403
+        }
         if (!InspectionThemeRepositoryCustomImpl.isBranchInScope(theme.branchCode, scopeBranchCodes)) {
             throw InspectionThemeForbiddenException()
         }
     }
 
     /**
-     * 조회 지점 스코프(OrgCode 목록) 산출 — [WomenScheduleBranchResolver] 화이트리스트 기준.
+     * 조회 지점 스코프 산출 — [AdminDataScopeService] 의 [DataScope] 기준.
      *
-     * @param requestedBranchCode Select 로 고른 특정 지점. 화이트리스트 안이면 그 지점만, 밖/미지정이면 전체 화이트리스트.
-     * @return `branch_code IN` 에 넣을 지점 코드 목록. 화이트리스트가 비면(권한 밖) `null`(호출부는 빈 결과 처리).
-     *   [InspectionThemeRepositoryCustomImpl.COMMON_BRANCH_CODES] 병합은 repository 가 담당.
+     * 전사 권한자([DataScope.isAllBranches])는 [ThemeScope.All](전건). 그 외는 본인 지점(costCenterCode) 단일 +
+     * 전사공통([ThemeScope.Branches]). 권한 지점이 없으면 [ThemeScope.None]. `requestedBranchCode`(Select 선택값)가
+     * 권한 지점 안이면 그 지점으로 좁히고, 밖이면 전체 권한 지점(IDOR 차단).
      */
-    private fun resolveScopeBranchCodes(principal: WebUserPrincipal, requestedBranchCode: String?): List<String>? {
-        val allowed = branchResolver.resolveBranches(principal).map { it.branchCode }
-        if (allowed.isEmpty()) return null
-        return if (!requestedBranchCode.isNullOrBlank() && requestedBranchCode in allowed) {
+    private fun resolveScope(principal: WebUserPrincipal, requestedBranchCode: String?): ThemeScope {
+        val scope = dataScopeService.resolve(principal)
+        if (scope.isAllBranches) return ThemeScope.All
+        val allowed = scope.branchCodes
+        if (allowed.isEmpty()) return ThemeScope.None
+        val codes = if (!requestedBranchCode.isNullOrBlank() && requestedBranchCode in allowed) {
             listOf(requestedBranchCode)
         } else {
             allowed
         }
+        return ThemeScope.Branches(codes)
+    }
+
+    /** 테마 조회 지점 스코프 — 전건 / 지점 목록 / 권한없음. */
+    private sealed interface ThemeScope {
+        data object All : ThemeScope
+        data class Branches(val codes: List<String>) : ThemeScope
+        data object None : ThemeScope
     }
 
     private fun findActiveTheme(id: Long): InspectionTheme {
