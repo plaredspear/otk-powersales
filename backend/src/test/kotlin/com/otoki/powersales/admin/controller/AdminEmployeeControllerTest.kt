@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.permission.SfPermissionInspectionService
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
@@ -58,6 +59,39 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/employees/branches - 지점 셀렉터 옵션")
+    inner class GetBranches {
+
+        @Test
+        @DisplayName("성공 - 전사 지점 목록 반환")
+        fun getBranches_success() {
+            every { adminEmployeeService.getBranchOptions() } returns listOf(
+                BranchResponse(branchCode = "1100", branchName = "강남지점"),
+                BranchResponse(branchCode = "1200", branchName = "서초지점"),
+            )
+
+            mockMvc.perform(get("/api/v1/admin/employees/branches"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].branchCode").value("1100"))
+                .andExpect(jsonPath("$.data[0].branchName").value("강남지점"))
+                .andExpect(jsonPath("$.data[1].branchCode").value("1200"))
+        }
+
+        @Test
+        @DisplayName("라우팅 - /branches 리터럴 경로가 /{employeeId}(Long) 보다 우선 매칭")
+        fun getBranches_literalPathTakesPriorityOverIdPathVariable() {
+            // /branches 가 @GetMapping("/{employeeId}") 로 잘못 라우팅되면 "branches" → Long 변환 실패로 400 이 된다.
+            // 리터럴 경로 우선 매칭이 보장되어 200 + 지점 목록이 반환되는지 검증 (회귀 가드).
+            every { adminEmployeeService.getBranchOptions() } returns emptyList()
+
+            mockMvc.perform(get("/api/v1/admin/employees/branches"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+        }
     }
 
     @Nested

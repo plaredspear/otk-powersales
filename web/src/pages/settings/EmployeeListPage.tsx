@@ -5,6 +5,7 @@ import { CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useEmployees } from '@/hooks/employee/useEmployees';
+import { useEmployeeBranches } from '@/hooks/employee/useEmployeeBranches';
 import type { Employee } from '@/api/employee';
 import { APP_AUTHORITY_OPTIONS, type AppAuthority } from '@/constants/userRole';
 import { usePermission } from '@/hooks/usePermission';
@@ -64,6 +65,11 @@ export default function EmployeeListPage() {
   const [costCenterCodeInput, setCostCenterCodeInput] = useState(costCenterCode);
   const [keywordInput, setKeywordInput] = useState(keyword);
   const [roleInput, setRoleInput] = useState(role);
+
+  // 지점 셀렉터 옵션 — 전 지점(전사). 사원 목록이 전사 조회이므로 옵션도 전사 지점이며
+  // costCenterCode 는 표시 필터로만 작동한다(보안축 아님).
+  const { data: branches } = useEmployeeBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
 
   const handleSearch = () => {
     setFilters({
@@ -215,13 +221,15 @@ export default function EmployeeListPage() {
           options={STATUS_OPTIONS}
           onChange={(val) => setStatusInput(val || '')}
         />
-        <Input
-          placeholder="지점코드"
+        <Select
+          placeholder="지점 (전체)"
+          style={{ width: 160 }}
+          value={costCenterCodeInput || undefined}
+          options={branchOptions}
           allowClear
-          style={{ width: 140 }}
-          value={costCenterCodeInput ?? ''}
-          onChange={(e) => setCostCenterCodeInput(e.target.value)}
-          onPressEnter={handleSearch}
+          showSearch
+          optionFilterProp="label"
+          onChange={(val) => setCostCenterCodeInput(val || '')}
         />
         <Select
           style={{ width: 140 }}

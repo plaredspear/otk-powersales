@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import io.mockk.every
@@ -26,11 +27,13 @@ class AdminEmployeeServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val organizationRepository: OrganizationRepository = mockk()
 
     private val adminEmployeeService = AdminEmployeeService(
         employeeRepository,
         EmployeeListExcelExporter(),
         teamMemberScheduleRepository,
+        organizationRepository,
     )
 
     init {

@@ -21,6 +21,7 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeUpdateServi
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
@@ -46,6 +47,17 @@ class AdminEmployeeController(
     private val sfPermissionInspectionService: SfPermissionInspectionService,
     private val employeeWorkHistoryService: EmployeeWorkHistoryService,
 ) {
+
+    /**
+     * 사원 목록 화면 지점 셀렉터 옵션 — 전 지점(전사) 목록.
+     * 전사 반환 근거는 [AdminEmployeeService.getBranchOptions] KDoc 참조.
+     */
+    @GetMapping("/branches")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)
+    fun getBranches(): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        val result = adminEmployeeService.getBranchOptions()
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
 
     @GetMapping
     @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.READ)

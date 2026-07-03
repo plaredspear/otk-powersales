@@ -172,12 +172,30 @@ export interface EmployeeManualRegisterRequest {
 }
 
 
+export interface EmployeeBranch {
+  branchCode: string;
+  branchName: string;
+}
+
 // --- API function ---
 
 export async function fetchEmployees(params: FetchEmployeesParams): Promise<EmployeeListData> {
   const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/employees', { params });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '사원 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 사원 목록 화면 지점 셀렉터 옵션 (`GET /api/v1/admin/employees/branches`, `employee` READ 권한 필요).
+ *
+ * 사원 목록은 전사 조회이므로 옵션도 전 지점(전사) 목록을 반환한다 (거래처의 권한별 화이트리스트와 다름).
+ */
+export async function getEmployeeBranches(): Promise<EmployeeBranch[]> {
+  const res = await client.get<ApiResponse<EmployeeBranch[]>>('/api/v1/admin/employees/branches');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
   }
   return res.data.data;
 }

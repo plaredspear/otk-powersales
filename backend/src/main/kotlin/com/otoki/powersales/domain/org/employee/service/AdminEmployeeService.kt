@@ -9,6 +9,8 @@ import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListRespons
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -22,13 +24,25 @@ import org.springframework.transaction.annotation.Transactional
 class AdminEmployeeService(
     private val employeeRepository: EmployeeRepository,
     private val employeeListExcelExporter: EmployeeListExcelExporter,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val organizationRepository: OrganizationRepository
 ) {
 
     companion object {
         /** 검색결과 전체 엑셀 export 최대 건수 (초과분 잘라냄 — 타 도메인 export 정합). */
         private const val EXPORT_MAX_ROWS = 50_000
     }
+
+    /**
+     * 사원 목록 화면 지점 셀렉터 옵션 — 전 지점(전사) 목록.
+     *
+     * 사원 목록([getEmployees]) 은 SF 표준 리스트뷰(`filterScope=Everything`) 정합으로 전사 조회이며
+     * `costCenterCode` 는 보안축이 아닌 순수 표시 필터다. 따라서 옵션도 목록 스코프와 일치하도록
+     * 권한별 화이트리스트([WomenScheduleBranchResolver])가 아닌 전사 지점 목록을 반환한다
+     * (거래처/여사원 화면과 다른 지점). [findAllTeamScheduleBranches] 는 Redis 캐시된 무인자 조회다.
+     */
+    fun getBranchOptions(): List<BranchResponse> =
+        organizationRepository.findAllTeamScheduleBranches()
 
     /**
      * 근무형태 표시 문자열 — 근무유형1(진열/행사) / 근무유형3(고정/격고/순회) 조합.
