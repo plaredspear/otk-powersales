@@ -78,10 +78,10 @@ void main() {
       changePasswordUseCase = ChangePasswordUseCase(mockRepository);
     });
 
-    test('정상 비밀번호 변경', () async {
+    test('정상 비밀번호 변경 (8자 + 3종)', () async {
       // Arrange
-      const currentPassword = 'oldpass1234';
-      const newPassword = 'newpass5678';
+      const currentPassword = 'Oldpass12!';
+      const newPassword = 'Newpass56!';
 
       // Act
       await changePasswordUseCase.call(
@@ -96,84 +96,73 @@ void main() {
 
     test('강제 변경: currentPassword null 허용', () async {
       // 강제 변경 시 currentPassword 미전달 — Repository 호출 시 null 로 전달
-      await changePasswordUseCase.call(newPassword: 'newpass1234');
+      await changePasswordUseCase.call(newPassword: 'Newpass12!');
       expect(mockRepository.lastCurrentPassword, isNull);
-      expect(mockRepository.lastNewPassword, equals('newpass1234'));
+      expect(mockRepository.lastNewPassword, equals('Newpass12!'));
     });
 
-    test('새 비밀번호 3글자 → ArgumentError (길이 위반)', () async {
-      expect(
-        () => changePasswordUseCase.call(
-          currentPassword: 'oldpass1234',
-          newPassword: 'abc',
-        ),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('4자 이상 32자 이하'),
-          ),
-        ),
-      );
-    });
-
-    test('새 비밀번호 33자 → ArgumentError (길이 초과)', () async {
-      // 33자 + 반복 없음 → 길이 위반
-      final tooLong = List.generate(33, (i) => String.fromCharCode(0x61 + (i % 26))).join();
-      expect(
-        () => changePasswordUseCase.call(
-          currentPassword: 'oldpass1234',
-          newPassword: tooLong,
-        ),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
-
-    test('새 비밀번호 "1111" → ArgumentError (4연속 위반)', () async {
-      expect(
-        () => changePasswordUseCase.call(
-          currentPassword: 'oldpass1234',
-          newPassword: '1111',
-        ),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('4번 연속'),
-          ),
-        ),
-      );
-    });
-
-    test('새 비밀번호 "aaaa" → ArgumentError (4연속 위반)', () async {
-      expect(
-        () => changePasswordUseCase.call(
-          currentPassword: 'oldpass1234',
-          newPassword: 'aaaa',
-        ),
-        throwsA(
-          isA<ArgumentError>().having(
-            (e) => e.message,
-            'message',
-            contains('4번 연속'),
-          ),
-        ),
-      );
-    });
-
-    test('정상 4글자 비밀번호 "ab12" → 성공', () async {
-      // Arrange
-      const currentPassword = 'oldpass1234';
-      const newPassword = 'ab12';
-
-      // Act
+    test('임시 비밀번호 "pwrs1234!" (9자, 3종) → 성공', () async {
       await changePasswordUseCase.call(
-        currentPassword: currentPassword,
+        currentPassword: 'Oldpass12!',
+        newPassword: 'pwrs1234!',
+      );
+      expect(mockRepository.lastNewPassword, equals('pwrs1234!'));
+    });
+
+    test('새 비밀번호 7글자 → ArgumentError (길이 위반)', () async {
+      expect(
+        () => changePasswordUseCase.call(
+          currentPassword: 'Oldpass12!',
+          newPassword: 'Abc12!x',
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('8자 이상'),
+          ),
+        ),
+      );
+    });
+
+    test('새 비밀번호 소문자만 8자 (1종) → ArgumentError (종류 위반)', () async {
+      expect(
+        () => changePasswordUseCase.call(
+          currentPassword: 'Oldpass12!',
+          newPassword: 'abcdefgh',
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('3종 이상'),
+          ),
+        ),
+      );
+    });
+
+    test('새 비밀번호 소문자+숫자 8자 (2종) → ArgumentError (종류 위반)', () async {
+      expect(
+        () => changePasswordUseCase.call(
+          currentPassword: 'Oldpass12!',
+          newPassword: 'abcd1234',
+        ),
+        throwsA(
+          isA<ArgumentError>().having(
+            (e) => e.message,
+            'message',
+            contains('3종 이상'),
+          ),
+        ),
+      );
+    });
+
+    test('동일 문자 반복이어도 8자 + 3종이면 성공 (반복금지 제거됨)', () async {
+      const newPassword = 'aaaaA1!x';
+      await changePasswordUseCase.call(
+        currentPassword: 'Oldpass12!',
         newPassword: newPassword,
       );
-
-      // Assert
-      expect(mockRepository.lastCurrentPassword, equals(currentPassword));
       expect(mockRepository.lastNewPassword, equals(newPassword));
     });
 
@@ -185,7 +174,7 @@ void main() {
       expect(
         () => changePasswordUseCase.call(
           currentPassword: 'wrongPassword',
-          newPassword: 'newpass5678',
+          newPassword: 'Newpass56!',
         ),
         throwsA(
           isA<Exception>().having(
@@ -199,8 +188,8 @@ void main() {
 
     test('Repository에 올바른 파라미터가 전달되는지 확인', () async {
       // Arrange
-      const currentPassword = 'current123';
-      const newPassword = 'new4567';
+      const currentPassword = 'Current12!';
+      const newPassword = 'Newpass45!';
 
       // Act
       await changePasswordUseCase.call(

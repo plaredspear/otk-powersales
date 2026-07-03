@@ -18,10 +18,10 @@ class ChangePasswordUseCase {
     final validation = PasswordValidation.fromPassword(newPassword);
     if (!validation.isValid) {
       if (!validation.isLengthValid) {
-        throw ArgumentError('비밀번호는 4자 이상 32자 이하여야 합니다');
+        throw ArgumentError('비밀번호는 8자 이상이어야 합니다');
       }
-      if (!validation.isNotRepeating) {
-        throw ArgumentError('같은 문자를 4번 연속 사용할 수 없습니다');
+      if (!validation.hasEnoughCharacterTypes) {
+        throw ArgumentError('영문 대/소문자·숫자·특수문자 중 3종 이상을 조합해주세요');
       }
     }
 

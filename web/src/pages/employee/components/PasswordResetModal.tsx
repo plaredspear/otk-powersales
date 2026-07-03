@@ -5,7 +5,7 @@ import { mapCredentialErrorMessage } from './credentialErrorMapping';
 
 const { Paragraph, Text } = Typography;
 
-const TEMPORARY_PASSWORD = '1234';
+const TEMPORARY_PASSWORD = 'pwrs1234!';
 
 interface PasswordResetModalProps {
   employee: Employee;

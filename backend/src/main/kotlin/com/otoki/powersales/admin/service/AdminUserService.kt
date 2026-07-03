@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional
  * web admin User 관리 화면 서비스.
  *
  * - 목록/상세 조회 (USER_READ)
- * - 비밀번호 임시 리셋 → "1234" BCrypt 해시 + passwordChangeRequired = true
+ * - 비밀번호 임시 리셋 → "pwrs1234!" BCrypt 해시 + passwordChangeRequired = true
  * - 활성/비활성 토글 — 자기 자신 비활성화 시도는 차단
  *
  * 권한 게이트는 컨트롤러 단의 `@RequiresPermission` 가 처리하며, 본 서비스는 진입 시점에
@@ -105,6 +105,6 @@ class AdminUserService(
     }
 
     companion object {
-        const val TEMPORARY_PASSWORD = "1234"
+        const val TEMPORARY_PASSWORD = "pwrs1234!"
     }
 }

@@ -24486,8 +24486,18 @@
       },
       "WebChangePasswordResponse" : {
         "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresIn" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "passwordChangeRequired" : {
             "type" : "boolean"
+          },
+          "refreshToken" : {
+            "type" : "string"
           }
         },
         "type" : "object"

@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional
  * 사원 자격 정보(단말 UUID / 비밀번호) 운영자 리셋 서비스 (Spec #582 P1-B).
  *
  * - 단말 초기화: `Employee.resetDevice()` 호출 → `deviceUuid = null`
- * - 비밀번호 임시 리셋: 임시 비밀번호 `"1234"` 를 BCrypt 해시화하여 저장 + `passwordChangeRequired = true`
+ * - 비밀번호 임시 리셋: 임시 비밀번호 `"pwrs1234!"` 를 BCrypt 해시화하여 저장 + `passwordChangeRequired = true`
  *
  * 권한 검증은 컨트롤러 단의 `@RequiresPermission(EMPLOYEE_RESET_CREDENTIALS)` 가
  * `WebAdminContextFilter` 에서 처리하며, 본 서비스는 진입 시점에 SYSTEM_ADMIN 권한 보유를 가정한다.
@@ -67,6 +67,6 @@ class AdminEmployeeCredentialService(
             }
 
     companion object {
-        const val TEMPORARY_PASSWORD = "1234"
+        const val TEMPORARY_PASSWORD = "pwrs1234!"
     }
 }

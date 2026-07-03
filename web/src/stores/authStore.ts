@@ -59,10 +59,17 @@ interface AuthState {
   user: AuthUser | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  /**
+   * 임시 비밀번호(운영자 리셋) 상태. true 면 강제 변경 화면으로 라우팅되며 변경 완료 전까지
+   * 다른 페이지 접근이 차단된다 (ProtectedRoute 가드 + backend WebPasswordChangeRequiredFilter).
+   */
+  passwordChangeRequired: boolean;
   /** 대행 중이면 메타, 아니면 null. */
   impersonation: ImpersonationState | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  /** 강제 변경 완료 시 호출 — 플래그 해제 후 정상 페이지 접근 허용. */
+  clearPasswordChangeRequired: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   /**
    * 토큰 + 사용자 전체 교체 (대행 시작/종료 시, Spec #851).
@@ -76,10 +83,13 @@ interface AuthState {
   initialize: () => void;
 }
 
+const PASSWORD_CHANGE_REQUIRED_KEY = 'passwordChangeRequired';
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   accessToken: null,
   isAuthenticated: false,
+  passwordChangeRequired: false,
   impersonation: null,
 
   login: async (username: string, password: string) => {
@@ -91,13 +101,24 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem('refreshToken', data.refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.removeItem(IMPERSONATION_KEY);
+    if (data.passwordChangeRequired) {
+      localStorage.setItem(PASSWORD_CHANGE_REQUIRED_KEY, 'true');
+    } else {
+      localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
+    }
 
     set({
       user,
       accessToken: data.accessToken,
       isAuthenticated: true,
+      passwordChangeRequired: data.passwordChangeRequired,
       impersonation: null,
     });
+  },
+
+  clearPasswordChangeRequired: () => {
+    localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
+    set({ passwordChangeRequired: false });
   },
 
   applyAuth: (tokens, userInfo, impersonation) => {
@@ -110,10 +131,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     } else {
       localStorage.removeItem(IMPERSONATION_KEY);
     }
+    // 대행 시작/종료 컨텍스트에서는 임시 비밀번호 강제 상태를 유지하지 않는다
+    // (대행자 기준 세션이고, backend 도 대행 중엔 강제 필터를 통과시킨다).
+    localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
     set({
       user,
       accessToken: tokens.accessToken,
       isAuthenticated: true,
+      passwordChangeRequired: false,
       impersonation,
     });
   },
@@ -123,7 +148,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     localStorage.removeItem(IMPERSONATION_KEY);
-    set({ user: null, accessToken: null, isAuthenticated: false, impersonation: null });
+    localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
+    set({
+      user: null,
+      accessToken: null,
+      isAuthenticated: false,
+      passwordChangeRequired: false,
+      impersonation: null,
+    });
   },
 
   setTokens: (accessToken: string, refreshToken: string) => {
@@ -153,12 +185,15 @@ export const useAuthStore = create<AuthState>((set) => ({
             localStorage.removeItem(IMPERSONATION_KEY);
           }
         }
-        set({ user, accessToken, isAuthenticated: true, impersonation });
+        const passwordChangeRequired =
+          localStorage.getItem(PASSWORD_CHANGE_REQUIRED_KEY) === 'true';
+        set({ user, accessToken, isAuthenticated: true, passwordChangeRequired, impersonation });
       } catch {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         localStorage.removeItem(IMPERSONATION_KEY);
+        localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
       }
     }
   },

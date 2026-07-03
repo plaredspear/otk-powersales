@@ -75,17 +75,17 @@ describe('PasswordResetModal (Spec #582 P2-W)', () => {
     mockedResetPassword.mockReset();
   });
 
-  it('모달에 사번/이름 + 임시 비밀번호 강조 박스("1234") + 복사 버튼이 표시된다', () => {
+  it('모달에 사번/이름 + 임시 비밀번호 강조 박스("pwrs1234!") + 복사 버튼이 표시된다', () => {
     const { baseElement } = renderModal();
     expect(screen.getByText('비밀번호 초기화 확인')).toBeInTheDocument();
     expect(baseElement).toHaveTextContent('100123');
     expect(baseElement).toHaveTextContent('홍길동');
     expect(screen.getByText('임시 비밀번호')).toBeInTheDocument();
-    expect(screen.getByText('1234')).toBeInTheDocument();
+    expect(screen.getByText('pwrs1234!')).toBeInTheDocument();
     expect(screen.getByText('사원 본인에게 별도 전달해 주세요.')).toBeInTheDocument();
   });
 
-  it('초기화 실행 성공 - 토스트 duration 10초 + 본문에 "1234" 명시 + onClose 호출', async () => {
+  it('초기화 실행 성공 - 토스트 duration 10초 + 본문에 "pwrs1234!" 명시 + onClose 호출', async () => {
     mockedResetPassword.mockResolvedValueOnce({
       employeeId: 12345,
       employeeCode: '100123',
@@ -108,7 +108,7 @@ describe('PasswordResetModal (Spec #582 P2-W)', () => {
     });
     const arg = successSpy.mock.calls[0][0];
     expect(arg.message).toContain('비밀번호가 초기화되었습니다');
-    expect(arg.description).toContain("'1234'");
+    expect(arg.description).toContain("'pwrs1234!'");
     expect(arg.duration).toBe(10);
     expect(onClose).toHaveBeenCalledTimes(1);
 

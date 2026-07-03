@@ -128,11 +128,11 @@ class AdminEmployeeCredentialServiceTest {
         fun responseDoesNotIncludePlaintextPassword() {
             val employee = activeEmployee()
             every { employeeRepository.findById(12345L) } returns Optional.of(employee)
-            every { passwordEncoder.encode("1234") } returns "BCRYPT_HASHED"
+            every { passwordEncoder.encode(AdminEmployeeCredentialService.TEMPORARY_PASSWORD) } returns "BCRYPT_HASHED"
 
             val response = service.resetPassword(12345L)
 
-            assertThat(response.toString()).doesNotContain("\"1234\"")
+            assertThat(response.toString()).doesNotContain("pwrs1234!")
         }
 
         @Test

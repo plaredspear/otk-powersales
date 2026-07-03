@@ -214,38 +214,44 @@ class WebAuthenticationServiceTest {
     inner class ChangePasswordTests {
 
         @Test
-        @DisplayName("성공 - 자발 변경 (currentPassword 일치) → 새 비밀번호 BCrypt 해시 + passwordChangeRequired=false")
+        @DisplayName("성공 - 자발 변경 (currentPassword 일치) → 새 비밀번호 BCrypt 해시 + passwordChangeRequired=false + 새 토큰 발급")
         fun changePassword_voluntary_success() {
             val user = createUser(passwordChangeRequired = false)
             val principal = principalFor(user)
             every { userRepository.findById(1L) } returns Optional.of(user)
             every { passwordEncoder.matches("oldpw", user.password) } returns true
-            every { passwordEncoder.encode("newpw123") } returns "encoded-new"
+            every { passwordEncoder.encode("Newpw123!") } returns "encoded-new"
+            stubTokenIssuance()
 
             val response = service.changePassword(
                 principal,
-                WebChangePasswordRequest(currentPassword = "oldpw", newPassword = "newpw123")
+                WebChangePasswordRequest(currentPassword = "oldpw", newPassword = "Newpw123!")
             )
 
             assertThat(response.passwordChangeRequired).isFalse()
+            assertThat(response.accessToken).isEqualTo("new-access-token")
+            assertThat(response.refreshToken).isEqualTo("new-refresh-token")
+            assertThat(response.expiresIn).isEqualTo(3600)
             assertThat(user.password).isEqualTo("encoded-new")
             assertThat(user.passwordChangeRequired).isFalse()
         }
 
         @Test
-        @DisplayName("성공 - 강제 변경 (passwordChangeRequired=true) → currentPassword 미검증")
+        @DisplayName("성공 - 강제 변경 (passwordChangeRequired=true) → currentPassword 미검증 + 새 토큰(강제 해제) 발급")
         fun changePassword_forced_success() {
             val user = createUser(passwordChangeRequired = true)
             val principal = principalFor(user, passwordChangeRequired = true)
             every { userRepository.findById(1L) } returns Optional.of(user)
-            every { passwordEncoder.encode("newpw456") } returns "encoded-new-2"
+            every { passwordEncoder.encode("Newpw456!") } returns "encoded-new-2"
+            stubTokenIssuance()
 
             val response = service.changePassword(
                 principal,
-                WebChangePasswordRequest(currentPassword = null, newPassword = "newpw456")
+                WebChangePasswordRequest(currentPassword = null, newPassword = "Newpw456!")
             )
 
             assertThat(response.passwordChangeRequired).isFalse()
+            assertThat(response.accessToken).isEqualTo("new-access-token")
             assertThat(user.password).isEqualTo("encoded-new-2")
         }
 
@@ -293,6 +299,15 @@ class WebAuthenticationServiceTest {
                 )
             }.isInstanceOf(ImpersonationPasswordChangeBlockedException::class.java)
         }
+    }
+
+    /** issueTokensFor 경로(changePassword 이후 새 토큰 발급)에 필요한 mock 일괄 설정. */
+    private fun stubTokenIssuance() {
+        every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
+        every { webJwtService.createAccessToken(any(), any(), any()) } returns "new-access-token"
+        every { webJwtService.createRefreshToken(any(), any(), any(), any(), any()) } returns "new-refresh-token"
+        every { webJwtService.getAccessTokenExpirationSeconds() } returns 3600
+        every { webJwtService.getRefreshExpirationMillis() } returns 7 * 24 * 60 * 60 * 1000L
     }
 
     private fun createUser(
