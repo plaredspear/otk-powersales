@@ -699,7 +699,8 @@ class Stage1TargetsTest {
         // partial unique index (WHERE sfid IS NOT NULL, V5/V57) 를 arbiter 로 쓰는 entity 는
         // conflictPredicate 를 반드시 지정해야 런타임 ON CONFLICT arbiter 추론이 성공한다.
         private val partialUniqueEntities = setOf(
-            "Account", "Product", "Claim", "ErpOrder", "ErpOrderProduct", "PromotionEmployee",
+            "Account", "Product", "Claim", "AgreementHistory",
+            "ErpOrder", "ErpOrderProduct", "PromotionEmployee",
         )
 
         @Test
@@ -785,6 +786,60 @@ class Stage1TargetsTest {
         fun mfeisSfidCovered() {
             assertThat(Stage1Targets.get("TeamMemberSchedule")!!.conflictUpdate!!.updateColumns)
                 .contains("monthly_female_employee_integration_schedule_sfid")
+        }
+
+        // 실제 Flyway 마이그레이션 SQL 을 파싱해 각 entity 충돌키의 unique index 가 partial 인지 실측하고,
+        // 코드의 conflictPredicate 유무를 교차검증한다. partial index (WHERE ...) 를 arbiter 로 쓰려면
+        // ON CONFLICT 에 述語 명시가 필수 — 누락 시 "no unique or exclusion constraint matching the
+        // ON CONFLICT specification" 런타임 실패 (AgreementHistory 회귀 방지). 분류를 테스트 상수에
+        // 하드코딩하지 않고 SQL 을 SoT 로 삼는다.
+        @Test
+        @DisplayName("충돌키 unique index 가 partial 이면 conflictPredicate 필수 — 마이그레이션 SQL 교차검증")
+        fun conflictPredicateMatchesMigrationSql() {
+            val migrationDir = File(System.getProperty("user.dir"))
+                .resolve("src/main/resources/db/migration")
+            assumeTrue(migrationDir.isDirectory, "migration 디렉토리 없음 — 검증 skip")
+            // `;` 로 SQL 문장 단위 분리 후 각 문장 내에서만 매칭한다 (전체 SQL 대상 광역 정규식은
+            // 대용량 V1 스키마에서 catastrophic backtracking → 타임아웃). 각 unique 정의는 단일 문장.
+            val statements = migrationDir.walkTopDown()
+                .filter { it.isFile && it.extension == "sql" }
+                .flatMap { it.readText().split(";").asSequence() }
+                .map { it.replace(Regex("""--[^\n]*"""), "") } // 라인 주석 제거
+                .toList()
+
+            backfillEntities.forEach { (target, key) ->
+                val meta = Stage1Targets.get(target)!!
+                val table = meta.tableName
+                // full: 단일 `ALTER TABLE <table> ... ADD CONSTRAINT ... UNIQUE (<key>)` 문장.
+                val fullRe = Regex(
+                    """ALTER\s+TABLE\b.*?\b$table\b.*?ADD\s+CONSTRAINT\s+\w+\s+UNIQUE\s*\(\s*$key\s*\)""",
+                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+                )
+                // partial: 단일 `CREATE UNIQUE INDEX ... ON <table> (<key>) WHERE <predicate>` 문장.
+                val partialRe = Regex(
+                    """CREATE\s+UNIQUE\s+INDEX\b.*?\bON\b.*?\b$table\b\s*\(\s*$key\s*\)\s*WHERE\s+(.+)""",
+                    setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+                )
+
+                val hasFull = statements.any { fullRe.containsMatchIn(it) }
+                val partialPredicate = statements.firstNotNullOfOrNull { stmt ->
+                    partialRe.find(stmt)?.groupValues?.get(1)?.trim()?.trimEnd(';')?.trim()
+                }
+
+                if (partialPredicate != null && !hasFull) {
+                    assertThat(meta.conflictUpdate!!.conflictPredicate)
+                        .withFailMessage(
+                            "$target 충돌키 $key 는 partial unique index (WHERE $partialPredicate) 다. " +
+                                "conflictPredicate 를 명시해야 ON CONFLICT arbiter 추론이 성공한다.",
+                        )
+                        .isEqualTo(partialPredicate)
+                } else if (hasFull) {
+                    assertThat(meta.conflictUpdate!!.conflictPredicate)
+                        .withFailMessage("$target 충돌키 $key 는 full unique 라 conflictPredicate 가 없어야 함")
+                        .isNull()
+                }
+                // else: 매칭 실패 — 다른 형태의 제약. 이 테스트 범위 밖.
+            }
         }
     }
 }

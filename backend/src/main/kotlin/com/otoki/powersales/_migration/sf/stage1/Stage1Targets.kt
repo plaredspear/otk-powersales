@@ -455,11 +455,12 @@ object Stage1Targets {
             FieldMapping("LastModifiedDate", "updated_at", nullable = false),
             FieldMapping("LastModifiedById", "last_modified_by_sfid"),
         ),
-        // employee_sfid / agreement_word_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V20) 됐다.
-        // DO NOTHING 재적재는 sfid UNIQUE(V20 idx_agreement_history_sfid) 충돌로 skip → backfill 안 됨.
-        // ON CONFLICT (sfid) DO UPDATE 로 기존 row 보강 (COALESCE 로 기존값 보존). 상세 [TeamMemberSchedule 주석].
+        // employee_sfid / agreement_word_sfid 가 최초 적재 후 뒤늦게 ADD COLUMN (V20) 됐다. DO NOTHING
+        // 재적재는 sfid 충돌로 skip → backfill 안 됨. 충돌키는 partial unique (V20 idx_agreement_history_sfid
+        // WHERE sfid IS NOT NULL) 라 conflictPredicate 로 述語 명시. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
             updateColumns = listOf(
                 "employee_sfid", "agreement_flag", "agreement_date", "agreement_word_sfid", "is_deleted",
                 "name", "owner_sfid", "created_by_sfid", "created_at", "updated_at", "last_modified_by_sfid",
