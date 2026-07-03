@@ -110,6 +110,7 @@ class EmployeeRepositoryCustomImpl(
         branchCodes: List<String>?,
         keyword: String?,
         role: String?,
+        roles: List<String>?,
         pageable: Pageable
     ): Page<Employee> {
         val where = BooleanBuilder()
@@ -129,6 +130,9 @@ class EmployeeRepositoryCustomImpl(
         }
         if (role != null) {
             where.and(employee.role.eq(role))
+        }
+        if (!roles.isNullOrEmpty()) {
+            where.and(employee.role.`in`(roles))
         }
 
         val content = queryFactory

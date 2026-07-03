@@ -14,7 +14,7 @@ export interface FetchEmployeesParams {
 }
 
 /**
- * 여사원 현황 페이지 전용 — role 은 backend 에서 WOMAN 으로 강제되므로 제외.
+ * 여사원 현황 페이지 전용 — role 은 backend 에서 여사원+조장으로 고정되므로 제외.
  */
 export interface FetchFemaleEmployeesParams {
   status?: string;

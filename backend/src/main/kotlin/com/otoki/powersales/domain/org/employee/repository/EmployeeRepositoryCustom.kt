@@ -39,11 +39,18 @@ interface EmployeeRepositoryCustom {
 
     fun findAllEmployeeCodes(): List<String>
 
+    /**
+     * @param role   단일 role 등호 필터 (`employee.role = :role`). 전체 사원 관리/lookup 화면용.
+     * @param roles  다중 role IN 필터 (`employee.role IN :roles`). 여사원 현황(여사원+조장)처럼 여러
+     *               직책을 함께 노출하는 화면용. [role] 과 [roles] 를 동시에 주면 둘 다 AND 로 적용된다
+     *               (실사용은 둘 중 하나만 지정).
+     */
     fun findEmployees(
         status: String?,
         branchCodes: List<String>?,
         keyword: String?,
         role: String?,
+        roles: List<String>?,
         pageable: Pageable
     ): Page<Employee>
 

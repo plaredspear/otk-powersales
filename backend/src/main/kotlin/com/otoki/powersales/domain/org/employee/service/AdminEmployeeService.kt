@@ -89,10 +89,12 @@ class AdminEmployeeService(
         status: String?,
         costCenterCode: String?,
         keyword: String?,
-        role: String?,
+        role: String? = null,
         page: Int,
         size: Int,
         applyBranchScope: Boolean = false,
+        // 여러 직책을 함께 노출하는 화면용 (여사원 현황 = 여사원 + 조장). null 이면 [role] 단일 필터만 적용.
+        roles: List<String>? = null,
     ): EmployeeListResponse {
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
         val branchFilter: List<String>? = if (applyBranchScope) {
@@ -112,7 +114,7 @@ class AdminEmployeeService(
         }
 
         val pageable = PageRequest.of(page, size, Sort.by("name").ascending())
-        val userPage = employeeRepository.findEmployees(status, branchFilter, keyword, role, pageable)
+        val userPage = employeeRepository.findEmployees(status, branchFilter, keyword, role, roles, pageable)
 
         // 만나이 / 근속년수 계산 기준일 — 페이지 전체에 동일 적용
         val today = LocalDate.now()
@@ -142,8 +144,10 @@ class AdminEmployeeService(
         status: String?,
         costCenterCode: String?,
         keyword: String?,
-        role: String?,
+        role: String? = null,
         applyBranchScope: Boolean = false,
+        // 여러 직책을 함께 노출하는 화면용 (여사원 현황 = 여사원 + 조장). null 이면 [role] 단일 필터만 적용.
+        roles: List<String>? = null,
     ): ExcelResult {
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
         val noAccess: Boolean
@@ -163,7 +167,7 @@ class AdminEmployeeService(
         } else {
             val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("name").ascending())
             val today = LocalDate.now()
-            val employees = employeeRepository.findEmployees(status, branchFilter, keyword, role, pageable).content
+            val employees = employeeRepository.findEmployees(status, branchFilter, keyword, role, roles, pageable).content
             val attendanceInfo = loadAttendanceInfo(employees.map { it.id })
             employees.map { emp ->
                 val info = attendanceInfo[emp.id]

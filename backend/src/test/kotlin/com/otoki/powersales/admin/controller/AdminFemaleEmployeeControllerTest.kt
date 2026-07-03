@@ -33,6 +33,11 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @DisplayName("AdminFemaleEmployeeController 테스트")
 class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
 
+    companion object {
+        /** 여사원 현황 컨트롤러가 전달하는 role 목록 (여사원 + 조장) — 컨트롤러 상수와 동일. */
+        private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN, AppAuthority.LEADER)
+    }
+
     @MockkBean
     private lateinit var adminEmployeeService: AdminEmployeeService
 
@@ -98,7 +103,8 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
         )
         every {
             adminEmployeeService.getEmployees(
-                any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any(), applyBranchScope = eq(true)
+                any(), any(), any(), any(), any(), any(), any(),
+                applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
             )
         } returns response
 
@@ -112,10 +118,11 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.content[0].age").value("45살"))
             .andExpect(jsonPath("$.data.content[0].yearsOfService").value("5년"))
 
-        // 여사원 현황은 본인 지점 스코프 적용 (applyBranchScope=true) 로 호출
+        // 여사원 현황은 여사원+조장 role + 본인 지점 스코프 적용 (applyBranchScope=true) 로 호출
         verify(exactly = 1) {
             adminEmployeeService.getEmployees(
-                any(), any(), any(), any(), eq(AppAuthority.WOMAN), any(), any(), applyBranchScope = eq(true)
+                any(), any(), any(), any(), any(), any(), any(),
+                applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
             )
         }
     }
@@ -132,8 +139,8 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
         )
         every {
             adminEmployeeService.getEmployees(
-                any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), eq(0), eq(10),
-                applyBranchScope = eq(true),
+                any(), eq("재직"), eq("A001"), eq("김"), any(), eq(0), eq(10),
+                applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
             )
         } returns response
 
@@ -156,7 +163,8 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
         val result = ExcelResult(bytes = ByteArray(800), filename = "여사원현황_20260618.xlsx")
         every {
             adminEmployeeService.exportEmployees(
-                any(), any(), any(), any(), eq(AppAuthority.WOMAN), applyBranchScope = eq(true)
+                any(), any(), any(), any(), any(),
+                applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
             )
         } returns result
 
@@ -172,12 +180,13 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("GET /api/v1/admin/female-employees/export - 검색 필터가 WOMAN role + 본인 지점 스코프로 전달")
+    @DisplayName("GET /api/v1/admin/female-employees/export - 검색 필터가 여사원+조장 role + 본인 지점 스코프로 전달")
     fun exportFemaleEmployees_filterParams() {
         val result = ExcelResult(bytes = ByteArray(10), filename = "여사원현황.xlsx")
         every {
             adminEmployeeService.exportEmployees(
-                any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), applyBranchScope = eq(true)
+                any(), eq("재직"), eq("A001"), eq("김"), any(),
+                applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
             )
         } returns result
 
@@ -191,7 +200,8 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
 
         verify {
             adminEmployeeService.exportEmployees(
-                any(), eq("재직"), eq("A001"), eq("김"), eq(AppAuthority.WOMAN), applyBranchScope = eq(true)
+                any(), eq("재직"), eq("A001"), eq("김"), any(),
+                applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
             )
         }
     }

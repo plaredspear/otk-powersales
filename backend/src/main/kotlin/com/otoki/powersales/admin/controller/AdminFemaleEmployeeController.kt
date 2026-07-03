@@ -29,9 +29,10 @@ import java.time.YearMonth
 import java.time.format.DateTimeParseException
 
 /**
- * 여사원 현황 페이지 전용 — role 은 항상 [AppAuthority.WOMAN] ("여사원") 으로 고정.
+ * 여사원 현황 페이지 전용 — role 은 [AppAuthority.WOMAN] ("여사원") + [AppAuthority.LEADER] ("조장") 로 고정.
+ * 조장은 여사원 조직을 관리하는 직책이라 여사원 현황에 함께 노출한다.
  *
- * 권한 관리 (`/settings/admin-accounts`) 등 다른 role 도 보여야 하는 화면은
+ * 권한 관리 (`/settings/admin-accounts`) 등 전체 role 을 보여야 하는 화면은
  * [AdminEmployeeController.getEmployees] 를 그대로 사용하고, 본 endpoint 는
  * 여사원 현황 화면에서만 호출한다.
  *
@@ -53,6 +54,11 @@ class AdminFemaleEmployeeController(
     private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
 ) {
 
+    companion object {
+        /** 여사원 현황에 노출할 직책 — 여사원 + 조장(여사원 조직 관리자). */
+        private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN, AppAuthority.LEADER)
+    }
+
     @GetMapping
     @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
     fun getFemaleEmployees(
@@ -69,7 +75,7 @@ class AdminFemaleEmployeeController(
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,
-            role = AppAuthority.WOMAN,
+            roles = FEMALE_EMPLOYEE_ROLES,
             page = page,
             size = size,
             // SF `SalesMemberListController` / `TeamMemberListController` 의 CostCenterCode 본인 지점 스코프 정합
@@ -93,7 +99,7 @@ class AdminFemaleEmployeeController(
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,
-            role = AppAuthority.WOMAN,
+            roles = FEMALE_EMPLOYEE_ROLES,
             applyBranchScope = true,
         )
         return ExcelResponseUtils.build(result)
