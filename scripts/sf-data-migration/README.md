@@ -68,7 +68,7 @@ backend 의 `@SFObject` 어노테이션이 붙은 모든 entity + Permission sta
 | `SharingRuleCondition` | (XML 메타) | (위 동일) — spec #790 |
 | `SharingRuleTarget` | (XML 메타) | (위 동일) — spec #790 |
 | `UserRoleHierarchySnapshot` | (XML 메타) | `POST /stage2/user-role-hierarchy` (신규 — depth/all_subordinate_ids/ancestor_path 재계산) — spec #790 |
-| `ProfileFlags` | (XML 메타 + ObjectPermissions SOQL) | `POST /stage2/fk` (profile FK) — spec #790. system 비트 5종은 profile XML, object_permissions 는 `ObjectPermissions` SOQL (`Parent.IsOwnedByProfile=TRUE`) 출처 — profile XML 은 objectPermissions 가 비어 내려오므로 SOQL 로 보강. 자연 키 profile_name 은 파일명 URL 디코딩 (`6%2E조장`→`6.조장`) 후 profile.name 평문 매칭 |
+| `ProfileFlags` | (XML 메타 + ObjectPermissions SOQL) | `POST /stage2/fk` (profile FK) — spec #790. system 비트 5종은 profile XML, object_permissions 는 `ObjectPermissions` SOQL (`Parent.IsOwnedByProfile=TRUE`) 출처 — profile XML 은 objectPermissions 가 비어 내려오므로 SOQL 로 보강. 자연 키 profile_name 은 파일명 URL 디코딩 (`6%2E조장`→`6.조장`) 후 profile.name 평문 매칭. **조장 계열(`6.조장` / `7.영업사원 + 조장`) 은 SF 재적재가 아니라 backend SoT + 부팅 sync 로 초기값 고정** — `backend/.../platform/auth/permission/LeaderProfileFlagsSeed.kt` (dev 확정 권한 SoT) + `LeaderProfileFlagsSyncRunner.kt` (부팅 시 row 없거나 `is_locally_modified=FALSE` 일 때만 upsert). SF frozen snapshot 을 고쳐 재적재할 수 없고 web admin 편집분(dirty) 은 보호해야 하므로 신규 권한은 SoT 관리 (CLAUDE.md §4 reference data 정책 정합) |
 | `PermissionSet` | `PermissionSet` | Stage 1 raw 적재 (Id/Name/Label) — spec #796. `permission_set_flags.permission_set_id` 자연 키 lookup ref. |
 | `PermissionSetFlags` | (XML 메타) | `POST /stage2/fk` (permission_set FK) — spec #790 |
 | `GroupMember` | `GroupMember` | `POST /stage2/fk` (group / user_or_group polymorphic FK) — spec #790 |
