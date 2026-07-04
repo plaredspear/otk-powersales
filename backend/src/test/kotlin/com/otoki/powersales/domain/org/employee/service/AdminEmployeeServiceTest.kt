@@ -65,6 +65,32 @@ class AdminEmployeeServiceTest {
         }
 
         @Test
+        @DisplayName("직종명은 직위(jikwee) 기준 파생 - OSPM/OSPE/OSPJ→판촉직, OSC→OSC직, 미매핑은 원본 jikjong")
+        fun jikjong_derivedFromJikwee() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val employees = listOf(
+                createEmployee(employeeCode = "1", name = "A").apply { jikwee = "OSPM"; jikjong = "원본M" },
+                createEmployee(employeeCode = "2", name = "B").apply { jikwee = "OSPE"; jikjong = "원본E" },
+                createEmployee(employeeCode = "3", name = "C").apply { jikwee = "ospj"; jikjong = "원본J" },
+                createEmployee(employeeCode = "4", name = "D").apply { jikwee = "OSC"; jikjong = "원본C" },
+                createEmployee(employeeCode = "5", name = "E").apply { jikwee = "기타"; jikjong = "관리직" },
+                createEmployee(employeeCode = "6", name = "F").apply { jikwee = null; jikjong = null },
+            )
+            val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 6L)
+            every { employeeRepository.findEmployees(null, null, null, null, null, any()) } returns page
+
+            val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
+
+            val jikjongByCode = result.content.associate { it.employeeCode to it.jikjong }
+            assertThat(jikjongByCode["1"]).isEqualTo("판촉직") // OSPM
+            assertThat(jikjongByCode["2"]).isEqualTo("판촉직") // OSPE
+            assertThat(jikjongByCode["3"]).isEqualTo("판촉직") // ospj (대소문자 무시)
+            assertThat(jikjongByCode["4"]).isEqualTo("OSC직")  // OSC
+            assertThat(jikjongByCode["5"]).isEqualTo("관리직")  // 미매핑 → 원본 jikjong
+            assertThat(jikjongByCode["6"]).isNull()            // 직위·원본 모두 없음
+        }
+
+        @Test
         @DisplayName("전체 권한 + 지점 필터 -> 지정 지점만 조회")
         fun allBranches_withCostCenterCode() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
@@ -305,7 +331,7 @@ class AdminEmployeeServiceTest {
     inner class ExportEmployeesTests {
 
         @Test
-        @DisplayName("성공 - 검색결과 전량을 헤더 23컬럼 + 데이터 행으로 출력 + 파일명 패턴")
+        @DisplayName("성공 - 검색결과 전량을 헤더 19컬럼 + 데이터 행으로 출력 + 파일명 패턴")
         fun export_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             val employees = listOf(
@@ -329,7 +355,7 @@ class AdminEmployeeServiceTest {
             assertThat(sheet.getRow(0).getCell(6).stringCellValue).isEqualTo("근무형태3")
             assertThat(sheet.getRow(0).getCell(7).stringCellValue).isEqualTo("근무거래처")
             assertThat(sheet.getRow(0).getCell(8).stringCellValue).isEqualTo("거래처코드")
-            assertThat(sheet.getRow(0).getCell(22).stringCellValue).isEqualTo("앱활성")
+            assertThat(sheet.getRow(0).getCell(18).stringCellValue).isEqualTo("앱활성")
             assertThat(sheet.getRow(1).getCell(0).stringCellValue).isEqualTo("10000001")
             assertThat(sheet.getRow(1).getCell(1).stringCellValue).isEqualTo("홍길동")
             assertThat(sheet.getRow(2).getCell(0).stringCellValue).isEqualTo("10000002")

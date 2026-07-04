@@ -31,6 +31,7 @@ data class EmployeeListItem(
     val appointmentDate: String?,
     val ordDetailNode: String?,
     // SF 여사원 리스트뷰 정합 컬럼 (직종명 / 회사 이메일 / 휴대전화 / 만나이 / 근속년수)
+    // 직종명(jikjong)은 직위(jikwee) 기준 파생 — OSPM/OSPE/OSPJ→'판촉직', OSC→'OSC직', 그 외는 원본값.
     val jikjong: String?,
     val workEmail: String?,
     val phone: String?,
@@ -47,6 +48,18 @@ data class EmployeeListItem(
     val workAccountCode: String?
 ) {
     companion object {
+        /**
+         * 직종명 표시값 — 직위(jikwee) 기준 파생.
+         * - OSPM/OSPE/OSPJ → "판촉직", OSC → "OSC직"
+         * - 그 외/미매핑 직위는 원본 [Employee.jikjong] 값을 그대로 노출 (fallback).
+         */
+        private fun deriveJikjong(employee: Employee): String? =
+            when (employee.jikwee?.trim()?.uppercase()) {
+                "OSPM", "OSPE", "OSPJ" -> "판촉직"
+                "OSC" -> "OSC직"
+                else -> employee.jikjong
+            }
+
         fun from(
             employee: Employee,
             today: LocalDate,
@@ -73,7 +86,7 @@ data class EmployeeListItem(
             jobCode = employee.jobCode,
             appointmentDate = employee.appointmentDate?.toString(),
             ordDetailNode = employee.ordDetailNode,
-            jikjong = employee.jikjong,
+            jikjong = deriveJikjong(employee),
             workEmail = employee.workEmail,
             phone = employee.phone,
             age = employee.calculateAge(today),

@@ -179,12 +179,10 @@ export default function EmployeePage() {
       align: 'center',
       render: (val: string | null) => val ?? '-',
     },
+    // 직종명 — 직위(jikwee) 기준 파생값 (OSPM/OSPE/OSPJ→판촉직, OSC→OSC직). backend 가 계산해 내려준다.
     { title: '직종명', dataIndex: 'jikjong', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
-    { title: '직책', dataIndex: 'jikchak', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '직위', dataIndex: 'jikwee', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '직급', dataIndex: 'jikgub', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
-    { title: '이메일(회사)', dataIndex: 'workEmail', width: 180, render: (val: string | null) => val ?? '-' },
-    { title: '전화번호(HP)', dataIndex: 'phone', width: 130, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '발령일', dataIndex: 'appointmentDate', width: 110, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '발령명', dataIndex: 'ordDetailNode', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '입사일', dataIndex: 'startDate', width: 110, align: 'center', render: (val: string | null) => val ?? '-' },
@@ -196,7 +194,6 @@ export default function EmployeePage() {
       // 재직 중인 사원은 퇴사일을 표시하지 않는다.
       render: (val: string | null, record: Employee) => (record.status === '재직' ? '-' : (val ?? '-')),
     },
-    { title: '만나이', dataIndex: 'age', width: 80, align: 'center', render: (val: string | null) => val ?? '-' },
     { title: '근속년수', dataIndex: 'yearsOfService', width: 90, align: 'center', render: (val: string | null) => val ?? '-' },
     {
       title: '앱활성',
