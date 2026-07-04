@@ -744,8 +744,17 @@ object Stage1Targets {
         // (실측: PSQLException duplicate key erp_order_sap_order_number_key). 항상 채워지는(NOT NULL,
         // SF Name) 자연키 sap_order_number 를 arbiter 로 삼아 '동일 주문' dedup 후 sfid 포함 전 컬럼
         // backfill. 상세 [TeamMemberSchedule 주석].
+        //
+        // ⚠️ CSV 내부 sap_order_number 진짜 중복 (SAP→SF 재전송으로 같은 주문번호가 서로 다른 sfid 로
+        // 2,898행). ON CONFLICT (sap_order_number) DO UPDATE 는 같은 INSERT 명령에 동일 sap_order_number
+        // 가 2건 이상 들어오면 "cannot affect row a second time" 으로 실패한다. dedupKey 로 staging 을
+        // sap_order_number 당 1행으로 줄이되, dedupOrderBy=created_at ASC 로 '가장 오래된(최초 생성)' 행만
+        // 남긴다 (SAP 원본 최초 전송분 우선, 사용자 결정). UNIQUE 는 유지 — findBySapOrderNumber 단건
+        // 전제(모바일 주문조회/SAP 실시간 upsert)를 보존.
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sap_order_number",
+            dedupKey = "sap_order_number",
+            dedupOrderBy = "created_at ASC",
             updateColumns = listOf(
                 "sfid", "sap_account_code", "sap_account_name", "delivery_request_date",
                 "order_date", "employee_code", "employee_name", "order_sales_amount", "order_channel",
@@ -1411,16 +1420,19 @@ object Stage1Targets {
         // 라 이미 채워진 값은 보존되고 NULL 인 컬럼만 채워진다. sfid(충돌키) 는 SET 대상에서 제외.
         //
         // ⚠️ updateOnly 제거 이력 (upsert 복원): 과거 arbiter(sfid) 외 제2 UNIQUE
-        // (promotion_emp_id_ext) 진짜 중복 6쌍이 재적재 시 duplicate key 를 유발해 updateOnly=true
+        // (promotion_emp_id_ext) 진짜 중복 6쌍(12행)이 duplicate key 를 유발해 updateOnly=true
         // (UPDATE FROM staging) 로 후퇴했었다. 그러나 UPDATE-only 는 빈 테이블 첫 적재를 INSERT 하지
         // 못해 전건 0 적재되는 치명적 결함이 있어(사용자 결정), INSERT ... ON CONFLICT DO UPDATE upsert
-        // 로 복원했다. 첫 적재(빈 테이블)는 충돌이 없어 전량 INSERT 된다.
-        // 재적재 주의: 이 entity 를 재적재하면 제2 UNIQUE(promotion_emp_id_ext) 중복 6쌍이 다시
-        // duplicate key 예외를 낼 수 있다(arbiter=sfid 가 그 위반을 못 잡음). 재적재 시나리오가
-        // 필요해지면 그때 해당 entity 만 CSV dedup 또는 제2 UNIQUE arbiter 전환으로 개별 대응한다.
-        // 일괄 적재는 continue-on-error 라 이 entity 만 FAILED 되고 나머지는 계속 적재된다.
+        // 로 복원했다.
+        // dedupKey=promotion_emp_id_ext: CSV 내부에 promotion_emp_id_ext 진짜 중복 12행(비어있지 않은
+        // 값)이 있어, 첫 적재여도 arbiter=sfid 로 INSERT 하면 promotion_emp_id_ext partial UNIQUE
+        // (WHERE ... IS NOT NULL, spec #694)를 위반한다(ON CONFLICT(sfid)가 못 잡음). staging 을
+        // promotion_emp_id_ext non-NULL 값당 1행으로 줄여(가장 오래된 행) 위반을 방지. NULL 행(134만)은
+        // partial UNIQUE 대상이 아니므로 buildStagingSource 의 NULL 제외 로직으로 전량 보존된다.
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sfid",
+            dedupKey = "promotion_emp_id_ext",
+            dedupOrderBy = "created_at ASC",
             updateColumns = listOf(
                 "name", "employee_sfid", "working_date", "working_type",
                 "working_category1", "working_category2", "working_category3", "working_category4",

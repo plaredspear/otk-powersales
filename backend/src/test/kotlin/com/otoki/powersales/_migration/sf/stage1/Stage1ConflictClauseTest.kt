@@ -100,4 +100,44 @@ class Stage1ConflictClauseTest {
                 "WHERE t.sfid = s.sfid AND s.sfid IS NOT NULL AND t.sfid IS NOT NULL",
         )
     }
+
+    @Test
+    @DisplayName("dedupKey 미지정 → staging 테이블명 그대로 (dedup 없음)")
+    fun stagingSourceWithoutDedup() {
+        val cu = ConflictUpdate(conflictColumn = "sfid", updateColumns = listOf("name"))
+        val sql = Stage1S3CopyService.buildStagingSource(cu, "sfid, name", "stg")
+        assertThat(sql).isEqualTo("stg")
+    }
+
+    @Test
+    @DisplayName("dedupKey 지정 → non-NULL 은 DISTINCT ON 으로 1행, NULL 은 전량 보존 (UNION ALL)")
+    fun stagingSourceWithNullSafeDedup() {
+        val cu = ConflictUpdate(
+            conflictColumn = "sfid",
+            conflictPredicate = "sfid IS NOT NULL",
+            dedupKey = "sap_order_number",
+            dedupOrderBy = "created_at ASC",
+            updateColumns = listOf("name"),
+        )
+        val sql = Stage1S3CopyService.buildStagingSource(cu, "sfid, name, sap_order_number, created_at", "stg")
+        assertThat(sql).isEqualTo(
+            "(SELECT DISTINCT ON (sap_order_number) sfid, name, sap_order_number, created_at FROM stg " +
+                "WHERE sap_order_number IS NOT NULL ORDER BY sap_order_number, created_at ASC " +
+                "UNION ALL " +
+                "SELECT sfid, name, sap_order_number, created_at FROM stg WHERE sap_order_number IS NULL) dedup_src",
+        )
+    }
+
+    @Test
+    @DisplayName("dedupKey 지정 + dedupOrderBy 누락 → error")
+    fun stagingSourceDedupRequiresOrderBy() {
+        val cu = ConflictUpdate(
+            conflictColumn = "sfid",
+            dedupKey = "sap_order_number",
+            updateColumns = listOf("name"),
+        )
+        org.junit.jupiter.api.assertThrows<IllegalStateException> {
+            Stage1S3CopyService.buildStagingSource(cu, "sfid, name", "stg")
+        }
+    }
 }

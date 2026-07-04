@@ -132,10 +132,23 @@ data class EntityMetadata(
  *
  * @param updateOnly true → INSERT 대신 UPDATE FROM staging (backfill 전용, 신규 INSERT 없음).
  *   arbiter 외 UNIQUE 를 가진 entity(team_member_schedule/claim 등)의 근본 해결.
+ *
+ * ## staging dedup — 자연키 UNIQUE 를 arbiter(sfid) 로 못 잡는 CSV 내부 중복 처리
+ * SAP→SF 전송 등으로 SF 원본 CSV 에 자연키(예: sap_order_number) 가 서로 다른 sfid 로 진짜 중복돼
+ * 있으면, arbiter=sfid 로 INSERT 할 때 그 자연키 UNIQUE(erp_order_sap_order_number_key)를 위반한다
+ * (ON CONFLICT(sfid) 는 sap_order_number 위반을 못 잡음). [dedupKey] 를 지정하면 INSERT-SELECT 가
+ * `SELECT DISTINCT ON (dedupKey) ... ORDER BY dedupKey, <dedupOrderBy>` 로 staging 을 미리 dedup 해
+ * 각 dedupKey 당 1행만 INSERT 한다. UNIQUE 는 유지(런타임 findByX 단건 전제 보존)하면서 중복은 제거.
+ *
+ * @param dedupKey null 아니면 이 컬럼 기준으로 staging 을 dedup (각 값당 1행만 INSERT).
+ * @param dedupOrderBy dedup 시 어느 행을 남길지 tie-breaker 정렬 (예: "created_at ASC" = 가장 오래된
+ *   행 유지). dedupKey 지정 시 필수. DISTINCT ON 의 ORDER BY 는 `dedupKey, <dedupOrderBy>` 로 조립된다.
  */
 data class ConflictUpdate(
     val conflictColumn: String,
     val updateColumns: List<String>,
     val conflictPredicate: String? = null,
     val updateOnly: Boolean = false,
+    val dedupKey: String? = null,
+    val dedupOrderBy: String? = null,
 )

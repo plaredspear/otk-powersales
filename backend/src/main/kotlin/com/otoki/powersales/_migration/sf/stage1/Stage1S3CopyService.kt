@@ -320,13 +320,13 @@ class Stage1S3CopyService(
                 val copyRowCount = copyIn.handledRowCount.toInt()
 
                 // updateOnly → INSERT 없이 UPDATE FROM staging 으로 기존 행만 backfill
-                // (arbiter 외 UNIQUE 를 가진 entity 의 신규 INSERT 충돌 회피). 그 외 → 기존 INSERT ... ON CONFLICT.
+                // (arbiter 외 UNIQUE 를 가진 entity 의 신규 INSERT 충돌 회피). 그 외 → INSERT ... ON CONFLICT.
                 val cu = meta.conflictUpdate
                 val insSql = if (cu?.updateOnly == true) {
                     buildUpdateFromStagingSql(meta, cu, fullyQualified, quotedTable, stagingTable)
                 } else {
                     "INSERT INTO $fullyQualified ($columnsList) " +
-                        "SELECT $columnsList FROM $stagingTable " +
+                        "SELECT $columnsList FROM ${buildStagingSource(cu, columnsList, stagingTable)} " +
                         buildConflictClause(meta, quotedTable)
                 }
                 val inserted = conn.createStatement().use { st -> st.executeUpdate(insSql) }
@@ -359,6 +359,39 @@ class Stage1S3CopyService(
         if (name == "user") "\"user\"" else name
 
     companion object {
+        /**
+         * INSERT-SELECT 의 FROM 소스 생성.
+         *
+         * - conflictUpdate.dedupKey 미지정 → staging 테이블명 그대로 (기존 동작).
+         * - 지정 → dedupKey non-NULL 행만 DISTINCT ON 으로 중복 제거하고, dedupKey NULL 행은 전량
+         *   보존하는 서브쿼리를 반환한다:
+         *   ```
+         *   (SELECT DISTINCT ON (<dedupKey>) <cols> FROM staging WHERE <dedupKey> IS NOT NULL
+         *      ORDER BY <dedupKey>, <dedupOrderBy>
+         *    UNION ALL
+         *    SELECT <cols> FROM staging WHERE <dedupKey> IS NULL) dedup_src
+         *   ```
+         *   SF 원본 CSV 에 자연키(sap_order_number / promotion_emp_id_ext 등)가 서로 다른 sfid 로 진짜
+         *   중복돼 있을 때, arbiter=sfid 로 INSERT 하면 그 자연키 partial UNIQUE(WHERE key IS NOT NULL)를
+         *   위반한다(ON CONFLICT(sfid)가 못 잡음). non-NULL 중복만 1행으로 줄여 UNIQUE 위반과
+         *   "cannot affect row a second time" 을 방지하되, NULL 행(TMS 는 134만 행이 NULL)은 partial
+         *   UNIQUE 대상이 아니므로 dedup 없이 전량 보존한다 (DISTINCT ON 이 NULL 을 한 그룹으로 뭉개는
+         *   것을 회피). dedupOrderBy(예: "created_at ASC")로 어느 중복 행을 남길지 결정(가장 오래된 행 등).
+         */
+        internal fun buildStagingSource(
+            cu: ConflictUpdate?,
+            columnsList: String,
+            stagingTable: String,
+        ): String {
+            val dedupKey = cu?.dedupKey ?: return stagingTable
+            val orderBy = cu.dedupOrderBy
+                ?: error("dedupKey 지정 시 dedupOrderBy 필수 (어느 중복 행을 남길지)")
+            return "(SELECT DISTINCT ON ($dedupKey) $columnsList FROM $stagingTable " +
+                "WHERE $dedupKey IS NOT NULL ORDER BY $dedupKey, $orderBy " +
+                "UNION ALL " +
+                "SELECT $columnsList FROM $stagingTable WHERE $dedupKey IS NULL) dedup_src"
+        }
+
         /**
          * INSERT 의 ON CONFLICT 절 생성.
          *
