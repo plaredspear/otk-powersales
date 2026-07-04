@@ -74,6 +74,17 @@ class HerokuStage1CopyProgress(
     private val insertedRowsRef = AtomicLong(0L)
     private val unmatchedRowsRef = AtomicLong(0L)
 
+    // 진행률 persist 스로틀 — advanceProcessed/advanceFiltered 는 대용량 적재에서 행마다 호출되므로,
+    // 매 행 Redis write(JSON 직렬화 + 네트워크 왕복)를 하면 그 자체가 병목이 된다. in-memory 카운터는
+    // 매 행 정확히 갱신하되, Redis persist 는 PERSIST_ROW_INTERVAL 행마다만 수행한다. entity 시작/종료 등
+    // 상태 전이는 별도로 즉시 persist 하므로 최종 수치는 항상 정확히 반영된다.
+    private val lastPersistedProgressRow = AtomicLong(0L)
+
+    private companion object {
+        // 진행률 스냅샷 Redis persist 최소 행 간격 (SF Stage1 과 동일 정책).
+        const val PERSIST_ROW_INTERVAL = 5_000L
+    }
+
     val errors: ConcurrentLinkedQueue<String> = ConcurrentLinkedQueue()
 
     private val entityResultsRef: MutableList<EntityResult> =
@@ -94,6 +105,7 @@ class HerokuStage1CopyProgress(
         this.filteredOutRef.set(0L)
         this.insertedRowsRef.set(0L)
         this.unmatchedRowsRef.set(0L)
+        this.lastPersistedProgressRow.set(0L)
         this.errors.clear()
         synchronized(entityResultsRef) { entityResultsRef.clear() }
         this.startedAt = Instant.now()
@@ -112,6 +124,7 @@ class HerokuStage1CopyProgress(
         this.filteredOutRef.set(0L)
         this.insertedRowsRef.set(0L)
         this.unmatchedRowsRef.set(0L)
+        this.lastPersistedProgressRow.set(0L)
         this.errors.clear()
         synchronized(entityResultsRef) {
             entityResultsRef.clear()
@@ -214,12 +227,27 @@ class HerokuStage1CopyProgress(
 
     fun advanceProcessed(delta: Long = 1L) {
         processedRowsRef.addAndGet(delta)
-        persist()
+        maybePersistProgress()
     }
 
     fun advanceFiltered(delta: Long = 1L) {
         filteredOutRef.addAndGet(delta)
-        persist()
+        maybePersistProgress()
+    }
+
+    /**
+     * 진행률(processed+filtered)이 마지막 persist 시점 대비 [PERSIST_ROW_INTERVAL] 행 이상 증가했을
+     * 때만 Redis 스냅샷을 저장한다 (매 행 write 방지). 카운터는 in-memory 로 정확하며, entity 종료 시
+     * 즉시 persist 하므로 polling 최종 수치는 항상 정확하다. 동시 호출 시 CAS 로 한 스레드만 persist.
+     */
+    private fun maybePersistProgress() {
+        val current = processedRowsRef.get() + filteredOutRef.get()
+        val last = lastPersistedProgressRow.get()
+        if (current - last >= PERSIST_ROW_INTERVAL &&
+            lastPersistedProgressRow.compareAndSet(last, current)
+        ) {
+            persist()
+        }
     }
 
     fun setInserted(value: Long) {
