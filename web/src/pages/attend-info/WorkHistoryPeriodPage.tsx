@@ -1,86 +1,30 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
   Checkbox,
+  Empty,
   Input,
   InputNumber,
-  message,
   Select,
   Space,
   Tag,
   Typography,
 } from 'antd';
-import { CaretRightOutlined, DownloadOutlined, SearchOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import { SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import {
-  useAttendInfoBranches,
-  useAttendInfoMembers,
-  useWorkHistoryPeriodSummary,
-  useWorkHistoryPeriodSummaryExport,
-} from '@/hooks/attend-info/useAttendInfo';
-import type { WorkHistoryMonthlyStat, WorkHistoryPeriodSummaryItem } from '@/api/attendInfo';
+import { useAttendInfoBranches, useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
 import type { TeamMember } from '@/api/team-schedule';
-import ResizableTable from '@/components/common/ResizableTable';
-import { listTableLocale } from '@/lib/listTableLocale';
 import { MonthlyMemberSelectPanel } from './components/monthly/MonthlyMemberSelectPanel';
 import PeriodAccountBreakdown from './components/period/PeriodAccountBreakdown';
 
 const { Text } = Typography;
 
-function formatNumber(value: number): string {
-  return value.toLocaleString('ko-KR');
-}
-
 // 조회 가능한 최대 기간(개월). backend WorkHistoryPeriodSummaryService.MAX_RANGE_MONTHS 와 정합.
 const MAX_RANGE_MONTHS = 6;
 
-const MONTHLY_CELL_BG = '#fafafa';
-
-/**
- * 단일 테이블의 통합 행 — 여사원 합계 행(summary) 과, 그 아래 끼워 넣는 월별 통계 행(monthly).
- * 별도 자식 테이블 대신 같은 테이블의 일반 행으로 편입해 컬럼 정렬을 구조적으로 일치시킨다.
- */
-type SummaryRow = WorkHistoryPeriodSummaryItem & { __kind: 'summary'; __key: string };
-type MonthlyRow = WorkHistoryMonthlyStat & { __kind: 'monthly'; __key: string };
-type TableRow = SummaryRow | MonthlyRow;
-
-const isSummary = (r: TableRow): r is SummaryRow => r.__kind === 'summary';
-
-// 월별(monthly) 행에서 식별부(소속지점~직위) 자리를 회색 배경으로 표시하기 위한 onCell.
-const monthlyIdentityCell = (record: TableRow) =>
-  isSummary(record) ? {} : { style: { backgroundColor: MONTHLY_CELL_BG } };
-
-// 숫자 지표 컬럼 정의 생성 — summary/monthly 양쪽 동일 dataIndex 라 render 분기 불필요.
-function numericColumn(
-  title: string,
-  dataIndex: keyof WorkHistoryMonthlyStat,
-  width: number,
-): ColumnsType<TableRow>[number] {
-  return {
-    title,
-    dataIndex,
-    width,
-    align: 'right',
-    render: (v: number) => formatNumber(v),
-  };
-}
-
-interface QueryParams {
-  fromYearMonth: string;
-  toYearMonth: string;
-  costCenterCodes: string[];
-  keyword: string;
-}
-
 function toYearMonth(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`;
-}
-
-/** 여사원 합계 행 식별 키 — 확장 상태 / 월별 행 부모 매칭에 사용. */
-function summaryKeyOf(item: WorkHistoryPeriodSummaryItem): string {
-  return item.employeeCode ?? item.employeeName ?? '';
 }
 
 export default function WorkHistoryPeriodPage() {
@@ -91,9 +35,8 @@ export default function WorkHistoryPeriodPage() {
   const [toMonth, setToMonth] = useState(now.month() + 1);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
-  const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
-  // 펼쳐진 여사원 합계 행 키 집합 (월별 통계 행 노출 대상).
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  // 조회 버튼으로 확정된 거래처별 뷰 조회 조건. 여사원 선택 + 조회 클릭 시에만 설정된다.
+  const [appliedQuery, setAppliedQuery] = useState<{ fromYearMonth: string; toYearMonth: string } | null>(null);
   // 좌측 패널 여사원 목록의 조회 지점 (다중/전사 권한자 선택). 단일지점 사용자는 자동 채움.
   const [memberBranchCode, setMemberBranchCode] = useState<string | undefined>(undefined);
   // 좌측 패널에서 선택한 여사원 — 선택 시 우측이 거래처별 집계 뷰로 전환.
@@ -108,9 +51,6 @@ export default function WorkHistoryPeriodPage() {
   const allSelected = allCodes.length > 0 && selectedCodes.length === allCodes.length;
   const someSelected = selectedCodes.length > 0 && !allSelected;
   const singleBranch = branches.length === 1;
-
-  const { data, isLoading, isError, error } = useWorkHistoryPeriodSummary(queryParams);
-  const exportMutation = useWorkHistoryPeriodSummaryExport();
 
   // 좌측 패널 여사원 목록 — 월별 근무내역(개인) 탭과 동일 소스 (퇴사/휴직 포함, attend_info 권한).
   // 단일지점 사용자는 자동선택 effect 가 지점을 채우기 전의 무의미한 fetch 를 억제 (이중 조회 방지).
@@ -130,15 +70,18 @@ export default function WorkHistoryPeriodPage() {
     }
   }, [branches, memberBranchCode]);
 
-  // 패널 지점 변경 시 이전 지점에서 고른 여사원은 무효 — 선택 해제.
+  // 패널 지점 변경 시 이전 지점에서 고른 여사원은 무효 — 선택 해제 + 확정 조회 초기화.
   const handleMemberBranchChange = (code: string) => {
     setMemberBranchCode(code);
     setSelectedMember(undefined);
+    setAppliedQuery(null);
   };
 
-  // 같은 여사원 재클릭 시 선택 해제 (전체 집계 목록으로 복귀), 다른 여사원이면 교체.
+  // 같은 여사원 재클릭 시 선택 해제, 다른 여사원이면 교체. 어느 쪽이든 확정 조회를 초기화해
+  // 새 여사원은 조회 버튼을 다시 눌러야 결과가 뜬다.
   const handleMemberSelect = (member: TeamMember) => {
     setSelectedMember((prev) => (prev?.employeeId === member.employeeId ? undefined : member));
+    setAppliedQuery(null);
   };
 
   const fromYm = toYearMonth(fromYear, fromMonth);
@@ -151,127 +94,15 @@ export default function WorkHistoryPeriodPage() {
   const exceedsMax = inclusiveMonths > MAX_RANGE_MONTHS;
   const rangeInvalid = reversed || exceedsMax;
 
+  // 조회 — 여사원 선택을 전제로 한다. 선택한 여사원의 거래처별 뷰 조회 조건을 확정.
   const handleSearch = () => {
-    if (rangeInvalid) return;
-    // 단일지점 사용자는 본인 지점 자동 선택, 미선택이면 빈 배열(권한 스코프 전체)로 조회.
-    const codes = singleBranch && selectedCodes.length === 0 ? allCodes : selectedCodes;
-    setQueryParams({ fromYearMonth: fromYm, toYearMonth: toYm, costCenterCodes: codes, keyword });
+    if (rangeInvalid || !selectedMember) return;
+    setAppliedQuery({ fromYearMonth: fromYm, toYearMonth: toYm });
   };
-
-  // 지점이 하나뿐인 사용자는 선택할 지점이 없으므로 페이지 진입 시(지점 목록 로드 후) 현재 년월로 1회 자동 조회.
-  const autoSearchedRef = useRef(false);
-  useEffect(() => {
-    if (autoSearchedRef.current) return;
-    if (!singleBranch || rangeInvalid) return;
-    autoSearchedRef.current = true;
-    setQueryParams({ fromYearMonth: fromYm, toYearMonth: toYm, costCenterCodes: allCodes, keyword });
-  }, [singleBranch, rangeInvalid, fromYm, toYm, allCodes, keyword]);
 
   const handleToggleAll = () => {
     setSelectedCodes(allSelected ? [] : allCodes);
   };
-
-  // 펼침 가능한(월별 분해가 있는) 행 클릭 시 확장 토글.
-  const toggleRow = (item: WorkHistoryPeriodSummaryItem) => {
-    if (item.monthlyBreakdown.length === 0) return;
-    const key = summaryKeyOf(item);
-    setExpandedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  const handleExport = () => {
-    if (!queryParams) return;
-    exportMutation.mutate(queryParams, {
-      onError: (e) =>
-        message.error(e instanceof Error ? e.message : '엑셀 다운로드에 실패했습니다'),
-    });
-  };
-
-  const exportDisabled = queryParams == null || !data || data.items.length === 0;
-
-  // 펼친 여사원 합계 행 뒤에 그 월별 통계 행을 끼워 넣은 단일 테이블 데이터.
-  // 별도 자식 테이블이 아니라 같은 테이블의 일반 행이라 컬럼 정렬이 구조적으로 항상 일치한다.
-  const tableRows = useMemo<TableRow[]>(() => {
-    const items = data?.items ?? [];
-    const rows: TableRow[] = [];
-    for (const item of items) {
-      const key = summaryKeyOf(item);
-      rows.push({ ...item, __kind: 'summary', __key: key });
-      if (expandedKeys.has(key)) {
-        for (const m of item.monthlyBreakdown) {
-          rows.push({ ...m, __kind: 'monthly', __key: `${key}__${m.yearMonth}` });
-        }
-      }
-    }
-    return rows;
-  }, [data, expandedKeys]);
-
-  // 단일 컬럼 정의 — summary/monthly 행을 같은 컬럼으로 렌더. 월별 행은 식별부(소속지점/사번/이름)를
-  // 회색 배경의 빈 칸으로 두고, 년월(yyyy-MM) 은 직위 컬럼(4번째)에 흰색 배경으로 표시한다.
-  const columns: ColumnsType<TableRow> = [
-    {
-      title: '소속지점',
-      dataIndex: 'orgName',
-      width: 120,
-      ellipsis: true,
-      onCell: monthlyIdentityCell,
-      render: (_v, record) => {
-        if (!isSummary(record)) return null; // 월별 행: 빈 칸 (년월은 직위 컬럼에 표시)
-        const expandable = record.monthlyBreakdown.length > 0;
-        const expanded = expandedKeys.has(record.__key);
-        return (
-          <Space size={4}>
-            {expandable ? (
-              <CaretRightOutlined
-                style={{
-                  transition: 'transform 0.2s',
-                  transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                }}
-              />
-            ) : (
-              <span style={{ display: 'inline-block', width: 14 }} />
-            )}
-            <span>{record.orgName ?? '-'}</span>
-          </Space>
-        );
-      },
-    },
-    {
-      title: '사번',
-      dataIndex: 'employeeCode',
-      width: 100,
-      ellipsis: true,
-      onCell: monthlyIdentityCell,
-      render: (_v, record) => (isSummary(record) ? record.employeeCode ?? '-' : null),
-    },
-    {
-      title: '이름',
-      dataIndex: 'employeeName',
-      width: 100,
-      ellipsis: true,
-      onCell: monthlyIdentityCell,
-      render: (_v, record) => (isSummary(record) ? record.employeeName ?? '-' : null),
-    },
-    {
-      title: '직위',
-      dataIndex: 'title',
-      width: 90,
-      ellipsis: true,
-      // 직위 컬럼은 월별 행에서 년월을 표시하며 배경은 흰색(회색 onCell 미적용).
-      render: (_v, record) => (isSummary(record) ? record.title ?? '-' : record.yearMonth),
-    },
-    numericColumn('총 근무일수', 'totalWorkingDays', 110),
-    numericColumn('근무 거래처 수', 'workingAccountCount', 120),
-    numericColumn('진열', 'displayDays', 80),
-    numericColumn('행사', 'eventDays', 80),
-    numericColumn('근무', 'workDays', 80),
-    numericColumn('연차', 'annualLeaveDays', 80),
-    numericColumn('대휴', 'altHolidayDays', 80),
-  ];
 
   return (
     <div>
@@ -378,18 +209,10 @@ export default function WorkHistoryPeriodPage() {
             type="primary"
             icon={<SearchOutlined />}
             onClick={handleSearch}
-            disabled={rangeInvalid}
-            loading={isLoading}
+            // 여사원을 선택해야만 조회 가능 — 미선택 시 조회 차단.
+            disabled={rangeInvalid || !selectedMember}
           >
             조회
-          </Button>
-          <Button
-            icon={<DownloadOutlined />}
-            onClick={handleExport}
-            disabled={exportDisabled}
-            loading={exportMutation.isPending}
-          >
-            엑셀 다운로드
           </Button>
         </Space>
       </div>
@@ -447,48 +270,31 @@ export default function WorkHistoryPeriodPage() {
             />
           )}
 
-          {selectedMember ? (
-            <PeriodAccountBreakdown
-              member={selectedMember}
-              fromYearMonth={fromYm}
-              toYearMonth={toYm}
-              rangeInvalid={rangeInvalid}
-              onClear={() => setSelectedMember(undefined)}
+          {!selectedMember ? (
+            // 여사원 미선택 — 조회는 여사원 선택을 전제로 한다 (조회 버튼도 미선택 시 비활성).
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="좌측에서 여사원을 선택하면 거래처별 근무내역을 조회합니다."
+              style={{ marginTop: 48 }}
+            />
+          ) : appliedQuery == null ? (
+            // 여사원은 선택했으나 아직 조회 전 — 상단 조회 버튼을 눌러야 결과를 표시.
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="조회 버튼을 눌러 선택한 여사원의 거래처별 근무내역을 조회하세요."
+              style={{ marginTop: 48 }}
             />
           ) : (
-            <>
-              {isError && (
-                <Alert
-                  type="error"
-                  message="조회 실패"
-                  description={error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다'}
-                  style={{ marginBottom: 16 }}
-                />
-              )}
-
-              {queryParams != null && data && (
-                <Text style={{ marginBottom: 8, display: 'block' }}>
-                  총 {formatNumber(data.totalCount)}명
-                </Text>
-              )}
-              <ResizableTable
-                rowKey="__key"
-                columns={columns}
-                dataSource={tableRows}
-                loading={isLoading}
-                pagination={false}
-                size="small"
-                sticky
-                scroll={{ x: 'max-content' }}
-                // summary 행(월별 분해 보유) 클릭 시 확장 토글 + 포인터 커서. monthly 행은 클릭 무반응.
-                onRow={(record) =>
-                  isSummary(record) && record.monthlyBreakdown.length > 0
-                    ? { onClick: () => toggleRow(record), style: { cursor: 'pointer' } }
-                    : {}
-                }
-                locale={listTableLocale({ searched: queryParams != null })}
-              />
-            </>
+            <PeriodAccountBreakdown
+              member={selectedMember}
+              fromYearMonth={appliedQuery.fromYearMonth}
+              toYearMonth={appliedQuery.toYearMonth}
+              rangeInvalid={rangeInvalid}
+              onClear={() => {
+                setSelectedMember(undefined);
+                setAppliedQuery(null);
+              }}
+            />
           )}
         </div>
       </div>
