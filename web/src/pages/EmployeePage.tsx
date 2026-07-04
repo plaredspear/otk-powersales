@@ -10,7 +10,7 @@ import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
 import { useFemaleEmployeeBranches } from '@/hooks/employee/useFemaleEmployeeBranches';
-import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
+import { getPPTTeamTypeColor, PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL } from '@/constants/pptTeamType';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import { FEMALE_EMPLOYEE_EXPORT_PATH, type Employee } from '@/api/employee';
@@ -32,6 +32,27 @@ const STATUS_OPTIONS = [
   { value: '퇴직', label: '퇴직' },
 ];
 
+// 근무형태1(진열/행사) — backend WorkingCategory1 displayName 정합. '' 은 전체.
+const WORK_TYPE1_OPTIONS = [
+  { value: '', label: '근무형태 전체' },
+  { value: '진열', label: '진열' },
+  { value: '행사', label: '행사' },
+];
+
+// 근무형태3(고정/격고/순회) — backend WorkingCategory3 displayName 정합. 근무형태1 선택 시에만 활성.
+const WORK_TYPE3_OPTIONS = [
+  { value: '', label: '세부 전체' },
+  { value: '고정', label: '고정' },
+  { value: '격고', label: '격고' },
+  { value: '순회', label: '순회' },
+];
+
+// 전문행사조 — 일반 포함 6개 + '전체' 선택지. value '' = 전체(미필터).
+const PPT_FILTER_OPTIONS = [
+  { value: '', label: '전문행사조 전체' },
+  ...PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL,
+];
+
 const DEVICE_TOOLTIP =
   '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
 const PASSWORD_TOOLTIP =
@@ -46,16 +67,41 @@ export default function EmployeePage() {
     navigate(`/female-employee/${id}`, { state: { listSearch: location.search } });
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
-    defaultFilters: { status: '', costCenterCode: '', keyword: '' },
+    defaultFilters: {
+      status: '',
+      costCenterCode: '',
+      keyword: '',
+      workType1: '',
+      workType3: '',
+      professionalPromotionTeam: '',
+    },
   });
-  const { status, costCenterCode, keyword } = filters;
+  const { status, costCenterCode, keyword, workType1, workType3, professionalPromotionTeam } = filters;
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
   const [statusInput, setStatusInput] = useState(status);
   const [costCenterCodeInput, setCostCenterCodeInput] = useState(costCenterCode);
   const [keywordInput, setKeywordInput] = useState(keyword);
+  const [workType1Input, setWorkType1Input] = useState(workType1);
+  const [workType3Input, setWorkType3Input] = useState(workType3);
+  const [pptInput, setPptInput] = useState(professionalPromotionTeam);
+
+  // 근무형태1 변경 시 세부(근무형태3) 는 초기화 — '진열/행사' 를 바꾸면 하위 선택은 무효.
+  const handleWorkType1Change = (v: string) => {
+    setWorkType1Input(v);
+    if (!v) setWorkType3Input('');
+  };
 
   const handleSearch = () => {
-    setFilters({ status: statusInput, costCenterCode: costCenterCodeInput, keyword: keywordInput });
+    // 근무형태1 미선택이면 근무형태3 도 전송하지 않는다 (세부는 상위에 종속).
+    const nextWorkType3 = workType1Input ? workType3Input : '';
+    setFilters({
+      status: statusInput,
+      costCenterCode: costCenterCodeInput,
+      keyword: keywordInput,
+      workType1: workType1Input,
+      workType3: nextWorkType3,
+      professionalPromotionTeam: pptInput,
+    });
   };
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조와 동일 backend resolver).
@@ -80,6 +126,9 @@ export default function EmployeePage() {
     status: status || undefined,
     costCenterCode: costCenterCode || undefined,
     keyword: keyword || undefined,
+    workType1: workType1 || undefined,
+    workType3: workType3 || undefined,
+    professionalPromotionTeam: professionalPromotionTeam || undefined,
     page,
     size,
   });
@@ -93,6 +142,9 @@ export default function EmployeePage() {
         ...(status ? { status } : {}),
         ...(costCenterCode ? { costCenterCode } : {}),
         ...(keyword ? { keyword } : {}),
+        ...(workType1 ? { workType1 } : {}),
+        ...(workType3 ? { workType3 } : {}),
+        ...(professionalPromotionTeam ? { professionalPromotionTeam } : {}),
       },
       totalCount: data?.totalElements,
       maxRows: EXCEL_EXPORT_MAX_ROWS,
@@ -282,6 +334,26 @@ export default function EmployeePage() {
           value={statusInput ?? ''}
           options={STATUS_OPTIONS}
           onChange={setStatusInput}
+        />
+        <Select
+          style={{ width: 140 }}
+          value={workType1Input ?? ''}
+          options={WORK_TYPE1_OPTIONS}
+          onChange={handleWorkType1Change}
+        />
+        <Select
+          style={{ width: 120 }}
+          value={workType3Input ?? ''}
+          options={WORK_TYPE3_OPTIONS}
+          onChange={setWorkType3Input}
+          // 근무형태(진열/행사) 선택 시에만 세부(고정/격고/순회) 선택 가능.
+          disabled={!workType1Input}
+        />
+        <Select
+          style={{ width: 160 }}
+          value={pptInput ?? ''}
+          options={PPT_FILTER_OPTIONS}
+          onChange={setPptInput}
         />
         <Input
           placeholder="사번 또는 이름 검색"

@@ -9,7 +9,9 @@ import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberSchedu
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.promotion.entity.Promotion
 import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -38,6 +40,9 @@ class TeamMemberScheduleRepositoryTest {
 
     @Autowired
     private lateinit var teamMemberScheduleRepository: TeamMemberScheduleRepository
+
+    @Autowired
+    private lateinit var employeeRepository: EmployeeRepository
 
     @Autowired
     private lateinit var testEntityManager: TestEntityManager
@@ -788,6 +793,164 @@ class TeamMemberScheduleRepositoryTest {
                 .findLatestAttendanceInfoByEmployeeIds(emptyList())
 
             assertThat(result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("findEmployees - 근무형태(최근 출근등록 1건) / 전문행사조 필터")
+    inner class FindEmployeesWorkTypeAndPromotionFilter {
+
+        @BeforeEach
+        fun removeBaseEmployee() {
+            // 바깥 setUp 이 만든 testEmployee(EMP001, 전문행사조 null) 는 본 필터 테스트의 모수에서 제외 —
+            // '일반' 필터 등에 섞이지 않도록 삭제하고 격리된 사원만 다룬다.
+            employeeRepository.delete(testEmployee)
+            testEntityManager.flush()
+            testEntityManager.clear()
+        }
+
+        /** attendanceLog 가 연결된(=출근등록된) TMS 1건을 persist 한다. */
+        private fun persistAttendedSchedule(
+            employee: Employee,
+            workingDate: LocalDate,
+            category1: WorkingCategory1?,
+            category3: WorkingCategory3?,
+        ) {
+            val attendanceLog = testEntityManager.persistAndFlush(AttendanceLog())
+            val schedule = testEntityManager.persistAndFlush(
+                TeamMemberSchedule(
+                    employee = employee,
+                    workingDate = workingDate,
+                    workingType = WorkingType.WORK,
+                    workingCategory1 = category1,
+                    workingCategory3 = category3,
+                )
+            )
+            teamMemberScheduleRepository.updateAttendanceLog(schedule.id, attendanceLog.id)
+        }
+
+        private fun persistEmployee(
+            code: String,
+            promotionTeam: ProfessionalPromotionTeamType? = null,
+        ): Employee = testEntityManager.persistAndFlush(
+            Employee(employeeCode = code, name = "사원$code", professionalPromotionTeam = promotionTeam)
+        )
+
+        @Test
+        @DisplayName("근무형태1(행사) 필터 - 최근 출근등록이 행사인 사원만 조회")
+        fun filterByWorkType1() {
+            val today = LocalDate.now()
+            val eventEmp = persistEmployee("E1")
+            val displayEmp = persistEmployee("E2")
+            val noAttendanceEmp = persistEmployee("E3") // 출근등록 이력 없음 → 제외 대상
+            persistAttendedSchedule(eventEmp, today, WorkingCategory1.EVENT, WorkingCategory3.FIXED)
+            persistAttendedSchedule(displayEmp, today, WorkingCategory1.DISPLAY, WorkingCategory3.PATROL)
+            testEntityManager.clear()
+
+            val result = employeeRepository.findEmployees(
+                null, null, null, null, null,
+                WorkingCategory1.EVENT, null, null, false,
+                PageRequest.of(0, 20),
+            )
+
+            assertThat(result.content.map { it.employeeCode }).containsExactly("E1")
+            assertThat(result.content.map { it.employeeCode }).doesNotContain("E2", "E3")
+        }
+
+        @Test
+        @DisplayName("근무형태1+3(진열/순회) 필터 - 최근 1건이 두 조건 모두 일치하는 사원만")
+        fun filterByWorkType1And3() {
+            val today = LocalDate.now()
+            val target = persistEmployee("T1")
+            val wrongCat3 = persistEmployee("T2")
+            persistAttendedSchedule(target, today, WorkingCategory1.DISPLAY, WorkingCategory3.PATROL)
+            persistAttendedSchedule(wrongCat3, today, WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
+            testEntityManager.clear()
+
+            val result = employeeRepository.findEmployees(
+                null, null, null, null, null,
+                WorkingCategory1.DISPLAY, WorkingCategory3.PATROL, null, false,
+                PageRequest.of(0, 20),
+            )
+
+            assertThat(result.content.map { it.employeeCode }).containsExactly("T1")
+        }
+
+        @Test
+        @DisplayName("근무형태 필터는 '가장 최근 1건' 기준 - 과거에 행사였어도 최근이 진열이면 제외")
+        fun filterUsesLatestOnly() {
+            val today = LocalDate.now()
+            val emp = persistEmployee("L1")
+            // 과거: 행사 / 최근: 진열 — 행사 필터에는 잡히지 않아야 한다.
+            persistAttendedSchedule(emp, today.minusDays(3), WorkingCategory1.EVENT, WorkingCategory3.FIXED)
+            persistAttendedSchedule(emp, today, WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
+            testEntityManager.clear()
+
+            val eventResult = employeeRepository.findEmployees(
+                null, null, null, null, null,
+                WorkingCategory1.EVENT, null, null, false,
+                PageRequest.of(0, 20),
+            )
+            val displayResult = employeeRepository.findEmployees(
+                null, null, null, null, null,
+                WorkingCategory1.DISPLAY, null, null, false,
+                PageRequest.of(0, 20),
+            )
+
+            assertThat(eventResult.content.map { it.employeeCode }).doesNotContain("L1")
+            assertThat(displayResult.content.map { it.employeeCode }).containsExactly("L1")
+        }
+
+        @Test
+        @DisplayName("전문행사조 필터 - 지정 조의 사원만 조회")
+        fun filterByPromotionTeam() {
+            persistEmployee("P1", ProfessionalPromotionTeamType.RAMEN_SALE)
+            persistEmployee("P2", ProfessionalPromotionTeamType.CURRY_PROMOTION)
+            persistEmployee("P3", null)
+            testEntityManager.clear()
+
+            val result = employeeRepository.findEmployees(
+                null, null, null, null, null,
+                null, null, ProfessionalPromotionTeamType.RAMEN_SALE, false,
+                PageRequest.of(0, 20),
+            )
+
+            assertThat(result.content.map { it.employeeCode }).containsExactly("P1")
+        }
+
+        @Test
+        @DisplayName("전문행사조 '일반'(미배정) 필터 - professionalPromotionTeam IS NULL 인 사원만")
+        fun filterByPromotionTeamGeneral() {
+            persistEmployee("G1", null)
+            persistEmployee("G2", ProfessionalPromotionTeamType.RAMEN_SALE)
+            testEntityManager.clear()
+
+            val result = employeeRepository.findEmployees(
+                null, null, null, null, null,
+                null, null, null, true,
+                PageRequest.of(0, 20),
+            )
+
+            assertThat(result.content.map { it.employeeCode }).containsExactly("G1")
+        }
+
+        @Test
+        @DisplayName("근무형태 + 전문행사조 동시 필터 - 둘 다 만족하는 사원만")
+        fun filterByWorkTypeAndPromotionTeam() {
+            val today = LocalDate.now()
+            val match = persistEmployee("M1", ProfessionalPromotionTeamType.RAMEN_SALE)
+            val wrongTeam = persistEmployee("M2", ProfessionalPromotionTeamType.CURRY_PROMOTION)
+            persistAttendedSchedule(match, today, WorkingCategory1.EVENT, WorkingCategory3.FIXED)
+            persistAttendedSchedule(wrongTeam, today, WorkingCategory1.EVENT, WorkingCategory3.FIXED)
+            testEntityManager.clear()
+
+            val result = employeeRepository.findEmployees(
+                null, null, null, null, null,
+                WorkingCategory1.EVENT, null, ProfessionalPromotionTeamType.RAMEN_SALE, false,
+                PageRequest.of(0, 20),
+            )
+
+            assertThat(result.content.map { it.employeeCode }).containsExactly("M1")
         }
     }
 }

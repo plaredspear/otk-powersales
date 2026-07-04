@@ -20,6 +20,11 @@ export interface FetchFemaleEmployeesParams {
   status?: string;
   costCenterCode?: string;
   keyword?: string;
+  // 근무형태1(진열/행사) / 근무형태3(고정/격고/순회) — 최근 출근등록 1건 기준 필터.
+  workType1?: string;
+  workType3?: string;
+  // 전문행사조 — 조명(라면세일조 등) 또는 '일반'(미배정). 미지정이면 전체.
+  professionalPromotionTeam?: string;
   page?: number;
   size?: number;
 }

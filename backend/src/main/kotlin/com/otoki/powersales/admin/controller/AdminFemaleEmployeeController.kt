@@ -67,6 +67,11 @@ class AdminFemaleEmployeeController(
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false) keyword: String?,
+        // 근무형태1(진열/행사) / 근무형태3(고정/격고/순회) — 최근 출근등록 1건 기준 필터.
+        @RequestParam(required = false) workType1: String?,
+        @RequestParam(required = false) workType3: String?,
+        // 전문행사조 — 조명(라면세일조 등) 또는 '일반'(미배정). blank 면 전체.
+        @RequestParam(required = false) professionalPromotionTeam: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int,
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
@@ -80,6 +85,9 @@ class AdminFemaleEmployeeController(
             size = size,
             // SF `SalesMemberListController` / `TeamMemberListController` 의 CostCenterCode 본인 지점 스코프 정합
             applyBranchScope = true,
+            workType1 = workType1,
+            workType3 = workType3,
+            professionalPromotionTeam = professionalPromotionTeam,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -93,6 +101,9 @@ class AdminFemaleEmployeeController(
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) workType1: String?,
+        @RequestParam(required = false) workType3: String?,
+        @RequestParam(required = false) professionalPromotionTeam: String?,
     ): ResponseEntity<ByteArray> {
         val result = adminEmployeeService.exportEmployees(
             scope = scope,
@@ -101,6 +112,9 @@ class AdminFemaleEmployeeController(
             keyword = keyword,
             roles = FEMALE_EMPLOYEE_ROLES,
             applyBranchScope = true,
+            workType1 = workType1,
+            workType3 = workType3,
+            professionalPromotionTeam = professionalPromotionTeam,
         )
         return ExcelResponseUtils.build(result)
     }

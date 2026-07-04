@@ -6,8 +6,11 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -54,7 +57,7 @@ class AdminEmployeeServiceTest {
 
             val employees = listOf(createEmployee(employeeCode = "10000001", name = "홍길동"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { employeeRepository.findEmployees(null, null, null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
 
@@ -77,7 +80,7 @@ class AdminEmployeeServiceTest {
                 createEmployee(employeeCode = "6", name = "F").apply { jikwee = null; jikjong = null },
             )
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 6L)
-            every { employeeRepository.findEmployees(null, null, null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
 
@@ -97,7 +100,7 @@ class AdminEmployeeServiceTest {
 
             val employees = listOf(createEmployee(employeeCode = "10000001", costCenterCode = "A001"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { employeeRepository.findEmployees(null, listOf("A001"), null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, listOf("A001"), null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, "A001", null, null, 0, 20)
 
@@ -116,7 +119,7 @@ class AdminEmployeeServiceTest {
             )
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 2L)
             // applyBranchScope=false (행사 그리드/사원 목록 등) — 지점 보안축 미적용. costCenterCode 미지정 → 전사.
-            every { employeeRepository.findEmployees(null, null, null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
 
@@ -131,7 +134,7 @@ class AdminEmployeeServiceTest {
             val employees = listOf(createEmployee(employeeCode = "10000002", costCenterCode = "B002"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             // scope.branchCodes=["A001"] 이지만 applyBranchScope=false 라 표시 필터(B002)를 그대로 전달
-            every { employeeRepository.findEmployees(null, listOf("B002"), null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, listOf("B002"), null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, "B002", null, null, 0, 20)
 
@@ -147,7 +150,7 @@ class AdminEmployeeServiceTest {
             val employees = listOf(createEmployee(employeeCode = "10000001"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             // applyBranchScope=false — 보안축 없음. costCenterCode 미지정 → 전사(branchFilter=null)
-            every { employeeRepository.findEmployees(null, null, null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20)
 
@@ -162,7 +165,7 @@ class AdminEmployeeServiceTest {
             val employees = listOf(createEmployee(employeeCode = "10000001"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             // applyBranchScope=true + isAllBranches → EffectiveBranchResult.All → branchFilter=null
-            every { employeeRepository.findEmployees(null, null, null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, null, null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(
                 scope, null, null, null, null, 0, 20, applyBranchScope = true
@@ -180,7 +183,7 @@ class AdminEmployeeServiceTest {
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             // applyBranchScope=true + 미지정 → EffectiveBranchResult.Filtered(["A001","A002"])
             every {
-                employeeRepository.findEmployees(null, listOf("A001", "A002"), null, null, null, any())
+                employeeRepository.findEmployees(null, listOf("A001", "A002"), null, null, null, any(), any(), any(), any(), any())
             } returns page
 
             val result = adminEmployeeService.getEmployees(
@@ -213,7 +216,7 @@ class AdminEmployeeServiceTest {
             val employees = listOf(createEmployee(employeeCode = "10000001", costCenterCode = "A001"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
             // applyBranchScope=true + 권한 내 A001 선택 → Filtered(["A001"])
-            every { employeeRepository.findEmployees(null, listOf("A001"), null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, listOf("A001"), null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(
                 scope, null, "A001", null, null, 0, 20, applyBranchScope = true
@@ -230,7 +233,7 @@ class AdminEmployeeServiceTest {
 
             val employees = listOf(createEmployee(employeeCode = "10000001", status = "재직"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { employeeRepository.findEmployees("재직", null, null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees("재직", null, null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, "재직", null, null, null, 0, 20)
 
@@ -244,11 +247,68 @@ class AdminEmployeeServiceTest {
 
             val employees = listOf(createEmployee(employeeCode = "10000001", name = "홍길동"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { employeeRepository.findEmployees(null, null, "홍", null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, null, "홍", null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, null, "홍", null, 0, 20)
 
             assertThat(result.content).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("근무형태/전문행사조 문자열 필터를 enum 으로 파싱해 repository 에 전달")
+        fun workTypeAndPromotionFilterParsedToRepository() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val page = PageImpl(emptyList<Employee>(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+            every {
+                employeeRepository.findEmployees(
+                    null, null, null, null, null,
+                    WorkingCategory1.EVENT, WorkingCategory3.PATROL,
+                    ProfessionalPromotionTeamType.RAMEN_SALE, false,
+                    any(),
+                )
+            } returns page
+
+            adminEmployeeService.getEmployees(
+                scope, null, null, null, null, 0, 20,
+                workType1 = "행사", workType3 = "순회", professionalPromotionTeam = "라면세일조",
+            )
+
+            verify {
+                employeeRepository.findEmployees(
+                    null, null, null, null, null,
+                    WorkingCategory1.EVENT, WorkingCategory3.PATROL,
+                    ProfessionalPromotionTeamType.RAMEN_SALE, false,
+                    any(),
+                )
+            }
+        }
+
+        @Test
+        @DisplayName("전문행사조 '일반' 필터 -> promotionTeamGeneral=true 로 전달 (IS NULL)")
+        fun promotionTeamGeneralParsed() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            val page = PageImpl(emptyList<Employee>(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+            every {
+                employeeRepository.findEmployees(null, null, null, null, null, null, null, null, true, any())
+            } returns page
+
+            adminEmployeeService.getEmployees(
+                scope, null, null, null, null, 0, 20, professionalPromotionTeam = "일반",
+            )
+
+            verify {
+                employeeRepository.findEmployees(null, null, null, null, null, null, null, null, true, any())
+            }
+        }
+
+        @Test
+        @DisplayName("유효하지 않은 근무형태 값 -> IllegalArgumentException")
+        fun invalidWorkTypeThrows() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+            assertThatThrownBy {
+                adminEmployeeService.getEmployees(scope, null, null, null, null, 0, 20, workType1 = "존재안함")
+            }.isInstanceOf(IllegalArgumentException::class.java)
         }
 
         @Test
@@ -258,7 +318,7 @@ class AdminEmployeeServiceTest {
 
             val employees = listOf(createEmployee(employeeCode = "10000001", costCenterCode = "A001"))
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 1L)
-            every { employeeRepository.findEmployees(null, listOf("A001"), null, null, null, any()) } returns page
+            every { employeeRepository.findEmployees(null, listOf("A001"), null, null, null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.getEmployees(scope, null, "A001", null, null, 0, 20)
 
@@ -276,7 +336,7 @@ class AdminEmployeeServiceTest {
             )
             val page = PageImpl(employees, PageRequest.of(0, 20, Sort.by("name").ascending()), 2L)
             every {
-                employeeRepository.findEmployees(null, listOf("A001"), null, null, listOf("여사원", "조장"), any())
+                employeeRepository.findEmployees(null, listOf("A001"), null, null, listOf("여사원", "조장"), any(), any(), any(), any(), any())
             } returns page
 
             val result = adminEmployeeService.getEmployees(
@@ -286,7 +346,7 @@ class AdminEmployeeServiceTest {
 
             assertThat(result.content).hasSize(2)
             verify {
-                employeeRepository.findEmployees(null, listOf("A001"), null, null, listOf("여사원", "조장"), any())
+                employeeRepository.findEmployees(null, listOf("A001"), null, null, listOf("여사원", "조장"), any(), any(), any(), any(), any())
             }
         }
     }
@@ -339,7 +399,7 @@ class AdminEmployeeServiceTest {
                 createEmployee(employeeCode = "10000002", name = "김영희"),
             )
             val page = PageImpl(employees, PageRequest.of(0, 50_000, Sort.by("name").ascending()), 2L)
-            every { employeeRepository.findEmployees(null, null, null, "여사원", null, any()) } returns page
+            every { employeeRepository.findEmployees(null, null, null, "여사원", null, any(), any(), any(), any(), any()) } returns page
 
             val result = adminEmployeeService.exportEmployees(
                 scope, null, null, null, "여사원", applyBranchScope = true
@@ -367,13 +427,14 @@ class AdminEmployeeServiceTest {
         fun export_filterAndPageSize() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             val page = PageImpl(emptyList<Employee>(), PageRequest.of(0, 50_000, Sort.by("name").ascending()), 0L)
-            every { employeeRepository.findEmployees("재직", null, "홍", "여사원", null, any()) } returns page
+            every { employeeRepository.findEmployees("재직", null, "홍", "여사원", null, any(), any(), any(), any(), any()) } returns page
 
             adminEmployeeService.exportEmployees(scope, "재직", null, "홍", "여사원", applyBranchScope = true)
 
             verify {
                 employeeRepository.findEmployees(
                     "재직", null, "홍", "여사원", null,
+                    any(), any(), any(), any(),
                     match { it.pageSize == 50_000 }
                 )
             }
@@ -392,7 +453,7 @@ class AdminEmployeeServiceTest {
             assertThat(workbook.getSheetAt(0).lastRowNum).isEqualTo(0) // 헤더 행만
             workbook.close()
             verify(exactly = 0) {
-                employeeRepository.findEmployees(any(), any(), any(), any(), any(), any())
+                employeeRepository.findEmployees(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
             }
         }
     }

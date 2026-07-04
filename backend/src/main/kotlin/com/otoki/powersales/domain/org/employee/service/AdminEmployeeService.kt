@@ -7,10 +7,13 @@ import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailRespo
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -31,6 +34,44 @@ class AdminEmployeeService(
     companion object {
         /** 검색결과 전체 엑셀 export 최대 건수 (초과분 잘라냄 — 타 도메인 export 정합). */
         private const val EXPORT_MAX_ROWS = 50_000
+    }
+
+    /**
+     * 여사원 현황 조회/엑셀 공통 필터 — 문자열 요청 파라미터를 repository 술어용 값으로 파싱한 결과.
+     * 근무형태(1/3)는 최근 출근등록 1건 기준, 전문행사조는 사원 자체 필드 기준.
+     */
+    private data class EmployeeSearchFilters(
+        val workType1: WorkingCategory1?,
+        val workType3: WorkingCategory3?,
+        val promotionTeam: ProfessionalPromotionTeamType?,
+        val promotionTeamGeneral: Boolean,
+    )
+
+    /**
+     * 근무형태1/근무형태3/전문행사조 문자열 필터를 파싱. 유효하지 않은 근무형태 값은 [IllegalArgumentException].
+     * 전문행사조는 '일반'(미배정) 을 [ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME] 로 받아 IS NULL 필터로 변환하고,
+     * 그 외 유효하지 않은 값은 매칭 실패로 간주해 무시(빈 결과가 아닌 미적용)하지 않고 명시적으로 예외 처리한다.
+     */
+    private fun parseSearchFilters(
+        workType1: String?,
+        workType3: String?,
+        professionalPromotionTeam: String?,
+    ): EmployeeSearchFilters {
+        val wt1 = workType1?.takeIf { it.isNotBlank() }?.let {
+            WorkingCategory1.fromDisplayNameOrNull(it)
+                ?: throw IllegalArgumentException("유효하지 않은 근무형태1: $it")
+        }
+        val wt3 = workType3?.takeIf { it.isNotBlank() }?.let {
+            WorkingCategory3.fromDisplayNameOrNull(it)
+                ?: throw IllegalArgumentException("유효하지 않은 근무형태3: $it")
+        }
+        val pptRaw = professionalPromotionTeam?.takeIf { it.isNotBlank() }
+        val general = pptRaw == ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME
+        val ppt = if (general) null else pptRaw?.let {
+            ProfessionalPromotionTeamType.fromDisplayNameOrNull(it)
+                ?: throw IllegalArgumentException("유효하지 않은 전문행사조: $it")
+        }
+        return EmployeeSearchFilters(wt1, wt3, ppt, general)
     }
 
     /**
@@ -86,7 +127,12 @@ class AdminEmployeeService(
         applyBranchScope: Boolean = false,
         // 여러 직책을 함께 노출하는 화면용 (여사원 현황 = 여사원 + 조장). null 이면 [role] 단일 필터만 적용.
         roles: List<String>? = null,
+        // 근무형태(최근 출근등록 1건 기준) / 전문행사조 필터. blank/null 이면 미적용.
+        workType1: String? = null,
+        workType3: String? = null,
+        professionalPromotionTeam: String? = null,
     ): EmployeeListResponse {
+        val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam)
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
         val branchFilter: List<String>? = if (applyBranchScope) {
             when (val result = scope.effectiveBranchCodes(requestedBranch)) {
@@ -105,7 +151,11 @@ class AdminEmployeeService(
         }
 
         val pageable = PageRequest.of(page, size, Sort.by("name").ascending())
-        val userPage = employeeRepository.findEmployees(status, branchFilter, keyword, role, roles, pageable)
+        val userPage = employeeRepository.findEmployees(
+            status, branchFilter, keyword, role, roles,
+            filters.workType1, filters.workType3, filters.promotionTeam, filters.promotionTeamGeneral,
+            pageable,
+        )
 
         // 만나이 / 근속년수 계산 기준일 — 페이지 전체에 동일 적용
         val today = LocalDate.now()
@@ -139,7 +189,12 @@ class AdminEmployeeService(
         applyBranchScope: Boolean = false,
         // 여러 직책을 함께 노출하는 화면용 (여사원 현황 = 여사원 + 조장). null 이면 [role] 단일 필터만 적용.
         roles: List<String>? = null,
+        // 근무형태(최근 출근등록 1건 기준) / 전문행사조 필터. blank/null 이면 미적용.
+        workType1: String? = null,
+        workType3: String? = null,
+        professionalPromotionTeam: String? = null,
     ): ExcelResult {
+        val filters = parseSearchFilters(workType1, workType3, professionalPromotionTeam)
         val requestedBranch = costCenterCode?.takeIf { it.isNotBlank() }
         val noAccess: Boolean
         val branchFilter: List<String>? = if (applyBranchScope) {
@@ -158,7 +213,11 @@ class AdminEmployeeService(
         } else {
             val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("name").ascending())
             val today = LocalDate.now()
-            val employees = employeeRepository.findEmployees(status, branchFilter, keyword, role, roles, pageable).content
+            val employees = employeeRepository.findEmployees(
+                status, branchFilter, keyword, role, roles,
+                filters.workType1, filters.workType3, filters.promotionTeam, filters.promotionTeamGeneral,
+                pageable,
+            ).content
             val attendanceInfo = loadAttendanceInfo(employees.map { it.id })
             employees.map { emp ->
                 val info = attendanceInfo[emp.id]
