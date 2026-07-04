@@ -388,7 +388,7 @@ SELECT
     Category__c, DKRetail__Category__c, DKRetail__Type__c, Category1__c, Category2__c, Category3__c,
     AccountId__c, DKRetail__SAPAccountCode__c,
     DKRetail__EmployeeId__c,
-    DKRetail__ProductId__c, ProductCode__c,
+    DKRetail__ProductId__c,
     OrgCostCenterCode__c, CostCenterCode__c,
     CarNumber__c, ClaimDate__c, ClaimType__c, ClaimTypeMeasures__c,
     LogisticsResponsibility__c, WERK1_TEXT2__c, WERK3_TEXT2__c,
@@ -754,7 +754,7 @@ EOF
 UPLOAD_FILE_SOQL=$(cat <<'EOF'
 SELECT
     Id, Name, UniqueKey__c, RecordId__c, Size__c, Object__c, Url__c,
-    UploadKbn__c, FileId__c, Date__c, IsDeleted, CreatedDate, LastModifiedDate,
+    UploadKbn__c, FileId__c, IsDeleted, CreatedDate, LastModifiedDate,
     OwnerId, CreatedById, LastModifiedById
 FROM UploadFile__c
 EOF
