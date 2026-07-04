@@ -285,6 +285,38 @@ export interface WorkHistoryAccountStat {
   workDays: number;
   annualLeaveDays: number;
   altHolidayDays: number;
+  /** 총 투입횟수 (통합일정 정의). 거래처 미연결이면 0. */
+  totalInputCount: number;
+  /** 총 환산근무일수 (통합일정 정의, Σ(1/N) 기간 합). 문자열(BigDecimal) 또는 숫자. */
+  equivalentWorkingDays: string | number;
+  /**
+   * 월별 분해 (yyyy-MM 오름차순). 행 펼침 시 표시. 환산인원은 여기에만 담긴다(분모가 월마다 달라 합산 불가).
+   * 단일 월 조회면 빈 배열.
+   */
+  monthlyStats: WorkHistoryAccountMonthlyStat[];
+}
+
+/**
+ * 기간별 근무내역(개인) — 거래처별 행의 월별 분해 (통합일정 B그룹).
+ * 환산인원(월 단위로만 정의)과 근무형태 대표값을 월별로 제공.
+ */
+export interface WorkHistoryAccountMonthlyStat {
+  /** 대상 년월 (yyyy-MM). */
+  yearMonth: string;
+  totalWorkingDays: number;
+  totalInputCount: number;
+  /** 환산근무일수 (Σ(1/N)). 문자열(BigDecimal) 또는 숫자. */
+  equivalentWorkingDays: string | number;
+  /** 환산인원 (환산근무일수 ÷ 당월근무일수). 문자열(BigDecimal) 또는 숫자. */
+  convertedHeadcount: string | number;
+  /** 근무형태1 대표값. */
+  workingCategory1: string | null;
+  /** 근무형태3 대표값. */
+  workingCategory3: string | null;
+  /** 근무형태4 대표값 (secondWorkType). */
+  workingCategory4: string | null;
+  /** 근무형태5 대표값. */
+  workingCategory5: string | null;
 }
 
 export interface WorkHistoryEmployeeAccountResponse {

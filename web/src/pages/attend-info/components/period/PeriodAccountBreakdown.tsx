@@ -1,7 +1,7 @@
-import { Alert, Button, Tag, Typography } from 'antd';
+import { Alert, Button, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useWorkHistoryEmployeeAccounts } from '@/hooks/attend-info/useAttendInfo';
-import type { WorkHistoryAccountStat } from '@/api/attendInfo';
+import type { WorkHistoryAccountMonthlyStat, WorkHistoryAccountStat } from '@/api/attendInfo';
 import { MEMBER_STATUS_COLOR, type TeamMember } from '@/api/team-schedule';
 import ResizableTable from '@/components/common/ResizableTable';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -22,6 +22,14 @@ interface Props {
 
 function formatNumber(value: number): string {
   return value.toLocaleString('ko-KR');
+}
+
+/** 환산 계열(BigDecimal 문자열/숫자) → 소수 표시. 값 없으면 '-'. */
+function formatDecimal(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '-';
+  const num = typeof value === 'string' ? Number(value) : value;
+  if (Number.isNaN(num)) return '-';
+  return num.toLocaleString('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 4 });
 }
 
 function numericColumn(
@@ -80,6 +88,57 @@ const columns: ColumnsType<WorkHistoryAccountStat> = [
   numericColumn('근무', 'workDays', 80),
   numericColumn('연차', 'annualLeaveDays', 80),
   numericColumn('대휴', 'altHolidayDays', 80),
+  {
+    title: '총 투입횟수',
+    dataIndex: 'totalInputCount',
+    width: 110,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '총 환산근무일수',
+    dataIndex: 'equivalentWorkingDays',
+    width: 130,
+    align: 'right',
+    render: (v: string | number) => formatDecimal(v),
+  },
+];
+
+/** 월별 분해(펼침) 컬럼 — 환산인원 + 근무형태 대표값은 월 단위로만 정의되어 여기에만 표시. */
+const monthlyColumns: ColumnsType<WorkHistoryAccountMonthlyStat> = [
+  { title: '년월', dataIndex: 'yearMonth', width: 100 },
+  {
+    title: '근무일수',
+    dataIndex: 'totalWorkingDays',
+    width: 90,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '투입횟수',
+    dataIndex: 'totalInputCount',
+    width: 90,
+    align: 'right',
+    render: (v: number) => formatNumber(v),
+  },
+  {
+    title: '환산근무일수',
+    dataIndex: 'equivalentWorkingDays',
+    width: 120,
+    align: 'right',
+    render: (v: string | number) => formatDecimal(v),
+  },
+  {
+    title: '환산인원',
+    dataIndex: 'convertedHeadcount',
+    width: 100,
+    align: 'right',
+    render: (v: string | number) => formatDecimal(v),
+  },
+  { title: '근무형태1', dataIndex: 'workingCategory1', width: 100, render: (v: string | null) => v ?? '-' },
+  { title: '근무형태3', dataIndex: 'workingCategory3', width: 100, render: (v: string | null) => v ?? '-' },
+  { title: '근무형태4', dataIndex: 'workingCategory4', width: 100, render: (v: string | null) => v ?? '-' },
+  { title: '근무형태5', dataIndex: 'workingCategory5', width: 100, render: (v: string | null) => v ?? '-' },
 ];
 
 /**
@@ -160,6 +219,20 @@ export default function PeriodAccountBreakdown({
         pagination={false}
         sticky
         scroll={{ x: 'max-content' }}
+        expandable={{
+          // 월별 분해(환산인원·근무형태)는 다월 조회일 때만 채워진다. 있는 행만 펼침 가능.
+          rowExpandable: (r: WorkHistoryAccountStat) => r.monthlyStats.length > 0,
+          expandedRowRender: (r: WorkHistoryAccountStat) => (
+            <Table<WorkHistoryAccountMonthlyStat>
+              rowKey={(m) => m.yearMonth}
+              columns={monthlyColumns}
+              dataSource={r.monthlyStats}
+              pagination={false}
+              size="small"
+              scroll={{ x: 'max-content' }}
+            />
+          ),
+        }}
         locale={listTableLocale({
           searched: !rangeInvalid,
           emptyText: '선택한 기간에 근무내역이 없습니다.',

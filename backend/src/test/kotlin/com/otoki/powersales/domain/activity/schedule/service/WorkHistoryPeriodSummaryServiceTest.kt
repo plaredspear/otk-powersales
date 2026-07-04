@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -31,8 +32,9 @@ class WorkHistoryPeriodSummaryServiceTest {
         name: String = "홍길동",
         orgName: String? = "강남지점",
         jikwee: String? = "사원",
+        id: Long = 100L,
     ): Employee {
-        val emp = Employee(employeeCode = code, name = name)
+        val emp = Employee(id = id, employeeCode = code, name = name)
         emp.orgName = orgName
         emp.jikwee = jikwee
         return emp
@@ -252,6 +254,14 @@ class WorkHistoryPeriodSummaryServiceTest {
     @DisplayName("거래처별 집계 (getAccountSummary)")
     inner class AccountSummary {
 
+        // B그룹(통합일정 지표) 모수 조회 — 기본은 빈 리스트. B그룹 검증 테스트만 개별 override.
+        @BeforeEach
+        fun setUpBMetricsPopulation() {
+            every {
+                repository.findAttendedSchedulesByEmployeeAndMonth(any(), any(), any())
+            } returns emptyList()
+        }
+
         private fun namedAccount(id: Long, name: String): Account {
             val acc = Account(id = id, externalKey = "B$id")
             acc.name = name
@@ -377,6 +387,86 @@ class WorkHistoryPeriodSummaryServiceTest {
         fun validatesRange() {
             assertThatThrownBy { service.getAccountSummary(allScope, "20230016", "2026-01", "2026-07") }
                 .isInstanceOf(InvalidParameterException::class.java)
+        }
+
+        /** costCenterCode 를 세팅한 B그룹 모수용 출근 스케줄. */
+        private fun attended(
+            emp: Employee,
+            acc: Account,
+            workingDate: LocalDate,
+            costCenter: String = "CC1",
+            category1: WorkingCategory1 = WorkingCategory1.DISPLAY,
+        ): TeamMemberSchedule = schedule(emp, acc, workingDate, WorkingType.WORK, category1)
+            .apply { costCenterCode = costCenter }
+
+        @Test
+        @DisplayName("B그룹(통합일정) — 환산근무일수 Σ(1/N)·환산인원·투입횟수를 통합일정 정의대로 산출한다")
+        fun computesIntegrationBMetrics() {
+            val emp = employee()
+            val martA = namedAccount(1, "이마트 원주점")
+            val martB = namedAccount(2, "홈플러스 원주점")
+            // 표시용 조회 (거래처별 뷰 원천) — 사원 A/B 근무 행.
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), any())
+            } returns listOf(
+                attended(emp, martA, LocalDate.of(2026, 6, 1)),
+                attended(emp, martA, LocalDate.of(2026, 6, 2)),
+                attended(emp, martB, LocalDate.of(2026, 6, 2)),
+            )
+            // B그룹 모수 (월 전체·거래처 무관) — 6/1: A만(N=1), 6/2: A+B(N=2). 당월근무일수(CC1) = 2일.
+            every {
+                repository.findAttendedSchedulesByEmployeeAndMonth(any(), any(), any())
+            } returns listOf(
+                attended(emp, martA, LocalDate.of(2026, 6, 1)),
+                attended(emp, martA, LocalDate.of(2026, 6, 2)),
+                attended(emp, martB, LocalDate.of(2026, 6, 2)),
+            )
+
+            val res = service.getAccountSummary(allScope, "20230016", "2026-06", "2026-06")
+
+            val a = res.items.first { it.accountName == "이마트 원주점" }
+            val b = res.items.first { it.accountName == "홈플러스 원주점" }
+            // 환산근무일수: A = 1/1 + 1/2 = 1.5, B = 1/2 = 0.5
+            assertThat(a.equivalentWorkingDays).isEqualByComparingTo("1.5000")
+            assertThat(b.equivalentWorkingDays).isEqualByComparingTo("0.5000")
+            // 투입횟수: 같은 조합의 distinct 근무일 — A = 2(6/1,6/2), B = 1(6/2)
+            assertThat(a.totalInputCount).isEqualTo(2)
+            assertThat(b.totalInputCount).isEqualTo(1)
+            // 단일 월 조회이므로 월별 분해는 비어 있다.
+            assertThat(a.monthlyStats).isEmpty()
+        }
+
+        @Test
+        @DisplayName("B그룹 — 다월 조회 시 월별 분해(환산인원 포함)를 채우고 합산 가능 지표는 기간 합계로 낸다")
+        fun fillsMonthlyBreakdownForMultiMonth() {
+            val emp = employee()
+            val martA = namedAccount(1, "이마트 원주점")
+            every {
+                repository.findWorkHistoryForPeriodByEmployee(any(), any(), any(), any())
+            } returns listOf(
+                attended(emp, martA, LocalDate.of(2026, 5, 1)),
+                attended(emp, martA, LocalDate.of(2026, 6, 1)),
+            )
+            // 5월: A 단독 1일(N=1) → 환산 1.0, 당월근무일수 1 → 환산인원 1.0
+            // 6월: A 단독 1일(N=1) → 환산 1.0, 당월근무일수 1 → 환산인원 1.0
+            every {
+                repository.findAttendedSchedulesByEmployeeAndMonth(any(), any(), any())
+            } returns listOf(
+                attended(emp, martA, LocalDate.of(2026, 5, 1)),
+                attended(emp, martA, LocalDate.of(2026, 6, 1)),
+            )
+
+            val res = service.getAccountSummary(allScope, "20230016", "2026-05", "2026-06")
+
+            val a = res.items.first { it.accountName == "이마트 원주점" }
+            // 기간 합계: 환산근무일수 1.0 + 1.0 = 2.0, 투입횟수 1 + 1 = 2
+            assertThat(a.equivalentWorkingDays).isEqualByComparingTo("2.0000")
+            assertThat(a.totalInputCount).isEqualTo(2)
+            // 월별 분해 2건 (환산인원은 월별로만)
+            assertThat(a.monthlyStats).hasSize(2)
+            assertThat(a.monthlyStats.map { it.yearMonth }).containsExactly("2026-05", "2026-06")
+            assertThat(a.monthlyStats[0].convertedHeadcount).isEqualByComparingTo("1.0000")
+            assertThat(a.monthlyStats[0].workingCategory1).isEqualTo(WorkingCategory1.DISPLAY.displayName)
         }
     }
 

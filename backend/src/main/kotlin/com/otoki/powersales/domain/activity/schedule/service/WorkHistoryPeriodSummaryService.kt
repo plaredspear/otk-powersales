@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryAccountMonthlyStat
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryAccountStat
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryEmployeeAccountResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkHistoryMonthlyStat
@@ -15,6 +16,9 @@ import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -117,11 +121,23 @@ class WorkHistoryPeriodSummaryService(
             )
         }
 
+        // 통합일정(MFEIS) B그룹 지표 산출용 월 전체 모수.
+        // 환산근무일수의 분모 N(그날 사원의 거래처 무관 출근 수)과 당월근무일수는 거래처 필터가 걸린
+        // 표시용 조회로는 구할 수 없어, 사원 1명 × 기간 전체를 별도 1회 조회한다 (getIntegrationDetail 동일 패턴).
+        // 이 모수는 MFEIS 집계 모수와 동일하게 account != null 출근 행만 포함한다.
+        val employeeId = schedules.firstOrNull()?.employee?.id
+        val bMetrics: Map<Long, AccountBMetrics> = if (employeeId != null) {
+            computeAccountBMetrics(employeeId, fromYm, toYm)
+        } else {
+            emptyMap()
+        }
+
         val items = schedules
             .groupBy { it.account?.id }
-            .map { (_, rows) ->
+            .map { (accountId, rows) ->
                 val acc = rows.first().account
                 val s = stat(rows)
+                val b = accountId?.let { bMetrics[it] }
                 WorkHistoryAccountStat(
                     accountName = acc?.name,
                     accountExternalKey = acc?.externalKey,
@@ -134,6 +150,9 @@ class WorkHistoryPeriodSummaryService(
                     workDays = s.workDays,
                     annualLeaveDays = s.annualLeaveDays,
                     altHolidayDays = s.altHolidayDays,
+                    totalInputCount = b?.totalInputCount ?: 0,
+                    equivalentWorkingDays = b?.equivalentWorkingDays ?: BigDecimal.ZERO,
+                    monthlyStats = b?.monthlyStats ?: emptyList(),
                 )
             }
             .sortedWith(
@@ -151,6 +170,124 @@ class WorkHistoryPeriodSummaryService(
             totalCount = items.size,
         )
     }
+
+    /**
+     * 거래처별 통합일정(MFEIS) B그룹 지표 산출 — 사원 1명 × 기간.
+     *
+     * MFEIS 재집계([AdminMonthlyIntegrationService.refreshIntegration]) 의 산출식을 조회 시점에 재현한다.
+     * 모수는 사원+월의 출근등록(account != null) TMS 전건이며, N(그날 출근 수)/당월근무일수는 월 단위로 계산한다.
+     *
+     * 반환: accountId → (기간 합산 투입횟수/환산근무일수 + 월별 분해). 월별 분해에만 환산인원을 담는다
+     * (분모가 월마다 달라 합산 불가).
+     */
+    private fun computeAccountBMetrics(
+        employeeId: Long,
+        fromYm: YearMonth,
+        toYm: YearMonth,
+    ): Map<Long, AccountBMetrics> {
+        val population = teamMemberScheduleRepository.findAttendedSchedulesByEmployeeAndMonth(
+            employeeId = employeeId,
+            from = fromYm.atDay(1),
+            to = toYm.atEndOfMonth(),
+        )
+        if (population.isEmpty()) return emptyMap()
+
+        // 월(yyyy-MM) → 거래처 → 월별 지표. 월 단위로 N/당월근무일수를 계산해야 하므로 월로 먼저 나눈다.
+        // accountId → 월별 지표 리스트 (오름차순)
+        val perAccountMonthly = mutableMapOf<Long, MutableList<WorkHistoryAccountMonthlyStat>>()
+
+        val byMonth = population.groupBy { YearMonth.from(it.workingDate!!) }
+        for (ym in byMonth.keys.sorted()) {
+            val monthRows = byMonth.getValue(ym)
+
+            // 그날 투입건수 N — 사원+근무일별 모수 row 수 (거래처 무관). refreshIntegration 동등.
+            val rowCountByDate: Map<LocalDate, Int> = monthRows.groupingBy { it.workingDate!! }.eachCount()
+            // 당월근무일수 — 사원+costCenter 별 distinct 근무일 (거래처 무관). refreshIntegration 동등.
+            val workingDaysByCostCenter: Map<String?, Int> = monthRows
+                .groupBy { it.costCenterCode }
+                .mapValues { (_, rows) -> rows.mapNotNull { it.workingDate }.distinct().size }
+
+            val byAccount = monthRows.groupBy { it.account?.id }
+            for ((accountId, accRows) in byAccount) {
+                if (accountId == null) continue // 모수는 account != null 이나 방어적으로 스킵
+
+                // 환산근무일수 — Σ(1/N) 전정밀도 누적 후 최종 4자리 HALF_UP (refreshIntegration 동등).
+                var equivalentRaw = BigDecimal.ZERO
+                for (row in accRows) {
+                    val n = rowCountByDate[row.workingDate!!] ?: 1
+                    equivalentRaw = equivalentRaw.add(BigDecimal.ONE.divide(BigDecimal(n), 16, RoundingMode.HALF_UP))
+                }
+                val equivalentWorkingDays = equivalentRaw.setScale(4, RoundingMode.HALF_UP)
+
+                // 환산인원 — 미반올림 환산근무일수 ÷ 당월근무일수 (거래처 대표 costCenter 기준).
+                val rep = accRows.first()
+                val workingDaysMonth = workingDaysByCostCenter[rep.costCenterCode] ?: 0
+                val convertedHeadcount = if (workingDaysMonth > 0) {
+                    equivalentRaw.divide(BigDecimal(workingDaysMonth), 4, RoundingMode.HALF_UP)
+                } else {
+                    BigDecimal.ZERO
+                }
+
+                // 총투입횟수 — 이 거래처+월 의 근무유형 조합별 distinct 근무일 수 합 (refreshIntegration 동등).
+                val totalInputCount = accRows
+                    .groupBy { inputsComboKey(it) }
+                    .values
+                    .sumOf { comboRows -> comboRows.mapNotNull { it.workingDate }.distinct().size }
+
+                // 근무형태1/3/4/5 대표값 — 이 거래처+월 최다 조합의 대표 row 값.
+                val repByCombo = accRows
+                    .groupBy { inputsComboKey(it) }
+                    .maxByOrNull { it.value.size }
+                    ?.value?.first() ?: rep
+
+                perAccountMonthly.getOrPut(accountId) { mutableListOf() }.add(
+                    WorkHistoryAccountMonthlyStat(
+                        yearMonth = ym.format(YEAR_MONTH_FORMAT),
+                        totalWorkingDays = accRows.size,
+                        totalInputCount = totalInputCount,
+                        equivalentWorkingDays = equivalentWorkingDays,
+                        convertedHeadcount = convertedHeadcount,
+                        workingCategory1 = repByCombo.workingCategory1?.displayName,
+                        workingCategory3 = repByCombo.workingCategory3?.displayName,
+                        workingCategory4 = repByCombo.secondWorkType,
+                        workingCategory5 = repByCombo.workingCategory5?.displayName,
+                    )
+                )
+            }
+        }
+
+        // 기간 합산 (투입횟수/환산근무일수는 합산 가능) + 월별 분해 (단일 월이면 빈 리스트).
+        return perAccountMonthly.mapValues { (_, monthly) ->
+            val sorted = monthly.sortedBy { it.yearMonth }
+            AccountBMetrics(
+                totalInputCount = sorted.sumOf { it.totalInputCount },
+                equivalentWorkingDays = sorted
+                    .fold(BigDecimal.ZERO) { acc, m -> acc.add(m.equivalentWorkingDays) }
+                    .setScale(4, RoundingMode.HALF_UP),
+                monthlyStats = if (sorted.size > 1) sorted else emptyList(),
+            )
+        }
+    }
+
+    /**
+     * 통합일정 총투입횟수 조합 키 — 거래처+근무유형 조합 (costCenter 미포함).
+     * [AdminMonthlyIntegrationService.inputsComboKey] 동등.
+     */
+    private fun inputsComboKey(schedule: TeamMemberSchedule): List<Any?> = listOf(
+        schedule.account?.id,
+        schedule.workingCategory1,
+        schedule.workingCategory3,
+        schedule.secondWorkType,
+        schedule.workingCategory5,
+        schedule.professionalPromotionTeam,
+    )
+
+    /** [computeAccountBMetrics] 반환용 — 거래처 1개의 B그룹 지표 (기간 합산 + 월별 분해). */
+    private data class AccountBMetrics(
+        val totalInputCount: Int,
+        val equivalentWorkingDays: BigDecimal,
+        val monthlyStats: List<WorkHistoryAccountMonthlyStat>,
+    )
 
     /**
      * 기간별 근무내역 집계 엑셀 export — 조회와 동일 필터/스코프.

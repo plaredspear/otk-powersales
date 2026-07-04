@@ -1,5 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.dto.response
 
+import java.math.BigDecimal
+
 /**
  * 기간별 근무내역(개인) — 여사원별 근무 집계 항목.
  *
@@ -91,6 +93,54 @@ data class WorkHistoryAccountStat(
     val annualLeaveDays: Int,
     /** 구분(WorkingType)별 일수 — 대휴. */
     val altHolidayDays: Int,
+    /**
+     * 총 투입횟수 — 통합일정(MFEIS) 정의 동등. 이 거래처 내 (근무유형 조합)별 distinct 근무일 수의 합.
+     * 거래처 미연결 행은 0.
+     */
+    val totalInputCount: Int = 0,
+    /**
+     * 총 환산근무일수 — 통합일정(MFEIS) 정의 동등. Σ(1/N), N = 그날 사원의 (거래처 무관) 출근 row 수.
+     * 기간 조회면 각 월의 환산근무일수를 합산한다 (환산근무일수는 합산 가능). scale 4 HALF_UP.
+     * 거래처 미연결 행은 0.
+     */
+    val equivalentWorkingDays: BigDecimal = BigDecimal.ZERO,
+    /**
+     * 월별 통계 분해 (yyyy-MM 오름차순). 행을 펼치면 표시.
+     * 환산인원(convertedHeadcount)은 분모(당월근무일수)가 월마다 달라 기간 합산이 불가하므로
+     * 이 월별 분해에만 담는다. 근무형태1/3/4/5 대표값도 월별로 제공.
+     * 단일 월 조회면 빈 리스트 (펼칠 분해가 없음).
+     */
+    val monthlyStats: List<WorkHistoryAccountMonthlyStat> = emptyList(),
+)
+
+/**
+ * 기간별 근무내역(개인) — 거래처별 행의 월별 분해 (통합일정 B그룹 지표).
+ *
+ * 통합일정(MFEIS) 의 월 단위 집계를 거래처별 뷰 안에서 재현한 것으로,
+ * 환산인원(월 단위로만 정의)과 근무형태 대표값을 월별로 제공한다.
+ */
+data class WorkHistoryAccountMonthlyStat(
+    /** 대상 년월 (yyyy-MM). */
+    val yearMonth: String,
+    /** 이 거래처의 해당 월 근무일수 (출근 등록 행 수). */
+    val totalWorkingDays: Int,
+    /** 총 투입횟수 — 이 거래처+월 의 (근무유형 조합)별 distinct 근무일 수 합. */
+    val totalInputCount: Int,
+    /** 환산근무일수 — 이 거래처+월 의 Σ(1/N). scale 4 HALF_UP. */
+    val equivalentWorkingDays: BigDecimal,
+    /**
+     * 환산인원 — 환산근무일수(미반올림) ÷ 당월근무일수(사원+costCenter distinct 근무일). scale 4 HALF_UP.
+     * 당월근무일수 0 이면 0.
+     */
+    val convertedHeadcount: BigDecimal,
+    /** 근무형태1 대표값 (이 거래처+월 최다 조합의 WorkingCategory1). null 가능. */
+    val workingCategory1: String?,
+    /** 근무형태3 대표값. null 가능. */
+    val workingCategory3: String?,
+    /** 근무형태4 대표값 (TMS.secondWorkType). null 가능. */
+    val workingCategory4: String?,
+    /** 근무형태5 대표값 (WorkingCategory5). null 가능. */
+    val workingCategory5: String?,
 )
 
 data class WorkHistoryEmployeeAccountResponse(

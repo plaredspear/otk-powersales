@@ -304,6 +304,9 @@ describe('WorkHistoryPeriodPage', () => {
             workDays: 3,
             annualLeaveDays: 0,
             altHolidayDays: 0,
+            totalInputCount: 2,
+            equivalentWorkingDays: '2.5000',
+            monthlyStats: [],
           },
           {
             accountName: null,
@@ -317,6 +320,9 @@ describe('WorkHistoryPeriodPage', () => {
             workDays: 0,
             annualLeaveDays: 1,
             altHolidayDays: 0,
+            totalInputCount: 0,
+            equivalentWorkingDays: '0.0000',
+            monthlyStats: [],
           },
         ],
       });
