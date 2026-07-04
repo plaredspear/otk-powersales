@@ -36,6 +36,7 @@ import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberSchedu
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper
 import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
+import org.springframework.core.env.Environment
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -51,14 +52,26 @@ class AdminPromotionEmployeeService(
     private val policyEvaluator: SharingRulePolicyEvaluator,
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
     private val storageService: StorageService,
+    private val environment: Environment,
 ) {
+
+    // 현장사진 미리보기 가능 환경(= S3StorageService 활성) 여부.
+    // S3StorageService 는 @Profile("dev | prod") 로만 등록되고, 그 외(local 등)에는 LocalStorageService(stub)
+    // 가 등록되어 getPresignedUrl 이 브라우저에서 로드 불가한 "local://..." 를 반환한다. 따라서 web 이 깨진
+    // 이미지를 그리지 않도록, S3 프로파일이 아닐 때는 siteImageUrl 을 아예 null 로 내린다(web 은 URL 유무로만 분기).
+    // 주의: 이 프로파일 조건은 S3StorageService 의 @Profile 과 동일해야 한다(변경 시 양쪽 동기 필요).
+    private val siteImagePreviewable: Boolean =
+        environment.activeProfiles.any { it in S3_PROFILES }
 
     // 현장사진(private/ 저장)을 presigned URL 로 변환. key 없거나 blank 면 null.
     // 모바일 일매출 조회(MobileDailySalesService.imageUrl)와 동일한 TTL 로 web 관리자 조회 정합.
     // 레거시 SF SiteImage__c 수식필드(public URL)의 신규 대체 — s3ImageUniqueKey 는 응답에 그대로 유지.
-    private fun siteImageUrl(key: String?): String? =
-        key?.takeIf { it.isNotBlank() }
+    // local 환경에서는 브라우저가 로드할 수 없는 stub URL 대신 null 을 반환한다.
+    private fun siteImageUrl(key: String?): String? {
+        if (!siteImagePreviewable) return null
+        return key?.takeIf { it.isNotBlank() }
             ?.let { storageService.getPresignedUrl(it, StorageConstants.DAILY_SALES_PRESIGN_TTL_SECONDS) }
+    }
 
     /**
      * SF Sharing Rule 정책이 합성된 가시 PromotionEmployee 일람 (spec #782 P4-B — ControlledByParent).
@@ -79,6 +92,9 @@ class AdminPromotionEmployeeService(
     }
 
     companion object {
+        // 현장사진 presigned URL 이 브라우저에서 로드 가능한(= S3StorageService 활성) 프로파일.
+        // S3StorageService @Profile("dev | prod") 과 반드시 일치시킬 것.
+        private val S3_PROFILES = setOf("dev", "prod")
         private val VALID_WORK_STATUSES = setOf("근무", "연차", "대휴")
         private val VALID_WORK_TYPE3 = setOf("고정", "격고", "순회")
         private const val BATCH_MAX_SIZE = 200

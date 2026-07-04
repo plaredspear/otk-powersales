@@ -35,6 +35,9 @@ class AdminPromotionEmployeeSharingPolicyTest {
         mockk(relaxUnitFun = true)
     private val storageService: com.otoki.powersales.platform.common.storage.StorageService =
         mockk(relaxed = true)
+    private val environment: org.springframework.core.env.Environment = mockk {
+        every { activeProfiles } returns arrayOf("dev")
+    }
 
     private val service = AdminPromotionEmployeeService(
         promotionEmployeeRepository = promotionEmployeeRepository,
@@ -44,6 +47,7 @@ class AdminPromotionEmployeeSharingPolicyTest {
         policyEvaluator = policyEvaluator,
         teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
         storageService = storageService,
+        environment = environment,
     )
 
     @Test
