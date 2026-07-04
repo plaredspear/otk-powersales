@@ -114,9 +114,14 @@ class ProdAdminBootstrapInitializer(
             passwordChangeRequired = true,
         )
         // 시스템 관리자 Profile 강제 set — provisionForSeed 가 role=null → 5.영업사원 fallback 하기 때문에 후처리 필요.
+        // isActive 강제 set — provision 이 웹 게이트(isActive)를 모바일 게이트(appLoginActive=false)로 흘려보내
+        // 웹 관리자 로그인마저 막히므로, 웹 전용 계정인 시스템 관리자는 웹 로그인을 열어준다 (모바일은 appLoginActive=false 유지).
         val user = userRepository.findByEmployeeCode(ADMIN_EMPLOYEE_CODE)
-        if (user != null && sysadminProfileId != null) {
-            user.profileId = sysadminProfileId
+        if (user != null) {
+            if (sysadminProfileId != null) {
+                user.profileId = sysadminProfileId
+            }
+            user.isActive = true
             userRepository.save(user)
         }
 
