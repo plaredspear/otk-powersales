@@ -140,21 +140,7 @@ describe('WorkHistoryPeriodPage', () => {
       expect(mockedAccounts.mock.calls[0][0]).toMatchObject({ employeeCode: '20230016' });
     });
 
-    it('전체 목록으로 버튼 클릭 시 선택이 해제되고 조회 결과가 사라진다', async () => {
-      renderPage();
-      fireEvent.click(await screen.findByText('홍길동(20230016)'));
-      await screen.findByText('총 2개 거래처');
-      const backBtn = await screen.findByRole('button', { name: /전체 목록으로/ });
-      fireEvent.click(backBtn);
-      await waitFor(() => {
-        expect(screen.queryByText('총 2개 거래처')).not.toBeInTheDocument();
-        expect(
-          screen.getByText('좌측에서 여사원을 선택하면 거래처별 근무내역을 조회합니다.'),
-        ).toBeInTheDocument();
-      });
-    });
-
-    it('선택된 여사원을 다시 클릭하면 선택이 해제된다', async () => {
+    it('선택된 여사원을 다시 클릭하면 선택이 해제되고 미선택 안내로 복귀한다', async () => {
       renderPage();
       const memberItem = await screen.findByText('홍길동(20230016)');
       fireEvent.click(memberItem);
@@ -162,6 +148,9 @@ describe('WorkHistoryPeriodPage', () => {
       fireEvent.click(memberItem);
       await waitFor(() => {
         expect(screen.queryByText('총 2개 거래처')).not.toBeInTheDocument();
+        expect(
+          screen.getByText('좌측에서 여사원을 선택하면 거래처별 근무내역을 조회합니다.'),
+        ).toBeInTheDocument();
       });
     });
 

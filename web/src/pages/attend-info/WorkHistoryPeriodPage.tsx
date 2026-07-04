@@ -229,7 +229,6 @@ export default function WorkHistoryPeriodPage() {
               fromYearMonth={fromYm}
               toYearMonth={toYm}
               rangeInvalid={rangeInvalid}
-              onClear={() => setSelectedMember(undefined)}
             />
           ) : (
             // 여사원 미선택 안내 — 선택하면 즉시 조회된다.

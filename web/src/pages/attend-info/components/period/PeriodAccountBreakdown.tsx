@@ -1,4 +1,4 @@
-import { Alert, Button, Table, Tag, Typography } from 'antd';
+import { Alert, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useWorkHistoryEmployeeAccounts } from '@/hooks/attend-info/useAttendInfo';
 import type { WorkHistoryAccountMonthlyStat, WorkHistoryAccountStat } from '@/api/attendInfo';
@@ -16,8 +16,6 @@ interface Props {
   toYearMonth: string;
   /** 기간 입력 오류 (역순/최대 초과) — true 면 조회하지 않음 */
   rangeInvalid: boolean;
-  /** 여사원 선택 해제 → 전체 집계 목록으로 복귀 */
-  onClear: () => void;
 }
 
 function formatNumber(value: number): string {
@@ -152,7 +150,6 @@ export default function PeriodAccountBreakdown({
   fromYearMonth,
   toYearMonth,
   rangeInvalid,
-  onClear,
 }: Props) {
   const { data, isLoading, isError, error } = useWorkHistoryEmployeeAccounts(
     rangeInvalid
@@ -162,7 +159,7 @@ export default function PeriodAccountBreakdown({
 
   return (
     <div>
-      {/* 월별 근무내역(개인) 탭과 동일한 선택 여사원 강조 박스 + 목록 복귀 버튼 */}
+      {/* 월별 근무내역(개인) 탭과 동일한 선택 여사원 강조 박스 */}
       <div
         style={{
           marginBottom: 12,
@@ -170,31 +167,21 @@ export default function PeriodAccountBreakdown({
           borderLeft: '3px solid #1677ff',
           borderRadius: 4,
           background: '#f0f7ff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-          flexWrap: 'wrap',
         }}
       >
-        <div>
-          <Text strong style={{ fontSize: 15 }}>
-            {[member.orgName, `${member.name}(${member.employeeCode})`, member.jikwee]
-              .filter(Boolean)
-              .join(' · ')}
-          </Text>
-          {member.status && (
-            <Tag color={MEMBER_STATUS_COLOR[member.status] ?? 'default'} style={{ marginLeft: 8 }}>
-              {member.status}
-            </Tag>
-          )}
-          <Text type="secondary" style={{ marginLeft: 8 }}>
-            {fromYearMonth} ~ {toYearMonth} 거래처별 근무내역
-          </Text>
-        </div>
-        <Button size="small" onClick={onClear}>
-          전체 목록으로
-        </Button>
+        <Text strong style={{ fontSize: 15 }}>
+          {[member.orgName, `${member.name}(${member.employeeCode})`, member.jikwee]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+        {member.status && (
+          <Tag color={MEMBER_STATUS_COLOR[member.status] ?? 'default'} style={{ marginLeft: 8 }}>
+            {member.status}
+          </Tag>
+        )}
+        <Text type="secondary" style={{ marginLeft: 8 }}>
+          {fromYearMonth} ~ {toYearMonth} 거래처별 근무내역
+        </Text>
       </div>
 
       {isError && (
