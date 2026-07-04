@@ -27,32 +27,14 @@ import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useSched
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
 import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
-import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, SchedulePreset } from '@/api/schedule';
+import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem } from '@/api/schedule';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
-import { PresetFilterSelect, type PresetOption } from '@/components/common/PresetFilterSelect';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import { useAuthStore } from '@/stores/authStore';
-
-/**
- * 레거시 SF List View 10개 매핑 — `docs/plan/legacy-pages/진열사원스케줄마스터/UC-01.md` 참조.
- * 프리셋 선택 시 backend 가 ValidData 계산식 + 근무형태 / 확정여부 조건을 일괄 적용.
- */
-const SCHEDULE_PRESET_OPTIONS: PresetOption<SchedulePreset>[] = [
-  { value: 'INPUT_TODAY', label: '0. 당일등록' },
-  { value: 'ALL', label: '1. 모두' },
-  { value: 'VALID', label: '2-1. 유효사원' },
-  { value: 'VALID_CONFIRMED', label: '2-2. 유효사원(확정)' },
-  { value: 'VALID_NOT_CONFIRMED', label: '2-3. 유효사원(미확정)' },
-  { value: 'FIXED_VALID', label: '3. 고정 유효사원' },
-  { value: 'BIFURCATION_VALID', label: '4. 격고 유효사원' },
-  { value: 'PATROL_VALID', label: '5. 순회 유효사원' },
-  { value: 'VALID_CONFIRMED_TEMP', label: '6. 유효사원(확정)_임시' },
-  { value: 'END', label: '7. 종료 사원' },
-];
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -304,7 +286,6 @@ export default function DisplaySchedulePage() {
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
   const [filterStartDateRange, setFilterStartDateRange] = useState<[string, string] | null>(null);
-  const [filterPreset, setFilterPreset] = useState<SchedulePreset | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string | undefined>(undefined);
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | undefined>(undefined);
 
@@ -317,7 +298,6 @@ export default function DisplaySchedulePage() {
     confirmed?: boolean;
     startDateFrom?: string;
     startDateTo?: string;
-    preset?: SchedulePreset;
   }>({});
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -398,7 +378,6 @@ export default function DisplaySchedulePage() {
       confirmed: filterConfirmed,
       startDateFrom: filterStartDateRange?.[0],
       startDateTo: filterStartDateRange?.[1],
-      preset: filterPreset,
     });
   };
 
@@ -409,32 +388,11 @@ export default function DisplaySchedulePage() {
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
     setFilterStartDateRange(null);
-    setFilterPreset(undefined);
     setSortBy(undefined);
     setSortDir(undefined);
     setListPage(0);
     setSelectedRowKeys([]);
     setAppliedFilters({});
-  };
-
-  /**
-   * 프리셋 선택 시 자유 필터 폼을 자동 채움 + 즉시 적용 (검색 버튼 클릭 불필요).
-   * 레거시 SF List View 드롭다운 UX 동등.
-   */
-  const handlePresetChange = (preset: SchedulePreset | undefined) => {
-    setFilterPreset(preset);
-    setListPage(0);
-    setSelectedRowKeys([]);
-    setAppliedFilters({
-      employeeCode: filterEmployeeCode || undefined,
-      accountName: filterAccountName || undefined,
-      accountType: filterAccountType || undefined,
-      typeOfWork3: filterTypeOfWork3,
-      confirmed: filterConfirmed,
-      startDateFrom: filterStartDateRange?.[0],
-      startDateTo: filterStartDateRange?.[1],
-      preset,
-    });
   };
 
   const handleBatchConfirm = () => {
@@ -660,13 +618,6 @@ export default function DisplaySchedulePage() {
 
       <Card title="스케줄 목록" style={{ marginTop: 16 }}>
         <Space wrap size="middle" style={{ marginBottom: 16 }}>
-          <PresetFilterSelect<SchedulePreset>
-            options={SCHEDULE_PRESET_OPTIONS}
-            value={filterPreset}
-            onChange={handlePresetChange}
-            placeholder="뷰 선택"
-            style={{ width: 220 }}
-          />
           <Input
             placeholder="사원번호"
             value={filterEmployeeCode}
