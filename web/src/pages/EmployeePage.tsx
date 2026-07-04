@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -58,6 +58,20 @@ const DEVICE_TOOLTIP =
 const PASSWORD_TOOLTIP =
   "임시 비밀번호 'pwrs1234!' 로 초기화됩니다. 사원은 다음 로그인 시 비밀번호 변경을 요구받습니다.";
 const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사원 정보를 먼저 활성화해 주세요.';
+
+// 근무형태1/3·근무거래처·거래처코드 컬럼은 사원의 '가장 최근 출근등록 1건' 에서 파생된 값이라는 공통 안내.
+const LATEST_ATTENDANCE_NOTICE =
+  '가장 최근에 출근등록한 1건의 정보입니다. 출근등록 이력이 없으면 "-" 로 표시됩니다.';
+
+// 컬럼 헤더에 설명 info 아이콘(hover tooltip)을 붙인다.
+const headerWithInfo = (title: string, tooltip: string) => (
+  <span>
+    {title}{' '}
+    <Tooltip title={tooltip}>
+      <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help' }} />
+    </Tooltip>
+  </span>
+);
 
 export default function EmployeePage() {
   const navigate = useNavigate();
@@ -195,32 +209,32 @@ export default function EmployeePage() {
       },
     },
     {
-      title: '근무형태1',
+      title: headerWithInfo('근무형태1', `근무유형1(진열/행사)입니다. ${LATEST_ATTENDANCE_NOTICE}`),
       dataIndex: 'workType1',
-      width: 100,
+      width: 120,
       align: 'center',
       // 가장 최근 출근등록 1건의 근무유형1(진열/행사). 이력 없으면 '-'.
       render: (val: string | null | undefined) => val ?? '-',
     },
     {
-      title: '근무형태3',
+      title: headerWithInfo('근무형태3', `근무유형3(고정/격고/순회)입니다. ${LATEST_ATTENDANCE_NOTICE}`),
       dataIndex: 'workType3',
-      width: 100,
+      width: 120,
       align: 'center',
       // 가장 최근 출근등록 1건의 근무유형3(고정/격고/순회). 이력 없으면 '-'.
       render: (val: string | null | undefined) => val ?? '-',
     },
     {
-      title: '근무거래처',
+      title: headerWithInfo('근무거래처', `근무한 거래처명입니다. ${LATEST_ATTENDANCE_NOTICE}`),
       dataIndex: 'workAccountName',
-      width: 160,
+      width: 180,
       // 가장 최근 출근등록 1건의 거래처명. 이력/거래처 없으면 '-'.
       render: (val: string | null | undefined) => val ?? '-',
     },
     {
-      title: '거래처코드',
+      title: headerWithInfo('거래처코드', `근무 거래처의 SAP 거래처코드입니다. ${LATEST_ATTENDANCE_NOTICE}`),
       dataIndex: 'workAccountCode',
-      width: 110,
+      width: 130,
       align: 'center',
       render: (val: string | null | undefined) => val ?? '-',
     },
