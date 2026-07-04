@@ -2,15 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Checkbox,
+  DatePicker,
   Empty,
   Input,
-  InputNumber,
   Select,
   Space,
   Tag,
   Typography,
 } from 'antd';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useAttendInfoBranches, useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
 import type { TeamMember } from '@/api/team-schedule';
 import { MonthlyMemberSelectPanel } from './components/monthly/MonthlyMemberSelectPanel';
@@ -21,16 +21,11 @@ const { Text } = Typography;
 // 조회 가능한 최대 기간(개월). backend WorkHistoryPeriodSummaryService.MAX_RANGE_MONTHS 와 정합.
 const MAX_RANGE_MONTHS = 6;
 
-function toYearMonth(year: number, month: number): string {
-  return `${year}-${String(month).padStart(2, '0')}`;
-}
-
 export default function WorkHistoryPeriodPage() {
   const now = dayjs();
-  const [fromYear, setFromYear] = useState(now.year());
-  const [fromMonth, setFromMonth] = useState(now.month() + 1);
-  const [toYear, setToYear] = useState(now.year());
-  const [toMonth, setToMonth] = useState(now.month() + 1);
+  // 시작/종료 년월 — 월 단위 캘린더(DatePicker picker="month") 로 선택.
+  const [fromMonthDate, setFromMonthDate] = useState<Dayjs>(now);
+  const [toMonthDate, setToMonthDate] = useState<Dayjs>(now);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
   // 좌측 패널 여사원 목록의 조회 지점 (다중/전사 권한자 선택). 단일지점 사용자는 자동 채움.
@@ -78,13 +73,14 @@ export default function WorkHistoryPeriodPage() {
     setSelectedMember((prev) => (prev?.employeeId === member.employeeId ? undefined : member));
   };
 
-  const fromYm = toYearMonth(fromYear, fromMonth);
-  const toYm = toYearMonth(toYear, toMonth);
+  const fromYm = fromMonthDate.format('YYYY-MM');
+  const toYm = toMonthDate.format('YYYY-MM');
   const reversed = fromYm > toYm;
-  // 시작~종료 포함 개월 수 (예: 2026-01 ~ 2026-06 = 6). 역순일 땐 의미 없으므로 0 처리.
+  // 시작~종료 포함 개월 수 (예: 2026-01 ~ 2026-06 = 6). day 성분 영향 없도록 월초 기준 diff.
+  // 역순일 땐 의미 없으므로 0 처리.
   const inclusiveMonths = reversed
     ? 0
-    : (toYear - fromYear) * 12 + (toMonth - fromMonth) + 1;
+    : toMonthDate.startOf('month').diff(fromMonthDate.startOf('month'), 'month') + 1;
   const exceedsMax = inclusiveMonths > MAX_RANGE_MONTHS;
   const rangeInvalid = reversed || exceedsMax;
 
@@ -140,45 +136,25 @@ export default function WorkHistoryPeriodPage() {
           </Space>
           <Space direction="vertical" size={4}>
             <span>시작 년월:</span>
-            <Space.Compact>
-              <InputNumber
-                value={fromYear}
-                min={2020}
-                max={2099}
-                onChange={(v) => v != null && setFromYear(v)}
-                style={{ width: 90 }}
-                parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
-              />
-              <InputNumber
-                value={fromMonth}
-                min={1}
-                max={12}
-                onChange={(v) => v != null && setFromMonth(v)}
-                style={{ width: 64 }}
-                parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
-              />
-            </Space.Compact>
+            <DatePicker
+              picker="month"
+              value={fromMonthDate}
+              onChange={(v) => v && setFromMonthDate(v)}
+              allowClear={false}
+              disabledDate={(d) => d.year() < 2020 || d.year() > 2099}
+              style={{ width: 130 }}
+            />
           </Space>
           <Space direction="vertical" size={4}>
             <span>종료 년월:</span>
-            <Space.Compact>
-              <InputNumber
-                value={toYear}
-                min={2020}
-                max={2099}
-                onChange={(v) => v != null && setToYear(v)}
-                style={{ width: 90 }}
-                parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
-              />
-              <InputNumber
-                value={toMonth}
-                min={1}
-                max={12}
-                onChange={(v) => v != null && setToMonth(v)}
-                style={{ width: 64 }}
-                parser={(value) => Number((value ?? '').toString().replace(/[^0-9]/g, ''))}
-              />
-            </Space.Compact>
+            <DatePicker
+              picker="month"
+              value={toMonthDate}
+              onChange={(v) => v && setToMonthDate(v)}
+              allowClear={false}
+              disabledDate={(d) => d.year() < 2020 || d.year() > 2099}
+              style={{ width: 130 }}
+            />
           </Space>
           <Space direction="vertical" size={4}>
             <span>사번/이름:</span>

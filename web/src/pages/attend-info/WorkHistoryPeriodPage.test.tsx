@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import WorkHistoryPeriodPage from './WorkHistoryPeriodPage';
 import * as api from '@/api/attendInfo';
 import { useAuthStore } from '@/stores/authStore';
@@ -169,18 +170,22 @@ describe('WorkHistoryPeriodPage', () => {
       fireEvent.click(await screen.findByText('홍길동(20230016)'));
       await screen.findByText('총 2개 거래처');
 
-      // 시작 년도를 1년 낮춰 12개월 차이 → 6개월 초과.
-      const spinButtons = screen.getAllByRole('spinbutton');
-      const fromYearInput = spinButtons[0];
-      const current = Number((fromYearInput as HTMLInputElement).value);
+      // 시작 년월(월 캘린더)을 1년 전으로 입력 → 12개월 차이 → 6개월 초과.
+      // 초기값이 채워진 월 DatePicker input(현재 YYYY-MM 표시)을 찾아 이전 연도로 교체.
+      const currentYm = dayjs().format('YYYY-MM');
+      const startYm = dayjs().subtract(1, 'year').format('YYYY-MM');
+      // 시작/종료 둘 다 같은 값이므로 첫 번째(시작 년월)를 조작.
+      const fromInput = screen.getAllByDisplayValue(currentYm)[0];
       mockedAccounts.mockClear();
-      fireEvent.change(fromYearInput, { target: { value: String(current - 1) } });
+      fireEvent.mouseDown(fromInput);
+      fireEvent.change(fromInput, { target: { value: startYm } });
+      fireEvent.keyDown(fromInput, { key: 'Enter', code: 'Enter' });
 
-      expect(screen.getByText('조회 기간은 최대 6개월까지 가능합니다')).toBeInTheDocument();
-      // rangeInvalid 이면 거래처별 조회를 억제한다.
       await waitFor(() => {
-        expect(mockedAccounts).not.toHaveBeenCalled();
+        expect(screen.getByText('조회 기간은 최대 6개월까지 가능합니다')).toBeInTheDocument();
       });
+      // rangeInvalid 이면 거래처별 조회를 억제한다.
+      expect(mockedAccounts).not.toHaveBeenCalled();
     });
   });
 });
