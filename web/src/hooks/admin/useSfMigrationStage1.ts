@@ -3,6 +3,7 @@ import {
   getStage1CopyProgress,
   getStage1Defaults,
   listStage1Targets,
+  resetStage1Copy,
   startStage1Copy,
   startStage1CopyAll,
   Stage1AlreadyRunningError,
@@ -58,6 +59,16 @@ export function useStartStage1CopyAll() {
       if (err instanceof Stage1AlreadyRunningError) {
         queryClient.setQueryData(PROGRESS_KEY, err.progress);
       }
+    },
+  });
+}
+
+export function useResetStage1Copy() {
+  const queryClient = useQueryClient();
+  return useMutation<Stage1CopyProgress, Error, void>({
+    mutationFn: resetStage1Copy,
+    onSuccess: (data) => {
+      queryClient.setQueryData(PROGRESS_KEY, data);
     },
   });
 }

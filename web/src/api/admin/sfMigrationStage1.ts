@@ -123,6 +123,20 @@ export async function getStage1CopyProgress(): Promise<Stage1CopyProgress> {
   return res.data.data;
 }
 
+/**
+ * 진행 상태 강제 초기화 — stale RUNNING(인스턴스 크래시/재시작으로 스냅샷이 RUNNING 으로 남아
+ * 화면이 "실행 중" 으로 잠긴 상태) 해제용. 서버는 in-memory 가 실제 RUNNING 이면 409 로 거부한다.
+ */
+export async function resetStage1Copy(): Promise<Stage1CopyProgress> {
+  const res = await client.post<ApiResponse<Stage1CopyProgress>>(
+    '/api/v1/admin/sf-migration/stage1/reset',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Stage 1 상태 초기화에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export interface Stage1Target {
   targetName: string;
   /** SF export CSV 파일명 (예: "erp_order_products.csv"). prefix 와 합쳐 최종 S3 key 조립. */

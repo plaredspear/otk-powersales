@@ -7,6 +7,8 @@ import {
   Empty,
   Form,
   Input,
+  message,
+  Popconfirm,
   Progress,
   Radio,
   Select,
@@ -18,6 +20,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
+  useResetStage1Copy,
   useStage1CopyProgress,
   useStage1Defaults,
   useStage1Targets,
@@ -112,6 +115,14 @@ export default function SfMigrationStage1Page() {
   const defaultsQuery = useStage1Defaults();
   const startSingleMutation = useStartStage1Copy();
   const startBatchMutation = useStartStage1CopyAll();
+  const resetMutation = useResetStage1Copy();
+
+  const handleReset = () => {
+    resetMutation.mutate(undefined, {
+      onSuccess: () => message.success('진행 상태를 초기화했습니다'),
+      onError: (err) => message.error(err.message || '상태 초기화에 실패했습니다'),
+    });
+  };
 
   const [singleForm] = Form.useForm<{ targetName: string; s3Bucket: string; s3KeyPrefix: string }>();
   const [batchForm] = Form.useForm<{ s3Bucket: string; s3KeyPrefix: string }>();
@@ -466,6 +477,19 @@ export default function SfMigrationStage1Page() {
               <Button onClick={() => progressQuery.refetch()} disabled={progressQuery.isFetching}>
                 새로 고침
               </Button>
+              {isRunning && (
+                <Popconfirm
+                  title="진행 상태 초기화"
+                  description="인스턴스 재시작 등으로 이미 중단된 작업이 '실행 중'으로 남은 경우에만 사용하세요. 다른 인스턴스에서 실제 적재가 진행 중이면 그 진행 표시가 사라집니다."
+                  okText="초기화"
+                  cancelText="취소"
+                  onConfirm={handleReset}
+                >
+                  <Button danger loading={resetMutation.isPending}>
+                    상태 초기화
+                  </Button>
+                </Popconfirm>
+              )}
               <Tag color={statusTag.color} style={{ fontSize: 14, padding: '4px 12px' }}>
                 상태: {statusTag.label}
               </Tag>
@@ -509,6 +533,19 @@ export default function SfMigrationStage1Page() {
               <Button onClick={() => progressQuery.refetch()} disabled={progressQuery.isFetching}>
                 새로 고침
               </Button>
+              {isRunning && (
+                <Popconfirm
+                  title="진행 상태 초기화"
+                  description="인스턴스 재시작 등으로 이미 중단된 작업이 '실행 중'으로 남은 경우에만 사용하세요. 다른 인스턴스에서 실제 적재가 진행 중이면 그 진행 표시가 사라집니다."
+                  okText="초기화"
+                  cancelText="취소"
+                  onConfirm={handleReset}
+                >
+                  <Button danger loading={resetMutation.isPending}>
+                    상태 초기화
+                  </Button>
+                </Popconfirm>
+              )}
               <Tag color={statusTag.color} style={{ fontSize: 14, padding: '4px 12px' }}>
                 상태: {statusTag.label}
               </Tag>

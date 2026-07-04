@@ -289,6 +289,29 @@ class Stage1CopyProgress(
         persist()
     }
 
+    /**
+     * 진행 상태 강제 초기화 — in-memory 상태를 IDLE 로 되돌리고 Redis 스냅샷을 삭제한다.
+     * 인스턴스 크래시/재시작으로 finishOk/finishWithFailure 가 실행되지 못해 스냅샷이 RUNNING 으로
+     * 남아 UI 가 영구히 "실행 중" 으로 잠기는 경우, 운영자가 명시적으로 호출해 잠금을 해제한다.
+     *
+     * ⚠️ 다중 인스턴스(EB) 환경 주의: 다른 인스턴스에서 실제 적재가 진행 중일 때 호출하면 그 진행
+     * 표시가 사라지고 신규 실행 가드가 풀린다. "죽은 작업"이 확실할 때만(예: 인스턴스 재시작 직후)
+     * 사용한다. 실제 실행 중인 워커 스레드를 중단시키지는 않는다(스냅샷/게이트 상태만 초기화).
+     */
+    fun forceReset() {
+        this.status = Status.IDLE
+        this.targetName = null
+        this.s3Key = null
+        this.finishedAt = Instant.now()
+        this.processedRowsRef.set(0L)
+        this.filteredOutRef.set(0L)
+        this.insertedRowsRef.set(0L)
+        this.lastPersistedProgressRow.set(0L)
+        this.errors.clear()
+        synchronized(entityResultsRef) { entityResultsRef.clear() }
+        store.delete(MigrationProgressStore.SLUG_SF_STAGE1)
+    }
+
     /** 현재 in-memory 상태를 응답 DTO 로 스냅샷. */
     fun toResponse(): Stage1CopyProgressResponse = Stage1CopyProgressResponse(
         status = status.name,

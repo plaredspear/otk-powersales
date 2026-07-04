@@ -118,6 +118,26 @@ class Stage1CopyController(
         return ResponseEntity.ok(ApiResponse.success(progress.loadResponse()))
     }
 
+    /**
+     * 진행 상태 강제 초기화 — stale RUNNING(인스턴스 크래시/재시작으로 스냅샷이 RUNNING 으로 남아
+     * UI 가 "실행 중" 으로 잠긴 상태) 해제용. progress 를 IDLE 로 되돌리고 Redis 스냅샷을 삭제한다.
+     *
+     * 안전 가드: 이 인스턴스가 실제 실행 중(in-memory RUNNING)이면 409 로 거부한다 — 진행 중인
+     * 워커를 스냅샷만 지워 UI 에서 숨기는 오작동 방지. stale 상황은 "in-memory IDLE + Redis RUNNING"
+     * 이므로 재시작된 인스턴스에서는 통과한다. 다중 인스턴스에서 다른 인스턴스가 실행 중일 가능성은
+     * 운영자가 판단(화면 안내 문구).
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage1/reset")
+    fun reset(): ResponseEntity<ApiResponse<Stage1CopyProgressResponse>> {
+        if (progress.status == Stage1CopyProgress.Status.RUNNING) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.success(progress.toResponse()))
+        }
+        log.warn("[stage1-copy] 진행 상태 강제 초기화 (reset) — stale RUNNING 해제")
+        progress.forceReset()
+        return ResponseEntity.ok(ApiResponse.success(progress.toResponse()))
+    }
+
     @GetMapping("/api/v1/admin/sf-migration/stage1/targets")
     fun listTargets(): ResponseEntity<ApiResponse<List<Stage1Targets.TargetCsv>>> {
         return ResponseEntity.ok(ApiResponse.success(Stage1Targets.listWithCsv()))

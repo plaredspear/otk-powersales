@@ -61,6 +61,20 @@ class MigrationProgressStore(
         }
     }
 
+    /**
+     * Redis 스냅샷을 삭제한다 (stale RUNNING 강제 초기화용). Redis 미사용/장애 시 no-op.
+     * 인스턴스 크래시로 finishOk/finishWithFailure 가 실행되지 못해 스냅샷이 RUNNING 으로
+     * 남으면 UI 가 영구히 "실행 중" 으로 잠기므로, 운영자가 명시적으로 초기화할 때 사용한다.
+     */
+    fun delete(slug: String) {
+        val template = redisTemplate ?: return
+        try {
+            template.delete(key(slug))
+        } catch (ex: Exception) {
+            log.warn("[MIGRATION_PROGRESS] Redis 삭제 실패. slug={} cause={}", slug, ex.message)
+        }
+    }
+
     private fun key(slug: String): String = "$KEY_PREFIX$slug"
 
     companion object {
