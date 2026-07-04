@@ -421,6 +421,12 @@ app:
     sales-progress-rate-master:
       sync:
         enabled: true
+    # 거래처 좌표변환 배치 (매일 02:00, Naver Geocode).
+    account-naver-geocode:
+      enabled: true
+    # 연기예약 처리 배치 (매일 00:00).
+    postponed-appointment:
+      enabled: true
   # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
   sap:
     outbound:
@@ -481,6 +487,12 @@ app:
     sales-progress-rate-master:
       sync:
         enabled: true
+    # 거래처 좌표변환 배치 (매일 02:00, Naver Geocode).
+    account-naver-geocode:
+      enabled: true
+    # 연기예약 처리 배치 (매일 00:00).
+    postponed-appointment:
+      enabled: true
   # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
   sap:
     outbound:
