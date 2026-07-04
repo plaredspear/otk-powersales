@@ -1,6 +1,7 @@
 package com.otoki.powersales._migration.heroku.stage1
 
 import com.opencsv.CSVReaderBuilder
+import com.opencsv.RFC4180ParserBuilder
 import com.otoki.powersales._migration.sf.stage1.PgCsvHelper
 import org.postgresql.PGConnection
 import org.slf4j.LoggerFactory
@@ -249,7 +250,12 @@ class HerokuStage1S3CopyService(
                 try {
                     s3Client.getObject(getReq).use { s3Stream ->
                         InputStreamReader(s3Stream, Charsets.UTF_8).use { reader ->
-                            CSVReaderBuilder(reader).build().use { csv ->
+                            // 값 내부 개행(LF) 과 레코드 구분자(CRLF) 가 혼재하는 CSV 를 quoted field
+                            // 안에서 안전히 처리하도록 순수 RFC4180 구현을 사용한다 (opencsv 기본
+                            // CSVParser 는 이 혼용에서 `Unterminated quoted field` 로 실패).
+                            CSVReaderBuilder(reader)
+                                .withCSVParser(RFC4180ParserBuilder().build())
+                                .build().use { csv ->
                                 val header = csv.readNext()
                                     ?: error("CSV header missing: s3://$s3Bucket/$s3Key")
                                 val headerIndex = header.withIndex().associate { (i, h) -> h.trim() to i }
