@@ -4,6 +4,8 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
+import com.otoki.powersales.domain.sales.dto.response.PosSalesAccountItem
+import com.otoki.powersales.domain.sales.dto.response.PosSalesAccountListResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesDashboardListItem
 import com.otoki.powersales.domain.sales.dto.response.PosSalesDashboardListResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
@@ -48,7 +50,47 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("GET /list - 거래처별 POS매출 페이징 응답 반환 (일 단위 기간 + 합계 + 필터 전달)")
+    @DisplayName("GET /accounts - 1단 거래처 목록 반환 (POS 미접촉, 거래처 필터 전달)")
+    fun accountsHappyPath() {
+        val response = PosSalesAccountListResponse(
+            totalElements = 1,
+            items = listOf(
+                PosSalesAccountItem(
+                    accountId = 1, accountName = "거래처A",
+                    sapAccountCode = "SAP1", branchCode = "1000", branchName = "서울지점",
+                ),
+            ),
+        )
+        every { queryService.getAccounts(any(), any()) } returns response
+
+        mockMvc.perform(
+            get("/api/v1/admin/sales/pos/accounts")
+                .param("costCenterCodes", "1000")
+                .param("distributionChannels", "02 슈퍼")
+                .param("accountTypes", "6111 이마트")
+                .param("customerKeyword", "거래처"),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.totalElements").value(1))
+            .andExpect(jsonPath("$.data.items[0].accountId").value(1))
+            .andExpect(jsonPath("$.data.items[0].sapAccountCode").value("SAP1"))
+
+        verify {
+            queryService.getAccounts(
+                any(),
+                match { req ->
+                    req.costCenterCodes == listOf("1000") &&
+                        req.distributionChannels == listOf("02 슈퍼") &&
+                        req.accountTypes == listOf("6111 이마트") &&
+                        req.customerKeyword == "거래처"
+                },
+            )
+        }
+    }
+
+    @Test
+    @DisplayName("GET /list - 선택 거래처 POS매출 페이징 응답 반환 (일 단위 기간 + 합계 + accountIds/제품 필터 전달)")
     fun listHappyPath() {
         val response = PosSalesDashboardListResponse(
             startDate = LocalDate.of(2026, 5, 1),
@@ -70,9 +112,7 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
             get("/api/v1/admin/sales/pos/list")
                 .param("startDate", "2026-05-01")
                 .param("endDate", "2026-05-20")
-                .param("costCenterCodes", "1000")
-                .param("distributionChannels", "02 슈퍼")
-                .param("accountTypes", "6111 이마트")
+                .param("accountIds", "1,2")
                 .param("productIds", "10,11")
                 .param("category2", "면류")
         )
@@ -90,8 +130,7 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
                 match { req ->
                     req.startDate == LocalDate.of(2026, 5, 1) &&
                         req.endDate == LocalDate.of(2026, 5, 20) &&
-                        req.distributionChannels == listOf("02 슈퍼") &&
-                        req.accountTypes == listOf("6111 이마트") &&
+                        req.accountIds == listOf(1L, 2L) &&
                         req.productIds == listOf(10L, 11L) &&
                         req.category2 == "면류"
                 },
@@ -112,7 +151,7 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
             get("/api/v1/admin/sales/pos/list/export")
                 .param("startDate", "2026-05-01")
                 .param("endDate", "2026-05-20")
-                .param("costCenterCodes", "1000")
+                .param("accountIds", "1,2")
         )
             .andExpect(status().isOk)
             .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
@@ -164,7 +203,7 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
             get("/api/v1/admin/sales/pos/list")
                 .param("startDate", "2026-05")
                 .param("endDate", "2026-05-20")
-                .param("costCenterCodes", "1000"),
+                .param("accountIds", "1"),
         )
             .andExpect(status().isBadRequest)
     }

@@ -7,7 +7,9 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
+import com.otoki.powersales.domain.sales.dto.request.PosSalesAccountListRequest
 import com.otoki.powersales.domain.sales.dto.request.PosSalesDashboardListRequest
+import com.otoki.powersales.domain.sales.dto.response.PosSalesAccountListResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesDashboardListResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
 import com.otoki.powersales.domain.sales.service.PosSalesAdminQueryService
@@ -28,6 +30,10 @@ import java.time.LocalDate
  * ([AdminElectronicSalesDashboardController]) 과 동일한 권한 entity(`monthly_sales_history`)/READ +
  * endpoint 구성. 유통형태/거래처유형/중·소분류 옵션과 제품 검색은 전산실적의
  * `/filter-options` / `/product-lookup` 을 재사용한다 (동일 권한 가드, 메인 DB 메타).
+ *
+ * ## 2단 조회 (외부 POS DB 부하 축소)
+ * - `/accounts` (1단): 지점/거래처명/유통형태/거래처유형으로 메인 DB 거래처 목록만 조회 (POS 미접촉).
+ * - `/list`, `/list/export` (2단): 1단에서 선택한 거래처(accountIds, 최대 20)만 외부 POS DB 집계.
  */
 @RestController
 @RequestMapping("/api/v1/admin/sales/pos")
@@ -37,17 +43,34 @@ class AdminPosSalesController(
     private val excelExporter: PosSalesDashboardExcelExporter,
 ) {
 
-    /** 거래처별 POS매출 명세 — 기간(일 단위, 최대 31일) + 유통형태/거래처유형/제품/분류 필터 + 페이징 + 정렬. */
+    /** 1단 — 조건에 맞는 거래처 목록 조회 (외부 POS DB 미접촉). 지점/거래처명/유통형태/거래처유형 필터. */
+    @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
+    @GetMapping("/accounts")
+    fun getAccounts(
+        @CurrentDataScope scope: DataScope,
+        @RequestParam costCenterCodes: List<String>,
+        @RequestParam(required = false) customerKeyword: String?,
+        @RequestParam(required = false) distributionChannels: List<String>?,
+        @RequestParam(required = false) accountTypes: List<String>?,
+    ): ResponseEntity<ApiResponse<PosSalesAccountListResponse>> {
+        val request = PosSalesAccountListRequest(
+            costCenterCodes = costCenterCodes,
+            customerKeyword = customerKeyword,
+            distributionChannels = distributionChannels ?: emptyList(),
+            accountTypes = accountTypes ?: emptyList(),
+        )
+        val response = queryService.getAccounts(scope, request)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 2단 — 선택 거래처별 POS매출 명세. 기간(일 단위, 최대 31일) + 제품/분류 필터 + 페이징 + 정렬. */
     @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/list")
     fun getList(
         @CurrentDataScope scope: DataScope,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
-        @RequestParam costCenterCodes: List<String>,
-        @RequestParam(required = false) customerKeyword: String?,
-        @RequestParam(required = false) distributionChannels: List<String>?,
-        @RequestParam(required = false) accountTypes: List<String>?,
+        @RequestParam accountIds: List<Long>,
         @RequestParam(required = false) productIds: List<Long>?,
         @RequestParam(required = false) category2: String?,
         @RequestParam(required = false) category3: String?,
@@ -56,10 +79,7 @@ class AdminPosSalesController(
         @RequestParam(required = false) sort: String?,
     ): ResponseEntity<ApiResponse<PosSalesDashboardListResponse>> {
         val request = PosSalesDashboardListRequest(
-            startDate = startDate, endDate = endDate, costCenterCodes = costCenterCodes,
-            customerKeyword = customerKeyword,
-            distributionChannels = distributionChannels ?: emptyList(),
-            accountTypes = accountTypes ?: emptyList(),
+            startDate = startDate, endDate = endDate, accountIds = accountIds,
             productIds = productIds ?: emptyList(),
             category2 = category2, category3 = category3,
             page = page, size = size, sort = sort,
@@ -68,27 +88,21 @@ class AdminPosSalesController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
-    /** 거래처별 POS매출 명세 엑셀 다운로드. 페이징 미적용 (권한 범위 전체 export). */
+    /** 2단 — 선택 거래처별 POS매출 명세 엑셀 다운로드. 페이징 미적용 (선택 거래처 전체 export). */
     @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     @GetMapping("/list/export")
     fun exportList(
         @CurrentDataScope scope: DataScope,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
-        @RequestParam costCenterCodes: List<String>,
-        @RequestParam(required = false) customerKeyword: String?,
-        @RequestParam(required = false) distributionChannels: List<String>?,
-        @RequestParam(required = false) accountTypes: List<String>?,
+        @RequestParam accountIds: List<Long>,
         @RequestParam(required = false) productIds: List<Long>?,
         @RequestParam(required = false) category2: String?,
         @RequestParam(required = false) category3: String?,
         @RequestParam(required = false) sort: String?,
     ): ResponseEntity<ByteArray> {
         val request = PosSalesDashboardListRequest(
-            startDate = startDate, endDate = endDate, costCenterCodes = costCenterCodes,
-            customerKeyword = customerKeyword,
-            distributionChannels = distributionChannels ?: emptyList(),
-            accountTypes = accountTypes ?: emptyList(),
+            startDate = startDate, endDate = endDate, accountIds = accountIds,
             productIds = productIds ?: emptyList(),
             category2 = category2, category3 = category3,
             page = 0, size = Int.MAX_VALUE, sort = sort,

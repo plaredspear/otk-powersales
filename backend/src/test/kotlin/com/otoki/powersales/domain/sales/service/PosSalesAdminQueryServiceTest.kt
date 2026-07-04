@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.foundation.product.repository.ProductReposito
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.platform.common.exception.BusinessException
+import com.otoki.powersales.domain.sales.dto.request.PosSalesAccountListRequest
 import com.otoki.powersales.domain.sales.dto.request.PosSalesDashboardListRequest
 import io.mockk.every
 import io.mockk.mockk
@@ -20,7 +21,7 @@ import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 import java.time.LocalDate
 
-@DisplayName("PosSalesAdminQueryService — POS매출 거래처별 명세 응답 회귀 보호")
+@DisplayName("PosSalesAdminQueryService — POS매출 2단 조회 (거래처 조회 + 선택 거래처 POS 집계) 회귀 보호")
 class PosSalesAdminQueryServiceTest {
 
     private val accountRepository: AccountRepository = mockk()
@@ -60,10 +61,9 @@ class PosSalesAdminQueryServiceTest {
         every { getSalesQty() } returns BigDecimal(qty)
     }
 
+    /** 2단 조회 요청 (선택 거래처 id 기반). */
     private fun listRequest(
-        customerKeyword: String? = null,
-        distributionChannels: List<String> = emptyList(),
-        accountTypes: List<String> = emptyList(),
+        accountIds: List<Long> = listOf(1L),
         productIds: List<Long> = emptyList(),
         category2: String? = null,
         category3: String? = null,
@@ -72,20 +72,117 @@ class PosSalesAdminQueryServiceTest {
     ) = PosSalesDashboardListRequest(
         startDate = startDate,
         endDate = endDate,
-        costCenterCodes = listOf("B001"),
-        customerKeyword = customerKeyword,
-        distributionChannels = distributionChannels,
-        accountTypes = accountTypes,
+        accountIds = accountIds,
         productIds = productIds,
         category2 = category2,
         category3 = category3,
     )
 
+    /** 1단 거래처 조회 요청. */
+    private fun accountRequest(
+        customerKeyword: String? = null,
+        distributionChannels: List<String> = emptyList(),
+        accountTypes: List<String> = emptyList(),
+        costCenterCodes: List<String> = listOf("B001"),
+    ) = PosSalesAccountListRequest(
+        costCenterCodes = costCenterCodes,
+        customerKeyword = customerKeyword,
+        distributionChannels = distributionChannels,
+        accountTypes = accountTypes,
+    )
+
+    // ------------------- 1단: getAccounts (거래처 조회, POS 미접촉) -------------------
+
     @Test
-    @DisplayName("getList — POS 거래처별 합계가 custCd(000+externalKey) 로 거래처에 결합")
+    @DisplayName("getAccounts — 지점 거래처 목록을 POS 조회 없이 반환 (거래처명 오름차순)")
+    fun accountsReturnsBranchAccountsWithoutPos() {
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(
+            account(2, "S002"),
+            account(1, "S001"),
+        )
+
+        val result = service.getAccounts(allBranchesScope, accountRequest())
+
+        assertThat(result.totalElements).isEqualTo(2)
+        assertThat(result.items.map { it.accountId }).containsExactly(1L, 2L) // 거래처1, 거래처2 정렬
+        verify(exactly = 0) { posRepository.aggregateByCustomer(any(), any(), any()) }
+    }
+
+    @Test
+    @DisplayName("getAccounts — 유통형태(distributionChannels) 라벨 필터로 거래처 축소")
+    fun accountsFiltersByDistributionChannel() {
+        val superMart = account(1, "S001", distributionChannel = "02 슈퍼")
+        val cvs = account(2, "S002", distributionChannel = "03 C.V.S")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(superMart, cvs)
+
+        val result = service.getAccounts(allBranchesScope, accountRequest(distributionChannels = listOf("02 슈퍼")))
+
+        assertThat(result.items).hasSize(1)
+        assertThat(result.items.first().accountId).isEqualTo(1)
+    }
+
+    @Test
+    @DisplayName("getAccounts — 거래처유형(accountTypes = ABC유형 라벨) 필터로 거래처 축소")
+    fun accountsFiltersByAccountType() {
+        val emart = account(1, "S001", abcTypeLabel = "6111 이마트")
+        val homeplus = account(2, "S002", abcTypeLabel = "6112 홈플러스")
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(emart, homeplus)
+
+        val result = service.getAccounts(allBranchesScope, accountRequest(accountTypes = listOf("6112 홈플러스")))
+
+        assertThat(result.items).hasSize(1)
+        assertThat(result.items.first().accountId).isEqualTo(2)
+    }
+
+    @Test
+    @DisplayName("getAccounts — 거래처 keyword 필터 (부분일치)")
+    fun accountsFiltersByCustomerKeyword() {
+        val acc1 = account(1, "S001")
+        val acc2 = account(2, "S002")
+        every { acc1.name } returns "이마트 원주점"
+        every { acc2.name } returns "홈플러스 원주점"
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc1, acc2)
+
+        val result = service.getAccounts(allBranchesScope, accountRequest(customerKeyword = "이마트"))
+
+        assertThat(result.items).hasSize(1)
+        assertThat(result.items.first().accountId).isEqualTo(1)
+    }
+
+    @Test
+    @DisplayName("getAccounts — 거래처 수 상한(2500) 초과 시 400 조건 좁힘 안내")
+    fun accountsRejectsTooManyAccounts() {
+        val accounts = (1..2_501L).map { account(it, "S$it") }
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
+
+        assertThatThrownBy { service.getAccounts(allBranchesScope, accountRequest()) }
+            .isInstanceOf(BusinessException::class.java)
+            .hasMessageContaining("2500건")
+    }
+
+    @Test
+    @DisplayName("getAccounts — 지점(costCenterCodes) 미지정 시 400")
+    fun accountsRejectsEmptyBranches() {
+        assertThatThrownBy { service.getAccounts(allBranchesScope, accountRequest(costCenterCodes = emptyList())) }
+            .isInstanceOf(BusinessException::class.java)
+    }
+
+    @Test
+    @DisplayName("getAccounts — 권한 범위 밖 지점 요청 시 AdminForbiddenException")
+    fun accountsRejectsOutOfScope() {
+        val scope = DataScope(branchCodes = listOf("B999"), isAllBranches = false)
+
+        assertThatThrownBy { service.getAccounts(scope, accountRequest()) }
+            .isInstanceOf(AdminForbiddenException::class.java)
+    }
+
+    // ------------------- 2단: getList (선택 거래처 POS 집계) -------------------
+
+    @Test
+    @DisplayName("getList — 선택 거래처 POS 합계가 custCd(000+externalKey) 로 거래처에 결합")
     fun listJoinsPosByCustCd() {
         val acc = account(1, "S001")
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1L), true) } returns listOf(acc)
         every {
             posRepository.aggregateByCustomer(listOf("000S001"), "2026-04-01", "2026-04-30")
         } returns listOf(customerRow("000S001", amt = 5000, qty = 12))
@@ -101,56 +198,41 @@ class PosSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getList — 응답에 전체(페이징 무관) POS매출 금액/수량 합계 포함")
+    @DisplayName("getList — 응답에 선택 거래처 전체(페이징 무관) POS매출 금액/수량 합계 포함")
     fun listIncludesGrandTotals() {
         val accounts = (1..3L).map { account(it, "S00$it") }
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1L, 2L, 3L), true) } returns accounts
         every { posRepository.aggregateByCustomer(any(), any(), any()) } returns listOf(
             customerRow("000S001", amt = 1000, qty = 1),
             customerRow("000S002", amt = 2000, qty = 2),
             customerRow("000S003", amt = 3000, qty = 3),
         )
 
-        val result = service.getList(allBranchesScope, listRequest().copy(size = 2))
+        val result = service.getList(allBranchesScope, listRequest(accountIds = listOf(1L, 2L, 3L)).copy(size = 2))
 
         assertThat(result.items).hasSize(2) // 페이징 적용
-        assertThat(result.totalSalesAmount).isEqualTo(6000L) // 합계는 전체 기준
+        assertThat(result.totalSalesAmount).isEqualTo(6000L) // 합계는 선택 거래처 전체 기준
         assertThat(result.totalSalesQuantity).isEqualTo(6L)
     }
 
     @Test
-    @DisplayName("getList — 유통형태(distributionChannels) 라벨 필터로 거래처 축소")
-    fun listFiltersByDistributionChannel() {
-        val superMart = account(1, "S001", distributionChannel = "02 슈퍼")
-        val cvs = account(2, "S002", distributionChannel = "03 C.V.S")
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(superMart, cvs)
-        every { posRepository.aggregateByCustomer(listOf("000S001"), any(), any()) } returns emptyList()
+    @DisplayName("getList — 선택 거래처는 단일 청크(≤20)라 POS CUST_CD IN 왕복 1회")
+    fun listAggregatesSelectedInSingleCall() {
+        val accounts = (1..20L).map { account(it, "S%04d".format(it)) }
+        val ids = accounts.map { it.id }
+        every { accountRepository.findByIdInAndIsDeletedNot(ids, true) } returns accounts
+        every { posRepository.aggregateByCustomer(any(), any(), any()) } returns emptyList()
 
-        val result = service.getList(allBranchesScope, listRequest(distributionChannels = listOf("02 슈퍼")))
+        service.getList(allBranchesScope, listRequest(accountIds = ids).copy(size = 100))
 
-        assertThat(result.items).hasSize(1)
-        assertThat(result.items.first().accountId).isEqualTo(1)
-    }
-
-    @Test
-    @DisplayName("getList — 거래처유형(accountTypes = ABC유형 라벨) 필터로 거래처 축소")
-    fun listFiltersByAccountType() {
-        val emart = account(1, "S001", abcTypeLabel = "6111 이마트")
-        val homeplus = account(2, "S002", abcTypeLabel = "6112 홈플러스")
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(emart, homeplus)
-        every { posRepository.aggregateByCustomer(listOf("000S002"), any(), any()) } returns emptyList()
-
-        val result = service.getList(allBranchesScope, listRequest(accountTypes = listOf("6112 홈플러스")))
-
-        assertThat(result.items).hasSize(1)
-        assertThat(result.items.first().accountId).isEqualTo(2)
+        verify(exactly = 1) { posRepository.aggregateByCustomer(any(), any(), any()) }
     }
 
     @Test
     @DisplayName("getList — 제품 필터 시 바코드 해소 후 BARCODE IN 집계 분기 사용")
     fun listUsesBarcodeAggregationWhenProductFilter() {
         val acc = account(1, "S001")
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1L), true) } returns listOf(acc)
         every {
             productRepository.findBarcodesForElectronicSales(listOf(10L), null, null)
         } returns listOf("880001", "880002")
@@ -168,7 +250,7 @@ class PosSalesAdminQueryServiceTest {
     @DisplayName("getList — 바코드가 청크 크기(1000) 초과 시 분할 호출 + custCd 합산 병합")
     fun listChunksBarcodes() {
         val acc = account(1, "S001")
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1L), true) } returns listOf(acc)
         val barcodes = (1..1500).map { "BC$it" }
         every {
             productRepository.findBarcodesForElectronicSales(emptyList(), "면류", null)
@@ -188,61 +270,43 @@ class PosSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getList — 거래처(custCd)가 청크 크기(50) 초과 시 분할 호출 + 병합 (외부 DB 쿼리 1회 부하 상한)")
-    fun listChunksCustCds() {
-        val accounts = (1..120L).map { account(it, "S%04d".format(it)) }
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
-        val allCustCds = accounts.map { "000${it.externalKey}" }
-        every {
-            posRepository.aggregateByCustomer(allCustCds.subList(0, 50), any(), any())
-        } returns listOf(customerRow(allCustCds[0], amt = 1000, qty = 10))
-        every {
-            posRepository.aggregateByCustomer(allCustCds.subList(50, 100), any(), any())
-        } returns listOf(customerRow(allCustCds[60], amt = 500, qty = 5))
-        every {
-            posRepository.aggregateByCustomer(allCustCds.subList(100, 120), any(), any())
-        } returns emptyList()
+    @DisplayName("getList — 선택 거래처 수 상한(20) 초과 시 POS 미조회 + 400")
+    fun listRejectsTooManySelectedAccounts() {
+        val ids = (1..21L).toList()
 
-        val result = service.getList(allBranchesScope, listRequest().copy(size = 100))
-
-        assertThat(result.totalSalesAmount).isEqualTo(1500L)
-        assertThat(result.totalSalesQuantity).isEqualTo(15L)
-        verify(exactly = 3) { posRepository.aggregateByCustomer(any(), any(), any()) }
-    }
-
-    @Test
-    @DisplayName("getList — 거래처 수 상한(2500) 초과 시 POS 미조회 + 400 조건 좁힘 안내")
-    fun listRejectsTooManyAccounts() {
-        val accounts = (1..2_501L).map { account(it, "S$it") }
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
-
-        assertThatThrownBy { service.getList(allBranchesScope, listRequest()) }
+        assertThatThrownBy { service.getList(allBranchesScope, listRequest(accountIds = ids)) }
             .isInstanceOf(BusinessException::class.java)
-            .hasMessageContaining("2500건")
+            .hasMessageContaining("20개")
 
+        verify(exactly = 0) { accountRepository.findByIdInAndIsDeletedNot(any(), any()) }
         verify(exactly = 0) { posRepository.aggregateByCustomer(any(), any(), any()) }
-        verify(exactly = 0) { posRepository.aggregateByCustomerAndBarcodes(any(), any(), any(), any()) }
     }
 
     @Test
-    @DisplayName("getList — 거래처 수 상한(2500) 경계는 허용")
-    fun listAllowsAccountCountAtLimit() {
-        val accounts = (1..2_500L).map { account(it, "S$it") }
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
+    @DisplayName("getList — 선택 거래처 수 상한(20) 경계는 허용")
+    fun listAllowsSelectedAtLimit() {
+        val accounts = (1..20L).map { account(it, "S%04d".format(it)) }
+        val ids = accounts.map { it.id }
+        every { accountRepository.findByIdInAndIsDeletedNot(ids, true) } returns accounts
         every { posRepository.aggregateByCustomer(any(), any(), any()) } returns emptyList()
 
-        val result = service.getList(allBranchesScope, listRequest())
+        val result = service.getList(allBranchesScope, listRequest(accountIds = ids).copy(size = 100))
 
-        assertThat(result.pageInfo.totalElements).isEqualTo(2_500L)
-        // 2,500 거래처 / 청크 50 = 50회 분할 호출
-        verify(exactly = 50) { posRepository.aggregateByCustomer(any(), any(), any()) }
+        assertThat(result.pageInfo.totalElements).isEqualTo(20L)
+    }
+
+    @Test
+    @DisplayName("getList — 선택 거래처 미지정(빈 목록) 시 400")
+    fun listRejectsEmptySelection() {
+        assertThatThrownBy { service.getList(allBranchesScope, listRequest(accountIds = emptyList())) }
+            .isInstanceOf(BusinessException::class.java)
     }
 
     @Test
     @DisplayName("getList — 제품 필터 지정 + 매칭 바코드 0건이면 POS 미호출 + 전 거래처 0")
     fun listSkipsPosWhenNoBarcodeMatches() {
         val acc = account(1, "S001")
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1L), true) } returns listOf(acc)
         every {
             productRepository.findBarcodesForElectronicSales(emptyList(), "면류", "봉지면")
         } returns emptyList()
@@ -255,26 +319,10 @@ class PosSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getList — 거래처 keyword 필터 (부분일치)")
-    fun listFiltersByCustomerKeyword() {
-        val acc1 = account(1, "S001")
-        val acc2 = account(2, "S002")
-        every { acc1.name } returns "이마트 원주점"
-        every { acc2.name } returns "홈플러스 원주점"
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc1, acc2)
-        every { posRepository.aggregateByCustomer(listOf("000S001"), any(), any()) } returns emptyList()
-
-        val result = service.getList(allBranchesScope, listRequest(customerKeyword = "이마트"))
-
-        assertThat(result.items).hasSize(1)
-        assertThat(result.items.first().accountId).isEqualTo(1)
-    }
-
-    @Test
     @DisplayName("getList — POS 도달 불가(예외) 시 graceful fallback 으로 0/0")
     fun listGracefulFallbackOnPosError() {
         val acc = account(1, "S001")
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1L), true) } returns listOf(acc)
         every {
             posRepository.aggregateByCustomer(any(), any(), any())
         } throws RuntimeException("POS 도달 불가")
@@ -300,7 +348,7 @@ class PosSalesAdminQueryServiceTest {
     @DisplayName("getList — 31일(두 끝점 일수 차이) 경계는 허용, 초과는 400 — 레거시 maxSpan 정합")
     fun listEnforcesMaxRangeDays() {
         val acc = account(1, "S001")
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1L), true) } returns listOf(acc)
         every { posRepository.aggregateByCustomer(any(), any(), any()) } returns emptyList()
 
         // 2026-01-01 ~ 2026-02-01 = 일수 차이 31 → 허용
@@ -317,6 +365,30 @@ class PosSalesAdminQueryServiceTest {
             )
         }.isInstanceOf(BusinessException::class.java)
     }
+
+    @Test
+    @DisplayName("getList — 선택 거래처 중 권한 범위 밖이 있으면 AdminForbiddenException")
+    fun listRejectsOutOfScope() {
+        val acc = account(1, "S001", branchCode = "B001")
+        every { accountRepository.findByIdInAndIsDeletedNot(listOf(1L), true) } returns listOf(acc)
+        val scope = DataScope(branchCodes = listOf("B999"), isAllBranches = false)
+
+        assertThatThrownBy { service.getList(scope, listRequest()) }
+            .isInstanceOf(AdminForbiddenException::class.java)
+    }
+
+    @Test
+    @DisplayName("getListForExport — 선택 거래처 수 상한(20) 이 export 경로에도 동일 적용")
+    fun exportRejectsTooManySelectedAccounts() {
+        val ids = (1..21L).toList()
+
+        assertThatThrownBy { service.getListForExport(allBranchesScope, listRequest(accountIds = ids)) }
+            .isInstanceOf(BusinessException::class.java)
+
+        verify(exactly = 0) { posRepository.aggregateByCustomer(any(), any(), any()) }
+    }
+
+    // ------------------- getDetail (기존 유지) -------------------
 
     @Test
     @DisplayName("getDetail — 제품별 명세(바코드 포함) + 합계 산출")
@@ -406,26 +478,5 @@ class PosSalesAdminQueryServiceTest {
                 endDate = LocalDate.of(2026, 4, 30),
             )
         }.isInstanceOf(AdminForbiddenException::class.java)
-    }
-
-    @Test
-    @DisplayName("getList — 권한 범위 밖 지점 요청 시 AdminForbiddenException")
-    fun listRejectsOutOfScope() {
-        val scope = DataScope(branchCodes = listOf("B999"), isAllBranches = false)
-
-        assertThatThrownBy { service.getList(scope, listRequest()) }
-            .isInstanceOf(AdminForbiddenException::class.java)
-    }
-
-    @Test
-    @DisplayName("getListForExport — 거래처 수 상한(2500) 이 export 경로에도 동일 적용")
-    fun exportRejectsTooManyAccounts() {
-        val accounts = (1..2_501L).map { account(it, "S$it") }
-        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns accounts
-
-        assertThatThrownBy { service.getListForExport(allBranchesScope, listRequest()) }
-            .isInstanceOf(BusinessException::class.java)
-
-        verify(exactly = 0) { posRepository.aggregateByCustomer(any(), any(), any()) }
     }
 }

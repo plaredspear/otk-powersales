@@ -8794,6 +8794,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePosSalesAccountListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PosSalesAccountListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePosSalesDashboardListResponse" : {
         "properties" : {
           "data" : {
@@ -19558,6 +19587,42 @@
         },
         "type" : "object"
       },
+      "PosSalesAccountItem" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PosSalesAccountListResponse" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PosSalesAccountItem"
+            },
+            "type" : "array"
+          },
+          "totalElements" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "PosSalesDashboardListItem" : {
         "properties" : {
           "accountId" : {
@@ -29194,7 +29259,21 @@
         "operationId" : "getSafetyCheckReportRpa",
         "parameters" : [ {
           "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
           "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -29220,7 +29299,21 @@
         "operationId" : "exportSafetyCheckReportRpa",
         "parameters" : [ {
           "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
           "name" : "date",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -29316,6 +29409,17 @@
             "format" : "int32",
             "type" : "integer"
           }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : false,
+          "schema" : {
+            "default" : [ ],
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -29364,6 +29468,17 @@
           "schema" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : false,
+          "schema" : {
+            "default" : [ ],
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         } ],
         "responses" : {
@@ -34303,6 +34418,69 @@
         "tags" : [ "admin-monthly-sales-dashboard-controller" ]
       }
     },
+    "/api/v1/admin/sales/pos/accounts" : {
+      "get" : {
+        "operationId" : "getAccounts_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "query",
+          "name" : "costCenterCodes",
+          "required" : true,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "customerKeyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "distributionChannels",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountTypes",
+          "required" : false,
+          "schema" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePosSalesAccountListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-pos-sales-controller" ]
+      }
+    },
     "/api/v1/admin/sales/pos/detail/{customerId}" : {
       "get" : {
         "operationId" : "getDetail_4",
@@ -34406,38 +34584,12 @@
           }
         }, {
           "in" : "query",
-          "name" : "costCenterCodes",
+          "name" : "accountIds",
           "required" : true,
           "schema" : {
             "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "customerKeyword",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "distributionChannels",
-          "required" : false,
-          "schema" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "accountTypes",
-          "required" : false,
-          "schema" : {
-            "items" : {
-              "type" : "string"
+              "format" : "int64",
+              "type" : "integer"
             },
             "type" : "array"
           }
@@ -34535,38 +34687,12 @@
           }
         }, {
           "in" : "query",
-          "name" : "costCenterCodes",
+          "name" : "accountIds",
           "required" : true,
           "schema" : {
             "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "customerKeyword",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
-          "name" : "distributionChannels",
-          "required" : false,
-          "schema" : {
-            "items" : {
-              "type" : "string"
-            },
-            "type" : "array"
-          }
-        }, {
-          "in" : "query",
-          "name" : "accountTypes",
-          "required" : false,
-          "schema" : {
-            "items" : {
-              "type" : "string"
+              "format" : "int64",
+              "type" : "integer"
             },
             "type" : "array"
           }

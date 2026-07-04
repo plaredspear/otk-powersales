@@ -7,7 +7,10 @@ import com.otoki.powersales.admin.exception.AdminForbiddenException
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.domain.sales.dto.request.PosSalesAccountListRequest
 import com.otoki.powersales.domain.sales.dto.request.PosSalesDashboardListRequest
+import com.otoki.powersales.domain.sales.dto.response.PosSalesAccountItem
+import com.otoki.powersales.domain.sales.dto.response.PosSalesAccountListResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesDashboardListItem
 import com.otoki.powersales.domain.sales.dto.response.PosSalesDashboardListResponse
 import com.otoki.powersales.domain.sales.dto.response.PosSalesRangeResponse
@@ -34,13 +37,20 @@ import java.time.format.DateTimeFormatter
  * 본 service 는 그 화면을 거래처별 명세로 확장 — 전산실적 [ElectronicSalesAdminQueryService] 와
  * 동일한 권한/필터 패턴. 단일 거래처 제품별 조회(mobile)는 [PosSalesService] 가 그대로 담당.
  *
+ * ## 2단 조회 (외부 POS DB 부하 축소)
+ * POS 는 메인 RDS 와 분리된 외부 read-only DB 라, 지점 전 거래처를 매 조회마다 집계하면 왕복이
+ * 급증한다. 이를 막기 위해 조회를 2단으로 분리한다:
+ * - **1단 [getAccounts]**: 메인 DB Account 만으로 조건에 맞는 거래처 목록 반환 (POS 미접촉 → 즉시 응답).
+ * - **2단 [getList]**: 운영자가 선택한 거래처(accountIds, 최대 [MAX_SELECTABLE_ACCOUNTS])만 외부 POS
+ *   DB 로 집계. 상단 합계도 선택 거래처 기준. → POS `CUST_CD IN` 왕복이 최대 1회로 축소.
+ *
  * ## 기간 산출
  * 레거시 daterangepicker `maxSpan: { days: 31 }` 정합 — 시작일~종료일 일 단위, 두 끝점 일수 차이
  * 최대 [MAX_RANGE_DAYS]. 거래처 N건 × 일별 스캔이라 전산실적(3개월)보다 보수적 상한을 유지한다.
  *
  * ## 필터 해소 위치 (외부 POS DB 보호)
- * - 메인 DB(Account): 지점 / 거래처 keyword / 유통형태 / 거래처유형 → POS `CUST_CD IN` 값 축소
- * - 메인 DB(Product): 선택 제품 / 중분류 / 소분류 → 소비자 바코드 목록으로 해소 후 POS 의 기존
+ * - 1단 메인 DB(Account): 지점 / 거래처 keyword / 유통형태 / 거래처유형 → 거래처 목록 축소
+ * - 2단 메인 DB(Product): 선택 제품 / 중분류 / 소분류 → 소비자 바코드 목록으로 해소 후 POS 의 기존
  *   `BARCODE IN` predicate 로만 합류. 바코드 목록은 [BARCODE_CHUNK_SIZE] 단위 청크 분할로 IN
  *   비대화를 방지. 유통형태/거래처유형/중·소분류 옵션과 제품 검색은 전산실적 endpoint
  *   (`/api/v1/admin/sales/electronic/filter-options`, `/product-lookup`) 를 재사용 (동일 권한 entity).
@@ -60,19 +70,59 @@ class PosSalesAdminQueryService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     /**
-     * 거래처별 POS매출 명세 조회 — 페이징 + 정렬 + 필터.
+     * 1단 — 조건에 맞는 거래처 목록 조회 (외부 POS DB 미접촉).
      *
-     * 권한 범위 거래처 N건의 기간 POS매출 합계를 거래처 1행으로 반환. 제품/분류 필터가
-     * 지정되면 해당 제품군만 합산. 응답에 조회 결과 전체(페이징 무관) 금액/수량 합계를 포함.
-     * 페이징은 조회된 거래처 list 를 메모리에서 sort + slice.
+     * 지점/거래처명/유통형태/거래처유형 필터를 메인 DB Account 에만 적용해 거래처 목록을 반환한다.
+     * POS 집계는 수행하지 않아 즉시 응답한다. 운영자는 이 목록에서 거래처를 선택해 [getList] 로
+     * 2단 POS 조회를 실행한다. [MAX_ACCOUNT_COUNT] 초과 시 400 (조건 좁힘 안내).
      *
      * @throws AdminForbiddenException 권한 범위와 입력 costCenterCodes 의 교집합이 비어있을 때
+     * @throws BusinessException costCenterCodes 미지정(400) 또는 거래처 수가 [MAX_ACCOUNT_COUNT] 초과(400)일 때
+     */
+    fun getAccounts(scope: DataScope, request: PosSalesAccountListRequest): PosSalesAccountListResponse {
+        if (request.costCenterCodes.isEmpty()) {
+            throw BusinessException(
+                errorCode = "INVALID_PARAMETER",
+                message = "cost_center_codes는 필수입니다",
+                httpStatus = HttpStatus.BAD_REQUEST,
+            )
+        }
+        val effectiveCodes = applyScope(scope, request.costCenterCodes)
+        val accounts = findAccounts(
+            effectiveCodes,
+            customerKeyword = request.customerKeyword,
+            distributionChannels = request.distributionChannels,
+            accountTypes = request.accountTypes,
+        )
+        validateAccountCount(accounts.size)
+        val items = accounts
+            .map { account ->
+                PosSalesAccountItem(
+                    accountId = account.id,
+                    accountName = account.name,
+                    sapAccountCode = account.externalKey,
+                    branchCode = account.branchCode,
+                    branchName = account.branchName,
+                )
+            }
+            .sortedWith(compareBy(nullsLast()) { it.accountName })
+        return PosSalesAccountListResponse(totalElements = items.size, items = items)
+    }
+
+    /**
+     * 2단 — 선택 거래처별 POS매출 명세 조회 (페이징 + 정렬 + 제품 필터).
+     *
+     * 1단에서 운영자가 선택한 거래처(accountIds, 최대 [MAX_SELECTABLE_ACCOUNTS])의 기간 POS매출
+     * 합계를 거래처 1행으로 반환. 제품/분류 필터가 지정되면 해당 제품군만 합산. 응답에 조회 결과
+     * 전체(페이징 무관) 금액/수량 합계 포함 — 선택 거래처 기준. 페이징은 메모리에서 sort + slice.
+     *
+     * @throws AdminForbiddenException 선택 거래처 중 권한 범위 밖 거래처가 포함되어 있을 때
      */
     fun getList(scope: DataScope, request: PosSalesDashboardListRequest): PosSalesDashboardListResponse {
-        validateParams(request.startDate, request.endDate, request.costCenterCodes)
-        val effectiveCodes = applyScope(scope, request.costCenterCodes)
+        validateDateRange(request.startDate, request.endDate)
+        val accounts = resolveSelectedAccounts(scope, request.accountIds)
 
-        val items = buildListItems(effectiveCodes, request)
+        val items = buildListItems(accounts, request)
         val sorted = sortItems(items, request.sort)
         val totalElements = sorted.size.toLong()
         val pageSize = request.size.coerceIn(1, 100)
@@ -97,12 +147,12 @@ class PosSalesAdminQueryService(
     }
 
     /**
-     * 엑셀 export 용 전체 명세 산출 (페이징 미적용).
+     * 엑셀 export 용 선택 거래처 명세 산출 (페이징 미적용).
      */
     fun getListForExport(scope: DataScope, request: PosSalesDashboardListRequest): List<PosSalesDashboardListItem> {
-        validateParams(request.startDate, request.endDate, request.costCenterCodes)
-        val effectiveCodes = applyScope(scope, request.costCenterCodes)
-        return sortItems(buildListItems(effectiveCodes, request), request.sort).take(EXPORT_MAX_ROWS)
+        validateDateRange(request.startDate, request.endDate)
+        val accounts = resolveSelectedAccounts(scope, request.accountIds)
+        return sortItems(buildListItems(accounts, request), request.sort).take(EXPORT_MAX_ROWS)
     }
 
     /**
@@ -172,12 +222,10 @@ class PosSalesAdminQueryService(
     // ------------------- helpers -------------------
 
     private fun buildListItems(
-        effectiveCodes: List<String>,
+        accounts: List<Account>,
         request: PosSalesDashboardListRequest,
     ): List<PosSalesDashboardListItem> {
-        val accounts = findAccounts(effectiveCodes, request)
         if (accounts.isEmpty()) return emptyList()
-        validateAccountCount(accounts.size)
 
         // 제품/분류 필터 → 소비자 바코드 해소 (메인 DB). 필터 지정 + 매칭 바코드 0건이면
         // POS 를 조회하지 않고 전 거래처 0 으로 응답 (매칭 제품 없음 = 매출 없음).
@@ -320,21 +368,49 @@ class PosSalesAdminQueryService(
 
     private fun findAccounts(
         effectiveCodes: List<String>,
-        request: PosSalesDashboardListRequest,
+        customerKeyword: String?,
+        distributionChannels: List<String>,
+        accountTypes: List<String>,
     ): List<Account> {
         return accountRepository.findByBranchCodeIn(effectiveCodes)
             .filter { acc ->
-                request.customerKeyword.isNullOrBlank() ||
-                    acc.name?.contains(request.customerKeyword, ignoreCase = true) == true
+                customerKeyword.isNullOrBlank() ||
+                    acc.name?.contains(customerKeyword, ignoreCase = true) == true
             }
             // 유통형태(거래처상태코드+거래처타입) / 거래처유형(ABC유형) 라벨 필터 — 메인 DB 해소분
             .filter { acc ->
-                request.distributionChannels.isEmpty() ||
-                    acc.distributionChannelLabel() in request.distributionChannels
+                distributionChannels.isEmpty() ||
+                    acc.distributionChannelLabel() in distributionChannels
             }
             .filter { acc ->
-                request.accountTypes.isEmpty() || acc.abcTypeLabel() in request.accountTypes
+                accountTypes.isEmpty() || acc.abcTypeLabel() in accountTypes
             }
+    }
+
+    /**
+     * 2단 선택 거래처 id 해소 — 상한 검증 + 존재 확인 + 권한 범위 확인.
+     *
+     * accountIds 의 개수가 [MAX_SELECTABLE_ACCOUNTS] 초과면 400. 선택 거래처 중 하나라도 권한
+     * 범위(지점) 밖이면 403 (silent 제외로 합계가 틀어지는 것 방지).
+     */
+    private fun resolveSelectedAccounts(scope: DataScope, accountIds: List<Long>): List<Account> {
+        if (accountIds.isEmpty()) {
+            throw BusinessException(
+                errorCode = "INVALID_PARAMETER",
+                message = "조회할 거래처를 선택해주세요",
+                httpStatus = HttpStatus.BAD_REQUEST,
+            )
+        }
+        if (accountIds.size > MAX_SELECTABLE_ACCOUNTS) {
+            throw BusinessException(
+                errorCode = "INVALID_PARAMETER",
+                message = "거래처는 최대 ${MAX_SELECTABLE_ACCOUNTS}개까지 선택할 수 있습니다.",
+                httpStatus = HttpStatus.BAD_REQUEST,
+            )
+        }
+        val accounts = accountRepository.findByIdInAndIsDeletedNot(accountIds.distinct(), true)
+        if (accounts.any { !scope.validateAccess(it.branchCode) }) throw AdminForbiddenException()
+        return accounts
     }
 
     /** [Account.externalKey] → POS `CUST_CD` (legacy 패딩 `"000" + accountCode`). blank → null. */
@@ -350,27 +426,15 @@ class PosSalesAdminQueryService(
     }
 
     /**
-     * count 기반 외부 DB 보호 가드 — POS 를 조회하기 전에, 메인 DB 에서 이미 확보한 거래처 목록의
-     * 개수(추가 쿼리 없음)로 외부 DB 에 나갈 조회 규모를 확인하고 상한 초과 시 조건 좁힘을 안내한다.
-     * 상한까지만 잘라 조회하면 합계가 틀어지므로(silent truncation) 초과분 절단은 하지 않는다.
+     * 1단 거래처 목록 크기 가드 — 메인 DB 에서 확보한 거래처 목록의 개수(추가 쿼리 없음)로 화면에
+     * 내려줄 목록 규모를 제한한다. 상한 초과 시 조건 좁힘을 안내한다 (silent truncation 방지).
      */
     private fun validateAccountCount(count: Int) {
         if (count > MAX_ACCOUNT_COUNT) {
             throw BusinessException(
                 errorCode = "INVALID_PARAMETER",
                 message = "조회 대상 거래처가 ${count}건입니다. 최대 ${MAX_ACCOUNT_COUNT}건까지 조회할 수 있습니다. " +
-                    "지점/유통형태/거래처유형 조건을 좁혀주세요.",
-                httpStatus = HttpStatus.BAD_REQUEST,
-            )
-        }
-    }
-
-    private fun validateParams(startDate: LocalDate, endDate: LocalDate, costCenterCodes: List<String>) {
-        validateDateRange(startDate, endDate)
-        if (costCenterCodes.isEmpty()) {
-            throw BusinessException(
-                errorCode = "INVALID_PARAMETER",
-                message = "cost_center_codes는 필수입니다",
+                    "지점/유통형태/거래처유형/거래처명 조건을 좁혀주세요.",
                 httpStatus = HttpStatus.BAD_REQUEST,
             )
         }
@@ -423,9 +487,15 @@ class PosSalesAdminQueryService(
         private const val CUST_CD_CHUNK_SIZE = 50
 
         /**
-         * 1회 조회의 거래처 수 상한 — 메인 DB 에서 확보한 거래처 목록 count 로 사전 확인 (추가
-         * 쿼리 없음). 초과 시 POS 미조회 + 400 조건 좁힘 안내. 청크 50 기준 최악 50회 쿼리로 상한.
+         * 1단 거래처 목록 크기 상한 — 메인 DB 에서 확보한 거래처 목록 count 로 사전 확인 (추가
+         * 쿼리 없음). 초과 시 400 조건 좁힘 안내. 외부 POS DB 는 미접촉이라 메인 DB 목록 규모만 제한.
          */
         private const val MAX_ACCOUNT_COUNT = 2_500
+
+        /**
+         * 2단 선택 거래처 수 상한 — 외부 POS DB `CUST_CD IN` 왕복을 1회로 유지하기 위해
+         * [CUST_CD_CHUNK_SIZE] 이내로 제한. 초과 시 400.
+         */
+        const val MAX_SELECTABLE_ACCOUNTS = 20
     }
 }

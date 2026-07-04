@@ -1,12 +1,31 @@
 import { useMemo, useRef, useState } from 'react';
-import { Alert, Card, Col, DatePicker, Input, Row, Select, Statistic, Typography, message } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Input,
+  Row,
+  Select,
+  Space,
+  Statistic,
+  Tag,
+  Typography,
+  message,
+} from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { TableRowSelection } from 'antd/es/table/interface';
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
+  MAX_SELECTABLE_ACCOUNTS,
   POS_SALES_EXPORT_LIST_PATH,
   exportPosSalesListParams,
+  fetchPosSalesAccounts,
   fetchPosSalesList,
+  type PosSalesAccountItem,
   type PosSalesDashboardListItem,
 } from '@/api/posSales';
 import {
@@ -29,38 +48,54 @@ const { Text } = Typography;
 // 정합. backend PosSalesAdminQueryService.MAX_RANGE_DAYS 정합.
 const MAX_RANGE_DAYS = 31;
 
-interface QueryParams {
-  startDate: string;
-  endDate: string;
+/** 1단 거래처 조회 조건 (조회 버튼 클릭 시점에 확정). */
+interface AccountQueryParams {
   codes: string[];
   customerKeyword?: string;
   distributionChannels: string[];
   accountTypes: string[];
+}
+
+/** 2단 POS 조회 조건 (선택 거래처 + 기간 + 제품/분류). */
+interface PosQueryParams {
+  startDate: string;
+  endDate: string;
+  accountIds: number[];
   productIds: number[];
   category2?: string;
   category3?: string;
 }
 
 /**
- * POS매출 — web admin 조회 페이지.
+ * POS매출 — web admin 2단 조회 페이지.
  *
  * 레거시 「POS매출 조회」(`/sales/posMain` → `posmain.jsp`, POS `live_pos_sales_dh`) 의 거래처별 확장.
- * 기간은 일 단위(기본: 당월 1일~오늘 — 레거시 daterangepicker 기본값 정합, 최대 31일).
- * 유통형태/거래처유형(메인 DB Account) + 제품/중분류/소분류(메인 DB Product → POS 바코드 IN) 필터.
- * 권한 범위 거래처 N건의 기간 POS매출 합계 명세 + 상단 전체 합계 + 페이징 + 정렬 + 엑셀 export.
- * row 클릭 시 제품별 상세 modal (목록과 동일 필터 반영, 바코드 포함).
+ * 외부 POS DB 부하를 줄이기 위해 조회를 2단으로 분리한다:
+ * - 1단: 지점/거래처명/유통형태/거래처유형으로 메인 DB 거래처 목록만 조회 (POS 미접촉, 즉시 응답).
+ *        결과 목록에서 거래처를 최대 20개 선택.
+ * - 2단: 선택 거래처(+기간, 최대 31일 + 제품/중분류/소분류)만 외부 POS DB 로 집계. 상단 합계 카드는
+ *        선택 거래처 기준. 페이징 + 정렬 + 엑셀 export. row 클릭 시 제품별 상세 modal.
+ *
  * 조건 옵션/제품 검색은 월매출(전산실적)과 동일 endpoint 재사용 (동일 권한 `monthly_sales_history`).
  */
 export default function SalesQueryPage() {
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs()]);
+  // 1단 거래처 조회 조건 (버퍼)
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionChannels, setDistributionChannels] = useState<string[]>([]);
   const [accountTypes, setAccountTypes] = useState<string[]>([]);
+  const [accountQuery, setAccountQuery] = useState<AccountQueryParams | null>(null);
+
+  // 거래처 선택 (1단 결과에서 체크)
+  const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
+
+  // 2단 POS 조회 조건 (버퍼)
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs()]);
   const [selectedProducts, setSelectedProducts] = useState<ElectronicSalesProductLookupItem[]>([]);
   const [category2, setCategory2] = useState<string | undefined>(undefined);
   const [category3, setCategory3] = useState<string | undefined>(undefined);
-  const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
+  const [posQuery, setPosQuery] = useState<PosQueryParams | null>(null);
+
   const [page, setPage] = useState<number>(0);
   const [pageSize, setPageSize] = useState<number>(20);
   const [sort, setSort] = useState<string | undefined>(undefined);
@@ -120,17 +155,32 @@ export default function SalesQueryPage() {
     );
   };
 
-  const listQuery = useQuery({
-    queryKey: ['posSalesDashboard', 'list', queryParams, page, pageSize, sort],
+  // 1단 — 거래처 목록 조회
+  const accountsQuery = useQuery({
+    queryKey: ['posSalesDashboard', 'accounts', accountQuery],
     queryFn: () => {
-      const p = queryParams!;
+      const q = accountQuery!;
+      return fetchPosSalesAccounts({
+        costCenterCodes: q.codes,
+        customerKeyword: q.customerKeyword,
+        distributionChannels: q.distributionChannels,
+        accountTypes: q.accountTypes,
+      });
+    },
+    enabled: accountQuery != null,
+    placeholderData: (prev) => prev,
+  });
+  const accounts = accountsQuery.data;
+
+  // 2단 — 선택 거래처 POS 집계
+  const listQuery = useQuery({
+    queryKey: ['posSalesDashboard', 'list', posQuery, page, pageSize, sort],
+    queryFn: () => {
+      const p = posQuery!;
       return fetchPosSalesList({
         startDate: p.startDate,
         endDate: p.endDate,
-        costCenterCodes: p.codes,
-        customerKeyword: p.customerKeyword,
-        distributionChannels: p.distributionChannels,
-        accountTypes: p.accountTypes,
+        accountIds: p.accountIds,
         productIds: p.productIds,
         category2: p.category2,
         category3: p.category3,
@@ -139,50 +189,60 @@ export default function SalesQueryPage() {
         sort,
       });
     },
-    enabled: queryParams != null,
+    enabled: posQuery != null,
     placeholderData: (prev) => prev,
   });
+  const list = listQuery.data;
 
-  const handleSearch = () => {
+  // 1단 조회 — 거래처 목록 갱신 (선택/2단 결과 초기화)
+  const handleSearchAccounts = () => {
     if (selectedCodes.length === 0) {
       message.warning('지점은 필수항목입니다.');
       return;
     }
-    if (rangeExceedsMax) return;
-    setPage(0);
-    setQueryParams({
-      startDate: dateRange[0].format('YYYY-MM-DD'),
-      endDate: dateRange[1].format('YYYY-MM-DD'),
+    setSelectedAccountIds([]);
+    setPosQuery(null);
+    setAccountQuery({
       codes: selectedCodes,
       customerKeyword: customerKeyword.trim() || undefined,
       distributionChannels,
       accountTypes,
+    });
+  };
+
+  // 2단 조회 — 선택 거래처 POS 집계
+  const handleSearchPos = () => {
+    if (selectedAccountIds.length === 0) {
+      message.warning('조회할 거래처를 선택해주세요.');
+      return;
+    }
+    if (rangeExceedsMax) return;
+    setPage(0);
+    setPosQuery({
+      startDate: dateRange[0].format('YYYY-MM-DD'),
+      endDate: dateRange[1].format('YYYY-MM-DD'),
+      accountIds: selectedAccountIds,
       productIds: selectedProducts.map((p) => p.productId),
       category2,
       category3,
     });
   };
 
-  const list = listQuery.data;
-
   const { run: runExport, downloading: exporting } = useExcelDownload();
 
   const handleExport = () => {
-    if (!queryParams) return;
+    if (!posQuery) return;
     runExport(
       POS_SALES_EXPORT_LIST_PATH,
-      `pos-sales-${queryParams.startDate}-${queryParams.endDate}.xlsx`,
+      `pos-sales-${posQuery.startDate}-${posQuery.endDate}.xlsx`,
       {
         params: exportPosSalesListParams({
-          startDate: queryParams.startDate,
-          endDate: queryParams.endDate,
-          costCenterCodes: queryParams.codes,
-          customerKeyword: queryParams.customerKeyword,
-          distributionChannels: queryParams.distributionChannels,
-          accountTypes: queryParams.accountTypes,
-          productIds: queryParams.productIds,
-          category2: queryParams.category2,
-          category3: queryParams.category3,
+          startDate: posQuery.startDate,
+          endDate: posQuery.endDate,
+          accountIds: posQuery.accountIds,
+          productIds: posQuery.productIds,
+          category2: posQuery.category2,
+          category3: posQuery.category3,
           sort,
         }),
         totalCount: list?.pageInfo.totalElements,
@@ -196,6 +256,37 @@ export default function SalesQueryPage() {
   const formatQty = (v: number | null | undefined) =>
     v == null ? '-' : v.toLocaleString();
 
+  // 1단 거래처 목록 컬럼 (체크박스 선택)
+  const accountColumns: ColumnsType<PosSalesAccountItem> = useMemo(
+    () => [
+      { title: '거래처', dataIndex: 'accountName', width: 200, render: (v) => v ?? '-' },
+      { title: 'SAP코드', dataIndex: 'sapAccountCode', width: 120, render: (v) => v ?? '-' },
+      { title: '지점', dataIndex: 'branchName', width: 140, render: (v) => v ?? '-' },
+    ],
+    [],
+  );
+
+  const rowSelection: TableRowSelection<PosSalesAccountItem> = {
+    // 최대 20개 상한이라 "전체 선택"은 무의미(20개 초과 목록에서 누르면 상한 초과로 0개 선택됨) → 숨김.
+    hideSelectAll: true,
+    selectedRowKeys: selectedAccountIds,
+    onChange: (keys) => {
+      const next = keys as number[];
+      if (next.length > MAX_SELECTABLE_ACCOUNTS) {
+        message.warning(`거래처는 최대 ${MAX_SELECTABLE_ACCOUNTS}개까지 선택할 수 있습니다.`);
+        return;
+      }
+      setSelectedAccountIds(next);
+    },
+    getCheckboxProps: (record) => ({
+      // 상한 도달 시 미선택 행은 체크 비활성 (이미 선택된 행은 해제 가능하도록 유지)
+      disabled:
+        selectedAccountIds.length >= MAX_SELECTABLE_ACCOUNTS &&
+        !selectedAccountIds.includes(record.accountId),
+    }),
+  };
+
+  // 2단 POS 결과 컬럼
   const columns: ColumnsType<PosSalesDashboardListItem> = useMemo(
     () => [
       {
@@ -231,33 +322,16 @@ export default function SalesQueryPage() {
     [],
   );
 
-  const filterSummary = queryParams
-    ? [
-        `${queryParams.startDate} ~ ${queryParams.endDate}`,
-        `${queryParams.codes.length}개 지점`,
-        queryParams.customerKeyword && `거래처: ${queryParams.customerKeyword}`,
-        queryParams.distributionChannels.length > 0 &&
-          `유통형태 ${queryParams.distributionChannels.length}개`,
-        queryParams.accountTypes.length > 0 && `거래처유형 ${queryParams.accountTypes.length}개`,
-        queryParams.productIds.length > 0 && `제품 ${queryParams.productIds.length}개`,
-        queryParams.category2 && `중분류: ${queryParams.category2}`,
-        queryParams.category3 && `소분류: ${queryParams.category3}`,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : '';
-
   return (
     <div style={{ padding: 16 }}>
+      {/* ── 1단: 거래처 조회 조건 ── */}
       <PeriodBranchFilterBar
         selectedCodes={selectedCodes}
         onCodesChange={setSelectedCodes}
-        onSearch={handleSearch}
-        onExport={handleExport}
-        exportDisabled={!list || list.items.length === 0}
-        exportLoading={exporting}
-        searchLoading={listQuery.isLoading}
-        searchDisabled={rangeExceedsMax}
+        onSearch={handleSearchAccounts}
+        onExport={() => {}}
+        hideExport
+        searchLoading={accountsQuery.isFetching}
         periodFilter={
           <div>
             <span>조회기간:</span>
@@ -313,6 +387,85 @@ export default function SalesQueryPage() {
                 />
               </div>
             </div>
+            <div>
+              <span>거래처 검색:</span>
+              <div style={{ marginTop: 4 }}>
+                <Input
+                  placeholder="거래처명 부분 일치"
+                  value={customerKeyword}
+                  onChange={(e) => setCustomerKeyword(e.target.value)}
+                  onPressEnter={handleSearchAccounts}
+                  style={{ width: 180 }}
+                  allowClear
+                />
+              </div>
+            </div>
+          </>
+        }
+      />
+
+      {rangeExceedsMax && (
+        <Alert
+          type="warning"
+          message={`조회 기간은 최대 ${MAX_RANGE_DAYS}일까지 가능합니다`}
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      {accountsQuery.isError && (
+        <Alert
+          type="error"
+          message={(accountsQuery.error as Error)?.message ?? '거래처 조회 실패'}
+          style={{ marginBottom: 8 }}
+        />
+      )}
+
+      {/* ── 1단 결과: 거래처 목록 (체크박스 선택) ── */}
+      {accountQuery != null && (
+        <Card size="small" style={{ marginBottom: 12 }}>
+          <div
+            style={{
+              marginBottom: 8,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Space>
+              <Text strong>거래처 선택</Text>
+              <Text type="secondary">
+                {accounts?.totalElements ?? 0}건 · 선택 {selectedAccountIds.length}/
+                {MAX_SELECTABLE_ACCOUNTS}
+              </Text>
+            </Space>
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              onClick={handleSearchPos}
+              disabled={selectedAccountIds.length === 0 || rangeExceedsMax}
+              loading={listQuery.isFetching}
+            >
+              선택 거래처 POS 조회
+            </Button>
+          </div>
+          <ResizableTable
+            rowKey={(r) => r.accountId}
+            size="small"
+            columns={accountColumns}
+            dataSource={accounts?.items ?? []}
+            loading={accountsQuery.isLoading}
+            rowSelection={rowSelection}
+            scroll={{ y: 280 }}
+            pagination={false}
+            locale={listTableLocale({ searched: accountQuery != null })}
+          />
+        </Card>
+      )}
+
+      {/* ── 2단: 제품/분류 필터 ── */}
+      {accountQuery != null && (
+        <Card size="small" style={{ marginBottom: 12 }}>
+          <Space wrap align="end">
             <div>
               <span>중분류:</span>
               <div style={{ marginTop: 4 }}>
@@ -375,47 +528,31 @@ export default function SalesQueryPage() {
                 />
               </div>
             </div>
-            <div>
-              <span>거래처 검색:</span>
-              <div style={{ marginTop: 4 }}>
-                <Input
-                  placeholder="거래처명 부분 일치"
-                  value={customerKeyword}
-                  onChange={(e) => setCustomerKeyword(e.target.value)}
-                  onPressEnter={handleSearch}
-                  style={{ width: 180 }}
-                  allowClear
-                />
-              </div>
-            </div>
-          </>
-        }
-      />
-
-      {rangeExceedsMax && (
-        <Alert
-          type="warning"
-          message={`조회 기간은 최대 ${MAX_RANGE_DAYS}일까지 가능합니다`}
-          style={{ marginBottom: 16 }}
-        />
+          </Space>
+        </Card>
       )}
 
-      {queryParams != null && (
+      {/* ── 2단 결과 ── */}
+      {posQuery != null && (
         <div
           style={{
             marginBottom: 8,
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             alignItems: 'center',
           }}
         >
-          <Text type="secondary">{filterSummary}</Text>
-          <RefreshButton onRefresh={() => listQuery.refetch()} refreshing={listQuery.isFetching} />
+          <Space>
+            <RefreshButton onRefresh={() => listQuery.refetch()} refreshing={listQuery.isFetching} />
+            <Button onClick={handleExport} loading={exporting} disabled={!list || list.items.length === 0}>
+              엑셀 다운로드
+            </Button>
+          </Space>
         </div>
       )}
 
-      {/* 최종 합계 — 조회 결과 전체(페이징 무관)의 POS매출 금액/수량 */}
-      {queryParams != null && list && (
+      {/* 최종 합계 — 선택 거래처(페이징 무관)의 POS매출 금액/수량 */}
+      {posQuery != null && list && (
         <Card size="small" style={{ marginBottom: 12 }}>
           <Row gutter={16}>
             <Col span={12}>
@@ -440,45 +577,58 @@ export default function SalesQueryPage() {
         />
       )}
 
-      <ResizableTable
-        rowKey={(r) => r.accountId}
-        size="small"
-        columns={columns}
-        dataSource={list?.items ?? []}
-        loading={queryParams != null && listQuery.isLoading}
-        pagination={buildListPagination({
-          page,
-          pageSize,
-          total: list?.pageInfo.totalElements ?? 0,
-          onPageChange: setPage,
-          onSizeChange: (size) => {
-            setPageSize(size);
-            setPage(0);
-          },
-        })}
-        onChange={(_pagination, _filters, sorter) => {
-          if (!Array.isArray(sorter) && sorter.order && sorter.field) {
-            const field = String(sorter.field);
-            const direction = sorter.order === 'descend' ? 'desc' : 'asc';
-            setSort(`${field},${direction}`);
-            setPage(0);
-          } else {
-            setSort(undefined);
-          }
-        }}
-        locale={listTableLocale({ searched: queryParams != null })}
-      />
+      {posQuery != null && (
+        <ResizableTable
+          rowKey={(r) => r.accountId}
+          size="small"
+          columns={columns}
+          dataSource={list?.items ?? []}
+          loading={listQuery.isLoading}
+          pagination={buildListPagination({
+            page,
+            pageSize,
+            total: list?.pageInfo.totalElements ?? 0,
+            onPageChange: setPage,
+            onSizeChange: (size) => {
+              setPageSize(size);
+              setPage(0);
+            },
+          })}
+          onChange={(_pagination, _filters, sorter) => {
+            if (!Array.isArray(sorter) && sorter.order && sorter.field) {
+              const field = String(sorter.field);
+              const direction = sorter.order === 'descend' ? 'desc' : 'asc';
+              setSort(`${field},${direction}`);
+              setPage(0);
+            } else {
+              setSort(undefined);
+            }
+          }}
+          locale={listTableLocale({ searched: posQuery != null })}
+        />
+      )}
+
+      {/* 조회 전 안내 — 어떤 조건도 조회하지 않은 초기 상태 */}
+      {accountQuery == null && (
+        <Card size="small">
+          <Text type="secondary">
+            지점·기간 등 조건을 선택하고 <Tag color="blue">조회</Tag> 를 누르면 거래처 목록이
+            표시됩니다. 목록에서 거래처를 최대 {MAX_SELECTABLE_ACCOUNTS}개 선택한 뒤{' '}
+            <Tag color="geekblue">선택 거래처 POS 조회</Tag> 로 POS매출을 조회하세요.
+          </Text>
+        </Card>
+      )}
 
       <PosSalesDetailModal
         open={detailTarget != null}
         onClose={() => setDetailTarget(null)}
         customerId={detailTarget?.accountId ?? null}
         customerName={detailTarget?.accountName ?? null}
-        startDate={queryParams?.startDate ?? dateRange[0].format('YYYY-MM-DD')}
-        endDate={queryParams?.endDate ?? dateRange[1].format('YYYY-MM-DD')}
-        productIds={queryParams?.productIds ?? []}
-        category2={queryParams?.category2}
-        category3={queryParams?.category3}
+        startDate={posQuery?.startDate ?? dateRange[0].format('YYYY-MM-DD')}
+        endDate={posQuery?.endDate ?? dateRange[1].format('YYYY-MM-DD')}
+        productIds={posQuery?.productIds ?? []}
+        category2={posQuery?.category2}
+        category3={posQuery?.category3}
       />
     </div>
   );
