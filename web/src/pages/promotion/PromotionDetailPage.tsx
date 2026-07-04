@@ -881,16 +881,29 @@ export default function PromotionDetailPage() {
         dataIndex: 'siteImageUrl',
         width: 80,
         align: 'center' as const,
-        render: (url: string | null) =>
-          url ? (
-            <Image
-              src={url}
-              alt="현장사진"
-              width={48}
-              height={48}
-              style={{ objectFit: 'cover', borderRadius: 4 }}
-            />
-          ) : null,
+        render: (url: string | null, record: PromotionEmployee) => {
+          // URL 있음: 실제 썸네일. URL 없고 key 만 있음: 로컬 환경(미리보기 미지원) — 존재는 아이콘으로 안내.
+          // 둘 다 없음: 사진 없음(빈칸). local 판별은 backend 가 siteImageUrl 을 null 로 내려 결정한다.
+          if (url) {
+            return (
+              <Image
+                src={url}
+                alt="현장사진"
+                width={48}
+                height={48}
+                style={{ objectFit: 'cover', borderRadius: 4 }}
+              />
+            );
+          }
+          if (record.s3ImageUniqueKey) {
+            return (
+              <Tooltip title="로컬 환경에서는 현장사진 미리보기가 지원되지 않습니다 (운영/개발 환경에서 표시)">
+                <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+              </Tooltip>
+            );
+          }
+          return null;
+        },
       },
       {
         // SF 확정(ScheduleConfirmed__c): 조원일정 연결(scheduleId != null) 시 ✔️, 미연결 시 ❌
@@ -1148,7 +1161,10 @@ export default function PromotionDetailPage() {
                   style={{ objectFit: 'cover', borderRadius: 4 }}
                 />
               ) : (
-                <CheckCircleFilled style={{ color: '#52c41a' }} />
+                // 로컬 환경: 미리보기 미지원 — 사진 존재만 안내 아이콘으로 표시
+                <Tooltip title="로컬 환경에서는 현장사진 미리보기가 지원되지 않습니다 (운영/개발 환경에서 표시)">
+                  <InfoCircleOutlined style={{ color: '#8c8c8c' }} />
+                </Tooltip>
               )}
               <Button
                 type="text"

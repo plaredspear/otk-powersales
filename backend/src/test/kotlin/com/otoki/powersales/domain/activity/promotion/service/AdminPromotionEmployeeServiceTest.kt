@@ -57,6 +57,10 @@ class AdminPromotionEmployeeServiceTest {
         mockk(relaxUnitFun = true)
     private val storageService: com.otoki.powersales.platform.common.storage.StorageService =
         mockk(relaxed = true)
+    // 기본은 dev 프로파일(= 현장사진 미리보기 가능). 로컬 케이스는 테스트에서 별도 service 인스턴스로 검증.
+    private val environment: org.springframework.core.env.Environment = mockk {
+        every { activeProfiles } returns arrayOf("dev")
+    }
     private val principal: WebUserPrincipal = mockk(relaxed = true)
 
     private val service: AdminPromotionEmployeeService = AdminPromotionEmployeeService(
@@ -67,6 +71,7 @@ class AdminPromotionEmployeeServiceTest {
         policyEvaluator = policyEvaluator,
         teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
         storageService = storageService,
+        environment = environment,
     )
 
     // 부모 Promotion 가시 범위 검증 통과용 — 전체 지점 권한 (isAllBranches=true → validateAccess 항상 true).
@@ -125,6 +130,40 @@ class AdminPromotionEmployeeServiceTest {
             // key 없는 행: URL null, presigned 발급은 key 있는 1건만 시도
             assertThat(result[1].siteImageUrl).isNull()
             verify(exactly = 1) { storageService.getPresignedUrl(any(), any()) }
+        }
+
+        @Test
+        @DisplayName("로컬 프로파일 -> siteImageUrl null (미리보기 미지원) + presigned 발급 시도 안 함, key 는 유지")
+        fun getEmployees_siteImageUrl_localProfile() {
+            // dev/prod 아닌 프로파일 = S3StorageService 미활성(LocalStorageService stub) = 미리보기 불가
+            val localEnv: org.springframework.core.env.Environment = mockk {
+                every { activeProfiles } returns arrayOf("local")
+            }
+            // 공용 storageService 는 @BeforeEach 에서 clear 되지 않아 호출 이력이 누적되므로,
+            // "presigned 미호출" 검증을 위해 이 테스트 전용 독립 mock 을 사용한다.
+            val localStorage: com.otoki.powersales.platform.common.storage.StorageService =
+                mockk(relaxed = true)
+            val localService = AdminPromotionEmployeeService(
+                promotionEmployeeRepository = promotionEmployeeRepository,
+                promotionRepository = promotionRepository,
+                employeeRepository = employeeRepository,
+                teamMemberScheduleRepository = teamMemberScheduleRepository,
+                policyEvaluator = policyEvaluator,
+                teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
+                storageService = localStorage,
+                environment = localEnv,
+            )
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            every { promotionEmployeeRepository.findWithEmployeeByPromotionId(10L) } returns listOf(
+                createPe(id = 1L, s3ImageUniqueKey = "uploads/site-photo-1.jpg")
+            )
+
+            val result = localService.getEmployees(allBranchesScope, 10L)
+
+            // 로컬: URL 은 null 로 내려 web 이 깨진 이미지를 그리지 않게 하되, key 는 유지(존재 안내 + 삭제용)
+            assertThat(result[0].siteImageUrl).isNull()
+            assertThat(result[0].s3ImageUniqueKey).isEqualTo("uploads/site-photo-1.jpg")
+            verify(exactly = 0) { localStorage.getPresignedUrl(any(), any()) }
         }
 
         @Test
