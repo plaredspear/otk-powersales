@@ -115,7 +115,6 @@ object Stage1Targets {
         // employee_code 를 arbiter 로 삼아 '동일 사원' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "employee_code",
-            updateOnly = true,
             updateColumns = listOf(
                 "sfid", "name", "birth_date", "status", "app_login_active", "role", "org_name",
                 "cost_center_code", "work_phone", "phone", "home_phone", "work_email", "email", "gender",
@@ -249,7 +248,6 @@ object Stage1Targets {
         // external_key 를 arbiter 로 삼아 '동일 거래처' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "external_key",
-            updateOnly = true,
             updateColumns = listOf(
                 "sfid", "name", "phone", "mobile_phone", "address1", "address2", "representative", "abc_type",
                 "abc_type_code", "account_group", "branch_code", "branch_name", "zip_code",
@@ -327,7 +325,6 @@ object Stage1Targets {
         // product_code 를 arbiter 로 삼아 '동일 상품' dedup 후 sfid 포함 전 컬럼 backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "product_code",
-            updateOnly = true,
             updateColumns = listOf(
                 "sfid", "name", "product_type", "product_status", "storage_condition", "shelf_life",
                 "shelf_life_unit", "category1", "category2", "category3", "category_code1", "category_code2",
@@ -649,7 +646,6 @@ object Stage1Targets {
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sfid",
             conflictPredicate = "sfid IS NOT NULL",
-            updateOnly = true,
             updateColumns = listOf(
                 "employee_sfid", "account_sfid", "date", "claim_type1", "claim_type2", "defect_description",
                 "defect_quantity", "purchase_amount", "purchase_method_code", "request_type_code", "status",
@@ -750,7 +746,6 @@ object Stage1Targets {
         // backfill. 상세 [TeamMemberSchedule 주석].
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sap_order_number",
-            updateOnly = true,
             updateColumns = listOf(
                 "sfid", "sap_account_code", "sap_account_name", "delivery_request_date",
                 "order_date", "employee_code", "employee_name", "order_sales_amount", "order_channel",
@@ -1414,9 +1409,18 @@ object Stage1Targets {
         // Stage2 FK Resolve 의 *_sfid ↔ ref.sfid JOIN 이 전건 실패).
         // → ON CONFLICT (sfid) DO UPDATE 로 기존 row 를 CSV 값으로 보강한다. COALESCE(EXCLUDED, 기존)
         // 라 이미 채워진 값은 보존되고 NULL 인 컬럼만 채워진다. sfid(충돌키) 는 SET 대상에서 제외.
+        //
+        // ⚠️ updateOnly 제거 이력 (upsert 복원): 과거 arbiter(sfid) 외 제2 UNIQUE
+        // (promotion_emp_id_ext) 진짜 중복 6쌍이 재적재 시 duplicate key 를 유발해 updateOnly=true
+        // (UPDATE FROM staging) 로 후퇴했었다. 그러나 UPDATE-only 는 빈 테이블 첫 적재를 INSERT 하지
+        // 못해 전건 0 적재되는 치명적 결함이 있어(사용자 결정), INSERT ... ON CONFLICT DO UPDATE upsert
+        // 로 복원했다. 첫 적재(빈 테이블)는 충돌이 없어 전량 INSERT 된다.
+        // 재적재 주의: 이 entity 를 재적재하면 제2 UNIQUE(promotion_emp_id_ext) 중복 6쌍이 다시
+        // duplicate key 예외를 낼 수 있다(arbiter=sfid 가 그 위반을 못 잡음). 재적재 시나리오가
+        // 필요해지면 그때 해당 entity 만 CSV dedup 또는 제2 UNIQUE arbiter 전환으로 개별 대응한다.
+        // 일괄 적재는 continue-on-error 라 이 entity 만 FAILED 되고 나머지는 계속 적재된다.
         conflictUpdate = ConflictUpdate(
             conflictColumn = "sfid",
-            updateOnly = true,
             updateColumns = listOf(
                 "name", "employee_sfid", "working_date", "working_type",
                 "working_category1", "working_category2", "working_category3", "working_category4",
