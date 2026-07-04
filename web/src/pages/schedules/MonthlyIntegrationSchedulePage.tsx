@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Card, Descriptions, Drawer, Empty, Grid, Input, message, Space, Spin, Table, Typography } from 'antd';
+import { Alert, Card, DatePicker, Descriptions, Drawer, Empty, Grid, Input, message, Space, Spin, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
@@ -321,6 +321,23 @@ export default function MonthlyIntegrationSchedulePage() {
         exportLoading={exportMutation.isPending}
         searchLoading={isLoading}
         hideExport={isMobile}
+        periodFilter={
+          <Space direction="vertical" size={4}>
+            <span>조회월:</span>
+            <DatePicker
+              picker="month"
+              value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
+              onChange={(value) => {
+                if (!value) return;
+                setYear(value.year());
+                setMonth(value.month() + 1);
+              }}
+              allowClear={false}
+              format="YYYY-MM"
+              style={{ width: 140 }}
+            />
+          </Space>
+        }
         extraFilters={
           <>
             <Space direction="vertical" size={4}>
