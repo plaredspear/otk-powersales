@@ -140,13 +140,15 @@ class AdminFemaleEmployeePlacementCheckController(
         return ExcelResponseUtils.build(result)
     }
 
-    /** 일일 안전점검 현황 (RPA용) 조회 (Spec #842). 전사 고정 — DataScope 미적용. date 미지정 시 어제. */
+    /** 일일 안전점검 현황 (RPA용) 조회 (Spec #842). date 미지정 시 어제. branchCode 선택 시 그 지점으로 좁힘. */
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/safety-check-report-rpa")
     fun getSafetyCheckReportRpa(
+        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) date: String?,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ApiResponse<FemaleEmployeeSafetyCheckRpaResponse>> {
-        val response = safetyCheckRpaService.getReport(parseDate(date))
+        val response = safetyCheckRpaService.getReport(scope, branchCode, parseDate(date))
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -154,9 +156,11 @@ class AdminFemaleEmployeePlacementCheckController(
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/safety-check-report-rpa/export")
     fun exportSafetyCheckReportRpa(
+        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) date: String?,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
-        val result = safetyCheckRpaService.exportReport(parseDate(date))
+        val result = safetyCheckRpaService.exportReport(scope, branchCode, parseDate(date))
         return ExcelResponseUtils.build(result)
     }
 

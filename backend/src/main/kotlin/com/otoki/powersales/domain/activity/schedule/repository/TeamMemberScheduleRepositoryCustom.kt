@@ -234,11 +234,14 @@ interface TeamMemberScheduleRepositoryCustom {
 
     /**
      * 판매여사원 일일 안전점검 현황 (RPA용) 조회 (Spec #842 — SF Report `X00/new_report_xdB` 이식).
-     * `findSafetyCheckReport` 와 동일 필터(workingDate/traversalFlag='O'/yesChkCnt IS NOT NULL)지만,
-     * (a) 지점 스코프 없음 (전사 고정 — SF scope=organization), (b) ownerUser fetchJoin (CUST_NAME 컬럼용).
+     * `findSafetyCheckReport` 와 동일 필터(workingDate/traversalFlag='O'/yesChkCnt IS NOT NULL)에
+     * branchCodes 비어있지 않으면 teamMemberSchedule.costCenterCode ∈ branchCodes (사원 소속 지점 — SF 정합).
+     * `findSafetyCheckReport` 와 차이: ownerUser fetchJoin (CUST_NAME 컬럼용).
+     * 신규 차이 — 레거시 RPA 는 SF scope=organization 전사였으나, 지점 필터 지원을 위해 branchCodes 스코프 추가.
      * 정렬: workingCategory1 오름차순.
      */
     fun findSafetyCheckReportRpa(
         date: LocalDate,
+        branchCodes: List<String>,
     ): List<TeamMemberSchedule>
 }

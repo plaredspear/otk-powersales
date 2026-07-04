@@ -1,5 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckRpaItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.FemaleEmployeeSafetyCheckRpaResponse
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
@@ -16,13 +18,14 @@ import java.time.LocalDate
  * 판매여사원 일일 안전점검 현황 (RPA용) 보고서 조회 + 엑셀 export.
  *
  * 레거시 매핑: SF Report `X00/new_report_xdB` (RPA용·scope=organization·24컬럼 CUST_NAME).
- * 동작: 지정 일자(미지정 시 어제 KST)의 `TeamMemberSchedule` 안전점검 완료 건을 전사 조회
+ * 동작: 지정 일자(미지정 시 어제 KST)의 `TeamMemberSchedule` 안전점검 완료 건을 조회
  *       (traversalFlag='O' + yesChkCnt≠null). employee/account/owner 조인 결과를 24컬럼 행으로 매핑. 근무구분1 오름차순.
  * 부수 효과: 없음 (조회 전용).
  *
  * 신규 차이: [AdminFemaleEmployeeSafetyCheckReportService] (#841) 와 데이터 소스/필터 동일하되,
- *   (a) 전사 고정 (DataScope 미적용 — SF scope=organization, RPA = 전사 전용),
- *   (b) 마지막 컬럼 CommuteDate 대신 CUST_NAME = 레코드 Owner User 이름.
+ *   (a) 마지막 컬럼 CommuteDate 대신 CUST_NAME = 레코드 Owner User 이름,
+ *   (b) 지점 필터 지원 — 레거시 RPA 는 SF scope=organization 전사였으나, 일별 안전점검과 동일하게
+ *       DataScope(costCenterCode) 지점 스코프를 신규 적용 (전사 권한자 미선택 시 전건).
  * checkTime 은 startTime 직접 (#841 동일 — 레거시 `StartTime - 9/24` KST 보정 신규 미적용).
  */
 @Service
@@ -32,22 +35,30 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
 ) {
 
     /**
-     * RPA용 일일 안전점검 현황 조회 (전사 고정).
+     * RPA용 일일 안전점검 현황 조회.
      *
-     * date 미지정 시 어제(KST). traversalFlag='O' + yesChkCnt≠null (점검 완료) 필터. 지점 스코프 없음.
+     * date 미지정 시 어제(KST). traversalFlag='O' + yesChkCnt≠null (점검 완료) 필터.
+     * 지점 스코프: requestedBranchCode(화면 지점 선택값)를 [DataScope.effectiveBranchCodes] 로 해석 —
+     * 전사 권한자는 선택 지점으로 좁히거나(미선택 시 전건), 지점 사용자는 본인 지점으로 강제(선택값 밖이면 무시).
+     * 권한 지점이 아예 없으면([EffectiveBranchResult.NoAccess]) 빈 결과.
      */
-    fun getReport(date: LocalDate?): FemaleEmployeeSafetyCheckRpaResponse {
+    fun getReport(scope: DataScope, requestedBranchCode: String?, date: LocalDate?): FemaleEmployeeSafetyCheckRpaResponse {
         val targetDate = date ?: LocalDate.now(TimeZones.SEOUL_ZONE).minusDays(1)
-        val schedules = teamMemberScheduleRepository.findSafetyCheckReportRpa(targetDate)
+        val schedules = when (val effective = scope.effectiveBranchCodes(requestedBranchCode)) {
+            is EffectiveBranchResult.All -> teamMemberScheduleRepository.findSafetyCheckReportRpa(targetDate, emptyList())
+            is EffectiveBranchResult.Filtered ->
+                teamMemberScheduleRepository.findSafetyCheckReportRpa(targetDate, effective.codes)
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }
         val items = schedules.map { toItem(it) }
         return FemaleEmployeeSafetyCheckRpaResponse(targetDate.toString(), items)
     }
 
     /**
-     * RPA용 안전점검 현황 엑셀 export — 24컬럼 시트 (조회와 동일 필터).
+     * RPA용 안전점검 현황 엑셀 export — 24컬럼 시트 (조회와 동일 필터/스코프).
      */
-    fun exportReport(date: LocalDate?): ExcelResult {
-        val response = getReport(date)
+    fun exportReport(scope: DataScope, requestedBranchCode: String?, date: LocalDate?): ExcelResult {
+        val response = getReport(scope, requestedBranchCode, date)
 
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("판매여사원안전점검RPA")

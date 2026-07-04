@@ -42,20 +42,21 @@ function failureMessage(label: string, res: { data: ApiResponse<unknown> }): str
   return res.data.error?.message || res.data.message || `${label} 조회에 실패했습니다`;
 }
 
-/** 일일 안전점검 현황 (RPA) 조회 (date 미지정 시 어제). 전사 고정. */
+/** 일일 안전점검 현황 (RPA) 조회 (date 미지정 시 어제). branchCode 선택 시 그 지점(사원 소속)으로 좁힘. */
 export async function fetchSafetyCheckReportRpa(
   date: string,
+  branchCode?: string,
 ): Promise<FemaleEmployeeSafetyCheckRpaResponse> {
   const res = await client.get<ApiResponse<FemaleEmployeeSafetyCheckRpaResponse>>(BASE, {
-    params: { date },
+    params: { date, branchCode: branchCode || undefined },
   });
   if (!res.data.success || !res.data.data) throw new Error(failureMessage('판매여사원 안전점검 현황 (RPA)', res));
   return res.data.data;
 }
 
-/** 일일 안전점검 현황 (RPA) 엑셀 다운로드. */
-export async function exportSafetyCheckReportRpa(date: string): Promise<void> {
+/** 일일 안전점검 현황 (RPA) 엑셀 다운로드. branchCode 지정 시 그 지점(사원 소속)으로 좁힘. */
+export async function exportSafetyCheckReportRpa(date: string, branchCode?: string): Promise<void> {
   await downloadExcel(`${BASE}/export`, `판매여사원안전점검RPA_${date}.xlsx`, {
-    params: { date },
+    params: { date, branchCode: branchCode || undefined },
   });
 }

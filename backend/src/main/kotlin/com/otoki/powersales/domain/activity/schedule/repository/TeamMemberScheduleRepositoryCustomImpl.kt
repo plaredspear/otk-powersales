@@ -664,6 +664,7 @@ open class TeamMemberScheduleRepositoryCustomImpl(
 
     override fun findSafetyCheckReportRpa(
         date: LocalDate,
+        branchCodes: List<String>,
     ): List<TeamMemberSchedule> {
         return queryFactory
             .selectFrom(teamMemberSchedule)
@@ -677,7 +678,8 @@ open class TeamMemberScheduleRepositoryCustomImpl(
                 teamMemberSchedule.traversalFlag.eq("O"),
                 // 점검 응답 존재 = 점검 완료 (레거시 Yes_ChkCnt != 빈값)
                 teamMemberSchedule.yesChkCnt.isNotNull,
-                // 전사 고정 — SF scope=organization (지점 스코프 없음)
+                // 지점 스코프 — 사원 소속 지점(costCenterCode). 비어있으면 전사 (일별 안전점검과 동일 정합).
+                costCenterCodeIn(branchCodes),
                 isNotDeleted(),
             )
             .orderBy(teamMemberSchedule.workingCategory1.asc())

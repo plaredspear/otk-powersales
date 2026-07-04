@@ -8,6 +8,8 @@ import {
   exportSafetyCheckReportRpa as apiExport,
   type FemaleEmployeeSafetyCheckRpaItem,
 } from '@/api/femaleEmployeeSafetyCheckReportRpa';
+import { useReportBranches } from '@/hooks/female-employee/useReportBranches';
+import BranchSingleSelect from '@/components/common/BranchSingleSelect';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -17,17 +19,22 @@ const { Text } = Typography;
 /**
  * 판매여사원 일일 안전점검 현황 (RPA용) — SF Report new_report_xdB 이식 (Spec #842).
  *
- * 조회 일자(기본 어제)의 안전점검 완료 건을 전사 조회 (지점 스코프 없음 — SF scope=organization).
+ * 조회 일자(기본 어제)의 안전점검 완료 건을 조회. 지점 사용자는 본인 소속 지점(costCenterCode) 만,
+ * 영업지원실/본부는 전사 (backend DataScope 가드 — 레거시 SF scope=organization 대비 지점 필터 신규 적용).
  * #841 영업지원실/지점용과 데이터 소스 동일, 마지막 컬럼이 출근일자 대신 소유자명(CUST_NAME).
  * 24컬럼 그리드 + 엑셀 다운로드.
  */
 export default function FemaleEmployeeSafetyCheckReportRpaPage() {
   const [date, setDate] = useState<Dayjs>(dayjs().subtract(1, 'day'));
+  const [branchCode, setBranchCode] = useState<string | undefined>(undefined);
   const [queryDate, setQueryDate] = useState<string | null>(null);
+  const [queryBranchCode, setQueryBranchCode] = useState<string | undefined>(undefined);
+
+  const { data: branches = [] } = useReportBranches();
 
   const query = useQuery({
-    queryKey: ['femaleEmployeeSafetyCheckReportRpa', queryDate],
-    queryFn: () => fetchSafetyCheckReportRpa(queryDate!),
+    queryKey: ['femaleEmployeeSafetyCheckReportRpa', queryDate, queryBranchCode],
+    queryFn: () => fetchSafetyCheckReportRpa(queryDate!, queryBranchCode),
     enabled: queryDate != null,
   });
 
@@ -37,12 +44,13 @@ export default function FemaleEmployeeSafetyCheckReportRpaPage() {
       return;
     }
     setQueryDate(date.format('YYYY-MM-DD'));
+    setQueryBranchCode(branchCode);
   };
 
   const handleExport = async () => {
     if (!queryDate) return;
     try {
-      await apiExport(queryDate);
+      await apiExport(queryDate, queryBranchCode);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '엑셀 다운로드 실패');
     }
@@ -81,9 +89,12 @@ export default function FemaleEmployeeSafetyCheckReportRpaPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <Space style={{ marginBottom: 12 }} wrap>
-        <span>조회일자:</span>
-        <DatePicker value={date} onChange={(v) => v && setDate(v)} allowClear={false} />
+      <Space style={{ marginBottom: 12 }} wrap align="end">
+        <BranchSingleSelect branches={branches} value={branchCode} onChange={setBranchCode} />
+        <Space direction="vertical" size={4}>
+          <span>조회일자:</span>
+          <DatePicker value={date} onChange={(v) => v && setDate(v)} allowClear={false} />
+        </Space>
         <Button type="primary" onClick={handleSearch} loading={query.isLoading}>
           조회
         </Button>
