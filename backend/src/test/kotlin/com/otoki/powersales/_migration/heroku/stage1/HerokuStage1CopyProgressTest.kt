@@ -1,5 +1,6 @@
 package com.otoki.powersales._migration.heroku.stage1
 
+import com.otoki.powersales._migration.common.MigrationProgressStore
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -18,7 +19,7 @@ class HerokuStage1CopyProgressTest {
     @Test
     @DisplayName("skipEntity 는 해당 entity 를 SKIPPED 로 마크하고 사유를 errorMessage 에 기록")
     fun skipEntityMarksSkipped() {
-        val progress = HerokuStage1CopyProgress()
+        val progress = HerokuStage1CopyProgress(MigrationProgressStore.noop())
         progress.beginBatch("bucket", listOf("EducationCode", "LoginHistory", "ProductExpiration"))
         progress.beginEntity("LoginHistory", "heroku-migration/input/employee_his.csv")
 
@@ -37,7 +38,7 @@ class HerokuStage1CopyProgressTest {
     @Test
     @DisplayName("skipEntity 는 전체 status 를 FAILED 로 바꾸지 않는다 — batch 계속 진행")
     fun skipEntityDoesNotFailBatch() {
-        val progress = HerokuStage1CopyProgress()
+        val progress = HerokuStage1CopyProgress(MigrationProgressStore.noop())
         progress.beginBatch("bucket", listOf("EducationCode", "LoginHistory"))
         progress.beginEntity("LoginHistory", "k")
         progress.skipEntity("LoginHistory", "k", "404")
@@ -52,7 +53,7 @@ class HerokuStage1CopyProgressTest {
     @Test
     @DisplayName("skip 후 다른 entity 정상 완료 시 finishOk → COMPLETED (1개 SKIPPED 공존)")
     fun skipThenCompleteOthers() {
-        val progress = HerokuStage1CopyProgress()
+        val progress = HerokuStage1CopyProgress(MigrationProgressStore.noop())
         progress.beginBatch("bucket", listOf("EducationCode", "LoginHistory"))
 
         progress.beginEntity("EducationCode", "edu.csv")

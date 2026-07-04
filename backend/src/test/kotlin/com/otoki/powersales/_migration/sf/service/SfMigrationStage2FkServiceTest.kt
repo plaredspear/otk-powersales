@@ -1,5 +1,6 @@
 package com.otoki.powersales._migration.sf.service
 
+import com.otoki.powersales._migration.common.MigrationProgressStore
 import io.mockk.mockk
 import jakarta.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
@@ -18,7 +19,7 @@ class SfMigrationStage2FkServiceTest {
     private val service = SfMigrationStage2FkService(
         em = mockk<EntityManager>(),
         transactionTemplate = mockk<TransactionTemplate>(),
-        progress = SfFkResolveProgress(),
+        progress = SfFkResolveProgress(MigrationProgressStore.noop()),
     )
 
     @Test

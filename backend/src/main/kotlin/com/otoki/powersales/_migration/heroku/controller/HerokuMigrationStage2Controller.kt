@@ -71,7 +71,8 @@ class HerokuMigrationStage2Controller(
 
     @GetMapping("/api/v1/admin/heroku-migration/stage2/fk/progress")
     fun getFkProgress(): ResponseEntity<ApiResponse<HerokuFkResolveProgressResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(fkProgress.toResponse()))
+        // Redis 스냅샷 우선 — 다중 인스턴스에서 실행 인스턴스가 아닌 곳으로 polling 이 라우팅돼도 진행 상태 조회.
+        return ResponseEntity.ok(ApiResponse.success(fkProgress.loadResponse()))
     }
 
     /**
@@ -120,47 +121,7 @@ class HerokuMigrationStage2Controller(
 
     @GetMapping("/api/v1/admin/heroku-migration/stage2/sfid-fk/progress")
     fun getSfidFkProgress(): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(sfFkProgress.toResponse()))
-    }
-
-    /** SF progress → 응답 변환 (SF 컨트롤러와 동일 매핑 — sfid resolve 는 SF progress 공유). */
-    private fun SfFkResolveProgress.toResponse(): SfFkResolveProgressResponse {
-        return SfFkResolveProgressResponse(
-            status = status.name,
-            startedAt = startedAt,
-            finishedAt = finishedAt,
-            totalTables = totalTables,
-            completedTables = completedTablesCount,
-            currentTable = currentTable,
-            currentTableChunk = currentTableChunk,
-            currentTableTotalChunks = currentTableTotalChunks,
-            totalRowsAffected = totalRowsAffected,
-            tableResults = tableResults.toList(),
-            errors = errors.toList(),
-        )
-    }
-
-    private fun HerokuFkResolveProgress.toResponse(): HerokuFkResolveProgressResponse {
-        return HerokuFkResolveProgressResponse(
-            status = status.name,
-            startedAt = startedAt,
-            finishedAt = finishedAt,
-            totalTables = totalTables,
-            completedTables = completedTablesCount,
-            currentTable = currentTable,
-            totalRowsAffected = totalRowsAffected,
-            tableResults = tableResults.map {
-                HerokuFkTableResult(table = it.table, column = it.column, rowsAffected = it.rowsAffected)
-            },
-            unmatched = unmatched.map {
-                HerokuFkUnmatched(
-                    table = it.table,
-                    column = it.column,
-                    naturalKey = it.naturalKey,
-                    unmatchedCount = it.unmatchedCount,
-                )
-            },
-            errors = errors.toList(),
-        )
+        // sfid resolve 는 SF progress 공유 — Redis 스냅샷 우선 조회 (다중 인스턴스 대응).
+        return ResponseEntity.ok(ApiResponse.success(sfFkProgress.loadResponse()))
     }
 }

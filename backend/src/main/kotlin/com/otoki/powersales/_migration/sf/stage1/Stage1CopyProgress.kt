@@ -1,5 +1,6 @@
 package com.otoki.powersales._migration.sf.stage1
 
+import com.otoki.powersales._migration.common.MigrationProgressStore
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.Collections
@@ -7,10 +8,12 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Stage 1 S3 → COPY 적재 진행 상태 in-memory 추적 (1회성 cut-over 도구).
+ * Stage 1 S3 → COPY 적재 진행 상태 추적 (1회성 cut-over 도구).
  *
- * 단일 backend 인스턴스 가정. backend 재시작 시 이력 손실되나 [Stage1S3CopyService] 의
- * INFO 로그가 CloudWatch 에 영구 보관되어 감사 가능.
+ * 상태는 in-memory 필드로 유지하되, 모든 mutate 후 [MigrationProgressStore] 로 스냅샷을 Redis 에
+ * 저장한다 — 다중 인스턴스에서 실행 인스턴스와 `/progress` polling 인스턴스가 갈려도 같은 진행 상태를
+ * 읽게 한다 (Redis 미사용 환경은 in-memory 폴백). backend 재시작 시 in-memory 이력은 손실되나
+ * [Stage1S3CopyService] 의 INFO 로그가 CloudWatch 에 영구 보관되어 감사 가능.
  *
  * 동시 실행 1회 가정 — controller 가 RUNNING 시 신규 요청을 거부한다.
  *
@@ -22,7 +25,9 @@ import java.util.concurrent.atomic.AtomicLong
  * 단건 모드는 [entityResults] 비어있고 targetName 만 채워진다.
  */
 @Component
-class Stage1CopyProgress {
+class Stage1CopyProgress(
+    private val store: MigrationProgressStore,
+) {
 
     enum class Status { IDLE, RUNNING, COMPLETED, FAILED }
 
@@ -104,6 +109,7 @@ class Stage1CopyProgress {
         this.startedAt = Instant.now()
         this.finishedAt = null
         this.status = Status.RUNNING
+        persist()
     }
 
     /**
@@ -139,6 +145,7 @@ class Stage1CopyProgress {
         this.startedAt = Instant.now()
         this.finishedAt = null
         this.status = Status.RUNNING
+        persist()
     }
 
     /**
@@ -198,6 +205,7 @@ class Stage1CopyProgress {
             entityResultsRef.clear()
             entityResultsRef.addAll(updated)
         }
+        persist()
     }
 
     private fun updateEntity(targetName: String, transform: (EntityResult) -> EntityResult) {
@@ -205,32 +213,76 @@ class Stage1CopyProgress {
             val idx = entityResultsRef.indexOfFirst { it.targetName == targetName }
             if (idx >= 0) entityResultsRef[idx] = transform(entityResultsRef[idx])
         }
+        persist()
     }
 
     fun advanceProcessed(delta: Long = 1L) {
         processedRowsRef.addAndGet(delta)
+        persist()
     }
 
     fun advanceFiltered(delta: Long = 1L) {
         filteredOutRef.addAndGet(delta)
+        persist()
     }
 
     fun setInserted(value: Long) {
         insertedRowsRef.set(value)
+        persist()
     }
 
     fun addInserted(delta: Long) {
         insertedRowsRef.addAndGet(delta)
+        persist()
     }
 
     fun finishOk() {
         this.finishedAt = Instant.now()
         this.status = Status.COMPLETED
+        persist()
     }
 
     fun finishWithFailure(message: String) {
         errors += message
         this.finishedAt = Instant.now()
         this.status = Status.FAILED
+        persist()
     }
+
+    /** 현재 in-memory 상태를 응답 DTO 로 스냅샷. */
+    fun toResponse(): Stage1CopyProgressResponse = Stage1CopyProgressResponse(
+        status = status.name,
+        mode = mode.name,
+        startedAt = startedAt,
+        finishedAt = finishedAt,
+        targetName = targetName,
+        s3Bucket = s3Bucket,
+        s3Key = s3Key,
+        processedRows = processedRows,
+        filteredOut = filteredOut,
+        insertedRows = insertedRows,
+        errors = errors.toList(),
+        entityResults = entityResults.map {
+            Stage1EntityResultResponse(
+                targetName = it.targetName,
+                status = it.status.name,
+                s3Key = it.s3Key,
+                processedRows = it.processedRows,
+                filteredOut = it.filteredOut,
+                insertedRows = it.insertedRows,
+                errorMessage = it.errorMessage,
+                startedAt = it.startedAt,
+                finishedAt = it.finishedAt,
+            )
+        },
+    )
+
+    /**
+     * polling 조회용 스냅샷 — Redis 우선 (다중 인스턴스 공유), 부재/미사용 시 in-memory [toResponse].
+     */
+    fun loadResponse(): Stage1CopyProgressResponse =
+        store.load(MigrationProgressStore.SLUG_SF_STAGE1, Stage1CopyProgressResponse::class.java)
+            ?: toResponse()
+
+    private fun persist() = store.save(MigrationProgressStore.SLUG_SF_STAGE1, toResponse())
 }

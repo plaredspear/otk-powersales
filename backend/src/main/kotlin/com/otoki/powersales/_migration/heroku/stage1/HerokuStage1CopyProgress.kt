@@ -1,5 +1,6 @@
 package com.otoki.powersales._migration.heroku.stage1
 
+import com.otoki.powersales._migration.common.MigrationProgressStore
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.Collections
@@ -7,17 +8,21 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Heroku Stage 1 S3 → COPY 적재 진행 상태 in-memory 추적 (1회성 cut-over 도구).
+ * Heroku Stage 1 S3 → COPY 적재 진행 상태 추적 (1회성 cut-over 도구).
  *
- * SF [com.otoki.powersales._migration.sf.stage1.Stage1CopyProgress] 와 동형. 단일 backend
- * 인스턴스 가정 — backend 재시작 시 이력 손실되나 [HerokuStage1S3CopyService] 의 INFO 로그가
- * CloudWatch 에 영구 보관되어 감사 가능. 동시 실행 1회 가정 (controller 가 RUNNING 시 거부).
+ * SF [com.otoki.powersales._migration.sf.stage1.Stage1CopyProgress] 와 동형. 상태는 in-memory 로
+ * 유지하되 모든 mutate 후 [MigrationProgressStore] 로 Redis 에 스냅샷을 저장해 다중 인스턴스에서
+ * 실행 인스턴스와 polling 인스턴스가 갈려도 같은 진행 상태를 읽게 한다 (Redis 미사용 시 in-memory 폴백).
+ * backend 재시작 시 in-memory 이력은 손실되나 [HerokuStage1S3CopyService] 의 INFO 로그가 CloudWatch 에
+ * 영구 보관되어 감사 가능. 동시 실행 1회 가정 (controller 가 RUNNING 시 거부).
  *
  * Heroku 고유 — EmployeeInfo 처럼 적재 시점 PK resolve 가 필요한 entity 는 employee_code 가
  * employee 에 없으면 INSERT 불가하므로, 그 미매칭 수를 [unmatchedRows] 로 누적해 UI 가 확인.
  */
 @Component
-class HerokuStage1CopyProgress {
+class HerokuStage1CopyProgress(
+    private val store: MigrationProgressStore,
+) {
 
     enum class Status { IDLE, RUNNING, COMPLETED, FAILED }
 
@@ -94,6 +99,7 @@ class HerokuStage1CopyProgress {
         this.startedAt = Instant.now()
         this.finishedAt = null
         this.status = Status.RUNNING
+        persist()
     }
 
     /** Batch 모드 시작 — entity list 를 PENDING 으로 미리 채워 UI 가 즉시 일람 표시 가능. */
@@ -129,6 +135,7 @@ class HerokuStage1CopyProgress {
         this.startedAt = Instant.now()
         this.finishedAt = null
         this.status = Status.RUNNING
+        persist()
     }
 
     fun beginEntity(targetName: String, s3Key: String) {
@@ -194,6 +201,7 @@ class HerokuStage1CopyProgress {
             entityResultsRef.clear()
             entityResultsRef.addAll(updated)
         }
+        persist()
     }
 
     private fun updateEntity(targetName: String, transform: (EntityResult) -> EntityResult) {
@@ -201,40 +209,88 @@ class HerokuStage1CopyProgress {
             val idx = entityResultsRef.indexOfFirst { it.targetName == targetName }
             if (idx >= 0) entityResultsRef[idx] = transform(entityResultsRef[idx])
         }
+        persist()
     }
 
     fun advanceProcessed(delta: Long = 1L) {
         processedRowsRef.addAndGet(delta)
+        persist()
     }
 
     fun advanceFiltered(delta: Long = 1L) {
         filteredOutRef.addAndGet(delta)
+        persist()
     }
 
     fun setInserted(value: Long) {
         insertedRowsRef.set(value)
+        persist()
     }
 
     fun addInserted(delta: Long) {
         insertedRowsRef.addAndGet(delta)
+        persist()
     }
 
     fun setUnmatched(value: Long) {
         unmatchedRowsRef.set(value)
+        persist()
     }
 
     fun addUnmatched(delta: Long) {
         unmatchedRowsRef.addAndGet(delta)
+        persist()
     }
 
     fun finishOk() {
         this.finishedAt = Instant.now()
         this.status = Status.COMPLETED
+        persist()
     }
 
     fun finishWithFailure(message: String) {
         errors += message
         this.finishedAt = Instant.now()
         this.status = Status.FAILED
+        persist()
     }
+
+    /** 현재 in-memory 상태를 응답 DTO 로 스냅샷. */
+    fun toResponse(): HerokuStage1CopyProgressResponse = HerokuStage1CopyProgressResponse(
+        status = status.name,
+        mode = mode.name,
+        startedAt = startedAt,
+        finishedAt = finishedAt,
+        targetName = targetName,
+        s3Bucket = s3Bucket,
+        s3Key = s3Key,
+        processedRows = processedRows,
+        filteredOut = filteredOut,
+        insertedRows = insertedRows,
+        unmatchedRows = unmatchedRows,
+        errors = errors.toList(),
+        entityResults = entityResults.map {
+            HerokuStage1EntityResultResponse(
+                targetName = it.targetName,
+                status = it.status.name,
+                s3Key = it.s3Key,
+                processedRows = it.processedRows,
+                filteredOut = it.filteredOut,
+                insertedRows = it.insertedRows,
+                unmatchedRows = it.unmatchedRows,
+                errorMessage = it.errorMessage,
+                startedAt = it.startedAt,
+                finishedAt = it.finishedAt,
+            )
+        },
+    )
+
+    /**
+     * polling 조회용 스냅샷 — Redis 우선 (다중 인스턴스 공유), 부재/미사용 시 in-memory [toResponse].
+     */
+    fun loadResponse(): HerokuStage1CopyProgressResponse =
+        store.load(MigrationProgressStore.SLUG_HEROKU_STAGE1, HerokuStage1CopyProgressResponse::class.java)
+            ?: toResponse()
+
+    private fun persist() = store.save(MigrationProgressStore.SLUG_HEROKU_STAGE1, toResponse())
 }

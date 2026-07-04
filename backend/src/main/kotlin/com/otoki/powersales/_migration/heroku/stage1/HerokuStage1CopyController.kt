@@ -90,7 +90,8 @@ class HerokuStage1CopyController(
 
     @GetMapping("/api/v1/admin/heroku-migration/stage1/copy-from-s3/progress")
     fun getProgress(): ResponseEntity<ApiResponse<HerokuStage1CopyProgressResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(progress.toResponse()))
+        // Redis 스냅샷 우선 — 다중 인스턴스에서 실행 인스턴스가 아닌 곳으로 polling 이 라우팅돼도 진행 상태 조회.
+        return ResponseEntity.ok(ApiResponse.success(progress.loadResponse()))
     }
 
     @GetMapping("/api/v1/admin/heroku-migration/stage1/targets")
@@ -107,37 +108,6 @@ class HerokuStage1CopyController(
             ApiResponse.success(
                 HerokuStage1Defaults(s3Bucket = configuredS3Bucket, s3KeyPrefix = DEFAULT_S3_KEY_PREFIX),
             ),
-        )
-    }
-
-    private fun HerokuStage1CopyProgress.toResponse(): HerokuStage1CopyProgressResponse {
-        return HerokuStage1CopyProgressResponse(
-            status = status.name,
-            mode = mode.name,
-            startedAt = startedAt,
-            finishedAt = finishedAt,
-            targetName = targetName,
-            s3Bucket = s3Bucket,
-            s3Key = s3Key,
-            processedRows = processedRows,
-            filteredOut = filteredOut,
-            insertedRows = insertedRows,
-            unmatchedRows = unmatchedRows,
-            errors = errors.toList(),
-            entityResults = entityResults.map {
-                HerokuStage1EntityResultResponse(
-                    targetName = it.targetName,
-                    status = it.status.name,
-                    s3Key = it.s3Key,
-                    processedRows = it.processedRows,
-                    filteredOut = it.filteredOut,
-                    insertedRows = it.insertedRows,
-                    unmatchedRows = it.unmatchedRows,
-                    errorMessage = it.errorMessage,
-                    startedAt = it.startedAt,
-                    finishedAt = it.finishedAt,
-                )
-            },
         )
     }
 

@@ -1,5 +1,6 @@
 package com.otoki.powersales._migration.sf.service
 
+import com.otoki.powersales._migration.common.MigrationProgressStore
 import com.otoki.powersales._migration.sf.dto.SubstepResult
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
@@ -11,7 +12,7 @@ class SfFkResolveProgressTest {
     @Test
     @DisplayName("begin → beginTable → advanceChunk → finishTable → finishOk 라이프사이클")
     fun lifecycle() {
-        val p = SfFkResolveProgress()
+        val p = SfFkResolveProgress(MigrationProgressStore.noop())
 
         assertThat(p.status).isEqualTo(SfFkResolveProgress.Status.IDLE)
 
@@ -51,7 +52,7 @@ class SfFkResolveProgressTest {
     @Test
     @DisplayName("finishWithFailure 시 status FAILED + error 누적")
     fun failure() {
-        val p = SfFkResolveProgress()
+        val p = SfFkResolveProgress(MigrationProgressStore.noop())
         p.begin(totalTables = 1)
         p.addError("scan 실패")
         p.finishWithFailure("DB 연결 끊김")
@@ -64,7 +65,7 @@ class SfFkResolveProgressTest {
     @Test
     @DisplayName("tryAcquire — 첫 호출만 true, RUNNING 중 재호출은 false (동시 실행 차단)")
     fun tryAcquireBlocksConcurrent() {
-        val p = SfFkResolveProgress()
+        val p = SfFkResolveProgress(MigrationProgressStore.noop())
 
         assertThat(p.tryAcquire()).isTrue()
         assertThat(p.status).isEqualTo(SfFkResolveProgress.Status.RUNNING)
@@ -81,7 +82,7 @@ class SfFkResolveProgressTest {
     @Test
     @DisplayName("tryAcquire — 직전 실행의 결과/경고를 비워 stale 노출 방지")
     fun tryAcquireClearsStaleResult() {
-        val p = SfFkResolveProgress()
+        val p = SfFkResolveProgress(MigrationProgressStore.noop())
         p.begin(totalTables = 1)
         p.beginTable("erp_order_product", 1)
         p.advanceChunk(6300)
@@ -105,7 +106,7 @@ class SfFkResolveProgressTest {
     @Test
     @DisplayName("releaseWithoutRun — 선점 락을 IDLE 로 되돌려 다음 선점 허용")
     fun releaseWithoutRunResetsLock() {
-        val p = SfFkResolveProgress()
+        val p = SfFkResolveProgress(MigrationProgressStore.noop())
         assertThat(p.tryAcquire()).isTrue()
 
         p.releaseWithoutRun()
@@ -118,7 +119,7 @@ class SfFkResolveProgressTest {
     @Test
     @DisplayName("begin 재호출 시 이전 상태 초기화")
     fun reset() {
-        val p = SfFkResolveProgress()
+        val p = SfFkResolveProgress(MigrationProgressStore.noop())
         p.begin(totalTables = 1)
         p.beginTable("a", 1)
         p.advanceChunk(100)

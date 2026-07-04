@@ -92,7 +92,8 @@ class SfMigrationStage2Controller(
 
     @GetMapping("/api/v1/admin/sf-migration/stage2/fk/progress")
     fun getFkProgress(): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(fkProgress.toResponse()))
+        // Redis 스냅샷 우선 — 다중 인스턴스에서 실행 인스턴스가 아닌 곳으로 polling 이 라우팅돼도 진행 상태 조회.
+        return ResponseEntity.ok(ApiResponse.success(fkProgress.loadResponse()))
     }
 
     /**
@@ -217,21 +218,5 @@ class SfMigrationStage2Controller(
             totalRowsAffected = 0,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
-    }
-
-    private fun SfFkResolveProgress.toResponse(): SfFkResolveProgressResponse {
-        return SfFkResolveProgressResponse(
-            status = status.name,
-            startedAt = startedAt,
-            finishedAt = finishedAt,
-            totalTables = totalTables,
-            completedTables = completedTablesCount,
-            currentTable = currentTable,
-            currentTableChunk = currentTableChunk,
-            currentTableTotalChunks = currentTableTotalChunks,
-            totalRowsAffected = totalRowsAffected,
-            tableResults = tableResults.toList(),
-            errors = errors.toList(),
-        )
     }
 }

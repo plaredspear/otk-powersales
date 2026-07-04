@@ -1,5 +1,9 @@
 package com.otoki.powersales._migration.heroku.service
 
+import com.otoki.powersales._migration.common.MigrationProgressStore
+import com.otoki.powersales._migration.heroku.controller.HerokuFkResolveProgressResponse
+import com.otoki.powersales._migration.heroku.controller.HerokuFkTableResult
+import com.otoki.powersales._migration.heroku.controller.HerokuFkUnmatched
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -7,14 +11,18 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * Heroku Stage 2 FK Resolve 진행 상태 in-memory 추적 (1회성 cut-over 도구).
+ * Heroku Stage 2 FK Resolve 진행 상태 추적 (1회성 cut-over 도구).
  *
- * SF [com.otoki.powersales._migration.sf.service.SfFkResolveProgress] 패턴. 단일 backend 인스턴스
- * 가정 — 재시작 시 이력 손실되나 [HerokuFkResolveService] 의 INFO 로그가 CloudWatch 에 보관.
+ * SF [com.otoki.powersales._migration.sf.service.SfFkResolveProgress] 패턴. 상태는 in-memory 로
+ * 유지하되 모든 mutate 후 [MigrationProgressStore] 로 Redis 에 스냅샷을 저장해 다중 인스턴스에서
+ * 실행 인스턴스와 polling 인스턴스가 갈려도 같은 진행 상태를 읽게 한다 (Redis 미사용 시 in-memory 폴백).
+ * backend 재시작 시 in-memory 이력은 손실되나 [HerokuFkResolveService] 의 INFO 로그가 CloudWatch 에 보관.
  * 동시 실행 1회 가정 (controller 가 RUNNING 시 거부).
  */
 @Component
-class HerokuFkResolveProgress {
+class HerokuFkResolveProgress(
+    private val store: MigrationProgressStore,
+) {
 
     enum class Status { IDLE, RUNNING, COMPLETED, COMPLETED_WITH_WARNINGS, FAILED }
 
@@ -61,24 +69,31 @@ class HerokuFkResolveProgress {
         this.startedAt = Instant.now()
         this.finishedAt = null
         this.status = Status.RUNNING
+        persist()
     }
 
     fun beginTable(tableName: String) {
         this.currentTable = tableName
+        persist()
     }
 
     fun finishTable(result: TableResult) {
         tableResults += result
         totalRowsAffectedRef.addAndGet(result.rowsAffected)
         completedTables.incrementAndGet()
+        persist()
     }
 
     fun addUnmatched(u: Unmatched) {
-        if (u.unmatchedCount > 0) unmatched += u
+        if (u.unmatchedCount > 0) {
+            unmatched += u
+            persist()
+        }
     }
 
     fun addError(message: String) {
         errors += message
+        persist()
     }
 
     fun finishOk() {
@@ -87,6 +102,7 @@ class HerokuFkResolveProgress {
         // unmatched 가 있으면 status 만으로 누락을 놓치지 않도록 COMPLETED_WITH_WARNINGS.
         this.status =
             if (errors.isEmpty() && unmatched.isEmpty()) Status.COMPLETED else Status.COMPLETED_WITH_WARNINGS
+        persist()
     }
 
     fun finishWithFailure(message: String) {
@@ -94,5 +110,38 @@ class HerokuFkResolveProgress {
         this.finishedAt = Instant.now()
         this.currentTable = null
         this.status = Status.FAILED
+        persist()
     }
+
+    /** 현재 in-memory 상태를 응답 DTO 로 스냅샷. */
+    fun toResponse(): HerokuFkResolveProgressResponse = HerokuFkResolveProgressResponse(
+        status = status.name,
+        startedAt = startedAt,
+        finishedAt = finishedAt,
+        totalTables = totalTables,
+        completedTables = completedTablesCount,
+        currentTable = currentTable,
+        totalRowsAffected = totalRowsAffected,
+        tableResults = tableResults.map {
+            HerokuFkTableResult(table = it.table, column = it.column, rowsAffected = it.rowsAffected)
+        },
+        unmatched = unmatched.map {
+            HerokuFkUnmatched(
+                table = it.table,
+                column = it.column,
+                naturalKey = it.naturalKey,
+                unmatchedCount = it.unmatchedCount,
+            )
+        },
+        errors = errors.toList(),
+    )
+
+    /**
+     * polling 조회용 스냅샷 — Redis 우선 (다중 인스턴스 공유), 부재/미사용 시 in-memory [toResponse].
+     */
+    fun loadResponse(): HerokuFkResolveProgressResponse =
+        store.load(MigrationProgressStore.SLUG_HEROKU_STAGE2_FK, HerokuFkResolveProgressResponse::class.java)
+            ?: toResponse()
+
+    private fun persist() = store.save(MigrationProgressStore.SLUG_HEROKU_STAGE2_FK, toResponse())
 }

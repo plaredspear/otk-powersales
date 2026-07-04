@@ -1,5 +1,7 @@
 package com.otoki.powersales._migration.sf.service
 
+import com.otoki.powersales._migration.common.MigrationProgressStore
+import com.otoki.powersales._migration.sf.dto.SfFkResolveProgressResponse
 import com.otoki.powersales._migration.sf.dto.SubstepResult
 import org.springframework.stereotype.Component
 import java.time.Instant
@@ -8,15 +10,19 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Stage 2-A FK Resolve 진행 상태 in-memory 추적 (1회성 cut-over 도구).
+ * Stage 2-A FK Resolve 진행 상태 추적 (1회성 cut-over 도구).
  *
- * 단일 backend 인스턴스 가정. backend 재시작 시 이력 손실되나 [SfMigrationStage2FkService] 의
- * INFO 로그 (`[fk] ...`) 가 CloudWatch 에 영구 보관되어 감사 가능.
+ * 상태는 in-memory 필드로 유지하되, 모든 mutate 후 [MigrationProgressStore] 로 스냅샷을 Redis 에
+ * 저장한다 — Elastic Beanstalk 다중 인스턴스에서 실행 인스턴스와 `/progress` polling 인스턴스가
+ * 갈려도 같은 진행 상태를 읽게 한다 (Redis 미사용 환경은 in-memory 폴백). backend 재시작 시 in-memory
+ * 이력은 손실되나 [SfMigrationStage2FkService] 의 INFO 로그 (`[fk] ...`) 가 CloudWatch 에 영구 보관.
  *
  * 동시 실행 1회 가정 — runFkResolve 호출 전 [status] 가 RUNNING 이면 거부해야 한다 (controller 담당).
  */
 @Component
-class SfFkResolveProgress {
+class SfFkResolveProgress(
+    private val store: MigrationProgressStore,
+) {
 
     enum class Status { IDLE, RUNNING, COMPLETED, COMPLETED_WITH_WARNINGS, FAILED }
 
@@ -51,6 +57,7 @@ class SfFkResolveProgress {
         totalTables = 0
         startedAt = Instant.now()
         finishedAt = null
+        persist()
         return true
     }
 
@@ -61,6 +68,7 @@ class SfFkResolveProgress {
     fun releaseWithoutRun() {
         status = Status.IDLE
         startedAt = null
+        persist()
     }
 
     @Volatile var startedAt: Instant? = null
@@ -103,26 +111,31 @@ class SfFkResolveProgress {
         this.startedAt = Instant.now()
         this.finishedAt = null
         this.status = Status.RUNNING
+        persist()
     }
 
     fun beginTable(tableName: String, totalChunks: Int) {
         this.currentTable = tableName
         this.currentTableTotalChunks = totalChunks
         this.currentTableChunkNo.set(0)
+        persist()
     }
 
     fun advanceChunk(rowsThisChunk: Int) {
         currentTableChunkNo.incrementAndGet()
         totalRowsAffectedRef.updateAndGet { it + rowsThisChunk }
+        persist()
     }
 
     fun finishTable(result: SubstepResult) {
         tableResults += result
         completedTables.incrementAndGet()
+        persist()
     }
 
     fun addError(message: String) {
         errors += message
+        persist()
     }
 
     fun finishOk() {
@@ -131,6 +144,7 @@ class SfFkResolveProgress {
         // errors (FK 컬럼 매핑 실패 / chunk 실패 / dangling 잔존) 가 있으면 COMPLETED 가 아니라
         // COMPLETED_WITH_WARNINGS — status 만 보고 누락을 놓치지 않도록 (errors 별도 확인 유도).
         this.status = if (errors.isEmpty()) Status.COMPLETED else Status.COMPLETED_WITH_WARNINGS
+        persist()
     }
 
     fun finishWithFailure(message: String) {
@@ -138,5 +152,30 @@ class SfFkResolveProgress {
         this.finishedAt = Instant.now()
         this.currentTable = null
         this.status = Status.FAILED
+        persist()
     }
+
+    /** 현재 in-memory 상태를 응답 DTO 로 스냅샷. */
+    fun toResponse(): SfFkResolveProgressResponse = SfFkResolveProgressResponse(
+        status = status.name,
+        startedAt = startedAt,
+        finishedAt = finishedAt,
+        totalTables = totalTables,
+        completedTables = completedTablesCount,
+        currentTable = currentTable,
+        currentTableChunk = currentTableChunk,
+        currentTableTotalChunks = currentTableTotalChunks,
+        totalRowsAffected = totalRowsAffected,
+        tableResults = tableResults.toList(),
+        errors = errors.toList(),
+    )
+
+    /**
+     * polling 조회용 스냅샷 — Redis 우선 (다중 인스턴스 공유), 부재/미사용 시 in-memory [toResponse].
+     */
+    fun loadResponse(): SfFkResolveProgressResponse =
+        store.load(MigrationProgressStore.SLUG_SF_STAGE2_FK, SfFkResolveProgressResponse::class.java)
+            ?: toResponse()
+
+    private fun persist() = store.save(MigrationProgressStore.SLUG_SF_STAGE2_FK, toResponse())
 }
