@@ -10528,7 +10528,10 @@
           "workPhone" : {
             "type" : [ "string", "null" ]
           },
-          "workType" : {
+          "workType1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workType3" : {
             "type" : [ "string", "null" ]
           },
           "yearsOfService" : {

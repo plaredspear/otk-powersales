@@ -129,7 +129,8 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
                         age = null,
                         yearsOfService = null,
                         professionalPromotionTeam = "일반",
-                        workType = null,
+                        workType1 = null,
+                        workType3 = null,
                         workAccountName = null,
                         workAccountCode = null
                     )

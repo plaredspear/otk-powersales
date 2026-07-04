@@ -45,15 +45,6 @@ class AdminEmployeeService(
         organizationRepository.findAllTeamScheduleBranches()
 
     /**
-     * 근무형태 표시 문자열 — 근무유형1(진열/행사) / 근무유형3(고정/격고/순회) 조합.
-     * 둘 다 있으면 "진열/고정", 하나만 있으면 그 값, 둘 다 없으면 null(UI '-').
-     */
-    private fun formatWorkType(info: LatestAttendanceInfo): String? {
-        val parts = listOfNotNull(info.workingCategory1, info.workingCategory3)
-        return parts.takeIf { it.isNotEmpty() }?.joinToString("/")
-    }
-
-    /**
      * 현재 페이지 사원들의 최근 출근등록 1건 정보(근무형태/근무거래처) Map<employeeId, info> 조회.
      * 출근등록 이력 0건 사원은 키가 없다.
      */
@@ -123,7 +114,7 @@ class AdminEmployeeService(
         return EmployeeListResponse(
             content = userPage.content.map { emp ->
                 val info = attendanceInfo[emp.id]
-                EmployeeListItem.from(emp, today, info?.let { formatWorkType(it) }, info?.accountName, info?.accountCode)
+                EmployeeListItem.from(emp, today, info?.workingCategory1, info?.workingCategory3, info?.accountName, info?.accountCode)
             },
             page = page,
             size = size,
@@ -171,7 +162,7 @@ class AdminEmployeeService(
             val attendanceInfo = loadAttendanceInfo(employees.map { it.id })
             employees.map { emp ->
                 val info = attendanceInfo[emp.id]
-                EmployeeListItem.from(emp, today, info?.let { formatWorkType(it) }, info?.accountName, info?.accountCode)
+                EmployeeListItem.from(emp, today, info?.workingCategory1, info?.workingCategory3, info?.accountName, info?.accountCode)
             }
         }
 

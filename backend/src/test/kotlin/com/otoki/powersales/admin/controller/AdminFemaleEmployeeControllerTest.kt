@@ -91,7 +91,8 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                     age = "45살",
                     yearsOfService = "5년",
                     professionalPromotionTeam = "라면세일조",
-                    workType = "진열/고정",
+                    workType1 = "진열",
+                    workType3 = "고정",
                     workAccountName = "테스트마트",
                     workAccountCode = "ACC001",
                 ),
@@ -117,6 +118,8 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.content[0].phone").value("01012345678"))
             .andExpect(jsonPath("$.data.content[0].age").value("45살"))
             .andExpect(jsonPath("$.data.content[0].yearsOfService").value("5년"))
+            .andExpect(jsonPath("$.data.content[0].workType1").value("진열"))
+            .andExpect(jsonPath("$.data.content[0].workType3").value("고정"))
 
         // 여사원 현황은 여사원+조장 role + 본인 지점 스코프 적용 (applyBranchScope=true) 로 호출
         verify(exactly = 1) {

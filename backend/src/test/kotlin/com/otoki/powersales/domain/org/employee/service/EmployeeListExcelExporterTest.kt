@@ -18,7 +18,8 @@ class EmployeeListExcelExporterTest {
         status: String? = "재직",
         endDate: String? = null,
         professionalPromotionTeam: String = "일반",
-        workType: String? = "진열/고정",
+        workType1: String? = "진열",
+        workType3: String? = "고정",
         workAccountName: String? = "테스트마트",
         workAccountCode: String? = "ACC001",
     ) = EmployeeListItem(
@@ -46,16 +47,17 @@ class EmployeeListExcelExporterTest {
         age = "30",
         yearsOfService = "6",
         professionalPromotionTeam = professionalPromotionTeam,
-        workType = workType,
+        workType1 = workType1,
+        workType3 = workType3,
         workAccountName = workAccountName,
         workAccountCode = workAccountCode,
     )
 
     @Test
-    @DisplayName("헤더 22개 + 데이터 행이 목록 컬럼 순서대로 생성")
+    @DisplayName("헤더 23개 + 데이터 행이 목록 컬럼 순서대로 생성")
     fun export_headersAndRows() {
         val result = exporter.export(
-            listOf(item(professionalPromotionTeam = "라면세일조", workType = "진열/고정")),
+            listOf(item(professionalPromotionTeam = "라면세일조", workType1 = "진열", workType3 = "고정")),
             "여사원현황.xlsx",
         )
 
@@ -71,15 +73,16 @@ class EmployeeListExcelExporterTest {
         assertThat(header.getCell(2).stringCellValue).isEqualTo("상태")
         assertThat(header.getCell(3).stringCellValue).isEqualTo("소속")
         assertThat(header.getCell(4).stringCellValue).isEqualTo("전문행사조")
-        assertThat(header.getCell(5).stringCellValue).isEqualTo("근무형태")
-        assertThat(header.getCell(6).stringCellValue).isEqualTo("근무거래처")
-        assertThat(header.getCell(7).stringCellValue).isEqualTo("거래처코드")
-        assertThat(header.getCell(8).stringCellValue).isEqualTo("권한")
-        assertThat(header.getCell(13).stringCellValue).isEqualTo("이메일(회사)")
-        assertThat(header.getCell(14).stringCellValue).isEqualTo("전화번호(HP)")
-        assertThat(header.getCell(19).stringCellValue).isEqualTo("만나이")
-        assertThat(header.getCell(20).stringCellValue).isEqualTo("근속년수")
-        assertThat(header.getCell(21).stringCellValue).isEqualTo("앱활성")
+        assertThat(header.getCell(5).stringCellValue).isEqualTo("근무형태1")
+        assertThat(header.getCell(6).stringCellValue).isEqualTo("근무형태3")
+        assertThat(header.getCell(7).stringCellValue).isEqualTo("근무거래처")
+        assertThat(header.getCell(8).stringCellValue).isEqualTo("거래처코드")
+        assertThat(header.getCell(9).stringCellValue).isEqualTo("권한")
+        assertThat(header.getCell(14).stringCellValue).isEqualTo("이메일(회사)")
+        assertThat(header.getCell(15).stringCellValue).isEqualTo("전화번호(HP)")
+        assertThat(header.getCell(20).stringCellValue).isEqualTo("만나이")
+        assertThat(header.getCell(21).stringCellValue).isEqualTo("근속년수")
+        assertThat(header.getCell(22).stringCellValue).isEqualTo("앱활성")
 
         val row = sheet.getRow(1)
         assertThat(row.getCell(0).stringCellValue).isEqualTo("10000001")
@@ -87,27 +90,31 @@ class EmployeeListExcelExporterTest {
         assertThat(row.getCell(2).stringCellValue).isEqualTo("재직")
         assertThat(row.getCell(3).stringCellValue).isEqualTo("서울지점")
         assertThat(row.getCell(4).stringCellValue).isEqualTo("라면세일조")
-        assertThat(row.getCell(5).stringCellValue).isEqualTo("진열/고정")
-        assertThat(row.getCell(6).stringCellValue).isEqualTo("테스트마트")
-        assertThat(row.getCell(7).stringCellValue).isEqualTo("ACC001")
-        assertThat(row.getCell(13).stringCellValue).isEqualTo("hong@otoki.com")
-        assertThat(row.getCell(14).stringCellValue).isEqualTo("010-1234-5678")
-        assertThat(row.getCell(19).stringCellValue).isEqualTo("30")
-        assertThat(row.getCell(20).stringCellValue).isEqualTo("6")
-        assertThat(row.getCell(21).stringCellValue).isEqualTo("활성")
+        assertThat(row.getCell(5).stringCellValue).isEqualTo("진열")
+        assertThat(row.getCell(6).stringCellValue).isEqualTo("고정")
+        assertThat(row.getCell(7).stringCellValue).isEqualTo("테스트마트")
+        assertThat(row.getCell(8).stringCellValue).isEqualTo("ACC001")
+        assertThat(row.getCell(14).stringCellValue).isEqualTo("hong@otoki.com")
+        assertThat(row.getCell(15).stringCellValue).isEqualTo("010-1234-5678")
+        assertThat(row.getCell(20).stringCellValue).isEqualTo("30")
+        assertThat(row.getCell(21).stringCellValue).isEqualTo("6")
+        assertThat(row.getCell(22).stringCellValue).isEqualTo("활성")
         workbook.close()
     }
 
     @Test
-    @DisplayName("근무형태/근무거래처/거래처코드 null 은 '-' 로 출력")
+    @DisplayName("근무형태1/근무형태3/근무거래처/거래처코드 null 은 '-' 로 출력")
     fun export_workInfoNull() {
-        val result = exporter.export(listOf(item(workType = null, workAccountName = null, workAccountCode = null)))
+        val result = exporter.export(
+            listOf(item(workType1 = null, workType3 = null, workAccountName = null, workAccountCode = null)),
+        )
 
         val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
         val row = workbook.getSheetAt(0).getRow(1)
-        assertThat(row.getCell(5).stringCellValue).isEqualTo("-") // 근무형태
-        assertThat(row.getCell(6).stringCellValue).isEqualTo("-") // 근무거래처
-        assertThat(row.getCell(7).stringCellValue).isEqualTo("-") // 거래처코드
+        assertThat(row.getCell(5).stringCellValue).isEqualTo("-") // 근무형태1
+        assertThat(row.getCell(6).stringCellValue).isEqualTo("-") // 근무형태3
+        assertThat(row.getCell(7).stringCellValue).isEqualTo("-") // 근무거래처
+        assertThat(row.getCell(8).stringCellValue).isEqualTo("-") // 거래처코드
         workbook.close()
     }
 
@@ -123,9 +130,9 @@ class EmployeeListExcelExporterTest {
 
         val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
         val sheet = workbook.getSheetAt(0)
-        // 퇴사일은 18번 컬럼
-        assertThat(sheet.getRow(1).getCell(18).stringCellValue).isEmpty()
-        assertThat(sheet.getRow(2).getCell(18).stringCellValue).isEqualTo("2025-12-31")
+        // 퇴사일은 19번 컬럼
+        assertThat(sheet.getRow(1).getCell(19).stringCellValue).isEmpty()
+        assertThat(sheet.getRow(2).getCell(19).stringCellValue).isEqualTo("2025-12-31")
         workbook.close()
     }
 
@@ -147,7 +154,7 @@ class EmployeeListExcelExporterTest {
         val workbook = XSSFWorkbook(ByteArrayInputStream(result.bytes))
         val row = workbook.getSheetAt(0).getRow(1)
         assertThat(row.getCell(0).stringCellValue).isEmpty()
-        assertThat(row.getCell(21).stringCellValue).isEqualTo("비활성")
+        assertThat(row.getCell(22).stringCellValue).isEqualTo("비활성")
         workbook.close()
     }
 }

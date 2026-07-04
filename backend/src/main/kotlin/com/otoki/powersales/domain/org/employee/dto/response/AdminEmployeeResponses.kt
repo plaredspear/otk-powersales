@@ -38,9 +38,10 @@ data class EmployeeListItem(
     val yearsOfService: String?,
     // 전문행사조 — 미배정(enum null) 사원은 '일반' 으로 표기.
     val professionalPromotionTeam: String,
-    // 근무형태 — 가장 최근 출근(근무)등록 1건의 근무유형1(진열/행사)/근무유형3(고정/격고/순회) 조합.
-    // 출근등록 이력이 없으면 null (UI '-' 표기).
-    val workType: String?,
+    // 근무형태1 — 가장 최근 출근(근무)등록 1건의 근무유형1(진열/행사). 출근등록 이력이 없으면 null (UI '-' 표기).
+    val workType1: String?,
+    // 근무형태3 — 가장 최근 출근(근무)등록 1건의 근무유형3(고정/격고/순회). 출근등록 이력이 없으면 null (UI '-' 표기).
+    val workType3: String?,
     // 근무거래처 — 가장 최근 출근(근무)등록 1건의 거래처명/거래처코드(SAP거래처코드). 이력/거래처 없으면 null.
     val workAccountName: String?,
     val workAccountCode: String?
@@ -49,7 +50,8 @@ data class EmployeeListItem(
         fun from(
             employee: Employee,
             today: LocalDate,
-            workType: String? = null,
+            workType1: String? = null,
+            workType3: String? = null,
             workAccountName: String? = null,
             workAccountCode: String? = null,
         ): EmployeeListItem = EmployeeListItem(
@@ -77,7 +79,8 @@ data class EmployeeListItem(
             age = employee.calculateAge(today),
             yearsOfService = employee.calculateYearsOfService(today),
             professionalPromotionTeam = employee.professionalPromotionTeam?.displayName ?: "일반",
-            workType = workType,
+            workType1 = workType1,
+            workType3 = workType3,
             workAccountName = workAccountName,
             workAccountCode = workAccountCode
         )

@@ -305,7 +305,7 @@ class AdminEmployeeServiceTest {
     inner class ExportEmployeesTests {
 
         @Test
-        @DisplayName("성공 - 검색결과 전량을 헤더 22컬럼 + 데이터 행으로 출력 + 파일명 패턴")
+        @DisplayName("성공 - 검색결과 전량을 헤더 23컬럼 + 데이터 행으로 출력 + 파일명 패턴")
         fun export_success() {
             val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
             val employees = listOf(
@@ -325,10 +325,11 @@ class AdminEmployeeServiceTest {
             assertThat(sheet.sheetName).isEqualTo("여사원현황")
             assertThat(sheet.getRow(0).getCell(0).stringCellValue).isEqualTo("사번")
             assertThat(sheet.getRow(0).getCell(4).stringCellValue).isEqualTo("전문행사조")
-            assertThat(sheet.getRow(0).getCell(5).stringCellValue).isEqualTo("근무형태")
-            assertThat(sheet.getRow(0).getCell(6).stringCellValue).isEqualTo("근무거래처")
-            assertThat(sheet.getRow(0).getCell(7).stringCellValue).isEqualTo("거래처코드")
-            assertThat(sheet.getRow(0).getCell(21).stringCellValue).isEqualTo("앱활성")
+            assertThat(sheet.getRow(0).getCell(5).stringCellValue).isEqualTo("근무형태1")
+            assertThat(sheet.getRow(0).getCell(6).stringCellValue).isEqualTo("근무형태3")
+            assertThat(sheet.getRow(0).getCell(7).stringCellValue).isEqualTo("근무거래처")
+            assertThat(sheet.getRow(0).getCell(8).stringCellValue).isEqualTo("거래처코드")
+            assertThat(sheet.getRow(0).getCell(22).stringCellValue).isEqualTo("앱활성")
             assertThat(sheet.getRow(1).getCell(0).stringCellValue).isEqualTo("10000001")
             assertThat(sheet.getRow(1).getCell(1).stringCellValue).isEqualTo("홍길동")
             assertThat(sheet.getRow(2).getCell(0).stringCellValue).isEqualTo("10000002")

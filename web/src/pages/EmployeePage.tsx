@@ -143,11 +143,19 @@ export default function EmployeePage() {
       },
     },
     {
-      title: '근무형태',
-      dataIndex: 'workType',
-      width: 110,
+      title: '근무형태1',
+      dataIndex: 'workType1',
+      width: 100,
       align: 'center',
-      // 가장 최근 출근등록 1건의 진열/행사 + 고정/격고/순회 조합. 이력 없으면 '-'.
+      // 가장 최근 출근등록 1건의 근무유형1(진열/행사). 이력 없으면 '-'.
+      render: (val: string | null | undefined) => val ?? '-',
+    },
+    {
+      title: '근무형태3',
+      dataIndex: 'workType3',
+      width: 100,
+      align: 'center',
+      // 가장 최근 출근등록 1건의 근무유형3(고정/격고/순회). 이력 없으면 '-'.
       render: (val: string | null | undefined) => val ?? '-',
     },
     {
