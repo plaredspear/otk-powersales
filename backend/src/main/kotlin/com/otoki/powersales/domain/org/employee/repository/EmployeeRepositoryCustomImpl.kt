@@ -144,9 +144,14 @@ class EmployeeRepositoryCustomImpl(
         if (!roles.isNullOrEmpty()) {
             where.and(employee.role.`in`(roles))
         }
-        // 전문행사조 필터 — '일반'(미배정=null) 은 IS NULL, 특정 조는 등호.
+        // 전문행사조 필터 — '일반'(미배정) 은 IS NULL 뿐 아니라, SF 레거시가 정규화 없이 적재한
+        // '일반'·'해당없음' 문자열 행도 함께 조회한다 (화면 목록이 이 값들을 '일반'으로 표시하는 것과 정합).
+        // converter 컬럼이라 enum path 로는 문자열과 직접 비교할 수 없어, stringValue() 로 원본 문자열과 비교.
         if (promotionTeamGeneral) {
-            where.and(employee.professionalPromotionTeam.isNull)
+            where.and(
+                employee.professionalPromotionTeam.isNull
+                    .or(employee.professionalPromotionTeam.stringValue().`in`(ProfessionalPromotionTeamType.UNASSIGNED_LEGACY_VALUES))
+            )
         } else if (promotionTeam != null) {
             where.and(employee.professionalPromotionTeam.eq(promotionTeam))
         }
