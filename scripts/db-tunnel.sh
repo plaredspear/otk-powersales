@@ -15,7 +15,7 @@ Usage: $(basename "$0") [options]
 Options:
   -s <stage>      stage (dev | prod)
   -l <port>       local port                (default: dev=15432, prod=25432)
-  --password      RDS master password 만 출력하고 종료 (환경변수 <STAGE>_OTK_PWRS_DB_PASSWORD 필요)
+  --password      RDS master password 만 출력하고 종료 (Secrets Manager 에서 조회)
   -h              도움말
 
 Examples:
@@ -64,13 +64,16 @@ fi
 source "$ENV_FILE"
 
 if [[ "$PRINT_PASSWORD" -eq 1 ]]; then
-  case "$STAGE" in
-    dev)  PASSWORD_VAR="DEV_OTK_PWRS_DB_PASSWORD";  PASSWORD_VALUE="${DEV_OTK_PWRS_DB_PASSWORD:-}"  ;;
-    prod) PASSWORD_VAR="PROD_OTK_PWRS_DB_PASSWORD"; PASSWORD_VALUE="${PROD_OTK_PWRS_DB_PASSWORD:-}" ;;
-    *)    echo "Error: 알 수 없는 stage: $STAGE" >&2; exit 1 ;;
-  esac
+  if [[ -z "${RDS_SECRET_ARN:-}" ]]; then
+    echo "Error: $ENV_FILE 에 RDS_SECRET_ARN 이 설정되어 있지 않습니다." >&2
+    exit 1
+  fi
+  SECRET_JSON=$(aws_ secretsmanager get-secret-value \
+    --secret-id "$RDS_SECRET_ARN" \
+    --query SecretString --output text)
+  PASSWORD_VALUE=$(printf '%s' "$SECRET_JSON" | jq -r '.password // empty')
   if [[ -z "$PASSWORD_VALUE" ]]; then
-    echo "Error: 환경변수 \$$PASSWORD_VAR 가 설정되지 않았습니다." >&2
+    echo "Error: Secrets Manager 응답에서 password 를 추출하지 못했습니다 (ARN: $RDS_SECRET_ARN)." >&2
     exit 1
   fi
   echo "$PASSWORD_VALUE"
