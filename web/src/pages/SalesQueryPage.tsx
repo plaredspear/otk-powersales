@@ -266,18 +266,23 @@ export default function SalesQueryPage() {
     [],
   );
 
+  // 거래처 행 선택 토글 — 행 클릭/체크박스 공용. 선택 해제는 항상 허용, 신규 선택은 상한(20) 가드.
+  const toggleAccount = (accountId: number) => {
+    setSelectedAccountIds((prev) => {
+      if (prev.includes(accountId)) return prev.filter((id) => id !== accountId);
+      if (prev.length >= MAX_SELECTABLE_ACCOUNTS) {
+        message.warning(`거래처는 최대 ${MAX_SELECTABLE_ACCOUNTS}개까지 선택할 수 있습니다.`);
+        return prev;
+      }
+      return [...prev, accountId];
+    });
+  };
+
   const rowSelection: TableRowSelection<PosSalesAccountItem> = {
     // 최대 20개 상한이라 "전체 선택"은 무의미(20개 초과 목록에서 누르면 상한 초과로 0개 선택됨) → 숨김.
     hideSelectAll: true,
     selectedRowKeys: selectedAccountIds,
-    onChange: (keys) => {
-      const next = keys as number[];
-      if (next.length > MAX_SELECTABLE_ACCOUNTS) {
-        message.warning(`거래처는 최대 ${MAX_SELECTABLE_ACCOUNTS}개까지 선택할 수 있습니다.`);
-        return;
-      }
-      setSelectedAccountIds(next);
-    },
+    onSelect: (record) => toggleAccount(record.accountId),
     getCheckboxProps: (record) => ({
       // 상한 도달 시 미선택 행은 체크 비활성 (이미 선택된 행은 해제 가능하도록 유지)
       disabled:
@@ -457,6 +462,11 @@ export default function SalesQueryPage() {
             rowSelection={rowSelection}
             scroll={{ y: 280 }}
             pagination={false}
+            // 행 아무 곳이나 클릭해도 선택/해제 (작은 체크박스만 조준할 필요 없음)
+            onRow={(record) => ({
+              onClick: () => toggleAccount(record.accountId),
+              style: { cursor: 'pointer' },
+            })}
             locale={listTableLocale({ searched: accountQuery != null })}
           />
         </Card>

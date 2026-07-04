@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import dayjs from 'dayjs';
@@ -128,9 +128,8 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
     fireEvent.click(screen.getByRole('button', { name: /search조회$/ }));
     await screen.findByText('이마트 원주점');
 
-    // 첫 거래처(이마트 원주점) 행 체크박스 선택
-    const row = screen.getByText('이마트 원주점').closest('tr')!;
-    fireEvent.click(within(row).getByRole('checkbox'));
+    // 첫 거래처(이마트 원주점) 행 클릭으로 선택 (체크박스 조준 불필요)
+    fireEvent.click(screen.getByText('이마트 원주점'));
 
     fireEvent.click(screen.getByRole('button', { name: /선택 거래처 POS 조회/ }));
 
@@ -168,9 +167,8 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
     fireEvent.click(screen.getByRole('button', { name: /search조회$/ }));
     await screen.findByText('이마트 원주점');
 
-    // 거래처 선택
-    const row = screen.getByText('이마트 원주점').closest('tr')!;
-    fireEvent.click(within(row).getByRole('checkbox'));
+    // 거래처 선택 (행 클릭)
+    fireEvent.click(screen.getByText('이마트 원주점'));
 
     const inputs = screen
       .getAllByRole('textbox')
