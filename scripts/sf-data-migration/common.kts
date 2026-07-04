@@ -10,8 +10,10 @@
  */
 
 import com.opencsv.CSVReaderBuilder
+import com.opencsv.RFC4180ParserBuilder
 import java.io.File
-import java.io.FileReader
+import java.io.FileInputStream
+import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.sql.Connection
 import java.sql.DriverManager
@@ -1613,9 +1615,20 @@ fun formatJdbcError(e: Throwable): String {
 // CSV parsing
 // =============================================================================
 
+/**
+ * SF Bulk API 2.0 CSV 는 레코드 구분자 CRLF + 값 내부 개행(LF) 이 혼재한다.
+ * opencsv 기본 CSVParser 는 이 혼용을 quoted-field 안에서 안전히 못 다뤄
+ * `Unterminated quoted field` 로 실패하므로, 순수 RFC4180 구현(RFC4180Parser)을 사용한다.
+ * (`""` 만 quote escape 로 인정 — SF Bulk CSV 포맷과 정합. 인코딩은 UTF-8 명시.)
+ */
+fun openCsvReader(file: File) =
+    CSVReaderBuilder(InputStreamReader(FileInputStream(file), Charsets.UTF_8))
+        .withCSVParser(RFC4180ParserBuilder().build())
+        .build()
+
 fun parseCsvFile(file: File): List<Map<String, String?>> {
     if (!file.exists()) error("CSV file not found: ${file.absolutePath}")
-    val rows = CSVReaderBuilder(FileReader(file)).build().readAll().map { it.toList() }
+    val rows = openCsvReader(file).readAll().map { it.toList() }
     if (rows.isEmpty()) return emptyList()
     val headers = rows[0].map { it.trim() }
     val result = mutableListOf<Map<String, String?>>()
@@ -1642,7 +1655,7 @@ fun parseCsvFile(file: File): List<Map<String, String?>> {
  */
 fun streamCsvFile(file: File, onRow: (Map<String, String?>) -> Unit): Int {
     if (!file.exists()) error("CSV file not found: ${file.absolutePath}")
-    val reader = CSVReaderBuilder(FileReader(file)).build()
+    val reader = openCsvReader(file)
     try {
         val headerArr = reader.readNext() ?: return 0
         val headers = headerArr.map { it.trim() }
