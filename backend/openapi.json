@@ -20721,6 +20721,9 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
+          "siteImageUrl" : {
+            "type" : [ "string", "null" ]
+          },
           "targetAmount" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
@@ -20808,6 +20811,9 @@
           "scheduleId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          },
+          "siteImageUrl" : {
+            "type" : [ "string", "null" ]
           },
           "targetAmount" : {
             "format" : "int64",
