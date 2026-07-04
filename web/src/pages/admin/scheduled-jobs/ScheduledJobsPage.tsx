@@ -787,26 +787,41 @@ export default function ScheduledJobsPage() {
           <span
             title={isDisabled ? `${name} (비활성)` : name}
             style={{
-              display: 'inline-block',
+              display: 'inline-flex',
+              alignItems: 'flex-start',
+              gap: 6,
               lineHeight: 1.3,
               color: isDisabled ? '#bfbfbf' : undefined,
             }}
           >
-            {jobLabel(name)}
-            {isDisabled && (
-              <span style={{ fontSize: 11, marginLeft: 4 }}>(비활성)</span>
-            )}
-            {JOB_SCHEDULES[name] && (
-              <span
-                style={{
-                  display: 'block',
-                  fontSize: 11,
-                  color: isDisabled ? '#cfcfcf' : '#999',
-                }}
-              >
-                {JOB_SCHEDULES[name]}
-              </span>
-            )}
+            <span
+              aria-label={isDisabled ? '비활성' : '활성'}
+              style={{
+                flex: '0 0 auto',
+                width: 8,
+                height: 8,
+                marginTop: 5,
+                borderRadius: '50%',
+                backgroundColor: isDisabled ? '#d9d9d9' : '#52c41a',
+              }}
+            />
+            <span style={{ display: 'inline-block' }}>
+              {jobLabel(name)}
+              {isDisabled && (
+                <span style={{ fontSize: 11, marginLeft: 4 }}>(비활성)</span>
+              )}
+              {JOB_SCHEDULES[name] && (
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 11,
+                    color: isDisabled ? '#cfcfcf' : '#999',
+                  }}
+                >
+                  {JOB_SCHEDULES[name]}
+                </span>
+              )}
+            </span>
           </span>
         ),
         children: (
