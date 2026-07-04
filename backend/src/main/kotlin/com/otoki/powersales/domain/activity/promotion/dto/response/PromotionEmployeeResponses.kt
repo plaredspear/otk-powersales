@@ -31,10 +31,18 @@ data class PromotionEmployeeListResponse(
     val primarySalesPrice: BigDecimal?,
     val otherSalesAmount: BigDecimal?,
     val otherSalesQuantity: BigDecimal?,
-    val s3ImageUniqueKey: String?
+    val s3ImageUniqueKey: String?,
+    // 현장사진 조회용 presigned URL (S3 private/ 저장 → 발급 시 만료). key 없거나 미해소 시 null.
+    // 레거시 SF SiteImage__c 수식필드(public URL 조합) 대체 — key 소유/삭제는 s3ImageUniqueKey 로 유지.
+    val siteImageUrl: String?
 ) {
     companion object {
-        fun from(entity: PromotionEmployee, employeeName: String?, employeeCode: String? = null): PromotionEmployeeListResponse =
+        fun from(
+            entity: PromotionEmployee,
+            employeeName: String?,
+            employeeCode: String? = null,
+            siteImageUrl: String? = null
+        ): PromotionEmployeeListResponse =
             PromotionEmployeeListResponse(
                 id = entity.id,
                 name = entity.name,
@@ -59,7 +67,8 @@ data class PromotionEmployeeListResponse(
                 primarySalesPrice = entity.primarySalesPrice,
                 otherSalesAmount = entity.otherSalesAmount,
                 otherSalesQuantity = entity.otherSalesQuantity,
-                s3ImageUniqueKey = entity.s3ImageUniqueKey
+                s3ImageUniqueKey = entity.s3ImageUniqueKey,
+                siteImageUrl = siteImageUrl
             )
     }
 }
@@ -90,11 +99,18 @@ data class PromotionEmployeeDetailResponse(
     val otherSalesAmount: BigDecimal?,
     val otherSalesQuantity: BigDecimal?,
     val s3ImageUniqueKey: String?,
+    // 현장사진 조회용 presigned URL (S3 private/ 저장 → 발급 시 만료). key 없거나 미해소 시 null.
+    val siteImageUrl: String?,
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime
 ) {
     companion object {
-        fun from(entity: PromotionEmployee, employeeName: String?, employeeCode: String? = null): PromotionEmployeeDetailResponse =
+        fun from(
+            entity: PromotionEmployee,
+            employeeName: String?,
+            employeeCode: String? = null,
+            siteImageUrl: String? = null
+        ): PromotionEmployeeDetailResponse =
             PromotionEmployeeDetailResponse(
                 id = entity.id,
                 promotionId = entity.promotionId!!,
@@ -119,6 +135,7 @@ data class PromotionEmployeeDetailResponse(
                 otherSalesAmount = entity.otherSalesAmount,
                 otherSalesQuantity = entity.otherSalesQuantity,
                 s3ImageUniqueKey = entity.s3ImageUniqueKey,
+                siteImageUrl = siteImageUrl,
                 createdAt = entity.createdAt,
                 updatedAt = entity.updatedAt
             )

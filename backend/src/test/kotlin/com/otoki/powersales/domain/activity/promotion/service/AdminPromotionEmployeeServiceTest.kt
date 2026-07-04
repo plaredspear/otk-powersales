@@ -55,6 +55,8 @@ class AdminPromotionEmployeeServiceTest {
         mockk(relaxed = true)
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper =
         mockk(relaxUnitFun = true)
+    private val storageService: com.otoki.powersales.platform.common.storage.StorageService =
+        mockk(relaxed = true)
     private val principal: WebUserPrincipal = mockk(relaxed = true)
 
     private val service: AdminPromotionEmployeeService = AdminPromotionEmployeeService(
@@ -64,6 +66,7 @@ class AdminPromotionEmployeeServiceTest {
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         policyEvaluator = policyEvaluator,
         teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
+        storageService = storageService,
     )
 
     // 부모 Promotion 가시 범위 검증 통과용 — 전체 지점 권한 (isAllBranches=true → validateAccess 항상 true).
@@ -101,6 +104,27 @@ class AdminPromotionEmployeeServiceTest {
             val result = service.getEmployees(allBranchesScope, 10L)
             assertThat(result).hasSize(2)
             assertThat(result[0].employeeName).isEqualTo("김여사")
+        }
+
+        @Test
+        @DisplayName("현장사진 key 존재 -> presigned URL 로 변환하여 siteImageUrl 반환, key 도 유지")
+        fun getEmployees_siteImageUrl() {
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            every { promotionEmployeeRepository.findWithEmployeeByPromotionId(10L) } returns listOf(
+                createPe(id = 1L, s3ImageUniqueKey = "uploads/site-photo-1.jpg"),
+                createPe(id = 2L, s3ImageUniqueKey = null)
+            )
+            every { storageService.getPresignedUrl("uploads/site-photo-1.jpg", any()) } returns
+                "https://s3.example.com/presigned?sig=abc"
+
+            val result = service.getEmployees(allBranchesScope, 10L)
+
+            // key 있는 행: presigned URL 로 변환 + 원본 key 유지 (편집 모드 삭제 로직이 key 를 사용)
+            assertThat(result[0].siteImageUrl).isEqualTo("https://s3.example.com/presigned?sig=abc")
+            assertThat(result[0].s3ImageUniqueKey).isEqualTo("uploads/site-photo-1.jpg")
+            // key 없는 행: URL null, presigned 발급은 key 있는 1건만 시도
+            assertThat(result[1].siteImageUrl).isNull()
+            verify(exactly = 1) { storageService.getPresignedUrl(any(), any()) }
         }
 
         @Test
@@ -1343,7 +1367,8 @@ class AdminPromotionEmployeeServiceTest {
     private fun createPe(
         id: Long = 1L, promotionId: Long = 10L, employeeId: Long? = 1L,
         scheduleDate: LocalDate = LocalDate.of(2026, 3, 15), teamMemberScheduleId: Long? = null,
-        promoCloseByTm: Boolean = false, workStatus: String? = "근무", workType1: String? = "행사"
+        promoCloseByTm: Boolean = false, workStatus: String? = "근무", workType1: String? = "행사",
+        s3ImageUniqueKey: String? = null
     ) = PromotionEmployee(
         id = id, promotionId = promotionId, employeeId = employeeId,
         scheduleDate = scheduleDate,
@@ -1351,7 +1376,8 @@ class AdminPromotionEmployeeServiceTest {
         workType1 = workType1?.let { WorkingCategory1.fromDisplayName(it) },
         workType3 = WorkingCategory3.FIXED,
         basePrice = BigDecimal.valueOf(1500L), dailyTargetCount = BigDecimal.valueOf(100L),
-        teamMemberScheduleId = teamMemberScheduleId, promoCloseByTm = promoCloseByTm
+        teamMemberScheduleId = teamMemberScheduleId, promoCloseByTm = promoCloseByTm,
+        s3ImageUniqueKey = s3ImageUniqueKey
     ).also {
         it.promotion = createPromotion()
         if (employeeId != null) it.employee = createEmployee()

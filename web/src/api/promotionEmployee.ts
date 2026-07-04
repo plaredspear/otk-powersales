@@ -29,6 +29,8 @@ export interface PromotionEmployee {
   otherSalesAmount: number | null;
   otherSalesQuantity: number | null;
   s3ImageUniqueKey: string | null;
+  // 현장사진 조회용 presigned URL (백엔드에서 s3ImageUniqueKey → 발급). 없으면 null.
+  siteImageUrl: string | null;
 }
 
 export interface PromotionEmployeeFormData {

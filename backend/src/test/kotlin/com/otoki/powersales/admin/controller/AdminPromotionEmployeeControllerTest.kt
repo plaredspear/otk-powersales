@@ -267,7 +267,8 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         primarySalesPrice = null,
         otherSalesAmount = null,
         otherSalesQuantity = null,
-        s3ImageUniqueKey = null
+        s3ImageUniqueKey = null,
+        siteImageUrl = null
     )
 
     private fun createDetailResponse() = PromotionEmployeeDetailResponse(
@@ -294,6 +295,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         otherSalesAmount = null,
         otherSalesQuantity = null,
         s3ImageUniqueKey = null,
+        siteImageUrl = null,
         createdAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0),
         updatedAt = LocalDateTime.of(2026, 3, 10, 10, 0, 0)
     )
