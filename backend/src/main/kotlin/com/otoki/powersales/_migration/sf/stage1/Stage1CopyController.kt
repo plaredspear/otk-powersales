@@ -28,7 +28,8 @@ import java.util.concurrent.Executors
  *
  * 진입점 2개:
  *  - POST /copy-from-s3       : 단건 (target 1개) 실행
- *  - POST /copy-all-from-s3   : 일괄 (등록된 모든 entity) 실행 — 의존성 순서, 1개 실패 시 즉시 중단
+ *  - POST /copy-all-from-s3   : 일괄 (등록된 모든 entity) 실행 — 의존성 순서, continue-on-error
+ *                               (1개 실패해도 중단 없이 다음 entity 계속, 실패는 누적)
  *
  * 권한: 로그인(authenticated)만 요구 — @RequiresSfPermission 제거. 권한 데이터 적재 단계라
  * MODIFY_ALL_DATA 부트스트랩 닭-달걀 회피. web 사이드 메뉴 제외 + URL 직접 진입. 완료 후 가드 복원 권장.

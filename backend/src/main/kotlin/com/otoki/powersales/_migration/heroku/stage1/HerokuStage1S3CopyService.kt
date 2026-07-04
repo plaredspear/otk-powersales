@@ -85,7 +85,9 @@ class HerokuStage1S3CopyService(
     /**
      * S3 의 prefix 아래 모든 entity 의 CSV 를 의존성 순서대로 순차 적재 (BATCH 모드).
      *
-     * S3 key 는 `<s3KeyPrefix>/<csvFileName>` 자동 조립. 1개 entity 실패 시 즉시 중단 (나머지 SKIPPED).
+     * S3 key 는 `<s3KeyPrefix>/<csvFileName>` 자동 조립. continue-on-error — 1개 entity 실패해도
+     * 중단하지 않고 다음 entity 를 계속 적재하며, 하나라도 실패하면 최종 batch 상태는 FAILED.
+     * (S3 에 CSV 가 없는 entity 는 404 로 SKIPPED 후 계속 — 기존 동작 유지.)
      */
     fun copyAllFromS3(
         s3Bucket: String,
@@ -151,6 +153,9 @@ class HerokuStage1S3CopyService(
                     targetName, s3Bucket, s3Key,
                 )
             } catch (e: Throwable) {
+                // continue-on-error: 실패한 entity 만 FAILED 로 마크하고 에러를 누적한 뒤,
+                // batch 를 중단하지 않고 다음 entity 로 진행한다. (404 SKIPPED 와 마찬가지로
+                // 한 entity 실패가 나머지 적재를 막지 않도록.) 최종 상태는 루프 종료 후 확정.
                 val msg = "${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
                 val processedDelta = progress.processedRows - processedBefore
                 val filteredDelta = progress.filteredOut - filteredBefore
@@ -160,33 +165,28 @@ class HerokuStage1S3CopyService(
                     filteredOut = filteredDelta,
                     errorMessage = msg,
                 )
-                progress.markRemainingAsSkipped()
-                progress.finishWithFailure("[$targetName] $msg")
+                progress.recordError("[$targetName] $msg")
                 failed++
                 log.error(
-                    "[heroku-stage1-copy-all] entity FAILED target={} reason={} — batch abort",
+                    "[heroku-stage1-copy-all] entity FAILED target={} reason={} — continue with next entity",
                     targetName, msg, e,
-                )
-                return HerokuStage1BatchSummary(
-                    totalTargets = targets.size,
-                    success = success,
-                    failed = failed,
-                    // 실패로 batch 중단 — 아직 처리 못 한 PENDING + 그동안 404 로 건너뛴 entity 모두 skipped.
-                    skipped = targets.size - success - failed,
-                    totalInserted = totalInserted,
                 )
             }
         }
 
-        progress.finishOk()
+        if (failed > 0) {
+            progress.finishWithFailure("batch 완료 — 실패 entity $failed 개 (성공 $success, 건너뜀 $skipped)")
+        } else {
+            progress.finishOk()
+        }
         log.info(
-            "[heroku-stage1-copy-all] done totalTargets={} success={} skipped={} totalInserted={}",
-            targets.size, success, skipped, totalInserted,
+            "[heroku-stage1-copy-all] done totalTargets={} success={} failed={} skipped={} totalInserted={}",
+            targets.size, success, failed, skipped, totalInserted,
         )
         return HerokuStage1BatchSummary(
             totalTargets = targets.size,
             success = success,
-            failed = 0,
+            failed = failed,
             skipped = skipped,
             totalInserted = totalInserted,
         )

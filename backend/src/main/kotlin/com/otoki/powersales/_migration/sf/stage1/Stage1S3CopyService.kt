@@ -23,9 +23,10 @@ import javax.sql.DataSource
  * 두 가지 진입점:
  *  - [copyFromS3] (단건): target 1개를 동기 실행. 단건 호출 시 [Stage1CopyProgress] 의
  *    SINGLE 모드를 가정. controller 가 begin() 후 호출하는 일반 경로.
- *  - [copyAllFromS3] (일괄): entity 의존성 순서대로 순차 실행. 1개 실패 시 즉시 중단 +
- *    나머지 PENDING entity 는 SKIPPED 로 마크. 각 entity 결과는 [Stage1CopyProgress.entityResults]
- *    에 누적되어 UI 가 실패 사유를 확인 가능.
+ *  - [copyAllFromS3] (일괄): entity 의존성 순서대로 순차 실행. continue-on-error —
+ *    1개 entity 실패해도 중단하지 않고 다음 entity 를 계속 적재하며, 실패는 누적한다.
+ *    각 entity 결과(성공/실패/사유)는 [Stage1CopyProgress.entityResults] 에 누적되어
+ *    UI 가 확인 가능하고, 하나라도 실패했으면 최종 batch 상태는 FAILED 로 마크된다.
  *
  * 적재 패턴:
  *  - UNLOGGED staging 생성 (WAL 우회) → S3 stream → CSV → COPY → INSERT-SELECT ON CONFLICT
@@ -85,8 +86,9 @@ class Stage1S3CopyService(
      *
      * S3 key 는 `<s3KeyPrefix.removeSuffix("/")>/<EntityMetadata.csvFileName>` 으로 자동 조립.
      *
-     * 1개 entity 실패 시 즉시 중단 (나머지 entity 는 SKIPPED). entity 별 적재 결과는
-     * [Stage1CopyProgress.entityResults] 에 누적되어 UI 가 성공/실패/실패 사유 확인.
+     * continue-on-error — 1개 entity 실패해도 중단하지 않고 다음 entity 를 계속 적재한다.
+     * entity 별 적재 결과는 [Stage1CopyProgress.entityResults] 에 누적되어 UI 가 성공/실패/
+     * 실패 사유를 확인하며, 하나라도 실패하면 최종 batch 상태는 FAILED.
      *
      * @param s3Bucket    CSV 보관 bucket
      * @param s3KeyPrefix CSV 들의 공통 prefix (예: "sf-migration/input")
@@ -136,6 +138,9 @@ class Stage1S3CopyService(
                     targetName, result.inserted, processedDelta, filteredDelta,
                 )
             } catch (e: Throwable) {
+                // continue-on-error: 실패한 entity 만 FAILED 로 마크하고 에러를 누적한 뒤,
+                // batch 를 중단하지 않고 다음 entity 로 진행한다 (한 entity 실패가 나머지
+                // 적재를 막지 않도록). 최종 상태는 루프 종료 후 실패 유무로 확정.
                 val msg = "${e.javaClass.simpleName}: ${e.message ?: "unknown"}"
                 val processedDelta = progress.processedRows - processedBefore
                 val filteredDelta = progress.filteredOut - filteredBefore
@@ -145,32 +150,28 @@ class Stage1S3CopyService(
                     filteredOut = filteredDelta,
                     errorMessage = msg,
                 )
-                progress.markRemainingAsSkipped()
-                progress.finishWithFailure("[$targetName] $msg")
+                progress.recordError("[$targetName] $msg")
                 failed++
                 log.error(
-                    "[stage1-copy-all] entity FAILED target={} reason={} — batch abort",
+                    "[stage1-copy-all] entity FAILED target={} reason={} — continue with next entity",
                     targetName, msg, e,
-                )
-                return Stage1BatchSummary(
-                    totalTargets = targets.size,
-                    success = success,
-                    failed = failed,
-                    skipped = targets.size - success - failed,
-                    totalInserted = totalInserted,
                 )
             }
         }
 
-        progress.finishOk()
+        if (failed > 0) {
+            progress.finishWithFailure("batch 완료 — 실패 entity $failed 개 (성공 $success 개)")
+        } else {
+            progress.finishOk()
+        }
         log.info(
-            "[stage1-copy-all] done totalTargets={} success={} totalInserted={}",
-            targets.size, success, totalInserted,
+            "[stage1-copy-all] done totalTargets={} success={} failed={} totalInserted={}",
+            targets.size, success, failed, totalInserted,
         )
         return Stage1BatchSummary(
             totalTargets = targets.size,
             success = success,
-            failed = 0,
+            failed = failed,
             skipped = 0,
             totalInserted = totalInserted,
         )

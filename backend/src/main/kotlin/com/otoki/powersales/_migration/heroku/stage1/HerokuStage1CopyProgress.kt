@@ -242,6 +242,16 @@ class HerokuStage1CopyProgress(
         persist()
     }
 
+    /**
+     * 전역 에러 목록에 메시지만 누적 (status 는 그대로 유지).
+     * batch continue-on-error 모드에서 개별 entity 실패를 즉시 전체 FAILED 로 만들지 않고
+     * 누적만 하기 위한 용도. 최종 상태는 루프 종료 후 [finishOk] / [finishWithFailure] 로 확정.
+     */
+    fun recordError(message: String) {
+        errors += message
+        persist()
+    }
+
     fun finishOk() {
         this.finishedAt = Instant.now()
         this.status = Status.COMPLETED
