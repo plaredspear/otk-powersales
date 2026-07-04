@@ -73,6 +73,12 @@ data class WorkHistoryAccountStat(
     val accountName: String?,
     /** 거래처 코드 (Account.externalKey). 거래처 미연결이면 null. */
     val accountExternalKey: String?,
+    /** 거래처 지점명 (Account.branchName). 거래처 미연결이면 null. */
+    val accountBranchName: String?,
+    /** 유통형태 (Account.distributionChannelLabel — 거래처상태코드 + 거래처유형). 미연결이면 null. */
+    val distributionChannelLabel: String?,
+    /** 거래처유형 (Account.abcTypeLabel — ABC유형코드 + ABC유형). 미연결이면 null. */
+    val abcTypeLabel: String?,
     /** 총 근무일수 (출근 등록된 일정 행 수). */
     val totalWorkingDays: Int,
     /** 근무유형(WorkingCategory1)별 일수 — 진열. */

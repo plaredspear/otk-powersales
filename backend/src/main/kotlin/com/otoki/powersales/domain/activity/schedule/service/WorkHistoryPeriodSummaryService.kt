@@ -125,6 +125,9 @@ class WorkHistoryPeriodSummaryService(
                 WorkHistoryAccountStat(
                     accountName = acc?.name,
                     accountExternalKey = acc?.externalKey,
+                    accountBranchName = acc?.branchName,
+                    distributionChannelLabel = acc?.distributionChannelLabel(),
+                    abcTypeLabel = acc?.abcTypeLabel(),
                     totalWorkingDays = s.totalWorkingDays,
                     displayDays = s.displayDays,
                     eventDays = s.eventDays,

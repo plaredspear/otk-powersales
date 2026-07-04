@@ -295,6 +295,9 @@ describe('WorkHistoryPeriodPage', () => {
           {
             accountName: '이마트 원주점',
             accountExternalKey: 'A0001',
+            accountBranchName: '원주1지점',
+            distributionChannelLabel: '02 대형마트(3대)',
+            abcTypeLabel: '6111 이마트',
             totalWorkingDays: 3,
             displayDays: 2,
             eventDays: 1,
@@ -305,6 +308,9 @@ describe('WorkHistoryPeriodPage', () => {
           {
             accountName: null,
             accountExternalKey: null,
+            accountBranchName: null,
+            distributionChannelLabel: null,
+            abcTypeLabel: null,
             totalWorkingDays: 1,
             displayDays: 0,
             eventDays: 0,

@@ -273,6 +273,12 @@ export interface WorkHistoryAccountStat {
   accountName: string | null;
   /** 거래처 코드 (externalKey). 거래처 미연결이면 null. */
   accountExternalKey: string | null;
+  /** 거래처 지점명. 거래처 미연결이면 null. */
+  accountBranchName: string | null;
+  /** 유통형태 (거래처상태코드 + 거래처유형). 거래처 미연결이면 null. */
+  distributionChannelLabel: string | null;
+  /** 거래처유형 (ABC유형코드 + ABC유형). 거래처 미연결이면 null. */
+  abcTypeLabel: string | null;
   totalWorkingDays: number;
   displayDays: number;
   eventDays: number;

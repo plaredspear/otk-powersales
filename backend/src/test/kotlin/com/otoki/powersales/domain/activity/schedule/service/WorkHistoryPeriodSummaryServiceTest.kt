@@ -255,6 +255,11 @@ class WorkHistoryPeriodSummaryServiceTest {
         private fun namedAccount(id: Long, name: String): Account {
             val acc = Account(id = id, externalKey = "B$id")
             acc.name = name
+            acc.branchName = "원주1지점"
+            acc.accountStatusCode = "02"
+            acc.accountType = "대형마트(3대)"
+            acc.abcTypeCode = "6111"
+            acc.abcType = "이마트"
             return acc
         }
 
@@ -283,6 +288,10 @@ class WorkHistoryPeriodSummaryServiceTest {
             assertThat(itemA.displayDays).isEqualTo(1)
             assertThat(itemA.eventDays).isEqualTo(1)
             assertThat(itemA.workDays).isEqualTo(2)
+            // 통합일정 대비 추가된 거래처 속성 컬럼 (지점명 / 유통형태 / 거래처유형)
+            assertThat(itemA.accountBranchName).isEqualTo("원주1지점")
+            assertThat(itemA.distributionChannelLabel).isEqualTo("02 대형마트(3대)")
+            assertThat(itemA.abcTypeLabel).isEqualTo("6111 이마트")
         }
 
         @Test
