@@ -324,8 +324,6 @@ export const router = createBrowserRouter(
                   element: <PermissionRoute entity="suggestion" operation="READ" />,
                   children: [
                     { path: '/logistics-claim-report-period', element: <LazyWrapper><LogisticsClaimReportPage period="CUSTOM" /></LazyWrapper> },
-                    { path: '/logistics-claim-report-this-month', element: <LazyWrapper><LogisticsClaimReportPage period="THIS_MONTH" /></LazyWrapper> },
-                    { path: '/logistics-claim-report-last-month', element: <LazyWrapper><LogisticsClaimReportPage period="LAST_MONTH" /></LazyWrapper> },
                   ],
                 },
                 {
