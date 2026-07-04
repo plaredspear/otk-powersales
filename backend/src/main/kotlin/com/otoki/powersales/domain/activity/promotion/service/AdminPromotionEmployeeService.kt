@@ -34,6 +34,8 @@ import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper
+import com.otoki.powersales.platform.common.storage.StorageConstants
+import com.otoki.powersales.platform.common.storage.StorageService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -48,7 +50,15 @@ class AdminPromotionEmployeeService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val policyEvaluator: SharingRulePolicyEvaluator,
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
+    private val storageService: StorageService,
 ) {
+
+    // 현장사진(private/ 저장)을 presigned URL 로 변환. key 없거나 blank 면 null.
+    // 모바일 일매출 조회(MobileDailySalesService.imageUrl)와 동일한 TTL 로 web 관리자 조회 정합.
+    // 레거시 SF SiteImage__c 수식필드(public URL)의 신규 대체 — s3ImageUniqueKey 는 응답에 그대로 유지.
+    private fun siteImageUrl(key: String?): String? =
+        key?.takeIf { it.isNotBlank() }
+            ?.let { storageService.getPresignedUrl(it, StorageConstants.DAILY_SALES_PRESIGN_TTL_SECONDS) }
 
     /**
      * SF Sharing Rule 정책이 합성된 가시 PromotionEmployee 일람 (spec #782 P4-B — ControlledByParent).
@@ -112,7 +122,7 @@ class AdminPromotionEmployeeService(
         val employees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
 
         return employees.map { pe ->
-            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode)
+            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
         }
     }
 
@@ -128,7 +138,7 @@ class AdminPromotionEmployeeService(
 
     fun getEmployee(id: Long): PromotionEmployeeDetailResponse {
         val pe = findPromotionEmployeeById(id)
-        return PromotionEmployeeDetailResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode)
+        return PromotionEmployeeDetailResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
     }
 
     @Transactional
@@ -162,7 +172,7 @@ class AdminPromotionEmployeeService(
             )
         )
 
-        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode)
+        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
     }
 
     @Transactional
@@ -219,7 +229,7 @@ class AdminPromotionEmployeeService(
 
         promotionEmployeeRepository.save(pe)
 
-        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode)
+        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
     }
 
     @Transactional
@@ -306,7 +316,7 @@ class AdminPromotionEmployeeService(
         // 전체 행사사원 목록 조회하여 응답
         val allEmployees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
         val responseItems = allEmployees.map { pe ->
-            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode)
+            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
         }
 
         return BatchUpdatePromotionEmployeeResponse(

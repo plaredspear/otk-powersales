@@ -5,6 +5,7 @@ import {
   Collapse,
   DatePicker,
   Divider,
+  Image,
   InputNumber,
   Modal,
   Popconfirm,
@@ -85,6 +86,7 @@ interface EditableRow {
   otherSalesAmount: number | null;
   otherSalesQuantity: number | null;
   s3ImageUniqueKey: string | null;
+  siteImageUrl: string | null;
   promoCloseByTm: boolean;
   // Read-only display fields
   employeeName: string | null;
@@ -116,6 +118,7 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
     otherSalesAmount: pe.otherSalesAmount,
     otherSalesQuantity: pe.otherSalesQuantity,
     s3ImageUniqueKey: pe.s3ImageUniqueKey,
+    siteImageUrl: pe.siteImageUrl,
   };
 }
 
@@ -875,11 +878,19 @@ export default function PromotionDetailPage() {
       },
       {
         title: '현장사진',
-        dataIndex: 's3ImageUniqueKey',
-        width: 70,
+        dataIndex: 'siteImageUrl',
+        width: 80,
         align: 'center' as const,
-        render: (v: string | null) =>
-          v ? <CheckCircleFilled style={{ color: '#52c41a' }} /> : null,
+        render: (url: string | null) =>
+          url ? (
+            <Image
+              src={url}
+              alt="현장사진"
+              width={48}
+              height={48}
+              style={{ objectFit: 'cover', borderRadius: 4 }}
+            />
+          ) : null,
       },
       {
         // SF 확정(ScheduleConfirmed__c): 조원일정 연결(scheduleId != null) 시 ✔️, 미연결 시 ❌
@@ -1122,19 +1133,33 @@ export default function PromotionDetailPage() {
       },
       {
         title: '현장사진',
-        dataIndex: 's3ImageUniqueKey',
-        width: 90,
+        dataIndex: 'siteImageUrl',
+        width: 100,
         align: 'center' as const,
-        render: (v: string | null, record: EditableRow) =>
-          v ? (
+        render: (url: string | null, record: EditableRow) =>
+          record.s3ImageUniqueKey ? (
             <Space size={4}>
-              <CheckCircleFilled style={{ color: '#52c41a' }} />
+              {url ? (
+                <Image
+                  src={url}
+                  alt="현장사진"
+                  width={40}
+                  height={40}
+                  style={{ objectFit: 'cover', borderRadius: 4 }}
+                />
+              ) : (
+                <CheckCircleFilled style={{ color: '#52c41a' }} />
+              )}
               <Button
                 type="text"
                 size="small"
                 danger
                 icon={<CloseOutlined />}
-                onClick={() => updateField(record.id, 's3ImageUniqueKey', null)}
+                onClick={() => {
+                  // key 를 비우면 batch 저장 시 사진이 제거된다. 미리보기도 즉시 사라지도록 URL 도 함께 비운다.
+                  updateField(record.id, 's3ImageUniqueKey', null);
+                  updateField(record.id, 'siteImageUrl', null);
+                }}
                 style={{ minWidth: 0, padding: '0 4px' }}
               />
             </Space>
