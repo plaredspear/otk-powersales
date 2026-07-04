@@ -1,5 +1,4 @@
 import client from './client';
-import { downloadExcel } from '@/lib/excelDownload';
 import type { ApiResponse } from './types';
 import type { Branch, TeamMember } from './team-schedule';
 
@@ -179,91 +178,6 @@ export async function fetchAttendInfoMembers(branchCode?: string): Promise<TeamM
 }
 
 /**
- * 기간별 근무내역(개인) — 여사원별 근무 집계 항목.
- * 근무기간 조회(월별근무내역 목록)와 동일하게 TeamMemberSchedule(출근 등록 기준)을 원천으로 하되,
- * 단일 월이 아닌 기간(시작년월~종료년월) 전체를 여사원별 1행으로 집계.
- */
-export interface WorkHistoryPeriodSummaryItem {
-  /** 소속지점명 */
-  orgName: string | null;
-  /** 사번 */
-  employeeCode: string | null;
-  /** 이름 */
-  employeeName: string | null;
-  /** 직위 */
-  title: string | null;
-  /** 총 근무일수 */
-  totalWorkingDays: number;
-  /** 근무 거래처 수 */
-  workingAccountCount: number;
-  /** 근무유형별 일수 — 진열 */
-  displayDays: number;
-  /** 근무유형별 일수 — 행사 */
-  eventDays: number;
-  /** 구분별 일수 — 근무 */
-  workDays: number;
-  /** 구분별 일수 — 연차 */
-  annualLeaveDays: number;
-  /** 구분별 일수 — 대휴 */
-  altHolidayDays: number;
-  /** 월별 통계 분해 (yyyy-MM 오름차순). 단일 월 조회 시 빈 배열. */
-  monthlyBreakdown: WorkHistoryMonthlyStat[];
-}
-
-/** 여사원별 월 단위 근무 통계 — 합계 행의 월별 분해. */
-export interface WorkHistoryMonthlyStat {
-  /** 대상 년월 (yyyy-MM) */
-  yearMonth: string;
-  totalWorkingDays: number;
-  workingAccountCount: number;
-  displayDays: number;
-  eventDays: number;
-  workDays: number;
-  annualLeaveDays: number;
-  altHolidayDays: number;
-}
-
-export interface WorkHistoryPeriodSummaryResponse {
-  fromYearMonth: string;
-  toYearMonth: string;
-  items: WorkHistoryPeriodSummaryItem[];
-  totalCount: number;
-}
-
-export interface FetchWorkHistoryPeriodSummaryParams {
-  /** 시작년월 (yyyy-MM) */
-  fromYearMonth: string;
-  /** 종료년월 (yyyy-MM) */
-  toYearMonth: string;
-  /** 조회 지점 코드 (costCenterCode) — 비우면 권한 스코프 전체 */
-  costCenterCodes: string[];
-  /** 사번/이름 검색어 */
-  keyword?: string;
-}
-
-/**
- * 기간별 근무내역(개인) 집계 조회.
- * 지점 스코프 내 전체 여사원의 기간 근무 집계를 여사원별 1행으로 반환.
- */
-export async function fetchWorkHistoryPeriodSummary(
-  params: FetchWorkHistoryPeriodSummaryParams,
-): Promise<WorkHistoryPeriodSummaryResponse> {
-  const trimmedKeyword = params.keyword?.trim();
-  const res = await client.get<ApiResponse<WorkHistoryPeriodSummaryResponse>>(`${BASE}/period-summary`, {
-    params: {
-      fromYearMonth: params.fromYearMonth,
-      toYearMonth: params.toYearMonth,
-      costCenterCodes: params.costCenterCodes.join(','),
-      ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
-    },
-  });
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.error?.message || res.data.message || '기간별 근무내역 조회에 실패했습니다');
-  }
-  return res.data.data;
-}
-
-/**
  * 기간별 근무내역(개인) — 특정 여사원 1명의 거래처별 근무 집계 행.
  * 좌측 패널에서 여사원을 선택하면 선택 기간 내 근무 행을 거래처 단위로 그룹핑해 표시.
  * 거래처 미연결 행(연차/대휴 등)은 accountName=null 1행으로 묶인다.
@@ -352,23 +266,4 @@ export async function fetchWorkHistoryEmployeeAccounts(
     throw new Error(res.data.error?.message || res.data.message || '거래처별 근무내역 조회에 실패했습니다');
   }
   return res.data.data;
-}
-
-/** 기간별 근무내역(개인) 엑셀 다운로드 — 조회와 동일 필터/스코프. */
-export async function fetchWorkHistoryPeriodSummaryExport(
-  params: FetchWorkHistoryPeriodSummaryParams,
-): Promise<void> {
-  const trimmedKeyword = params.keyword?.trim();
-  await downloadExcel(
-    `${BASE}/period-summary/export`,
-    `기간별근무내역_${params.fromYearMonth}_${params.toYearMonth}.xlsx`,
-    {
-      params: {
-        fromYearMonth: params.fromYearMonth,
-        toYearMonth: params.toYearMonth,
-        costCenterCodes: params.costCenterCodes.join(','),
-        ...(trimmedKeyword ? { keyword: trimmedKeyword } : {}),
-      },
-    },
-  );
 }

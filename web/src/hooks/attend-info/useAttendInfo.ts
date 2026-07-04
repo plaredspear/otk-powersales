@@ -5,15 +5,12 @@ import {
   fetchAttendInfoBranches,
   fetchAttendInfoMembers,
   fetchWorkHistoryEmployeeAccounts,
-  fetchWorkHistoryPeriodSummary,
-  fetchWorkHistoryPeriodSummaryExport,
   getAttendInfo,
   searchAttendInfo,
   updateAttendInfo,
   type CreateAttendInfoRequest,
   type FetchAttendInfoParams,
   type FetchWorkHistoryEmployeeAccountParams,
-  type FetchWorkHistoryPeriodSummaryParams,
   type UpdateAttendInfoRequest,
 } from '@/api/attendInfo';
 import { useAuthStore } from '@/stores/authStore';
@@ -57,17 +54,6 @@ export function useAttendInfoMembers(branchCode?: string, options?: { enabled?: 
 }
 
 /**
- * 기간별 근무내역(개인) 집계 조회. params 가 null 이면 비활성 (조회 버튼 클릭 전).
- */
-export function useWorkHistoryPeriodSummary(params: FetchWorkHistoryPeriodSummaryParams | null) {
-  return useQuery({
-    queryKey: [...QUERY_KEY, 'period-summary', params],
-    queryFn: () => fetchWorkHistoryPeriodSummary(params!),
-    enabled: params != null,
-  });
-}
-
-/**
  * 기간별 근무내역(개인) — 여사원 1명의 거래처별 집계 조회.
  * params 가 null 이면 비활성 (여사원 미선택 또는 기간 입력 오류).
  */
@@ -76,13 +62,6 @@ export function useWorkHistoryEmployeeAccounts(params: FetchWorkHistoryEmployeeA
     queryKey: [...QUERY_KEY, 'period-summary-accounts', params],
     queryFn: () => fetchWorkHistoryEmployeeAccounts(params!),
     enabled: params != null,
-  });
-}
-
-/** 기간별 근무내역(개인) 엑셀 다운로드. */
-export function useWorkHistoryPeriodSummaryExport() {
-  return useMutation({
-    mutationFn: (params: FetchWorkHistoryPeriodSummaryParams) => fetchWorkHistoryPeriodSummaryExport(params),
   });
 }
 
