@@ -90,7 +90,7 @@ class AdminFemaleEmployeePlacementCheckController(
         return ExcelResponseUtils.build(result)
     }
 
-    /** 개인별(사번) 월간 근무내역 조회 (Spec #840). */
+    /** 개인별(사번) 월간 근무내역 조회 (Spec #840). costCenterCodes 선택 시 그 지점(사원 소속)으로 좁힘. */
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/work-history")
     fun getWorkHistory(
@@ -98,8 +98,9 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam employeeCode: String,
         @RequestParam year: Int,
         @RequestParam month: Int,
+        @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
     ): ResponseEntity<ApiResponse<FemaleEmployeeWorkHistoryResponse>> {
-        val response = workHistoryService.getWorkHistory(scope, employeeCode, year, month)
+        val response = workHistoryService.getWorkHistory(scope, employeeCode, year, month, costCenterCodes)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -111,8 +112,9 @@ class AdminFemaleEmployeePlacementCheckController(
         @RequestParam employeeCode: String,
         @RequestParam year: Int,
         @RequestParam month: Int,
+        @RequestParam(required = false, defaultValue = "") costCenterCodes: List<String>,
     ): ResponseEntity<ByteArray> {
-        val result = workHistoryService.exportWorkHistory(scope, employeeCode, year, month)
+        val result = workHistoryService.exportWorkHistory(scope, employeeCode, year, month, costCenterCodes)
         return ExcelResponseUtils.build(result)
     }
 
