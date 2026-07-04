@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, message } from 'antd';
+import { Alert, DatePicker, Space, message } from 'antd';
+import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useCategorySchedule } from '@/hooks/schedules/useCategorySchedule';
@@ -131,6 +132,23 @@ export default function CategorySchedulePage() {
         exportDisabled={!data || data.items.length === 0}
         exportLoading={exportMutation.isPending}
         searchLoading={isLoading}
+        periodFilter={
+          <Space direction="vertical" size={4}>
+            <span>조회월:</span>
+            <DatePicker
+              picker="month"
+              value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
+              onChange={(value) => {
+                if (!value) return;
+                setYear(value.year());
+                setMonth(value.month() + 1);
+              }}
+              allowClear={false}
+              format="YYYY-MM"
+              style={{ width: 140 }}
+            />
+          </Space>
+        }
         extraActions={
           queryParams != null ? (
             <RefreshButton onRefresh={refetch} refreshing={isFetching} />

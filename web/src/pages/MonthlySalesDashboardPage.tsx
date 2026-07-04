@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Card, Col, Input, Row, Select, Statistic, Typography, message } from 'antd';
+import { Alert, Card, Col, DatePicker, Input, Row, Select, Space, Statistic, Typography, message } from 'antd';
+import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -263,6 +264,23 @@ export default function MonthlySalesDashboardPage() {
         exportDisabled={!list || list.items.length === 0}
         exportLoading={exporting}
         searchLoading={summaryQuery.isLoading || listQuery.isLoading}
+        periodFilter={
+          <Space direction="vertical" size={4}>
+            <span>조회월:</span>
+            <DatePicker
+              picker="month"
+              value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
+              onChange={(value) => {
+                if (!value) return;
+                setYear(value.year());
+                setMonth(value.month() + 1);
+              }}
+              allowClear={false}
+              format="YYYY-MM"
+              style={{ width: 140 }}
+            />
+          </Space>
+        }
         extraFilters={
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <div>

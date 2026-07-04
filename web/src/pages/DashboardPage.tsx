@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Alert, Card, Col, Empty, Row, Spin, Statistic, Tabs, Tooltip } from 'antd';
+import { Alert, Card, Col, DatePicker, Empty, Row, Space, Spin, Statistic, Tabs, Tooltip } from 'antd';
+import dayjs from 'dayjs';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
@@ -424,6 +425,23 @@ export default function DashboardPage() {
         onExport={() => undefined}
         hideExport
         searchLoading={dashboardQuery.isFetching}
+        periodFilter={
+          <Space direction="vertical" size={4}>
+            <span>조회월:</span>
+            <DatePicker
+              picker="month"
+              value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
+              onChange={(value) => {
+                if (!value) return;
+                setYear(value.year());
+                setMonth(value.month() + 1);
+              }}
+              allowClear={false}
+              format="YYYY-MM"
+              style={{ width: 140 }}
+            />
+          </Space>
+        }
       />
 
       {dashboardQuery.isError && (

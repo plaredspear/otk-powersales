@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Alert, Typography, message } from 'antd';
+import { Alert, DatePicker, Space, Typography, message } from 'antd';
+import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -97,7 +98,23 @@ export default function FemaleEmployeePlacementCheckPage() {
         onExport={handleExport}
         exportDisabled={!query.data || query.data.items.length === 0}
         searchLoading={query.isLoading}
-        showMonth
+        periodFilter={
+          <Space direction="vertical" size={4}>
+            <span>조회월:</span>
+            <DatePicker
+              picker="month"
+              value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
+              onChange={(value) => {
+                if (!value) return;
+                setYear(value.year());
+                setMonth(value.month() + 1);
+              }}
+              allowClear={false}
+              format="YYYY-MM"
+              style={{ width: 140 }}
+            />
+          </Space>
+        }
         extraActions={
           queryParams != null ? (
             <RefreshButton onRefresh={query.refetch} refreshing={query.isFetching} />
