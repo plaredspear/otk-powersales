@@ -62,9 +62,9 @@ describe('WorkHistoryPeriodPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('여사원 미선택 상태에서는 조회 버튼이 비활성화된다', () => {
+  it('조회 버튼이 없다 (여사원 선택이 곧 조회)', () => {
     renderPage();
-    expect(screen.getByRole('button', { name: /조회/ })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^조회$/ })).not.toBeInTheDocument();
   });
 
   describe('여사원 선택 → 거래처별 집계', () => {
@@ -128,32 +128,9 @@ describe('WorkHistoryPeriodPage', () => {
       expect(await screen.findByText('홍길동(20230016)')).toBeInTheDocument();
     });
 
-    it('여사원을 선택하면 조회 버튼이 활성화된다', async () => {
+    it('여사원을 선택하면 (조회 버튼 없이) 즉시 거래처별 집계가 표시된다', async () => {
       renderPage();
       fireEvent.click(await screen.findByText('홍길동(20230016)'));
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /조회/ })).not.toBeDisabled();
-      });
-    });
-
-    it('여사원 선택 후에도 조회 버튼을 누르기 전에는 조회하지 않고 안내를 표시한다', async () => {
-      renderPage();
-      fireEvent.click(await screen.findByText('홍길동(20230016)'));
-      await waitFor(() => {
-        expect(
-          screen.getByText('조회 버튼을 눌러 선택한 여사원의 거래처별 근무내역을 조회하세요.'),
-        ).toBeInTheDocument();
-      });
-      expect(mockedAccounts).not.toHaveBeenCalled();
-    });
-
-    it('여사원 선택 후 조회 버튼을 누르면 거래처별 집계가 표시된다', async () => {
-      renderPage();
-      fireEvent.click(await screen.findByText('홍길동(20230016)'));
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /조회/ })).not.toBeDisabled();
-      });
-      fireEvent.click(screen.getByRole('button', { name: /조회/ }));
       await waitFor(() => {
         expect(screen.getByText('이마트 원주점')).toBeInTheDocument();
         expect(screen.getByText('(거래처 미지정)')).toBeInTheDocument();
@@ -165,10 +142,7 @@ describe('WorkHistoryPeriodPage', () => {
     it('전체 목록으로 버튼 클릭 시 선택이 해제되고 조회 결과가 사라진다', async () => {
       renderPage();
       fireEvent.click(await screen.findByText('홍길동(20230016)'));
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /조회/ })).not.toBeDisabled();
-      });
-      fireEvent.click(screen.getByRole('button', { name: /조회/ }));
+      await screen.findByText('총 2개 거래처');
       const backBtn = await screen.findByRole('button', { name: /전체 목록으로/ });
       fireEvent.click(backBtn);
       await waitFor(() => {
@@ -183,25 +157,30 @@ describe('WorkHistoryPeriodPage', () => {
       renderPage();
       const memberItem = await screen.findByText('홍길동(20230016)');
       fireEvent.click(memberItem);
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /조회/ })).not.toBeDisabled();
-      });
+      await screen.findByText('총 2개 거래처');
       fireEvent.click(memberItem);
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /조회/ })).toBeDisabled();
+        expect(screen.queryByText('총 2개 거래처')).not.toBeInTheDocument();
       });
     });
-  });
 
-  it('조회 기간이 6개월을 초과하면 경고를 표시하고 조회 버튼이 비활성화된다', async () => {
-    renderPage();
-    // 시작/종료 년월 입력은 [시작년, 시작월, 종료년, 종료월] 순의 spinbutton.
-    const spinButtons = screen.getAllByRole('spinbutton');
-    const fromYearInput = spinButtons[0];
-    const current = Number((fromYearInput as HTMLInputElement).value);
-    fireEvent.change(fromYearInput, { target: { value: String(current - 1) } });
+    it('기간이 6개월을 초과하면 경고를 표시하고 (여사원 선택 상태여도) 조회하지 않는다', async () => {
+      renderPage();
+      fireEvent.click(await screen.findByText('홍길동(20230016)'));
+      await screen.findByText('총 2개 거래처');
 
-    expect(screen.getByText('조회 기간은 최대 6개월까지 가능합니다')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /조회/ })).toBeDisabled();
+      // 시작 년도를 1년 낮춰 12개월 차이 → 6개월 초과.
+      const spinButtons = screen.getAllByRole('spinbutton');
+      const fromYearInput = spinButtons[0];
+      const current = Number((fromYearInput as HTMLInputElement).value);
+      mockedAccounts.mockClear();
+      fireEvent.change(fromYearInput, { target: { value: String(current - 1) } });
+
+      expect(screen.getByText('조회 기간은 최대 6개월까지 가능합니다')).toBeInTheDocument();
+      // rangeInvalid 이면 거래처별 조회를 억제한다.
+      await waitFor(() => {
+        expect(mockedAccounts).not.toHaveBeenCalled();
+      });
+    });
   });
 });

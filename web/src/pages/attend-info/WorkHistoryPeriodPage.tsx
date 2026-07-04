@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  Button,
   Checkbox,
   Empty,
   Input,
@@ -11,7 +10,6 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useAttendInfoBranches, useAttendInfoMembers } from '@/hooks/attend-info/useAttendInfo';
 import type { TeamMember } from '@/api/team-schedule';
@@ -35,8 +33,6 @@ export default function WorkHistoryPeriodPage() {
   const [toMonth, setToMonth] = useState(now.month() + 1);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
-  // 조회 버튼으로 확정된 거래처별 뷰 조회 조건. 여사원 선택 + 조회 클릭 시에만 설정된다.
-  const [appliedQuery, setAppliedQuery] = useState<{ fromYearMonth: string; toYearMonth: string } | null>(null);
   // 좌측 패널 여사원 목록의 조회 지점 (다중/전사 권한자 선택). 단일지점 사용자는 자동 채움.
   const [memberBranchCode, setMemberBranchCode] = useState<string | undefined>(undefined);
   // 좌측 패널에서 선택한 여사원 — 선택 시 우측이 거래처별 집계 뷰로 전환.
@@ -70,18 +66,16 @@ export default function WorkHistoryPeriodPage() {
     }
   }, [branches, memberBranchCode]);
 
-  // 패널 지점 변경 시 이전 지점에서 고른 여사원은 무효 — 선택 해제 + 확정 조회 초기화.
+  // 패널 지점 변경 시 이전 지점에서 고른 여사원은 무효 — 선택 해제.
   const handleMemberBranchChange = (code: string) => {
     setMemberBranchCode(code);
     setSelectedMember(undefined);
-    setAppliedQuery(null);
   };
 
-  // 같은 여사원 재클릭 시 선택 해제, 다른 여사원이면 교체. 어느 쪽이든 확정 조회를 초기화해
-  // 새 여사원은 조회 버튼을 다시 눌러야 결과가 뜬다.
+  // 같은 여사원 재클릭 시 선택 해제, 다른 여사원이면 교체. 선택 즉시 우측이 거래처별 뷰로 조회된다
+  // (월별 근무내역 탭과 동일 — 조회 버튼 없이 선택이 곧 조회).
   const handleMemberSelect = (member: TeamMember) => {
     setSelectedMember((prev) => (prev?.employeeId === member.employeeId ? undefined : member));
-    setAppliedQuery(null);
   };
 
   const fromYm = toYearMonth(fromYear, fromMonth);
@@ -93,12 +87,6 @@ export default function WorkHistoryPeriodPage() {
     : (toYear - fromYear) * 12 + (toMonth - fromMonth) + 1;
   const exceedsMax = inclusiveMonths > MAX_RANGE_MONTHS;
   const rangeInvalid = reversed || exceedsMax;
-
-  // 조회 — 여사원 선택을 전제로 한다. 선택한 여사원의 거래처별 뷰 조회 조건을 확정.
-  const handleSearch = () => {
-    if (rangeInvalid || !selectedMember) return;
-    setAppliedQuery({ fromYearMonth: fromYm, toYearMonth: toYm });
-  };
 
   const handleToggleAll = () => {
     setSelectedCodes(allSelected ? [] : allCodes);
@@ -199,21 +187,9 @@ export default function WorkHistoryPeriodPage() {
               placeholder="사번 또는 이름"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              onPressEnter={handleSearch}
               style={{ width: 160 }}
             />
           </Space>
-        </Space>
-        <Space>
-          <Button
-            type="primary"
-            icon={<SearchOutlined />}
-            onClick={handleSearch}
-            // 여사원을 선택해야만 조회 가능 — 미선택 시 조회 차단.
-            disabled={rangeInvalid || !selectedMember}
-          >
-            조회
-          </Button>
         </Space>
       </div>
 
@@ -270,30 +246,21 @@ export default function WorkHistoryPeriodPage() {
             />
           )}
 
-          {!selectedMember ? (
-            // 여사원 미선택 — 조회는 여사원 선택을 전제로 한다 (조회 버튼도 미선택 시 비활성).
+          {selectedMember ? (
+            // 여사원 선택 즉시 거래처별 뷰 조회 (월별 근무내역 탭과 동일 — 조회 버튼 없음).
+            <PeriodAccountBreakdown
+              member={selectedMember}
+              fromYearMonth={fromYm}
+              toYearMonth={toYm}
+              rangeInvalid={rangeInvalid}
+              onClear={() => setSelectedMember(undefined)}
+            />
+          ) : (
+            // 여사원 미선택 안내 — 선택하면 즉시 조회된다.
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description="좌측에서 여사원을 선택하면 거래처별 근무내역을 조회합니다."
               style={{ marginTop: 48 }}
-            />
-          ) : appliedQuery == null ? (
-            // 여사원은 선택했으나 아직 조회 전 — 상단 조회 버튼을 눌러야 결과를 표시.
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="조회 버튼을 눌러 선택한 여사원의 거래처별 근무내역을 조회하세요."
-              style={{ marginTop: 48 }}
-            />
-          ) : (
-            <PeriodAccountBreakdown
-              member={selectedMember}
-              fromYearMonth={appliedQuery.fromYearMonth}
-              toYearMonth={appliedQuery.toYearMonth}
-              rangeInvalid={rangeInvalid}
-              onClear={() => {
-                setSelectedMember(undefined);
-                setAppliedQuery(null);
-              }}
             />
           )}
         </div>
