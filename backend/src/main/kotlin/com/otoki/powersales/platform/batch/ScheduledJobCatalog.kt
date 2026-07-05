@@ -149,8 +149,8 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = ProductExpirationAlertBatch.JOB_NAME,
-            cron = "\${app.batch.product-expiration-alert.cron:0 0 0 * * *}",
-            description = "유통기한 만료 FCM 알림 발송 (기본 매일 00:00, alarm_date=당일 담당 여사원) — legacy OttogiSalesSchedule.alarm 동등",
+            cron = "\${app.batch.product-expiration-alert.cron:0 0 9 * * *}",
+            description = "유통기한 만료 FCM 알림 발송 (기본 매일 09:00 KST, alarm_date=당일 담당 여사원) — legacy OttogiSalesSchedule.alarm 동등 (레거시 Heroku UTC 0 0 0 = KST 09:00)",
             beanType = ProductExpirationAlertBatch::class.java,
         ),
     )
