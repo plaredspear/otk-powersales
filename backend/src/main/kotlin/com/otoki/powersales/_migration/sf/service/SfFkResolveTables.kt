@@ -123,6 +123,8 @@ internal val NATURAL_KEY_FK_MAPPINGS: List<NaturalKeyFkSpec> = listOf(
         targetIdColumn = "user_role_id",
     ),
     // profile_flags.profile_name → profile.profile_id
+    // (LeaderProfileFlagsSyncRunner 비활성화 후 profile_flags row 는 Stage1 SF row 하나뿐이라
+    //  단순 UPDATE 로 안전하게 profile_id 채움 — SF 추출값 완전 우선.)
     NaturalKeyFkSpec(
         sourceTable = "profile_flags",
         sourceColumn = "profile_name",

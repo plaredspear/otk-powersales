@@ -107,7 +107,7 @@ class SfMigrationStage2Controller(
     /**
      * spec #800 — Natural Key FK Resolve.
      *
-     * `NATURAL_KEY_FK_MAPPINGS` (9 entry) 일괄 적용. sfid prefix 기반이 아니라
+     * `NATURAL_KEY_FK_MAPPINGS` (8 entry) 일괄 적용. sfid prefix 기반이 아니라
      * developer_name / name / 외부 sfid 컬럼 기반 join 으로 id 채움.
      *
      * 운영 cut-over 시점에 fk substep 직후 1회 호출.

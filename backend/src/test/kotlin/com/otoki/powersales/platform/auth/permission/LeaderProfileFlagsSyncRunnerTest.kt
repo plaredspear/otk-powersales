@@ -18,7 +18,12 @@ import org.springframework.transaction.support.TransactionCallback
 import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.databind.ObjectMapper
 
-@DisplayName("LeaderProfileFlagsSyncRunner 테스트")
+/**
+ * NOTE: LeaderProfileFlagsSyncRunner 는 현재 `@Component` 미부착으로 부팅 시 실행되지 않는다
+ * (SF 데이터 마이그레이션 SF값 완전 우선 결정 — 클래스 KDoc 참조). 본 테스트는 되살릴 경우를 대비해
+ * run() 로직 자체의 회귀를 계속 보장한다 (직접 인스턴스화 — 스캔 애노테이션 무관).
+ */
+@DisplayName("LeaderProfileFlagsSyncRunner 테스트 (현재 빈 미등록 — 로직 회귀 보존용)")
 class LeaderProfileFlagsSyncRunnerTest {
 
     private val profileRepository: ProfileRepository = mockk()

@@ -9,35 +9,35 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.cache.CacheManager
-import org.springframework.context.annotation.Profile
-import org.springframework.stereotype.Component
 import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.databind.ObjectMapper
 
 /**
- * 조장 계열 Profile 의 ProfileFlags 초기값 부팅 sync.
+ * 조장 계열 Profile 의 ProfileFlags 초기값 부팅 sync — **현재 비활성화 (`@Component` 미부착)**.
  *
- * [LeaderProfileFlagsSeed] 의 declarative SoT 를 부팅 시 DB 에 반영한다 —
- * dev 에서 확정한 조장 권한을 모든 환경(dev / prod)에 재현. CLAUDE.md §4 reference data 정책
- * (Flyway INSERT 금지 / SoT + 부팅 sync) 정합. [ProdAdminBootstrapInitializer] 의 부팅 시드 스타일을 따른다.
+ * ## 비활성화 사유 (SF 데이터 마이그레이션 SF값 완전 우선)
+ * 본 Runner 는 부팅 시 조장 계열 Profile("6.조장" / "7.영업사원 + 조장") 의 ProfileFlags row 를
+ * `findByProfileId` 로 찾아 없으면 **새로 create** 했다. 그런데 SF Stage1 은 같은 profile 을
+ * (profile_name=존재, profile_id=NULL) 별도 row 로 적재하고, Runner 는 profile_id 로만 조회하므로
+ * Stage1 row 를 못 찾아 (profile_name=NULL, profile_id=존재) row 를 별도 생성했다. profile_flags 는
+ * profile_name / profile_id 각각 UNIQUE 라 두 row 가 공존 → Stage2 FK Resolve 가 Stage1 row 의
+ * profile_id 를 채우려는 순간 `profile_flags_profile_id_key` UNIQUE 위반 (운영 관측: profile_id=25 already exists).
  *
- * ## 적용 규칙 (초기값-only)
- * 대상 Profile 의 ProfileFlags row 가 **없거나 `is_locally_modified=FALSE` 일 때만** SoT 값으로 upsert.
- * web admin 편집분(`is_locally_modified=TRUE`)은 skip 하여 운영 편집 자율성 + SF 재적재 dirty-skip 정책과 정합.
- * upsert 로 넣은 row 는 `is_locally_modified=FALSE` 를 유지 → 이후 web admin 편집 시 보호 대상으로 전환.
+ * 결정: **SF 추출값을 조장 profile 에도 완전 우선** — Runner 를 비활성화해 부팅 시 profile_flags 를
+ * create/update 하지 않는다. profile_flags row 는 Stage1 SF row 하나만 남고, Stage2 FK Resolve 의
+ * 단순 UPDATE(NATURAL_KEY_FK_MAPPINGS 의 profile_flags 매핑)로 profile_id 만 채워진다.
+ * 조장 권한은 SF 원본 object_permissions 를 그대로 사용한다.
  *
- * ## 순서 의존
- * profile.name 자연 키로 lookup 하므로 profile row 가 먼저 존재해야 한다. dev/prod 는 SF Stage1 Profile
- * 적재 (12종) 후 존재, local 은 LocalDataInitializer.seedProfiles 가 보장. profile 부재 시 해당 seed 만 skip
- * (부팅 순서상 아직 미적재일 수 있어 warn 만 남기고 다음 부팅 또는 마이그레이션 후 재기동 시 반영).
+ * ## 되살릴 때
+ * 조장 권한을 다시 코드 SoT 로 관리해야 하면 `@Component` + `@Profile("dev | prod")` 재부착 + 반드시
+ * SF 마이그레이션(Stage2 FK Resolve) 이후에만 실행되도록 순서를 보장하고(그때 profile_id 가 채워져 있어
+ * create 분기가 타지 않음), create 분기를 제거해 "존재 시 update, 없으면 skip" 으로 바꿔야 UNIQUE 충돌이
+ * 재발하지 않는다. [LeaderProfileFlagsSeed] 의 SoT 정의는 그대로 보존한다.
  *
- * ## JSON 정규화
+ * ## JSON 정규화 (참고 — 되살릴 때 유효)
  * SoT 원문(가독성 위해 공백 포함)을 파싱 후 compact 재직렬화하여 저장 — DB objectPermissions 형식
- * (AdminProfileFlagsMutationService 저장분)과 정합. dev/local 은 dev(dev|prod)에서만 실행하지 않고
- * SF 마이그레이션 대상 환경 전반에 필요하므로 `dev | prod` 프로파일.
+ * (AdminProfileFlagsMutationService 저장분)과 정합.
  */
-@Component
-@Profile("dev | prod")
 class LeaderProfileFlagsSyncRunner(
     private val profileRepository: ProfileRepository,
     private val profileFlagsRepository: ProfileFlagsRepository,

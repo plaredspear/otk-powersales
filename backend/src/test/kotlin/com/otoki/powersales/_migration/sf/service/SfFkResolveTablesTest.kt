@@ -266,6 +266,8 @@ class SfFkResolveTablesTest {
         @Test
         @DisplayName("profile_flags.profile_name → profile.name → profile_id")
         fun profileFlagsByName() {
+            // LeaderProfileFlagsSyncRunner 비활성화 후 profile_flags row 는 Stage1 SF row 하나뿐이라
+            // 단순 UPDATE 매핑으로 안전하게 profile_id 채움 (SF 추출값 완전 우선).
             val spec = NATURAL_KEY_FK_MAPPINGS.find {
                 it.sourceTable == "profile_flags" && it.sourceColumn == "profile_name"
             }
