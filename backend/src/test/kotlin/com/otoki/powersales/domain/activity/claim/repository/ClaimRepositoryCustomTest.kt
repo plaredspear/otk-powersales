@@ -2,9 +2,11 @@ package com.otoki.powersales.domain.activity.claim.repository
 
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.common.config.QueryDslConfig
 import org.assertj.core.api.Assertions.assertThat
+import org.hibernate.Hibernate
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -41,9 +43,13 @@ class ClaimRepositoryCustomTest {
     private fun persistAccount(name: String): Account =
         em.persistAndFlush(Account(name = name))
 
+    private fun persistProduct(code: String, name: String): Product =
+        em.persistAndFlush(Product(productCode = code, name = name))
+
     private fun persistClaim(
         employee: Employee? = null,
         account: Account? = null,
+        product: Product? = null,
         costCenterCode: String? = null,
         date: LocalDate,
         createdAt: LocalDateTime = LocalDateTime.of(2026, 6, 1, 0, 0),
@@ -51,6 +57,7 @@ class ClaimRepositoryCustomTest {
         val claim = Claim(
             employee = employee,
             account = account,
+            product = product,
             costCenterCode = costCenterCode,
             date = date,
         )
@@ -181,6 +188,47 @@ class ClaimRepositoryCustomTest {
 
             assertThat(result).hasSize(1)
             assertThat(result[0].account?.id).isEqualTo(a1.id)
+        }
+    }
+
+    @Nested
+    @DisplayName("findByIdWithSfRefs — SF 송신 snapshot 복원")
+    inner class FindByIdWithSfRefs {
+
+        /**
+         * SF 송신([ClaimSfDispatchService.dispatch]) 은 `@Async` + AFTER_COMMIT 로 claim 을 재로드해
+         * employee/account/product 를 읽는다. 이 연관은 `@ManyToOne(LAZY)` 라 enhancement 환경에서
+         * 미초기화 프록시로 노출돼 `claim.employee?.employeeCode` 가 null 로 평가되는 회귀가 있었다
+         * (claimId=159077 등록 SF 송신 실패). fetch join 이 세 연관을 초기화된 채 반환함을 가드한다.
+         */
+        @Test
+        @DisplayName("employee/account/product 를 초기화된 상태로 반환한다")
+        fun eagerlyLoadsSfRefs() {
+            val emp = persistEmployee("EMP-SF", "송신사원")
+            val acc = persistAccount("송신거래처")
+            val prod = persistProduct("P-SF", "송신제품")
+            val claim = persistClaim(
+                employee = emp, account = acc, product = prod,
+                date = LocalDate.of(2026, 6, 10),
+            )
+            // 영속성 컨텍스트를 비워 재로드 시 프록시 미초기화 조건을 재현.
+            em.clear()
+
+            val loaded = claimRepository.findByIdWithSfRefs(claim.id)
+
+            assertThat(loaded).isNotNull
+            assertThat(Hibernate.isInitialized(loaded!!.employee)).isTrue()
+            assertThat(Hibernate.isInitialized(loaded.account)).isTrue()
+            assertThat(Hibernate.isInitialized(loaded.product)).isTrue()
+            assertThat(loaded.employee?.employeeCode).isEqualTo("EMP-SF")
+            assertThat(loaded.account?.id).isEqualTo(acc.id)
+            assertThat(loaded.product?.productCode).isEqualTo("P-SF")
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 id 는 null 을 반환한다")
+        fun returnsNullWhenMissing() {
+            assertThat(claimRepository.findByIdWithSfRefs(999999L)).isNull()
         }
     }
 }

@@ -48,7 +48,9 @@ class ClaimSfDispatchService(
     ): DispatchResult? {
         // 1. 트랜잭션 안에서 claim + 이미지 좌표 복원 (snapshot).
         val snapshot = txTemplate.execute {
-            val claim = claimRepository.findByIdOrNull(claimId)
+            // employee/account/product 를 fetch join 으로 즉시 로드 — @ManyToOne(LAZY) 프록시가
+            // enhancement 환경에서 미초기화되어 null 로 평가되는 문제 회피 (findByIdWithSfRefs KDoc 참조).
+            val claim = claimRepository.findByIdWithSfRefs(claimId)
                 ?: throw ClaimNotFoundException(claimId)
             if (claim.status !in allowedStatuses) {
                 onStatusMismatch(claim.status)
