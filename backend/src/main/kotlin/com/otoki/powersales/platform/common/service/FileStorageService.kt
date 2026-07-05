@@ -54,33 +54,48 @@ class FileStorageService(
 	}
 
 	/**
-	 * 교육 자료 파일 업로드. 신규 객체는 S3 키 형식(`uploads/education/<yyyy>/<mm>/<dd>/<uuid>.<ext>`)으로 저장된다.
+	 * 교육 자료 파일 업로드. 실제 S3 key = `private/education/<fileKey>` 에 저장되며, 반환값(= DB `file_key`)은
+	 * segment 없는 `<fileKey>` 원본이다. 레거시 마이그레이션분과 동일한 평면 file_key 규칙을 유지한다:
+	 * `{13자리 epoch밀리초}{8자리 random}.{ext}` (최대 25자, `file_key` 컬럼 length=30 이내).
+	 * (레거시는 public S3 URL 이었으나 권한 통제 정합 위해 다른 도메인과 동일하게 private 전환.)
 	 */
 	fun uploadEducationFile(file: MultipartFile, eduId: String): String {
 		validateNotEmpty(file)
-		val result = storageService.upload(
-			domain = "education",
-			originalName = file.originalFilename ?: "unknown",
+		val fileKey = newEducationFileKey(file.originalFilename ?: "unknown")
+		val result = storageService.uploadPrivateWithKey(
+			uniqueKey = educationUniqueKey(fileKey),
 			bytes = file.bytes,
 			contentType = file.contentType ?: throw InvalidFileException("파일 타입을 확인할 수 없습니다")
 		)
-		return result.key
+		// uploadPrivateWithKey 반환 key 는 넘긴 uniqueKey("education/<fileKey>") 이므로 segment 를 벗겨 file_key 로 저장.
+		return result.key.substringAfterLast('/')
 	}
 
 	/**
-	 * 교육 자료 파일 조회용 presigned URL. 교육 파일은 public 경로(`upload`)에 저장되나 버킷이 anonymous read
-	 * 를 허용하지 않으므로 presign 해 내려준다. 레거시 UUID 형식 key 는 신규 S3 객체가 아니므로 그대로 둔다.
+	 * 교육 자료 파일 조회용 presigned URL. 교육 첨부는 `private/education/<fileKey>` 에 저장되며(private 세그먼트는
+	 * StorageService 가 합성), DB `file_key` 는 segment 없는 원본값(레거시 `161733...jpg`)을 그대로 보관한다.
+	 * 여기서 `education/` 도메인 prefix 만 붙여 uniqueKey 를 만들면 실제 S3 key = `private/education/<fileKey>` 가 된다.
 	 */
 	fun getEducationFileUrl(fileKey: String): String =
-		storageService.getUrl(fileKey, StorageConstants.EDUCATION_PRESIGN_TTL_SECONDS)
+		storageService.getPresignedUrl(educationUniqueKey(fileKey), StorageConstants.EDUCATION_PRESIGN_TTL_SECONDS)
+
+	/** DB 보관 `file_key`(segment 없음) → private 도메인 uniqueKey. 실제 S3 key = `private/` + 반환값. */
+	private fun educationUniqueKey(fileKey: String): String = "education/$fileKey"
+
+	/** 신규 교육 첨부 file_key 생성. 레거시 형식과 호환되는 평면 timestamp 기반, 컬럼 length=30 이내. */
+	private fun newEducationFileKey(originalName: String): String {
+		val ext = originalName.substringAfterLast('.', "").lowercase()
+		val rand = "%08d".format(kotlin.random.Random.nextInt(0, 100_000_000))
+		val base = "${System.currentTimeMillis()}$rand"
+		return if (ext.isNotBlank()) "$base.$ext" else base
+	}
 
 	/**
-	 * 교육 자료 파일 삭제. fileKey 가 신규 S3 키이면 그대로 삭제, 레거시 UUID 형식이면 no-op (범위 외).
+	 * 교육 자료 파일 삭제. DB `file_key`(segment 없음)를 받아 `private/education/<fileKey>` 객체를 삭제한다.
+	 * deletePrivate 는 NoSuchKey 를 idempotent 로 무시하므로 레거시/신규 구분 없이 안전하다.
 	 */
 	fun deleteEducationFile(eduId: String, fileKey: String) {
-		if (fileKey.startsWith("uploads/")) {
-			storageService.delete(fileKey)
-		}
+		storageService.deletePrivate(educationUniqueKey(fileKey))
 	}
 
 	/**

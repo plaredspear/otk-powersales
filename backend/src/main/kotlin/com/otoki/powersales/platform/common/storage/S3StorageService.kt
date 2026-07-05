@@ -56,6 +56,16 @@ class S3StorageService(
 		)
 	}
 
+	override fun uploadPrivateWithKey(uniqueKey: String, bytes: ByteArray, contentType: String): UploadResult {
+		putObject(StorageConstants.privateKey(uniqueKey), bytes, contentType)
+		return UploadResult(
+			key = uniqueKey,
+			contentType = contentType,
+			originalName = uniqueKey.substringAfterLast('/'),
+			sizeBytes = bytes.size.toLong()
+		)
+	}
+
 	override fun uploadLargePrivate(domain: String, originalName: String, bytes: ByteArray, contentType: String): UploadResult {
 		val uniqueKey = buildKey(domain, originalName)
 		putLargeObject(StorageConstants.privateKey(uniqueKey), bytes, contentType)

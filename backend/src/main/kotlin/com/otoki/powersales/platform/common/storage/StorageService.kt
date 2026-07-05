@@ -19,6 +19,13 @@ interface StorageService {
 	fun uploadPrivate(domain: String, originalName: String, bytes: ByteArray, contentType: String): UploadResult
 
 	/**
+	 * private/ 하위로 업로드하되 uniqueKey 를 호출자가 직접 지정한다. 실제 S3 key = "private/" + uniqueKey.
+	 * 교육 첨부처럼 DB 컬럼 길이 제약(예: file_key length=30)으로 buildKey 의 `uploads/<domain>/<날짜>/<uuid>`
+	 * 형식을 쓸 수 없고 짧은 key 규칙을 도메인이 소유해야 하는 경우에 사용한다.
+	 */
+	fun uploadPrivateWithKey(uniqueKey: String, bytes: ByteArray, contentType: String): UploadResult
+
+	/**
 	 * private/ 하위로 대용량 바이너리(앱 패키지 APK/IPA) 업로드. uploadPrivate 와 달리 contentType 화이트리스트를
 	 * 적용하지 않고 크기 상한도 [StorageConstants.APP_PACKAGE_MAX_BYTES] 로 별도 적용한다. 반환 key 는 segment 없는 uniqueKey.
 	 */
