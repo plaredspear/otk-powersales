@@ -441,7 +441,8 @@ app:
     # 연기예약 처리 배치 (매일 00:00).
     postponed-appointment:
       enabled: true
-    # 유통기한 만료 FCM 알림 배치 (매일 00:00, alarm_date=당일 담당 여사원). 실제 발송은 app.push.fcm.enabled + credential 필요.
+    # 유통기한 만료 FCM 알림 배치 (매일 09:00 KST, alarm_date=당일 담당 여사원). 레거시 Heroku UTC 0 0 0 = KST 09:00 정합.
+    # 실제 발송은 app.push.fcm.enabled + credential 필요.
     product-expiration-alert:
       enabled: true
   # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
@@ -510,7 +511,8 @@ app:
     # 연기예약 처리 배치 (매일 00:00).
     postponed-appointment:
       enabled: true
-    # 유통기한 만료 FCM 알림 배치 (매일 00:00, alarm_date=당일 담당 여사원). 실제 발송은 app.push.fcm.enabled + credential 필요.
+    # 유통기한 만료 FCM 알림 배치 (매일 09:00 KST, alarm_date=당일 담당 여사원). 레거시 Heroku UTC 0 0 0 = KST 09:00 정합.
+    # 실제 발송은 app.push.fcm.enabled + credential 필요.
     product-expiration-alert:
       enabled: true
   # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
