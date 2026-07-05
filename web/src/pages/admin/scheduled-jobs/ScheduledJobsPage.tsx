@@ -781,41 +781,53 @@ export default function ScheduledJobsPage() {
     ...jobNames.map((name) => {
       // catalog 미로딩 중에는 활성으로 간주(undefined !== false), 로딩 후 false 면 비활성 표기.
       const isDisabled = enabledByJob[name] === false;
+      // 탭 활성화 아이콘(초록 점)은 런타임 처리 토글(runtimeEnabled)까지 반영해 토글 패널과 동기화한다.
+      // 정적 비활성(빈 미등록)이거나 런타임 토글 OFF 면 회색(비활성)으로 표시.
+      const runtimeOff = runtimeEnabledByJob[name] === false;
+      const isTabInactive = isDisabled || runtimeOff;
+      // 라벨 접미 문구는 사유를 구분: 정적 비활성 우선, 그다음 런타임 토글 OFF.
+      const inactiveSuffix = isDisabled ? '(비활성)' : runtimeOff ? '(처리 중지)' : null;
       return {
         key: name,
         label: (
           <span
-            title={isDisabled ? `${name} (비활성)` : name}
+            title={
+              isDisabled
+                ? `${name} (비활성)`
+                : runtimeOff
+                  ? `${name} (런타임 처리 중지)`
+                  : name
+            }
             style={{
               display: 'inline-flex',
               alignItems: 'flex-start',
               gap: 6,
               lineHeight: 1.3,
-              color: isDisabled ? '#bfbfbf' : undefined,
+              color: isTabInactive ? '#bfbfbf' : undefined,
             }}
           >
             <span
-              aria-label={isDisabled ? '비활성' : '활성'}
+              aria-label={isTabInactive ? '비활성' : '활성'}
               style={{
                 flex: '0 0 auto',
                 width: 8,
                 height: 8,
                 marginTop: 5,
                 borderRadius: '50%',
-                backgroundColor: isDisabled ? '#d9d9d9' : '#52c41a',
+                backgroundColor: isTabInactive ? '#d9d9d9' : '#52c41a',
               }}
             />
             <span style={{ display: 'inline-block' }}>
               {jobLabel(name)}
-              {isDisabled && (
-                <span style={{ fontSize: 11, marginLeft: 4 }}>(비활성)</span>
+              {inactiveSuffix && (
+                <span style={{ fontSize: 11, marginLeft: 4 }}>{inactiveSuffix}</span>
               )}
               {JOB_SCHEDULES[name] && (
                 <span
                   style={{
                     display: 'block',
                     fontSize: 11,
-                    color: isDisabled ? '#cfcfcf' : '#999',
+                    color: isTabInactive ? '#cfcfcf' : '#999',
                   }}
                 >
                   {JOB_SCHEDULES[name]}
