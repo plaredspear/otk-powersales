@@ -24,7 +24,7 @@ import org.springframework.transaction.support.TransactionTemplate
  * 운영 시스템 관리자 / 일반 사용자를 등록한다.
  *
  * local 전용 [LocalDataInitializer] 와의 차이:
- * - prod 에서는 sysadmin@otoki.local (ADMIN-99999999) **단 1개만** 생성 (테스트 사번 99990001~5 미생성).
+ * - prod 에서는 시스템 관리자 부트스트랩 계정 2개 (ADMIN-99999999, ADMIN-99990001) 만 생성 (테스트 사번 99990001~5 미생성).
  * - 초기 비밀번호 `pwrs1234!` 는 동일하나 `passwordChangeRequired = true` — 최초 로그인 시 변경 강제.
  *
  * [LocalDataInitializer.seedSystemAdmin] 의 ADMIN- 시스템 관리자 정책을 그대로 따른다:
@@ -53,16 +53,23 @@ class ProdAdminBootstrapInitializer(
 
     private val log = LoggerFactory.getLogger(javaClass)
 
+    private data class SeedSystemAdmin(
+        val employeeCode: String,
+        val name: String,
+        val orgName: String,
+        val workEmail: String,
+    )
+
     private companion object {
-        const val ADMIN_EMPLOYEE_CODE = "ADMIN-99999999"
-        const val ADMIN_NAME = "시스템개발자"
-        const val ADMIN_ORG_NAME = "시스템개발자조직"
-        const val ADMIN_WORK_EMAIL = "sysadmin@otoki.local"
+        val SEEDS = listOf(
+            SeedSystemAdmin("ADMIN-99999999", "시스템개발자", "시스템개발자조직", "sysadmin@otoki.local"),
+            SeedSystemAdmin("ADMIN-99990001", "시스템개발자2", "시스템개발자조직", "sysadmin2@otoki.local"),
+        )
     }
 
     override fun run(args: ApplicationArguments) {
         try {
-            transactionTemplate.executeWithoutResult { seedProdSystemAdmin() }
+            transactionTemplate.executeWithoutResult { seedProdSystemAdmins() }
         } catch (e: Exception) {
             log.warn("prod 시스템 관리자 부트스트랩 시드 실행 실패 (기존 데이터 충돌 가능): {}", e.message)
         }
@@ -75,56 +82,58 @@ class ProdAdminBootstrapInitializer(
         return count.toLong() > 0
     }
 
-    private fun seedProdSystemAdmin() {
-        if (employeeRepository.existsByEmployeeCode(ADMIN_EMPLOYEE_CODE)) {
-            log.info("prod 시스템 관리자 계정 이미 존재 — 시드 skip: employeeCode={}", ADMIN_EMPLOYEE_CODE)
-            return
-        }
-
+    private fun seedProdSystemAdmins() {
         val encodedPassword = passwordEncoder.encode("pwrs1234!")!!
         val sysadminProfileId = profileRepository.findByName(SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME)?.id
 
-        val infoExists = employeeInfoExists(ADMIN_EMPLOYEE_CODE)
-        val employee = Employee(
-            employeeCode = ADMIN_EMPLOYEE_CODE,
-            name = ADMIN_NAME,
-            orgName = ADMIN_ORG_NAME,
-            password = encodedPassword,
-            passwordChangeRequired = true,
-        ).apply {
-            role = null
-            origin = EmployeeOrigin.MANUAL
-            appLoginActive = false
-            workEmail = ADMIN_WORK_EMAIL
-        }
-        if (infoExists) {
-            employee.employeeInfo = null
-        }
-        employeeRepository.save(employee)
-
-        userProvisioningService.provisionForSeed(
-            employeeCode = ADMIN_EMPLOYEE_CODE,
-            name = ADMIN_NAME,
-            workEmail = ADMIN_WORK_EMAIL,
-            email = null,
-            birthDate = null,
-            role = null,
-            appLoginActive = false,
-            encodedPassword = encodedPassword,
-            passwordChangeRequired = true,
-        )
-        // 시스템 관리자 Profile 강제 set — provisionForSeed 가 role=null → 5.영업사원 fallback 하기 때문에 후처리 필요.
-        // isActive 강제 set — provision 이 웹 게이트(isActive)를 모바일 게이트(appLoginActive=false)로 흘려보내
-        // 웹 관리자 로그인마저 막히므로, 웹 전용 계정인 시스템 관리자는 웹 로그인을 열어준다 (모바일은 appLoginActive=false 유지).
-        val user = userRepository.findByEmployeeCode(ADMIN_EMPLOYEE_CODE)
-        if (user != null) {
-            if (sysadminProfileId != null) {
-                user.profileId = sysadminProfileId
+        for (seed in SEEDS) {
+            if (employeeRepository.existsByEmployeeCode(seed.employeeCode)) {
+                log.info("prod 시스템 관리자 계정 이미 존재 — 시드 skip: employeeCode={}", seed.employeeCode)
+                continue
             }
-            user.isActive = true
-            userRepository.save(user)
-        }
 
-        log.info("prod 시스템 관리자 부트스트랩 계정 생성 완료: employeeCode={}", ADMIN_EMPLOYEE_CODE)
+            val infoExists = employeeInfoExists(seed.employeeCode)
+            val employee = Employee(
+                employeeCode = seed.employeeCode,
+                name = seed.name,
+                orgName = seed.orgName,
+                password = encodedPassword,
+                passwordChangeRequired = true,
+            ).apply {
+                role = null
+                origin = EmployeeOrigin.MANUAL
+                appLoginActive = false
+                workEmail = seed.workEmail
+            }
+            if (infoExists) {
+                employee.employeeInfo = null
+            }
+            employeeRepository.save(employee)
+
+            userProvisioningService.provisionForSeed(
+                employeeCode = seed.employeeCode,
+                name = seed.name,
+                workEmail = seed.workEmail,
+                email = null,
+                birthDate = null,
+                role = null,
+                appLoginActive = false,
+                encodedPassword = encodedPassword,
+                passwordChangeRequired = true,
+            )
+            // 시스템 관리자 Profile 강제 set — provisionForSeed 가 role=null → 5.영업사원 fallback 하기 때문에 후처리 필요.
+            // isActive 강제 set — provision 이 웹 게이트(isActive)를 모바일 게이트(appLoginActive=false)로 흘려보내
+            // 웹 관리자 로그인마저 막히므로, 웹 전용 계정인 시스템 관리자는 웹 로그인을 열어준다 (모바일은 appLoginActive=false 유지).
+            val user = userRepository.findByEmployeeCode(seed.employeeCode)
+            if (user != null) {
+                if (sysadminProfileId != null) {
+                    user.profileId = sysadminProfileId
+                }
+                user.isActive = true
+                userRepository.save(user)
+            }
+
+            log.info("prod 시스템 관리자 부트스트랩 계정 생성 완료: employeeCode={}", seed.employeeCode)
+        }
     }
 }
