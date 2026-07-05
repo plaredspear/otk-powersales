@@ -115,6 +115,23 @@ object HerokuStage1Targets {
      */
     val HEROKU_PK_RESOLVE_TARGETS: Set<String> = setOf("EmployeeInfo")
 
+    /**
+     * 마이그레이션 적재에서 제외할 (targetName, dbColumn) 집합 — `@HCColumn` 부착 필드라도 skip.
+     *
+     * `@HCColumn` 은 런타임 HC sync 매핑용 SoT 라 지우지 않고(엔티티 정의는 마이그레이션 전용이 아님),
+     * 마이그레이션 관심사인 "제외" 는 여기 마이그레이션 코드에 둔다. 제외 컬럼은 CSV 에 있어도
+     * 신규 테이블로 적재하지 않고 NULL 로 남는다.
+     *
+     * - EmployeeInfo.fcm_token: FCM 디바이스 토큰(PII/보안). 레거시 시점 값은 이전하지 않고,
+     *   신규 앱 로그인/토큰 리프레시 때 재등록되게 한다. 만료·재발급 특성상 이전 실익도 없다.
+     * - EmployeeInfo.device_uuid: 기기 UUID(PII/보안). 레거시 값은 이전하지 않고, 신규 앱 로그인 시
+     *   재등록되게 한다.
+     */
+    private val EXCLUDED_COLUMNS: Set<Pair<String, String>> = setOf(
+        "EmployeeInfo" to "fcm_token",
+        "EmployeeInfo" to "device_uuid",
+    )
+
     private val ALL: Map<String, HerokuEntityMeta> =
         TARGET_CLASSES.associate { kClass ->
             val meta = buildMeta(kClass)
@@ -139,7 +156,7 @@ object HerokuStage1Targets {
         val table = kClass.findAnnotation<Table>()
             ?: error("$targetName is missing @Table")
 
-        val columns = collectColumnMappings(kClass)
+        val columns = collectColumnMappings(kClass, targetName)
         require(columns.isNotEmpty()) { "$targetName has no @HCColumn-mapped column" }
 
         return HerokuEntityMeta(
@@ -158,8 +175,11 @@ object HerokuStage1Targets {
      *
      * BaseEntity 상속 엔티티는 부모의 createdAt/updatedAt (`@HCColumn("createddate")` /
      * `@HCColumn("lastmodifieddate")`) 도 포함된다.
+     *
+     * [EXCLUDED_COLUMNS] 에 등록된 (targetName, dbColumn) 는 `@HCColumn` 이 있어도 매핑에서 제외한다
+     * (예: EmployeeInfo.fcm_token — PII/보안 미이전).
      */
-    private fun collectColumnMappings(kClass: KClass<*>): List<HerokuColumnMapping> {
+    private fun collectColumnMappings(kClass: KClass<*>, targetName: String): List<HerokuColumnMapping> {
         val seen = LinkedHashSet<String>() // dbColumn 중복 방지 (insertion order 유지)
         val result = mutableListOf<HerokuColumnMapping>()
 
@@ -170,6 +190,7 @@ object HerokuStage1Targets {
                 val hc = field.getAnnotation(HCColumn::class.java) ?: continue
                 val column = field.getAnnotation(Column::class.java) ?: continue
                 val dbColumn = column.name.ifBlank { field.name }
+                if (targetName to dbColumn in EXCLUDED_COLUMNS) continue // 마이그레이션 제외 컬럼 skip
                 if (!seen.add(dbColumn)) continue
                 result.add(HerokuColumnMapping(herokuColumn = hc.value, dbColumn = dbColumn))
             }

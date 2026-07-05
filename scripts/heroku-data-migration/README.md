@@ -49,7 +49,7 @@ Stage 2-C (SF 마이그레이션 web 화면 /admin/tools/sf-migration-2 의 FK R
 | 3 | TEXT 개행/콤마 | tmp_claim.description / education_mng.content → RFC4180 quoting |
 | 4 | timestamp 타임존 | Heroku inst_date UTC 여부 확인 → 신규 created_at KST 변환 정책 |
 | 5 | boolean 표현 | isdeleted / gps_yn 등 `t/f` vs `true/false` → COPY 시 자동 cast |
-| 6 | PII / 비밀번호 | employee_mng = 사번/emp_pwd/디바이스 UUID/FCM 토큰. **S3 업로드 후 cut-over 완료 시 객체 삭제**. emp_pwd 형식(BCrypt `$2a$` prefix) 확인 |
+| 6 | PII / 비밀번호 | employee_mng = 사번/emp_pwd/디바이스 UUID/FCM 토큰. **S3 업로드 후 cut-over 완료 시 객체 삭제**. emp_pwd 형식(BCrypt `$2a$` prefix) 확인. **emp_token(FCM 토큰) / emp_uuid(기기 UUID)는 적재 파서가 매핑 제외라 CSV 에 있어도 fcm_token/device_uuid 로 적재되지 않음**(신규 앱 로그인 시 재등록) — export 시 컬럼 유지/제거 무관 |
 | 7 | 부모키 포함 | 패턴 B 자식(education_file_mng / education_member_history) export 시 부모 식별 키(`edu_id`) 누락 금지 |
 | 8 | sfid 컬럼 검증 | 패턴 C 의 employeeid__c / masterId / eventmasterid 가 18자 sfid 인지 확인 |
 | 9 | S3 업로드 | export CSV 를 `s3://<bucket>/heroku-migration/input/<table>.csv` 로 업로드. bucket = 운영 `S3_BUCKET` 환경 속성 |

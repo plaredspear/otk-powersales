@@ -124,6 +124,16 @@ class HerokuStage1TargetsTest {
         }
 
         @Test
+        @DisplayName("EmployeeInfo fcm_token(emp_token) / device_uuid(emp_uuid) 는 마이그레이션 제외 — @HCColumn 이 있어도 매핑 없음 (PII/보안)")
+        fun employeeInfoPiiExcluded() {
+            val ei = HerokuStage1Targets.get("EmployeeInfo")!!
+            assertThat(ei.columns.map { it.dbColumn }).doesNotContain("fcm_token", "device_uuid")
+            assertThat(ei.columns.map { it.herokuColumn }).doesNotContain("emp_token", "emp_uuid")
+            // 다른 EmployeeInfo 매핑은 정상 유지 (제외가 PII 컬럼에만 적용)
+            assertThat(ei.columns.map { it.dbColumn }).contains("password", "employee_code")
+        }
+
+        @Test
         @DisplayName("EducationViewHistory costcentercode__c → cost_center_code 매핑 (선행 작업 정합)")
         fun educationViewHistoryCostCenterCode() {
             val evh = HerokuStage1Targets.get("EducationViewHistory")!!
