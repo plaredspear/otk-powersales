@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/theme/app_spacing.dart';
 import 'package:mobile/core/theme/app_typography.dart';
@@ -158,6 +159,12 @@ class _NoticeDetailPageState extends ConsumerState<NoticeDetailPage> {
               color: AppColors.textPrimary,
               height: 1.6,
             ),
+            // 본문 링크(<a href>) 탭 시 외부 브라우저로 연다. 색상/정렬 등 인라인 style 은 기본 렌더.
+            onTapUrl: (url) async {
+              final uri = Uri.tryParse(url);
+              if (uri == null) return false;
+              return launchUrl(uri, mode: LaunchMode.externalApplication);
+            },
             customWidgetBuilder: (element) {
               if (element.localName != 'img') return null;
               final src = element.attributes['src'];

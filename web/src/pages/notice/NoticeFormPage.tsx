@@ -17,6 +17,11 @@ import MobileNoticePreview from './MobileNoticePreview';
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20MB
 
+// 정렬(align)은 Quill 기본이 class 기반(ql-align-*)이라 CSS 가 없는 환경(모바일 HtmlWidget)에서 렌더되지 않는다.
+// 인라인 style(text-align) 로 출력하도록 style attributor 를 등록해 웹/모바일 렌더를 일치시킨다.
+// (color/background 는 기본이 이미 인라인 style 이라 별도 등록 불요.)
+Quill.register('formats/align', Quill.import('attributors/style/align'), true);
+
 interface FormValues {
   title: string;
   scope: string;
@@ -254,10 +259,15 @@ export default function NoticeFormPage() {
     () => ({
       toolbar: {
         container: [
-          ['bold', 'italic', 'underline'],
-          [{ header: 1 }, { header: 2 }],
+          [{ header: [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          // 폰트 색 / 배경색 — Quill 기본이 인라인 style(color/background-color) 로 출력되어
+          // 웹 상세(DOMPurify) 와 모바일 HtmlWidget 양쪽에서 렌더된다.
+          [{ color: [] }, { background: [] }],
           [{ list: 'ordered' }, { list: 'bullet' }],
+          [{ align: [] }],
           ['link', 'image'],
+          ['clean'],
         ],
         handlers: { image: imageHandler },
       },
