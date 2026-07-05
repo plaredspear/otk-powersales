@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/session/session_reset_controller.dart';
 import 'package:mobile/data/datasources/auth_interceptor.dart';
@@ -217,6 +216,29 @@ void main() {
     });
   });
 
+  group('_handle401 refresh token 회전 저장', () {
+    test('갱신 성공 시 회전된 access/refresh 를 모두 저장하고 원요청을 재시도한다', () async {
+      final adapter = _Refresh200ThenRetryOkAdapter();
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource()
+        ..accessToken = 'oldAccess'
+        ..refreshToken = 'oldRefresh';
+      d.interceptors.add(AuthInterceptor(localDataSource: localDS, dio: d));
+      d.httpClientAdapter = adapter;
+
+      final response = await d.get('/api/v1/mobile/education/posts');
+
+      // 원요청이 갱신 후 재시도되어 200 으로 성공해야 한다.
+      expect(response.statusCode, 200);
+      expect(adapter.refreshCount, 1);
+      expect(adapter.protectedCount, 2);
+      // 회전된 새 토큰 페어가 둘 다 저장되어야 한다. refresh 를 저장하지 않으면
+      // 다음 refresh 에서 옛 token 을 보내 서버 재사용 탐지(family revoke)로 로그아웃된다.
+      expect(localDS.accessToken, 'rotatedAccess');
+      expect(localDS.refreshToken, 'rotatedRefresh');
+    });
+  });
+
   group('로그인 이력 없음 (신규 설치)', () {
     test('refresh token 이 없으면 401 을 세션 만료로 처리하지 않고 그대로 전파한다', () async {
       // 첫 설치 후 로그인 전: access/refresh token 이 모두 없다.
@@ -408,8 +430,10 @@ class _Mock401ExceptRefreshAdapter implements HttpClientAdapter {
   ) async {
     if (options.path.contains('/auth/refresh')) {
       refreshCount++;
+      // 서버 회전 계약: refresh 응답에는 항상 새 access + refresh token 이 포함된다
+      // (TokenResponse.refreshToken 은 non-null).
       return ResponseBody.fromString(
-        '{"success":true,"data":{"accessToken":"newToken"}}',
+        '{"success":true,"data":{"accessToken":"newToken","refreshToken":"newRefresh"}}',
         200,
         headers: {
           'content-type': ['application/json; charset=utf-8'],
@@ -420,6 +444,52 @@ class _Mock401ExceptRefreshAdapter implements HttpClientAdapter {
     return ResponseBody.fromString(
       '{"success":false,"data":null,"error":{"code":"UNAUTHORIZED","message":"인증이 필요합니다"}}',
       401,
+      headers: {
+        'content-type': ['application/json; charset=utf-8'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// 보호 자원 첫 요청은 401, /auth/refresh 는 200(회전된 새 토큰 페어), 재시도는 200.
+/// "정상 갱신 → 회전 토큰 저장 → 원요청 재시도 성공" 흐름을 모사한다.
+class _Refresh200ThenRetryOkAdapter implements HttpClientAdapter {
+  int refreshCount = 0;
+  int protectedCount = 0;
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    if (options.path.contains('/auth/refresh')) {
+      refreshCount++;
+      return ResponseBody.fromString(
+        '{"success":true,"data":{"accessToken":"rotatedAccess","refreshToken":"rotatedRefresh"}}',
+        200,
+        headers: {
+          'content-type': ['application/json; charset=utf-8'],
+        },
+      );
+    }
+    protectedCount++;
+    // 첫 요청은 401(만료), 갱신 후 재시도(2회차)는 200.
+    if (protectedCount == 1) {
+      return ResponseBody.fromString(
+        '{"success":false,"data":null,"error":{"code":"UNAUTHORIZED","message":"인증이 필요합니다"}}',
+        401,
+        headers: {
+          'content-type': ['application/json; charset=utf-8'],
+        },
+      );
+    }
+    return ResponseBody.fromString(
+      '{"success":true,"data":{"ok":true}}',
+      200,
       headers: {
         'content-type': ['application/json; charset=utf-8'],
       },

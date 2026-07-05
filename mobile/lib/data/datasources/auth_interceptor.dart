@@ -188,14 +188,14 @@ class AuthInterceptor extends Interceptor {
 
       final data = response.data['data'] as Map<String, dynamic>;
       final newAccessToken = data['accessToken'] as String;
+      // 서버는 refresh 마다 refresh token 을 회전(이전 token 즉시 폐기 + 재사용 탐지)하며
+      // 응답에 항상 새 refresh token 을 포함한다(TokenResponse.refreshToken 은 non-null).
+      // 회전된 값을 조건부가 아니라 무조건 저장해야 다음 refresh 에서 옛 token 을 보내
+      // family revoke 로 강제 로그아웃되지 않는다. 자동 로그인 경로(AuthTokenModel.fromJson)
+      // 와 동일하게 필수 파싱하여, 계약이 깨지면 조용한 저장 누락 대신 즉시 드러나게 한다.
+      final newRefreshToken = data['refreshToken'] as String;
       await _localDataSource.saveAccessToken(newAccessToken);
-
-      // refresh_token도 갱신되면 저장
-      if (data.containsKey('refreshToken')) {
-        await _localDataSource.saveRefreshToken(
-          data['refreshToken'] as String,
-        );
-      }
+      await _localDataSource.saveRefreshToken(newRefreshToken);
 
       _refreshCompleter!.complete(newAccessToken);
       return newAccessToken;
