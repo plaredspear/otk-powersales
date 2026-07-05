@@ -15,6 +15,7 @@ import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import { useSalesBranches } from '@/hooks/sales/useSalesBranches';
 import MonthlyTrendChart from '@/components/charts/MonthlyTrendChart';
 import MonthlySalesDashboardDetailModal from './MonthlySalesDashboardDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -43,6 +44,8 @@ export default function MonthlySalesDashboardPage() {
   const [year, setYear] = useState<number>(today.getFullYear());
   const [month, setMonth] = useState<number>(today.getMonth() + 1);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  // 매출 계열 화면(monthly_sales_history 게이팅) — 동일 entity 로 가드된 지점 셀렉터 사용.
+  const { data: branches = [] } = useSalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionKeyword, setDistributionKeyword] = useState<string>('');
   const [accountTypeKeyword, setAccountTypeKeyword] = useState<string>('');
@@ -253,6 +256,7 @@ export default function MonthlySalesDashboardPage() {
   return (
     <div style={{ padding: 16 }}>
       <PeriodBranchFilterBar
+        branches={branches}
         year={year}
         month={month}
         selectedCodes={selectedCodes}

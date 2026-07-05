@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.AdminUserDetailResponse
 import com.otoki.powersales.admin.dto.AdminUserListItem
 import com.otoki.powersales.admin.dto.AdminUserListResponse
 import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
+import com.otoki.powersales.admin.dto.AdminUserProfileOption
 import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
 import com.otoki.powersales.admin.exception.AdminUserNotFoundException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
@@ -117,6 +118,27 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
             )
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.content").isEmpty)
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/users/profile-options - 프로파일 필터 옵션 (user READ 가드)")
+    inner class GetProfileOptions {
+
+        @Test
+        @DisplayName("성공 - id/name 옵션 목록 반환")
+        fun getProfileOptions_success() {
+            every { adminUserService.getProfileOptions() } returns listOf(
+                AdminUserProfileOption(id = 5L, name = "5.영업사원"),
+                AdminUserProfileOption(id = 6L, name = "6.조장"),
+            )
+
+            mockMvc.perform(get("/api/v1/admin/users/profile-options"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].id").value(5L))
+                .andExpect(jsonPath("$.data[0].name").value("5.영업사원"))
+                .andExpect(jsonPath("$.data[1].id").value(6L))
         }
     }
 

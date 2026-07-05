@@ -5,6 +5,7 @@ import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.AdminUserDetailResponse
 import com.otoki.powersales.admin.dto.AdminUserListResponse
 import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
+import com.otoki.powersales.admin.dto.AdminUserProfileOption
 import com.otoki.powersales.admin.dto.UpdateUserActiveStatusRequest
 import com.otoki.powersales.admin.service.AdminUserService
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -45,6 +46,19 @@ class AdminUserController(
     ): ResponseEntity<ApiResponse<AdminUserListResponse>> {
         val response = adminUserService.findUsers(keyword, isActive, profileId, page, size)
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 사용자 관리 화면 필터용 프로파일 옵션 목록 — `user` READ 로 가드.
+     *
+     * 프로파일 관리 상세 목록(`/permissions/profiles`, `profile` READ) 을 빌려쓰면 `user` 권한만
+     * 가진 관리자는 필터 로딩에서 403 이 나므로, 화면 게이팅 권한(`user`)과 동일하게 가드한 경량
+     * lookup 으로 분리한다 (id/name 만 반환).
+     */
+    @GetMapping("/profile-options")
+    @RequiresSfPermission(entity = "user", operation = SfPermissionOperation.READ)
+    fun getProfileOptions(): ResponseEntity<ApiResponse<List<AdminUserProfileOption>>> {
+        return ResponseEntity.ok(ApiResponse.success(adminUserService.getProfileOptions()))
     }
 
     @GetMapping("/{userId}")

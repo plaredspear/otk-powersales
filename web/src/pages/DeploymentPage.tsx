@@ -36,7 +36,7 @@ import {
   type SalesComparisonDetailItem,
   type SummaryFilter,
 } from '@/api/salesComparison';
-import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
+import { useSalesBranches } from '@/hooks/sales/useSalesBranches';
 import ResizableTable from '@/components/common/ResizableTable';
 import { listTableLocale } from '@/lib/listTableLocale';
 import './DeploymentPage.css';
@@ -243,7 +243,9 @@ export default function DeploymentPage() {
   const [clickedAccountIds, setClickedAccountIds] = useState<number[]>([]);
   const [clickedAccountForDetail, setClickedAccountForDetail] = useState<number | null>(null);
 
-  const { data: branches = [] } = useDashboardBranches();
+  // 배치 적합성(monthly_sales_history 게이팅) — 무가드 dashboard 지점 대신 동일 entity 로 가드된
+  // 매출 지점 셀렉터 사용 (권한 없이 지점 인벤토리가 노출되던 over-exposure 해소).
+  const { data: branches = [] } = useSalesBranches();
 
   // 접근 가능한 지점이 1개뿐이면 항상 그 지점으로 고정 — 선택 변경 불가.
   const singleBranch = branches.length === 1;

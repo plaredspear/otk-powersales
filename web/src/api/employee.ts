@@ -310,6 +310,26 @@ function detailBasePath(isFemale: boolean): string {
   return isFemale ? '/api/v1/admin/female-employees' : '/api/v1/admin/employees';
 }
 
+/**
+ * 월별 근무내역 base path 선택자 — 호출 화면의 게이팅 권한과 API 가드를 정합.
+ *
+ * 근무기간 조회 화면(`attend_info` 권한)은 `/attend-info/*`, 여사원 현황(`female_employee`)은
+ * `/female-employees/*`, 그 외(설정 사원, `employee`)는 `/employees/*` 를 호출한다. 각 base 의
+ * `{id}/work-history/monthly` 는 해당 도메인 entity READ 로 가드된다.
+ */
+export type WorkHistoryScope = 'employee' | 'female' | 'attendInfo';
+
+function monthlyWorkHistoryBasePath(scope: WorkHistoryScope): string {
+  switch (scope) {
+    case 'female':
+      return '/api/v1/admin/female-employees';
+    case 'attendInfo':
+      return '/api/v1/admin/attend-info';
+    default:
+      return '/api/v1/admin/employees';
+  }
+}
+
 export async function fetchEmployee(
   employeeId: number,
   isFemale = false,
@@ -408,18 +428,18 @@ export async function fetchEmployeeWorkHistory(
 /** 근무기간 조회(월별) 엑셀 다운로드 경로 (GET, ?yearMonth=yyyy-MM). */
 export function employeeMonthlyWorkHistoryExportPath(
   employeeId: number,
-  isFemale = false,
+  scope: WorkHistoryScope = 'employee',
 ): string {
-  return `${detailBasePath(isFemale)}/${employeeId}/work-history/monthly/export`;
+  return `${monthlyWorkHistoryBasePath(scope)}/${employeeId}/work-history/monthly/export`;
 }
 
 export async function fetchEmployeeMonthlyWorkHistory(
   employeeId: number,
   yearMonth: string,
-  isFemale = false,
+  scope: WorkHistoryScope = 'employee',
 ): Promise<EmployeeWorkHistory> {
   const res = await client.get<ApiResponse<EmployeeWorkHistory>>(
-    `${detailBasePath(isFemale)}/${employeeId}/work-history/monthly`,
+    `${monthlyWorkHistoryBasePath(scope)}/${employeeId}/work-history/monthly`,
     { params: { yearMonth } },
   );
   if (!res.data.success || !res.data.data) {

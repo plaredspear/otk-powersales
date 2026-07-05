@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.AdminUserDetailResponse
 import com.otoki.powersales.admin.dto.AdminUserListItem
 import com.otoki.powersales.admin.dto.AdminUserListResponse
 import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
+import com.otoki.powersales.admin.dto.AdminUserProfileOption
 import com.otoki.powersales.admin.exception.AdminUserNotFoundException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
@@ -50,6 +51,17 @@ class AdminUserService(
             totalPages = userPage.totalPages
         )
     }
+
+    /**
+     * 사용자 관리 화면 필터용 프로파일 옵션 목록 (id/name, 이름 오름차순).
+     *
+     * 프로파일 관리 상세 목록(`profile` READ) 이 아니라 `user` READ 로 가드된 경량 lookup 이라,
+     * 사용자 관리 권한만 가진 관리자도 필터 드롭다운을 채울 수 있다.
+     */
+    fun getProfileOptions(): List<AdminUserProfileOption> =
+        profileRepository.findAll()
+            .map { AdminUserProfileOption(id = it.id, name = it.name) }
+            .sortedBy { it.name }
 
     fun findUserDetail(userId: Long): AdminUserDetailResponse {
         val user = userRepository.findById(userId)

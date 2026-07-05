@@ -4,6 +4,11 @@ import { Button, Checkbox, InputNumber, Select, Space, Tag } from 'antd';
 import { DownloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useTeamScheduleBranches } from '@/hooks/team-schedule/useTeamScheduleBranches';
 
+interface BranchOption {
+  branchCode: string;
+  branchName: string;
+}
+
 interface PeriodBranchFilterBarProps {
   year?: number;
   month?: number;
@@ -25,9 +30,39 @@ interface PeriodBranchFilterBarProps {
   periodFilter?: ReactNode;
   /** 지점 미선택 외의 추가 조회 차단 조건 (예: 기간 검증 실패). */
   searchDisabled?: boolean;
+  /**
+   * 지점 셀렉터 옵션 소스. 지정 시 이 목록을 그대로 사용하고, 미지정 시 여사원 일정
+   * (`team_member_schedule` 가드) 지점 목록을 fallback 으로 조회한다.
+   *
+   * 화면 게이팅 권한과 지점 API 가드를 정합시키려면 각 화면이 자기 도메인 권한으로 가드된 지점
+   * 훅 결과를 여기에 주입한다 (예: 매출 계열은 `useSalesBranches`). fallback 은 게이팅이
+   * `team_member_schedule` 인 여사원 일정 계열 화면 전용이다.
+   */
+  branches?: BranchOption[];
 }
 
-export default function PeriodBranchFilterBar({
+/**
+ * 지점 셀렉터 옵션 소스 wrapper.
+ *
+ * `branches` prop 을 명시하면 그것을 그대로 렌더하고, 미지정 시에만 여사원 일정
+ * (`team_member_schedule` 가드) 지점 훅을 호출한다. 훅을 조건부 호출하지 않도록 fallback 전용
+ * 하위 컴포넌트로 분리해, `branches` 를 주입한 화면(예: 매출 계열)에서는 team-schedule 호출이
+ * 전혀 발생하지 않는다.
+ */
+export default function PeriodBranchFilterBar(props: PeriodBranchFilterBarProps) {
+  if (props.branches !== undefined) {
+    return <PeriodBranchFilterBarView {...props} branches={props.branches} />;
+  }
+  return <PeriodBranchFilterBarWithTeamScheduleBranches {...props} />;
+}
+
+/** `branches` 미지정 시 fallback — 여사원 일정 지점 목록을 조회해 주입. */
+function PeriodBranchFilterBarWithTeamScheduleBranches(props: PeriodBranchFilterBarProps) {
+  const { data: branches = [] } = useTeamScheduleBranches();
+  return <PeriodBranchFilterBarView {...props} branches={branches} />;
+}
+
+function PeriodBranchFilterBarView({
   year,
   month,
   selectedCodes,
@@ -45,9 +80,8 @@ export default function PeriodBranchFilterBar({
   extraActions,
   periodFilter,
   searchDisabled = false,
+  branches = [],
 }: PeriodBranchFilterBarProps) {
-  const { data: branches = [] } = useTeamScheduleBranches();
-
   const branchOptions = useMemo(
     () => branches.map((b) => ({ value: b.branchCode, label: b.branchName })),
     [branches],

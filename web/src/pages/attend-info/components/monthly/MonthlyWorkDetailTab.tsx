@@ -60,7 +60,8 @@ export default function MonthlyWorkDetailTab() {
 
   const employeeId = selected?.employeeId;
   const yearMonth = period.format('YYYY-MM');
-  const histQuery = useEmployeeMonthlyWorkHistory(employeeId, employeeId ? yearMonth : undefined);
+  // 근무기간 조회 화면(attend_info 게이팅) — attend-info 전용 endpoint 로 조회해 게이팅 권한과 정합.
+  const histQuery = useEmployeeMonthlyWorkHistory(employeeId, employeeId ? yearMonth : undefined, 'attendInfo');
 
   const items = histQuery.data?.items ?? [];
 
@@ -73,7 +74,7 @@ export default function MonthlyWorkDetailTab() {
   const handleExport = useCallback(() => {
     if (employeeId == null) return;
     runExport(
-      employeeMonthlyWorkHistoryExportPath(employeeId),
+      employeeMonthlyWorkHistoryExportPath(employeeId, 'attendInfo'),
       `월별근무내역_${selected?.employeeCode ?? employeeId}_${period.format('YYYYMM')}.xlsx`,
       { params: { yearMonth }, totalCount: items.length, maxRows: EXCEL_EXPORT_MAX_ROWS },
     );

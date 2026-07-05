@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   fetchEmployeeWorkHistory,
   fetchEmployeeMonthlyWorkHistory,
+  type WorkHistoryScope,
 } from '@/api/employee';
 
 export function useEmployeeWorkHistory(
@@ -22,10 +23,11 @@ export function useEmployeeWorkHistory(
 export function useEmployeeMonthlyWorkHistory(
   employeeId: number | undefined,
   yearMonth: string | undefined,
+  scope: WorkHistoryScope = 'employee',
 ) {
   return useQuery({
-    queryKey: ['admin', 'employee', employeeId, 'work-history', 'monthly', yearMonth],
-    queryFn: () => fetchEmployeeMonthlyWorkHistory(employeeId as number, yearMonth as string),
+    queryKey: ['admin', 'employee', employeeId, 'work-history', 'monthly', yearMonth, scope],
+    queryFn: () => fetchEmployeeMonthlyWorkHistory(employeeId as number, yearMonth as string, scope),
     enabled: typeof employeeId === 'number' && !!yearMonth,
   });
 }

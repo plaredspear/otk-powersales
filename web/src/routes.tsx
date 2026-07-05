@@ -274,6 +274,9 @@ export const router = createBrowserRouter(
                   element: <PermissionRoute entity="display_work_schedule" operation="READ" />,
                   children: [
                     { path: '/display-work-schedules', element: <LazyWrapper><DisplaySchedulePage /></LazyWrapper> },
+                    // 진열스케줄 데이터 기반 확정 보고서 — 호출 API(/display-work-schedule/list·/export)와 동일
+                    // display_work_schedule 가드로 게이팅 (menuConfig 정합).
+                    { path: '/valid-employee-confirmed-report', element: <LazyWrapper><ValidEmployeeConfirmedReportPage /></LazyWrapper> },
                   ],
                 },
                 {
@@ -310,7 +313,6 @@ export const router = createBrowserRouter(
                     { path: '/converted-headcount-report-hypermarket-permanent-wc3', element: <LazyWrapper><ConvertedHeadcountReportPage variant="HYPERMARKET_PERMANENT_WC3" title="대형마트 환산인원 (상시, 근무유형3 추가)" /></LazyWrapper> },
                     { path: '/converted-headcount-report-segmented', element: <LazyWrapper><ConvertedHeadcountReportPage variant="SEGMENTED_ALL" title="세분화 거래처유형별 환산인원" /></LazyWrapper> },
                     { path: '/converted-headcount-report-team2-split-check', element: <LazyWrapper><ConvertedHeadcountReportPage variant="TEAM2_SPLIT_CHECK" title="거래처유형별 환산인원 (상시·임시, 영업지원2팀 분리) 확인용" /></LazyWrapper> },
-                    { path: '/valid-employee-confirmed-report', element: <LazyWrapper><ValidEmployeeConfirmedReportPage /></LazyWrapper> },
                   ],
                 },
                 {

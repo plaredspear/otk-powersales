@@ -78,6 +78,26 @@ export async function fetchUsers(params: UserListParams): Promise<UserListData> 
   return res.data.data;
 }
 
+/** 사용자 관리 화면 필터용 프로파일 옵션 (id/name). */
+export interface UserProfileOption {
+  id: number;
+  name: string;
+}
+
+/**
+ * 사용자 관리 필터용 프로파일 옵션 조회.
+ *
+ * 프로파일 관리 상세 목록(`/permissions/profiles`, `profile` READ 가드) 대신 `user` READ 로 가드된
+ * 경량 lookup 을 호출한다. `user` 권한만 가진 관리자도 필터 드롭다운을 채울 수 있다.
+ */
+export async function fetchUserProfileOptions(): Promise<UserProfileOption[]> {
+  const res = await client.get<ApiResponse<UserProfileOption[]>>('/api/v1/admin/users/profile-options');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '프로파일 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 /**
  * web admin User 상세 조회.
  */

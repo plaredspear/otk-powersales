@@ -7,7 +7,7 @@ import { useUsers } from '@/hooks/user/useUsers';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import type { UserSummary } from '@/api/user';
-import { fetchProfiles } from '@/api/admin/permission';
+import { fetchUserProfileOptions } from '@/api/user';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
@@ -48,13 +48,13 @@ export default function UserListPage() {
   };
 
   const { data: profiles } = useQuery({
-    queryKey: ['admin', 'permissions', 'profiles'],
-    queryFn: fetchProfiles,
+    queryKey: ['admin', 'users', 'profile-options'],
+    queryFn: fetchUserProfileOptions,
   });
 
   const profileOptions = [
     { value: '', label: '프로파일 전체' },
-    ...(profiles ?? []).map((p) => ({ value: String(p.profileId), label: p.name })),
+    ...(profiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
   ];
 
   const handleRowClick = useThrottleClick((id: number) => navigate(`/users/${id}`));

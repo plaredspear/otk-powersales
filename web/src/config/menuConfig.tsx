@@ -267,9 +267,13 @@ export const menuRoute: MenuRoute = {
               operation: 'READ',
             },
             {
+              // 진열스케줄(display_work_schedule) 데이터를 preset=VALID_CONFIRMED 로 조회하는 보고서 —
+              // 호출 API(/display-work-schedule/list·/export)가 display_work_schedule READ 로 가드되므로
+              // 게이팅도 동일 entity 로 정합. (team_member_schedule 로 게이팅하면 display_work_schedule
+              // READ 없는 사용자에게 메뉴만 보이고 조회는 403.)
               path: '/valid-employee-confirmed-report',
               name: '진열사원 유효사원 (확정)',
-              entity: 'team_member_schedule',
+              entity: 'display_work_schedule',
               operation: 'READ',
             },
           ],

@@ -38,6 +38,7 @@ import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
+import { useSalesBranches } from '@/hooks/sales/useSalesBranches';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import PosSalesDetailModal from './PosSalesDetailModal';
@@ -81,6 +82,8 @@ interface PosQueryParams {
 export default function SalesQueryPage() {
   // 1단 거래처 조회 조건 (버퍼)
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  // 매출 계열 화면(monthly_sales_history 게이팅) — 동일 entity 로 가드된 지점 셀렉터 사용.
+  const { data: branches = [] } = useSalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionChannels, setDistributionChannels] = useState<string[]>([]);
   const [accountTypes, setAccountTypes] = useState<string[]>([]);
@@ -331,6 +334,7 @@ export default function SalesQueryPage() {
     <div style={{ padding: 16 }}>
       {/* ── 1단: 거래처 조회 조건 ── */}
       <PeriodBranchFilterBar
+        branches={branches}
         selectedCodes={selectedCodes}
         onCodesChange={setSelectedCodes}
         onSearch={handleSearchAccounts}

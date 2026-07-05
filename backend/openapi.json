@@ -3096,6 +3096,18 @@
         },
         "type" : "object"
       },
+      "AdminUserProfileOption" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "AgeGroupCount" : {
         "properties" : {
           "ageGroup" : {
@@ -6117,6 +6129,34 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/AccountCategoryOptionResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListAdminUserProfileOption" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AdminUserProfileOption"
             },
             "type" : [ "array", "null" ]
           },
@@ -25238,7 +25278,7 @@
     },
     "/api/v1/admin/accounts/branches" : {
       "get" : {
-        "operationId" : "getBranches_7",
+        "operationId" : "getBranches_8",
         "responses" : {
           "200" : {
             "content" : {
@@ -26164,7 +26204,7 @@
     },
     "/api/v1/admin/attend-info/branches" : {
       "get" : {
-        "operationId" : "getBranches_6",
+        "operationId" : "getBranches_7",
         "responses" : {
           "200" : {
             "content" : {
@@ -26244,6 +26284,75 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseWorkHistoryEmployeeAccountResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-attend-info-controller" ]
+      }
+    },
+    "/api/v1/admin/attend-info/{employeeId}/work-history/monthly" : {
+      "get" : {
+        "operationId" : "getMonthlyWorkHistory_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "yearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeWorkHistoryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-attend-info-controller" ]
+      }
+    },
+    "/api/v1/admin/attend-info/{employeeId}/work-history/monthly/export" : {
+      "get" : {
+        "operationId" : "exportMonthlyWorkHistory_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "yearMonth",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "format" : "byte",
+                  "type" : "string"
                 }
               }
             },
@@ -26928,7 +27037,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_5",
+        "operationId" : "getBranches_6",
         "responses" : {
           "200" : {
             "content" : {
@@ -28086,7 +28195,7 @@
     },
     "/api/v1/admin/employees/branches" : {
       "get" : {
-        "operationId" : "getBranches_4",
+        "operationId" : "getBranches_5",
         "responses" : {
           "200" : {
             "content" : {
@@ -28927,7 +29036,7 @@
     },
     "/api/v1/admin/female-employees/branches" : {
       "get" : {
-        "operationId" : "getBranches_3",
+        "operationId" : "getBranches_4",
         "responses" : {
           "200" : {
             "content" : {
@@ -30011,7 +30120,7 @@
     },
     "/api/v1/admin/inspection-themes/branches" : {
       "get" : {
-        "operationId" : "getBranches_2",
+        "operationId" : "getBranches_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -31632,7 +31741,7 @@
     },
     "/api/v1/admin/ppt-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_1",
+        "operationId" : "getBranches_2",
         "responses" : {
           "200" : {
             "content" : {
@@ -33616,6 +33725,24 @@
           }
         },
         "tags" : [ "admin-sales-progress-rate-master-controller" ]
+      }
+    },
+    "/api/v1/admin/sales/branches" : {
+      "get" : {
+        "operationId" : "getBranches_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sales-branch-controller" ]
       }
     },
     "/api/v1/admin/sales/electronic/detail/{customerId}" : {
@@ -37937,6 +38064,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAdminUserListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-user-controller" ]
+      }
+    },
+    "/api/v1/admin/users/profile-options" : {
+      "get" : {
+        "operationId" : "getProfileOptions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListAdminUserProfileOption"
                 }
               }
             },
