@@ -17,7 +17,9 @@ import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageService
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
+import com.otoki.powersales.platform.common.config.ProdFeatureGate
 import io.mockk.every
+import org.springframework.mock.env.MockEnvironment
 import org.springframework.transaction.support.TransactionTemplate
 import io.mockk.mockk
 import io.mockk.verify
@@ -47,7 +49,8 @@ class SuggestionServiceLogisticsClaimScopeTest {
     private val service = SuggestionService(
         suggestionRepository, suggestionDraftRepository, uploadFileRepository, accountRepository,
         employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, validator, storageService,
-        sfOutboundClient, txTemplate
+        sfOutboundClient, txTemplate,
+        ProdFeatureGate(MockEnvironment().apply { setActiveProfiles("dev") })
     )
 
     private val leaderId = 10L

@@ -23,8 +23,10 @@ import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionDraf
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
 import com.otoki.powersales.domain.activity.suggestion.service.SuggestionService
 import com.otoki.powersales.external.sf.outbound.SfOutboundClient
+import com.otoki.powersales.platform.common.config.ProdFeatureGate
 import io.mockk.every
 import io.mockk.mockk
+import org.springframework.mock.env.MockEnvironment
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -62,7 +64,8 @@ class SuggestionServiceDeletePhotoTest {
         validator,
         storageService,
         sfOutboundClient,
-        txTemplate
+        txTemplate,
+        ProdFeatureGate(MockEnvironment().apply { setActiveProfiles("dev") })
     )
 
     private val employeeId = 100L

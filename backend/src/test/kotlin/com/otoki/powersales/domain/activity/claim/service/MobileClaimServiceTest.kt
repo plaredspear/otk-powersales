@@ -23,10 +23,13 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.platform.common.config.ProdFeatureGate
+import com.otoki.powersales.platform.common.exception.FeatureNotYetEnabledException
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.springframework.mock.env.MockEnvironment
 import org.springframework.context.ApplicationEventPublisher
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -69,6 +72,7 @@ class MobileClaimServiceTest {
         uploadFileRepository,
         eventPublisher,
         txTemplate,
+        ProdFeatureGate(MockEnvironment().apply { setActiveProfiles("dev") }),
     )
 
     private val userId = 100L
@@ -327,5 +331,39 @@ class MobileClaimServiceTest {
         assertThat(MobileClaimService::createClaim.findAnnotation<Transactional>()?.propagation)
             .withFailMessage("MobileClaimService.createClaim 은 @Transactional(propagation=NEVER) 여야 한다")
             .isEqualTo(Propagation.NEVER)
+    }
+
+    @Test
+    @DisplayName("운영(prod) 환경 - 클레임 등록 즉시 차단(FeatureNotYetEnabledException) + lookup·업로드 미도달")
+    fun prodBlocksRegistrationBeforeSideEffects() {
+        // prod 프로파일 gate 를 주입한 서비스. 나머지 의존성은 클래스 필드 mock 재사용.
+        val prodService = MobileClaimService(
+            claimDraftRepository,
+            employeeRepository,
+            accountRepository,
+            productRepository,
+            fileStorageService,
+            claimRepository,
+            uploadFileRepository,
+            eventPublisher,
+            txTemplate,
+            ProdFeatureGate(MockEnvironment().apply { setActiveProfiles("prod") }),
+        )
+
+        assertThatThrownBy {
+            prodService.createClaim(
+                userId, validRequest(),
+                defectPhoto = mockPhoto("defectPhoto"),
+                labelPhoto = mockPhoto("labelPhoto"),
+                receiptPhoto = null
+            )
+        }
+            .isInstanceOf(FeatureNotYetEnabledException::class.java)
+            .hasMessage("관련 부서 협의 후, 활성화 예정입니다")
+
+        // gate 가 최우선 진입 가드이므로 사원 조회 / 파일 업로드 / claim INSERT 는 도달하지 않는다.
+        verify(exactly = 0) { employeeRepository.findById(any()) }
+        verify(exactly = 0) { fileStorageService.uploadClaimPhoto(any(), any(), any(), any()) }
+        verify(exactly = 0) { claimRepository.save(any()) }
     }
 }

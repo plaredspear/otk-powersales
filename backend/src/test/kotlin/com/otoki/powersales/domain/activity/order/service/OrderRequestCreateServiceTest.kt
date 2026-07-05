@@ -24,10 +24,12 @@ import com.otoki.powersales.domain.activity.order.sap.client.SapLoanInquiryClien
 import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.external.sap.outbox.SapOutbox
+import com.otoki.powersales.platform.common.config.ProdFeatureGate
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.springframework.mock.env.MockEnvironment
 import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import org.assertj.core.api.Assertions.assertThat
@@ -73,6 +75,7 @@ class OrderRequestCreateServiceTest {
         orderDeadlineCalculator,
         entityManager,
         eventPublisher,
+        ProdFeatureGate(MockEnvironment().apply { setActiveProfiles("dev") }),
     )
 
     private val userId = 1L
