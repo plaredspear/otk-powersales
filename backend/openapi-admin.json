@@ -5306,6 +5306,32 @@
         },
         "type" : "object"
       },
+      "ApiResponseInteger" : {
+        "properties" : {
+          "data" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseInventorySearchResponse" : {
         "properties" : {
           "data" : {
@@ -23882,6 +23908,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseNoticeInlineImageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-notice-controller" ]
+      }
+    },
+    "/api/v1/admin/notices/migrate-inline-base64" : {
+      "post" : {
+        "operationId" : "migrateInlineBase64Images",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseInteger"
                 }
               }
             },
