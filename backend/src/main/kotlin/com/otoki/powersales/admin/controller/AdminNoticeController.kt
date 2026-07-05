@@ -118,6 +118,17 @@ class AdminNoticeController(
         return ResponseEntity.ok(ApiResponse.success(response, "푸시 알림을 발송했습니다"))
     }
 
+    /**
+     * 기존 공지 본문에 base64 로 저장된 인라인 이미지를 일괄로 S3 업로드 + placeholder 로 정규화한다.
+     * 저장 시점 정규화 도입 이전 데이터 소급 복구용 일회성 관리자 작업. 응답 data = 정규화된 공지 수.
+     */
+    @PostMapping("/migrate-inline-base64")
+    @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.EDIT)
+    fun migrateInlineBase64Images(): ResponseEntity<ApiResponse<Int>> {
+        val migrated = noticeService.migrateInlineBase64Images()
+        return ResponseEntity.ok(ApiResponse.success(migrated, "본문 base64 이미지 ${migrated}건을 정규화했습니다"))
+    }
+
     @PostMapping("/images/inline", consumes = ["multipart/form-data"])
     @RequiresSfPermission(entity = "notice", operation = SfPermissionOperation.CREATE)
     fun uploadNoticeInlineImage(

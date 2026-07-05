@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button, Col, Form, Input, Row, Select, Space, Spin, message } from 'antd';
 import type { FormInstance } from 'antd';
-import ReactQuill from 'react-quill-new';
+import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import './NoticeContentEditor.css';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
@@ -208,6 +208,47 @@ export default function NoticeFormPage() {
     e.preventDefault();
     for (const file of files) await uploadAndInsert(file);
   };
+
+  // base64 data URI → File 변환 (붙여넣기 HTML 안의 인라인 이미지 정규화용).
+  const dataUriToFile = (dataUri: string): File | null => {
+    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/is.exec(dataUri);
+    if (!match) return null;
+    const [, mime, b64] = match;
+    try {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+      const ext = (mime.split('/')[1] ?? 'png').replace('jpeg', 'jpg');
+      return new File([bytes], `pasted.${ext}`, { type: mime });
+    } catch {
+      return null;
+    }
+  };
+
+  // 붙여넣기 시 본문에 base64 로 박히는 인라인 이미지를 정상 업로드 경로로 돌린다.
+  // clipboardData.files 로 잡히지 않고 HTML(<img src="data:...">) 형태로 들어오는 경우(스크린샷 붙여넣기 등),
+  // Quill 기본 동작은 base64 를 그대로 본문에 삽입한다 → (1) 본문 비대화 (2) 모바일에서 http 아닌 src 렌더 불가.
+  // Quill clipboard matcher 로 data URI IMG 노드만 delta 에서 제거하고 비동기 업로드→presigned 삽입으로 대체한다
+  // (텍스트 등 나머지 붙여넣기 내용은 보존). 백엔드도 저장 시점에 동일 정규화를 수행하는 이중 방어.
+  useEffect(() => {
+    const editor = quillRef.current?.getEditor();
+    if (!editor) return;
+    const Delta = Quill.import('delta') as new () => unknown;
+    // react-quill-new 의 clipboard 타입에 addMatcher 가 노출되지 않아 최소 인터페이스로 좁혀 접근한다.
+    const clipboard = (editor as unknown as {
+      clipboard: { addMatcher: (selector: string, fn: (node: Node, delta: unknown) => unknown) => void };
+    }).clipboard;
+    clipboard.addMatcher('IMG', (node, delta) => {
+      const src = node instanceof HTMLElement ? (node.getAttribute('src') ?? '') : '';
+      if (src.startsWith('data:image/')) {
+        const file = dataUriToFile(src);
+        if (file) void uploadAndInsert(file);
+        return new Delta();
+      }
+      return delta;
+    });
+    // addMatcher 는 누적 등록되므로 에디터 mount 시 1회만 등록한다.
+  }, []);
 
   const quillModules = useMemo(
     () => ({

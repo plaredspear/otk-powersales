@@ -43,10 +43,12 @@ import com.otoki.powersales.platform.push.sender.FcmSendResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
+import java.util.Base64
 
 @Service
 @Transactional(readOnly = true)
@@ -62,6 +64,8 @@ class NoticeService(
 ) {
 
     companion object {
+        private val log = LoggerFactory.getLogger(NoticeService::class.java)
+
         // placeholder <img> 의 생성/파싱 형식은 NoticeImagePlaceholder (SoT) 가 소유한다.
         // 조회측 rewrite 는 그 정규식 2개를 그대로 참조 — 생성측(마이그레이션 치환)과 형식 정합 보장.
         private val INLINE_IMG_REGEX = NoticeImagePlaceholder.PLACEHOLDER_IMG_REGEX
@@ -69,6 +73,9 @@ class NoticeService(
 
         // 본문 인라인 이미지 식별자 (upload_file.upload_kbn). 첨부 목록과 구분하기 위함.
         private const val UPLOAD_KBN_INLINE = "INLINE"
+
+        // base64 data URI 정규화 시 업로드 파일명(확장자 파생용). 실제 파일명 정보가 없어 고정 stem 사용.
+        private const val INLINE_UPLOAD_STEM = "inline"
 
         // 공지 push notification 제목 (본문은 공지 제목). 모바일 data payload 의 딥링크 타입.
         private const val PUSH_TITLE = "공지사항"
@@ -171,6 +178,89 @@ class NoticeService(
         }
     }
 
+    /**
+     * 본문에 base64 data URI 로 박혀 들어온 인라인 이미지(`<img src="data:image/...;base64,...">`)를
+     * private S3 로 업로드하고 placeholder(`<img src="notice-image://{id}" data-refid="{id}">`)로 치환한다.
+     *
+     * 웹 Quill 에디터에 이미지를 '붙여넣기' 하면 정상 업로드 경로([uploadNoticeInlineImage])를 타지 않고
+     * base64 가 본문에 그대로 삽입될 수 있다. 이 경우 (1) DB contents 가 비대해지고 (2) 모바일은 http 가 아닌
+     * src 를 렌더하지 못해 이미지가 깨진다. 저장 시점에 여기서 정규화하여 어떤 클라이언트/경로로 들어와도
+     * 본문에는 placeholder 만 남고 조회 시 presigned 로 rewrite 되게 한다(설계 SoT: [NoticeImagePlaceholder]).
+     *
+     * 업로드분은 즉시 이 공지 소속(parentId=noticeId, upload_kbn=INLINE)으로 생성되므로 이어지는
+     * [syncInlineImages] 의 backfill/cleanup 대상에서 자연히 보존된다(본문이 그 refid 를 참조).
+     * 허용 외 content-type/디코드 실패분은 원본 태그를 보존한다(placeholder 미치환). content-type/크기 검증은
+     * 정상 업로드([uploadPrivate])와 동일 규칙 — 상한 초과 시 예외가 전파되어 저장이 거부된다.
+     */
+    private fun normalizeInlineBase64Images(noticeId: Long, html: String?): String? {
+        if (html.isNullOrEmpty() || !html.contains("data:image", ignoreCase = true)) return html
+        return NoticeImagePlaceholder.DATA_URI_IMG_REGEX.replace(html) { match ->
+            val contentType = match.groupValues[1].lowercase()
+            if (contentType !in StorageConstants.ALLOWED_CONTENT_TYPES) return@replace match.value
+            val bytes = try {
+                Base64.getMimeDecoder().decode(match.groupValues[2])
+            } catch (_: IllegalArgumentException) {
+                return@replace match.value
+            }
+            if (bytes.isEmpty()) return@replace match.value
+
+            val fileName = "$INLINE_UPLOAD_STEM.${extensionForContentType(contentType)}"
+            val result = storageService.uploadPrivate(
+                domain = "notice",
+                originalName = fileName,
+                bytes = bytes,
+                contentType = contentType
+            )
+            val saved = uploadFileRepository.save(
+                UploadFile(
+                    name = fileName,
+                    uniqueKey = result.key,
+                    fileSize = formatFileSize(bytes.size.toLong()),
+                    parentType = UploadFileParentTypes.NOTICE,
+                    parentId = noticeId,
+                    uploadKbn = UPLOAD_KBN_INLINE,
+                    isDeleted = false
+                )
+            )
+            NoticeImagePlaceholder.build(saved.id.toString(), "")
+        }
+    }
+
+    private fun extensionForContentType(contentType: String): String = when (contentType) {
+        "image/png" -> "png"
+        "image/jpeg", "image/jpg" -> "jpg"
+        "image/gif" -> "gif"
+        "image/webp" -> "webp"
+        "image/heic" -> "heic"
+        else -> "img"
+    }
+
+    /**
+     * 기존 공지 본문에 base64 로 저장된 인라인 이미지를 일괄 정규화(S3 업로드 + placeholder 치환)한다.
+     * 저장 시점 정규화([normalizeInlineBase64Images]) 도입 이전에 저장된 공지를 소급 복구하기 위한 일회성 관리자 작업.
+     * 공지별 실패(허용 외 타입/상한 초과 등)는 로그만 남기고 건너뛰어 나머지 공지 정규화를 계속한다.
+     *
+     * @return 실제로 본문이 정규화(변경)된 공지 수
+     */
+    @Transactional
+    fun migrateInlineBase64Images(): Int {
+        val notices = noticeRepository.findByContentsContaining("data:image").filter { it.isDeleted != true }
+        var migrated = 0
+        for (notice in notices) {
+            try {
+                val normalized = normalizeInlineBase64Images(notice.id, notice.contents)
+                if (normalized != notice.contents) {
+                    notice.contents = normalized
+                    migrated++
+                }
+            } catch (ex: Exception) {
+                log.warn("공지 {} 의 base64 인라인 이미지 정규화 실패 — 건너뜀", notice.id, ex)
+            }
+        }
+        log.info("base64 인라인 이미지 정규화 완료 — 대상 {}건 중 {}건 변경", notices.size, migrated)
+        return migrated
+    }
+
     fun getPosts(userId: Long, category: String?, search: String?, page: Int, size: Int): NoticePostListResponse {
         val employee = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
@@ -258,6 +348,9 @@ class NoticeService(
             status = if (request.publish) NoticeStatus.PUBLISHED else NoticeStatus.DRAFT
         )
         val saved = noticeRepository.save(notice)
+        // 붙여넣기 등으로 본문에 base64 로 박혀 들어온 이미지를 S3 업로드 + placeholder 로 정규화한다
+        // (parentId=noticeId 로 즉시 소속 → 이어지는 syncInlineImages 가 본문 참조로 자연히 보존).
+        saved.contents = normalizeInlineBase64Images(saved.id, saved.contents)
         syncInlineImages(saved.id, saved.contents, request.sessionUploadedRefids)
         return NoticeMutationResponse.Companion.from(saved)
     }
@@ -274,7 +367,8 @@ class NoticeService(
         notice.name = request.title
         notice.scope = noticeScope
         notice.category = cat
-        notice.contents = request.content
+        // 붙여넣기 등으로 본문에 base64 로 박혀 들어온 이미지를 S3 업로드 + placeholder 로 정규화한다.
+        notice.contents = normalizeInlineBase64Images(notice.id, request.content)
         // 발행 버튼=PUBLISHED, 임시저장 버튼=DRAFT(발행취소 효과). "임시저장=무조건 DRAFT" 정책.
         notice.status = if (request.publish) NoticeStatus.PUBLISHED else NoticeStatus.DRAFT
 

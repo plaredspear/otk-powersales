@@ -33,6 +33,21 @@ object NoticeImagePlaceholder {
     val SRC_ATTR_REGEX =
         Regex("""\bsrc\s*=\s*"[^"]*"""", RegexOption.IGNORE_CASE)
 
+    /**
+     * base64 data URI 로 본문에 통째로 박혀 들어온 인라인 이미지 `<img src="data:image/...;base64,...">`.
+     * group(1) = content-type(mime, 예: image/png), group(2) = base64 payload.
+     *
+     * 정상 인라인 업로드 경로([NoticeService.uploadNoticeInlineImage])는 본문에 placeholder 만 남기지만,
+     * 웹 에디터 '붙여넣기' 등은 Quill 기본 동작으로 base64 를 본문에 그대로 삽입해 이 경로를 우회한다.
+     * 그 결과 (1) DB contents 가 비대해지고 (2) 모바일이 http 아닌 src 를 렌더 못 해 이미지가 깨진다.
+     * 저장 시점에 [NoticeService] 가 본 정규식으로 찾아 S3 업로드 + placeholder 치환하여 정규화한다.
+     */
+    val DATA_URI_IMG_REGEX =
+        Regex(
+            """<img\b[^>]*?\bsrc\s*=\s*"data:(image/[a-zA-Z0-9.+-]+);base64,([^"]*)"[^>]*>""",
+            RegexOption.IGNORE_CASE
+        )
+
     /** HTML attribute 값 이스케이프 (refid/alt 안의 " / & 안전 처리). */
     private fun escapeAttr(s: String): String = s.replace("&", "&amp;").replace("\"", "&quot;")
 

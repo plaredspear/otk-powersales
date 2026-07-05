@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageService
+import com.otoki.powersales.platform.common.storage.UploadResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.support.notice.dto.request.NoticeCreateRequest
@@ -508,6 +509,34 @@ class NoticeServiceTest {
             assertThat(result.categoryName).isEqualTo("회사공지")
             assertThat(result.branch).isNull()
             assertThat(result.branchCode).isNull()
+        }
+
+        @Test
+        @DisplayName("붙여넣기 base64 인라인 이미지 - 저장 시 S3 업로드 + placeholder 로 정규화 (본문에 data URI 미잔존)")
+        fun createNotice_normalizesInlineBase64Image() {
+            // 1x1 PNG base64 (내용 무관, 디코드만 되면 됨)
+            val b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+            val request = NoticeCreateRequest(
+                title = "공지",
+                scope = "영업사원",
+                category = "COMPANY",
+                content = """<p>본문</p><img src="data:image/png;base64,$b64">"""
+            )
+            val savedNotice = slot<Notice>()
+            every { noticeRepository.save(capture(savedNotice)) } answers { firstArg() }
+            every { storageService.uploadPrivate("notice", any(), any(), "image/png") } returns
+                UploadResult(key = "uploads/notice/2026/07/06/uuid.png", contentType = "image/png", originalName = "inline.png", sizeBytes = 68L)
+            every { uploadFileRepository.save(any<UploadFile>()) } returns
+                UploadFile(id = 555L, uniqueKey = "uploads/notice/2026/07/06/uuid.png", parentType = "Notice", parentId = 0L, uploadKbn = "INLINE")
+            every { uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(any(), "Notice") } returns emptyList()
+
+            noticeService.createNotice(request, 1L, null)
+
+            verify { storageService.uploadPrivate("notice", any(), any(), "image/png") }
+            // 저장되는 본문(entity)에는 base64 대신 placeholder 만 남는다 → 조회 시 presigned 로 rewrite 되어 모바일 정상 렌더.
+            assertThat(savedNotice.captured.contents).doesNotContain("data:image")
+            assertThat(savedNotice.captured.contents).contains("notice-image://555")
+            assertThat(savedNotice.captured.contents).contains("""data-refid="555"""")
         }
 
         @Test
