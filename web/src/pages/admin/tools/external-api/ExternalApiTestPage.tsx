@@ -8,6 +8,7 @@ import LogisticsClaimRegistTab from './LogisticsClaimRegistTab';
 import LogisticsClaimStatusUpdateTab from './LogisticsClaimStatusUpdateTab';
 import SalesProgressRateMasterSyncTab from './SalesProgressRateMasterSyncTab';
 import StaffReviewSyncTab from './StaffReviewSyncTab';
+import PushSendTestTab from './PushSendTestTab';
 import IntegrationInfoDescriptions from './IntegrationInfoDescriptions';
 import ExternalApiLogsTab from './ExternalApiLogsTab';
 
@@ -48,6 +49,8 @@ const API_DESCRIPTIONS: Record<string, string> = {
     '기준 일자(MOD_DT, YYYYMMDD) 하나를 Salesforce Apex REST `/services/apexrest/mobile/IF_SendStaffReviewToPWS` 로 POST 하면, SF 가 해당 일자(수정일 기준)로 변경된 사원평가 마스터 목록(성명/사번/지점평가/사원합계점수/직위/근무유형1~3/평가 항목별 점수 등 32개 필드)을 응답하는 SF → PWS 방향의 조회 인터페이스입니다("알라딘 Staffreview 마스터 API" 문서 정합). 클레임 등록과 동일한 OAuth2(Bearer) + 401 재시도 경로로 호출하며, SF 응답을 결과 테이블 + raw JSON 그대로 노출합니다. 조회 전용이라 신규 DB 에는 저장하지 않습니다.',
   'logistics-claim-regist':
     '모바일 물류 클레임 등록(제안하기 > 물류 클레임) 입력 정보를 토대로 Salesforce Apex REST `IF_REST_MOBILE_ProposalRegist` 전송 payload(apiMap) 미리보기를 구성합니다. SF 전송 API 정보가 아직 확보되지 않은 단계라 실제 SF POST 는 수행하지 않고, 레거시 Input 클래스 key 셋(Category/ProductCode/accountCode/EmployeeCode/Title/Description/CarNumber/claimList/logclaimDate/S3Image* 등) 정합의 apiMap 을 JSON 으로만 노출합니다. 추후 SF endpoint/계약 정보를 받으면 실제 전송 호출을 추가할 예정입니다. 사진은 최대 2장이며 모두 선택입니다.',
+  'push-send-test':
+    '입력한 사번에 등록된 FCM 디바이스 토큰으로 임의 제목/본문의 테스트 알림을 Firebase Cloud Messaging(HTTP v1)으로 1건 발송합니다. 공지사항 push 와 동일한 backend FcmSender 경로를 사용합니다. 실제 발송은 서버의 FCM 활성 설정(app.push.fcm.enabled=true + Firebase 서비스 계정 credential 주입) + 운영(비-local) 프로필에서만 이루어지며, 미충족 시(또는 사번에 FCM 토큰 미등록 시) 발송 없이 결과만 반환합니다. 대상 사번은 모바일 앱에 로그인하여 FCM 토큰이 등록된 상태여야 실제 알림을 수신합니다.',
 };
 
 /** 탭 상단 자연어 설명 Alert. key 로 설명을 찾아 표시하며, 미등록 key 는 폴백 문구. */
@@ -223,6 +226,25 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
         />
         <StaffReviewSyncTab />
         <InlineCallHistory endpointKey="staff-review-sync" />
+      </Space>
+    ),
+  },
+  {
+    key: 'push-send-test',
+    label: 'push 발송 테스트',
+    children: (
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <ApiDescriptionAlert
+          apiKey="push-send-test"
+          title="FCM push — 사번 대상 테스트 알림 발송"
+        />
+        <Alert
+          type="warning"
+          showIcon
+          message="이 탭은 실제 단말로 FCM push 를 발송합니다."
+          description="'push 발송' 버튼은 입력 사번에 등록된 FCM 토큰으로 실제 알림을 전송합니다. 단, 서버의 FCM 활성 설정(app.push.fcm.enabled)과 credential 이 주입되고 운영(비-local) 프로필일 때만 실제 발송되며, 미충족 시 발송 없이 결과만 반환됩니다. SYSTEM_ADMIN 권한 필요."
+        />
+        <PushSendTestTab />
       </Space>
     ),
   },
