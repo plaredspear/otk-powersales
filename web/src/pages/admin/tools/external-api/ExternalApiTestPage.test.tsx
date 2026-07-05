@@ -15,6 +15,14 @@ vi.mock('@/hooks/admin/useNaverGeocodeTest', () => ({
   }),
 }));
 
+const pushTestMutateAsyncMock = vi.fn();
+vi.mock('@/hooks/admin/usePushTest', () => ({
+  usePushTest: () => ({
+    mutateAsync: pushTestMutateAsyncMock,
+    isPending: false,
+  }),
+}));
+
 const testClaimRegistMock = vi.fn();
 const testLogisticsClaimRegistMock = vi.fn();
 vi.mock('@/api/claims', () => ({
@@ -68,6 +76,7 @@ function renderPage() {
 describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
   beforeEach(() => {
     mutateAsyncMock.mockReset();
+    pushTestMutateAsyncMock.mockReset();
     testClaimRegistMock.mockReset();
     testLogisticsClaimRegistMock.mockReset();
     fetchIntegrationInfoMock.mockReset();
@@ -193,5 +202,51 @@ describe('ExternalApiTestPage (외부 API 테스트 통합 페이지)', () => {
   it('E1 - 주소 blank 시 "변환" 버튼이 disabled', () => {
     renderPage();
     expect(screen.getByRole('button', { name: '변환' })).toBeDisabled();
+  });
+
+  it('P1 - push 발송 테스트 탭 전환 시 사번/제목/본문 폼과 발송 버튼이 노출', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: 'push 발송 테스트' }));
+
+    expect(await screen.findByPlaceholderText('예: 00012345')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('알림 제목')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('알림 본문')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'push 발송' }),
+    ).toBeInTheDocument();
+    // 실제 발송 경고 안내 노출
+    expect(
+      screen.getByText(/실제 단말로 FCM push 를 발송합니다/),
+    ).toBeInTheDocument();
+  });
+
+  it('P2 - push 발송 시 입력값으로 API 호출 + 발송 결과(성공 건수/요약)를 출력', async () => {
+    pushTestMutateAsyncMock.mockResolvedValue({
+      employeeCode: '00012345',
+      employeeName: '홍길동',
+      tokenRegistered: true,
+      maskedToken: 'abcdefgh…(30자)',
+      successCount: 1,
+      failureCount: 0,
+      message: '발송 성공 (success=1, failure=0)',
+    });
+
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('tab', { name: 'push 발송 테스트' }));
+
+    await user.type(await screen.findByPlaceholderText('예: 00012345'), '00012345');
+    await user.click(screen.getByRole('button', { name: 'push 발송' }));
+
+    await waitFor(() => {
+      expect(pushTestMutateAsyncMock).toHaveBeenCalledWith({
+        employeeCode: '00012345',
+        title: '테스트 알림',
+        body: '푸시 발송 테스트입니다.',
+      });
+    });
+    expect(await screen.findByText('발송 성공 (success=1, failure=0)')).toBeInTheDocument();
+    expect(screen.getByText('abcdefgh…(30자)')).toBeInTheDocument();
   });
 });
