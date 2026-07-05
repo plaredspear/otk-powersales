@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/session/session_reset_controller.dart';
 import 'package:mobile/data/datasources/auth_interceptor.dart';
 import 'package:mobile/data/datasources/auth_local_datasource.dart';
 
@@ -216,6 +217,30 @@ void main() {
     });
   });
 
+  group('로그인 이력 없음 (신규 설치)', () {
+    test('refresh token 이 없으면 401 을 세션 만료로 처리하지 않고 그대로 전파한다', () async {
+      // 첫 설치 후 로그인 전: access/refresh token 이 모두 없다.
+      final d = Dio(BaseOptions(baseUrl: 'https://api.test.com'));
+      final localDS = FakeAuthLocalDataSource();
+      d.interceptors.add(AuthInterceptor(localDataSource: localDS, dio: d));
+      d.httpClientAdapter = _Always401Adapter();
+
+      // 직전 테스트가 남긴 사유가 있으면 소비해 초기화.
+      SessionResetController.instance.consumeReason();
+
+      try {
+        await d.get('/api/v1/mobile/education/posts');
+        fail('Expected DioException');
+      } on DioException catch (e) {
+        // 401 이 강제 로그아웃 없이 그대로 전파되어야 한다.
+        expect(e.response?.statusCode, 401);
+      }
+
+      // 만료할 세션이 없으므로 "세션 만료" 강제 로그아웃 사유가 설정되면 안 된다.
+      expect(SessionResetController.instance.consumeReason(), isNull);
+    });
+  });
+
   group('취소된 요청 가드 (백그라운드 전환)', () {
     test('취소 에러는 토큰 갱신/로그아웃 없이 그대로 전파한다(토큰 보존)', () async {
       // 응답 대신 즉시 취소 에러를 방출하는 어댑터 — 백그라운드 cancelAll 을 모사.
@@ -392,6 +417,28 @@ class _Mock401ExceptRefreshAdapter implements HttpClientAdapter {
       );
     }
     protectedCount++;
+    return ResponseBody.fromString(
+      '{"success":false,"data":null,"error":{"code":"UNAUTHORIZED","message":"인증이 필요합니다"}}',
+      401,
+      headers: {
+        'content-type': ['application/json; charset=utf-8'],
+      },
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
+/// 모든 요청에 401 로 응답하는 어댑터. 로그인 전(무인증) 요청이 인증 필요 엔드포인트에서
+/// 401 을 받는 상황을 모사한다.
+class _Always401Adapter implements HttpClientAdapter {
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     return ResponseBody.fromString(
       '{"success":false,"data":null,"error":{"code":"UNAUTHORIZED","message":"인증이 필요합니다"}}',
       401,

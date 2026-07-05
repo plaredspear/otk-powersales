@@ -121,6 +121,15 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
+    // 저장된 refresh token 이 없으면 복원/만료할 "세션" 자체가 없다 — 로그인 이력이 없는
+    // 무인증 상태(예: 첫 설치 후 로그인 전)에서 인증 필요 엔드포인트가 401을 준 경우다.
+    // 이 401 을 세션 만료로 오인해 _forceLogout(세션 만료 안내)하지 않고 그대로 전파한다.
+    // (전파된 에러는 호출측이 자체 처리하며, 화면은 이미 로그인 화면에 있다.)
+    final refreshToken = await _localDataSource.getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) {
+      return handler.next(err);
+    }
+
     try {
       final newToken = await _refreshAccessToken();
       if (newToken == null) {
