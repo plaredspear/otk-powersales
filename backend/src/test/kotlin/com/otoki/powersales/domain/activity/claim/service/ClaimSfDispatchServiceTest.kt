@@ -105,6 +105,7 @@ class ClaimSfDispatchServiceTest {
     @DisplayName("SF_PENDING dispatch 성공 → status=SENT + sendAttemptCount 1")
     fun dispatchPendingSucceeds() {
         val claim = claimWith(ClaimStatus.SF_PENDING)
+        every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         stubPhotos()
         every { sfOutboundClient.callApi("/ClaimRegist", any()) } returns
@@ -123,6 +124,7 @@ class ClaimSfDispatchServiceTest {
     @DisplayName("SF 호출 실패 → status=SEND_FAILED + 예외 미전파")
     fun dispatchKeepsFailedStatusOnSfError() {
         val claim = claimWith(ClaimStatus.SF_PENDING)
+        every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         stubPhotos()
         every { sfOutboundClient.callApi("/ClaimRegist", any()) } throws RuntimeException("timeout")
@@ -138,6 +140,7 @@ class ClaimSfDispatchServiceTest {
     @DisplayName("apiMap 정합 — Channel/pwrskey/EmployeeCode/SAPAccountCode + ExpirationDate, ManufacturingDate=\"\"")
     fun dispatchBuildsApiMap() {
         val claim = claimWith(ClaimStatus.SF_PENDING, channel = ClaimChannel.WEB)
+        every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         stubPhotos()
         val apiMapSlot = slot<Map<String, Any?>>()
@@ -159,6 +162,7 @@ class ClaimSfDispatchServiceTest {
     @DisplayName("재전송 경로 channel 유지 - mobile(CAP) 재전송 시 payload Channel=CAP")
     fun dispatchPreservesOriginalChannel() {
         val claim = claimWith(ClaimStatus.SEND_FAILED, channel = ClaimChannel.CAP)
+        every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         stubPhotos()
         val apiMapSlot = slot<Map<String, Any?>>()
@@ -175,7 +179,7 @@ class ClaimSfDispatchServiceTest {
     fun dispatchSkipsWhenStatusMismatch() {
         // SENT 상태인 claim 에 재전송(SEND_FAILED 만 허용) 시도 → skip.
         val claim = claimWith(ClaimStatus.SENT)
-        every { claimRepository.findById(claimId) } returns Optional.of(claim)
+        every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         var mismatchStatus: ClaimStatus? = null
 
         val result = service.dispatch(claimId, resendAllowed, onStatusMismatch = { mismatchStatus = it })
