@@ -35,30 +35,25 @@ interface FormValues {
  * Form.Item 이 주입하는 value(현재 HTML)/onChange 를 ReactQuill 에 연결한다.
  * (직전에는 ReactQuill 을 <div> 로 감싸 Form.Item 의 value/onChange 가 에디터로
  *  전달되지 않아, 본문이 폼 값으로 수집되지 못하고 미리보기/저장에 누락되던 버그가 있었다.)
- * 드래그앤드롭/붙여넣기 이미지 삽입은 wrapper div 의 이벤트로 처리한다.
+ * 붙여넣기 이미지 삽입은 wrapper div 의 onPaste 로 처리한다.
+ * 드래그앤드롭은 Quill root(.ql-editor) 에 capture 단계 리스너를 직접 걸어 처리한다
+ *  (wrapper 버블링으로는 Quill 기본 drop 삽입을 막지 못해 base64+presigned 2중 삽입되던 버그 회피).
  */
 function ContentEditor({
   value,
   onChange,
   quillRef,
   modules,
-  onDrop,
   onPaste,
 }: {
   value?: string;
   onChange?: (html: string) => void;
   quillRef: React.RefObject<ReactQuill | null>;
   modules: Record<string, unknown>;
-  onDrop: (e: React.DragEvent) => void;
   onPaste: (e: React.ClipboardEvent) => void;
 }) {
   return (
-    <div
-      className="notice-content-editor"
-      onDrop={onDrop}
-      onDragOver={(e) => e.preventDefault()}
-      onPaste={onPaste}
-    >
+    <div className="notice-content-editor" onPaste={onPaste}>
       <ReactQuill
         ref={quillRef}
         theme="snow"
@@ -198,15 +193,8 @@ export default function NoticeFormPage() {
     input.click();
   };
 
-  // 드래그앤드롭 / 붙여넣기 핸들러.
-  const handleDrop = async (e: React.DragEvent) => {
-    const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
-    if (files.length === 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    for (const file of files) await uploadAndInsert(file);
-  };
-
+  // 붙여넣기 핸들러 (clipboardData.files 로 잡히는 이미지 파일 케이스).
+  // HTML(<img src="data:...">) 형태 붙여넣기는 아래 useEffect 의 clipboard matcher 가 별도 처리.
   const handlePaste = async (e: React.ClipboardEvent) => {
     const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
     if (files.length === 0) return;
@@ -253,6 +241,33 @@ export default function NoticeFormPage() {
       return delta;
     });
     // addMatcher 는 누적 등록되므로 에디터 mount 시 1회만 등록한다.
+
+    // 드래그앤드롭 이미지 삽입 — Quill root(.ql-editor) 에 capture 단계로 리스너를 직접 걸어
+    // Quill 기본 drop 삽입(base64 <img>)을 선제 차단하고 정상 업로드 경로 1회만 태운다.
+    // (wrapper div 버블링 방식은 하위 contenteditable 에서 이미 벌어진 Quill 기본 삽입을 막지 못해
+    //  base64 + presigned 2중 삽입되던 버그가 있었다.)
+    const root = editor.root;
+    const onDrop = (e: DragEvent) => {
+      const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
+      if (files.length === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // 여러 파일 drop 시 handlePaste 와 동일하게 순차 업로드해 삽입 순서/커서를 안정화한다
+      // (동시 발사하면 삽입 위치가 업로드 응답 도착 순서에 좌우됨).
+      void (async () => {
+        for (const file of files) await uploadAndInsert(file);
+      })();
+    };
+    const onDragOver = (e: DragEvent) => e.preventDefault();
+    root.addEventListener('drop', onDrop, { capture: true });
+    root.addEventListener('dragover', onDragOver, { capture: true });
+    return () => {
+      root.removeEventListener('drop', onDrop, { capture: true } as EventListenerOptions);
+      root.removeEventListener('dragover', onDragOver, { capture: true } as EventListenerOptions);
+    };
+    // uploadAndInsert / dataUriToFile 는 ref·모듈상수·안정 import 만 참조하므로 재구독 불필요.
+    // clipboard matcher(addMatcher) 와 drop 리스너는 에디터 mount 시 1회만 등록해야 한다
+    // (재실행 시 matcher 누적 / 리스너 중복). 정체성 안정화가 로직상 필수라 deps 를 비운다.
   }, []);
 
   const quillModules = useMemo(
@@ -409,7 +424,6 @@ export default function NoticeFormPage() {
               <ContentEditor
                 quillRef={quillRef}
                 modules={quillModules}
-                onDrop={handleDrop}
                 onPaste={handlePaste}
               />
             </Form.Item>
