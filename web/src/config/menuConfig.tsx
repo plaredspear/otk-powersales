@@ -477,16 +477,54 @@ export function normalizeMenuKeyword(keyword: string): string {
 }
 
 /**
+ * 실제 라우트로 등록하지 않는 카테고리 전용 placeholder path prefix.
+ * "`/` 로 시작 + routes.tsx 실경로와 절대 충돌하지 않는다" 는 계약을 가진다 (아래 menuCategoryKey 주석 참조).
+ */
+const MENU_CATEGORY_PATH_PREFIX = '/__cat/';
+
+/**
+ * 카테고리(자식 보유 항목)에 부여할 안정 submenu key 겸 placeholder path. name 은 메뉴 SoT 에서 고유하다.
+ *
+ * `/__cat/<name>` 처럼 반드시 `/` 로 시작하는 형태로 만든다. 이유:
+ * ProLayout(@umijs/route-utils) 의 formatter 는 path 없는 카테고리의 path 를 `mergePath('', parent.path)`
+ * 로 계산하는데, path 없는 카테고리가 2단 중첩되면 `mergePath('', '')` 가 `'/'` 로 collapse 된다.
+ * 그 결과 여러 카테고리가 flatMenus 의 `'/'` 키를 서로 덮어쓰고, 대시보드(pathname `'/'`)에서
+ * getMenuMatches 의 `item === '/' && path === '/'` 규칙에 걸려 "마지막 생존 카테고리"(보고서 > 기타)가
+ * 잘못 selected/open 된다. 카테고리에 `/` 로 시작하는 고유 path 를 부여하면 mergePath 가 그 값을 그대로
+ * 통과시켜(collapse 방지) 이 오작동을 막는다. 실제 라우트로 등록하지 않으므로 네비게이션엔 영향 없다.
+ * (`#`/`?` 는 stripQueryStringAndHashFromPath 가 잘라 다시 `/` 로 collapse 되므로 쓰지 않는다.)
+ */
+function menuCategoryKey(item: MenuItem): string {
+  return item.key ?? item.path ?? `${MENU_CATEGORY_PATH_PREFIX}${item.name}`;
+}
+
+/**
+ * 자식을 가진 모든 카테고리에 안정 key + placeholder path 를 주입한다.
+ * ProLayout 에 넘기기 직전 한 번 적용하여 path 없는 카테고리가 `'/'` 로 collapse 되는 것을 막는다.
+ * (path 를 이미 가진 카테고리 — 예: `/promotions` 목록 겸 부모 — 는 그대로 둔다.)
+ */
+export function withMenuCategoryKeys(items: MenuItem[]): MenuItem[] {
+  return items.map((item) => {
+    if (!item.children || item.children.length === 0) return item;
+    const key = menuCategoryKey(item);
+    return {
+      ...item,
+      key,
+      path: item.path ?? key,
+      children: withMenuCategoryKeys(item.children),
+    };
+  });
+}
+
+/**
  * 메뉴 트리를 검색어로 필터링한다. (사이드바 검색 전용)
  * - 한글 부분일치 (대소문자/공백 무시). 매칭 항목 + 매칭된 자식을 가진 부모 카테고리를 유지한다.
  * - subRoutes 는 사이드바 비노출이므로 검색 대상에서 제외한다.
  * - 부모 자신의 name 이 매칭되면 자식 전체를 그대로 보존한다 (카테고리 단위 탐색).
+ *
+ * 카테고리 안정 key/path 부여는 하지 않는다. 이 결과는 AdminLayout 에서 항상 withMenuCategoryKeys 로
+ * 감싸지므로 key+path 주입은 그 후단에 일원화되어 있다 (검색·비검색 경로 공통).
  */
-/** 카테고리(자식 보유 항목)에 부여할 안정 submenu key. name 은 메뉴 SoT 에서 고유하다. */
-function menuCategoryKey(item: MenuItem): string {
-  return item.key ?? item.path ?? `cat:${item.name}`;
-}
-
 export function filterMenuByKeyword(items: MenuItem[], keyword: string): MenuItem[] {
   const normalized = normalizeMenuKeyword(keyword);
   if (!normalized) return items;
@@ -499,8 +537,7 @@ export function filterMenuByKeyword(items: MenuItem[], keyword: string): MenuIte
         // 부모 자신이 매칭되면 자식 전체 보존, 아니면 매칭된 자식만 남긴다.
         const nextChildren = selfMatch ? item.children : walk(item.children);
         if (selfMatch || nextChildren.length > 0) {
-          // 안정 key 부여 → ProLayout 이 해시 대신 이 key 로 submenu 를 식별, openKeys 제어 가능.
-          acc.push({ ...item, key: menuCategoryKey(item), children: nextChildren });
+          acc.push({ ...item, children: nextChildren });
         }
       } else if (selfMatch) {
         acc.push(item);

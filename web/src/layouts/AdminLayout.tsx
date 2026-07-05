@@ -5,7 +5,14 @@ import ProLayout from '@ant-design/pro-layout';
 import { Dropdown, Input, Typography, type MenuProps } from 'antd';
 import { DownOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAuthStore } from '@/stores/authStore';
-import { collectMenuOpenKeys, filterMenuByKeyword, normalizeMenuKeyword, menuRoute, type MenuItem } from '@/config/menuConfig';
+import {
+  collectMenuOpenKeys,
+  filterMenuByKeyword,
+  normalizeMenuKeyword,
+  menuRoute,
+  withMenuCategoryKeys,
+  type MenuItem,
+} from '@/config/menuConfig';
 import queryClient from '@/lib/queryClient';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import AppBreadcrumb from '@/components/AppBreadcrumb';
@@ -57,10 +64,13 @@ export default function AdminLayout() {
   }, [hasEntityPermission, hasSystemPermission, profileName]);
 
   // 권한 필터된 트리를 검색어로 한 번 더 좁힌다. 검색어 없으면 그대로 통과.
+  // withMenuCategoryKeys 로 모든 카테고리에 안정 key + placeholder path 를 주입한다.
+  // (path 없는 카테고리가 ProLayout 내부에서 path `'/'` 로 collapse 되어 대시보드에서
+  //  엉뚱한 카테고리가 열리는 문제 방지 — menuConfig.withMenuCategoryKeys 주석 참조.)
   const searchedMenuRoute = useMemo(
     () => ({
       ...filteredMenuRoute,
-      children: filterMenuByKeyword(filteredMenuRoute.children, menuKeyword),
+      children: withMenuCategoryKeys(filterMenuByKeyword(filteredMenuRoute.children, menuKeyword)),
     }),
     [filteredMenuRoute, menuKeyword],
   );
