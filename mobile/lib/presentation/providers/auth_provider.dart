@@ -120,18 +120,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await tryAutoLogin();
   }
 
-  /// 저장된 사번 로드 (Hive)
+  /// 저장된 사번 및 자동 로그인 설정 로드 (Hive + Secure Storage)
+  ///
+  /// 레거시 Heroku 는 로그인 성공 시 `isAutoLogin` 값을 세션에 보관해 앱에 에코하고,
+  /// 앱은 다음 로그인 화면에서 그 값을 복원해 이전 자동 로그인 선택을 유지한다.
+  /// 이에 정합하도록 저장된 자동 로그인 여부(`auto_login`)를 함께 읽어 상태로 복원해,
+  /// 로그인 화면 재진입(자동 로그인 실패 / 로그아웃 후 재로그인 / 강제 로그아웃) 시에도
+  /// 자동 로그인 체크박스가 이전 선택 그대로 표시되게 한다.
   Future<void> loadSavedEmployeeNumber() async {
     try {
       final savedId = await _localDataSource.getSavedEmployeeNumber();
       final rememberEnabled =
           await _localDataSource.isRememberEmployeeNumberEnabled();
+      final autoLoginEnabled = await _localDataSource.isAutoLoginEnabled();
+      if (!mounted) return;
       state = state.copyWith(
         savedEmployeeNumber: savedId,
         rememberEmployeeNumber: rememberEnabled,
+        autoLogin: autoLoginEnabled,
       );
     } catch (_) {
-      // Hive 로드 실패 시 무시
+      // 로드 실패 시 무시
     }
   }
 

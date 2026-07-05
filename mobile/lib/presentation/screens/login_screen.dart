@@ -37,12 +37,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _employeeCodeController.addListener(_onInputChanged);
     _passwordController.addListener(_onInputChanged);
 
-    // 저장된 사번 로드를 보장한다. 정상 기동은 스플래시의 initialize() 가 이미 로드하지만,
-    // 로그아웃 재생성 세션은 스플래시를 건너뛰므로 여기서 직접 로드해 프리필이 깨지지 않게 한다.
-    // (값이 채워지면 build 의 _loadSavedSettings 가 컨트롤러에 반영한다.)
-    Future.microtask(
-      () => ref.read(authProvider.notifier).loadSavedEmployeeNumber(),
-    );
+    // 저장된 사번/자동 로그인 설정을 로드한 뒤 프리필한다. 정상 기동은 스플래시의
+    // initialize() 가 이미 로드하지만, 로그아웃 재생성 세션은 스플래시를 건너뛰므로
+    // 여기서 직접 로드한다(멱등). 로드 완료 콜백에서만 프리필해, 저장된 사번이
+    // 없는(=사번 기억 OFF) 경우에도 자동 로그인 선택 복원 타이밍을 놓치지 않으며,
+    // 프리필/복원을 이 한 경로에서만 수행해 build 의 부수효과를 없앤다.
+    Future.microtask(() async {
+      await ref.read(authProvider.notifier).loadSavedEmployeeNumber();
+      if (!mounted) return;
+      setState(_loadSavedSettings);
+    });
 
     // 강제 로그아웃으로 재진입한 세션이면 사유를 1회 안내한다.
     // (사용자가 직접 로그아웃한 경우 사유는 null → 무표시)
@@ -113,11 +117,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  /// 저장된 사번과 설정을 로드
+  /// 저장된 사번과 설정을 로그인 화면 상태로 복원한다.
   ///
-  /// 저장된 사번 로드(`initialize()`)는 비동기라 LoginScreen 첫 빌드 시점엔
-  /// 아직 `savedEmployeeNumber`가 null일 수 있다. 따라서 값이 실제로 채워졌을
-  /// 때에만 잠가서, 로드 완료로 상태가 갱신되면 그때 프리필되도록 한다.
+  /// 저장 설정 로드(`loadSavedEmployeeNumber`)가 완료된 시점(initState 의 로드 완료
+  /// 콜백)에서만 호출된다. 저장된 사번(사번 기억 ON) 프리필과 함께, 자동 로그인
+  /// 선택(`autoLogin`)을 사번 기억 여부와 독립적으로 복원한다 — 레거시 Heroku 는 앱이
+  /// isAutoLogin 저장값을 보관해 로그인 화면에 이전 선택을 유지시키므로, 이에
+  /// 정합하도록 저장소에서 복원한 값을 체크박스에 반영한다.
+  ///
+  /// 최초 1회만 복원하고 잠근다(`_prefilledFromStorage`). 이후 사용자가 체크박스를
+  /// 직접 토글해도 rebuild 로 저장값이 덮어써지지 않는다.
   void _loadSavedSettings() {
     if (_prefilledFromStorage) return;
 
@@ -126,11 +135,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (authState.rememberEmployeeNumber && saved != null && saved.isNotEmpty) {
       _employeeCodeController.text = saved;
       _rememberEmployeeNumber = true;
-      _prefilledFromStorage = true;
-    } else if (authState.rememberEmployeeNumber) {
-      // 기억하기는 켜져 있으나 저장된 사번이 아직 없는 경우 체크박스만 반영
-      _rememberEmployeeNumber = true;
     }
+    _autoLogin = authState.autoLogin;
+    _prefilledFromStorage = true;
   }
 
   /// 로그인 실행
@@ -149,9 +156,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
-
-    // 저장된 사번 로드
-    _loadSavedSettings();
 
     return Scaffold(
       backgroundColor: const Color(0xFFEFEFEF),
