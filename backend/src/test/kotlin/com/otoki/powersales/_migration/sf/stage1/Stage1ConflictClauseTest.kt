@@ -121,10 +121,10 @@ class Stage1ConflictClauseTest {
         )
         val sql = Stage1S3CopyService.buildStagingSource(cu, "sfid, name, sap_order_number, created_at", "stg")
         assertThat(sql).isEqualTo(
-            "(SELECT DISTINCT ON (sap_order_number) sfid, name, sap_order_number, created_at FROM stg " +
-                "WHERE sap_order_number IS NOT NULL ORDER BY sap_order_number, created_at ASC " +
+            "((SELECT DISTINCT ON (sap_order_number) sfid, name, sap_order_number, created_at FROM stg " +
+                "WHERE sap_order_number IS NOT NULL ORDER BY sap_order_number, created_at ASC) " +
                 "UNION ALL " +
-                "SELECT sfid, name, sap_order_number, created_at FROM stg WHERE sap_order_number IS NULL) dedup_src",
+                "(SELECT sfid, name, sap_order_number, created_at FROM stg WHERE sap_order_number IS NULL)) dedup_src",
         )
     }
 

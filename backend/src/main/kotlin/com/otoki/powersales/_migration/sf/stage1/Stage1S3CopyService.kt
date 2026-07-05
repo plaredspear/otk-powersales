@@ -386,10 +386,12 @@ class Stage1S3CopyService(
             val dedupKey = cu?.dedupKey ?: return stagingTable
             val orderBy = cu.dedupOrderBy
                 ?: error("dedupKey 지정 시 dedupOrderBy 필수 (어느 중복 행을 남길지)")
-            return "(SELECT DISTINCT ON ($dedupKey) $columnsList FROM $stagingTable " +
-                "WHERE $dedupKey IS NOT NULL ORDER BY $dedupKey, $orderBy " +
+            // PostgreSQL 은 ORDER BY 가 붙은 SELECT 를 UNION 으로 이을 때 각 leg 를 괄호로 감싸야 한다
+            // (미괄호 시 `ORDER BY ... UNION` 을 전체 UNION 의 ORDER BY 뒤 UNION 으로 파싱 → syntax error).
+            return "((SELECT DISTINCT ON ($dedupKey) $columnsList FROM $stagingTable " +
+                "WHERE $dedupKey IS NOT NULL ORDER BY $dedupKey, $orderBy) " +
                 "UNION ALL " +
-                "SELECT $columnsList FROM $stagingTable WHERE $dedupKey IS NULL) dedup_src"
+                "(SELECT $columnsList FROM $stagingTable WHERE $dedupKey IS NULL)) dedup_src"
         }
 
         /**
