@@ -30,6 +30,7 @@ import com.otoki.powersales.platform.common.storage.UploadFileKbnTypes
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.activity.promotion.exception.AccountNotFoundException
+import com.otoki.powersales.platform.common.config.ProdFeatureGate
 import com.otoki.powersales.platform.common.exception.ProductNotFoundException
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
@@ -68,6 +69,7 @@ class MobileClaimService(
     private val uploadFileRepository: UploadFileRepository,
     private val eventPublisher: ApplicationEventPublisher,
     private val txTemplate: TransactionTemplate,
+    private val prodFeatureGate: ProdFeatureGate,
 ) {
 
     /**
@@ -83,6 +85,9 @@ class MobileClaimService(
         labelPhoto: MultipartFile,
         receiptPhoto: MultipartFile?,
     ): ClaimCreateResponse {
+        // 운영 환경 등록 차단 — 관련 부서 협의 전까지 prod 에서 클레임 등록을 열지 않는다.
+        prodFeatureGate.assertRegistrationEnabled()
+
         // 1. 검증 + 의존 entity 조회
         val employee = employeeRepository.findByIdOrNull(userId)
             ?: throw ClaimInvalidParameterException("사원을 찾을 수 없습니다")
