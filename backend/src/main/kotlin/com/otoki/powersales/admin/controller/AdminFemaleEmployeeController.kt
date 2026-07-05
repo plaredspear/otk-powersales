@@ -17,6 +17,8 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialS
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -52,11 +54,29 @@ class AdminFemaleEmployeeController(
     private val adminEmployeeService: AdminEmployeeService,
     private val employeeWorkHistoryService: EmployeeWorkHistoryService,
     private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
 ) {
 
     companion object {
         /** 여사원 현황에 노출할 직책 — 여사원 + 조장(여사원 조직 관리자). */
         private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN, AppAuthority.LEADER)
+    }
+
+    /**
+     * 여사원 현황 화면 지점 셀렉터 옵션 — `female_employee` 권한으로 가드.
+     *
+     * 여사원 일정/대시보드/전문행사조와 동일하게 [WomenScheduleBranchResolver] 로 권한별 지점
+     * 화이트리스트를 산출한다 (단일 출처). 여사원 현황 화면이 필요로 하는 lookup 이므로 화면의
+     * 게이팅 권한(`female_employee`)과 동일하게 가드한다 — 다른 도메인(전문행사조) endpoint 를
+     * 빌려쓰지 않아 조장 등 여사원 권한만 가진 직책도 접근 가능하게 한다.
+     */
+    @GetMapping("/branches")
+    @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
+    fun getBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        val result = womenScheduleBranchResolver.resolveBranches(principal)
+        return ResponseEntity.ok(ApiResponse.success(result))
     }
 
     @GetMapping

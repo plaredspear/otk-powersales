@@ -12,6 +12,8 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialS
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import io.mockk.every
 import io.mockk.mockk
@@ -46,6 +48,9 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
+
+    @MockkBean
+    private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
@@ -128,6 +133,24 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                 applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
             )
         }
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/branches - 권한별 지점 화이트리스트 반환 (female_employee 가드)")
+    fun getBranches_returnsWhitelist() {
+        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "A001", branchName = "서울1지점"),
+            BranchResponse(branchCode = "A002", branchName = "서울2지점"),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/female-employees/branches"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].branchCode").value("A001"))
+            .andExpect(jsonPath("$.data[0].branchName").value("서울1지점"))
+            .andExpect(jsonPath("$.data[1].branchCode").value("A002"))
+
+        verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(any()) }
     }
 
     @Test

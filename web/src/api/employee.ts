@@ -276,6 +276,27 @@ export async function fetchFemaleEmployees(params: FetchFemaleEmployeesParams): 
   return res.data.data;
 }
 
+/** 여사원 현황 화면 지점 셀렉터 옵션. */
+export interface FemaleEmployeeBranch {
+  branchCode: string;
+  branchName: string;
+}
+
+/**
+ * 여사원 현황 화면 지점 셀렉터 옵션 조회.
+ *
+ * backend 의 권한별 지점 화이트리스트(WomenScheduleBranchResolver)를 반환한다. 여사원 현황
+ * 화면의 게이팅 권한(`female_employee`)과 동일하게 가드되는 전용 endpoint 라, 조장 등 여사원
+ * 권한만 가진 직책도 접근 가능하다.
+ */
+export async function fetchFemaleEmployeeBranches(): Promise<FemaleEmployeeBranch[]> {
+  const res = await client.get<ApiResponse<FemaleEmployeeBranch[]>>('/api/v1/admin/female-employees/branches');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 /** 여사원 현황 엑셀 다운로드 경로 (GET, 목록과 동일 검색 파라미터). */
 export const FEMALE_EMPLOYEE_EXPORT_PATH = '/api/v1/admin/female-employees/export';
 
