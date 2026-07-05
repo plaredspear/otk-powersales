@@ -2122,6 +2122,55 @@
         "required" : [ "alarmDate", "expirationDate" ],
         "type" : "object"
       },
+      "AdminPushTestRequest" : {
+        "properties" : {
+          "body" : {
+            "maxLength" : 200,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "employeeCode" : {
+            "maxLength" : 20,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "title" : {
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "body", "employeeCode", "title" ],
+        "type" : "object"
+      },
+      "AdminPushTestResponse" : {
+        "properties" : {
+          "employeeCode" : {
+            "type" : "string"
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "failureCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maskedToken" : {
+            "type" : [ "string", "null" ]
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "successCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "tokenRegistered" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "AdminSalesProgressRateMasterSyncTestRequest" : {
         "properties" : {
           "modDt" : {
@@ -3925,6 +3974,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminProductExpirationSummaryResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminPushTestResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminPushTestResponse"
             }, {
               "type" : "null"
             } ]
@@ -26668,7 +26746,7 @@
     },
     "/api/v1/admin/claim-master-sync/test" : {
       "post" : {
-        "operationId" : "test_6",
+        "operationId" : "test_7",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -26696,7 +26774,7 @@
     },
     "/api/v1/admin/claim-regist/test" : {
       "post" : {
-        "operationId" : "test_5",
+        "operationId" : "test_6",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -30510,7 +30588,7 @@
     },
     "/api/v1/admin/logistics-claim-master-sync/test" : {
       "post" : {
-        "operationId" : "test_4",
+        "operationId" : "test_5",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -30538,7 +30616,7 @@
     },
     "/api/v1/admin/logistics-claim-regist/test" : {
       "post" : {
-        "operationId" : "test_3",
+        "operationId" : "test_4",
         "requestBody" : {
           "content" : {
             "multipart/form-data" : {
@@ -30565,7 +30643,7 @@
     },
     "/api/v1/admin/naver-geocode/test" : {
       "post" : {
-        "operationId" : "test_2",
+        "operationId" : "test_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -33567,6 +33645,34 @@
           }
         },
         "tags" : [ "admin-promotion-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/push/test" : {
+      "post" : {
+        "operationId" : "test_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminPushTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminPushTestResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-push-test-controller" ]
       }
     },
     "/api/v1/admin/safety-check/status" : {
