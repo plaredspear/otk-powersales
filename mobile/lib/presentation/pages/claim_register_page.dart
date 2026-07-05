@@ -263,13 +263,14 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
                 onPressed: state.loading ? null : () => _handleDraftSave(),
               ),
             ),
-            // 전송 버튼
+            // 전송 버튼 — 관련 부서 협의 전까지 비활성화. 탭 시 안내 메시지 표시.
             Expanded(
               child: _BottomBarButton(
                 label: '전송',
                 backgroundColor: const Color(0xFFFFE000),
                 textColor: Colors.black,
-                onPressed: state.loading ? null : () => _handleSubmit(),
+                disabled: true,
+                onPressed: () => _handleSubmitDisabled(),
               ),
             ),
           ],
@@ -348,7 +349,15 @@ class _ClaimRegisterPageState extends ConsumerState<ClaimRegisterPage> {
     }
   }
 
-  /// 등록 전송
+  /// 전송 비활성화 안내 — 관련 부서 협의 전까지 클레임 등록을 차단하고 안내만 표시.
+  void _handleSubmitDisabled() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('관련 부서 협의 후, 활성화 예정입니다')),
+    );
+  }
+
+  /// 등록 전송 — 관련 부서 협의 후 전송 버튼 활성화 시 onPressed 로 복원.
+  // ignore: unused_element
   Future<void> _handleSubmit() async {
     final success = await ref
         .read(claimRegisterProvider.notifier)
@@ -438,6 +447,7 @@ class _BottomBarButton extends StatelessWidget {
     required this.backgroundColor,
     required this.textColor,
     required this.onPressed,
+    this.disabled = false,
   });
 
   final String label;
@@ -445,10 +455,13 @@ class _BottomBarButton extends StatelessWidget {
   final Color textColor;
   final VoidCallback? onPressed;
 
+  /// 비활성화 표시. true 면 회색 스타일로 렌더링하되 탭(onPressed)은 유지한다.
+  final bool disabled;
+
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: backgroundColor,
+      color: disabled ? const Color(0xFFCCCCCC) : backgroundColor,
       child: InkWell(
         onTap: onPressed,
         child: Center(
@@ -457,7 +470,7 @@ class _BottomBarButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: textColor,
+              color: disabled ? const Color(0xFF888888) : textColor,
             ),
           ),
         ),
