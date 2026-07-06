@@ -283,7 +283,9 @@ export default function DisplaySchedulePage() {
   //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. branchCode 는 빈 값이라 backend 가 본인 소속 지점으로
   //    자동 스코프하므로 별도 전송 불필요.
   const { data: branches } = useScheduleBranches();
-  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const branchOptions = (branches ?? [])
+    .map((b) => ({ value: b.branchCode, label: b.branchName }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
   const singleBranch = branches?.length === 1 ? branches[0] : null;
   const isMultiBranch = (branches?.length ?? 0) > 1;
 

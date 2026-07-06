@@ -10,13 +10,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
-@DisplayName("PromotionBranchResolver 테스트")
-class PromotionBranchResolverTest {
+@DisplayName("WhitelistBranchScopeResolver 테스트")
+class WhitelistBranchScopeResolverTest {
 
     private val reportBranchScopeService: ReportBranchScopeService = mockk()
     private val dashboardBranchResolver: DashboardBranchResolver = mockk()
 
-    private val resolver = PromotionBranchResolver(reportBranchScopeService, dashboardBranchResolver)
+    private val resolver = WhitelistBranchScopeResolver(reportBranchScopeService, dashboardBranchResolver)
 
     @Test
     @DisplayName("getBranches 전사 권한자 - 대시보드 고정 화이트리스트 34개")
