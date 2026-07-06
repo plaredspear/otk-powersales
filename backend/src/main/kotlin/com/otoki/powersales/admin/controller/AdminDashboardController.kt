@@ -4,10 +4,10 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.service.AdminDashboardService
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
-import com.otoki.powersales.domain.activity.schedule.service.AdminTeamScheduleService
 import com.otoki.powersales.admin.exception.InvalidYearMonthException
 
 import org.springframework.http.ResponseEntity
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/v1/admin/dashboard")
 class AdminDashboardController(
     private val adminDashboardService: AdminDashboardService,
-    private val adminTeamScheduleService: AdminTeamScheduleService
+    private val dashboardBranchResolver: DashboardBranchResolver
 ) {
 
     /**
@@ -41,7 +41,7 @@ class AdminDashboardController(
         }
 
         // 조회 조건(지점) 라벨을 응답에 채우기 위한 코드→지점명 맵 — branches 셀렉터와 동일 산출 로직 재사용.
-        val branchNamesByCode = adminTeamScheduleService.getBranches(principal)
+        val branchNamesByCode = dashboardBranchResolver.resolveBranches(principal)
             .associate { it.branchCode to it.branchName }
 
         val response = adminDashboardService.getDashboard(scope, yearMonth, branchCode, branchNamesByCode)
@@ -51,15 +51,15 @@ class AdminDashboardController(
     /**
      * 대시보드 지점 셀렉터 옵션. 대시보드와 동일하게 별도 권한 가드 없이 인증된 모든 admin 사용자 접근 가능.
      *
-     * 여사원일정 화면의 `/api/v1/admin/team-schedule/branches` 와 동일 산출 로직 ([AdminTeamScheduleService.getBranches])
-     * 을 재사용하되, 해당 엔드포인트는 `team_member_schedule:R` 가드가 걸려있어 대시보드 전용 가드-free endpoint 로 분리한다.
-     * 반환 지점 범위는 사용자 권한 (SYSTEM_ADMIN / ALL_BRANCHES / 본인 지점) 기준으로 계속 제한된다.
+     * [DashboardBranchResolver] 로 산출 — 전사 권한자 (SYSTEM_ADMIN / ALL_BRANCHES) 는 대시보드 전용
+     * 고정 화이트리스트 (Retail 32개 지점 + 영업지원2팀 + CVS전략팀 = 34개), 그 외는 본인 지점 스코프.
+     * 여사원일정 등과 공유하는 [WomenScheduleBranchResolver] 와 별개로, 대시보드에만 적용되는 규칙이다.
      */
     @GetMapping("/branches")
     fun getBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = adminTeamScheduleService.getBranches(principal)
+        val result = dashboardBranchResolver.resolveBranches(principal)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 

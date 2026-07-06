@@ -14,7 +14,7 @@ import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.service.AdminDashboardService
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
-import com.otoki.powersales.domain.activity.schedule.service.AdminTeamScheduleService
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import java.math.BigDecimal
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -39,7 +39,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
     private lateinit var adminDashboardService: AdminDashboardService
 
     @MockkBean
-    private lateinit var adminTeamScheduleService: AdminTeamScheduleService
+    private lateinit var dashboardBranchResolver: DashboardBranchResolver
 
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
@@ -93,7 +93,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 200 OK + 응답 스키마 키 모두 존재")
         fun getDashboard_success_schemaKeysExist() {
-            every { adminTeamScheduleService.getBranches(any()) } returns emptyList()
+            every { dashboardBranchResolver.resolveBranches(any()) } returns emptyList()
             every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-03")
 
             mockMvc.perform(
@@ -140,7 +140,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - yearMonth 미입력 시 응답의 year_month가 YYYY-MM 패턴")
         fun getDashboard_success_noYearMonth() {
-            every { adminTeamScheduleService.getBranches(any()) } returns emptyList()
+            every { dashboardBranchResolver.resolveBranches(any()) } returns emptyList()
             every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
 
             mockMvc.perform(
@@ -188,7 +188,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
                 BranchResponse(branchCode = "1234", branchName = "서울지점"),
                 BranchResponse(branchCode = "5678", branchName = "부산지점")
             )
-            every { adminTeamScheduleService.getBranches(any()) } returns branches
+            every { dashboardBranchResolver.resolveBranches(any()) } returns branches
 
             mockMvc.perform(get("/api/v1/admin/dashboard/branches"))
                 .andExpect(status().isOk)
