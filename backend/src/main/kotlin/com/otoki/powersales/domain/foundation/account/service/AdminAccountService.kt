@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.foundation.account.service
 import com.otoki.powersales.domain.foundation.account.dto.response.AccountDetailResponse
 import com.otoki.powersales.domain.foundation.account.dto.response.AccountListItem
 import com.otoki.powersales.domain.foundation.account.dto.response.AccountListResponse
+import com.otoki.powersales.domain.foundation.account.dto.response.AccountLookupFilterOptions
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
@@ -69,7 +70,8 @@ class AdminAccountService(
         size: Int,
         applyPromotionFilter: Boolean = true,
         excludeClosedAccount: Boolean = false,
-        myBranchScopePrincipal: WebUserPrincipal? = null
+        myBranchScopePrincipal: WebUserPrincipal? = null,
+        accountType: String? = null
     ): AccountListResponse {
         val visibilityPredicate = if (myBranchScopePrincipal != null) {
             myBranchScopePredicate(myBranchScopePrincipal)
@@ -95,6 +97,7 @@ class AdminAccountService(
             policyPredicate = composedPolicyPredicate,
             keyword = keyword,
             abcType = abcType,
+            accountType = accountType,
             accountStatusName = accountStatusName,
             applyPromotionFilter = applyPromotionFilter,
             excludeClosedAccount = excludeClosedAccount,
@@ -139,6 +142,20 @@ class AdminAccountService(
         }
         val expanded = branchCodeExpander.expand(allowedBranchCodes)
         return account.branchCode.`in`(expanded)
+    }
+
+    /**
+     * 행사마스터 거래처 고급 검색 필터 드롭다운 옵션 — 거래처유형/거래상태 distinct 값.
+     *
+     * 지점 스코프([myBranchScopePredicate]) + 행사 lookup 게이팅(promotionLookupFilter + 폐업 제외)을
+     * 적용한 실제 검색 대상 집합의 값만 반환한다 (선택지에 폐업 등 노출 불가 값이 뜨지 않게 함).
+     */
+    fun getPromotionLookupFilterOptions(principal: WebUserPrincipal): AccountLookupFilterOptions {
+        val predicate = myBranchScopePredicate(principal)
+        return AccountLookupFilterOptions(
+            accountTypes = accountRepository.findDistinctAccountTypes(predicate),
+            accountStatusNames = accountRepository.findDistinctAccountStatusNames(predicate),
+        )
     }
 
     /**

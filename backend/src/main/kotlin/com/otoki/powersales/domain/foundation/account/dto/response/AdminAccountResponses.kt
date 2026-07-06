@@ -18,6 +18,15 @@ data class AccountListResponse(
     val totalPages: Int
 )
 
+/**
+ * 행사마스터 거래처 고급 검색 필터 드롭다운 옵션 — 거래처유형/거래상태 distinct 값.
+ * 실제 검색 대상(지점 스코프 + 행사 lookup 게이팅) 집합의 값만 포함한다.
+ */
+data class AccountLookupFilterOptions(
+    val accountTypes: List<String>,
+    val accountStatusNames: List<String>
+)
+
 data class AccountListItem(
     val id: Long,
     val externalKey: String?,

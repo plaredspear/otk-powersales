@@ -18,6 +18,7 @@ class AccountRepositoryCustomImpl(
         policyPredicate: Predicate,
         keyword: String?,
         abcType: String?,
+        accountType: String?,
         accountStatusName: String?,
         applyPromotionFilter: Boolean,
         excludeClosedAccount: Boolean,
@@ -54,6 +55,10 @@ class AccountRepositoryCustomImpl(
 
         if (!abcType.isNullOrBlank()) {
             builder.and(account.abcType.eq(abcType))
+        }
+
+        if (!accountType.isNullOrBlank()) {
+            builder.and(account.accountType.eq(accountType))
         }
 
         if (!accountStatusName.isNullOrBlank()) {
@@ -180,6 +185,39 @@ class AccountRepositoryCustomImpl(
                 )
             }
     }
+
+    override fun findDistinctAccountTypes(predicate: Predicate): List<String> {
+        return queryFactory
+            .select(account.accountType)
+            .from(account)
+            .where(lookupFilterWhere(predicate).and(account.accountType.isNotNull).and(account.accountType.ne("")))
+            .distinct()
+            .orderBy(account.accountType.asc())
+            .fetch()
+            .filterNotNull()
+    }
+
+    override fun findDistinctAccountStatusNames(predicate: Predicate): List<String> {
+        return queryFactory
+            .select(account.accountStatusName)
+            .from(account)
+            .where(lookupFilterWhere(predicate).and(account.accountStatusName.isNotNull).and(account.accountStatusName.ne("")))
+            .distinct()
+            .orderBy(account.accountStatusName.asc())
+            .fetch()
+            .filterNotNull()
+    }
+
+    /**
+     * 고급 검색 필터 드롭다운 distinct 조회의 공통 WHERE — 실제 검색 결과와 동일 게이팅.
+     * notDeleted + 지점 스코프(predicate) + promotionLookupFilter + 폐업 제외.
+     */
+    private fun lookupFilterWhere(predicate: Predicate): BooleanBuilder =
+        BooleanBuilder()
+            .and(notDeleted())
+            .and(predicate)
+            .and(promotionLookupFilter())
+            .and(account.accountStatusName.ne(ACCOUNT_STATUS_CLOSED).or(account.accountStatusName.isNull))
 
     private fun notDeleted() = account.isDeleted.isNull.or(account.isDeleted.eq(false))
 
