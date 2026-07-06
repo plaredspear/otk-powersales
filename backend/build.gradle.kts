@@ -200,3 +200,10 @@ tasks.register<JavaExec>("migrateHeroku") {
 	mainClass.set("com.otoki.powersales.common.migration.HerokuMigrationTool")
 	classpath = sourceSets.main.get().runtimeClasspath
 }
+
+tasks.register<JavaExec>("genSapClientSecret") {
+	group = "tool"
+	description = "SAP inbound client_secret 원문 + BCrypt 해시 생성 (기존 원문 해시화: --args='<plain-secret>')"
+	mainClass.set("com.otoki.powersales.external.sap.auth.util.SapClientSecretTool")
+	classpath = sourceSets.main.get().runtimeClasspath
+}
