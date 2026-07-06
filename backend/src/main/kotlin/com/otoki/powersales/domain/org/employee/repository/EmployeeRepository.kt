@@ -26,6 +26,14 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByOrgName(orgName: String): List<Employee>
 
     /**
+     * 코스트센터(costCenterCode) 단위 사원 목록 조회.
+     *
+     * 레거시 홈(home.jsp) 조장 팀 범위 정합 — 레거시는 조장과 동일 costcentercode 전원을
+     * 팀원으로 집계한다(employeeMapper `costcentercode__c = (…teamleadercode…)` 서브쿼리).
+     */
+    fun findByCostCenterCode(costCenterCode: String): List<Employee>
+
+    /**
      * 지점 코드 목록 + 상태로 사원 조회 (관리자 대시보드 기본현황)
      */
     fun findByCostCenterCodeInAndStatus(costCenterCodes: List<String>, status: String): List<Employee>

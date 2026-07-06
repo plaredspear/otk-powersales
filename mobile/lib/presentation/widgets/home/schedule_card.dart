@@ -67,11 +67,12 @@ class ScheduleCard extends StatelessWidget {
 
   /// 순회/격고 근무자 여부 (레거시 home.jsp:558 `workingType eq '순회' || '격고'`).
   ///
-  /// 한 사람의 오늘 일정은 모두 동일한 근무형태(workType)이므로 첫 일정 기준으로
-  /// 판정한다. 순회/격고는 출근 전 일정을 숨기고, 출근 후에도 첫 일정만 노출한다.
+  /// 레거시는 `workingType` 을 list forEach 로 덮어써 **마지막 일정의 workType**
+  /// (last-wins, home.jsp:493~499)으로 근무형태를 판정하므로 동일하게 마지막 일정 기준.
+  /// 순회/격고는 출근 전 일정을 숨기고, 출근 후에도 첫 일정만 노출한다.
   bool get _isRotationWorker {
     if (schedules.isEmpty) return false;
-    final type = schedules.first.workType;
+    final type = schedules.last.workType;
     return type == '순회' || type == '격고';
   }
 
@@ -101,7 +102,9 @@ class ScheduleCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (!_isLeaderView && totalCount > 0) ...[
+                // 출근 카운트 배지: 레거시는 순회/격고 근무자만 상단 `commCnt/len`
+                // 배지를 노출한다(home.jsp:567). 고정근무자는 배지 없음(일정별 버튼으로 대체).
+                if (!_isLeaderView && _isRotationWorker && totalCount > 0) ...[
                   const SizedBox(width: AppSpacing.sm),
                   _buildAttendanceBadge(registeredCount, totalCount),
                 ],

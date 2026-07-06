@@ -40,20 +40,6 @@ class HomeService(
     companion object {
         private val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-        /**
-         * 정렬 우선순위: 출근완료(0) → 행사(1) → 진열(2).
-         *
-         * SF 레거시(`FullCalendarComponentController`) 는 이름순 정렬만 적용하므로 4단계 정렬은 신규 도입 정책.
-         * 기존 "임시배정" 분기는 `WorkingCategory2.TEMPORARY` 옵션을 SF picklist 정합으로 제거하면서 함께 제거
-         * (sf-align-teammemberschedule #762 — SF 레거시 동등 분기 부재 확인 완료).
-         */
-        private fun sortPriority(teamMemberSchedule: TeamMemberSchedule): Int {
-            return when {
-                teamMemberSchedule.attendanceLog != null -> 0
-                teamMemberSchedule.workingCategory1 != WorkingCategory1.DISPLAY -> 1
-                else -> 2
-            }
-        }
     }
 
     /**
@@ -95,18 +81,20 @@ class HomeService(
         // 스케줄 → 거래처명 매핑 (batch fetch)
         val accountMap = fetchAccountMap(eventSchedules, displayWorkSchedules)
 
-        // 행사 TMS 정렬 + 중복 제거 + DTO 변환
+        // 행사 TMS 중복 제거 + DTO 변환
         val eventInfos = eventSchedules
-            .sortedBy { sortPriority(it) }
             .distinctBy { it.id }
             .map { tms -> toTeamMemberScheduleInfo(tms, employeeMap, accountMap) }
 
-        // 확정 진열마스터 → DTO 변환 (출근여부는 매칭되는 진열 TMS 에서 읽음, 진열 → 항상 마지막 정렬)
+        // 확정 진열마스터 → DTO 변환 (출근여부는 매칭되는 진열 TMS 에서 읽음)
         val displayInfos = displayWorkSchedules.map { dws ->
             toDisplayWorkScheduleInfo(dws, employeeMap, accountMap, displayTmsByKey)
         }
 
-        val todaySchedules = eventInfos + displayInfos
+        // 레거시 home.jsp 정합: 최종 표시는 거래처명 오름차순 정렬
+        // (HomeController personmergedList.sort(name), null 은 "" 취급).
+        val todaySchedules = (eventInfos + displayInfos)
+            .sortedBy { it.accountName ?: "" }
 
         // 출근/근태 영역 노출 대상 여부 (레거시 home.jsp: appauthority ∈ {여사원, 조장} 만 노출)
         // 지점장 / AccountViewAll / null(미매핑) 은 출근 영역 비노출 — 모바일이 이 플래그로 카드 자체를 숨긴다.
@@ -179,7 +167,9 @@ class HomeService(
     private fun fetchSchedulesByRole(employee: Employee, today: LocalDate): Pair<List<TeamMemberSchedule>, Map<Long, Employee>> {
         return when (employee.role) {
             AppAuthority.LEADER -> {
-                val teamEmployees = employeeRepository.findByOrgName(employee.orgName ?: "")
+                // 레거시 home.jsp 조장 팀 범위 정합: 조장과 동일 costcentercode 전원
+                // (employeeMapper 의 costcentercode__c 서브쿼리). orgName 이 아니라 costCenterCode 기준.
+                val teamEmployees = employeeRepository.findByCostCenterCode(employee.costCenterCode ?: "")
                 val employeeIds = teamEmployees.map { it.id }
                 val teamMemberSchedules = if (teamEmployees.isNotEmpty()) {
                     teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(today, teamEmployees)

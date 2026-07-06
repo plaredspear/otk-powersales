@@ -48,7 +48,7 @@ void main() {
       });
     });
 
-    group('출근 카운트 배지', () {
+    group('출근 카운트 배지 (레거시: 순회/격고만 노출)', () {
       testWidgets('T1: totalCount == 0 이면 배지를 숨겨야 한다', (tester) async {
         await tester.pumpWidget(buildTestWidget(
           attendanceSummary:
@@ -59,21 +59,19 @@ void main() {
         expect(find.text('0/0'), findsNothing);
       });
 
-      testWidgets('T2: totalCount > 0, registeredCount == 0 이면 "0/N" 배지 표시',
-          (tester) async {
+      testWidgets('T2: 순회 출근 전이면 "0/N" 배지 표시', (tester) async {
         await tester.pumpWidget(buildTestWidget(
-          schedules: _makeSchedules(8, registered: 0),
+          schedules: _makeSchedules(8, registered: 0, workType: '순회'),
           attendanceSummary:
               const AttendanceSummary(totalCount: 8, registeredCount: 0),
         ));
 
         expect(find.text('0/8'), findsOneWidget);
-        // 레거시 정렬: 배지 내 체크 아이콘 제거 (텍스트만 표시)
       });
 
-      testWidgets('T3: 부분 출근 시 "X/N" 배지 표시', (tester) async {
+      testWidgets('T3: 순회 부분 출근 시 "X/N" 배지 표시', (tester) async {
         await tester.pumpWidget(buildTestWidget(
-          schedules: _makeSchedules(8, registered: 3),
+          schedules: _makeSchedules(8, registered: 3, workType: '순회'),
           attendanceSummary:
               const AttendanceSummary(totalCount: 8, registeredCount: 3),
         ));
@@ -81,14 +79,26 @@ void main() {
         expect(find.text('3/8'), findsOneWidget);
       });
 
-      testWidgets('T4: 전원 출근 시 "N/N" 배지 표시', (tester) async {
+      testWidgets('T4: 순회 전원 출근 시 "N/N" 배지 표시', (tester) async {
         await tester.pumpWidget(buildTestWidget(
-          schedules: _makeSchedules(8, registered: 8),
+          schedules: _makeSchedules(8, registered: 8, workType: '순회'),
           attendanceSummary:
               const AttendanceSummary(totalCount: 8, registeredCount: 8),
         ));
 
         expect(find.text('8/8'), findsOneWidget);
+      });
+
+      testWidgets('T5: 고정근무자는 배지를 노출하지 않는다 (레거시 정합)',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(8, registered: 3, workType: '고정'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 8, registeredCount: 3),
+        ));
+
+        // 고정근무자는 상단 배지 없음(일정별 버튼으로 상태 표시)
+        expect(find.text('3/8'), findsNothing);
       });
     });
 
@@ -550,7 +560,8 @@ void main() {
               const AttendanceSummary(totalCount: 1, registeredCount: 0),
         ));
 
-        expect(find.text('0/1'), findsOneWidget);
+        // 고정근무자는 상단 배지 없음 (레거시 정합)
+        expect(find.text('0/1'), findsNothing);
         // 출근 전에도 일정이 노출된다 (레거시 정합)
         expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
         expect(find.text('매장 0 (행사/-/-)'), findsOneWidget);
@@ -563,7 +574,8 @@ void main() {
               const AttendanceSummary(totalCount: 1, registeredCount: 1),
         ));
 
-        expect(find.text('1/1'), findsOneWidget);
+        // 고정근무자는 배지 없이 일정별 "등록 완료" 버튼만 표시
+        expect(find.text('1/1'), findsNothing);
         expect(find.text('등록 완료'), findsOneWidget);
       });
 

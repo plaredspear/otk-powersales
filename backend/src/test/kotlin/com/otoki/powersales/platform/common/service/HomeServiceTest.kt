@@ -135,7 +135,7 @@ class HomeServiceTest {
             val userId = 1L
             val leader = createEmployee(id = userId, orgName = "부산1지점", role = AppAuthority.LEADER)
             every { employeeRepository.findById(userId) } returns Optional.of(leader)
-            every { employeeRepository.findByOrgName("부산1지점") } returns listOf(leader)
+            every { employeeRepository.findByCostCenterCode("10010") } returns listOf(leader)
             every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns emptyList()
 
             val result = homeService.getHomeData(userId)
@@ -173,7 +173,7 @@ class HomeServiceTest {
         }
 
         @Test
-        @DisplayName("조장 - 팀 전체 스케줄 조회 -> orgName 기반 팀원 전체 스케줄 반환")
+        @DisplayName("조장 - 팀 전체 스케줄 조회 -> costCenterCode 기반 팀원 전체 스케줄 반환")
         fun leader_teamSchedules() {
             // Given
             val userId = 1L
@@ -201,7 +201,7 @@ class HomeServiceTest {
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(leader)
-            every { employeeRepository.findByOrgName(orgName) } returns teamEmployees
+            every { employeeRepository.findByCostCenterCode("10010") } returns teamEmployees
             every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns teamMemberSchedules
             every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
             every { accountRepository.findByIdIn(any()) } returns accounts
@@ -266,7 +266,7 @@ class HomeServiceTest {
             val leader = createEmployee(id = userId, orgName = "부산1지점", role = AppAuthority.LEADER)
 
             every { employeeRepository.findById(userId) } returns Optional.of(leader)
-            every { employeeRepository.findByOrgName("부산1지점") } returns listOf(leader)
+            every { employeeRepository.findByCostCenterCode("10010") } returns listOf(leader)
             every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns emptyList()
             every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
             every { noticeRepository.findRecentNotices(any()) } returns emptyList()
@@ -374,53 +374,54 @@ class HomeServiceTest {
         // ========== 정렬 ==========
 
         @Test
-        @DisplayName("정렬 - 출근완료 행사 -> 미출근 행사 -> 진열(마스터) 순서로 정렬")
-        fun schedules_sortedByPriority() {
+        @DisplayName("정렬 - 거래처명 오름차순 (레거시 personmergedList name sort 정합, 행사/진열 혼합)")
+        fun schedules_sortedByAccountName() {
             // Given
             val userId = 1L
             val employee = createEmployee(id = userId, role = null)
-            val account = createAccount(id = 8940, name = "진열 거래처")
+            // 이름 오름차순: 가나상점(8941) < 나다상점(8940) < 다라상점(8939)
+            val accGa = createAccount(id = 8941, name = "가나상점")
+            val accNa = createAccount(id = 8940, name = "나다상점")
+            val accDa = createAccount(id = 8939, name = "다라상점")
 
-            // 미출근 행사 (priority 1)
-            val eventSchedule = createTeamMemberSchedule(
+            // 행사(다라상점) — 미출근
+            val eventDa = createTeamMemberSchedule(
                 id = 2L,
                 employeeId = userId,
                 accountId = 8939,
                 workingCategory1 = WorkingCategory1.EVENT,
-                workingCategory2 = null,
                 commuteLogSfid = null
             )
-            // 출근완료 행사 (priority 0)
-            val commuteSchedule = createTeamMemberSchedule(
+            // 행사(가나상점) — 출근완료 (우선순위 정렬이었다면 맨 앞이지만, 이름순에선 그대로 맨 앞)
+            val eventGa = createTeamMemberSchedule(
                 id = 1L,
                 employeeId = userId,
                 accountId = 8941,
                 workingCategory1 = WorkingCategory1.EVENT,
-                workingCategory2 = null,
                 commuteLogSfid = "CLG001"
             )
+            // 진열(나다상점) — 확정 마스터 (레거시: 우선순위 없이 이름순에 섞임)
+            val displayNa = createDisplayWorkSchedule(id = 300L, employeeId = userId, accountId = 8940)
 
-            // 진열: 확정 마스터로만 집계 (레거시 정합) — 항상 행사 뒤에 정렬
-            val displayMaster = createDisplayWorkSchedule(id = 300L, employeeId = userId, accountId = 8940)
-
-            // 의도적으로 역순 전달 (미출근 행사 -> 출근완료 행사)
-            val teamMemberSchedules = listOf(eventSchedule, commuteSchedule)
+            // 의도적으로 이름 비순서로 전달
+            val teamMemberSchedules = listOf(eventDa, eventGa)
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns teamMemberSchedules
-            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(displayMaster)
-            every { accountRepository.findByIdIn(any()) } returns listOf(account)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(displayNa)
+            every { accountRepository.findByIdIn(any()) } returns listOf(accGa, accNa, accDa)
             every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
             every { noticeRepository.findRecentNotices(any()) } returns emptyList()
 
             // When
             val result = homeService.getHomeData(userId)
 
-            // Then
+            // Then — 거래처명 오름차순 (진열이 항상 뒤가 아니라 이름순에 섞임)
             assertThat(result.todaySchedules).hasSize(3)
-            assertThat(result.todaySchedules[0].scheduleId).isEqualTo(1L) // 출근완료 행사
-            assertThat(result.todaySchedules[1].scheduleId).isEqualTo(2L) // 미출근 행사
-            assertThat(result.todaySchedules[2].displayWorkScheduleId).isEqualTo(300L) // 진열 마스터
+            assertThat(result.todaySchedules[0].accountName).isEqualTo("가나상점") // 행사(출근완료) id1
+            assertThat(result.todaySchedules[1].accountName).isEqualTo("나다상점") // 진열 마스터 300
+            assertThat(result.todaySchedules[1].displayWorkScheduleId).isEqualTo(300L)
+            assertThat(result.todaySchedules[2].accountName).isEqualTo("다라상점") // 행사(미출근) id2
         }
 
         // ========== 중복 제거 ==========
@@ -527,7 +528,7 @@ class HomeServiceTest {
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(leader)
-            every { employeeRepository.findByOrgName(orgName) } returns listOf(leader, a, b, c, d)
+            every { employeeRepository.findByCostCenterCode("10010") } returns listOf(leader, a, b, c, d)
             every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns teamMemberSchedules
             every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns displayWorkSchedules
             // 안전점검 실시: C(4) 만
@@ -713,6 +714,7 @@ class HomeServiceTest {
         employeeCode: String = "20030117",
         name: String = "최금주",
         orgName: String? = "부산1지점",
+        costCenterCode: String? = "10010",
         sfid: String? = null,
         role: String? = null
     ): Employee {
@@ -722,6 +724,7 @@ class HomeServiceTest {
             password = "encoded_password",
             name = name,
             orgName = orgName,
+            costCenterCode = costCenterCode,
             sfid = sfid,
             role = role
         )
