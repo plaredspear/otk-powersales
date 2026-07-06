@@ -114,8 +114,8 @@ void main() {
 
         // 레거시 정합: 출근 전에도 "거래처명 (근무구분)"이 노출된다.
         expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
-        expect(find.text('매장 0 (행사)'), findsOneWidget);
-        expect(find.text('매장 7 (행사)'), findsOneWidget);
+        expect(find.text('매장 0 (행사/-/-)'), findsOneWidget);
+        expect(find.text('매장 7 (행사/-/-)'), findsOneWidget);
       });
 
       testWidgets('T3: 부분 출근 시 스케줄 목록 표시', (tester) async {
@@ -126,9 +126,9 @@ void main() {
         ));
 
         // 스케줄 아이템이 "거래처명 (근무구분)" 형식으로 표시되어야 함
-        expect(find.text('매장 0 (행사)'), findsOneWidget);
-        expect(find.text('매장 1 (행사)'), findsOneWidget);
-        expect(find.text('매장 2 (행사)'), findsOneWidget);
+        expect(find.text('매장 0 (행사/-/-)'), findsOneWidget);
+        expect(find.text('매장 1 (행사/-/-)'), findsOneWidget);
+        expect(find.text('매장 2 (행사/-/-)'), findsOneWidget);
       });
 
       testWidgets(
@@ -155,7 +155,7 @@ void main() {
         expect(find.text('가락 알파마트(주) (진열/상시/고정)'), findsOneWidget);
       });
 
-      testWidgets('T5: 빈 토큰(wc2 null)은 건너뛰고 존재하는 값만 표시',
+      testWidgets('T5: 빈 토큰(wc2 null)은 "-" 로 채워 세 슬롯을 항상 표시',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           schedules: const [
@@ -173,7 +173,26 @@ void main() {
               const AttendanceSummary(totalCount: 1, registeredCount: 0),
         ));
 
-        expect(find.text('가락 알파마트(주) (진열/고정)'), findsOneWidget);
+        expect(find.text('가락 알파마트(주) (진열/-/고정)'), findsOneWidget);
+      });
+
+      testWidgets('T6: 세 토큰이 모두 비면 "(-/-/-)" 로 표시', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: const [
+            Schedule(
+              scheduleId: 1,
+              employeeName: '테스트',
+              employeeCode: 'EMP-001',
+              accountName: '가락 알파마트(주)',
+              workCategory: '',
+              isCommuteRegistered: false,
+            ),
+          ],
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 1, registeredCount: 0),
+        ));
+
+        expect(find.text('가락 알파마트(주) (-/-/-)'), findsOneWidget);
       });
     });
 
@@ -187,9 +206,9 @@ void main() {
         ));
 
         expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
-        expect(find.text('매장 0 (행사/고정)'), findsOneWidget);
-        expect(find.text('매장 1 (행사/고정)'), findsOneWidget);
-        expect(find.text('매장 2 (행사/고정)'), findsOneWidget);
+        expect(find.text('매장 0 (행사/-/고정)'), findsOneWidget);
+        expect(find.text('매장 1 (행사/-/고정)'), findsOneWidget);
+        expect(find.text('매장 2 (행사/-/고정)'), findsOneWidget);
       });
 
       testWidgets('순회근무자는 출근 전에는 일정을 숨기고 안내 문구를 표시',
@@ -201,7 +220,7 @@ void main() {
         ));
 
         expect(find.text('출근 후 등록을 누르세요.'), findsOneWidget);
-        expect(find.text('매장 0 (행사/순회)'), findsNothing);
+        expect(find.text('매장 0 (행사/-/순회)'), findsNothing);
       });
 
       testWidgets('격고근무자도 출근 전에는 일정을 숨긴다', (tester) async {
@@ -212,7 +231,7 @@ void main() {
         ));
 
         expect(find.text('출근 후 등록을 누르세요.'), findsOneWidget);
-        expect(find.text('매장 0 (행사/격고)'), findsNothing);
+        expect(find.text('매장 0 (행사/-/격고)'), findsNothing);
       });
 
       testWidgets('순회근무자는 출근 후 첫 일정(list[0])만 표시한다', (tester) async {
@@ -223,10 +242,10 @@ void main() {
         ));
 
         expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
-        expect(find.text('매장 0 (행사/순회)'), findsOneWidget);
+        expect(find.text('매장 0 (행사/-/순회)'), findsOneWidget);
         // 나머지 일정은 숨겨진다 (레거시 home.jsp:575)
-        expect(find.text('매장 1 (행사/순회)'), findsNothing);
-        expect(find.text('매장 2 (행사/순회)'), findsNothing);
+        expect(find.text('매장 1 (행사/-/순회)'), findsNothing);
+        expect(find.text('매장 2 (행사/-/순회)'), findsNothing);
       });
     });
 
@@ -453,7 +472,7 @@ void main() {
         expect(find.text('0/1'), findsOneWidget);
         // 출근 전에도 일정이 노출된다 (레거시 정합)
         expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
-        expect(find.text('매장 0 (행사)'), findsOneWidget);
+        expect(find.text('매장 0 (행사/-/-)'), findsOneWidget);
       });
 
       testWidgets('T6: totalCount 1, registeredCount 1', (tester) async {

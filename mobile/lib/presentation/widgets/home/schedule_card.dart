@@ -316,19 +316,18 @@ class ScheduleCard extends StatelessWidget {
   /// - wc1 workCategory(진열/행사)
   /// - wc2 workCategory2(진열=상시/임시, 행사=전담/진열겸임)
   /// - wc3 workType(고정/순회/격고)
-  /// 빈 토큰은 건너뛰고 존재하는 값만 슬래시로 잇는다.
-  /// (예: "가락 알파마트(주) (진열/상시/고정)")
+  /// 레거시처럼 세 슬롯을 항상 노출하며, 빈 슬롯은 `-` 로 표시한다.
+  /// (예: "가락 알파마트(주) (진열/상시/고정)", "가락 알파마트(주) (진열/-/고정)")
   String _formatScheduleLabel(Schedule schedule) {
     final name = schedule.accountName ?? '(미지정)';
-    final parts = <String>[
-      if (schedule.workCategory.isNotEmpty) schedule.workCategory,
-      if (schedule.workCategory2 != null && schedule.workCategory2!.isNotEmpty)
-        schedule.workCategory2!,
-      if (schedule.workType != null && schedule.workType!.isNotEmpty)
-        schedule.workType!,
+    String slot(String? value) =>
+        (value != null && value.isNotEmpty) ? value : '-';
+    final tokens = [
+      slot(schedule.workCategory),
+      slot(schedule.workCategory2),
+      slot(schedule.workType),
     ];
-    if (parts.isEmpty) return name;
-    return '$name (${parts.join('/')})';
+    return '$name (${tokens.join('/')})';
   }
 
   /// 버튼 텍스트 결정
