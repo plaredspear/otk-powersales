@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.service
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
@@ -76,6 +78,54 @@ class DashboardBranchResolverTest {
         assertThat(list.map { it.branchCode }).doesNotHaveDuplicates()
         // org_cd 오름차순 정렬 (4889 → 5694 → 5815 ...)
         assertThat(list.map { it.branchCode }).isSorted()
+    }
+
+    @Test
+    @DisplayName("effectiveBranchCodes 전사 권한자 - 선택 없음 → 34개 화이트리스트 전체(Filtered)")
+    fun effectiveBranchCodes_allBranches_noSelection() {
+        val principal = principalOf(costCenterCode = "9999", profileName = "시스템 관리자")
+        val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        val result = resolver.effectiveBranchCodes(principal, scope, null)
+
+        assertThat(result).isInstanceOf(EffectiveBranchResult.Filtered::class.java)
+        val codes = (result as EffectiveBranchResult.Filtered).codes
+        assertThat(codes).hasSize(34)
+        assertThat(codes.toSet()).isEqualTo(DashboardBranchResolver.WHITELIST_CODES)
+        verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
+    }
+
+    @Test
+    @DisplayName("effectiveBranchCodes 전사 권한자 - 34개 안 지점 선택 → 그 지점만(Filtered)")
+    fun effectiveBranchCodes_allBranches_selectionInWhitelist() {
+        val principal = principalOf(costCenterCode = "9999", profileName = "시스템 관리자")
+        val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        val result = resolver.effectiveBranchCodes(principal, scope, "5815")
+
+        assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("5815")))
+    }
+
+    @Test
+    @DisplayName("effectiveBranchCodes 전사 권한자 - 34개 밖 지점 선택 → NoAccess(차단)")
+    fun effectiveBranchCodes_allBranches_selectionOutsideWhitelist() {
+        val principal = principalOf(costCenterCode = "9999", profileName = "시스템 관리자")
+        val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        val result = resolver.effectiveBranchCodes(principal, scope, "9999")
+
+        assertThat(result).isEqualTo(EffectiveBranchResult.NoAccess)
+    }
+
+    @Test
+    @DisplayName("effectiveBranchCodes 지점 사용자 - DataScope 위임(본인 지점)")
+    fun effectiveBranchCodes_scopedUser_delegatesToDataScope() {
+        val principal = principalOf(costCenterCode = "5457")
+        val scope = DataScope(branchCodes = listOf("5457"), isAllBranches = false)
+
+        val result = resolver.effectiveBranchCodes(principal, scope, null)
+
+        assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("5457")))
     }
 
     private fun principalOf(

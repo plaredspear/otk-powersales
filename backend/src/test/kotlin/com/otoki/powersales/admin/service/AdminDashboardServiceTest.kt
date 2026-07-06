@@ -1,6 +1,5 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.activity.schedule.repository.DashboardDeploymentRow
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
@@ -25,8 +24,6 @@ class AdminDashboardServiceTest {
     private val service = AdminDashboardService(
         mfeisRepository, employeeRepository, monthlySalesAdminQueryService,
     )
-
-    private val allScope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
     // -- fixtures --
 
@@ -97,7 +94,7 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
         val byType = result.staffDeployment.byAccountType.associateBy { it.accountType }
 
         assertThat(byType["슈퍼"]!!.convertedHeadcount)
@@ -123,7 +120,7 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
         val byWork = result.staffDeployment.byWorkType.associateBy { it.workType }
 
         assertThat(byWork["진열"]!!.convertedHeadcount).isEqualByComparingTo(BigDecimal("960.0000"))
@@ -147,7 +144,7 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
         val superItem = result.staffDeployment.byChannelAndWorkType
             .first { it.channelName == "슈퍼" }
 
@@ -175,7 +172,7 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
         val byWorkType = result.basicStats.byWorkType
 
         assertThat(byWorkType.fixed).isEqualByComparingTo(BigDecimal("401.0000"))
@@ -196,7 +193,7 @@ class AdminDashboardServiceTest {
                 hasActualData = true, hasLastYearData = true, hasTargetData = true,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
 
         assertThat(result.salesSummary.actualAmount).isEqualTo(800L)
         assertThat(result.salesSummary.lastYearAmount).isEqualTo(760L)
@@ -226,7 +223,7 @@ class AdminDashboardServiceTest {
                 hasActualData = true, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
 
         // 화면 "—" 신호 — 목표 미등록
         assertThat(result.salesSummary.hasTargetData).isFalse()
@@ -259,7 +256,7 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
         val byAge = result.basicStats.byAgeGroup.associateBy { it.ageGroup }
 
         assertThat(byAge["30대"]!!.count).isEqualTo(1)
@@ -276,7 +273,7 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
 
         assertThat(result.basicStats.byAgeGroup.first { it.ageGroup == "미상" }.count).isEqualTo(1)
     }
@@ -296,7 +293,7 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
 
         assertThat(result.basicStats.totalByPosition.active).isEqualTo(3)
         assertThat(result.basicStats.totalByPosition.onLeave).isEqualTo(1)
@@ -318,7 +315,7 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
 
         assertThat(result.basicStats.staffType.promotion).isEqualTo(2)
         assertThat(result.basicStats.staffType.osc).isEqualTo(2)
@@ -330,7 +327,7 @@ class AdminDashboardServiceTest {
     fun emptyData() {
         stubEmpty()
 
-        val result = service.getDashboard(allScope, "2026-05", null)
+        val result = service.getDashboard(emptyList(), "2026-05")
 
         assertThat(result.salesSummary.actualAmount).isZero()
         assertThat(result.staffDeployment.byAccountType).isEmpty()
@@ -345,19 +342,18 @@ class AdminDashboardServiceTest {
         stubEmpty()
         val expected = YearMonth.now().toString()
 
-        val result = service.getDashboard(allScope, null, null)
+        val result = service.getDashboard(emptyList(), null)
 
         assertThat(result.salesSummary.yearMonth).isEqualTo(expected)
         assertThat(result.staffDeployment.yearMonth).isEqualTo(expected)
     }
 
     @Test
-    @DisplayName("T12 조장(지점 제한) 미선택 조회 — branchName 에 본인 지점명 반영")
+    @DisplayName("T12 지점 제한(단일 지점) 조회 — branchName 에 본인 지점명 반영")
     fun branchLabelForLeaderScope() {
         stubEmpty()
-        val leaderScope = DataScope(branchCodes = listOf("1000"), isAllBranches = false)
 
-        val result = service.getDashboard(leaderScope, "2026-05", null, mapOf("1000" to "서울1지점"))
+        val result = service.getDashboard(listOf("1000"), "2026-05", mapOf("1000" to "서울1지점"))
 
         assertThat(result.salesSummary.branchName).isEqualTo("서울1지점")
         assertThat(result.staffDeployment.branchName).isEqualTo("서울1지점")
@@ -365,23 +361,22 @@ class AdminDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("T13 전사 권한 전체 조회 — branchName '전체'")
-    fun branchLabelForAllBranches() {
+    @DisplayName("T13 조회 코드 빈 목록(권한 지점 없음) — branchName '전체'")
+    fun branchLabelForEmptyCodes() {
         stubEmpty()
 
-        val result = service.getDashboard(allScope, "2026-05", null, mapOf("1000" to "서울1지점"))
+        val result = service.getDashboard(emptyList(), "2026-05", mapOf("1000" to "서울1지점"))
 
         assertThat(result.salesSummary.branchName).isEqualTo("전체")
     }
 
     @Test
-    @DisplayName("T14 복수 지점 권한 미선택 조회 — 'OO 외 N개' 라벨")
+    @DisplayName("T14 복수 지점 조회 — 'OO 외 N개' 라벨")
     fun branchLabelForMultipleBranches() {
         stubEmpty()
-        val multiScope = DataScope(branchCodes = listOf("1000", "2000"), isAllBranches = false)
 
         val result = service.getDashboard(
-            multiScope, "2026-05", null, mapOf("1000" to "서울1지점", "2000" to "부산지점"),
+            listOf("1000", "2000"), "2026-05", mapOf("1000" to "서울1지점", "2000" to "부산지점"),
         )
 
         assertThat(result.salesSummary.branchName).isEqualTo("서울1지점 외 1개")
