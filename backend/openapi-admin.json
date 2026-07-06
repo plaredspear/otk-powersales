@@ -180,6 +180,9 @@
           "accountStatusName" : {
             "type" : [ "string", "null" ]
           },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
           "address1" : {
             "type" : [ "string", "null" ]
           },
@@ -203,6 +206,12 @@
             "type" : [ "string", "null" ]
           },
           "phone" : {
+            "type" : [ "string", "null" ]
+          },
+          "representative" : {
+            "type" : [ "string", "null" ]
+          },
+          "zipCode" : {
             "type" : [ "string", "null" ]
           }
         },
