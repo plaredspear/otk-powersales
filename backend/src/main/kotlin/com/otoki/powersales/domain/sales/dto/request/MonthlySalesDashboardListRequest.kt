@@ -13,6 +13,9 @@ package com.otoki.powersales.domain.sales.dto.request
  *
  * [targetRegistration]: 목표등록 구분 — 거래처목표등록마스터(SalesProgressRateMaster)의
  * 해당 (거래처, 연, 월) row 존재유무. "registered"=row 존재, "unregistered"=row 미존재, null=전체.
+ *
+ * [deploymentFilter]: 근무등록 구분 — 선택 지점 범위에서 여사원이 근무등록(출근등록)한 거래처 기준
+ * (MFEIS keySet). "deployed"=근무등록 거래처, "undeployed"=미등록 거래처, null/기타=전체.
  */
 data class MonthlySalesDashboardListRequest(
     val year: Int,
@@ -24,6 +27,7 @@ data class MonthlySalesDashboardListRequest(
     val distributionKeyword: String? = null,
     val accountTypeKeyword: String? = null,
     val targetRegistration: String? = null,
+    val deploymentFilter: String? = null,
     val page: Int = 0,
     val size: Int = 20,
     val sort: String? = null,

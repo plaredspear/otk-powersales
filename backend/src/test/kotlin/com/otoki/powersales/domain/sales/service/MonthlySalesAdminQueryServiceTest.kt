@@ -231,7 +231,7 @@ class MonthlySalesAdminQueryServiceTest {
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns emptyList()
         every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2026") } returns emptyList()
         // 진열 1.5 + 1.0 = 2.5, 행사 0.75 → 상시/임시·위탁 무필터 전체 합산
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", emptyList()) } returns listOf(
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", listOf("B001")) } returns listOf(
             deploymentRow(1, "진열", "1.5"),
             deploymentRow(1, "진열", "1.0"),
             deploymentRow(1, "행사", "0.75"),
@@ -246,6 +246,69 @@ class MonthlySalesAdminQueryServiceTest {
     }
 
     @Test
+    @DisplayName("getList — deploymentFilter='deployed' 는 근무등록(MFEIS keySet) 거래처만 남긴다")
+    fun listFiltersDeployedAccountsOnly() {
+        val accA = account(1, "S001") // MFEIS 존재 (근무등록)
+        val accB = account(2, "S002") // MFEIS 없음 (미등록)
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(accA, accB)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), any()) } returns emptyList()
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", listOf("B001")) } returns listOf(
+            deploymentRow(1, "진열", "1.0"),
+        )
+
+        val deployed = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), deploymentFilter = "deployed"),
+        )
+        assertThat(deployed.items.map { it.accountId }).containsExactly(1L)
+
+        val undeployed = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), deploymentFilter = "undeployed"),
+        )
+        assertThat(undeployed.items.map { it.accountId }).containsExactly(2L)
+
+        val all = service.getList(
+            allBranchesScope,
+            MonthlySalesDashboardListRequest(2026, 4, listOf("B001"), deploymentFilter = null),
+        )
+        assertThat(all.items.map { it.accountId }).containsExactlyInAnyOrder(1L, 2L)
+    }
+
+    @Test
+    @DisplayName("getSummary — deploymentFilter='deployed' 는 근무등록 거래처만 목표/실적 누계에 합산")
+    fun summaryAggregatesDeployedAccountsOnly() {
+        val accA = account(1, "S001") // 근무등록 + 실적 1000 + 목표 2000
+        val accB = account(2, "S002") // 미등록 + 실적 500 + 목표 3000
+        every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(accA, accB)
+        every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), any()) } returns listOf(
+            row(accountId = 1, salesDate = "202604", ship1 = 1000),
+            row(accountId = 2, salesDate = "202604", ship1 = 500),
+        )
+        // 추이(6개월)용 이전 연도 조회는 목표 없음, 당월 연도(2026)만 목표 존재
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), any()) } returns emptyList()
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(any(), "2026") } returns listOf(
+            target(month = 4, rt = 2000.0, accountId = 1),
+            target(month = 4, rt = 3000.0, accountId = 2),
+        )
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", listOf("B001")) } returns listOf(
+            deploymentRow(1, "진열", "1.0"),
+        )
+
+        val result = service.getSummary(
+            allBranchesScope, year = 2026, month = 4,
+            costCenterCodes = listOf("B001"), customerKeyword = null, accountGroup = null,
+            deploymentFilter = "deployed",
+        )
+
+        // 근무등록된 거래처(1)만 반영 — 거래처(2) 실적/목표는 제외
+        assertThat(result.totalAchievedAmount).isEqualTo(1000L)
+        assertThat(result.totalTargetAmount).isEqualTo(2000L)
+        assertThat(result.overallAchievementRate).isEqualTo(50.0)
+    }
+
+    @Test
     @DisplayName("getList — 여사원 투입 없는 거래처는 진열/행사/총인원 모두 0")
     fun listHeadcountZeroWhenNoDeployment() {
         val acc = account(2, "S002")
@@ -253,7 +316,7 @@ class MonthlySalesAdminQueryServiceTest {
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(2L)) } returns emptyList()
         every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(2L), "2026") } returns emptyList()
         // 다른 거래처(1) 투입만 존재 → 조회 거래처(2)는 매핑 없음
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", emptyList()) } returns listOf(
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", listOf("B001")) } returns listOf(
             deploymentRow(1, "진열", "1.0"),
         )
 
@@ -272,7 +335,7 @@ class MonthlySalesAdminQueryServiceTest {
         every { accountRepository.findByBranchCodeIn(listOf("B001")) } returns listOf(acc)
         every { monthlySalesHistoryGateway.findBySalesDatesByAccountId(any(), listOf(1L)) } returns emptyList()
         every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2026") } returns emptyList()
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", emptyList()) } returns listOf(
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", listOf("B001")) } returns listOf(
             deploymentRow(1, "진열", "1.0"),
             deploymentRow(1, "기타", "9.0"),
             deploymentRow(1, "", "9.0"),

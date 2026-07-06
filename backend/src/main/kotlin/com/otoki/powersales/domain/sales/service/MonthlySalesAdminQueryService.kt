@@ -76,6 +76,7 @@ class MonthlySalesAdminQueryService(
         distributionKeyword: String? = null,
         accountTypeKeyword: String? = null,
         targetRegistration: String? = null,
+        deploymentFilter: String? = null,
     ): MonthlySalesDashboardSummaryResponse {
         validateParams(year, month, costCenterCodes)
         val effectiveCodes = applyScope(scope, costCenterCodes)
@@ -84,7 +85,12 @@ class MonthlySalesAdminQueryService(
         // 목표등록 구분 필터 — 목표 map(row 존재유무) 조회 후 accounts 필터 (목록/추이와 정합).
         val candidateIds = candidateAccounts.map { it.id }
         val targetByAccountId = findTargetMap(candidateIds, year, month)
-        val accounts = filterByTargetRegistration(candidateAccounts, targetByAccountId, targetRegistration)
+        val targetFiltered = filterByTargetRegistration(candidateAccounts, targetByAccountId, targetRegistration)
+
+        // 근무등록 구분 필터 — 선택 지점(effectiveCodes) 범위의 근무등록(출근등록) 거래처 keySet 기준.
+        // KPI 누계(목표/실적)와 월별 추이가 근무등록 거래처만 반영하도록 목록과 동일 필터 적용.
+        val deployedAccountIds = findHeadcountMap(year, month, effectiveCodes).keys
+        val accounts = filterByDeployment(targetFiltered, deployedAccountIds, deploymentFilter)
 
         if (accounts.isEmpty()) {
             return MonthlySalesDashboardSummaryResponse(
@@ -274,11 +280,16 @@ class MonthlySalesAdminQueryService(
         val targetByAccountId = findTargetMap(accountIds, request.year, request.month)
 
         // 목표등록 구분 필터 — 거래처목표등록마스터 row 존재유무 기준 (registered/unregistered).
-        val filteredAccounts = filterByTargetRegistration(accounts, targetByAccountId, request.targetRegistration)
-        if (filteredAccounts.isEmpty()) return emptyList()
+        val targetFiltered = filterByTargetRegistration(accounts, targetByAccountId, request.targetRegistration)
+        if (targetFiltered.isEmpty()) return emptyList()
 
-        // 환산인원 — 거래처별 진열/행사 환산인원 map (MFEIS 1 trip 배치 조회, N+1 회피)
-        val headcountByAccountId = findHeadcountMap(request.year, request.month)
+        // 환산인원 — 선택 지점 범위의 거래처별 진열/행사 환산인원 map (MFEIS 1 trip 배치 조회, N+1 회피).
+        // 이 맵의 keySet 이 근무등록(출근등록) 거래처 집합이므로 표시(headcount)와 필터 기준이 동일.
+        val headcountByAccountId = findHeadcountMap(request.year, request.month, effectiveCodes)
+
+        // 근무등록 구분 필터 — 선택 지점 범위의 근무등록 거래처 keySet 기준 (deployed/undeployed).
+        val filteredAccounts = filterByDeployment(targetFiltered, headcountByAccountId.keys, request.deploymentFilter)
+        if (filteredAccounts.isEmpty()) return emptyList()
 
         return filteredAccounts.map { account ->
             val currentOro = oroByKey[account.id to currentSalesDate]
@@ -457,6 +468,27 @@ class MonthlySalesAdminQueryService(
         else -> accounts
     }
 
+    /**
+     * 근무등록 구분 필터 — 선택 지점 범위에서 여사원이 근무등록(출근등록)한 거래처 기준.
+     *
+     * [deployedAccountIds] 는 [findHeadcountMap] 이 조회한 (선택 지점, 연, 월) MFEIS keySet 으로,
+     * 여사원이 실제 출근/근무등록하여 환산인원이 잡히는 거래처 account_id 집합이다.
+     * MFEIS 는 출근등록(attendanceLog IS NOT NULL)된 TeamMemberSchedule 만 모수로 적재되므로,
+     * 이 집합은 "1번이라도 근무등록한 거래처" 와 정합. 판정 주체는 사원 본인이 아니라 선택 지점의
+     * 임의 여사원(누구라도) 이다 (사용자 결정 — web 은 지점 단위 조회).
+     *
+     * "deployed"=근무등록 거래처만, "undeployed"=미등록 거래처만, null/기타 값=전체(무필터).
+     */
+    private fun filterByDeployment(
+        accounts: List<Account>,
+        deployedAccountIds: Set<Long>,
+        deploymentFilter: String?,
+    ): List<Account> = when (deploymentFilter?.trim()?.lowercase()) {
+        "deployed" -> accounts.filter { it.id in deployedAccountIds }
+        "undeployed" -> accounts.filter { it.id !in deployedAccountIds }
+        else -> accounts
+    }
+
     private fun buildCategorySales(
         oroRow: MonthlySalesRow?,
         target: SalesProgressRateMaster?,
@@ -559,20 +591,23 @@ class MonthlySalesAdminQueryService(
      * 거래처별 진열/행사 환산인원 map — MFEIS(월별 여사원 통합일정) 1 trip 배치 조회.
      *
      * [MonthlyFemaleEmployeeIntegrationScheduleRepository.findDeploymentDashboardRows] 로 해당 (연, 월) 의
-     * MFEIS row 를 전사 조회(costCenterCodes 빈 목록 = 전체) 후, `account_id` 로 group + `workingCategory1`
-     * (진열/행사) 별 `convertedHeadcount` 합산. 거래처 기준 스코프이므로 지점 필터는 걸지 않고, 매핑은
-     * 호출 측이 조회 거래처 account_id 로만 lookup 한다.
+     * MFEIS row 를 [costCenterCodes] 스코프로 조회(빈 목록 = 전사) 후, `account_id` 로 group + `workingCategory1`
+     * (진열/행사) 별 `convertedHeadcount` 합산. 매핑은 호출 측이 조회 거래처 account_id 로만 lookup 한다.
+     *
+     * 근무등록 필터([deploymentFilter])는 이 맵의 keySet(= 선택 지점 범위에서 여사원이 실제 출근/근무등록한
+     * 거래처)을 판정 기준으로 재사용하므로, 표시용 headcount 와 필터/집계 기준이 같은 스코프에서 나온다.
+     * MFEIS 는 출근등록(attendanceLog IS NOT NULL)된 TMS 만 모수로 적재되므로 keySet = 출근등록 거래처 정합.
      *
      * 사용자 결정 (레거시 미존재 신규 조합):
      * - 상시/임시(workingCategory5) 필터 미적용 — 전체 포함.
      * - 위탁(consignmentAcc) 제외 미적용 — 전체 포함.
      * - 진열 = workingCategory1='진열' 합, 행사 = '행사' 합, 총인원 = 진열 + 행사.
      */
-    private fun findHeadcountMap(year: Int, month: Int): Map<Long, HeadcountSummary> {
+    private fun findHeadcountMap(year: Int, month: Int, costCenterCodes: List<String>): Map<Long, HeadcountSummary> {
         val rows = mfeisRepository.findDeploymentDashboardRows(
             year = year.toString(),
             month = month.toString(),
-            costCenterCodes = emptyList(),
+            costCenterCodes = costCenterCodes,
         )
         return rows
             .asSequence()

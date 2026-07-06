@@ -34593,6 +34593,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "deploymentFilter",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -34716,6 +34723,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "deploymentFilter",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "sort",
           "required" : false,
           "schema" : {
@@ -34805,6 +34819,13 @@
         }, {
           "in" : "query",
           "name" : "targetRegistration",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "deploymentFilter",
           "required" : false,
           "schema" : {
             "type" : "string"

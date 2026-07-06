@@ -31,6 +31,7 @@ interface QueryParams {
   distributionKeyword?: string;
   accountTypeKeyword?: string;
   targetRegistration?: 'registered' | 'unregistered';
+  deploymentFilter?: 'deployed' | 'undeployed';
 }
 
 /**
@@ -50,6 +51,8 @@ export default function MonthlySalesDashboardPage() {
   const [distributionKeyword, setDistributionKeyword] = useState<string>('');
   const [accountTypeKeyword, setAccountTypeKeyword] = useState<string>('');
   const [targetRegistration, setTargetRegistration] = useState<'registered' | 'unregistered' | undefined>(undefined);
+  // 근무등록 필터 — 첫 진입 기본값 '등록'(deployed): 조회월에 여사원이 근무등록한 거래처만.
+  const [deploymentFilter, setDeploymentFilter] = useState<'deployed' | 'undeployed' | undefined>('deployed');
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
   const [page, setPage] = useState<number>(0);
   const [pageSize, setPageSize] = useState<number>(20);
@@ -62,7 +65,7 @@ export default function MonthlySalesDashboardPage() {
       const p = queryParams!;
       return fetchSummary(
         p.year, p.month, p.codes, p.customerKeyword, undefined,
-        p.distributionKeyword, p.accountTypeKeyword, p.targetRegistration,
+        p.distributionKeyword, p.accountTypeKeyword, p.targetRegistration, p.deploymentFilter,
       );
     },
     enabled: queryParams != null,
@@ -80,6 +83,7 @@ export default function MonthlySalesDashboardPage() {
         distributionKeyword: p.distributionKeyword,
         accountTypeKeyword: p.accountTypeKeyword,
         targetRegistration: p.targetRegistration,
+        deploymentFilter: p.deploymentFilter,
         page,
         size: pageSize,
         sort,
@@ -118,6 +122,7 @@ export default function MonthlySalesDashboardPage() {
         distributionKeyword: distributionKeyword.trim() || undefined,
         accountTypeKeyword: accountTypeKeyword.trim() || undefined,
         targetRegistration,
+        deploymentFilter,
       });
     }
     // 최초 자동 조회만 담당 — queryParams 가 채워진 뒤의 재조회는 사용자 조작에 맡긴다.
@@ -141,6 +146,7 @@ export default function MonthlySalesDashboardPage() {
           distributionKeyword: queryParams.distributionKeyword,
           accountTypeKeyword: queryParams.accountTypeKeyword,
           targetRegistration: queryParams.targetRegistration,
+          deploymentFilter: queryParams.deploymentFilter,
           sort,
         }),
         totalCount: list?.pageInfo.totalElements,
@@ -269,21 +275,37 @@ export default function MonthlySalesDashboardPage() {
         exportLoading={exporting}
         searchLoading={summaryQuery.isLoading || listQuery.isLoading}
         periodFilter={
-          <Space direction="vertical" size={4}>
-            <span>조회월:</span>
-            <DatePicker
-              picker="month"
-              value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
-              onChange={(value) => {
-                if (!value) return;
-                setYear(value.year());
-                setMonth(value.month() + 1);
-              }}
-              allowClear={false}
-              format="YYYY-MM"
-              style={{ width: 140 }}
-            />
-          </Space>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <Space direction="vertical" size={4}>
+              <span>조회월:</span>
+              <DatePicker
+                picker="month"
+                value={dayjs(`${year}-${String(month).padStart(2, '0')}-01`)}
+                onChange={(value) => {
+                  if (!value) return;
+                  setYear(value.year());
+                  setMonth(value.month() + 1);
+                }}
+                allowClear={false}
+                format="YYYY-MM"
+                style={{ width: 140 }}
+              />
+            </Space>
+            <Space direction="vertical" size={4}>
+              <span>근무등록:</span>
+              <Select
+                value={deploymentFilter}
+                onChange={(v) => setDeploymentFilter(v)}
+                style={{ width: 120 }}
+                allowClear
+                placeholder="전체"
+                options={[
+                  { value: 'deployed', label: '등록' },
+                  { value: 'undeployed', label: '미등록' },
+                ]}
+              />
+            </Space>
+          </div>
         }
         extraFilters={
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
