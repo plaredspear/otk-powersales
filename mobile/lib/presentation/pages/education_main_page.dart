@@ -4,6 +4,7 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/theme/app_typography.dart';
 import 'package:mobile/domain/entities/education_category.dart';
 import 'package:mobile/presentation/widgets/education/education_category_card.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// 교육 메인 화면
 ///
@@ -14,7 +15,26 @@ class EducationMainPage extends StatelessWidget {
   const EducationMainPage({super.key});
 
   /// 카테고리 선택 핸들러
-  void _onCategoryTap(BuildContext context, EducationCategory category) {
+  ///
+  /// 외부 링크 카테고리(예: 교육 평가)는 외부 브라우저로 연결하고,
+  /// 그 외에는 해당 카테고리의 게시물 목록 화면으로 이동한다.
+  Future<void> _onCategoryTap(
+    BuildContext context,
+    EducationCategory category,
+  ) async {
+    final url = category.externalUrl;
+    if (url != null) {
+      final uri = Uri.tryParse(url);
+      final launched = uri != null &&
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('페이지를 열 수 없습니다')),
+        );
+      }
+      return;
+    }
+
     AppRouter.navigateTo(
       context,
       AppRouter.educationList,
