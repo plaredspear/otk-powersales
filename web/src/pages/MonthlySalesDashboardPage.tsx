@@ -107,6 +107,7 @@ export default function MonthlySalesDashboardPage() {
       distributionKeyword: distributionKeyword.trim() || undefined,
       accountTypeKeyword: accountTypeKeyword.trim() || undefined,
       targetRegistration,
+      deploymentFilter,
     });
   };
 
