@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionList
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionPosProductResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportResponse
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.service.ReportBranchScopeService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
@@ -47,6 +48,20 @@ class AdminPromotionController(
     @GetMapping("/target-actual-report/branches")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getTargetActualReportBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+    }
+
+    /**
+     * 행사마스터 목록 화면 지점 셀렉터 옵션.
+     *
+     * 전사 권한자는 전 지점, 그 외는 본인 지점 1건 (목표 대비 실적 보고서 셀렉터와 동일 산출 —
+     * [ReportBranchScopeService.getBranches]). 화면 게이팅과 동일한 promotion READ 로 가드.
+     */
+    @GetMapping("/branches")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun getPromotionBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
         return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
@@ -106,6 +121,7 @@ class AdminPromotionController(
         @RequestParam(required = false) @Size(min = 1, max = 100) primaryProduct: String?,
         @RequestParam(required = false) @Size(min = 1, max = 100) employeeKeyword: String?,
         @RequestParam(required = false, defaultValue = "false") ownerOnly: Boolean,
+        @RequestParam(required = false) branchCode: String?,
     ): ResponseEntity<ByteArray> {
         val result = adminPromotionService.exportPromotions(
             scope = scope,
@@ -118,7 +134,8 @@ class AdminPromotionController(
             category1 = category1,
             primaryProduct = primaryProduct,
             employeeKeyword = employeeKeyword,
-            ownerOnly = ownerOnly
+            ownerOnly = ownerOnly,
+            branchCodes = resolveBranchCodes(principal, branchCode)
         )
         return ExcelResponseUtils.build(result)
     }
@@ -138,6 +155,7 @@ class AdminPromotionController(
         @RequestParam(required = false) @Size(min = 1, max = 100) primaryProduct: String?,
         @RequestParam(required = false) @Size(min = 1, max = 100) employeeKeyword: String?,
         @RequestParam(required = false, defaultValue = "false") ownerOnly: Boolean,
+        @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<PromotionListResponse>> {
@@ -153,6 +171,7 @@ class AdminPromotionController(
             primaryProduct = primaryProduct,
             employeeKeyword = employeeKeyword,
             ownerOnly = ownerOnly,
+            branchCodes = resolveBranchCodes(principal, branchCode),
             page = page,
             size = size
         )
@@ -253,5 +272,21 @@ class AdminPromotionController(
     ): ResponseEntity<ApiResponse<PromotionDetailResponse>> {
         val response = adminPromotionService.cloneWithChildren(scope, id, principal.requireEmployeeId())
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
+    }
+
+    /**
+     * 목록/엑셀 지점 필터에 넘길 지점 코드 목록 산출.
+     *
+     * [ReportBranchScopeService.effectiveBranchCodes] 결과를 목록 쿼리용 `List<String>?` 로 변환한다:
+     * - All (전사 권한자 + 선택 없음) → null (지점 필터 미적용, 가시 범위 전건)
+     * - Filtered → 해당 지점 코드 (그 지점으로 좁힘)
+     * - NoAccess (권한 지점 없음 / 선택값이 본인 지점 밖) → emptyList (매칭 0건, IDOR 차단)
+     */
+    private fun resolveBranchCodes(principal: WebUserPrincipal, branchCode: String?): List<String>? {
+        return when (val result = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }
     }
 }

@@ -6,6 +6,7 @@ import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import RefreshButton from '@/components/common/RefreshButton';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
+import { usePromotionBranches } from '@/hooks/promotion/usePromotionBranches';
 import { usePermission } from '@/hooks/usePermission';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
@@ -55,6 +56,7 @@ export default function PromotionListPage() {
       category1: '',
       primaryProduct: '',
       employeeKeyword: '',
+      branchCode: '',
       ownerOnly: '',
     },
     defaultPageSize: 50,
@@ -69,8 +71,18 @@ export default function PromotionListPage() {
     category1,
     primaryProduct,
     employeeKeyword,
+    branchCode,
     ownerOnly,
   } = filters;
+
+  // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조 정합).
+  //  - 다중 지점(전사 권한자): Select 로 선택
+  //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. branchCode 는 빈 값이라 backend 가 본인 소속 지점으로
+  //    자동 스코프하므로 별도 전송 불필요.
+  const { data: branches } = usePromotionBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
 
   // 조회버튼 분리형: 입력 위젯은 로컬 편집 버퍼, URL filters 가 source of truth.
   // 마운트 시 URL 값으로 1회 초기화하여 새로고침/복귀 시 위젯 표시가 맞도록 한다.
@@ -83,6 +95,7 @@ export default function PromotionListPage() {
   const [filterCategory1, setFilterCategory1] = useState(category1 ?? '');
   const [filterPrimaryProduct, setFilterPrimaryProduct] = useState(primaryProduct ?? '');
   const [filterEmployeeKeyword, setFilterEmployeeKeyword] = useState(employeeKeyword ?? '');
+  const [filterBranchCode, setFilterBranchCode] = useState(branchCode ?? '');
 
   const handleSearch = () => {
     setFilters({
@@ -95,6 +108,7 @@ export default function PromotionListPage() {
       category1: filterCategory1,
       primaryProduct: filterPrimaryProduct,
       employeeKeyword: filterEmployeeKeyword,
+      branchCode: filterBranchCode,
     });
   };
 
@@ -116,6 +130,7 @@ export default function PromotionListPage() {
     category1: category1 || undefined,
     primaryProduct: primaryProduct || undefined,
     employeeKeyword: employeeKeyword || undefined,
+    branchCode: branchCode || undefined,
     ownerOnly: ownerOnly === 'true' || undefined,
     page,
     size: pageSize,
@@ -141,6 +156,7 @@ export default function PromotionListPage() {
           category1: category1 || undefined,
           primaryProduct: primaryProduct || undefined,
           employeeKeyword: employeeKeyword || undefined,
+          branchCode: branchCode || undefined,
           ownerOnly: ownerOnly === 'true' || undefined,
         }),
         totalCount: data?.totalElements ?? 0,
@@ -327,7 +343,24 @@ export default function PromotionListPage() {
         </Space>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        {isMultiBranch && (
+          <Select
+            placeholder="지점 (전체)"
+            value={filterBranchCode || undefined}
+            onChange={(v) => setFilterBranchCode(v ?? '')}
+            style={{ width: 160 }}
+            options={branchOptions}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+          />
+        )}
+        {singleBranch && (
+          <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+            지점: {singleBranch.branchName}
+          </Tag>
+        )}
         <Select
           style={{ width: 130 }}
           value={filterPromotionType}

@@ -50,13 +50,13 @@ class PromotionRepositoryEmployeeKeywordSearchTest {
         testEntityManager.clear()
     }
 
-    private fun persistPromotion(): Promotion =
+    private fun persistPromotion(costCenterCode: String = "5815"): Promotion =
         testEntityManager.persistAndFlush(
             Promotion(
                 promotionNumber = "PM-${seq++}",
                 startDate = LocalDate.of(2026, 6, 1),
                 endDate = LocalDate.of(2026, 6, 30),
-                costCenterCode = "5815",
+                costCenterCode = costCenterCode,
                 isDeleted = false,
             ),
         )
@@ -78,7 +78,7 @@ class PromotionRepositoryEmployeeKeywordSearchTest {
             ),
         )
 
-    private fun search(employeeKeyword: String?) =
+    private fun search(employeeKeyword: String?, branchCodes: List<String>? = null) =
         promotionRepository.searchForAdmin(
             policyPredicate = allowAll,
             keyword = null,
@@ -92,6 +92,7 @@ class PromotionRepositoryEmployeeKeywordSearchTest {
             employeeKeyword = employeeKeyword,
             ownerOnly = false,
             currentUserId = null,
+            branchCodes = branchCodes,
             pageable = pageable,
         )
 
@@ -164,5 +165,54 @@ class PromotionRepositoryEmployeeKeywordSearchTest {
 
         assertThat(result.content).extracting<Long> { it.id }.containsExactlyInAnyOrder(p1.id, p2.id)
         assertThat(result.totalElements).isEqualTo(2)
+    }
+
+    @Test
+    @DisplayName("branchCodes 지정 — 그 지점(costCenterCode) 소속 행사만 반환")
+    fun filtersByBranchCode() {
+        val branchA = persistPromotion(costCenterCode = "1101")
+        val branchB = persistPromotion(costCenterCode = "1102")
+
+        val result = search(employeeKeyword = null, branchCodes = listOf("1101"))
+
+        assertThat(result.content).extracting<Long> { it.id }.containsExactly(branchA.id)
+        assertThat(result.totalElements).isEqualTo(1)
+        assertThat(branchB.id).isNotEqualTo(branchA.id) // 두 행사가 실제로 서로 다른 지점임을 명시
+    }
+
+    @Test
+    @DisplayName("branchCodes 다중 지정 — IN 매칭된 지점 소속 행사 모두 반환")
+    fun filtersByMultipleBranchCodes() {
+        val a = persistPromotion(costCenterCode = "1101")
+        val b = persistPromotion(costCenterCode = "1102")
+        persistPromotion(costCenterCode = "1103")
+
+        val result = search(employeeKeyword = null, branchCodes = listOf("1101", "1102"))
+
+        assertThat(result.content).extracting<Long> { it.id }.containsExactlyInAnyOrder(a.id, b.id)
+        assertThat(result.totalElements).isEqualTo(2)
+    }
+
+    @Test
+    @DisplayName("branchCodes=null — 지점 필터 미적용 (전체 반환)")
+    fun nullBranchCodesReturnsAll() {
+        persistPromotion(costCenterCode = "1101")
+        persistPromotion(costCenterCode = "1102")
+
+        val result = search(employeeKeyword = null, branchCodes = null)
+
+        assertThat(result.totalElements).isEqualTo(2)
+    }
+
+    @Test
+    @DisplayName("branchCodes=emptyList — NoAccess 산출값. 매칭 0건")
+    fun emptyBranchCodesReturnsNone() {
+        persistPromotion(costCenterCode = "1101")
+        persistPromotion(costCenterCode = "1102")
+
+        val result = search(employeeKeyword = null, branchCodes = emptyList())
+
+        assertThat(result.content).isEmpty()
+        assertThat(result.totalElements).isEqualTo(0)
     }
 }

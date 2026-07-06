@@ -26,6 +26,7 @@ interface PromotionRepositoryCustom {
      * `primaryProduct` 는 대표제품명(`Product.name`)/제품코드(`Product.productCode`) OR like 검색,
      * `employeeKeyword` 는 배정된 행사사원의 사번(`Employee.employeeCode`)/성명(`Employee.name`) OR like
      * EXISTS 필터(해당 키워드 매칭 행사사원이 1명 이상 배정된 행사만 — promotion row 중복 없이 페이징/count 정합 유지).
+     * `branchCodes` 는 지점 스코프(행사 소속 지점 `Promotion.costCenterCode` IN) 필터. null 이면 미적용(전건).
      * 모두 AND 합성.
      */
     fun searchForAdmin(
@@ -41,6 +42,7 @@ interface PromotionRepositoryCustom {
         employeeKeyword: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
+        branchCodes: List<String>?,
         pageable: Pageable
     ): Page<Promotion>
 

@@ -19,6 +19,8 @@ export interface PromotionListParams {
   employeeKeyword?: string;
   /** true 면 내가 owner 인 행사만 (SF ListView filterScope=Mine 대응). */
   ownerOnly?: boolean;
+  /** 지점 스코프 — 행사 소속 지점(costCenterCode) 필터. 전사 권한자만 선택 가능(그 외는 본인 지점 자동 스코프). */
+  branchCode?: string;
   page: number;
   size: number;
 }
@@ -109,6 +111,26 @@ export interface PromotionFormMeta {
 
 // --- API functions ---
 
+/** 행사마스터 목록 화면 지점 셀렉터 옵션. */
+export interface PromotionBranch {
+  branchCode: string;
+  branchName: string;
+}
+
+/**
+ * 행사마스터 목록 화면 지점 셀렉터 옵션 조회.
+ *
+ * 전사 권한자는 전 지점, 그 외는 본인 지점 1건을 반환한다(권한별 화이트리스트).
+ * 프론트는 응답 길이로 단일/다중을 판별한다(단일이면 Tag 표시, 다중이면 Select).
+ */
+export async function fetchPromotionBranches(): Promise<PromotionBranch[]> {
+  const res = await client.get<ApiResponse<PromotionBranch[]>>('/api/v1/admin/promotions/branches');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function fetchPromotionFormMeta(): Promise<PromotionFormMeta> {
   const res = await client.get<ApiResponse<PromotionFormMeta>>('/api/v1/admin/promotions/form-meta');
   if (!res.data.success || !res.data.data) {
@@ -132,6 +154,7 @@ export async function fetchPromotions(params: PromotionListParams): Promise<Prom
   if (params.primaryProduct) queryParams.primaryProduct = params.primaryProduct;
   if (params.employeeKeyword) queryParams.employeeKeyword = params.employeeKeyword;
   if (params.ownerOnly) queryParams.ownerOnly = 'true';
+  if (params.branchCode) queryParams.branchCode = params.branchCode;
 
   const res = await client.get<ApiResponse<PromotionListData>>('/api/v1/admin/promotions', {
     params: queryParams,
@@ -160,6 +183,7 @@ export function promotionExportParams(
   if (params.primaryProduct) queryParams.primaryProduct = params.primaryProduct;
   if (params.employeeKeyword) queryParams.employeeKeyword = params.employeeKeyword;
   if (params.ownerOnly) queryParams.ownerOnly = 'true';
+  if (params.branchCode) queryParams.branchCode = params.branchCode;
   return queryParams;
 }
 

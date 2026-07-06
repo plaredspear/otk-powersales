@@ -98,6 +98,7 @@ class AdminPromotionService(
         primaryProduct: String?,
         employeeKeyword: String?,
         ownerOnly: Boolean,
+        branchCodes: List<String>?,
         page: Int,
         size: Int
     ): PromotionListResponse {
@@ -123,6 +124,7 @@ class AdminPromotionService(
             employeeKeyword = employeeKeyword,
             ownerOnly = ownerOnly,
             currentUserId = scope.userId,
+            branchCodes = branchCodes,
             pageable = pageable
         )
 
@@ -153,7 +155,8 @@ class AdminPromotionService(
         category1: String?,
         primaryProduct: String?,
         employeeKeyword: String?,
-        ownerOnly: Boolean
+        ownerOnly: Boolean,
+        branchCodes: List<String>?
     ): ExcelResult {
         val policyPredicate = policyEvaluator.buildPredicate(
             scope = scope,
@@ -175,6 +178,7 @@ class AdminPromotionService(
             employeeKeyword = employeeKeyword,
             ownerOnly = ownerOnly,
             currentUserId = scope.userId,
+            branchCodes = branchCodes,
             pageable = pageable
         )
 

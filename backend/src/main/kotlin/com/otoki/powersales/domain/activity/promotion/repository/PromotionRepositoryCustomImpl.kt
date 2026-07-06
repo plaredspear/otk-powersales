@@ -45,12 +45,22 @@ class PromotionRepositoryCustomImpl(
         employeeKeyword: String?,
         ownerOnly: Boolean,
         currentUserId: Long?,
+        branchCodes: List<String>?,
         pageable: Pageable
     ): Page<Promotion> {
         val builder = BooleanBuilder()
 
         builder.and(promotion.isDeleted.eq(false))
         builder.and(policyPredicate)
+
+        // 지점 스코프 — 행사 소속 지점(Promotion.costCenterCode) IN 필터.
+        // 산출된 코드 목록이 비어 있으면(NoAccess) 매칭 0건, null 이면 미적용(가시 범위 전건).
+        if (branchCodes != null) {
+            builder.and(
+                if (branchCodes.isEmpty()) Expressions.FALSE.isTrue
+                else promotion.costCenterCode.`in`(branchCodes)
+            )
+        }
 
         if (!keyword.isNullOrBlank()) {
             val lowerPattern = "%${keyword.lowercase()}%"

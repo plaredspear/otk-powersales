@@ -142,13 +142,13 @@ class AdminPromotionServiceTest {
             every { promotionRepository.searchForAdmin(
                 policyPredicate = any(), keyword = null, promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = false, currentUserId = any(), pageable = pageable
+                ownerOnly = false, currentUserId = any(), branchCodes = any(), pageable = pageable
             ) } returns page
 
             val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = false, page = 0, size = 20
+                ownerOnly = false, branchCodes = null, page = 0, size = 20
             )
 
             assertThat(result.content).hasSize(1)
@@ -167,13 +167,13 @@ class AdminPromotionServiceTest {
             every { promotionRepository.searchForAdmin(
                 policyPredicate = any(), keyword = null, promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = false, currentUserId = any(), pageable = pageable
+                ownerOnly = false, currentUserId = any(), branchCodes = any(), pageable = pageable
             ) } returns PageImpl(emptyList(), pageable, 0)
 
             val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = false, page = 0, size = 20
+                ownerOnly = false, branchCodes = null, page = 0, size = 20
             )
 
             assertThat(result.content).isEmpty()
@@ -189,14 +189,14 @@ class AdminPromotionServiceTest {
                 promotionRepository.searchForAdmin(
                     policyPredicate = any(), keyword = null, promotionType = null,
                     startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                    ownerOnly = true, currentUserId = 77L, pageable = pageable,
+                    ownerOnly = true, currentUserId = 77L, branchCodes = any(), pageable = pageable,
                 )
             } returns PageImpl(emptyList(), pageable, 0)
 
             val result = adminPromotionService.getPromotions(
                 scope = scope, keyword = null, promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = true, page = 0, size = 20,
+                ownerOnly = true, branchCodes = null, page = 0, size = 20,
             )
 
             assertThat(result.totalElements).isEqualTo(0)
@@ -204,7 +204,7 @@ class AdminPromotionServiceTest {
                 promotionRepository.searchForAdmin(
                     policyPredicate = any(), keyword = null, promotionType = null,
                     startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                    ownerOnly = true, currentUserId = 77L, pageable = pageable,
+                    ownerOnly = true, currentUserId = 77L, branchCodes = any(), pageable = pageable,
                 )
             }
         }
@@ -222,7 +222,7 @@ class AdminPromotionServiceTest {
             every { promotionRepository.searchForAdmin(
                 policyPredicate = any(), keyword = null, promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = false, currentUserId = any(), pageable = pageable
+                ownerOnly = false, currentUserId = any(), branchCodes = any(), pageable = pageable
             ) } returns PageImpl(listOf(promotion), pageable, 1)
             every { promotionEmployeeRepository.sumTargetActualAmountByPromotionIds(listOf(1L)) } returns
                 mapOf(1L to (2077400L to 2009770L))
@@ -230,7 +230,7 @@ class AdminPromotionServiceTest {
             val result = adminPromotionService.getPromotions(scope = scope,
                 keyword = null, promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = false, page = 0, size = 20
+                ownerOnly = false, branchCodes = null, page = 0, size = 20
             )
 
             assertThat(result.content[0].targetAmount).isEqualTo(2077400.0)
@@ -255,14 +255,14 @@ class AdminPromotionServiceTest {
                 promotionRepository.searchForAdmin(
                     policyPredicate = any(), keyword = null, promotionType = null,
                     startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                    ownerOnly = false, currentUserId = any(), pageable = pageable,
+                    ownerOnly = false, currentUserId = any(), branchCodes = any(), pageable = pageable,
                 )
             } returns PageImpl(listOf(promotion), pageable, 1)
 
             val result = adminPromotionService.exportPromotions(
                 scope = scope, keyword = null, promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = false,
+                ownerOnly = false, branchCodes = null,
             )
 
             // xlsx (ZIP) magic number "PK" 로 시작 — 유효한 워크북 바이트 검증
@@ -281,14 +281,14 @@ class AdminPromotionServiceTest {
                 promotionRepository.searchForAdmin(
                     policyPredicate = any(), keyword = any(), promotionType = any(),
                     startDate = any(), endDate = any(), accountName = any(), accountNumber = any(), category1 = any(), primaryProduct = any(), employeeKeyword = any(),
-                    ownerOnly = any(), currentUserId = any(), pageable = pageable,
+                    ownerOnly = any(), currentUserId = any(), branchCodes = any(), pageable = pageable,
                 )
             } returns PageImpl(emptyList(), pageable, 0)
 
             adminPromotionService.exportPromotions(
                 scope = scope, keyword = "행사", promotionType = null,
                 startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                ownerOnly = false,
+                ownerOnly = false, branchCodes = null,
             )
 
             // size=50,000 (EXPORT_MAX_ROWS) 단일 페이지로 repository 호출
@@ -296,7 +296,7 @@ class AdminPromotionServiceTest {
                 promotionRepository.searchForAdmin(
                     policyPredicate = any(), keyword = "행사", promotionType = null,
                     startDate = null, endDate = null, accountName = null, accountNumber = null, category1 = null, primaryProduct = null, employeeKeyword = null,
-                    ownerOnly = false, currentUserId = any(), pageable = pageable,
+                    ownerOnly = false, currentUserId = any(), branchCodes = any(), pageable = pageable,
                 )
             }
         }
