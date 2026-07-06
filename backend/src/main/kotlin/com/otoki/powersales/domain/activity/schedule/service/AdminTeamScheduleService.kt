@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
@@ -48,7 +49,7 @@ class AdminTeamScheduleService(
     private val teamScheduleValidator: TeamScheduleValidator,
     private val branchCodeExpander: BranchCodeExpander,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver
+    private val dashboardBranchResolver: DashboardBranchResolver
 ) {
 
     /**
@@ -100,13 +101,16 @@ class AdminTeamScheduleService(
     /**
      * 여사원 일정관리 "지점 선택" 드롭다운 옵션.
      *
-     * SF 레거시 `ScheduleSearchByTeamMemberController.init()` → `CurrentUserBranchNameList.getOrgList()` 정합.
-     * - SYSTEM_ADMIN: `Organization` 전체에서 distinct(Level5 우선)
-     * - ALL_BRANCHES Role (영업지원/본부): SF `RT.Name in ('영업지원실','영업본부')` 분기 (CVS 미포함)
-     * - 그 외 (LEADER, BRANCH_MANAGER, WOMAN 등): 본인 `costCenterCode` 기준 조직 트리 + Retail/제1/CVS사업부
+     * 대시보드/행사마스터/진열스케줄과 동일하게 전사 권한자는 고정 화이트리스트 34개
+     * ([DashboardBranchResolver.DASHBOARD_ALL_BRANCHES] — Retail 32 + 영업지원2팀 + CVS전략팀) 만 노출한다(운영 요구).
+     * 그 외 지점 사용자는 기존과 동일하게 본인 `costCenterCode` 기준 조직 트리
+     * ([WomenScheduleBranchResolver] 위임 — [DashboardBranchResolver.resolveBranches] 내부).
+     *
+     * 셀렉터만 34개로 제한하며, 실제 거래처/일정 조회 스코프([getAccounts]·[getSchedulesWithSummary]) 는
+     * 선택된 거래처/여사원 ID 기준이라 기존 로직을 유지한다.
      */
     fun getBranches(principal: WebUserPrincipal): List<BranchResponse> =
-        womenScheduleBranchResolver.resolveBranches(principal)
+        dashboardBranchResolver.resolveBranches(principal)
 
     /**
      * 여사원 일정관리 "전문행사조" 필터 옵션 — [getForm] 내부 전용.
