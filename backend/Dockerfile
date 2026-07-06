@@ -38,7 +38,7 @@ EXPOSE 8080
 ENV TZ=Asia/Seoul
 
 ENV JAVA_OPTS="-XX:+UseContainerSupport \
-  -XX:MaxRAMPercentage=75.0 \
+  -XX:MaxRAMPercentage=65.0 \
   -XX:InitialRAMPercentage=50.0 \
   -Duser.timezone=Asia/Seoul \
   -Djava.security.egd=file:/dev/./urandom"
