@@ -274,8 +274,19 @@ class AttendanceService(
             .findByEmployeeIdAndWorkingDate(employee.id, today)
             .orElse(null)
 
+        // Spec #587 §1.6/§1.5 — 분기별 출근종류 결정 (attendance_log 적재용 — resolve 단계 결과로 확정)
+        val attendanceType = when {
+            displayMaster != null -> AttendanceType.DISPLAY
+            isEventBranch -> AttendanceType.EVENT
+            else -> AttendanceType.REGULAR
+        }
+
+        // reason(출근 사유)은 신규 모바일 등록 API 에 입력 필드가 없어 항상 null (레거시 home.jsp #reason textarea 미재현).
         val request = AttendanceRegisterRequest(
             scheduleId = teamMemberSchedule.id,
+            employeeId = employee.id,
+            accountId = account?.id,
+            attendanceType = attendanceType,
             equipment1 = safetyCheckSubmission?.equipment1,
             equipment2 = safetyCheckSubmission?.equipment2,
             equipment3 = safetyCheckSubmission?.equipment3,
@@ -337,12 +348,7 @@ class AttendanceService(
         val totalCount = todayTeamMemberSchedules.size
         val registeredCount = todayTeamMemberSchedules.count { it.attendanceLog != null || it.id == teamMemberSchedule.id }
 
-        // Spec #587 §1.6/§1.5 — 분기별 attendanceType 결정 + 응답 필드 채움
-        val attendanceType = when {
-            displayMaster != null -> AttendanceType.DISPLAY
-            isEventBranch -> AttendanceType.EVENT
-            else -> AttendanceType.REGULAR
-        }
+        // Spec #587 §1.6/§1.5 — attendanceType 은 step 5 (등록 요청 구성) 에서 이미 결정됨 (응답 필드에 재사용)
 
         return AttendanceRegisterResponse(
             scheduleId = teamMemberSchedule.id,
@@ -431,8 +437,14 @@ class AttendanceService(
             .findByEmployeeIdAndWorkingDate(targetEmployee.id, today)
             .orElse(null)
 
+        // 대리등록 분기: 진열=DISPLAY / scheduleId(행사·기배정)=REGULAR (본인 등록과 동일 규칙, 행사 분기 없음)
+        val attendanceType = if (displayMaster != null) AttendanceType.DISPLAY else AttendanceType.REGULAR
+
         val request = AttendanceRegisterRequest(
             scheduleId = teamMemberSchedule.id,
+            employeeId = targetEmployee.id,
+            accountId = teamMemberSchedule.account?.id,
+            attendanceType = attendanceType,
             equipment1 = safetyCheckSubmission?.equipment1,
             equipment2 = safetyCheckSubmission?.equipment2,
             equipment3 = safetyCheckSubmission?.equipment3,
@@ -501,7 +513,7 @@ class AttendanceService(
             totalCount = totalCount,
             registeredCount = registeredCount,
             gpsSkipped = true, // 대리등록은 GPS 미적용
-            attendanceType = if (displayMaster != null) AttendanceType.DISPLAY else AttendanceType.REGULAR,
+            attendanceType = attendanceType,
             displayWorkScheduleId = displayMaster?.id,
             scheduleStartDate = displayMaster?.startDate,
             scheduleEndDate = displayMaster?.endDate,

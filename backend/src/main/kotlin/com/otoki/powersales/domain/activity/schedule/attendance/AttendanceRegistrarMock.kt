@@ -19,7 +19,7 @@ import java.time.LocalDateTime
  */
 @Service
 @Transactional(readOnly = true)
-@ConditionalOnProperty(name = ["attendance.registrar.mock.enabled"], havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = ["attendance.registrar.mock.enabled"], havingValue = "true", matchIfMissing = false)
 class AttendanceRegistrarMock(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val attendanceLogRepository: AttendanceLogRepository,
