@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Card, Col, DatePicker, Input, Row, Select, Space, Statistic, Typography, message } from 'antd';
+import { Alert, Card, Col, DatePicker, Input, Row, Select, Space, Statistic, Tooltip, Typography, message } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery } from '@tanstack/react-query';
@@ -293,7 +294,12 @@ export default function MonthlySalesDashboardPage() {
               />
             </Space>
             <Space direction="vertical" size={4}>
-              <span>근무등록:</span>
+              <span>
+                근무등록:{' '}
+                <Tooltip title="선택한 지점에서 조회월에 여사원이 1번이라도 근무등록(출근등록)한 거래처를 기준으로 합니다. '등록'은 근무등록된 거래처만, '미등록'은 근무등록이 없는 거래처만 조회하며, 목표·실적 합계도 해당 거래처 기준으로 집계됩니다.">
+                  <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help', fontSize: 14 }} />
+                </Tooltip>
+              </span>
               <Select
                 value={deploymentFilter}
                 onChange={(v) => setDeploymentFilter(v)}
