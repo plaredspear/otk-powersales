@@ -65,6 +65,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
   const columns: ColumnsType<Account> = [
     { title: '거래처명', dataIndex: 'name', key: 'name', width: 220, fixed: 'left' },
     { title: 'SAP거래처코드', dataIndex: 'externalKey', key: 'externalKey', width: 130 },
+    { title: '거래상태', dataIndex: 'accountStatusName', key: 'accountStatusName', width: 90 },
     { title: '전화', dataIndex: 'phone', key: 'phone', width: 130 },
     { title: '거래처유형', dataIndex: 'accountType', key: 'accountType', width: 110 },
     { title: 'ABC유형', dataIndex: 'abcType', key: 'abcType', width: 90 },
@@ -72,6 +73,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
     { title: '주소', dataIndex: 'address1', key: 'address1', width: 240 },
     { title: '대표자명', dataIndex: 'representative', key: 'representative', width: 100 },
     { title: '거래처지점명', dataIndex: 'branchName', key: 'branchName', width: 120 },
+    { title: '소유자', dataIndex: 'ownerName', key: 'ownerName', width: 100 },
   ];
 
   return (
@@ -83,7 +85,9 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
       onOk={handleConfirm}
       onCancel={onClose}
       okButtonProps={{ disabled: selectedId == null }}
-      width={1000}
+      // 결과 그리드(컬럼 합계 + 라디오 열 ≈ 1470px)가 가로 스크롤 없이 들어가도록 최대한 넓히되,
+      // 초대형 화면에서 화면을 꽉 채우지 않도록 상한(1560px) + 좌우 여백(64px)을 둬 모달 형태를 유지한다.
+      width="min(1560px, calc(100vw - 64px))"
       destroyOnClose
     >
       <Input.Search
@@ -103,7 +107,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
           rowKey="id"
           columns={columns}
           size="small"
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1470 }}
           locale={{
             emptyText: submittedKeyword ? '검색 결과가 없습니다' : '검색어를 입력해주세요',
           }}

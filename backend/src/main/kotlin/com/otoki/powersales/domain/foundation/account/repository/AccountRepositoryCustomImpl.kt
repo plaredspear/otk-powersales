@@ -65,7 +65,9 @@ class AccountRepositoryCustomImpl(
             // policyPredicate 의 owner/hierarchy 절이 ownerUser 를 참조하므로 명시 leftJoin 으로
             // 선언해 암묵 INNER JOIN 을 차단한다. 누락 시 owner_user_id NULL 행이 OR 의 다른
             // 절(cost_center_code 등)로 통과해야 함에도 전부 누락된다.
-            .leftJoin(account.ownerUser, user)
+            // fetchJoin 으로 소유자(ownerUser)를 함께 로드 — AccountListItem.ownerName 이 LAZY
+            // 접근 시 유발하던 N+1 을 제거 (고급 검색 결과 그리드 소유자 컬럼용).
+            .leftJoin(account.ownerUser, user).fetchJoin()
             .where(builder)
             .orderBy(account.name.asc())
             .offset(pageable.offset)

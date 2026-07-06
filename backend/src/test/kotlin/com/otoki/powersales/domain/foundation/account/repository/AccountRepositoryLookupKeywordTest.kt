@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.user.entity.User
 import com.querydsl.core.types.dsl.Expressions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -166,5 +167,29 @@ class AccountRepositoryLookupKeywordTest {
         val result = lookup("존재하지않는키워드")
 
         assertThat(result.content).isEmpty()
+    }
+
+    @Test
+    @DisplayName("소유자(ownerUser)를 fetch join 으로 로드 — 세션 종료 후에도 이름 접근 가능 (N+1 회피)")
+    fun loadsOwnerViaFetchJoin() {
+        val owner = testEntityManager.persistAndFlush(
+            User(username = "owner01", employeeCode = "E0001", password = "x").apply { name = "김성준" }
+        )
+        val account = Account(
+            name = "이마트 여의도점",
+            externalKey = "OWNER-1",
+            accountGroup = "1000",
+            accountStatusName = "거래",
+            isDeleted = false,
+            ownerUser = owner,
+        )
+        testEntityManager.persistAndFlush(account)
+        testEntityManager.clear()
+
+        val result = lookup("여의도")
+
+        // fetch join 이 없으면 clear() 후 LAZY 프록시 접근 시 LazyInitializationException 발생.
+        assertThat(result.content).hasSize(1)
+        assertThat(result.content[0].ownerUser?.name).isEqualTo("김성준")
     }
 }
