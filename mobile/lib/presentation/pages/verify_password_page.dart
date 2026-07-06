@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/error_utils.dart';
 import '../providers/auth_provider.dart';
 import '../providers/password_provider.dart';
+import '../widgets/auth/password_policy_checklist.dart';
 
 /// 현재 비밀번호 확인 페이지 (F54 1단계)
 ///
@@ -168,6 +169,11 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
+
+                  // 변경할 비밀번호 조건 안내 (로그인 강제변경 화면과 동일한 체크리스트 위젯)
+                  // 여기는 '현재' 비밀번호 입력란이므로 입력값을 검증하지 않고,
+                  // 다음 단계에서 입력할 새 비밀번호가 충족해야 할 조건만 중립 상태로 미리 안내한다.
+                  _buildPasswordPolicyGuide(),
                 ],
               ),
             ),
@@ -219,6 +225,33 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
             field,
           ],
         ),
+      ),
+    );
+  }
+
+  /// 변경할 비밀번호 조건 안내.
+  ///
+  /// 새 비밀번호 입력 화면(로그인 강제변경·마이페이지 2단계)과 동일한
+  /// [PasswordPolicyChecklist] 위젯을 재사용해 정책 요건을 표시한다.
+  /// 이 화면은 현재 비밀번호를 확인하는 단계라 입력값을 검증하지 않으므로,
+  /// 빈 문자열을 전달해 중립(대기) 상태의 요건 목록으로만 노출한다.
+  Widget _buildPasswordPolicyGuide() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            '변경할 비밀번호 조건',
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF999999),
+            ),
+          ),
+          SizedBox(height: 8),
+          PasswordPolicyChecklist(password: ''),
+        ],
       ),
     );
   }
