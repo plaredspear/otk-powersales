@@ -12,6 +12,7 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTarg
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.service.PromotionBranchResolver
 import com.otoki.powersales.admin.service.ReportBranchScopeService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionTargetActualReportService
@@ -38,6 +39,7 @@ class AdminPromotionController(
     private val adminPromotionService: AdminPromotionService,
     private val targetActualReportService: AdminPromotionTargetActualReportService,
     private val reportBranchScopeService: ReportBranchScopeService,
+    private val promotionBranchResolver: PromotionBranchResolver,
 ) {
 
     /**
@@ -56,15 +58,15 @@ class AdminPromotionController(
     /**
      * 행사마스터 목록 화면 지점 셀렉터 옵션.
      *
-     * 전사 권한자는 전 지점, 그 외는 본인 지점 1건 (목표 대비 실적 보고서 셀렉터와 동일 산출 —
-     * [ReportBranchScopeService.getBranches]). 화면 게이팅과 동일한 promotion READ 로 가드.
+     * 대시보드와 동일하게 전사 권한자는 고정 화이트리스트 34개([DashboardBranchResolver.DASHBOARD_ALL_BRANCHES]),
+     * 그 외는 본인 지점 1건 ([PromotionBranchResolver]). 화면 게이팅과 동일한 promotion READ 로 가드.
      */
     @GetMapping("/branches")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getPromotionBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+        return ResponseEntity.ok(ApiResponse.success(promotionBranchResolver.getBranches(principal)))
     }
 
     @GetMapping("/form-meta")
@@ -277,13 +279,14 @@ class AdminPromotionController(
     /**
      * 목록/엑셀 지점 필터에 넘길 지점 코드 목록 산출.
      *
-     * [ReportBranchScopeService.effectiveBranchCodes] 결과를 목록 쿼리용 `List<String>?` 로 변환한다:
-     * - All (전사 권한자 + 선택 없음) → null (지점 필터 미적용, 가시 범위 전건)
-     * - Filtered → 해당 지점 코드 (그 지점으로 좁힘)
-     * - NoAccess (권한 지점 없음 / 선택값이 본인 지점 밖) → emptyList (매칭 0건, IDOR 차단)
+     * [PromotionBranchResolver.effectiveBranchCodes] 결과를 목록 쿼리용 `List<String>?` 로 변환한다.
+     * 대시보드와 동일하게 전사 권한자도 34개 화이트리스트로 제한되므로, 선택 없이 조회해도 34개 코드로 좁혀진다:
+     * - All (지점 사용자 위임 경로에서만 발생 가능) → null (지점 필터 미적용)
+     * - Filtered → 해당 지점 코드 (전사 권한자 선택 없음 = 34개 전체 / 선택 시 그 지점 / 지점 사용자 본인 지점)
+     * - NoAccess (선택값이 34개 밖 / 본인 지점 밖 / 권한 지점 없음) → emptyList (매칭 0건, IDOR 차단)
      */
     private fun resolveBranchCodes(principal: WebUserPrincipal, branchCode: String?): List<String>? {
-        return when (val result = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)) {
+        return when (val result = promotionBranchResolver.effectiveBranchCodes(principal, branchCode)) {
             is EffectiveBranchResult.All -> null
             is EffectiveBranchResult.Filtered -> result.codes
             is EffectiveBranchResult.NoAccess -> emptyList()

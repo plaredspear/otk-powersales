@@ -55,6 +55,8 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
 
     @MockkBean private lateinit var reportBranchScopeService: com.otoki.powersales.admin.service.ReportBranchScopeService
 
+    @MockkBean private lateinit var promotionBranchResolver: com.otoki.powersales.admin.service.PromotionBranchResolver
+
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
@@ -66,6 +68,9 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
         // 목록/엑셀 지점 스코프 산출 — 기본은 전사(All, 지점 필터 미적용). branchCode 필터 미지정 케이스 정합.
+        //  - 목록/엑셀(getPromotions/exportPromotions) 은 promotionBranchResolver 를 사용(34개 화이트리스트 제한).
+        //  - target-actual-report 계열은 여전히 reportBranchScopeService 사용.
+        every { promotionBranchResolver.effectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
         every { reportBranchScopeService.effectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
     }
 

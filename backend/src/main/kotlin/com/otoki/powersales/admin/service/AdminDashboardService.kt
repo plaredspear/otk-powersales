@@ -1,6 +1,5 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.dto.response.AccountTypeCount
 import com.otoki.powersales.admin.dto.response.AgeGroupCount
 import com.otoki.powersales.admin.dto.response.BasicStats
@@ -56,19 +55,20 @@ class AdminDashboardService(
 ) {
 
     /**
-     * 대시보드 3섹션 집계 — yearMonth 미지정 시 당월. branchCode 미지정 시 권한 스코프 전체.
+     * 대시보드 3섹션 집계 — yearMonth 미지정 시 당월.
+     *
+     * [effectiveCodes] 는 컨트롤러가 [DashboardBranchResolver.effectiveBranchCodes] 로 산출한
+     * 조회 지점 코드 목록(전사 권한자는 34개 화이트리스트, 지점 사용자는 본인 지점). 빈 목록이면 조회 결과 0건.
      *
      * 거래처유형별 투입현황은 전월(마감) 고정(D2). 매출현황은 실적+기준진도율만(D7).
      */
     fun getDashboard(
-        scope: DataScope,
+        effectiveCodes: List<String>,
         yearMonth: String?,
-        branchCode: String?,
         branchNamesByCode: Map<String, String> = emptyMap(),
     ): DashboardResponse {
         val ym = yearMonth?.let { YearMonth.parse(it, YEAR_MONTH_FORMATTER) } ?: YearMonth.now()
         val previousYm = ym.minusMonths(1)
-        val effectiveCodes = resolveScope(scope, branchCode)
         // 조회 조건(지점)을 화면에 노출하기 위한 라벨 — 코드가 아니라 실제 지점명.
         // 단일 지점이면 그 지점명, 복수면 "OO 외 N", effectiveCodes 가 비면(전사 권한 전체) "전체".
         val branchName = resolveBranchLabel(effectiveCodes, branchNamesByCode)
@@ -294,14 +294,9 @@ class AdminDashboardService(
     // ------------------- helpers -------------------
 
     /**
-     * 권한 스코프 해소 — branchCode 지정 시 권한 검증 후 단일 코드, 미지정 시 권한 범위 전체.
-     *
-     * isAllBranches 면 빈 목록(전사) 반환 — repository 가 빈 목록을 전체로 해석.
-     */
-    /**
      * 조회 조건 라벨 — effectiveCodes(실제 조회 지점) 를 지점명으로 변환해 응답 branchName 에 노출.
      *
-     * - 빈 목록(전사 권한 전체 조회): "전체"
+     * - 빈 목록(조회 권한 지점 없음): "전체" (0건 결과의 표기)
      * - 단일 지점: 그 지점명 (맵 부재 시 코드 fallback)
      * - 복수 지점: "OO 외 N개" (사용자가 어느 범위인지 인지하도록)
      */
@@ -313,19 +308,6 @@ class AdminDashboardService(
         val names = effectiveCodes.map { branchNamesByCode[it] ?: it }
         return if (names.size == 1) names.first()
         else "${names.first()} 외 ${names.size - 1}개"
-    }
-
-    private fun resolveScope(scope: DataScope, branchCode: String?): List<String> {
-        if (scope.isAllBranches) {
-            return branchCode?.let { listOf(it) } ?: emptyList()
-        }
-        if (branchCode != null) {
-            if (branchCode !in scope.branchCodes) {
-                throw com.otoki.powersales.admin.exception.AdminForbiddenException()
-            }
-            return listOf(branchCode)
-        }
-        return scope.branchCodes
     }
 
     private fun findEmployees(effectiveCodes: List<String>): List<DashboardEmployeeProjection> {

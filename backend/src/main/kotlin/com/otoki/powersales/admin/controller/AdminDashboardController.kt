@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.admin.service.AdminDashboardService
@@ -44,7 +45,18 @@ class AdminDashboardController(
         val branchNamesByCode = dashboardBranchResolver.resolveBranches(principal)
             .associate { it.branchCode to it.branchName }
 
-        val response = adminDashboardService.getDashboard(scope, yearMonth, branchCode, branchNamesByCode)
+        // 조회 지점 스코프 — 전사 권한자도 34개 화이트리스트로 제한(셀렉터와 동일 범위).
+        //  - Filtered → 그 코드로 좁힘. NoAccess → 매칭 0건 sentinel(빈 문자열, IN 절 매칭 불가).
+        //  - repository 는 "빈 목록 = 전건" 이므로 NoAccess 를 빈 목록으로 넘기면 안 된다 → sentinel 로 0건 보장.
+        val effectiveCodes = when (
+            val result = dashboardBranchResolver.effectiveBranchCodes(principal, scope, branchCode)
+        ) {
+            is EffectiveBranchResult.All -> emptyList()
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> listOf("")
+        }
+
+        val response = adminDashboardService.getDashboard(effectiveCodes, yearMonth, branchNamesByCode)
         return ResponseEntity.ok(ApiResponse.success(response, "대시보드 조회 성공"))
     }
 

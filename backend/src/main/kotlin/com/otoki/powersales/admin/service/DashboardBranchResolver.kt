@@ -1,5 +1,7 @@
 package com.otoki.powersales.admin.service
 
+import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
@@ -29,15 +31,44 @@ class DashboardBranchResolver(
     /** SF "전 지점 가시" Profile.Name 집합 — [WomenScheduleBranchResolver] 와 동일 기준. */
     private val allBranchesProfiles: Set<String> = setOf("1.본부장", "2.사업부장", "3.영업부장")
 
-    fun resolveBranches(principal: WebUserPrincipal): List<BranchResponse> {
+    /** 전사 권한자 판정 — 셀렉터/조회 스코프 모두 이 기준으로 34개 화이트리스트를 고정한다. */
+    fun isAllBranches(principal: WebUserPrincipal): Boolean {
         val profileName = principal.profileName
-        val isAllBranches = profileName == SYSTEM_ADMIN_PROFILE_NAME ||
+        return profileName == SYSTEM_ADMIN_PROFILE_NAME ||
             principal.isSalesSupport ||
             profileName in allBranchesProfiles
-        return if (isAllBranches) {
+    }
+
+    fun resolveBranches(principal: WebUserPrincipal): List<BranchResponse> {
+        return if (isAllBranches(principal)) {
             DASHBOARD_ALL_BRANCHES
         } else {
             womenScheduleBranchResolver.resolveBranches(principal)
+        }
+    }
+
+    /**
+     * 대시보드 조회 지점 스코프 산출 — 셀렉터([resolveBranches]) 와 동일하게 34개 화이트리스트로 제한.
+     *
+     * - 전사 권한자:
+     *   - 선택값 없음 → 34개 코드 전체(Filtered). (전건 조회가 아니라 34개 지점으로 제한)
+     *   - 선택값이 34개 안 → 그 지점(Filtered).
+     *   - 선택값이 34개 밖 → NoAccess(차단, 34개 밖 지점 조회 방어).
+     * - 그 외(지점 사용자): [DataScope.effectiveBranchCodes] 그대로(본인 지점 스코프).
+     */
+    fun effectiveBranchCodes(
+        principal: WebUserPrincipal,
+        scope: DataScope,
+        requestedBranchCode: String?,
+    ): EffectiveBranchResult {
+        if (!isAllBranches(principal)) {
+            return scope.effectiveBranchCodes(requestedBranchCode?.takeIf { it.isNotBlank() })
+        }
+        val requested = requestedBranchCode?.takeIf { it.isNotBlank() }
+        return when {
+            requested == null -> EffectiveBranchResult.Filtered(WHITELIST_CODES.toList())
+            requested in WHITELIST_CODES -> EffectiveBranchResult.Filtered(listOf(requested))
+            else -> EffectiveBranchResult.NoAccess
         }
     }
 
@@ -93,5 +124,8 @@ class DashboardBranchResolver(
             BranchResponse("5852", "부산2지점"),
             BranchResponse("5853", "진주1지점"),
         )
+
+        /** [DASHBOARD_ALL_BRANCHES] 지점 코드 집합 — 조회 스코프 제한 / IDOR 검증용. */
+        val WHITELIST_CODES: Set<String> = DASHBOARD_ALL_BRANCHES.map { it.branchCode }.toSet()
     }
 }

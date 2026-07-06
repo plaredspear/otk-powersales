@@ -94,7 +94,9 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 200 OK + 응답 스키마 키 모두 존재")
         fun getDashboard_success_schemaKeysExist() {
             every { dashboardBranchResolver.resolveBranches(any()) } returns emptyList()
-            every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-03")
+            every { dashboardBranchResolver.effectiveBranchCodes(any(), any(), any()) } returns
+                com.otoki.powersales.admin.dto.EffectiveBranchResult.All
+            every { adminDashboardService.getDashboard(any(), any(), any()) } returns emptyDashboardResponse("2026-03")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
@@ -141,7 +143,9 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - yearMonth 미입력 시 응답의 year_month가 YYYY-MM 패턴")
         fun getDashboard_success_noYearMonth() {
             every { dashboardBranchResolver.resolveBranches(any()) } returns emptyList()
-            every { adminDashboardService.getDashboard(any(), any(), any(), any()) } returns emptyDashboardResponse("2026-05")
+            every { dashboardBranchResolver.effectiveBranchCodes(any(), any(), any()) } returns
+                com.otoki.powersales.admin.dto.EffectiveBranchResult.All
+            every { adminDashboardService.getDashboard(any(), any(), any()) } returns emptyDashboardResponse("2026-05")
 
             mockMvc.perform(
                 get("/api/v1/admin/dashboard")
