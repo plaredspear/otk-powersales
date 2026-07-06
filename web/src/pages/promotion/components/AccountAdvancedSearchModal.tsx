@@ -65,6 +65,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
   const columns: ColumnsType<Account> = [
     { title: '거래처명', dataIndex: 'name', key: 'name', width: 220, fixed: 'left' },
     { title: 'SAP거래처코드', dataIndex: 'externalKey', key: 'externalKey', width: 130 },
+    { title: '거래상태', dataIndex: 'accountStatusName', key: 'accountStatusName', width: 90 },
     { title: '전화', dataIndex: 'phone', key: 'phone', width: 130 },
     { title: '거래처유형', dataIndex: 'accountType', key: 'accountType', width: 110 },
     { title: 'ABC유형', dataIndex: 'abcType', key: 'abcType', width: 90 },
@@ -103,7 +104,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
           rowKey="id"
           columns={columns}
           size="small"
-          scroll={{ x: 1200 }}
+          scroll={{ x: 1290 }}
           locale={{
             emptyText: submittedKeyword ? '검색 결과가 없습니다' : '검색어를 입력해주세요',
           }}
