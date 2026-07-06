@@ -12,10 +12,22 @@ export interface AppAuthorityOption {
   label: string;
 }
 
-/** Employee 등록 / 검색 dropdown 옵션 — SF picklist 4종. */
+/**
+ * Employee 등록 / 검색 dropdown 옵션 — SF picklist 4종.
+ *
+ * value 는 SF picklist raw value(백엔드 저장값) 이므로 변경 불가. label 은 화면 표기용이라
+ * 의미가 드러나도록 보강한다 — `AccountViewAll` 은 전체 거래처 조회 권한(부서장)이라 영문
+ * raw value 만으로는 운영자가 무슨 권한인지 알기 어려워 한글 병기.
+ */
 export const APP_AUTHORITY_OPTIONS: AppAuthorityOption[] = [
   { value: '여사원', label: '여사원' },
   { value: '조장', label: '조장' },
   { value: '지점장', label: '지점장' },
-  { value: 'AccountViewAll', label: 'AccountViewAll' },
+  { value: 'AccountViewAll', label: '영업부장 (AccountViewAll)' },
 ];
+
+/** AppAuthority raw value → 화면 표시 라벨. 미지정(null)은 '-'. */
+export function appAuthorityLabel(role: AppAuthority | null | undefined): string {
+  if (!role) return '-';
+  return APP_AUTHORITY_OPTIONS.find((o) => o.value === role)?.label ?? role;
+}

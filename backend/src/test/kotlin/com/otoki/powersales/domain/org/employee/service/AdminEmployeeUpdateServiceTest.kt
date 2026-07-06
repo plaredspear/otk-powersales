@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.org.employee.service
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.admin.exception.SapOriginEmployeeNotEditableException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeRoleUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.enums.EmployeeOrigin
@@ -122,5 +123,37 @@ class AdminEmployeeUpdateServiceTest {
 
         assertThat(existing.costCenterCode).isEqualTo("2000")
         assertThat(user.costCenterCode).isEqualTo("2000")
+    }
+
+    @Test
+    @DisplayName("updateRole - origin=SAP 사원도 role 변경 성공 (일반 수정과 달리 차단 안 함)")
+    fun updateRole_sapOrigin_allowed() {
+        val sapEmployee = Employee(id = 20L, employeeCode = "200100", name = "SAP여사원")
+            .apply {
+                origin = EmployeeOrigin.SAP
+                role = null // 미지정 상태
+                jikchak = "기존직책"
+            }
+        every { employeeRepository.findWithEmployeeInfoById(20L) } returns sapEmployee
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        val response = service.updateRole(
+            20L,
+            AdminEmployeeRoleUpdateRequest(role = AppAuthority.ACCOUNT_VIEW_ALL),
+        )
+
+        assertThat(response.role).isEqualTo(AppAuthority.ACCOUNT_VIEW_ALL)
+        // role 외 필드는 건드리지 않는다 (SAP SoT 보존)
+        assertThat(sapEmployee.jikchak).isEqualTo("기존직책")
+    }
+
+    @Test
+    @DisplayName("updateRole - 존재하지 않는 사원 -> EmployeeNotFoundException")
+    fun updateRole_notFound() {
+        every { employeeRepository.findWithEmployeeInfoById(999L) } returns null
+
+        assertThatThrownBy {
+            service.updateRole(999L, AdminEmployeeRoleUpdateRequest(role = AppAuthority.WOMAN))
+        }.isInstanceOf(EmployeeNotFoundException::class.java)
     }
 }

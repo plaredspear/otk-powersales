@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.org.employee.service
 
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.admin.exception.SapOriginEmployeeNotEditableException
+import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeRoleUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -53,6 +54,30 @@ class AdminEmployeeUpdateService(
         val saved = employeeRepository.save(employee)
         syncUserCache(saved)
         logger.info("EMPLOYEE_UPDATED id={} code={} role={}", saved.id, saved.employeeCode, saved.role)
+        return EmployeeDetailResponse.from(saved)
+    }
+
+    /**
+     * 사원 권한(role) 전용 수정.
+     *
+     * 일반 수정([update]) 과 달리 origin=SAP 사원도 허용한다 — 권한 필드는 SAP 인입
+     * ([EmployeeUpsertService.applyMutableFields]) 이 갱신하지 않는 컬럼이라 SAP 인입과
+     * 경합하지 않기 때문이다. AccountViewAll 처럼 SAP 발령으로 산출되지 않는 권한을 부여하는
+     * 유일한 경로다. role 외 다른 필드는 건드리지 않으므로 SAP SoT 를 침해하지 않는다.
+     */
+    @Transactional
+    fun updateRole(employeeId: Long, request: AdminEmployeeRoleUpdateRequest): EmployeeDetailResponse {
+        val employee = employeeRepository.findWithEmployeeInfoById(employeeId)
+            ?: throw EmployeeNotFoundException(employeeId)
+
+        val previousRole = employee.role
+        employee.role = request.role
+
+        val saved = employeeRepository.save(employee)
+        logger.info(
+            "EMPLOYEE_ROLE_UPDATED id={} code={} previousRole={} newRole={}",
+            saved.id, saved.employeeCode, previousRole, saved.role,
+        )
         return EmployeeDetailResponse.from(saved)
     }
 

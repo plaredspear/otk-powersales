@@ -357,6 +357,27 @@ export async function updateEmployee(
   return res.data.data;
 }
 
+/**
+ * 사원 권한(role) 전용 수정.
+ *
+ * 일반 수정([updateEmployee]) 과 달리 origin=SAP 사원도 허용된다 — 권한 필드는 SAP 인입이
+ * 갱신하지 않아 경합하지 않기 때문. AccountViewAll(전체 거래처 조회 권한) 처럼 SAP 발령으로
+ * 산출되지 않는 권한을 부여하는 유일한 경로다.
+ */
+export async function updateEmployeeRole(
+  employeeId: number,
+  role: AppAuthority,
+): Promise<EmployeeDetail> {
+  const res = await client.patch<ApiResponse<EmployeeDetail>>(
+    `/api/v1/admin/employees/${employeeId}/role`,
+    { role },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 권한 수정에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function manualRegisterEmployee(
   request: EmployeeManualRegisterRequest,
 ): Promise<EmployeeDetail> {

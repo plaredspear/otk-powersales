@@ -14,9 +14,11 @@ import type { Employee, EmployeeDetail } from '@/api/employee';
 import { useEmployee } from '@/hooks/employee/useEmployee';
 import { usePermission } from '@/hooks/usePermission';
 import EmployeeEditModal from '@/pages/employee/components/EmployeeEditModal';
+import EmployeeRoleModal from '@/pages/employee/components/EmployeeRoleModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import WorkHistorySection from '@/pages/employee/components/WorkHistorySection';
+import { appAuthorityLabel } from '@/constants/userRole';
 
 function toEmployeeListItem(detail: EmployeeDetail): Employee {
   return {
@@ -81,6 +83,7 @@ export default function EmployeeDetailPage() {
     : hasSystemPermission('MANAGE_USERS');
 
   const [editOpen, setEditOpen] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [deviceOpen, setDeviceOpen] = useState(false);
 
@@ -135,6 +138,13 @@ export default function EmployeeDetailPage() {
         <Tooltip title={editTooltip}>
           <Button type="primary" disabled={editDisabled} onClick={() => setEditOpen(true)}>
             수정
+          </Button>
+        </Tooltip>
+        <Tooltip title={canEdit ? '' : '수정 권한이 없습니다'}>
+          {/* 권한(role) 은 SAP 인입과 경합하지 않아 origin=SAP 사원도 변경 가능 —
+              수정 권한만 있으면 활성. AccountViewAll 부여의 유일한 경로. */}
+          <Button disabled={!canEdit} onClick={() => setRoleOpen(true)}>
+            권한 변경
           </Button>
         </Tooltip>
         <Tooltip title={credentialsTooltip}>
@@ -214,7 +224,7 @@ export default function EmployeeDetailPage() {
       <Card title="앱 설정" style={{ marginBottom: 12 }}>
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="권한">
-            {employee.role ?? '-'}
+            {appAuthorityLabel(employee.role)}
           </Descriptions.Item>
           <Descriptions.Item label="앱 로그인">
             {employee.appLoginActive === true ? (
@@ -272,6 +282,13 @@ export default function EmployeeDetailPage() {
           employee={employee}
           open={true}
           onClose={() => setEditOpen(false)}
+        />
+      )}
+      {roleOpen && (
+        <EmployeeRoleModal
+          employee={employee}
+          open={true}
+          onClose={() => setRoleOpen(false)}
         />
       )}
       {passwordOpen && (

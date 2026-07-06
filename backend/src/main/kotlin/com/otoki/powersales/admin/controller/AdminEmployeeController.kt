@@ -8,6 +8,7 @@ import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeManualRegisterRequest
+import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeRoleUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
@@ -248,6 +249,23 @@ class AdminEmployeeController(
     ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
         val response = adminEmployeeUpdateService.update(employeeId, request)
         return ResponseEntity.ok(ApiResponse.success(response, "사원 정보가 수정되었습니다"))
+    }
+
+    /**
+     * 사원 권한(role) 전용 수정.
+     *
+     * 일반 수정([updateEmployee]) 과 달리 origin=SAP 사원도 허용한다 — 권한 필드는 SAP 인입이
+     * 갱신하지 않아 경합하지 않기 때문. AccountViewAll 처럼 SAP 발령으로 산출되지 않는 권한을
+     * 부여하는 유일한 경로다.
+     */
+    @PatchMapping("/{employeeId}/role")
+    @RequiresSfPermission(entity = "employee", operation = SfPermissionOperation.EDIT)
+    fun updateEmployeeRole(
+        @PathVariable employeeId: Long,
+        @Valid @RequestBody request: AdminEmployeeRoleUpdateRequest
+    ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
+        val response = adminEmployeeUpdateService.updateRole(employeeId, request)
+        return ResponseEntity.ok(ApiResponse.success(response, "사원 권한이 수정되었습니다"))
     }
 
     @PostMapping("/{employeeId}/reset-device")
