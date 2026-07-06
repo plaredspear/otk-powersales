@@ -85,7 +85,9 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
       onOk={handleConfirm}
       onCancel={onClose}
       okButtonProps={{ disabled: selectedId == null }}
-      width={1000}
+      // 결과 그리드(컬럼 합계 + 라디오 열 ≈ 1470px)가 가로 스크롤 없이 들어가도록 최대한 넓히되,
+      // 초대형 화면에서 화면을 꽉 채우지 않도록 상한(1560px) + 좌우 여백(64px)을 둬 모달 형태를 유지한다.
+      width="min(1560px, calc(100vw - 64px))"
       destroyOnClose
     >
       <Input.Search
@@ -105,7 +107,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
           rowKey="id"
           columns={columns}
           size="small"
-          scroll={{ x: 1390 }}
+          scroll={{ x: 1470 }}
           locale={{
             emptyText: submittedKeyword ? '검색 결과가 없습니다' : '검색어를 입력해주세요',
           }}
