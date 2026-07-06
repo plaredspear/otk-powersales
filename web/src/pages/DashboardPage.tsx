@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import ReactECharts from 'echarts-for-react';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useAuthStore } from '@/stores/authStore';
+import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
 import { SYSTEM_ADMIN_PROFILE_NAME } from '@/hooks/usePermission';
 import {
   fetchDashboard,
@@ -204,6 +205,10 @@ export default function DashboardPage() {
     (state) => state.user?.profileName === SYSTEM_ADMIN_PROFILE_NAME,
   );
   const [hasSearched, setHasSearched] = useState(false);
+
+  // 대시보드 전용 지점 목록 — 전사 권한자는 고정 화이트리스트(34개), 그 외는 본인 지점 스코프.
+  // 여사원 일정 지점(useTeamScheduleBranches)과 분리하기 위해 branches 를 명시 주입한다.
+  const { data: dashboardBranches = [] } = useDashboardBranches();
 
   const dashboardQuery = useQuery({
     queryKey: ['adminDashboard', queryParams],
@@ -415,6 +420,7 @@ export default function DashboardPage() {
   return (
     <div style={{ padding: 24 }}>
       <PeriodBranchFilterBar
+        branches={dashboardBranches}
         year={year}
         month={month}
         selectedCodes={selectedCodes}
