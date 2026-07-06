@@ -29,10 +29,12 @@ data class AccountListItem(
     val address1: String?,
     val phone: String?,
     val accountStatusName: String?,
-    // SF 행사마스터 거래처 고급 검색(Enhanced Lookup) 결과 그리드 컬럼 동등 — 거래처유형/우편번호/대표자명.
+    // SF 행사마스터 거래처 고급 검색(Enhanced Lookup) 결과 그리드 컬럼 동등 — 거래처유형/우편번호/대표자명/소유자.
     val accountType: String?,
     val zipCode: String?,
-    val representative: String?
+    val representative: String?,
+    // SF Owner.LastName 동등 위치 — 신규는 소유자 전체 이름(User.name) 표시.
+    val ownerName: String?
 ) {
     companion object {
         fun from(account: Account): AccountListItem = AccountListItem(
@@ -48,7 +50,8 @@ data class AccountListItem(
             accountStatusName = account.accountStatusName,
             accountType = account.accountType,
             zipCode = account.zipCode,
-            representative = account.representative
+            representative = account.representative,
+            ownerName = account.ownerUser?.name
         )
     }
 }

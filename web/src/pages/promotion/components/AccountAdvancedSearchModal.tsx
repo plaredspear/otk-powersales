@@ -73,6 +73,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
     { title: '주소', dataIndex: 'address1', key: 'address1', width: 240 },
     { title: '대표자명', dataIndex: 'representative', key: 'representative', width: 100 },
     { title: '거래처지점명', dataIndex: 'branchName', key: 'branchName', width: 120 },
+    { title: '소유자', dataIndex: 'ownerName', key: 'ownerName', width: 100 },
   ];
 
   return (
@@ -104,7 +105,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
           rowKey="id"
           columns={columns}
           size="small"
-          scroll={{ x: 1290 }}
+          scroll={{ x: 1390 }}
           locale={{
             emptyText: submittedKeyword ? '검색 결과가 없습니다' : '검색어를 입력해주세요',
           }}

@@ -31,6 +31,7 @@ const nativeAccount: Account = {
   accountType: null,
   zipCode: null,
   representative: null,
+  ownerName: null,
 };
 
 const sapAccount: Account = {

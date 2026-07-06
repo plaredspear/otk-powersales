@@ -130,7 +130,8 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                         accountStatusName = "활성",
                         accountType = "편의점",
                         zipCode = "06234",
-                        representative = "홍길동"
+                        representative = "홍길동",
+                        ownerName = "김성준"
                     )
                 ),
                 page = 0,
