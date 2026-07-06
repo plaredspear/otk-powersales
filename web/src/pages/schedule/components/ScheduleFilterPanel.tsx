@@ -52,6 +52,11 @@ export function ScheduleFilterPanel({
   isFilterDirty,
   isCoolingDown,
 }: ScheduleFilterPanelProps) {
+  const isSingleBranch = branches.length === 1;
+  const branchOptions = branches
+    .map((b) => ({ value: b.branchCode, label: b.branchName }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+
   return (
     <div
       style={{
@@ -64,6 +69,20 @@ export function ScheduleFilterPanel({
         border: '1px solid #f0f0f0',
       }}
     >
+      {/* 지점 선택 — 거래처/여사원 탭 공통. 다중지점 사용자만 노출(단일지점은 본인 지점 자동 스코프). */}
+      {!isSingleBranch && (
+        <Select
+          style={{ width: '100%', marginBottom: 12 }}
+          placeholder="지점 (전체)"
+          options={branchOptions}
+          value={selectedBranchCode || undefined}
+          onChange={onSelectedBranchCodeChange}
+          allowClear
+          showSearch
+          optionFilterProp="label"
+        />
+      )}
+
       <Segmented
         block
         options={TAB_OPTIONS}
@@ -110,13 +129,10 @@ export function ScheduleFilterPanel({
           />
         ) : (
           <AccountFilterTab
-            branches={branches}
             accounts={accounts}
             isAccountsLoading={isFormLoading}
             selectedIds={selectedAccountIds}
             onChange={onSelectedAccountIdsChange}
-            branchCode={selectedBranchCode}
-            onBranchCodeChange={onSelectedBranchCodeChange}
           />
         )}
       </div>
