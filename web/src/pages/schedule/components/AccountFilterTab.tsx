@@ -1,36 +1,22 @@
 import { useMemo, useState } from 'react';
-import { Checkbox, Empty, Input, Select, Spin } from 'antd';
+import { Checkbox, Empty, Input, Spin } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import type { Branch, TeamScheduleAccount } from '@/api/team-schedule';
+import type { TeamScheduleAccount } from '@/api/team-schedule';
 
 interface AccountFilterTabProps {
-  branches: Branch[];
   accounts: TeamScheduleAccount[];
   isAccountsLoading: boolean;
   selectedIds: number[];
   onChange: (ids: number[]) => void;
-  branchCode: string;
-  onBranchCodeChange: (code: string) => void;
 }
 
 export function AccountFilterTab({
-  branches,
   accounts,
   isAccountsLoading,
   selectedIds,
   onChange,
-  branchCode,
-  onBranchCodeChange,
 }: AccountFilterTabProps) {
-  const isSingleBranch = branches.length === 1;
   const [search, setSearch] = useState('');
-
-  const branchOptions = branches
-    .map((b) => ({
-      value: b.branchCode,
-      label: b.branchName,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
 
   // 이름 또는 externalKey (SAP code) 에 검색어를 포함하는 row 만 표시.
   const filteredAccounts = useMemo(() => {
@@ -70,19 +56,6 @@ export function AccountFilterTab({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
-      {!isSingleBranch && (
-        <Select
-          style={{ width: '100%', marginBottom: 8, flexShrink: 0 }}
-          placeholder="지점 (전체)"
-          options={branchOptions}
-          value={branchCode || undefined}
-          onChange={onBranchCodeChange}
-          allowClear
-          showSearch
-          optionFilterProp="label"
-        />
-      )}
-
       {isAccountsLoading ? (
         <div style={{ textAlign: 'center', padding: 24 }}>
           <Spin size="small" />
