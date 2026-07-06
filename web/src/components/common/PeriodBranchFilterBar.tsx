@@ -82,8 +82,12 @@ function PeriodBranchFilterBarView({
   searchDisabled = false,
   branches = [],
 }: PeriodBranchFilterBarProps) {
+  // 드롭다운 옵션은 지점명(label) 가나다순으로 정렬해 노출한다 (한국어 로케일 기준).
   const branchOptions = useMemo(
-    () => branches.map((b) => ({ value: b.branchCode, label: b.branchName })),
+    () =>
+      branches
+        .map((b) => ({ value: b.branchCode, label: b.branchName }))
+        .sort((a, b) => a.label.localeCompare(b.label, 'ko')),
     [branches],
   );
 
