@@ -13,9 +13,11 @@ import '../../../domain/entities/schedule.dart';
 ///
 /// 일정 표시는 근무형태(workType = 고정/순회/격고)에 따라 레거시 home.jsp와
 /// 동일하게 분기한다:
-/// - 고정근무자 (home.jsp:546): 출근등록 여부와 무관하게 모든 일정을
-///   "거래처명 (근무구분/상시임시/근무형태)" 형식으로 항상 표시.
-/// - 순회/격고근무자 (home.jsp:558):
+/// - 고정근무자 (home.jsp:546·579): 출근등록 여부와 무관하게 모든 일정을
+///   "거래처명 (근무구분/상시임시/근무형태)" 형식으로 항상 표시하고,
+///   일정마다 우측에 등록 버튼(미출근=활성 "등록" / 출근완료=비활성 "등록 완료")을
+///   붙인다. 하단 단일 등록 버튼은 노출하지 않는다.
+/// - 순회/격고근무자 (home.jsp:558): 하단에 단일 등록 버튼 1개.
 ///   · 출근 전(registeredCount == 0) → 일정을 숨기고 "출근 후 등록을 누르세요."
 ///   · 출근 후 → 첫 일정(list[0])만 표시 (home.jsp:575)
 ///
@@ -132,12 +134,16 @@ class ScheduleCard extends StatelessWidget {
                 // 순회/격고 · 출근 후: 첫 일정만 표시 (home.jsp:575)
                 _buildScheduleList(firstOnly: true)
               else
-                // 고정: 출근 여부와 무관하게 전체 일정 표시 (home.jsp:546)
-                _buildScheduleList(),
+                // 고정: 출근 여부와 무관하게 전체 일정 표시 + 일정별 등록 버튼
+                // (레거시 home.jsp:546·579)
+                _buildScheduleList(perScheduleButton: true),
 
-              // 등록 버튼 (일반 사원만) - 레거시 navy/slate/disabled
-              const SizedBox(height: AppSpacing.md),
-              _buildRegisterButton(totalCount, registeredCount),
+              // 하단 등록 버튼: 휴무/순회·격고만. 고정근무자는 일정별 버튼으로
+              // 대체하므로 하단 단일 버튼을 노출하지 않는다 (레거시 home.jsp:579 정합).
+              if (totalCount == 0 || _isRotationWorker) ...[
+                const SizedBox(height: AppSpacing.md),
+                _buildRegisterButton(totalCount, registeredCount),
+              ],
             ],
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -261,11 +267,19 @@ class ScheduleCard extends StatelessWidget {
   /// 일정 목록 UI
   ///
   /// [firstOnly] 가 true 이면 첫 일정만 표시한다(순회/격고 출근 후, home.jsp:575).
-  Widget _buildScheduleList({bool firstOnly = false}) {
+  /// [perScheduleButton] 이 true 이면 각 일정 우측에 등록 버튼을 노출한다
+  /// (고정근무자, 레거시 home.jsp:579).
+  Widget _buildScheduleList({
+    bool firstOnly = false,
+    bool perScheduleButton = false,
+  }) {
     final items = firstOnly ? schedules.take(1) : schedules;
     return Column(
       children: items.map((schedule) {
-        return _buildScheduleItem(schedule);
+        return _buildScheduleItem(
+          schedule,
+          showRegisterButton: perScheduleButton,
+        );
       }).toList(),
     );
   }
@@ -274,7 +288,13 @@ class ScheduleCard extends StatelessWidget {
   ///
   /// 레거시 home.jsp:549 `${name} (${wc1}/${wc2}/${wc3})` 정합:
   /// "거래처명 (근무구분/상시임시/근무형태)" 텍스트 + 우측 출근 상태.
-  Widget _buildScheduleItem(Schedule schedule) {
+  ///
+  /// [showRegisterButton] 이 true 이면 우측을 출근 상태 대신 일정별 등록 버튼으로
+  /// 대체한다(고정근무자, 레거시 home.jsp:579 — 출근 완료면 비활성 "등록 완료").
+  Widget _buildScheduleItem(
+    Schedule schedule, {
+    bool showRegisterButton = false,
+  }) {
     return InkWell(
       onTap: onScheduleTap != null ? () => onScheduleTap!(schedule) : null,
       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -294,17 +314,55 @@ class ScheduleCard extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
 
-            // 출근 상태
-            Text(
-              schedule.isCommuteRegistered ? '출근완료' : '미등록',
-              style: AppTypography.labelMedium.copyWith(
-                color: schedule.isCommuteRegistered
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-                fontWeight: FontWeight.w700,
+            // 우측: 일정별 등록 버튼(고정) 또는 출근 상태 텍스트
+            if (showRegisterButton)
+              _buildInlineRegisterButton(schedule)
+            else
+              Text(
+                schedule.isCommuteRegistered ? '출근완료' : '미등록',
+                style: AppTypography.labelMedium.copyWith(
+                  color: schedule.isCommuteRegistered
+                      ? AppColors.success
+                      : AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 일정별 등록 버튼 (고정근무자, 레거시 home.jsp:579~588)
+  ///
+  /// - 미출근: "등록" (navy, 활성) → 출근등록 플로우 진입
+  /// - 출근완료: "등록 완료" (slate, 비활성 — 레거시 `class="end"`)
+  Widget _buildInlineRegisterButton(Schedule schedule) {
+    final isComplete = schedule.isCommuteRegistered;
+    final background = isComplete ? AppColors.legacySlate : AppColors.legacyNavy;
+    final label = isComplete ? '등록 완료' : '등록';
+
+    return SizedBox(
+      height: AppSpacing.buttonHeightSmall, // 32
+      child: Material(
+        color: background,
+        borderRadius: BorderRadius.circular(AppSpacing.homeButtonRadius),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppSpacing.homeButtonRadius),
+          onTap: isComplete ? null : onRegisterTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            child: Center(
+              widthFactor: 1,
+              child: Text(
+                label,
+                style: AppTypography.legacyButton.copyWith(
+                  fontSize: 14,
+                  color: AppColors.white,
+                ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

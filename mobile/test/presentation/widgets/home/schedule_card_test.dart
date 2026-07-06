@@ -249,7 +249,7 @@ void main() {
       });
     });
 
-    group('등록 버튼', () {
+    group('하단 단일 등록 버튼 (순회/격고·휴무)', () {
       testWidgets('T1: totalCount == 0 이면 "등록" 버튼 비활성', (tester) async {
         var tapped = false;
         await tester.pumpWidget(buildTestWidget(
@@ -265,11 +265,10 @@ void main() {
         expect(tapped, isFalse);
       });
 
-      testWidgets('T2: registeredCount < totalCount 이면 "등록" 버튼 활성',
-          (tester) async {
+      testWidgets('T2: 순회 출근 전이면 하단 "등록" 버튼 활성', (tester) async {
         var tapped = false;
         await tester.pumpWidget(buildTestWidget(
-          schedules: _makeSchedules(8, registered: 0),
+          schedules: _makeSchedules(8, registered: 0, workType: '순회'),
           attendanceSummary:
               const AttendanceSummary(totalCount: 8, registeredCount: 0),
           onRegisterTap: () => tapped = true,
@@ -281,10 +280,10 @@ void main() {
         expect(tapped, isTrue);
       });
 
-      testWidgets('T3: 부분 출근 시 "다음 등록" 버튼 활성', (tester) async {
+      testWidgets('T3: 순회 부분 출근 시 "다음 등록" 버튼 활성', (tester) async {
         var tapped = false;
         await tester.pumpWidget(buildTestWidget(
-          schedules: _makeSchedules(8, registered: 3),
+          schedules: _makeSchedules(8, registered: 3, workType: '순회'),
           attendanceSummary:
               const AttendanceSummary(totalCount: 8, registeredCount: 3),
           onRegisterTap: () => tapped = true,
@@ -296,11 +295,10 @@ void main() {
         expect(tapped, isTrue);
       });
 
-      testWidgets('T4: registeredCount == totalCount 이면 "등록 완료" 비활성',
-          (tester) async {
+      testWidgets('T4: 순회 전원 출근 시 "등록 완료" 비활성', (tester) async {
         var tapped = false;
         await tester.pumpWidget(buildTestWidget(
-          schedules: _makeSchedules(8, registered: 8),
+          schedules: _makeSchedules(8, registered: 8, workType: '순회'),
           attendanceSummary:
               const AttendanceSummary(totalCount: 8, registeredCount: 8),
           onRegisterTap: () => tapped = true,
@@ -310,6 +308,75 @@ void main() {
         expect(button, findsOneWidget);
         await tester.tap(button);
         expect(tapped, isFalse);
+      });
+    });
+
+    group('고정근무자 일정별 등록 버튼 (레거시 home.jsp:579)', () {
+      testWidgets('출근 전 3건이면 "등록" 버튼 3개, 하단 단일 버튼 없음',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(3, registered: 0, workType: '고정'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 0),
+        ));
+
+        // 일정마다 "등록" 버튼 → 3개
+        expect(find.text('등록'), findsNWidgets(3));
+        // 하단 단일 버튼 계열은 노출되지 않는다
+        expect(find.text('다음 등록'), findsNothing);
+        expect(find.text('등록 완료'), findsNothing);
+      });
+
+      testWidgets('부분 출근 시 출근 건은 "등록 완료", 미출근 건은 "등록"',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(3, registered: 1, workType: '고정'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 1),
+        ));
+
+        expect(find.text('등록 완료'), findsNWidgets(1));
+        expect(find.text('등록'), findsNWidgets(2));
+        // 고정은 "다음 등록"을 쓰지 않는다
+        expect(find.text('다음 등록'), findsNothing);
+      });
+
+      testWidgets('전원 출근 시 모든 일정이 "등록 완료"', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(3, registered: 3, workType: '고정'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 3),
+        ));
+
+        expect(find.text('등록 완료'), findsNWidgets(3));
+        expect(find.text('등록'), findsNothing);
+      });
+
+      testWidgets('미출근 일정의 "등록" 버튼 탭 시 onRegisterTap 호출',
+          (tester) async {
+        var tapped = 0;
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(1, registered: 0, workType: '고정'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 1, registeredCount: 0),
+          onRegisterTap: () => tapped++,
+        ));
+
+        await tester.tap(find.text('등록'));
+        expect(tapped, 1);
+      });
+
+      testWidgets('출근완료 일정의 "등록 완료" 버튼은 비활성', (tester) async {
+        var tapped = 0;
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(1, registered: 1, workType: '고정'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 1, registeredCount: 1),
+          onRegisterTap: () => tapped++,
+        ));
+
+        await tester.tap(find.text('등록 완료'));
+        expect(tapped, 0);
       });
     });
 
@@ -438,16 +505,30 @@ void main() {
         expect(find.text('일정 관리'), findsNothing);
       });
 
-      testWidgets('USER는 등록 버튼이 표시되어야 한다', (tester) async {
+      testWidgets('USER(순회)는 하단 "다음 등록" 버튼이 표시되어야 한다', (tester) async {
         await tester.pumpWidget(buildTestWidget(
           userRole: 'USER',
-          schedules: _makeSchedules(3, registered: 1),
+          schedules: _makeSchedules(3, registered: 1, workType: '순회'),
           attendanceSummary:
               const AttendanceSummary(totalCount: 3, registeredCount: 1),
           onRegisterTap: () {},
         ));
 
         expect(find.text('다음 등록'), findsOneWidget);
+      });
+
+      testWidgets('USER(고정)는 일정별 등록 버튼이 표시되어야 한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          userRole: 'USER',
+          schedules: _makeSchedules(3, registered: 1, workType: '고정'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 1),
+          onRegisterTap: () {},
+        ));
+
+        // 미출근 2건 "등록" + 출근완료 1건 "등록 완료"
+        expect(find.text('등록'), findsNWidgets(2));
+        expect(find.text('등록 완료'), findsNWidgets(1));
       });
 
       testWidgets('USER는 팀 출근 현황 텍스트가 표시되지 않아야 한다', (tester) async {
@@ -499,8 +580,8 @@ void main() {
 
 /// 테스트용 Schedule 목록 생성 (일반 사원)
 ///
-/// [workType] 이 null 이면 근무형태 미지정(고정으로 취급)이며 라벨은 "매장 N (행사)".
-/// 값이 있으면 라벨은 "매장 N (행사/근무형태)".
+/// [workType] 이 null 이면 근무형태 미지정(고정으로 취급)이며 라벨은 "매장 N (행사/-/-)".
+/// 값이 있으면 라벨은 "매장 N (행사/-/근무형태)" (wc2 미설정이라 가운데는 "-").
 List<Schedule> _makeSchedules(
   int count, {
   required int registered,
