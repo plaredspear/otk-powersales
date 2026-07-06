@@ -72,7 +72,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @MockkBean
-    private lateinit var reportBranchScopeService: com.otoki.powersales.admin.service.ReportBranchScopeService
+    private lateinit var whitelistBranchScopeResolver: com.otoki.powersales.admin.service.WhitelistBranchScopeResolver
 
     @BeforeEach
     fun stubArgumentResolver() {
@@ -82,7 +82,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
         // 목록/엑셀 지점 스코프 산출 — 기본은 전사(All, 지점 필터 미적용). branchCode 미지정 케이스 정합.
-        every { reportBranchScopeService.effectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
+        every { whitelistBranchScopeResolver.effectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
     }
 
     @Nested
@@ -742,7 +742,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("성공 - 권한별 지점 화이트리스트 반환 (정적 경로가 /{id} 보다 우선 매칭)")
         fun getBranches_success() {
-            every { reportBranchScopeService.getBranches(any()) } returns listOf(
+            every { whitelistBranchScopeResolver.getBranches(any()) } returns listOf(
                 com.otoki.powersales.platform.common.dto.response.BranchResponse(branchCode = "1101", branchName = "성수지점"),
                 com.otoki.powersales.platform.common.dto.response.BranchResponse(branchCode = "1102", branchName = "강남지점"),
             )
