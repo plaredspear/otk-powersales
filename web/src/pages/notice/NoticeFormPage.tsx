@@ -22,9 +22,12 @@ const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20MB
 // (color/background 는 기본이 이미 인라인 style 이라 별도 등록 불요.)
 Quill.register('formats/align', Quill.import('attributors/style/align'), true);
 
+// 공개범위는 '현장여사원'으로 고정한다(레거시 영업사원 공지 미사용). 폼에서 선택 UI 를 노출하지 않고
+// 저장 시 항상 이 값을 전송한다. 백엔드 scope 는 @NotBlank 필수라 값 자체는 계속 채워 보내야 한다.
+const FIXED_SCOPE = '현장여사원';
+
 interface FormValues {
   title: string;
-  scope: string;
   category: string;
   content: string;
 }
@@ -145,7 +148,6 @@ export default function NoticeFormPage() {
     if (isEdit && notice) {
       form.setFieldsValue({
         title: notice.title,
-        scope: notice.scope ?? undefined,
         category: notice.category,
         content: notice.content,
       });
@@ -317,7 +319,7 @@ export default function NoticeFormPage() {
     // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제하므로 전송하지 않는다.
     const payload = {
       title: values.title,
-      scope: values.scope,
+      scope: FIXED_SCOPE,
       category: values.category,
       content: replacePreviewsWithPlaceholders(values.content),
       branch: null,
@@ -366,21 +368,11 @@ export default function NoticeFormPage() {
       <Form
         form={form}
         layout="vertical"
-        initialValues={{ scope: '현장여사원', category: defaultCategory }}
+        initialValues={{ category: defaultCategory }}
         style={{ flex: 1, minWidth: 0, maxWidth: 820 }}
       >
+        {/* 공개범위(scope)는 '현장여사원'으로 고정되어 폼에 노출하지 않는다(저장 시 자동 전송). */}
         <Row gutter={24}>
-          <Col xs={24} sm={12}>
-            <Form.Item
-              name="scope"
-              label="공개범위"
-              rules={[{ required: true, message: '공개범위를 선택해주세요' }]}
-            >
-              <Select
-                options={formMeta?.scopes.map((s) => ({ value: s.code, label: s.name }))}
-              />
-            </Form.Item>
-          </Col>
           <Col xs={24} sm={12}>
             <Form.Item
               name="category"

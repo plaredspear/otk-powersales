@@ -62,12 +62,6 @@ export default function NoticeListPage() {
       },
     },
     {
-      title: '공개범위',
-      dataIndex: 'scope',
-      width: 110,
-      render: (val: string | null) => val ?? '-',
-    },
-    {
       title: '카테고리',
       dataIndex: 'category',
       width: 120,
