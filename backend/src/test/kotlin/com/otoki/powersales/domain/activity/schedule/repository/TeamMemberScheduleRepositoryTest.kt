@@ -797,8 +797,13 @@ class TeamMemberScheduleRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findEmployees - 근무형태(최근 출근등록 1건) / 전문행사조 필터")
-    inner class FindEmployeesWorkTypeAndPromotionFilter {
+    @DisplayName("findEmployees - 전문행사조 / 근무형태 매칭 employee_id IN 필터")
+    inner class FindEmployeesPromotionAndWorkTypeIdFilter {
+
+        // 근무형태(최근 출근등록 1건) 매칭 employee_id 산출은 native DISTINCT ON 쿼리
+        // (TeamMemberScheduleRepository.findEmployeeIdsByLatestWorkType) 로 처리한다 — H2 미지원 PG 전용 문법이라
+        // 여기서 실행 검증하지 않고 SQL 정적 검증만 한다(프로젝트 native query 검증 방침).
+        // 본 테스트는 그 결과(employee_id 집합)를 받은 findEmployees 의 employee.id IN / 전문행사조 필터만 검증한다.
 
         @BeforeEach
         fun removeBaseEmployee() {
@@ -809,26 +814,6 @@ class TeamMemberScheduleRepositoryTest {
             testEntityManager.clear()
         }
 
-        /** attendanceLog 가 연결된(=출근등록된) TMS 1건을 persist 한다. */
-        private fun persistAttendedSchedule(
-            employee: Employee,
-            workingDate: LocalDate,
-            category1: WorkingCategory1?,
-            category3: WorkingCategory3?,
-        ) {
-            val attendanceLog = testEntityManager.persistAndFlush(AttendanceLog())
-            val schedule = testEntityManager.persistAndFlush(
-                TeamMemberSchedule(
-                    employee = employee,
-                    workingDate = workingDate,
-                    workingType = WorkingType.WORK,
-                    workingCategory1 = category1,
-                    workingCategory3 = category3,
-                )
-            )
-            teamMemberScheduleRepository.updateAttendanceLog(schedule.id, attendanceLog.id)
-        }
-
         private fun persistEmployee(
             code: String,
             promotionTeam: ProfessionalPromotionTeamType? = null,
@@ -837,68 +822,40 @@ class TeamMemberScheduleRepositoryTest {
         )
 
         @Test
-        @DisplayName("근무형태1(행사) 필터 - 최근 출근등록이 행사인 사원만 조회")
-        fun filterByWorkType1() {
-            val today = LocalDate.now()
-            val eventEmp = persistEmployee("E1")
-            val displayEmp = persistEmployee("E2")
-            val noAttendanceEmp = persistEmployee("E3") // 출근등록 이력 없음 → 제외 대상
-            persistAttendedSchedule(eventEmp, today, WorkingCategory1.EVENT, WorkingCategory3.FIXED)
-            persistAttendedSchedule(displayEmp, today, WorkingCategory1.DISPLAY, WorkingCategory3.PATROL)
+        @DisplayName("근무형태 매칭 집합으로 employee.id IN 필터 - 매칭된 사원만 조회")
+        fun workTypeMatchedIdsFilter() {
+            val e1 = persistEmployee("E1")
+            val e2 = persistEmployee("E2")
+            persistEmployee("E3")
             testEntityManager.clear()
 
+            // native 매칭 결과가 {e1, e2} 라고 가정 — findEmployees 가 employee.id IN 으로 정확히 필터하는지.
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                WorkingCategory1.EVENT, null, null, false,
+                setOf(e1.id, e2.id), null, false,
                 PageRequest.of(0, 20),
             )
 
-            assertThat(result.content.map { it.employeeCode }).containsExactly("E1")
-            assertThat(result.content.map { it.employeeCode }).doesNotContain("E2", "E3")
+            assertThat(result.content.map { it.employeeCode }).containsExactlyInAnyOrder("E1", "E2")
+            assertThat(result.content.map { it.employeeCode }).doesNotContain("E3")
         }
 
         @Test
-        @DisplayName("근무형태1+3(진열/순회) 필터 - 최근 1건이 두 조건 모두 일치하는 사원만")
-        fun filterByWorkType1And3() {
-            val today = LocalDate.now()
-            val target = persistEmployee("T1")
-            val wrongCat3 = persistEmployee("T2")
-            persistAttendedSchedule(target, today, WorkingCategory1.DISPLAY, WorkingCategory3.PATROL)
-            persistAttendedSchedule(wrongCat3, today, WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
+        @DisplayName("근무형태 매칭 0명이면 빈 결과 - employee.id IN (empty) 가 전건 조회로 새지 않아야 한다")
+        fun emptyWorkTypeMatchReturnsEmpty() {
+            persistEmployee("N1")
+            persistEmployee("N2")
             testEntityManager.clear()
 
+            // 매칭 0명(빈 집합) → 전체 사원이 새어 나오면 안 되고 반드시 빈 결과여야 한다(빈 IN 방어).
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                WorkingCategory1.DISPLAY, WorkingCategory3.PATROL, null, false,
+                emptySet(), null, false,
                 PageRequest.of(0, 20),
             )
 
-            assertThat(result.content.map { it.employeeCode }).containsExactly("T1")
-        }
-
-        @Test
-        @DisplayName("근무형태 필터는 '가장 최근 1건' 기준 - 과거에 행사였어도 최근이 진열이면 제외")
-        fun filterUsesLatestOnly() {
-            val today = LocalDate.now()
-            val emp = persistEmployee("L1")
-            // 과거: 행사 / 최근: 진열 — 행사 필터에는 잡히지 않아야 한다.
-            persistAttendedSchedule(emp, today.minusDays(3), WorkingCategory1.EVENT, WorkingCategory3.FIXED)
-            persistAttendedSchedule(emp, today, WorkingCategory1.DISPLAY, WorkingCategory3.FIXED)
-            testEntityManager.clear()
-
-            val eventResult = employeeRepository.findEmployees(
-                null, null, null, null, null,
-                WorkingCategory1.EVENT, null, null, false,
-                PageRequest.of(0, 20),
-            )
-            val displayResult = employeeRepository.findEmployees(
-                null, null, null, null, null,
-                WorkingCategory1.DISPLAY, null, null, false,
-                PageRequest.of(0, 20),
-            )
-
-            assertThat(eventResult.content.map { it.employeeCode }).doesNotContain("L1")
-            assertThat(displayResult.content.map { it.employeeCode }).containsExactly("L1")
+            assertThat(result.content).isEmpty()
+            assertThat(result.totalElements).isZero()
         }
 
         @Test
@@ -911,7 +868,7 @@ class TeamMemberScheduleRepositoryTest {
 
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                null, null, ProfessionalPromotionTeamType.RAMEN_SALE, false,
+                null, ProfessionalPromotionTeamType.RAMEN_SALE, false,
                 PageRequest.of(0, 20),
             )
 
@@ -927,7 +884,7 @@ class TeamMemberScheduleRepositoryTest {
 
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                null, null, null, true,
+                null, null, true,
                 PageRequest.of(0, 20),
             )
 
@@ -935,18 +892,16 @@ class TeamMemberScheduleRepositoryTest {
         }
 
         @Test
-        @DisplayName("근무형태 + 전문행사조 동시 필터 - 둘 다 만족하는 사원만")
-        fun filterByWorkTypeAndPromotionTeam() {
-            val today = LocalDate.now()
+        @DisplayName("근무형태 매칭 집합 + 전문행사조 동시 필터 - 둘 다 만족하는 사원만")
+        fun workTypeMatchedIdsAndPromotionTeam() {
             val match = persistEmployee("M1", ProfessionalPromotionTeamType.RAMEN_SALE)
             val wrongTeam = persistEmployee("M2", ProfessionalPromotionTeamType.CURRY_PROMOTION)
-            persistAttendedSchedule(match, today, WorkingCategory1.EVENT, WorkingCategory3.FIXED)
-            persistAttendedSchedule(wrongTeam, today, WorkingCategory1.EVENT, WorkingCategory3.FIXED)
             testEntityManager.clear()
 
+            // 근무형태 매칭이 {M1, M2} 여도 전문행사조(라면세일조) AND 조건으로 M1 만 남아야 한다.
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                WorkingCategory1.EVENT, null, ProfessionalPromotionTeamType.RAMEN_SALE, false,
+                setOf(match.id, wrongTeam.id), ProfessionalPromotionTeamType.RAMEN_SALE, false,
                 PageRequest.of(0, 20),
             )
 

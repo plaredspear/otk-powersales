@@ -9,12 +9,61 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import java.time.LocalDate
 
 /**
  * 일정 Repository
  */
 interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>, TeamMemberScheduleRepositoryCustom {
+
+    /**
+     * 여사원 현황 "근무형태" 필터 — 사원별 **가장 최근 출근등록 1건**의 근무형태(1/3)가 조건과 일치하는
+     * employee_id 집합. PostgreSQL `DISTINCT ON` 으로 각 사원의 최근 1건을 인덱스
+     * (`idx_team_member_schedule_employee_id_working_date`) 단일 스캔으로 뽑는다.
+     *
+     * 기존에 애플리케이션 레이어에서 (1) 사원별 MAX(working_date) → (2) `employee_id IN (전 사원)
+     * AND working_date IN (전 최근일자)` 2쿼리로 처리하던 방식은, 전 사원 대상일 때 두 IN 의 곱집합이
+     * 폭발해 timeout 이 발생했다. DB 단일 쿼리로 대체한다.
+     *
+     * ## 왜 employee 목록 쿼리의 상관 서브쿼리로 되돌리지 않는가 (실측 근거)
+     * 더 단순한 대안은 employee 목록 쿼리 WHERE 에 `EXISTS(최근 1건이 조건 일치)` 상관 서브쿼리를 붙이는
+     * 것이다. 본 인덱스가 있으면 **목록 조회(LIMIT 20)는 24ms** 로 빠르다 — LIMIT 이 상관 서브쿼리를
+     * 조기 종료시키기 때문. 그러나 페이징 **count 쿼리(totalElements)는 LIMIT 이 없어 전 사원에 대해
+     * 상관 서브쿼리를 전건 평가**해야 하고, 옵티마이저가 이를 Hash Anti Join 으로 풀며 ~1.9억 행을 비교해
+     * **32초 (timeout)** 가 걸린다. 화면은 목록+count 를 함께 호출하므로 이 방식으로는 근본 해결이 안 된다.
+     * 반면 본 DISTINCT ON 방식은 team_member_schedule 을 **한 번만** index-only scan 하여 목록·count 와
+     * 무관하게 ~0.3초로 끝난다 (dev 실측). 그래서 목록/count 를 employee 쿼리에서 분리하고 매칭 집합만
+     * 여기서 산출한다.
+     *
+     * '최근 1건' tie-break: working_date DESC, team_member_schedule_id DESC (같은 날이면 마지막 등록).
+     * 근무형태 컬럼은 converter 로 displayName("진열"/"행사", "고정"/"격고"/"순회") 문자열이 저장된다.
+     *
+     * @param workType1 근무형태1 displayName. null 이면 조건 미적용.
+     * @param workType3 근무형태3 displayName. null 이면 조건 미적용.
+     */
+    @Query(
+        nativeQuery = true,
+        value = """
+            SELECT latest.employee_id
+            FROM (
+                SELECT DISTINCT ON (tms.employee_id)
+                       tms.employee_id       AS employee_id,
+                       tms.working_category1 AS working_category1,
+                       tms.working_category3 AS working_category3
+                FROM powersales.team_member_schedule tms
+                WHERE tms.attendance_log_id IS NOT NULL
+                ORDER BY tms.employee_id, tms.working_date DESC, tms.team_member_schedule_id DESC
+            ) latest
+            WHERE (CAST(:workType1 AS text) IS NULL OR latest.working_category1 = :workType1)
+              AND (CAST(:workType3 AS text) IS NULL OR latest.working_category3 = :workType3)
+        """,
+    )
+    fun findEmployeeIdsByLatestWorkType(
+        @Param("workType1") workType1: String?,
+        @Param("workType3") workType3: String?,
+    ): List<Long>
 
     fun findByWorkingDateAndEmployeeIn(workingDate: LocalDate, employees: List<Employee>): List<TeamMemberSchedule>
 

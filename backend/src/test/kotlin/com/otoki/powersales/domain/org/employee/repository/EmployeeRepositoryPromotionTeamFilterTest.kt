@@ -85,9 +85,7 @@ class EmployeeRepositoryPromotionTeamFilterTest {
             keyword = null,
             role = null,
             roles = null,
-            workType1 = null,
-            workType3 = null,
-            promotionTeam = null,
+            promotionTeam =null,
             promotionTeamGeneral = true,
             pageable = PageRequest.of(0, 20),
         )
@@ -112,9 +110,7 @@ class EmployeeRepositoryPromotionTeamFilterTest {
             keyword = null,
             role = null,
             roles = null,
-            workType1 = null,
-            workType3 = null,
-            promotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE,
+            promotionTeam =ProfessionalPromotionTeamType.RAMEN_SALE,
             promotionTeamGeneral = false,
             pageable = PageRequest.of(0, 20),
         )

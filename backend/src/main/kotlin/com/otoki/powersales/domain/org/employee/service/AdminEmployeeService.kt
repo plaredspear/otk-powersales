@@ -75,6 +75,22 @@ class AdminEmployeeService(
     }
 
     /**
+     * 근무형태(1/3) 필터가 걸린 경우, '최근 출근등록 1건이 조건과 일치하는' employee_id 집합을 미리 산출한다.
+     * 목록 쿼리(findEmployees)는 이 집합을 `employee.id IN (...)` 로 필터한다 — employee 목록 쿼리에
+     * 상관 서브쿼리를 붙이던 방식(전건 조회 timeout)을 제거하기 위해 조회를 2단계로 분리한다.
+     *
+     * @return 근무형태 필터가 없으면 null(필터 미적용). 있으면 매칭 employee_id 집합(빈 집합 = 일치 0명).
+     */
+    private fun resolveWorkTypeMatchedEmployeeIds(filters: EmployeeSearchFilters): Set<Long>? {
+        if (filters.workType1 == null && filters.workType3 == null) return null
+        // 근무형태 컬럼은 displayName 문자열로 저장 — native DISTINCT ON 쿼리에 문자열로 전달.
+        return teamMemberScheduleRepository.findEmployeeIdsByLatestWorkType(
+            filters.workType1?.displayName,
+            filters.workType3?.displayName,
+        ).toHashSet()
+    }
+
+    /**
      * 사원 목록 화면 지점 셀렉터 옵션 — 전 지점(전사) 목록.
      *
      * 사원 목록([getEmployees]) 은 SF 표준 리스트뷰(`filterScope=Everything`) 정합으로 전사 조회이며
@@ -150,10 +166,11 @@ class AdminEmployeeService(
             requestedBranch?.let { listOf(it) }
         }
 
+        val workTypeMatchedEmployeeIds = resolveWorkTypeMatchedEmployeeIds(filters)
         val pageable = PageRequest.of(page, size, Sort.by("name").ascending())
         val userPage = employeeRepository.findEmployees(
             status, branchFilter, keyword, role, roles,
-            filters.workType1, filters.workType3, filters.promotionTeam, filters.promotionTeamGeneral,
+            workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
             pageable,
         )
 
@@ -211,11 +228,12 @@ class AdminEmployeeService(
         val items = if (noAccess) {
             emptyList()
         } else {
+            val workTypeMatchedEmployeeIds = resolveWorkTypeMatchedEmployeeIds(filters)
             val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, Sort.by("name").ascending())
             val today = LocalDate.now()
             val employees = employeeRepository.findEmployees(
                 status, branchFilter, keyword, role, roles,
-                filters.workType1, filters.workType3, filters.promotionTeam, filters.promotionTeamGeneral,
+                workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
                 pageable,
             ).content
             val attendanceInfo = loadAttendanceInfo(employees.map { it.id })

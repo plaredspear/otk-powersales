@@ -2,8 +2,6 @@ package com.otoki.powersales.domain.org.employee.repository
 
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.org.employee.entity.Employee
-import com.otoki.powersales.platform.common.enums.WorkingCategory1
-import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 
@@ -47,10 +45,11 @@ interface EmployeeRepositoryCustom {
      * @param roles  다중 role IN 필터 (`employee.role IN :roles`). 여사원 현황(여사원+조장)처럼 여러
      *               직책을 함께 노출하는 화면용. [role] 과 [roles] 를 동시에 주면 둘 다 AND 로 적용된다
      *               (실사용은 둘 중 하나만 지정).
-     * @param workType1  근무형태1(진열/행사) 필터 — 사원의 **가장 최근 출근등록 1건**의 workingCategory1 과
-     *                   일치하는 사원만. 지정 시 출근등록 이력 없는 사원은 제외된다. null 이면 미적용.
-     * @param workType3  근무형태3(고정/격고/순회) 필터 — 최근 출근등록 1건의 workingCategory3 기준. [workType1]
-     *                   과 함께 주면 둘 다 AND 로 같은 최근 1건에 대해 적용. null 이면 미적용.
+     * @param workTypeMatchedEmployeeIds  근무형태(1/3) 필터 결과 employee_id 집합. 근무형태 필터를 건 경우
+     *               서비스 레이어가 [com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepositoryCustom.findEmployeeIdsMatchingLatestWorkType]
+     *               로 '최근 출근등록 1건이 조건과 일치하는 사원' 집합을 먼저 산출해 넘긴다. `employee.id IN (...)`
+     *               로 필터하며(상관 서브쿼리 제거 — timeout 회피), **null = 근무형태 필터 미적용**,
+     *               **비어있는 집합 = 일치 사원 0명(빈 결과)**. 두 의미를 구분한다.
      * @param promotionTeam  전문행사조 필터 — 지정 시 `employee.professionalPromotionTeam = :promotionTeam`.
      *                       null 이면 미적용 (단 [promotionTeamGeneral] 참조).
      * @param promotionTeamGeneral  '일반'(전문행사조 미배정 = null) 필터 여부. true 면
@@ -62,8 +61,7 @@ interface EmployeeRepositoryCustom {
         keyword: String?,
         role: String?,
         roles: List<String>?,
-        workType1: WorkingCategory1? = null,
-        workType3: WorkingCategory3? = null,
+        workTypeMatchedEmployeeIds: Set<Long>? = null,
         promotionTeam: ProfessionalPromotionTeamType? = null,
         promotionTeamGeneral: Boolean = false,
         pageable: Pageable
