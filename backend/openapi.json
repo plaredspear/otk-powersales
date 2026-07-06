@@ -1697,6 +1697,17 @@
         },
         "type" : "object"
       },
+      "AdminEmployeeRoleUpdateRequest" : {
+        "properties" : {
+          "role" : {
+            "minLength" : 1,
+            "pattern" : "^(여사원|조장|지점장|AccountViewAll)$",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "role" ],
+        "type" : "object"
+      },
       "AdminEmployeeUpdateRequest" : {
         "properties" : {
           "appLoginActive" : {
@@ -28702,6 +28713,43 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseResetPasswordResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/employees/{employeeId}/role" : {
+      "patch" : {
+        "operationId" : "updateEmployeeRole",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminEmployeeRoleUpdateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
                 }
               }
             },
