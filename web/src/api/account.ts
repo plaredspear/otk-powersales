@@ -5,6 +5,7 @@ import type { ApiResponse } from './types';
 export interface FetchAccountsParams {
   keyword?: string;
   abcType?: string;
+  accountType?: string;
   branchCode?: string;
   accountStatusName?: string;
   page?: number;
@@ -144,11 +145,32 @@ export async function fetchAccountDetail(id: number): Promise<AccountDetail> {
  * sharing rule 평가는 백엔드가 동일하게 적용. 폐업 거래처는 조회에서 완전 제외 (행사 등록 대상 아님).
  */
 export async function fetchAccountsForPromotionLookup(
-  params: Pick<FetchAccountsParams, 'keyword' | 'page' | 'size'>,
+  params: Pick<FetchAccountsParams, 'keyword' | 'accountType' | 'accountStatusName' | 'page' | 'size'>,
 ): Promise<AccountListData> {
   const res = await client.get<ApiResponse<AccountListData>>('/api/v1/admin/accounts/lookup', { params });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '거래처 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 행사마스터 거래처 고급 검색 필터 드롭다운 옵션 (`GET /api/v1/admin/accounts/lookup-filter-options`).
+ *
+ * 실제 검색 대상(지점 스코프 + 행사 lookup 게이팅 + 폐업 제외) 집합의 거래처유형/거래상태 distinct 값.
+ * promotion.READ 권한으로 호출 (lookup 과 동일).
+ */
+export interface AccountLookupFilterOptions {
+  accountTypes: string[];
+  accountStatusNames: string[];
+}
+
+export async function fetchPromotionLookupFilterOptions(): Promise<AccountLookupFilterOptions> {
+  const res = await client.get<ApiResponse<AccountLookupFilterOptions>>(
+    '/api/v1/admin/accounts/lookup-filter-options',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '거래처 검색 필터 옵션 조회에 실패했습니다');
   }
   return res.data.data;
 }

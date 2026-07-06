@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountCr
 import com.otoki.powersales.domain.foundation.account.dto.request.AdminAccountUpdateRequest
 import com.otoki.powersales.domain.foundation.account.dto.response.AccountDetailResponse
 import com.otoki.powersales.domain.foundation.account.dto.response.AccountListResponse
+import com.otoki.powersales.domain.foundation.account.dto.response.AccountLookupFilterOptions
 import com.otoki.powersales.domain.foundation.account.dto.response.AdminAccountCreateResponse
 import com.otoki.powersales.domain.foundation.account.dto.response.AdminAccountUpdateResponse
 import com.otoki.powersales.domain.foundation.account.service.AccountCreateService
@@ -105,6 +106,10 @@ class AdminAccountController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) @Size(min = 1, max = 50) keyword: String?,
+        // 고급 검색 부가 필터 — 거래처유형(accountType) / 거래상태(accountStatusName) 정확 일치.
+        // 폐업은 excludeClosedAccount 로 원천 배제되므로 accountStatusName=폐업 은 0건.
+        @RequestParam(required = false) accountType: String?,
+        @RequestParam(required = false) accountStatusName: String?,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<AccountListResponse>> {
@@ -113,15 +118,31 @@ class AdminAccountController(
             keyword = keyword,
             abcType = null,
             branchCode = null,
-            accountStatusName = null,
+            accountStatusName = accountStatusName,
             page = page,
             size = size,
             excludeClosedAccount = true,
             // SF 행사마스터(PPTMaster) 거래처 lookup 정합 — sharing policy(owner.user_role_id 계층) 대신
             // CurrentUserBranchNameList 동등 지점 화이트리스트 → branch_code IN 매칭으로 평가. owner 기준이면
             // 본인 지점 거래처가 owner 불일치로 전부 누락된다(조장이 본인 지점 거래처 검색 시 0건).
-            myBranchScopePrincipal = principal
+            myBranchScopePrincipal = principal,
+            accountType = accountType
         )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 행사마스터 거래처 고급 검색 필터 드롭다운 옵션 — 거래처유형/거래상태 distinct 값.
+     *
+     * 실제 검색 대상(지점 스코프 + promotionLookupFilter + 폐업 제외) 집합의 값만 반환해
+     * 선택지에 노출 불가 값(폐업 등)이 뜨지 않게 한다. lookup 과 동일하게 promotion.READ 로 가드.
+     */
+    @GetMapping("/lookup-filter-options")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun lookupFilterOptions(
+        @AuthenticationPrincipal principal: WebUserPrincipal
+    ): ResponseEntity<ApiResponse<AccountLookupFilterOptions>> {
+        val response = adminAccountService.getPromotionLookupFilterOptions(principal)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

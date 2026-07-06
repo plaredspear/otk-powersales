@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Input, Modal, Spin } from 'antd';
+import { Input, Modal, Select, Space, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
+import {
+  fetchAccountsForPromotionLookup,
+  fetchPromotionLookupFilterOptions,
+  type Account,
+} from '@/api/account';
 
 const PAGE_SIZE = 20;
 
@@ -23,34 +27,66 @@ interface Props {
  * keyword 는 백엔드에서 거래처명/SAP코드/전화/대표자명/주소/거래처지점명 OR 매칭된다.
  */
 export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: Props) {
-  const [submittedKeyword, setSubmittedKeyword] = useState<string | undefined>(undefined);
+  // 입력 중 필터 (검색 버튼 누르기 전 임시값).
+  const [keywordInput, setKeywordInput] = useState('');
+  const [accountTypeInput, setAccountTypeInput] = useState<string | undefined>(undefined);
+  const [accountStatusInput, setAccountStatusInput] = useState<string | undefined>(undefined);
+  // 검색 실행 시점의 확정 필터 (쿼리 파라미터).
+  const [submitted, setSubmitted] = useState<{
+    keyword?: string;
+    accountType?: string;
+    accountStatusName?: string;
+  } | null>(null);
   const [page, setPage] = useState(0);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   // 모달을 닫을 때마다 검색 상태 초기화 — 다음 오픈 시 이전 검색 잔상 방지.
   useEffect(() => {
     if (!open) {
-      setSubmittedKeyword(undefined);
+      setKeywordInput('');
+      setAccountTypeInput(undefined);
+      setAccountStatusInput(undefined);
+      setSubmitted(null);
       setPage(0);
       setSelectedId(null);
     }
   }, [open]);
 
+  // 거래처유형/거래상태 필터 드롭다운 옵션 — 실제 검색 대상 집합의 distinct 값.
+  const { data: filterOptions } = useQuery({
+    queryKey: ['account-lookup-filter-options'],
+    queryFn: fetchPromotionLookupFilterOptions,
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data, isFetching } = useQuery({
-    queryKey: ['account-advanced-search', submittedKeyword, page],
+    queryKey: ['account-advanced-search', submitted, page],
     queryFn: () =>
-      fetchAccountsForPromotionLookup({ keyword: submittedKeyword, page, size: PAGE_SIZE }),
-    // 검색어 2자 이상 입력 후 검색 실행 시에만 조회 (SF 고급 검색과 동일 — 빈 검색 전체 노출 방지).
-    enabled: open && !!submittedKeyword && submittedKeyword.length >= 2,
+      fetchAccountsForPromotionLookup({
+        keyword: submitted?.keyword,
+        accountType: submitted?.accountType,
+        accountStatusName: submitted?.accountStatusName,
+        page,
+        size: PAGE_SIZE,
+      }),
+    // 검색 실행 시에만 조회 (SF 고급 검색과 동일 — 빈 검색 전체 노출 방지). keyword 2자 이상
+    // 또는 거래처유형/거래상태 필터 중 하나 이상 선택 시 검색 가능.
+    enabled: open && submitted != null,
   });
 
   const rows = data?.content ?? [];
   const selectedAccount = rows.find((a) => a.id === selectedId) ?? null;
 
-  const handleSearch = (value: string) => {
-    const trimmed = value.trim();
-    if (trimmed.length < 2) return;
-    setSubmittedKeyword(trimmed);
+  const handleSearch = () => {
+    const trimmed = keywordInput.trim();
+    // 검색 조건이 전혀 없으면(키워드 2자 미만 + 필터 미선택) 검색하지 않는다.
+    if (trimmed.length < 2 && !accountTypeInput && !accountStatusInput) return;
+    setSubmitted({
+      keyword: trimmed.length >= 2 ? trimmed : undefined,
+      accountType: accountTypeInput,
+      accountStatusName: accountStatusInput,
+    });
     setPage(0);
     setSelectedId(null);
   };
@@ -102,10 +138,30 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
       width="min(1560px, calc(100vw - 64px))"
       destroyOnClose
     >
+      <Space style={{ marginBottom: 12 }} wrap>
+        <Select
+          placeholder="거래처유형"
+          allowClear
+          style={{ width: 180 }}
+          value={accountTypeInput}
+          onChange={setAccountTypeInput}
+          options={filterOptions?.accountTypes.map((v) => ({ value: v, label: v })) ?? []}
+        />
+        <Select
+          placeholder="거래상태"
+          allowClear
+          style={{ width: 140 }}
+          value={accountStatusInput}
+          onChange={setAccountStatusInput}
+          options={filterOptions?.accountStatusNames.map((v) => ({ value: v, label: v })) ?? []}
+        />
+      </Space>
       <Input.Search
         placeholder="거래처명 / SAP코드 / 전화 / 대표자명 / 주소 / 지점명 검색 (2자 이상)"
         allowClear
         enterButton="검색"
+        value={keywordInput}
+        onChange={(e) => setKeywordInput(e.target.value)}
         onSearch={handleSearch}
         style={{ width: '100%', marginBottom: 12 }}
       />
@@ -121,7 +177,7 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
           size="small"
           scroll={{ x: 1470 }}
           locale={{
-            emptyText: submittedKeyword ? '검색 결과가 없습니다' : '검색어를 입력해주세요',
+            emptyText: submitted ? '검색 결과가 없습니다' : '검색 조건을 입력해주세요',
           }}
           pagination={{
             current: page + 1,

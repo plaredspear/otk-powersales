@@ -20,6 +20,7 @@ interface AccountRepositoryCustom {
      *                        (우선순위 1-6 평가: viewAllData / Owner / Hierarchy / SharingRule / branchCodes / ControlledByParent)
      * @param keyword 거래처코드 (externalKey) / 거래처명 (name) 부분 일치 (lowercase 매칭)
      * @param abcType ABC 유형 정확 일치
+     * @param accountType 거래처유형 정확 일치
      * @param accountStatusName 상태 정확 일치
      * @param applyPromotionFilter `DKRetail__Promotion__c.AccId__c.lookupFilter` (accountGroup ∈ {1000,1010}
      *                        + 폐업/distribution 조건) 적용 여부. SF 에서 이 조건은 Promotion 거래처 선택
@@ -35,6 +36,7 @@ interface AccountRepositoryCustom {
         policyPredicate: Predicate,
         keyword: String?,
         abcType: String?,
+        accountType: String?,
         accountStatusName: String?,
         applyPromotionFilter: Boolean,
         excludeClosedAccount: Boolean,
@@ -109,6 +111,17 @@ interface AccountRepositoryCustom {
      * 라벨 조합 규칙은 [Account.abcTypeLabel] companion 이 정본 — 호출 측에서 조합.
      */
     fun findDistinctAbcTypeParts(): List<AccountLabelPartsRow>
+
+    /**
+     * 행사마스터 거래처 고급 검색 필터 드롭다운용 distinct 값 조회.
+     *
+     * [predicate] 로 행사 lookup 게이팅(promotionLookupFilter + 폐업 제외 + 지점 스코프)을 전달해
+     * 실제 검색 대상이 되는 거래처 집합의 값만 반환한다 — 선택지에 폐업 등 노출 불가 값이 뜨지 않게 한다.
+     */
+    fun findDistinctAccountTypes(predicate: Predicate): List<String>
+
+    /** [findDistinctAccountTypes] 와 동일 게이팅으로 거래상태(accountStatusName) distinct 값 조회. */
+    fun findDistinctAccountStatusNames(predicate: Predicate): List<String>
 }
 
 /** 거래처 라벨 구성요소 distinct 1건 — (코드, 명칭) 쌍. */
