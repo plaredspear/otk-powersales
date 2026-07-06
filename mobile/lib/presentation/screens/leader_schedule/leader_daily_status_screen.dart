@@ -565,43 +565,51 @@ class _LeaderDailyStatusScreenState
     return RefreshIndicator(
       onRefresh: onRefresh,
       color: AppColors.primary,
-      child: ListView(
+      // 바로가기(진열/행사/연차)는 섹션 헤더의 GlobalKey.currentContext 로 ensureVisible 한다.
+      // ListView(children:) 는 화면 밖 항목을 lazy 빌드해 헤더 컨텍스트가 null → 점프가 무시된다.
+      // 팀 규모(수십 명)라 전부 즉시 빌드해도 무방하므로 SingleChildScrollView+Column 으로 구성해
+      // 세 섹션 헤더가 항상 렌더되도록 한다(레거시 mngDaily 도 전 항목 렌더).
+      child: SingleChildScrollView(
         controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: AppSpacing.xl),
-        children: [
-          // ── 진열 근무자 섹션 ──
-          _SectionHeader(
-            key: _displaySectionKey,
-            title: '진열 근무자',
-            count: displayGroups.length,
-          ),
-          ..._buildWorkerCards(
-            displayGroups,
-            emptyText: emptyHint ?? '진열 근무자가 없습니다',
-            isEvent: false,
-          ),
-          // ── 행사 근무자 섹션 ──
-          _SectionHeader(
-            key: _eventSectionKey,
-            title: '행사 근무자',
-            count: eventGroups.length,
-          ),
-          ..._buildWorkerCards(
-            eventGroups,
-            emptyText: emptyHint ?? '행사 근무자가 없습니다',
-            isEvent: true,
-          ),
-          // ── 연차 근무자 섹션 ──
-          _SectionHeader(
-            key: _annualSectionKey,
-            title: '연차 근무자',
-            count: annualLeaveWorkers.length,
-          ),
-          ..._buildAnnualCards(
-            annualLeaveWorkers,
-            emptyText: emptyHint ?? '연차 여사원이 없습니다',
-          ),
-        ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── 진열 근무자 섹션 ──
+            _SectionHeader(
+              key: _displaySectionKey,
+              title: '진열 근무자',
+              count: displayGroups.length,
+            ),
+            ..._buildWorkerCards(
+              displayGroups,
+              emptyText: emptyHint ?? '진열 근무자가 없습니다',
+              isEvent: false,
+            ),
+            // ── 행사 근무자 섹션 ──
+            _SectionHeader(
+              key: _eventSectionKey,
+              title: '행사 근무자',
+              count: eventGroups.length,
+            ),
+            ..._buildWorkerCards(
+              eventGroups,
+              emptyText: emptyHint ?? '행사 근무자가 없습니다',
+              isEvent: true,
+            ),
+            // ── 연차 근무자 섹션 ──
+            _SectionHeader(
+              key: _annualSectionKey,
+              title: '연차 근무자',
+              count: annualLeaveWorkers.length,
+            ),
+            ..._buildAnnualCards(
+              annualLeaveWorkers,
+              emptyText: emptyHint ?? '연차 여사원이 없습니다',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -951,11 +959,12 @@ class _QuickJumpBar extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Container(width: 1, height: 12, color: AppColors.border),
           const SizedBox(width: AppSpacing.sm),
-          _JumpLink(label: '진열', onTap: onDisplay),
+          // 섹션별 구분색: 웹 여사원 일정관리(SF FullCalendar 정합) 색 차용.
+          _JumpLink(label: '진열', color: AppColors.workDisplay, onTap: onDisplay),
           const SizedBox(width: AppSpacing.md),
-          _JumpLink(label: '행사', onTap: onEvent),
+          _JumpLink(label: '행사', color: AppColors.workEvent, onTap: onEvent),
           const SizedBox(width: AppSpacing.md),
-          _JumpLink(label: '연차', onTap: onAnnual),
+          _JumpLink(label: '연차', color: AppColors.workAnnualLeave, onTap: onAnnual),
         ],
       ),
     );
@@ -964,9 +973,14 @@ class _QuickJumpBar extends StatelessWidget {
 
 class _JumpLink extends StatelessWidget {
   final String label;
+  final Color color;
   final VoidCallback onTap;
 
-  const _JumpLink({required this.label, required this.onTap});
+  const _JumpLink({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -981,7 +995,7 @@ class _JumpLink extends StatelessWidget {
         child: Text(
           label,
           style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.secondary,
+            color: color,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -1776,7 +1790,10 @@ class _WorkerCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.border),
+        // 타입별 border 색(웹 여사원 일정관리 정합): 진열=파랑, 행사=분홍.
+        border: Border.all(
+          color: isEvent ? AppColors.workEvent : AppColors.workDisplay,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1937,7 +1954,8 @@ class _AnnualLeaveCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.border),
+        // 타입별 border 색(웹 여사원 일정관리 정합): 연차=진회색.
+        border: Border.all(color: AppColors.workAnnualLeave),
       ),
       child: Text(
         '${employee.employeeName} (${employee.employeeCode})',

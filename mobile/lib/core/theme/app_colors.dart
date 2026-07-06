@@ -155,4 +155,15 @@ abstract final class AppColors {
 
   /// 내일정 등록 전 텍스트 (레거시 myDaily.jsp .color_gray #999)
   static const Color legacyRegisteredGray = Color(0xFF999999);
+
+  // ─── 여사원 근무 구분 (웹 여사원 일정관리 = SF FullCalendar 정합) ────
+  // 웹 scheduleEventColor.ts getEventColor() 와 동일 값. 진열/행사/연차 색 구분 공유용.
+  /// 진열 근무 구분 (웹 #4E8BBF)
+  static const Color workDisplay = Color(0xFF4E8BBF);
+
+  /// 행사 근무 구분 (웹 #F392BC)
+  static const Color workEvent = Color(0xFFF392BC);
+
+  /// 연차/대휴 근무 구분 (웹 #495E62)
+  static const Color workAnnualLeave = Color(0xFF495E62);
 }
