@@ -22,6 +22,10 @@ export interface Account {
   address1: string | null;
   phone: string | null;
   accountStatusName: string | null;
+  // SF 거래처 고급 검색 결과 그리드 컬럼 — 거래처유형/우편번호/대표자명.
+  accountType: string | null;
+  zipCode: string | null;
+  representative: string | null;
 }
 
 export interface AccountListData {

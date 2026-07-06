@@ -40,9 +40,15 @@ class AccountRepositoryCustomImpl(
 
         if (!keyword.isNullOrBlank()) {
             val lowerPattern = "%${keyword.lowercase()}%"
+            // SF 고급 검색(Enhanced Lookup)은 검색창 1개로 결과 그리드의 여러 컬럼을 relevance 매칭한다.
+            // 신규는 keyword 단일 입력을 거래처명/SAP코드/전화/대표자명/주소/거래처지점명 OR 매칭으로 근사.
             builder.and(
                 account.externalKey.lower().like(lowerPattern)
                     .or(account.name.lower().like(lowerPattern))
+                    .or(account.phone.lower().like(lowerPattern))
+                    .or(account.representative.lower().like(lowerPattern))
+                    .or(account.address1.lower().like(lowerPattern))
+                    .or(account.branchName.lower().like(lowerPattern))
             )
         }
 

@@ -21,10 +21,11 @@ import {
   useUpdatePromotion,
 } from '@/hooks/promotion/usePromotionMutation';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
-import { fetchAccountsForPromotionLookup } from '@/api/account';
+import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
 import { fetchProductsForPromotionLookup } from '@/api/product';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import type { PromotionFormData } from '@/api/promotion';
+import AccountAdvancedSearchModal from './components/AccountAdvancedSearchModal';
 
 const { TextArea } = Input;
 
@@ -65,6 +66,7 @@ export default function PromotionFormPage() {
   const sourceId = isEdit ? promotionId : cloneFromId;
 
   const [form] = Form.useForm<FormValues>();
+  const accountIdValue = Form.useWatch('accountId', form);
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { data: promotion, isLoading: detailLoading } = usePromotion(sourceId);
   const { data: formMeta, isLoading: formMetaLoading } = usePromotionFormMeta();
@@ -76,6 +78,7 @@ export default function PromotionFormPage() {
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
   const [accountSearching, setAccountSearching] = useState(false);
   const [productSearching, setProductSearching] = useState(false);
+  const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
 
   const promotionTypeOptions =
     formMeta?.promotionTypes.map((t) => ({ value: t.name, label: t.name })) ?? [];
@@ -136,6 +139,14 @@ export default function PromotionFormPage() {
     } finally {
       setAccountSearching(false);
     }
+  };
+
+  const handleAdvancedSearchSelect = (account: Account) => {
+    // 고급 검색 그리드에서 고른 거래처를 폼 값 + Select 옵션에 반영 — 기존 빠른 검색 라벨 형식과 동일.
+    setAccountOptions([
+      { value: account.id, label: `${account.name} (${account.externalKey ?? ''})` },
+    ]);
+    form.setFieldValue('accountId', account.id);
   };
 
   const handleProductSearch = async (keyword: string) => {
@@ -224,15 +235,21 @@ export default function PromotionFormPage() {
                 label="거래처"
                 rules={[{ required: true, message: '거래처를 선택해주세요' }]}
               >
-                <Select
-                  showSearch
-                  placeholder="거래처 검색 (2자 이상 입력)"
-                  filterOption={false}
-                  onSearch={handleAccountSearch}
-                  loading={accountSearching}
-                  options={accountOptions}
-                  notFoundContent={accountSearching ? <Spin size="small" /> : null}
-                />
+                <Space.Compact style={{ width: '100%' }}>
+                  <Select
+                    showSearch
+                    style={{ width: '100%' }}
+                    placeholder="거래처 검색 (2자 이상 입력)"
+                    filterOption={false}
+                    onSearch={handleAccountSearch}
+                    loading={accountSearching}
+                    options={accountOptions}
+                    notFoundContent={accountSearching ? <Spin size="small" /> : null}
+                    value={accountIdValue}
+                    onChange={(v) => form.setFieldValue('accountId', v)}
+                  />
+                  <Button onClick={() => setAdvancedSearchOpen(true)}>고급 검색</Button>
+                </Space.Compact>
               </Form.Item>
             </Col>
           </Row>
@@ -370,6 +387,12 @@ export default function PromotionFormPage() {
           </Space>
         </Form.Item>
       </Form>
+
+      <AccountAdvancedSearchModal
+        open={advancedSearchOpen}
+        onClose={() => setAdvancedSearchOpen(false)}
+        onSelect={handleAdvancedSearchSelect}
+      />
     </div>
   );
 }

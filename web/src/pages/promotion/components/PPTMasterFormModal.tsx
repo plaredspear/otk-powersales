@@ -86,6 +86,9 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
           address1: null,
           phone: null,
           accountStatusName: null,
+          accountType: null,
+          zipCode: null,
+          representative: null,
         },
       ]);
     } else if (open) {

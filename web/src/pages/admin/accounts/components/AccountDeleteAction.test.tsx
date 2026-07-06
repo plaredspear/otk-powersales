@@ -28,6 +28,9 @@ const nativeAccount: Account = {
   address1: null,
   phone: null,
   accountStatusName: '활성',
+  accountType: null,
+  zipCode: null,
+  representative: null,
 };
 
 const sapAccount: Account = {
