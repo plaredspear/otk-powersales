@@ -33,9 +33,18 @@ data class HomeResponse(
         val employeeCode: String,
         val accountName: String?,
         val accountId: Long?,
+        /** 근무구분 = 레거시 `workingcategory1__c` (진열/행사). 일정 라벨 첫 번째 토큰. */
         val workCategory: String,
         /**
-         * 근무형태(고정/순회/격고). 레거시 home.jsp `workingcategory3__c` 정합.
+         * 일정 라벨 두 번째 토큰 = 레거시 `workingcategory2__c` 슬롯.
+         *
+         * 레거시 쿼리별로 소스가 다르다(home.jsp:549 `(wc1/wc2/wc3)` 정합):
+         * - 진열(DisplayWorkSchedule): typeOfWork5 = 상시/임시
+         * - 행사(TeamMemberSchedule): workingCategory2 = 전담/진열겸임
+         */
+        val workCategory2: String?,
+        /**
+         * 근무형태(고정/순회/격고) = 레거시 `workingcategory3__c`. 일정 라벨 세 번째 토큰.
          *
          * 순회/격고 근무자는 출근 등록 전에는 일정을 숨기므로(home.jsp:558·570),
          * 모바일 홈 카드가 이 값으로 표시 분기를 수행한다.

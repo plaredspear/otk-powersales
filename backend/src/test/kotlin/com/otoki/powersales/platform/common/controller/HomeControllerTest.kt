@@ -45,6 +45,7 @@ class HomeControllerTest : MobileControllerTestSupport() {
                         accountName = "이마트 부산점",
                         accountId = 1,
                         workCategory = "순회",
+                        workCategory2 = "상시",
                         workType = "진열",
                         isCommuteRegistered = true,
                         commuteRegisteredAt = commuteTime
@@ -103,6 +104,7 @@ class HomeControllerTest : MobileControllerTestSupport() {
                         accountName = "이마트 부산점",
                         accountId = 1,
                         workCategory = "순회",
+                        workCategory2 = "상시",
                         workType = "진열",
                         isCommuteRegistered = true,
                         commuteRegisteredAt = commuteTime1
@@ -114,6 +116,7 @@ class HomeControllerTest : MobileControllerTestSupport() {
                         accountName = "홈플러스 서면점",
                         accountId = 2,
                         workCategory = "전담",
+                        workCategory2 = null,
                         workType = null,
                         isCommuteRegistered = false,
                         commuteRegisteredAt = null
@@ -125,6 +128,7 @@ class HomeControllerTest : MobileControllerTestSupport() {
                         accountName = null,
                         accountId = null,
                         workCategory = "내근",
+                        workCategory2 = null,
                         workType = null,
                         isCommuteRegistered = false,
                         commuteRegisteredAt = null

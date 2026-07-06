@@ -19,6 +19,7 @@ import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
+import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
@@ -560,7 +561,8 @@ class HomeServiceTest {
                 employeeId = userId,
                 accountId = 742,
                 typeOfWork1 = TypeOfWork1.DISPLAY,
-                typeOfWork3 = TypeOfWork3.ROTATION
+                typeOfWork3 = TypeOfWork3.ROTATION,
+                typeOfWork5 = TypeOfWork5.REGULAR
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
@@ -579,7 +581,9 @@ class HomeServiceTest {
             assertThat(result.todaySchedules[0].scheduleId).isEqualTo(0L)
             assertThat(result.todaySchedules[0].accountName).isEqualTo("테스트 거래처")
             assertThat(result.todaySchedules[0].workCategory).isEqualTo("진열")
-            // workType = 근무형태(고정/순회/격고) = typeOfWork3 (레거시 workingcategory3__c 정합)
+            // 진열 일정 라벨 토큰: wc2=typeOfWork5(상시), wc3=typeOfWork3(순회)
+            // 레거시 selectDisplayAccList `(typeofwork1/typeofwork5/typeofwork3)` 정합
+            assertThat(result.todaySchedules[0].workCategory2).isEqualTo("상시")
             assertThat(result.todaySchedules[0].workType).isEqualTo("순회")
             assertThat(result.todaySchedules[0].isCommuteRegistered).isFalse()
             assertThat(result.attendanceSummary.totalCount).isEqualTo(1)
@@ -587,7 +591,7 @@ class HomeServiceTest {
         }
 
         @Test
-        @DisplayName("행사 TMS - workType 은 근무형태(workingCategory3=고정/순회/격고)로 매핑 (레거시 workingcategory3__c 정합)")
+        @DisplayName("행사 TMS - 라벨 토큰(wc2=workingCategory2, wc3=workingCategory3)로 매핑 (레거시 selectAccList 정합)")
         fun eventSchedule_workTypeFromWorkingCategory3() {
             // Given
             val userId = 1L
@@ -599,6 +603,7 @@ class HomeServiceTest {
                 employeeId = userId,
                 accountId = 8938,
                 workingCategory1 = WorkingCategory1.EVENT,
+                workingCategory2 = WorkingCategory2.DEDICATED,
                 workingCategory3 = WorkingCategory3.PATROL
             )
 
@@ -615,6 +620,8 @@ class HomeServiceTest {
             // Then
             assertThat(result.todaySchedules).hasSize(1)
             assertThat(result.todaySchedules[0].workCategory).isEqualTo("행사")
+            // 행사 일정 2번째 토큰 = workingCategory2(전담/진열겸임)
+            assertThat(result.todaySchedules[0].workCategory2).isEqualTo("전담")
             // 근무유형(WorkingType=근무/연차/대휴) 이 아니라 근무형태(순회)로 매핑되어야 한다
             assertThat(result.todaySchedules[0].workType).isEqualTo("순회")
         }
@@ -756,6 +763,7 @@ class HomeServiceTest {
         accountId: Long? = null,
         typeOfWork1: TypeOfWork1? = TypeOfWork1.DISPLAY,
         typeOfWork3: TypeOfWork3? = TypeOfWork3.ROTATION,
+        typeOfWork5: TypeOfWork5? = null,
         startDate: LocalDate = LocalDate.now(),
         endDate: LocalDate? = null
     ): DisplayWorkSchedule {
@@ -765,6 +773,7 @@ class HomeServiceTest {
             account = accountId?.let { Account(id = it) },
             typeOfWork1 = typeOfWork1,
             typeOfWork3 = typeOfWork3,
+            typeOfWork5 = typeOfWork5,
             startDate = startDate,
             endDate = endDate,
             confirmed = true,

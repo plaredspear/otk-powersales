@@ -14,7 +14,7 @@ import '../../../domain/entities/schedule.dart';
 /// 일정 표시는 근무형태(workType = 고정/순회/격고)에 따라 레거시 home.jsp와
 /// 동일하게 분기한다:
 /// - 고정근무자 (home.jsp:546): 출근등록 여부와 무관하게 모든 일정을
-///   "거래처명 (근무구분/근무형태)" 형식으로 항상 표시.
+///   "거래처명 (근무구분/상시임시/근무형태)" 형식으로 항상 표시.
 /// - 순회/격고근무자 (home.jsp:558):
 ///   · 출근 전(registeredCount == 0) → 일정을 숨기고 "출근 후 등록을 누르세요."
 ///   · 출근 후 → 첫 일정(list[0])만 표시 (home.jsp:575)
@@ -272,8 +272,8 @@ class ScheduleCard extends StatelessWidget {
 
   /// 일정 아이템 UI
   ///
-  /// 레거시 home.jsp:549 `${name} (${wc1}/…)` 정합:
-  /// "거래처명 (근무구분/근무형태)" 텍스트 + 우측 출근 상태.
+  /// 레거시 home.jsp:549 `${name} (${wc1}/${wc2}/${wc3})` 정합:
+  /// "거래처명 (근무구분/상시임시/근무형태)" 텍스트 + 우측 출근 상태.
   Widget _buildScheduleItem(Schedule schedule) {
     return InkWell(
       onTap: onScheduleTap != null ? () => onScheduleTap!(schedule) : null,
@@ -284,7 +284,7 @@ class ScheduleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 거래처명 (근무구분/근무형태)
+            // 거래처명 (근무구분/상시임시/근무형태)
             Expanded(
               child: Text(
                 _formatScheduleLabel(schedule),
@@ -310,15 +310,20 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  /// 일정 라벨을 "거래처명 (근무구분/근무형태)" 형식으로 조합한다.
+  /// 일정 라벨을 "거래처명 (근무구분/상시임시/근무형태)" 형식으로 조합한다.
   ///
-  /// 레거시 home.jsp:549 `${name} (${wc1}/…)` 정합.
-  /// workCategory(진열/행사)와 workType(고정/순회/격고)이 있으면 슬래시로 잇는다.
-  /// (예: "가락 알파마트(주) (진열/고정)")
+  /// 레거시 home.jsp:549 `${name} (${wc1}/${wc2}/${wc3})` 정합.
+  /// - wc1 workCategory(진열/행사)
+  /// - wc2 workCategory2(진열=상시/임시, 행사=전담/진열겸임)
+  /// - wc3 workType(고정/순회/격고)
+  /// 빈 토큰은 건너뛰고 존재하는 값만 슬래시로 잇는다.
+  /// (예: "가락 알파마트(주) (진열/상시/고정)")
   String _formatScheduleLabel(Schedule schedule) {
     final name = schedule.accountName ?? '(미지정)';
     final parts = <String>[
       if (schedule.workCategory.isNotEmpty) schedule.workCategory,
+      if (schedule.workCategory2 != null && schedule.workCategory2!.isNotEmpty)
+        schedule.workCategory2!,
       if (schedule.workType != null && schedule.workType!.isNotEmpty)
         schedule.workType!,
     ];

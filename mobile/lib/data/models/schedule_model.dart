@@ -11,6 +11,7 @@ class ScheduleModel {
   final String? accountName;
   final int? accountId;
   final String workCategory;
+  final String? workCategory2;
   final String? workType;
   final bool isCommuteRegistered;
   final DateTime? commuteRegisteredAt;
@@ -23,6 +24,7 @@ class ScheduleModel {
     this.accountName,
     this.accountId,
     required this.workCategory,
+    this.workCategory2,
     this.workType,
     required this.isCommuteRegistered,
     this.commuteRegisteredAt,
@@ -37,6 +39,7 @@ class ScheduleModel {
       accountName: json['accountName'] as String?,
       accountId: json['accountId'] as int?,
       workCategory: json['workCategory'] as String,
+      workCategory2: json['workCategory2'] as String?,
       workType: json['workType'] as String?,
       isCommuteRegistered: json['isCommuteRegistered'] as bool,
       commuteRegisteredAt: json['commuteRegisteredAt'] != null
@@ -54,6 +57,7 @@ class ScheduleModel {
       'accountName': accountName,
       'accountId': accountId,
       'workCategory': workCategory,
+      'workCategory2': workCategory2,
       'workType': workType,
       'isCommuteRegistered': isCommuteRegistered,
       'commuteRegisteredAt': commuteRegisteredAt?.toIso8601String(),
@@ -69,6 +73,7 @@ class ScheduleModel {
       accountName: accountName,
       accountId: accountId,
       workCategory: workCategory,
+      workCategory2: workCategory2,
       workType: workType,
       isCommuteRegistered: isCommuteRegistered,
       commuteRegisteredAt: commuteRegisteredAt,
@@ -84,6 +89,7 @@ class ScheduleModel {
       accountName: entity.accountName,
       accountId: entity.accountId,
       workCategory: entity.workCategory,
+      workCategory2: entity.workCategory2,
       workType: entity.workType,
       isCommuteRegistered: entity.isCommuteRegistered,
       commuteRegisteredAt: entity.commuteRegisteredAt,
@@ -101,6 +107,7 @@ class ScheduleModel {
         other.accountName == accountName &&
         other.accountId == accountId &&
         other.workCategory == workCategory &&
+        other.workCategory2 == workCategory2 &&
         other.workType == workType &&
         other.isCommuteRegistered == isCommuteRegistered &&
         other.commuteRegisteredAt == commuteRegisteredAt;
@@ -116,6 +123,7 @@ class ScheduleModel {
       accountName,
       accountId,
       workCategory,
+      workCategory2,
       workType,
       isCommuteRegistered,
       commuteRegisteredAt,

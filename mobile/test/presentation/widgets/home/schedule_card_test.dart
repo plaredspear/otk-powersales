@@ -131,7 +131,31 @@ void main() {
         expect(find.text('매장 2 (행사)'), findsOneWidget);
       });
 
-      testWidgets('T4: workType(근무형태)이 있으면 "거래처명 (근무구분/근무형태)" 형식으로 표시',
+      testWidgets(
+          'T4: wc1/wc2/wc3 모두 있으면 "거래처명 (근무구분/상시임시/근무형태)" 형식으로 표시',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: const [
+            Schedule(
+              scheduleId: 1,
+              employeeName: '테스트',
+              employeeCode: 'EMP-001',
+              accountName: '가락 알파마트(주)',
+              workCategory: '진열',
+              workCategory2: '상시',
+              workType: '고정',
+              isCommuteRegistered: false,
+            ),
+          ],
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 1, registeredCount: 0),
+        ));
+
+        // 레거시 home.jsp:549 `(wc1/wc2/wc3)` 정합
+        expect(find.text('가락 알파마트(주) (진열/상시/고정)'), findsOneWidget);
+      });
+
+      testWidgets('T5: 빈 토큰(wc2 null)은 건너뛰고 존재하는 값만 표시',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           schedules: const [

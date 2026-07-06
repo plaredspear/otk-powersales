@@ -288,6 +288,8 @@ class HomeService(
             accountName = teamMemberSchedule.account?.id?.let { accountMap[it] },
             accountId = teamMemberSchedule.account?.id,
             workCategory = teamMemberSchedule.workingCategory1?.displayName ?: "",
+            // 행사 일정 2번째 토큰 — 레거시 selectAccList `workingcategory2__c`(전담/진열겸임) 정합.
+            workCategory2 = teamMemberSchedule.workingCategory2?.displayName,
             // 근무형태(고정/순회/격고) — 레거시 workingcategory3__c 정합.
             // (DisplayWorkSchedule 측 typeOfWork3 와 의미 일치)
             workType = teamMemberSchedule.workingCategory3?.displayName,
@@ -320,6 +322,8 @@ class HomeService(
             accountName = displayWorkSchedule.account?.id?.let { accountMap[it] },
             accountId = displayWorkSchedule.account?.id,
             workCategory = displayWorkSchedule.typeOfWork1?.displayName ?: "진열",
+            // 진열 일정 2번째 토큰 — 레거시 selectDisplayAccList `typeofwork5__c`(상시/임시) 정합.
+            workCategory2 = displayWorkSchedule.typeOfWork5?.displayName,
             // 근무형태(고정/순회/격고) — 레거시 workingcategory3__c 정합.
             workType = displayWorkSchedule.typeOfWork3?.displayName,
             isCommuteRegistered = matchedTms?.attendanceLog != null,
