@@ -52,18 +52,19 @@ class MyScheduleServiceTest {
             val year = 2020
             val month = 8
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
-            val workDates = listOf(
-                LocalDate.of(2020, 8, 1),
-                LocalDate.of(2020, 8, 4),
-                LocalDate.of(2020, 8, 10)
+            // 단일일 진열 마스터 3건(8/1, 8/4, 8/10) — 기간 전개 결과 각 1일씩만 근무일
+            val masters = listOf(
+                createMockSchedule(startDate = LocalDate.of(2020, 8, 1)),
+                createMockSchedule(startDate = LocalDate.of(2020, 8, 4)),
+                createMockSchedule(startDate = LocalDate.of(2020, 8, 10))
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
-            every { displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId),
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
-            ) } returns workDates
+            ) } returns masters
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
             ) } returns emptyList()
@@ -85,6 +86,59 @@ class MyScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 진열 마스터 기간(startDate~endDate)이 여러 날이면 전체를 근무일로 전개")
+        fun getMonthlySchedule_expandsMultiDayPeriod() {
+            // Given
+            val userId = 1L
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            // 8/4 ~ 8/6 기간 마스터 1건
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
+                eq(userId), eq(LocalDate.of(2020, 8, 1)), eq(LocalDate.of(2020, 8, 31))
+            ) } returns listOf(
+                createMockSchedule(startDate = LocalDate.of(2020, 8, 4), endDate = LocalDate.of(2020, 8, 6))
+            )
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any(), any()
+            ) } returns emptyList()
+
+            // When
+            val result = myScheduleService.getMonthlySchedule(userId, 2020, 8)
+
+            // Then — 기간 3일 전체가 근무일
+            assertThat(result.workDays.filter { it.hasWork }.map { it.date })
+                .containsExactly("2020-08-04", "2020-08-05", "2020-08-06")
+        }
+
+        @Test
+        @DisplayName("성공 - endDate NULL(진행 중) 마스터는 시작일부터 월말까지 전개 (전월 이전 시작 포함)")
+        fun getMonthlySchedule_expandsOngoingPeriodClampedToMonth() {
+            // Given
+            val userId = 1L
+            val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            // startDate 전월(7월) 시작, endDate NULL → 8월 전체가 근무일
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
+                eq(userId), eq(LocalDate.of(2020, 8, 1)), eq(LocalDate.of(2020, 8, 31))
+            ) } returns listOf(
+                createMockSchedule(startDate = LocalDate.of(2020, 7, 15), endDate = null)
+            )
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any(), any()
+            ) } returns emptyList()
+
+            // When
+            val result = myScheduleService.getMonthlySchedule(userId, 2020, 8)
+
+            // Then — 월 시작일(8/1)부터 월말(8/31)까지 전부 근무일 (조회 범위로 clamp)
+            assertThat(result.workDays.filter { it.hasWork }).hasSize(31)
+            assertThat(result.workDays.first { it.date == "2020-08-01" }.hasWork).isTrue()
+            assertThat(result.workDays.first { it.date == "2020-08-31" }.hasWork).isTrue()
+        }
+
+        @Test
         @DisplayName("성공 - 행사(EVENT) 근무일이 진열에 없어도 hasWork 로 표시")
         fun getMonthlySchedule_unionsEventDays() {
             // Given
@@ -95,11 +149,11 @@ class MyScheduleServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
             // 진열: 8/4 만
-            every { displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId),
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
-            ) } returns listOf(LocalDate.of(2020, 8, 4))
+            ) } returns listOf(createMockSchedule(startDate = LocalDate.of(2020, 8, 4)))
             // TMS: 8/10 행사(EVENT) → union 대상, 8/15 진열(DISPLAY) → 진열 마스터에 없으면 미표시
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
@@ -135,7 +189,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
-            every { displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId),
                 any(),
                 any()
@@ -165,7 +219,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
-            every { displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId),
                 any(),
                 any()
@@ -191,9 +245,9 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "김여사", "20030117", sfid = "a0B000000012345")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
-            every { displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId), any(), any()
-            ) } returns listOf(LocalDate.of(2026, 4, 1))
+            ) } returns listOf(createMockSchedule(startDate = LocalDate.of(2026, 4, 1)))
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)),
                 eq(LocalDate.of(2026, 4, 1)),
@@ -223,7 +277,7 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "김여사", "20030117", sfid = "a0B000000012345")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
-            every { displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId), any(), any()
             ) } returns emptyList()
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
@@ -247,9 +301,12 @@ class MyScheduleServiceTest {
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
-            every { displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId), any(), any()
-            ) } returns listOf(LocalDate.of(2026, 3, 5), LocalDate.of(2026, 3, 10))
+            ) } returns listOf(
+                createMockSchedule(startDate = LocalDate.of(2026, 3, 5)),
+                createMockSchedule(startDate = LocalDate.of(2026, 3, 10))
+            )
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)),
                 eq(LocalDate.of(2026, 3, 1)),
@@ -319,7 +376,7 @@ class MyScheduleServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(createMockMemberSchedule(workingDate = date, workingType = WorkingType.WORK))
-            every { displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date) } returns mockSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns mockSchedules
 
             // When
             val result = myScheduleService.getDailySchedule(userId, date)
@@ -355,7 +412,7 @@ class MyScheduleServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
             // 진열은 없음 → 행사 거래처만 표시되어야 함
-            every { displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns emptyList()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
                 createMockMemberSchedule(
                     workingDate = date,
@@ -388,7 +445,7 @@ class MyScheduleServiceTest {
             val sharedAccount = Account(id = 40L, name = "공통거래처")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
-            every { displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date) } returns listOf(
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns listOf(
                 createMockSchedule(typeOfWork1 = TypeOfWork1.DISPLAY, account = sharedAccount, startDate = date)
             )
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
@@ -435,7 +492,7 @@ class MyScheduleServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns mockMemberSchedules
-            every { displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date) } returns mockSchedules
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns mockSchedules
 
             // When
             val result = myScheduleService.getDailySchedule(userId, date)
@@ -457,7 +514,7 @@ class MyScheduleServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns emptyList()
-            every { displayWorkScheduleRepository.findByEmployeeAndStartDate(userId, date) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns emptyList()
 
             // When
             val result = myScheduleService.getDailySchedule(userId, date)
@@ -490,7 +547,7 @@ class MyScheduleServiceTest {
             assertThat(result.reportProgress.completed).isEqualTo(0)
             assertThat(result.reportProgress.total).isEqualTo(0)
             assertThat(result.reportProgress.workType).isEmpty()
-            verify(exactly = 0) { displayWorkScheduleRepository.findByEmployeeAndStartDate(any(), any()) }
+            verify(exactly = 0) { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(any(), any()) }
         }
 
         @Test
@@ -511,7 +568,7 @@ class MyScheduleServiceTest {
             assertThat(result.workingType).isEqualTo("연차")
             assertThat(result.accounts).isEmpty()
             assertThat(result.reportProgress.total).isEqualTo(0)
-            verify(exactly = 0) { displayWorkScheduleRepository.findByEmployeeAndStartDate(any(), any()) }
+            verify(exactly = 0) { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(any(), any()) }
         }
 
         @Test
@@ -567,7 +624,8 @@ class MyScheduleServiceTest {
         typeOfWork3: TypeOfWork3? = null,
         typeOfWork5: TypeOfWork5? = null,
         account: Account? = null,
-        startDate: LocalDate = LocalDate.now()
+        startDate: LocalDate = LocalDate.now(),
+        endDate: LocalDate? = startDate
     ): DisplayWorkSchedule {
         return DisplayWorkSchedule(
             id = id,
@@ -575,7 +633,8 @@ class MyScheduleServiceTest {
             typeOfWork3 = typeOfWork3,
             typeOfWork5 = typeOfWork5,
             account = account,
-            startDate = startDate
+            startDate = startDate,
+            endDate = endDate
         )
     }
 }

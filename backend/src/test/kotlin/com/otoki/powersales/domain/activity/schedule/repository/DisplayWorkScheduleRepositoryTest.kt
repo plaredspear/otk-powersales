@@ -204,105 +204,101 @@ class DisplayWorkScheduleRepositoryTest {
         assertThat(result).isEmpty()
     }
 
-    @Test
-    @DisplayName("findDistinctStartDatesByEmployeeIdAndDateBetween - 기간 내 일정이 있는 날짜 목록 조회")
-    fun findDistinctStartDates_success() {
-        // Given
-        val startDate = today
-        val endDate = today.plus(10, ChronoUnit.DAYS)
+    @Nested
+    @DisplayName("findConfirmedValidByEmployeeIdAndDateRange — 기간 겹침(확정) 진열마스터")
+    inner class FindConfirmedValidByEmployeeIdAndDateRangeTests {
 
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plus(3, ChronoUnit.DAYS)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plus(7, ChronoUnit.DAYS)))
-        testEntityManager.clear()
+        @Test
+        @DisplayName("시작일이 조회 기간 이전이어도 기간이 겹치면 조회됨")
+        fun startBeforeRange_overlaps_returns() {
+            // 기간: [1일, 말일], 마스터: startDate 전월 20일 ~ endDate 이달 10일
+            val from = today.withDayOfMonth(1)
+            val to = today.withDayOfMonth(today.lengthOfMonth())
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = testEmployee, startDate = from.minusDays(10), endDate = from.plusDays(9))
+            )
+            testEntityManager.clear()
 
-        // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
+            val result = displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(testEmployee.id, from, to)
 
-        // Then
-        assertThat(result).hasSize(3)
-        assertThat(result).containsExactly(
-            today,
-            today.plus(3, ChronoUnit.DAYS),
-            today.plus(7, ChronoUnit.DAYS)
-        )
-    }
+            assertThat(result).hasSize(1)
+        }
 
-    @Test
-    @DisplayName("findDistinctStartDatesByEmployeeIdAndDateBetween - 중복 날짜 제거 확인")
-    fun findDistinctStartDates_removeDuplicates() {
-        // Given
-        val startDate = today
-        val endDate = today.plus(1, ChronoUnit.DAYS)
+        @Test
+        @DisplayName("endDate NULL(진행 중) 마스터도 조회됨")
+        fun endDateNull_ongoing_returns() {
+            val from = today.withDayOfMonth(1)
+            val to = today.withDayOfMonth(today.lengthOfMonth())
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = testEmployee, startDate = from.minusMonths(3), endDate = null)
+            )
+            testEntityManager.clear()
 
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
-        testEntityManager.clear()
+            val result = displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(testEmployee.id, from, to)
 
-        // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
+            assertThat(result).hasSize(1)
+        }
 
-        // Then
-        assertThat(result).hasSize(1)
-        assertThat(result).containsExactly(today)
-    }
+        @Test
+        @DisplayName("미확정(confirmed=false) 마스터는 제외")
+        fun notConfirmed_excluded() {
+            val from = today.withDayOfMonth(1)
+            val to = today.withDayOfMonth(today.lengthOfMonth())
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = testEmployee, startDate = today, endDate = today, confirmed = false)
+            )
+            testEntityManager.clear()
 
-    @Test
-    @DisplayName("findDistinctStartDatesByEmployeeIdAndDateBetween - 날짜순 정렬 확인")
-    fun findDistinctStartDates_orderedByDate() {
-        // Given
-        val startDate = today
-        val endDate = today.plus(10, ChronoUnit.DAYS)
+            val result = displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(testEmployee.id, from, to)
 
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today.plus(7, ChronoUnit.DAYS)))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount2, startDate = today))
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount3, startDate = today.plus(3, ChronoUnit.DAYS)))
-        testEntityManager.clear()
+            assertThat(result).isEmpty()
+        }
 
-        // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
+        @Test
+        @DisplayName("soft-delete(isDeleted=true) 마스터는 제외")
+        fun softDeleted_excluded() {
+            val from = today.withDayOfMonth(1)
+            val to = today.withDayOfMonth(today.lengthOfMonth())
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = testEmployee, startDate = today, endDate = today, isDeleted = true)
+            )
+            testEntityManager.clear()
 
-        // Then
-        assertThat(result).hasSize(3)
-        assertThat(result).isSorted()
-        assertThat(result).containsExactly(
-            today,
-            today.plus(3, ChronoUnit.DAYS),
-            today.plus(7, ChronoUnit.DAYS)
-        )
-    }
+            val result = displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(testEmployee.id, from, to)
 
-    @Test
-    @DisplayName("findDistinctStartDatesByEmployeeIdAndDateBetween - 스케줄 없으면 빈 리스트 반환")
-    fun findDistinctStartDates_noSchedules() {
-        // Given
-        val startDate = today.plusMonths(1)
-        val endDate = today.plusMonths(1).plus(10, ChronoUnit.DAYS)
+            assertThat(result).isEmpty()
+        }
 
-        // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(testEmployee.id, startDate, endDate)
+        @Test
+        @DisplayName("기간이 겹치지 않는 마스터는 제외")
+        fun noOverlap_excluded() {
+            val from = today.withDayOfMonth(1)
+            val to = today.withDayOfMonth(today.lengthOfMonth())
+            // 기간 전체가 조회 범위 이후
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = testEmployee, startDate = to.plusDays(5), endDate = to.plusDays(10))
+            )
+            testEntityManager.clear()
 
-        // Then
-        assertThat(result).isEmpty()
-    }
+            val result = displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(testEmployee.id, from, to)
 
-    @Test
-    @DisplayName("findDistinctStartDatesByEmployeeIdAndDateBetween - 다른 사용자의 일정은 제외")
-    fun findDistinctStartDates_filterByEmployeeId() {
-        // Given
-        val otherEmployeeId = 99999L
-        val startDate = today
-        val endDate = today.plus(10, ChronoUnit.DAYS)
+            assertThat(result).isEmpty()
+        }
 
-        testEntityManager.persistAndFlush(createDisplayWorkSchedule(account = testAccount1, startDate = today))
-        testEntityManager.clear()
+        @Test
+        @DisplayName("다른 사원의 마스터는 제외")
+        fun otherEmployee_excluded() {
+            val from = today.withDayOfMonth(1)
+            val to = today.withDayOfMonth(today.lengthOfMonth())
+            testEntityManager.persistAndFlush(
+                createSapDws(employee = testEmployee, startDate = today, endDate = today)
+            )
+            testEntityManager.clear()
 
-        // When
-        val result = displayWorkScheduleRepository.findDistinctStartDatesByEmployeeIdAndDateBetween(otherEmployeeId, startDate, endDate)
+            val result = displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(99999L, from, to)
 
-        // Then
-        assertThat(result).isEmpty()
+            assertThat(result).isEmpty()
+        }
     }
 
     // ========== findValidForDisplayMasterSapPaged (Spec #669 Q2 재결정) ==========

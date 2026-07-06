@@ -45,23 +45,6 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
-    override fun findDistinctStartDatesByEmployeeIdAndDateBetween(
-        employeeId: Long,
-        startDate: LocalDate,
-        endDate: LocalDate
-    ): List<LocalDate> {
-        return queryFactory
-            .select(displayWorkSchedule.startDate).distinct()
-            .from(displayWorkSchedule)
-            .where(
-                displayWorkSchedule.employee.id.eq(employeeId),
-                displayWorkSchedule.startDate.between(startDate, endDate)
-            )
-            .orderBy(displayWorkSchedule.startDate.asc())
-            .fetch()
-            .filterNotNull()
-    }
-
     override fun findDistinctAccountIdsByEmployeeIdAndDateRange(
         employeeId: Long,
         fromDate: LocalDate,
@@ -416,6 +399,25 @@ class DisplayWorkScheduleRepositoryCustomImpl(
                 isNotDeleted(),
                 displayWorkSchedule.startDate.loe(date),
                 displayWorkSchedule.endDate.goe(date)
+                    .or(displayWorkSchedule.endDate.isNull)
+            )
+            .fetch()
+    }
+
+    override fun findConfirmedValidByEmployeeIdAndDateRange(
+        employeeId: Long,
+        from: LocalDate,
+        to: LocalDate
+    ): List<DisplayWorkSchedule> {
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .where(
+                displayWorkSchedule.employee.id.eq(employeeId),
+                displayWorkSchedule.confirmed.eq(true),
+                isNotDeleted(),
+                displayWorkSchedule.startDate.loe(to),
+                displayWorkSchedule.endDate.goe(from)
                     .or(displayWorkSchedule.endDate.isNull)
             )
             .fetch()

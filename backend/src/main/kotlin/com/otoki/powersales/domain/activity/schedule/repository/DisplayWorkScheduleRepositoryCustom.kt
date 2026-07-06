@@ -51,12 +51,6 @@ interface DisplayWorkScheduleRepositoryCustom {
         endDate: LocalDate
     ): List<Long>
 
-    fun findDistinctStartDatesByEmployeeIdAndDateBetween(
-        employeeId: Long,
-        startDate: LocalDate,
-        endDate: LocalDate
-    ): List<LocalDate>
-
     fun findByEmployeeIdInAndNotDeleted(employeeIds: List<Long>): List<DisplayWorkSchedule>
 
     /**
@@ -133,6 +127,16 @@ interface DisplayWorkScheduleRepositoryCustom {
      * 복수 사원의 오늘 유효한 확정 진열마스터 조회
      */
     fun findConfirmedValidByEmployeeIdsAndDate(employeeIds: List<Long>, date: LocalDate): List<DisplayWorkSchedule>
+
+    /**
+     * 사원의 특정 기간(from~to)과 겹치는 유효 확정 진열마스터 조회 (월간 캘린더 근무일 전개용).
+     * 조건: confirmed=true, isDeleted!=true, startDate<=to, (endDate>=from OR endDate IS NULL).
+     *
+     * 레거시 `MyPageController.calSchedule` 의 진열 쿼리(`GENERATE_SERIES(startdate__c, enddate__c, '1 day')`)
+     * 기간 전개와 정합 — 반환된 각 마스터의 [startDate, endDate] 를 호출 측에서 월 범위 내 날짜로 전개한다.
+     * (홈/여사원 일별현황이 쓰는 [findConfirmedValidByEmployeeIdsAndDate] 의 기간 판정과 동일 기준.)
+     */
+    fun findConfirmedValidByEmployeeIdAndDateRange(employeeId: Long, from: LocalDate, to: LocalDate): List<DisplayWorkSchedule>
 
     /**
      * DISPLAY SAP daily batch 용 페이지 조회.

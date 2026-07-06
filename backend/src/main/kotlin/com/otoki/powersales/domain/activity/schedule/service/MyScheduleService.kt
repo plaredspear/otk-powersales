@@ -52,9 +52,20 @@ class MyScheduleService(
         val startDate = yearMonth.atDay(1)
         val endDate = yearMonth.atEndOfMonth()
 
-        // 해당 기간 내 일정이 있는 날짜 목록 조회
+        // 진열 마스터를 기간(startDate~endDate)으로 전개해 월 내 근무일 집합 생성.
+        // 레거시 calSchedule 의 GENERATE_SERIES(startdate__c, enddate__c) 정합 — 마스터 시작일 하루만이
+        // 아니라 기간에 걸친 모든 날을 근무일로 표시한다(전월 이전 시작·진행 중(endDate NULL) 마스터 포함).
+        // 기간 판정 기준(confirmed=true, period overlap)은 홈/여사원 일별현황과 동일.
         val workDates = displayWorkScheduleRepository
-            .findDistinctStartDatesByEmployeeIdAndDateBetween(employee.id, startDate, endDate)
+            .findConfirmedValidByEmployeeIdAndDateRange(employee.id, startDate, endDate)
+            .flatMap { master ->
+                val periodStart = master.startDate ?: return@flatMap emptyList<LocalDate>()
+                val rangeStart = maxOf(periodStart, startDate)
+                val rangeEnd = minOf(master.endDate ?: endDate, endDate)
+                generateSequence(rangeStart) { it.plusDays(1) }
+                    .takeWhile { !it.isAfter(rangeEnd) }
+                    .toList()
+            }
             .toSet()
 
         // TeamMemberSchedule에서 날짜별 workingType 조회
@@ -131,8 +142,10 @@ class MyScheduleService(
             )
         }
 
-        // 해당 날짜의 거래처 일정 목록 조회
-        val schedules = displayWorkScheduleRepository.findByEmployeeAndStartDate(employee.id, date)
+        // 해당 날짜의 거래처 일정 목록 조회.
+        // 진열 마스터는 기간형(startDate~endDate)이므로 시작일 단일 매칭이 아니라 기간 겹침으로 조회한다
+        // (레거시 calSchedule/myDaily GENERATE_SERIES 정합, 홈/여사원 일별현황과 동일 기준).
+        val schedules = displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(employee.id, date)
 
         // 출근 등록 완료된 거래처 id 집합
         // 레거시 myDaily.jsp: displayworkschedulemaster ⨝ teammemberschedule(같은 거래처·날짜)의
