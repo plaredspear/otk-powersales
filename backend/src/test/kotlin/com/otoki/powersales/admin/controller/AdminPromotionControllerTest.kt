@@ -117,6 +117,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
                         promotionType = "시식",
                         accountName = "GS25 역삼점",
                         accountCode = "1052715",
+                        accountStatusName = "거래",
                         startDate = LocalDate.of(2026, 3, 10),
                         endDate = LocalDate.of(2026, 3, 20),
                         primaryProductName = "XO_교자 (324GX2)",

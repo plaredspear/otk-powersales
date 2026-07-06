@@ -19,6 +19,7 @@ data class PromotionListItem(
     val promotionType: String?,
     val accountName: String?,
     val accountCode: String?,
+    val accountStatusName: String?,
     val startDate: LocalDate?,
     val endDate: LocalDate?,
     val primaryProductName: String?,
@@ -41,6 +42,7 @@ data class PromotionListItem(
             promotion: Promotion,
             accountName: String?,
             accountCode: String?,
+            accountStatusName: String?,
             primaryProductName: String?,
             primaryProductCode: String?,
             // 조원 파생값 SUM (SF rollup DKRetail__TargetAmount__c / ActualAmount__c 재현).
@@ -59,6 +61,7 @@ data class PromotionListItem(
                 promotionType = promotion.promotionType?.displayName,
                 accountName = accountName,
                 accountCode = accountCode,
+                accountStatusName = accountStatusName,
                 startDate = promotion.startDate,
                 endDate = promotion.endDate,
                 primaryProductName = primaryProductName,
