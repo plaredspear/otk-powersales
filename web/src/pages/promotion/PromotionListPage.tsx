@@ -224,6 +224,24 @@ export default function PromotionListPage() {
         ),
     },
     {
+      title: '거래상태',
+      dataIndex: 'accountStatusName',
+      width: 90,
+      fixed: 'left',
+      align: 'center',
+      // 폐업/출고중지 등 비정상 거래상태는 빨간색으로 강조 (고급 검색 모달/등록 화면과 일관).
+      render: (val: string | null) =>
+        val ? (
+          <span
+            style={{ color: ['폐업', '출고중지'].includes(val) ? '#cf1322' : undefined }}
+          >
+            {val}
+          </span>
+        ) : (
+          '-'
+        ),
+    },
+    {
       title: '대표제품',
       dataIndex: 'primaryProductName',
       width: 180,

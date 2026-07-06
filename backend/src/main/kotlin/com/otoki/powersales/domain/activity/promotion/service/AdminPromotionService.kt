@@ -200,6 +200,7 @@ class AdminPromotionService(
                 promotion = promotion,
                 accountName = promotion.account?.name,
                 accountCode = promotion.account?.externalKey,
+                accountStatusName = promotion.account?.accountStatusName,
                 primaryProductName = promotion.primaryProduct?.name,
                 primaryProductCode = promotion.primaryProduct?.productCode,
                 targetAmount = amounts?.first ?: 0L,

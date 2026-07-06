@@ -79,6 +79,10 @@ export default function PromotionFormPage() {
   const [accountSearching, setAccountSearching] = useState(false);
   const [productSearching, setProductSearching] = useState(false);
   const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
+  // 빠른 검색 결과 원본 — Select onChange 시 거래상태 등 부가 정보를 되찾기 위해 보관.
+  const [accountSearchResults, setAccountSearchResults] = useState<Account[]>([]);
+  // 선택된 거래처의 거래상태 — 신규등록 시 거래처 선택 즉시 표시 (수정/복제 초기 로드 제외).
+  const [selectedAccountStatus, setSelectedAccountStatus] = useState<string | null>(null);
 
   const promotionTypeOptions =
     formMeta?.promotionTypes.map((t) => ({ value: t.name, label: t.name })) ?? [];
@@ -128,6 +132,7 @@ export default function PromotionFormPage() {
     setAccountSearching(true);
     try {
       const result = await fetchAccountsForPromotionLookup({ keyword, size: 20 });
+      setAccountSearchResults(result.content);
       setAccountOptions(
         result.content
           .filter((a) => a.id != null && a.name != null)
@@ -141,12 +146,21 @@ export default function PromotionFormPage() {
     }
   };
 
+  const handleAccountChange = (accountId: number) => {
+    form.setFieldValue('accountId', accountId);
+    // 빠른 검색 결과 원본에서 거래상태를 되찾아 표시 (선택 즉시 반영).
+    const matched = accountSearchResults.find((a) => a.id === accountId);
+    setSelectedAccountStatus(matched?.accountStatusName ?? null);
+  };
+
   const handleAdvancedSearchSelect = (account: Account) => {
     // 고급 검색 그리드에서 고른 거래처를 폼 값 + Select 옵션에 반영 — 기존 빠른 검색 라벨 형식과 동일.
     setAccountOptions([
       { value: account.id, label: `${account.name} (${account.externalKey ?? ''})` },
     ]);
+    setAccountSearchResults([account]);
     form.setFieldValue('accountId', account.id);
+    setSelectedAccountStatus(account.accountStatusName);
   };
 
   const handleProductSearch = async (keyword: string) => {
@@ -246,11 +260,26 @@ export default function PromotionFormPage() {
                     options={accountOptions}
                     notFoundContent={accountSearching ? <Spin size="small" /> : null}
                     value={accountIdValue}
-                    onChange={(v) => form.setFieldValue('accountId', v)}
+                    onChange={handleAccountChange}
                   />
                   <Button onClick={() => setAdvancedSearchOpen(true)}>고급 검색</Button>
                 </Space.Compact>
               </Form.Item>
+              {selectedAccountStatus && (
+                <div style={{ marginTop: -12, marginBottom: 12 }}>
+                  <span style={{ color: '#8c8c8c', marginRight: 8 }}>거래상태</span>
+                  <span
+                    style={{
+                      color: ['폐업', '출고중지'].includes(selectedAccountStatus)
+                        ? '#cf1322'
+                        : undefined,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {selectedAccountStatus}
+                  </span>
+                </div>
+              )}
             </Col>
           </Row>
 

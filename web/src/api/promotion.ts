@@ -32,6 +32,7 @@ export interface PromotionListItem {
   promotionType: string | null;
   accountName: string | null;
   accountCode: string | null;
+  accountStatusName: string | null;
   startDate: string;
   endDate: string;
   primaryProductName: string | null;
