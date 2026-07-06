@@ -301,6 +301,23 @@
         },
         "type" : "object"
       },
+      "AccountLookupFilterOptions" : {
+        "properties" : {
+          "accountStatusNames" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "accountTypes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "AccountMasterDetail" : {
         "properties" : {
           "failureCount" : {
@@ -3405,6 +3422,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AccountListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAccountLookupFilterOptions" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AccountLookupFilterOptions"
             }, {
               "type" : "null"
             } ]
@@ -25433,6 +25479,20 @@
           }
         }, {
           "in" : "query",
+          "name" : "accountType",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountStatusName",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -25459,6 +25519,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAccountListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-account-controller" ]
+      }
+    },
+    "/api/v1/admin/accounts/lookup-filter-options" : {
+      "get" : {
+        "operationId" : "lookupFilterOptions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAccountLookupFilterOptions"
                 }
               }
             },
