@@ -364,8 +364,14 @@ class _LeaderDailyStatusScreenState
       if (selected == null || selected.isEmpty || !mounted) return;
 
       final notifier = ref.read(leaderDailyStatusProvider.notifier);
+      // 레거시 mngDaily addScheduleProc 정합: 한 건이 실패해도 break 하지 않고
+      // 나머지 건을 계속 등록한다 (EmployeeController.java:869-927 — 비즈니스 실패 시 루프 관통).
+      // 각 건은 독립 요청·독립 커밋이라 앞 건 성공은 그대로 유지된다(롤백 없음).
+      // 레거시는 부분 실패를 전체 ERROR + 마지막 메시지로 뭉뚱그리나, 신규는 성공/실패 건수를
+      // 함께 보고해 어느 건이 남았는지 사용자가 인지하도록 개선한다.
       String? firstError;
       var successCount = 0;
+      var failCount = 0;
       for (final r in selected) {
         final err = await notifier.registerProxyAttendance(
           targetEmployeeId: employeeId,
@@ -373,17 +379,20 @@ class _LeaderDailyStatusScreenState
           displayWorkScheduleId: r.displayWorkScheduleId,
         );
         if (err != null) {
-          firstError = err;
-          break;
+          firstError ??= err;
+          failCount++;
+          continue;
         }
         successCount++;
       }
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
-      messenger.showSnackBar(SnackBar(
-        content: Text(firstError ??
-            '$successCount건 대리출근 등록이 완료되었습니다.'),
-      ));
+      final message = failCount == 0
+          ? '$successCount건 대리출근 등록이 완료되었습니다.'
+          : successCount == 0
+              ? '대리출근 등록에 실패했습니다: $firstError'
+              : '$successCount건 등록 완료, $failCount건 실패했습니다: $firstError';
+      messenger.showSnackBar(SnackBar(content: Text(message)));
     });
   }
 
