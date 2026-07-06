@@ -55,21 +55,29 @@ class AdminTeamScheduleService(
     /**
      * 여사원 일정관리 "여사원" 탭 목록.
      *
-     * SF 레거시 `TeamMemberListController.fetchTeamMembers()` 정합 — branchCode 무관, 권한 기준 일괄 조회:
-     * - 특수 사번 4명 (`19951029`/`20001013`/`20060052`/`20050308`) → CostCenterCode IN ('3233','3234','3235','3236','5691','5694')
-     * - 그 외 → 본인 `cost_center_code` 단일
+     * 지점 드롭다운 연동 조회 — 거래처 탭과 동일하게 선택 지점 기준으로 여사원을 노출한다.
+     * - `branchCode == null` (지점 미선택 / 단일지점 사용자): 본인 권한 스코프
+     *   ([WomenMemberScopeResolver]) — SF 레거시 `TeamMemberListController.fetchTeamMembers()` 정합.
+     *   특수 사번 4명 (`19951029`/`20001013`/`20060052`/`20050308`) → 인천 광역 6개 cost center,
+     *   그 외 → 본인 `cost_center_code` 단일.
+     * - `branchCode != null` (다중/전사 권한자가 지점 드롭다운에서 선택): 드롭다운에 실제 노출된
+     *   지점([getBranches] = [DashboardBranchResolver.resolveBranches]) 화이트리스트로 검증하여 권한 밖
+     *   지점 조회(IDOR)를 차단하고, 통과 시 해당 지점 cost center(BranchMapping 확장)로 조회.
      *
      * 공통 SOQL 정합 필터: `role = WOMAN AND app_login_active = true AND is_deleted != true`, `ORDER BY name`.
-     * 여사원 모드는 SF `TeamMemberListComponent.cmp:76-115` 의 else 블록 — 지점 드롭다운이 없고 권한 범위 여사원을
-     * 즉시 일괄 표시하는 동작. 다중 지점 사용자(SYSTEM_ADMIN / 영업지원1·2팀)도 본인 costCenterCode 단일 조회.
      *
      * @param principal 인증된 web admin 사용자. employeeCode / costCenterCode snapshot 만 사용 —
      *                  Employee 엔티티 재조회 없이 데이터 스코프 분기를 수행.
+     * @param branchCode 선택된 지점 코드. null 이면 본인 권한 스코프.
      */
-    fun getMembers(principal: WebUserPrincipal): List<TeamMemberDto> {
-        val targetCostCenterCodes = WomenMemberScopeResolver.resolveCostCenterCodes(
-            principal.employeeCode, principal.costCenterCode
-        )
+    fun getMembers(principal: WebUserPrincipal, branchCode: String? = null): List<TeamMemberDto> {
+        val targetCostCenterCodes: List<String> = if (branchCode.isNullOrBlank()) {
+            WomenMemberScopeResolver.resolveCostCenterCodes(principal.employeeCode, principal.costCenterCode)
+        } else {
+            // 권한 밖 지점 조회 차단 — 드롭다운 화이트리스트 미포함이면 빈 목록.
+            if (getBranches(principal).none { it.branchCode == branchCode }) return emptyList()
+            branchCodeExpander.expand(setOf(branchCode)).toList()
+        }
         if (targetCostCenterCodes.isEmpty()) return emptyList()
 
         return employeeRepository.findActiveWomenByCostCenterCodes(targetCostCenterCodes)
@@ -142,9 +150,10 @@ class AdminTeamScheduleService(
      */
     fun getForm(principal: WebUserPrincipal, branchCode: String? = null): TeamScheduleFormDto {
         val branches = getBranches(principal)
-        val members = getMembers(principal)
         val promotionTeams = getProfessionalPromotionTeams()
         val effectiveBranchCode = branchCode ?: branches.singleOrNull()?.branchCode
+        // 여사원 목록도 거래처와 동일하게 선택 지점 기준으로 조회 (지점 드롭다운 연동).
+        val members = getMembers(principal, effectiveBranchCode)
         val accounts = if (effectiveBranchCode != null) {
             getAccounts(principal, effectiveBranchCode)
         } else {
@@ -201,13 +210,13 @@ class AdminTeamScheduleService(
         val hasAccountFilter = !accountIds.isNullOrEmpty()
 
         // 무필터(거래처/여사원 미선택) 요청 — 개별 일정 row 는 끌어오지 않고 일별 요약만 조회한다.
-        // SF `FullCalendarComponentController.fetchScheduleSummary` 정합: 본인/특수사번 costCenterCode 기준
-        // active 여사원 employeeId 집합으로 DB GROUP BY 집계 (account JOIN·전체 컬럼 fetch 회피).
+        // 여사원 목록과 동일한 지점 스코프([getMembers] branchCode 연동) active 여사원 employeeId 집합으로
+        // DB GROUP BY 집계 (account JOIN·전체 컬럼 fetch 회피). branchCode 미지정 시 본인/특수사번 스코프.
         if (!hasEmployeeFilter && !hasAccountFilter) {
             if (principal == null) {
                 return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
             }
-            val summaryEmployeeIds = getMembers(principal).map { it.employeeId }
+            val summaryEmployeeIds = getMembers(principal, branchCode).map { it.employeeId }
             if (summaryEmployeeIds.isEmpty()) {
                 return MonthlyScheduleWithSummaryDto(schedules = emptyList(), dailySummary = emptyList())
             }

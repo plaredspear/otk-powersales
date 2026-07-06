@@ -223,7 +223,7 @@ class AdminTeamScheduleServiceTest {
     // ========== getMembers ==========
 
     @Nested
-    @DisplayName("getMembers - 여사원 목록 조회 (SF 정합 — branchCode 무관)")
+    @DisplayName("getMembers - 여사원 목록 조회 (지점 드롭다운 연동)")
     inner class GetMembersTests {
 
         @Test
@@ -286,6 +286,38 @@ class AdminTeamScheduleServiceTest {
             val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = null, role = AppAuthority.LEADER)
 
             val result = service.getMembers(principalOf(leader))
+
+            assertThat(result).isEmpty()
+            verify(exactly = 0) { employeeRepository.findActiveWomenByCostCenterCodes(any()) }
+        }
+
+        @Test
+        @DisplayName("지점 선택 - 드롭다운 화이트리스트 지점의 cost center 로 조회 (본인 costCenterCode 무시)")
+        fun getMembers_withSelectedBranch_usesBranchScope() {
+            val admin = createEmployee(id = 10L, employeeCode = "99990001", costCenterCode = "9999", role = null)
+            every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
+                BranchResponse(branchCode = "1234", branchName = "강북1지점")
+            )
+            val m1 = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = AppAuthority.WOMAN)
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")) } returns listOf(m1)
+
+            val result = service.getMembers(principalOf(admin), branchCode = "1234")
+
+            assertThat(result).hasSize(1)
+            verify { employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")) }
+            // 본인 costCenterCode(9999) 스코프는 사용하지 않음
+            verify(exactly = 0) { employeeRepository.findActiveWomenByCostCenterCodes(listOf("9999")) }
+        }
+
+        @Test
+        @DisplayName("권한 밖 지점 선택 - 드롭다운 화이트리스트 미포함이면 빈 결과 (IDOR 차단)")
+        fun getMembers_withDisallowedBranch_blocked() {
+            val admin = createEmployee(id = 10L, employeeCode = "99990001", costCenterCode = "9999", role = null)
+            every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(
+                BranchResponse(branchCode = "1234", branchName = "강북1지점")
+            )
+
+            val result = service.getMembers(principalOf(admin), branchCode = "9999")
 
             assertThat(result).isEmpty()
             verify(exactly = 0) { employeeRepository.findActiveWomenByCostCenterCodes(any()) }
@@ -378,7 +410,8 @@ class AdminTeamScheduleServiceTest {
             val account = createAccount(id = 2001, sfid = "ACC_2001", name = "이마트 강남점", branchCode = "5460")
 
             every { dashboardBranchResolver.resolveBranches(any()) } returns branches
-            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
+            // 여사원 목록도 선택 지점(5460) 스코프로 조회 (지점 드롭다운 연동).
+            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("5460")) } returns emptyList()
             every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5460"), listOf("1010", "1000")) } returns listOf(account)
             every { teamMemberScheduleRepository.findMonthlyByAccountIds(eq(listOf(2001)), any(), any(), isNull()) } returns emptyList()
 
@@ -417,7 +450,8 @@ class AdminTeamScheduleServiceTest {
             val expandedCodes = setOf("5691", "5692", "5693", "5694")
 
             every { dashboardBranchResolver.resolveBranches(any()) } returns branches
-            every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
+            // 여사원 목록도 확장된 cost center 집합으로 조회 (지점 드롭다운 연동, 순서 무관 매칭).
+            every { employeeRepository.findActiveWomenByCostCenterCodes(match { it.toSet() == expandedCodes }) } returns emptyList()
             every { branchCodeExpander.expand(setOf("5694")) } returns expandedCodes
             val acc1 = createAccount(id = 1, sfid = "ACC_001", name = "CVS 1", branchCode = "5691")
             val acc2 = createAccount(id = 2, sfid = "ACC_002", name = "CVS 2", branchCode = "5692")
