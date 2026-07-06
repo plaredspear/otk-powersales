@@ -25,10 +25,12 @@ export function AccountFilterTab({
   const isSingleBranch = branches.length === 1;
   const [search, setSearch] = useState('');
 
-  const branchOptions = branches.map((b) => ({
-    value: b.branchCode,
-    label: b.branchName,
-  }));
+  const branchOptions = branches
+    .map((b) => ({
+      value: b.branchCode,
+      label: b.branchName,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
 
   // 이름 또는 externalKey (SAP code) 에 검색어를 포함하는 row 만 표시.
   const filteredAccounts = useMemo(() => {

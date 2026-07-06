@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
+import com.otoki.powersales.admin.service.DashboardBranchResolver
 import com.otoki.powersales.domain.activity.schedule.dto.response.DailySummaryDto
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
@@ -65,7 +66,7 @@ class AdminTeamScheduleServiceTest {
 
     private val accountRepository: AccountRepository = mockk(relaxUnitFun = true)
 
-    private val womenScheduleBranchResolver: WomenScheduleBranchResolver = mockk(relaxUnitFun = true)
+    private val dashboardBranchResolver: DashboardBranchResolver = mockk(relaxUnitFun = true)
 
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService = mockk(relaxUnitFun = true)
 
@@ -89,7 +90,7 @@ class AdminTeamScheduleServiceTest {
             teamScheduleValidator = teamScheduleValidator,
             branchCodeExpander = branchCodeExpander,
             teamMemberScheduleOwnerResolver = teamMemberScheduleOwnerResolver,
-            womenScheduleBranchResolver = womenScheduleBranchResolver
+            dashboardBranchResolver = dashboardBranchResolver
         )
         every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
         // BranchCodeExpander 는 SF Util.getIncludedBranchCode 정합 — 일반 cost center 는 입력=출력 (1:1).
@@ -297,19 +298,20 @@ class AdminTeamScheduleServiceTest {
     @DisplayName("getBranches - 지점 드롭다운 옵션 조회 (resolver 위임)")
     inner class GetBranchesTests {
 
-        // 권한별 분기 로직은 WomenScheduleBranchResolverTest 에서 검증. 여기서는 위임만 확인.
+        // 전사 권한자 34개 화이트리스트 / 지점 사용자 조직트리 분기 로직은 DashboardBranchResolverTest 에서 검증.
+        // 여기서는 셀렉터가 대시보드 고정 화이트리스트 정합 resolver 에 위임하는지만 확인.
         @Test
-        @DisplayName("WomenScheduleBranchResolver 결과를 그대로 반환")
+        @DisplayName("DashboardBranchResolver 결과를 그대로 반환")
         fun getBranches_delegatesToResolver() {
             val leader = createEmployee(id = 10L, role = AppAuthority.LEADER, costCenterCode = "5457")
             val principal = principalOf(leader)
             val branches = listOf(BranchResponse("5457", "강북유통지점"))
-            every { womenScheduleBranchResolver.resolveBranches(principal) } returns branches
+            every { dashboardBranchResolver.resolveBranches(principal) } returns branches
 
             val result = service.getBranches(principal)
 
             assertThat(result).isEqualTo(branches)
-            verify { womenScheduleBranchResolver.resolveBranches(principal) }
+            verify { dashboardBranchResolver.resolveBranches(principal) }
         }
     }
 
@@ -327,7 +329,7 @@ class AdminTeamScheduleServiceTest {
             val member = createEmployee(id = 2L, employeeCode = "20030002", name = "김영희", role = AppAuthority.WOMAN)
             val account = createAccount(id = 1, sfid = "ACC_001", name = "이마트 강북점", branchCode = "5457")
 
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(branch)
+            every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(branch)
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("5457")) } returns listOf(member)
             every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5457"), listOf("1010", "1000")) } returns listOf(account)
             // 단일지점 케이스는 accounts 가 채워지므로 dailySummary 계산을 위해 schedules 조회 발생
@@ -355,7 +357,7 @@ class AdminTeamScheduleServiceTest {
                 BranchResponse("5457", "강북유통지점")
             )
 
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns branches
+            every { dashboardBranchResolver.resolveBranches(any()) } returns branches
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
 
             val result = service.getForm(principalOf(supporter, isSalesSupport = true))
@@ -375,7 +377,7 @@ class AdminTeamScheduleServiceTest {
             )
             val account = createAccount(id = 2001, sfid = "ACC_2001", name = "이마트 강남점", branchCode = "5460")
 
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns branches
+            every { dashboardBranchResolver.resolveBranches(any()) } returns branches
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
             every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("5460"), listOf("1010", "1000")) } returns listOf(account)
             every { teamMemberScheduleRepository.findMonthlyByAccountIds(eq(listOf(2001)), any(), any(), isNull()) } returns emptyList()
@@ -396,7 +398,7 @@ class AdminTeamScheduleServiceTest {
             val emart = createAccount(id = 2, sfid = "ACC_002", name = "이마트 강남점", branchCode = "1234")
             val gs = createAccount(id = 3, sfid = "ACC_003", name = "GS25 강남점", branchCode = "1234")
 
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(branch)
+            every { dashboardBranchResolver.resolveBranches(any()) } returns listOf(branch)
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("1234")) } returns emptyList()
             every { accountRepository.findByBranchCodeInAndAccountGroupIn(setOf("1234"), listOf("1010", "1000")) } returns
                 listOf(homeplus, emart, gs)
@@ -414,7 +416,7 @@ class AdminTeamScheduleServiceTest {
             val branches = listOf(BranchResponse("5694", "CVS전략"))
             val expandedCodes = setOf("5691", "5692", "5693", "5694")
 
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns branches
+            every { dashboardBranchResolver.resolveBranches(any()) } returns branches
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("3475")) } returns emptyList()
             every { branchCodeExpander.expand(setOf("5694")) } returns expandedCodes
             val acc1 = createAccount(id = 1, sfid = "ACC_001", name = "CVS 1", branchCode = "5691")
@@ -436,7 +438,7 @@ class AdminTeamScheduleServiceTest {
         fun getForm_noBranch_accountsEmpty() {
             val leader = createEmployee(id = 10L, employeeCode = "20030001", costCenterCode = "9999", role = AppAuthority.LEADER)
 
-            every { womenScheduleBranchResolver.resolveBranches(any()) } returns emptyList()
+            every { dashboardBranchResolver.resolveBranches(any()) } returns emptyList()
             every { employeeRepository.findActiveWomenByCostCenterCodes(listOf("9999")) } returns emptyList()
 
             val result = service.getForm(principalOf(leader))
