@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.common.service
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory2
+import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -578,9 +579,44 @@ class HomeServiceTest {
             assertThat(result.todaySchedules[0].scheduleId).isEqualTo(0L)
             assertThat(result.todaySchedules[0].accountName).isEqualTo("테스트 거래처")
             assertThat(result.todaySchedules[0].workCategory).isEqualTo("진열")
+            // workType = 근무형태(고정/순회/격고) = typeOfWork3 (레거시 workingcategory3__c 정합)
+            assertThat(result.todaySchedules[0].workType).isEqualTo("순회")
             assertThat(result.todaySchedules[0].isCommuteRegistered).isFalse()
             assertThat(result.attendanceSummary.totalCount).isEqualTo(1)
             assertThat(result.attendanceSummary.registeredCount).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("행사 TMS - workType 은 근무형태(workingCategory3=고정/순회/격고)로 매핑 (레거시 workingcategory3__c 정합)")
+        fun eventSchedule_workTypeFromWorkingCategory3() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, role = null)
+            val account = createAccount(id = 8938, name = "이마트 부산점")
+
+            val tms = createTeamMemberSchedule(
+                id = 1L,
+                employeeId = userId,
+                accountId = 8938,
+                workingCategory1 = WorkingCategory1.EVENT,
+                workingCategory3 = WorkingCategory3.PATROL
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns listOf(tms)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns emptyList()
+            every { accountRepository.findByIdIn(any()) } returns listOf(account)
+            every { safetyCheckService.getTodayStatus(any()) } returns SafetyCheckTodayResponse(completed = true)
+            every { noticeRepository.findRecentNotices(any()) } returns emptyList()
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then
+            assertThat(result.todaySchedules).hasSize(1)
+            assertThat(result.todaySchedules[0].workCategory).isEqualTo("행사")
+            // 근무유형(WorkingType=근무/연차/대휴) 이 아니라 근무형태(순회)로 매핑되어야 한다
+            assertThat(result.todaySchedules[0].workType).isEqualTo("순회")
         }
 
         @Test
@@ -693,6 +729,7 @@ class HomeServiceTest {
         workingType: WorkingType? = WorkingType.WORK,
         workingCategory1: WorkingCategory1? = WorkingCategory1.DISPLAY,
         workingCategory2: WorkingCategory2? = null,
+        workingCategory3: WorkingCategory3? = null,
         commuteLogSfid: String? = null,
         commuteReportDatetime: LocalDateTime? = null
     ): TeamMemberSchedule {
@@ -705,6 +742,7 @@ class HomeServiceTest {
             workingType = workingType,
             workingCategory1 = workingCategory1,
             workingCategory2 = workingCategory2,
+            workingCategory3 = workingCategory3,
             commuteLogSfid = commuteLogSfid,
             // Spec #789 정합 — 출근 등록 가드는 attendance_log id-FK 기준.
             attendanceLog = commuteLogSfid?.let { AttendanceLog(id = 1L) },

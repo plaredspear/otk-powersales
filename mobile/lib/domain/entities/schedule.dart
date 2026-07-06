@@ -9,8 +9,15 @@ class Schedule {
   final String employeeCode;
   final String? accountName;
   final int? accountId;
+
+  /// 근무구분 (진열/행사) — 레거시 workingcategory1__c.
   final String workCategory;
+
+  /// 근무형태 (고정/순회/격고) — 레거시 workingcategory3__c.
+  ///
+  /// 순회/격고 근무자는 출근 전 일정을 숨기는 등 홈 카드 표시 분기에 사용된다.
   final String? workType;
+
   final bool isCommuteRegistered;
   final DateTime? commuteRegisteredAt;
 

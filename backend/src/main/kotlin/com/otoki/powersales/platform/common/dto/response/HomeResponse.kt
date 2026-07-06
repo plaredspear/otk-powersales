@@ -34,6 +34,12 @@ data class HomeResponse(
         val accountName: String?,
         val accountId: Long?,
         val workCategory: String,
+        /**
+         * 근무형태(고정/순회/격고). 레거시 home.jsp `workingcategory3__c` 정합.
+         *
+         * 순회/격고 근무자는 출근 등록 전에는 일정을 숨기므로(home.jsp:558·570),
+         * 모바일 홈 카드가 이 값으로 표시 분기를 수행한다.
+         */
         val workType: String?,
         val isCommuteRegistered: Boolean,
         val commuteRegisteredAt: LocalDateTime?

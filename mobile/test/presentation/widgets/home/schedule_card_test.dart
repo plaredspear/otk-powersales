@@ -103,7 +103,8 @@ void main() {
         expect(find.text('오늘 등록된 스케줄이 없습니다.'), findsOneWidget);
       });
 
-      testWidgets('T2: totalCount > 0, registeredCount == 0 이면 미출근 안내 표시',
+      testWidgets(
+          'T2: totalCount > 0, registeredCount == 0 이어도 일정(거래처명+근무정보)을 표시',
           (tester) async {
         await tester.pumpWidget(buildTestWidget(
           schedules: _makeSchedules(8, registered: 0),
@@ -111,7 +112,10 @@ void main() {
               const AttendanceSummary(totalCount: 8, registeredCount: 0),
         ));
 
-        expect(find.text('출근 후 등록을 누르세요.'), findsOneWidget);
+        // 레거시 정합: 출근 전에도 "거래처명 (근무구분)"이 노출된다.
+        expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
+        expect(find.text('매장 0 (행사)'), findsOneWidget);
+        expect(find.text('매장 7 (행사)'), findsOneWidget);
       });
 
       testWidgets('T3: 부분 출근 시 스케줄 목록 표시', (tester) async {
@@ -121,10 +125,84 @@ void main() {
               const AttendanceSummary(totalCount: 3, registeredCount: 1),
         ));
 
-        // 스케줄 아이템이 표시되어야 함
-        expect(find.text('매장 0'), findsOneWidget);
-        expect(find.text('매장 1'), findsOneWidget);
-        expect(find.text('매장 2'), findsOneWidget);
+        // 스케줄 아이템이 "거래처명 (근무구분)" 형식으로 표시되어야 함
+        expect(find.text('매장 0 (행사)'), findsOneWidget);
+        expect(find.text('매장 1 (행사)'), findsOneWidget);
+        expect(find.text('매장 2 (행사)'), findsOneWidget);
+      });
+
+      testWidgets('T4: workType(근무형태)이 있으면 "거래처명 (근무구분/근무형태)" 형식으로 표시',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: const [
+            Schedule(
+              scheduleId: 1,
+              employeeName: '테스트',
+              employeeCode: 'EMP-001',
+              accountName: '가락 알파마트(주)',
+              workCategory: '진열',
+              workType: '고정',
+              isCommuteRegistered: false,
+            ),
+          ],
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 1, registeredCount: 0),
+        ));
+
+        expect(find.text('가락 알파마트(주) (진열/고정)'), findsOneWidget);
+      });
+    });
+
+    group('근무형태 분기 (레거시 home.jsp 정합)', () {
+      testWidgets('고정근무자는 출근 전(registeredCount==0)에도 전체 일정을 표시',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(3, registered: 0, workType: '고정'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 0),
+        ));
+
+        expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
+        expect(find.text('매장 0 (행사/고정)'), findsOneWidget);
+        expect(find.text('매장 1 (행사/고정)'), findsOneWidget);
+        expect(find.text('매장 2 (행사/고정)'), findsOneWidget);
+      });
+
+      testWidgets('순회근무자는 출근 전에는 일정을 숨기고 안내 문구를 표시',
+          (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(3, registered: 0, workType: '순회'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 0),
+        ));
+
+        expect(find.text('출근 후 등록을 누르세요.'), findsOneWidget);
+        expect(find.text('매장 0 (행사/순회)'), findsNothing);
+      });
+
+      testWidgets('격고근무자도 출근 전에는 일정을 숨긴다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(2, registered: 0, workType: '격고'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 2, registeredCount: 0),
+        ));
+
+        expect(find.text('출근 후 등록을 누르세요.'), findsOneWidget);
+        expect(find.text('매장 0 (행사/격고)'), findsNothing);
+      });
+
+      testWidgets('순회근무자는 출근 후 첫 일정(list[0])만 표시한다', (tester) async {
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(3, registered: 1, workType: '순회'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 3, registeredCount: 1),
+        ));
+
+        expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
+        expect(find.text('매장 0 (행사/순회)'), findsOneWidget);
+        // 나머지 일정은 숨겨진다 (레거시 home.jsp:575)
+        expect(find.text('매장 1 (행사/순회)'), findsNothing);
+        expect(find.text('매장 2 (행사/순회)'), findsNothing);
       });
     });
 
@@ -349,7 +427,9 @@ void main() {
         ));
 
         expect(find.text('0/1'), findsOneWidget);
-        expect(find.text('출근 후 등록을 누르세요.'), findsOneWidget);
+        // 출근 전에도 일정이 노출된다 (레거시 정합)
+        expect(find.text('출근 후 등록을 누르세요.'), findsNothing);
+        expect(find.text('매장 0 (행사)'), findsOneWidget);
       });
 
       testWidgets('T6: totalCount 1, registeredCount 1', (tester) async {
@@ -375,7 +455,14 @@ void main() {
 }
 
 /// 테스트용 Schedule 목록 생성 (일반 사원)
-List<Schedule> _makeSchedules(int count, {required int registered}) {
+///
+/// [workType] 이 null 이면 근무형태 미지정(고정으로 취급)이며 라벨은 "매장 N (행사)".
+/// 값이 있으면 라벨은 "매장 N (행사/근무형태)".
+List<Schedule> _makeSchedules(
+  int count, {
+  required int registered,
+  String? workType,
+}) {
   return List.generate(count, (i) {
     return Schedule(
       scheduleId: i + 1,
@@ -383,6 +470,7 @@ List<Schedule> _makeSchedules(int count, {required int registered}) {
       employeeCode: 'EMP-001',
       accountName: '매장 $i',
       workCategory: '행사',
+      workType: workType,
       isCommuteRegistered: i < registered,
     );
   });

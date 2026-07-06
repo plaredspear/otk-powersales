@@ -288,7 +288,9 @@ class HomeService(
             accountName = teamMemberSchedule.account?.id?.let { accountMap[it] },
             accountId = teamMemberSchedule.account?.id,
             workCategory = teamMemberSchedule.workingCategory1?.displayName ?: "",
-            workType = teamMemberSchedule.workingType?.displayName,
+            // 근무형태(고정/순회/격고) — 레거시 workingcategory3__c 정합.
+            // (DisplayWorkSchedule 측 typeOfWork3 와 의미 일치)
+            workType = teamMemberSchedule.workingCategory3?.displayName,
             isCommuteRegistered = teamMemberSchedule.attendanceLog != null,
             commuteRegisteredAt = teamMemberSchedule.commuteReportDatetime
         )
@@ -318,6 +320,7 @@ class HomeService(
             accountName = displayWorkSchedule.account?.id?.let { accountMap[it] },
             accountId = displayWorkSchedule.account?.id,
             workCategory = displayWorkSchedule.typeOfWork1?.displayName ?: "진열",
+            // 근무형태(고정/순회/격고) — 레거시 workingcategory3__c 정합.
             workType = displayWorkSchedule.typeOfWork3?.displayName,
             isCommuteRegistered = matchedTms?.attendanceLog != null,
             commuteRegisteredAt = matchedTms?.commuteReportDatetime

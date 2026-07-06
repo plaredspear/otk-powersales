@@ -8,9 +8,16 @@ import '../../../domain/entities/schedule.dart';
 /// 일정 카드 위젯
 ///
 /// 홈 화면의 #1 영역: 오늘 일정을 표시한다.
-/// - 일정 없음: "출근 후 등록을 누르세요." + "등록" 버튼
-/// - 일정 있음: 오늘 스케줄 목록 (근무유형 배지, 매장명, 출근 상태)
-/// - 출근 카운트 배지: "✓ X/N" 형태로 출근 현황 표시
+/// - 일정 없음: "오늘 등록된 스케줄이 없습니다." + 비활성 "등록" 버튼
+/// - 출근 카운트 배지: "X/N" 형태로 출근 현황 표시
+///
+/// 일정 표시는 근무형태(workType = 고정/순회/격고)에 따라 레거시 home.jsp와
+/// 동일하게 분기한다:
+/// - 고정근무자 (home.jsp:546): 출근등록 여부와 무관하게 모든 일정을
+///   "거래처명 (근무구분/근무형태)" 형식으로 항상 표시.
+/// - 순회/격고근무자 (home.jsp:558):
+///   · 출근 전(registeredCount == 0) → 일정을 숨기고 "출근 후 등록을 누르세요."
+///   · 출근 후 → 첫 일정(list[0])만 표시 (home.jsp:575)
 ///
 /// 조장(LEADER) 뷰 (레거시 home.jsp 정합):
 /// - 날짜 → "N명 중, M명 등록 완료" → 풀폭 "일정 관리" navy 버튼
@@ -55,6 +62,16 @@ class ScheduleCard extends StatelessWidget {
 
   /// 조장 뷰 여부 (레거시 `eq '조장'` 정확 일치 — 지점장/부서장 제외)
   bool get _isLeaderView => userRole == 'LEADER';
+
+  /// 순회/격고 근무자 여부 (레거시 home.jsp:558 `workingType eq '순회' || '격고'`).
+  ///
+  /// 한 사람의 오늘 일정은 모두 동일한 근무형태(workType)이므로 첫 일정 기준으로
+  /// 판정한다. 순회/격고는 출근 전 일정을 숨기고, 출근 후에도 첫 일정만 노출한다.
+  bool get _isRotationWorker {
+    if (schedules.isEmpty) return false;
+    final type = schedules.first.workType;
+    return type == '순회' || type == '격고';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,12 +121,18 @@ class ScheduleCard extends StatelessWidget {
             ] else ...[
               const SizedBox(height: AppSpacing.md),
 
-              // 본문 영역
+              // 본문 영역 (레거시 home.jsp 근무형태 분기 정합)
               if (totalCount == 0)
+                // 휴무
                 _buildEmptySchedule()
-              else if (registeredCount == 0)
+              else if (_isRotationWorker && registeredCount == 0)
+                // 순회/격고 · 출근 전: 일정 숨김 (home.jsp:570)
                 _buildUnregisteredMessage()
+              else if (_isRotationWorker)
+                // 순회/격고 · 출근 후: 첫 일정만 표시 (home.jsp:575)
+                _buildScheduleList(firstOnly: true)
               else
+                // 고정: 출근 여부와 무관하게 전체 일정 표시 (home.jsp:546)
                 _buildScheduleList(),
 
               // 등록 버튼 (일반 사원만) - 레거시 navy/slate/disabled
@@ -205,21 +228,6 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  /// 미출근 안내 텍스트
-  Widget _buildUnregisteredMessage() {
-    return Column(
-      children: [
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          '출근 후 등록을 누르세요.',
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
-
   /// 일정 없음 UI
   Widget _buildEmptySchedule() {
     return Column(
@@ -235,16 +243,37 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  /// 일정 목록 UI
-  Widget _buildScheduleList() {
+  /// 순회/격고 근무자의 출근 전 안내 (레거시 home.jsp:571)
+  Widget _buildUnregisteredMessage() {
     return Column(
-      children: schedules.map((schedule) {
+      children: [
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '출근 후 등록을 누르세요.',
+          style: AppTypography.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 일정 목록 UI
+  ///
+  /// [firstOnly] 가 true 이면 첫 일정만 표시한다(순회/격고 출근 후, home.jsp:575).
+  Widget _buildScheduleList({bool firstOnly = false}) {
+    final items = firstOnly ? schedules.take(1) : schedules;
+    return Column(
+      children: items.map((schedule) {
         return _buildScheduleItem(schedule);
       }).toList(),
     );
   }
 
   /// 일정 아이템 UI
+  ///
+  /// 레거시 home.jsp:549 `${name} (${wc1}/…)` 정합:
+  /// "거래처명 (근무구분/근무형태)" 텍스트 + 우측 출근 상태.
   Widget _buildScheduleItem(Schedule schedule) {
     return InkWell(
       onTap: onScheduleTap != null ? () => onScheduleTap!(schedule) : null,
@@ -255,29 +284,10 @@ class ScheduleCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 근무유형 배지
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xxs,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              ),
-              child: Text(
-                schedule.workCategory,
-                style: AppTypography.labelMedium.copyWith(
-                  color: AppColors.onPrimary,
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-
-            // 매장명
+            // 거래처명 (근무구분/근무형태)
             Expanded(
               child: Text(
-                schedule.accountName ?? '(미지정)',
+                _formatScheduleLabel(schedule),
                 style: AppTypography.bodyMedium,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -298,6 +308,22 @@ class ScheduleCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// 일정 라벨을 "거래처명 (근무구분/근무형태)" 형식으로 조합한다.
+  ///
+  /// 레거시 home.jsp:549 `${name} (${wc1}/…)` 정합.
+  /// workCategory(진열/행사)와 workType(고정/순회/격고)이 있으면 슬래시로 잇는다.
+  /// (예: "가락 알파마트(주) (진열/고정)")
+  String _formatScheduleLabel(Schedule schedule) {
+    final name = schedule.accountName ?? '(미지정)';
+    final parts = <String>[
+      if (schedule.workCategory.isNotEmpty) schedule.workCategory,
+      if (schedule.workType != null && schedule.workType!.isNotEmpty)
+        schedule.workType!,
+    ];
+    if (parts.isEmpty) return name;
+    return '$name (${parts.join('/')})';
   }
 
   /// 버튼 텍스트 결정

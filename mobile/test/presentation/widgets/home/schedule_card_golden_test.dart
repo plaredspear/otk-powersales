@@ -94,6 +94,20 @@ void main() {
     );
   });
 
+  testWidgets('user_rotation_unregistered (순회 · 출근 전 일정 숨김)', (tester) async {
+    await tester.pumpWidget(wrap(buildCard(
+      userRole: 'USER',
+      totalCount: 5,
+      registeredCount: 0,
+      schedules: _makeSchedules(5, registered: 0, workType: '순회'),
+    )));
+    await expectLater(
+      find.byType(ScheduleCard),
+      matchesGoldenFile(
+          '../../../goldens/home/schedule_card_user_rotation_unregistered.png'),
+    );
+  });
+
   testWidgets('leaderView', (tester) async {
     await tester.pumpWidget(wrap(buildCard(
       userRole: 'LEADER',
@@ -108,7 +122,11 @@ void main() {
   });
 }
 
-List<Schedule> _makeSchedules(int count, {required int registered}) {
+List<Schedule> _makeSchedules(
+  int count, {
+  required int registered,
+  String? workType,
+}) {
   return List.generate(count, (i) {
     return Schedule(
       scheduleId: i + 1,
@@ -116,6 +134,7 @@ List<Schedule> _makeSchedules(int count, {required int registered}) {
       employeeCode: 'EMP-001',
       accountName: '매장 ${i + 1}',
       workCategory: '행사',
+      workType: workType,
       isCommuteRegistered: i < registered,
       commuteRegisteredAt:
           i < registered ? DateTime(2026, 5, 4, 9, 0) : null,
