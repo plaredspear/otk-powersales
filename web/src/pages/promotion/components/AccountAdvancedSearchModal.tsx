@@ -65,7 +65,19 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
   const columns: ColumnsType<Account> = [
     { title: '거래처명', dataIndex: 'name', key: 'name', width: 220, fixed: 'left' },
     { title: 'SAP거래처코드', dataIndex: 'externalKey', key: 'externalKey', width: 130 },
-    { title: '거래상태', dataIndex: 'accountStatusName', key: 'accountStatusName', width: 90 },
+    {
+      title: '거래상태',
+      dataIndex: 'accountStatusName',
+      key: 'accountStatusName',
+      width: 90,
+      // 폐업/출고중지 등 비정상 거래상태는 빨간색으로 강조 (행사 등록 부적합 신호).
+      render: (value: string | null) =>
+        value != null && ['폐업', '출고중지'].includes(value) ? (
+          <span style={{ color: '#cf1322' }}>{value}</span>
+        ) : (
+          value
+        ),
+    },
     { title: '전화', dataIndex: 'phone', key: 'phone', width: 130 },
     { title: '거래처유형', dataIndex: 'accountType', key: 'accountType', width: 110 },
     { title: 'ABC유형', dataIndex: 'abcType', key: 'abcType', width: 90 },
