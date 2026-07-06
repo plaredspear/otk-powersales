@@ -52,5 +52,31 @@ void main() {
       final model = UserModel.fromJson(baseJson(role: '조장'));
       expect(model.role, '조장');
     });
+
+    group('toEntity - rawRole (원본 권한 보존, "내 정보" 미지정 구분용)', () {
+      test('원본 값이 있으면 그대로 보존', () {
+        expect(UserModel.fromJson(baseJson(role: '여사원')).toEntity().rawRole,
+            '여사원');
+        expect(UserModel.fromJson(baseJson(role: '조장')).toEntity().rawRole,
+            '조장');
+        expect(
+            UserModel.fromJson(baseJson(role: 'AccountViewAll'))
+                .toEntity()
+                .rawRole,
+            'AccountViewAll');
+      });
+
+      test('role null → rawRole null (실제 여사원과 구분)', () {
+        final entity = UserModel.fromJson(baseJson(role: null)).toEntity();
+        // role 은 여전히 USER 로 뭉개지지만, rawRole 은 null 로 미지정을 구분한다.
+        expect(entity.role, 'USER');
+        expect(entity.rawRole, isNull);
+      });
+
+      test('role 빈 문자열 → rawRole null', () {
+        final entity = UserModel.fromJson(baseJson(role: '')).toEntity();
+        expect(entity.rawRole, isNull);
+      });
+    });
   });
 }

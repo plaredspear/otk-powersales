@@ -66,6 +66,10 @@ class UserModel {
   }
 
   /// Domain Entity로 변환 (role 은 도메인 어휘로 번역)
+  ///
+  /// [User.rawRole] 에는 SF picklist 원본 문자열을 그대로 싣는다. 단 [fromJson] 에서
+  /// null 을 `''` 로 정규화했으므로, 빈 문자열(원본 미지정)은 `null` 로 되돌려 전달해
+  /// 표시 계층이 "미지정"을 구분할 수 있게 한다.
   User toEntity() {
     return User(
       id: id,
@@ -73,17 +77,21 @@ class UserModel {
       name: name,
       orgName: orgName,
       role: _toDomainRole(role),
+      rawRole: role.isEmpty ? null : role,
     );
   }
 
   /// Domain Entity에서 생성
+  ///
+  /// [UserModel.role] 은 백엔드 원본 문자열 슬롯이므로, 엔티티의 원본값([User.rawRole])이
+  /// 있으면 그것을 우선 싣는다(왕복 정합). 없으면 도메인 role 로 대체.
   factory UserModel.fromEntity(User entity) {
     return UserModel(
       id: entity.id,
       employeeCode: entity.employeeCode,
       name: entity.name,
       orgName: entity.orgName,
-      role: entity.role,
+      role: entity.rawRole ?? entity.role,
     );
   }
 

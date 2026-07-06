@@ -16,15 +16,27 @@ import '../providers/auth_provider.dart';
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
-  /// 권한 코드 → 레거시 한글 라벨 (appauthority__c 정합)
-  static String _roleLabel(String role) {
-    switch (role) {
-      case 'LEADER':
-        return '조장';
-      case 'ADMIN':
-        return '지점장';
-      default:
+  /// 원본 권한(appauthority__c) → 표시 라벨.
+  ///
+  /// 백엔드 원본 role 값이 미지정(null/공백)이면 도메인 번역 단계에서 실제 "여사원"과
+  /// 구분되지 않으므로, 도메인 role 대신 [User.rawRole](SF picklist 원문)을 직접 라벨링한다.
+  /// 미지정이면 "-" 로 표시해 실제 여사원과 혼동되지 않게 한다.
+  static String _roleLabel(String? rawRole) {
+    switch (rawRole) {
+      case '여사원':
         return '여사원';
+      case '조장':
+        return '조장';
+      case '지점장':
+        return '지점장';
+      case 'AccountViewAll':
+        return '영업부장';
+      case null:
+      case '':
+        return '-';
+      default:
+        // 예상 밖 picklist 값은 원문 그대로 노출 (마이그레이션/정합 이상 가시화)
+        return rawRole;
     }
   }
 
@@ -64,7 +76,7 @@ class ProfilePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  user == null ? '' : _roleLabel(user.role),
+                  user == null ? '' : _roleLabel(user.rawRole),
                   style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.legacyTextSub,
@@ -79,7 +91,7 @@ class ProfilePage extends ConsumerWidget {
           _infoRow(label: '소속', value: orgName),
           _infoRow(
             label: '권한',
-            value: user == null ? '' : _roleLabel(user.role),
+            value: user == null ? '' : _roleLabel(user.rawRole),
           ),
 
           const SizedBox(height: 12),

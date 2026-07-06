@@ -16,12 +16,21 @@ class User {
   /// 권한 (USER, LEADER, ADMIN)
   final String role;
 
+  /// 원본 권한 문자열 (SF `DKRetail__AppAuthority__c` picklist: `여사원`/`조장`/`지점장`/`AccountViewAll`).
+  ///
+  /// [role] 은 도메인 어휘(USER/LEADER/ADMIN)로 번역되면서 `null`/`여사원`/그 외 미매칭 값이
+  /// 모두 `USER` 로 뭉개진다. "내 정보" 화면처럼 원본 권한이 미지정(null/공백)인 사용자를
+  /// 실제 여사원과 구분해 표시해야 하는 곳에서만 이 값을 참조한다.
+  /// 백엔드 미지정 시 `null`.
+  final String? rawRole;
+
   const User({
     required this.id,
     required this.employeeCode,
     required this.name,
     this.orgName,
     required this.role,
+    this.rawRole,
   });
 
   User copyWith({
@@ -31,6 +40,7 @@ class User {
     String? orgName,
     bool clearOrgName = false,
     String? role,
+    String? rawRole,
   }) {
     return User(
       id: id ?? this.id,
@@ -38,6 +48,7 @@ class User {
       name: name ?? this.name,
       orgName: clearOrgName ? null : (orgName ?? this.orgName),
       role: role ?? this.role,
+      rawRole: rawRole ?? this.rawRole,
     );
   }
 
@@ -48,6 +59,7 @@ class User {
       'name': name,
       'orgName': orgName,
       'role': role,
+      'rawRole': rawRole,
     };
   }
 
@@ -58,6 +70,7 @@ class User {
       name: json['name'] as String,
       orgName: json['orgName'] as String?,
       role: json['role'] as String,
+      rawRole: json['rawRole'] as String?,
     );
   }
 
@@ -69,7 +82,8 @@ class User {
         other.employeeCode == employeeCode &&
         other.name == name &&
         other.orgName == orgName &&
-        other.role == role;
+        other.role == role &&
+        other.rawRole == rawRole;
   }
 
   @override
@@ -80,11 +94,12 @@ class User {
       name,
       orgName,
       role,
+      rawRole,
     );
   }
 
   @override
   String toString() {
-    return 'User(id: $id, employeeCode: $employeeCode, name: $name, orgName: $orgName, role: $role)';
+    return 'User(id: $id, employeeCode: $employeeCode, name: $name, orgName: $orgName, role: $role, rawRole: $rawRole)';
   }
 }
