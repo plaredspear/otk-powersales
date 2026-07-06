@@ -71,6 +71,9 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
     @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
+    @MockkBean
+    private lateinit var reportBranchScopeService: com.otoki.powersales.admin.service.ReportBranchScopeService
+
     @BeforeEach
     fun stubArgumentResolver() {
         every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
@@ -78,6 +81,8 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
         every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns DataScope(branchCodes = emptyList(), isAllBranches = true)
+        // 목록/엑셀 지점 스코프 산출 — 기본은 전사(All, 지점 필터 미적용). branchCode 미지정 케이스 정합.
+        every { reportBranchScopeService.effectiveBranchCodes(any(), any()) } returns com.otoki.powersales.admin.dto.EffectiveBranchResult.All
     }
 
     @Nested
@@ -114,7 +119,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             )
             val page = PageImpl(items, PageRequest.of(0, 20), 1)
             every { adminDisplayWorkScheduleService.listSchedules(
-                any(), eq(0), eq(20), null, null, null, null, null, null, null, null, any()
+                any(), eq(0), eq(20), null, null, null, null, null, null, null, null, any(), any()
             ) } returns page
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/list"))
@@ -129,7 +134,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         fun list_withFilters() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             every { adminDisplayWorkScheduleService.listSchedules(
-                any(), eq(0), eq(20), eq("123"), null, null, eq(true), null, null, null, null, any()
+                any(), eq(0), eq(20), eq("123"), null, null, eq(true), null, null, null, null, any(), any()
             ) } returns emptyPage
 
             mockMvc.perform(
@@ -146,7 +151,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         fun list_empty() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             every { adminDisplayWorkScheduleService.listSchedules(
-                any(), eq(0), eq(20), null, null, null, null, null, null, null, null, any()
+                any(), eq(0), eq(20), null, null, null, null, null, null, null, null, any(), any()
             ) } returns emptyPage
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/list"))
@@ -161,7 +166,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             every { adminDisplayWorkScheduleService.listSchedules(
                 any(), eq(0), eq(20), null, null, null, null, null, null, null,
-                eq(SchedulePreset.END), any()
+                eq(SchedulePreset.END), any(), any()
             ) } returns emptyPage
 
             mockMvc.perform(
@@ -177,6 +182,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             val emptyPage = PageImpl<ScheduleListItemDto>(emptyList(), PageRequest.of(0, 20), 0)
             every { adminDisplayWorkScheduleService.listSchedules(
                 any(), eq(0), eq(20), null, null, null, null, null, null, null, null,
+                any(),
                 match { it.getOrderFor("endDate")?.direction == Sort.Direction.ASC }
             ) } returns emptyPage
 
@@ -566,7 +572,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 filename = "진열스케줄_20260516_120000.xlsx"
             )
             every {
-                adminDisplayWorkScheduleService.exportAllSchedules(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+                adminDisplayWorkScheduleService.exportAllSchedules(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
             } returns result
 
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/export-all"))
@@ -586,7 +592,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
             val result = ExcelResult(bytes = ByteArray(10), filename = "진열스케줄.xlsx")
             every {
                 adminDisplayWorkScheduleService.exportAllSchedules(
-                    any(), eq("2003"), eq("이마트"), any(), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
+                    any(), eq("2003"), eq("이마트"), any(), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any(), any()
                 )
             } returns result
 
@@ -602,7 +608,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
 
             verify {
                 adminDisplayWorkScheduleService.exportAllSchedules(
-                    any(), eq("2003"), eq("이마트"), any(), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any()
+                    any(), eq("2003"), eq("이마트"), any(), eq(true), eq("고정"), any(), any(), eq(SchedulePreset.END), any(), any()
                 )
             }
         }
@@ -730,16 +736,23 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/admin/display-work-schedule/branches - 제거된 엔드포인트")
+    @DisplayName("GET /api/v1/admin/display-work-schedule/branches - 지점 셀렉터 옵션")
     inner class GetBranches {
 
         @Test
-        @DisplayName("제거 확인 - GET /{id} 로 라우팅되어 path 타입 변환 실패(400)")
-        fun getBranches_removed() {
-            // 과거 전용 /branches GET 엔드포인트는 제거됨. 현재는 GET /{id} 에 매칭되며
-            // path "branches" 가 Long 으로 변환되지 않아 400 (MethodArgumentTypeMismatch) 반환.
+        @DisplayName("성공 - 권한별 지점 화이트리스트 반환 (정적 경로가 /{id} 보다 우선 매칭)")
+        fun getBranches_success() {
+            every { reportBranchScopeService.getBranches(any()) } returns listOf(
+                com.otoki.powersales.platform.common.dto.response.BranchResponse(branchCode = "1101", branchName = "성수지점"),
+                com.otoki.powersales.platform.common.dto.response.BranchResponse(branchCode = "1102", branchName = "강남지점"),
+            )
+
             mockMvc.perform(get("/api/v1/admin/display-work-schedule/branches"))
-                .andExpect(status().isBadRequest)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].branchCode").value("1101"))
+                .andExpect(jsonPath("$.data[0].branchName").value("성수지점"))
+                .andExpect(jsonPath("$.data[1].branchCode").value("1102"))
         }
     }
 

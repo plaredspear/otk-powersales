@@ -14,6 +14,7 @@ import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.ComparableExpressionBase
+import com.querydsl.core.types.dsl.Expressions
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -124,6 +125,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        branchCodes: List<String>?,
         policyPredicate: Predicate,
         pageable: Pageable
     ): Page<ScheduleListRow> {
@@ -138,6 +140,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildTypeOfWork3Condition(typeOfWork3))
             .and(buildStartDateFromCondition(startDateFrom))
             .and(buildStartDateToCondition(startDateTo))
+            .and(buildBranchCodesCondition(branchCodes))
             .and(buildPresetCondition(preset, today))
 
         val content = queryFactory
@@ -539,6 +542,16 @@ class DisplayWorkScheduleRepositoryCustomImpl(
 
     private fun buildStartDateToCondition(startDateTo: LocalDate?): BooleanExpression? {
         return startDateTo?.let { displayWorkSchedule.startDate.loe(it) }
+    }
+
+    /**
+     * 지점 스코프 — 스케줄 소속 지점(`DisplayWorkSchedule.costCenterCode`) IN 필터.
+     * null 이면 미적용(가시 범위 전건), emptyList(NoAccess 산출값) 이면 매칭 0건(IDOR 차단).
+     */
+    private fun buildBranchCodesCondition(branchCodes: List<String>?): BooleanExpression? {
+        if (branchCodes == null) return null
+        if (branchCodes.isEmpty()) return Expressions.FALSE.isTrue // NoAccess — 매칭 0건
+        return displayWorkSchedule.costCenterCode.`in`(branchCodes)
     }
 
     override fun existsVisibleById(id: Long, policyPredicate: Predicate): Boolean {

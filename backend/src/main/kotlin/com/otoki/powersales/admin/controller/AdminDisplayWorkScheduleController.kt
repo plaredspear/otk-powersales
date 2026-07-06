@@ -19,9 +19,12 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUpload
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.security.CurrentDataScope
+import com.otoki.powersales.admin.service.ReportBranchScopeService
 import com.otoki.powersales.domain.activity.schedule.service.AdminDisplayWorkScheduleService
 import com.otoki.powersales.platform.common.dto.ApiResponse
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import jakarta.validation.Valid
@@ -37,7 +40,22 @@ import java.time.LocalDate
 @RequestMapping("/api/v1/admin/display-work-schedule")
 class AdminDisplayWorkScheduleController(
     private val adminDisplayWorkScheduleService: AdminDisplayWorkScheduleService,
+    private val reportBranchScopeService: ReportBranchScopeService,
 ) {
+
+    /**
+     * 진열스케줄마스터 목록 화면 지점 셀렉터 옵션.
+     *
+     * 전사 권한자는 전 지점, 그 외는 본인 지점 1건 (행사마스터/보고서 셀렉터와 동일 산출 —
+     * [ReportBranchScopeService.getBranches]). 화면 게이팅과 동일한 display_work_schedule READ 로 가드.
+     */
+    @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/branches")
+    fun getScheduleBranches(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
+        return ResponseEntity.ok(ApiResponse.success(reportBranchScopeService.getBranches(principal)))
+    }
 
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/list")
@@ -54,13 +72,14 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) startDateFrom: LocalDate?,
         @RequestParam(required = false) startDateTo: LocalDate?,
         @RequestParam(required = false) preset: SchedulePreset?,
+        @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false) sortBy: String?,
         @RequestParam(required = false) sortDir: String?,
     ): ResponseEntity<ApiResponse<Page<ScheduleListItemDto>>> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.listSchedules(
             scope, page, size, employeeCode, accountName, accountType, confirmed,
-            typeOfWork3, startDateFrom, startDateTo, preset, sort
+            typeOfWork3, startDateFrom, startDateTo, preset, resolveBranchCodes(principal, branchCode), sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }
@@ -79,13 +98,14 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) startDateFrom: LocalDate?,
         @RequestParam(required = false) startDateTo: LocalDate?,
         @RequestParam(required = false) preset: SchedulePreset?,
+        @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false) sortBy: String?,
         @RequestParam(required = false) sortDir: String?,
     ): ResponseEntity<ByteArray> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.exportAllSchedules(
             scope, employeeCode, accountName, accountType, confirmed,
-            typeOfWork3, startDateFrom, startDateTo, preset, sort
+            typeOfWork3, startDateFrom, startDateTo, preset, resolveBranchCodes(principal, branchCode), sort
         )
         return ExcelResponseUtils.build(result)
     }
@@ -94,6 +114,22 @@ class AdminDisplayWorkScheduleController(
         if (sortBy.isNullOrBlank()) return Sort.unsorted()
         val direction = if (sortDir.equals("asc", ignoreCase = true)) Sort.Direction.ASC else Sort.Direction.DESC
         return Sort.by(direction, sortBy)
+    }
+
+    /**
+     * 목록/엑셀 지점 필터에 넘길 지점 코드 목록 산출 (행사마스터 정합).
+     *
+     * [ReportBranchScopeService.effectiveBranchCodes] 결과를 목록 쿼리용 `List<String>?` 로 변환한다:
+     * - All (전사 권한자 + 선택 없음) → null (지점 필터 미적용, 가시 범위 전건)
+     * - Filtered → 해당 지점 코드 (그 지점으로 좁힘)
+     * - NoAccess (권한 지점 없음 / 선택값이 본인 지점 밖) → emptyList (매칭 0건, IDOR 차단)
+     */
+    private fun resolveBranchCodes(principal: WebUserPrincipal, branchCode: String?): List<String>? {
+        return when (val result = reportBranchScopeService.effectiveBranchCodes(principal, branchCode)) {
+            is EffectiveBranchResult.All -> null
+            is EffectiveBranchResult.Filtered -> result.codes
+            is EffectiveBranchResult.NoAccess -> emptyList()
+        }
     }
 
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.EDIT)

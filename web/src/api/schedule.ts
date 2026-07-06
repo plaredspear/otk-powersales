@@ -106,6 +106,8 @@ export interface ScheduleListParams {
   startDateFrom?: string;
   startDateTo?: string;
   preset?: SchedulePreset;
+  /** 지점 스코프 — 스케줄 소속 지점(costCenterCode) 필터. 전사 권한자만 선택 가능(그 외는 본인 지점 자동 스코프). */
+  branchCode?: string;
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
 }
@@ -226,9 +228,32 @@ export function scheduleExportParams(
   if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
   if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
   if (params.preset) queryParams.preset = params.preset;
+  if (params.branchCode) queryParams.branchCode = params.branchCode;
   if (params.sortBy) queryParams.sortBy = params.sortBy;
   if (params.sortDir) queryParams.sortDir = params.sortDir;
   return queryParams;
+}
+
+/** 진열스케줄마스터 목록 화면 지점 셀렉터 옵션. */
+export interface ScheduleBranch {
+  branchCode: string;
+  branchName: string;
+}
+
+/**
+ * 진열스케줄마스터 목록 화면 지점 셀렉터 옵션 조회.
+ *
+ * 전사 권한자는 전 지점, 그 외는 본인 지점 1건을 반환한다(권한별 화이트리스트).
+ * 프론트는 응답 길이로 단일/다중을 판별한다(단일이면 Tag 표시, 다중이면 Select).
+ */
+export async function fetchScheduleBranches(): Promise<ScheduleBranch[]> {
+  const res = await client.get<ApiResponse<ScheduleBranch[]>>(
+    '/api/v1/admin/display-work-schedule/branches',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '지점 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
 }
 
 export async function uploadScheduleExcel(file: File): Promise<ScheduleUploadResult> {
@@ -273,6 +298,7 @@ export async function fetchScheduleList(params: ScheduleListParams): Promise<Sch
   if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
   if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
   if (params.preset) queryParams.preset = params.preset;
+  if (params.branchCode) queryParams.branchCode = params.branchCode;
   if (params.sortBy) queryParams.sortBy = params.sortBy;
   if (params.sortDir) queryParams.sortDir = params.sortDir;
 

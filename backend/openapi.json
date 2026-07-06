@@ -27240,6 +27240,24 @@
         "tags" : [ "admin-display-work-schedule-controller" ]
       }
     },
+    "/api/v1/admin/display-work-schedule/branches" : {
+      "get" : {
+        "operationId" : "getScheduleBranches",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-display-work-schedule-controller" ]
+      }
+    },
     "/api/v1/admin/display-work-schedule/confirm" : {
       "patch" : {
         "operationId" : "batchConfirm",
@@ -27376,6 +27394,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "sortBy",
           "required" : false,
           "schema" : {
@@ -27490,6 +27515,13 @@
           "required" : false,
           "schema" : {
             "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : false,
+          "schema" : {
             "type" : "string"
           }
         }, {

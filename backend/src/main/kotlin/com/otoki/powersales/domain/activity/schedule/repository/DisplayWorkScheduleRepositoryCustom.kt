@@ -85,6 +85,9 @@ interface DisplayWorkScheduleRepositoryCustom {
      *
      * DTO projection — Employee entity hydration 회피 (Employee.employeeInfo 가 @NotFound 로
      * 즉시 fetch 강제되어 페이지당 N+1 발생하던 사례 차단).
+     *
+     * `branchCodes` 는 지점 스코프(스케줄 소속 지점 `DisplayWorkSchedule.costCenterCode` IN) 필터.
+     * null 이면 미적용(가시 범위 전건). 검색 필터와 AND 합성.
      */
     fun findScheduleList(
         employeeCode: String?,
@@ -95,6 +98,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        branchCodes: List<String>?,
         policyPredicate: Predicate,
         pageable: Pageable
     ): Page<ScheduleListRow>

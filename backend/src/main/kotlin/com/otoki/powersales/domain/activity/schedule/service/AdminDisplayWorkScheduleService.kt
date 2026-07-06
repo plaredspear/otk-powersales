@@ -363,6 +363,7 @@ class AdminDisplayWorkScheduleService(
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        branchCodes: List<String>?,
         sort: Sort,
     ): Page<ScheduleListItemDto> {
         val pageSize = size.coerceIn(1, 100)
@@ -382,7 +383,7 @@ class AdminDisplayWorkScheduleService(
         val policyPredicate = schedulePolicyPredicate(scope)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
+            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, branchCodes, policyPredicate, pageable
         )
 
         // 페이지 단위 출근등록 수 집계 (N+1 회피 — id IN + GROUP BY 1쿼리)
@@ -408,6 +409,7 @@ class AdminDisplayWorkScheduleService(
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        branchCodes: List<String>?,
         sort: Sort,
     ): ExcelResult {
         val accountIds = if (!accountName.isNullOrBlank()) {
@@ -423,7 +425,7 @@ class AdminDisplayWorkScheduleService(
         val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, sort)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, policyPredicate, pageable
+            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, branchCodes, policyPredicate, pageable
         )
 
         val items = schedulePage.content.map { toListItemDto(it) }

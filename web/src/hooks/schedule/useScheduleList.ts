@@ -17,6 +17,7 @@ export function useScheduleList(params: ScheduleListParams) {
       params.typeOfWork3,
       params.startDateFrom,
       params.startDateTo,
+      params.branchCode,
     ],
     queryFn: () => fetchScheduleList(params),
   });

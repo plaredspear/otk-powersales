@@ -25,6 +25,7 @@ import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
+import { useScheduleBranches } from '@/hooks/schedule/useScheduleBranches';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
 import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem } from '@/api/schedule';
@@ -277,6 +278,15 @@ export default function DisplaySchedulePage() {
   const uploadMutation = useScheduleUpload();
   const confirmMutation = useScheduleConfirm();
 
+  // 지점 셀렉터 — 권한별 지점 화이트리스트 (행사마스터/전문행사조 정합).
+  //  - 다중 지점(전사 권한자): Select 로 선택
+  //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. branchCode 는 빈 값이라 backend 가 본인 소속 지점으로
+  //    자동 스코프하므로 별도 전송 불필요.
+  const { data: branches } = useScheduleBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
+
   // Schedule list state
   const [listPage, setListPage] = useState(0);
   const [listSize, setListSize] = useState(50);
@@ -286,6 +296,7 @@ export default function DisplaySchedulePage() {
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
   const [filterStartDateRange, setFilterStartDateRange] = useState<[string, string] | null>(null);
+  const [filterBranchCode, setFilterBranchCode] = useState('');
   const [sortBy, setSortBy] = useState<string | undefined>(undefined);
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | undefined>(undefined);
 
@@ -298,6 +309,7 @@ export default function DisplaySchedulePage() {
     confirmed?: boolean;
     startDateFrom?: string;
     startDateTo?: string;
+    branchCode?: string;
   }>({});
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -378,6 +390,7 @@ export default function DisplaySchedulePage() {
       confirmed: filterConfirmed,
       startDateFrom: filterStartDateRange?.[0],
       startDateTo: filterStartDateRange?.[1],
+      branchCode: filterBranchCode || undefined,
     });
   };
 
@@ -388,6 +401,7 @@ export default function DisplaySchedulePage() {
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
     setFilterStartDateRange(null);
+    setFilterBranchCode('');
     setSortBy(undefined);
     setSortDir(undefined);
     setListPage(0);
@@ -618,6 +632,23 @@ export default function DisplaySchedulePage() {
 
       <Card title="스케줄 목록" style={{ marginTop: 16 }}>
         <Space wrap size="middle" style={{ marginBottom: 16 }}>
+          {isMultiBranch && (
+            <Select
+              placeholder="지점 (전체)"
+              value={filterBranchCode || undefined}
+              onChange={(v) => setFilterBranchCode(v ?? '')}
+              style={{ width: 160 }}
+              options={branchOptions}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+            />
+          )}
+          {singleBranch && (
+            <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+              지점: {singleBranch.branchName}
+            </Tag>
+          )}
           <Input
             placeholder="사원번호"
             value={filterEmployeeCode}
