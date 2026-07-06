@@ -127,7 +127,10 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                         employeeCode = "123456",
                         address1 = "서울시 강남구 역삼동 123-4",
                         phone = "02-1234-5678",
-                        accountStatusName = "활성"
+                        accountStatusName = "활성",
+                        accountType = "편의점",
+                        zipCode = "06234",
+                        representative = "홍길동"
                     )
                 ),
                 page = 0,
