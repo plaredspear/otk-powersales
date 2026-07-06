@@ -10,6 +10,7 @@ import {
   Spin,
   Tooltip,
 } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import type { Employee, EmployeeDetail } from '@/api/employee';
 import { useEmployee } from '@/hooks/employee/useEmployee';
 import { usePermission } from '@/hooks/usePermission';
@@ -59,6 +60,44 @@ const ORIGIN_TAG: Record<string, { color: string; label: string }> = {
   SAP: { color: 'blue', label: 'SAP 인입' },
   MANUAL: { color: 'gold', label: '수동 등록' },
 };
+
+/**
+ * 권한(App권한) info 툴팁 — 4종 권한 목록과 각각의 지정 방법 안내.
+ *
+ * 부여 경로는 (1) SAP 발령 자동계산(조장/여사원만) (2) web admin '권한 변경' 이다.
+ */
+const ROLE_INFO_TOOLTIP = (
+  <div style={{ maxWidth: 340 }}>
+    <div style={{ fontWeight: 600, marginBottom: 6 }}>App권한 안내</div>
+    <div style={{ marginBottom: 6 }}>
+      모바일 앱에서 거래처 조회 범위를 결정하는 권한입니다. 권한이 지정되지 않은 경우(-)에는
+      여사원과 동일하게 동작합니다.
+    </div>
+    <ul style={{ margin: 0, paddingLeft: 18 }}>
+      <li>
+        <b>여사원</b> — 본인 방문 일정(당월)에 잡힌 거래처만 조회합니다.
+      </li>
+      <li>
+        <b>조장</b> — 본인 소속 지점의 거래처를 조회합니다.
+      </li>
+      <li>
+        <b>지점장</b> — 현재는 여사원과 동일한 범위로 조회합니다.
+      </li>
+      <li>
+        <b>영업부장 (AccountViewAll)</b> — 일정이 잡힌 전체 거래처를 조회합니다.
+      </li>
+    </ul>
+    <div style={{ marginTop: 8, fontWeight: 600 }}>지정 방법</div>
+    <ul style={{ margin: 0, paddingLeft: 18 }}>
+      <li>여사원 / 조장 — SAP 발령(직무·직책)에 따라 자동으로 지정됩니다.</li>
+      <li>
+        지점장 / 영업부장 — SAP 발령으로는 지정되지 않으며, 이 화면의 「권한 변경」 으로만
+        부여할 수 있습니다.
+      </li>
+      <li>「권한 변경」 은 SAP 인입으로 관리되는 사원도 변경할 수 있습니다.</li>
+    </ul>
+  </div>
+);
 
 export default function EmployeeDetailPage() {
   const { employeeId: rawId } = useParams<{ employeeId: string }>();
@@ -223,7 +262,18 @@ export default function EmployeeDetailPage() {
 
       <Card title="앱 설정" style={{ marginBottom: 12 }}>
         <Descriptions column={2} bordered size="small">
-          <Descriptions.Item label="권한">
+          <Descriptions.Item
+            label={
+              <span>
+                권한{' '}
+                <Tooltip title={ROLE_INFO_TOOLTIP}>
+                  <InfoCircleOutlined
+                    style={{ color: '#8c8c8c', cursor: 'help', fontSize: 14 }}
+                  />
+                </Tooltip>
+              </span>
+            }
+          >
             {appAuthorityLabel(employee.role)}
           </Descriptions.Item>
           <Descriptions.Item label="앱 로그인">
