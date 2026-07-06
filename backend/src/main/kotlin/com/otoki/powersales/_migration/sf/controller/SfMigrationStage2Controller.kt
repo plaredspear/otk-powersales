@@ -186,6 +186,21 @@ class SfMigrationStage2Controller(
     }
 
     /**
+     * User.profile_id 를 SF User.ProfileId(=profile_sfid) 기준으로 최종 정합.
+     *
+     * SAP 인바운드 provisioning fallback(`5.영업사원`/`9. Staff`)이 profile_id 를 선점하면 일반 FK Resolve 의
+     * `IS NULL` 가드가 SF 실제 Profile(`6.조장` 등)로 갱신하지 못하는 정합 사고를 교정한다. `profile_sfid`
+     * 보유 사원의 profile_id 를 SF 정답으로 무조건 override (COALESCE 없음). '시스템 관리자' 격상 계정은 보존.
+     *
+     * 운영 cut-over 시점에 fk substep(2-A) **직후 1회** 호출. 멱등.
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/user-profile-reconcile")
+    fun runUserProfileSfidReconcile(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = service.runUserProfileSfidReconcile()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
      * spec #790 — UserRole hierarchy snapshot 재계산 endpoint.
      *
      * cut-over 시점에 user_role 적재 + Stage 2 fk substep 이 모든 user_role_id 를 채운 후 1회 호출.

@@ -328,4 +328,52 @@ class SfMigrationStage2Service(
             totalRowsAffected = totalUpdated,
         )
     }
+
+    /**
+     * Stage 2 (user.profile_id reconcile) — SF User.ProfileId(=user.profile_sfid) 를 profile_id 의 **최종 권위**로 강제 정합.
+     *
+     * ## 배경 (정합 사고)
+     * 일반 FK Resolve([SfMigrationStage2FkService])는 `profile_id = COALESCE(t.profile_id, ...)`
+     * + `WHERE (t.profile_id IS NULL ...)` 가드라 **profile_id 가 이미 채워져 있으면 덮어쓰지 않는다**.
+     * 그런데 SAP 인바운드 provisioning([com.otoki.powersales.user.service.UserProvisioningService.profileIdFor])이
+     * `employee.role`(SF AppAuthority picklist) 기반 fallback(`else -> "5.영업사원"`)으로 user 를 먼저 INSERT 하면,
+     * FK Resolve 실행 시점에 profile_id 가 이미 `5.영업사원`/`9. Staff` 로 선점되어 SF 실제 Profile(예: `6.조장`)
+     * 로 갱신되지 못한다. 즉 provisioning 과 마이그레이션이 같은 profile_id 컬럼을 두고 경쟁하고, `IS NULL`
+     * 가드 탓에 "먼저 채운 쪽이 이기는" 구조가 되어 SF 권위가 뒤집힌다.
+     *
+     * ## 정합 원칙
+     * SF 마이그레이션이 있는 사원(`profile_sfid` 보유)은 **SF User.Profile 이 최종 권위**다. 본 substep 은
+     * `profile_sfid → profile.sfid` 조인으로 SF 정답 profile_id 를 산출해 `COALESCE` 없이 **무조건 override** 한다.
+     * FK Resolve 를 재실행해도 provisioning 선점이 재발할 수 있으므로, cut-over 시점 fk substep **직후 1회**
+     * 실행하여 profile_id 를 SF 정답으로 수렴시킨다. 멱등 (이미 일치하는 row 는 IS DISTINCT FROM 조건으로 skip).
+     *
+     * ## 시스템 관리자 격상 보존
+     * 운영에서 SF Profile(`9. Staff` 등)보다 높게 격상된 `시스템 관리자` 계정
+     * ([com.otoki.powersales.platform.common.config.ProdAdminBootstrapInitializer] 등이 부여) 은
+     * SF 정답(9.Staff)으로 되돌리면 관리자 권한을 박탈하게 된다. 따라서 **현재 profile 이 '시스템 관리자'면
+     * override 대상에서 제외** 한다.
+     */
+    @Transactional
+    fun runUserProfileSfidReconcile(): SfMigrationStage2Response {
+        val rows = em.createNativeQuery(
+            """
+            UPDATE powersales."user" u
+            SET profile_id = p_sf.profile_id
+            FROM powersales.profile p_sf
+            WHERE p_sf.sfid = u.profile_sfid
+              AND u.profile_sfid IS NOT NULL
+              AND u.profile_id IS DISTINCT FROM p_sf.profile_id
+              AND NOT EXISTS (
+                SELECT 1 FROM powersales.profile p_now
+                WHERE p_now.profile_id = u.profile_id
+                  AND p_now.name = '시스템 관리자'
+              )
+            """.trimIndent()
+        ).executeUpdate()
+        return singleResultResponse(
+            substep = "userProfileSfidReconcile",
+            label = "User.profile_id (SF profile_sfid override — 시스템 관리자 격상 보존)",
+            rows = rows,
+        )
+    }
 }
