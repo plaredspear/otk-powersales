@@ -66,7 +66,7 @@ class AdminEmployeeUpdateService(
      * 유일한 경로다. role 외 다른 필드는 건드리지 않으므로 SAP SoT 를 침해하지 않는다.
      */
     @Transactional
-    fun updateRole(employeeId: Long, request: AdminEmployeeRoleUpdateRequest): EmployeeDetailResponse {
+    fun updateEmployeeRole(employeeId: Long, request: AdminEmployeeRoleUpdateRequest): EmployeeDetailResponse {
         val employee = employeeRepository.findWithEmployeeInfoById(employeeId)
             ?: throw EmployeeNotFoundException(employeeId)
 

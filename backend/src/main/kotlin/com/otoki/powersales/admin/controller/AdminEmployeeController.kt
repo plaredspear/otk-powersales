@@ -264,7 +264,7 @@ class AdminEmployeeController(
         @PathVariable employeeId: Long,
         @Valid @RequestBody request: AdminEmployeeRoleUpdateRequest
     ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
-        val response = adminEmployeeUpdateService.updateRole(employeeId, request)
+        val response = adminEmployeeUpdateService.updateEmployeeRole(employeeId, request)
         return ResponseEntity.ok(ApiResponse.success(response, "사원 권한이 수정되었습니다"))
     }
 

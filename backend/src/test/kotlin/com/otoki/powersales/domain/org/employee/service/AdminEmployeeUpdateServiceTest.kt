@@ -126,8 +126,8 @@ class AdminEmployeeUpdateServiceTest {
     }
 
     @Test
-    @DisplayName("updateRole - origin=SAP 사원도 role 변경 성공 (일반 수정과 달리 차단 안 함)")
-    fun updateRole_sapOrigin_allowed() {
+    @DisplayName("updateEmployeeRole - origin=SAP 사원도 role 변경 성공 (일반 수정과 달리 차단 안 함)")
+    fun updateEmployeeRole_sapOrigin_allowed() {
         val sapEmployee = Employee(id = 20L, employeeCode = "200100", name = "SAP여사원")
             .apply {
                 origin = EmployeeOrigin.SAP
@@ -137,7 +137,7 @@ class AdminEmployeeUpdateServiceTest {
         every { employeeRepository.findWithEmployeeInfoById(20L) } returns sapEmployee
         every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
 
-        val response = service.updateRole(
+        val response = service.updateEmployeeRole(
             20L,
             AdminEmployeeRoleUpdateRequest(role = AppAuthority.ACCOUNT_VIEW_ALL),
         )
@@ -148,12 +148,12 @@ class AdminEmployeeUpdateServiceTest {
     }
 
     @Test
-    @DisplayName("updateRole - 존재하지 않는 사원 -> EmployeeNotFoundException")
-    fun updateRole_notFound() {
+    @DisplayName("updateEmployeeRole - 존재하지 않는 사원 -> EmployeeNotFoundException")
+    fun updateEmployeeRole_notFound() {
         every { employeeRepository.findWithEmployeeInfoById(999L) } returns null
 
         assertThatThrownBy {
-            service.updateRole(999L, AdminEmployeeRoleUpdateRequest(role = AppAuthority.WOMAN))
+            service.updateEmployeeRole(999L, AdminEmployeeRoleUpdateRequest(role = AppAuthority.WOMAN))
         }.isInstanceOf(EmployeeNotFoundException::class.java)
     }
 }
