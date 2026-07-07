@@ -59,4 +59,41 @@ class GlobalExceptionHandlerTest {
         val body = response.body as ApiResponse<*>
         assertThat(body.error?.code).isEqualTo("METHOD_NOT_ALLOWED")
     }
+
+    @Test
+    @DisplayName("handleBusinessException - 5xx(서버 결함)도 상태/에러코드를 그대로 응답한다 (로깅은 error 레벨)")
+    fun handleBusinessException_serverError() {
+        val ex = BusinessException(
+            errorCode = "STORAGE_WRITE_FAILED",
+            message = "스토리지 저장에 실패했습니다",
+            httpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+            cause = RuntimeException("s3 put failed")
+        )
+        val request = ServletWebRequest(MockHttpServletRequest("POST", "/api/v1/admin/notices/images/inline"))
+
+        val response = handler.handleBusinessException(ex, request)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+        val body = response.body as ApiResponse<*>
+        assertThat(body.success).isFalse()
+        assertThat(body.error?.code).isEqualTo("STORAGE_WRITE_FAILED")
+        assertThat(body.error?.message).isEqualTo("스토리지 저장에 실패했습니다")
+    }
+
+    @Test
+    @DisplayName("handleBusinessException - 4xx(클라이언트 오류)는 상태/에러코드를 그대로 응답한다 (로깅은 warn 레벨)")
+    fun handleBusinessException_clientError() {
+        val ex = BusinessException(
+            errorCode = "INVALID_PARAMETER",
+            message = "잘못된 요청",
+            httpStatus = HttpStatus.BAD_REQUEST
+        )
+        val request = ServletWebRequest(MockHttpServletRequest("POST", "/api/v1/admin/notices"))
+
+        val response = handler.handleBusinessException(ex, request)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        val body = response.body as ApiResponse<*>
+        assertThat(body.error?.code).isEqualTo("INVALID_PARAMETER")
+    }
 }

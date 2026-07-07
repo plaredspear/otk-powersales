@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.ServletWebRequest
 import org.springframework.web.context.request.WebRequest
+import org.slf4j.LoggerFactory
 
 /**
  * 전역 예외 처리 핸들러 (REST API 전용).
@@ -31,6 +32,8 @@ import org.springframework.web.context.request.WebRequest
  */
 @RestControllerAdvice
 class GlobalExceptionHandler {
+
+    private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     /**
      * Validation 예외 처리
@@ -213,6 +216,14 @@ class GlobalExceptionHandler {
         ex: BusinessException,
         request: WebRequest
     ): ResponseEntity<ApiResponse<Any>> {
+        // 5xx(서버 결함: STORAGE_WRITE_FAILED 등)는 스택트레이스까지 error 로 남겨 추적 가능하게 한다.
+        // 4xx(클라이언트 요청 오류)는 정상 흐름의 일부라 스택 없이 warn 요약만 남긴다(로그 노이즈 회피).
+        if (ex.httpStatus.is5xxServerError) {
+            log.error("BusinessException {} ({}): {}", ex.errorCode, ex.httpStatus, ex.message, ex)
+        } else {
+            log.warn("BusinessException {} ({}): {}", ex.errorCode, ex.httpStatus, ex.message)
+        }
+
         val response = ApiResponse.error<Any>(
             code = ex.errorCode,
             message = ex.message ?: "Business logic error"
@@ -260,8 +271,8 @@ class GlobalExceptionHandler {
             message = "서버 내부 오류가 발생했습니다"
         )
 
-        // 로깅 (실제로는 Logger 사용)
-        ex.printStackTrace()
+        // 예상치 못한 서버 오류 — 스택트레이스까지 error 로 남긴다(printStackTrace 는 로거를 우회해 집계/포맷 누락).
+        log.error("Unhandled exception: {}", ex.message, ex)
 
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
