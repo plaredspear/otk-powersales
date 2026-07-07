@@ -30,6 +30,7 @@ import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDel
 import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem } from '@/api/schedule';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -268,6 +269,10 @@ function buildListColumns(
 
 export default function DisplaySchedulePage() {
   const navigate = useNavigate();
+  // 페이지 전체 스크롤 제거 — 상단 업로드/업로드결과 카드·필터·액션·목록헤더·페이지네이션은 고정하고
+  // "스케줄 목록" 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소(대행 배너/업로드결과 카드)를
+  // 실측 반영. headerReserve = rowSelection 헤더 + 테이블 헤더 행(≈39) + 페이지네이션(≈56).
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // 확정 해제 권한 — backend isAdminGrade(시스템 관리자 OR 영업지원실) 정합. 비관리자는 버튼 미노출.
   const user = useAuthStore((s) => s.user);
   const canUnconfirm = user?.profileName === '시스템 관리자' || user?.isSalesSupport === true;
@@ -511,8 +516,19 @@ export default function DisplaySchedulePage() {
   const canConfirmUpload = uploadResult != null && uploadResult.errorRows === 0 && uploadResult.successRows > 0;
 
   return (
-    <div>
-      <Card title="진열스케줄마스터">
+    // 페이지 전체 스크롤 제거 — 컨테이너를 실측 가용 높이에 고정하고, 목록 카드만 flex:1 로 남은 공간을
+    // 차지해 그 안의 테이블 body 만 스크롤. 상단 업로드/업로드결과 카드는 flexShrink:0 로 고정.
+    <div
+      ref={containerRef}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        minHeight: 0,
+        boxSizing: 'border-box',
+      }}
+    >
+      <Card title="진열스케줄마스터" style={{ flexShrink: 0 }}>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Space>
             <Button
@@ -549,7 +565,7 @@ export default function DisplaySchedulePage() {
       </Card>
 
       {uploadResult && (
-        <Card title="업로드 결과" style={{ marginTop: 16 }}>
+        <Card title="업로드 결과" style={{ marginTop: 16, flexShrink: 0 }}>
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col>
               <Statistic title="전체" value={uploadResult.totalRows} suffix="건" />
@@ -632,8 +648,13 @@ export default function DisplaySchedulePage() {
         </Card>
       )}
 
-      <Card title="스케줄 목록" style={{ marginTop: 16 }}>
-        <Space wrap size="middle" style={{ marginBottom: 16 }}>
+      <Card
+        title="스케줄 목록"
+        // flex:1 로 남은 높이를 차지하고, Card body 를 flex 컬럼으로 만들어 테이블 wrapper 가 늘어나게 한다.
+        style={{ marginTop: 16, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+        styles={{ body: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' } }}
+      >
+        <Space wrap size="middle" style={{ marginBottom: 16, flexShrink: 0 }}>
           {isMultiBranch && (
             <Select
               placeholder="지점 (전체)"
@@ -728,7 +749,7 @@ export default function DisplaySchedulePage() {
           />
         </Space>
 
-        <Space style={{ marginBottom: 16 }}>
+        <Space style={{ marginBottom: 16, flexShrink: 0 }}>
           <Button
             type="primary"
             disabled={selectedRowKeys.length === 0}
@@ -768,6 +789,8 @@ export default function DisplaySchedulePage() {
           </Button>
         </Space>
 
+        {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이에서 헤더 행/페이지네이션을 뺀 값이 scrollY. */}
+        <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
         <ResizableTable
           columns={listColumns}
           dataSource={scheduleListQuery.data?.content}
@@ -775,7 +798,8 @@ export default function DisplaySchedulePage() {
           size="small"
           loading={scheduleListQuery.isLoading}
           locale={listTableLocale()}
-          scroll={{ x: 1200 }}
+          // 테이블 body(행) 만 세로 스크롤. y 는 wrapper 실측 높이(하드코딩 없음).
+          scroll={{ x: 1200, y: scrollY }}
           rowSelection={{
             selectedRowKeys,
             onChange: (keys) => setSelectedRowKeys(keys),
@@ -810,6 +834,7 @@ export default function DisplaySchedulePage() {
             setListPage(0);
           }}
         />
+        </div>
       </Card>
 
       <ScheduleCreateModal

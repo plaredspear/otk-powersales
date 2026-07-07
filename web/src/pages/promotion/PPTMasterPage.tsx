@@ -27,6 +27,7 @@ import PermissionGate from '@/components/PermissionGate';
 const PPT_ENTITY = 'professional_promotion_team_master';
 import { usePermission } from '@/hooks/usePermission';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
@@ -62,6 +63,9 @@ function getEmployeeStatusLabel(record: PPTMaster): string {
 }
 
 export default function PPTMasterPage() {
+  // 페이지 전체 스크롤 제거 — 필터 카드·액션버튼은 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단
+  // 가변 요소(대행 배너 등)를 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // page/필터/사이즈를 URL query string 에 보관 — 새로고침/링크 공유/복귀 시 직전 조건 복원.
   // validOnly(boolean) 는 URL 보관을 위해 string 으로 직렬화하고 사용처에서 역변환한다.
   const { page, setPage, size: pageSize, setSize, filters, setFilters } = useListQueryParams({
@@ -335,8 +339,18 @@ export default function PPTMasterPage() {
   ];
 
   return (
-    <div>
-      <Card size="small" style={{ marginBottom: 16 }}>
+    // 페이지 전체 스크롤 제거 — 컨테이너를 실측 가용 높이에 고정. 필터/액션버튼은 고정, 테이블 body 만 스크롤.
+    <div
+      ref={containerRef}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        minHeight: 0,
+        boxSizing: 'border-box',
+      }}
+    >
+      <Card size="small" style={{ marginBottom: 16, flexShrink: 0 }}>
         <Space wrap>
           {isMultiBranch && (
             <Select
@@ -398,7 +412,7 @@ export default function PPTMasterPage() {
         </Space>
       </Card>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 16, flexShrink: 0 }}>
         <PermissionGate entity={PPT_ENTITY} operation="EDIT" fallback={<span />}>
           <Popconfirm
             title={`선택한 ${selectedIds.length}건을 일괄 확정하시겠습니까?`}
@@ -449,27 +463,31 @@ export default function PPTMasterPage() {
         </Space>
       </div>
 
-      <ResizableTable
-        rowKey="id"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        rowSelection={{
-          selectedRowKeys: selectedIds,
-          onChange: (keys) => setSelectedIds(keys as number[]),
-          getCheckboxProps: (record) => ({ disabled: record.isConfirmed }),
-        }}
-        locale={listTableLocale()}
-        pagination={buildListPagination({
-          page,
-          pageSize,
-          total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
-          onPageChange: setPage,
-          onSizeChange: setSize,
-        })}
-        scroll={{ x: 1870 }}
-      />
+      {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이에서 헤더 행/페이지네이션을 뺀 값이 scrollY. */}
+      <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
+        <ResizableTable
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          rowSelection={{
+            selectedRowKeys: selectedIds,
+            onChange: (keys) => setSelectedIds(keys as number[]),
+            getCheckboxProps: (record) => ({ disabled: record.isConfirmed }),
+          }}
+          locale={listTableLocale()}
+          pagination={buildListPagination({
+            page,
+            pageSize,
+            total: data?.totalElements ?? 0,
+            // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+            onPageChange: setPage,
+            onSizeChange: setSize,
+          })}
+          // 테이블 body(행) 만 세로 스크롤. y 는 wrapper 실측 높이(하드코딩 없음).
+          scroll={{ x: 1870, y: scrollY }}
+        />
+      </div>
 
       <PPTMasterFormModal
         open={formOpen}
