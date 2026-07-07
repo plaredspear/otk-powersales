@@ -167,9 +167,14 @@ class AdminPromotionEmployeeService(
         validateProfessionalTeamMatch(promotion, resolved?.id ?: request.employeeId)
             ?.let { throw TeamCategoryMismatchException(it) }
 
+        // SF AutoNumber "행사사원#"("PE" + 8자리) 동등 채번
+        val seq = promotionEmployeeRepository.getNextPromotionEmployeeNumberSeq()
+        val name = "PE" + String.format("%08d", seq)
+
         val pe = promotionEmployeeRepository.save(
             PromotionEmployee(
                 promotionId = promotionId,
+                name = name,
                 employeeId = resolved?.id ?: request.employeeId,
                 scheduleDate = request.scheduleDate,
                 workStatus = request.workStatus?.let { WorkingType.fromDisplayNameOrNull(it) } ?: DEFAULT_WORK_STATUS,

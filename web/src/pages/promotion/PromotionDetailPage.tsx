@@ -68,6 +68,7 @@ const WORK_TYPE3_OPTIONS = [
 // Editable row data during edit mode
 interface EditableRow {
   id: number;
+  name: string | null;
   employeeId: number | null;
   employeeCode: string | null;
   scheduleDate: string | null;
@@ -96,6 +97,7 @@ interface EditableRow {
 function toEditableRow(pe: PromotionEmployee): EditableRow {
   return {
     id: pe.id,
+    name: pe.name,
     employeeId: pe.employeeId,
     employeeCode: pe.employeeCode,
     scheduleDate: pe.scheduleDate,
@@ -923,7 +925,13 @@ export default function PromotionDetailPage() {
 
   // --- 편집 모드 컬럼 ---
   const editColumns: ColumnsType<EditableRow> = [
-      { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
+      {
+        title: 'NO.',
+        dataIndex: 'name',
+        width: 110,
+        align: 'center' as const,
+        render: (name: string | null) => name ?? '-',
+      },
       {
         title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         width: 220,
@@ -1457,7 +1465,7 @@ export default function PromotionDetailPage() {
             onRow={(record) => ({
               title: errorMessages.get(record.id) || undefined,
             })}
-            scroll={{ x: 2100 }}
+            scroll={{ x: 2140 }}
           />
         ) : (
           <ResizableTable<PromotionEmployee>

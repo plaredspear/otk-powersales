@@ -273,6 +273,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
 
     private fun createDetailResponse() = PromotionEmployeeDetailResponse(
         id = 1L,
+        name = "PE00000001",
         promotionId = 10L,
         employeeId = 100L,
         employeeCode = "20030117",
