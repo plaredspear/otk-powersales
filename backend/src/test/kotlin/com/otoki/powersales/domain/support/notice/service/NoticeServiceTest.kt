@@ -30,6 +30,10 @@ import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundEx
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.domain.org.organization.entity.Organization
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
+import com.otoki.powersales.domain.support.notice.exception.BranchNotAllowedException
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -60,6 +64,7 @@ class NoticeServiceTest {
     private val fileStorageService: FileStorageService = mockk()
     private val storageService: StorageService = mockk()
     private val fcmSender: FcmSender = mockk()
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver = mockk()
 
     private lateinit var noticeService: NoticeService
 
@@ -70,10 +75,10 @@ class NoticeServiceTest {
             noticePushLogRepository,
             uploadFileRepository,
             employeeRepository,
-            organizationRepository,
             fileStorageService,
             storageService,
-            fcmSender
+            fcmSender,
+            womenScheduleBranchResolver
         )
         // 공지 이미지는 private presigned 조회 — uniqueKey 를 받아 presigned 형태 URL 반환 stub.
         every { storageService.getPresignedUrl(any(), any()) } answers {
@@ -82,7 +87,36 @@ class NoticeServiceTest {
         // 상세 조회 시 발송 이력 조회 — 기본 미발송 stub (개별 테스트에서 override 가능).
         every { noticePushLogRepository.countByNoticeId(any()) } returns 0L
         every { noticePushLogRepository.findFirstByNoticeIdOrderByCreatedAtDesc(any()) } returns null
+        // 지점 스코프 화이트리스트 — 기본은 서울1지점(1101) 단일. 지점공지 저장/검증에 사용.
+        // 개별 테스트에서 override 가능(전사 다중 지점, 빈 목록 등).
+        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "1101", branchName = "[수도권] 서울1지점")
+        )
     }
+
+    /** 테스트용 WebUserPrincipal 생성 — 지점공지 지점 스코프/role 검증에 필요한 필드만 채운다. */
+    private fun principalOf(
+        employeeId: Long = 1L,
+        role: String? = null,
+        costCenterCode: String? = "1101",
+        profileName: String? = null,
+        isSalesSupport: Boolean = false
+    ): WebUserPrincipal = WebUserPrincipal(
+        userId = 1L,
+        usernameValue = "tester@otoki.com",
+        employeeCode = "10000001",
+        employeeId = employeeId,
+        role = role,
+        costCenterCode = costCenterCode,
+        profileName = profileName,
+        profileId = null,
+        isSalesSupport = isSalesSupport,
+        passwordChangeRequired = false,
+        permissions = emptySet(),
+        encodedPassword = "",
+        grantedAuthorities = emptyList(),
+        active = true
+    )
 
     @Nested
     @DisplayName("getNoticeDetail - 공지사항 상세 조회")
@@ -503,7 +537,7 @@ class NoticeServiceTest {
             )
             every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
-            val result = noticeService.createNotice(request, 1L, null)
+            val result = noticeService.createNotice(request, principalOf())
 
             assertThat(result.title).isEqualTo("테스트 공지")
             assertThat(result.category).isEqualTo("COMPANY")
@@ -531,7 +565,7 @@ class NoticeServiceTest {
                 UploadFile(id = 555L, uniqueKey = "uploads/notice/2026/07/06/uuid.png", parentType = "Notice", parentId = 0L, uploadKbn = "INLINE")
             every { uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(any(), "Notice") } returns emptyList()
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
 
             verify { storageService.uploadPrivate("notice", any(), any(), "image/png") }
             // 저장되는 본문(entity)에는 base64 대신 placeholder 만 남는다 → 조회 시 presigned 로 rewrite 되어 모바일 정상 렌더.
@@ -541,46 +575,44 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("지점공지 작성 시 지점은 등록자 소속으로 강제 - 조직 매칭 지점명 + 등록자 costCenterCode")
-        fun createNotice_branch_usesCreatorBranch() {
+        @DisplayName("지점공지 작성 시 선택한 지점코드를 권한 스코프 화이트리스트에서 매칭하여 저장")
+        fun createNotice_branch_usesSelectedBranch() {
             val request = NoticeCreateRequest(
                 title = "지점 공지",
                 scope = "영업사원",
                 category = "BRANCH",
                 content = "<p>지점 내용</p>",
-                // 요청 값은 무시되고 등록자 소속 지점이 권위.
-                branch = "타지점",
-                branchCode = "9999"
-            )
-            every { organizationRepository.findAll() } returns listOf(
-                createOrg(orgNameLevel3 = "수도권", orgNameLevel4 = "서울1지점", costCenterLevel5 = "1101")
+                // 작성자가 권한 스코프 안에서 고른 지점코드.
+                branchCode = "1101"
             )
             every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
-            val result = noticeService.createNotice(request, 1L, null)
+            val result = noticeService.createNotice(request, principalOf())
 
             assertThat(result.category).isEqualTo("BRANCH")
             assertThat(result.categoryName).isEqualTo("지점공지")
+            // 지점명은 resolver 화이트리스트에서 코드로 매칭한 값.
             assertThat(result.branch).isEqualTo("[수도권] 서울1지점")
             assertThat(result.branchCode).isEqualTo("1101")
         }
 
         @Test
-        @DisplayName("지점공지 작성 시 조직 매칭 실패하면 지점명은 등록자 orgName 으로 폴백")
-        fun createNotice_branch_fallbackToOrgName() {
+        @DisplayName("지점공지 작성 시 선택 지점코드가 권한 스코프 밖이면 BranchNotAllowedException")
+        fun createNotice_branch_outsideScopeRejected() {
             val request = NoticeCreateRequest(
                 title = "지점 공지",
                 scope = "영업사원",
                 category = "BRANCH",
-                content = "<p>지점 내용</p>"
+                content = "<p>지점 내용</p>",
+                branchCode = "1101"
             )
-            every { organizationRepository.findAll() } returns emptyList()
-            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
+            // 화이트리스트는 타지점(9999)만 — 요청한 1101 은 스코프 밖.
+            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+                BranchResponse(branchCode = "9999", branchName = "타지점")
+            )
 
-            val result = noticeService.createNotice(request, 1L, null)
-
-            assertThat(result.branch).isEqualTo("작성자소속")
-            assertThat(result.branchCode).isEqualTo("1101")
+            assertThatThrownBy { noticeService.createNotice(request, principalOf()) }
+                .isInstanceOf(BranchNotAllowedException::class.java)
         }
 
         @Test
@@ -594,7 +626,7 @@ class NoticeServiceTest {
             )
             every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
-            val result = noticeService.createNotice(request, 1L, null)
+            val result = noticeService.createNotice(request, principalOf())
 
             assertThat(result.category).isEqualTo("EDUCATION")
             assertThat(result.categoryName).isEqualTo("교육")
@@ -615,7 +647,7 @@ class NoticeServiceTest {
             )
             every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
-            val result = noticeService.createNotice(request, 1L, null)
+            val result = noticeService.createNotice(request, principalOf())
 
             assertThat(result.branch).isNull()
             assertThat(result.branchCode).isNull()
@@ -626,28 +658,22 @@ class NoticeServiceTest {
         fun createNotice_invalidCategory() {
             val request = NoticeCreateRequest(title = "공지", scope = "영업사원", category = "UNKNOWN", content = "내용")
 
-            assertThatThrownBy { noticeService.createNotice(request, 1L, null) }
+            assertThatThrownBy { noticeService.createNotice(request, principalOf()) }
                 .isInstanceOf(InvalidNoticeCategoryException::class.java)
         }
 
         @Test
-        @DisplayName("지점공지인데 등록자 소속 지점코드 없음 -> BranchRequiredException")
-        fun createNotice_branchRequiredWhenCreatorHasNoBranch() {
-            val noBranchCreator = Employee(
-                id = 2L,
-                employeeCode = "10000002",
-                name = "지점없음",
-                costCenterCode = null
-            )
-            every { employeeRepository.findById(2L) } returns Optional.of(noBranchCreator)
+        @DisplayName("지점공지인데 요청 지점코드 없음 -> BranchRequiredException")
+        fun createNotice_branchRequiredWhenNoBranchCode() {
             val request = NoticeCreateRequest(
                 title = "지점 공지",
                 scope = "영업사원",
                 category = "BRANCH",
                 content = "<p>내용</p>"
+                // branchCode 미지정 → 필수값 누락.
             )
 
-            assertThatThrownBy { noticeService.createNotice(request, 2L, null) }
+            assertThatThrownBy { noticeService.createNotice(request, principalOf()) }
                 .isInstanceOf(BranchRequiredException::class.java)
         }
 
@@ -656,7 +682,7 @@ class NoticeServiceTest {
         fun createNotice_leaderRejectsCompany() {
             val request = NoticeCreateRequest(title = "회사 공지", scope = "영업사원", category = "COMPANY", content = "내용")
 
-            assertThatThrownBy { noticeService.createNotice(request, 1L, AppAuthority.LEADER) }
+            assertThatThrownBy { noticeService.createNotice(request, principalOf(role = AppAuthority.LEADER)) }
                 .isInstanceOf(BranchNoticeOnlyException::class.java)
         }
 
@@ -665,18 +691,19 @@ class NoticeServiceTest {
         fun createNotice_branchManagerRejectsEducation() {
             val request = NoticeCreateRequest(title = "교육 공지", scope = "영업사원", category = "EDUCATION", content = "내용")
 
-            assertThatThrownBy { noticeService.createNotice(request, 1L, AppAuthority.BRANCH_MANAGER) }
+            assertThatThrownBy { noticeService.createNotice(request, principalOf(role = AppAuthority.BRANCH_MANAGER)) }
                 .isInstanceOf(BranchNoticeOnlyException::class.java)
         }
 
         @Test
         @DisplayName("지점장이 지점공지 작성 -> 정상 등록")
         fun createNotice_branchManagerBranchOk() {
-            val request = NoticeCreateRequest(title = "지점 공지", scope = "영업사원", category = "BRANCH", content = "내용")
-            every { organizationRepository.findAll() } returns emptyList()
+            val request = NoticeCreateRequest(
+                title = "지점 공지", scope = "영업사원", category = "BRANCH", content = "내용", branchCode = "1101"
+            )
             every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
-            val result = noticeService.createNotice(request, 1L, AppAuthority.BRANCH_MANAGER)
+            val result = noticeService.createNotice(request, principalOf(role = AppAuthority.BRANCH_MANAGER))
 
             assertThat(result.category).isEqualTo("BRANCH")
         }
@@ -688,7 +715,7 @@ class NoticeServiceTest {
             val saved = slot<Notice>()
             every { noticeRepository.save(capture(saved)) } answers { firstArg() }
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
 
             assertThat(saved.captured.status).isEqualTo(NoticeStatus.DRAFT)
         }
@@ -700,7 +727,7 @@ class NoticeServiceTest {
             val saved = slot<Notice>()
             every { noticeRepository.save(capture(saved)) } answers { firstArg() }
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
 
             assertThat(saved.captured.status).isEqualTo(NoticeStatus.PUBLISHED)
         }
@@ -732,33 +759,21 @@ class NoticeServiceTest {
                 content = "<p>수정 내용</p>"
             )
 
-            val result = noticeService.updateNotice(10L, request, null)
+            val result = noticeService.updateNotice(10L, request, principalOf())
 
             assertThat(result.title).isEqualTo("수정된 제목")
             assertThat(result.content).isEqualTo("<p>수정 내용</p>")
         }
 
         @Test
-        @DisplayName("카테고리 변경 - COMPANY -> BRANCH 시 지점은 공지 소유자 소속으로 강제 (요청 값 무시)")
-        fun updateNotice_changeCategoryToBranch_usesOwnerBranch() {
-            val owner = Employee(
-                id = 1L,
-                employeeCode = "10000001",
-                name = "작성자",
-                orgName = "작성자소속",
-                costCenterCode = "1101"
-            )
+        @DisplayName("카테고리 변경 - COMPANY -> BRANCH 시 선택 지점코드를 권한 스코프에서 매칭하여 저장")
+        fun updateNotice_changeCategoryToBranch_usesSelectedBranch() {
             val existing = createNotice(
                 id = 10L,
                 category = NoticeCategory.COMPANY,
-                name = "전체 공지",
-                employee = owner
+                name = "전체 공지"
             )
             every { noticeRepository.findById(10L) } returns Optional.of(existing)
-            every { employeeRepository.findById(1L) } returns Optional.of(owner)
-            every { organizationRepository.findAll() } returns listOf(
-                createOrg(orgNameLevel3 = "수도권", orgNameLevel4 = "서울1지점", costCenterLevel5 = "1101")
-            )
             every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
 
             val request = NoticeUpdateRequest(
@@ -766,21 +781,21 @@ class NoticeServiceTest {
                 scope = "영업사원",
                 category = "BRANCH",
                 content = "<p>내용</p>",
-                // 요청 값은 무시되고 공지 소유자 소속 지점이 권위.
-                branch = "타지점",
-                branchCode = "9999"
+                // 작성자가 권한 스코프 안에서 고른 지점코드.
+                branchCode = "1101"
             )
 
-            val result = noticeService.updateNotice(10L, request, null)
+            val result = noticeService.updateNotice(10L, request, principalOf())
 
             assertThat(result.category).isEqualTo("BRANCH")
+            // 지점명은 resolver 화이트리스트에서 코드로 매칭한 값.
             assertThat(result.branch).isEqualTo("[수도권] 서울1지점")
             assertThat(result.branchCode).isEqualTo("1101")
         }
 
         @Test
-        @DisplayName("소유자 없는 레거시 공지를 BRANCH 로 수정 + 기존 지점코드 없음 -> BranchRequiredException")
-        fun updateNotice_legacyNoOwnerToBranch_branchRequired() {
+        @DisplayName("BRANCH 로 수정 + 요청/기존 지점코드 모두 없음 -> BranchRequiredException")
+        fun updateNotice_toBranchNoBranchCode_branchRequired() {
             val existing = createNotice(
                 id = 11L,
                 category = NoticeCategory.COMPANY,
@@ -795,9 +810,10 @@ class NoticeServiceTest {
                 scope = "영업사원",
                 category = "BRANCH",
                 content = "<p>내용</p>"
+                // branchCode 미지정 + 기존 공지도 지점코드 없음.
             )
 
-            assertThatThrownBy { noticeService.updateNotice(11L, request, null) }
+            assertThatThrownBy { noticeService.updateNotice(11L, request, principalOf()) }
                 .isInstanceOf(BranchRequiredException::class.java)
         }
 
@@ -806,7 +822,7 @@ class NoticeServiceTest {
         fun updateNotice_invalidId() {
             val request = NoticeUpdateRequest(title = "제목", scope = "영업사원", category = "COMPANY", content = "내용")
 
-            assertThatThrownBy { noticeService.updateNotice(0L, request, null) }
+            assertThatThrownBy { noticeService.updateNotice(0L, request, principalOf()) }
                 .isInstanceOf(InvalidNoticeIdException::class.java)
         }
 
@@ -816,7 +832,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(999L) } returns Optional.empty()
             val request = NoticeUpdateRequest(title = "제목", scope = "영업사원", category = "COMPANY", content = "내용")
 
-            assertThatThrownBy { noticeService.updateNotice(999L, request, null) }
+            assertThatThrownBy { noticeService.updateNotice(999L, request, principalOf()) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
         }
 
@@ -827,7 +843,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(10L) } returns Optional.of(existing)
             val request = NoticeUpdateRequest(title = "제목", scope = "영업사원", category = "COMPANY", content = "내용")
 
-            assertThatThrownBy { noticeService.updateNotice(10L, request, null) }
+            assertThatThrownBy { noticeService.updateNotice(10L, request, principalOf()) }
                 .isInstanceOf(NoticePostNotFoundException::class.java)
         }
 
@@ -838,7 +854,7 @@ class NoticeServiceTest {
             every { noticeRepository.findById(10L) } returns Optional.of(existing)
             val request = NoticeUpdateRequest(title = "제목", scope = "영업사원", category = "COMPANY", content = "내용")
 
-            assertThatThrownBy { noticeService.updateNotice(10L, request, AppAuthority.LEADER) }
+            assertThatThrownBy { noticeService.updateNotice(10L, request, principalOf(role = AppAuthority.LEADER)) }
                 .isInstanceOf(BranchNoticeOnlyException::class.java)
         }
 
@@ -850,7 +866,7 @@ class NoticeServiceTest {
             every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
             val request = NoticeUpdateRequest(title = "수정", scope = "영업사원", category = "COMPANY", content = "내용", publish = false)
 
-            noticeService.updateNotice(10L, request, null)
+            noticeService.updateNotice(10L, request, principalOf())
 
             assertThat(existing.status).isEqualTo(NoticeStatus.DRAFT)
         }
@@ -863,7 +879,7 @@ class NoticeServiceTest {
             every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
             val request = NoticeUpdateRequest(title = "수정", scope = "영업사원", category = "COMPANY", content = "내용", publish = true)
 
-            noticeService.updateNotice(10L, request, null)
+            noticeService.updateNotice(10L, request, principalOf())
 
             assertThat(existing.status).isEqualTo(NoticeStatus.PUBLISHED)
         }
@@ -880,7 +896,7 @@ class NoticeServiceTest {
                 title = "수정", scope = "영업사원", category = "COMPANY", content = "내용", version = 2L
             )
 
-            assertThatThrownBy { noticeService.updateNotice(10L, request, null) }
+            assertThatThrownBy { noticeService.updateNotice(10L, request, principalOf()) }
                 .isInstanceOf(NoticeVersionConflictException::class.java)
 
             // 충돌 시 본문 변경도 cleanup(S3 delete)도 일어나지 않아야 한다.
@@ -899,7 +915,7 @@ class NoticeServiceTest {
                 title = "수정된 제목", scope = "영업사원", category = "COMPANY", content = "내용", version = 5L
             )
 
-            val result = noticeService.updateNotice(10L, request, null)
+            val result = noticeService.updateNotice(10L, request, principalOf())
 
             assertThat(result.title).isEqualTo("수정된 제목")
         }
@@ -915,7 +931,7 @@ class NoticeServiceTest {
                 title = "수정", scope = "영업사원", category = "COMPANY", content = "내용", version = null
             )
 
-            val result = noticeService.updateNotice(10L, request, null)
+            val result = noticeService.updateNotice(10L, request, principalOf())
 
             assertThat(result.title).isEqualTo("수정")
         }
@@ -944,7 +960,7 @@ class NoticeServiceTest {
                 title = "수정", scope = "영업사원", category = "COMPANY", content = content, publish = false
             )
 
-            noticeService.updateNotice(10L, request, null)
+            noticeService.updateNotice(10L, request, principalOf())
 
             // 삭제되지 않아야 한다 — S3 delete 미호출 + soft-delete 미표기.
             verify(exactly = 0) { storageService.deletePrivate(uniqueKey) }
@@ -972,7 +988,7 @@ class NoticeServiceTest {
                 title = "수정", scope = "영업사원", category = "COMPANY", content = "<p>이미지 제거됨</p>", publish = false
             )
 
-            noticeService.updateNotice(10L, request, null)
+            noticeService.updateNotice(10L, request, principalOf())
 
             verify(exactly = 1) { storageService.deletePrivate(removedKey) }
             assertThat(removedFile.isDeleted).isEqualTo(true)
@@ -1084,15 +1100,11 @@ class NoticeServiceTest {
     inner class GetNoticeFormMetaTests {
 
         @Test
-        @DisplayName("정상 조회 - 회사공지/지점공지만 노출(교육 제외) + 지점 목록 반환")
+        @DisplayName("정상 조회 - 회사공지/지점공지만 노출(교육 제외) + 지점 목록은 권한 스코프 resolver 결과")
         fun getNoticeFormMeta_success() {
-            val orgs = listOf(
-                createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울1지점", costCenterLevel4 = "1100", costCenterLevel5 = "1101"),
-                createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울2지점", costCenterLevel4 = "1100", costCenterLevel5 = "1102")
-            )
-            every { organizationRepository.findAll() } returns orgs
-
-            val result = noticeService.getNoticeFormMeta(null)
+            // 지점 목록 산출(레벨별 지점명 조합/중복제거/불완전제외)은 WomenScheduleBranchResolver 책임 —
+            // 여기서는 resolver 가 내려준 화이트리스트를 그대로 branches 로 노출하는지만 검증한다.
+            val result = noticeService.getNoticeFormMeta(principalOf())
 
             // 교육(EDUCATION)은 별도 '교육' 메뉴에서 관리 → 공지사항 폼 카테고리에서 제외.
             assertThat(result.categories).hasSize(2)
@@ -1102,64 +1114,33 @@ class NoticeServiceTest {
             assertThat(result.categories[1].name).isEqualTo("지점공지")
             assertThat(result.categories.map { it.code }).doesNotContain("EDUCATION")
 
+            // 기본 resolver stub = [수도권] 서울1지점(1101) 단일.
+            assertThat(result.branches).hasSize(1)
+            assertThat(result.branches[0].branchCode).isEqualTo("1101")
+            assertThat(result.branches[0].branchName).isEqualTo("[수도권] 서울1지점")
+        }
+
+        @Test
+        @DisplayName("전사 권한 - resolver 다중 지점을 그대로 노출")
+        fun getNoticeFormMeta_multipleBranches() {
+            every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+                BranchResponse(branchCode = "1101", branchName = "[수도권] 서울1지점"),
+                BranchResponse(branchCode = "1102", branchName = "[수도권] 서울2지점")
+            )
+
+            val result = noticeService.getNoticeFormMeta(principalOf())
+
             assertThat(result.branches).hasSize(2)
             assertThat(result.branches[0].branchCode).isEqualTo("1101")
-            assertThat(result.branches[0].branchName).isEqualTo("[제1사업부] 1영업부-서울1지점")
             assertThat(result.branches[1].branchCode).isEqualTo("1102")
-            assertThat(result.branches[1].branchName).isEqualTo("[제1사업부] 1영업부-서울2지점")
         }
 
         @Test
-        @DisplayName("5레벨 없는 조직 - orgNameLevel5 null -> '[사업부] 영업부' 형식")
-        fun getNoticeFormMeta_noLevel5() {
-            val orgs = listOf(
-                createOrg(orgNameLevel3 = "e-Biz", orgNameLevel4 = "영업지원", orgNameLevel5 = null, costCenterLevel4 = "2100", costCenterLevel5 = null)
-            )
-            every { organizationRepository.findAll() } returns orgs
-
-            val result = noticeService.getNoticeFormMeta(null)
-
-            assertThat(result.branches).hasSize(1)
-            assertThat(result.branches[0].branchName).isEqualTo("[e-Biz] 영업지원")
-            assertThat(result.branches[0].branchCode).isEqualTo("2100")
-        }
-
-        @Test
-        @DisplayName("불완전한 조직 제외 - orgNameLevel3 null -> 제외")
-        fun getNoticeFormMeta_filterIncomplete() {
-            val orgs = listOf(
-                createOrg(orgNameLevel3 = null, orgNameLevel4 = "영업부", orgNameLevel5 = "지점"),
-                createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = null, orgNameLevel5 = "지점"),
-                createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점", costCenterLevel5 = "3001")
-            )
-            every { organizationRepository.findAll() } returns orgs
-
-            val result = noticeService.getNoticeFormMeta(null)
-
-            assertThat(result.branches).hasSize(1)
-            assertThat(result.branches[0].branchCode).isEqualTo("3001")
-        }
-
-        @Test
-        @DisplayName("중복 제거 - 동일 branchCode -> 하나만 반환")
-        fun getNoticeFormMeta_dedup() {
-            val orgs = listOf(
-                createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점A", costCenterLevel5 = "1001"),
-                createOrg(orgNameLevel3 = "사업부", orgNameLevel4 = "영업부", orgNameLevel5 = "지점A", costCenterLevel5 = "1001")
-            )
-            every { organizationRepository.findAll() } returns orgs
-
-            val result = noticeService.getNoticeFormMeta(null)
-
-            assertThat(result.branches).hasSize(1)
-        }
-
-        @Test
-        @DisplayName("빈 org 테이블 - branches 빈 배열")
+        @DisplayName("resolver 빈 목록 - branches 빈 배열")
         fun getNoticeFormMeta_empty() {
-            every { organizationRepository.findAll() } returns emptyList()
+            every { womenScheduleBranchResolver.resolveBranches(any()) } returns emptyList()
 
-            val result = noticeService.getNoticeFormMeta(null)
+            val result = noticeService.getNoticeFormMeta(principalOf())
 
             assertThat(result.categories).hasSize(2)
             assertThat(result.branches).isEmpty()
@@ -1168,9 +1149,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("조장 - 카테고리 지점공지만 노출")
         fun getNoticeFormMeta_leaderBranchOnly() {
-            every { organizationRepository.findAll() } returns emptyList()
-
-            val result = noticeService.getNoticeFormMeta(AppAuthority.LEADER)
+            val result = noticeService.getNoticeFormMeta(principalOf(role = AppAuthority.LEADER))
 
             assertThat(result.categories).hasSize(1)
             assertThat(result.categories[0].code).isEqualTo("BRANCH")
@@ -1180,9 +1159,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("지점장 - 카테고리 지점공지만 노출")
         fun getNoticeFormMeta_branchManagerBranchOnly() {
-            every { organizationRepository.findAll() } returns emptyList()
-
-            val result = noticeService.getNoticeFormMeta(AppAuthority.BRANCH_MANAGER)
+            val result = noticeService.getNoticeFormMeta(principalOf(role = AppAuthority.BRANCH_MANAGER))
 
             assertThat(result.categories).hasSize(1)
             assertThat(result.categories[0].code).isEqualTo("BRANCH")
@@ -1191,9 +1168,7 @@ class NoticeServiceTest {
         @Test
         @DisplayName("여사원 - 회사공지/지점공지 노출 (교육 제외)")
         fun getNoticeFormMeta_womanExcludesEducation() {
-            every { organizationRepository.findAll() } returns emptyList()
-
-            val result = noticeService.getNoticeFormMeta(AppAuthority.WOMAN)
+            val result = noticeService.getNoticeFormMeta(principalOf(role = AppAuthority.WOMAN))
 
             assertThat(result.categories.map { it.code }).containsExactly("COMPANY", "BRANCH")
             assertThat(result.categories.map { it.code }).doesNotContain("EDUCATION")
@@ -1331,7 +1306,7 @@ class NoticeServiceTest {
                 uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(777L), "Notice")
             } returns listOf(inlineFile)
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
 
             assertThat(inlineFile.parentId).isEqualTo(321L)
         }
@@ -1352,7 +1327,7 @@ class NoticeServiceTest {
                 uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(999L), "Notice")
             } returns listOf(ownedFile)
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
 
             // parent_id 가 원래 공지(42)에서 바뀌지 않아야 한다.
             assertThat(ownedFile.parentId).isEqualTo(42L)
@@ -1374,7 +1349,7 @@ class NoticeServiceTest {
                 uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(listOf(888L), "Notice")
             } returns listOf(attachFile)
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
 
             assertThat(attachFile.parentId).isNull()
         }
@@ -1389,7 +1364,7 @@ class NoticeServiceTest {
                 createNotice(id = 1L, contents = firstArg<Notice>().contents)
             }
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
             // backfill 조회(findByIdIn...) 스텁을 두지 않았으므로, 호출되면 MockKException 으로 실패한다 (= 미호출 검증).
             // cleanup 조회(findByParentTypeAndParentId...)는 @BeforeEach 에서 빈 목록 stub — 항상 수행되나 정리 대상 없음.
         }
@@ -1416,7 +1391,7 @@ class NoticeServiceTest {
             } returns listOf(kept, dropped)
             every { storageService.deletePrivate(any()) } just Runs
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
 
             // 700 은 본문 유지 → backfill 로 소속, 삭제 안 됨. 701 은 본문에서 빠짐 → 정리.
             assertThat(kept.parentId).isEqualTo(800L)
@@ -1443,7 +1418,7 @@ class NoticeServiceTest {
             } returns listOf(myDropped)
             every { storageService.deletePrivate(any()) } just Runs
 
-            noticeService.createNotice(request, 1L, null)
+            noticeService.createNotice(request, principalOf())
 
             // 내 세션 700 은 본문에서 빠졌으니 정리, 타 세션 902 는 조회 자체를 안 하므로 간섭 없음.
             assertThat(myDropped.isDeleted).isTrue()
@@ -1466,7 +1441,7 @@ class NoticeServiceTest {
             val request = NoticeUpdateRequest(
                 title = "수정", scope = "영업사원", category = "COMPANY", content = "<p>이미지 제거</p>"
             )
-            noticeService.updateNotice(50L, request, null)
+            noticeService.updateNotice(50L, request, principalOf())
 
             assertThat(ownedDropped.isDeleted).isTrue()
             verify { storageService.deletePrivate("uploads/notice/x/605.png") }

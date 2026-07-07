@@ -11,6 +11,7 @@ import { useCreateNotice, useUpdateNotice } from '@/hooks/notice/useNoticeMutati
 import { useAuth } from '@/hooks/useAuth';
 import { uploadNoticeInlineImage } from '@/api/notice';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import BranchSingleSelect, { type BranchOption } from '@/components/common/BranchSingleSelect';
 import MobileNoticePreview from './MobileNoticePreview';
 
 // 본문 인라인 이미지 허용 타입/용량 (백엔드 StorageConstants 와 정합).
@@ -30,6 +31,8 @@ interface FormValues {
   title: string;
   category: string;
   content: string;
+  /** 지점공지(BRANCH) 선택 지점코드. 그 외 카테고리에서는 미사용. */
+  branchCode?: string;
 }
 
 /**
@@ -68,26 +71,50 @@ function ContentEditor({
   );
 }
 
+/**
+ * antd Form.Item 이 주입하는 value/onChange 를 BranchSingleSelect 에 연결하는 controlled 어댑터.
+ * (Form.Item 은 첫 자식에 value/onChange 를 주입하므로 별도 컴포넌트로 감싸 전달한다.)
+ */
+function BranchSelectField({
+  branches,
+  value,
+  onChange,
+}: {
+  branches: BranchOption[];
+  value?: string;
+  onChange?: (branchCode: string | undefined) => void;
+}) {
+  return (
+    <BranchSingleSelect
+      branches={branches}
+      value={value}
+      onChange={(code) => onChange?.(code)}
+      label="지점"
+    />
+  );
+}
+
 function BranchField({
   form,
-  branchName,
+  branches,
 }: {
   form: FormInstance<FormValues>;
-  branchName: string | null;
+  branches: BranchOption[];
 }) {
   const categoryValue = Form.useWatch('category', form);
   if (categoryValue !== 'BRANCH') return null;
 
-  // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제 저장한다.
-  // 사용자가 임의 지점을 고를 수 없도록 읽기전용으로 해당 지점만 표시한다.
-  // - 신규: 등록자(로그인 사용자) 소속 지점
-  // - 수정: 공지 소유자 소속 지점 (= 기존 저장된 지점)
+  // 지점공지의 지점은 작성자가 권한 스코프(행사마스터/여사원일정과 동일한 화이트리스트) 안에서 고른다.
+  // BranchSingleSelect: 전사 권한자는 다중 지점 Select, 단일 지점(조장/지점장 등)은 자동 선택 후 Tag 고정.
+  // form 의 branchCode 필드로 관리 → 저장 시 payload 에 실린다.
   return (
     <Form.Item
+      name="branchCode"
       label="지점"
-      extra="지점공지는 등록자 소속 지점으로 저장됩니다."
+      rules={[{ required: true, message: '지점을 선택해주세요' }]}
+      extra="지점공지는 선택한 지점으로 저장됩니다."
     >
-      <Input value={branchName ?? '소속 지점 정보 없음'} disabled />
+      <BranchSelectField branches={branches} />
     </Form.Item>
   );
 }
@@ -128,14 +155,8 @@ export default function NoticeFormPage() {
   const watchedCategoryName =
     formMeta?.categories.find((c) => c.code === watchedCategory)?.name ?? '';
 
-  // 지점공지 폼에 표시할 지점명.
-  // - 수정: 공지에 이미 저장된 지점(소유자 지점)을 그대로 표시
-  // - 신규: 등록자(로그인 사용자) 소속 지점명 (백엔드 저장값과 동일하게 form-meta 에서 코드로 매칭)
-  const myBranchName =
-    formMeta?.branches.find((b) => b.branchCode === user?.costCenterCode)?.branchName ??
-    user?.orgName ??
-    null;
-  const branchFieldName = isEdit ? (notice?.branch ?? null) : myBranchName;
+  // 지점공지 지점 옵션 — 백엔드 form-meta 가 WomenScheduleBranchResolver 권한별 화이트리스트로 내려준다.
+  const branchOptions: BranchOption[] = formMeta?.branches ?? [];
 
   useEffect(() => {
     if (isEdit) {
@@ -156,6 +177,8 @@ export default function NoticeFormPage() {
         title: notice.title,
         category: notice.category,
         content: notice.content,
+        // 수정 진입 시 기존 저장 지점코드를 초기값으로 — BranchSingleSelect 가 옵션에 있으면 선택 상태로 표시.
+        branchCode: notice.branchCode ?? undefined,
       });
     }
   }, [isEdit, notice, form]);
@@ -340,14 +363,16 @@ export default function NoticeFormPage() {
       return; // 검증 실패 시 antd 가 필드 에러 표시
     }
 
-    // 지점공지의 지점/지점코드는 백엔드가 공지 소유자(등록자) 소속 지점을 권위로 강제하므로 전송하지 않는다.
+    // 지점공지(BRANCH)면 작성자가 고른 지점코드를 전송한다(백엔드가 권한 스코프 검증). 그 외 카테고리는
+    // 지점 무관이라 미전송(null). 백엔드가 branch 명은 화이트리스트에서 코드로 매칭해 저장한다.
+    const isBranch = values.category === 'BRANCH';
     const payload = {
       title: values.title,
       scope: FIXED_SCOPE,
       category: values.category,
       content: replacePreviewsWithPlaceholders(values.content),
       branch: null,
-      branchCode: null,
+      branchCode: isBranch ? (values.branchCode ?? null) : null,
       // 낙관적 락 — 수정 화면 진입 시 받은 version 을 되돌려보내 동시 편집 충돌(409)을 감지시킨다.
       // (신규 등록은 notice 가 없으므로 undefined.)
       version: isEdit ? notice?.version : undefined,
@@ -418,7 +443,7 @@ export default function NoticeFormPage() {
         <Row gutter={24}>
           <Col xs={24} sm={12} />
           <Col xs={24} sm={12}>
-            <BranchField form={form} branchName={branchFieldName} />
+            <BranchField form={form} branches={branchOptions} />
           </Col>
         </Row>
 

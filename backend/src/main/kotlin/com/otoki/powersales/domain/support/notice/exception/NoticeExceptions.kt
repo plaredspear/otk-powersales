@@ -47,6 +47,16 @@ class BranchRequiredException : BusinessException(
 )
 
 /**
+ * 지점공지 등록/수정 시 선택한 지점이 작성자의 권한 스코프(WomenScheduleBranchResolver 화이트리스트) 밖인 경우.
+ * 프론트 드롭다운에 없는 지점코드를 API 직접 호출로 심는 우회(IDOR)를 차단한다.
+ */
+class BranchNotAllowedException : BusinessException(
+    errorCode = "BRANCH_NOT_ALLOWED",
+    message = "선택할 수 없는 지점입니다",
+    httpStatus = HttpStatus.FORBIDDEN
+)
+
+/**
  * 조장/지점장 권한은 지점공지(BRANCH) 외 카테고리로 공지를 등록/수정할 수 없다.
  * (프론트 UI 는 지점공지만 노출하나, API 직접 호출 우회를 서버에서도 차단)
  */

@@ -179,7 +179,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 branchCode = null,
                 createdAt = LocalDateTime.parse("2026-03-04T10:00:00")
             )
-            every { noticeService.createNotice(any(), eq(1L), any()) } returns mutationResponse
+            every { noticeService.createNotice(any(), any()) } returns mutationResponse
 
             val request = NoticeCreateRequest(
                 title = "새 공지",
@@ -222,7 +222,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
             exception: Throwable,
             expectedCode: String
         ) {
-            every { noticeService.createNotice(any(), eq(1L), any()) } throws exception
+            every { noticeService.createNotice(any(), any()) } throws exception
 
             val request = NoticeCreateRequest(
                 title = "공지",

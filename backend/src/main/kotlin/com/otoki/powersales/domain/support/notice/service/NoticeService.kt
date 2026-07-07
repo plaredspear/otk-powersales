@@ -43,7 +43,9 @@ import com.otoki.powersales.platform.push.sender.FcmSender
 import com.otoki.powersales.platform.push.sender.FcmSendResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.domain.support.notice.exception.BranchNotAllowedException
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -58,10 +60,10 @@ class NoticeService(
     private val noticePushLogRepository: NoticePushLogRepository,
     private val uploadFileRepository: UploadFileRepository,
     private val employeeRepository: EmployeeRepository,
-    private val organizationRepository: OrganizationRepository,
     private val fileStorageService: FileStorageService,
     private val storageService: StorageService,
-    private val fcmSender: FcmSender
+    private val fcmSender: FcmSender,
+    private val womenScheduleBranchResolver: WomenScheduleBranchResolver
 ) {
 
     companion object {
@@ -327,16 +329,16 @@ class NoticeService(
         )
 
     @Transactional
-    fun createNotice(request: NoticeCreateRequest, creatorId: Long, role: String?): NoticeMutationResponse {
+    fun createNotice(request: NoticeCreateRequest, principal: WebUserPrincipal): NoticeMutationResponse {
         val cat = parseCategory(request.category)
-        requireBranchNoticeForLeader(role, cat)
+        requireBranchNoticeForLeader(principal.role, cat)
         val noticeScope = parseScope(request.scope)
 
-        // 지점공지(BRANCH) 의 지점/지점코드는 요청 값이 아니라 등록자(조장/지점장) 소속 지점을 권위로 사용한다.
-        // 이로써 누가 등록하든 본인 지점 공지로만 등록되며, 프론트 우회로 타 지점 공지를 만들 수 없다.
-        val creator = employeeRepository.findById(creatorId)
+        val creator = employeeRepository.findById(principal.requireEmployeeId())
             .orElseThrow { EmployeeNotFoundException() }
-        val (branch, branchCode) = resolveCreatorBranch(cat, creator)
+        // 지점공지(BRANCH) 의 지점/지점코드는 작성자가 권한 스코프 안에서 고른 값을 저장한다
+        // (행사마스터/여사원일정과 동일한 WomenScheduleBranchResolver 화이트리스트). 스코프 밖 코드는 거부(IDOR).
+        val (branch, branchCode) = resolveSelectedBranch(cat, principal, request.branchCode)
 
         val notice = Notice(
             name = request.title,
@@ -358,7 +360,7 @@ class NoticeService(
     }
 
     @Transactional
-    fun updateNotice(noticeId: Long, request: NoticeUpdateRequest, role: String?): NoticeMutationResponse {
+    fun updateNotice(noticeId: Long, request: NoticeUpdateRequest, principal: WebUserPrincipal): NoticeMutationResponse {
         if (noticeId <= 0) throw InvalidNoticeIdException()
         val notice = findActiveNotice(noticeId)
 
@@ -371,7 +373,7 @@ class NoticeService(
         }
 
         val cat = parseCategory(request.category)
-        requireBranchNoticeForLeader(role, cat)
+        requireBranchNoticeForLeader(principal.role, cat)
         val noticeScope = parseScope(request.scope)
 
         notice.name = request.title
@@ -382,21 +384,17 @@ class NoticeService(
         // 발행 버튼=PUBLISHED, 임시저장 버튼=DRAFT(발행취소 효과). "임시저장=무조건 DRAFT" 정책.
         notice.status = if (request.publish) NoticeStatus.PUBLISHED else NoticeStatus.DRAFT
 
-        // 등록(createNotice) 과 동일하게, 지점공지의 지점/지점코드는 요청 값이 아니라 공지 소유자(등록자)
-        // 소속 지점을 권위로 강제한다. 이로써 등록 후 수정으로 타 지점 코드로 바꾸는 우회를 차단한다.
-        // 소유자(employee) 정보가 없는 레거시 데이터는 기존 지점값을 보존한다.
+        // 지점공지의 지점/지점코드는 작성자가 권한 스코프 안에서 고른 값으로 갱신한다(등록과 동일 규칙).
+        // 요청 branchCode 가 없으면(구 클라이언트/미변경) 기존 값을 보존한다. 스코프 밖 코드는 거부(IDOR).
         if (cat == NoticeCategory.BRANCH) {
-            val ownerId = notice.employee?.id
-            if (ownerId != null) {
-                val owner = employeeRepository.findById(ownerId)
-                    .orElseThrow { EmployeeNotFoundException() }
-                val (branch, branchCode) = resolveCreatorBranch(cat, owner)
+            if (request.branchCode.isNullOrBlank()) {
+                if (notice.branchCode.isNullOrBlank()) throw BranchRequiredException()
+                // 기존 지점값 보존
+            } else {
+                val (branch, branchCode) = resolveSelectedBranch(cat, principal, request.branchCode)
                 notice.branch = branch
                 notice.branchCode = branchCode
-            } else if (notice.branchCode.isNullOrBlank()) {
-                throw BranchRequiredException()
             }
-            // ownerId == null 이고 기존 지점값이 있으면 보존 (변경하지 않음)
         } else {
             notice.branch = null
             notice.branchCode = null
@@ -659,7 +657,7 @@ class NoticeService(
         uploadFile.isDeleted = true
     }
 
-    fun getNoticeFormMeta(role: String?): NoticeFormMetaResponse {
+    fun getNoticeFormMeta(principal: WebUserPrincipal): NoticeFormMetaResponse {
         val scopes = NoticeScope.entries.map {
             ScopeOption(code = it.displayName, name = it.displayName)
         }
@@ -667,7 +665,7 @@ class NoticeService(
         // 조장/지점장은 지점공지만 작성 가능 → 카테고리 옵션도 지점공지(BRANCH)만 노출한다.
         // 프론트는 내려온 옵션을 그대로 렌더링하므로 UI 제한이 서버 권위로 통일된다.
         // 교육(EDUCATION)은 별도 '교육' 메뉴에서 관리하므로 공지사항 작성 카테고리에서는 제외한다.
-        val visibleCategories = if (isBranchNoticeOnlyRole(role)) {
+        val visibleCategories = if (isBranchNoticeOnlyRole(principal.role)) {
             listOf(NoticeCategory.BRANCH)
         } else {
             NoticeCategory.entries.filter { it != NoticeCategory.EDUCATION }
@@ -676,7 +674,10 @@ class NoticeService(
             CategoryOption(code = it.apiCode, name = it.displayName)
         }
 
-        val branches = loadBranchOptions()
+        // 지점공지 선택 지점 옵션 — 행사마스터/여사원일정과 동일한 WomenScheduleBranchResolver 권한별 화이트리스트.
+        // 전사 권한자는 다중 지점, 조장/지점장은 본인 지점 단일(프론트가 단일 시 고정 표시). costCenterCode(=OrgCode) 차원.
+        val branches = womenScheduleBranchResolver.resolveBranches(principal)
+            .map { BranchOption(branchCode = it.branchCode, branchName = it.branchName) }
 
         return NoticeFormMetaResponse(scopes = scopes, categories = categories, branches = branches)
     }
@@ -698,43 +699,24 @@ class NoticeService(
     }
 
     /**
-     * 조직 마스터(Organization) 에서 지점 옵션 목록을 생성한다.
-     * 지점코드는 5레벨(costCenterLevel5) 우선, 없으면 4레벨(costCenterLevel4).
-     */
-    private fun loadBranchOptions(): List<BranchOption> =
-        organizationRepository.findAll()
-            .filter { !it.orgNameLevel3.isNullOrBlank() && !it.orgNameLevel4.isNullOrBlank() }
-            .map { org ->
-                val branchName = if (org.orgNameLevel5.isNullOrBlank()) {
-                    "[${org.orgNameLevel3}] ${org.orgNameLevel4}"
-                } else {
-                    "[${org.orgNameLevel3}] ${org.orgNameLevel4}-${org.orgNameLevel5}"
-                }
-                val branchCode = if (!org.costCenterLevel5.isNullOrBlank()) {
-                    org.costCenterLevel5!!
-                } else {
-                    org.costCenterLevel4 ?: ""
-                }
-                BranchOption(branchCode = branchCode, branchName = branchName)
-            }
-            .distinctBy { it.branchCode }
-            .sortedBy { it.branchName }
-
-    /**
-     * 지점공지(BRANCH) 등록 시 저장할 (지점명, 지점코드) 를 등록자 소속 지점에서 해석한다.
+     * 지점공지(BRANCH) 저장 시 (지점명, 지점코드) 를 작성자가 고른 지점코드에서 해석한다.
      * - 회사공지/교육: (null, null)
-     * - 지점공지: 등록자 costCenterCode 가 권위. 미보유 시 등록 차단(BranchRequiredException).
-     *   지점명은 조직 마스터의 지점 옵션에서 코드로 매칭, 없으면 등록자 orgName 으로 폴백.
+     * - 지점공지: 요청 branchCode 필수(미보유 시 BranchRequiredException). 그 코드가 작성자 권한 스코프
+     *   (WomenScheduleBranchResolver 화이트리스트) 안에 있어야 하며(아니면 BranchNotAllowedException/IDOR 차단),
+     *   지점명은 화이트리스트에서 코드로 매칭한다.
      */
-    private fun resolveCreatorBranch(category: NoticeCategory, creator: Employee): Pair<String?, String?> {
+    private fun resolveSelectedBranch(
+        category: NoticeCategory,
+        principal: WebUserPrincipal,
+        requestedBranchCode: String?
+    ): Pair<String?, String?> {
         if (category != NoticeCategory.BRANCH) return null to null
 
-        val branchCode = creator.costCenterCode
-        if (branchCode.isNullOrBlank()) throw BranchRequiredException()
+        val branchCode = requestedBranchCode?.takeIf { it.isNotBlank() } ?: throw BranchRequiredException()
 
-        val branchName = loadBranchOptions().firstOrNull { it.branchCode == branchCode }?.branchName
-            ?: creator.orgName
-        return branchName to branchCode
+        val allowed = womenScheduleBranchResolver.resolveBranches(principal)
+        val match = allowed.firstOrNull { it.branchCode == branchCode } ?: throw BranchNotAllowedException()
+        return match.branchName to match.branchCode
     }
 
     private fun findActiveNotice(noticeId: Long): Notice {

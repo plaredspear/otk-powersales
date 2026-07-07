@@ -45,7 +45,7 @@ class AdminNoticeController(
     fun getNoticeFormMeta(
         @AuthenticationPrincipal principal: WebUserPrincipal
     ): ResponseEntity<ApiResponse<NoticeFormMetaResponse>> {
-        val response = noticeService.getNoticeFormMeta(principal.role)
+        val response = noticeService.getNoticeFormMeta(principal)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -66,7 +66,7 @@ class AdminNoticeController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: NoticeCreateRequest
     ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
-        val response = noticeService.createNotice(request, principal.requireEmployeeId(), principal.role)
+        val response = noticeService.createNotice(request, principal)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response))
     }
 
@@ -77,7 +77,7 @@ class AdminNoticeController(
         @PathVariable noticeId: Long,
         @Valid @RequestBody request: NoticeUpdateRequest
     ): ResponseEntity<ApiResponse<NoticeMutationResponse>> {
-        val response = noticeService.updateNotice(noticeId, request, principal.role)
+        val response = noticeService.updateNotice(noticeId, request, principal)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
