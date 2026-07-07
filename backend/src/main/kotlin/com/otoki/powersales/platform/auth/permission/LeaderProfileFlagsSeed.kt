@@ -20,10 +20,13 @@ package com.otoki.powersales.platform.auth.permission
  * 건드리지 않아 운영 편집 자율성을 보존한다 (SF 재적재 dirty-skip 정책과 동일).
  *
  * ## JSON 형식 보존
- * [objectPermissionsJson] / [customPermissionsJson] 은 dev 실측값을 그대로 보존한다.
- * `6.조장` 은 present-key sparse 형식 (`{"allowRead": true}`), `7.영업사원 + 조장` 은 6비트 full
- * 형식으로 서로 다르나, 둘 다 dev 확정 상태이므로 원문 그대로 저장한다 (SfPermissionResolver 가
- * 두 형식을 모두 해석).
+ * [objectPermissionsJson] 은 dev 실측값을 그대로 보존한다. `6.조장` 은 present-key sparse 형식
+ * (`{"allowRead": true}`), `7.영업사원 + 조장` 은 6비트 full 형식으로 서로 다르나, 둘 다 dev 확정
+ * 상태이므로 원문 그대로 저장한다 (SfPermissionResolver 가 두 형식을 모두 해석).
+ *
+ * [customPermissionsJson] 은 SF object 가 아닌 가상/@HerokuOnly 자원 권한이다. 교육(`education_post`,
+ * @HerokuOnly) 은 SF object 가 아니라 object_permissions 로 부여 불가하므로 여기서 공지사항 동급 CRUD 로
+ * 부여한다 (양 조장 프로필 공통). 실제 dev/prod 반영은 web admin 권한 편집이 담당 (본 Runner 비활성).
  */
 object LeaderProfileFlagsSeed {
 
@@ -52,7 +55,7 @@ object LeaderProfileFlagsSeed {
             manageUsers = false,
             apiEnabled = true,
             objectPermissionsJson = LEADER_7_OBJECT_PERMISSIONS,
-            customPermissionsJson = null,
+            customPermissionsJson = LEADER_7_CUSTOM_PERMISSIONS,
         ),
     )
 
@@ -107,10 +110,18 @@ private val LEADER_6_OBJECT_PERMISSIONS = """
 }
 """.trimIndent()
 
-// dev 실측 조장(6.조장) custom_permissions — 가상자원(@PermissionResource) 권한.
+// dev 실측 조장(6.조장) custom_permissions — 가상자원 권한 (SF object 아닌 custom resource).
+//
+// `education_post` 는 교육 게시물(구 education_mng) 로 @HerokuOnly 라 SF object 가 아니다. 조장에게 공지사항
+// (DKRetail__Notice__c) 과 동등하게 교육 관리 화면(AdminEducationController, @RequiresSfPermission(entity=
+// "education_post")) 접근을 부여하되, SF object 가 아니라 object_permissions 로는 부여 불가하므로
+// custom_permissions 로 CRUD 4비트를 부여한다 (SfPermissionResolver.applyCustomPermissionsJson 경로).
+// 실제 dev/prod 반영은 web admin 권한 화면 편집(is_locally_modified=TRUE)이 담당 — 본 Runner 는 비활성이라
+// 런타임 미반영이며, 본 상수는 "조장이 가져야 할 권한" 의 문서화된 SoT.
 private val LEADER_6_CUSTOM_PERMISSIONS = """
 {
-  "female_employee": { "allowEdit": true, "allowRead": true, "allowCreate": true }
+  "female_employee": { "allowEdit": true, "allowRead": true, "allowCreate": true },
+  "education_post": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true }
 }
 """.trimIndent()
 
@@ -150,5 +161,13 @@ private val LEADER_7_OBJECT_PERMISSIONS = """
   "EmployeeInputCriteriaMaster__c": { "allowEdit": false, "allowRead": true, "allowCreate": false, "allowDelete": false, "viewAllRecords": false, "modifyAllRecords": false },
   "DKRetail__TeamMemberSchedule__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true, "viewAllRecords": false, "modifyAllRecords": false },
   "MonthlyFemaleEmployeeIntegrationSchedule__c": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true, "viewAllRecords": false, "modifyAllRecords": false }
+}
+""".trimIndent()
+
+// 영업사원+조장(7.영업사원 + 조장) custom_permissions — 교육(@HerokuOnly education_post) 을 6.조장 과 동일하게
+// 공지사항 동급 CRUD 4비트로 부여 (SF object 아니므로 object_permissions 불가, custom_permissions 경로).
+private val LEADER_7_CUSTOM_PERMISSIONS = """
+{
+  "education_post": { "allowEdit": true, "allowRead": true, "allowCreate": true, "allowDelete": true }
 }
 """.trimIndent()

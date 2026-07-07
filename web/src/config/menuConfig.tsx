@@ -336,10 +336,12 @@ export const menuRoute: MenuRoute = {
         {
           path: '/education',
           name: '교육',
+          entity: 'education_post',
+          operation: 'READ',
           subRoutes: [
-            { path: '/education/new', name: '교육 등록' },
-            { path: '/education/:id', name: '교육 상세' },
-            { path: '/education/:id/edit', name: '교육 수정' },
+            { path: '/education/new', name: '교육 등록', entity: 'education_post', operation: 'CREATE' },
+            { path: '/education/:id', name: '교육 상세', entity: 'education_post', operation: 'READ' },
+            { path: '/education/:id/edit', name: '교육 수정', entity: 'education_post', operation: 'EDIT' },
           ],
         },
       ],
