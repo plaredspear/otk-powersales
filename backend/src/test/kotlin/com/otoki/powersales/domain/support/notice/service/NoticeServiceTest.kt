@@ -17,7 +17,6 @@ import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.domain.support.notice.exception.BranchRequiredException
 import com.otoki.powersales.domain.support.notice.exception.NoticeNotPublishedException
 import com.otoki.powersales.domain.support.notice.exception.NoticeScopeNotPushableException
-import com.otoki.powersales.domain.support.notice.exception.NoticeCategoryNotPushableException
 import com.otoki.powersales.domain.support.notice.repository.NoticePushLogRepository
 import com.otoki.powersales.platform.push.sender.FcmSendResult
 import com.otoki.powersales.platform.push.sender.FcmSender
@@ -1101,19 +1100,19 @@ class NoticeServiceTest {
     inner class GetNoticeFormMetaTests {
 
         @Test
-        @DisplayName("정상 조회 - 회사공지/지점공지만 노출(교육 제외) + 지점 목록은 권한 스코프 resolver 결과")
+        @DisplayName("정상 조회 - 카테고리 3개 + 지점 목록은 권한 스코프 resolver 결과")
         fun getNoticeFormMeta_success() {
             // 지점 목록 산출(레벨별 지점명 조합/중복제거/불완전제외)은 WomenScheduleBranchResolver 책임 —
             // 여기서는 resolver 가 내려준 화이트리스트를 그대로 branches 로 노출하는지만 검증한다.
             val result = noticeService.getNoticeFormMeta(principalOf())
 
-            // 교육(EDUCATION)은 별도 '교육' 메뉴에서 관리 → 공지사항 폼 카테고리에서 제외.
-            assertThat(result.categories).hasSize(2)
+            assertThat(result.categories).hasSize(3)
             assertThat(result.categories[0].code).isEqualTo("COMPANY")
             assertThat(result.categories[0].name).isEqualTo("회사공지")
             assertThat(result.categories[1].code).isEqualTo("BRANCH")
             assertThat(result.categories[1].name).isEqualTo("지점공지")
-            assertThat(result.categories.map { it.code }).doesNotContain("EDUCATION")
+            assertThat(result.categories[2].code).isEqualTo("EDUCATION")
+            assertThat(result.categories[2].name).isEqualTo("교육")
 
             // 기본 resolver stub = [수도권] 서울1지점(1101) 단일.
             assertThat(result.branches).hasSize(1)
@@ -1143,7 +1142,7 @@ class NoticeServiceTest {
 
             val result = noticeService.getNoticeFormMeta(principalOf())
 
-            assertThat(result.categories).hasSize(2)
+            assertThat(result.categories).hasSize(3)
             assertThat(result.branches).isEmpty()
         }
 
@@ -1167,12 +1166,11 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("여사원 - 회사공지/지점공지 노출 (교육 제외)")
-        fun getNoticeFormMeta_womanExcludesEducation() {
+        @DisplayName("여사원 - 카테고리 3개 모두 노출")
+        fun getNoticeFormMeta_womanAllCategories() {
             val result = noticeService.getNoticeFormMeta(principalOf(role = AppAuthority.WOMAN))
 
-            assertThat(result.categories.map { it.code }).containsExactly("COMPANY", "BRANCH")
-            assertThat(result.categories.map { it.code }).doesNotContain("EDUCATION")
+            assertThat(result.categories).hasSize(3)
         }
     }
 
@@ -1599,19 +1597,6 @@ class NoticeServiceTest {
 
             assertThatThrownBy { noticeService.sendPush(14L, senderId = 7L) }
                 .isInstanceOf(NoticeScopeNotPushableException::class.java)
-            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
-        }
-
-        @Test
-        @DisplayName("교육 공지는 모바일 목록 미노출이므로 발송할 수 없다")
-        fun rejectsEducationCategory() {
-            val notice = createNotice(id = 15L, category = NoticeCategory.EDUCATION)
-            every { noticeRepository.findById(15L) } returns Optional.of(notice)
-
-            assertThatThrownBy { noticeService.sendPush(15L, senderId = 7L) }
-                .isInstanceOf(NoticeCategoryNotPushableException::class.java)
-            // 대상 선별 쿼리조차 호출하지 않고 조기 차단한다.
-            verify(exactly = 0) { noticeRepository.findPushTargetTokens(any(), any()) }
             verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
         }
     }

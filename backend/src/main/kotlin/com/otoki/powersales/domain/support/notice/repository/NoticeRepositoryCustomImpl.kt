@@ -103,7 +103,7 @@ class NoticeRepositoryCustomImpl(
         category: NoticeCategory,
         branchCode: String?
     ): List<String> {
-        // 지점공지는 지점코드 매칭 사용자만, 그 외(회사)는 전 사용자.
+        // 지점공지는 지점코드 매칭 사용자만, 그 외(회사/교육)는 전 사용자.
         // 지점공지인데 branchCode 가 비면 대상 없음 (오발송 방지).
         val branchCondition = if (category == NoticeCategory.BRANCH) {
             if (branchCode.isNullOrBlank()) return emptyList()

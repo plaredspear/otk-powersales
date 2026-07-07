@@ -87,16 +87,6 @@ class NoticeScopeNotPushableException : BusinessException(
 )
 
 /**
- * 교육(EDUCATION) 카테고리 공지는 모바일 공지 목록에 노출되지 않으므로(별도 '교육' 메뉴 소관)
- * push 발송할 수 없다. 조회 노출 규칙(목록에서 교육 제외)과 정합을 맞춰 오발송을 차단한다.
- */
-class NoticeCategoryNotPushableException : BusinessException(
-    errorCode = "NOTICE_CATEGORY_NOT_PUSHABLE",
-    message = "이 분류의 공지사항은 푸시 발송 대상이 아닙니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
-/**
  * 유효하지 않은 첨부 이미지 ID — imageId 미존재 또는 parent 불일치
  */
 class InvalidImageIdException : BusinessException(

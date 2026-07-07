@@ -36,7 +36,6 @@ import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeScopeEx
 import com.otoki.powersales.domain.support.notice.exception.NoticeNotPublishedException
 import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.domain.support.notice.exception.NoticeScopeNotPushableException
-import com.otoki.powersales.domain.support.notice.exception.NoticeCategoryNotPushableException
 import com.otoki.powersales.domain.support.notice.exception.NoticeVersionConflictException
 import com.otoki.powersales.domain.support.notice.repository.NoticePushLogRepository
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
@@ -436,9 +435,8 @@ class NoticeService(
      * 공지 FCM push 즉시 발송 — web 관리자 상세화면 '푸시 발송' 버튼용.
      *
      * 발송 대상은 그 공지가 앱 목록에 노출되는 사용자와 동일하게 선별한다 (조회 노출 규칙 정합):
-     * - 회사공지(COMPANY): 앱 로그인 활성(재직) + FCM 토큰 보유 전 사용자
+     * - 회사공지(COMPANY)/교육(EDUCATION): 앱 로그인 활성(재직) + FCM 토큰 보유 전 사용자
      * - 지점공지(BRANCH): 앱 로그인 활성 + costCenterCode 가 공지 branchCode 와 일치하는 사용자만
-     * - 교육(EDUCATION): 모바일 목록 미노출(별도 교육 메뉴 소관) → 발송 대상 아님(차단).
      * scope=영업사원 공지는 앱에 노출되지 않으므로 발송 대상이 아니다 (레거시 Heroku 조회 정합).
      *
      * 알림 탭 시 딥링크(해당 공지 상세 이동)를 위해 data payload({"type":"notice","noticeId":...})를 함께 실는다.
@@ -456,8 +454,6 @@ class NoticeService(
         if (notice.scope == NoticeScope.SALES_EMPLOYEE) throw NoticeScopeNotPushableException()
 
         val category = notice.category ?: throw InvalidNoticeCategoryException()
-        // 교육 공지는 모바일 목록 미노출 → push 도 대상 아님 (조회 노출 규칙 정합, 오발송 차단).
-        if (category == NoticeCategory.EDUCATION) throw NoticeCategoryNotPushableException()
         val tokens = noticeRepository.findPushTargetTokens(category, notice.branchCode)
 
         val result = if (tokens.isEmpty()) {
@@ -668,11 +664,10 @@ class NoticeService(
 
         // 조장/지점장은 지점공지만 작성 가능 → 카테고리 옵션도 지점공지(BRANCH)만 노출한다.
         // 프론트는 내려온 옵션을 그대로 렌더링하므로 UI 제한이 서버 권위로 통일된다.
-        // 교육(EDUCATION)은 별도 '교육' 메뉴에서 관리하므로 공지사항 작성 카테고리에서는 제외한다.
         val visibleCategories = if (isBranchNoticeOnlyRole(principal.role)) {
             listOf(NoticeCategory.BRANCH)
         } else {
-            NoticeCategory.entries.filter { it != NoticeCategory.EDUCATION }
+            NoticeCategory.entries
         }
         val categories = visibleCategories.map {
             CategoryOption(code = it.apiCode, name = it.displayName)
