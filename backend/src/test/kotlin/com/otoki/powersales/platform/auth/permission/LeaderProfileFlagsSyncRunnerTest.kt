@@ -79,7 +79,9 @@ class LeaderProfileFlagsSyncRunnerTest {
 
         val leader7 = saved.first { it.profileId == 7L }
         assertThat(leader7.permissionsApiEnabled).isTrue
-        assertThat(leader7.customPermissions).isNull()
+        // 7.영업사원+조장 custom_permissions 는 education_post 만 포함(female_employee 는 6.조장 전용).
+        assertThat(leader7.customPermissions).contains("education_post")
+        assertThat(leader7.customPermissions).doesNotContain("female_employee")
         assertThat(leader7.objectPermissions).contains("viewAllRecords")
     }
 

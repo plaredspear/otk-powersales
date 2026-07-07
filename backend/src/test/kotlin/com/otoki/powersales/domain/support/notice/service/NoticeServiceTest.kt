@@ -87,6 +87,8 @@ class NoticeServiceTest {
         // 상세 조회 시 발송 이력 조회 — 기본 미발송 stub (개별 테스트에서 override 가능).
         every { noticePushLogRepository.countByNoticeId(any()) } returns 0L
         every { noticePushLogRepository.findFirstByNoticeIdOrderByCreatedAtDesc(any()) } returns null
+        // 상세 조회 시 예상 발송 대상 수 계산 — 기본 0 stub (개별 테스트에서 override 가능).
+        every { noticeRepository.countPushTargets(any(), any()) } returns 0L
         // 지점 스코프 화이트리스트 — 기본은 서울1지점(1101) 단일. 지점공지 저장/검증에 사용.
         // 개별 테스트에서 override 가능(전사 다중 지점, 빈 목록 등).
         every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
