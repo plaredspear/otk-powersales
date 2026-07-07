@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import koKR from 'antd/locale/ko_KR';
 import '@/assets/fonts/fonts.css';
+import '@/styles/global.css';
 import App from '@/App';
 import { useAuthStore } from '@/stores/authStore';
 import queryClient from '@/lib/queryClient';

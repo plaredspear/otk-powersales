@@ -1,0 +1,13 @@
+/*
+ * 전역 리셋. 브라우저 기본 body margin(8px) 을 제거한다.
+ *
+ * 기존 index.css 에 body{margin:0} 이 있으나 어디서도 import 되지 않아(= Vite 데모 잔재)
+ * 적용되지 않았고, 그 8px 여백이 문서 높이를 뷰포트보다 크게 만들어 목록 페이지에서
+ * 페이지 전체 스크롤이 생기는 원인이었다. index.css 는 데모용 스타일(#root width/text-align 등)이
+ * 섞여 있어 통째로 로드하지 않고, 실제로 필요한 리셋만 여기에서 로드한다.
+ */
+html,
+body {
+  margin: 0;
+  padding: 0;
+}

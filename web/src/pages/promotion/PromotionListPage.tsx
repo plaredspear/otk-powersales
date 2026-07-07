@@ -11,6 +11,7 @@ import { usePermission } from '@/hooks/usePermission';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import { promotionExportParams, type PromotionListItem } from '@/api/promotion';
@@ -45,6 +46,13 @@ function formatDateTime(value: string): string {
 export default function PromotionListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  // 페이지 전체 스크롤 제거 — 컨테이너 높이/테이블 body 스크롤을 상단 가변 요소(헤더/브레드크럼/대행 배너)
+  // 와 레이아웃 하단 padding 을 실측해 산출. 테이블 body(행) 만 세로 스크롤되고 헤더/필터/페이지네이션은
+  // 화면에 고정된다.
+  //  - bottomGap: 테이블 아래 최소 여백(px). 레이아웃 Outlet 의 padding-bottom 은 훅이 자동 실측하므로 작게.
+  //  - headerReserve: 테이블 헤더 행(≈39) + 페이지네이션(margin 포함 ≈56). wrapper 높이에 포함되므로
+  //    scrollY 에서 빼야 마지막 행이 잘리지 않고 body 가 wrapper 안에 들어간다.
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   const { hasEntityPermission } = usePermission();
   const canWrite = hasEntityPermission('promotion', 'EDIT');
   // 작성자 → 사용자 상세(/users/:id) 링크는 user READ 권한 보유자(시스템 관리자급)에게만.
@@ -349,12 +357,27 @@ export default function PromotionListPage() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
+    // 페이지 전체가 스크롤되지 않도록 컨테이너를 실측 가용 높이(뷰포트 − 컨테이너 top − 하단여백)에 고정.
+    //  - 최상위: flex 컬럼. 높이는 useFlexTableScrollY 가 상단 요소를 실측해 산출(배너 유무 자동 반영).
+    //  - 툴바 / 필터바: 고정(flexShrink:0)
+    //  - 테이블 wrapper: flex:1 + minHeight:0 로 남은 공간을 차지하고, 그 실측 높이가 scrollY 로 body 스크롤.
+    <div
+      ref={containerRef}
+      style={{
+        // padding 없음 — 레이아웃 Outlet wrapper 가 이미 24px 여백을 준다. 여기에 또 주면 이중 여백.
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        boxSizing: 'border-box',
+        minHeight: 0,
+      }}
+    >
       <div
         style={{
           display: 'flex',
           justifyContent: 'flex-end',
           marginBottom: 16,
+          flexShrink: 0,
         }}
       >
         <Space>
@@ -370,7 +393,7 @@ export default function PromotionListPage() {
         </Space>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
         {isMultiBranch && (
           <Select
             placeholder="지점 (전체)"
@@ -458,23 +481,26 @@ export default function PromotionListPage() {
         {/* "내 행사만" 체크박스 UI 는 임시 제거 (ownerOnly state/API/backend 로직은 유지 — 추후 재노출 대비). */}
       </div>
 
-      <ResizableTable
-        rowKey="id"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        locale={listTableLocale()}
-        sticky
-        scroll={{ x: 2020 }}
-        pagination={buildListPagination({
-          page,
-          pageSize,
-          total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
-          onPageChange: setPage,
-          onSizeChange: setSize,
-        })}
-      />
+      {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 이 wrapper 의 실측 높이에서 헤더 행을 뺀 값이 scrollY. */}
+      <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
+        <ResizableTable
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          locale={listTableLocale()}
+          // 테이블 body(행 영역) 만 세로 스크롤되고 헤더는 고정. y 는 wrapper 실측 높이(하드코딩 없음).
+          scroll={{ x: 2020, y: scrollY }}
+          pagination={buildListPagination({
+            page,
+            pageSize,
+            total: data?.totalElements ?? 0,
+            // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+            onPageChange: setPage,
+            onSizeChange: setSize,
+          })}
+        />
+      </div>
     </div>
   );
 }
