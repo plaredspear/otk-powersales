@@ -1220,6 +1220,7 @@ export default function PromotionDetailPage() {
       {
         title: '삭제',
         width: 60,
+        fixed: 'right',
         render: (_: unknown, record: EditableRow) => (
           <Popconfirm
             title="삭제하시겠습니까?"
@@ -1379,6 +1380,12 @@ export default function PromotionDetailPage() {
                     <li><b>격고</b>: 같은 날 최대 2건까지 가능. 단, 고정이 있거나 순회가 함께 있으면 불가</li>
                     <li><b>순회</b>: 고정이 있거나 격고가 2건이면 불가</li>
                   </ul>
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div style={{ fontWeight: 'bold', marginBottom: 4 }}>행사사원 삭제 방법</div>
+                  <div>
+                    근무등록 전에 행사사원을 삭제하려면 <b>편집</b> 버튼을 누른 뒤,
+                    표 <b>맨 오른쪽에 고정된 삭제 버튼</b>을 클릭하세요.
+                  </div>
                 </div>
               }
             >
