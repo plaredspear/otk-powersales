@@ -143,6 +143,7 @@ class AdminNoticeControllerTest : AdminControllerTestSupport() {
                 branch = null,
                 branchCode = null,
                 createdAt = LocalDateTime.parse("2026-03-04T10:00:00"),
+                version = 0L,
                 images = emptyList()
             )
             every { noticeService.getNoticeDetail(1L, any()) } returns response

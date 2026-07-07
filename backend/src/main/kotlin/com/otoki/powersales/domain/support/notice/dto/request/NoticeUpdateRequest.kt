@@ -21,6 +21,13 @@ data class NoticeUpdateRequest(
     val branchCode: String? = null,
 
     /**
+     * 낙관적 락 버전 — 수정 화면 진입 시 상세조회로 받은 version 을 그대로 되돌려보낸다.
+     * 저장 시점의 DB version 과 다르면(= 다른 사용자가 먼저 수정) JPA 가 충돌을 감지해 409 로 거부한다.
+     * 하위호환: 미전송(null) 시 낙관적 락 검사를 건너뛴다(구 클라이언트/외부 호출 대비).
+     */
+    val version: Long? = null,
+
+    /**
      * 이번 편집 세션에서 본문에 삽입 목적으로 업로드한 인라인 이미지 refid(= upload_file.id) 목록.
      * 저장 시 최종 본문에서 빠진 이미지를 정리(S3+soft-delete)하는 대상 판별에 쓴다.
      * 서버는 이 목록에 든 파일만 정리 후보로 보므로, 타 세션이 올린 미저장 파일에는 간섭하지 않는다.

@@ -140,6 +140,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
                 branch = null,
                 branchCode = null,
                 createdAt = LocalDateTime.parse("2026-02-28T10:30:00"),
+                version = 0L,
                 images = listOf(
                     NoticeImageResponse(id = 101L, url = "https://bucket.s3.ap-northeast-2.amazonaws.com/img.jpg", sortOrder = 0)
                 )
@@ -169,6 +170,7 @@ class NoticeControllerTest : MobileControllerTestSupport() {
                 branch = "서울1지점",
                 branchCode = "B001",
                 createdAt = LocalDateTime.parse("2026-01-01T00:00:00"),
+                version = 0L,
                 images = emptyList()
             )
             every { noticeService.getNoticeDetail(10L, any()) } returns response

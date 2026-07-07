@@ -36,6 +36,7 @@ import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeScopeEx
 import com.otoki.powersales.domain.support.notice.exception.NoticeNotPublishedException
 import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.domain.support.notice.exception.NoticeScopeNotPushableException
+import com.otoki.powersales.domain.support.notice.exception.NoticeVersionConflictException
 import com.otoki.powersales.domain.support.notice.repository.NoticePushLogRepository
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.platform.push.sender.FcmSender
@@ -152,6 +153,7 @@ class NoticeService(
             branch = notice.branch,
             branchCode = notice.branchCode,
             createdAt = notice.createdAt,
+            version = notice.version,
             images = images,
             pushSentCount = pushSentCount,
             lastPush = lastPush
@@ -359,6 +361,14 @@ class NoticeService(
     fun updateNotice(noticeId: Long, request: NoticeUpdateRequest, role: String?): NoticeMutationResponse {
         if (noticeId <= 0) throw InvalidNoticeIdException()
         val notice = findActiveNotice(noticeId)
+
+        // 낙관적 락 — 수정 화면 진입 시 받은 version 과 현재 DB version 이 다르면 그 사이 다른 사용자가 저장한 것.
+        // 나중 저장자를 409 로 거부해 lost update + 인라인 이미지 교차 오삭제를 차단한다(cleanup 실행 전에 중단).
+        // request.version 이 null(구 클라이언트/외부 호출)이면 이 선제 검사는 생략 — 단 JPA @Version 이 flush 시점에
+        // "로드~flush 사이 변경" 은 여전히 잡는다(ObjectOptimisticLockingFailureException).
+        if (request.version != null && request.version != notice.version) {
+            throw NoticeVersionConflictException()
+        }
 
         val cat = parseCategory(request.category)
         requireBranchNoticeForLeader(role, cat)

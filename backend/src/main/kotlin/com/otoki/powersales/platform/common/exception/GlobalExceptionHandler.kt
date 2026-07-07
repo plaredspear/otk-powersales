@@ -234,6 +234,27 @@ class GlobalExceptionHandler {
             .body(response)
     }
 
+    /**
+     * 낙관적 락 충돌 처리 — @Version 엔티티를 두 요청이 거의 동시에 수정해, service 의 선제 version 검사를
+     * 둘 다 통과한 뒤 flush 시점에 JPA 가 버전 불일치를 감지한 경우(진짜 race). 나중 커밋을 409 로 거부한다.
+     * (대부분의 동시 편집은 service 의 선제 검사에서 도메인 예외로 먼저 걸러지고, 이 경로는 그 사이 좁은
+     *  타이밍 창을 메우는 안전망이다.) 정상 흐름의 일부라 스택 없이 warn 요약만 남긴다.
+     */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException::class)
+    fun handleOptimisticLockConflict(
+        ex: org.springframework.orm.ObjectOptimisticLockingFailureException,
+        request: WebRequest
+    ): ResponseEntity<ApiResponse<Any>> {
+        log.warn("Optimistic lock conflict: {}", ex.message)
+        val response = ApiResponse.error<Any>(
+            code = "VERSION_CONFLICT",
+            message = "다른 사용자가 먼저 수정했습니다. 최신 내용을 다시 불러온 뒤 저장해주세요"
+        )
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(response)
+    }
+
     // HTTP 메서드 불일치는 컨트롤러 매칭 전에 발생해 RestControllerAdvice assignableTypes 로 잡히지 않으므로 글로벌에서 처리.
     // SAP 인바운드 path 는 SapResultWrapper 형식, 그 외는 ApiResponse 형식.
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)

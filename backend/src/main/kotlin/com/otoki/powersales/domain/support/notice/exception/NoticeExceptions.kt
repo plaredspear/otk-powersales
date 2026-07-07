@@ -84,3 +84,14 @@ class InvalidImageIdException : BusinessException(
     message = "유효하지 않은 이미지 ID입니다",
     httpStatus = HttpStatus.NOT_FOUND
 )
+
+/**
+ * 공지 동시 수정 충돌 — 수정 화면을 연 뒤 다른 사용자가 먼저 저장해 버전이 어긋난 경우.
+ * 나중 저장자의 요청을 거부해 lost update(먼저 저장자의 변경 덮어쓰기) + 인라인 이미지 교차 오삭제를 막는다.
+ * 클라이언트는 이 응답을 받으면 "다른 사용자가 먼저 수정했습니다. 최신 내용을 다시 불러오세요" 안내를 띄운다.
+ */
+class NoticeVersionConflictException : BusinessException(
+    errorCode = "NOTICE_VERSION_CONFLICT",
+    message = "다른 사용자가 먼저 수정했습니다. 최신 내용을 다시 불러온 뒤 저장해주세요",
+    httpStatus = HttpStatus.CONFLICT
+)

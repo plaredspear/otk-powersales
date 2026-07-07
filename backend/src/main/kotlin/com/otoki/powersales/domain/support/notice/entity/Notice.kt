@@ -90,6 +90,14 @@ class Notice(
     @Convert(converter = NoticeStatusConverter::class)
     var status: NoticeStatus? = null,
 
+    // 낙관적 락 버전 — 동시 수정 방어(여러 관리자가 같은 공지를 동시 편집 시 lost update + 인라인 이미지
+    // 교차 오삭제 차단). SF 메타에 없는 신규 로컬 컬럼. 상세조회 응답에 실어 보내고 수정 요청에 되받아,
+    // 저장 시 JPA 가 버전 불일치를 감지하면 ObjectOptimisticLockingFailureException → 409 로 거부한다.
+    @FieldName("버전")
+    @Version
+    @Column(name = "version", nullable = false)
+    var version: Long = 0,
+
     // -- Relations --
 
     @ManyToOne(fetch = FetchType.LAZY)

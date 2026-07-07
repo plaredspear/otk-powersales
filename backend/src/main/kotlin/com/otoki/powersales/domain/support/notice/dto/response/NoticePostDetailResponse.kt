@@ -17,6 +17,8 @@ data class NoticePostDetailResponse(
     val branch: String?,
     val branchCode: String?,
     val createdAt: LocalDateTime?,
+    /** 낙관적 락 버전. 수정 저장 시 이 값을 그대로 되돌려보내야 동시 편집 충돌(409)을 감지한다. */
+    val version: Long,
     val images: List<NoticeImageResponse>,
     /** push 누적 발송 횟수 (0=미발송). 중복 발송 경고 판단용. */
     val pushSentCount: Long = 0,

@@ -348,6 +348,9 @@ export default function NoticeFormPage() {
       content: replacePreviewsWithPlaceholders(values.content),
       branch: null,
       branchCode: null,
+      // 낙관적 락 — 수정 화면 진입 시 받은 version 을 되돌려보내 동시 편집 충돌(409)을 감지시킨다.
+      // (신규 등록은 notice 가 없으므로 undefined.)
+      version: isEdit ? notice?.version : undefined,
       // 이번 세션 업로드분 중 최종 본문에서 빠진 이미지를 서버가 정리하도록 전달.
       sessionUploadedRefids: Array.from(sessionUploadedRefids.current),
       publish,
@@ -364,8 +367,10 @@ export default function NoticeFormPage() {
         message.success(`공지사항이 ${savedMsg}`);
         navigate('/notices');
       }
-    } catch {
-      message.error(isEdit ? '공지사항 저장에 실패했습니다' : '공지사항 등록에 실패했습니다');
+    } catch (e) {
+      // 동시 편집 충돌(409) 등 서버가 내려준 구체적 안내 메시지를 그대로 노출한다.
+      const fallback = isEdit ? '공지사항 저장에 실패했습니다' : '공지사항 등록에 실패했습니다';
+      message.error(e instanceof Error && e.message ? e.message : fallback);
     }
   };
 

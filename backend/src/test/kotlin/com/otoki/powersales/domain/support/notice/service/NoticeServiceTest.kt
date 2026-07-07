@@ -25,6 +25,7 @@ import com.otoki.powersales.domain.support.notice.exception.BranchNoticeOnlyExce
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeCategoryException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeIdException
+import com.otoki.powersales.domain.support.notice.exception.NoticeVersionConflictException
 import com.otoki.powersales.domain.support.notice.exception.NoticePostNotFoundException
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.domain.org.organization.entity.Organization
@@ -865,6 +866,58 @@ class NoticeServiceTest {
             noticeService.updateNotice(10L, request, null)
 
             assertThat(existing.status).isEqualTo(NoticeStatus.PUBLISHED)
+        }
+
+        @Test
+        @DisplayName("동시 편집 - 요청 version 이 현재 DB version 과 다르면 NoticeVersionConflictException (cleanup 미실행)")
+        fun updateNotice_versionConflict() {
+            // DB 의 현재 공지는 version=3 (다른 사용자가 먼저 저장해 올라간 상태).
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY).apply { version = 3L }
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+
+            // 이 사용자는 version=2 를 보고 있던 오래된 화면에서 저장 시도.
+            val request = NoticeUpdateRequest(
+                title = "수정", scope = "영업사원", category = "COMPANY", content = "내용", version = 2L
+            )
+
+            assertThatThrownBy { noticeService.updateNotice(10L, request, null) }
+                .isInstanceOf(NoticeVersionConflictException::class.java)
+
+            // 충돌 시 본문 변경도 cleanup(S3 delete)도 일어나지 않아야 한다.
+            assertThat(existing.name).isEqualTo("테스트 공지")
+            verify(exactly = 0) { storageService.deletePrivate(any()) }
+        }
+
+        @Test
+        @DisplayName("동시 편집 - 요청 version 이 현재 DB version 과 같으면 정상 수정된다")
+        fun updateNotice_versionMatch() {
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY).apply { version = 5L }
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
+
+            val request = NoticeUpdateRequest(
+                title = "수정된 제목", scope = "영업사원", category = "COMPANY", content = "내용", version = 5L
+            )
+
+            val result = noticeService.updateNotice(10L, request, null)
+
+            assertThat(result.title).isEqualTo("수정된 제목")
+        }
+
+        @Test
+        @DisplayName("동시 편집 - 요청 version 이 null(구 클라이언트)이면 선제 검사를 건너뛰고 정상 수정한다")
+        fun updateNotice_versionNull_skipsCheck() {
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY).apply { version = 7L }
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
+
+            val request = NoticeUpdateRequest(
+                title = "수정", scope = "영업사원", category = "COMPANY", content = "내용", version = null
+            )
+
+            val result = noticeService.updateNotice(10L, request, null)
+
+            assertThat(result.title).isEqualTo("수정")
         }
 
         @Test
