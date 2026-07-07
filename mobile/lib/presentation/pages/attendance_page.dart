@@ -178,11 +178,9 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
           child: state.filteredAccounts.isEmpty
               ? _buildNoSearchResult()
               : ListView.separated(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: state.filteredAccounts.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final account = state.filteredAccounts[index];
                     return AccountListItem(
@@ -223,10 +221,7 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
           const SizedBox(height: 8),
           const Text(
             '스케줄을 확인해 주세요',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textTertiary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
           ),
         ],
       ),
@@ -263,20 +258,21 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
 
     if (state.allAccounts.isEmpty) return null;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        border: Border(
-          top: BorderSide(color: AppColors.border),
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
-      ),
-      child: PrimaryButton(
-        text: '등록하기',
-        isLoading: state.isRegistering,
-        onPressed: canRegister && !state.isRegistering
-            ? () => throttledTapAsync(() => _handleRegister(notifier, state))
-            : null,
+        child: PrimaryButton(
+          text: '등록하기',
+          isLoading: state.isRegistering,
+          onPressed: canRegister && !state.isRegistering
+              ? () => throttledTapAsync(() => _handleRegister(notifier, state))
+              : null,
+        ),
       ),
     );
   }

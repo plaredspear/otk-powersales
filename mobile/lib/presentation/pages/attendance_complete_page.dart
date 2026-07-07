@@ -19,8 +19,7 @@ class AttendanceCompletePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final workTypeLabel =
-        result.workType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
+    final workTypeLabel = result.workType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
     final isAllDone = result.isAllRegistered;
 
     return Scaffold(
@@ -78,8 +77,10 @@ class AttendanceCompletePage extends ConsumerWidget {
 
               // 근무유형 뱃지
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.otokiYellow.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
@@ -127,8 +128,10 @@ class AttendanceCompletePage extends ConsumerWidget {
               if (isAllDone) ...[
                 const SizedBox(height: 16),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.success.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
@@ -161,64 +164,64 @@ class AttendanceCompletePage extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          border: Border(
-            top: BorderSide(color: AppColors.border),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            border: Border(top: BorderSide(color: AppColors.border)),
           ),
+          child: isAllDone
+              ? PrimaryButton(
+                  text: '홈으로 돌아가기',
+                  onPressed: () {
+                    AppRouter.navigateToAndRemoveAll(context, AppRouter.main);
+                  },
+                )
+              : Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          AppRouter.navigateToAndRemoveAll(
+                            context,
+                            AppRouter.main,
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: const BorderSide(color: AppColors.border),
+                        ),
+                        child: const Text(
+                          '홈으로',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: PrimaryButton(
+                        text: '다음 등록',
+                        onPressed: () {
+                          ref
+                              .read(attendanceProvider.notifier)
+                              .prepareNextRegistration();
+                          AppRouter.goBack(context);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
         ),
-        child: isAllDone
-            ? PrimaryButton(
-                text: '홈으로 돌아가기',
-                onPressed: () {
-                  AppRouter.navigateToAndRemoveAll(
-                      context, AppRouter.main);
-                },
-              )
-            : Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        AppRouter.navigateToAndRemoveAll(
-                            context, AppRouter.main);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side:
-                            const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text(
-                        '홈으로',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: PrimaryButton(
-                      text: '다음 등록',
-                      onPressed: () {
-                        ref
-                            .read(attendanceProvider.notifier)
-                            .prepareNextRegistration();
-                        AppRouter.goBack(context);
-                      },
-                    ),
-                  ),
-                ],
-              ),
       ),
     );
   }
