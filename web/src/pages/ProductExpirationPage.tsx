@@ -32,6 +32,7 @@ import { fetchProducts } from '@/api/product';
 import type { ProductExpiration, CreateProductExpirationRequest, UpdateProductExpirationRequest } from '@/api/productExpiration';
 import { useAuthStore } from '@/stores/authStore';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
@@ -48,6 +49,10 @@ const STATUS_OPTIONS = [
 
 export default function ProductExpirationPage() {
   const user = useAuthStore((s) => s.user);
+
+  // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
+  // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
 
   // 적용된 필터/page/size 를 URL query string 에 보관 — 새로고침/링크 공유 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilter, setFilters } = useListQueryParams({
@@ -242,21 +247,30 @@ export default function ProductExpirationPage() {
   ];
 
   return (
-    <div>
+    <div
+      ref={containerRef}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        boxSizing: 'border-box',
+        minHeight: 0,
+      }}
+    >
       {/* Scope Badge */}
       {user?.role === '조장' && (
-        <Tag color="blue" style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px' }}>
+        <Tag color="blue" style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px', flexShrink: 0 }}>
           내 팀 ({user.orgName ?? ''})
         </Tag>
       )}
       {user?.role === '여사원' && (
-        <Tag style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px' }}>
+        <Tag style={{ marginBottom: 16, fontSize: 14, padding: '4px 12px', flexShrink: 0 }}>
           내 데이터
         </Tag>
       )}
 
       {/* Summary Cards */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Row gutter={16} style={{ marginBottom: 16, flexShrink: 0 }}>
         <Col span={8}>
           <Card hoverable onClick={() => handleSummaryClick('')} style={{ cursor: 'pointer' }}>
             <Statistic title="전체" value={summary?.totalCount ?? '-'} prefix={<CalendarOutlined />} />
@@ -275,7 +289,7 @@ export default function ProductExpirationPage() {
       </Row>
 
       {/* Filter Area */}
-      <Card style={{ marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16, flexShrink: 0 }}>
         <Row gutter={[16, 12]}>
           <Col span={6}>
             <Input
@@ -327,7 +341,7 @@ export default function ProductExpirationPage() {
       </Card>
 
       {/* Action Buttons */}
-      <Space style={{ marginBottom: 16 }}>
+      <Space style={{ marginBottom: 16, flexShrink: 0 }}>
         <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalOpen(true)}>
           등록
@@ -338,25 +352,28 @@ export default function ProductExpirationPage() {
       </Space>
 
       {/* Table */}
-      <ResizableTable<ProductExpiration>
-        rowKey="id"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        locale={listTableLocale()}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: (keys) => setSelectedRowKeys(keys as number[]),
-        }}
-        pagination={buildListPagination({
-          page,
-          pageSize: size,
-          total: data?.totalElements ?? 0,
-          onPageChange: setPage,
-          onSizeChange: setSize,
-        })}
-        scroll={{ x: 1200 }}
-      />
+      {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이가 scrollY 로 body 스크롤. */}
+      <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
+        <ResizableTable<ProductExpiration>
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          locale={listTableLocale()}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys as number[]),
+          }}
+          pagination={buildListPagination({
+            page,
+            pageSize: size,
+            total: data?.totalElements ?? 0,
+            onPageChange: setPage,
+            onSizeChange: setSize,
+          })}
+          scroll={{ x: 1200, y: scrollY }}
+        />
+      </div>
 
       {/* Create Modal */}
       <CreateModal

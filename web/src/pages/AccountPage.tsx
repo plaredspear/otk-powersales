@@ -7,6 +7,7 @@ import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { useAccounts } from '@/hooks/account/useAccounts';
 import { useAccountBranches } from '@/hooks/account/useAccountBranches';
 import { usePermission } from '@/hooks/usePermission';
@@ -40,6 +41,9 @@ const STATUS_OPTIONS = [
 
 export default function AccountPage() {
   const location = useLocation();
+  // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
+  // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: { abcType: '', branchCode: '', accountStatusName: '', keyword: '' },
@@ -158,9 +162,19 @@ export default function AccountPage() {
   }
 
   return (
-    <div style={{ padding: 16 }}>
+    <div
+      ref={containerRef}
+      style={{
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        boxSizing: 'border-box',
+        minHeight: 0,
+      }}
+    >
 
-      <Space style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap' }}>
+      <Space style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', flexShrink: 0 }}>
         <Space wrap>
           {isMultiBranch && (
             <Select
@@ -213,21 +227,25 @@ export default function AccountPage() {
         </Space>
       </Space>
 
-      <ResizableTable
-        rowKey="id"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        locale={listTableLocale()}
-        pagination={buildListPagination({
-          page: data?.page ?? page,
-          pageSize: size,
-          total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
-          onPageChange: setPage,
-          onSizeChange: setSize,
-        })}
-      />
+      {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이가 scrollY 로 body 스크롤. */}
+      <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
+        <ResizableTable
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          locale={listTableLocale()}
+          scroll={{ x: 'max-content', y: scrollY }}
+          pagination={buildListPagination({
+            page: data?.page ?? page,
+            pageSize: size,
+            total: data?.totalElements ?? 0,
+            // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
+            onPageChange: setPage,
+            onSizeChange: setSize,
+          })}
+        />
+      </div>
 
       <AdminAccountCreateModal
         open={createModalOpen}

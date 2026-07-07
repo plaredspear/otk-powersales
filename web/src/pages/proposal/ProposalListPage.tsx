@@ -6,6 +6,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useSuggestions } from '@/hooks/suggestions/useSuggestions';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import type {
   SuggestionActionStatus,
   SuggestionCategory,
@@ -51,6 +52,9 @@ const DEFAULT_END_DATE = dayjs().format('YYYY-MM-DD');
 
 export default function ProposalListPage() {
   const navigate = useNavigate();
+  // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
+  // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // page/필터/사이즈를 URL query string 에 보관 — 상세 진입 후 복귀/새로고침/링크 공유 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
@@ -174,8 +178,18 @@ export default function ProposalListPage() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+    <div
+      ref={containerRef}
+      style={{
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        boxSizing: 'border-box',
+        minHeight: 0,
+      }}
+    >
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, alignItems: 'center', flexShrink: 0 }}>
         <Space wrap>
           <span>등록일:</span>
           <RangePicker
@@ -203,7 +217,7 @@ export default function ProposalListPage() {
           />
         </Space>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16, alignItems: 'center', flexShrink: 0 }}>
         <Space wrap>
           <span>작성자명:</span>
           <Input
@@ -236,26 +250,29 @@ export default function ProposalListPage() {
         </Space>
       </div>
 
-      <ResizableTable
-        rowKey="id"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        locale={listTableLocale()}
-        scroll={{ x: 1320 }}
-        pagination={buildListPagination({
-          page,
-          pageSize: size,
-          total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
-          onPageChange: setPage,
-          onSizeChange: setSize,
-        })}
-        onRow={(record) => ({
-          onClick: () => handleRowClick(record.id),
-          style: { cursor: 'pointer' },
-        })}
-      />
+      {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이가 scrollY 로 body 스크롤. */}
+      <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
+        <ResizableTable
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          locale={listTableLocale()}
+          scroll={{ x: 1320, y: scrollY }}
+          pagination={buildListPagination({
+            page,
+            pageSize: size,
+            total: data?.totalElements ?? 0,
+            // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams). 순수 이동은 setPage.
+            onPageChange: setPage,
+            onSizeChange: setSize,
+          })}
+          onRow={(record) => ({
+            onClick: () => handleRowClick(record.id),
+            style: { cursor: 'pointer' },
+          })}
+        />
+      </div>
     </div>
   );
 }

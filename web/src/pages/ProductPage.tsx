@@ -3,6 +3,7 @@ import { Alert, Button, Input, Select, Space, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { useProducts, useProductCategories } from '@/hooks/product/useProducts';
 import { downloadProductsExcel, type Product } from '@/api/product';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
@@ -47,6 +48,9 @@ export default function ProductPage() {
   // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
   const goToDetail = (code: string) =>
     navigate(`/product/${encodeURIComponent(code)}`, { state: { listSearch: location.search } });
+  // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
+  // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: { keyword: '', category1: '', category2: '', category3: '', productStatus: '' },
@@ -290,8 +294,18 @@ export default function ProductPage() {
   }
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+    <div
+      ref={containerRef}
+      style={{
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        boxSizing: 'border-box',
+        minHeight: 0,
+      }}
+    >
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', flexShrink: 0 }}>
         <Select
           style={{ width: 140 }}
           value={category1Input}
@@ -331,7 +345,7 @@ export default function ProductPage() {
         </Button>
       </div>
 
-      <Space style={{ marginBottom: 12 }}>
+      <Space style={{ marginBottom: 12, flexShrink: 0 }}>
         <RefreshButton onRefresh={refetch} refreshing={isFetching} />
         <Button
           type="primary"
@@ -355,27 +369,30 @@ export default function ProductPage() {
         </Button>
       </Space>
 
-      <ResizableTable
-        rowKey="productCode"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        locale={listTableLocale()}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-          preserveSelectedRowKeys: true,
-        }}
-        pagination={buildListPagination({
-          page,
-          pageSize: size,
-          total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
-          onPageChange: setPage,
-          onSizeChange: setSize,
-        })}
-        scroll={{ x: 1500 }}
-      />
+      {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이가 scrollY 로 body 스크롤. */}
+      <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
+        <ResizableTable
+          rowKey="productCode"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          locale={listTableLocale()}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+            preserveSelectedRowKeys: true,
+          }}
+          pagination={buildListPagination({
+            page,
+            pageSize: size,
+            total: data?.totalElements ?? 0,
+            // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
+            onPageChange: setPage,
+            onSizeChange: setSize,
+          })}
+          scroll={{ x: 1500, y: scrollY }}
+        />
+      </div>
 
       <InventorySearchModal
         open={inventoryModalOpen}

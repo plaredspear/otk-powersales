@@ -4,6 +4,7 @@ import { Alert, Button, Input, Select, Space, Tag, Tooltip, message } from 'antd
 import { CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { useEmployees } from '@/hooks/employee/useEmployees';
 import { useEmployeeBranches } from '@/hooks/employee/useEmployeeBranches';
 import type { Employee } from '@/api/employee';
@@ -44,6 +45,9 @@ const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사�
 export default function EmployeeListPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
+  // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
   const goToDetail = (id: number) =>
     navigate(`/employee/${id}`, { state: { listSearch: location.search } });
@@ -212,9 +216,19 @@ export default function EmployeeListPage() {
   }
 
   return (
-    <div style={{ padding: 16 }}>
+    <div
+      ref={containerRef}
+      style={{
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        boxSizing: 'border-box',
+        minHeight: 0,
+      }}
+    >
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
         <Select
           style={{ width: 140 }}
           value={statusInput ?? ''}
@@ -258,21 +272,25 @@ export default function EmployeeListPage() {
         </Space>
       </div>
 
-      <ResizableTable
-        rowKey="employeeCode"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        locale={listTableLocale()}
-        pagination={buildListPagination({
-          page: data?.page ?? page,
-          pageSize: size,
-          total: data?.totalElements ?? 0,
-          // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
-          onPageChange: setPage,
-          onSizeChange: setSize,
-        })}
-      />
+      {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이가 scrollY 로 body 스크롤. */}
+      <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
+        <ResizableTable
+          rowKey="employeeCode"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          locale={listTableLocale()}
+          scroll={{ x: 'max-content', y: scrollY }}
+          pagination={buildListPagination({
+            page: data?.page ?? page,
+            pageSize: size,
+            total: data?.totalElements ?? 0,
+            // 사이즈 변경 시 setSize 가 page 를 0 으로 자동 리셋(useListQueryParams).
+            onPageChange: setPage,
+            onSizeChange: setSize,
+          })}
+        />
+      </div>
       {deviceTarget && (
         <DeviceResetModal
           employee={deviceTarget}

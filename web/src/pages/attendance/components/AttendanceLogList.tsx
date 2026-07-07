@@ -17,6 +17,8 @@ interface AttendanceLogListProps {
   onPageChange: (page: number) => void;
   onSizeChange: (size: number) => void;
   onView: (item: AttendanceLogListItem) => void;
+  /** 테이블 body 세로 스크롤 높이(px). 부모가 useFlexTableScrollY 로 실측해 내려준다. */
+  scrollY?: number;
 }
 
 const ATTENDANCE_TYPE_LABEL: Record<AttendanceTypeCode, string> = {
@@ -46,6 +48,7 @@ export default function AttendanceLogList({
   onPageChange,
   onSizeChange,
   onView,
+  scrollY,
 }: AttendanceLogListProps) {
   const columns: ColumnsType<AttendanceLogListItem> = [
     {
@@ -141,6 +144,8 @@ export default function AttendanceLogList({
         onClick: () => onView(record),
         style: { cursor: 'pointer' },
       })}
+      // 테이블 body(행) 만 세로 스크롤. y 는 부모가 실측해 내려준 값(하드코딩 없음).
+      scroll={{ x: 'max-content', y: scrollY }}
     />
   );
 }

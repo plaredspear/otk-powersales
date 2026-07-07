@@ -6,6 +6,7 @@ import { useEducationPosts } from '@/hooks/education/useEducationPosts';
 import { useEducationCategories } from '@/hooks/education/useEducationCategories';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
+import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import type { EducationSummary } from '@/api/education';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -21,6 +22,9 @@ const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
 
 export default function EducationListPage() {
   const navigate = useNavigate();
+  // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
+  // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
+  const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // page/size/필터를 URL query string 에 보관 — 상세 이동 후 복귀/새로고침 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilter } = useListQueryParams({
     defaultFilters: {
@@ -79,8 +83,18 @@ export default function EducationListPage() {
   ];
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+    <div
+      ref={containerRef}
+      style={{
+        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        height: containerHeight,
+        boxSizing: 'border-box',
+        minHeight: 0,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16, flexShrink: 0 }}>
         <Space>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
@@ -89,7 +103,7 @@ export default function EducationListPage() {
         </Space>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexShrink: 0 }}>
         <Select
           style={{ width: 140 }}
           value={filters.category}
@@ -106,24 +120,28 @@ export default function EducationListPage() {
         />
       </div>
 
-      <ResizableTable
-        rowKey="eduId"
-        columns={columns}
-        dataSource={data?.content}
-        loading={isLoading}
-        locale={listTableLocale()}
-        pagination={buildListPagination({
-          page: data ? data.currentPage - 1 : page,
-          pageSize: size,
-          total: data?.totalCount ?? 0,
-          onPageChange: setPage,
-          onSizeChange: setSize,
-        })}
-        onRow={(record) => ({
-          onClick: () => handleRowClick(record.eduId),
-          style: { cursor: 'pointer' },
-        })}
-      />
+      {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이가 scrollY 로 body 스크롤. */}
+      <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
+        <ResizableTable
+          rowKey="eduId"
+          columns={columns}
+          dataSource={data?.content}
+          loading={isLoading}
+          locale={listTableLocale()}
+          scroll={{ x: 'max-content', y: scrollY }}
+          pagination={buildListPagination({
+            page: data ? data.currentPage - 1 : page,
+            pageSize: size,
+            total: data?.totalCount ?? 0,
+            onPageChange: setPage,
+            onSizeChange: setSize,
+          })}
+          onRow={(record) => ({
+            onClick: () => handleRowClick(record.eduId),
+            style: { cursor: 'pointer' },
+          })}
+        />
+      </div>
     </div>
   );
 }
