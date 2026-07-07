@@ -21,9 +21,14 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.validation.BeanPropertyBindingResult
+import org.springframework.validation.FieldError
 import org.springframework.web.HttpMediaTypeNotSupportedException
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
+import com.fasterxml.jackson.databind.ObjectMapper
 
 @DisplayName("SapInboundExceptionHandler 테스트")
 class SapInboundExceptionHandlerTest {
@@ -115,6 +120,76 @@ class SapInboundExceptionHandlerTest {
         assertThat(response.body?.resultMsg).contains("application/json")
         assertThat(response.headers.contentType).isEqualTo(MediaType.APPLICATION_JSON)
     }
+
+    @Test
+    @DisplayName("handleValidation - 400 + INVALID_PAYLOAD + REQUEST_REJECTED_PAYLOAD audit(실패 필드 경로 포함) 기록")
+    fun handleValidation_responds400AndRecordsPayloadAudit() {
+        every { auditService.record(any()) } returns mockk()
+        val bindingResult = BeanPropertyBindingResult(Any(), "erpOrderRequest").apply {
+            addError(FieldError("erpOrderRequest", "reqItemList", "reqItemList 필수"))
+        }
+        val ex = MethodArgumentNotValidException(mockk(relaxed = true), bindingResult)
+
+        val response = handler.handleValidation(ex)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body?.resultCode).isEqualTo(SapResultWrapper.CODE_INVALID_PAYLOAD)
+        assertThat(response.body?.resultMsg).isEqualTo("reqItemList 필수")
+
+        val captor = slot<SapInboundAudit>()
+        verify { auditService.record(capture(captor)) }
+        val audit = captor.captured
+        assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_REJECTED_PAYLOAD)
+        assertThat(audit.endpoint).isEqualTo("/api/v1/sap/account")
+        assertThat(audit.httpMethod).isEqualTo("POST")
+        // 값 없이 실패 필드 경로만 기록
+        assertThat(audit.reason).contains("reqItemList")
+    }
+
+    @Test
+    @DisplayName("handleUnreadable - 400 + REQUEST_REJECTED_PAYLOAD audit(값 없이 구조 메타만) 기록")
+    fun handleUnreadable_responds400AndRecordsStructuralMeta() {
+        every { auditService.record(any()) } returns mockk()
+        // reqItemList 를 배열이 아닌 문자열로 보내 타입 불일치(MismatchedInputException) 유발
+        val mapper = ObjectMapper()
+        val ex: HttpMessageNotReadableException = try {
+            mapper.readValue(
+                """{"reqItemList":"not-an-array"}""",
+                TypeErpOrderLike::class.java
+            )
+            error("역직렬화가 실패해야 함")
+        } catch (cause: Exception) {
+            HttpMessageNotReadableException("parse failed", cause, mockk(relaxed = true))
+        }
+
+        val response = handler.handleUnreadable(ex)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body?.resultCode).isEqualTo(SapResultWrapper.CODE_INVALID_PAYLOAD)
+        assertThat(response.body?.resultMsg).isEqualTo("요청 본문이 올바르지 않습니다")
+
+        val captor = slot<SapInboundAudit>()
+        verify { auditService.record(capture(captor)) }
+        val audit = captor.captured
+        assertThat(audit.eventType).isEqualTo(SapInboundAuditEventType.REQUEST_REJECTED_PAYLOAD)
+        // 구조 메타(실패 필드 path)는 남고, 업무 값("not-an-array")은 남지 않는다
+        assertThat(audit.reason).contains("reqItemList")
+        assertThat(audit.reason).doesNotContain("not-an-array")
+    }
+
+    @Test
+    @DisplayName("handleUnreadable - audit 적재 실패해도 400 응답은 유지 (runCatching 격리)")
+    fun handleUnreadable_isolatesAuditFailure() {
+        every { auditService.record(any()) } throws RuntimeException("DB down")
+        val ex = HttpMessageNotReadableException("broken", mockk(relaxed = true))
+
+        val response = handler.handleUnreadable(ex)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
+        assertThat(response.body?.resultCode).isEqualTo(SapResultWrapper.CODE_INVALID_PAYLOAD)
+    }
+
+    private data class TypeErpOrderLike(val reqItemList: List<String>? = null)
 
     @Test
     @DisplayName("handleNotAcceptable - 406 + NOT_ACCEPTABLE + Content-Type: application/json 강제")

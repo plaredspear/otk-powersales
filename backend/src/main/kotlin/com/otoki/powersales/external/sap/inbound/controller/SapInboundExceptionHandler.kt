@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
+import com.fasterxml.jackson.databind.exc.MismatchedInputException
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -56,6 +57,12 @@ class SapInboundExceptionHandler(
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<SapResultWrapper<Nothing>> {
         val msg = ex.bindingResult.allErrors.firstOrNull()?.defaultMessage ?: "요청 페이로드가 올바르지 않습니다"
+        // 값 없이 실패 필드 경로만 기록 — "reqItemList 가 null/누락(키 표기 불일치 포함)" 을 사후 진단.
+        val failedFields = ex.bindingResult.fieldErrors
+            .mapNotNull { it.field.takeIf { f -> f.isNotBlank() } }
+            .distinct()
+            .joinToString(", ")
+        recordPayloadRejection(reason = "검증 실패 field=[$failedFields] msg=$msg")
         return json(HttpStatus.BAD_REQUEST, SapResultWrapper(SapResultWrapper.Companion.CODE_INVALID_PAYLOAD, msg))
     }
 
@@ -64,10 +71,26 @@ class SapInboundExceptionHandler(
     // (정책 단일 출처: JacksonConfig 의 "미정의 JSON 필드 정책 — lenient 유지" 주석. 레거시
     //  JSON.deserializeStrict 의 unknown-field 전체 실패와는 의도적으로 다르게 채택함.)
     @ExceptionHandler(HttpMessageNotReadableException::class)
-    fun handleUnreadable(): ResponseEntity<SapResultWrapper<Nothing>> {
+    fun handleUnreadable(ex: HttpMessageNotReadableException): ResponseEntity<SapResultWrapper<Nothing>> {
+        recordPayloadRejection(reason = "역직렬화 실패 ${describeUnreadable(ex)}")
         return json(HttpStatus.BAD_REQUEST,
             SapResultWrapper(SapResultWrapper.Companion.CODE_INVALID_PAYLOAD, "요청 본문이 올바르지 않습니다")
         )
+    }
+
+    /**
+     * 역직렬화 실패를 업무 데이터(값) 없이 구조 메타로만 요약한다.
+     * MismatchedInputException 이면 대상 타입 + JSON path(필드 경로) 를 뽑아 "어느 필드가 배열/타입이 안 맞았는가" 를 남기고,
+     * 그 외(깨진 JSON 등)는 예외 클래스명만 남긴다. 예외 message 는 원문 JSON 조각을 포함할 수 있어 사용하지 않는다.
+     */
+    private fun describeUnreadable(ex: HttpMessageNotReadableException): String {
+        val cause = ex.mostSpecificCause
+        if (cause is MismatchedInputException) {
+            val path = cause.path.joinToString(".") { it.fieldName ?: "[${it.index}]" }.ifBlank { "(root)" }
+            val target = cause.targetType?.simpleName ?: "?"
+            return "type=MismatchedInput path=$path target=$target"
+        }
+        return "type=${cause::class.simpleName}"
     }
 
     @ExceptionHandler(BusinessException::class)
@@ -113,6 +136,25 @@ class SapInboundExceptionHandler(
         return json(HttpStatus.INTERNAL_SERVER_ERROR,
             SapResultWrapper(SapResultWrapper.Companion.CODE_INTERNAL_ERROR, "내부 오류")
         )
+    }
+
+    // 400(검증/파싱 실패) 을 REQUEST_REJECTED_PAYLOAD 로 기록. reason 에는 값 없이 구조 메타만 담는다.
+    // audit 적재 실패가 400 응답을 500 으로 뒤집지 않도록 recordScopeRejection 과 동일하게 격리한다.
+    private fun recordPayloadRejection(reason: String) {
+        val request = currentRequest() ?: return
+        val auth = SecurityContextHolder.getContext().authentication
+        runCatching {
+            auditService.record(
+                SapInboundAudit(
+                    eventType = SapInboundAuditEventType.REQUEST_REJECTED_PAYLOAD,
+                    clientId = auth?.name,
+                    endpoint = request.requestURI,
+                    httpMethod = request.method,
+                    clientIp = ClientIpResolver.resolve(request),
+                    reason = reason.take(1000)
+                )
+            )
+        }
     }
 
     // audit 적재 실패가 메인 응답(403) 을 500 으로 뒤집지 않도록 격리.

@@ -9,6 +9,13 @@ object SapInboundAuditEventType {
     const val REQUEST_REJECTED_IP = "REQUEST_REJECTED_IP"
     const val REQUEST_REJECTED_SANITY = "REQUEST_REJECTED_SANITY"
 
+    /**
+     * 요청 본문 검증/역직렬화 실패로 400(INVALID_PAYLOAD) 을 반환한 경우.
+     * reason 에는 업무 데이터(값) 없이 구조 메타(최상위 JSON 키 목록 / 바인딩 실패 필드 경로 / 실패 유형)만 기록해
+     * "어떤 키 표기로 왔는가" 를 사후 진단할 수 있게 한다. (SAP erp-order 등 봉투 구조 불일치 400 다발 추적용)
+     */
+    const val REQUEST_REJECTED_PAYLOAD = "REQUEST_REJECTED_PAYLOAD"
+
     /** endpoint 가 비활성 상태라 적재 처리를 생략하고 정상 응답만 반환한 경우 (SAP 인바운드 토글). */
     const val REQUEST_SKIPPED = "REQUEST_SKIPPED"
 
