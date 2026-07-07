@@ -412,6 +412,14 @@ class AdminPromotionEmployeeService(
             )
         }
 
+        // 3-1. 기준단가·목표수량 필수 (목표금액은 두 값으로 자동 산출되는 파생값)
+        if (item.basePrice == null) {
+            return BatchItemError(index, item.employeeId, "VALUES_REQUIRED", "기준단가는 필수 항목입니다")
+        }
+        if (item.dailyTargetCount == null) {
+            return BatchItemError(index, item.employeeId, "VALUES_REQUIRED", "목표수량은 필수 항목입니다")
+        }
+
         // 4. 근무상태 (null 허용)
         if (item.workStatus != null && item.workStatus.isNotBlank() && item.workStatus !in VALID_WORK_STATUSES) {
             return BatchItemError(index, item.employeeId, "INVALID_WORK_STATUS", "근무상태는 근무, 연차, 대휴 중 하나여야 합니다")

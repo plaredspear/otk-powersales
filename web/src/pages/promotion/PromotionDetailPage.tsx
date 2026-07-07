@@ -123,6 +123,8 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
 
 const REQUIRED_FIELDS: (keyof EditableRow)[] = [
   'scheduleDate',
+  'basePrice',
+  'dailyTargetCount',
 ];
 
 export default function PromotionDetailPage() {
@@ -1020,7 +1022,7 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '기준단가',
+        title: <span>기준단가<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
         dataIndex: 'basePrice',
         width: 100,
         render: (_: unknown, record: EditableRow) => (
@@ -1034,7 +1036,7 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '목표수량',
+        title: <span>목표수량<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
         dataIndex: 'dailyTargetCount',
         width: 90,
         render: (_: unknown, record: EditableRow) => (
