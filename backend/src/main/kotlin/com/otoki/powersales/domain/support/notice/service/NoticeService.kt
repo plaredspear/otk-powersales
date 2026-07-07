@@ -580,12 +580,19 @@ class NoticeService(
      * (프론트가 sessionUploadedRefids 를 미전송하면 세션 기반 정리는 생략되고 parent_id=noticeId 정리만 수행 — 하위호환.)
      */
     private fun syncInlineImages(noticeId: Long, content: String?, sessionUploadedRefids: List<String>?) {
-        val keptIds = NoticeImagePlaceholder.extractRefids(content ?: "")
+        val html = content ?: ""
+        val keptRefids = NoticeImagePlaceholder.extractRefids(html)
             .mapNotNull { it.toLongOrNull() }.toSet()
 
+        // 본문이 참조 중인 uniqueKey 집합. 수정 화면은 data-refid 를 잃은 presigned `<img>` 를 그대로 저장 본문에
+        // 담아 보낼 수 있어(웹 에디터가 파싱 시 data-refid 소실), refid 만으로는 "본문에 살아있는 이미지" 를
+        // 판별하지 못한다. presigned URL 에 내재된 불변 uniqueKey 로 이 공지 소속 파일과 매칭해 보존 대상을 보강한다.
+        // (presigned URL 자체는 저장/식별자로 쓰지 않고, URL 에서 뽑은 uniqueKey 만 매칭에 사용.)
+        val keptUniqueKeys = NoticeImagePlaceholder.extractUniqueKeys(html).toSet()
+
         // (1) backfill — 본문에 남아있는 refid 중 미소속 임시 업로드분을 이 공지로 연결.
-        if (keptIds.isNotEmpty()) {
-            uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(keptIds.toList(), UploadFileParentTypes.NOTICE)
+        if (keptRefids.isNotEmpty()) {
+            uploadFileRepository.findByIdInAndParentTypeAndIsDeletedFalse(keptRefids.toList(), UploadFileParentTypes.NOTICE)
                 .filter { it.uploadKbn == UPLOAD_KBN_INLINE && it.parentId == null }
                 .forEach { it.parentId = noticeId }
         }
@@ -599,8 +606,11 @@ class NoticeService(
             addAll(uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.NOTICE, noticeId))
         }.distinctBy { it.id }
 
+        // 보존 판정: 본문이 refid 로 참조 OR uniqueKey 로 참조하면 삭제하지 않는다.
+        // (수정 시 이미지를 건드리지 않았는데 presigned src 로만 남은 기존 이미지가 오삭제되던 문제 방지.)
         candidates
-            .filter { it.uploadKbn == UPLOAD_KBN_INLINE && it.id !in keptIds }
+            .filter { it.uploadKbn == UPLOAD_KBN_INLINE }
+            .filter { it.id !in keptRefids && (it.uniqueKey.isNullOrBlank() || it.uniqueKey !in keptUniqueKeys) }
             .filter { it.parentId == noticeId || it.id in sessionIds }
             .forEach { file ->
                 file.uniqueKey?.takeIf { it.isNotBlank() }?.let { storageService.deletePrivate(it) }

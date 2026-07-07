@@ -33,6 +33,13 @@ object NoticeImagePlaceholder {
     val SRC_ATTR_REGEX =
         Regex("""\bsrc\s*=\s*"[^"]*"""", RegexOption.IGNORE_CASE)
 
+    /** 본문 `<img>` 태그의 src 값을 추출. group(1) = src 원문(presigned URL / placeholder scheme / 기타). */
+    private val IMG_SRC_VALUE_REGEX =
+        Regex("""<img\b[^>]*?\bsrc\s*=\s*"([^"]*)"[^>]*>""", RegexOption.IGNORE_CASE)
+
+    /** private S3 key 의 세그먼트 prefix ("private/"). presigned URL path 에서 이 뒤가 uniqueKey. */
+    private const val PRIVATE_PATH_SEGMENT = "private/"
+
     /**
      * base64 data URI 로 본문에 통째로 박혀 들어온 인라인 이미지 `<img src="data:image/...;base64,...">`.
      * group(1) = content-type(mime, 예: image/png), group(2) = base64 payload.
@@ -67,5 +74,36 @@ object NoticeImagePlaceholder {
     fun extractRefids(html: String): List<String> {
         if (!html.contains("data-refid")) return emptyList()
         return PLACEHOLDER_IMG_REGEX.findAll(html).map { it.groupValues[1] }.toList()
+    }
+
+    /**
+     * 본문 HTML 의 모든 `<img src="...">` 에서 참조하는 private S3 uniqueKey 목록을 추출한다.
+     *
+     * 수정 화면은 상세조회가 rewrite 한 presigned URL(`https://.../private/{uniqueKey}?X-Amz-...`)을
+     * 그대로 저장 본문에 담아 보낼 수 있다(웹 에디터가 data-refid 를 파싱 단계에서 버리기 때문).
+     * presigned URL 은 만료·매번 재발급되는 임시값이라 식별자로 쓸 수 없으므로, URL path 에 내재된
+     * 불변의 uniqueKey(= upload_file.unique_key)만 뽑아 "본문이 참조 중인 이미지" 판별에 쓴다.
+     * 이로써 refid(data-refid) 소실 시에도 cleanup 이 본문 참조 이미지를 오삭제하지 않는다.
+     *
+     * 매칭 규칙: src 를 `?` 기준으로 잘라 쿼리스트링(만료 서명)을 제거한 뒤, path 에서 "private/" 이후를
+     * uniqueKey 로 취한다. "private/" 를 포함하지 않는 src(placeholder scheme, 외부 URL 등)는 제외한다.
+     */
+    fun extractUniqueKeys(html: String): List<String> {
+        if (!html.contains(PRIVATE_PATH_SEGMENT)) return emptyList()
+        return IMG_SRC_VALUE_REGEX.findAll(html)
+            .mapNotNull { match -> uniqueKeyFromSrc(match.groupValues[1]) }
+            .toList()
+    }
+
+    /**
+     * 단일 img src 값에서 uniqueKey 를 해석한다. "private/" 미포함 시 null.
+     * URL 인코딩된 경로 세그먼트는 uniqueKey(uploads/notice/yyyy/mm/dd/uuid.ext)에 인코딩 대상 문자가
+     * 없으므로 별도 디코딩 없이 그대로 비교 가능하다(영숫자/`/`/`.`/`-` 로만 구성).
+     */
+    private fun uniqueKeyFromSrc(src: String): String? {
+        val withoutQuery = src.substringBefore('?')
+        val idx = withoutQuery.indexOf(PRIVATE_PATH_SEGMENT)
+        if (idx < 0) return null
+        return withoutQuery.substring(idx + PRIVATE_PATH_SEGMENT.length).takeIf { it.isNotBlank() }
     }
 }

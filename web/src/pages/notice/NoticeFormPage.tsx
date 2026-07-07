@@ -146,6 +146,12 @@ export default function NoticeFormPage() {
 
   useEffect(() => {
     if (isEdit && notice) {
+      // 상세조회 본문은 백엔드가 placeholder 를 presigned URL 로 rewrite 하되 data-refid 는 보존한 상태다
+      // (<img src="https://.../private/{uniqueKey}?..." data-refid="{refid}">).
+      // Quill 은 로드 시 img 의 src 만 인식하고 data-refid 를 버리므로, 저장 시 presigned URL 을 다시
+      // placeholder 로 되돌릴 매핑(presigned src → placeholder)을 에디터 로드 전에 미리 확보해 둔다.
+      // presigned URL 은 만료되는 임시값이라 저장 본문에 남기지 않는다(저장 직전 replacePreviewsWithPlaceholders 가 복원).
+      registerExistingImagePlaceholders(notice.content);
       form.setFieldsValue({
         title: notice.title,
         category: notice.category,
@@ -293,6 +299,24 @@ export default function NoticeFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
+
+  // 수정 화면 진입 시, 서버 상세조회 본문의 기존 이미지(<img src="presigned" data-refid="{refid}">)에서
+  // presigned src → placeholder 매핑을 미리 등록한다. Quill 이 로드하며 data-refid 를 버리기 전에 원본 HTML 에서
+  // 추출해야 하므로 setFieldsValue 직전에 호출한다. 저장 직전 replacePreviewsWithPlaceholders 가 이 매핑으로
+  // presigned URL 을 placeholder 로 되돌려, 만료 URL 이 DB 본문에 영구 저장되는 것을 막는다.
+  const registerExistingImagePlaceholders = (html: string | null | undefined) => {
+    if (!html) return;
+    // src / data-refid 속성 순서에 무관하게 태그 전체를 잡아 각 속성을 개별 파싱한다.
+    for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
+      const tag = m[0];
+      const src = /\bsrc\s*=\s*"([^"]*)"/i.exec(tag)?.[1];
+      const refid = /\bdata-refid\s*=\s*"([^"]*)"/i.exec(tag)?.[1];
+      if (src && refid && /^https?:/i.test(src)) {
+        // 백엔드 placeholder 형식과 동일하게 재구성 (NoticeImagePlaceholder.build 정합).
+        previewToPlaceholder.current.set(src, `<img src="notice-image://${refid}" data-refid="${refid}">`);
+      }
+    }
+  };
 
   // 저장 직전 본문의 presigned previewUrl 을 placeholder 로 치환 (만료 URL 영구 저장 방지).
   const replacePreviewsWithPlaceholders = (html: string): string => {

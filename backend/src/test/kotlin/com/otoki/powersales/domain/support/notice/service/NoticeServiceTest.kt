@@ -866,6 +866,64 @@ class NoticeServiceTest {
 
             assertThat(existing.status).isEqualTo(NoticeStatus.PUBLISHED)
         }
+
+        @Test
+        @DisplayName("수정 시 본문에 presigned URL(data-refid 소실)만 남아도 기존 인라인 이미지를 보존한다 (uniqueKey 매칭)")
+        fun updateNotice_keepsInlineImageReferencedByPresignedUrl() {
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY)
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
+
+            val uniqueKey = "uploads/notice/2026/07/07/keep.png"
+            val inlineFile = createUploadFile(
+                id = 555L, uniqueKey = uniqueKey, parentId = 10L, uploadKbn = "INLINE"
+            )
+            // 이 공지 소속 INLINE 파일 1건 — 본문에서 참조 중.
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 10L)
+            } returns listOf(inlineFile)
+
+            // 수정 화면이 보내는 본문: 웹 에디터가 data-refid 를 버려 presigned src 만 남은 형태.
+            // presigned URL path 에 uniqueKey 가 내재되어 있어 cleanup 이 보존해야 한다.
+            val content =
+                "<p>내용</p><img src=\"https://test-bucket.s3.ap-northeast-2.amazonaws.com/private/$uniqueKey?X-Amz-Signature=expired\">"
+            val request = NoticeUpdateRequest(
+                title = "수정", scope = "영업사원", category = "COMPANY", content = content, publish = false
+            )
+
+            noticeService.updateNotice(10L, request, null)
+
+            // 삭제되지 않아야 한다 — S3 delete 미호출 + soft-delete 미표기.
+            verify(exactly = 0) { storageService.deletePrivate(uniqueKey) }
+            assertThat(inlineFile.isDeleted).isNotEqualTo(true)
+        }
+
+        @Test
+        @DisplayName("수정 시 본문에서 완전히 제거된 인라인 이미지는 정리(S3 delete + soft-delete)한다")
+        fun updateNotice_deletesInlineImageRemovedFromBody() {
+            val existing = createNotice(id = 10L, category = NoticeCategory.COMPANY)
+            every { noticeRepository.findById(10L) } returns Optional.of(existing)
+            every { noticeRepository.save(any<Notice>()) } answers { firstArg() }
+
+            val removedKey = "uploads/notice/2026/07/07/removed.png"
+            val removedFile = createUploadFile(
+                id = 556L, uniqueKey = removedKey, parentId = 10L, uploadKbn = "INLINE"
+            )
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Notice", 10L)
+            } returns listOf(removedFile)
+            every { storageService.deletePrivate(removedKey) } just Runs
+
+            // 본문에 이 이미지(refid/uniqueKey) 참조가 전혀 없음 → 정리 대상.
+            val request = NoticeUpdateRequest(
+                title = "수정", scope = "영업사원", category = "COMPANY", content = "<p>이미지 제거됨</p>", publish = false
+            )
+
+            noticeService.updateNotice(10L, request, null)
+
+            verify(exactly = 1) { storageService.deletePrivate(removedKey) }
+            assertThat(removedFile.isDeleted).isEqualTo(true)
+        }
     }
 
     @Nested
