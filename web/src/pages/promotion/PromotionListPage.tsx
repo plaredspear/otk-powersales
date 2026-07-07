@@ -28,6 +28,12 @@ const PROMOTION_TYPE_TAG: Record<string, string> = {
   증정: 'gold',
 };
 
+// 제품유형(대표제품 category1) 조회 옵션 — 상온/냉동/냉장/만두/라면 고정.
+const CATEGORY1_OPTIONS = ['상온', '냉동', '냉장', '만두', '라면'].map((v) => ({
+  value: v,
+  label: v,
+}));
+
 function formatDate(value: string): string {
   return dayjs(value).format('YYYY-MM-DD');
 }
@@ -422,13 +428,13 @@ export default function PromotionListPage() {
           style={{ width: 150 }}
           onPressEnter={handleSearch}
         />
-        <Input
-          placeholder="제품유형"
-          allowClear
-          value={filterCategory1}
-          onChange={(e) => setFilterCategory1(e.target.value)}
+        <Select
+          placeholder="제품유형 (전체)"
+          value={filterCategory1 || undefined}
+          onChange={(v) => setFilterCategory1(v ?? '')}
           style={{ width: 150 }}
-          onPressEnter={handleSearch}
+          options={CATEGORY1_OPTIONS}
+          allowClear
         />
         <Input
           placeholder="제품명/제품코드"
@@ -458,6 +464,7 @@ export default function PromotionListPage() {
         dataSource={data?.content}
         loading={isLoading}
         locale={listTableLocale()}
+        sticky
         scroll={{ x: 2020 }}
         pagination={buildListPagination({
           page,
