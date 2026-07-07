@@ -17,7 +17,6 @@ import {
   Tooltip,
   Typography,
   message,
-  notification,
 } from 'antd';
 import { CheckCircleFilled, CloseCircleFilled, CloseOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -662,13 +661,13 @@ export default function PromotionDetailPage() {
         setErrorRowIds(errorIds);
         setErrorMessages(msgs);
 
-        // notification으로 항목별 상세 에러 표시
+        // 화면 중앙 모달로 항목별 상세 에러 표시
         const maxDisplay = 5;
         const displayErrors = err.errors.slice(0, maxDisplay);
         const remaining = err.errors.length - maxDisplay;
-        notification.error({
-          message: `검증 오류 (${err.errors.length}건)`,
-          description: (
+        Modal.error({
+          title: `검증 오류 (${err.errors.length}건)`,
+          content: (
             <ul style={{ margin: 0, paddingLeft: 16 }}>
               {displayErrors.map((itemErr, idx) => {
                 const rowNum = itemErr.itemIndex + 1;
@@ -677,8 +676,7 @@ export default function PromotionDetailPage() {
               {remaining > 0 && <li>외 {remaining}건</li>}
             </ul>
           ),
-          placement: 'topRight',
-          duration: 0,
+          okText: '확인',
         });
       } else {
         message.error(err instanceof Error ? err.message : '일괄 수정에 실패했습니다');
