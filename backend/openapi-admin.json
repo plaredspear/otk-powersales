@@ -12699,6 +12699,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "pushTargetCount" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "scope" : {
             "type" : [ "string", "null" ]
           },
