@@ -3,7 +3,6 @@ package com.otoki.powersales.external.sap.inbound.controller
 import com.otoki.powersales.external.sap.inbound.dto.SapResultWrapper
 import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderDetail
 import com.otoki.powersales.external.sap.inbound.dto.order.ErpOrderRequest
-import com.otoki.powersales.external.sap.inbound.exception.SapInvalidPayloadException
 import com.otoki.powersales.external.sap.inbound.service.SapErpOrderService
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
@@ -41,8 +40,10 @@ class SapErpOrderController(
     fun upsertErpOrder(
         @Valid @RequestBody request: ErpOrderRequest
     ): ResponseEntity<SapResultWrapper<ErpOrderDetail>> {
-        val items = request.reqItemList?.takeIf { it.isNotEmpty() }
-            ?: throw SapInvalidPayloadException("reqItemList 빈 리스트")
+        // reqItemList 가 null/빈 리스트여도 400/422 로 거절하지 않고 적재 0건으로 200 을 반환한다.
+        // (SAP 가 alias 세트에 없는 키 표기로 보내 null 로 바인딩되는 경우 실패를 받지 않게 하기 위한 임시 조치.
+        //  근본 해결은 SAP 실제 키 확인 후 ErpOrderRequest @JsonAlias 추가 — ErpOrderRequest 주석 참고.)
+        val items = request.reqItemList.orEmpty()
         val detail = sapErpOrderService.upsert(items)
         return ResponseEntity.ok(SapResultWrapper.Companion.ok(detail))
     }
