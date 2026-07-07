@@ -1084,7 +1084,7 @@ class NoticeServiceTest {
     inner class GetNoticeFormMetaTests {
 
         @Test
-        @DisplayName("정상 조회 - 카테고리 3개 + 지점 목록 반환")
+        @DisplayName("정상 조회 - 회사공지/지점공지만 노출(교육 제외) + 지점 목록 반환")
         fun getNoticeFormMeta_success() {
             val orgs = listOf(
                 createOrg(orgNameLevel3 = "제1사업부", orgNameLevel4 = "1영업부", orgNameLevel5 = "서울1지점", costCenterLevel4 = "1100", costCenterLevel5 = "1101"),
@@ -1094,13 +1094,13 @@ class NoticeServiceTest {
 
             val result = noticeService.getNoticeFormMeta(null)
 
-            assertThat(result.categories).hasSize(3)
+            // 교육(EDUCATION)은 별도 '교육' 메뉴에서 관리 → 공지사항 폼 카테고리에서 제외.
+            assertThat(result.categories).hasSize(2)
             assertThat(result.categories[0].code).isEqualTo("COMPANY")
             assertThat(result.categories[0].name).isEqualTo("회사공지")
             assertThat(result.categories[1].code).isEqualTo("BRANCH")
             assertThat(result.categories[1].name).isEqualTo("지점공지")
-            assertThat(result.categories[2].code).isEqualTo("EDUCATION")
-            assertThat(result.categories[2].name).isEqualTo("교육")
+            assertThat(result.categories.map { it.code }).doesNotContain("EDUCATION")
 
             assertThat(result.branches).hasSize(2)
             assertThat(result.branches[0].branchCode).isEqualTo("1101")
@@ -1161,7 +1161,7 @@ class NoticeServiceTest {
 
             val result = noticeService.getNoticeFormMeta(null)
 
-            assertThat(result.categories).hasSize(3)
+            assertThat(result.categories).hasSize(2)
             assertThat(result.branches).isEmpty()
         }
 
@@ -1189,13 +1189,14 @@ class NoticeServiceTest {
         }
 
         @Test
-        @DisplayName("여사원 - 카테고리 3개 모두 노출")
-        fun getNoticeFormMeta_womanAllCategories() {
+        @DisplayName("여사원 - 회사공지/지점공지 노출 (교육 제외)")
+        fun getNoticeFormMeta_womanExcludesEducation() {
             every { organizationRepository.findAll() } returns emptyList()
 
             val result = noticeService.getNoticeFormMeta(AppAuthority.WOMAN)
 
-            assertThat(result.categories).hasSize(3)
+            assertThat(result.categories.map { it.code }).containsExactly("COMPANY", "BRANCH")
+            assertThat(result.categories.map { it.code }).doesNotContain("EDUCATION")
         }
     }
 

@@ -666,10 +666,11 @@ class NoticeService(
 
         // 조장/지점장은 지점공지만 작성 가능 → 카테고리 옵션도 지점공지(BRANCH)만 노출한다.
         // 프론트는 내려온 옵션을 그대로 렌더링하므로 UI 제한이 서버 권위로 통일된다.
+        // 교육(EDUCATION)은 별도 '교육' 메뉴에서 관리하므로 공지사항 작성 카테고리에서는 제외한다.
         val visibleCategories = if (isBranchNoticeOnlyRole(role)) {
             listOf(NoticeCategory.BRANCH)
         } else {
-            NoticeCategory.entries
+            NoticeCategory.entries.filter { it != NoticeCategory.EDUCATION }
         }
         val categories = visibleCategories.map {
             CategoryOption(code = it.apiCode, name = it.displayName)
