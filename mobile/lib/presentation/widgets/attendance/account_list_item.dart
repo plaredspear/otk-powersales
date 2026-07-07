@@ -35,30 +35,15 @@ class AccountListItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.check_circle,
-            color: AppColors.success,
-            size: 24,
-          ),
+          const Icon(Icons.check_circle, color: AppColors.success, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      account.accountName,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    _buildWorkCategoryBadge(),
-                    ..._buildWorkCategory3Badge(),
-                  ],
+                _buildNameWithBadges(
+                  nameColor: AppColors.textTertiary,
+                  nameWeight: FontWeight.w500,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -107,25 +92,9 @@ class AccountListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          account.accountName,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: AppColors.textPrimary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      _buildWorkCategoryBadge(),
-                      ..._buildWorkCategory3Badge(),
-                    ],
+                  _buildNameWithBadges(
+                    nameColor: AppColors.textPrimary,
+                    nameWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -155,6 +124,39 @@ class AccountListItem extends StatelessWidget {
     );
   }
 
+  /// 거래처명 + 근무유형 배지. 이름 확인이 중요하므로 이름은 절대 잘리지 않게
+  /// 카드 전폭까지 자동 줄바꿈(ellipsis 미적용)하고, 배지는 Wrap 으로 이름 뒤에
+  /// 흐르다 공간이 부족하면 다음 줄로 밀려 내려간다.
+  Widget _buildNameWithBadges({
+    required Color nameColor,
+    required FontWeight nameWeight,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+              child: Text(
+                account.accountName,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: nameWeight,
+                  color: nameColor,
+                ),
+              ),
+            ),
+            _buildWorkCategoryBadge(),
+            ..._buildWorkCategory3Badge(),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildWorkCategoryBadge() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -179,7 +181,6 @@ class AccountListItem extends StatelessWidget {
     if (category3 == null || category3.isEmpty) return const [];
 
     return [
-      const SizedBox(width: 4),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
@@ -201,8 +202,7 @@ class AccountListItem extends StatelessWidget {
   Widget _buildRegisteredWorkTypeBadge() {
     if (account.registeredWorkType == null) return const SizedBox.shrink();
 
-    final label =
-        account.registeredWorkType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
+    final label = account.registeredWorkType == 'ROOM_TEMP' ? '상온' : '냉장/냉동';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
