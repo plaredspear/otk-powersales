@@ -51,70 +51,89 @@ class LeaderScheduleCalendarGrid extends StatelessWidget {
     return dates;
   }
 
+  static const List<String> _weekdayLabels = [
+    '일', '월', '화', '수', '목', '금', '토',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final dates = _calendarDates();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    return Column(
-      children: [
-        // 요일 헤더
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-            horizontal: AppSpacing.md,
-          ),
-          child: Row(
-            children: ['일', '월', '화', '수', '목', '금', '토'].asMap().entries.map(
-              (e) {
-                final color = e.key == 0
-                    ? AppColors.otokiRed
-                    : e.key == 6
-                        ? AppColors.secondary
-                        : AppColors.textPrimary;
-                return Expanded(
-                  child: Center(
-                    child: Text(
-                      e.value,
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
-                    ),
+    // 시스템 글꼴 확대 시 셀 텍스트가 넘치지 않도록 스케일 상한을 제한한다.
+    // (셀 내부는 추가로 FittedBox 로 축소되어 어떤 스케일에서도 숫자가 잘리지 않는다.)
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      // Table + TableBorder 로 격자 선을 셀 경계에 정확히 그린다(선이 셀 밖으로
+      // 삐져나오지 않는다). 상단 정렬하여 표 아래 남는 공간에는 선을 그리지 않는다.
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: LayoutBuilder(
+            builder: (context, constraints) {
+              // 셀 높이는 레거시 비율(0.78)을 유지하도록 셀 너비에서 산출한다.
+              final cellHeight = (constraints.maxWidth / 7) / 0.78;
+              return Table(
+                border: TableBorder.all(color: AppColors.divider, width: 1),
+                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                children: [
+                  // 요일 헤더
+                  TableRow(
+                    children: [
+                      for (var i = 0; i < 7; i++)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.sm,
+                          ),
+                          child: Center(
+                            child: Text(
+                              _weekdayLabels[i],
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: i == 0
+                                    ? AppColors.otokiRed
+                                    : i == 6
+                                        ? AppColors.secondary
+                                        : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
-                );
-              },
-            ).toList(),
+                  // 주별 날짜 행 (빈 셀도 표 격자 유지를 위해 높이만 확보)
+                  for (var week = 0; week * 7 < dates.length; week++)
+                    TableRow(
+                      children: [
+                        for (var dow = 0; dow < 7; dow++)
+                          _buildCell(
+                            dates[week * 7 + dow],
+                            (week * 7 + dow) % 7,
+                            today,
+                            cellHeight,
+                          ),
+                      ],
+                    ),
+                ],
+              );
+            },
           ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            child: GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7,
-                childAspectRatio: 0.78,
-              ),
-              itemCount: dates.length,
-              itemBuilder: (context, index) {
-                final date = dates[index];
-                if (date == null) return const SizedBox.shrink();
-                return _DayCell(
-                  date: date,
-                  weekday: index % 7,
-                  isToday: date == today,
-                  isFuture: date.isAfter(today),
-                  day: dayOf(_fmt(date)),
-                  onTap: onDateTap,
-                );
-              },
-            ),
-          ),
-        ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildCell(DateTime? date, int weekday, DateTime today, double height) {
+    if (date == null) {
+      return SizedBox(height: height);
+    }
+    return _DayCell(
+      date: date,
+      weekday: weekday,
+      isToday: date == today,
+      isFuture: date.isAfter(today),
+      day: dayOf(_fmt(date)),
+      onTap: onDateTap,
+      height: height,
     );
   }
 }
@@ -127,6 +146,9 @@ class _DayCell extends StatelessWidget {
   final LeaderCalendarDay? day;
   final void Function(DateTime date) onTap;
 
+  /// 표 행 높이(모든 셀 동일).
+  final double height;
+
   const _DayCell({
     required this.date,
     required this.weekday,
@@ -134,6 +156,7 @@ class _DayCell extends StatelessWidget {
     required this.isFuture,
     required this.day,
     required this.onTap,
+    required this.height,
   });
 
   @override
@@ -148,34 +171,38 @@ class _DayCell extends StatelessWidget {
 
     return GestureDetector(
       onTap: hasWork ? () => onTap(date) : null,
+      behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: isToday
-              ? AppColors.otokiYellow.withValues(alpha: 0.35)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '${date.day}',
-              style: AppTypography.bodyMedium.copyWith(
-                fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                color: dayNumColor,
-              ),
-            ),
-            if (hasWork)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: _SumCount(
-                  attended: day!.attended,
-                  total: day!.total,
-                  isFuture: isFuture,
+        height: height,
+        color: isToday
+            ? AppColors.otokiYellow.withValues(alpha: 0.35)
+            : null,
+        // 글꼴 확대 시에도 셀 밖으로 넘치지 않도록 내용 전체를 축소해 담는다.
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 2),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${date.day}',
+                style: AppTypography.bodyMedium.copyWith(
+                  fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                  color: dayNumColor,
                 ),
               ),
-          ],
+              if (hasWork)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: _SumCount(
+                    attended: day!.attended,
+                    total: day!.total,
+                    isFuture: isFuture,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
