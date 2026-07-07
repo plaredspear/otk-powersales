@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.support.notice.repository
 
 import com.otoki.powersales.platform.common.config.QueryDslConfig
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.support.notice.entity.Notice
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
 import com.otoki.powersales.domain.support.notice.enums.NoticeScope
@@ -382,6 +383,143 @@ class NoticeRepositoryTest {
             assertThat(result.totalElements).isEqualTo(2)
             assertThat(result.content.map { it.name })
                 .containsExactlyInAnyOrder("isDeleted=null 공지", "isDeleted=false 공지")
+        }
+    }
+
+    @Nested
+    @DisplayName("findPushTargetTokens - 푸시 대상 FCM 토큰 조회 (활성 사용자 필터)")
+    inner class FindPushTargetTokensTests {
+
+        /**
+         * 푸시 대상 Employee(+EmployeeInfo) 를 직접 영속한다.
+         *
+         * Employee 생성자의 fcmToken 파라미터는 employeeCode 가 non-null 이면 함께 만들어지는
+         * EmployeeInfo(employee_info) 로 흘러들어간다(PK 공유 @MapsId, cascade). 따라서 별도
+         * EmployeeInfo persist 없이 persistAndFlush(employee) 한 번으로 두 테이블이 함께 적재된다.
+         * 이 쿼리는 employee ⋈ employeeInfo 만 조회하므로 Notice 는 무관(persist 불필요).
+         */
+        private fun persistEmployee(
+            employeeCode: String,
+            appLoginActive: Boolean?,
+            isDeleted: Boolean? = null,
+            costCenterCode: String? = null,
+            fcmToken: String? = null
+        ): Employee {
+            val employee = Employee(
+                employeeCode = employeeCode,
+                name = "테스트사원-$employeeCode",
+                isDeleted = isDeleted,
+                fcmToken = fcmToken
+            ).apply {
+                this.appLoginActive = appLoginActive
+                this.costCenterCode = costCenterCode
+            }
+            val persisted = testEntityManager.persistAndFlush(employee)
+            testEntityManager.clear()
+            return persisted
+        }
+
+        @Test
+        @DisplayName("회사공지(COMPANY) - 활성 + fcmToken 보유 사용자의 토큰을 반환한다")
+        fun companyReturnsActiveTokens() {
+            // Given
+            persistEmployee(employeeCode = "A001", appLoginActive = true, fcmToken = "token-A001")
+            persistEmployee(employeeCode = "A002", appLoginActive = true, fcmToken = "token-A002")
+
+            // When
+            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+
+            // Then
+            assertThat(result).containsExactlyInAnyOrder("token-A001", "token-A002")
+        }
+
+        @Test
+        @DisplayName("퇴사/비활성 제외 - appLoginActive=false 또는 null 사용자는 토큰이 있어도 제외된다")
+        fun excludesInactiveUsers() {
+            // Given
+            persistEmployee(employeeCode = "B001", appLoginActive = true, fcmToken = "token-active")
+            persistEmployee(employeeCode = "B002", appLoginActive = false, fcmToken = "token-inactive")
+            persistEmployee(employeeCode = "B003", appLoginActive = null, fcmToken = "token-null-active")
+
+            // When
+            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+
+            // Then
+            assertThat(result).containsExactly("token-active")
+        }
+
+        @Test
+        @DisplayName("isDeleted=true 제외 - 삭제 사용자는 활성 + 토큰 보유여도 제외된다")
+        fun excludesDeletedUsers() {
+            // Given
+            persistEmployee(employeeCode = "C001", appLoginActive = true, isDeleted = false, fcmToken = "token-not-deleted")
+            persistEmployee(employeeCode = "C002", appLoginActive = true, isDeleted = null, fcmToken = "token-deleted-null")
+            persistEmployee(employeeCode = "C003", appLoginActive = true, isDeleted = true, fcmToken = "token-deleted")
+
+            // When
+            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+
+            // Then — isDeleted=true 만 제외, null/false 는 포함
+            assertThat(result).containsExactlyInAnyOrder("token-not-deleted", "token-deleted-null")
+        }
+
+        @Test
+        @DisplayName("fcmToken null/빈문자열 제외 - 토큰 미보유 사용자는 제외된다")
+        fun excludesBlankTokens() {
+            // Given
+            persistEmployee(employeeCode = "D001", appLoginActive = true, fcmToken = "token-valid")
+            persistEmployee(employeeCode = "D002", appLoginActive = true, fcmToken = null)
+            persistEmployee(employeeCode = "D003", appLoginActive = true, fcmToken = "")
+
+            // When
+            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+
+            // Then
+            assertThat(result).containsExactly("token-valid")
+        }
+
+        @Test
+        @DisplayName("지점공지(BRANCH) - costCenterCode 일치 활성 사용자만 반환, 다른 지점 제외")
+        fun branchFiltersByCostCenterCode() {
+            // Given
+            persistEmployee(employeeCode = "E001", appLoginActive = true, costCenterCode = "X", fcmToken = "token-X-1")
+            persistEmployee(employeeCode = "E002", appLoginActive = true, costCenterCode = "X", fcmToken = "token-X-2")
+            persistEmployee(employeeCode = "E003", appLoginActive = true, costCenterCode = "Y", fcmToken = "token-Y")
+            // 지점 일치하지만 비활성 → 제외
+            persistEmployee(employeeCode = "E004", appLoginActive = false, costCenterCode = "X", fcmToken = "token-X-inactive")
+
+            // When
+            val result = noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, "X")
+
+            // Then
+            assertThat(result).containsExactlyInAnyOrder("token-X-1", "token-X-2")
+        }
+
+        @Test
+        @DisplayName("지점공지(BRANCH) + branchCode=null - 오발송 방지로 빈 목록 즉시 반환")
+        fun branchWithNullBranchCodeReturnsEmpty() {
+            // Given — 활성 + 토큰 보유 사용자가 있어도 branchCode 가 비면 대상 없음
+            persistEmployee(employeeCode = "F001", appLoginActive = true, costCenterCode = "X", fcmToken = "token-F")
+
+            // When
+            val result = noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, null)
+
+            // Then
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        @DisplayName("distinct - 동일 fcmToken 은 한 번만 반환된다")
+        fun returnsDistinctTokens() {
+            // Given — 서로 다른 사원이지만 우연히 동일 토큰(멀티기기 잔재 등)
+            persistEmployee(employeeCode = "G001", appLoginActive = true, fcmToken = "dup-token")
+            persistEmployee(employeeCode = "G002", appLoginActive = true, fcmToken = "dup-token")
+
+            // When
+            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+
+            // Then
+            assertThat(result).containsExactly("dup-token")
         }
     }
 }

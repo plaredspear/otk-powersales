@@ -17,6 +17,7 @@ import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.domain.support.notice.exception.BranchRequiredException
 import com.otoki.powersales.domain.support.notice.exception.NoticeNotPublishedException
 import com.otoki.powersales.domain.support.notice.exception.NoticeScopeNotPushableException
+import com.otoki.powersales.domain.support.notice.exception.NoticeCategoryNotPushableException
 import com.otoki.powersales.domain.support.notice.repository.NoticePushLogRepository
 import com.otoki.powersales.platform.push.sender.FcmSendResult
 import com.otoki.powersales.platform.push.sender.FcmSender
@@ -1598,6 +1599,19 @@ class NoticeServiceTest {
 
             assertThatThrownBy { noticeService.sendPush(14L, senderId = 7L) }
                 .isInstanceOf(NoticeScopeNotPushableException::class.java)
+            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("교육 공지는 모바일 목록 미노출이므로 발송할 수 없다")
+        fun rejectsEducationCategory() {
+            val notice = createNotice(id = 15L, category = NoticeCategory.EDUCATION)
+            every { noticeRepository.findById(15L) } returns Optional.of(notice)
+
+            assertThatThrownBy { noticeService.sendPush(15L, senderId = 7L) }
+                .isInstanceOf(NoticeCategoryNotPushableException::class.java)
+            // 대상 선별 쿼리조차 호출하지 않고 조기 차단한다.
+            verify(exactly = 0) { noticeRepository.findPushTargetTokens(any(), any()) }
             verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
         }
     }

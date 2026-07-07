@@ -103,7 +103,7 @@ class NoticeRepositoryCustomImpl(
         category: NoticeCategory,
         branchCode: String?
     ): List<String> {
-        // 지점공지는 지점코드 매칭 사용자만, 그 외(회사/교육)는 전 사용자.
+        // 지점공지는 지점코드 매칭 사용자만, 그 외(회사)는 전 사용자.
         // 지점공지인데 branchCode 가 비면 대상 없음 (오발송 방지).
         val branchCondition = if (category == NoticeCategory.BRANCH) {
             if (branchCode.isNullOrBlank()) return emptyList()
@@ -118,6 +118,10 @@ class NoticeRepositoryCustomImpl(
             .from(employee)
             .join(employee.employeeInfo, employeeInfo)
             .where(
+                // 앱 로그인 활성(재직) 사용자만 — 퇴사/휴직/잠금 시 SAP 인바운드가 appLoginActive 를 false 로 내린다.
+                // 로그아웃 없이 퇴사한 사용자의 stale fcmToken 오발송을 차단 (여사원 표준 활성 필터와 정합).
+                employee.appLoginActive.isTrue,
+                employee.isDeleted.isNull.or(employee.isDeleted.isFalse),
                 employeeInfo.fcmToken.isNotNull,
                 employeeInfo.fcmToken.ne(""),
                 branchCondition,
