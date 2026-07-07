@@ -89,6 +89,8 @@ class AdminPromotionEmployeeServiceTest {
         // 핵심필드 변경 시 schedule cascade delete 전 dangling reference 제거용 saveAndFlush
         // (relaxUnitFun 대상이 아니므로 명시 stub 필요) — 각 테스트에서 override 가능.
         every { promotionEmployeeRepository.saveAndFlush(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
+        // createEmployee 의 name("PE"+8자리) 채번 (non-Unit 반환이라 명시 stub 필요) — 각 테스트에서 override 가능.
+        every { promotionEmployeeRepository.getNextPromotionEmployeeNumberSeq() } returns 1L
     }
 
     @Nested
@@ -202,6 +204,19 @@ class AdminPromotionEmployeeServiceTest {
 
             val result = service.createEmployee(10L, createRequest())
             assertThat(result.employeeCode).isEqualTo("20030117")
+        }
+
+        @Test
+        @DisplayName("name 채번 - seq=7 -> 'PE00000007' 부여")
+        fun createEmployee_nameAutoNumber() {
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
+            every { promotionEmployeeRepository.getNextPromotionEmployeeNumberSeq() } returns 7L
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            stubRollup()
+
+            val result = service.createEmployee(10L, createRequest())
+            assertThat(result.name).isEqualTo("PE00000007")
         }
 
         @Test
@@ -1137,6 +1152,44 @@ class AdminPromotionEmployeeServiceTest {
             }
             assertThat(ex.errors[0].errorCode).isEqualTo("SCHEDULE_DATE_OUT_OF_RANGE")
             assertThat(ex.errors[0].itemIndex).isEqualTo(0)
+        }
+
+        @Test
+        @DisplayName("기준단가 미입력 -> VALUES_REQUIRED 에러 수집")
+        fun batchUpdate_basePriceNull() {
+            val pe = createPe(id = 1L)
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, basePrice = null)
+            ))
+
+            val ex = assertThrows<BatchValidationException> {
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
+            }
+            assertThat(ex.errors[0].errorCode).isEqualTo("VALUES_REQUIRED")
+            assertThat(ex.errors[0].message).contains("기준단가")
+        }
+
+        @Test
+        @DisplayName("목표수량 미입력 -> VALUES_REQUIRED 에러 수집")
+        fun batchUpdate_dailyTargetCountNull() {
+            val pe = createPe(id = 1L)
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, dailyTargetCount = null)
+            ))
+
+            val ex = assertThrows<BatchValidationException> {
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
+            }
+            assertThat(ex.errors[0].errorCode).isEqualTo("VALUES_REQUIRED")
+            assertThat(ex.errors[0].message).contains("목표수량")
         }
 
         @Test

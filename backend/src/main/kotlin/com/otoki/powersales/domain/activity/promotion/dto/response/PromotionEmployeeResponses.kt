@@ -75,6 +75,7 @@ data class PromotionEmployeeListResponse(
 
 data class PromotionEmployeeDetailResponse(
     val id: Long,
+    val name: String?,
     val promotionId: Long,
     val employeeId: Long?,
     val employeeCode: String?,
@@ -113,6 +114,7 @@ data class PromotionEmployeeDetailResponse(
         ): PromotionEmployeeDetailResponse =
             PromotionEmployeeDetailResponse(
                 id = entity.id,
+                name = entity.name,
                 promotionId = entity.promotionId!!,
                 employeeId = entity.employeeId,
                 employeeCode = employeeCode,

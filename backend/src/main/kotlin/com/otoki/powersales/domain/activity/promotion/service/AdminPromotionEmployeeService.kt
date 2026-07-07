@@ -167,9 +167,14 @@ class AdminPromotionEmployeeService(
         validateProfessionalTeamMatch(promotion, resolved?.id ?: request.employeeId)
             ?.let { throw TeamCategoryMismatchException(it) }
 
+        // SF AutoNumber "행사사원#"("PE" + 8자리) 동등 채번
+        val seq = promotionEmployeeRepository.getNextPromotionEmployeeNumberSeq()
+        val name = "PE" + String.format("%08d", seq)
+
         val pe = promotionEmployeeRepository.save(
             PromotionEmployee(
                 promotionId = promotionId,
+                name = name,
                 employeeId = resolved?.id ?: request.employeeId,
                 scheduleDate = request.scheduleDate,
                 workStatus = request.workStatus?.let { WorkingType.fromDisplayNameOrNull(it) } ?: DEFAULT_WORK_STATUS,
@@ -410,6 +415,14 @@ class AdminPromotionEmployeeService(
                 index, item.employeeId, "SCHEDULE_DATE_OUT_OF_RANGE",
                 "투입일(${item.scheduleDate})이 행사 기간(${promotion.startDate} ~ ${promotion.endDate})을 벗어납니다"
             )
+        }
+
+        // 3-1. 기준단가·목표수량 필수 (목표금액은 두 값으로 자동 산출되는 파생값)
+        if (item.basePrice == null) {
+            return BatchItemError(index, item.employeeId, "VALUES_REQUIRED", "기준단가는 필수 항목입니다")
+        }
+        if (item.dailyTargetCount == null) {
+            return BatchItemError(index, item.employeeId, "VALUES_REQUIRED", "목표수량은 필수 항목입니다")
         }
 
         // 4. 근무상태 (null 허용)

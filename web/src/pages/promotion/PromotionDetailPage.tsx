@@ -17,7 +17,6 @@ import {
   Tooltip,
   Typography,
   message,
-  notification,
 } from 'antd';
 import { CheckCircleFilled, CloseCircleFilled, CloseOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -69,6 +68,7 @@ const WORK_TYPE3_OPTIONS = [
 // Editable row data during edit mode
 interface EditableRow {
   id: number;
+  name: string | null;
   employeeId: number | null;
   employeeCode: string | null;
   scheduleDate: string | null;
@@ -97,6 +97,7 @@ interface EditableRow {
 function toEditableRow(pe: PromotionEmployee): EditableRow {
   return {
     id: pe.id,
+    name: pe.name,
     employeeId: pe.employeeId,
     employeeCode: pe.employeeCode,
     scheduleDate: pe.scheduleDate,
@@ -124,6 +125,8 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
 
 const REQUIRED_FIELDS: (keyof EditableRow)[] = [
   'scheduleDate',
+  'basePrice',
+  'dailyTargetCount',
 ];
 
 export default function PromotionDetailPage() {
@@ -662,13 +665,13 @@ export default function PromotionDetailPage() {
         setErrorRowIds(errorIds);
         setErrorMessages(msgs);
 
-        // notification으로 항목별 상세 에러 표시
+        // 화면 중앙 모달로 항목별 상세 에러 표시
         const maxDisplay = 5;
         const displayErrors = err.errors.slice(0, maxDisplay);
         const remaining = err.errors.length - maxDisplay;
-        notification.error({
-          message: `검증 오류 (${err.errors.length}건)`,
-          description: (
+        Modal.error({
+          title: `검증 오류 (${err.errors.length}건)`,
+          content: (
             <ul style={{ margin: 0, paddingLeft: 16 }}>
               {displayErrors.map((itemErr, idx) => {
                 const rowNum = itemErr.itemIndex + 1;
@@ -677,8 +680,7 @@ export default function PromotionDetailPage() {
               {remaining > 0 && <li>외 {remaining}건</li>}
             </ul>
           ),
-          placement: 'topRight',
-          duration: 0,
+          okText: '확인',
         });
       } else {
         message.error(err instanceof Error ? err.message : '일괄 수정에 실패했습니다');
@@ -923,7 +925,13 @@ export default function PromotionDetailPage() {
 
   // --- 편집 모드 컬럼 ---
   const editColumns: ColumnsType<EditableRow> = [
-      { title: 'NO.', dataIndex: 'id', width: 70, align: 'center' as const },
+      {
+        title: 'NO.',
+        dataIndex: 'name',
+        width: 110,
+        align: 'center' as const,
+        render: (name: string | null) => name ?? '-',
+      },
       {
         title: <span>행사사원<span style={{ color: '#fa8c16', marginLeft: 2 }}>**</span></span>,
         width: 220,
@@ -1022,7 +1030,7 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '기준단가',
+        title: <span>기준단가<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
         dataIndex: 'basePrice',
         width: 100,
         render: (_: unknown, record: EditableRow) => (
@@ -1036,7 +1044,7 @@ export default function PromotionDetailPage() {
         ),
       },
       {
-        title: '목표수량',
+        title: <span>목표수량<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
         dataIndex: 'dailyTargetCount',
         width: 90,
         render: (_: unknown, record: EditableRow) => (
@@ -1220,6 +1228,7 @@ export default function PromotionDetailPage() {
       {
         title: '삭제',
         width: 60,
+        fixed: 'right',
         render: (_: unknown, record: EditableRow) => (
           <Popconfirm
             title="삭제하시겠습니까?"
@@ -1379,6 +1388,12 @@ export default function PromotionDetailPage() {
                     <li><b>격고</b>: 같은 날 최대 2건까지 가능. 단, 고정이 있거나 순회가 함께 있으면 불가</li>
                     <li><b>순회</b>: 고정이 있거나 격고가 2건이면 불가</li>
                   </ul>
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div style={{ fontWeight: 'bold', marginBottom: 4 }}>행사사원 삭제 방법</div>
+                  <div>
+                    근무등록 전에 행사사원을 삭제하려면 <b>편집</b> 버튼을 누른 뒤,
+                    표 <b>맨 오른쪽에 고정된 삭제 버튼</b>을 클릭하세요.
+                  </div>
                 </div>
               }
             >
@@ -1450,7 +1465,7 @@ export default function PromotionDetailPage() {
             onRow={(record) => ({
               title: errorMessages.get(record.id) || undefined,
             })}
-            scroll={{ x: 2100 }}
+            scroll={{ x: 2140 }}
           />
         ) : (
           <ResizableTable<PromotionEmployee>
