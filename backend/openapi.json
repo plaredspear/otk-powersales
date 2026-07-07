@@ -14749,7 +14749,6 @@
             "type" : [ "array", "null" ]
           }
         },
-        "required" : [ "reqItemList" ],
         "type" : "object"
       },
       "ErpOrderRequestItem" : {
@@ -17598,6 +17597,10 @@
           },
           "title" : {
             "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -17740,6 +17743,10 @@
             "maxLength" : 200,
             "minLength" : 0,
             "type" : "string"
+          },
+          "version" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
           }
         },
         "required" : [ "category", "content", "scope", "title" ],

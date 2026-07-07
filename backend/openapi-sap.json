@@ -555,7 +555,6 @@
             "type" : [ "array", "null" ]
           }
         },
-        "required" : [ "reqItemList" ],
         "type" : "object"
       },
       "ErpOrderRequestItem" : {
