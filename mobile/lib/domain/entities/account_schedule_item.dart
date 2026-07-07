@@ -8,6 +8,7 @@ class AccountScheduleItem {
   final String accountName;
   final String? accountTypeCode;
   final String workCategory;
+  final String? workCategory2;
   final String? workCategory3;
   final String address;
   final double? latitude;
@@ -23,6 +24,7 @@ class AccountScheduleItem {
     required this.accountName,
     this.accountTypeCode,
     required this.workCategory,
+    this.workCategory2,
     this.workCategory3,
     required this.address,
     this.latitude,
@@ -39,6 +41,7 @@ class AccountScheduleItem {
     String? accountName,
     String? accountTypeCode,
     String? workCategory,
+    String? workCategory2,
     String? workCategory3,
     String? address,
     double? latitude,
@@ -49,11 +52,13 @@ class AccountScheduleItem {
   }) {
     return AccountScheduleItem(
       scheduleId: scheduleId ?? this.scheduleId,
-      displayWorkScheduleId: displayWorkScheduleId ?? this.displayWorkScheduleId,
+      displayWorkScheduleId:
+          displayWorkScheduleId ?? this.displayWorkScheduleId,
       accountId: accountId ?? this.accountId,
       accountName: accountName ?? this.accountName,
       accountTypeCode: accountTypeCode ?? this.accountTypeCode,
       workCategory: workCategory ?? this.workCategory,
+      workCategory2: workCategory2 ?? this.workCategory2,
       workCategory3: workCategory3 ?? this.workCategory3,
       address: address ?? this.address,
       latitude: latitude ?? this.latitude,
@@ -72,6 +77,7 @@ class AccountScheduleItem {
       'accountName': accountName,
       'accountTypeCode': accountTypeCode,
       'workCategory': workCategory,
+      'workCategory2': workCategory2,
       'workCategory3': workCategory3,
       'address': address,
       'latitude': latitude,
@@ -90,6 +96,7 @@ class AccountScheduleItem {
       accountName: json['accountName'] as String,
       accountTypeCode: json['accountTypeCode'] as String?,
       workCategory: json['workCategory'] as String,
+      workCategory2: json['workCategory2'] as String?,
       workCategory3: json['workCategory3'] as String?,
       address: json['address'] as String? ?? '',
       latitude: (json['latitude'] as num?)?.toDouble(),

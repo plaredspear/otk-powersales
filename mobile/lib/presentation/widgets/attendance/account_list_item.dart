@@ -34,6 +34,7 @@ class AccountListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.check_circle, color: AppColors.success, size: 24),
           const SizedBox(width: 12),
@@ -41,10 +42,15 @@ class AccountListItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildNameWithBadges(
-                  nameColor: AppColors.textTertiary,
-                  nameWeight: FontWeight.w500,
+                Text(
+                  account.accountName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textTertiary,
+                  ),
                 ),
+                _buildCategoryLine(),
                 const SizedBox(height: 4),
                 Text(
                   account.address,
@@ -56,6 +62,7 @@ class AccountListItem extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           _buildRegisteredWorkTypeBadge(),
         ],
       ),
@@ -79,6 +86,7 @@ class AccountListItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
               isSelected
@@ -92,10 +100,17 @@ class AccountListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildNameWithBadges(
-                    nameColor: AppColors.textPrimary,
-                    nameWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  Text(
+                    account.accountName,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
+                  _buildCategoryLine(),
                   const SizedBox(height: 4),
                   Text(
                     account.address,
@@ -124,79 +139,31 @@ class AccountListItem extends StatelessWidget {
     );
   }
 
-  /// 거래처명 + 근무유형 배지. 이름 확인이 중요하므로 이름은 절대 잘리지 않게
-  /// 카드 전폭까지 자동 줄바꿈(ellipsis 미적용)하고, 배지는 Wrap 으로 이름 뒤에
-  /// 흐르다 공간이 부족하면 다음 줄로 밀려 내려간다.
-  Widget _buildNameWithBadges({
-    required Color nameColor,
-    required FontWeight nameWeight,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Wrap(
-          spacing: 6,
-          runSpacing: 4,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: constraints.maxWidth),
-              child: Text(
-                account.accountName,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: nameWeight,
-                  color: nameColor,
-                ),
-              ),
-            ),
-            _buildWorkCategoryBadge(),
-            ..._buildWorkCategory3Badge(),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildWorkCategoryBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.otokiYellow.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        account.workCategory,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
-        ),
-      ),
-    );
-  }
-
-  /// 근무유형3(고정/격고/순회) 배지. 진열 거래처에만 값이 있으므로 없으면 미표시.
-  List<Widget> _buildWorkCategory3Badge() {
-    final category3 = account.workCategory3;
-    if (category3 == null || category3.isEmpty) return const [];
-
-    return [
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: AppColors.otokiBlue.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          category3,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.otokiBlue,
-          ),
-        ),
-      ),
+  /// 근무유형을 레거시처럼 `진열/상시/순회` 형태로 이름 아래 별도 줄에 슬래시로
+  /// 표시(근무구분/근무형태/순회유형). 이름 확인이 최우선이므로 배지 대신 텍스트
+  /// 줄로 분리해 이름이 절대 잘리지 않게 한다. 값이 없는 토큰은 건너뛰고, 전부
+  /// 비면 줄 자체를 렌더링하지 않는다.
+  Widget _buildCategoryLine() {
+    final parts = <String>[
+      if (account.workCategory.isNotEmpty) account.workCategory,
+      if (account.workCategory2 != null && account.workCategory2!.isNotEmpty)
+        account.workCategory2!,
+      if (account.workCategory3 != null && account.workCategory3!.isNotEmpty)
+        account.workCategory3!,
     ];
+    if (parts.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        parts.join('/'),
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: AppColors.textSecondary,
+        ),
+      ),
+    );
   }
 
   Widget _buildRegisteredWorkTypeBadge() {
