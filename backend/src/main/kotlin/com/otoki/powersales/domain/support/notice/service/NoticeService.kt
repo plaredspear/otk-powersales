@@ -143,6 +143,19 @@ class NoticeService(
             )
         }
 
+        // 지금 발송 시 예상 대상 수 — 발송 가능한 공지(발행 + 영업사원 scope 아님)에서만 계산한다.
+        // 발송 불가 공지는 발송 버튼 자체가 노출되지 않으므로 null 로 두어 web 이 표시를 생략하게 한다.
+        val category = notice.category
+        val pushTargetCount = if (
+            category != null &&
+            notice.status == NoticeStatus.PUBLISHED &&
+            notice.scope != NoticeScope.SALES_EMPLOYEE
+        ) {
+            noticeRepository.countPushTargets(category, notice.branchCode)
+        } else {
+            null
+        }
+
         return NoticePostDetailResponse(
             id = notice.id,
             scope = notice.scope?.displayName,
@@ -158,7 +171,8 @@ class NoticeService(
             version = notice.version,
             images = images,
             pushSentCount = pushSentCount,
-            lastPush = lastPush
+            lastPush = lastPush,
+            pushTargetCount = pushTargetCount
         )
     }
 

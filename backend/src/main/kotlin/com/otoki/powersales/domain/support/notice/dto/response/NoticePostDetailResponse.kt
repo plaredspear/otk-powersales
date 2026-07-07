@@ -23,7 +23,12 @@ data class NoticePostDetailResponse(
     /** push 누적 발송 횟수 (0=미발송). 중복 발송 경고 판단용. */
     val pushSentCount: Long = 0,
     /** 마지막 push 발송 이력 (미발송이면 null). */
-    val lastPush: NoticePushInfo? = null
+    val lastPush: NoticePushInfo? = null,
+    /**
+     * 지금 발송 시 예상 push 대상 사원 수 (발송 전 표시용).
+     * 발송 불가 공지(미발행 / 영업사원 scope)면 null — 이 경우 발송 버튼도 노출되지 않는다.
+     */
+    val pushTargetCount: Long? = null
 )
 
 /**

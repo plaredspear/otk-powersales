@@ -60,6 +60,8 @@ export interface NoticeDetail {
   pushSentCount: number;
   /** 마지막 push 발송 이력 (미발송이면 null). */
   lastPush: NoticePushInfo | null;
+  /** 지금 발송 시 예상 push 대상 사원 수. 발송 불가 공지(미발행/영업사원)면 null. */
+  pushTargetCount: number | null;
 }
 
 export interface NoticePushInfo {
