@@ -37,4 +37,18 @@ interface NoticeRepositoryCustom {
         category: NoticeCategory,
         branchCode: String?
     ): List<String>
+
+    /**
+     * 공지 push 발송 대상 사원 수를 조회한다 (발송 전 예상 대상 수 표시용).
+     *
+     * 선별 규칙은 [findPushTargetTokens] 와 동일 (동일 WHERE 조건의 count).
+     * 지점공지인데 branchCode 가 비면 0 (오발송 방지 규칙 정합).
+     *
+     * @param category 공지 카테고리
+     * @param branchCode 지점공지일 때 매칭할 지점코드 (그 외 카테고리는 무시)
+     */
+    fun countPushTargets(
+        category: NoticeCategory,
+        branchCode: String?
+    ): Long
 }

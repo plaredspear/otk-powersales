@@ -1,6 +1,7 @@
 import { useContext, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Descriptions, Modal, Space, Spin, Tag, message } from 'antd';
+import { Button, Descriptions, Modal, Popover, Space, Spin, Tag, message } from 'antd';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import DOMPurify from 'dompurify';
 import { useNoticeDetail } from '@/hooks/notice/useNoticeDetail';
 import {
@@ -20,6 +21,36 @@ const STATUS_TAG: Record<string, { color: string; label: string }> = {
   DRAFT: { color: 'default', label: '임시저장' },
   PUBLISHED: { color: 'success', label: '발행' },
 };
+
+// 푸시 발송 대상 선별 규칙 안내 (백엔드 findPushTargetTokens 정합).
+// 지점공지는 소속 지점(costCenterCode) 일치 사용자만, 그 외(회사/교육)는 전 사용자.
+function pushTargetContent(category: string, branch: string | null, targetCount: number | null) {
+  const isBranch = category === 'BRANCH';
+  return (
+    <div style={{ fontSize: 13, maxWidth: 280 }}>
+      <div style={{ fontWeight: 600, marginBottom: 6 }}>푸시 발송 대상</div>
+      <ul style={{ paddingLeft: 18, margin: 0 }}>
+        {isBranch ? (
+          <li>
+            소속 지점이 <b>{branch || '이 공지의 지점'}</b>과 일치하는 앱 사용자
+          </li>
+        ) : (
+          <li>앱을 사용하는 전체 사용자</li>
+        )}
+        <li>재직(앱 로그인 활성) 중인 사용자</li>
+        <li>앱 푸시 토큰을 보유한 사용자</li>
+      </ul>
+      <div style={{ color: '#8c8c8c', marginTop: 6 }}>
+        퇴사·휴직·잠금 사용자, 토큰 미보유 사용자는 제외됩니다.
+      </div>
+      {targetCount !== null && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f0f0f0' }}>
+          현재 예상 대상: <b>{targetCount.toLocaleString()}명</b>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function NoticeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -128,9 +159,25 @@ export default function NoticeDetailPage() {
         </Button>
         <Space>
           {notice.status === 'PUBLISHED' && notice.scope !== '영업사원' && (
-            <Button onClick={handleSendPush} loading={pushMutation.isPending}>
-              푸시 발송
-            </Button>
+            <Space size={4}>
+              <Button onClick={handleSendPush} loading={pushMutation.isPending}>
+                푸시 발송
+              </Button>
+              {notice.pushTargetCount !== null && (
+                <span style={{ color: '#8c8c8c', fontSize: 13 }}>
+                  대상 {notice.pushTargetCount.toLocaleString()}명
+                </span>
+              )}
+              <Popover
+                trigger="click"
+                content={pushTargetContent(notice.category, notice.branch, notice.pushTargetCount)}
+              >
+                <InfoCircleOutlined
+                  style={{ color: '#8c8c8c', cursor: 'pointer' }}
+                  aria-label="푸시 발송 대상 조건"
+                />
+              </Popover>
+            </Space>
           )}
           {notice.status === 'PUBLISHED' ? (
             <Button onClick={handleUnpublish} loading={unpublishMutation.isPending}>

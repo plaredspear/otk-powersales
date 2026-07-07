@@ -522,4 +522,96 @@ class NoticeRepositoryTest {
             assertThat(result).containsExactly("dup-token")
         }
     }
+
+    @Nested
+    @DisplayName("countPushTargets - 푸시 대상 수 조회 (findPushTargetTokens 와 정합)")
+    inner class CountPushTargetsTests {
+
+        /** FindPushTargetTokensTests 와 동일한 방식으로 대상 Employee(+EmployeeInfo) 를 영속한다. */
+        private fun persistEmployee(
+            employeeCode: String,
+            appLoginActive: Boolean?,
+            isDeleted: Boolean? = null,
+            costCenterCode: String? = null,
+            fcmToken: String? = null
+        ): Employee {
+            val employee = Employee(
+                employeeCode = employeeCode,
+                name = "테스트사원-$employeeCode",
+                isDeleted = isDeleted,
+                fcmToken = fcmToken
+            ).apply {
+                this.appLoginActive = appLoginActive
+                this.costCenterCode = costCenterCode
+            }
+            val persisted = testEntityManager.persistAndFlush(employee)
+            testEntityManager.clear()
+            return persisted
+        }
+
+        @Test
+        @DisplayName("회사공지 - 활성 필터 적용 후 대상 수는 토큰 목록 크기와 같다")
+        fun companyCountMatchesTokenSize() {
+            // Given — 포함 2 (활성+토큰) / 제외 3 (비활성, 삭제, 토큰없음)
+            persistEmployee(employeeCode = "H001", appLoginActive = true, fcmToken = "token-H001")
+            persistEmployee(employeeCode = "H002", appLoginActive = true, fcmToken = "token-H002")
+            persistEmployee(employeeCode = "H003", appLoginActive = false, fcmToken = "token-inactive")
+            persistEmployee(employeeCode = "H004", appLoginActive = true, isDeleted = true, fcmToken = "token-deleted")
+            persistEmployee(employeeCode = "H005", appLoginActive = true, fcmToken = null)
+
+            // When
+            val count = noticeRepository.countPushTargets(NoticeCategory.COMPANY, null)
+            val tokens = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+
+            // Then — 핵심 불변식: 예상 대상 수 == 실제 발송 토큰 수
+            assertThat(count).isEqualTo(2L)
+            assertThat(count).isEqualTo(tokens.size.toLong())
+        }
+
+        @Test
+        @DisplayName("지점공지 - costCenterCode 일치 사용자만 카운트, 토큰 목록 크기와 같다")
+        fun branchCountMatchesTokenSize() {
+            // Given
+            persistEmployee(employeeCode = "I001", appLoginActive = true, costCenterCode = "X", fcmToken = "token-X-1")
+            persistEmployee(employeeCode = "I002", appLoginActive = true, costCenterCode = "X", fcmToken = "token-X-2")
+            persistEmployee(employeeCode = "I003", appLoginActive = true, costCenterCode = "Y", fcmToken = "token-Y")
+
+            // When
+            val count = noticeRepository.countPushTargets(NoticeCategory.BRANCH, "X")
+            val tokens = noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, "X")
+
+            // Then
+            assertThat(count).isEqualTo(2L)
+            assertThat(count).isEqualTo(tokens.size.toLong())
+        }
+
+        @Test
+        @DisplayName("지점공지 + branchCode=null - 오발송 방지로 0 반환")
+        fun branchWithNullBranchCodeReturnsZero() {
+            // Given — 활성 + 토큰 보유 사용자가 있어도 branchCode 가 비면 대상 없음
+            persistEmployee(employeeCode = "J001", appLoginActive = true, costCenterCode = "X", fcmToken = "token-J")
+
+            // When
+            val count = noticeRepository.countPushTargets(NoticeCategory.BRANCH, null)
+
+            // Then
+            assertThat(count).isZero()
+        }
+
+        @Test
+        @DisplayName("distinct - 동일 fcmToken 은 1건으로 카운트된다")
+        fun countsDistinctTokens() {
+            // Given — 서로 다른 사원이 동일 토큰(멀티기기 잔재 등)
+            persistEmployee(employeeCode = "K001", appLoginActive = true, fcmToken = "dup-token")
+            persistEmployee(employeeCode = "K002", appLoginActive = true, fcmToken = "dup-token")
+
+            // When
+            val count = noticeRepository.countPushTargets(NoticeCategory.COMPANY, null)
+            val tokens = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+
+            // Then — distinct 정합 (토큰 목록도 1건)
+            assertThat(count).isEqualTo(1L)
+            assertThat(count).isEqualTo(tokens.size.toLong())
+        }
+    }
 }
