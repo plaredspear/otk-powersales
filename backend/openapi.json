@@ -20965,6 +20965,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
           "otherSalesAmount" : {
             "type" : [ "number", "null" ]
           },
