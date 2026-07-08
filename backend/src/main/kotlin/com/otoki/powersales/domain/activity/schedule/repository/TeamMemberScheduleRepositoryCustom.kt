@@ -5,7 +5,6 @@ import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadRow
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 /**
  * 사원의 가장 최근 출근(근무)등록 1건의 정보 (여사원 현황 근무형태/근무거래처 컬럼용).
@@ -47,32 +46,6 @@ interface TeamMemberScheduleRepositoryCustom {
      * @return Map<employeeId, LatestAttendanceInfo> (출근등록 1건 이상인 사원만 포함)
      */
     fun findLatestAttendanceInfoByEmployeeIds(employeeIds: List<Long>): Map<Long, LatestAttendanceInfo>
-
-    /**
-     * 출근 등록 시점의 attendance_log id-FK 채움 (Spec #789 — sfid 비즈니스 로직 사용 금지 정책 정합).
-     * 운영에서는 HC sync 가 sfid 컬럼을 채우고 본 메서드는 application 레이어 backlink 보강 책임 (dev mock 측 동등 시뮬레이션 포함).
-     */
-    fun updateAttendanceLog(id: Long, attendanceLogId: Long)
-
-    fun updateSafetyCheckData(
-        id: Long,
-        equipment1: String?,
-        equipment2: String?,
-        equipment3: String?,
-        equipment4: String?,
-        equipment5: String?,
-        equipment6: String?,
-        equipment7: String?,
-        equipment8: String?,
-        equipment9: String?,
-        yesChkCnt: Double?,
-        noChkCnt: Double?,
-        startTime: LocalDateTime?,
-        completeTime: LocalDateTime?,
-        precaution: String?,
-        precautionChk: Double?,
-        traversalFlag: String?
-    )
 
     fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): List<TeamMemberSchedule>
 

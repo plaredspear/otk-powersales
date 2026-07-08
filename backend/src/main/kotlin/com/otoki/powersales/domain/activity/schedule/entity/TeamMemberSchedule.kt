@@ -146,52 +146,52 @@ class TeamMemberSchedule(
     @SFField("TraversalFlag__c")
     @FieldName("순회체크")
     @Column(name = "traversal_flag", length = 10)
-    val traversalFlag: String? = null,
+    var traversalFlag: String? = null,
 
     @SFField("Equipment1__c")
     @FieldName("1) 손목보호대를 착용했습니다.")
     @Column(name = "equipment1", length = 10)
-    val equipment1: String? = null,
+    var equipment1: String? = null,
 
     @SFField("Equipment2__c")
     @FieldName("2) 숨수건(화재피해 예방)을 소지하고 있습니다.")
     @Column(name = "equipment2", length = 10)
-    val equipment2: String? = null,
+    var equipment2: String? = null,
 
     @SFField("Equipment3__c")
     @FieldName("3) 안전화를 착용했습니다.")
     @Column(name = "equipment3", length = 10)
-    val equipment3: String? = null,
+    var equipment3: String? = null,
 
     @SFField("Equipment4__c")
     @FieldName("4) 진열업무시 코팅장갑 및 허리보호대를 착용합니다.")
     @Column(name = "equipment4", length = 10)
-    val equipment4: String? = null,
+    var equipment4: String? = null,
 
     @SFField("Equipment5__c")
     @FieldName("5) 진열대가 높을 경우 안전사다리를 사용합니다.")
     @Column(name = "equipment5", length = 10)
-    val equipment5: String? = null,
+    var equipment5: String? = null,
 
     @SFField("Equipment6__c")
     @FieldName("6) 시식행사 진행시 위생장갑을 사용합니다.")
     @Column(name = "equipment6", length = 10)
-    val equipment6: String? = null,
+    var equipment6: String? = null,
 
     @SFField("Equipment7__c")
     @FieldName("7) 오뚜기 유니폼을 착용하였습니다.")
     @Column(name = "equipment7", length = 10)
-    val equipment7: String? = null,
+    var equipment7: String? = null,
 
     @SFField("Equipment8__c")
     @FieldName("8) 오뚜기 판매여사원 명찰을 착용하였습니다.")
     @Column(name = "equipment8", length = 10)
-    val equipment8: String? = null,
+    var equipment8: String? = null,
 
     @SFField("Equipment9__c")
     @FieldName("9) 코로나 예방 마스크 착용 했습니다.")
     @Column(name = "equipment9", length = 10)
-    val equipment9: String? = null,
+    var equipment9: String? = null,
 
     @SFField("Equipment10__c")
     @FieldName("10) 확장1")
@@ -201,32 +201,32 @@ class TeamMemberSchedule(
     @SFField("Yes_ChkCnt__c")
     @FieldName("&lt;예&gt; 체크 개수")
     @Column(name = "yes_chk_cnt")
-    val yesChkCnt: Double? = null,
+    var yesChkCnt: Double? = null,
 
     @SFField("No_ChkCnt__c")
     @FieldName("&lt;해당없음&gt; 체크 개수")
     @Column(name = "no_chk_cnt")
-    val noChkCnt: Double? = null,
+    var noChkCnt: Double? = null,
 
     @SFField("precaution_chk__c")
     @FieldName("예방사항 총 체크")
     @Column(name = "precaution_chk")
-    val precautionChk: Double? = null,
+    var precautionChk: Double? = null,
 
     @SFField("precaution__c")
     @FieldName("예방사항 통합관리")
     @Column(name = "precaution", length = 3000)
-    val precaution: String? = null,
+    var precaution: String? = null,
 
     @SFField("StartTime__c")
     @FieldName("점검시간")
     @Column(name = "start_time")
-    val startTime: LocalDateTime? = null,
+    var startTime: LocalDateTime? = null,
 
     @SFField("CompleteTime__c")
     @FieldName("완료시간")
     @Column(name = "complete_time")
-    val completeTime: LocalDateTime? = null,
+    var completeTime: LocalDateTime? = null,
 
     @SFField("IsDeleted")
     @FieldName("삭제여부")

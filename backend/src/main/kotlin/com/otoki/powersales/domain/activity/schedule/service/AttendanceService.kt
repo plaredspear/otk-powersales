@@ -13,6 +13,7 @@ import com.otoki.powersales.platform.common.util.GeoUtils
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
 import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.domain.activity.schedule.attendance.AttendanceRegisterRequest
 import com.otoki.powersales.domain.activity.schedule.attendance.AttendanceRegistrar
@@ -282,54 +283,23 @@ class AttendanceService(
         }
 
         // reason(출근 사유)은 신규 모바일 등록 API 에 입력 필드가 없어 항상 null (레거시 home.jsp #reason textarea 미재현).
-        val request = AttendanceRegisterRequest(
-            scheduleId = teamMemberSchedule.id,
-            employeeId = employee.id,
-            accountId = account?.id,
-            attendanceType = attendanceType,
-            equipment1 = safetyCheckSubmission?.equipment1,
-            equipment2 = safetyCheckSubmission?.equipment2,
-            equipment3 = safetyCheckSubmission?.equipment3,
-            equipment4 = safetyCheckSubmission?.equipment4,
-            equipment5 = safetyCheckSubmission?.equipment5,
-            equipment6 = safetyCheckSubmission?.equipment6,
-            equipment7 = safetyCheckSubmission?.equipment7,
-            equipment8 = safetyCheckSubmission?.equipment8,
-            equipment9 = safetyCheckSubmission?.equipment9,
-            yesCount = safetyCheckSubmission?.yesCheckCount,
-            noCount = safetyCheckSubmission?.noCheckCount,
-            startTime = safetyCheckSubmission?.startTime?.toString(),
-            completeTime = safetyCheckSubmission?.completeTime?.toString(),
-            precaution = safetyCheckSubmission?.precaution,
-            precautionCount = safetyCheckSubmission?.precautionCheckCount,
-            traversalFlag = safetyCheckSubmission?.traversalFlag
+        val savedLog = attendanceRegistrar.register(
+            AttendanceRegisterRequest(
+                employeeId = employee.id,
+                accountId = account?.id,
+                attendanceType = attendanceType,
+            )
         )
-        attendanceRegistrar.register(request)
+        // 백링크는 bulk UPDATE 가 아니라 managed entity 에 직접 세팅한다 — bulk 는 persistence context 를
+        // 우회하므로, 이후 stampLegacyWorkReportMeta/refreshIntegration 이 dirty 로 만든 entity 의
+        // 전체 컬럼 flush 가 stale null 로 백링크를 덮어써 고아 출근로그 + 미등록 표시가 발생했다.
+        teamMemberSchedule.attendanceLog = savedLog
 
-        // 6. 후속 처리: SafetyCheckSubmission.completeWorkYn = 'Y' + TMS 안전점검 데이터 반영
+        // 6. 후속 처리: SafetyCheckSubmission.completeWorkYn = 'Y' + TMS 안전점검 stamp
         if (safetyCheckSubmission != null) {
             safetyCheckSubmission.completeWorkYn = "Y"
             safetyCheckSubmissionRepository.save(safetyCheckSubmission)
-
-            teamMemberScheduleRepository.updateSafetyCheckData(
-                id = teamMemberSchedule.id,
-                equipment1 = safetyCheckSubmission.equipment1,
-                equipment2 = safetyCheckSubmission.equipment2,
-                equipment3 = safetyCheckSubmission.equipment3,
-                equipment4 = safetyCheckSubmission.equipment4,
-                equipment5 = safetyCheckSubmission.equipment5,
-                equipment6 = safetyCheckSubmission.equipment6,
-                equipment7 = safetyCheckSubmission.equipment7,
-                equipment8 = safetyCheckSubmission.equipment8,
-                equipment9 = safetyCheckSubmission.equipment9,
-                yesChkCnt = safetyCheckSubmission.yesCheckCount?.toDouble(),
-                noChkCnt = safetyCheckSubmission.noCheckCount?.toDouble(),
-                startTime = safetyCheckSubmission.startTime,
-                completeTime = safetyCheckSubmission.completeTime,
-                precaution = safetyCheckSubmission.precaution,
-                precautionChk = safetyCheckSubmission.precautionCheckCount?.toDouble(),
-                traversalFlag = safetyCheckSubmission.traversalFlag
-            )
+            applySafetyCheckStamp(teamMemberSchedule, safetyCheckSubmission)
         }
 
         // 7. 레거시 WorkReport TMS 메타 stamp + 월별여사원 통합일정(환산 일정) 재집계
@@ -440,54 +410,21 @@ class AttendanceService(
         // 대리등록 분기: 진열=DISPLAY / scheduleId(행사·기배정)=REGULAR (본인 등록과 동일 규칙, 행사 분기 없음)
         val attendanceType = if (displayMaster != null) AttendanceType.DISPLAY else AttendanceType.REGULAR
 
-        val request = AttendanceRegisterRequest(
-            scheduleId = teamMemberSchedule.id,
-            employeeId = targetEmployee.id,
-            accountId = teamMemberSchedule.account?.id,
-            attendanceType = attendanceType,
-            equipment1 = safetyCheckSubmission?.equipment1,
-            equipment2 = safetyCheckSubmission?.equipment2,
-            equipment3 = safetyCheckSubmission?.equipment3,
-            equipment4 = safetyCheckSubmission?.equipment4,
-            equipment5 = safetyCheckSubmission?.equipment5,
-            equipment6 = safetyCheckSubmission?.equipment6,
-            equipment7 = safetyCheckSubmission?.equipment7,
-            equipment8 = safetyCheckSubmission?.equipment8,
-            equipment9 = safetyCheckSubmission?.equipment9,
-            yesCount = safetyCheckSubmission?.yesCheckCount,
-            noCount = safetyCheckSubmission?.noCheckCount,
-            startTime = safetyCheckSubmission?.startTime?.toString(),
-            completeTime = safetyCheckSubmission?.completeTime?.toString(),
-            precaution = safetyCheckSubmission?.precaution,
-            precautionCount = safetyCheckSubmission?.precautionCheckCount,
-            traversalFlag = safetyCheckSubmission?.traversalFlag
+        val savedLog = attendanceRegistrar.register(
+            AttendanceRegisterRequest(
+                employeeId = targetEmployee.id,
+                accountId = teamMemberSchedule.account?.id,
+                attendanceType = attendanceType,
+            )
         )
-        attendanceRegistrar.register(request)
+        // 백링크는 managed entity 에 직접 세팅 (본인 등록과 동일 — bulk UPDATE 는 이후 dirty flush 에 덮여 유실).
+        teamMemberSchedule.attendanceLog = savedLog
 
-        // 후속 처리: completeWorkYn='Y' + TMS 안전점검 데이터 반영 (본인 등록과 동일)
+        // 후속 처리: completeWorkYn='Y' + TMS 안전점검 stamp (본인 등록과 동일)
         if (safetyCheckSubmission != null) {
             safetyCheckSubmission.completeWorkYn = "Y"
             safetyCheckSubmissionRepository.save(safetyCheckSubmission)
-
-            teamMemberScheduleRepository.updateSafetyCheckData(
-                id = teamMemberSchedule.id,
-                equipment1 = safetyCheckSubmission.equipment1,
-                equipment2 = safetyCheckSubmission.equipment2,
-                equipment3 = safetyCheckSubmission.equipment3,
-                equipment4 = safetyCheckSubmission.equipment4,
-                equipment5 = safetyCheckSubmission.equipment5,
-                equipment6 = safetyCheckSubmission.equipment6,
-                equipment7 = safetyCheckSubmission.equipment7,
-                equipment8 = safetyCheckSubmission.equipment8,
-                equipment9 = safetyCheckSubmission.equipment9,
-                yesChkCnt = safetyCheckSubmission.yesCheckCount?.toDouble(),
-                noChkCnt = safetyCheckSubmission.noCheckCount?.toDouble(),
-                startTime = safetyCheckSubmission.startTime,
-                completeTime = safetyCheckSubmission.completeTime,
-                precaution = safetyCheckSubmission.precaution,
-                precautionChk = safetyCheckSubmission.precautionCheckCount?.toDouble(),
-                traversalFlag = safetyCheckSubmission.traversalFlag
-            )
+            applySafetyCheckStamp(teamMemberSchedule, safetyCheckSubmission)
         }
 
         // 레거시 WorkReport TMS 메타 stamp + 월별여사원 통합일정(환산 일정) 재집계
@@ -736,6 +673,33 @@ class AttendanceService(
         teamMemberSchedule.professionalPromotionTeam =
             employee.professionalPromotionTeam?.displayName
                 ?: ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME
+    }
+
+    /**
+     * 안전점검 제출 데이터를 TMS 에 stamp — managed entity 직접 반영.
+     * bulk UPDATE 는 persistence context 를 우회해, 같은 트랜잭션에서 뒤이어 dirty 가 된 entity 의
+     * flush(전체 컬럼 UPDATE)에 덮여 유실된다 ([AttendanceRegistrar] 문서 참조).
+     */
+    private fun applySafetyCheckStamp(
+        teamMemberSchedule: TeamMemberSchedule,
+        submission: SafetyCheckSubmission
+    ) {
+        teamMemberSchedule.equipment1 = submission.equipment1
+        teamMemberSchedule.equipment2 = submission.equipment2
+        teamMemberSchedule.equipment3 = submission.equipment3
+        teamMemberSchedule.equipment4 = submission.equipment4
+        teamMemberSchedule.equipment5 = submission.equipment5
+        teamMemberSchedule.equipment6 = submission.equipment6
+        teamMemberSchedule.equipment7 = submission.equipment7
+        teamMemberSchedule.equipment8 = submission.equipment8
+        teamMemberSchedule.equipment9 = submission.equipment9
+        teamMemberSchedule.yesChkCnt = submission.yesCheckCount?.toDouble()
+        teamMemberSchedule.noChkCnt = submission.noCheckCount?.toDouble()
+        teamMemberSchedule.startTime = submission.startTime
+        teamMemberSchedule.completeTime = submission.completeTime
+        teamMemberSchedule.precaution = submission.precaution
+        teamMemberSchedule.precautionChk = submission.precautionCheckCount?.toDouble()
+        teamMemberSchedule.traversalFlag = submission.traversalFlag
     }
 
     private fun findTeamLeader(costCenterCode: String?): Employee? {

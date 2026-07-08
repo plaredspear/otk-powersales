@@ -39,7 +39,6 @@ import com.otoki.powersales.domain.activity.schedule.exception.InvalidCoordsExce
 import com.otoki.powersales.domain.activity.schedule.exception.SafetyCheckRequiredException
 import com.otoki.powersales.domain.activity.schedule.exception.TeamMemberScheduleNotFoundException
 import com.otoki.powersales.domain.activity.schedule.attendance.AttendanceRegistrar
-import com.otoki.powersales.domain.activity.schedule.attendance.AttendanceRegisterResult
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -798,7 +797,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -876,7 +875,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // 5km 떨어진 좌표 사용 (면제이므로 성공해야 함)
@@ -915,7 +914,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // 10km 떨어진 좌표 사용 (면제이므로 성공해야 함)
@@ -954,7 +953,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When — 좌표 누락이지만 면제 코드이므로 ATT_ACCOUNT_COORDS_MISSING 미발생
@@ -986,7 +985,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1017,7 +1016,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1177,7 +1176,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1207,7 +1206,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1244,7 +1243,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(targetTeamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns allTeamMemberSchedules
 
             // When
@@ -1363,7 +1362,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1526,7 +1525,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -1603,7 +1602,7 @@ class AttendanceServiceTest {
                 }
             } andThen newTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
 
             // When
@@ -1662,7 +1661,7 @@ class AttendanceServiceTest {
             every { displayWorkScheduleRepository.findById(displayWorkScheduleId) } returns Optional.of(master)
             every { teamMemberScheduleRepository.findByEmployeeAndAccountAndWorkingDate(eq(employee), any(), eq(today)) } returns existingTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(existingTms)
 
             // When
@@ -1814,7 +1813,7 @@ class AttendanceServiceTest {
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), AppAuthority.LEADER) } returns emptyList()
             every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
 
             // When
@@ -1932,7 +1931,7 @@ class AttendanceServiceTest {
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), AppAuthority.LEADER) } returns emptyList()
             every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
 
             // When
@@ -1983,7 +1982,7 @@ class AttendanceServiceTest {
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("CC001"), AppAuthority.LEADER) } returns emptyList()
             every { teamMemberScheduleRepository.save(any<TeamMemberSchedule>()) } returns newTms
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(newTms)
 
             // When
@@ -2048,7 +2047,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(tms)
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(tms)
 
             // When
@@ -2092,7 +2091,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { teamMemberScheduleRepository.findById(eventScheduleId) } returns Optional.of(tms)
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(tms)
 
             // When
@@ -2251,7 +2250,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
@@ -2262,26 +2261,47 @@ class AttendanceServiceTest {
             assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
             verify { safetyCheckSubmissionRepository.save(safetyCheck) }
 
-            // Then - TMS 안전점검 데이터 반영 검증
-            verify { teamMemberScheduleRepository.updateSafetyCheckData(
-                id = 10L,
-                equipment1 = "예",
-                equipment2 = "해당없음",
-                equipment3 = null,
-                equipment4 = null,
-                equipment5 = null,
-                equipment6 = null,
-                equipment7 = null,
-                equipment8 = null,
-                equipment9 = null,
-                yesChkCnt = 7.0,
-                noChkCnt = 2.0,
-                startTime = LocalDateTime.of(2026, 4, 1, 8, 0),
-                completeTime = LocalDateTime.of(2026, 4, 1, 8, 10),
-                precaution = "항목1;항목2",
-                precautionChk = 2.0,
-                traversalFlag = "Y"
-            ) }
+            // Then - TMS 안전점검 stamp 검증 (managed entity 직접 반영)
+            assertThat(teamMemberSchedule.equipment1).isEqualTo("예")
+            assertThat(teamMemberSchedule.equipment2).isEqualTo("해당없음")
+            assertThat(teamMemberSchedule.equipment3).isNull()
+            assertThat(teamMemberSchedule.yesChkCnt).isEqualTo(7.0)
+            assertThat(teamMemberSchedule.noChkCnt).isEqualTo(2.0)
+            assertThat(teamMemberSchedule.startTime).isEqualTo(LocalDateTime.of(2026, 4, 1, 8, 0))
+            assertThat(teamMemberSchedule.completeTime).isEqualTo(LocalDateTime.of(2026, 4, 1, 8, 10))
+            assertThat(teamMemberSchedule.precaution).isEqualTo("항목1;항목2")
+            assertThat(teamMemberSchedule.precautionChk).isEqualTo(2.0)
+            assertThat(teamMemberSchedule.traversalFlag).isEqualTo("Y")
+        }
+
+        @Test
+        @DisplayName("출근 등록 시 attendance_log 백링크가 managed entity 에 직접 세팅된다 (bulk UPDATE 유실 회귀 방지)")
+        fun register_setsAttendanceLogBacklinkOnManagedEntity() {
+            // Given
+            val userId = 1L
+            val scheduleId = 10L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            val teamMemberSchedule = createTeamMemberSchedule(
+                id = scheduleId, sfid = "SCH001", employeeId = userId, accountId = 8938,
+                commuteLogSfid = null, accountName = "이마트 강남점", accountAbcTypeCode = "2110",
+                accountLatitude = accountLat.toString(), accountLongitude = accountLon.toString()
+            )
+            val savedLog = AttendanceLog(id = 777L)
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
+            every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
+            every { attendanceRegistrar.register(any()) } returns savedLog
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
+
+            // When
+            attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
+
+            // Then — 백링크가 저장된 로그 entity 로 직접 연결 (bulk UPDATE 미사용 — 이후 dirty flush 에도 보존)
+            assertThat(teamMemberSchedule.attendanceLog).isSameAs(savedLog)
         }
 
         @Test
@@ -2303,7 +2323,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.empty()
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
             // When
@@ -2312,12 +2332,11 @@ class AttendanceServiceTest {
             // Then - 출근등록 성공
             assertThat(result.scheduleId).isEqualTo(scheduleId)
 
-            // Then - 데이터 연동 스킵 검증
+            // Then - 데이터 연동 스킵 검증 (안전점검 stamp 미반영)
             verify(exactly = 0) { safetyCheckSubmissionRepository.save(any()) }
-            verify(exactly = 0) { teamMemberScheduleRepository.updateSafetyCheckData(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any(), any(), any()
-            ) }
+            assertThat(teamMemberSchedule.equipment1).isNull()
+            assertThat(teamMemberSchedule.yesChkCnt).isNull()
+            assertThat(teamMemberSchedule.startTime).isNull()
         }
 
         @Test
@@ -2348,7 +2367,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
@@ -2359,25 +2378,10 @@ class AttendanceServiceTest {
             assertThat(result.scheduleId).isEqualTo(scheduleId)
             assertThat(safetyCheck.completeWorkYn).isEqualTo("Y")
             verify { safetyCheckSubmissionRepository.save(safetyCheck) }
-            verify { teamMemberScheduleRepository.updateSafetyCheckData(
-                id = 10L,
-                equipment1 = "예",
-                equipment2 = null,
-                equipment3 = null,
-                equipment4 = null,
-                equipment5 = null,
-                equipment6 = null,
-                equipment7 = null,
-                equipment8 = null,
-                equipment9 = null,
-                yesChkCnt = 5.0,
-                noChkCnt = 4.0,
-                startTime = null,
-                completeTime = null,
-                precaution = null,
-                precautionChk = null,
-                traversalFlag = null
-            ) }
+            assertThat(teamMemberSchedule.equipment1).isEqualTo("예")
+            assertThat(teamMemberSchedule.equipment2).isNull()
+            assertThat(teamMemberSchedule.yesChkCnt).isEqualTo(5.0)
+            assertThat(teamMemberSchedule.noChkCnt).isEqualTo(4.0)
         }
 
         @Test
@@ -2407,7 +2411,7 @@ class AttendanceServiceTest {
             every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
             every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns Optional.of(safetyCheck)
             every { teamMemberScheduleRepository.findById(scheduleId) } returns Optional.of(teamMemberSchedule)
-            every { attendanceRegistrar.register(any()) } returns AttendanceRegisterResult("200", "SUCCESS")
+            every { attendanceRegistrar.register(any()) } returns AttendanceLog()
             every { safetyCheckSubmissionRepository.save(any<SafetyCheckSubmission>()) } answers { firstArg<SafetyCheckSubmission>() }
             every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns listOf(teamMemberSchedule)
 
@@ -2415,25 +2419,9 @@ class AttendanceServiceTest {
             attendanceService.register(userId, scheduleId, null, null, nearUserLat, nearUserLon, null)
 
             // Then - null → null 변환 검증
-            verify { teamMemberScheduleRepository.updateSafetyCheckData(
-                id = 10L,
-                equipment1 = null,
-                equipment2 = null,
-                equipment3 = null,
-                equipment4 = null,
-                equipment5 = null,
-                equipment6 = null,
-                equipment7 = null,
-                equipment8 = null,
-                equipment9 = null,
-                yesChkCnt = null,
-                noChkCnt = null,
-                startTime = null,
-                completeTime = null,
-                precaution = null,
-                precautionChk = null,
-                traversalFlag = null
-            ) }
+            assertThat(teamMemberSchedule.yesChkCnt).isNull()
+            assertThat(teamMemberSchedule.noChkCnt).isNull()
+            assertThat(teamMemberSchedule.precautionChk).isNull()
         }
     }
 

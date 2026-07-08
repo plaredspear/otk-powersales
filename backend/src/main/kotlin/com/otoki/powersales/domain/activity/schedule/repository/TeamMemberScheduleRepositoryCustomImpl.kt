@@ -20,7 +20,6 @@ import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 open class TeamMemberScheduleRepositoryCustomImpl(
     private val queryFactory: JPAQueryFactory
@@ -117,57 +116,6 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             )
         }
         return pickedByEmployee.mapValues { it.value.info }
-    }
-
-    @Transactional
-    override fun updateAttendanceLog(id: Long, attendanceLogId: Long) {
-        queryFactory
-            .update(teamMemberSchedule)
-            .set(teamMemberSchedule.attendanceLog.id, attendanceLogId)
-            .where(teamMemberSchedule.id.eq(id))
-            .execute()
-    }
-
-    @Transactional
-    override fun updateSafetyCheckData(
-        id: Long,
-        equipment1: String?,
-        equipment2: String?,
-        equipment3: String?,
-        equipment4: String?,
-        equipment5: String?,
-        equipment6: String?,
-        equipment7: String?,
-        equipment8: String?,
-        equipment9: String?,
-        yesChkCnt: Double?,
-        noChkCnt: Double?,
-        startTime: LocalDateTime?,
-        completeTime: LocalDateTime?,
-        precaution: String?,
-        precautionChk: Double?,
-        traversalFlag: String?
-    ) {
-        queryFactory
-            .update(teamMemberSchedule)
-            .set(teamMemberSchedule.equipment1, equipment1)
-            .set(teamMemberSchedule.equipment2, equipment2)
-            .set(teamMemberSchedule.equipment3, equipment3)
-            .set(teamMemberSchedule.equipment4, equipment4)
-            .set(teamMemberSchedule.equipment5, equipment5)
-            .set(teamMemberSchedule.equipment6, equipment6)
-            .set(teamMemberSchedule.equipment7, equipment7)
-            .set(teamMemberSchedule.equipment8, equipment8)
-            .set(teamMemberSchedule.equipment9, equipment9)
-            .set(teamMemberSchedule.yesChkCnt, yesChkCnt)
-            .set(teamMemberSchedule.noChkCnt, noChkCnt)
-            .set(teamMemberSchedule.startTime, startTime)
-            .set(teamMemberSchedule.completeTime, completeTime)
-            .set(teamMemberSchedule.precaution, precaution)
-            .set(teamMemberSchedule.precautionChk, precautionChk)
-            .set(teamMemberSchedule.traversalFlag, traversalFlag)
-            .where(teamMemberSchedule.id.eq(id))
-            .execute()
     }
 
     override fun findByEmployeeIdAndWorkingDate(
