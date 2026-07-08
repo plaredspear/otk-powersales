@@ -14881,6 +14881,18 @@
         },
         "type" : "object"
       },
+      "EtcBreakdownItem" : {
+        "properties" : {
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "label" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "EvictResult" : {
         "properties" : {
           "cacheName" : {
@@ -23898,6 +23910,12 @@
             "format" : "int32",
             "type" : "integer"
           },
+          "etcBreakdown" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EtcBreakdownItem"
+            },
+            "type" : "array"
+          },
           "osc" : {
             "format" : "int32",
             "type" : "integer"
@@ -24897,6 +24915,12 @@
           "etc" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "etcBreakdown" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EtcBreakdownItem"
+            },
+            "type" : "array"
           },
           "onLeave" : {
             "format" : "int32",
