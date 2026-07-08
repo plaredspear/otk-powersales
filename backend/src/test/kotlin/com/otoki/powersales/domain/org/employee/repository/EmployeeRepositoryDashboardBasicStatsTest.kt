@@ -76,10 +76,24 @@ class EmployeeRepositoryDashboardBasicStatsTest {
         assertThat(result.map { it.status }).containsExactlyInAnyOrder("재직", "휴직")
     }
 
+    @Test
+    @DisplayName("여사원만 집계 - 조장/지점장/role=null 은 제외한다")
+    fun onlyWomenRole() {
+        persist("EMP_WOMAN", status = "재직", costCenterCode = "C001", role = "여사원")
+        persist("EMP_LEADER", status = "재직", costCenterCode = "C001", role = "조장")
+        persist("EMP_MANAGER", status = "재직", costCenterCode = "C001", role = "지점장")
+        persist("EMP_NULL_ROLE", status = "재직", costCenterCode = "C001", role = null)
+
+        val result = employeeRepository.findDashboardBasicStatsProjection(listOf("C001"))
+
+        assertThat(result).hasSize(1)
+    }
+
     private fun persist(
         employeeCode: String,
         status: String?,
         costCenterCode: String?,
+        role: String? = "여사원",
     ) {
         testEntityManager.persist(
             Employee(
@@ -89,6 +103,7 @@ class EmployeeRepositoryDashboardBasicStatsTest {
                 orgName = "부산1지점",
                 status = status,
                 costCenterCode = costCenterCode,
+                role = role,
             )
         )
         testEntityManager.flush()

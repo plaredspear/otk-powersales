@@ -41,11 +41,12 @@ interface EmployeeRepositoryCustom {
     fun findAllEmployeeCodes(): List<String>
 
     /**
-     * 관리자 대시보드 기본현황 집계 전용 projection 조회.
+     * 관리자 대시보드 기본현황 집계 전용 projection 조회 — 여사원(role='여사원')만.
      *
      * 기본현황은 jobCode / status / birthDate 3개 필드만 쓰므로 entity 전 컬럼 적재 대신
      * [DashboardEmployeeProjection] 으로 전송량을 축소한다.
      *
+     * 조장/지점장/관리직은 제외하고 여사원만 집계한다.
      * 퇴직자(status='퇴직') 는 재직 현황 모수에서 제외한다. status 가 NULL 인 사원은
      * 재직/휴직 미분류로 유지해야 하므로 포함한다.
      *
