@@ -160,7 +160,7 @@ class OroraDailySalesChunkProcessor(
         // 이번 chunk 처리분 외의 기존 적재분(다른 날짜 row 등)까지 포함한 해당 월 전량 SUM 집계.
         val sumByCode = dailySalesHistoryRepository
             .sumMonthlyBySapAccountCodeIn(sapCodes, salesMonth)
-            .associateBy { it.getSapAccountCode() }
+            .associateBy { it.sapAccountCode }
 
         val toSave = mutableListOf<MonthlySalesHistory>()
         sapCodes.forEach { sapCode ->
@@ -175,9 +175,9 @@ class OroraDailySalesChunkProcessor(
             }
 
             val sum = sumByCode[sapCode]
-            entity.abcClosingSumAmount = sum?.getErpSalesSum() ?: 0.0
-            entity.shipClosingSumAmount = sum?.getErpDistributionSum() ?: 0.0
-            entity.totalLedgerAmount = BigDecimal.valueOf(sum?.getLedgerSum() ?: 0.0)
+            entity.abcClosingSumAmount = sum?.erpSalesSum ?: 0.0
+            entity.shipClosingSumAmount = sum?.erpDistributionSum ?: 0.0
+            entity.totalLedgerAmount = BigDecimal.valueOf(sum?.ledgerSum ?: 0.0)
 
             toSave += entity
         }

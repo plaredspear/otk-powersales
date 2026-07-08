@@ -58,15 +58,15 @@ class DailySalesHistoryRepositoryTest {
 
         val rows = dailySalesHistoryRepository
             .sumMonthlyBySapAccountCodeIn(listOf("1000077", "1000088"), "202601")
-            .associateBy { it.getSapAccountCode() }
+            .associateBy { it.sapAccountCode }
 
         assertThat(rows).hasSize(2)
-        assertThat(rows["1000077"]!!.getErpSalesSum()).isEqualTo(1500.0)
-        assertThat(rows["1000077"]!!.getErpDistributionSum()).isEqualTo(300.0)
-        assertThat(rows["1000077"]!!.getLedgerSum()).isEqualTo(30.0) // null 은 SUM 에서 무시
-        assertThat(rows["1000088"]!!.getErpSalesSum()).isEqualTo(700.0)
-        assertThat(rows["1000088"]!!.getErpDistributionSum()).isNull() // 전부 null → SUM null
-        assertThat(rows["1000088"]!!.getLedgerSum()).isNull()
+        assertThat(rows["1000077"]!!.erpSalesSum).isEqualTo(1500.0)
+        assertThat(rows["1000077"]!!.erpDistributionSum).isEqualTo(300.0)
+        assertThat(rows["1000077"]!!.ledgerSum).isEqualTo(30.0) // null 은 SUM 에서 무시
+        assertThat(rows["1000088"]!!.erpSalesSum).isEqualTo(700.0)
+        assertThat(rows["1000088"]!!.erpDistributionSum).isNull() // 전부 null → SUM null
+        assertThat(rows["1000088"]!!.ledgerSum).isNull()
     }
 
     @Test
@@ -80,9 +80,9 @@ class DailySalesHistoryRepositoryTest {
         val rows = dailySalesHistoryRepository.sumMonthlyBySapAccountCodeIn(listOf("1000077"), "202601")
 
         assertThat(rows).hasSize(1)
-        assertThat(rows.first().getSapAccountCode()).isEqualTo("1000077")
-        assertThat(rows.first().getErpSalesSum()).isEqualTo(1000.0)
-        assertThat(rows.first().getErpDistributionSum()).isEqualTo(200.0)
+        assertThat(rows.first().sapAccountCode).isEqualTo("1000077")
+        assertThat(rows.first().erpSalesSum).isEqualTo(1000.0)
+        assertThat(rows.first().erpDistributionSum).isEqualTo(200.0)
     }
 
     @Test
@@ -93,6 +93,6 @@ class DailySalesHistoryRepositoryTest {
         val rows = dailySalesHistoryRepository.sumMonthlyBySapAccountCodeIn(listOf("1000077", "1000088"), "202601")
 
         assertThat(rows).hasSize(1)
-        assertThat(rows.first().getSapAccountCode()).isEqualTo("1000077")
+        assertThat(rows.first().sapAccountCode).isEqualTo("1000077")
     }
 }

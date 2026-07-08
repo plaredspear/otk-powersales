@@ -9,7 +9,7 @@ import com.otoki.powersales.domain.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.domain.sales.enums.SalesMonth
 import com.otoki.powersales.domain.sales.enums.SalesYear
 import com.otoki.powersales.domain.sales.repository.DailySalesHistoryRepository
-import com.otoki.powersales.domain.sales.repository.DailySalesMonthlySumRow
+import com.otoki.powersales.domain.sales.repository.DailySalesMonthlySum
 import com.otoki.powersales.domain.sales.repository.MonthlySalesHistoryRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -55,12 +55,12 @@ class OroraDailySalesChunkProcessorTest {
     )
 
     private fun sumRow(sap: String, erpSales: Double?, erpDist: Double?, ledger: Double? = null) =
-        object : DailySalesMonthlySumRow {
-            override fun getSapAccountCode() = sap
-            override fun getErpSalesSum() = erpSales
-            override fun getErpDistributionSum() = erpDist
-            override fun getLedgerSum() = ledger
-        }
+        DailySalesMonthlySum(
+            sapAccountCode = sap,
+            erpSalesSum = erpSales,
+            erpDistributionSum = erpDist,
+            ledgerSum = ledger,
+        )
 
     private fun account(id: Long, key: String) = Account(id = id, externalKey = key, sfid = "001$key")
 
