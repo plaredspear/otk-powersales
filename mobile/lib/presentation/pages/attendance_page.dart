@@ -53,20 +53,53 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
         account.scheduleId == state.selectedScheduleId;
   }
 
+  /// 위치 획득 실패 사유별 안내 메시지
+  static const Map<LocationFailureReason, String> _locationFailureMessages = {
+    LocationFailureReason.cancelled:
+        '출근등록에는 위치 정보가 필요합니다. 위치 권한을 허용해 주세요',
+    LocationFailureReason.permissionDenied:
+        '위치 권한이 거부되어 출근등록을 할 수 없습니다. 설정에서 위치 권한을 허용해 주세요',
+    LocationFailureReason.serviceDisabled:
+        '위치 서비스(GPS)가 꺼져 있습니다. 위치 서비스를 켠 후 다시 시도해 주세요',
+    LocationFailureReason.positionUnavailable:
+        '현재 위치를 확인할 수 없습니다. 위치 신호가 잘 잡히는 곳에서 다시 시도해 주세요',
+  };
+
+  void _showLocationFailureSnackBar(LocationFailureReason reason) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(_locationFailureMessages[reason]!),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: '확인',
+          textColor: AppColors.white,
+          onPressed: messenger.hideCurrentSnackBar,
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleRegister(
     AttendanceNotifier notifier,
     dynamic state,
   ) async {
-    // GPS 좌표 획득
+    // GPS 좌표 획득 — 실패 시 사유별 안내 후 등록 중단 (위치 필수)
     final locationService = ref.read(locationServiceProvider);
     final helper = LocationPermissionHelper(locationService);
-    final position = await helper.ensurePermissionAndGetPosition(context);
+    final location = await helper.ensurePermissionAndGetPosition(context);
 
     if (!mounted) return;
 
+    if (!location.isSuccess) {
+      _showLocationFailureSnackBar(location.failureReason!);
+      return;
+    }
+
     final result = await notifier.register(
-      latitude: position?.latitude,
-      longitude: position?.longitude,
+      latitude: location.position!.latitude,
+      longitude: location.position!.longitude,
     );
 
     if (!mounted) return;
