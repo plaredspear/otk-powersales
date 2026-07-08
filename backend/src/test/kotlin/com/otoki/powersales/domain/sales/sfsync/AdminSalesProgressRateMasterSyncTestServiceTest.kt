@@ -17,16 +17,22 @@ import tools.jackson.databind.ObjectMapper
 class AdminSalesProgressRateMasterSyncTestServiceTest {
 
     private lateinit var sfOutboundClient: SfOutboundClient
+    private lateinit var fetchClient: SalesProgressRateMasterFetchClient
+    private lateinit var syncService: SalesProgressRateMasterSyncService
     private lateinit var service: AdminSalesProgressRateMasterSyncTestService
 
     @BeforeEach
     fun setUp() {
         sfOutboundClient = mockk()
-        service = AdminSalesProgressRateMasterSyncTestService(sfOutboundClient, ObjectMapper())
+        fetchClient = mockk()
+        syncService = mockk()
+        service = AdminSalesProgressRateMasterSyncTestService(
+            sfOutboundClient, ObjectMapper(), fetchClient, syncService,
+        )
     }
 
-    private fun request(modDt: String = "20260410") =
-        AdminSalesProgressRateMasterSyncTestRequest(modDt = modDt)
+    private fun request(modDt: String = "20260410", save: Boolean = false) =
+        AdminSalesProgressRateMasterSyncTestRequest(modDt = modDt, save = save)
 
     @Test
     @DisplayName("MOD_DT 를 /IF_salesprogresssend 로 POST — 응답 rawBody 그대로 노출")
@@ -54,6 +60,67 @@ class AdminSalesProgressRateMasterSyncTestServiceTest {
 
         assertThat(apiMapSlot.captured).containsExactlyEntriesOf(mapOf("MOD_DT" to "20260101"))
         assertThat(response.requestPayload).contains("\"MOD_DT\":\"20260101\"")
+    }
+
+    @Test
+    @DisplayName("save=false (기본) — DB 저장 경로 미호출 + syncResult null")
+    fun test_saveFalse_noDbWrite() {
+        every { sfOutboundClient.callApi("/IF_salesprogresssend", any()) } returns
+            SfApiResponse(resultCode = "200", resultMsg = "OK", rawBody = "[]")
+
+        val response = service.test(userId = 1L, request = request(save = false))
+
+        assertThat(response.syncResult).isNull()
+        verify(exactly = 0) { fetchClient.parse(any()) }
+        verify(exactly = 0) { syncService.syncRecords(any(), any()) }
+    }
+
+    @Test
+    @DisplayName("save=true — rawBody 를 parse 해 syncRecords 로 upsert + 통계 노출 (SF 재호출 없음)")
+    fun test_saveTrue_upsertsAndReturnsSummary() {
+        val rawList = """[{"AccountCode":"A-1","TargetYear":"2026","TargetMonth":"3"}]"""
+        every { sfOutboundClient.callApi("/IF_salesprogresssend", any()) } returns
+            SfApiResponse(resultCode = "200", resultMsg = "OK", rawBody = rawList)
+        val dtos = listOf(
+            SalesProgressRateMasterFetchDto(
+                sfid = null, name = null, externalKey = "20263A-1",
+                targetYear = "2026", targetMonth = "3", accountCode = "A-1",
+                rtTargetAmount = null, frTargetAmount = null, rmTargetAmount = null,
+                foTargetAmount = null, targetSumAmount = null,
+                currentMonthSalesAmount = null, previousMonthSalesAmount = null,
+                businessRate = null, accountBranchView = null, accountBranchCode = null,
+                isDeleted = false,
+            ),
+        )
+        every { fetchClient.parse(rawList) } returns dtos
+        every { syncService.syncRecords(dtos) } returns
+            SalesProgressRateMasterSyncService.SyncResult(fetched = 1, inserted = 1, updated = 0, skipped = 0)
+
+        val response = service.test(userId = 1L, request = request(save = true))
+
+        assertThat(response.success).isTrue()
+        assertThat(response.rawResponse).isEqualTo(rawList)
+        assertThat(response.syncResult).isEqualTo(
+            AdminSalesProgressRateMasterSyncTestResponse.SyncSummary(
+                fetched = 1, inserted = 1, updated = 0, skipped = 0,
+            ),
+        )
+        // 저장 경로도 SF 호출은 1회분을 공유 — 재호출 없음.
+        verify(exactly = 1) { sfOutboundClient.callApi("/IF_salesprogresssend", any()) }
+        verify(exactly = 1) { syncService.syncRecords(dtos) }
+    }
+
+    @Test
+    @DisplayName("save=true + SF 응답 실패 (RESULT_CODE != 200) — DB 저장 안 함 + syncResult null")
+    fun test_saveTrue_sfFailure_noDbWrite() {
+        every { sfOutboundClient.callApi("/IF_salesprogresssend", any()) } returns
+            SfApiResponse(resultCode = "0", resultMsg = "응답 본문 비어있음", rawBody = "")
+
+        val response = service.test(userId = 1L, request = request(save = true))
+
+        assertThat(response.success).isFalse()
+        assertThat(response.syncResult).isNull()
+        verify(exactly = 0) { syncService.syncRecords(any(), any()) }
     }
 
     @Test

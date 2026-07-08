@@ -36,8 +36,11 @@ class SalesProgressRateMasterFetchClientImpl(
             return emptyList()
         }
 
-        return parseRecords(raw).map { it.toFetchDto() }
+        return parse(raw)
     }
+
+    override fun parse(raw: String?): List<SalesProgressRateMasterFetchDto> =
+        parseRecords(raw).map { it.toFetchDto() }
 
     /** rawBody JSON 에서 거래처목표 레코드 배열을 추출. 형식 불명/파싱 실패 시 빈 리스트. */
     private fun parseRecords(raw: String?): List<SalesProgressRateMasterSfRecord> {

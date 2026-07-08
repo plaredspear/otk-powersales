@@ -2132,6 +2132,9 @@
             "minLength" : 1,
             "pattern" : "\\d{8}",
             "type" : "string"
+          },
+          "save" : {
+            "type" : "boolean"
           }
         },
         "required" : [ "modDt" ],
@@ -2153,6 +2156,13 @@
           },
           "success" : {
             "type" : "boolean"
+          },
+          "syncResult" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SyncSummary"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "type" : "object"
@@ -17538,6 +17548,27 @@
           },
           "proposalNumber" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SyncSummary" : {
+        "properties" : {
+          "fetched" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "inserted" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "skipped" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "updated" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"

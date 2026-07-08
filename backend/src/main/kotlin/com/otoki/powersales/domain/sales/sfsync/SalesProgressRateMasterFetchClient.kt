@@ -17,4 +17,12 @@ interface SalesProgressRateMasterFetchClient {
      * @return SF 응답 전체. 빈 리스트면 변경분 없음(또는 호출 실패 — 로그로 구분).
      */
     fun fetch(modDt: String): List<SalesProgressRateMasterFetchDto>
+
+    /**
+     * 이미 확보한 SF 응답 rawBody(JSON) 를 [SalesProgressRateMasterFetchDto] 리스트로 변환한다.
+     *
+     * SF 를 재호출하지 않고 응답 원형만 재해석하는 경로 (개발자 도구의 "조회 + 저장" 이 raw 노출과
+     * 저장에 같은 응답 1회분을 공유할 때 사용). 형식 불명/파싱 실패 시 빈 리스트.
+     */
+    fun parse(raw: String?): List<SalesProgressRateMasterFetchDto>
 }

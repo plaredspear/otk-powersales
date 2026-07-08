@@ -12,6 +12,7 @@ export function useSalesProgressRateMasters(params: SalesProgressRateMasterListP
       params.keyword,
       params.targetYear,
       params.targetMonth,
+      params.branchCode,
       params.page,
       params.size,
     ],
