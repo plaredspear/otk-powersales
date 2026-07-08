@@ -29,6 +29,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -281,6 +282,48 @@ class PromotionSchedulesUpsertHelperTest {
             assertThatThrownBy { helper.upsert(10L) }
                 .isInstanceOf(ValuesRequiredException::class.java)
                 .hasMessageContaining("근무유형3")
+        }
+
+        @Test
+        @DisplayName("기준단가 누락 -> 400 VALUES_REQUIRED")
+        fun confirm_missingBasePrice() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeId = 1L, basePrice = null)
+            )
+            setupMocks(promotion, employees)
+
+            assertThatThrownBy { helper.upsert(10L) }
+                .isInstanceOf(ValuesRequiredException::class.java)
+                .hasMessageContaining("기준단가")
+        }
+
+        @Test
+        @DisplayName("목표수량 누락 -> 400 VALUES_REQUIRED")
+        fun confirm_missingDailyTargetCount() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeId = 1L, dailyTargetCount = null)
+            )
+            setupMocks(promotion, employees)
+
+            assertThatThrownBy { helper.upsert(10L) }
+                .isInstanceOf(ValuesRequiredException::class.java)
+                .hasMessageContaining("목표수량")
+        }
+
+        @Test
+        @DisplayName("목표금액 0 -> 400 VALUES_REQUIRED")
+        fun confirm_zeroTargetAmount() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeId = 1L, targetAmount = 0L)
+            )
+            setupMocks(promotion, employees)
+
+            assertThatThrownBy { helper.upsert(10L) }
+                .isInstanceOf(ValuesRequiredException::class.java)
+                .hasMessageContaining("목표금액")
         }
     }
 
@@ -545,7 +588,10 @@ class PromotionSchedulesUpsertHelperTest {
         scheduleDate: LocalDate = startDate,
         workStatus: String? = "근무",
         workType1: String? = "행사",
-        workType3: String? = "고정"
+        workType3: String? = "고정",
+        basePrice: BigDecimal? = BigDecimal("1000"),
+        dailyTargetCount: BigDecimal? = BigDecimal("10"),
+        targetAmount: Long? = 10000L
     ): PromotionEmployee = PromotionEmployee(
         id = id,
         promotionId = promotionId,
@@ -553,7 +599,10 @@ class PromotionSchedulesUpsertHelperTest {
         scheduleDate = scheduleDate,
         workStatus = workStatus?.takeIf { it.isNotBlank() }?.let { WorkingType.fromDisplayName(it) },
         workType1 = workType1?.takeIf { it.isNotBlank() }?.let { WorkingCategory1.fromDisplayName(it) },
-        workType3 = workType3?.takeIf { it.isNotBlank() }?.let { WorkingCategory3.fromDisplayName(it) }
+        workType3 = workType3?.takeIf { it.isNotBlank() }?.let { WorkingCategory3.fromDisplayName(it) },
+        basePrice = basePrice,
+        dailyTargetCount = dailyTargetCount,
+        targetAmount = targetAmount
     )
 
     private fun createAccount(

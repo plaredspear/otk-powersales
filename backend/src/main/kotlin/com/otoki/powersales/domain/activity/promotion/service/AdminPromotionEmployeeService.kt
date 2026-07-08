@@ -417,12 +417,17 @@ class AdminPromotionEmployeeService(
             )
         }
 
-        // 3-1. 기준단가·목표수량 필수 (목표금액은 두 값으로 자동 산출되는 파생값)
+        // 3-1. 기준단가·목표수량·목표금액 필수 (목표금액은 기준단가 × 목표수량 파생값)
         if (item.basePrice == null) {
             return BatchItemError(index, item.employeeId, "VALUES_REQUIRED", "기준단가는 필수 항목입니다")
         }
         if (item.dailyTargetCount == null) {
             return BatchItemError(index, item.employeeId, "VALUES_REQUIRED", "목표수량은 필수 항목입니다")
+        }
+        // 목표금액(= 기준단가 × 목표수량)이 0 이면 미입력으로 간주하여 저장 차단
+        val targetAmount = calculateTargetAmount(item.basePrice, item.dailyTargetCount)
+        if (targetAmount == null || targetAmount == 0L) {
+            return BatchItemError(index, item.employeeId, "VALUES_REQUIRED", "목표금액은 필수 항목입니다 (기준단가 × 목표수량)")
         }
 
         // 4. 근무상태 (null 허용)

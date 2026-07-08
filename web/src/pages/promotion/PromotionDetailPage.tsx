@@ -585,6 +585,14 @@ export default function PromotionDetailPage() {
           break;
         }
       }
+      // 목표금액(= 기준단가 × 목표수량)이 0 이면 미입력으로 간주하여 저장 차단 (backend 정합)
+      if (!invalidIds.has(row.id)) {
+        const targetAmount = Number(row.basePrice ?? 0) * Number(row.dailyTargetCount ?? 0);
+        if (!targetAmount) {
+          invalidIds.add(row.id);
+          msgs.set(row.id, '목표금액은 0보다 커야 합니다 (기준단가 × 목표수량)');
+        }
+      }
     }
 
     if (invalidIds.size > 0) {
@@ -808,14 +816,14 @@ export default function PromotionDetailPage() {
         render: (v: string | null) => v ?? '-',
       },
       {
-        title: '기준단가',
+        title: <span>기준단가<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
         dataIndex: 'basePrice',
         width: 90,
         align: 'right' as const,
         render: (v: number | null) => fmtNum(v),
       },
       {
-        title: '목표수량',
+        title: <span>목표수량<span style={{ color: '#ff4d4f', marginLeft: 2 }}>*</span></span>,
         dataIndex: 'dailyTargetCount',
         width: 80,
         align: 'right' as const,

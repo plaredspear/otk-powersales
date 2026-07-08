@@ -155,6 +155,10 @@ class PromotionSchedulesUpsertHelper(
             if (pe.workStatus == null) missingFields.add("근무상태")
             if (pe.workType1 == null) missingFields.add("근무유형1")
             if (pe.workType3 == null) missingFields.add("근무유형3")
+            if (pe.basePrice == null) missingFields.add("기준단가")
+            if (pe.dailyTargetCount == null) missingFields.add("목표수량")
+            // 목표금액은 기준단가 × 목표수량 파생값. 계산 결과가 없거나 0 이면 미입력으로 간주.
+            if (pe.targetAmount == null || pe.targetAmount == 0L) missingFields.add("목표금액")
 
             if (missingFields.isNotEmpty()) {
                 val name = pe.employeeId?.let { resolveEmployeeName(it, userByIdMap) } ?: pe.id.toString()

@@ -1193,6 +1193,25 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
+        @DisplayName("목표금액 0 (기준단가·목표수량 중 0) -> VALUES_REQUIRED 에러 수집")
+        fun batchUpdate_zeroTargetAmount() {
+            val pe = createPe(id = 1L)
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+
+            val request = BatchUpdatePromotionEmployeeRequest(listOf(
+                createBatchItem(id = 1L, dailyTargetCount = BigDecimal.valueOf(0L))
+            ))
+
+            val ex = assertThrows<BatchValidationException> {
+                service.batchUpdateEmployees(principal, 10L, 1L, request)
+            }
+            assertThat(ex.errors[0].errorCode).isEqualTo("VALUES_REQUIRED")
+            assertThat(ex.errors[0].message).contains("목표금액")
+        }
+
+        @Test
         @DisplayName("비관리자 마감 행사사원 핵심필드 수정 -> CLOSED_EMPLOYEE_MODIFICATION")
         fun batchUpdate_closedEmployeeModification() {
             val pe = createPe(id = 1L, teamMemberScheduleId = 100L, promoCloseByTm = true)
