@@ -299,11 +299,15 @@ export default function DashboardPage() {
             <InfoCircleOutlined style={{ marginRight: 4 }} />
             여사원 투입거래처 기준 매출현황
           </span>
-          <Link to="/sales/monthly">월 매출(물류배부) 보고서 보기 →</Link>
+          <Link
+            to={`/sales/monthly?yearMonth=${queryParams.yearMonth}&deploymentFilter=deployed`}
+          >
+            {Number(queryParams.yearMonth.slice(5, 7))}월 월 매출(물류배부) →
+          </Link>
         </div>
       </>
     );
-  }, [data]);
+  }, [data, queryParams.yearMonth]);
 
   const deploymentTab = useMemo(() => {
     if (!data) return null;

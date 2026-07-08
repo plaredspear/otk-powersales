@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Alert, Card, Col, DatePicker, Input, Row, Select, Space, Statistic, Tooltip, Typography, message } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -42,9 +43,25 @@ interface QueryParams {
  * 하단 = 거래처별 명세 table + 페이징 + 정렬 + 엑셀 export. row 클릭 시 모바일 동등 상세 modal.
  */
 export default function MonthlySalesDashboardPage() {
+  const [searchParams] = useSearchParams();
+  // 대시보드 등 외부 화면에서 조회월/근무등록 조건을 URL 로 전달받아 초기값으로 사용한다.
+  // yearMonth=YYYY-MM, deploymentFilter=deployed|undeployed (미지정 시 '등록' 기본).
   const today = new Date();
-  const [year, setYear] = useState<number>(today.getFullYear());
-  const [month, setMonth] = useState<number>(today.getMonth() + 1);
+  const initYearMonth = searchParams.get('yearMonth');
+  const initYear = initYearMonth?.match(/^\d{4}-\d{2}$/)
+    ? Number(initYearMonth.slice(0, 4))
+    : today.getFullYear();
+  const initMonth = initYearMonth?.match(/^\d{4}-\d{2}$/)
+    ? Number(initYearMonth.slice(5, 7))
+    : today.getMonth() + 1;
+  const initDeployment =
+    searchParams.get('deploymentFilter') === 'undeployed'
+      ? 'undeployed'
+      : searchParams.get('deploymentFilter') === 'deployed'
+        ? 'deployed'
+        : ('deployed' as const);
+  const [year, setYear] = useState<number>(initYear);
+  const [month, setMonth] = useState<number>(initMonth);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   // 매출 계열 화면(monthly_sales_history 게이팅) — 동일 entity 로 가드된 지점 셀렉터 사용.
   const { data: branches = [] } = useSalesBranches();
@@ -53,7 +70,8 @@ export default function MonthlySalesDashboardPage() {
   const [accountTypeKeyword, setAccountTypeKeyword] = useState<string>('');
   const [targetRegistration, setTargetRegistration] = useState<'registered' | 'unregistered' | undefined>(undefined);
   // 근무등록 필터 — 첫 진입 기본값 '등록'(deployed): 조회월에 여사원이 근무등록한 거래처만.
-  const [deploymentFilter, setDeploymentFilter] = useState<'deployed' | 'undeployed' | undefined>('deployed');
+  // URL deploymentFilter 파라미터가 있으면 그 값을 초기값으로 반영.
+  const [deploymentFilter, setDeploymentFilter] = useState<'deployed' | 'undeployed' | undefined>(initDeployment);
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
   const [page, setPage] = useState<number>(0);
   const [pageSize, setPageSize] = useState<number>(20);
