@@ -22,6 +22,8 @@ import {
   useScheduledJobCatalog,
   useScheduledJobRuns,
   useScheduledJobSummary,
+  useTriggerMonthlyReaggregate,
+  useTriggerMonthlyReaggregateChunk,
   useTriggerOroraDailyMaterialize,
   useTriggerOroraDailyMaterializeChunk,
   useTriggerOroraMonthlyMaterialize,
@@ -465,6 +467,166 @@ function OroraDailyChunkTriggerPanel() {
 }
 
 /**
+ * 월별 합계 재집계 패널 (전체 거래처 범위). ORORA 조회 없이 이미 적재된 daily_sales_history 만으로
+ * monthly_sales_history 의 전산/물류 마감 합계·총 원장매출을 재계산한다. 대상 월은 **필수 선택**
+ * (미선택 시 실행 불가) — 재집계는 자동 산출하지 않는다. `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function MonthlyReaggregateTriggerPanel() {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const [month, setMonth] = useState<Dayjs | null>(null);
+  const trigger = useTriggerMonthlyReaggregate();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const salesMonth = month ? month.format('YYYYMM') : undefined;
+
+  const handleRun = () => {
+    if (!salesMonth) {
+      message.warning('재집계 대상 월을 선택하세요');
+      return;
+    }
+    trigger.mutate(salesMonth, {
+      onSuccess: (result) => {
+        message.success(result.message ?? `${result.salesMonth} 재집계를 시작했습니다.`);
+      },
+      onError: (err) => {
+        message.error(err instanceof Error ? err.message : '월별 합계 재집계 접수에 실패했습니다');
+      },
+    });
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="월별 합계 재집계 (전체)">
+      <Space wrap align="center">
+        <Text type="secondary">
+          대상 월 <Text type="danger">*</Text>
+        </Text>
+        <DatePicker
+          picker="month"
+          placeholder="대상 월 선택 (필수)"
+          value={month}
+          onChange={(value) => setMonth(value)}
+          disabledDate={(current) => current && current > dayjs().endOf('month')}
+        />
+        <Popconfirm
+          title="월별 합계 재집계"
+          description={`${salesMonth ?? '선택한 월'}의 monthly_sales_history 합계를 daily_sales_history 로 재계산합니다. 실행하시겠습니까?`}
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+          disabled={!salesMonth}
+        >
+          <Button type="primary" loading={trigger.isPending} disabled={!salesMonth}>
+            재집계 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          ORORA 조회 없이 이미 적재된 일별 매출만으로 월합계(전산/물류 마감 합계·총 원장매출)를 재계산합니다.
+          목표/비고/마감 등 운영 입력 컬럼은 보존됩니다. 백그라운드로 실행되며 진행/결과는 아래 실행 이력에서 확인하세요.
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+/**
+ * 월별 합계 재집계 거래처 청크 단위 패널. 전체 범위를 도는 재집계와 달리 거래처 청크 1개만 재계산한다.
+ * 대상 월은 **필수 선택**. `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function MonthlyReaggregateChunkTriggerPanel() {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const [month, setMonth] = useState<Dayjs | null>(null);
+  const [chunkIndex, setChunkIndex] = useState<number | undefined>(undefined);
+  const chunksQuery = useOroraDailyChunks();
+  const trigger = useTriggerMonthlyReaggregateChunk();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const salesMonth = month ? month.format('YYYYMM') : undefined;
+  const chunkOptions = (chunksQuery.data?.chunks ?? []).map((chunk) => ({
+    value: chunk.chunkIndex,
+    label: `${chunk.chunkIndex + 1}번 (거래처 ${chunk.fromAccountCode} ~ ${chunk.toAccountCode})`,
+  }));
+
+  const canRun = salesMonth !== undefined && chunkIndex !== undefined;
+
+  const handleRun = () => {
+    if (!salesMonth) {
+      message.warning('재집계 대상 월을 선택하세요');
+      return;
+    }
+    if (chunkIndex === undefined) {
+      message.warning('재집계할 거래처 청크를 선택하세요');
+      return;
+    }
+    trigger.mutate(
+      { chunkIndex, salesMonth },
+      {
+        onSuccess: (result) => {
+          message.success(
+            result.message ?? `${result.salesMonth} ${chunkIndex + 1}번 청크 재집계를 시작했습니다.`,
+          );
+        },
+        onError: (err) => {
+          message.error(err instanceof Error ? err.message : '월별 합계 재집계 청크 접수에 실패했습니다');
+        },
+      },
+    );
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="월별 합계 재집계 (거래처 청크 단위)">
+      <Space wrap align="center">
+        <Text type="secondary">
+          대상 월 <Text type="danger">*</Text>
+        </Text>
+        <DatePicker
+          picker="month"
+          placeholder="대상 월 선택 (필수)"
+          value={month}
+          onChange={(value) => setMonth(value)}
+          disabledDate={(current) => current && current > dayjs().endOf('month')}
+        />
+        <Text type="secondary">거래처 청크</Text>
+        <Select
+          style={{ minWidth: 320 }}
+          placeholder={chunksQuery.isLoading ? '청크 목록 불러오는 중…' : '청크 선택'}
+          loading={chunksQuery.isLoading}
+          value={chunkIndex}
+          onChange={(value: number) => setChunkIndex(value)}
+          options={chunkOptions}
+          showSearch
+          optionFilterProp="label"
+        />
+        <Popconfirm
+          title="월별 합계 재집계 (청크)"
+          description={`${salesMonth ?? '선택한 월'} 중 ${
+            chunkIndex === undefined ? '선택한' : `${chunkIndex + 1}번`
+          } 거래처 청크의 월합계를 daily_sales_history 로 재계산합니다. 실행하시겠습니까?`}
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+          disabled={!canRun}
+        >
+          <Button type="primary" loading={trigger.isPending} disabled={!canRun}>
+            청크 재집계 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          선택한 거래처 청크 1개 구간만 월합계를 재계산합니다 (특정 거래처 구간 교정 / 부분 점검용).
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+/**
  * 전문행사조(PPT) 마스터 배치 수동 실행 패널. "금일 전문행사조 마감"(expire) / "금일 전문행사조 반영"
  * (sync) 탭에서 노출되며, 실행 시 backend 가 즉시 배치를 1회 돌리고 결과를 이력에 남긴다.
  * 사원 행사조 소속을 변경하므로 `MODIFY_ALL_DATA` 권한자에게만 버튼을 노출한다.
@@ -899,6 +1061,8 @@ export default function ScheduledJobsPage() {
               <>
                 <OroraDailyTriggerPanel />
                 <OroraDailyChunkTriggerPanel />
+                <MonthlyReaggregateTriggerPanel />
+                <MonthlyReaggregateChunkTriggerPanel />
               </>
             )}
             {PPT_MASTER_TRIGGER_ACTIONS[name] && (

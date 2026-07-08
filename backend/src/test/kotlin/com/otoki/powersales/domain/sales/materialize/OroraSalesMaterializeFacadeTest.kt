@@ -26,9 +26,11 @@ class OroraSalesMaterializeFacadeTest {
 
     private val monthlyService: OroraMonthlySalesMaterializeService = mockk()
     private val dailyService: OroraDailySalesMaterializeService = mockk()
+    private val reaggregateService: MonthlyAggregateReaggregateService = mockk()
     private val facade = OroraSalesMaterializeFacade(
         monthlyService = monthlyService,
         dailyService = dailyService,
+        reaggregateService = reaggregateService,
         rangeFrom = 1000000,
         rangeTo = 1100000,
         chunkSize = 2000,
@@ -142,5 +144,34 @@ class OroraSalesMaterializeFacadeTest {
         facade.materializeDailyChunk(chunkIndex = 0)
 
         assertThat(month.captured).isEqualTo(LocalDate.now().format(yyyymm))
+    }
+
+    @Test
+    @DisplayName("재집계: 명시 월 + 전체 거래처 range 를 reaggregateService 에 전달")
+    fun reaggregatePassesMonthAndFullRange() {
+        val month = slot<String>()
+        val range = slot<OroraAccountRange>()
+        every { reaggregateService.reaggregate(capture(month), capture(range)) } returns
+                MonthlyAggregateResult("202601", 0)
+
+        facade.reaggregateMonthly("202601")
+
+        assertThat(month.captured).isEqualTo("202601")
+        assertThat(range.captured.chunkCount()).isEqualTo(51) // 전체 범위
+        verify(exactly = 1) { reaggregateService.reaggregate(any(), any()) }
+    }
+
+    @Test
+    @DisplayName("재집계 chunk: 명시 월 + 선택 chunk range 만 reaggregateService 에 전달")
+    fun reaggregateChunkPassesSingleChunkRange() {
+        val month = slot<String>()
+        val range = slot<OroraAccountRange>()
+        every { reaggregateService.reaggregate(capture(month), capture(range)) } returns
+                MonthlyAggregateResult("202601", 0)
+
+        facade.reaggregateMonthlyChunk(chunkIndex = 1, salesMonth = "202601")
+
+        assertThat(month.captured).isEqualTo("202601")
+        assertThat(range.captured.toChunks()).containsExactly("0001002000" to "0001003999")
     }
 }

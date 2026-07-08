@@ -122,4 +122,46 @@ class OroraMaterializeAsyncRunner(
             )
         }
     }
+
+    /**
+     * 월별 합계 재집계(전체 거래처 범위) 비동기 실행 — ORORA 조회 없이 daily 전량 SUM 으로 월합계 정합.
+     * daily 배치와 동일 JOB_NAME 으로 이력에 남기되 metadata `trigger=manual-reaggregate` 로 구분한다.
+     */
+    @Async("appAsyncExecutor")
+    fun runMonthlyReaggregate(salesMonth: String) {
+        scheduledJobRunner.run(OroraDailySalesMaterializeBatch.JOB_NAME) { ctx ->
+            val r = facade.reaggregateMonthly(salesMonth)
+            ctx.metadata(
+                mapOf(
+                    "trigger" to "manual-reaggregate",
+                    "salesMonth" to r.salesMonth,
+                    "monthlyAggregateUpdatedCount" to r.monthlyAggregateUpdatedCount,
+                )
+            )
+            log.info(
+                "[MONTHLY_REAGGREGATE_MANUAL] 비동기 재집계 완료 salesMonth={} monthlyAggregateUpdated={}",
+                r.salesMonth, r.monthlyAggregateUpdatedCount,
+            )
+        }
+    }
+
+    /** 월별 합계 재집계 거래처 청크 1개 비동기 실행. */
+    @Async("appAsyncExecutor")
+    fun runMonthlyReaggregateChunk(chunkIndex: Int, salesMonth: String) {
+        scheduledJobRunner.run(OroraDailySalesMaterializeBatch.JOB_NAME) { ctx ->
+            val r = facade.reaggregateMonthlyChunk(chunkIndex, salesMonth)
+            ctx.metadata(
+                mapOf(
+                    "trigger" to "manual-reaggregate-chunk",
+                    "chunkIndex" to chunkIndex,
+                    "salesMonth" to r.salesMonth,
+                    "monthlyAggregateUpdatedCount" to r.monthlyAggregateUpdatedCount,
+                )
+            )
+            log.info(
+                "[MONTHLY_REAGGREGATE_MANUAL] 비동기 청크 재집계 완료 chunkIndex={} salesMonth={} monthlyAggregateUpdated={}",
+                chunkIndex, r.salesMonth, r.monthlyAggregateUpdatedCount,
+            )
+        }
+    }
 }

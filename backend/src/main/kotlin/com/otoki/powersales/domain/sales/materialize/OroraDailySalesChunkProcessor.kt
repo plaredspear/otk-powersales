@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.domain.sales.enums.SalesMonth
 import com.otoki.powersales.domain.sales.enums.SalesYear
 import com.otoki.powersales.domain.sales.repository.DailySalesHistoryRepository
+import com.otoki.powersales.domain.sales.repository.DailySalesMonthlySum
 import com.otoki.powersales.domain.sales.repository.MonthlySalesHistoryRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -68,11 +69,44 @@ class OroraDailySalesChunkProcessor(
         val accountByCode = accountRepository.findByExternalKeyIn(sapCodes).associateBy { it.externalKey }
 
         val saved = upsertDaily(salesMonth, ororaRows, accountByCode)
+        // 방금 적재분(auto-flush)까지 포함해 해당 거래처들의 월 daily 전량을 SUM 집계 → 월합계 대입.
+        val savedCodes = saved.map { it.sapAccountCode }.distinct()
+        if (savedCodes.isEmpty()) return ChunkResult(0, 0)
+        val sumRows = dailySalesHistoryRepository.sumMonthlyBySapAccountCodeIn(savedCodes, salesMonth)
         val monthlyUpdated = updateMonthlyAggregate(
-            salesMonth, salesYear, salesMonthEnum,
-            saved.map { it.sapAccountCode }.distinct(), accountByCode,
+            salesYear, salesMonthEnum, savedCodes, sumRows, accountByCode,
         )
         return ChunkResult(saved.size, monthlyUpdated)
+    }
+
+    /**
+     * ORORA 조회 / 일별 적재 없이, 이미 적재된 `daily_sales_history` 만으로 월별 합계를 재집계 (단일 chunk).
+     *
+     * 거래처 코드 범위(chunk) 내에서 해당 월에 일별 row 가 있는 거래처를 골라 [updateMonthlyAggregate]
+     * 를 그대로 태운다 — abcClosingSum/shipClosingSum/totalLedger 를 daily 전량 SUM 으로 대입 (멱등).
+     * 일별 배치의 부수효과 재집계와 동일 로직이지만, 일별 데이터를 새로 받지 않고 기존 적재분만 정합할 때
+     * (레거시 트리거 비멱등 시절 어긋난 월합계 교정 등) 사용한다. `daily_sales_history` 는 읽기만 하고
+     * `monthly_sales_history` 만 갱신한다.
+     *
+     * @param fromCode chunk 거래처 코드 시작 (선행 `000` 제거 형식, 포함)
+     * @param toCode chunk 거래처 코드 끝 (선행 `000` 제거 형식, 포함)
+     * @return 재집계로 갱신/생성된 monthly row 수
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun reaggregateMonthly(
+        salesMonth: String,
+        salesYear: SalesYear,
+        salesMonthEnum: SalesMonth,
+        fromCode: String,
+        toCode: String,
+    ): Int {
+        val sumRows = dailySalesHistoryRepository
+            .sumMonthlyBySapAccountCodeBetween(fromCode, toCode, salesMonth)
+        if (sumRows.isEmpty()) return 0
+
+        val sapCodes = sumRows.map { it.sapAccountCode }
+        val accountByCode = accountRepository.findByExternalKeyIn(sapCodes).associateBy { it.externalKey }
+        return updateMonthlyAggregate(salesYear, salesMonthEnum, sapCodes, sumRows, accountByCode)
     }
 
     /**
@@ -130,12 +164,11 @@ class OroraDailySalesChunkProcessor(
     }
 
     /**
-     * 일별 적재 직후 월별 합계를 재합산 — 레거시 DailyErpSalesInfoTriggerHandler 부수효과의 멱등 대체.
+     * 주어진 월 SUM 집계 결과를 `monthly_sales_history` 의 합계 3컬럼에 대입 — 멱등 재합산의 공통 코어.
      *
-     * 이번 실행이 적재한 거래처들의 해당 월 `daily_sales_history` **전체**를 DB `SUM` projection 으로
-     * 집계하여 `abcClosingSum(ΣERPSales)/shipClosingSum(ΣERPDist)/totalLedger(ΣLedger)` 를 대입한다.
-     * entity 전량 로드 대신 거래처당 1 row 집계라 일별 배치 소요시간 부담이 없고, 방금 saveAll 한
-     * 적재분은 JPQL 실행 전 auto-flush 로 집계에 반영된다.
+     * `abcClosingSum(ΣERPSales)/shipClosingSum(ΣERPDist)/totalLedger(ΣLedger)` 를 [sumRows] (거래처당
+     * 1 row, daily 전량 SUM) 값으로 대입한다. 집계 자체는 호출측이 수행해 넘긴다 — 일별 적재 경로는
+     * 처리분 거래처 IN 으로, 수동 재집계 경로는 거래처 코드 범위로 각각 SUM 을 구한다.
      *
      * 레거시 deviation (사용자 결정 2026-07-09): 레거시의 "처리분 기준 대입" (insert=합산/update=마지막 1건 값)
      * 은 재실행 시 값이 달라지는 비멱등 동작이라 재합산으로 교체. 재실행/부분 재적재 몇 번을 반복해도
@@ -144,10 +177,10 @@ class OroraDailySalesChunkProcessor(
      * 온도대별 마감 컬럼 / 목표(thisMonthTarget 등) / 비고(remark) / 마감(isConfirmed) 은 건드리지 않아 보존.
      */
     private fun updateMonthlyAggregate(
-        salesMonth: String,
         salesYear: SalesYear,
         salesMonthEnum: SalesMonth,
         sapCodes: List<String>,
+        sumRows: List<DailySalesMonthlySum>,
         accountByCode: Map<String?, Account>,
     ): Int {
         if (sapCodes.isEmpty()) return 0
@@ -157,10 +190,7 @@ class OroraDailySalesChunkProcessor(
             .filter { it.externalkeyC != null }
             .associateBy { it.sapAccountCode }
 
-        // 이번 chunk 처리분 외의 기존 적재분(다른 날짜 row 등)까지 포함한 해당 월 전량 SUM 집계.
-        val sumByCode = dailySalesHistoryRepository
-            .sumMonthlyBySapAccountCodeIn(sapCodes, salesMonth)
-            .associateBy { it.sapAccountCode }
+        val sumByCode = sumRows.associateBy { it.sapAccountCode }
 
         val toSave = mutableListOf<MonthlySalesHistory>()
         sapCodes.forEach { sapCode ->

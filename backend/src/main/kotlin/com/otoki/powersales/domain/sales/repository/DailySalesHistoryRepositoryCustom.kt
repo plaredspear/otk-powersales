@@ -14,6 +14,20 @@ interface DailySalesHistoryRepositoryCustom {
         sapAccountCodes: Collection<String>,
         salesMonth: String,
     ): List<DailySalesMonthlySum>
+
+    /**
+     * 거래처 코드 범위(`[fromCode, toCode]`, 포함) + 매출월(`YYYYMM`) 의 거래처별 일별 금액 합계 집계.
+     *
+     * ORORA 조회 없이 이미 적재된 `daily_sales_history` 만으로 월별 합계를 재계산하는 수동 재집계용.
+     * 대상 거래처를 IN 목록으로 미리 뽑지 않고 코드 범위로 직접 훑어, 해당 월에 일별 row 가 있는
+     * 거래처를 그룹당 1 row 로 집계한다 (없는 거래처는 결과에 나타나지 않음). 거래처 코드는
+     * `daily_sales_history.sap_account_code` 로 선행 `000` prefix 가 제거된 형식이라 경계도 동일 형식.
+     */
+    fun sumMonthlyBySapAccountCodeBetween(
+        fromCode: String,
+        toCode: String,
+        salesMonth: String,
+    ): List<DailySalesMonthlySum>
 }
 
 /**

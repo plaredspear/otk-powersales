@@ -235,4 +235,48 @@ class OroraDailySalesChunkProcessorTest {
         assertThat(m.abcClosingSumAmount).isEqualTo(1000.0)
         assertThat(m.shipClosingSumAmount).isEqualTo(200.0)
     }
+
+    @Test
+    @DisplayName("재집계: ORORA/daily upsert 없이 코드 범위 SUM 만으로 월합계 대입")
+    fun reaggregateMonthlyUsesRangeSumOnly() {
+        // ORORA 조회·daily saveAll 없이, 코드 범위 SUM 집계 결과만으로 monthly 를 갱신해야 한다.
+        every {
+            dailyRepo.sumMonthlyBySapAccountCodeBetween("1000000", "1001999", "202601")
+        } returns listOf(sumRow("1000077", 1500.0, 300.0, ledger = 30.0))
+        every { accountRepo.findByExternalKeyIn(listOf("1000077")) } returns listOf(account(5, "1000077"))
+        every {
+            monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
+        } returns emptyList()
+        val savedMonthly = slot<List<MonthlySalesHistory>>()
+        every { monthlyRepo.saveAll(capture(savedMonthly)) } answers { savedMonthly.captured }
+
+        val updated = processor.reaggregateMonthly(
+            "202601", SalesYear.Y2026, SalesMonth.M01, "1000000", "1001999",
+        )
+
+        assertThat(updated).isEqualTo(1)
+        val m = savedMonthly.captured.first()
+        assertThat(m.sapAccountCode).isEqualTo("1000077")
+        assertThat(m.abcClosingSumAmount).isEqualTo(1500.0)
+        assertThat(m.shipClosingSumAmount).isEqualTo(300.0)
+        assertThat(m.totalLedgerAmount).isEqualByComparingTo(BigDecimal.valueOf(30.0))
+        // ORORA view 조회 / daily saveAll 은 재집계 경로에서 호출되지 않는다 (mock 미설정으로 검증).
+        io.mockk.verify(exactly = 0) { ororaRepo.findBySalesDateStartingWithAndSapAccountCodeBetween(any(), any(), any()) }
+        io.mockk.verify(exactly = 0) { dailyRepo.saveAll(any<List<DailySalesHistory>>()) }
+    }
+
+    @Test
+    @DisplayName("재집계: 해당 월 daily 가 없는 범위는 monthly 갱신 없음")
+    fun reaggregateMonthlyNoRowsNoUpdate() {
+        every {
+            dailyRepo.sumMonthlyBySapAccountCodeBetween(any(), any(), any())
+        } returns emptyList()
+
+        val updated = processor.reaggregateMonthly(
+            "202601", SalesYear.Y2026, SalesMonth.M01, "1000000", "1001999",
+        )
+
+        assertThat(updated).isEqualTo(0)
+        io.mockk.verify(exactly = 0) { monthlyRepo.saveAll(any<List<MonthlySalesHistory>>()) }
+    }
 }

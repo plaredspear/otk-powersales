@@ -227,12 +227,47 @@ class AdminScheduledJobService(
         )
     }
 
+    /**
+     * 월별 합계 재집계를 특정 월(`YYYYMM`)로 **비동기** 수동 실행 접수한다.
+     *
+     * ORORA 조회 없이 이미 적재된 `daily_sales_history` 만으로 `monthly_sales_history` 합계를 재계산한다
+     * (외부 연동 없음, RDS read+upsert 만). daily 배치와 동일 JOB_NAME 으로 이력에 남으며 metadata
+     * `trigger=manual-reaggregate` 로 구분된다. RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+     *
+     * @param salesMonth `YYYYMM` 6자. **필수** — 재집계는 자동 산출하지 않고 대상 월을 반드시 지정한다.
+     */
+    fun triggerMonthlyReaggregate(salesMonth: String?): OroraMaterializeAcceptedResponse {
+        val normalized = requireSalesMonth(salesMonth)
+        ororaMaterializeAsyncRunner.runMonthlyReaggregate(normalized)
+        return acceptedResponse(jobName = OroraDailySalesMaterializeBatch.JOB_NAME, salesMonth = normalized)
+    }
+
+    /**
+     * 월별 합계 재집계를 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 수동 실행한다. `salesMonth` 필수.
+     */
+    fun triggerMonthlyReaggregateChunk(chunkIndex: Int, salesMonth: String?): OroraMaterializeAcceptedResponse {
+        val normalized = requireSalesMonth(salesMonth)
+        val chunkCount = ororaSalesMaterializeFacade.dailyChunkCount()
+        require(chunkIndex in 0 until chunkCount) {
+            "chunkIndex 는 0 이상 $chunkCount 미만이어야 합니다: $chunkIndex"
+        }
+        ororaMaterializeAsyncRunner.runMonthlyReaggregateChunk(chunkIndex, normalized)
+        return acceptedResponse(jobName = OroraDailySalesMaterializeBatch.JOB_NAME, salesMonth = normalized)
+    }
+
     /** salesMonth 입력 정규화 + `YYYYMM` 6자리 숫자 검증. null/blank 면 null 반환(자동 산출 위임). */
     private fun validateSalesMonth(salesMonth: String?): String? {
         val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() } ?: return null
         require(normalized.length == 6 && normalized.all { it.isDigit() }) {
             "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
         }
+        return normalized
+    }
+
+    /** salesMonth 필수 검증 — null/blank 면 예외. 재집계는 자동 산출하지 않고 대상 월 지정을 강제한다. */
+    private fun requireSalesMonth(salesMonth: String?): String {
+        val normalized = validateSalesMonth(salesMonth)
+        requireNotNull(normalized) { "salesMonth 는 필수입니다 (재집계 대상 월을 지정하세요)." }
         return normalized
     }
 

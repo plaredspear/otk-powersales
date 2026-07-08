@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter
 class OroraSalesMaterializeFacade(
     private val monthlyService: OroraMonthlySalesMaterializeService,
     private val dailyService: OroraDailySalesMaterializeService,
+    private val reaggregateService: MonthlyAggregateReaggregateService,
     @Value("\${app.batch.orora.account-range.from:1000000}") private val rangeFrom: Long,
     @Value("\${app.batch.orora.account-range.to:1100000}") private val rangeTo: Long,
     @Value("\${app.batch.orora.account-range.chunk-size:1000}") private val chunkSize: Long,
@@ -76,6 +77,23 @@ class OroraSalesMaterializeFacade(
      */
     fun materializeDailyChunk(chunkIndex: Int, salesMonth: String? = null): OroraDailyMaterializeResult =
         dailyService.materialize(resolveSalesMonth(salesMonth), accountRange().singleChunk(chunkIndex))
+
+    /**
+     * 월별 합계 재집계 — ORORA 조회 없이 `daily_sales_history` 만으로 `monthly_sales_history` 재계산.
+     *
+     * 일별 적재([materializeDaily])와 달리 새 데이터를 받지 않고 기존 daily 전량 SUM 으로 월합계만
+     * 정합한다 (레거시 비멱등 시절 어긋난 월합계 교정 등). `salesMonth` 는 필수 — 자동 산출하지 않는다.
+     */
+    fun reaggregateMonthly(salesMonth: String): MonthlyAggregateResult =
+        reaggregateService.reaggregate(salesMonth, accountRange())
+
+    /**
+     * 월별 합계 재집계 — 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 실행. `salesMonth` 필수.
+     *
+     * @throws IndexOutOfBoundsException `chunkIndex` 가 `[0, dailyChunkCount())` 밖일 때
+     */
+    fun reaggregateMonthlyChunk(chunkIndex: Int, salesMonth: String): MonthlyAggregateResult =
+        reaggregateService.reaggregate(salesMonth, accountRange().singleChunk(chunkIndex))
 
     /**
      * 일별 적재의 전체 거래처 청크 개수 — 수동 트리거 UI 가 "전체 N개 중 몇 번째" 를 선택하도록 노출.

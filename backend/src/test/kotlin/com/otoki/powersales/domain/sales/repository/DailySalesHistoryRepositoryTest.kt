@@ -95,4 +95,24 @@ class DailySalesHistoryRepositoryTest {
         assertThat(rows).hasSize(1)
         assertThat(rows.first().sapAccountCode).isEqualTo("1000077")
     }
+
+    @Test
+    @DisplayName("sumMonthlyBySapAccountCodeBetween - 코드 범위 안 거래처만 월 SUM 집계한다")
+    fun sumsByCodeRangeForTargetMonth() {
+        persist("1000077", "20260115", 1000.0, 200.0, ledger = 30.0)
+        persist("1000077", "20260116", 500.0, 100.0)
+        persist("1000200", "20260120", 700.0, 50.0) // 범위 안
+        persist("1002500", "20260120", 9999.0, 9999.0) // 범위 밖 (상한 초과)
+        persist("1000077", "20251231", 8888.0, 8888.0) // 전월 — 제외
+
+        val rows = dailySalesHistoryRepository
+            .sumMonthlyBySapAccountCodeBetween("1000000", "1001999", "202601")
+            .associateBy { it.sapAccountCode }
+
+        assertThat(rows.keys).containsExactlyInAnyOrder("1000077", "1000200")
+        assertThat(rows["1000077"]!!.erpSalesSum).isEqualTo(1500.0)
+        assertThat(rows["1000077"]!!.erpDistributionSum).isEqualTo(300.0)
+        assertThat(rows["1000077"]!!.ledgerSum).isEqualTo(30.0)
+        assertThat(rows["1000200"]!!.erpSalesSum).isEqualTo(700.0)
+    }
 }
