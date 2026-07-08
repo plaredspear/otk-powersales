@@ -15,9 +15,8 @@ import org.springframework.stereotype.Component
  * ShedLock (#680 Q13 옵션 1): chunk 200 + `lockAtMostFor=PT30M / lockAtLeastFor=PT5M`.
  * 처리 로직은 [MfeisThisMonthRevenueBatchService.runMonthly] 위임.
  *
- * 현재 [BatchConfig] 의 `@EnableScheduling` 전면 임시 비활성 (commit d927d1bc, 2026-05-14) — 본 batch
- * fire 도 비활성 상태와 무관. 어노테이션 한 줄 복원 시 즉시 활성.
- * `app.batch.mfeis.this-month-revenue.enabled=true` 인 환경에서만 빈이 생성·발화한다 (기본 OFF).
+ * 전역 `@EnableScheduling` ([BatchConfig]) 은 ON — `app.batch.mfeis.this-month-revenue.enabled=true`
+ * 인 환경에서만 빈이 생성·발화한다 (기본 OFF, dev/prod 프로파일은 application.yml 에서 ON).
  */
 @Component
 @ConditionalOnProperty(name = ["app.batch.mfeis.this-month-revenue.enabled"], havingValue = "true", matchIfMissing = false)
