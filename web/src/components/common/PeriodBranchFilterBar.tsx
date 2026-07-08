@@ -35,7 +35,7 @@ interface PeriodBranchFilterBarProps {
    * (`team_member_schedule` 가드) 지점 목록을 fallback 으로 조회한다.
    *
    * 화면 게이팅 권한과 지점 API 가드를 정합시키려면 각 화면이 자기 도메인 권한으로 가드된 지점
-   * 훅 결과를 여기에 주입한다 (예: 매출 계열은 `useSalesBranches`). fallback 은 게이팅이
+   * 훅 결과를 여기에 주입한다 (예: 매출 계열은 화면별 전용 훅 `use*Branches`). fallback 은 게이팅이
    * `team_member_schedule` 인 여사원 일정 계열 화면 전용이다.
    */
   branches?: BranchOption[];

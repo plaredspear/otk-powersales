@@ -17,7 +17,7 @@ import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
-import { useSalesBranches } from '@/hooks/sales/useSalesBranches';
+import { useMonthlySalesBranches } from '@/hooks/sales/useMonthlySalesBranches';
 import MonthlyTrendChart from '@/components/charts/MonthlyTrendChart';
 import MonthlySalesDashboardDetailModal from './MonthlySalesDashboardDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -63,8 +63,8 @@ export default function MonthlySalesDashboardPage() {
   const [year, setYear] = useState<number>(initYear);
   const [month, setMonth] = useState<number>(initMonth);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-  // 매출 계열 화면(monthly_sales_history 게이팅) — 동일 entity 로 가드된 지점 셀렉터 사용.
-  const { data: branches = [] } = useSalesBranches();
+  // 월 매출(물류배부) 전용 지점 셀렉터 — 대시보드와 동일한 지점 기준(전사 권한자 34개 화이트리스트).
+  const { data: branches = [] } = useMonthlySalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionKeyword, setDistributionKeyword] = useState<string>('');
   const [accountTypeKeyword, setAccountTypeKeyword] = useState<string>('');

@@ -30,8 +30,8 @@ vi.mock('@/api/electronicSalesDashboard', async () => {
 });
 
 // PeriodBranchFilterBar 의 지점 옵션 — 단일지점 사용자로 고정 (본인 지점 자동 선택).
-vi.mock('@/hooks/sales/useSalesBranches', () => ({
-  useSalesBranches: () => ({
+vi.mock('@/hooks/sales/usePosSalesBranches', () => ({
+  usePosSalesBranches: () => ({
     data: [{ branchCode: 'B001', branchName: '원주1지점' }],
   }),
 }));

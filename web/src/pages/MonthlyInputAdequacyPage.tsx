@@ -8,7 +8,7 @@ import {
   type MonthlyInputAdequacyItem,
 } from '@/api/monthlyInputAdequacy';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
-import { useSalesBranches } from '@/hooks/sales/useSalesBranches';
+import { useInputAdequacyBranches } from '@/hooks/sales/useInputAdequacyBranches';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -40,8 +40,8 @@ export default function MonthlyInputAdequacyPage() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState<number>(currentYear);
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-  // 매출 계열 화면(monthly_sales_history 게이팅) — 동일 entity 로 가드된 지점 셀렉터 사용.
-  const { data: branches = [] } = useSalesBranches();
+  // 월별 투입적합성 전용 지점 셀렉터 (monthly_sales_history 게이팅) — 조직 트리 스코프.
+  const { data: branches = [] } = useInputAdequacyBranches();
   const [workingCategory3, setWorkingCategory3] = useState<string>('전체');
   const [queryParams, setQueryParams] = useState<QueryParams | null>(null);
 
