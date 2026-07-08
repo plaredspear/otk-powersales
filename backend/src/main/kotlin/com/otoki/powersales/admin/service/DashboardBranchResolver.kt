@@ -49,25 +49,27 @@ class DashboardBranchResolver(
 
     /**
      * 대시보드 조회 지점 스코프 산출 — 셀렉터([resolveBranches]) 와 동일하게 34개 화이트리스트로 제한.
+     * 화면은 지점을 **여러 개** 선택할 수 있으므로 코드 목록 전체에 IDOR 규칙을 적용한다.
      *
      * - 전사 권한자:
      *   - 선택값 없음 → 34개 코드 전체(Filtered). (전건 조회가 아니라 34개 지점으로 제한)
-     *   - 선택값이 34개 안 → 그 지점(Filtered).
-     *   - 선택값이 34개 밖 → NoAccess(차단, 34개 밖 지점 조회 방어).
-     * - 그 외(지점 사용자): [DataScope.effectiveBranchCodes] 그대로(본인 지점 스코프).
+     *   - 선택값이 모두 34개 안 → 그 지점들(Filtered).
+     *   - 선택값에 34개 밖 지점이 하나라도 포함 → NoAccess(차단, 34개 밖 지점 조회 방어).
+     * - 그 외(지점 사용자): [DataScope.effectiveBranchCodes] 그대로(본인 지점 스코프 ∩ 선택).
      */
     fun effectiveBranchCodes(
         principal: WebUserPrincipal,
         scope: DataScope,
-        requestedBranchCode: String?,
+        requestedBranchCodes: List<String>?,
     ): EffectiveBranchResult {
+        val requested = requestedBranchCodes.orEmpty().filter { it.isNotBlank() }.distinct()
         if (!isAllBranches(principal)) {
-            return scope.effectiveBranchCodes(requestedBranchCode?.takeIf { it.isNotBlank() })
+            return scope.effectiveBranchCodes(requested)
         }
-        val requested = requestedBranchCode?.takeIf { it.isNotBlank() }
         return when {
-            requested == null -> EffectiveBranchResult.Filtered(WHITELIST_CODES.toList())
-            requested in WHITELIST_CODES -> EffectiveBranchResult.Filtered(listOf(requested))
+            requested.isEmpty() -> EffectiveBranchResult.Filtered(WHITELIST_CODES.toList())
+            // 하나라도 화이트리스트 밖이면 전체 차단 (권한 밖 지점 조회 방어)
+            requested.all { it in WHITELIST_CODES } -> EffectiveBranchResult.Filtered(requested)
             else -> EffectiveBranchResult.NoAccess
         }
     }

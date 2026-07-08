@@ -74,6 +74,61 @@ class DataScopeTest {
     }
 
     @Nested
+    @DisplayName("effectiveBranchCodes(다중 코드)")
+    inner class EffectiveBranchCodesMulti {
+
+        @Test
+        @DisplayName("전체 조회 권한 + 다중 코드 요청 - 요청 코드 전체로 필터링")
+        fun allBranchesWithMultiRequest() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+            val result = scope.effectiveBranchCodes(listOf("B001", "B002"))
+
+            assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("B001", "B002")))
+        }
+
+        @Test
+        @DisplayName("전체 조회 권한 + 빈 목록 - All 반환")
+        fun allBranchesWithEmptyRequest() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+            val result = scope.effectiveBranchCodes(emptyList())
+
+            assertThat(result).isEqualTo(EffectiveBranchResult.All)
+        }
+
+        @Test
+        @DisplayName("제한 권한 + 다중 요청 - 본인 지점과의 교집합만 필터링")
+        fun limitedBranchesIntersection() {
+            val scope = DataScope(branchCodes = listOf("B001", "B002"), isAllBranches = false)
+
+            val result = scope.effectiveBranchCodes(listOf("B001", "B999"))
+
+            assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("B001")))
+        }
+
+        @Test
+        @DisplayName("제한 권한 + 교집합 없음 - NoAccess 반환")
+        fun limitedBranchesNoIntersection() {
+            val scope = DataScope(branchCodes = listOf("B001"), isAllBranches = false)
+
+            val result = scope.effectiveBranchCodes(listOf("B999"))
+
+            assertThat(result).isEqualTo(EffectiveBranchResult.NoAccess)
+        }
+
+        @Test
+        @DisplayName("제한 권한 + 빈 목록 - 본인 지점 전체로 필터링")
+        fun limitedBranchesEmptyRequest() {
+            val scope = DataScope(branchCodes = listOf("B001", "B002"), isAllBranches = false)
+
+            val result = scope.effectiveBranchCodes(emptyList())
+
+            assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("B001", "B002")))
+        }
+    }
+
+    @Nested
     @DisplayName("validateAccess")
     inner class ValidateAccess {
 

@@ -35,7 +35,7 @@ class AdminDashboardController(
         @CurrentDataScope scope: DataScope,
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @RequestParam(required = false) yearMonth: String?,
-        @RequestParam(required = false) branchCode: String?
+        @RequestParam(required = false) branchCode: List<String>?
     ): ResponseEntity<ApiResponse<DashboardResponse>> {
         if (yearMonth != null && !YEAR_MONTH_PATTERN.matches(yearMonth)) {
             throw InvalidYearMonthException()
@@ -46,7 +46,8 @@ class AdminDashboardController(
             .associate { it.branchCode to it.branchName }
 
         // 조회 지점 스코프 — 전사 권한자도 34개 화이트리스트로 제한(셀렉터와 동일 범위).
-        //  - Filtered → 그 코드로 좁힘. NoAccess → 매칭 0건 sentinel(빈 문자열, IN 절 매칭 불가).
+        // 화면은 지점을 여러 개 선택할 수 있어 branchCode 는 코드 목록(다중 IN)으로 해석한다.
+        //  - Filtered → 그 코드들로 좁힘. NoAccess → 매칭 0건 sentinel(빈 문자열, IN 절 매칭 불가).
         //  - repository 는 "빈 목록 = 전건" 이므로 NoAccess 를 빈 목록으로 넘기면 안 된다 → sentinel 로 0건 보장.
         val effectiveCodes = when (
             val result = dashboardBranchResolver.effectiveBranchCodes(principal, scope, branchCode)

@@ -124,16 +124,31 @@ export interface DashboardResponse {
  * 투입현황 대시보드 조회.
  *
  * @param yearMonth `yyyy-MM` (미지정 시 당월)
- * @param branchCode 지점 코드 (미지정 시 권한 스코프 전체)
+ * @param branchCodes 지점 코드 목록 (비어 있으면 권한 스코프 전체). 다중 선택 시 여러 지점 합산 조회.
  */
 export async function fetchDashboard(
   yearMonth?: string,
-  branchCode?: string,
+  branchCodes?: string[],
 ): Promise<DashboardResponse> {
+  const codes = (branchCodes ?? []).filter(Boolean);
   const res = await client.get<ApiResponse<DashboardResponse>>('/api/v1/admin/dashboard', {
     params: {
       ...(yearMonth ? { yearMonth } : {}),
-      ...(branchCode ? { branchCode } : {}),
+      // Spring `List<String>` 바인딩에 맞춰 반복 키(branchCode=A&branchCode=B)로 직렬화.
+      ...(codes.length > 0 ? { branchCode: codes } : {}),
+    },
+    paramsSerializer: {
+      serialize: (params) => {
+        const search = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            value.forEach((v) => search.append(key, String(v)));
+          } else if (value != null) {
+            search.append(key, String(value));
+          }
+        });
+        return search.toString();
+      },
     },
   });
   if (!res.data.success || !res.data.data) {

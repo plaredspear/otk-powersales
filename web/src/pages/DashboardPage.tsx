@@ -20,7 +20,7 @@ import {
 
 interface QueryParams {
   yearMonth: string;
-  branchCode?: string;
+  branchCodes?: string[];
 }
 
 function toYearMonth(year: number, month: number): string {
@@ -232,7 +232,7 @@ export default function DashboardPage() {
 
   const dashboardQuery = useQuery({
     queryKey: ['adminDashboard', queryParams],
-    queryFn: () => fetchDashboard(queryParams.yearMonth, queryParams.branchCode),
+    queryFn: () => fetchDashboard(queryParams.yearMonth, queryParams.branchCodes),
     enabled: !isSystemAdmin || hasSearched,
   });
 
@@ -240,8 +240,8 @@ export default function DashboardPage() {
     setHasSearched(true);
     setQueryParams({
       yearMonth: toYearMonth(year, month),
-      // 대시보드는 단일 지점 또는 전체(권한 스코프). 단일 선택 시에만 branchCode 전달.
-      branchCode: selectedCodes.length === 1 ? selectedCodes[0] : undefined,
+      // 선택한 지점을 모두 전달(다중 IN 조회). 선택 없으면 undefined → 권한 스코프 전체.
+      branchCodes: selectedCodes.length > 0 ? selectedCodes : undefined,
     });
   };
 

@@ -101,9 +101,20 @@ class DashboardBranchResolverTest {
         val principal = principalOf(costCenterCode = "9999", profileName = "시스템 관리자")
         val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-        val result = resolver.effectiveBranchCodes(principal, scope, "5815")
+        val result = resolver.effectiveBranchCodes(principal, scope, listOf("5815"))
 
         assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("5815")))
+    }
+
+    @Test
+    @DisplayName("effectiveBranchCodes 전사 권한자 - 다중 지점 선택(강북1+강북2) → 두 지점 모두(Filtered)")
+    fun effectiveBranchCodes_allBranches_multiSelectionInWhitelist() {
+        val principal = principalOf(costCenterCode = "9999", profileName = "시스템 관리자")
+        val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        val result = resolver.effectiveBranchCodes(principal, scope, listOf("5815", "5819"))
+
+        assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("5815", "5819")))
     }
 
     @Test
@@ -112,7 +123,18 @@ class DashboardBranchResolverTest {
         val principal = principalOf(costCenterCode = "9999", profileName = "시스템 관리자")
         val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
 
-        val result = resolver.effectiveBranchCodes(principal, scope, "9999")
+        val result = resolver.effectiveBranchCodes(principal, scope, listOf("9999"))
+
+        assertThat(result).isEqualTo(EffectiveBranchResult.NoAccess)
+    }
+
+    @Test
+    @DisplayName("effectiveBranchCodes 전사 권한자 - 다중 선택에 34개 밖 지점 하나라도 섞이면 → NoAccess(차단)")
+    fun effectiveBranchCodes_allBranches_multiSelectionPartiallyOutside() {
+        val principal = principalOf(costCenterCode = "9999", profileName = "시스템 관리자")
+        val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+
+        val result = resolver.effectiveBranchCodes(principal, scope, listOf("5815", "9999"))
 
         assertThat(result).isEqualTo(EffectiveBranchResult.NoAccess)
     }
@@ -126,6 +148,17 @@ class DashboardBranchResolverTest {
         val result = resolver.effectiveBranchCodes(principal, scope, null)
 
         assertThat(result).isEqualTo(EffectiveBranchResult.Filtered(listOf("5457")))
+    }
+
+    @Test
+    @DisplayName("effectiveBranchCodes 지점 사용자 - 본인 지점 밖만 선택 시 NoAccess(교집합 없음)")
+    fun effectiveBranchCodes_scopedUser_outsideOwnBranch() {
+        val principal = principalOf(costCenterCode = "5457")
+        val scope = DataScope(branchCodes = listOf("5457"), isAllBranches = false)
+
+        val result = resolver.effectiveBranchCodes(principal, scope, listOf("5815"))
+
+        assertThat(result).isEqualTo(EffectiveBranchResult.NoAccess)
     }
 
     private fun principalOf(

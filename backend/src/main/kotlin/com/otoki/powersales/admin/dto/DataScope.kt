@@ -72,6 +72,29 @@ data class DataScope(
         }
     }
 
+    /**
+     * 다중 지점 선택 버전 — 화면이 여러 지점을 동시에 요청할 때 사용(예: 대시보드 다중 선택).
+     * 단일 [effectiveBranchCodes] 와 동일한 IDOR 규칙을 코드 목록 전체에 적용한다.
+     *
+     * - `isAllBranches`: 선택 목록이 있으면 그대로 Filtered, 없으면 All.
+     * - 지점 사용자: 선택 목록 ∩ 본인 branchCodes → 교집합이 비면 NoAccess(권한 밖 지점만 골랐거나 선택 없음).
+     */
+    fun effectiveBranchCodes(requestedBranchCodes: List<String>): EffectiveBranchResult {
+        val requested = requestedBranchCodes.filter { it.isNotBlank() }.distinct()
+        return when {
+            isAllBranches && requested.isNotEmpty() -> EffectiveBranchResult.Filtered(requested)
+            isAllBranches -> EffectiveBranchResult.All
+            requested.isNotEmpty() -> {
+                val allowed = requested.filter { it in branchCodes }
+                if (allowed.isEmpty()) EffectiveBranchResult.NoAccess
+                else EffectiveBranchResult.Filtered(allowed)
+            }
+            else ->
+                if (branchCodes.isEmpty()) EffectiveBranchResult.NoAccess
+                else EffectiveBranchResult.Filtered(branchCodes)
+        }
+    }
+
     fun validateAccess(costCenterCode: String?): Boolean {
         if (isAllBranches) return true
         if (costCenterCode == null) return false
