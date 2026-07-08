@@ -132,9 +132,10 @@ class OroraDailySalesChunkProcessor(
     /**
      * 일별 적재 직후 월별 합계를 재합산 — 레거시 DailyErpSalesInfoTriggerHandler 부수효과의 멱등 대체.
      *
-     * 이번 실행이 적재한 거래처들의 해당 월 `daily_sales_history` **전체**를 재조회하여
-     * `abcClosingSum(ΣERPSales)/shipClosingSum(ΣERPDist)/totalLedger(ΣLedger)` 를 대입한다.
-     * 방금 saveAll 한 적재분은 JPQL 실행 전 auto-flush 로 조회에 반영된다.
+     * 이번 실행이 적재한 거래처들의 해당 월 `daily_sales_history` **전체**를 DB `SUM` projection 으로
+     * 집계하여 `abcClosingSum(ΣERPSales)/shipClosingSum(ΣERPDist)/totalLedger(ΣLedger)` 를 대입한다.
+     * entity 전량 로드 대신 거래처당 1 row 집계라 일별 배치 소요시간 부담이 없고, 방금 saveAll 한
+     * 적재분은 JPQL 실행 전 auto-flush 로 집계에 반영된다.
      *
      * 레거시 deviation (사용자 결정 2026-07-09): 레거시의 "처리분 기준 대입" (insert=합산/update=마지막 1건 값)
      * 은 재실행 시 값이 달라지는 비멱등 동작이라 재합산으로 교체. 재실행/부분 재적재 몇 번을 반복해도
@@ -156,10 +157,10 @@ class OroraDailySalesChunkProcessor(
             .filter { it.externalkeyC != null }
             .associateBy { it.sapAccountCode }
 
-        // 이번 chunk 처리분 외의 기존 적재분(다른 날짜 row 등)까지 포함한 해당 월 전량 재조회.
-        val monthRowsByCode = dailySalesHistoryRepository
-            .findBySapAccountCodeInAndSalesDateStartingWith(sapCodes, salesMonth)
-            .groupBy { it.sapAccountCode }
+        // 이번 chunk 처리분 외의 기존 적재분(다른 날짜 row 등)까지 포함한 해당 월 전량 SUM 집계.
+        val sumByCode = dailySalesHistoryRepository
+            .sumMonthlyBySapAccountCodeIn(sapCodes, salesMonth)
+            .associateBy { it.getSapAccountCode() }
 
         val toSave = mutableListOf<MonthlySalesHistory>()
         sapCodes.forEach { sapCode ->
@@ -173,10 +174,10 @@ class OroraDailySalesChunkProcessor(
                 accountByCode[sapCode]?.let { acc -> it.account = acc; it.accountSfid = acc.sfid }
             }
 
-            val rows = monthRowsByCode[sapCode].orEmpty()
-            entity.abcClosingSumAmount = rows.sumOf { it.erpSalesAmount ?: 0.0 }
-            entity.shipClosingSumAmount = rows.sumOf { it.erpDistributionAmount ?: 0.0 }
-            entity.totalLedgerAmount = BigDecimal.valueOf(rows.sumOf { it.ledgerAmount ?: 0.0 })
+            val sum = sumByCode[sapCode]
+            entity.abcClosingSumAmount = sum?.getErpSalesSum() ?: 0.0
+            entity.shipClosingSumAmount = sum?.getErpDistributionSum() ?: 0.0
+            entity.totalLedgerAmount = BigDecimal.valueOf(sum?.getLedgerSum() ?: 0.0)
 
             toSave += entity
         }
