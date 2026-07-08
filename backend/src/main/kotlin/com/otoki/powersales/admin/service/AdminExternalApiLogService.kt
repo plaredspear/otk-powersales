@@ -71,6 +71,7 @@ class AdminExternalApiLogService(
         httpStatus = httpStatus,
         success = success,
         durationMs = durationMs,
+        responseCount = responseCount,
         requestedAt = requestedAt,
         completedAt = completedAt,
     )
@@ -84,6 +85,7 @@ class AdminExternalApiLogService(
         httpStatus = httpStatus,
         success = success,
         durationMs = durationMs,
+        responseCount = responseCount,
         errorDetail = errorDetail,
         requestBody = requestBody,
         responseBody = responseBody,

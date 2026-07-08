@@ -26,7 +26,8 @@ class SfOutboundConfig {
     @Bean(name = ["sfOutboundRestClient"])
     fun sfOutboundRestClient(
         externalApiLogService: ExternalApiLogService,
-        bodyCapture: ExternalApiLogBodyCapture
+        bodyCapture: ExternalApiLogBodyCapture,
+        responseCountExtractor: SfResponseCountExtractor
     ): RestClient {
         val factory = SimpleClientHttpRequestFactory().apply {
             setConnectTimeout(Duration.ofSeconds(5))
@@ -35,7 +36,12 @@ class SfOutboundConfig {
         return RestClient.builder()
             .requestFactory(factory)
             .requestInterceptor(
-                ExternalApiLogInterceptor(ExternalApiTarget.SF, externalApiLogService, bodyCapture.enabled)
+                ExternalApiLogInterceptor(
+                    target = ExternalApiTarget.SF,
+                    logService = externalApiLogService,
+                    captureBody = bodyCapture.enabled,
+                    responseCountResolver = responseCountExtractor::extract,
+                )
             )
             .build()
     }

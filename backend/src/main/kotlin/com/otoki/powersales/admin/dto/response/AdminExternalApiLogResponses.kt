@@ -16,6 +16,8 @@ data class ExternalApiLogRow(
     val httpStatus: Int?,
     val success: Boolean,
     val durationMs: Long,
+    /** 응답 데이터 건수 — SF 목록 회수 호출에서만 채워진다 (그 외 null). */
+    val responseCount: Int?,
     val requestedAt: LocalDateTime,
     val completedAt: LocalDateTime,
 )
@@ -29,6 +31,8 @@ data class ExternalApiLogDetail(
     val httpStatus: Int?,
     val success: Boolean,
     val durationMs: Long,
+    /** 응답 데이터 건수 — SF 목록 회수 호출에서만 채워진다 (그 외 null). */
+    val responseCount: Int?,
     val errorDetail: String?,
     /** 요청 본문 — local / dev 환경에서만 적재 (그 외 null). */
     val requestBody: String?,

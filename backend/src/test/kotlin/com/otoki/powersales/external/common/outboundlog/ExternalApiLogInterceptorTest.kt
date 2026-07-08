@@ -2,6 +2,8 @@ package com.otoki.powersales.external.common.outboundlog
 
 import com.otoki.powersales.external.common.outboundlog.entity.ExternalApiLog
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
+import com.otoki.powersales.external.sf.outbound.SfResponseCountExtractor
+import tools.jackson.databind.json.JsonMapper
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -42,6 +44,24 @@ class ExternalApiLogInterceptorTest {
         return builder.build() to server
     }
 
+    /** count resolver 를 주입한 인터셉터를 단 RestClient + MockRestServiceServer 를 만든다. */
+    private fun buildClientWithCountResolver(
+        resolver: (String?) -> Int?,
+    ): Pair<RestClient, MockRestServiceServer> {
+        val builder = RestClient.builder()
+            .baseUrl("http://api-mock")
+            .requestInterceptor(
+                ExternalApiLogInterceptor(
+                    target = ExternalApiTarget.SF,
+                    logService = logService,
+                    captureBody = false,
+                    responseCountResolver = resolver,
+                )
+            )
+        val server = MockRestServiceServer.bindTo(builder).build()
+        return builder.build() to server
+    }
+
     @Test
     @DisplayName("2xx 응답 — success=true 로 1건 적재 + 본문은 그대로 다운스트림에 전달")
     fun success() {
@@ -69,8 +89,8 @@ class ExternalApiLogInterceptorTest {
                 requestedAt = any(),
                 completedAt = any(),
                 requestBody = any(),
-                responseBody = any()
-            )
+                responseBody = any(),
+                responseCount = any()            )
         } returns mockk<ExternalApiLog>()
 
         val body = restClient.post()
@@ -83,7 +103,7 @@ class ExternalApiLogInterceptorTest {
         assertThat(body).isEqualTo("""{"resultCode":"S"}""")
 
         verify(exactly = 1) {
-            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
         assertThat(targetSlot.captured).isEqualTo(ExternalApiTarget.SAP)
         assertThat(methodSlot.captured).isEqualTo("POST")
@@ -116,8 +136,8 @@ class ExternalApiLogInterceptorTest {
                 requestedAt = any(),
                 completedAt = any(),
                 requestBody = any(),
-                responseBody = any()
-            )
+                responseBody = any(),
+                responseCount = any()            )
         } returns mockk<ExternalApiLog>()
 
         assertThatThrownBy {
@@ -151,8 +171,8 @@ class ExternalApiLogInterceptorTest {
                 requestedAt = any(),
                 completedAt = any(),
                 requestBody = any(),
-                responseBody = any()
-            )
+                responseBody = any(),
+                responseCount = any()            )
         } returns mockk<ExternalApiLog>()
 
         assertThatThrownBy {
@@ -160,7 +180,7 @@ class ExternalApiLogInterceptorTest {
         }.isInstanceOf(Exception::class.java)
 
         verify(exactly = 1) {
-            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
         assertThat(statusSlot.captured).isEqualTo(401)
         assertThat(successSlot.captured).isFalse()
@@ -189,8 +209,8 @@ class ExternalApiLogInterceptorTest {
                 requestedAt = any(),
                 completedAt = any(),
                 requestBody = captureNullable(requestBodySlot),
-                responseBody = captureNullable(responseBodySlot)
-            )
+                responseBody = captureNullable(responseBodySlot),
+                responseCount = any()            )
         } returns mockk<ExternalApiLog>()
 
         val body = restClient.post()
@@ -226,8 +246,8 @@ class ExternalApiLogInterceptorTest {
                 requestedAt = any(),
                 completedAt = any(),
                 requestBody = any(),
-                responseBody = captureNullable(responseBodySlot)
-            )
+                responseBody = captureNullable(responseBodySlot),
+                responseCount = any()            )
         } returns mockk<ExternalApiLog>()
 
         assertThatThrownBy {
@@ -259,8 +279,8 @@ class ExternalApiLogInterceptorTest {
                 requestedAt = any(),
                 completedAt = any(),
                 requestBody = captureNullable(requestBodySlot),
-                responseBody = captureNullable(responseBodySlot)
-            )
+                responseBody = captureNullable(responseBodySlot),
+                responseCount = any()            )
         } returns mockk<ExternalApiLog>()
 
         restClient.post().uri("/SD03040").body(mapOf("k" to "v")).retrieve().body(String::class.java)
@@ -274,7 +294,7 @@ class ExternalApiLogInterceptorTest {
     fun loggingFailureDoesNotBreakCall() {
         val (restClient, server) = buildClient(captureBody = false)
         every {
-            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+            logService.log(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } throws RuntimeException("DB down")
 
         server.expect(ExpectedCount.once(), requestTo("http://api-mock/ok"))
@@ -283,5 +303,76 @@ class ExternalApiLogInterceptorTest {
         val body = restClient.get().uri("/ok").retrieve().body(String::class.java)
 
         assertThat(body).isEqualTo("OK")
+    }
+
+    @Test
+    @DisplayName("count resolver 주입 — 응답 본문에서 산출한 건수가 responseCount 로 적재된다")
+    fun responseCountRecordedWhenResolverInjected() {
+        // resolver: 실제 SF 추출기와 동일 규칙 (data 배열 크기)
+        val (restClient, server) = buildClientWithCountResolver(sfCountResolver())
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/IF_x"))
+            .andRespond(withSuccess("""{"data":[{"a":1},{"a":2},{"a":3}]}""", MediaType.APPLICATION_JSON))
+
+        val responseCountSlot = slot<Int?>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = any(),
+                success = any(),
+                durationMs = any(),
+                errorDetail = any(),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = any(),
+                responseCount = captureNullable(responseCountSlot)
+            )
+        } returns mockk<ExternalApiLog>()
+
+        val body = restClient.post().uri("/IF_x").body(mapOf("k" to "v")).retrieve().body(String::class.java)
+
+        // resolver 가 data 배열 크기 3 을 산출 + 다운스트림도 동일 본문 정상 수신
+        assertThat(body).isEqualTo("""{"data":[{"a":1},{"a":2},{"a":3}]}""")
+        assertThat(responseCountSlot.captured).isEqualTo(3)
+    }
+
+    @Test
+    @DisplayName("count resolver 미주입 — responseCount 는 null 로 적재된다")
+    fun responseCountNullWhenNoResolver() {
+        val (restClient, server) = buildClient(captureBody = false)
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/SD03040"))
+            .andRespond(withSuccess("""{"data":[{"a":1}]}""", MediaType.APPLICATION_JSON))
+
+        val responseCountSlot = slot<Int?>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = any(),
+                success = any(),
+                durationMs = any(),
+                errorDetail = any(),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = any(),
+                responseCount = captureNullable(responseCountSlot)
+            )
+        } returns mockk<ExternalApiLog>()
+
+        restClient.post().uri("/SD03040").body(mapOf("k" to "v")).retrieve().body(String::class.java)
+
+        assertThat(responseCountSlot.captured).isNull()
+    }
+
+    /** 테스트용 count resolver — 실제 [SfResponseCountExtractor] 로 data 배열 크기를 센다. */
+    private fun sfCountResolver(): (String?) -> Int? {
+        val extractor = SfResponseCountExtractor(JsonMapper.builder().build())
+        return extractor::extract
     }
 }

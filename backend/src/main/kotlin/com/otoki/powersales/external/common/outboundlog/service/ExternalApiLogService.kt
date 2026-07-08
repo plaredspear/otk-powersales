@@ -31,7 +31,8 @@ class ExternalApiLogService(
         requestedAt: LocalDateTime,
         completedAt: LocalDateTime,
         requestBody: String? = null,
-        responseBody: String? = null
+        responseBody: String? = null,
+        responseCount: Int? = null
     ): ExternalApiLog {
         val entity = ExternalApiLog(
             targetSystem = targetSystem,
@@ -41,6 +42,7 @@ class ExternalApiLogService(
             httpStatus = httpStatus,
             success = success,
             durationMs = durationMs,
+            responseCount = responseCount,
             errorDetail = errorDetail?.take(MAX_ERROR_DETAIL_LENGTH),
             requestBody = requestBody?.take(MAX_BODY_LENGTH),
             responseBody = responseBody?.take(MAX_BODY_LENGTH),

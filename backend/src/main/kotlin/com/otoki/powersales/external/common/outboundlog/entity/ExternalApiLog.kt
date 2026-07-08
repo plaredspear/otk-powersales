@@ -69,6 +69,15 @@ class ExternalApiLog(
     @Column(name = "duration_ms", nullable = false)
     val durationMs: Long,
 
+    /**
+     * 응답 데이터 건수 — 응답 본문(JSON)에서 회수한 데이터 레코드 배열의 크기.
+     * SF outbound 호출처럼 목록을 반환하는 호출에서만 채워지고, 그 외(SAP / Naver /
+     * 배열을 회수하지 않는 호출)는 null.
+     */
+    @FieldName("응답건수")
+    @Column(name = "response_count")
+    val responseCount: Int? = null,
+
     /** 실패 시 예외 클래스/메시지 또는 에러 응답 본문 일부 (최대 4000자 절단). */
     @FieldName("오류상세")
     @Column(name = "error_detail", columnDefinition = "TEXT")

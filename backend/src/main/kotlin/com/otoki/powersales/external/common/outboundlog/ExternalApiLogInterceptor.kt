@@ -39,12 +39,20 @@ class ExternalApiLogInterceptor(
      * buffering 해 [OutboundResponseSink.accept] 로 넘긴다 (예: SAP `sap_outbound_log` 적재).
      */
     private val responseSink: OutboundResponseSink? = null,
+    /**
+     * 응답 본문(JSON)에서 데이터 레코드 건수를 산출하는 콜백 (선택). 주입되면 `captureBody` 와
+     * 무관하게 응답 본문을 1회 buffering 해 전달하고, 반환값을 `external_api_log.response_count` 에
+     * 기록한다. SF 처럼 목록을 반환하는 outbound 호출에서만 주입한다 (SAP / Naver 는 미주입 → null).
+     * 응답 형식 지식은 각 대상 시스템 패키지에 두어 common 이 도메인을 역참조하지 않게 한다.
+     */
+    private val responseCountResolver: ((responseBody: String?) -> Int?)? = null,
 ) : ClientHttpRequestInterceptor {
 
     private val log = LoggerFactory.getLogger(ExternalApiLogInterceptor::class.java)
 
-    /** 응답 본문을 읽어야 하는지 — body 캡처(dev) 또는 도메인 sink 주입 시. */
-    private val needsResponseBody: Boolean get() = captureBody || responseSink != null
+    /** 응답 본문을 읽어야 하는지 — body 캡처(dev) 또는 도메인 sink / count resolver 주입 시. */
+    private val needsResponseBody: Boolean
+        get() = captureBody || responseSink != null || responseCountResolver != null
 
     override fun intercept(
         request: org.springframework.http.HttpRequest,
@@ -74,7 +82,8 @@ class ExternalApiLogInterceptor(
                 requestedAt = requestedAt,
                 errorDetail = if (success) null else "HTTP $status",
                 requestBody = if (captureBody) requestBody else null,
-                responseBody = if (captureBody) responseBody else null
+                responseBody = if (captureBody) responseBody else null,
+                responseCount = resolveResponseCount(responseBody)
             )
             notifySink(uri, requestBody, status, responseBody, requestedAt, startNanos, networkError = false)
             return returned
@@ -88,7 +97,8 @@ class ExternalApiLogInterceptor(
                 requestedAt = requestedAt,
                 errorDetail = "${ex.javaClass.simpleName}: ${ex.message}",
                 requestBody = if (captureBody) requestBody else null,
-                responseBody = null
+                responseBody = null,
+                responseCount = null
             )
             notifySink(uri, requestBody, null, null, requestedAt, startNanos, networkError = true)
             throw ex
@@ -102,7 +112,8 @@ class ExternalApiLogInterceptor(
                 requestedAt = requestedAt,
                 errorDetail = "${ex.javaClass.simpleName}: ${ex.message}",
                 requestBody = if (captureBody) requestBody else null,
-                responseBody = null
+                responseBody = null,
+                responseCount = null
             )
             notifySink(uri, requestBody, null, null, requestedAt, startNanos, networkError = true)
             throw ex
@@ -153,6 +164,20 @@ class ExternalApiLogInterceptor(
     private fun decodeBody(body: ByteArray): String? =
         if (body.isEmpty()) null else String(body, StandardCharsets.UTF_8)
 
+    /**
+     * count resolver 가 주입된 경우에만 응답 본문에서 데이터 건수를 산출한다.
+     * resolver 실패가 실제 호출/로그 적재를 막지 않도록 예외는 흡수해 null 로 처리한다.
+     */
+    private fun resolveResponseCount(responseBody: String?): Int? {
+        val resolver = responseCountResolver ?: return null
+        return try {
+            resolver(responseBody)
+        } catch (ex: Exception) {
+            log.warn("외부 API 응답 건수 산출 실패 target={} (건수 없이 적재)", target, ex)
+            null
+        }
+    }
+
     private fun record(
         method: String,
         uri: String,
@@ -162,7 +187,8 @@ class ExternalApiLogInterceptor(
         requestedAt: LocalDateTime,
         errorDetail: String?,
         requestBody: String?,
-        responseBody: String?
+        responseBody: String?,
+        responseCount: Int?
     ) {
         try {
             logService.log(
@@ -177,7 +203,8 @@ class ExternalApiLogInterceptor(
                 requestedAt = requestedAt,
                 completedAt = LocalDateTime.now(),
                 requestBody = requestBody,
-                responseBody = responseBody
+                responseBody = responseBody,
+                responseCount = responseCount
             )
         } catch (ex: Exception) {
             log.error("외부 API 호출 로그 적재 실패 target={} method={} uri={}", target, method, uri, ex)

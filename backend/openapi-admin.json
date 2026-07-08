@@ -11201,6 +11201,10 @@
           "responseBody" : {
             "type" : [ "string", "null" ]
           },
+          "responseCount" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
           "success" : {
             "type" : "boolean"
           },
@@ -11263,6 +11267,10 @@
           "requestedAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "responseCount" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
           },
           "success" : {
             "type" : "boolean"
