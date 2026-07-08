@@ -5,8 +5,14 @@ export interface SalesProgressRateMasterListParams {
   keyword?: string;
   targetYear?: string;
   targetMonth?: string;
+  branchCode?: string;
   page: number;
   size: number;
+}
+
+export interface SalesProgressRateMasterBranch {
+  branchCode: string;
+  branchName: string;
 }
 
 export interface SalesProgressRateMasterListItem {
@@ -74,6 +80,7 @@ export async function fetchSalesProgressRateMasters(
   if (params.keyword) queryParams.keyword = params.keyword;
   if (params.targetYear) queryParams.targetYear = params.targetYear;
   if (params.targetMonth) queryParams.targetMonth = params.targetMonth;
+  if (params.branchCode) queryParams.branchCode = params.branchCode;
 
   const res = await client.get<ApiResponse<SalesProgressRateMasterListData>>(
     '/api/v1/admin/sales-progress-rate-masters',
@@ -81,6 +88,24 @@ export async function fetchSalesProgressRateMasters(
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '거래처목표등록마스터 목록 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 거래처목표등록마스터 화면 지점 셀렉터 옵션
+ * (`GET /api/v1/admin/sales-progress-rate-masters/branches`, `sales_progress_rate_master` READ 권한 필요).
+ *
+ * 권한 주체별 조회 허용 지점 화이트리스트를 반환 (거래처/여사원 일정과 동일 출처).
+ */
+export async function getSalesProgressRateMasterBranches(): Promise<
+  SalesProgressRateMasterBranch[]
+> {
+  const res = await client.get<ApiResponse<SalesProgressRateMasterBranch[]>>(
+    '/api/v1/admin/sales-progress-rate-masters/branches',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
   }
   return res.data.data;
 }

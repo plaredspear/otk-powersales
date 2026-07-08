@@ -48,10 +48,10 @@ class AdminSalesProgressRateMasterServiceTest {
                 currentMonthSalesAmount = 500.0,
             )
             every {
-                repository.searchForAdmin(any(), any(), any(), any(), any())
+                repository.searchForAdmin(any(), any(), any(), any(), any(), any())
             } returns PageImpl(listOf(entity))
 
-            val response = service.getList(scope, null, null, null, 0, 20)
+            val response = service.getList(scope, null, null, null, null, 0, 20)
 
             val item = response.content.single()
             assertThat(item.targetSum).isEqualTo(1000.0)
@@ -70,10 +70,10 @@ class AdminSalesProgressRateMasterServiceTest {
             }
             val entity = createEntity(account = account)
             every {
-                repository.searchForAdmin(any(), any(), any(), any(), any())
+                repository.searchForAdmin(any(), any(), any(), any(), any(), any())
             } returns PageImpl(listOf(entity))
 
-            val item = service.getList(scope, null, null, null, 0, 20).content.single()
+            val item = service.getList(scope, null, null, null, null, 0, 20).content.single()
 
             assertThat(item.accountName).isEqualTo("GS25 역삼점")
             assertThat(item.accountBranchName).isEqualTo("강남53지점")
@@ -86,26 +86,26 @@ class AdminSalesProgressRateMasterServiceTest {
         fun nullProgressRateWhenTargetSumZero() {
             val entity = createEntity(rt = 0.0, fr = 0.0, rm = 0.0, fo = 0.0, currentMonthSalesAmount = 500.0)
             every {
-                repository.searchForAdmin(any(), any(), any(), any(), any())
+                repository.searchForAdmin(any(), any(), any(), any(), any(), any())
             } returns PageImpl(listOf(entity))
 
-            val item = service.getList(scope, null, null, null, 0, 20).content.single()
+            val item = service.getList(scope, null, null, null, null, 0, 20).content.single()
 
             assertThat(item.targetSum).isEqualTo(0.0)
             assertThat(item.progressRate).isNull()
         }
 
         @Test
-        @DisplayName("키워드/목표년도/목표월 필터를 repository 에 그대로 전달한다")
+        @DisplayName("키워드/목표년도/목표월/지점코드 필터를 repository 에 그대로 전달한다")
         fun passesFiltersToRepository() {
             every {
-                repository.searchForAdmin(any(), any(), any(), any(), any())
+                repository.searchForAdmin(any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList())
 
-            service.getList(scope, "역삼", "2026", "3", 0, 20)
+            service.getList(scope, "역삼", "2026", "3", "1100", 0, 20)
 
             verify {
-                repository.searchForAdmin(any(), "역삼", "2026", "3", any())
+                repository.searchForAdmin(any(), "역삼", "2026", "3", "1100", any())
             }
         }
 
@@ -113,10 +113,10 @@ class AdminSalesProgressRateMasterServiceTest {
         @DisplayName("요청한 page/size 를 응답에 반영한다")
         fun reflectsPageAndSize() {
             every {
-                repository.searchForAdmin(any(), any(), any(), any(), any())
+                repository.searchForAdmin(any(), any(), any(), any(), any(), any())
             } returns PageImpl(emptyList())
 
-            val response = service.getList(scope, null, null, null, 2, 50)
+            val response = service.getList(scope, null, null, null, null, 2, 50)
 
             assertThat(response.page).isEqualTo(2)
             assertThat(response.size).isEqualTo(50)

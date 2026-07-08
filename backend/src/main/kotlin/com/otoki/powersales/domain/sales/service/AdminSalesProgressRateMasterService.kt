@@ -27,12 +27,14 @@ class AdminSalesProgressRateMasterService(
 
     /**
      * @param scope 호출자(controller) 에서 산출/주입한 현재 사용자의 DataScope.
+     * @param branchCode 거래처 지점코드(account.branchCode) 필터 — 가시 범위와 AND 합성.
      */
     fun getList(
         scope: DataScope,
         keyword: String?,
         targetYear: String?,
         targetMonth: String?,
+        branchCode: String?,
         page: Int,
         size: Int,
     ): SalesProgressRateMasterListResponse {
@@ -48,6 +50,7 @@ class AdminSalesProgressRateMasterService(
             keyword = keyword,
             targetYear = targetYear,
             targetMonth = targetMonth,
+            branchCode = branchCode,
             pageable = pageable
         )
 

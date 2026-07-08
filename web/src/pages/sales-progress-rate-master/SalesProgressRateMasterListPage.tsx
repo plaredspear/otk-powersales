@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Button, Input, Typography } from 'antd';
+import { Button, Input, Select, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useSalesProgressRateMasters } from '@/hooks/sales-progress-rate-master/useSalesProgressRateMasters';
+import { useSalesProgressRateMasterBranches } from '@/hooks/sales-progress-rate-master/useSalesProgressRateMasterBranches';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
@@ -29,16 +30,30 @@ export default function SalesProgressRateMasterListPage() {
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
-    defaultFilters: { targetYear: '', targetMonth: '', keyword: '' },
+    defaultFilters: { targetYear: '', targetMonth: '', branchCode: '', keyword: '' },
   });
-  const { targetYear, targetMonth, keyword } = filters;
+  const { targetYear, targetMonth, branchCode, keyword } = filters;
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
   const [targetYearInput, setTargetYearInput] = useState(targetYear);
   const [targetMonthInput, setTargetMonthInput] = useState(targetMonth);
+  const [branchCodeInput, setBranchCodeInput] = useState<string | undefined>(
+    () => branchCode || undefined,
+  );
   const [keywordInput, setKeywordInput] = useState(keyword);
 
+  // 권한별 지점 화이트리스트 — 지점 1개면 셀렉터 대신 고정 Tag 표시 (거래처 마스터 화면과 동일 패턴).
+  const { data: branches } = useSalesProgressRateMasterBranches();
+  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
+  const singleBranch = branches?.length === 1 ? branches[0] : null;
+  const isMultiBranch = (branches?.length ?? 0) > 1;
+
   const handleSearch = () => {
-    setFilters({ targetYear: targetYearInput, targetMonth: targetMonthInput, keyword: keywordInput });
+    setFilters({
+      targetYear: targetYearInput,
+      targetMonth: targetMonthInput,
+      branchCode: branchCodeInput ?? '',
+      keyword: keywordInput,
+    });
   };
 
   const goToDetail = useThrottleClick((id: number) =>
@@ -49,6 +64,7 @@ export default function SalesProgressRateMasterListPage() {
     keyword: keyword || undefined,
     targetYear: targetYear || undefined,
     targetMonth: targetMonth || undefined,
+    branchCode: branchCode || undefined,
     page,
     size,
   });
@@ -190,6 +206,23 @@ export default function SalesProgressRateMasterListPage() {
       }}
     >
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', flexShrink: 0 }}>
+        {isMultiBranch && (
+          <Select
+            placeholder="지점 (전체)"
+            style={{ width: 160 }}
+            value={branchCodeInput || undefined}
+            options={branchOptions}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            onChange={(val) => setBranchCodeInput(val || undefined)}
+          />
+        )}
+        {singleBranch && (
+          <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
+            지점: {singleBranch.branchName}
+          </Tag>
+        )}
         <Input
           placeholder="목표 년도"
           allowClear
