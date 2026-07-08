@@ -508,11 +508,40 @@ class MonthlySalesAdminQueryServiceTest {
         )
         every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2026") } returns emptyList()
 
-        val result = service.sumInvestedAccountSales(refs, year = 2026, month = 5)
+        val result = service.sumInvestedAccountSales(refs, lastYearAccounts = refs, year = 2026, month = 5)
 
         // Ship 단독(500)이 아니라 ABC+Ship 합계(1000) 여야 한다.
         assertThat(result.actualAmount).isEqualTo(1000L)
         assertThat(result.lastYearAmount).isEqualTo(500L)
+        assertThat(result.hasActualData).isTrue()
+        assertThat(result.hasLastYearData).isTrue()
+    }
+
+    @Test
+    @DisplayName("sumInvestedAccountSales — 전년 동월 실적은 전년 동월 출근등록 거래처 모수로 합산 (당월 모수와 분리)")
+    fun sumInvestedAccountSalesUsesLastYearAccountsForLastYear() {
+        val currentRefs = listOf(
+            MonthlySalesAdminQueryService.InvestedAccountRef(id = 1L, externalKey = "S001"),
+        )
+        val lastYearRefs = listOf(
+            MonthlySalesAdminQueryService.InvestedAccountRef(id = 2L, externalKey = "S002"),
+        )
+        every {
+            monthlySalesHistoryGateway.findBySalesDates(listOf("202605", "202505"), listOf("S001", "S002"))
+        } returns listOf(
+            // 당월 모수(S001)의 당월 실적 — actual 에만 반영
+            rowByCode("S001", "202605", accountId = 1, abc1 = 1000),
+            // 당월 모수(S001)의 전년 실적 — 전년 모수가 아니므로 lastYear 에 포함되면 안 됨
+            rowByCode("S001", "202505", accountId = 1, abc1 = 999),
+            // 전년 모수(S002)의 전년 실적 — lastYear 에만 반영
+            rowByCode("S002", "202505", accountId = 2, abc1 = 300),
+        )
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2026") } returns emptyList()
+
+        val result = service.sumInvestedAccountSales(currentRefs, lastYearRefs, year = 2026, month = 5)
+
+        assertThat(result.actualAmount).isEqualTo(1000L)
+        assertThat(result.lastYearAmount).isEqualTo(300L)
         assertThat(result.hasActualData).isTrue()
         assertThat(result.hasLastYearData).isTrue()
     }

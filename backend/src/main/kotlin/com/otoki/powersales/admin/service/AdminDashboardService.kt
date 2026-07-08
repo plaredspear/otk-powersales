@@ -80,7 +80,7 @@ class AdminDashboardService(
         )
 
         return DashboardResponse(
-            salesSummary = buildSalesSummary(ym, branchName, rows),
+            salesSummary = buildSalesSummary(ym, branchName, rows, effectiveCodes),
             staffDeployment = buildStaffDeployment(ym, previousYm, branchName, effectiveCodes, rows),
             basicStats = buildBasicStats(ym, branchName, effectiveCodes, rows),
         )
@@ -91,6 +91,8 @@ class AdminDashboardService(
     /**
      * 매출현황 — 투입 거래처의 당월/전년 마감실적 합산 (D7).
      *
+     * 당월 실적/목표 모수는 당월 MFEIS 투입 거래처, 전년 동월 실적 모수는 **전년 동월 MFEIS
+     * 투입(출근등록) 거래처** — 전년 실적이 당월 모수에 묶이지 않도록 전년 MFEIS 를 자체 조회한다.
      * 매출 실적은 RDS `MonthlySalesHistory` ([MonthlySalesAdminQueryService.sumInvestedAccountSales]
      * 경유) 에서 조회한다 — 외부 ORORA view 직접 호출이 아니다.
      */
@@ -98,13 +100,19 @@ class AdminDashboardService(
         ym: YearMonth,
         branchName: String?,
         rows: List<DashboardDeploymentRow>,
+        effectiveCodes: List<String>,
     ): SalesSummary {
         // 투입 거래처 = 해당 월 MFEIS 에 등장하는 거래처(accountId 기준 distinct) — rows 는 getDashboard 에서 1회 조회분
-        val accounts = rows
-            .filter { it.accountId != null }
-            .distinctBy { it.accountId }
-            .map { InvestedAccountRef(id = it.accountId!!, externalKey = it.accountExternalKey) }
-        val sales = monthlySalesAdminQueryService.sumInvestedAccountSales(accounts, ym.year, ym.monthValue)
+        val accounts = investedAccountRefs(rows)
+        // 전년 동월 실적 모수 — 전년 동월 MFEIS 에 등장하는 출근등록 거래처 (당월 모수와 분리)
+        val lastYearYm = ym.minusYears(1)
+        val lastYearAccounts = investedAccountRefs(
+            mfeisRepository.findDeploymentDashboardRows(
+                lastYearYm.year.toString(), lastYearYm.monthValue.toString(), effectiveCodes,
+            ),
+        )
+        val sales = monthlySalesAdminQueryService
+            .sumInvestedAccountSales(accounts, lastYearAccounts, ym.year, ym.monthValue)
 
         val lastYearRatio = if (sales.lastYearAmount == 0L) 0.0
         else (sales.actualAmount.toDouble() / sales.lastYearAmount.toDouble()) * 100.0
@@ -129,6 +137,13 @@ class AdminDashboardService(
             hasTargetData = sales.hasTargetData,
         )
     }
+
+    /** MFEIS rows → 투입 거래처 식별자 목록 (accountId 기준 distinct). */
+    private fun investedAccountRefs(rows: List<DashboardDeploymentRow>): List<InvestedAccountRef> =
+        rows
+            .filter { it.accountId != null }
+            .distinctBy { it.accountId }
+            .map { InvestedAccountRef(id = it.accountId!!, externalKey = it.accountExternalKey) }
 
     /**
      * 달력일 기준 진도율 (결정 D4) — (경과 달력일 / 총 달력일) × 100.

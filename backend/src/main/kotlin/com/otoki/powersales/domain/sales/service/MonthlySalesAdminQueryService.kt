@@ -716,16 +716,26 @@ class MonthlySalesAdminQueryService(
     /**
      * 여사원 투입 거래처의 마감실적 합산 — 투입현황 대시보드 매출현황 탭 (Spec 850, 결정 D7).
      *
-     * 입력 account 집합의 당월/전년 동월 `ShipClosing` 마감실적을 RDS `MonthlySalesHistory`
-     * ([MonthlySalesHistoryQueryGateway]) 1 trip 으로 일괄 합산 — 외부 ORORA view 직접 호출 아님.
+     * 당월 실적/목표는 [accounts](당월 출근등록 거래처), 전년 동월 실적은 [lastYearAccounts]
+     * (전년 동월 출근등록 거래처) 를 각각의 모수로 합산한다 — 전년 실적이 당월 모수에 묶여
+     * 당시 미투입 거래처가 누락/혼입되지 않도록 분리.
+     * 두 모수의 당월/전년 마감실적을 RDS `MonthlySalesHistory` ([MonthlySalesHistoryQueryGateway])
+     * 1 trip 으로 일괄 조회 — 외부 ORORA view 직접 호출 아님.
      * RDS 조회 키는 (`sap_account_code`, `sales_year`, `sales_month`) 복합 인덱스로 가속된다.
-     * 목표(target)는 투입 거래처별 `SalesProgressRateMaster`(연·월 1행) 합계의 총합 — 상단 요약([getSummary]) 정합.
+     * 목표(target)는 당월 투입 거래처별 `SalesProgressRateMaster`(연·월 1행) 합계의 총합 — 상단 요약([getSummary]) 정합.
      * 미등록 거래처는 0. row 부재 (미적재) 시 실적/전년 0 반환.
      * 부수 효과: 없음 (조회 전용).
      */
-    fun sumInvestedAccountSales(accounts: List<InvestedAccountRef>, year: Int, month: Int): InvestedAccountSales {
-        val accountSapCodes = accounts.mapNotNull { it.externalKey }
-        if (accountSapCodes.isEmpty()) {
+    fun sumInvestedAccountSales(
+        accounts: List<InvestedAccountRef>,
+        lastYearAccounts: List<InvestedAccountRef>,
+        year: Int,
+        month: Int,
+    ): InvestedAccountSales {
+        val currentSapCodes = accounts.mapNotNull { it.externalKey }
+        val lastYearSapCodes = lastYearAccounts.mapNotNull { it.externalKey }
+        val allSapCodes = (currentSapCodes + lastYearSapCodes).distinct()
+        if (allSapCodes.isEmpty()) {
             return InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -734,18 +744,19 @@ class MonthlySalesAdminQueryService(
         val currentSalesDate = toSalesDate(year, month)
         val lastYearSalesDate = toSalesDate(year - 1, month)
         val oroByKey = monthlySalesHistoryGateway
-            .findBySalesDates(listOf(currentSalesDate, lastYearSalesDate), accountSapCodes)
+            .findBySalesDates(listOf(currentSalesDate, lastYearSalesDate), allSapCodes)
             .associateBy { it.sapAccountCode to it.salesDate }
 
         // 마감 합계 실적 = ABC(전산) 합 + Ship(물류배부) 합 — 레거시 SF `ClosingAmountSum__c` 정합
         // (물류 매출 조회 화면 "마감 합계 실적" 동등). Ship 단독이 아님.
+        // 당월은 당월 출근등록 거래처, 전년 동월은 전년 동월 출근등록 거래처 모수로 각각 합산.
         val actual = accounts.sumOf { closingSum(oroByKey[it.externalKey to currentSalesDate]) }
-        val lastYear = accounts.sumOf { closingSum(oroByKey[it.externalKey to lastYearSalesDate]) }
+        val lastYear = lastYearAccounts.sumOf { closingSum(oroByKey[it.externalKey to lastYearSalesDate]) }
 
         // 적재 데이터 존재 여부 — row 부재(미적재)와 실제 0/음수를 구분하기 위함.
-        // 투입 거래처 중 해당 월 RDS row 가 하나라도 있으면 데이터 존재로 본다.
+        // 각 모수의 투입 거래처 중 해당 월 RDS row 가 하나라도 있으면 데이터 존재로 본다.
         val hasActualData = accounts.any { oroByKey.containsKey(it.externalKey to currentSalesDate) }
-        val hasLastYearData = accounts.any { oroByKey.containsKey(it.externalKey to lastYearSalesDate) }
+        val hasLastYearData = lastYearAccounts.any { oroByKey.containsKey(it.externalKey to lastYearSalesDate) }
 
         // 목표 합계 — 투입 거래처별 (연, 월) SalesProgressRateMaster 1행 합계의 총합 (미등록 거래처는 0).
         // 투입 거래처 중 당월 목표 row 가 하나라도 있으면 데이터 존재로 본다 (전무하면 "목표 미등록").

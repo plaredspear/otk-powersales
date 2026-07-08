@@ -67,7 +67,7 @@ class AdminDashboardServiceTest {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
         every { employeeRepository.findProjectedByCostCenterCodeIn(any()) } returns emptyList()
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -87,8 +87,9 @@ class AdminDashboardServiceTest {
         // 거래처유형별 차트는 전월(마감) 기준 → previousYm rows 로 반환
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
+        every { mfeisRepository.findDeploymentDashboardRows("2025", "5", any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -113,8 +114,9 @@ class AdminDashboardServiceTest {
         )
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
+        every { mfeisRepository.findDeploymentDashboardRows("2025", "5", any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -137,8 +139,9 @@ class AdminDashboardServiceTest {
         )
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
+        every { mfeisRepository.findDeploymentDashboardRows("2025", "5", any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -165,8 +168,9 @@ class AdminDashboardServiceTest {
         )
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
+        every { mfeisRepository.findDeploymentDashboardRows("2025", "5", any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns emptyList()
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -187,7 +191,7 @@ class AdminDashboardServiceTest {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns
             listOf(mfeis(acc = acc))
         every { employeeRepository.findProjectedBy() } returns emptyList()
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 800L, targetAmount = 1000L, lastYearAmount = 760L,
                 hasActualData = true, hasLastYearData = true, hasTargetData = true,
@@ -217,7 +221,7 @@ class AdminDashboardServiceTest {
             listOf(mfeis(acc = acc))
         every { employeeRepository.findProjectedBy() } returns emptyList()
         // 목표 미등록 — 실적은 있으나 목표 row 전무 (hasTargetData=false, target=0)
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 800L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = true, hasLastYearData = false, hasTargetData = false,
@@ -250,7 +254,7 @@ class AdminDashboardServiceTest {
     fun ageGroupBucketing() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns listOf(employee(birthDate = "1995-03-01"))
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -267,7 +271,7 @@ class AdminDashboardServiceTest {
     fun ageGroupUnknown() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
         every { employeeRepository.findProjectedBy() } returns listOf(employee(birthDate = null))
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -287,7 +291,7 @@ class AdminDashboardServiceTest {
             employee(status = "휴직"),
             employee(status = "퇴직"), employee(status = null),
         )
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
@@ -309,7 +313,7 @@ class AdminDashboardServiceTest {
             employee(jobCode = "OSC직"), employee(jobCode = "레이디직"),
             employee(jobCode = "기타"),
         )
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
