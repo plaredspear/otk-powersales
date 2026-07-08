@@ -301,12 +301,11 @@ export default function MonthlySalesDashboardPage() {
                 </Tooltip>
               </span>
               <Select
-                value={deploymentFilter}
-                onChange={(v) => setDeploymentFilter(v)}
+                value={deploymentFilter ?? 'all'}
+                onChange={(v) => setDeploymentFilter(v === 'all' ? undefined : (v as 'deployed' | 'undeployed'))}
                 style={{ width: 120 }}
-                allowClear
-                placeholder="전체"
                 options={[
+                  { value: 'all', label: '전체' },
                   { value: 'deployed', label: '등록' },
                   { value: 'undeployed', label: '미등록' },
                 ]}
