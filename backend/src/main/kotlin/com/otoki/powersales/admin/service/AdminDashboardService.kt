@@ -5,6 +5,7 @@ import com.otoki.powersales.admin.dto.response.AgeGroupCount
 import com.otoki.powersales.admin.dto.response.BasicStats
 import com.otoki.powersales.admin.dto.response.ChannelWorkTypeItem
 import com.otoki.powersales.admin.dto.response.DashboardResponse
+import com.otoki.powersales.admin.dto.response.EtcBreakdownItem
 import com.otoki.powersales.admin.dto.response.PreviousMonthData
 import com.otoki.powersales.admin.dto.response.SalesSummary
 import com.otoki.powersales.admin.dto.response.StaffDeployment
@@ -239,20 +240,36 @@ class AdminDashboardService(
         // 판촉직/OSC직 (결정 D6 — Employee.jobCode). etc = 두 직군 외/null (모수는 사원 전체로 일치)
         val promotion = employees.count { it.jobCode == JOB_CODE_PROMOTION }
         val osc = employees.count { it.jobCode == JOB_CODE_OSC || it.jobCode == JOB_CODE_LADY }
-        val staffTypeEtc = employees.size - promotion - osc
+        val staffTypeEtcEmployees = employees.filter {
+            it.jobCode != JOB_CODE_PROMOTION && it.jobCode != JOB_CODE_OSC && it.jobCode != JOB_CODE_LADY
+        }
+        val staffTypeEtcBreakdown = buildEtcBreakdown(staffTypeEtcEmployees.map { it.jobCode })
 
         // 재직/휴직. 퇴직자는 모수에서 이미 제외됨(findEmployees). etc = status 가 재직/휴직 외이거나 null 인 사원
         val active = employees.count { it.status == STATUS_ACTIVE }
         val onLeave = employees.count { it.status == STATUS_ON_LEAVE }
-        val positionEtc = employees.size - active - onLeave
+        val positionEtcEmployees = employees.filter {
+            it.status != STATUS_ACTIVE && it.status != STATUS_ON_LEAVE
+        }
+        val positionEtcBreakdown = buildEtcBreakdown(positionEtcEmployees.map { it.status })
 
         // 근무형태별 고정/격고/순회 — MFEIS 당월 근무형태 기준 환산인원 SUM (getDashboard 1회 조회분 공유)
         val byWc3 = mfeisRows.groupBy { it.workingCategory3 }
 
         return BasicStats(
             branchName = branchName,
-            staffType = StaffTypeCount(promotion = promotion, osc = osc, etc = staffTypeEtc),
-            totalByPosition = TotalByPosition(active = active, onLeave = onLeave, etc = positionEtc),
+            staffType = StaffTypeCount(
+                promotion = promotion,
+                osc = osc,
+                etc = staffTypeEtcEmployees.size,
+                etcBreakdown = staffTypeEtcBreakdown,
+            ),
+            totalByPosition = TotalByPosition(
+                active = active,
+                onLeave = onLeave,
+                etc = positionEtcEmployees.size,
+                etcBreakdown = positionEtcBreakdown,
+            ),
             byAgeGroup = buildAgeGroups(employees, asOf),
             byWorkType = WorkTypeStats(
                 fixed = sumHeadcount(byWc3[WC3_FIXED].orEmpty()),
@@ -260,6 +277,20 @@ class AdminDashboardService(
                 visiting = sumHeadcount(byWc3[WC3_VISITING].orEmpty()),
             ),
         )
+    }
+
+    /**
+     * "기타" 항목 세부 내역 — 원본 값(jobCode/status)별 인원 수 집계.
+     *
+     * null/공백 값은 [ETC_LABEL_UNCLASSIFIED]("미분류") 로 합산. count 내림차순, 동수면 라벨 오름차순 정렬해
+     * 툴팁 표시 순서를 안정화한다.
+     */
+    private fun buildEtcBreakdown(rawValues: List<String?>): List<EtcBreakdownItem> {
+        return rawValues
+            .groupingBy { it?.takeIf { v -> v.isNotBlank() } ?: ETC_LABEL_UNCLASSIFIED }
+            .eachCount()
+            .map { (label, count) -> EtcBreakdownItem(label = label, count = count) }
+            .sortedWith(compareByDescending<EtcBreakdownItem> { it.count }.thenBy { it.label })
     }
 
     /** 연령대별 인원 수 — 만나이 정수 10세 단위 버킷. birthDate null/파싱불가는 "미상". */
@@ -326,6 +357,7 @@ class AdminDashboardService(
         private const val ACCOUNT_TYPE_UNKNOWN = "미상"
         private const val WORK_TYPE_UNKNOWN = "미상"
         private const val AGE_GROUP_UNKNOWN = "미상"
+        private const val ETC_LABEL_UNCLASSIFIED = "미분류"
 
         // 근무형태(WorkingCategory3) 표준값
         private const val WC3_FIXED = "고정"

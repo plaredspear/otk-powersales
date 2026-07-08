@@ -299,6 +299,10 @@ class AdminDashboardServiceTest {
         assertThat(result.basicStats.totalByPosition.active).isEqualTo(3)
         assertThat(result.basicStats.totalByPosition.onLeave).isEqualTo(1)
         assertThat(result.basicStats.totalByPosition.etc).isEqualTo(1)
+        // 기타(null) → "미분류" 1명 breakdown
+        assertThat(result.basicStats.totalByPosition.etcBreakdown)
+            .extracting("label", "count")
+            .containsExactly(org.assertj.core.groups.Tuple.tuple("미분류", 1))
     }
 
     @Test
@@ -321,6 +325,39 @@ class AdminDashboardServiceTest {
         assertThat(result.basicStats.staffType.promotion).isEqualTo(2)
         assertThat(result.basicStats.staffType.osc).isEqualTo(2)
         assertThat(result.basicStats.staffType.etc).isEqualTo(1)
+        // 기타(jobCode="기타") → "기타" 1명 breakdown
+        assertThat(result.basicStats.staffType.etcBreakdown)
+            .extracting("label", "count")
+            .containsExactly(org.assertj.core.groups.Tuple.tuple("기타", 1))
+    }
+
+    @Test
+    @DisplayName("T10 기타 breakdown — 원본 값별 집계 + null/공백은 '미분류' 합산 + count 내림차순 정렬")
+    fun etcBreakdownGrouping() {
+        every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            // 재직/휴직 아님 → 모두 기타. status 원본값별로 그룹핑되어야 함
+            employee(status = "파견"), employee(status = "파견"),
+            employee(status = "교육"),
+            employee(status = null), employee(status = ""),
+        )
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
+            )
+
+        val result = service.getDashboard(emptyList(), "2026-05")
+
+        assertThat(result.basicStats.totalByPosition.etc).isEqualTo(5)
+        // count 내림차순: 파견 2 / 미분류 2(null+공백) / 교육 1. 동수(파견·미분류)는 라벨 오름차순 → 미분류 먼저
+        assertThat(result.basicStats.totalByPosition.etcBreakdown)
+            .extracting("label", "count")
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple("미분류", 2),
+                org.assertj.core.groups.Tuple.tuple("파견", 2),
+                org.assertj.core.groups.Tuple.tuple("교육", 1),
+            )
     }
 
     @Test
