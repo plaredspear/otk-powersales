@@ -6224,6 +6224,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseLoggerLevelResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LoggerLevelResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseLoggerListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LoggerListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseLogisticsClaimReportResponse" : {
         "properties" : {
           "data" : {
@@ -11887,6 +11945,37 @@
         "properties" : {
           "externalKey" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "LoggerLevelResponse" : {
+        "properties" : {
+          "configuredLevel" : {
+            "type" : [ "string", "null" ]
+          },
+          "effectiveLevel" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "LoggerListResponse" : {
+        "properties" : {
+          "availableLevels" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "loggers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LoggerLevelResponse"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -18016,6 +18105,19 @@
             "type" : "integer"
           }
         },
+        "type" : "object"
+      },
+      "UpdateLoggerLevelRequest" : {
+        "properties" : {
+          "level" : {
+            "type" : [ "string", "null" ]
+          },
+          "loggerName" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "loggerName" ],
         "type" : "object"
       },
       "UpdateThemeRequest" : {
@@ -31625,6 +31727,50 @@
           }
         },
         "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/tools/log-levels" : {
+      "get" : {
+        "operationId" : "getLoggers",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLoggerListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "log-level-controller" ]
+      },
+      "post" : {
+        "operationId" : "updateLoggerLevel",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateLoggerLevelRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLoggerLevelResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "log-level-controller" ]
       }
     },
     "/api/v1/admin/user-roles/tree" : {

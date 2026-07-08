@@ -356,9 +356,17 @@ export const router = createBrowserRouter(
                   ],
                 },
                 {
-                  element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
+                  // 개발자 도구 > 대시보드 = 런타임 로그 레벨 관리. 백엔드가 시스템 관리자 전용으로
+                  // 가드하므로(LogLevelController.requireSystemAdmin) 라우트 가드도 RoleRoute 로
+                  // 일치시켜 비관리자 진입을 차단한다 (menuConfig 게이팅과 정합).
+                  element: <RoleRoute allowedProfileNames={['시스템 관리자']} />,
                   children: [
                     { path: '/admin/tools/dashboard', element: <LazyWrapper><ToolsDashboardPage /></LazyWrapper> },
+                  ],
+                },
+                {
+                  element: <PermissionRoute systemPermission="VIEW_ALL_DATA" />,
+                  children: [
                     { path: '/admin/tools/scheduled-jobs', element: <LazyWrapper><ScheduledJobsPage /></LazyWrapper> },
                   ],
                 },

@@ -448,7 +448,10 @@ export const menuRoute: MenuRoute = {
       name: '개발자 도구',
       icon: <ToolOutlined />,
       children: [
-        { path: '/admin/tools/dashboard', name: '대시보드', systemPermission: 'VIEW_ALL_DATA' },
+        // 대시보드 = 런타임 로그 레벨 관리. 백엔드가 시스템 관리자 전용으로 가드하므로
+        // (LogLevelController.requireSystemAdmin) 메뉴 게이팅도 profileName 으로 일치시켜
+        // 비관리자에게 진입 후 403 을 노출하지 않는다.
+        { path: '/admin/tools/dashboard', name: '대시보드', allowedProfileNames: ['시스템 관리자'] },
         { path: '/admin/tools/external-api', name: '외부 API 테스트', systemPermission: 'MODIFY_ALL_DATA' },
         { path: '/admin/tools/scheduled-jobs', name: '스케줄 잡', systemPermission: 'VIEW_ALL_DATA' },
         { path: '/admin/tools/sap-integration', name: 'SAP 연동', systemPermission: 'VIEW_ALL_DATA' },
