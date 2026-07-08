@@ -304,18 +304,11 @@ export default function DashboardPage() {
             <InfoCircleOutlined style={{ marginRight: 4 }} />
             여사원 투입거래처 기준 매출현황
           </span>
-          <span style={{ display: 'flex', gap: 16 }}>
-            <Link
-              to={`/sales/monthly?yearMonth=${queryParams.yearMonth}&deploymentFilter=deployed`}
-            >
-              {Number(queryParams.yearMonth.slice(5, 7))}월 월 매출(물류배부) →
-            </Link>
-            <Link
-              to={`/sales/monthly?yearMonth=${Number(queryParams.yearMonth.slice(0, 4)) - 1}-${queryParams.yearMonth.slice(5, 7)}&deploymentFilter=deployed`}
-            >
-              전년 {Number(queryParams.yearMonth.slice(5, 7))}월 월 매출(물류배부) →
-            </Link>
-          </span>
+          <Link
+            to={`/sales/monthly?yearMonth=${queryParams.yearMonth}&deploymentFilter=deployed`}
+          >
+            {Number(queryParams.yearMonth.slice(5, 7))}월 월 매출(물류배부) →
+          </Link>
         </div>
       </>
     );
