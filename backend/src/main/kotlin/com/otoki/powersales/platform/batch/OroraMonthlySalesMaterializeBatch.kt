@@ -16,9 +16,8 @@ import org.springframework.stereotype.Component
  * 마감분을 적재했으며 (`OroraYearMonth__mdt` 전월값) 운영 DB 적재 분포도 이를 확인 → 본 batch 는
  * 동일 cron 으로 **전월** 동적 산출. 처리 로직은 [OroraSalesMaterializeFacade.materializeMonthly] 위임.
  *
- * 현재 [BatchConfig] 의 `@EnableScheduling` 전면 임시 비활성 (commit d927d1bc, 2026-05-14) — 본 batch
- * fire 도 비활성 상태와 무관. 어노테이션 한 줄 복원 시 즉시 활성.
- * `app.batch.orora.monthly.enabled=true` 인 환경에서만 빈이 생성·발화한다 (기본 OFF).
+ * 전역 `@EnableScheduling` ([BatchConfig]) 은 ON — `app.batch.orora.monthly.enabled=true` 인 환경에서만
+ * 빈이 생성·발화한다 (기본 OFF, dev/prod 프로파일은 application.yml 에서 ON).
  */
 @Component
 @ConditionalOnProperty(name = ["app.batch.orora.monthly.enabled"], havingValue = "true", matchIfMissing = false)
@@ -27,7 +26,8 @@ class OroraMonthlySalesMaterializeBatch(
     private val scheduledJobRunner: ScheduledJobRunner,
 ) {
 
-    // 레거시 SF CronTrigger "오로라 월별 매출 이력 수신" `0 0 11 ? * 5#1` (매월 첫째 주 목요일 11:00 Asia/Seoul) 정합.
+    // 기본값은 레거시 SF CronTrigger "오로라 월별 매출 이력 수신" `0 0 11 ? * 5#1` (매월 첫째 주 목요일 11:00 Asia/Seoul) 정합.
+    // 실 운영은 application.yml `app.batch.orora.monthly.cron` 이 override (현재 매월 3일 05:00 KST).
     // Quartz 요일 5=목요일 → Spring THU. JVM/컨테이너 TZ=Asia/Seoul (Dockerfile) 이므로 zone 명시 없이 KST 로 발화.
     @Scheduled(cron = "\${app.batch.orora.monthly.cron:0 0 11 ? * THU#1}")
     // lockAtMostFor=PT2H: 다중 인스턴스 환경에서 거래처 chunk(≈50개) 누적 처리가 길어져도
