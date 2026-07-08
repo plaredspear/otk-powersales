@@ -51,22 +51,6 @@ interface EmployeeRepository : JpaRepository<Employee, Long>, EmployeeRepository
     fun findByCostCenterCodeIn(costCenterCodes: List<String>): List<Employee>
 
     /**
-     * 대시보드 기본현황 집계 전용 projection 조회 (지점 스코프).
-     *
-     * 기본현황은 jobCode / status / birthDate 3개 필드만 쓰므로 entity 전 컬럼 적재 대신
-     * [DashboardEmployeeProjection] 으로 전송량을 축소한다. status 무관 전량.
-     */
-    fun findProjectedByCostCenterCodeIn(costCenterCodes: List<String>): List<DashboardEmployeeProjection>
-
-    /**
-     * 대시보드 기본현황 집계 전용 projection 조회 (전사 — 전사 권한 스코프).
-     *
-     * [findProjectedByCostCenterCodeIn] 의 전사판. WHERE 없는 findAll() 의 entity 전 컬럼 적재 대신
-     * 3개 필드만 가져온다.
-     */
-    fun findProjectedBy(): List<DashboardEmployeeProjection>
-
-    /**
      * 진열스케줄 템플릿용 사원 조회
      * 조건: costCenterCode 일치, role 일치, appLoginActive=true, status 일치
      */
@@ -137,3 +121,14 @@ interface DashboardEmployeeProjection {
     val status: String?
     val birthDate: String?
 }
+
+/**
+ * [DashboardEmployeeProjection] 의 QueryDSL `Projections.constructor` 전용 구현체.
+ *
+ * QueryDSL 은 interface projection 을 직접 생성하지 못하므로, 조회 결과를 담을 concrete class 를 둔다.
+ */
+data class DashboardEmployeeProjectionDto(
+    override val jobCode: String?,
+    override val status: String?,
+    override val birthDate: String?,
+) : DashboardEmployeeProjection

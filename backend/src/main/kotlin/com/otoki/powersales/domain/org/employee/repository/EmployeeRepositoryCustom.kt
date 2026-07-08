@@ -41,6 +41,19 @@ interface EmployeeRepositoryCustom {
     fun findAllEmployeeCodes(): List<String>
 
     /**
+     * 관리자 대시보드 기본현황 집계 전용 projection 조회.
+     *
+     * 기본현황은 jobCode / status / birthDate 3개 필드만 쓰므로 entity 전 컬럼 적재 대신
+     * [DashboardEmployeeProjection] 으로 전송량을 축소한다.
+     *
+     * 퇴직자(status='퇴직') 는 재직 현황 모수에서 제외한다. status 가 NULL 인 사원은
+     * 재직/휴직 미분류로 유지해야 하므로 포함한다.
+     *
+     * @param costCenterCodes  지점 스코프 필터. `null` 또는 비어있으면 전사 조회.
+     */
+    fun findDashboardBasicStatsProjection(costCenterCodes: List<String>?): List<DashboardEmployeeProjection>
+
+    /**
      * @param role   단일 role 등호 필터 (`employee.role = :role`). 전체 사원 관리/lookup 화면용.
      * @param roles  다중 role IN 필터 (`employee.role IN :roles`). 여사원 현황(여사원+조장)처럼 여러
      *               직책을 함께 노출하는 화면용. [role] 과 [roles] 를 동시에 주면 둘 다 AND 로 적용된다

@@ -241,7 +241,7 @@ class AdminDashboardService(
         val osc = employees.count { it.jobCode == JOB_CODE_OSC || it.jobCode == JOB_CODE_LADY }
         val staffTypeEtc = employees.size - promotion - osc
 
-        // 재직/휴직. etc = 두 상태 외/null (퇴직 등). 모수는 사원 전체로 일치
+        // 재직/휴직. 퇴직자는 모수에서 이미 제외됨(findEmployees). etc = status 가 재직/휴직 외이거나 null 인 사원
         val active = employees.count { it.status == STATUS_ACTIVE }
         val onLeave = employees.count { it.status == STATUS_ON_LEAVE }
         val positionEtc = employees.size - active - onLeave
@@ -313,8 +313,8 @@ class AdminDashboardService(
 
     private fun findEmployees(effectiveCodes: List<String>): List<DashboardEmployeeProjection> {
         // 기본현황은 jobCode/status/birthDate 만 쓰므로 projection 으로 적재 (entity 전 컬럼 회피).
-        return if (effectiveCodes.isEmpty()) employeeRepository.findProjectedBy()
-        else employeeRepository.findProjectedByCostCenterCodeIn(effectiveCodes)
+        // 퇴직자는 재직 현황 모수에서 제외 (repository 쿼리 레벨). empty → 전사 조회.
+        return employeeRepository.findDashboardBasicStatsProjection(effectiveCodes)
     }
 
     companion object {

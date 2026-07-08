@@ -2,10 +2,12 @@ package com.otoki.powersales.domain.org.employee.repository
 
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.org.employee.entity.QEmployeeInfo.Companion.employeeInfo
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.Projections
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -103,6 +105,29 @@ class EmployeeRepositoryCustomImpl(
         return queryFactory
             .select(employee.employeeCode)
             .from(employee)
+            .fetch()
+    }
+
+    override fun findDashboardBasicStatsProjection(
+        costCenterCodes: List<String>?
+    ): List<DashboardEmployeeProjection> {
+        // 퇴직자(status='퇴직') 제외. status=NULL 은 재직/휴직 미분류로 유지하기 위해 포함한다.
+        val where = BooleanBuilder()
+            .and(employee.status.isNull.or(employee.status.ne(EmploymentStatus.RESIGNED.code)))
+        if (!costCenterCodes.isNullOrEmpty()) {
+            where.and(employee.costCenterCode.`in`(costCenterCodes))
+        }
+        return queryFactory
+            .select(
+                Projections.constructor(
+                    DashboardEmployeeProjectionDto::class.java,
+                    employee.jobCode,
+                    employee.status,
+                    employee.birthDate,
+                )
+            )
+            .from(employee)
+            .where(where)
             .fetch()
     }
 
