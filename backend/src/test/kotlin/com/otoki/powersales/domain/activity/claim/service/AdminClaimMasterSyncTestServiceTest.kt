@@ -198,6 +198,19 @@ class AdminClaimMasterSyncTestServiceTest {
     }
 
     @Test
+    @DisplayName("운영 SF 응답의 \"Result\" 래퍼(대문자 R)도 대소문자 무시로 추출해 갱신")
+    fun extractsArrayFromResultWrapperCaseInsensitive() {
+        val claim = Claim(id = 7L)
+        every { claimRepository.findById(7L) } returns Optional.of(claim)
+        stubSf("""{ "RESULT_CODE": "200", "Result": [{ "pwrskey": "7", "ActionStatus": "처리완료" }] }""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(claim.actionStatus).isEqualTo("처리완료")
+    }
+
+    @Test
     @DisplayName("응답에서 배열을 못 찾으면 갱신 0 (성공 응답은 유지)")
     fun noArrayYieldsZeroUpdates() {
         stubSf("""{ "RESULT_CODE": "200", "RESULT_MSG": "SUCCESS" }""")

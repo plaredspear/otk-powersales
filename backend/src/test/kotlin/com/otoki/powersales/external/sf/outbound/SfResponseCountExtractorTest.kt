@@ -29,6 +29,12 @@ class SfResponseCountExtractorTest {
     }
 
     @Test
+    @DisplayName("운영 SF 응답의 \"Result\" 래퍼(대문자 R)도 대소문자 무시로 인식")
+    fun resultWrapperCaseInsensitive() {
+        assertThat(extractor.extract("""{"RESULT_CODE":"200","Result":[{"a":1},{"a":2}]}""")).isEqualTo(2)
+    }
+
+    @Test
     @DisplayName("빈 배열은 0 을 반환")
     fun emptyArray() {
         assertThat(extractor.extract("""{"data":[]}""")).isEqualTo(0)

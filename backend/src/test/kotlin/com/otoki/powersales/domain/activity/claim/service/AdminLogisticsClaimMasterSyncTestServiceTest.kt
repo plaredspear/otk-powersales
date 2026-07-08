@@ -210,4 +210,17 @@ class AdminLogisticsClaimMasterSyncTestServiceTest {
         assertThat(response.updatedCount).isEqualTo(1)
         assertThat(s.actionStatus).isEqualTo(SuggestionActionStatus.IN_PROGRESS)
     }
+
+    @Test
+    @DisplayName("운영 SF 응답의 \"Result\" 래퍼(대문자 R)도 대소문자 무시로 추출해 갱신")
+    fun extractsArrayFromResultWrapperCaseInsensitive() {
+        val s = suggestion(7L)
+        every { suggestionRepository.findById(7L) } returns Optional.of(s)
+        stubSf("""{ "RESULT_CODE": "200", "Result": [{ "pwrskey": "7", "ActionStatus": "조치중" }] }""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(s.actionStatus).isEqualTo(SuggestionActionStatus.IN_PROGRESS)
+    }
 }

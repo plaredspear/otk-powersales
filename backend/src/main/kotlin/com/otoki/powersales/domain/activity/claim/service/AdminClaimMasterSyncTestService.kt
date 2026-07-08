@@ -5,13 +5,13 @@ import com.otoki.powersales.domain.activity.claim.dto.response.AdminClaimMasterS
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import com.otoki.powersales.external.sf.outbound.SfOAuthFailedException
+import com.otoki.powersales.external.sf.outbound.SfResponseArrayExtractor
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunContext
 import org.slf4j.LoggerFactory
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.core.type.TypeReference
-import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -156,7 +156,7 @@ class AdminClaimMasterSyncTestService(
         if (raw.isNullOrBlank()) return emptyList()
         return try {
             val root = objectMapper.readTree(raw)
-            val arrayNode = extractArrayNode(root) ?: run {
+            val arrayNode = SfResponseArrayExtractor.extractArrayNode(root) ?: run {
                 log.warn("[claim-master-sync] SF 응답에서 레코드 배열을 찾지 못함 — 빈 리스트. body 앞부분={}", raw.take(200))
                 return emptyList()
             }
@@ -165,18 +165,6 @@ class AdminClaimMasterSyncTestService(
             log.warn("[claim-master-sync] SF 응답 파싱 실패 — 빈 리스트. error={} body 앞부분={}", e.message, raw.take(200))
             emptyList()
         }
-    }
-
-    /** 최상위가 배열이면 그대로, 객체면 흔한 wrapper key 를 순서대로 탐색. */
-    private fun extractArrayNode(root: JsonNode): JsonNode? {
-        if (root.isArray) return root
-        if (root.isObject) {
-            for (key in WRAPPER_KEYS) {
-                val child = root.get(key)
-                if (child != null && child.isArray) return child
-            }
-        }
-        return null
     }
 
     private fun failure(requestPayload: String, message: String) = AdminClaimMasterSyncTestResponse(
@@ -198,9 +186,6 @@ class AdminClaimMasterSyncTestService(
     companion object {
         /** SF Apex REST suffix (apex base URL 뒤에 붙는다). */
         const val SF_ENDPOINT = "/IF_SendClaimToPWS"
-
-        /** SF 응답 wrapper key 후보 (sales-progress fetch 와 동일 순서). */
-        private val WRAPPER_KEYS = listOf("data", "DATA", "list", "LIST", "result", "RESULT", "items")
 
         /** SF Request Body MOD_DT 형식 (YYYYMMDD). */
         private val MOD_DT_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")

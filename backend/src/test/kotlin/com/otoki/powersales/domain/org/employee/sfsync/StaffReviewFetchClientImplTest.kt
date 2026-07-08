@@ -104,6 +104,17 @@ class StaffReviewFetchClientImplTest {
     }
 
     @Test
+    @DisplayName("운영 SF 응답의 \"Result\" 래퍼(대문자 R)도 대소문자 무시로 추출")
+    fun parsesResultWrapperCaseInsensitive() {
+        stub("""{"RESULT_CODE":"200","Result":[{"Id":"a0X1","Name":"SR-1"}]}""")
+
+        val result = client.fetch("20260101")
+
+        assertThat(result).hasSize(1)
+        assertThat(result.single().sfid).isEqualTo("a0X1")
+    }
+
+    @Test
     @DisplayName("알 수 없는 근무유형 값은 null 로 매핑 (예외 없음)")
     fun unknownWorkingCategoryMapsToNull() {
         stub("""[{"Id":"a0X1","Name":"SR-1","DKRetailWorkingCategory1":"미정의값"}]""")
