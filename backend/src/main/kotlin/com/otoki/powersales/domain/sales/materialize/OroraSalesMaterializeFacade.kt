@@ -94,6 +94,21 @@ class OroraSalesMaterializeFacade(
     private fun accountRange(): OroraAccountRange = OroraAccountRange(rangeFrom, rangeTo, chunkSize)
 
     /**
+     * 월별 적재 대상 매출월 미리보기 — 명시값 우선, 없으면 전월 `YYYYMM`.
+     *
+     * 비동기 적재 접수 응답이 "어느 월을 적재하는지" 를 즉시 표기하기 위해 [materializeMonthly] 내부의
+     * [resolvePreviousSalesMonth] 와 동일한 산출을 공개한다.
+     */
+    fun previewMonthlySalesMonth(salesMonth: String?): String = resolvePreviousSalesMonth(salesMonth)
+
+    /**
+     * 일별 적재 대상 매출월 미리보기 — 명시값 우선, 없으면 당월 `YYYYMM`.
+     *
+     * 비동기 적재 접수 응답 표기용. [materializeDaily] 내부의 [resolveSalesMonth] 와 동일 산출.
+     */
+    fun previewDailySalesMonth(salesMonth: String?): String = resolveSalesMonth(salesMonth)
+
+    /**
      * 대상 매출월 결정 (일별) — 명시값 우선, 없으면 현재 시각 기준 당월 `YYYYMM`.
      */
     private fun resolveSalesMonth(salesMonth: String?): String =

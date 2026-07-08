@@ -114,11 +114,21 @@ export async function getScheduledJobSummary(
   return res.data.data;
 }
 
-export interface OroraMonthlyMaterializeTriggerResponse {
+/**
+ * ORORA 매출 수동 적재 **비동기 접수** 응답.
+ *
+ * 적재는 서버 별도 스레드에서 수행되므로 본 응답은 "접수됨" 만 알린다. 실제 조회/적재 건수는
+ * 완료 후 실행 이력(`scheduled_job_run`)에 남으며, 화면은 이력 탭 새로고침으로 진행/결과를 확인한다.
+ */
+export interface OroraMaterializeAcceptedResponse {
+  /** 실행을 접수한 스케줄 잡 이름 (이력 탭 필터 값). */
+  jobName: string;
+  /** 적재 대상 매출월 (`YYYYMM`). 요청에서 미지정 시 서버가 산출한 값. */
   salesMonth: string;
-  fetchedCount: number;
-  upsertedCount: number;
-  skippedAccountUnmatchedCount: number;
+  /** 접수 여부 (항상 true — 접수 실패는 예외로 전파). */
+  accepted: boolean;
+  /** 사용자 안내 문구. */
+  message: string;
 }
 
 export interface ScheduledJobManualTriggerResponse {
@@ -146,18 +156,19 @@ export async function triggerPptMaster(
 }
 
 /**
- * ORORA 월매출 적재를 특정 월(`YYYYMM`)로 수동 실행한다 (`salesMonth` 미지정 시 전월).
+ * ORORA 월매출 적재를 특정 월(`YYYYMM`)로 **비동기** 수동 실행 접수한다 (`salesMonth` 미지정 시 전월).
+ * 서버는 즉시 접수(202)만 반환하고 실제 적재는 백그라운드에서 수행 — 결과는 실행 이력 탭에서 확인한다.
  * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
  */
 export async function triggerOroraMonthlyMaterialize(
   salesMonth?: string,
-): Promise<OroraMonthlyMaterializeTriggerResponse> {
-  const res = await client.post<ApiResponse<OroraMonthlyMaterializeTriggerResponse>>(
+): Promise<OroraMaterializeAcceptedResponse> {
+  const res = await client.post<ApiResponse<OroraMaterializeAcceptedResponse>>(
     '/api/v1/admin/scheduled-jobs/orora-monthly/trigger',
     salesMonth ? { salesMonth } : {},
   );
   if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || 'ORORA 월매출 수동 적재에 실패했습니다');
+    throw new Error(res.data.message || 'ORORA 월매출 수동 적재 접수에 실패했습니다');
   }
   return res.data.data;
 }
@@ -204,21 +215,15 @@ export async function getOroraMonthlyChunks(): Promise<OroraMonthlyChunkCatalogR
 export async function triggerOroraMonthlyMaterializeChunk(
   chunkIndex: number,
   salesMonth?: string,
-): Promise<OroraMonthlyMaterializeTriggerResponse> {
-  const res = await client.post<ApiResponse<OroraMonthlyMaterializeTriggerResponse>>(
+): Promise<OroraMaterializeAcceptedResponse> {
+  const res = await client.post<ApiResponse<OroraMaterializeAcceptedResponse>>(
     '/api/v1/admin/scheduled-jobs/orora-monthly/chunk/trigger',
     salesMonth ? { chunkIndex, salesMonth } : { chunkIndex },
   );
   if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || 'ORORA 월매출 청크 수동 적재에 실패했습니다');
+    throw new Error(res.data.message || 'ORORA 월매출 청크 수동 적재 접수에 실패했습니다');
   }
   return res.data.data;
-}
-
-export interface OroraDailyMaterializeTriggerResponse {
-  salesMonth: string;
-  dailyUpsertedCount: number;
-  monthlyAggregateUpdatedCount: number;
 }
 
 /** ORORA 일매출 거래처 청크 메타 응답 (거래처 범위가 일·월 공용이라 월매출과 형태 동일). */
@@ -237,13 +242,13 @@ export interface OroraDailyChunkCatalogResponse {
  */
 export async function triggerOroraDailyMaterialize(
   salesMonth?: string,
-): Promise<OroraDailyMaterializeTriggerResponse> {
-  const res = await client.post<ApiResponse<OroraDailyMaterializeTriggerResponse>>(
+): Promise<OroraMaterializeAcceptedResponse> {
+  const res = await client.post<ApiResponse<OroraMaterializeAcceptedResponse>>(
     '/api/v1/admin/scheduled-jobs/orora-daily/trigger',
     salesMonth ? { salesMonth } : {},
   );
   if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || 'ORORA 일매출 수동 적재에 실패했습니다');
+    throw new Error(res.data.message || 'ORORA 일매출 수동 적재 접수에 실패했습니다');
   }
   return res.data.data;
 }
@@ -270,13 +275,13 @@ export async function getOroraDailyChunks(): Promise<OroraDailyChunkCatalogRespo
 export async function triggerOroraDailyMaterializeChunk(
   chunkIndex: number,
   salesMonth?: string,
-): Promise<OroraDailyMaterializeTriggerResponse> {
-  const res = await client.post<ApiResponse<OroraDailyMaterializeTriggerResponse>>(
+): Promise<OroraMaterializeAcceptedResponse> {
+  const res = await client.post<ApiResponse<OroraMaterializeAcceptedResponse>>(
     '/api/v1/admin/scheduled-jobs/orora-daily/chunk/trigger',
     salesMonth ? { chunkIndex, salesMonth } : { chunkIndex },
   );
   if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || 'ORORA 일매출 청크 수동 적재에 실패했습니다');
+    throw new Error(res.data.message || 'ORORA 일매출 청크 수동 적재 접수에 실패했습니다');
   }
   return res.data.data;
 }

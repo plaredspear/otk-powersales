@@ -187,15 +187,10 @@ function OroraMonthlyTriggerPanel() {
   const handleRun = () => {
     trigger.mutate(salesMonth, {
       onSuccess: (result) => {
-        message.success(
-          `${result.salesMonth} 적재 완료 — 조회 ${result.fetchedCount}건 / 적재 ${result.upsertedCount}건` +
-            (result.skippedAccountUnmatchedCount > 0
-              ? ` / 거래처 미매칭 ${result.skippedAccountUnmatchedCount}건`
-              : ''),
-        );
+        message.success(result.message ?? `${result.salesMonth} 적재를 시작했습니다.`);
       },
       onError: (err) => {
-        message.error(err instanceof Error ? err.message : 'ORORA 월매출 수동 적재에 실패했습니다');
+        message.error(err instanceof Error ? err.message : 'ORORA 월매출 수동 적재 접수에 실패했습니다');
       },
     });
   };
@@ -223,7 +218,8 @@ function OroraMonthlyTriggerPanel() {
           </Button>
         </Popconfirm>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          ORORA view 를 조회해 monthly_sales_history 에 upsert 합니다. 외부 연동이므로 수십 초 소요될 수 있습니다.
+          ORORA view 를 조회해 monthly_sales_history 에 upsert 합니다. 외부 연동이라 수십 초~수 분 걸릴 수 있어
+          백그라운드로 실행되며, 실행 버튼은 즉시 접수만 반환합니다. 진행/결과는 아래 실행 이력에서 확인하세요.
         </Text>
       </Space>
     </Card>
@@ -263,15 +259,12 @@ function OroraMonthlyChunkTriggerPanel() {
       {
         onSuccess: (result) => {
           message.success(
-            `${result.salesMonth} ${chunkIndex + 1}번 청크 적재 완료 — 조회 ${result.fetchedCount}건 / 적재 ${result.upsertedCount}건` +
-              (result.skippedAccountUnmatchedCount > 0
-                ? ` / 거래처 미매칭 ${result.skippedAccountUnmatchedCount}건`
-                : ''),
+            result.message ?? `${result.salesMonth} ${chunkIndex + 1}번 청크 적재를 시작했습니다.`,
           );
         },
         onError: (err) => {
           message.error(
-            err instanceof Error ? err.message : 'ORORA 월매출 청크 수동 적재에 실패했습니다',
+            err instanceof Error ? err.message : 'ORORA 월매출 청크 수동 적재 접수에 실패했습니다',
           );
         },
       },
@@ -342,12 +335,10 @@ function OroraDailyTriggerPanel() {
   const handleRun = () => {
     trigger.mutate(salesMonth, {
       onSuccess: (result) => {
-        message.success(
-          `${result.salesMonth} 적재 완료 — 일별 ${result.dailyUpsertedCount}건 / 월합계 갱신 ${result.monthlyAggregateUpdatedCount}건`,
-        );
+        message.success(result.message ?? `${result.salesMonth} 적재를 시작했습니다.`);
       },
       onError: (err) => {
-        message.error(err instanceof Error ? err.message : 'ORORA 일매출 수동 적재에 실패했습니다');
+        message.error(err instanceof Error ? err.message : 'ORORA 일매출 수동 적재 접수에 실패했습니다');
       },
     });
   };
@@ -375,7 +366,8 @@ function OroraDailyTriggerPanel() {
           </Button>
         </Popconfirm>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          ORORA view 를 조회해 daily_sales_history 에 upsert + 월합계를 갱신합니다. 외부 연동이므로 수십 초 소요될 수 있습니다.
+          ORORA view 를 조회해 daily_sales_history 에 upsert + 월합계를 갱신합니다. 외부 연동이라 수십 초~수 분
+          걸릴 수 있어 백그라운드로 실행되며, 실행 버튼은 즉시 접수만 반환합니다. 진행/결과는 아래 실행 이력에서 확인하세요.
         </Text>
       </Space>
     </Card>
@@ -415,12 +407,12 @@ function OroraDailyChunkTriggerPanel() {
       {
         onSuccess: (result) => {
           message.success(
-            `${result.salesMonth} ${chunkIndex + 1}번 청크 적재 완료 — 일별 ${result.dailyUpsertedCount}건 / 월합계 갱신 ${result.monthlyAggregateUpdatedCount}건`,
+            result.message ?? `${result.salesMonth} ${chunkIndex + 1}번 청크 적재를 시작했습니다.`,
           );
         },
         onError: (err) => {
           message.error(
-            err instanceof Error ? err.message : 'ORORA 일매출 청크 수동 적재에 실패했습니다',
+            err instanceof Error ? err.message : 'ORORA 일매출 청크 수동 적재 접수에 실패했습니다',
           );
         },
       },

@@ -1,8 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
-import com.otoki.powersales.admin.dto.response.OroraDailyMaterializeTriggerResponse
-import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
+import com.otoki.powersales.admin.dto.response.OroraMaterializeAcceptedResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobManualTriggerResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
@@ -135,14 +134,13 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("POST /orora-monthly/trigger - salesMonth 가 service 로 전달되고 결과 반환")
+    @DisplayName("POST /orora-monthly/trigger - salesMonth 가 service 로 전달되고 202 접수 응답 반환")
     fun triggerOroraMonthly_withMonth() {
         every { adminScheduledJobService.triggerOroraMonthly("202604") } returns
-            OroraMonthlyMaterializeTriggerResponse(
+            OroraMaterializeAcceptedResponse(
+                jobName = "ororaMonthlySalesMaterialize",
                 salesMonth = "202604",
-                fetchedCount = 8900,
-                upsertedCount = 8900,
-                skippedAccountUnmatchedCount = 3,
+                message = "202604 적재를 시작했습니다.",
             )
 
         mockMvc.perform(
@@ -150,11 +148,10 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"salesMonth":"202604"}""")
         )
-            .andExpect(status().isOk)
+            .andExpect(status().isAccepted)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.salesMonth").value("202604"))
-            .andExpect(jsonPath("$.data.upsertedCount").value(8900))
-            .andExpect(jsonPath("$.data.skippedAccountUnmatchedCount").value(3))
+            .andExpect(jsonPath("$.data.accepted").value(true))
 
         verify(exactly = 1) { adminScheduledJobService.triggerOroraMonthly("202604") }
     }
@@ -163,23 +160,23 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
     @DisplayName("POST /orora-monthly/trigger - body 없으면 service 에 null 전달 (전월 자동)")
     fun triggerOroraMonthly_noBody() {
         every { adminScheduledJobService.triggerOroraMonthly(null) } returns
-            OroraMonthlyMaterializeTriggerResponse("202605", 0, 0, 0)
+            OroraMaterializeAcceptedResponse("ororaMonthlySalesMaterialize", "202605", true, "202605 적재를 시작했습니다.")
 
         mockMvc.perform(post("/api/v1/admin/scheduled-jobs/orora-monthly/trigger"))
-            .andExpect(status().isOk)
+            .andExpect(status().isAccepted)
             .andExpect(jsonPath("$.data.salesMonth").value("202605"))
 
         verify(exactly = 1) { adminScheduledJobService.triggerOroraMonthly(null) }
     }
 
     @Test
-    @DisplayName("POST /orora-daily/trigger - salesMonth 가 service 로 전달되고 결과 반환")
+    @DisplayName("POST /orora-daily/trigger - salesMonth 가 service 로 전달되고 202 접수 응답 반환")
     fun triggerOroraDaily_withMonth() {
         every { adminScheduledJobService.triggerOroraDaily("202606") } returns
-            OroraDailyMaterializeTriggerResponse(
+            OroraMaterializeAcceptedResponse(
+                jobName = "ororaDailySalesMaterialize",
                 salesMonth = "202606",
-                dailyUpsertedCount = 12000,
-                monthlyAggregateUpdatedCount = 8900,
+                message = "202606 적재를 시작했습니다.",
             )
 
         mockMvc.perform(
@@ -187,11 +184,10 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"salesMonth":"202606"}""")
         )
-            .andExpect(status().isOk)
+            .andExpect(status().isAccepted)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.salesMonth").value("202606"))
-            .andExpect(jsonPath("$.data.dailyUpsertedCount").value(12000))
-            .andExpect(jsonPath("$.data.monthlyAggregateUpdatedCount").value(8900))
+            .andExpect(jsonPath("$.data.accepted").value(true))
 
         verify(exactly = 1) { adminScheduledJobService.triggerOroraDaily("202606") }
     }
@@ -200,10 +196,10 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
     @DisplayName("POST /orora-daily/trigger - body 없으면 service 에 null 전달 (당월 자동)")
     fun triggerOroraDaily_noBody() {
         every { adminScheduledJobService.triggerOroraDaily(null) } returns
-            OroraDailyMaterializeTriggerResponse("202606", 0, 0)
+            OroraMaterializeAcceptedResponse("ororaDailySalesMaterialize", "202606", true, "202606 적재를 시작했습니다.")
 
         mockMvc.perform(post("/api/v1/admin/scheduled-jobs/orora-daily/trigger"))
-            .andExpect(status().isOk)
+            .andExpect(status().isAccepted)
             .andExpect(jsonPath("$.data.salesMonth").value("202606"))
 
         verify(exactly = 1) { adminScheduledJobService.triggerOroraDaily(null) }
@@ -213,10 +209,10 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
     @DisplayName("POST /orora-daily/chunk/trigger - chunkIndex + salesMonth 가 service 로 전달")
     fun triggerOroraDailyChunk_withMonth() {
         every { adminScheduledJobService.triggerOroraDailyChunk(2, "202606") } returns
-            OroraDailyMaterializeTriggerResponse(
+            OroraMaterializeAcceptedResponse(
+                jobName = "ororaDailySalesMaterialize",
                 salesMonth = "202606",
-                dailyUpsertedCount = 500,
-                monthlyAggregateUpdatedCount = 300,
+                message = "202606 적재를 시작했습니다.",
             )
 
         mockMvc.perform(
@@ -224,8 +220,9 @@ class AdminScheduledJobControllerTest : AdminControllerTestSupport() {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"chunkIndex":2,"salesMonth":"202606"}""")
         )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.dailyUpsertedCount").value(500))
+            .andExpect(status().isAccepted)
+            .andExpect(jsonPath("$.data.salesMonth").value("202606"))
+            .andExpect(jsonPath("$.data.accepted").value(true))
 
         verify(exactly = 1) { adminScheduledJobService.triggerOroraDailyChunk(2, "202606") }
     }

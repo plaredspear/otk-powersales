@@ -2,10 +2,9 @@ package com.otoki.powersales.admin.service
 
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
 import com.otoki.powersales.admin.dto.response.OroraDailyChunkCatalogResponse
-import com.otoki.powersales.admin.dto.response.OroraDailyMaterializeTriggerResponse
+import com.otoki.powersales.admin.dto.response.OroraMaterializeAcceptedResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkCatalogResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkInfo
-import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
@@ -16,7 +15,6 @@ import com.otoki.powersales.platform.batch.ScheduledJobCatalog
 import com.otoki.powersales.platform.batch.toggle.ScheduledJobToggleStore
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRun
 import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunRepository
-import com.otoki.powersales.platform.common.jobrun.ScheduledJobRunner
 import com.otoki.powersales.domain.sales.materialize.OroraSalesMaterializeFacade
 import org.springframework.beans.factory.ListableBeanFactory
 import org.springframework.data.domain.PageRequest
@@ -36,7 +34,7 @@ import java.time.LocalDateTime
 class AdminScheduledJobService(
     private val scheduledJobRunRepository: ScheduledJobRunRepository,
     private val ororaSalesMaterializeFacade: OroraSalesMaterializeFacade,
-    private val scheduledJobRunner: ScheduledJobRunner,
+    private val ororaMaterializeAsyncRunner: OroraMaterializeAsyncRunner,
     private val beanFactory: ListableBeanFactory,
     private val scheduledJobToggleStore: ScheduledJobToggleStore,
 ) {
@@ -114,27 +112,21 @@ class AdminScheduledJobService(
     }
 
     /**
-     * ORORA 월매출 적재를 특정 월(`YYYYMM`)로 수동 실행한다.
+     * ORORA 월매출 적재를 특정 월(`YYYYMM`)로 **비동기** 수동 실행 접수한다.
      *
-     * 입력 월을 검증한 뒤 [OroraSalesMaterializeFacade.materializeMonthly] 에 명시 월로 위임한다 (전월
-     * 자동 산출 대신 운영자 지정 월 재적재). 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
-     * facade 내부 chunk processor 가 `REQUIRES_NEW` 트랜잭션으로 적재하므로 본 서비스의 readOnly 경계와 무관.
+     * 입력 월을 검증한 뒤 실제 적재는 [OroraMaterializeAsyncRunner.runMonthly] 로 별도 스레드에 위임하고
+     * 즉시 접수 응답을 돌려준다 — ORORA view SELECT 가 수십 초~수 분 걸려도 HTTP 요청이 매달리지 않도록.
+     * 조회/적재 건수 등 결과는 완료 후 `scheduled_job_run` 이력에 남으며 이력 탭에서 확인한다.
+     * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
      *
      * @param salesMonth `YYYYMM` 6자 (예: `202604`). null/blank 면 전월 자동 산출.
      */
-    fun triggerOroraMonthly(salesMonth: String?): OroraMonthlyMaterializeTriggerResponse {
-        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() }
-        if (normalized != null) {
-            require(normalized.length == 6 && normalized.all { it.isDigit() }) {
-                "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
-            }
-        }
-        val result = ororaSalesMaterializeFacade.materializeMonthly(normalized)
-        return OroraMonthlyMaterializeTriggerResponse(
-            salesMonth = result.salesMonth,
-            fetchedCount = result.fetchedCount,
-            upsertedCount = result.upsertedCount,
-            skippedAccountUnmatchedCount = result.skippedAccountUnmatchedCount,
+    fun triggerOroraMonthly(salesMonth: String?): OroraMaterializeAcceptedResponse {
+        val normalized = validateSalesMonth(salesMonth)
+        ororaMaterializeAsyncRunner.runMonthly(normalized)
+        return acceptedResponse(
+            jobName = OroraMonthlySalesMaterializeBatch.JOB_NAME,
+            salesMonth = ororaSalesMaterializeFacade.previewMonthlySalesMonth(normalized),
         )
     }
 
@@ -164,37 +156,17 @@ class AdminScheduledJobService(
      * @param chunkIndex 적재 대상 청크 번호 (0-based). `[0, chunkCount)` 범위.
      * @param salesMonth `YYYYMM` 6자. null/blank 면 전월 자동 산출.
      */
-    fun triggerOroraMonthlyChunk(chunkIndex: Int, salesMonth: String?): OroraMonthlyMaterializeTriggerResponse {
-        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() }
-        if (normalized != null) {
-            require(normalized.length == 6 && normalized.all { it.isDigit() }) {
-                "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
-            }
-        }
+    fun triggerOroraMonthlyChunk(chunkIndex: Int, salesMonth: String?): OroraMaterializeAcceptedResponse {
+        val normalized = validateSalesMonth(salesMonth)
         val chunkCount = ororaSalesMaterializeFacade.monthlyChunkCount()
         require(chunkIndex in 0 until chunkCount) {
             "chunkIndex 는 0 이상 $chunkCount 미만이어야 합니다: $chunkIndex"
         }
-
-        return scheduledJobRunner.run(OroraMonthlySalesMaterializeBatch.JOB_NAME) { ctx ->
-            val result = ororaSalesMaterializeFacade.materializeMonthlyChunk(chunkIndex, normalized)
-            ctx.metadata(
-                mapOf(
-                    "trigger" to "manual-chunk",
-                    "chunkIndex" to chunkIndex,
-                    "salesMonth" to result.salesMonth,
-                    "fetchedCount" to result.fetchedCount,
-                    "upsertedCount" to result.upsertedCount,
-                    "skippedAccountUnmatchedCount" to result.skippedAccountUnmatchedCount,
-                )
-            )
-            OroraMonthlyMaterializeTriggerResponse(
-                salesMonth = result.salesMonth,
-                fetchedCount = result.fetchedCount,
-                upsertedCount = result.upsertedCount,
-                skippedAccountUnmatchedCount = result.skippedAccountUnmatchedCount,
-            )
-        }
+        ororaMaterializeAsyncRunner.runMonthlyChunk(chunkIndex, normalized)
+        return acceptedResponse(
+            jobName = OroraMonthlySalesMaterializeBatch.JOB_NAME,
+            salesMonth = ororaSalesMaterializeFacade.previewMonthlySalesMonth(normalized),
+        )
     }
 
     /**
@@ -206,18 +178,12 @@ class AdminScheduledJobService(
      *
      * @param salesMonth `YYYYMM` 6자 (예: `202606`). null/blank 면 당월 자동 산출.
      */
-    fun triggerOroraDaily(salesMonth: String?): OroraDailyMaterializeTriggerResponse {
-        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() }
-        if (normalized != null) {
-            require(normalized.length == 6 && normalized.all { it.isDigit() }) {
-                "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
-            }
-        }
-        val result = ororaSalesMaterializeFacade.materializeDaily(normalized)
-        return OroraDailyMaterializeTriggerResponse(
-            salesMonth = result.salesMonth,
-            dailyUpsertedCount = result.dailyUpsertedCount,
-            monthlyAggregateUpdatedCount = result.monthlyAggregateUpdatedCount,
+    fun triggerOroraDaily(salesMonth: String?): OroraMaterializeAcceptedResponse {
+        val normalized = validateSalesMonth(salesMonth)
+        ororaMaterializeAsyncRunner.runDaily(normalized)
+        return acceptedResponse(
+            jobName = OroraDailySalesMaterializeBatch.JOB_NAME,
+            salesMonth = ororaSalesMaterializeFacade.previewDailySalesMonth(normalized),
         )
     }
 
@@ -248,36 +214,35 @@ class AdminScheduledJobService(
      * @param chunkIndex 적재 대상 청크 번호 (0-based). `[0, chunkCount)` 범위.
      * @param salesMonth `YYYYMM` 6자. null/blank 면 당월 자동 산출.
      */
-    fun triggerOroraDailyChunk(chunkIndex: Int, salesMonth: String?): OroraDailyMaterializeTriggerResponse {
-        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() }
-        if (normalized != null) {
-            require(normalized.length == 6 && normalized.all { it.isDigit() }) {
-                "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
-            }
-        }
+    fun triggerOroraDailyChunk(chunkIndex: Int, salesMonth: String?): OroraMaterializeAcceptedResponse {
+        val normalized = validateSalesMonth(salesMonth)
         val chunkCount = ororaSalesMaterializeFacade.dailyChunkCount()
         require(chunkIndex in 0 until chunkCount) {
             "chunkIndex 는 0 이상 $chunkCount 미만이어야 합니다: $chunkIndex"
         }
-
-        return scheduledJobRunner.run(OroraDailySalesMaterializeBatch.JOB_NAME) { ctx ->
-            val result = ororaSalesMaterializeFacade.materializeDailyChunk(chunkIndex, normalized)
-            ctx.metadata(
-                mapOf(
-                    "trigger" to "manual-chunk",
-                    "chunkIndex" to chunkIndex,
-                    "salesMonth" to result.salesMonth,
-                    "dailyUpsertedCount" to result.dailyUpsertedCount,
-                    "monthlyAggregateUpdatedCount" to result.monthlyAggregateUpdatedCount,
-                )
-            )
-            OroraDailyMaterializeTriggerResponse(
-                salesMonth = result.salesMonth,
-                dailyUpsertedCount = result.dailyUpsertedCount,
-                monthlyAggregateUpdatedCount = result.monthlyAggregateUpdatedCount,
-            )
-        }
+        ororaMaterializeAsyncRunner.runDailyChunk(chunkIndex, normalized)
+        return acceptedResponse(
+            jobName = OroraDailySalesMaterializeBatch.JOB_NAME,
+            salesMonth = ororaSalesMaterializeFacade.previewDailySalesMonth(normalized),
+        )
     }
+
+    /** salesMonth 입력 정규화 + `YYYYMM` 6자리 숫자 검증. null/blank 면 null 반환(자동 산출 위임). */
+    private fun validateSalesMonth(salesMonth: String?): String? {
+        val normalized = salesMonth?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        require(normalized.length == 6 && normalized.all { it.isDigit() }) {
+            "salesMonth 는 YYYYMM 6자리 숫자여야 합니다: $salesMonth"
+        }
+        return normalized
+    }
+
+    /** ORORA 매출 비동기 적재 접수 공통 응답 조립. */
+    private fun acceptedResponse(jobName: String, salesMonth: String): OroraMaterializeAcceptedResponse =
+        OroraMaterializeAcceptedResponse(
+            jobName = jobName,
+            salesMonth = salesMonth,
+            message = "$salesMonth 적재를 시작했습니다. 진행/결과는 실행 이력 탭에서 확인하세요.",
+        )
 
     private fun ScheduledJobRun.toDto(): ScheduledJobRunDto {
         val durationMs = endedAt?.let { end ->

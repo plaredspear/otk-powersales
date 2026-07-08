@@ -10,9 +10,8 @@ import com.otoki.powersales.admin.dto.request.OroraDailyMaterializeTriggerReques
 import com.otoki.powersales.admin.dto.request.OroraMonthlyMaterializeChunkTriggerRequest
 import com.otoki.powersales.admin.dto.request.OroraMonthlyMaterializeTriggerRequest
 import com.otoki.powersales.admin.dto.response.OroraDailyChunkCatalogResponse
-import com.otoki.powersales.admin.dto.response.OroraDailyMaterializeTriggerResponse
+import com.otoki.powersales.admin.dto.response.OroraMaterializeAcceptedResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkCatalogResponse
-import com.otoki.powersales.admin.dto.response.OroraMonthlyMaterializeTriggerResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobManualTriggerResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
@@ -21,6 +20,7 @@ import com.otoki.powersales.admin.service.AdminScheduledJobService
 import com.otoki.powersales.admin.service.PPTMasterManualTriggerService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import org.springframework.format.annotation.DateTimeFormat
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -95,16 +95,19 @@ class AdminScheduledJobController(
     }
 
     /**
-     * ORORA 월매출 적재를 특정 월로 수동 실행한다 (`salesMonth` 미지정 시 전월).
+     * ORORA 월매출 적재를 특정 월로 **비동기** 수동 실행 접수한다 (`salesMonth` 미지정 시 전월).
+     *
+     * ORORA view SELECT 가 오래 걸려도 HTTP 요청이 매달리지 않도록 즉시 202 Accepted 로 접수만 반환한다.
+     * 실제 조회/적재 건수는 완료 후 `scheduled_job_run` 이력(이력 탭)에 남는다.
      * 외부 ORORA 호출 + RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
      */
     @PostMapping("/api/v1/admin/scheduled-jobs/orora-monthly/trigger")
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun triggerOroraMonthly(
         @RequestBody(required = false) request: OroraMonthlyMaterializeTriggerRequest?,
-    ): ResponseEntity<ApiResponse<OroraMonthlyMaterializeTriggerResponse>> {
+    ): ResponseEntity<ApiResponse<OroraMaterializeAcceptedResponse>> {
         val response = adminScheduledJobService.triggerOroraMonthly(request?.salesMonth)
-        return ResponseEntity.ok(ApiResponse.success(response))
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response))
     }
 
     /**
@@ -129,9 +132,9 @@ class AdminScheduledJobController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun triggerOroraMonthlyChunk(
         @RequestBody request: OroraMonthlyMaterializeChunkTriggerRequest,
-    ): ResponseEntity<ApiResponse<OroraMonthlyMaterializeTriggerResponse>> {
+    ): ResponseEntity<ApiResponse<OroraMaterializeAcceptedResponse>> {
         val response = adminScheduledJobService.triggerOroraMonthlyChunk(request.chunkIndex, request.salesMonth)
-        return ResponseEntity.ok(ApiResponse.success(response))
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response))
     }
 
     /**
@@ -142,9 +145,9 @@ class AdminScheduledJobController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun triggerOroraDaily(
         @RequestBody(required = false) request: OroraDailyMaterializeTriggerRequest?,
-    ): ResponseEntity<ApiResponse<OroraDailyMaterializeTriggerResponse>> {
+    ): ResponseEntity<ApiResponse<OroraMaterializeAcceptedResponse>> {
         val response = adminScheduledJobService.triggerOroraDaily(request?.salesMonth)
-        return ResponseEntity.ok(ApiResponse.success(response))
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response))
     }
 
     /**
@@ -169,9 +172,9 @@ class AdminScheduledJobController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun triggerOroraDailyChunk(
         @RequestBody request: OroraDailyMaterializeChunkTriggerRequest,
-    ): ResponseEntity<ApiResponse<OroraDailyMaterializeTriggerResponse>> {
+    ): ResponseEntity<ApiResponse<OroraMaterializeAcceptedResponse>> {
         val response = adminScheduledJobService.triggerOroraDailyChunk(request.chunkIndex, request.salesMonth)
-        return ResponseEntity.ok(ApiResponse.success(response))
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response))
     }
 
     /**

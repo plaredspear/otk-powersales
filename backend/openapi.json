@@ -8483,11 +8483,11 @@
         },
         "type" : "object"
       },
-      "ApiResponseOroraDailyMaterializeTriggerResponse" : {
+      "ApiResponseOroraMaterializeAcceptedResponse" : {
         "properties" : {
           "data" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/OroraDailyMaterializeTriggerResponse"
+              "$ref" : "#/components/schemas/OroraMaterializeAcceptedResponse"
             }, {
               "type" : "null"
             } ]
@@ -8546,35 +8546,6 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/OroraMonthlyMaterializeResult"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponseOroraMonthlyMaterializeTriggerResponse" : {
-        "properties" : {
-          "data" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/OroraMonthlyMaterializeTriggerResponse"
             }, {
               "type" : "null"
             } ]
@@ -18661,15 +18632,16 @@
         },
         "type" : "object"
       },
-      "OroraDailyMaterializeTriggerResponse" : {
+      "OroraMaterializeAcceptedResponse" : {
         "properties" : {
-          "dailyUpsertedCount" : {
-            "format" : "int32",
-            "type" : "integer"
+          "accepted" : {
+            "type" : "boolean"
           },
-          "monthlyAggregateUpdatedCount" : {
-            "format" : "int32",
-            "type" : "integer"
+          "jobName" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
           },
           "salesMonth" : {
             "type" : "string"
@@ -18747,26 +18719,6 @@
         "properties" : {
           "salesMonth" : {
             "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "OroraMonthlyMaterializeTriggerResponse" : {
-        "properties" : {
-          "fetchedCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "salesMonth" : {
-            "type" : "string"
-          },
-          "skippedAccountUnmatchedCount" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "upsertedCount" : {
-            "format" : "int32",
-            "type" : "integer"
           }
         },
         "type" : "object"
@@ -36439,7 +36391,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseOroraDailyMaterializeTriggerResponse"
+                  "$ref" : "#/components/schemas/ApiResponseOroraMaterializeAcceptedResponse"
                 }
               }
             },
@@ -36484,7 +36436,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseOroraDailyMaterializeTriggerResponse"
+                  "$ref" : "#/components/schemas/ApiResponseOroraMaterializeAcceptedResponse"
                 }
               }
             },
@@ -36512,7 +36464,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseOroraMonthlyMaterializeTriggerResponse"
+                  "$ref" : "#/components/schemas/ApiResponseOroraMaterializeAcceptedResponse"
                 }
               }
             },
@@ -36557,7 +36509,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseOroraMonthlyMaterializeTriggerResponse"
+                  "$ref" : "#/components/schemas/ApiResponseOroraMaterializeAcceptedResponse"
                 }
               }
             },

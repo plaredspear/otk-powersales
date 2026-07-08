@@ -65,18 +65,22 @@ data class ScheduledJobManualTriggerResponse(
 )
 
 /**
- * ORORA 월매출 수동 적재 트리거 결과.
+ * ORORA 매출 수동 적재 **비동기 접수** 결과.
  *
- * @property salesMonth 적재한 대상 매출월 (`YYYYMM`)
- * @property fetchedCount ORORA view 에서 조회된 row 수
- * @property upsertedCount RDS 에 적재(신규+갱신)된 row 수
- * @property skippedAccountUnmatchedCount account 미매칭으로 account_id=null 적재된 row 수
+ * 적재는 별도 스레드([com.otoki.powersales.admin.service.OroraMaterializeAsyncRunner])에서 수행되므로,
+ * 본 응답은 "접수됨" 만 알린다 (실제 조회/적재 건수는 완료 후 `scheduled_job_run` 이력에 남는다).
+ * ORORA view SELECT 가 수십 초~수 분 걸려도 HTTP 요청이 그 시간 동안 열려 있지 않도록 즉시 반환한다.
+ *
+ * @property jobName 실행을 접수한 스케줄 잡 이름 (이력 탭 필터 값)
+ * @property salesMonth 적재 대상 매출월 (`YYYYMM`). 요청에서 미지정 시 서버가 산출한 값.
+ * @property accepted 접수 여부 (항상 true — 접수 실패는 예외로 전파)
+ * @property message 사용자 안내 문구 (이력 탭에서 진행 확인 유도)
  */
-data class OroraMonthlyMaterializeTriggerResponse(
+data class OroraMaterializeAcceptedResponse(
+    val jobName: String,
     val salesMonth: String,
-    val fetchedCount: Int,
-    val upsertedCount: Int,
-    val skippedAccountUnmatchedCount: Int,
+    val accepted: Boolean = true,
+    val message: String,
 )
 
 /**
@@ -103,19 +107,6 @@ data class OroraMonthlyChunkInfo(
     val chunkIndex: Int,
     val fromAccountCode: String,
     val toAccountCode: String,
-)
-
-/**
- * ORORA 일매출 수동 적재 트리거 결과.
- *
- * @property salesMonth 적재한 대상 매출월 (`YYYYMM`)
- * @property dailyUpsertedCount `daily_sales_history` 에 적재된 row 수
- * @property monthlyAggregateUpdatedCount 일별 합계로 갱신/생성된 `monthly_sales_history` row 수
- */
-data class OroraDailyMaterializeTriggerResponse(
-    val salesMonth: String,
-    val dailyUpsertedCount: Int,
-    val monthlyAggregateUpdatedCount: Int,
 )
 
 /**
