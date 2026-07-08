@@ -54,6 +54,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
@@ -294,6 +295,10 @@ class AttendanceService(
         // 우회하므로, 이후 stampLegacyWorkReportMeta/refreshIntegration 이 dirty 로 만든 entity 의
         // 전체 컬럼 flush 가 stale null 로 백링크를 덮어써 고아 출근로그 + 미등록 표시가 발생했다.
         teamMemberSchedule.attendanceLog = savedLog
+        // 출근보고시각 — 레거시 IF_REST_MOBILE_WorkReport 가 insert/update 공통으로
+        // CommuteReportDateTime__c = System.now() 를 기록하는 것과 동등 (cls:116).
+        // 진열마스터 수정 차단·마스터 출근등록 수 집계가 이 컬럼을 판정 기준으로 쓴다.
+        teamMemberSchedule.commuteReportDatetime = LocalDateTime.now(clock.withZone(SEOUL_ZONE))
 
         // 6. 후속 처리: SafetyCheckSubmission.completeWorkYn = 'Y' + TMS 안전점검 stamp
         if (safetyCheckSubmission != null) {
@@ -419,6 +424,8 @@ class AttendanceService(
         )
         // 백링크는 managed entity 에 직접 세팅 (본인 등록과 동일 — bulk UPDATE 는 이후 dirty flush 에 덮여 유실).
         teamMemberSchedule.attendanceLog = savedLog
+        // 출근보고시각 — 레거시 WorkReport 공통 블록 정합 (본인 등록과 동일, 대리등록도 기록).
+        teamMemberSchedule.commuteReportDatetime = LocalDateTime.now(clock.withZone(SEOUL_ZONE))
 
         // 후속 처리: completeWorkYn='Y' + TMS 안전점검 stamp (본인 등록과 동일)
         if (safetyCheckSubmission != null) {

@@ -136,7 +136,7 @@ class TeamMemberSchedule(
     @SFField("CommuteReportDateTime__c")
     @FieldName("CommuteReportDateTime")
     @Column(name = "commute_report_datetime")
-    val commuteReportDatetime: LocalDateTime? = null,
+    var commuteReportDatetime: LocalDateTime? = null,
 
     @SFField("ID__c")
     @FieldName("ID")

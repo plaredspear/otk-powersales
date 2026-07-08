@@ -2302,6 +2302,9 @@ class AttendanceServiceTest {
 
             // Then — 백링크가 저장된 로그 entity 로 직접 연결 (bulk UPDATE 미사용 — 이후 dirty flush 에도 보존)
             assertThat(teamMemberSchedule.attendanceLog).isSameAs(savedLog)
+            // 출근보고시각 — 레거시 CommuteReportDateTime__c = System.now() 정합 (fixed clock = 오늘 10:00)
+            assertThat(teamMemberSchedule.commuteReportDatetime)
+                .isEqualTo(LocalDate.now().atTime(10, 0))
         }
 
         @Test
