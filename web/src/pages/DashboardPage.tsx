@@ -39,6 +39,11 @@ function cardExtra(total: number, decimals?: number) {
   return <span style={{ color: '#8c8c8c' }}>총 {formatHeadcount(total, decimals)}명 (단위: 명)</span>;
 }
 
+/** 금액을 천원 단위(반올림)로 표시 — 월 매출(물류배부) KPI 카드와 동일 규칙. */
+function formatThousandWon(v: number): string {
+  return Math.round(v / 1000).toLocaleString();
+}
+
 /** 차트 카드 제목 + 데이터 집계 기준 안내 툴팁(info 아이콘). */
 function cardTitle(title: string, desc: string) {
   return (
@@ -244,7 +249,7 @@ export default function DashboardPage() {
           <Col span={8}>
             <Card>
               {s.hasTargetData ? (
-                <Statistic title={cardTitle('당월 목표', SALES_CHART_INFO.target)} value={s.targetAmount} suffix="원" />
+                <Statistic title={cardTitle('당월 목표', SALES_CHART_INFO.target)} value={formatThousandWon(s.targetAmount)} suffix="천원" />
               ) : (
                 <Statistic title={cardTitle('당월 목표', SALES_CHART_INFO.target)} value="—" />
               )}
@@ -253,7 +258,7 @@ export default function DashboardPage() {
           <Col span={8}>
             <Card>
               {s.hasActualData ? (
-                <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value={s.actualAmount} suffix="원" />
+                <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value={formatThousandWon(s.actualAmount)} suffix="천원" />
               ) : (
                 <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value="—" />
               )}
@@ -278,7 +283,7 @@ export default function DashboardPage() {
           <Col span={8}>
             <Card>
               {s.hasLastYearData ? (
-                <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value={s.lastYearAmount} suffix="원" />
+                <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value={formatThousandWon(s.lastYearAmount)} suffix="천원" />
               ) : (
                 <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value="—" />
               )}
