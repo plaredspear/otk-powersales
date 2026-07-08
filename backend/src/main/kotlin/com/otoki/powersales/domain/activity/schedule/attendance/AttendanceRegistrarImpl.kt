@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.activity.schedule.attendance
 
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.repository.AttendanceLogRepository
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -26,7 +25,6 @@ import java.time.LocalDateTime
  */
 @Service
 @Transactional(readOnly = true)
-@ConditionalOnProperty(name = ["attendance.registrar.mock.enabled"], havingValue = "false", matchIfMissing = true)
 class AttendanceRegistrarImpl(
     private val attendanceLogRepository: AttendanceLogRepository,
     private val clock: Clock,
