@@ -111,8 +111,10 @@ class EmployeeRepositoryCustomImpl(
     override fun findDashboardBasicStatsProjection(
         costCenterCodes: List<String>?
     ): List<DashboardEmployeeProjection> {
+        // 여사원(role='여사원')만 집계 — 조장/지점장/관리직 제외.
         // 퇴직자(status='퇴직') 제외. status=NULL 은 재직/휴직 미분류로 유지하기 위해 포함한다.
         val where = BooleanBuilder()
+            .and(employee.role.eq(AppAuthority.WOMAN))
             .and(employee.status.isNull.or(employee.status.ne(EmploymentStatus.RESIGNED.code)))
         if (!costCenterCodes.isNullOrEmpty()) {
             where.and(employee.costCenterCode.`in`(costCenterCodes))
