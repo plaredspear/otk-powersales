@@ -21,15 +21,9 @@ export interface SalesSummary {
   branchName: string | null;
   targetAmount: number;
   actualAmount: number;
-  /** 당월 실적 채널별 내역 — actualAbcAmount(전산) + actualShipAmount(물류배부) = actualAmount. */
-  actualAbcAmount: number;
-  actualShipAmount: number;
   progressRate: number;
   referenceProgressRate: number;
   lastYearAmount: number;
-  /** 전년 동월 실적 채널별 내역 — lastYearAbcAmount(전산) + lastYearShipAmount(물류배부) = lastYearAmount. */
-  lastYearAbcAmount: number;
-  lastYearShipAmount: number;
   lastYearRatio: number;
   channelSales: ChannelSalesItem[];
   /** 매출 데이터 적재 여부 — 0원이 "미적재"인지 "실제 0"인지 구분. false 면 화면에서 "—" 표시. */

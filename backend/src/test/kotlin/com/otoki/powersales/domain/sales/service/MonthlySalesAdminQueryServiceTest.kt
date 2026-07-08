@@ -484,9 +484,6 @@ class MonthlySalesAdminQueryServiceTest {
         sapAccountCode = sapAccountCode,
         salesDate = salesDate,
         closingAmountSum = BigDecimal(abc1 + ship1 + ship2 + ship3 + ship4),
-        // 채널별 분리 표시는 원본 합계 컬럼을 사용 — abc 합계 = abc1, ship 합계 = ship1~4 합.
-        abcClosingSumAmount = BigDecimal(abc1),
-        shipClosingSumAmount = BigDecimal(ship1 + ship2 + ship3 + ship4),
         accountId = accountId,
         abcClosingAmount1 = BigDecimal(abc1),
         shipClosingAmount1 = BigDecimal(ship1),
@@ -516,14 +513,6 @@ class MonthlySalesAdminQueryServiceTest {
         // Ship 단독(500)이 아니라 ABC+Ship 합계(1000) 여야 한다.
         assertThat(result.actualAmount).isEqualTo(1000L)
         assertThat(result.lastYearAmount).isEqualTo(500L)
-        // 채널별 분리 — 원본 합계 컬럼(abcClosingSumAmount/shipClosingSumAmount) 기준.
-        assertThat(result.actualAbcAmount).isEqualTo(500L)
-        assertThat(result.actualShipAmount).isEqualTo(500L)
-        assertThat(result.lastYearAbcAmount).isEqualTo(300L)
-        assertThat(result.lastYearShipAmount).isEqualTo(200L)
-        // 분리 합 = 총합 정합
-        assertThat(result.actualAbcAmount + result.actualShipAmount).isEqualTo(result.actualAmount)
-        assertThat(result.lastYearAbcAmount + result.lastYearShipAmount).isEqualTo(result.lastYearAmount)
         assertThat(result.hasActualData).isTrue()
         assertThat(result.hasLastYearData).isTrue()
     }

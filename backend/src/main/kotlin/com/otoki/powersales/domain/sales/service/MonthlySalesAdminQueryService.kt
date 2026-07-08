@@ -540,20 +540,6 @@ class MonthlySalesAdminQueryService(
         oro?.closingAmountSum?.toLong() ?: 0L
 
     /**
-     * RDS row 의 전산(ABC) 마감실적 합계 — SF `ABCClosingSumAmount__c` 원본 합계 컬럼.
-     * 개별 abc1~4 재합산이 아니라 원본 합계 컬럼을 사용 (물류매출 누락 방지 정합, [closingSum] 주석 참조). row 부재 시 0.
-     */
-    private fun abcClosingSum(oro: MonthlySalesRow?): Long =
-        oro?.abcClosingSumAmount?.toLong() ?: 0L
-
-    /**
-     * RDS row 의 물류배부(Ship) 마감실적 합계 — SF `ShipClosingSumAmount__c` 원본 합계 컬럼.
-     * 개별 ship1~4 재합산이 아니라 원본 합계 컬럼을 사용 (물류매출 누락 방지 정합, [closingSum] 주석 참조). row 부재 시 0.
-     */
-    private fun shipClosingSum(oro: MonthlySalesRow?): Long =
-        oro?.shipClosingSumAmount?.toLong() ?: 0L
-
-    /**
      * 조회 거래처의 (연, 월) 목표 1행 — RDS `SalesProgressRateMaster` (SF `SalesProgressRateMaster__c` 복제).
      * `targetYear` 는 `"YYYY"` 문자열, `targetMonth` 는 SF 적재 포맷(zero-pad 비보장) 이라 정수 파싱 후
      * 월 일치로 매칭. soft-delete row 제외. (모바일 [MonthlySalesService.getMonthlySales] 의 findTarget 정합)
@@ -756,13 +742,6 @@ class MonthlySalesAdminQueryService(
         val actual = accounts.sumOf { closingSum(oroByKey[it.externalKey to currentSalesDate]) }
         val lastYear = accounts.sumOf { closingSum(oroByKey[it.externalKey to lastYearSalesDate]) }
 
-        // 채널별 분리 표시용 — 당월/전년 각각 전산(ABC) 합계 + 물류배부(Ship) 합계.
-        // 원본 합계 컬럼 사용 (개별 카테고리 재합산과 달리 물류매출 누락 없음). abc + ship = actual/lastYear 정합.
-        val actualAbc = accounts.sumOf { abcClosingSum(oroByKey[it.externalKey to currentSalesDate]) }
-        val actualShip = accounts.sumOf { shipClosingSum(oroByKey[it.externalKey to currentSalesDate]) }
-        val lastYearAbc = accounts.sumOf { abcClosingSum(oroByKey[it.externalKey to lastYearSalesDate]) }
-        val lastYearShip = accounts.sumOf { shipClosingSum(oroByKey[it.externalKey to lastYearSalesDate]) }
-
         // 적재 데이터 존재 여부 — row 부재(미적재)와 실제 0/음수를 구분하기 위함.
         // 투입 거래처 중 해당 월 RDS row 가 하나라도 있으면 데이터 존재로 본다.
         val hasActualData = accounts.any { oroByKey.containsKey(it.externalKey to currentSalesDate) }
@@ -777,8 +756,6 @@ class MonthlySalesAdminQueryService(
 
         return InvestedAccountSales(
             actualAmount = actual, targetAmount = target, lastYearAmount = lastYear,
-            actualAbcAmount = actualAbc, actualShipAmount = actualShip,
-            lastYearAbcAmount = lastYearAbc, lastYearShipAmount = lastYearShip,
             hasActualData = hasActualData, hasLastYearData = hasLastYearData,
             hasTargetData = hasTargetData,
         )
@@ -803,14 +780,6 @@ class MonthlySalesAdminQueryService(
         val actualAmount: Long,
         val targetAmount: Long,
         val lastYearAmount: Long,
-        /** 당월 실적 중 전산(ABC) 마감실적 합계 — 채널별 분리 표시용. actualAbcAmount + actualShipAmount = actualAmount. */
-        val actualAbcAmount: Long = 0L,
-        /** 당월 실적 중 물류배부(Ship) 마감실적 합계 — 채널별 분리 표시용. */
-        val actualShipAmount: Long = 0L,
-        /** 전년 동월 실적 중 전산(ABC) 마감실적 합계 — 채널별 분리 표시용. */
-        val lastYearAbcAmount: Long = 0L,
-        /** 전년 동월 실적 중 물류배부(Ship) 마감실적 합계 — 채널별 분리 표시용. */
-        val lastYearShipAmount: Long = 0L,
         val hasActualData: Boolean,
         val hasLastYearData: Boolean,
         val hasTargetData: Boolean,

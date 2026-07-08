@@ -39,25 +39,6 @@ function cardExtra(total: number, decimals?: number) {
   return <span style={{ color: '#8c8c8c' }}>총 {formatHeadcount(total, decimals)}명 (단위: 명)</span>;
 }
 
-/**
- * 실적 카드 하단 채널별 내역 — 전산(ABC) / 물류배부(Ship) 2줄. 합계 = 전산 + 물류배부.
- * 데이터 미적재(hasData=false) 시 렌더링하지 않는다 (상단 값이 "—" 이므로 소분류도 생략).
- */
-function ChannelBreakdown({ abc, ship }: { abc: number; ship: number }) {
-  return (
-    <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f0f0f0', fontSize: 13, color: '#595959' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span>전산</span>
-        <span>{abc.toLocaleString()} 원</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-        <span>물류배부</span>
-        <span>{ship.toLocaleString()} 원</span>
-      </div>
-    </div>
-  );
-}
-
 /** 차트 카드 제목 + 데이터 집계 기준 안내 툴팁(info 아이콘). */
 function cardTitle(title: string, desc: string) {
   return (
@@ -272,10 +253,7 @@ export default function DashboardPage() {
           <Col span={8}>
             <Card>
               {s.hasActualData ? (
-                <>
-                  <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value={s.actualAmount} suffix="원" />
-                  <ChannelBreakdown abc={s.actualAbcAmount} ship={s.actualShipAmount} />
-                </>
+                <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value={s.actualAmount} suffix="원" />
               ) : (
                 <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value="—" />
               )}
@@ -300,10 +278,7 @@ export default function DashboardPage() {
           <Col span={8}>
             <Card>
               {s.hasLastYearData ? (
-                <>
-                  <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value={s.lastYearAmount} suffix="원" />
-                  <ChannelBreakdown abc={s.lastYearAbcAmount} ship={s.lastYearShipAmount} />
-                </>
+                <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value={s.lastYearAmount} suffix="원" />
               ) : (
                 <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value="—" />
               )}
