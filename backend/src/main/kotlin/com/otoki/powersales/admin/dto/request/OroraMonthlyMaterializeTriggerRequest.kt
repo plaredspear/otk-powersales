@@ -45,3 +45,23 @@ data class OroraDailyMaterializeChunkTriggerRequest(
     val chunkIndex: Int,
     val salesMonth: String? = null,
 )
+
+/**
+ * 월별 합계 재집계 수동 트리거 요청 — ORORA 조회 없이 `daily_sales_history` 로 `monthly_sales_history` 재계산.
+ *
+ * @property salesMonth 재집계 대상 매출월 (`YYYYMM` 6자). **필수** — 재집계는 자동 산출하지 않는다.
+ */
+data class MonthlyReaggregateTriggerRequest(
+    val salesMonth: String? = null,
+)
+
+/**
+ * 월별 합계 재집계 거래처 청크 단위 수동 트리거 요청.
+ *
+ * @property chunkIndex 대상 청크 번호 (0-based). `[0, 전체 청크 수)` 범위.
+ * @property salesMonth 재집계 대상 매출월 (`YYYYMM` 6자). **필수**.
+ */
+data class MonthlyReaggregateChunkTriggerRequest(
+    val chunkIndex: Int,
+    val salesMonth: String? = null,
+)

@@ -9,11 +9,13 @@ import com.otoki.powersales.domain.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.domain.sales.enums.SalesMonth
 import com.otoki.powersales.domain.sales.enums.SalesYear
 import com.otoki.powersales.domain.sales.repository.DailySalesHistoryRepository
+import com.otoki.powersales.domain.sales.repository.DailySalesMonthlySum
 import com.otoki.powersales.domain.sales.repository.MonthlySalesHistoryRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
@@ -24,14 +26,17 @@ import java.time.LocalDate
  * 하나의 트랜잭션으로 묶어 원자성을 보장한다 (레거시 SObject upsert + trigger 부수효과 동등, §2.3).
  *
  * ## 레거시 동작 정합 (Queueable_OroraDailySalesHistory_M1 + DailyErpSalesInfoTriggerHandler)
- * 레거시 트리거의 raw 동작을 그대로 재현한다:
  * - 일별 SalesDate 는 대상월==today연월이면 `today`, 아니면 그 달 말일로 보정 (Queueable:113-119).
  * - 거래처(Account) 미매칭 row 는 일별 적재 자체를 차단 (TriggerHandler:79-80 `addError` 동등).
  * - 월별 갱신 컬럼은 `abcClosingSumAmount`(ΣERPSales) + `shipClosingSumAmount`(ΣERPDist) + `totalLedgerAmount`(ΣLedger).
  *   온도대별 마감 컬럼 / 목표 / 비고 / 마감 boolean 은 보존.
- * - insert 경로: 거래처+월 신규 일별 row 들의 **합산** (TriggerHandler beforeInsert :99-108).
- * - update 경로: 거래처+월 기존 일별 row 들의 **마지막 1건 값** (TriggerHandler beforeUpdate :257-259, `=` 단일 대입).
- * - 일별 LedgerAmount 는 ORORA view 미제공이라 항상 null → TotalLedger = Σnull = 0 (레거시 실측 동등).
+ * - 일별 LedgerAmount 는 ORORA view 미제공이라 항상 null → ORORA 적재분의 TotalLedger 기여는 0.
+ *
+ * ## 레거시 deviation — 월별 합계는 재합산 (사용자 결정 2026-07-09)
+ * 레거시 트리거는 "이번 처리분 기준 대입" (insert 경로=신규 묶음 합산 / update 경로=마지막 1건 값 덮어쓰기,
+ * TriggerHandler beforeUpdate :257-259 buggy `=` 대입) 이라 재실행 시 값이 달라져 멱등이 아니었다.
+ * 신규는 적재 후 해당 거래처+월의 `daily_sales_history` 전체를 재조회하여 합계를 대입 — 재실행/부분 재적재에
+ * 대해 완전 멱등. (초기 구현은 레거시 raw 재현이었으나 멱등성 확보 결정으로 교체.)
  */
 @Component
 class OroraDailySalesChunkProcessor(
@@ -44,13 +49,6 @@ class OroraDailySalesChunkProcessor(
     private val log = LoggerFactory.getLogger(javaClass)
 
     data class ChunkResult(val dailyUpserted: Int, val monthlyUpdated: Int)
-
-    /** 일별 적재 결과 1건 — 월별 합계 경로 분기(insert/update)에 필요한 메타를 함께 보관. */
-    private data class DailyUpsertOutcome(
-        val entity: DailySalesHistory,
-        val sapCode: String,
-        val wasNew: Boolean,
-    )
 
     /**
      * 단일 chunk 의 일별 적재 + 월별 합계 갱신을 하나의 트랜잭션으로 처리.
@@ -70,9 +68,45 @@ class OroraDailySalesChunkProcessor(
         val sapCodes = ororaRows.map { it.sapAccountCode.removePrefix(OroraAccountRange.ACCOUNT_CODE_PREFIX) }.distinct()
         val accountByCode = accountRepository.findByExternalKeyIn(sapCodes).associateBy { it.externalKey }
 
-        val outcomes = upsertDaily(salesMonth, ororaRows, accountByCode)
-        val monthlyUpdated = updateMonthlyAggregate(salesYear, salesMonthEnum, outcomes, accountByCode)
-        return ChunkResult(outcomes.size, monthlyUpdated)
+        val saved = upsertDaily(salesMonth, ororaRows, accountByCode)
+        // 방금 적재분(auto-flush)까지 포함해 해당 거래처들의 월 daily 전량을 SUM 집계 → 월합계 대입.
+        val savedCodes = saved.map { it.sapAccountCode }.distinct()
+        if (savedCodes.isEmpty()) return ChunkResult(0, 0)
+        val sumRows = dailySalesHistoryRepository.sumMonthlyBySapAccountCodeIn(savedCodes, salesMonth)
+        val monthlyUpdated = updateMonthlyAggregate(
+            salesYear, salesMonthEnum, savedCodes, sumRows, accountByCode,
+        )
+        return ChunkResult(saved.size, monthlyUpdated)
+    }
+
+    /**
+     * ORORA 조회 / 일별 적재 없이, 이미 적재된 `daily_sales_history` 만으로 월별 합계를 재집계 (단일 chunk).
+     *
+     * 거래처 코드 범위(chunk) 내에서 해당 월에 일별 row 가 있는 거래처를 골라 [updateMonthlyAggregate]
+     * 를 그대로 태운다 — abcClosingSum/shipClosingSum/totalLedger 를 daily 전량 SUM 으로 대입 (멱등).
+     * 일별 배치의 부수효과 재집계와 동일 로직이지만, 일별 데이터를 새로 받지 않고 기존 적재분만 정합할 때
+     * (레거시 트리거 비멱등 시절 어긋난 월합계 교정 등) 사용한다. `daily_sales_history` 는 읽기만 하고
+     * `monthly_sales_history` 만 갱신한다.
+     *
+     * @param fromCode chunk 거래처 코드 시작 (선행 `000` 제거 형식, 포함)
+     * @param toCode chunk 거래처 코드 끝 (선행 `000` 제거 형식, 포함)
+     * @return 재집계로 갱신/생성된 monthly row 수
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    fun reaggregateMonthly(
+        salesMonth: String,
+        salesYear: SalesYear,
+        salesMonthEnum: SalesMonth,
+        fromCode: String,
+        toCode: String,
+    ): Int {
+        val sumRows = dailySalesHistoryRepository
+            .sumMonthlyBySapAccountCodeBetween(fromCode, toCode, salesMonth)
+        if (sumRows.isEmpty()) return 0
+
+        val sapCodes = sumRows.map { it.sapAccountCode }
+        val accountByCode = accountRepository.findByExternalKeyIn(sapCodes).associateBy { it.externalKey }
+        return updateMonthlyAggregate(salesYear, salesMonthEnum, sapCodes, sumRows, accountByCode)
     }
 
     /**
@@ -87,7 +121,7 @@ class OroraDailySalesChunkProcessor(
         salesMonth: String,
         ororaRows: List<OroraDailySalesHistory>,
         accountByCode: Map<String?, Account>,
-    ): List<DailyUpsertOutcome> {
+    ): List<DailySalesHistory> {
         // 레거시 SalesDate__c 저장값은 보정(today/말일), external key 는 원본 YYYYMMDD (Queueable:115-145).
         // 둘을 분리한다: salesDate 컬럼=보정값, external_key=거래처코드+원본일자.
         val salesDateColumn = resolveSalesDate(salesMonth).token
@@ -97,7 +131,6 @@ class OroraDailySalesChunkProcessor(
             .associateBy { it.externalKey }
             .toMutableMap()
 
-        val outcomes = mutableListOf<DailyUpsertOutcome>()
         val toSave = mutableListOf<DailySalesHistory>()
         ororaRows.forEach { orora ->
             val sapCode = orora.sapAccountCode.removePrefix(OroraAccountRange.ACCOUNT_CODE_PREFIX)
@@ -109,12 +142,10 @@ class OroraDailySalesChunkProcessor(
             }
 
             val key = sapCode + orora.salesDate    // 레거시 external key = 거래처코드 + 원본 YYYYMMDD
-            val existing = existingByKey[key]
-            val wasNew = existing == null
 
             // salesDate 는 immutable(val). 동일 external key(거래처+원본일자) 재수신 시 대상월도 같아
             // 보정 SalesDate 값이 불변이므로, 기존 row 는 salesDate 재설정 없이 금액만 갱신한다.
-            val entity = existing ?: DailySalesHistory(
+            val entity = existingByKey[key] ?: DailySalesHistory(
                 sapAccountCode = sapCode,
                 salesDate = salesDateColumn,        // 보정된 날짜 (today/말일)
                 externalKey = key,
@@ -122,43 +153,46 @@ class OroraDailySalesChunkProcessor(
 
             entity.erpSalesAmount = orora.erpSalesAmount?.toDouble()
             entity.erpDistributionAmount = orora.erpDistributionAmount?.toDouble()
-            // 레거시 LedgerAmount 미매핑 동등: 일별 ledger 는 채우지 않는다 (월별 TotalLedger=Σnull=0).
+            // 레거시 LedgerAmount 미매핑 동등: 일별 ledger 는 채우지 않는다.
             entity.account = account
             entity.accountSfid = account.sfid
 
             toSave += entity
-            outcomes += DailyUpsertOutcome(entity, sapCode, wasNew)
         }
         dailySalesHistoryRepository.saveAll(toSave)
-        return outcomes
+        return toSave
     }
 
     /**
-     * 일별 적재 직후 월별 합계를 갱신 — 레거시 DailyErpSalesInfoTriggerHandler 부수효과 동등.
+     * 주어진 월 SUM 집계 결과를 `monthly_sales_history` 의 합계 3컬럼에 대입 — 멱등 재합산의 공통 코어.
      *
-     * 거래처+월 단위로 묶어, 레거시의 insert 트리거(합산) → update 트리거(마지막값) 순차 발동을 재현한다:
-     * - 신규(insert) 일별 row 묶음 → `abcClosingSum/shipClosingSum/totalLedger` 를 **합산**으로 set.
-     * - 기존(update) 일별 row 묶음 → 같은 컬럼을 **마지막 row 1건 값**으로 set (레거시 :257-259 `=`).
-     * 두 묶음이 같은 거래처+월에 공존하면 insert(합산) 적용 후 update(마지막값)로 덮어쓴다 (트리거 순서 동등).
+     * `abcClosingSum(ΣERPSales)/shipClosingSum(ΣERPDist)/totalLedger(ΣLedger)` 를 [sumRows] (거래처당
+     * 1 row, daily 전량 SUM) 값으로 대입한다. 집계 자체는 호출측이 수행해 넘긴다 — 일별 적재 경로는
+     * 처리분 거래처 IN 으로, 수동 재집계 경로는 거래처 코드 범위로 각각 SUM 을 구한다.
+     *
+     * 레거시 deviation (사용자 결정 2026-07-09): 레거시의 "처리분 기준 대입" (insert=합산/update=마지막 1건 값)
+     * 은 재실행 시 값이 달라지는 비멱등 동작이라 재합산으로 교체. 재실행/부분 재적재 몇 번을 반복해도
+     * 항상 같은 월 합계로 수렴한다.
      *
      * 온도대별 마감 컬럼 / 목표(thisMonthTarget 등) / 비고(remark) / 마감(isConfirmed) 은 건드리지 않아 보존.
      */
     private fun updateMonthlyAggregate(
         salesYear: SalesYear,
         salesMonthEnum: SalesMonth,
-        outcomes: List<DailyUpsertOutcome>,
+        sapCodes: List<String>,
+        sumRows: List<DailySalesMonthlySum>,
         accountByCode: Map<String?, Account>,
     ): Int {
-        if (outcomes.isEmpty()) return 0
+        if (sapCodes.isEmpty()) return 0
 
-        val sapCodes = outcomes.map { it.sapCode }.distinct()
         val existing = monthlySalesHistoryRepository
             .findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(listOf(salesYear), listOf(salesMonthEnum), sapCodes)
             .filter { it.externalkeyC != null }
             .associateBy { it.sapAccountCode }
-            .toMutableMap()
 
-        val toSave = LinkedHashMap<String, MonthlySalesHistory>()
+        val sumByCode = sumRows.associateBy { it.sapAccountCode }
+
+        val toSave = mutableListOf<MonthlySalesHistory>()
         sapCodes.forEach { sapCode ->
             val key = sapCode + salesYear.value + salesMonthEnum.value
             val entity = existing[sapCode] ?: MonthlySalesHistory(
@@ -170,35 +204,14 @@ class OroraDailySalesChunkProcessor(
                 accountByCode[sapCode]?.let { acc -> it.account = acc; it.accountSfid = acc.sfid }
             }
 
-            // 레거시 null→0 초기화 (TriggerHandler:90-97, 236-238).
-            if (entity.abcClosingSumAmount == null) entity.abcClosingSumAmount = 0.0
-            if (entity.shipClosingSumAmount == null) entity.shipClosingSumAmount = 0.0
-            if (entity.totalLedgerAmount == null) entity.totalLedgerAmount = java.math.BigDecimal.ZERO
+            val sum = sumByCode[sapCode]
+            entity.abcClosingSumAmount = sum?.erpSalesSum ?: 0.0
+            entity.shipClosingSumAmount = sum?.erpDistributionSum ?: 0.0
+            entity.totalLedgerAmount = BigDecimal.valueOf(sum?.ledgerSum ?: 0.0)
 
-            val rows = outcomes.filter { it.sapCode == sapCode }
-
-            // 1) insert 경로: 신규 row 묶음을 합산 (레거시 beforeInsert :99-108).
-            val inserted = rows.filter { it.wasNew }
-            if (inserted.isNotEmpty()) {
-                entity.abcClosingSumAmount = inserted.sumOf { it.entity.erpSalesAmount ?: 0.0 }
-                entity.shipClosingSumAmount = inserted.sumOf { it.entity.erpDistributionAmount ?: 0.0 }
-                entity.totalLedgerAmount = java.math.BigDecimal.valueOf(
-                    inserted.sumOf { it.entity.ledgerAmount ?: 0.0 }
-                )
-            }
-
-            // 2) update 경로: 기존 row 묶음의 마지막 1건 값으로 덮어쓰기 (레거시 beforeUpdate :257-259 `=`).
-            val updated = rows.filter { !it.wasNew }
-            if (updated.isNotEmpty()) {
-                val last = updated.last().entity
-                entity.abcClosingSumAmount = last.erpSalesAmount ?: 0.0
-                entity.shipClosingSumAmount = last.erpDistributionAmount ?: 0.0
-                entity.totalLedgerAmount = java.math.BigDecimal.valueOf(last.ledgerAmount ?: 0.0)
-            }
-
-            toSave[sapCode] = entity
+            toSave += entity
         }
-        monthlySalesHistoryRepository.saveAll(toSave.values.toList())
+        monthlySalesHistoryRepository.saveAll(toSave)
         return toSave.size
     }
 

@@ -5,6 +5,8 @@ import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.permission.SfSystemPermission
 import com.otoki.powersales.admin.dto.request.AdminScheduledJobQuery
 import com.otoki.powersales.admin.dto.request.ScheduledJobToggleRequest
+import com.otoki.powersales.admin.dto.request.MonthlyReaggregateChunkTriggerRequest
+import com.otoki.powersales.admin.dto.request.MonthlyReaggregateTriggerRequest
 import com.otoki.powersales.admin.dto.request.OroraDailyMaterializeChunkTriggerRequest
 import com.otoki.powersales.admin.dto.request.OroraDailyMaterializeTriggerRequest
 import com.otoki.powersales.admin.dto.request.OroraMonthlyMaterializeChunkTriggerRequest
@@ -174,6 +176,37 @@ class AdminScheduledJobController(
         @RequestBody request: OroraDailyMaterializeChunkTriggerRequest,
     ): ResponseEntity<ApiResponse<OroraMaterializeAcceptedResponse>> {
         val response = adminScheduledJobService.triggerOroraDailyChunk(request.chunkIndex, request.salesMonth)
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response))
+    }
+
+    /**
+     * 월별 합계 재집계를 특정 월(`YYYYMM`)로 **비동기** 수동 실행 접수한다 (`salesMonth` 필수).
+     *
+     * ORORA 조회 없이 이미 적재된 `daily_sales_history` 만으로 `monthly_sales_history` 합계를 재계산한다.
+     * daily 배치와 동일 잡명으로 이력에 남으며 metadata `trigger=manual-reaggregate` 로 구분된다.
+     * RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+     */
+    @PostMapping("/api/v1/admin/scheduled-jobs/monthly-reaggregate/trigger")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun triggerMonthlyReaggregate(
+        @RequestBody request: MonthlyReaggregateTriggerRequest,
+    ): ResponseEntity<ApiResponse<OroraMaterializeAcceptedResponse>> {
+        val response = adminScheduledJobService.triggerMonthlyReaggregate(request.salesMonth)
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response))
+    }
+
+    /**
+     * 월별 합계 재집계를 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 수동 실행한다 (`salesMonth` 필수).
+     *
+     * 전체 범위를 도는 [triggerMonthlyReaggregate] 와 달리 선택 청크의 거래처 구간만 재집계한다.
+     * RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+     */
+    @PostMapping("/api/v1/admin/scheduled-jobs/monthly-reaggregate/chunk/trigger")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun triggerMonthlyReaggregateChunk(
+        @RequestBody request: MonthlyReaggregateChunkTriggerRequest,
+    ): ResponseEntity<ApiResponse<OroraMaterializeAcceptedResponse>> {
+        val response = adminScheduledJobService.triggerMonthlyReaggregateChunk(request.chunkIndex, request.salesMonth)
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success(response))
     }
 

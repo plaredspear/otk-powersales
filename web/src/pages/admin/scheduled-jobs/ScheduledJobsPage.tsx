@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   App,
@@ -21,6 +22,8 @@ import {
   useScheduledJobCatalog,
   useScheduledJobRuns,
   useScheduledJobSummary,
+  useTriggerMonthlyReaggregate,
+  useTriggerMonthlyReaggregateChunk,
   useTriggerOroraDailyMaterialize,
   useTriggerOroraDailyMaterializeChunk,
   useTriggerOroraMonthlyMaterialize,
@@ -464,6 +467,166 @@ function OroraDailyChunkTriggerPanel() {
 }
 
 /**
+ * 월별 합계 재집계 패널 (전체 거래처 범위). ORORA 조회 없이 이미 적재된 daily_sales_history 만으로
+ * monthly_sales_history 의 전산/물류 마감 합계·총 원장매출을 재계산한다. 대상 월은 **필수 선택**
+ * (미선택 시 실행 불가) — 재집계는 자동 산출하지 않는다. `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function MonthlyReaggregateTriggerPanel() {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const [month, setMonth] = useState<Dayjs | null>(null);
+  const trigger = useTriggerMonthlyReaggregate();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const salesMonth = month ? month.format('YYYYMM') : undefined;
+
+  const handleRun = () => {
+    if (!salesMonth) {
+      message.warning('재집계 대상 월을 선택하세요');
+      return;
+    }
+    trigger.mutate(salesMonth, {
+      onSuccess: (result) => {
+        message.success(result.message ?? `${result.salesMonth} 재집계를 시작했습니다.`);
+      },
+      onError: (err) => {
+        message.error(err instanceof Error ? err.message : '월별 합계 재집계 접수에 실패했습니다');
+      },
+    });
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="월별 합계 재집계 (전체)">
+      <Space wrap align="center">
+        <Text type="secondary">
+          대상 월 <Text type="danger">*</Text>
+        </Text>
+        <DatePicker
+          picker="month"
+          placeholder="대상 월 선택 (필수)"
+          value={month}
+          onChange={(value) => setMonth(value)}
+          disabledDate={(current) => current && current > dayjs().endOf('month')}
+        />
+        <Popconfirm
+          title="월별 합계 재집계"
+          description={`${salesMonth ?? '선택한 월'}의 monthly_sales_history 합계를 daily_sales_history 로 재계산합니다. 실행하시겠습니까?`}
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+          disabled={!salesMonth}
+        >
+          <Button type="primary" loading={trigger.isPending} disabled={!salesMonth}>
+            재집계 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          ORORA 조회 없이 이미 적재된 일별 매출만으로 월합계(전산/물류 마감 합계·총 원장매출)를 재계산합니다.
+          목표/비고/마감 등 운영 입력 컬럼은 보존됩니다. 백그라운드로 실행되며 진행/결과는 아래 실행 이력에서 확인하세요.
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+/**
+ * 월별 합계 재집계 거래처 청크 단위 패널. 전체 범위를 도는 재집계와 달리 거래처 청크 1개만 재계산한다.
+ * 대상 월은 **필수 선택**. `MODIFY_ALL_DATA` 권한자에게만 노출.
+ */
+function MonthlyReaggregateChunkTriggerPanel() {
+  const { message } = App.useApp();
+  const { hasSystemPermission } = usePermission();
+  const [month, setMonth] = useState<Dayjs | null>(null);
+  const [chunkIndex, setChunkIndex] = useState<number | undefined>(undefined);
+  const chunksQuery = useOroraDailyChunks();
+  const trigger = useTriggerMonthlyReaggregateChunk();
+
+  if (!hasSystemPermission('MODIFY_ALL_DATA')) {
+    return null;
+  }
+
+  const salesMonth = month ? month.format('YYYYMM') : undefined;
+  const chunkOptions = (chunksQuery.data?.chunks ?? []).map((chunk) => ({
+    value: chunk.chunkIndex,
+    label: `${chunk.chunkIndex + 1}번 (거래처 ${chunk.fromAccountCode} ~ ${chunk.toAccountCode})`,
+  }));
+
+  const canRun = salesMonth !== undefined && chunkIndex !== undefined;
+
+  const handleRun = () => {
+    if (!salesMonth) {
+      message.warning('재집계 대상 월을 선택하세요');
+      return;
+    }
+    if (chunkIndex === undefined) {
+      message.warning('재집계할 거래처 청크를 선택하세요');
+      return;
+    }
+    trigger.mutate(
+      { chunkIndex, salesMonth },
+      {
+        onSuccess: (result) => {
+          message.success(
+            result.message ?? `${result.salesMonth} ${chunkIndex + 1}번 청크 재집계를 시작했습니다.`,
+          );
+        },
+        onError: (err) => {
+          message.error(err instanceof Error ? err.message : '월별 합계 재집계 청크 접수에 실패했습니다');
+        },
+      },
+    );
+  };
+
+  return (
+    <Card size="small" style={{ marginBottom: 16 }} title="월별 합계 재집계 (거래처 청크 단위)">
+      <Space wrap align="center">
+        <Text type="secondary">
+          대상 월 <Text type="danger">*</Text>
+        </Text>
+        <DatePicker
+          picker="month"
+          placeholder="대상 월 선택 (필수)"
+          value={month}
+          onChange={(value) => setMonth(value)}
+          disabledDate={(current) => current && current > dayjs().endOf('month')}
+        />
+        <Text type="secondary">거래처 청크</Text>
+        <Select
+          style={{ minWidth: 320 }}
+          placeholder={chunksQuery.isLoading ? '청크 목록 불러오는 중…' : '청크 선택'}
+          loading={chunksQuery.isLoading}
+          value={chunkIndex}
+          onChange={(value: number) => setChunkIndex(value)}
+          options={chunkOptions}
+          showSearch
+          optionFilterProp="label"
+        />
+        <Popconfirm
+          title="월별 합계 재집계 (청크)"
+          description={`${salesMonth ?? '선택한 월'} 중 ${
+            chunkIndex === undefined ? '선택한' : `${chunkIndex + 1}번`
+          } 거래처 청크의 월합계를 daily_sales_history 로 재계산합니다. 실행하시겠습니까?`}
+          okText="실행"
+          cancelText="취소"
+          onConfirm={handleRun}
+          disabled={!canRun}
+        >
+          <Button type="primary" loading={trigger.isPending} disabled={!canRun}>
+            청크 재집계 실행
+          </Button>
+        </Popconfirm>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          선택한 거래처 청크 1개 구간만 월합계를 재계산합니다 (특정 거래처 구간 교정 / 부분 점검용).
+        </Text>
+      </Space>
+    </Card>
+  );
+}
+
+/**
  * 전문행사조(PPT) 마스터 배치 수동 실행 패널. "금일 전문행사조 마감"(expire) / "금일 전문행사조 반영"
  * (sync) 탭에서 노출되며, 실행 시 backend 가 즉시 배치를 1회 돌리고 결과를 이력에 남긴다.
  * 사원 행사조 소속을 변경하므로 `MODIFY_ALL_DATA` 권한자에게만 버튼을 노출한다.
@@ -590,8 +753,23 @@ interface RunsAppliedFilters {
   to?: string;
 }
 
-export default function ScheduledJobsPage() {
-  const [activeTab, setActiveTab] = useState<string>(ALL_JOBS_KEY);
+/**
+ * 실행 이력 목록 + 조회 필터 패널. 탭(전체 / 잡별)마다 독립 인스턴스로 렌더되어,
+ * 페이지네이션·조회 필터 상태를 각 탭이 개별 보관한다. 초기 상태는 필터 없음이라
+ * 탭 진입 시 별도 조회 조건 없이도 최신순(backend startedAt DESC) 이력이 바로 보인다.
+ *
+ * @param jobName '전체' 탭이면 undefined (전 잡 대상), 잡 탭이면 해당 잡 이름.
+ * @param showJobNameColumn '전체' 탭에서만 '잡 이름' 컬럼을 노출한다.
+ */
+function RunsHistory({
+  jobName,
+  showJobNameColumn,
+  onSelectRun,
+}: {
+  jobName: string | undefined;
+  showJobNameColumn: boolean;
+  onSelectRun: (run: ScheduledJobRun) => void;
+}) {
   // 조회 조건 버퍼 — "조회" 버튼 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
   const [statusInput, setStatusInput] = useState<ScheduledJobStatus | undefined>(undefined);
   const [rangeInput, setRangeInput] = useState<[Dayjs | null, Dayjs | null] | null>(null);
@@ -599,7 +777,6 @@ export default function ScheduledJobsPage() {
   // 0-indexed 페이지 (buildListPagination 표준). 서버 조회 시 1-indexed 로 보정한다.
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(20);
-  const [selectedRun, setSelectedRun] = useState<ScheduledJobRun | null>(null);
 
   const handleSearch = () => {
     setPage(0);
@@ -610,51 +787,12 @@ export default function ScheduledJobsPage() {
     });
   };
 
-  // 잡 이름별 탭: '전체' 탭이면 jobName 필터 없음, 잡 탭이면 해당 잡 이름으로 필터.
-  const jobName =
-    activeTab === ALL_JOBS_KEY || activeTab === CATALOG_KEY ? undefined : activeTab;
-
-  const summaryQuery = useScheduledJobSummary(24);
-  const catalogQuery = useScheduledJobCatalog();
   const runsQuery = useScheduledJobRuns({
     jobName,
     ...applied,
     page: page + 1,
     size,
   });
-
-  // 등록된 작업(catalog) 기준으로 잡 이름 탭 목록 구성.
-  const jobNames = useMemo(
-    () => (catalogQuery.data ?? []).map((entry) => entry.jobName),
-    [catalogQuery.data],
-  );
-
-  // 잡 이름 → cron 표현식 (설명 헤더에 실행 주기 함께 표기).
-  const cronByJob = useMemo(() => {
-    const map: Record<string, string> = {};
-    (catalogQuery.data ?? []).forEach((entry) => {
-      map[entry.jobName] = entry.cron;
-    });
-    return map;
-  }, [catalogQuery.data]);
-
-  // 잡 이름 → 현재 환경 활성 여부 (탭 라벨에 비활성 표기). catalog 미로딩 시 기본 활성 가정.
-  const enabledByJob = useMemo(() => {
-    const map: Record<string, boolean> = {};
-    (catalogQuery.data ?? []).forEach((entry) => {
-      map[entry.jobName] = entry.enabled;
-    });
-    return map;
-  }, [catalogQuery.data]);
-
-  // 잡 이름 → 런타임 토글 활성 여부 (운영 중 끄고 켜기). catalog 미로딩 시 기본 활성 가정.
-  const runtimeEnabledByJob = useMemo(() => {
-    const map: Record<string, boolean> = {};
-    (catalogQuery.data ?? []).forEach((entry) => {
-      map[entry.jobName] = entry.runtimeEnabled;
-    });
-    return map;
-  }, [catalogQuery.data]);
 
   const runColumns: ColumnsType<ScheduledJobRun> = [
     {
@@ -695,32 +833,12 @@ export default function ScheduledJobsPage() {
     },
   ];
 
-  const catalogColumns: ColumnsType<RegisteredScheduledJob> = [
-    {
-      title: '상태',
-      dataIndex: 'enabled',
-      key: 'enabled',
-      width: 90,
-      filters: [
-        { text: '활성', value: true },
-        { text: '비활성', value: false },
-      ],
-      onFilter: (value, record) => record.enabled === value,
-      render: (enabled: boolean) =>
-        enabled ? <Tag color="green">활성</Tag> : <Tag color="default">비활성</Tag>,
-    },
-    { title: '잡 이름', dataIndex: 'jobName', key: 'jobName', width: 240 },
-    { title: 'cron 표현식', dataIndex: 'cron', key: 'cron', width: 280 },
-    { title: '설명', dataIndex: 'description', key: 'description' },
-  ];
-
   // 잡 탭에서는 '잡 이름' 컬럼이 중복이므로 제외하고, '전체' 탭에서만 노출.
-  const visibleRunColumns =
-    jobName === undefined
-      ? runColumns
-      : runColumns.filter((col) => col.key !== 'jobName');
+  const visibleRunColumns = showJobNameColumn
+    ? runColumns
+    : runColumns.filter((col) => col.key !== 'jobName');
 
-  const runsHistoryNode = (
+  return (
     <>
       <Space wrap style={{ marginBottom: 16 }}>
         <Select
@@ -757,18 +875,81 @@ export default function ScheduledJobsPage() {
         })}
         locale={listTableLocale()}
         onRow={(record) => ({
-          onClick: () => setSelectedRun(record),
+          onClick: () => onSelectRun(record),
           style: { cursor: 'pointer' },
         })}
       />
     </>
   );
+}
+
+export default function ScheduledJobsPage() {
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<string>(ALL_JOBS_KEY);
+  const [selectedRun, setSelectedRun] = useState<ScheduledJobRun | null>(null);
+
+  const summaryQuery = useScheduledJobSummary(24);
+  const catalogQuery = useScheduledJobCatalog();
+
+  // 등록된 작업(catalog) 기준으로 잡 이름 탭 목록 구성.
+  const jobNames = useMemo(
+    () => (catalogQuery.data ?? []).map((entry) => entry.jobName),
+    [catalogQuery.data],
+  );
+
+  // 잡 이름 → cron 표현식 (설명 헤더에 실행 주기 함께 표기).
+  const cronByJob = useMemo(() => {
+    const map: Record<string, string> = {};
+    (catalogQuery.data ?? []).forEach((entry) => {
+      map[entry.jobName] = entry.cron;
+    });
+    return map;
+  }, [catalogQuery.data]);
+
+  // 잡 이름 → 현재 환경 활성 여부 (탭 라벨에 비활성 표기). catalog 미로딩 시 기본 활성 가정.
+  const enabledByJob = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    (catalogQuery.data ?? []).forEach((entry) => {
+      map[entry.jobName] = entry.enabled;
+    });
+    return map;
+  }, [catalogQuery.data]);
+
+  // 잡 이름 → 런타임 토글 활성 여부 (운영 중 끄고 켜기). catalog 미로딩 시 기본 활성 가정.
+  const runtimeEnabledByJob = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    (catalogQuery.data ?? []).forEach((entry) => {
+      map[entry.jobName] = entry.runtimeEnabled;
+    });
+    return map;
+  }, [catalogQuery.data]);
+
+  const catalogColumns: ColumnsType<RegisteredScheduledJob> = [
+    {
+      title: '상태',
+      dataIndex: 'enabled',
+      key: 'enabled',
+      width: 90,
+      filters: [
+        { text: '활성', value: true },
+        { text: '비활성', value: false },
+      ],
+      onFilter: (value, record) => record.enabled === value,
+      render: (enabled: boolean) =>
+        enabled ? <Tag color="green">활성</Tag> : <Tag color="default">비활성</Tag>,
+    },
+    { title: '잡 이름', dataIndex: 'jobName', key: 'jobName', width: 240 },
+    { title: 'cron 표현식', dataIndex: 'cron', key: 'cron', width: 280 },
+    { title: '설명', dataIndex: 'description', key: 'description' },
+  ];
 
   const tabItems = [
     {
       key: ALL_JOBS_KEY,
       label: '전체',
-      children: runsHistoryNode,
+      children: (
+        <RunsHistory jobName={undefined} showJobNameColumn onSelectRun={setSelectedRun} />
+      ),
     },
     ...jobNames.map((name) => {
       // catalog 미로딩 중에는 활성으로 간주(undefined !== false), 로딩 후 false 면 비활성 표기.
@@ -880,6 +1061,8 @@ export default function ScheduledJobsPage() {
               <>
                 <OroraDailyTriggerPanel />
                 <OroraDailyChunkTriggerPanel />
+                <MonthlyReaggregateTriggerPanel />
+                <MonthlyReaggregateChunkTriggerPanel />
               </>
             )}
             {PPT_MASTER_TRIGGER_ACTIONS[name] && (
@@ -888,7 +1071,11 @@ export default function ScheduledJobsPage() {
                 jobLabelText={jobLabel(name)}
               />
             )}
-            {runsHistoryNode}
+            <RunsHistory
+              jobName={name}
+              showJobNameColumn={false}
+              onSelectRun={setSelectedRun}
+            />
           </>
         ),
       };
@@ -909,20 +1096,19 @@ export default function ScheduledJobsPage() {
     },
   ];
 
-  // 상단 요약 카드와 실행 이력 목록은 한 화면의 핵심 데이터라 함께 새로고침한다.
+  // 상단 요약 카드와 (현재 활성 탭의) 실행 이력 목록은 한 화면의 핵심 데이터라 함께 새로고침한다.
+  // 실행 이력 페이지네이션 상태는 각 탭의 RunsHistory 가 개별 보관하므로, 여기서는 'runs' 쿼리
+  // 캐시를 무효화해 마운트된 탭이 스스로 refetch 하게 한다.
   const handleRefresh = () => {
     summaryQuery.refetch();
-    runsQuery.refetch();
+    queryClient.invalidateQueries({ queryKey: ['admin', 'scheduled-jobs', 'runs'] });
   };
 
   return (
     <div style={{ padding: 24 }}>
       <Space style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
         <Title level={3} style={{ margin: 0 }}>스케줄 잡</Title>
-        <RefreshButton
-          onRefresh={handleRefresh}
-          refreshing={summaryQuery.isFetching || runsQuery.isFetching}
-        />
+        <RefreshButton onRefresh={handleRefresh} refreshing={summaryQuery.isFetching} />
       </Space>
       <Text type="secondary">
         backend `@Scheduled` 배치의 실행 상태를 조회합니다. 요약 카드는 최근 24시간 윈도우 기준입니다.
@@ -951,7 +1137,6 @@ export default function ScheduledJobsPage() {
         activeKey={activeTab}
         onChange={(key) => {
           setActiveTab(key);
-          setPage(0);
         }}
         items={tabItems}
       />

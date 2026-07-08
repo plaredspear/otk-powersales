@@ -285,3 +285,39 @@ export async function triggerOroraDailyMaterializeChunk(
   }
   return res.data.data;
 }
+
+/**
+ * 월별 합계 재집계를 특정 월(`YYYYMM`)로 **비동기** 수동 실행 접수한다. `salesMonth` 필수.
+ * ORORA 조회 없이 이미 적재된 daily_sales_history 만으로 monthly_sales_history 합계를 재계산한다.
+ * RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function triggerMonthlyReaggregate(
+  salesMonth: string,
+): Promise<OroraMaterializeAcceptedResponse> {
+  const res = await client.post<ApiResponse<OroraMaterializeAcceptedResponse>>(
+    '/api/v1/admin/scheduled-jobs/monthly-reaggregate/trigger',
+    { salesMonth },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '월별 합계 재집계 접수에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 월별 합계 재집계를 거래처 청크 1개(`chunkIndex`, 0-based) 만 대상으로 수동 실행한다. `salesMonth` 필수.
+ * 전체 범위 실행과 달리 선택 청크의 거래처 구간만 재집계한다. RDS upsert 라 `MODIFY_ALL_DATA` 권한 필요.
+ */
+export async function triggerMonthlyReaggregateChunk(
+  chunkIndex: number,
+  salesMonth: string,
+): Promise<OroraMaterializeAcceptedResponse> {
+  const res = await client.post<ApiResponse<OroraMaterializeAcceptedResponse>>(
+    '/api/v1/admin/scheduled-jobs/monthly-reaggregate/chunk/trigger',
+    { chunkIndex, salesMonth },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '월별 합계 재집계 청크 접수에 실패했습니다');
+  }
+  return res.data.data;
+}

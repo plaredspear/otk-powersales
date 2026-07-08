@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.sales.entity.MonthlySalesHistory
 import com.otoki.powersales.domain.sales.enums.SalesMonth
 import com.otoki.powersales.domain.sales.enums.SalesYear
 import com.otoki.powersales.domain.sales.repository.DailySalesHistoryRepository
+import com.otoki.powersales.domain.sales.repository.DailySalesMonthlySum
 import com.otoki.powersales.domain.sales.repository.MonthlySalesHistoryRepository
 import io.mockk.every
 import io.mockk.mockk
@@ -19,15 +20,18 @@ import org.junit.jupiter.api.Test
 import java.math.BigDecimal
 
 /**
- * [OroraDailySalesChunkProcessor] 일별 적재 + 월별 합계 갱신 검증 (Spec #855 / 레거시 raw 동작 정합).
+ * [OroraDailySalesChunkProcessor] 일별 적재 + 월별 합계 갱신 검증.
  *
  * 레거시 DailyErpSalesInfoTriggerHandler 동등:
  * - SalesDate 보정 (대상월≠today연월 → 그 달 말일), external key 는 원본 YYYYMMDD.
  * - 거래처 미매칭 row 차단.
- * - 월별 = abcClosingSum(ΣERPSales) + shipClosingSum(ΣERPDist) + totalLedger(ΣLedger=0).
- * - insert 경로=합산, update 경로=마지막 1건 값 덮어쓰기.
+ *
+ * 레거시 deviation (사용자 결정 2026-07-09):
+ * - 월별 합계는 해당 거래처+월 daily 전체 **재합산** (abcSum=ΣERPSales, shipSum=ΣERPDist, ledger=ΣLedger)
+ *   — DB SUM projection 집계 결과를 그대로 대입. 레거시의 "처리분 기준 대입" (insert=합산/update=마지막
+ *   1건 값) 은 재실행 시 값이 달라지는 비멱등이라 교체.
  */
-@DisplayName("OroraDailySalesChunkProcessor — 레거시 raw 동작 정합")
+@DisplayName("OroraDailySalesChunkProcessor — 일별 적재 + 월별 재합산 (멱등)")
 class OroraDailySalesChunkProcessorTest {
 
     private val ororaRepo: OroraDailySalesHistoryRepository = mockk()
@@ -44,6 +48,20 @@ class OroraDailySalesChunkProcessorTest {
             erpDistributionAmount = BigDecimal(erpDist),
         )
 
+    private fun dailyRow(sap: String, externalKey: String) = DailySalesHistory(
+        sapAccountCode = sap,
+        salesDate = "20260131",
+        externalKey = externalKey,
+    )
+
+    private fun sumRow(sap: String, erpSales: Double?, erpDist: Double?, ledger: Double? = null) =
+        DailySalesMonthlySum(
+            sapAccountCode = sap,
+            erpSalesSum = erpSales,
+            erpDistributionSum = erpDist,
+            ledgerSum = ledger,
+        )
+
     private fun account(id: Long, key: String) = Account(id = id, externalKey = key, sfid = "001$key")
 
     @Test
@@ -57,6 +75,7 @@ class OroraDailySalesChunkProcessorTest {
         every { dailyRepo.findByExternalKeyIn(listOf("100007720260115")) } returns emptyList()
         val savedDaily = slot<List<DailySalesHistory>>()
         every { dailyRepo.saveAll(capture(savedDaily)) } answers { savedDaily.captured }
+        every { dailyRepo.sumMonthlyBySapAccountCodeIn(any(), any()) } returns emptyList()
         every {
             monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
         } returns emptyList()
@@ -83,10 +102,6 @@ class OroraDailySalesChunkProcessorTest {
         every { dailyRepo.findByExternalKeyIn(any()) } returns emptyList()
         val savedDaily = slot<List<DailySalesHistory>>()
         every { dailyRepo.saveAll(capture(savedDaily)) } answers { savedDaily.captured }
-        every {
-            monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
-        } returns emptyList()
-        every { monthlyRepo.saveAll(any<List<MonthlySalesHistory>>()) } answers { firstArg<List<MonthlySalesHistory>>() }
 
         val result = processor.process("202601", SalesYear.Y2026, SalesMonth.M01, "0001000000", "0001001999")
 
@@ -96,9 +111,9 @@ class OroraDailySalesChunkProcessorTest {
     }
 
     @Test
-    @DisplayName("월별 insert 경로: 신규 일별 row 들의 합산 (abcSum=ΣERPSales, shipSum=ΣERPDist, ledger=0)")
-    fun insertPathSumsNewRows() {
-        // 신규 일별 2건 (1000+200, 500+100) → abcSum=1500, shipSum=300, ledger=0
+    @DisplayName("월별 재합산: 적재 후 해당 거래처+월 SUM 집계 결과를 그대로 대입")
+    fun monthlyAggregateUsesWholeMonthSum() {
+        // 신규 일별 2건 적재 → 월 SUM 집계(적재분 auto-flush 반영) 결과 대입: abcSum=1500, shipSum=300, ledger=0
         every {
             ororaRepo.findBySalesDateStartingWithAndSapAccountCodeBetween(any(), any(), any())
         } returns listOf(
@@ -106,8 +121,11 @@ class OroraDailySalesChunkProcessorTest {
             ororaRow("0001000077", "20260116", "500", "100"),
         )
         every { accountRepo.findByExternalKeyIn(any()) } returns listOf(account(5, "1000077"))
-        every { dailyRepo.findByExternalKeyIn(any()) } returns emptyList() // 둘 다 신규 = insert 경로
+        every { dailyRepo.findByExternalKeyIn(any()) } returns emptyList()
         every { dailyRepo.saveAll(any<List<DailySalesHistory>>()) } answers { firstArg<List<DailySalesHistory>>() }
+        every {
+            dailyRepo.sumMonthlyBySapAccountCodeIn(listOf("1000077"), "202601")
+        } returns listOf(sumRow("1000077", 1500.0, 300.0))
         every {
             monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
         } returns emptyList()
@@ -120,25 +138,29 @@ class OroraDailySalesChunkProcessorTest {
         val m = savedMonthly.captured.first()
         assertThat(m.abcClosingSumAmount).isEqualTo(1500.0)
         assertThat(m.shipClosingSumAmount).isEqualTo(300.0)
-        assertThat(m.totalLedgerAmount).isEqualByComparingTo(BigDecimal.ZERO) // 일별 ledger 미적재 → 0
+        assertThat(m.totalLedgerAmount).isEqualByComparingTo(BigDecimal.ZERO) // ledger 전부 null → SUM null → 0
     }
 
     @Test
-    @DisplayName("월별 update 경로: 기존 일별 row 들의 마지막 1건 값으로 덮어쓰기 (레거시 = 단일 대입)")
-    fun updatePathOverwritesWithLastRow() {
-        val existingByKey = listOf(
-            DailySalesHistory(sapAccountCode = "1000077", salesDate = "20260131", externalKey = "100007720260115"),
-            DailySalesHistory(sapAccountCode = "1000077", salesDate = "20260131", externalKey = "100007720260116"),
-        )
+    @DisplayName("멱등성: 동일 데이터 재수신(전건 기존 row) 시에도 월 합계가 재합산으로 유지")
+    fun rerunKeepsSameMonthlyAggregate() {
+        // 레거시 raw 동작이라면 update 경로 마지막 1건 값(500/100)으로 덮어썼을 케이스 —
+        // 재합산 방식은 신규/기존 여부와 무관하게 월 SUM 집계값(1500/300)을 대입해야 한다.
         every {
             ororaRepo.findBySalesDateStartingWithAndSapAccountCodeBetween(any(), any(), any())
         } returns listOf(
             ororaRow("0001000077", "20260115", "1000", "200"),
-            ororaRow("0001000077", "20260116", "500", "100"), // 마지막 row → 이 값만 남아야 함
+            ororaRow("0001000077", "20260116", "500", "100"),
         )
         every { accountRepo.findByExternalKeyIn(any()) } returns listOf(account(5, "1000077"))
-        every { dailyRepo.findByExternalKeyIn(any()) } returns existingByKey // 둘 다 기존 = update 경로
+        every { dailyRepo.findByExternalKeyIn(any()) } returns listOf( // 둘 다 기존 = 재실행
+            dailyRow("1000077", "100007720260115"),
+            dailyRow("1000077", "100007720260116"),
+        )
         every { dailyRepo.saveAll(any<List<DailySalesHistory>>()) } answers { firstArg<List<DailySalesHistory>>() }
+        every {
+            dailyRepo.sumMonthlyBySapAccountCodeIn(listOf("1000077"), "202601")
+        } returns listOf(sumRow("1000077", 1500.0, 300.0))
         every {
             monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
         } returns emptyList()
@@ -149,9 +171,112 @@ class OroraDailySalesChunkProcessorTest {
 
         assertThat(result.monthlyUpdated).isEqualTo(1)
         val m = savedMonthly.captured.first()
-        // 합산(1500/300)이 아니라 마지막 row(500/100) 값으로 덮어써야 한다 (레거시 buggy update 경로 동등).
-        assertThat(m.abcClosingSumAmount).isEqualTo(500.0)
-        assertThat(m.shipClosingSumAmount).isEqualTo(100.0)
-        assertThat(m.totalLedgerAmount).isEqualByComparingTo(BigDecimal.ZERO)
+        assertThat(m.abcClosingSumAmount).isEqualTo(1500.0)
+        assertThat(m.shipClosingSumAmount).isEqualTo(300.0)
+    }
+
+    @Test
+    @DisplayName("월별 재합산은 SUM 집계의 ledger 합계 (기존 보유분 포함) 도 대입")
+    fun monthlyAggregateAppliesLedgerSum() {
+        // 이번 실행은 20260116 1건만 수신 — SUM 집계에는 기존 20260115 row 의 ledger 30 이 포함돼 있음.
+        every {
+            ororaRepo.findBySalesDateStartingWithAndSapAccountCodeBetween(any(), any(), any())
+        } returns listOf(ororaRow("0001000077", "20260116", "500", "100"))
+        every { accountRepo.findByExternalKeyIn(any()) } returns listOf(account(5, "1000077"))
+        every { dailyRepo.findByExternalKeyIn(listOf("100007720260116")) } returns emptyList()
+        every { dailyRepo.saveAll(any<List<DailySalesHistory>>()) } answers { firstArg<List<DailySalesHistory>>() }
+        every {
+            dailyRepo.sumMonthlyBySapAccountCodeIn(listOf("1000077"), "202601")
+        } returns listOf(sumRow("1000077", 1500.0, 300.0, ledger = 30.0))
+        every {
+            monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
+        } returns emptyList()
+        val savedMonthly = slot<List<MonthlySalesHistory>>()
+        every { monthlyRepo.saveAll(capture(savedMonthly)) } answers { savedMonthly.captured }
+
+        val result = processor.process("202601", SalesYear.Y2026, SalesMonth.M01, "0001000000", "0001001999")
+
+        assertThat(result.monthlyUpdated).isEqualTo(1)
+        val m = savedMonthly.captured.first()
+        assertThat(m.abcClosingSumAmount).isEqualTo(1500.0)
+        assertThat(m.shipClosingSumAmount).isEqualTo(300.0)
+        assertThat(m.totalLedgerAmount).isEqualByComparingTo(BigDecimal.valueOf(30.0))
+    }
+
+    @Test
+    @DisplayName("기존 운영 입력 월 row 유지: 재합산은 합계 3컬럼만 대입하고 목표/비고/마감은 미변경")
+    fun monthlyAggregatePreservesOperationalColumns() {
+        val existingMonthly = MonthlySalesHistory(
+            sapAccountCode = "1000077",
+            salesYear = SalesYear.Y2026,
+            salesMonth = SalesMonth.M01,
+            externalkeyC = "1000077202601",
+            abcClosingSumAmount = 999.0, // 이전 합계 — 재합산으로 대체돼야 함
+        )
+        every {
+            ororaRepo.findBySalesDateStartingWithAndSapAccountCodeBetween(any(), any(), any())
+        } returns listOf(ororaRow("0001000077", "20260115", "1000", "200"))
+        every { accountRepo.findByExternalKeyIn(any()) } returns listOf(account(5, "1000077"))
+        every { dailyRepo.findByExternalKeyIn(any()) } returns emptyList()
+        every { dailyRepo.saveAll(any<List<DailySalesHistory>>()) } answers { firstArg<List<DailySalesHistory>>() }
+        every {
+            dailyRepo.sumMonthlyBySapAccountCodeIn(listOf("1000077"), "202601")
+        } returns listOf(sumRow("1000077", 1000.0, 200.0))
+        every {
+            monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
+        } returns listOf(existingMonthly)
+        val savedMonthly = slot<List<MonthlySalesHistory>>()
+        every { monthlyRepo.saveAll(capture(savedMonthly)) } answers { savedMonthly.captured }
+
+        processor.process("202601", SalesYear.Y2026, SalesMonth.M01, "0001000000", "0001001999")
+
+        val m = savedMonthly.captured.first()
+        assertThat(m).isSameAs(existingMonthly) // 신규 생성이 아니라 기존 row 갱신
+        assertThat(m.abcClosingSumAmount).isEqualTo(1000.0)
+        assertThat(m.shipClosingSumAmount).isEqualTo(200.0)
+    }
+
+    @Test
+    @DisplayName("재집계: ORORA/daily upsert 없이 코드 범위 SUM 만으로 월합계 대입")
+    fun reaggregateMonthlyUsesRangeSumOnly() {
+        // ORORA 조회·daily saveAll 없이, 코드 범위 SUM 집계 결과만으로 monthly 를 갱신해야 한다.
+        every {
+            dailyRepo.sumMonthlyBySapAccountCodeBetween("1000000", "1001999", "202601")
+        } returns listOf(sumRow("1000077", 1500.0, 300.0, ledger = 30.0))
+        every { accountRepo.findByExternalKeyIn(listOf("1000077")) } returns listOf(account(5, "1000077"))
+        every {
+            monthlyRepo.findBySalesYearInAndSalesMonthInAndSapAccountCodeIn(any(), any(), any())
+        } returns emptyList()
+        val savedMonthly = slot<List<MonthlySalesHistory>>()
+        every { monthlyRepo.saveAll(capture(savedMonthly)) } answers { savedMonthly.captured }
+
+        val updated = processor.reaggregateMonthly(
+            "202601", SalesYear.Y2026, SalesMonth.M01, "1000000", "1001999",
+        )
+
+        assertThat(updated).isEqualTo(1)
+        val m = savedMonthly.captured.first()
+        assertThat(m.sapAccountCode).isEqualTo("1000077")
+        assertThat(m.abcClosingSumAmount).isEqualTo(1500.0)
+        assertThat(m.shipClosingSumAmount).isEqualTo(300.0)
+        assertThat(m.totalLedgerAmount).isEqualByComparingTo(BigDecimal.valueOf(30.0))
+        // ORORA view 조회 / daily saveAll 은 재집계 경로에서 호출되지 않는다 (mock 미설정으로 검증).
+        io.mockk.verify(exactly = 0) { ororaRepo.findBySalesDateStartingWithAndSapAccountCodeBetween(any(), any(), any()) }
+        io.mockk.verify(exactly = 0) { dailyRepo.saveAll(any<List<DailySalesHistory>>()) }
+    }
+
+    @Test
+    @DisplayName("재집계: 해당 월 daily 가 없는 범위는 monthly 갱신 없음")
+    fun reaggregateMonthlyNoRowsNoUpdate() {
+        every {
+            dailyRepo.sumMonthlyBySapAccountCodeBetween(any(), any(), any())
+        } returns emptyList()
+
+        val updated = processor.reaggregateMonthly(
+            "202601", SalesYear.Y2026, SalesMonth.M01, "1000000", "1001999",
+        )
+
+        assertThat(updated).isEqualTo(0)
+        io.mockk.verify(exactly = 0) { monthlyRepo.saveAll(any<List<MonthlySalesHistory>>()) }
     }
 }

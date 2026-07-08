@@ -27,3 +27,14 @@ data class OroraDailyMaterializeResult(
     val dailyUpsertedCount: Int,
     val monthlyAggregateUpdatedCount: Int,
 )
+
+/**
+ * 월별 합계 재집계 결과 — ORORA 조회 없이 `daily_sales_history` 만으로 `monthly_sales_history` 재계산.
+ *
+ * @property salesMonth 대상 매출월 (`YYYYMM`)
+ * @property monthlyAggregateUpdatedCount 재집계로 갱신/생성된 `monthly_sales_history` row 수
+ */
+data class MonthlyAggregateResult(
+    val salesMonth: String,
+    val monthlyAggregateUpdatedCount: Int,
+)

@@ -5,6 +5,8 @@ import {
   getScheduledJobCatalog,
   getScheduledJobRuns,
   getScheduledJobSummary,
+  triggerMonthlyReaggregate,
+  triggerMonthlyReaggregateChunk,
   triggerOroraDailyMaterialize,
   triggerOroraDailyMaterializeChunk,
   triggerOroraMonthlyMaterialize,
@@ -132,6 +134,36 @@ export function useTriggerOroraDailyMaterializeChunk() {
   return useMutation({
     mutationFn: ({ chunkIndex, salesMonth }: { chunkIndex: number; salesMonth?: string }) =>
       triggerOroraDailyMaterializeChunk(chunkIndex, salesMonth),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'runs'] });
+      queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'summary'] });
+    },
+  });
+}
+
+/**
+ * 월별 합계 재집계(전체 범위) 트리거. ORORA 조회 없이 daily 로 monthly 재계산.
+ * 성공 시 실행 이력/요약 쿼리를 무효화하여 갱신한다.
+ */
+export function useTriggerMonthlyReaggregate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (salesMonth: string) => triggerMonthlyReaggregate(salesMonth),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'runs'] });
+      queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'summary'] });
+    },
+  });
+}
+
+/**
+ * 월별 합계 재집계 거래처 청크 단위 트리거. 성공 시 실행 이력/요약 쿼리를 무효화하여 갱신한다.
+ */
+export function useTriggerMonthlyReaggregateChunk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ chunkIndex, salesMonth }: { chunkIndex: number; salesMonth: string }) =>
+      triggerMonthlyReaggregateChunk(chunkIndex, salesMonth),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'runs'] });
       queryClient.invalidateQueries({ queryKey: [...KEY_BASE, 'summary'] });

@@ -12412,6 +12412,26 @@
         },
         "type" : "object"
       },
+      "MonthlyReaggregateChunkTriggerRequest" : {
+        "properties" : {
+          "chunkIndex" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "salesMonth" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "MonthlyReaggregateTriggerRequest" : {
+        "properties" : {
+          "salesMonth" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "MonthlySalesDashboardDetailResponse" : {
         "properties" : {
           "achievedAmount" : {
@@ -29491,6 +29511,62 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListRegisteredScheduledJobDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/monthly-reaggregate/chunk/trigger" : {
+      "post" : {
+        "operationId" : "triggerMonthlyReaggregateChunk",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MonthlyReaggregateChunkTriggerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraMaterializeAcceptedResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/monthly-reaggregate/trigger" : {
+      "post" : {
+        "operationId" : "triggerMonthlyReaggregate",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MonthlyReaggregateTriggerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOroraMaterializeAcceptedResponse"
                 }
               }
             },
