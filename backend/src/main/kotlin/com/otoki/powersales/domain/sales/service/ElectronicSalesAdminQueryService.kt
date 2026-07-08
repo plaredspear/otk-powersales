@@ -7,6 +7,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.AdminForbiddenException
+import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.sales.dto.request.ElectronicSalesDashboardListRequest
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardDetailResponse
@@ -15,6 +16,7 @@ import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardLi
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesDashboardListResponse
 import com.otoki.powersales.domain.sales.dto.response.ElectronicSalesProductLookupItem
 import org.slf4j.LoggerFactory
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -168,7 +170,12 @@ class ElectronicSalesAdminQueryService(
 
     /**
      * 조회 조건 옵션 — 유통형태 / 거래처유형 / 제품 중·소분류 (모두 메인 DB distinct).
+     *
+     * 옵션 소스(Account 유통형태·거래처유형 + Product 카테고리)는 모두 SAP inbound 하루 1회 적재로만
+     * 갱신되는 전역 코드 체계라, 매 화면 진입 시 반복되는 distinct 스캔을 Redis 캐시(24h TTL)로 대체한다.
+     * 무인자라 고정 key('ALL'). Account/Product 적재 직후 각 UpsertService 의 @CacheEvict 가 즉시 무효화한다.
      */
+    @Cacheable(value = [CacheConfig.CACHE_ELECTRONIC_SALES_FILTER_OPTIONS], key = "'ALL'")
     fun getFilterOptions(): ElectronicSalesDashboardFilterOptionsResponse {
         val distributionChannels = accountRepository.findDistinctDistributionChannelParts()
             .mapNotNull { Account.distributionChannelLabel(it.code, it.name) }

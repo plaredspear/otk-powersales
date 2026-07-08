@@ -117,6 +117,18 @@ class CacheConfig : CachingConfigurer {
         const val CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS = "monthlyIntegrationFilterOptions:v1"
 
         /**
+         * 전산실적 대시보드 + POS 거래처 매출 조회(공유) 조회조건 드롭다운 옵션
+         * (유통형태/거래처유형 + 제품 중·소분류) — 24h TTL.
+         *
+         * [CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS] 와 동일 성격이나, 옵션 소스가 Account(유통형태·거래처유형)
+         * 와 Product(카테고리) 두 원천에 걸쳐 있다. 둘 다 SAP inbound 하루 1회 적재이므로,
+         * [com.otoki.powersales.domain.foundation.account.service.AccountUpsertService.upsert] 와
+         * [com.otoki.powersales.domain.foundation.product.service.ProductUpsertService.upsert] 양쪽의
+         * @CacheEvict 가 적재 직후 무효화한다. 24h TTL 은 evict 누락 fallback.
+         */
+        const val CACHE_ELECTRONIC_SALES_FILTER_OPTIONS = "electronicSalesFilterOptions:v1"
+
+        /**
          * SF Sharing Rule 정책 evaluator cache name (spec #782 P2-B).
          *
          * 모두 1h TTL — 정책 변경 빈도 매우 낮음 (사원당 1~2년/회). UserRole entity / PermissionSetAssignment
@@ -262,6 +274,8 @@ class CacheConfig : CachingConfigurer {
             CACHE_TEAM_SCHEDULE_BRANCHES to defaultConfig,
             // 월별여사원 통합일정 조회조건 옵션 — Organization 캐시군과 동일 24h TTL
             CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS to defaultConfig,
+            // 전산실적/POS 조회조건 옵션 (Account + Product 원천) — 24h TTL
+            CACHE_ELECTRONIC_SALES_FILTER_OPTIONS to defaultConfig,
             CACHE_HIERARCHY_SUBORDINATES to sharingPolicyConfig,
             CACHE_HIERARCHY_ANCESTOR_PATH to sharingPolicyConfig,
             CACHE_MEMBER_GROUP_IDS to sharingPolicyConfig,

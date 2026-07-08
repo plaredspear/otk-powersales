@@ -14,6 +14,9 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountCategory
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.config.CacheConfig
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Caching
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -102,8 +105,19 @@ class AccountUpdateTxService(
     /**
      * 필드 검증/갱신 메인 쓰기 트랜잭션. 외부 HTTP 호출을 포함하지 않는다.
      *
+     * 이 경로는 [applyOtherFields] 에서 accountStatusCode/accountType/abcType/abcTypeCode 를 수정할 수 있어,
+     * 유통형태/거래처유형 옵션 집합이 바뀔 수 있다. 따라서 SAP inbound(AccountUpsertService) 와 동일하게
+     * 두 조회조건 옵션 캐시(통합일정 + 전산실적/POS)를 커밋 후 무효화한다 — admin 단건 수정은 빈도가
+     * 낮지만 24h TTL fallback 만으로는 즉시 반영되지 않으므로 evict 로 정합성을 완성한다.
+     *
      * @return 주소(address1/address2) 변경 여부
      */
+    @Caching(
+        evict = [
+            CacheEvict(value = [CacheConfig.CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS], allEntries = true),
+            CacheEvict(value = [CacheConfig.CACHE_ELECTRONIC_SALES_FILTER_OPTIONS], allEntries = true),
+        ]
+    )
     @Transactional
     fun applyUpdate(
         id: Long,

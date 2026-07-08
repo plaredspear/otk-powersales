@@ -9,6 +9,8 @@ import com.otoki.powersales.domain.foundation.product.service.dto.ParseResult
 import com.otoki.powersales.domain.foundation.product.service.dto.ProductUpsertCommand
 import com.otoki.powersales.domain.foundation.product.service.dto.ProductUpsertFailedRow
 import com.otoki.powersales.domain.foundation.product.service.dto.ProductUpsertResult
+import com.otoki.powersales.platform.common.config.CacheConfig
+import org.springframework.cache.annotation.CacheEvict
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -42,6 +44,16 @@ class ProductUpsertService(
     private val productRepository: ProductRepository
 ) {
 
+    /**
+     * 제품 마스터 upsert.
+     *
+     * 적재 직후 [CacheConfig.CACHE_ELECTRONIC_SALES_FILTER_OPTIONS] 를 무효화한다 —
+     * 전산실적/POS 조회조건 옵션의 제품 중·소분류(카테고리)가 Product 원천이므로, 제품 마스터가
+     * 적재되면 카테고리 옵션이 stale 가능하다. (유통형태/거래처유형 파트는 AccountUpsertService 가 무효화.)
+     * 본 서비스도 행 단위 부분 성공 모델이라 커밋 후 evict(성공 행 1건이라도 커밋 시 무효화,
+     * 전체 롤백 시에만 스킵). 24h TTL fallback. NoOp profile (test / local) 에서는 무동작.
+     */
+    @CacheEvict(value = [CacheConfig.CACHE_ELECTRONIC_SALES_FILTER_OPTIONS], allEntries = true)
     @Transactional
     fun upsert(commands: List<ProductUpsertCommand>): ProductUpsertResult {
         val productCodes = commands.mapNotNull { it.productCode?.takeIf { code -> code.isNotBlank() } }
