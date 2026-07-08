@@ -113,6 +113,17 @@ interface AccountRepositoryCustom {
     fun findDistinctAbcTypeParts(): List<AccountLabelPartsRow>
 
     /**
+     * 활성(미삭제) 거래처의 (유통형태, 거래처유형) 동시출현(co-occurrence) distinct 4-튜플.
+     *
+     * 유통형태(거래처상태코드 + 거래처타입)와 거래처유형(ABC유형코드 + ABC유형)이 같은 Account row 에
+     * 공존하므로, 4컬럼 distinct 로 "유통형태별로 어떤 거래처유형이 붙는지" 종속 매핑을 데이터에서 도출한다.
+     * [findDistinctDistributionChannelParts] / [findDistinctAbcTypeParts] 는 축별 독립 distinct 라 교차
+     * 정보가 소실되어 종속 매핑에 쓸 수 없으므로 본 메서드가 별도로 필요하다.
+     * 라벨 조합은 호출 측에서 [Account.distributionChannelLabel] / [Account.abcTypeLabel] 로 수행.
+     */
+    fun findDistinctDistributionAbcPairs(): List<AccountDistributionAbcPairRow>
+
+    /**
      * 행사마스터 거래처 고급 검색 필터 드롭다운용 distinct 값 조회.
      *
      * [predicate] 로 행사 lookup 게이팅(promotionLookupFilter + 폐업 제외 + 지점 스코프)을 전달해
@@ -128,4 +139,12 @@ interface AccountRepositoryCustom {
 data class AccountLabelPartsRow(
     val code: String?,
     val name: String?,
+)
+
+/** 유통형태 ↔ 거래처유형 동시출현 distinct 1건 — 유통형태(코드/명칭) + 거래처유형(코드/명칭). */
+data class AccountDistributionAbcPairRow(
+    val accountStatusCode: String?,
+    val accountType: String?,
+    val abcTypeCode: String?,
+    val abcType: String?,
 )

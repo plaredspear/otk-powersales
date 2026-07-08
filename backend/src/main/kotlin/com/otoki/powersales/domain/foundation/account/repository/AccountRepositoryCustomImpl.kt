@@ -186,6 +186,29 @@ class AccountRepositoryCustomImpl(
             }
     }
 
+    override fun findDistinctDistributionAbcPairs(): List<AccountDistributionAbcPairRow> {
+        return queryFactory
+            .select(account.accountStatusCode, account.accountType, account.abcTypeCode, account.abcType)
+            .from(account)
+            .where(notDeleted())
+            .distinct()
+            .orderBy(
+                account.accountStatusCode.asc(),
+                account.accountType.asc(),
+                account.abcTypeCode.asc(),
+                account.abcType.asc(),
+            )
+            .fetch()
+            .map { tuple ->
+                AccountDistributionAbcPairRow(
+                    accountStatusCode = tuple.get(account.accountStatusCode),
+                    accountType = tuple.get(account.accountType),
+                    abcTypeCode = tuple.get(account.abcTypeCode),
+                    abcType = tuple.get(account.abcType),
+                )
+            }
+    }
+
     override fun findDistinctAccountTypes(predicate: Predicate): List<String> {
         return queryFactory
             .select(account.accountType)

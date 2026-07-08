@@ -11,6 +11,20 @@ data class MonthlyIntegrationScheduleResponse(
     val totalCount: Int
 )
 
+/**
+ * 통합일정 조회조건 드롭다운 옵션 — 유통형태 / 거래처유형 목록 + 종속 매핑.
+ *
+ * - [distributions] : 유통형태 라벨 전체 목록 (정렬됨).
+ * - [accountTypes]  : 거래처유형 라벨 전체 목록 (유통형태 미선택 시 노출용, 정렬됨).
+ * - [dependentAccountTypes] : 유통형태 라벨 → 해당 유통형태에 실제 존재하는 거래처유형 라벨 목록.
+ *   유통형태 선택 시 이 맵으로 거래처유형 셀렉트를 종속 필터링한다.
+ */
+data class MonthlyIntegrationFilterOptionsResponse(
+    val distributions: List<String>,
+    val accountTypes: List<String>,
+    val dependentAccountTypes: Map<String, List<String>>,
+)
+
 data class MonthlyIntegrationScheduleItem(
     /** MFEIS row PK — 상세 조회 진입 키. 실시간 집계 경로(buildIntegrationItems)는 null. */
     val id: Long? = null,

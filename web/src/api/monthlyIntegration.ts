@@ -72,6 +72,16 @@ export interface MonthlyIntegrationDetailResponse {
   schedules: MonthlyIntegrationSourceScheduleItem[];
 }
 
+/** 통합일정 조회조건 드롭다운 옵션 — 유통형태/거래처유형 목록 + 종속 매핑. */
+export interface MonthlyIntegrationFilterOptions {
+  /** 유통형태 라벨 전체 목록 (예: "02 대형마트") */
+  distributions: string[];
+  /** 거래처유형 라벨 전체 목록 (유통형태 미선택 시 노출, 예: "6111 이마트") */
+  accountTypes: string[];
+  /** 유통형태 라벨 → 해당 유통형태에 존재하는 거래처유형 라벨 목록 */
+  dependentAccountTypes: Record<string, string[]>;
+}
+
 export interface CategoryScheduleItem {
   branchName: string;
   currentMonthTotal: number;
@@ -128,6 +138,17 @@ export async function fetchMonthlyIntegrationSchedule(
   );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.error?.message || res.data.message || '통합일정 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/** 조회조건 드롭다운 옵션 — 유통형태/거래처유형 목록 + 종속 매핑. */
+export async function fetchMonthlyIntegrationFilterOptions(): Promise<MonthlyIntegrationFilterOptions> {
+  const res = await client.get<ApiResponse<MonthlyIntegrationFilterOptions>>(
+    '/api/v1/admin/schedules/monthly-integration/filter-options',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.error?.message || res.data.message || '조회조건 옵션 조회에 실패했습니다');
   }
   return res.data.data;
 }

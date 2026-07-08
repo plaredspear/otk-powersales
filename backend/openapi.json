@@ -7665,6 +7665,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseMonthlyIntegrationFilterOptionsResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MonthlyIntegrationFilterOptionsResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseMonthlyIntegrationScheduleResponse" : {
         "properties" : {
           "data" : {
@@ -16816,6 +16845,32 @@
           "year" : {
             "format" : "int32",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "MonthlyIntegrationFilterOptionsResponse" : {
+        "properties" : {
+          "accountTypes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "dependentAccountTypes" : {
+            "additionalProperties" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            },
+            "type" : "object"
+          },
+          "distributions" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -34182,7 +34237,7 @@
     },
     "/api/v1/admin/sales/electronic/filter-options" : {
       "get" : {
-        "operationId" : "getFilterOptions",
+        "operationId" : "getFilterOptions_1",
         "responses" : {
           "200" : {
             "content" : {
@@ -36823,6 +36878,24 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-monthly-integration-controller" ]
+      }
+    },
+    "/api/v1/admin/schedules/monthly-integration/filter-options" : {
+      "get" : {
+        "operationId" : "getFilterOptions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMonthlyIntegrationFilterOptionsResponse"
                 }
               }
             },

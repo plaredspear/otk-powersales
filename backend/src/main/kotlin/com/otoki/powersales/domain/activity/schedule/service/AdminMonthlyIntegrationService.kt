@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.schedule.service
 import com.otoki.powersales.domain.activity.schedule.dto.response.CategoryScheduleItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.CategoryScheduleResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationDetailResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationFilterOptionsResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationSourceScheduleItem
@@ -85,6 +86,43 @@ class AdminMonthlyIntegrationService(
             month = month,
             items = items,
             totalCount = items.size
+        )
+    }
+
+    /**
+     * 통합일정 조회조건 드롭다운 옵션 — 유통형태 / 거래처유형 목록 + 종속 매핑.
+     *
+     * Account 전체(미삭제)의 (유통형태, 거래처유형) 동시출현 distinct 4-튜플에서
+     * 라벨을 조합해 (1) 유통형태 전체 목록, (2) 거래처유형 전체 목록,
+     * (3) 유통형태 → 종속 거래처유형 목록 매핑을 구성한다.
+     * 라벨 조합 규칙은 목록 화면([toResultItem])과 동일한 [Account] companion 정본을 재사용한다.
+     *
+     * 옵션 소스는 통합일정 검색 스코프(지점/월)가 아니라 Account 전역 코드 체계다 — 행사마스터
+     * lookup(`findDistinctAccountTypes`)이 promotionLookupFilter/지점 스코프로 게이팅하는 것과 의도적으로
+     * 다르다. 유통형태-거래처유형은 거래처 마스터의 코드 분류이므로 지점/월과 무관하게 전역 목록을 노출한다.
+     */
+    fun getFilterOptions(): MonthlyIntegrationFilterOptionsResponse {
+        val pairs = accountRepository.findDistinctDistributionAbcPairs()
+
+        val distributions = sortedSetOf<String>()
+        val accountTypes = sortedSetOf<String>()
+        val dependent = linkedMapOf<String, MutableSet<String>>()
+
+        for (pair in pairs) {
+            val distLabel = Account.distributionChannelLabel(pair.accountStatusCode, pair.accountType)
+            val abcLabel = Account.abcTypeLabel(pair.abcTypeCode, pair.abcType)
+            if (distLabel != null) distributions.add(distLabel)
+            if (abcLabel != null) accountTypes.add(abcLabel)
+            // 유통형태·거래처유형 둘 다 있는 경우에만 종속 매핑에 반영.
+            if (distLabel != null && abcLabel != null) {
+                dependent.getOrPut(distLabel) { sortedSetOf() }.add(abcLabel)
+            }
+        }
+
+        return MonthlyIntegrationFilterOptionsResponse(
+            distributions = distributions.toList(),
+            accountTypes = accountTypes.toList(),
+            dependentAccountTypes = dependent.mapValues { it.value.toList() },
         )
     }
 

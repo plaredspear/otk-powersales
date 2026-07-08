@@ -3,13 +3,15 @@ package com.otoki.powersales.domain.activity.schedule.service
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleSearchResult
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.platform.common.util.TimeZones
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.domain.sales.service.MonthlySalesRow
 import com.otoki.powersales.domain.activity.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule.Companion.monthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.domain.activity.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule
 import com.querydsl.core.types.Projections
+import com.querydsl.core.types.dsl.CaseBuilder
+import com.querydsl.core.types.dsl.StringExpression
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -35,7 +37,6 @@ class TeamMemberScheduleSearchService(
     private val expander: BranchCodeExpander,
     private val queryFactory: JPAQueryFactory,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
-    private val accountCategoryMasterRepository: AccountCategoryMasterRepository,
 ) {
 
     /**
@@ -100,22 +101,17 @@ class TeamMemberScheduleSearchService(
         val accountKeywordPredicate = trimmedAccountKeyword?.let {
             q.account.externalKey.eq(it).or(q.account.name.containsIgnoreCase(it))
         }
-        // 유통형태 검색어 — 화면 표시값(거래처상태코드 + 거래처유형명) 부분일치.
-        // accountStatusCode like OR accountType IN (검색어 매칭 거래처유형마스터 Name).
-        // accountType 은 거래처유형마스터 Name(raw String) 을 그대로 보관하므로, 마스터에서 검색어
-        // 부분일치 + useSearch 항목의 Name 을 조회해 직접 IN 으로 건다 (enum 환원 불필요).
+        // 유통형태 필터 — 조회조건이 드롭다운(Select)으로 바뀌어 화면 표시 라벨(거래처상태코드 + 거래처유형명)
+        // 완전일치로 매칭한다. 라벨 조합식은 [distributionChannelLabelExpr] 가 [Account.distributionChannelLabel]
+        // companion 정본 규칙(blank 필터 + 공백 join)을 QueryDSL 로 재현 — projection 라벨과 동일 규칙.
         val trimmedDistribution = distributionKeyword?.trim()?.takeIf { it.isNotEmpty() }
-        val distributionPredicate = trimmedDistribution?.let { kw ->
-            val matchedTypeNames = accountCategoryMasterRepository
-                .findByNameContainingIgnoreCaseAndUseSearchTrueAndIsDeletedNot(kw, true)
-                .map { it.name }
-            val codePredicate = q.account.accountStatusCode.containsIgnoreCase(kw)
-            if (matchedTypeNames.isEmpty()) codePredicate else codePredicate.or(q.account.accountType.`in`(matchedTypeNames))
+        val distributionPredicate = trimmedDistribution?.let { label ->
+            distributionChannelLabelExpr(q).eq(label)
         }
-        // 거래처유형 검색어 — 화면 표시값(ABC유형코드 + ABC유형) 부분일치.
+        // 거래처유형 필터 — 화면 표시 라벨(ABC유형코드 + ABC유형) 완전일치.
         val trimmedAccountType = accountTypeKeyword?.trim()?.takeIf { it.isNotEmpty() }
-        val accountTypePredicate = trimmedAccountType?.let {
-            q.account.abcTypeCode.containsIgnoreCase(it).or(q.account.abcType.containsIgnoreCase(it))
+        val accountTypePredicate = trimmedAccountType?.let { label ->
+            abcTypeLabelExpr(q).eq(label)
         }
         // DTO projection — MFEIS + employee/account 의 필요 컬럼만 select.
         // 엔티티(특히 Employee) 를 hydrate 하지 않으므로 Employee.employeeInfo @OneToOne 강제 로딩
@@ -168,6 +164,40 @@ class TeamMemberScheduleSearchService(
                 q.employee.employeeCode.asc(),
             )
             .fetch()
+    }
+
+    /**
+     * 유통형태 라벨(거래처상태코드 + 거래처타입) QueryDSL 조합식 — [Account.distributionChannelLabel]
+     * companion 정본 규칙(blank 필터 후 공백 join)을 재현. 필터 완전일치 비교용.
+     */
+    private fun distributionChannelLabelExpr(q: QMonthlyFemaleEmployeeIntegrationSchedule): StringExpression =
+        labelExpr(q.account.accountStatusCode, q.account.accountType)
+
+    /**
+     * 거래처유형 라벨(ABC유형코드 + ABC유형) QueryDSL 조합식 — [Account.abcTypeLabel] companion 정본 재현.
+     */
+    private fun abcTypeLabelExpr(q: QMonthlyFemaleEmployeeIntegrationSchedule): StringExpression =
+        labelExpr(q.account.abcTypeCode, q.account.abcType)
+
+    /**
+     * (코드, 명칭) 라벨 조합식 — companion 정본 `listOfNotNull(code, name).filter{ notBlank }.joinToString(" ")`
+     * 를 QueryDSL CASE 로 재현.
+     *
+     * - 코드/명칭 둘 다 non-blank → "코드 명칭"
+     * - 한쪽만 non-blank → 그 파트만
+     * - 둘 다 blank/null → "" (Select 옵션은 blank 라벨을 만들지 않으므로 어떤 입력과도 불일치)
+     */
+    private fun labelExpr(codeCol: StringExpression, nameCol: StringExpression): StringExpression {
+        // companion 정본과 동일하게 — 판정은 isNotBlank(trim 후 비어있지 않음)로, concat 은 "원본 값"으로.
+        // (정본은 filter { it.isNotBlank() } 로 걸러낸 뒤 원본을 그대로 join 하므로 trim 하지 않는다.
+        //  판정용 trim 결과를 concat 에 쓰면 선행/후행 공백 있는 값에서 옵션 라벨과 어긋난다.)
+        val codePresent = codeCol.isNotNull.and(codeCol.trim().ne(""))
+        val namePresent = nameCol.isNotNull.and(nameCol.trim().ne(""))
+        return CaseBuilder()
+            .`when`(codePresent.and(namePresent)).then(codeCol.concat(" ").concat(nameCol))
+            .`when`(codePresent).then(codeCol)
+            .`when`(namePresent).then(nameCol)
+            .otherwise("")
     }
 
     /**

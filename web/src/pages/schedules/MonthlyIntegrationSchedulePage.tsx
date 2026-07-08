@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Card, DatePicker, Descriptions, Drawer, Empty, Grid, Input, message, Space, Spin, Table, Typography } from 'antd';
+import { Alert, Card, DatePicker, Descriptions, Drawer, Empty, Grid, Input, message, Select, Space, Spin, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useMonthlyIntegrationSchedule } from '@/hooks/schedules/useMonthlyIntegrationSchedule';
 import { useMonthlyIntegrationExport } from '@/hooks/schedules/useMonthlyIntegrationExport';
 import { useMonthlyIntegrationDetail } from '@/hooks/schedules/useMonthlyIntegrationDetail';
+import { useMonthlyIntegrationFilterOptions } from '@/hooks/schedules/useMonthlyIntegrationFilterOptions';
 import type { MonthlyIntegrationScheduleItem, MonthlyIntegrationSourceScheduleItem } from '@/api/monthlyIntegration';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -246,6 +247,34 @@ export default function MonthlyIntegrationSchedulePage() {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
+  const { data: filterOptions } = useMonthlyIntegrationFilterOptions();
+
+  // 거래처유형 셀렉트 옵션 — 유통형태 선택 시 종속 목록, 미선택 시 전체 목록.
+  const accountTypeOptions =
+    distributionKeyword && filterOptions
+      ? filterOptions.dependentAccountTypes[distributionKeyword] ?? []
+      : filterOptions?.accountTypes ?? [];
+
+  // 선택된 거래처유형이 현재 옵션 목록에 없으면(유통형태 종속으로 사라진 값) 렌더에서 제외.
+  // filterOptions 로딩 전에는 옵션이 비어 있으므로 이때는 선택값을 그대로 유지한다.
+  const accountTypeValue =
+    !filterOptions || accountTypeOptions.includes(accountTypeKeyword)
+      ? accountTypeKeyword || undefined
+      : undefined;
+
+  // 유통형태 변경 시, 새 유통형태에 속하지 않는 거래처유형 선택값은 초기화.
+  const handleDistributionChange = (value: string | undefined) => {
+    const next = value ?? '';
+    setDistributionKeyword(next);
+    if (accountTypeKeyword) {
+      const dependent = next && filterOptions ? filterOptions.dependentAccountTypes[next] ?? [] : null;
+      // 유통형태를 비우면(전체) 기존 거래처유형 선택은 유지, 특정 유통형태 선택 시 종속 목록에 없으면 초기화.
+      if (dependent != null && !dependent.includes(accountTypeKeyword)) {
+        setAccountTypeKeyword('');
+      }
+    }
+  };
+
   const { data, isLoading, isError, error, refetch, isFetching } = useMonthlyIntegrationSchedule(
     queryParams?.year ?? year,
     queryParams?.month ?? month,
@@ -353,24 +382,28 @@ export default function MonthlyIntegrationSchedulePage() {
             </Space>
             <Space direction="vertical" size={4}>
               <span>유통형태:</span>
-              <Input
+              <Select
                 allowClear
-                placeholder="유통형태 (예: 슈퍼)"
-                value={distributionKeyword}
-                onChange={(e) => setDistributionKeyword(e.target.value)}
-                onPressEnter={handleSearch}
-                style={{ width: 150 }}
+                showSearch
+                placeholder="유통형태 선택"
+                value={distributionKeyword || undefined}
+                onChange={handleDistributionChange}
+                optionFilterProp="label"
+                options={(filterOptions?.distributions ?? []).map((v) => ({ label: v, value: v }))}
+                style={{ width: 170 }}
               />
             </Space>
             <Space direction="vertical" size={4}>
               <span>거래처유형:</span>
-              <Input
+              <Select
                 allowClear
-                placeholder="거래처유형 (예: 이마트)"
-                value={accountTypeKeyword}
-                onChange={(e) => setAccountTypeKeyword(e.target.value)}
-                onPressEnter={handleSearch}
-                style={{ width: 150 }}
+                showSearch
+                placeholder="거래처유형 선택"
+                value={accountTypeValue}
+                onChange={(value) => setAccountTypeKeyword(value ?? '')}
+                optionFilterProp="label"
+                options={accountTypeOptions.map((v) => ({ label: v, value: v }))}
+                style={{ width: 170 }}
               />
             </Space>
             <Space direction="vertical" size={4}>
@@ -415,9 +448,9 @@ export default function MonthlyIntegrationSchedulePage() {
               총 {formatNumber(data.totalCount)}건
             </Text>
             <Space direction="vertical" style={{ width: '100%' }} size={0}>
-              {data.items.map((item, index) => (
+              {data.items.map((item) => (
                 <MobileItemCard
-                  key={index}
+                  key={`${item.accountCode}-${item.employeeCode}`}
                   item={item}
                   onClick={item.id != null ? () => setDetailId(item.id) : undefined}
                 />

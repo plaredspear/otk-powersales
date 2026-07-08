@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleRow
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleSearchService
-import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.domain.sales.service.MonthlySalesRow
@@ -22,10 +21,9 @@ class TeamMemberScheduleSearchServiceTest {
     private val expander: BranchCodeExpander = mockk()
     private val queryFactory: JPAQueryFactory = mockk()
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk()
-    private val accountCategoryMasterRepository: AccountCategoryMasterRepository = mockk()
 
     private val service = TeamMemberScheduleSearchService(
-        expander, queryFactory, monthlySalesHistoryGateway, accountCategoryMasterRepository,
+        expander, queryFactory, monthlySalesHistoryGateway,
     )
 
     private fun row(accountId: Long?, externalKey: String? = null): TeamMemberScheduleRow =

@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.domain.activity.schedule.dto.response.CategoryScheduleResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationDetailResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationFilterOptionsResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleResponse
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
 import com.otoki.powersales.platform.common.dto.ApiResponse
@@ -35,6 +36,14 @@ class AdminMonthlyIntegrationController(
         val response = adminMonthlyIntegrationService.getMonthlyIntegration(
             year, month, costCenterCodes, keyword, accountKeyword, distributionKeyword, accountTypeKeyword,
         )
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /** 조회조건 드롭다운 옵션 — 유통형태 / 거래처유형 목록 + 유통형태별 종속 거래처유형 매핑. */
+    @GetMapping("/filter-options")
+    @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
+    fun getFilterOptions(): ResponseEntity<ApiResponse<MonthlyIntegrationFilterOptionsResponse>> {
+        val response = adminMonthlyIntegrationService.getFilterOptions()
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
