@@ -100,6 +100,20 @@ export async function fetchSalesProgressRateMaster(
 export interface SalesProgressRateMasterSyncTestInput {
   /** 조회 기준 일자 (YYYYMMDD, 예: '20260410'). SF Request Body 의 MOD_DT. */
   modDt: string;
+  /** true 면 SF 응답을 주기 sync 와 동일 경로(ExternalKey upsert)로 신규 DB 에 저장. 기본 false — 조회 전용. */
+  save?: boolean;
+}
+
+/** DB 저장(upsert) 통계 — save=true 조회 시에만 응답에 담긴다. */
+export interface SalesProgressRateMasterSyncSummary {
+  /** SF 응답에서 파싱된 레코드 수. */
+  fetched: number;
+  /** 신규 INSERT 건수. */
+  inserted: number;
+  /** 기존 row UPDATE 건수. */
+  updated: number;
+  /** ExternalKey 산출 불가로 skip 된 건수. */
+  skipped: number;
 }
 
 /** SF 거래처목표등록마스터 조회 테스트 결과 (SF 응답 원형). */
@@ -111,13 +125,16 @@ export interface SalesProgressRateMasterSyncTestResult {
   rawResponse: string | null;
   /** SF 로 전송한 요청 body JSON ({ "MOD_DT": "..." }). */
   requestPayload: string;
+  /** DB 저장(upsert) 통계. 조회 전용 요청(save=false) 또는 SF 호출 실패 시 null. */
+  syncResult: SalesProgressRateMasterSyncSummary | null;
 }
 
 /**
  * SF `IF_salesprogresssend` 거래처목표등록마스터 조회를 테스트 호출한다 (개발자 도구 — 외부 API 테스트).
  *
  * 기준 일자(MOD_DT) 하나를 SF 로 POST 하면 SF 가 해당 일자 기준으로 변경된 거래처목표등록마스터 목록을
- * 응답하는 SF → PWS 조회 인터페이스. 신규 DB 에는 저장하지 않고 SF 응답 원형만 반환한다.
+ * 응답하는 SF → PWS 조회 인터페이스. `save=true` 면 그 응답을 주기 sync 와 동일 경로(ExternalKey upsert)로
+ * 신규 DB 에 저장하고 통계를 함께 반환한다. `save=false`(기본)는 조회 전용 — DB 변경 없음.
  */
 export async function testSalesProgressRateMasterSync(
   input: SalesProgressRateMasterSyncTestInput,

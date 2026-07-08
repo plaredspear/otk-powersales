@@ -4,6 +4,7 @@ import {
   Card,
   DatePicker,
   Form,
+  Popconfirm,
   Space,
   Tag,
   Typography,
@@ -115,7 +116,8 @@ function cellText(value: unknown): string {
  * PDF "알라딘 거래처목표 마스터 API"(`IF_salesprogresssend`) 계약 정합. 기준 일자(MOD_DT) 하나를 SF 로 POST 하면
  * SF 가 해당 일자 기준으로 변경된 거래처목표등록마스터 목록을 응답하는 SF → PWS 조회 인터페이스다.
  * 백엔드 `POST /api/v1/admin/sales-progress-rate-master/sync/test` 를 호출하며, SF 응답을 결과 테이블 + raw JSON 으로
- * 노출한다. 신규 DB 에는 저장하지 않는다. SYSTEM(MODIFY_ALL_DATA) 권한 필요.
+ * 노출한다. 'SF 조회' 는 조회 전용(DB 변경 없음), 'SF 조회 + DB 저장' 은 주기 sync 와 동일 경로(ExternalKey upsert)로
+ * 신규 DB 에 저장하고 통계를 함께 노출한다. SYSTEM(MODIFY_ALL_DATA) 권한 필요.
  */
 export default function SalesProgressRateMasterSyncTab() {
   const [form] = Form.useForm<FormValues>();
@@ -130,18 +132,29 @@ export default function SalesProgressRateMasterSyncTab() {
     mutationFn: testSalesProgressRateMasterSync,
   });
 
-  const handleFinish = async (values: FormValues) => {
+  /** 폼 검증 후 SF 조회 실행. save=true 면 응답을 신규 DB 에 upsert 저장. */
+  const handleCall = async (save: boolean) => {
+    let values: FormValues;
+    try {
+      values = await form.validateFields();
+    } catch {
+      return; // 검증 실패 — 폼이 필드 에러를 표시한다.
+    }
     try {
       const response = await mutation.mutateAsync({
         modDt: values.modDt.format(MOD_DT_FORMAT),
+        save,
       });
       setResult(response);
+      const label = save ? 'SF 조회 + DB 저장' : 'SF 조회';
       notification[response.success ? 'success' : 'warning']({
         key: 'sales-progress-master-sync-test',
         message: response.success
-          ? `SF 조회 성공 (RESULT_CODE=${response.resultCode ?? '-'})`
-          : `SF 조회 실패 (RESULT_CODE=${response.resultCode ?? '-'})`,
-        description: response.resultMsg ?? undefined,
+          ? `${label} 성공 (RESULT_CODE=${response.resultCode ?? '-'})`
+          : `${label} 실패 (RESULT_CODE=${response.resultCode ?? '-'})`,
+        description: response.syncResult
+          ? `저장 결과 — INSERT ${response.syncResult.inserted} / UPDATE ${response.syncResult.updated} / SKIP ${response.syncResult.skipped}`
+          : (response.resultMsg ?? undefined),
       });
     } catch (err) {
       setResult(null);
@@ -180,7 +193,6 @@ export default function SalesProgressRateMasterSyncTab() {
         <Form
           form={form}
           layout="vertical"
-          onFinish={handleFinish}
           disabled={mutation.isPending}
           initialValues={{ modDt: dayjs() }}
         >
@@ -194,9 +206,27 @@ export default function SalesProgressRateMasterSyncTab() {
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" loading={mutation.isPending}>
-              SF 조회
-            </Button>
+            <Space>
+              <Button
+                type="primary"
+                loading={mutation.isPending}
+                onClick={() => handleCall(false)}
+              >
+                SF 조회 (저장 안 함)
+              </Button>
+              <Popconfirm
+                title="SF 조회 결과를 신규 DB 에 저장합니다"
+                description="주기 sync 와 동일 경로로 거래처목표등록마스터를 INSERT/UPDATE 합니다. 진행할까요?"
+                okText="저장"
+                cancelText="취소"
+                onConfirm={() => handleCall(true)}
+                disabled={mutation.isPending}
+              >
+                <Button danger loading={mutation.isPending}>
+                  SF 조회 + DB 저장
+                </Button>
+              </Popconfirm>
+            </Space>
           </Form.Item>
         </Form>
       </Card>
@@ -210,6 +240,11 @@ export default function SalesProgressRateMasterSyncTab() {
                 RESULT_CODE = {result.resultCode ?? '-'}
               </Tag>
               <Tag color="blue">{rows.length}건</Tag>
+              {result.syncResult ? (
+                <Tag color="purple">DB 저장됨</Tag>
+              ) : (
+                <Tag>조회 전용 (저장 안 함)</Tag>
+              )}
             </Space>
           }
         >
@@ -218,6 +253,18 @@ export default function SalesProgressRateMasterSyncTab() {
               <Text>
                 <strong>RESULT_MSG:</strong> {result.resultMsg}
               </Text>
+            )}
+
+            {result.syncResult && (
+              <Space wrap>
+                <Text strong>DB 저장 결과:</Text>
+                <Tag color="geekblue">파싱 {result.syncResult.fetched}건</Tag>
+                <Tag color="green">INSERT {result.syncResult.inserted}건</Tag>
+                <Tag color="gold">UPDATE {result.syncResult.updated}건</Tag>
+                <Tag color={result.syncResult.skipped > 0 ? 'red' : 'default'}>
+                  SKIP {result.syncResult.skipped}건
+                </Tag>
+              </Space>
             )}
 
             {rows.length > 0 && (

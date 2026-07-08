@@ -44,7 +44,7 @@ const API_DESCRIPTIONS: Record<string, string> = {
   'logistics-claim-status-update':
     '기준 일자(MOD_DT, YYYYMMDD) 하나를 Salesforce Apex REST `/services/apexrest/mobile/IF_SendLogisticsClaimToPWS` 로 POST 하면, SF 가 해당 일자 기준으로 변경된 물류 클레임(제안) 마스터 목록(제안명/거래처/조치상태/물류센터 등 21개 필드)을 응답하는 SF → PWS 방향의 조회 인터페이스입니다("알라딘 물류클레임 마스터 API" 문서 정합). 클레임 등록과 동일한 OAuth2(Bearer) + 401 재시도 경로로 호출하며, SF 응답을 결과 테이블 + raw JSON 그대로 노출합니다. 조회 전용이라 신규 DB 에는 저장하지 않습니다.',
   'sales-progress-rate-master-sync':
-    '기준 일자(MOD_DT, YYYYMMDD) 하나를 Salesforce Apex REST `/services/apexrest/mobile/IF_salesprogresssend` 로 POST 하면, SF 가 해당 일자 기준으로 변경된 거래처목표등록마스터 목록(거래처코드/영업률/FO·FR·RM·RT 목표금액/목표 연월/합계/진행률 등 15개 필드)을 응답하는 SF → PWS 방향의 조회 인터페이스입니다("알라딘 거래처목표 마스터 API" 문서 정합). 클레임 등록과 동일한 OAuth2(Bearer) + 401 재시도 경로로 호출하며, SF 응답을 결과 테이블 + raw JSON 그대로 노출합니다. 조회 전용이라 신규 DB 에는 저장하지 않습니다.',
+    '기준 일자(MOD_DT, YYYYMMDD) 하나를 Salesforce Apex REST `/services/apexrest/mobile/IF_salesprogresssend` 로 POST 하면, SF 가 해당 일자 기준으로 변경된 거래처목표등록마스터 목록(거래처코드/영업률/FO·FR·RM·RT 목표금액/목표 연월/합계/진행률 등 15개 필드)을 응답하는 SF → PWS 방향의 조회 인터페이스입니다("알라딘 거래처목표 마스터 API" 문서 정합). 클레임 등록과 동일한 OAuth2(Bearer) + 401 재시도 경로로 호출하며, SF 응답을 결과 테이블 + raw JSON 그대로 노출합니다. \'SF 조회 (저장 안 함)\' 은 조회 전용이고, \'SF 조회 + DB 저장\' 은 주기 sync 와 동일 경로(ExternalKey upsert)로 신규 DB 에 저장합니다.',
   'staff-review-sync':
     '기준 일자(MOD_DT, YYYYMMDD) 하나를 Salesforce Apex REST `/services/apexrest/mobile/IF_SendStaffReviewToPWS` 로 POST 하면, SF 가 해당 일자(수정일 기준)로 변경된 사원평가 마스터 목록(성명/사번/지점평가/사원합계점수/직위/근무유형1~3/평가 항목별 점수 등 32개 필드)을 응답하는 SF → PWS 방향의 조회 인터페이스입니다("알라딘 Staffreview 마스터 API" 문서 정합). 클레임 등록과 동일한 OAuth2(Bearer) + 401 재시도 경로로 호출하며, SF 응답을 결과 테이블 + raw JSON 그대로 노출합니다. 조회 전용이라 신규 DB 에는 저장하지 않습니다.',
   'logistics-claim-regist':
@@ -200,8 +200,8 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
         <Alert
           type="info"
           showIcon
-          message="이 탭은 SF 에서 거래처목표등록마스터를 조회합니다 (조회 전용 — DB 변경 없음)."
-          description="'SF 조회' 버튼은 입력한 기준 일자(MOD_DT)로 SF Apex REST IF_salesprogresssend 로 호출하여 변경 거래처목표등록마스터 목록을 받아옵니다. 신규 DB 에는 저장하지 않습니다. SYSTEM_ADMIN 권한 필요."
+          message="이 탭은 SF 에서 거래처목표등록마스터를 조회합니다. 'SF 조회 + DB 저장' 버튼만 신규 DB 를 변경합니다."
+          description="두 버튼 모두 입력한 기준 일자(MOD_DT)로 SF Apex REST IF_salesprogresssend 를 호출하여 변경 거래처목표등록마스터 목록을 받아옵니다. 'SF 조회 (저장 안 함)' 은 조회 전용 — 신규 DB 에 저장하지 않습니다. 'SF 조회 + DB 저장' 은 주기 sync 와 동일 경로(ExternalKey upsert)로 신규 DB 에 INSERT/UPDATE 하고 통계를 노출합니다. SYSTEM_ADMIN 권한 필요."
         />
         <SalesProgressRateMasterSyncTab />
         <InlineCallHistory endpointKey="sales-progress-rate-master-sync" />
