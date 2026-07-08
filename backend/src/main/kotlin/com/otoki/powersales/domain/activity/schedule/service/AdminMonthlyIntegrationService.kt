@@ -18,6 +18,7 @@ import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkSched
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
@@ -30,6 +31,7 @@ import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -100,7 +102,12 @@ class AdminMonthlyIntegrationService(
      * 옵션 소스는 통합일정 검색 스코프(지점/월)가 아니라 Account 전역 코드 체계다 — 행사마스터
      * lookup(`findDistinctAccountTypes`)이 promotionLookupFilter/지점 스코프로 게이팅하는 것과 의도적으로
      * 다르다. 유통형태-거래처유형은 거래처 마스터의 코드 분류이므로 지점/월과 무관하게 전역 목록을 노출한다.
+     *
+     * 원천 Account 는 SAP inbound 거래처 마스터 적재(하루 1회)로만 갱신되므로, 매 화면 진입마다
+     * 전역 distinct 스캔을 반복하지 않도록 Redis 캐시(24h TTL)에 얹는다. 무인자라 고정 key('all') 를 쓰며,
+     * 적재 직후 [AccountUpsertService.upsert] 의 @CacheEvict 가 즉시 무효화한다(Organization 캐시군과 동일).
      */
+    @Cacheable(value = [CacheConfig.CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS], key = "'ALL'")
     fun getFilterOptions(): MonthlyIntegrationFilterOptionsResponse {
         val pairs = accountRepository.findDistinctDistributionAbcPairs()
 

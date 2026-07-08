@@ -106,6 +106,17 @@ class CacheConfig : CachingConfigurer {
         const val CACHE_TEAM_SCHEDULE_BRANCHES = "teamScheduleBranchesV2"
 
         /**
+         * 월별여사원 통합일정 조회조건 드롭다운 옵션
+         * (유통형태/거래처유형 전체 목록 + 유통형태별 종속 거래처유형 매핑) — 24h TTL.
+         *
+         * 원천은 Account 마스터의 코드 분류(유통형태·거래처유형)로 사용자/지점/월과 무관한 전역값이며,
+         * SAP inbound 거래처 마스터 적재(하루 1회)로만 갱신된다. 따라서 Organization 캐시군과 동일하게
+         * "새벽 daily sync 1회 적재 + 적재 직후 @CacheEvict + 24h TTL fallback" 패턴을 적용한다.
+         * 적재 지점은 [com.otoki.powersales.domain.foundation.account.service.AccountUpsertService.upsert].
+         */
+        const val CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS = "monthlyIntegrationFilterOptions:v1"
+
+        /**
          * SF Sharing Rule 정책 evaluator cache name (spec #782 P2-B).
          *
          * 모두 1h TTL — 정책 변경 빈도 매우 낮음 (사원당 1~2년/회). UserRole entity / PermissionSetAssignment
@@ -249,6 +260,8 @@ class CacheConfig : CachingConfigurer {
         val perCacheConfig = mapOf(
             CACHE_ORGANIZATION_CASCADE to defaultConfig,
             CACHE_TEAM_SCHEDULE_BRANCHES to defaultConfig,
+            // 월별여사원 통합일정 조회조건 옵션 — Organization 캐시군과 동일 24h TTL
+            CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS to defaultConfig,
             CACHE_HIERARCHY_SUBORDINATES to sharingPolicyConfig,
             CACHE_HIERARCHY_ANCESTOR_PATH to sharingPolicyConfig,
             CACHE_MEMBER_GROUP_IDS to sharingPolicyConfig,

@@ -6,8 +6,10 @@ import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertC
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertFailedRow
 import com.otoki.powersales.domain.foundation.account.service.dto.AccountUpsertResult
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
+import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
+import org.springframework.cache.annotation.CacheEvict
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -39,6 +41,22 @@ class AccountUpsertService(
     private val mapper: AccountUpsertMapper
 ) {
 
+    /**
+     * SAP inbound 거래처 마스터 upsert.
+     *
+     * 적재 직후 [CacheConfig.CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS] 를 무효화한다 —
+     * 월별여사원 통합일정 조회조건 드롭다운(유통형태/거래처유형)의 원천이 Account 코드 분류이므로,
+     * 거래처 마스터가 적재되면 옵션 목록이 stale 가능하다. `allEntries = true` (고정 key 단건이라 무해).
+     *
+     * 본 서비스는 행 단위 부분 성공 모델(검증 실패 행은 누적, 트랜잭션 롤백 안 함)이라
+     * OrganizationReplaceService 의 all-or-nothing 교체와 실패 시맨틱이 다르다.
+     * `beforeInvocation = false` (기본) — 커밋 후 evict:
+     *  - 성공 행이 1건이라도 커밋되면 옵션 집합이 바뀔 수 있어 그 시점에 전체 evict.
+     *  - saveAll 예외 등으로 트랜잭션 전체가 롤백될 때만 evict 스킵되어 기존 캐시 보존.
+     * evict 누락 케이스도 24h TTL fallback + 다음 daily sync 로 자연 수렴.
+     * NoOp profile (test / local) 에서는 무동작.
+     */
+    @CacheEvict(value = [CacheConfig.CACHE_MONTHLY_INTEGRATION_FILTER_OPTIONS], allEntries = true)
     @Transactional
     fun upsert(commands: List<AccountUpsertCommand>): AccountUpsertResult {
         val externalKeys = commands.mapNotNull { it.externalKey?.takeIf { key -> key.isNotBlank() } }
