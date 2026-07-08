@@ -245,6 +245,9 @@ export default function DashboardPage() {
           : '#ff4d4f';
     return (
       <>
+        <div style={{ marginBottom: 12, color: '#8c8c8c' }}>
+          출근등록 거래처 {s.investedAccountCount.toLocaleString()}개
+        </div>
         <Row gutter={[16, 16]}>
           <Col span={8}>
             <Card>

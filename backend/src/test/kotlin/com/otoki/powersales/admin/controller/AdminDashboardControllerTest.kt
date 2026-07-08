@@ -58,6 +58,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         salesSummary = SalesSummary(
             yearMonth = yearMonth,
             branchName = null,
+            investedAccountCount = 0,
             targetAmount = 0L,
             actualAmount = 0L,
             progressRate = 0.0,

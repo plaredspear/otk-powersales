@@ -116,6 +116,7 @@ class AdminDashboardService(
         return SalesSummary(
             yearMonth = ym.format(YEAR_MONTH_FORMATTER),
             branchName = branchName,
+            investedAccountCount = accounts.size,
             targetAmount = sales.targetAmount,
             actualAmount = sales.actualAmount,
             progressRate = progressRate,

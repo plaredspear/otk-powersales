@@ -11,6 +11,8 @@ data class DashboardResponse(
 data class SalesSummary(
     val yearMonth: String,
     val branchName: String?,
+    // 집계 모수 — 해당 월 여사원 통합일정(출근등록)에 등장하는 투입 거래처 수 (distinct).
+    val investedAccountCount: Int,
     val targetAmount: Long,
     val actualAmount: Long,
     val progressRate: Double,

@@ -19,6 +19,8 @@ export interface ChannelSalesItem {
 export interface SalesSummary {
   yearMonth: string;
   branchName: string | null;
+  /** 집계 모수 — 해당 월 여사원 통합일정(출근등록)에 등장하는 투입 거래처 수 (distinct). */
+  investedAccountCount: number;
   targetAmount: number;
   actualAmount: number;
   progressRate: number;
