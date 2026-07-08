@@ -469,4 +469,62 @@ class MonthlySalesAdminQueryServiceTest {
         )
         assertThat(all.items.map { it.accountId }).containsExactlyInAnyOrder(1L, 2L)
     }
+
+    /** sapAccountCode 를 지정한 실적 row — sumInvestedAccountSales 의 (externalKey, salesDate) 키 매칭용. */
+    private fun rowByCode(
+        sapAccountCode: String,
+        salesDate: String,
+        accountId: Long,
+        abc1: Long = 0L,
+        ship1: Long = 0L,
+        ship2: Long = 0L,
+        ship3: Long = 0L,
+        ship4: Long = 0L,
+    ) = MonthlySalesRow(
+        sapAccountCode = sapAccountCode,
+        salesDate = salesDate,
+        closingAmountSum = BigDecimal(abc1 + ship1 + ship2 + ship3 + ship4),
+        // 채널별 분리 표시는 원본 합계 컬럼을 사용 — abc 합계 = abc1, ship 합계 = ship1~4 합.
+        abcClosingSumAmount = BigDecimal(abc1),
+        shipClosingSumAmount = BigDecimal(ship1 + ship2 + ship3 + ship4),
+        accountId = accountId,
+        abcClosingAmount1 = BigDecimal(abc1),
+        shipClosingAmount1 = BigDecimal(ship1),
+        shipClosingAmount2 = BigDecimal(ship2),
+        shipClosingAmount3 = BigDecimal(ship3),
+        shipClosingAmount4 = BigDecimal(ship4),
+    )
+
+    @Test
+    @DisplayName("sumInvestedAccountSales — 당월/전년 실적 = ClosingAmountSum(ABC+Ship 합계), 레거시 정합")
+    fun sumInvestedAccountSalesUsesAbcPlusShip() {
+        val refs = listOf(
+            MonthlySalesAdminQueryService.InvestedAccountRef(id = 1L, externalKey = "S001"),
+        )
+        // 당월(202605): ABC 500 + Ship(100+200+100+100=500) = 1000
+        // 전년(202505): ABC 300 + Ship(50+50+50+50=200) = 500
+        every {
+            monthlySalesHistoryGateway.findBySalesDates(listOf("202605", "202505"), listOf("S001"))
+        } returns listOf(
+            rowByCode("S001", "202605", accountId = 1, abc1 = 500, ship1 = 100, ship2 = 200, ship3 = 100, ship4 = 100),
+            rowByCode("S001", "202505", accountId = 1, abc1 = 300, ship1 = 50, ship2 = 50, ship3 = 50, ship4 = 50),
+        )
+        every { salesProgressRateMasterRepository.findByAccountIdInAndTargetYear(listOf(1L), "2026") } returns emptyList()
+
+        val result = service.sumInvestedAccountSales(refs, year = 2026, month = 5)
+
+        // Ship 단독(500)이 아니라 ABC+Ship 합계(1000) 여야 한다.
+        assertThat(result.actualAmount).isEqualTo(1000L)
+        assertThat(result.lastYearAmount).isEqualTo(500L)
+        // 채널별 분리 — 원본 합계 컬럼(abcClosingSumAmount/shipClosingSumAmount) 기준.
+        assertThat(result.actualAbcAmount).isEqualTo(500L)
+        assertThat(result.actualShipAmount).isEqualTo(500L)
+        assertThat(result.lastYearAbcAmount).isEqualTo(300L)
+        assertThat(result.lastYearShipAmount).isEqualTo(200L)
+        // 분리 합 = 총합 정합
+        assertThat(result.actualAbcAmount + result.actualShipAmount).isEqualTo(result.actualAmount)
+        assertThat(result.lastYearAbcAmount + result.lastYearShipAmount).isEqualTo(result.lastYearAmount)
+        assertThat(result.hasActualData).isTrue()
+        assertThat(result.hasLastYearData).isTrue()
+    }
 }

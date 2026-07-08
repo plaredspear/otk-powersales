@@ -118,9 +118,13 @@ class AdminDashboardService(
             branchName = branchName,
             targetAmount = sales.targetAmount,
             actualAmount = sales.actualAmount,
+            actualAbcAmount = sales.actualAbcAmount,
+            actualShipAmount = sales.actualShipAmount,
             progressRate = progressRate,
             referenceProgressRate = calendarReferenceProgressRate(ym, LocalDate.now()),
             lastYearAmount = sales.lastYearAmount,
+            lastYearAbcAmount = sales.lastYearAbcAmount,
+            lastYearShipAmount = sales.lastYearShipAmount,
             lastYearRatio = lastYearRatio,
             channelSales = emptyList(), // 후속 — 유통별 목표/진도율 데이터 부재
             hasActualData = sales.hasActualData,

@@ -39,6 +39,25 @@ function cardExtra(total: number, decimals?: number) {
   return <span style={{ color: '#8c8c8c' }}>총 {formatHeadcount(total, decimals)}명 (단위: 명)</span>;
 }
 
+/**
+ * 실적 카드 하단 채널별 내역 — 전산(ABC) / 물류배부(Ship) 2줄. 합계 = 전산 + 물류배부.
+ * 데이터 미적재(hasData=false) 시 렌더링하지 않는다 (상단 값이 "—" 이므로 소분류도 생략).
+ */
+function ChannelBreakdown({ abc, ship }: { abc: number; ship: number }) {
+  return (
+    <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f0f0f0', fontSize: 13, color: '#595959' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <span>전산</span>
+        <span>{abc.toLocaleString()} 원</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+        <span>물류배부</span>
+        <span>{ship.toLocaleString()} 원</span>
+      </div>
+    </div>
+  );
+}
+
 /** 차트 카드 제목 + 데이터 집계 기준 안내 툴팁(info 아이콘). */
 function cardTitle(title: string, desc: string) {
   return (
@@ -65,19 +84,19 @@ const BASIC_CHART_INFO = {
 
 /**
  * 매출현황 각 지표의 집계 기준 안내 문구 (기간/지점 조건은 제외).
- * 공통: "투입 거래처 = 해당 월 여사원 통합일정에 등장하는 거래처". 실적은 월 매출(물류배부) 마감 데이터 기준.
+ * 공통: "투입 거래처 = 해당 월 여사원 통합일정에 등장하는 거래처". 실적은 전산(ABC)+물류배부(Ship) 마감 합계 기준.
  */
 const SALES_CHART_INFO = {
   target:
     '해당 월에 여사원이 투입된 거래처들의 매출 목표를 합산합니다. 목표는 거래처별 월 매출 목표(연·월 1행)를 기준으로 하며, 목표가 등록되지 않은 거래처는 0으로 계산합니다.',
   actual:
-    '해당 월에 여사원이 투입된 거래처들의 당월 마감 실적(물류배부 기준)을 합산합니다. 반품·조정으로 음수가 나올 수 있으며, 실적 데이터가 아직 적재되지 않은 경우 "—"로 표시합니다.',
+    '해당 월에 여사원이 투입된 거래처들의 당월 마감 합계 실적(전산+물류배부 합계)을 합산합니다. 반품·조정으로 음수가 나올 수 있으며, 실적 데이터가 아직 적재되지 않은 경우 "—"로 표시합니다.',
   progress:
     '당월 실적을 당월 목표로 나눈 비율(실적 ÷ 목표 × 100)입니다. 목표가 0이면 0%로 표시합니다. 기준 진도율보다 높으면 파란색, 낮으면 빨간색으로 표시됩니다.',
   reference:
     '해당 월의 달력일 경과 비율(경과 일수 ÷ 총 일수 × 100)입니다. 영업일이 아니라 달력일 기준이며, 지난 달은 100%, 다음 달은 0%로 표시됩니다.',
   lastYear:
-    '해당 월에 여사원이 투입된 거래처들의 전년 동월 마감 실적(물류배부 기준)을 합산합니다. 반품·조정으로 음수가 나올 수 있으며, 전년 데이터가 없는 경우 "—"로 표시합니다.',
+    '해당 월에 여사원이 투입된 거래처들의 전년 동월 마감 합계 실적(전산+물류배부 합계)을 합산합니다. 반품·조정으로 음수가 나올 수 있으며, 전년 데이터가 없는 경우 "—"로 표시합니다.',
   lastYearRatio:
     '당월 실적을 전년 동월 실적으로 나눈 비율(당월 ÷ 전년 동월 × 100)입니다. 100%면 전년과 동일, 100%를 넘으면 증가입니다. 전년 데이터가 없는 경우 "—"로 표시합니다.',
 } as const;
@@ -253,7 +272,10 @@ export default function DashboardPage() {
           <Col span={8}>
             <Card>
               {s.hasActualData ? (
-                <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value={s.actualAmount} suffix="원" />
+                <>
+                  <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value={s.actualAmount} suffix="원" />
+                  <ChannelBreakdown abc={s.actualAbcAmount} ship={s.actualShipAmount} />
+                </>
               ) : (
                 <Statistic title={cardTitle('당월 실적', SALES_CHART_INFO.actual)} value="—" />
               )}
@@ -278,7 +300,10 @@ export default function DashboardPage() {
           <Col span={8}>
             <Card>
               {s.hasLastYearData ? (
-                <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value={s.lastYearAmount} suffix="원" />
+                <>
+                  <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value={s.lastYearAmount} suffix="원" />
+                  <ChannelBreakdown abc={s.lastYearAbcAmount} ship={s.lastYearShipAmount} />
+                </>
               ) : (
                 <Statistic title={cardTitle('전년 동월 실적', SALES_CHART_INFO.lastYear)} value="—" />
               )}

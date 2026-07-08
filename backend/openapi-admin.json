@@ -16330,7 +16330,15 @@
       },
       "SalesSummary" : {
         "properties" : {
+          "actualAbcAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "actualAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "actualShipAmount" : {
             "format" : "int64",
             "type" : "integer"
           },
@@ -16352,6 +16360,10 @@
           "hasTargetData" : {
             "type" : "boolean"
           },
+          "lastYearAbcAmount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "lastYearAmount" : {
             "format" : "int64",
             "type" : "integer"
@@ -16359,6 +16371,10 @@
           "lastYearRatio" : {
             "format" : "double",
             "type" : "number"
+          },
+          "lastYearShipAmount" : {
+            "format" : "int64",
+            "type" : "integer"
           },
           "progressRate" : {
             "format" : "double",

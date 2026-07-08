@@ -115,6 +115,8 @@ class MonthlySalesHistoryQueryGateway(
                     sapAccountCode = sapCode,
                     salesDate = salesDateOf(row),
                     closingAmountSum = closingAmountSum(row),
+                    abcClosingSumAmount = BigDecimal.valueOf(row.abcClosingSumAmount ?: 0.0),
+                    shipClosingSumAmount = BigDecimal.valueOf(row.shipClosingSumAmount ?: 0.0),
                     accountId = row.account?.id?.toLong(),
                     abcClosingAmount1 = row.abcClosingAmount1?.let { BigDecimal.valueOf(it) },
                     abcClosingAmount2 = row.abcClosingAmount2?.let { BigDecimal.valueOf(it) },
@@ -169,6 +171,9 @@ class MonthlySalesHistoryQueryGateway(
  * @property sapAccountCode 거래처 SAP 코드
  * @property salesDate 매출 연월 `YYYYMM` (조회월/전년월 구분 키). 물류매출 화면에서 사용
  * @property closingAmountSum SF `ClosingAmountSum__c` formula 동등 합계 (ABC합 + Ship합)
+ * @property abcClosingSumAmount SF `ABCClosingSumAmount__c` 원본 합계 (전산 마감실적 합계). 개별 abc1~4 재합산과
+ *   달리 물류매출 누락 없음 — 채널별 분리 표시에 사용 (상세는 [closingAmountSum] 주석 참조)
+ * @property shipClosingSumAmount SF `ShipClosingSumAmount__c` 원본 합계 (물류배부 마감실적 합계). 채널별 분리 표시용
  * @property abcClosingAmount1 전산마감실적_상온 (refresh/batch 의 양수 필터 평균 산출용 + 카테고리별 합산). null 가능
  * @property abcClosingAmount2 전산마감실적_라면 (카테고리별 합산용). null 가능
  * @property abcClosingAmount3 전산마감실적_냉장냉동 (카테고리별 합산용). null 가능
@@ -182,6 +187,10 @@ data class MonthlySalesRow(
     val sapAccountCode: String,
     val salesDate: String,
     val closingAmountSum: BigDecimal,
+    /** SF `ABCClosingSumAmount__c` — 전산 마감실적 합계 (원본 합계 컬럼). 채널별 분리 표시용. */
+    val abcClosingSumAmount: BigDecimal = BigDecimal.ZERO,
+    /** SF `ShipClosingSumAmount__c` — 물류배부 마감실적 합계 (원본 합계 컬럼). 채널별 분리 표시용. */
+    val shipClosingSumAmount: BigDecimal = BigDecimal.ZERO,
     /** Account FK (`account_id`). account_id 기준 조회 시에만 채워짐 — sapAccountCode 기준 조회에서는 null */
     val accountId: Long? = null,
     val abcClosingAmount1: BigDecimal?,
