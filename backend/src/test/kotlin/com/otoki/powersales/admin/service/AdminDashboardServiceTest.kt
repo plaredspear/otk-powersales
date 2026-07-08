@@ -65,8 +65,7 @@ class AdminDashboardServiceTest {
 
     private fun stubEmpty() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns emptyList()
-        every { employeeRepository.findProjectedByCostCenterCodeIn(any()) } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
@@ -87,7 +86,7 @@ class AdminDashboardServiceTest {
         // 거래처유형별 차트는 전월(마감) 기준 → previousYm rows 로 반환
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
@@ -113,7 +112,7 @@ class AdminDashboardServiceTest {
         )
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
@@ -137,7 +136,7 @@ class AdminDashboardServiceTest {
         )
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
@@ -165,7 +164,7 @@ class AdminDashboardServiceTest {
         )
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
@@ -186,7 +185,7 @@ class AdminDashboardServiceTest {
         val acc = account(1, "슈퍼")
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns
             listOf(mfeis(acc = acc))
-        every { employeeRepository.findProjectedBy() } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 800L, targetAmount = 1000L, lastYearAmount = 760L,
@@ -215,7 +214,7 @@ class AdminDashboardServiceTest {
         val acc = account(1, "슈퍼")
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns
             listOf(mfeis(acc = acc))
-        every { employeeRepository.findProjectedBy() } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         // 목표 미등록 — 실적은 있으나 목표 row 전무 (hasTargetData=false, target=0)
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
@@ -249,7 +248,7 @@ class AdminDashboardServiceTest {
     @DisplayName("T7 연령 버킷팅 — birthDate 1995-03-01 기준 2026-05 만 31세 -> 30대")
     fun ageGroupBucketing() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns listOf(employee(birthDate = "1995-03-01"))
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(employee(birthDate = "1995-03-01"))
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
@@ -266,7 +265,7 @@ class AdminDashboardServiceTest {
     @DisplayName("T8 연령 birthDate null -> 미상 버킷")
     fun ageGroupUnknown() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns listOf(employee(birthDate = null))
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(employee(birthDate = null))
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
                 actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
@@ -279,13 +278,15 @@ class AdminDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("T9 재직/휴직 분류 — 재직 3 / 휴직 1 / 기타(퇴직·null) 2, 모수=사원 전체")
+    @DisplayName("T9 재직/휴직 분류 — 재직 3 / 휴직 1 / 기타(null) 1. 퇴직자는 repository 에서 제외되어 모수 미포함")
     fun activeOnLeave() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns listOf(
+        // 퇴직자는 findDashboardBasicStatsProjection 쿼리 레벨에서 제외되므로 mock 입력에도 포함하지 않는다.
+        // etc 잔차에는 status=null 만 남는다.
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
             employee(status = "재직"), employee(status = "재직"), employee(status = "재직"),
             employee(status = "휴직"),
-            employee(status = "퇴직"), employee(status = null),
+            employee(status = null),
         )
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
@@ -297,14 +298,18 @@ class AdminDashboardServiceTest {
 
         assertThat(result.basicStats.totalByPosition.active).isEqualTo(3)
         assertThat(result.basicStats.totalByPosition.onLeave).isEqualTo(1)
-        assertThat(result.basicStats.totalByPosition.etc).isEqualTo(2)
+        assertThat(result.basicStats.totalByPosition.etc).isEqualTo(1)
+        // 기타(null) → "미분류" 1명 breakdown
+        assertThat(result.basicStats.totalByPosition.etcBreakdown)
+            .extracting("label", "count")
+            .containsExactly(org.assertj.core.groups.Tuple.tuple("미분류", 1))
     }
 
     @Test
     @DisplayName("D6 판촉/OSC — 판촉직 2 / OSC직·레이디직 합산 2")
     fun promotionOscByJobCode() {
         every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
-        every { employeeRepository.findProjectedBy() } returns listOf(
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
             employee(jobCode = "판촉직"), employee(jobCode = "판촉직"),
             employee(jobCode = "OSC직"), employee(jobCode = "레이디직"),
             employee(jobCode = "기타"),
@@ -320,6 +325,39 @@ class AdminDashboardServiceTest {
         assertThat(result.basicStats.staffType.promotion).isEqualTo(2)
         assertThat(result.basicStats.staffType.osc).isEqualTo(2)
         assertThat(result.basicStats.staffType.etc).isEqualTo(1)
+        // 기타(jobCode="기타") → "기타" 1명 breakdown
+        assertThat(result.basicStats.staffType.etcBreakdown)
+            .extracting("label", "count")
+            .containsExactly(org.assertj.core.groups.Tuple.tuple("기타", 1))
+    }
+
+    @Test
+    @DisplayName("T10 기타 breakdown — 원본 값별 집계 + null/공백은 '미분류' 합산 + count 내림차순 정렬")
+    fun etcBreakdownGrouping() {
+        every { mfeisRepository.findDeploymentDashboardRows(any(), any(), any()) } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            // 재직/휴직 아님 → 모두 기타. status 원본값별로 그룹핑되어야 함
+            employee(status = "파견"), employee(status = "파견"),
+            employee(status = "교육"),
+            employee(status = null), employee(status = ""),
+        )
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
+            )
+
+        val result = service.getDashboard(emptyList(), "2026-05")
+
+        assertThat(result.basicStats.totalByPosition.etc).isEqualTo(5)
+        // count 내림차순: 파견 2 / 미분류 2(null+공백) / 교육 1. 동수(파견·미분류)는 라벨 오름차순 → 미분류 먼저
+        assertThat(result.basicStats.totalByPosition.etcBreakdown)
+            .extracting("label", "count")
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple("미분류", 2),
+                org.assertj.core.groups.Tuple.tuple("파견", 2),
+                org.assertj.core.groups.Tuple.tuple("교육", 1),
+            )
     }
 
     @Test

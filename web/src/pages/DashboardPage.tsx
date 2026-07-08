@@ -126,13 +126,28 @@ function headcountBarOption(
   };
 }
 
+/** 도넛 조각 1개 — breakdown 이 있으면 툴팁에 세부 내역을 나열한다. */
+type DonutItem = {
+  name: string;
+  value: number;
+  /** "기타" 등 집계 항목의 구성 원본 값별 세부 내역. 있으면 툴팁에 줄나열. */
+  breakdown?: { label: string; count: number }[];
+};
+
 /** 도넛(파이) 차트 옵션. */
-function donutOption(items: { name: string; value: number }[]) {
+function donutOption(items: DonutItem[]) {
   return {
     tooltip: {
       trigger: 'item',
-      formatter: (p: { name: string; value: number; percent: number }) =>
-        `${p.name}<br/>${p.value.toLocaleString()}명 (${p.percent.toFixed(1)}%)`,
+      formatter: (p: { name: string; value: number; percent: number; data: DonutItem }) => {
+        const head = `${p.name}<br/>${p.value.toLocaleString()}명 (${p.percent.toFixed(1)}%)`;
+        const breakdown = p.data?.breakdown;
+        if (!breakdown || breakdown.length === 0) return head;
+        const lines = breakdown
+          .map((b) => `${b.label} ${b.count.toLocaleString()}명`)
+          .join('<br/>');
+        return `${head}<hr style="margin:4px 0;border:none;border-top:1px solid #eee"/>${lines}`;
+      },
     },
     legend: { orient: 'vertical', right: 0, top: 'middle' },
     series: [
@@ -373,7 +388,9 @@ export default function DashboardPage() {
               option={donutOption([
                 { name: '판촉직', value: b.staffType.promotion },
                 { name: 'OSC직', value: b.staffType.osc },
-                ...(b.staffType.etc > 0 ? [{ name: '기타', value: b.staffType.etc }] : []),
+                ...(b.staffType.etc > 0
+                  ? [{ name: '기타', value: b.staffType.etc, breakdown: b.staffType.etcBreakdown }]
+                  : []),
               ])}
               style={{ height: CHART_HEIGHT, width: '100%' }}
               notMerge
@@ -386,7 +403,9 @@ export default function DashboardPage() {
               option={donutOption([
                 { name: '재직', value: b.totalByPosition.active },
                 { name: '휴직', value: b.totalByPosition.onLeave },
-                ...(b.totalByPosition.etc > 0 ? [{ name: '기타', value: b.totalByPosition.etc }] : []),
+                ...(b.totalByPosition.etc > 0
+                  ? [{ name: '기타', value: b.totalByPosition.etc, breakdown: b.totalByPosition.etcBreakdown }]
+                  : []),
               ])}
               style={{ height: CHART_HEIGHT, width: '100%' }}
               notMerge

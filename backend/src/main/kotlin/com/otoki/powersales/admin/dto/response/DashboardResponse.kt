@@ -80,18 +80,32 @@ data class BasicStats(
     val byWorkType: WorkTypeStats
 )
 
-/** etc = jobCode 가 판촉직/OSC직/레이디직 어디에도 해당하지 않거나 null 인 사원 수 (모수 정합용). */
+/**
+ * etc = jobCode 가 판촉직/OSC직/레이디직 어디에도 해당하지 않거나 null 인 사원 수 (모수 정합용).
+ * etcBreakdown = "기타" 를 구성하는 원본 jobCode 값별 세부 내역 (툴팁 표시용, count 내림차순).
+ */
 data class StaffTypeCount(
     val promotion: Int,
     val osc: Int,
-    val etc: Int
+    val etc: Int,
+    val etcBreakdown: List<EtcBreakdownItem>
 )
 
-/** etc = status 가 재직/휴직 어디에도 해당하지 않거나 null 인 사원 수 (모수 정합용). */
+/**
+ * etc = status 가 재직/휴직 어디에도 해당하지 않거나 null 인 사원 수 (모수 정합용).
+ * etcBreakdown = "기타" 를 구성하는 원본 status 값별 세부 내역 (툴팁 표시용, count 내림차순).
+ */
 data class TotalByPosition(
     val active: Int,
     val onLeave: Int,
-    val etc: Int
+    val etc: Int,
+    val etcBreakdown: List<EtcBreakdownItem>
+)
+
+/** "기타" 항목 세부 내역 1건 — 원본 값(label)과 인원 수(count). null/공백 값은 "미분류" 로 표기. */
+data class EtcBreakdownItem(
+    val label: String,
+    val count: Int
 )
 
 data class AgeGroupCount(
