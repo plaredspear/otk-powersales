@@ -58,12 +58,19 @@ class SalesProgressRateMasterFetchClientImpl(
         }
     }
 
-    /** 최상위가 배열이면 그대로, 객체면 흔한 wrapper key 를 순서대로 탐색. */
+    /**
+     * 최상위가 배열이면 그대로, 객체면 흔한 wrapper key 를 탐색.
+     *
+     * 운영 SF 응답은 최상위 key 가 `"Result"` (대문자 R + 소문자 esult) 이므로 wrapper key 비교는
+     * 대소문자를 무시한다 — SF 응답 철자 변형(`Result`/`result`/`RESULT` 등) 전반을 방어.
+     */
     private fun extractArrayNode(root: JsonNode): JsonNode? {
         if (root.isArray) return root
         if (root.isObject) {
-            for (key in WRAPPER_KEYS) {
-                val child = root.get(key)
+            val fieldNames = root.propertyNames().asSequence().toList()
+            for (candidate in WRAPPER_KEYS) {
+                val matchedKey = fieldNames.firstOrNull { it.equals(candidate, ignoreCase = true) } ?: continue
+                val child = root.get(matchedKey)
                 if (child != null && child.isArray) return child
             }
         }
@@ -74,7 +81,7 @@ class SalesProgressRateMasterFetchClientImpl(
         /** SF Apex REST suffix (apex base URL 뒤에 붙는다). */
         const val SF_ENDPOINT = "/IF_salesprogresssend"
 
-        /** SF 응답 wrapper key 후보 (web extractRows 와 동일 순서). */
-        private val WRAPPER_KEYS = listOf("data", "DATA", "list", "LIST", "result", "RESULT", "items")
+        /** SF 응답 wrapper key 후보 (대소문자 무시 매칭 — [extractArrayNode] 참고). */
+        private val WRAPPER_KEYS = listOf("result", "data", "list", "items")
     }
 }

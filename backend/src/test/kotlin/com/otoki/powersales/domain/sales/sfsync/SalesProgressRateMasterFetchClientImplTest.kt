@@ -85,6 +85,45 @@ class SalesProgressRateMasterFetchClientImplTest {
     }
 
     @Test
+    @DisplayName("운영 SF 응답의 \"Result\" 래퍼(대문자 R)도 대소문자 무시로 추출")
+    fun parsesResultWrapperCaseInsensitive() {
+        stub(
+            """
+            {
+              "Result": [
+                {
+                  "Name": "SPR-00007081",
+                  "AccountCode": "1010179",
+                  "TargetYear": "2026",
+                  "TargetMonth": "6",
+                  "BusinessRate": "100",
+                  "RTTargetAmount": "70000000",
+                  "RMTartgetAmount": "12000000",
+                  "FRTargetAmount": "3000000",
+                  "FOTartgetAmount": "3000000",
+                  "TargetSumAmount": null,
+                  "ProgressRate": "87",
+                  "LastModifiedEmpNum": "20220020",
+                  "LastModifiedDate": "2026-07-09 01:00:05",
+                  "CreatedEmpNum": "20110404",
+                  "CreatedDate": "2026-05-29 14:43:44"
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val result = client.fetch("20260709")
+
+        assertThat(result).hasSize(1)
+        val dto = result.single()
+        assertThat(dto.name).isEqualTo("SPR-00007081")
+        assertThat(dto.accountCode).isEqualTo("1010179")
+        assertThat(dto.rtTargetAmount).isEqualTo(70000000.0)
+        assertThat(dto.foTargetAmount).isEqualTo(3000000.0)
+    }
+
+    @Test
     @DisplayName("빈 배열 응답 — 빈 리스트")
     fun emptyArray() {
         stub("[]")
