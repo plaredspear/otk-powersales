@@ -323,14 +323,18 @@ export default function DashboardPage() {
             여사원 투입거래처 기준 매출현황
           </span>
           <Link
-            to={`/sales/monthly?yearMonth=${queryParams.yearMonth}&deploymentFilter=deployed`}
+            to={`/sales/monthly?yearMonth=${queryParams.yearMonth}&deploymentFilter=deployed${
+              queryParams.branchCodes?.length
+                ? `&branchCodes=${queryParams.branchCodes.map(encodeURIComponent).join(',')}`
+                : ''
+            }`}
           >
             {Number(queryParams.yearMonth.slice(5, 7))}월 월 매출(물류배부) →
           </Link>
         </div>
       </>
     );
-  }, [data, queryParams.yearMonth]);
+  }, [data, queryParams.yearMonth, queryParams.branchCodes]);
 
   const deploymentTab = useMemo(() => {
     if (!data) return null;

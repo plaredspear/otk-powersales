@@ -60,9 +60,17 @@ export default function MonthlySalesDashboardPage() {
       : searchParams.get('deploymentFilter') === 'deployed'
         ? 'deployed'
         : ('deployed' as const);
+  // 대시보드에서 선택한 지점을 URL(branchCodes=코드,코드) 로 전달받아 초기 선택값으로 사용한다.
+  const initBranchCodes = (searchParams.get('branchCodes') ?? '')
+    .split(',')
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0);
   const [year, setYear] = useState<number>(initYear);
   const [month, setMonth] = useState<number>(initMonth);
-  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const [selectedCodes, setSelectedCodes] = useState<string[]>(initBranchCodes);
+  // 대시보드 링크(URL branchCodes)로 초기 선택을 받아 진입했는지 — 다중지점 자동 조회 트리거 판별용.
+  // 마운트 시점 고정값으로만 쓰므로 ref 대신 상수로 유지한다.
+  const [hasInitBranchCodes] = useState<boolean>(initBranchCodes.length > 0);
   // 월 매출(물류배부) 전용 지점 셀렉터 — 대시보드와 동일한 지점 기준(전사 권한자 34개 화이트리스트).
   const { data: branches = [] } = useMonthlySalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
@@ -130,10 +138,17 @@ export default function MonthlySalesDashboardPage() {
     });
   };
 
-  // 단일지점 사용자는 PeriodBranchFilterBar 가 본인 지점을 자동 선택하므로,
-  // 최초 진입 시(아직 조회 전) 별도 조회 버튼 클릭 없이 바로 결과를 보여준다.
+  // 최초 진입 시(아직 조회 전) 별도 조회 버튼 클릭 없이 바로 결과를 보여주는 자동 조회.
+  // 두 경우를 담당한다:
+  //  1) 단일지점 사용자 — PeriodBranchFilterBar 가 본인 지점을 자동 선택.
+  //  2) 대시보드 링크로 진입 — URL branchCodes 로 지점이 이미 선택되어 있음.
+  // 두 경우 모두 PeriodBranchFilterBar 의 stale 정리(현재 지점 목록에 없는 코드 제거)가 끝난 뒤
+  // 유효 코드로만 조회되도록 selectedCodes 변화를 트리거로 사용한다.
   useEffect(() => {
-    if (queryParams === null && selectedCodes.length === 1) {
+    // 단일지점(자동 선택) 이거나 대시보드 링크로 초기 선택을 받은 경우에만 자동 조회.
+    // URL 없이 직접 진입한 다중지점 사용자가 지점을 고르는 중간에 조회가 나가지 않도록 구분한다.
+    const shouldAutoSearch = selectedCodes.length === 1 || hasInitBranchCodes;
+    if (queryParams === null && selectedCodes.length > 0 && shouldAutoSearch) {
       setQueryParams({
         year,
         month,
