@@ -96,7 +96,7 @@ class EducationDetailPage extends ConsumerWidget {
                   child: Text(
                     detail.categoryName,
                     style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.primary,
+                      color: AppColors.secondaryDark,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

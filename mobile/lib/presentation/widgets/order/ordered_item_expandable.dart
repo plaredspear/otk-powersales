@@ -65,14 +65,14 @@ class OrderedItemExpandable extends StatelessWidget {
                       Text(
                         isExpanded ? '숨기기' : '제품 보기',
                         style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.primary,
+                          color: AppColors.secondaryDark,
                         ),
                       ),
                       Icon(
                         isExpanded
                             ? Icons.keyboard_arrow_up
                             : Icons.keyboard_arrow_down,
-                        color: AppColors.primary,
+                        color: AppColors.secondaryDark,
                         size: 20,
                       ),
                     ],

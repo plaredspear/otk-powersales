@@ -113,12 +113,12 @@ class DeliveryInfoPopup extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
+            foregroundColor: AppColors.secondaryDark,
           ),
           child: Text(
             '닫기',
             style: AppTypography.labelLarge.copyWith(
-              color: AppColors.primary,
+              color: AppColors.secondaryDark,
             ),
           ),
         ),

@@ -101,7 +101,7 @@ class NoticePagination extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: '$currentPage',
-                    style: const TextStyle(color: AppColors.primary),
+                    style: const TextStyle(color: AppColors.secondaryDark),
                   ),
                   TextSpan(
                     text: ' / ${totalPages == 0 ? 1 : totalPages}',

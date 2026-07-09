@@ -58,6 +58,7 @@ class ClientOrderCard extends StatelessWidget {
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.secondaryDark,
                   fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ],

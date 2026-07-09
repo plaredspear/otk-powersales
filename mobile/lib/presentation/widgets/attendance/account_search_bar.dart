@@ -33,6 +33,13 @@ class AccountSearchBar extends StatelessWidget {
           prefixIcon: const Icon(
             Icons.search,
             color: AppColors.otokiYellow,
+            // 흰 배경 위 노란 아이콘 시인성 확보용 검은 테두리(스트로크)
+            shadows: [
+              Shadow(color: Colors.black, offset: Offset(-1, -1)),
+              Shadow(color: Colors.black, offset: Offset(1, -1)),
+              Shadow(color: Colors.black, offset: Offset(1, 1)),
+              Shadow(color: Colors.black, offset: Offset(-1, 1)),
+            ],
           ),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(
