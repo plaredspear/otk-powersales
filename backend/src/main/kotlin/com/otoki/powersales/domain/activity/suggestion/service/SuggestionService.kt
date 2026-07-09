@@ -18,7 +18,6 @@ import com.otoki.powersales.domain.activity.suggestion.exception.SuggestionPhoto
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionDraftRepository
 import com.otoki.powersales.domain.activity.suggestion.repository.SuggestionRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
-import com.otoki.powersales.platform.common.config.ProdFeatureGate
 import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
@@ -81,7 +80,6 @@ class SuggestionService(
     private val storageService: StorageService,
     private val sfOutboundClient: SfOutboundClient,
     private val txTemplate: TransactionTemplate,
-    private val prodFeatureGate: ProdFeatureGate,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -124,11 +122,6 @@ class SuggestionService(
         // 등록 시 action_status 는 항상 UNCONFIRMED 고정(SF picklist default)이므로 BR3(중복접수 시 중복번호 필수)는
         // insert 시점에 발동하지 않는다(SF beforeInsertProposal 정합). BR3 는 조치 단계 update 에서만 발동.
         val category = request.category ?: throw IllegalArgumentException("category is required")
-        // 운영 환경 물류 클레임 등록 차단 — 관련 부서 협의 전까지 prod 에서 열지 않는다.
-        // 신제품/기존제품 제안(NEW_PRODUCT/EXISTING_PRODUCT)은 영향받지 않는다.
-        if (category == SuggestionCategory.LOGISTICS_CLAIM) {
-            prodFeatureGate.assertRegistrationEnabled()
-        }
         validator.validate(
             category = category,
             claimType = request.claimType,

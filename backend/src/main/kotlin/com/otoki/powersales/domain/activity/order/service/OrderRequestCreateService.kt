@@ -23,7 +23,6 @@ import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
-import com.otoki.powersales.platform.common.config.ProdFeatureGate
 import jakarta.persistence.EntityManager
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -61,14 +60,10 @@ class OrderRequestCreateService(
     private val orderDeadlineCalculator: OrderDeadlineCalculator,
     private val entityManager: EntityManager,
     private val eventPublisher: ApplicationEventPublisher,
-    private val prodFeatureGate: ProdFeatureGate,
 ) {
 
     @Transactional
     fun create(userId: Long, request: OrderRequestCreateRequest): OrderRequestCreateResponse {
-        // 운영 환경 등록 차단 — 관련 부서 협의 전까지 prod 에서 주문 등록을 열지 않는다.
-        prodFeatureGate.assertRegistrationEnabled()
-
         // 1. 멱등 검사
         if (!request.clientRequestId.isNullOrBlank()) {
             val existing = orderRequestRepository.findByClientRequestId(request.clientRequestId)

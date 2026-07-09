@@ -57,16 +57,3 @@ class AccountInvalidParameterException(detail: String) : BusinessException(
     message = detail,
     httpStatus = HttpStatus.BAD_REQUEST
 )
-
-/**
- * 운영(prod) 환경에서 아직 비활성인 기능의 등록 시도 차단.
- *
- * 주문 등록 / 주문(제품) 클레임 등록 / 물류 클레임 등록은 SF dual-write 연동을 포함하는데,
- * 운영 환경에서는 관련 부서 협의 전까지 해당 등록을 열지 않는다. prod 프로파일에서만 발동하며
- * dev/local 은 영향받지 않는다. [com.otoki.powersales.platform.common.config.ProdFeatureGate] 참조.
- */
-class FeatureNotYetEnabledException : BusinessException(
-    errorCode = "FEATURE_NOT_YET_ENABLED",
-    message = "관련 부서 협의 후, 활성화 예정입니다",
-    httpStatus = HttpStatus.BAD_REQUEST
-)

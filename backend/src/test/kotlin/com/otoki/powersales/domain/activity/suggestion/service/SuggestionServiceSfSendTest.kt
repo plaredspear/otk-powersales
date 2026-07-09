@@ -16,13 +16,9 @@ import com.otoki.powersales.external.sf.outbound.SfOutboundClient
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.StorageService
-import com.otoki.powersales.platform.common.config.ProdFeatureGate
-import com.otoki.powersales.platform.common.exception.FeatureNotYetEnabledException
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.jupiter.api.assertThrows
-import org.springframework.mock.env.MockEnvironment
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -50,7 +46,6 @@ class SuggestionServiceSfSendTest {
         suggestionRepository, suggestionDraftRepository, uploadFileRepository, accountRepository,
         employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, validator, storageService,
         sfOutboundClient, txTemplate,
-        ProdFeatureGate(MockEnvironment().apply { setActiveProfiles("dev") })
     )
 
     private fun request(
@@ -231,46 +226,6 @@ class SuggestionServiceSfSendTest {
             val result = service.invokeSf(emptyMap())
             assertThat(result.success).isFalse()
             assertThat(result.errorSummary).isEqualTo("timeout")
-        }
-    }
-
-    @Nested
-    @DisplayName("운영(prod) 환경 물류클레임 등록 차단 — LOGISTICS_CLAIM 만 게이트")
-    inner class ProdRegistrationGate {
-
-        /** prod 프로파일 gate 를 주입한 서비스 (그 외 의존성은 클래스 필드 mock 재사용). */
-        private val prodService = SuggestionService(
-            suggestionRepository, suggestionDraftRepository, uploadFileRepository, accountRepository,
-            employeeRepository, productRepository, orgCostCenterMatchService, fileStorageService, validator, storageService,
-            sfOutboundClient, txTemplate,
-            ProdFeatureGate(MockEnvironment().apply { setActiveProfiles("prod") })
-        )
-
-        @Test
-        fun `물류클레임 등록은 즉시 FeatureNotYetEnabledException — validator·lookup 도달 전`() {
-            val ex = assertThrows<FeatureNotYetEnabledException> {
-                prodService.create(
-                    employeeId = 1L,
-                    request = request().copy(category = SuggestionCategory.LOGISTICS_CLAIM),
-                    photos = null,
-                )
-            }
-            assertThat(ex.message).isEqualTo("관련 부서 협의 후, 활성화 예정입니다")
-            // gate 가 validator 앞에 있으므로 validator 는 호출되지 않는다.
-            verify(exactly = 0) { validator.validate(any(), any(), any(), any(), any(), any()) }
-        }
-
-        @Test
-        fun `신제품 제안 등록은 gate 를 통과 — FeatureNotYetEnabledException 아님`() {
-            // 신제품은 차단 대상이 아니므로 gate 를 지나 이후 로직으로 진입한다(mock 미설정으로 다른 예외 발생 가능).
-            val thrown = runCatching {
-                prodService.create(
-                    employeeId = 1L,
-                    request = request().copy(category = SuggestionCategory.NEW_PRODUCT),
-                    photos = null,
-                )
-            }.exceptionOrNull()
-            assertThat(thrown).isNotInstanceOf(FeatureNotYetEnabledException::class.java)
         }
     }
 }
