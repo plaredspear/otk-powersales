@@ -6,7 +6,6 @@ import '../datasources/my_schedule_remote_datasource.dart';
 /// 마이페이지 일정 Repository 구현체
 ///
 /// 실제 API DataSource를 사용하여 일정 기능을 구현합니다.
-/// Backend API 연동 시점에 MyScheduleMockRepository를 대체합니다.
 class MyScheduleRepositoryImpl implements MyScheduleRepository {
   final MyScheduleRemoteDataSource _remoteDataSource;
 

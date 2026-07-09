@@ -21,8 +21,6 @@ import 'add_product_provider.dart';
 import 'order_form_state.dart';
 
 // --- Spec #598 P1-M: 신규 백엔드 연결 Provider ──────────────────────
-// (P2-M / P3-M 가 OrderFormNotifier 메서드에서 활용. P1-M 단독 머지 시점에는
-// 정의만 추가하고 Notifier 동작은 mock 그대로 유지)
 
 /// 주문서 작성 화면 API DataSource Provider (#598 P1-M).
 final orderFormApiDataSourceProvider = Provider<OrderFormApiDataSource>((ref) {
