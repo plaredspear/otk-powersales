@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -979,7 +980,26 @@ function RunsHistory({
 }
 
 export default function ScheduledJobsPage() {
-  const [activeTab, setActiveTab] = useState<string>(ALL_JOBS_KEY);
+  // 활성 탭을 URL 쿼리(?tab=<탭 key>)로 관리해, 새로고침·공유·뒤로가기 시 탭이 유지되도록 한다.
+  // '전체' 탭은 기본값이라 파라미터를 생략(URL 을 깔끔하게 유지)하고, 그 외에는 탭 key 를 그대로 쓴다.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || ALL_JOBS_KEY;
+
+  const handleTabChange = (key: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (key === ALL_JOBS_KEY) {
+          next.delete('tab');
+        } else {
+          next.set('tab', key);
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   const [selectedRun, setSelectedRun] = useState<ScheduledJobRun | null>(null);
 
   const summaryQuery = useScheduledJobSummary(24);
@@ -990,6 +1010,18 @@ export default function ScheduledJobsPage() {
     () => (catalogQuery.data ?? []).map((entry) => entry.jobName),
     [catalogQuery.data],
   );
+
+  // URL 의 ?tab= 값이 실재하지 않는 탭(오타/삭제된 잡)일 경우 '전체'로 폴백해 URL 을 정리한다.
+  // catalog 로딩 완료 후에만 판정 — 로딩 중에는 유효 잡 탭도 미확정이라 성급한 리셋을 막는다.
+  useEffect(() => {
+    if (!catalogQuery.isSuccess) return;
+    const validKeys = new Set<string>([ALL_JOBS_KEY, CATALOG_KEY, ...jobNames]);
+    if (!validKeys.has(activeTab)) {
+      handleTabChange(ALL_JOBS_KEY);
+    }
+    // handleTabChange 는 setSearchParams 래퍼로 안정적이며, 의존성은 판정 입력값으로 한정한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalogQuery.isSuccess, jobNames, activeTab]);
 
   // 잡 이름 → cron 표현식 (설명 헤더에 실행 주기 함께 표기).
   const cronByJob = useMemo(() => {
@@ -1218,9 +1250,7 @@ export default function ScheduledJobsPage() {
         // 세로 탭이 잡 수만큼 길어져 화면을 넘어가므로, 탭 바 영역만 스크롤되도록 높이를 제한한다.
         tabBarStyle={{ maxHeight: 'calc(100vh - 240px)', overflowY: 'auto' }}
         activeKey={activeTab}
-        onChange={(key) => {
-          setActiveTab(key);
-        }}
+        onChange={handleTabChange}
         items={tabItems}
       />
 
