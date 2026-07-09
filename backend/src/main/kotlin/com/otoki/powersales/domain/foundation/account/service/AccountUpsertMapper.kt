@@ -64,6 +64,10 @@ class AccountUpsertMapper {
      *
      * 미적용 시: 거래처 주소가 바뀌어도 기존 좌표가 잔존해 보강 배치 후보에서 영구 제외되어
      * 지도 위치가 옛 주소에 고정되는 비동등이 발생한다.
+     *
+     * 좌표변환 영구 실패 플래그([Account.geocodeUnresolved]) 도 함께 초기화한다 — 주소가 바뀌면
+     * 새 주소로는 좌표를 찾을 수 있을 수 있으므로, 이전 주소 기준의 실패 판정을 리셋해 배치가
+     * 재시도하도록 재진입시킨다.
      */
     private fun invalidateCoordinatesIfAddressChanged(
         account: Account,
@@ -73,6 +77,7 @@ class AccountUpsertMapper {
         if (prevAddress1 != account.address1 || prevAddress2 != account.address2) {
             account.latitude = null
             account.longitude = null
+            account.geocodeUnresolved = null
         }
     }
 

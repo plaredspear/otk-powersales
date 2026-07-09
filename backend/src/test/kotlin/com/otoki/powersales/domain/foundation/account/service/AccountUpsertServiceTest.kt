@@ -638,13 +638,16 @@ class AccountUpsertServiceTest {
 
         private fun existingWithCoords(
             address1: String? = "서울시 강남구 옛주소",
-            address2: String? = "101동"
+            address2: String? = "101동",
+            geocodeUnresolved: Boolean? = true
         ): Account {
             val acc = Account(externalKey = "1032619", name = "기존이름")
             acc.address1 = address1
             acc.address2 = address2
             acc.latitude = "37.5"
             acc.longitude = "127.0"
+            // 주소 변경 시 좌표와 함께 초기화되는지 검증하기 위해 영구 실패 마킹을 세팅.
+            acc.geocodeUnresolved = geocodeUnresolved
             return acc
         }
 
@@ -662,6 +665,8 @@ class AccountUpsertServiceTest {
             assertThat(saved).isSameAs(existing)
             assertThat(saved.latitude).isNull()
             assertThat(saved.longitude).isNull()
+            // 주소 변경 시 영구 실패 마킹도 초기화되어 배치가 새 주소로 재시도한다.
+            assertThat(saved.geocodeUnresolved).isNull()
         }
 
         @Test
@@ -692,6 +697,8 @@ class AccountUpsertServiceTest {
             val saved = savedSlot.captured.single()
             assertThat(saved.latitude).isEqualTo("37.5")
             assertThat(saved.longitude).isEqualTo("127.0")
+            // 주소가 그대로면 영구 실패 마킹도 유지 — 불필요한 재시도를 억제한다 (본 개선의 핵심).
+            assertThat(saved.geocodeUnresolved).isTrue
         }
 
         @Test

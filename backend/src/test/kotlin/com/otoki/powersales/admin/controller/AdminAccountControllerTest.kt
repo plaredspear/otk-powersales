@@ -131,7 +131,8 @@ class AdminAccountControllerTest : AdminControllerTestSupport() {
                         accountType = "편의점",
                         zipCode = "06234",
                         representative = "홍길동",
-                        ownerName = "김성준"
+                        ownerName = "김성준",
+                        geocodeUnresolved = false
                     )
                 ),
                 page = 0,

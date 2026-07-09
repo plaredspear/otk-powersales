@@ -1,0 +1,11 @@
+-- 거래처 좌표변환(Naver Geocode) 배치의 무한 재시도 억제용 로컬 전용 플래그.
+--
+-- 배경: 배치 재진입 조건이 "좌표 IS NULL" 단일이라, 주소로 좌표를 못 찾는(주소 오타/미등록
+-- 도로명 등) 거래처는 주소가 바뀌지 않는 한 매일 동일 주소로 Naver API 를 재호출한다.
+--
+-- geocode_unresolved = TRUE 는 "이 주소로는 좌표를 확정할 수 없어 영구 실패로 판정" 을 의미.
+-- 배치는 이 플래그가 TRUE 인 거래처를 재조회 대상에서 제외한다. 거래처 주소가 변경되면
+-- (SAP 마스터 수신 / web 수정) 좌표와 함께 이 플래그도 NULL 로 초기화되어 자연 재시도된다.
+--
+-- SF sync 대상이 아닌 신규 로컬 전용 컬럼 (Account 의 @SFField 미부여). NULL = 미판정/재시도 가능.
+ALTER TABLE account ADD COLUMN geocode_unresolved BOOLEAN;

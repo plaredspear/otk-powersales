@@ -114,6 +114,13 @@ class Account(
     @Column(name = "longitude", length = 100)
     var longitude: String? = null,
 
+    // 좌표변환(Naver Geocode) 영구 실패 플래그 — SF sync 대상 아닌 로컬 전용 컬럼(@SFField 미부여).
+    // true = 주소로 좌표를 확정할 수 없어(주소 못 찾음) 배치 재조회 대상에서 제외. 주소 변경 시 null 로
+    // 초기화되어 재시도 재개(AccountUpsertMapper.invalidateCoordinatesIfAddressChanged). null = 미판정/재시도 가능.
+    @FieldName("좌표변환실패")
+    @Column(name = "geocode_unresolved")
+    var geocodeUnresolved: Boolean? = null,
+
     @SFField("ClosingTime1__c")
     @FieldName("주문마감시간_상온")
     @Column(name = "closing_time1", length = 50)

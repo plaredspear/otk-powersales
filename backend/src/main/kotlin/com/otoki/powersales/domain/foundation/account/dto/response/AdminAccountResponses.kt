@@ -43,7 +43,10 @@ data class AccountListItem(
     val zipCode: String?,
     val representative: String?,
     // SF Owner.LastName 동등 위치 — 신규는 소유자 전체 이름(User.name) 표시.
-    val ownerName: String?
+    val ownerName: String?,
+    // 좌표변환(Naver Geocode) 영구 실패 여부 — true 면 주소로 좌표를 못 찾아(주소 수정 필요) 배치 재조회에서
+    // 제외된 상태. "좌표 미수신" 필터 조회 시 운영자가 주소 확인 대상 거래처를 식별하기 위한 플래그.
+    val geocodeUnresolved: Boolean
 ) {
     companion object {
         fun from(account: Account): AccountListItem = AccountListItem(
@@ -60,7 +63,8 @@ data class AccountListItem(
             accountType = account.accountType,
             zipCode = account.zipCode,
             representative = account.representative,
-            ownerName = account.ownerUser?.name
+            ownerName = account.ownerUser?.name,
+            geocodeUnresolved = account.geocodeUnresolved == true
         )
     }
 }

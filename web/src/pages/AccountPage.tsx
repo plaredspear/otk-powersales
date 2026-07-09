@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, Checkbox, Input, Select, Space, Tag } from 'antd';
+import { Alert, Button, Checkbox, Input, Select, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -134,10 +134,18 @@ export default function AccountPage() {
     {
       title: '상태',
       dataIndex: 'accountStatusName',
-      width: 80,
+      width: 120,
       align: 'center',
-      render: (val: string | null) =>
-        val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
+      render: (val: string | null, account: Account) => (
+        <Space size={4} wrap>
+          {val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-'}
+          {account.geocodeUnresolved && (
+            <Tooltip title="주소로 좌표를 찾지 못해 좌표변환 배치 재조회에서 제외된 상태입니다. 주소를 확인·수정하면 자동으로 재시도됩니다.">
+              <Tag color="volcano">변환실패</Tag>
+            </Tooltip>
+          )}
+        </Space>
+      ),
     },
     ...(showActionsColumn
       ? [

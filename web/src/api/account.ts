@@ -34,6 +34,8 @@ export interface Account {
   zipCode: string | null;
   representative: string | null;
   ownerName: string | null;
+  // 좌표변환 영구 실패 여부 — true 면 주소로 좌표를 못 찾아(주소 수정 필요) 배치 재조회에서 제외된 상태.
+  geocodeUnresolved: boolean;
 }
 
 export interface AccountListData {

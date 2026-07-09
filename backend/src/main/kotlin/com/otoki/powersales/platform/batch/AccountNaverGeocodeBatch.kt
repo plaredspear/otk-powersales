@@ -23,14 +23,17 @@ class AccountNaverGeocodeBatch(
         scheduledJobRunner.runScheduled(JOB_NAME) { ctx ->
             val result = service.enrichCoordinatesMissingAccounts(BATCH_SIZE)
             log.info(
-                "ACCOUNT_NAVER_GEOCODE_BATCH scanned={} succeeded={} failed={}",
-                result.scanned, result.succeeded, result.failed
+                "ACCOUNT_NAVER_GEOCODE_BATCH scanned={} succeeded={} unresolved={} callFailed={}",
+                result.scanned, result.succeeded, result.unresolved, result.callFailed
             )
             ctx.metadata(
                 mapOf(
                     "scanned" to result.scanned,
                     "succeeded" to result.succeeded,
-                    "failed" to result.failed,
+                    // 영구 실패(주소 못 찾음) — 다음 배치부터 재조회 제외.
+                    "unresolved" to result.unresolved,
+                    // 일시 실패(HTTP/네트워크 오류) — 다음 배치 재시도 대상 유지.
+                    "callFailed" to result.callFailed,
                 )
             )
         }

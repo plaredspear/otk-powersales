@@ -211,6 +211,9 @@ const METADATA_LABELS: Record<string, string> = {
   failureCount: '실패',
   scanned: '스캔',
   succeeded: '성공',
+  // 거래처 좌표변환 배치: 영구 실패(주소 못 찾음, 재조회 제외) / 일시 실패(HTTP·네트워크 오류, 재시도)
+  unresolved: '변환실패',
+  callFailed: '호출실패',
   processed: '처리',
   deleted: '삭제',
   reverted: '복원',
@@ -1213,8 +1216,9 @@ export default function ScheduledJobsPage() {
                 description={
                   <Space direction="vertical" size={4}>
                     <Text type="secondary">
-                      실행 결과의 "실패" 건수는 이 배치가 좌표를 채우지 못한 거래처 수입니다. 어떤 거래처가 좌표 미수신
-                      상태인지 거래처 화면에서 직접 조회할 수 있습니다.
+                      "변환실패"는 주소로 좌표를 찾지 못한(영구 실패) 건으로, 다음 실행부터 재조회에서 제외되며
+                      거래처 주소가 변경되면 자동으로 재시도됩니다. "호출실패"는 일시 오류로 다음 실행에 재시도됩니다.
+                      어떤 거래처가 좌표 미수신 상태인지는 거래처 화면에서 직접 조회할 수 있습니다.
                     </Text>
                     <Link to="/account?coordinatesMissing=true">거래처 목록에서 좌표 미수신 거래처 조회 →</Link>
                   </Space>

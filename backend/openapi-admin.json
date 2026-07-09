@@ -198,6 +198,9 @@
           "externalKey" : {
             "type" : [ "string", "null" ]
           },
+          "geocodeUnresolved" : {
+            "type" : "boolean"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"

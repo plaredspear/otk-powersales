@@ -289,6 +289,22 @@ class AccountRepositoryTest {
             // Then
             Assertions.assertThat(result).isEmpty()
         }
+
+        @Test
+        @DisplayName("영구 실패 마킹(geocodeUnresolved=true) 거래처는 배치 재조회에서 제외")
+        fun findCoordinatesMissingAccounts_excludesGeocodeUnresolved() {
+            // Given — 셋 다 좌표 미수신이나 마킹 상태만 다름
+            persistAccount(externalKey = "EXT-NULL", latitude = null, longitude = null, geocodeUnresolved = null) // 포함
+            persistAccount(externalKey = "EXT-FALSE", latitude = null, longitude = null, geocodeUnresolved = false) // 포함
+            persistAccount(externalKey = "EXT-TRUE", latitude = null, longitude = null, geocodeUnresolved = true) // 영구 실패 → 제외
+
+            // When
+            val result = accountRepository.findCoordinatesMissingAccounts(limit = 100)
+
+            // Then — 마킹되지 않은 2건만
+            Assertions.assertThat(result.map { it.externalKey })
+                .containsExactlyInAnyOrder("EXT-NULL", "EXT-FALSE")
+        }
     }
 
     @Nested
@@ -329,6 +345,21 @@ class AccountRepositoryTest {
                 .containsExactlyInAnyOrder("EXT-1", "EXT-2")
         }
 
+        @Test
+        @DisplayName("coordinatesMissing=true → 영구 실패(geocodeUnresolved=true) 거래처도 포함 (운영자 확인용)")
+        fun coordinatesMissingTrue_includesGeocodeUnresolved() {
+            // Given — 화면 필터는 배치와 달리 영구 실패 건을 제외하지 않는다 (운영자가 봐야 함)
+            persistAccount(externalKey = "EXT-A", latitude = null, longitude = null, geocodeUnresolved = null)
+            persistAccount(externalKey = "EXT-B", latitude = null, longitude = null, geocodeUnresolved = true)
+
+            // When
+            val result = findAllAccessible(coordinatesMissing = true)
+
+            // Then — 영구 실패 마킹된 EXT-B 도 포함
+            Assertions.assertThat(result.content.map { it.externalKey })
+                .containsExactlyInAnyOrder("EXT-A", "EXT-B")
+        }
+
         private fun findAllAccessible(coordinatesMissing: Boolean) =
             accountRepository.findAllAccessibleByPolicy(
                 policyPredicate = Expressions.TRUE.isTrue,
@@ -366,7 +397,8 @@ class AccountRepositoryTest {
         latitude: String? = null,
         longitude: String? = null,
         address1: String? = "부산시 테스트구",
-        accountStatusName: String? = "거래"
+        accountStatusName: String? = "거래",
+        geocodeUnresolved: Boolean? = null
     ): Account {
         val account = Account(
             name = "거래처-${externalKey ?: "NULL"}",
@@ -374,7 +406,8 @@ class AccountRepositoryTest {
             address1 = address1,
             latitude = latitude,
             longitude = longitude,
-            accountStatusName = accountStatusName
+            accountStatusName = accountStatusName,
+            geocodeUnresolved = geocodeUnresolved
         )
         val saved = testEntityManager.persistAndFlush(account)
         testEntityManager.clear()

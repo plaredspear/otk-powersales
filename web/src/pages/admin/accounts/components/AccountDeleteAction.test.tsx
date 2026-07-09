@@ -32,6 +32,7 @@ const nativeAccount: Account = {
   zipCode: null,
   representative: null,
   ownerName: null,
+  geocodeUnresolved: false,
 };
 
 const sapAccount: Account = {
