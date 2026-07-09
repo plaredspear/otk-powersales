@@ -56,7 +56,7 @@ class ClientOrderCard extends StatelessWidget {
               Text(
                 '총 주문금액 ${_formatAmount(order.totalAmount)}원',
                 style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.primary,
+                  color: AppColors.secondaryDark,
                   fontWeight: FontWeight.bold,
                 ),
               ),

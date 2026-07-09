@@ -132,7 +132,7 @@ class ClientOrderInfoHeader extends StatelessWidget {
               Text(
                 _formatAmount(detail.totalApprovedAmount),
                 style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.primary,
+                  color: AppColors.secondaryDark,
                   fontWeight: FontWeight.bold,
                 ),
               ),
