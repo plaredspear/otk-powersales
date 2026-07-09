@@ -400,6 +400,14 @@ spring:
   # logging.level.org.hibernate.SQL 을 낮춰도 이 경로로 SQL 이 계속 찍힌다.
   jpa:
     show-sql: ${JPA_SHOW_SQL:false}
+  # prod 전용 HikariCP 풀 상향. base 기본(pool 5 / idle 2)은 local·dev 부하 기준이라
+  # 운영 스파이크(출근·마감 동시 몰림) 시 커넥션풀 고갈로 요청이 직렬화된다.
+  # RDS(db.t4g.xlarge, max_connections ≈ 1,600)는 여유가 크므로 prod 만 20 으로 올린다.
+  # EB 환경변수 용량 제약으로 값은 코드에 못 박고, 필요 시 환경변수로 override 가능.
+  datasource:
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL:20}
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
 
 springdoc:
   api-docs:
