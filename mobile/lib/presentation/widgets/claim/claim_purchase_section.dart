@@ -32,32 +32,41 @@ class ClaimPurchaseSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPurchaseAmount = purchaseAmount != null && purchaseAmount! > 0;
+    // 레거시 write.jsp:353 게이트 정합 — 금액/방법/영수증 중 하나라도 채우면
+    // 구매 그룹이 활성화되어 금액·방법이 필수(*)로 승격된다.
+    final hasPurchaseInfo = (purchaseAmount != null && purchaseAmount! > 0) ||
+        selectedPurchaseMethod != null ||
+        receiptPhoto != null;
+    // 영수증은 개인카드(B)/현금(C) 일 때만 필수 (법인카드는 면제).
+    final receiptRequired = hasPurchaseInfo &&
+        (selectedPurchaseMethod?.code == 'B' ||
+            selectedPurchaseMethod?.code == 'C');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 구매 금액 입력
+        // 구매 금액 입력 (구매 그룹 활성화 시 필수)
         _PurchaseAmountField(
           amount: purchaseAmount,
+          isRequired: hasPurchaseInfo,
           onChanged: onPurchaseAmountChanged,
         ),
 
-        // 구매 방법 선택 (구매금액 입력 시 필수)
+        // 구매 방법 선택 (구매 그룹 활성화 시 필수)
         _PurchaseMethodField(
-          isRequired: hasPurchaseAmount,
+          isRequired: hasPurchaseInfo,
           methods: purchaseMethods,
           selectedMethod: selectedPurchaseMethod,
           onSelected: onPurchaseMethodSelected,
         ),
 
-        // 구매 영수증 사진 (구매금액 입력 시 필수)
+        // 구매 영수증 사진 (개인카드/현금 선택 시 필수)
         ClaimPhotoField(
           label: '구매 영수증 사진 (최대 1장)',
           photo: receiptPhoto,
           onPhotoSelected: onReceiptPhotoSelected,
           onPhotoRemoved: onReceiptPhotoRemoved,
-          isRequired: hasPurchaseAmount,
+          isRequired: receiptRequired,
         ),
       ],
     );
@@ -66,9 +75,14 @@ class ClaimPurchaseSection extends StatelessWidget {
 
 /// 구매 금액 입력 필드
 class _PurchaseAmountField extends StatefulWidget {
-  const _PurchaseAmountField({required this.amount, required this.onChanged});
+  const _PurchaseAmountField({
+    required this.amount,
+    required this.isRequired,
+    required this.onChanged,
+  });
 
   final int? amount;
+  final bool isRequired;
   final ValueChanged<int?> onChanged;
 
   @override
@@ -109,6 +123,7 @@ class _PurchaseAmountFieldState extends State<_PurchaseAmountField> {
   Widget build(BuildContext context) {
     return ClaimFormRow(
       label: '구매 금액',
+      isRequired: widget.isRequired,
       trailing: const Text(
         '원',
         style: TextStyle(fontSize: 14, color: ClaimFormColors.unit),

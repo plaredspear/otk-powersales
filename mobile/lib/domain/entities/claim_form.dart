@@ -6,6 +6,9 @@ import 'claim_code.dart';
 ///
 /// 클레임 등록 시 사용자가 입력한 모든 정보를 담습니다.
 class ClaimRegisterForm {
+  /// copyWith 에서 "인자 미지정" 을 "명시적 null" 과 구분하기 위한 센티널.
+  static const Object _unset = Object();
+
   const ClaimRegisterForm({
     required this.accountId,
     required this.accountName,
@@ -56,7 +59,14 @@ class ClaimRegisterForm {
   final String? requestTypeName;
 
   /// 구매 정보 입력 여부
-  bool get hasPurchaseInfo => purchaseAmount != null && purchaseAmount! > 0;
+  ///
+  /// 레거시 write.jsp:353 게이트 정합 — 구매금액/구매방법/영수증 중 **하나라도**
+  /// 입력되면 구매 그룹이 활성화되어 금액·방법이 필수로 승격된다.
+  /// (구매금액만으로 판정하면 방법/영수증만 채운 미완성 입력이 통과되는 격차 발생.)
+  bool get hasPurchaseInfo =>
+      (purchaseAmount != null && purchaseAmount! > 0) ||
+      (purchaseMethodCode != null && purchaseMethodCode!.isNotEmpty) ||
+      receiptPhoto != null;
 
   /// 요청사항 입력 여부
   bool get hasRequestType =>
@@ -109,7 +119,11 @@ class ClaimRegisterForm {
     }
 
     // 조건부 필수 필드 검증 (구매 정보)
+    // 검증 순서는 레거시 write.jsp:354→358→355 정합 (구매금액 → 구매방법 → 영수증).
     if (hasPurchaseInfo) {
+      if (purchaseAmount == null || purchaseAmount! <= 0) {
+        errors.add('구매 금액을 입력해주세요');
+      }
       if (purchaseMethodCode == null || purchaseMethodCode!.isEmpty) {
         errors.add('구매 방법을 선택해주세요');
       }
@@ -132,6 +146,11 @@ class ClaimRegisterForm {
   bool get isValid => validate().isEmpty;
 
   /// copyWith
+  ///
+  /// 구매 금액은 선택 항목이라 명시적으로 `null` 을 넘겨 값을 지울 수 있어야 한다
+  /// (레거시 write.jsp: 빈 값 → 서버 null 저장). 일반 `?? this.x` 병합은
+  /// "미지정" 과 "명시적 null 삭제" 를 구분하지 못해 직전 값이 되살아나므로,
+  /// 센티널(_unset) 로 인자 전달 여부를 판별한다.
   ClaimRegisterForm copyWith({
     int? accountId,
     String? accountName,
@@ -147,7 +166,7 @@ class ClaimRegisterForm {
     int? defectQuantity,
     File? defectPhoto,
     File? labelPhoto,
-    int? purchaseAmount,
+    Object? purchaseAmount = _unset,
     String? purchaseMethodCode,
     String? purchaseMethodName,
     File? receiptPhoto,
@@ -169,7 +188,9 @@ class ClaimRegisterForm {
       defectQuantity: defectQuantity ?? this.defectQuantity,
       defectPhoto: defectPhoto ?? this.defectPhoto,
       labelPhoto: labelPhoto ?? this.labelPhoto,
-      purchaseAmount: purchaseAmount ?? this.purchaseAmount,
+      purchaseAmount: identical(purchaseAmount, _unset)
+          ? this.purchaseAmount
+          : purchaseAmount as int?,
       purchaseMethodCode: purchaseMethodCode ?? this.purchaseMethodCode,
       purchaseMethodName: purchaseMethodName ?? this.purchaseMethodName,
       receiptPhoto: receiptPhoto ?? this.receiptPhoto,
