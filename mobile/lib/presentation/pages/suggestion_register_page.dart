@@ -292,25 +292,17 @@ class _SuggestionRegisterPageState
                 onPressed: state.isSubmitting ? null : _handleTempSave,
               ),
             ),
-            // 전송 — 물류 클레임은 관련 부서 협의 전까지 비활성화, 탭 시 안내 메시지.
+            // 전송
             Expanded(
-              child: state.isLogisticsClaim
-                  ? _BottomAction(
-                      label: '전송',
-                      background: const Color(0xFFFFD400),
-                      foreground: Colors.black,
-                      disabled: true,
-                      onPressed: _handleSubmitDisabled,
-                    )
-                  : _BottomAction(
-                      label: '전송',
-                      background: const Color(0xFFFFD400),
-                      foreground: Colors.black,
-                      loading: state.isSubmitting,
-                      onPressed: state.isSubmitting
-                          ? null
-                          : () => _handleSubmit(notifier),
-                    ),
+              child: _BottomAction(
+                label: '전송',
+                background: const Color(0xFFFFD400),
+                foreground: Colors.black,
+                loading: state.isSubmitting,
+                onPressed: state.isSubmitting
+                    ? null
+                    : () => _handleSubmit(notifier),
+              ),
             ),
           ],
         ),
@@ -405,13 +397,6 @@ class _SuggestionRegisterPageState
     notifier.addPhoto(file);
   }
 
-  /// 물류 클레임 전송 비활성화 안내 — 관련 부서 협의 전까지 등록 차단하고 안내만 표시.
-  void _handleSubmitDisabled() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('관련 부서 협의 후, 활성화 예정입니다')),
-    );
-  }
-
   Future<void> _handleSubmit(SuggestionRegisterNotifier notifier) async {
     // 유효성 선검증 — 통과 시에만 전송 확인 (레거시 confirm 정합)
     final errors = ref.read(suggestionRegisterProvider).form.validate();
@@ -503,7 +488,6 @@ class _BottomAction extends StatelessWidget {
     required this.foreground,
     required this.onPressed,
     this.loading = false,
-    this.disabled = false,
   });
 
   final String label;
@@ -512,16 +496,11 @@ class _BottomAction extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool loading;
 
-  /// 비활성화 표시. true 면 회색 스타일로 렌더링하되 탭(onPressed)은 유지한다.
-  final bool disabled;
-
   @override
   Widget build(BuildContext context) {
-    final Color effectiveBackground = disabled
-        ? const Color(0xFFCCCCCC)
-        : (onPressed == null ? background.withValues(alpha: 0.6) : background);
-    final Color effectiveForeground =
-        disabled ? const Color(0xFF888888) : foreground;
+    final Color effectiveBackground =
+        onPressed == null ? background.withValues(alpha: 0.6) : background;
+    final Color effectiveForeground = foreground;
 
     return Material(
       color: effectiveBackground,

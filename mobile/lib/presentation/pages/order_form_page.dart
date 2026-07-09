@@ -325,13 +325,6 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     isSubmitting: state.isSubmitting,
                     hasItems: state.hasItems,
                     loanExceeded: state.isLoanExceeded,
-                    // 관련 부서 협의 전까지 승인요청(주문 등록) 비활성화 + 탭 시 안내.
-                    submitDisabled: true,
-                    onSubmitDisabled: () => ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(
-                      const SnackBar(content: Text('관련 부서 협의 후, 활성화 예정입니다')),
-                    ),
                   ),
                 ],
               ),
