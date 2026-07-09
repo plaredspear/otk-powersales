@@ -77,6 +77,9 @@ dependencies:
   logger: 2.6.2
   url_launcher: 6.3.2
   image_picker: 1.2.1
+  # 이미지 JPEG 재인코딩 — image_picker 가 유지할 수 있는 HEIC/PNG 를 SF 허용 포맷(JPEG)으로
+  # 확실히 변환한다 (SF ContentVersion FileExtensionGuard 정합 + 파일명/실바이트 포맷 일치).
+  flutter_image_compress: 2.4.0
 
   # Push Notifications (FCM)
   # 네이티브 설정 파일(google-services.json / GoogleService-Info.plist)과
