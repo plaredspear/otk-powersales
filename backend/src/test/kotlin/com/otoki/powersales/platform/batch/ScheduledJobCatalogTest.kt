@@ -3,7 +3,6 @@ package com.otoki.powersales.platform.batch
 import com.otoki.powersales.platform.batch.AccountNaverGeocodeBatch
 import com.otoki.powersales.platform.batch.AgreementWordCycleBatch
 import com.otoki.powersales.platform.batch.ClaimMasterSyncBatch
-import com.otoki.powersales.platform.batch.LogisticsClaimMasterSyncBatch
 import com.otoki.powersales.platform.batch.TeamMemberScheduleSapOutboundBatch
 import com.otoki.powersales.platform.batch.DisplayMasterLastMonthRevenueBatch
 import com.otoki.powersales.platform.batch.DisplayMasterSapOutboundBatch
@@ -32,7 +31,7 @@ import org.springframework.scheduling.support.CronExpression
 class ScheduledJobCatalogTest {
 
     @Test
-    @DisplayName("카탈로그의 22개 jobName 이 각 *Batch.JOB_NAME 상수와 1:1 일치한다")
+    @DisplayName("카탈로그의 21개 jobName 이 각 *Batch.JOB_NAME 상수와 1:1 일치한다")
     fun jobNames_alignWithBatchConstants() {
         val expected = setOf(
             AgreementWordCycleBatch.JOB_NAME,
@@ -47,7 +46,6 @@ class ScheduledJobCatalogTest {
             PostponedAppointmentBatch.JOB_NAME,
             SalesProgressRateMasterSyncBatch.JOB_NAME,
             ClaimMasterSyncBatch.JOB_NAME,
-            LogisticsClaimMasterSyncBatch.JOB_NAME,
             StaffReviewSyncBatch.JOB_NAME,
             SapOutboxBatch.JOB_NAME,
             ScheduledJobRunCleanupBatch.JOB_NAME,
@@ -60,7 +58,7 @@ class ScheduledJobCatalogTest {
         )
 
         assertThat(ScheduledJobCatalog.JOB_NAMES.toSet()).isEqualTo(expected)
-        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(22)
+        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(21)
         assertThat(ScheduledJobCatalog.ENTRIES.map { it.jobName }).doesNotHaveDuplicates()
     }
 

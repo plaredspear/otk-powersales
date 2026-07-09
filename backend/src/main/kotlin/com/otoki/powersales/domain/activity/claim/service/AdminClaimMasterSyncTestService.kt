@@ -86,12 +86,17 @@ class AdminClaimMasterSyncTestService(
     }
 
     /**
-     * 주기 배치 진입점 — SF fetch → pwrskey 매칭 claim 갱신. ([com.otoki.powersales.platform.batch.ClaimMasterSyncBatch])
+     * 주기 배치 진입점 — SF fetch → pwrskey 매칭 claim 갱신.
+     * (통합 잡 [com.otoki.powersales.platform.batch.ClaimMasterSyncBatch] 의 claim 도메인 —
+     *  오케스트레이터 [com.otoki.powersales.platform.batch.ClaimMasterSyncBatchService] 가 호출)
      *
-     * 테스트 도구([test])와 동일한 fetch/parse/갱신 경로를 쓰되, 응답 DTO 대신 [UpdateResult] 를 반환하고
-     * 실행 통계를 [ScheduledJobRunContext] metadata 로 기록한다. SF 호출 실패는 throw 하여 배치 러너가
-     * FAILURE 로 이력에 남기도록 한다(테스트 도구는 흡수했지만, 배치는 실패를 가시화).
+     * 테스트 도구([test])와 동일한 fetch/parse/갱신 경로를 쓰되, 응답 DTO 대신 [UpdateResult] 를 반환한다.
+     * SF 호출 실패는 흡수하지 않고 throw 하며, 통합 잡의 오케스트레이터가 도메인별 [runCatching] 으로 잡아
+     * metadata `error=true` 로 기록한다(다른 도메인 처리는 계속). 배치 자체는 SUCCESS 로 남고 실패는 metadata
+     * 로 가시화된다 — 한 도메인 실패가 잡 전체를 FAILURE 로 끌고 가지 않도록 한 격리 설계.
      *
+     * @param context 개별 호출 시 실행 통계를 [ScheduledJobRunContext] metadata 로 기록. 통합 잡은 도메인별
+     *   집계를 오케스트레이터가 단일 row 로 묶어 기록하므로 null 로 호출한다(개별 서비스의 metadata 미사용).
      * @param modDt SF 조회 기준 일자 (YYYYMMDD). 미지정 시 오늘 — 주기 배치가 당일 변경분을 가져온다.
      */
     fun sync(

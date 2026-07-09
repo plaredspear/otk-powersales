@@ -434,7 +434,9 @@ app:
   # 전문행사조 마스터 → 사원 행사조 정합 (SF Batch_PPTMaster1/2 동등) 을 prod 에서 활성화한다.
   # sync: 매시간 44분, expire: 매일 23:30 (cron 은 배치 클래스 @Scheduled 에 고정).
   batch:
-    # 클레임 / 물류클레임 상태 업데이트 sync 를 prod 에서 활성화한다.
+    # 클레임/물류클레임 상태 업데이트 sync — 단일 잡(ClaimMasterSyncBatch, 매시 정각)으로 통합, 도메인별 개별 on/off.
+    # 잡 빈 게이팅 = claim-master.sync.enabled. 두 도메인 처리 여부는 ClaimMasterSyncBatchService 가 각 플래그로 재판정한다.
+    # (claim-master.sync.enabled=false 로 잡을 끄면 logistics 도메인도 함께 멎으니, 물류만 돌리려면 claim 은 켠 채 로직 조정.)
     claim-master:
       sync:
         enabled: true
