@@ -40,7 +40,6 @@ import type {
 import { usePermission } from '@/hooks/usePermission';
 import JobRunDetailModal from './JobRunDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
-import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
@@ -166,6 +165,83 @@ function formatDuration(ms: number | null | undefined): string {
   const minutes = Math.floor(seconds / 60);
   const remainSec = Math.round(seconds - minutes * 60);
   return `${minutes}m ${remainSec}s`;
+}
+
+/**
+ * metadata JSON 의 키 → 이력 표의 '결과' 컬럼에 노출할 한글 라벨.
+ * 잡마다 metadata 키가 다르므로, 여러 잡에 반복 등장하는 수치 키만 매핑한다.
+ * 미매핑 키는 원본 키 이름을 그대로 노출(신규 잡/키 추가에도 자동 대응).
+ */
+const METADATA_LABELS: Record<string, string> = {
+  // SF/외부 sync 계열 (fetched/inserted/updated/skipped/notFound)
+  fetched: '조회',
+  inserted: '삽입',
+  updated: '갱신',
+  skipped: '스킵',
+  notFound: '미발견',
+  // 매출 materialize 계열
+  salesMonth: '대상월',
+  yearMonth: '대상월',
+  dailyUpsertedCount: '일적재',
+  monthlyAggregateUpdatedCount: '월집계갱신',
+  fetchedCount: '조회',
+  upsertedCount: '적재',
+  skippedAccountUnmatchedCount: '미매칭',
+  totalRows: '전체',
+  updatedRows: '갱신',
+  skippedRows: '스킵',
+  // SAP outbound 계열 (totalPages/sentPages/failedPages)
+  totalPages: '전체페이지',
+  sentPages: '전송',
+  failedPages: '실패',
+  picked: '픽업',
+  sent: '전송',
+  failed: '실패',
+  // 알림/좌표/기타
+  targetTokens: '대상',
+  successCount: '성공',
+  failureCount: '실패',
+  scanned: '스캔',
+  succeeded: '성공',
+  processed: '처리',
+  deleted: '삭제',
+  reverted: '복원',
+  resetCount: '리셋',
+  applied: '반영',
+};
+
+/** 결과 컬럼에서 숨길 metadata 키 — 수치가 아닌 실행 맥락 값이라 표에는 불필요. */
+const METADATA_HIDDEN_KEYS = new Set([
+  'trigger',
+  'triggeredBy',
+  'chunkIndex',
+  'externalKey',
+  'label',
+  'branch',
+  'cutoff',
+  'expiringEmployees',
+]);
+
+/**
+ * metadata JSON 문자열을 이력 표 '결과' 컬럼용 한 줄 요약으로 변환한다.
+ * 예: {"fetched":120,"updated":5,"skipped":2} → "조회 120, 갱신 5, 스킵 2".
+ * 파싱 불가/빈 값이면 '-' 를 반환한다.
+ */
+function summarizeMetadata(raw: string | null | undefined): string {
+  if (!raw) return '-';
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+  if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return raw;
+  }
+  const parts = Object.entries(parsed as Record<string, unknown>)
+    .filter(([key, value]) => !METADATA_HIDDEN_KEYS.has(key) && value != null && value !== '')
+    .map(([key, value]) => `${METADATA_LABELS[key] ?? key} ${value}`);
+  return parts.length > 0 ? parts.join(', ') : '-';
 }
 
 const ALL_JOBS_KEY = '__all__';
@@ -770,6 +846,7 @@ function RunsHistory({
   showJobNameColumn: boolean;
   onSelectRun: (run: ScheduledJobRun) => void;
 }) {
+  const queryClient = useQueryClient();
   // 조회 조건 버퍼 — "조회" 버튼 시점에만 applied 로 반영 (필터 변경만으로 조회하지 않음)
   const [statusInput, setStatusInput] = useState<ScheduledJobStatus | undefined>(undefined);
   const [rangeInput, setRangeInput] = useState<[Dayjs | null, Dayjs | null] | null>(null);
@@ -784,6 +861,11 @@ function RunsHistory({
       status: statusInput,
       from: rangeInput?.[0]?.toISOString() ?? undefined,
       to: rangeInput?.[1]?.toISOString() ?? undefined,
+    });
+    // 조건이 이전과 동일하면 queryKey 가 안 바뀌어 자동 재조회가 걸리지 않으므로,
+    // runs 캐시를 무효화해 항상 최신 이력을 다시 가져오도록 강제한다.
+    void queryClient.invalidateQueries({
+      queryKey: ['admin', 'scheduled-jobs', 'runs'],
     });
   };
 
@@ -825,6 +907,14 @@ function RunsHistory({
       render: (value: number | null) => formatDuration(value),
     },
     {
+      title: '결과',
+      dataIndex: 'metadata',
+      key: 'metadata',
+      width: 260,
+      ellipsis: true,
+      render: (value: string | null) => summarizeMetadata(value),
+    },
+    {
       title: '오류 메시지',
       dataIndex: 'errorMessage',
       key: 'errorMessage',
@@ -854,9 +944,14 @@ function RunsHistory({
           value={rangeInput as [Dayjs, Dayjs] | null}
           onChange={(value) => setRangeInput(value as [Dayjs | null, Dayjs | null] | null)}
         />
-        <Button type="primary" onClick={handleSearch}>
+        <Button type="primary" onClick={handleSearch} loading={runsQuery.isFetching}>
           조회
         </Button>
+        {runsQuery.dataUpdatedAt > 0 && (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            마지막 조회 {dayjs(runsQuery.dataUpdatedAt).format('YYYY-MM-DD HH:mm:ss')}
+          </Text>
+        )}
       </Space>
       <ResizableTable<ScheduledJobRun>
         rowKey="id"
@@ -884,7 +979,6 @@ function RunsHistory({
 }
 
 export default function ScheduledJobsPage() {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string>(ALL_JOBS_KEY);
   const [selectedRun, setSelectedRun] = useState<ScheduledJobRun | null>(null);
 
@@ -1096,20 +1190,9 @@ export default function ScheduledJobsPage() {
     },
   ];
 
-  // 상단 요약 카드와 (현재 활성 탭의) 실행 이력 목록은 한 화면의 핵심 데이터라 함께 새로고침한다.
-  // 실행 이력 페이지네이션 상태는 각 탭의 RunsHistory 가 개별 보관하므로, 여기서는 'runs' 쿼리
-  // 캐시를 무효화해 마운트된 탭이 스스로 refetch 하게 한다.
-  const handleRefresh = () => {
-    summaryQuery.refetch();
-    queryClient.invalidateQueries({ queryKey: ['admin', 'scheduled-jobs', 'runs'] });
-  };
-
   return (
     <div style={{ padding: 24 }}>
-      <Space style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-        <Title level={3} style={{ margin: 0 }}>스케줄 잡</Title>
-        <RefreshButton onRefresh={handleRefresh} refreshing={summaryQuery.isFetching} />
-      </Space>
+      <Title level={3} style={{ margin: 0 }}>스케줄 잡</Title>
       <Text type="secondary">
         backend `@Scheduled` 배치의 실행 상태를 조회합니다. 요약 카드는 최근 24시간 윈도우 기준입니다.
       </Text>
