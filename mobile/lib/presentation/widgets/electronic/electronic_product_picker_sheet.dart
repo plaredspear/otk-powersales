@@ -427,6 +427,10 @@ class _SearchButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.secondary,
         foregroundColor: AppColors.onSecondary,
+        // 전역 elevatedButtonTheme 의 minimumSize(Size.fromHeight → 너비 무한)를
+        // 덮어써서, 폭이 제약되지 않은 Row 셀 안에서 내용에 맞게 shrink-wrap 한다.
+        // (덮어쓰지 않으면 minWidth=Infinity 로 레이아웃이 깨진다.)
+        minimumSize: Size.zero,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.sm,
@@ -449,6 +453,10 @@ class _SelectButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.secondary,
         side: const BorderSide(color: AppColors.secondary),
+        // 전역 outlinedButtonTheme 의 minimumSize(Size.fromHeight → 너비 무한)를
+        // 덮어써서, 폭이 제약되지 않은 Row 셀 안에서 내용에 맞게 shrink-wrap 한다.
+        // (덮어쓰지 않으면 minWidth=Infinity 로 각 행 레이아웃이 깨진다.)
+        minimumSize: Size.zero,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.xs,
