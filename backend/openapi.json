@@ -25592,6 +25592,14 @@
           }
         }, {
           "in" : "query",
+          "name" : "coordinatesMissing",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {

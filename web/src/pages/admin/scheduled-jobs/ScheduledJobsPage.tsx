@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -150,6 +150,9 @@ const ORORA_MONTHLY_JOB = 'orora-monthly-sales-materialize-batch';
 
 /** ORORA 일매출 수동 트리거 대상 jobName (해당 탭에서만 수동 적재 UI 노출). */
 const ORORA_DAILY_JOB = 'orora-daily-sales-materialize-batch';
+
+/** 거래처 좌표변환 jobName (해당 탭에 좌표 미수신 거래처 조회 링크 노출). */
+const ACCOUNT_GEOCODE_JOB = 'account-naver-geocode-batch';
 
 /** 전문행사조(PPT) 마스터 수동 실행 대상 jobName → 트리거 action 매핑. */
 const PPT_MASTER_TRIGGER_ACTIONS: Record<string, PptMasterTriggerAction> = {
@@ -1199,6 +1202,23 @@ export default function ScheduledJobsPage() {
               <PptMasterTriggerPanel
                 action={PPT_MASTER_TRIGGER_ACTIONS[name]}
                 jobLabelText={jobLabel(name)}
+              />
+            )}
+            {name === ACCOUNT_GEOCODE_JOB && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message="좌표 미수신 거래처 확인"
+                description={
+                  <Space direction="vertical" size={4}>
+                    <Text type="secondary">
+                      실행 결과의 "실패" 건수는 이 배치가 좌표를 채우지 못한 거래처 수입니다. 어떤 거래처가 좌표 미수신
+                      상태인지 거래처 화면에서 직접 조회할 수 있습니다.
+                    </Text>
+                    <Link to="/account?coordinatesMissing=true">거래처 목록에서 좌표 미수신 거래처 조회 →</Link>
+                  </Space>
+                }
               />
             )}
             <RunsHistory

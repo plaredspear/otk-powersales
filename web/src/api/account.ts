@@ -8,6 +8,12 @@ export interface FetchAccountsParams {
   accountType?: string;
   branchCode?: string;
   accountStatusName?: string;
+  /**
+   * true 면 좌표(위/경도) 미수신 거래처만 조회 — "거래처 좌표변환" 배치(#637) 진입 후보와 동일 조건.
+   * 스케줄 잡 좌표변환 패널의 링크가 `?coordinatesMissing=true` 로 진입시켜 배치가 매번 재시도하는
+   * 거래처를 운영자가 직접 확인할 수 있게 한다.
+   */
+  coordinatesMissing?: boolean;
   page?: number;
   size?: number;
 }

@@ -114,6 +114,7 @@ class AdminAccountServiceTest {
                     accountStatusName = null,
                     applyPromotionFilter = any(),
                     excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
                     pageable = any(),
                 )
             }
@@ -137,6 +138,7 @@ class AdminAccountServiceTest {
                     accountStatusName = null,
                     applyPromotionFilter = any(),
                     excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
                     pageable = any(),
                 )
             }
@@ -160,6 +162,7 @@ class AdminAccountServiceTest {
                     accountStatusName = "활성",
                     applyPromotionFilter = any(),
                     excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
                     pageable = any(),
                 )
             }
@@ -180,6 +183,7 @@ class AdminAccountServiceTest {
                     accountStatusName = null,
                     applyPromotionFilter = any(),
                     excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
                     pageable = any(),
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
@@ -206,6 +210,7 @@ class AdminAccountServiceTest {
                     accountStatusName = null,
                     applyPromotionFilter = any(),
                     excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
                     pageable = any(),
                 )
             } returns PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), 100L)
@@ -234,6 +239,7 @@ class AdminAccountServiceTest {
                     accountStatusName = null,
                     applyPromotionFilter = any(),
                     excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
                     pageable = capture(pageableSlot),
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
@@ -269,6 +275,7 @@ class AdminAccountServiceTest {
                     accountStatusName = any(),
                     applyPromotionFilter = any(),
                     excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
                     pageable = any(),
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
@@ -306,6 +313,7 @@ class AdminAccountServiceTest {
                     accountStatusName = any(),
                     applyPromotionFilter = any(),
                     excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
                     pageable = any(),
                 )
             } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
@@ -409,6 +417,7 @@ class AdminAccountServiceTest {
                 accountStatusName = any(),
                 applyPromotionFilter = any(),
                 excludeClosedAccount = any(),
+                coordinatesMissing = any(),
                 pageable = any(),
             )
         } returns PageImpl(accounts, PageRequest.of(0, 20, Sort.by("name").ascending()), accounts.size.toLong())

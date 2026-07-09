@@ -87,6 +87,7 @@ class AccountRepositoryLookupKeywordTest {
         accountStatusName = accountStatusName,
         applyPromotionFilter = true,
         excludeClosedAccount = true,
+        coordinatesMissing = false,
         pageable = PageRequest.of(0, 20),
     )
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Select, Space, Tag } from 'antd';
+import { Alert, Button, Checkbox, Input, Select, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -46,8 +46,11 @@ export default function AccountPage() {
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
-    defaultFilters: { abcType: '', branchCode: '', accountStatusName: '', keyword: '' },
+    defaultFilters: { abcType: '', branchCode: '', accountStatusName: '', keyword: '', coordinatesMissing: '' },
   });
+  // 좌표 미수신 필터는 문자열 'true' 로 URL 에 보관 — 스케줄 잡 좌표변환 패널 링크(`?coordinatesMissing=true`)
+  // 로 진입 시 자동 복원된다.
+  const coordinatesMissing = filters.coordinatesMissing === 'true';
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
   const [abcTypeInput, setAbcTypeInput] = useState<string | undefined>(
     () => filters.abcType || undefined,
@@ -60,6 +63,9 @@ export default function AccountPage() {
   );
   const [keywordInput, setKeywordInput] = useState<string | undefined>(
     () => filters.keyword || undefined,
+  );
+  const [coordinatesMissingInput, setCoordinatesMissingInput] = useState<boolean>(
+    () => filters.coordinatesMissing === 'true',
   );
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -86,6 +92,7 @@ export default function AccountPage() {
       branchCode: branchCodeInput ?? '',
       accountStatusName: accountStatusNameInput ?? '',
       keyword: keywordInput ?? '',
+      coordinatesMissing: coordinatesMissingInput ? 'true' : '',
     });
   };
 
@@ -94,6 +101,7 @@ export default function AccountPage() {
     abcType: filters.abcType || undefined,
     branchCode: filters.branchCode || undefined,
     accountStatusName: filters.accountStatusName || undefined,
+    coordinatesMissing: coordinatesMissing || undefined,
     page,
     size,
   });
@@ -213,6 +221,12 @@ export default function AccountPage() {
             onChange={(e) => setKeywordInput(e.target.value || undefined)}
             onPressEnter={handleSearch}
           />
+          <Checkbox
+            checked={coordinatesMissingInput}
+            onChange={(e) => setCoordinatesMissingInput(e.target.checked)}
+          >
+            좌표 미수신만
+          </Checkbox>
           <Button type="primary" onClick={handleSearch}>
             조회
           </Button>
@@ -227,6 +241,15 @@ export default function AccountPage() {
         </Space>
       </Space>
 
+      {coordinatesMissing && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16, flexShrink: 0 }}
+          message="좌표 미수신 거래처만 표시 중"
+          description="위/경도가 비어 있는 '거래' 상태 거래처(주소·거래처코드 보유)만 조회합니다. 스케줄 잡 '거래처 좌표변환'(매일 02시)이 이 거래처들의 좌표를 네이버 Geocode API 로 보강하며, 조회에 실패한 거래처는 다음 실행 때 다시 대상이 됩니다."
+        />
+      )}
       {/* flex:1 로 남은 높이를 채우는 테이블 wrapper. 실측 높이가 scrollY 로 body 스크롤. */}
       <div ref={tableWrapperRef} style={{ flex: 1, minHeight: 0 }}>
         <ResizableTable

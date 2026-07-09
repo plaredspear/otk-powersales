@@ -22,12 +22,18 @@ class AccountRepositoryCustomImpl(
         accountStatusName: String?,
         applyPromotionFilter: Boolean,
         excludeClosedAccount: Boolean,
+        coordinatesMissing: Boolean,
         pageable: Pageable,
     ): Page<Account> {
         val builder = BooleanBuilder()
 
         builder.and(notDeleted())
         builder.and(policyPredicate)
+        // "좌표 미수신" 필터 — Naver Geocode batch(#637) 진입 후보와 동일 조건을 AND 합성.
+        // 배치가 매번 스캔·재시도하는 거래처를 거래처 화면에서 운영자가 직접 조회하기 위함.
+        if (coordinatesMissing) {
+            builder.and(coordinatesMissingPredicate())
+        }
         // SF AccId__c.lookupFilter 는 Promotion 거래처 선택 Lookup 에만 존재 — 메인 거래처 탭 listView
         // (AllAccounts=Everything) 에는 미적용. 따라서 lookup 진입점만 AND 합성.
         if (applyPromotionFilter) {
@@ -105,12 +111,7 @@ class AccountRepositoryCustomImpl(
     override fun findCoordinatesMissingAccounts(limit: Int): List<Account> {
         return queryFactory
             .selectFrom(account)
-            .where(
-                account.latitude.isNull.or(account.longitude.isNull),
-                account.address1.isNotNull,
-                account.externalKey.isNotNull,
-                account.accountStatusName.eq(ACCOUNT_STATUS_ACTIVE)
-            )
+            .where(coordinatesMissingPredicate())
             .limit(limit.toLong())
             .fetch()
     }
@@ -243,6 +244,21 @@ class AccountRepositoryCustomImpl(
             .and(account.accountStatusName.ne(ACCOUNT_STATUS_CLOSED).or(account.accountStatusName.isNull))
 
     private fun notDeleted() = account.isDeleted.isNull.or(account.isDeleted.eq(false))
+
+    /**
+     * Naver Geocode batch(#637) 진입 후보 조건 — 좌표 미수신 거래처.
+     *
+     * `(latitude IS NULL OR longitude IS NULL) AND address1 IS NOT NULL AND external_key IS NOT NULL
+     * AND account_status_name = '거래'`. 레거시 SOQL(`Batch_AccountLatLong.cls#start`) 동등.
+     *
+     * [findCoordinatesMissingAccounts] (배치 후보 조회) 와 [findAllAccessibleByPolicy] 의
+     * `coordinatesMissing` 필터(거래처 화면 "좌표 미수신" 조회) 가 동일 조건을 쓰도록 단일 출처로 추출.
+     */
+    private fun coordinatesMissingPredicate() =
+        account.latitude.isNull.or(account.longitude.isNull)
+            .and(account.address1.isNotNull)
+            .and(account.externalKey.isNotNull)
+            .and(account.accountStatusName.eq(ACCOUNT_STATUS_ACTIVE))
 
     /**
      * SF `DKRetail__Promotion__c.AccId__c.lookupFilter` 동등 비즈니스 필터.

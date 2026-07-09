@@ -71,7 +71,8 @@ class AdminAccountService(
         applyPromotionFilter: Boolean = true,
         excludeClosedAccount: Boolean = false,
         myBranchScopePrincipal: WebUserPrincipal? = null,
-        accountType: String? = null
+        accountType: String? = null,
+        coordinatesMissing: Boolean = false
     ): AccountListResponse {
         val visibilityPredicate = if (myBranchScopePrincipal != null) {
             myBranchScopePredicate(myBranchScopePrincipal)
@@ -101,6 +102,7 @@ class AdminAccountService(
             accountStatusName = accountStatusName,
             applyPromotionFilter = applyPromotionFilter,
             excludeClosedAccount = excludeClosedAccount,
+            coordinatesMissing = coordinatesMissing,
             pageable = pageable,
         )
 

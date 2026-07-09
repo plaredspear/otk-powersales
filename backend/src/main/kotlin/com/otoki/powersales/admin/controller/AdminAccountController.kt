@@ -73,6 +73,9 @@ class AdminAccountController(
         @RequestParam(required = false) abcType: String?,
         @RequestParam(required = false) branchCode: String?,
         @RequestParam(required = false) accountStatusName: String?,
+        // "좌표 미수신" 필터 — Naver Geocode batch(#637) 진입 후보와 동일 조건으로 좁혀 조회한다.
+        // 스케줄 잡 "거래처 좌표변환" 패널의 링크가 `?coordinatesMissing=true` 로 진입시킨다.
+        @RequestParam(required = false, defaultValue = "false") coordinatesMissing: Boolean,
         @RequestParam(required = false, defaultValue = "0") @Min(0) page: Int,
         @RequestParam(required = false, defaultValue = "20") @Min(1) @Max(100) size: Int
     ): ResponseEntity<ApiResponse<AccountListResponse>> {
@@ -85,7 +88,8 @@ class AdminAccountController(
             page = page,
             size = size,
             // SF 메인 거래처 탭 listView(AllAccounts)=Everything — lookupFilter 미적용 (lookup 진입점에만 적용).
-            applyPromotionFilter = false
+            applyPromotionFilter = false,
+            coordinatesMissing = coordinatesMissing
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }

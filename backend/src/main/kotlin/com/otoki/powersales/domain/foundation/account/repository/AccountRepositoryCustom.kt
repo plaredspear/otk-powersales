@@ -30,6 +30,11 @@ interface AccountRepositoryCustom {
      *                        없이 완전 제외할지 여부. 진열사원스케줄 마스터 등록 거래처 lookup 전용 —
      *                        폐업 거래처는 등록 자체가 차단되므로 조회 후보에서도 일관되게 제외한다.
      *                        [applyPromotionFilter] 의 distribution 면제 노출보다 우선 (AND 합성).
+     * @param coordinatesMissing true 면 Naver Geocode batch(#637) 진입 후보와 **동일 조건**을 AND 합성
+     *                        ((latitude IS NULL OR longitude IS NULL) AND address1 IS NOT NULL AND
+     *                        external_key IS NOT NULL AND account_status_name = '거래'). 거래처 화면에서
+     *                        "좌표 미수신" 필터로 배치가 매번 스캔·재시도하는 거래처를 운영자가 직접 조회하기 위함.
+     *                        [findCoordinatesMissingAccounts] 와 동일한 [coordinatesMissingPredicate] 를 재사용한다.
      * @param pageable 페이지네이션 + 정렬 (count query 정합 자동 처리)
      */
     fun findAllAccessibleByPolicy(
@@ -40,6 +45,7 @@ interface AccountRepositoryCustom {
         accountStatusName: String?,
         applyPromotionFilter: Boolean,
         excludeClosedAccount: Boolean,
+        coordinatesMissing: Boolean,
         pageable: Pageable,
     ): Page<Account>
 

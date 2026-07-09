@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.platform.common.config.QueryDslConfig
+import com.querydsl.core.types.dsl.Expressions
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -12,6 +13,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
+import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.ActiveProfiles
 
 /**
@@ -287,6 +289,58 @@ class AccountRepositoryTest {
             // Then
             Assertions.assertThat(result).isEmpty()
         }
+    }
+
+    @Nested
+    @DisplayName("findAllAccessibleByPolicy — coordinatesMissing 필터 (거래처 화면 '좌표 미수신만')")
+    inner class FindAllAccessibleByPolicyCoordinatesMissingTests {
+
+        @Test
+        @DisplayName("coordinatesMissing=true → batch 후보와 동일 조건으로 좁혀 조회")
+        fun coordinatesMissingTrue_appliesBatchCandidateFilter() {
+            // Given — findCoordinatesMissingAccounts 와 동일한 후보 판정 시나리오
+            persistAccount(externalKey = "EXT-1", latitude = null, longitude = null, accountStatusName = "거래") // 포함
+            persistAccount(externalKey = "EXT-2", latitude = null, longitude = "127.1", accountStatusName = "거래") // 포함
+            persistAccount(externalKey = "EXT-3", latitude = "37.5", longitude = "127.1", accountStatusName = "거래") // 좌표 있음 → 제외
+            persistAccount(externalKey = "EXT-4", latitude = null, longitude = null, address1 = null, accountStatusName = "거래") // 주소 없음 → 제외
+            persistAccount(externalKey = null, latitude = null, longitude = null, accountStatusName = "거래") // externalKey 없음 → 제외
+            persistAccount(externalKey = "EXT-6", latitude = null, longitude = null, accountStatusName = "휴면") // 비-거래 → 제외
+
+            // When
+            val result = findAllAccessible(coordinatesMissing = true)
+
+            // Then — EXT-1, EXT-2 만 매칭
+            Assertions.assertThat(result.content.map { it.externalKey })
+                .containsExactlyInAnyOrder("EXT-1", "EXT-2")
+        }
+
+        @Test
+        @DisplayName("coordinatesMissing=false → 좌표 유무 무관 전건 조회")
+        fun coordinatesMissingFalse_returnsAll() {
+            // Given
+            persistAccount(externalKey = "EXT-1", latitude = null, longitude = null, accountStatusName = "거래")
+            persistAccount(externalKey = "EXT-2", latitude = "37.5", longitude = "127.1", accountStatusName = "거래")
+
+            // When
+            val result = findAllAccessible(coordinatesMissing = false)
+
+            // Then — 좌표 있는 EXT-2 도 포함
+            Assertions.assertThat(result.content.map { it.externalKey })
+                .containsExactlyInAnyOrder("EXT-1", "EXT-2")
+        }
+
+        private fun findAllAccessible(coordinatesMissing: Boolean) =
+            accountRepository.findAllAccessibleByPolicy(
+                policyPredicate = Expressions.TRUE.isTrue,
+                keyword = null,
+                abcType = null,
+                accountType = null,
+                accountStatusName = null,
+                applyPromotionFilter = false,
+                excludeClosedAccount = false,
+                coordinatesMissing = coordinatesMissing,
+                pageable = PageRequest.of(0, 100),
+            )
     }
 
     // ========== Helpers ==========
