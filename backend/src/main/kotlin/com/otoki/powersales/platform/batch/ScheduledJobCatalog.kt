@@ -153,6 +153,12 @@ object ScheduledJobCatalog {
             description = "유통기한 만료 FCM 알림 발송 (기본 매일 09:00 KST, alarm_date=당일 담당 여사원) — legacy OttogiSalesSchedule.alarm 동등 (레거시 Heroku UTC 0 0 0 = KST 09:00)",
             beanType = ProductExpirationAlertBatch::class.java,
         ),
+        Entry(
+            jobName = SfClaimResendBatch.JOB_NAME,
+            cron = "\${app.batch.sf-resend.cron:0 50 * * * *}",
+            description = "SF 전송실패 건 재전송 (기본 매시간 50분) — 제품클레임(/ClaimRegist) + 물류클레임(/ProposalRegist) SEND_FAILED 이고 시도횟수 상한 미만 건 재전송",
+            beanType = SfClaimResendBatch::class.java,
+        ),
     )
 
     val JOB_NAMES: List<String> = ENTRIES.map { it.jobName }

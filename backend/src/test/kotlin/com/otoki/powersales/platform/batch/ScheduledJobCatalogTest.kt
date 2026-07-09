@@ -17,6 +17,7 @@ import com.otoki.powersales.platform.batch.PPTMasterSapOutboundBatch
 import com.otoki.powersales.platform.batch.PPTMasterSyncBatch
 import com.otoki.powersales.platform.batch.PostponedAppointmentBatch
 import com.otoki.powersales.platform.batch.ProductExpirationAlertBatch
+import com.otoki.powersales.platform.batch.SfClaimResendBatch
 import com.otoki.powersales.platform.batch.SalesProgressRateMasterSyncBatch
 import com.otoki.powersales.platform.batch.StaffReviewSyncBatch
 import com.otoki.powersales.platform.batch.SapOutboxBatch
@@ -31,7 +32,7 @@ import org.springframework.scheduling.support.CronExpression
 class ScheduledJobCatalogTest {
 
     @Test
-    @DisplayName("카탈로그의 21개 jobName 이 각 *Batch.JOB_NAME 상수와 1:1 일치한다")
+    @DisplayName("카탈로그의 22개 jobName 이 각 *Batch.JOB_NAME 상수와 1:1 일치한다")
     fun jobNames_alignWithBatchConstants() {
         val expected = setOf(
             AgreementWordCycleBatch.JOB_NAME,
@@ -55,11 +56,21 @@ class ScheduledJobCatalogTest {
             ErpOrderRetentionBatch.JOB_NAME,
             JMartCoordinateBatch.JOB_NAME,
             ProductExpirationAlertBatch.JOB_NAME,
+            SfClaimResendBatch.JOB_NAME,
         )
 
         assertThat(ScheduledJobCatalog.JOB_NAMES.toSet()).isEqualTo(expected)
-        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(21)
+        assertThat(ScheduledJobCatalog.ENTRIES).hasSize(22)
         assertThat(ScheduledJobCatalog.ENTRIES.map { it.jobName }).doesNotHaveDuplicates()
+    }
+
+    @Test
+    @DisplayName("SF 재전송 배치 cron 기본값이 유효하고 매시간 50분이다")
+    fun sfResendCron_isValidAndHourly() {
+        val raw = ScheduledJobCatalog.ENTRIES.first { it.jobName == SfClaimResendBatch.JOB_NAME }.cron
+        val cron = cronDefault(raw)
+        assertThat(cron).isEqualTo("0 50 * * * *")
+        assertThat(CronExpression.isValidExpression(cron)).isTrue()
     }
 
     @Test

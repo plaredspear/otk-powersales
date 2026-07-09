@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.claim.repository
 
 import com.otoki.powersales.domain.activity.claim.entity.Claim
+import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -11,6 +12,27 @@ interface ClaimRepository : JpaRepository<Claim, Long>, ClaimRepositoryCustom {
 
     /** SAP 인바운드 단건 조회 (Spec #561) */
     fun findByName(name: String): Claim?
+
+    /**
+     * SF 재전송 배치 대상 claim id 조회 — 전송실패(SEND_FAILED) + 재시도 상한 미만.
+     *
+     * 영구 실패(예: SF Apex 미배포로 strict 파싱 실패)가 매 배치마다 재시도되어 이력을 오염시키지
+     * 않도록 `sendAttemptCount < maxAttempt` 로 상한을 건다. 실제 전송/상태전이는
+     * [com.otoki.powersales.domain.activity.claim.service.ClaimSfDispatchService.dispatch] 가 담당하므로
+     * 여기서는 id 만 조회한다(락 경합 최소화 + 건별 트랜잭션 분리).
+     */
+    @Query(
+        """
+        select c.id from Claim c
+        where c.status = :status
+          and c.sendAttemptCount < :maxAttempt
+        order by c.id asc
+        """,
+    )
+    fun findResendTargetIds(
+        @Param("status") status: ClaimStatus,
+        @Param("maxAttempt") maxAttempt: Int,
+    ): List<Long>
 
     /** SAP 인바운드 일괄 조회 (Spec #561) */
     fun findAllByNameIn(names: Collection<String>): List<Claim>
