@@ -20,6 +20,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.Suitability
 import com.otoki.powersales.domain.activity.schedule.dto.response.TeamMemberScheduleResultItem
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
+import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import com.otoki.powersales.platform.common.util.excel.ExcelStyleSupport
 import org.apache.poi.ss.usermodel.FillPatternType
@@ -42,6 +43,7 @@ import kotlin.collections.get
  *
  * 레거시 매핑: `SalesComparisonSearchController.getLowDataList` / `getSummaryItems` (force-app/main/default/classes).
  * 동작: 월별여사원 통합일정(`TeamMemberScheduleSearchService.search` — MFEIS 직접 조회) 결과를 기반으로 거래처별 진열 상시 환산인원 합 + 6개월 평균매출 + 투입기준마스터의 고정/격고 기준금액을 비교하여 배치적합성(적합/경계/재검토) 판정 후 집계/중간집계/상세 3종 응답을 빌드한다.
+ * 매출 표시값 2종은 서로 다른 소스이다 (SF `SalesComparisonSearchController` 정합): 판정·표시에 쓰는 6개월 평균매출은 MFEIS 결과의 `actualAmount`(6개월 평균 `ClosingAmountSum`) 이고, "당월매출" 컬럼은 검색 당월 단일월 `ClosingAmountSum` 을 [MonthlySalesHistoryQueryGateway] 로 별도 조회한다 (cls:256-265 SOQL A). 배치적합성 판정에는 6개월 평균만 쓰이며 당월매출은 표시 전용이다 (cls:464).
  * 부수 효과: 없음 (조회 전용).
  * 신규 도입 — 레거시 미존재 web 진입점(`DeploymentPage`) 신규 구현 동반.
  */
@@ -51,7 +53,8 @@ class AdminSalesComparisonService(
     private val teamMemberScheduleSearchService: TeamMemberScheduleSearchService,
     private val accountRepository: AccountRepository,
     private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository,
-    private val accountCategoryMasterRepository: AccountCategoryMasterRepository
+    private val accountCategoryMasterRepository: AccountCategoryMasterRepository,
+    private val monthlySalesHistoryQueryGateway: MonthlySalesHistoryQueryGateway
 ) {
 
     /**
@@ -446,6 +449,28 @@ class AdminSalesComparisonService(
         // 6개월 평균매출 (accountCode → avg amount) — MFEIS 검색 결과의 actualAmount(6개월 평균 ABC 마감실적) 재사용
         val avgClosingAmounts = integrationItems.associate { it.accountCode to it.avgClosingAmount }
 
+        // 당월 매출 (accountCode → 검색 당월 단일월 ClosingAmountSum) — SF `SalesComparisonSearchController`
+        // (cls:256-265, 380-383) 정합. 6개월 평균(avgClosingAmount) 과 별개 소스: 검색 년월 1개월치만 조회한
+        // `ClosingAmountSum__c` (= ABC마감실적합 + 물류마감실적합) 를 그대로 사용한다 (평균/나눗셈 없음).
+        // account_id 로 조회 (SF `WHERE AccountId__c IN` 정합, [MonthlySalesHistoryQueryGateway] 6개월
+        // 평균과 동일 조인 키). 검색 당월 매출 레코드가 없는 거래처는 0 (cls:381-382).
+        val thisMonthSalesByCode: Map<String, Long> = run {
+            val accountIds = accounts.mapNotNull { it.id?.toLong() }.toSet()
+            if (accountIds.isEmpty()) {
+                emptyMap()
+            } else {
+                val currentYm = "%d%02d".format(year, month)
+                val salesByAccountId = monthlySalesHistoryQueryGateway
+                    .findBySalesDatesByAccountId(salesDates = listOf(currentYm), accountIds = accountIds)
+                    .associateBy({ it.accountId }, { it.closingAmountSum })
+                accounts.mapNotNull { account ->
+                    val code = account.externalKey ?: return@mapNotNull null
+                    val amount = account.id?.toLong()?.let { salesByAccountId[it] } ?: BigDecimal.ZERO
+                    code to amount.toLong()
+                }.toMap()
+            }
+        }
+
         // 투입기준마스터 (진열 + confirmed = true + isDeleted != true) — 화면 단위 1회 조회.
         // SF `SalesComparisonSearchController` (cls:334-342) 의 유효기간 필터 정합 —
         // `StartDate__c <= 선택월 말일 AND (EndDate__c IS NULL OR EndDate__c >= 선택월 1일)`.
@@ -496,7 +521,9 @@ class AdminSalesComparisonService(
                 .fold(BigDecimal.ZERO) { acc, it -> acc.add(it.equivalentWorkingDays) }
                 .setScale(3, RoundingMode.HALF_UP)
             val avgClosingAmount = avgClosingAmounts[accountCode] ?: 0L
-            val thisMonthSalesAmount = avgClosingAmount  // 별도 당월 매출 컬럼 매핑 부재 — 6개월 평균 재사용 (TODO: SF 명세 확인 후 정정 후보)
+            // SF cls:380-383 — 검색 당월 단일월 ClosingAmountSum. 6개월 평균과 별개 소스이며 판정에는
+            // 미사용(표시 전용). 당월 매출 레코드 부재 시 0 (cls:381-382).
+            val thisMonthSalesAmount = thisMonthSalesByCode[accountCode] ?: 0L
 
             // SF 거래처유형 코드 산출 (cls:366-372) — 화면 카테고리 컬럼용.
             // 체인 특수 4종(ABCType__c)은 ABCType 으로, 그 외는 Account.Type 으로 categoryMap 변환.

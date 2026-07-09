@@ -15,6 +15,8 @@ import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCri
 import com.otoki.powersales.domain.activity.schedule.service.AdminSalesComparisonService
 import com.otoki.powersales.domain.activity.schedule.service.InvalidParameterException
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleSearchService
+import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
+import com.otoki.powersales.domain.sales.service.MonthlySalesRow
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -33,12 +35,23 @@ class AdminSalesComparisonServiceTest {
     private val accountRepository: AccountRepository = mockk()
     private val employeeInputCriteriaMasterRepository: EmployeeInputCriteriaMasterRepository = mockk()
     private val accountCategoryMasterRepository: AccountCategoryMasterRepository = mockk()
+    private val monthlySalesHistoryQueryGateway: MonthlySalesHistoryQueryGateway = mockk()
 
     private val service = AdminSalesComparisonService(
         teamMemberScheduleSearchService,
         accountRepository,
         employeeInputCriteriaMasterRepository,
         accountCategoryMasterRepository,
+        monthlySalesHistoryQueryGateway,
+    )
+
+    /** 당월 매출 단일월 조회 mock — account_id → 당월 ClosingAmountSum row. */
+    private fun monthlySalesRow(accountId: Long, closingAmountSum: Long) = MonthlySalesRow(
+        sapAccountCode = "",
+        salesDate = "202605",
+        closingAmountSum = BigDecimal(closingAmountSum),
+        accountId = accountId,
+        abcClosingAmount1 = null,
     )
 
     /** MFEIS 검색 mock 반환 래퍼 — `search(...)` 가 반환하는 `TeamMemberScheduleSearchResult` 로 감싼다. */
@@ -130,6 +143,8 @@ class AdminSalesComparisonServiceTest {
             categoryMaster("대형마트(3대)", "01"),
             categoryMaster("체인", "02"),
         )
+        // 당월 매출 단일월 조회 기본값 — 미스텁 케이스는 당월 매출 없음(0). 개별 테스트에서 필요 시 override.
+        every { monthlySalesHistoryQueryGateway.findBySalesDatesByAccountId(any(), any()) } returns emptyList()
     }
 
     @Nested
@@ -566,6 +581,41 @@ class AdminSalesComparisonServiceTest {
 
             assertThat(response.items).hasSize(1)
             assertThat(response.items.first().accountCode).isEqualTo("A001")
+        }
+
+        @Test
+        fun `당월매출은 6개월평균과 별개 - 검색 당월 단일월 ClosingAmountSum 사용 (SF cls=256-265, 380-383)`() {
+            // 6개월 평균(actualAmount)=1,500,000 이지만 당월 매출은 단일월 조회값 999,000.
+            // SF 는 두 값을 별개 SOQL 로 산출 — 당월매출 컬럼에 6개월 평균이 아니라 단일월 값이 실려야 한다.
+            val itm = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(itm))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+            every { monthlySalesHistoryQueryGateway.findBySalesDatesByAccountId(eq(listOf("202605")), any()) } returns
+                listOf(monthlySalesRow(accountId = 1, closingAmountSum = 999_000))
+
+            val response = service.getMiddle(allScope, 2026, 5, listOf("CC001"), listOf(1))
+
+            val row = response.items.first { it.accountCode == "A001" }
+            assertThat(row.avgClosingAmount).isEqualTo(1_500_000L)       // 6개월 평균 유지
+            assertThat(row.thisMonthSalesAmount).isEqualTo(999_000L)     // 당월 단일월 값
+        }
+
+        @Test
+        fun `당월 매출 레코드 부재 시 당월매출 0 (SF cls=381-382)`() {
+            val itm = item("A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(itm))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+            // 당월 매출 조회 결과 없음 (기본 setup stub = emptyList)
+
+            val response = service.getMiddle(allScope, 2026, 5, listOf("CC001"), listOf(1))
+
+            val row = response.items.first { it.accountCode == "A001" }
+            assertThat(row.avgClosingAmount).isEqualTo(1_500_000L)       // 6개월 평균은 그대로
+            assertThat(row.thisMonthSalesAmount).isEqualTo(0L)          // 당월 매출은 0
         }
 
         @Test
