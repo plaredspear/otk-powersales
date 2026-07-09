@@ -80,6 +80,7 @@ const JOB_LABELS: Record<string, string> = {
   'scheduledJobRun.cleanup': '이력 정리',
   'orora-daily-sales-materialize-batch': 'ORORA 일매출',
   'orora-monthly-sales-materialize-batch': 'ORORA 월매출',
+  'erpOrder.retention': 'ERP주문 정리',
 };
 
 function jobLabel(jobName: string): string {
@@ -105,6 +106,7 @@ const JOB_SCHEDULES: Record<string, string> = {
   'scheduledJobRun.cleanup': '매일 04시',
   'orora-daily-sales-materialize-batch': '기본 매일 04:30',
   'orora-monthly-sales-materialize-batch': '기본 매월 3일 05시',
+  'erpOrder.retention': '기본 매주 일요일 04시',
 };
 
 /** 잡 이름 → 해당 스케줄 작업이 무슨 일을 하는지에 대한 자연어 설명. */
@@ -139,6 +141,8 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
     'ORORA 영업시스템의 일별 매출 view를 거래처 범위 단위로 조회하여 daily_sales_history 테이블에 적재하고, 같은 거래처·월의 monthly_sales_history 전산마감실적 합계·물류마감실적 합계·총 원장매출을 갱신합니다. 일자는 대상월이 당월이면 오늘, 과거월이면 그 달 말일로 보정해 저장하며, 거래처가 매칭되지 않는 매출 행은 적재하지 않습니다. 당월을 대상으로 매일 실행됩니다. 아래에서 특정 월을 지정해 수동 재적재할 수 있습니다. (legacy Queueable_OroraDailySalesHistory_M1 + DailyErpSalesInfoTriggerHandler 동등)',
   'orora-monthly-sales-materialize-batch':
     'ORORA 영업시스템의 월별 마감 view(ABC/물류 마감실적)를 거래처 범위 단위로 조회하여 monthly_sales_history 테이블에 적재(upsert)합니다. 익월 초에 전월 마감분을 적재하며, 운영 목표/비고/마감확정 컬럼은 보존합니다. 아래에서 특정 월을 지정해 수동 재적재할 수 있습니다. (legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등)',
+  'erpOrder.retention':
+    '주문생성일이 보관주기(6개월)를 초과한 ERP 주문 헤더와 라인아이템을 영구 삭제(hard delete)합니다. FK 정합을 위해 자식 라인 → 부모 헤더 순으로 지우며, 아카이빙 없이 삭제만 수행하는 보존 정책 정리 배치입니다. (legacy Batch_ERPOrderDel + Batch_ERPOrderProductDel 동등)',
 };
 
 /** ORORA 월매출 수동 트리거 대상 jobName (해당 탭에서만 수동 적재 UI 노출). */
