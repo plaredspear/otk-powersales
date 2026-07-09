@@ -147,10 +147,10 @@ class ClaimRegisterForm {
 
   /// copyWith
   ///
-  /// 구매 금액은 선택 항목이라 명시적으로 `null` 을 넘겨 값을 지울 수 있어야 한다
-  /// (레거시 write.jsp: 빈 값 → 서버 null 저장). 일반 `?? this.x` 병합은
-  /// "미지정" 과 "명시적 null 삭제" 를 구분하지 못해 직전 값이 되살아나므로,
-  /// 센티널(_unset) 로 인자 전달 여부를 판별한다.
+  /// 선택(nullable) 항목은 명시적으로 `null` 을 넘겨 값을 지울 수 있어야 한다
+  /// (구매금액 삭제, 영수증 사진 삭제, 구매방법/요청사항 해제 등).
+  /// 일반 `?? this.x` 병합은 "미지정" 과 "명시적 null 삭제" 를 구분하지 못해
+  /// 직전 값이 되살아나므로, 센티널(_unset) 로 인자 전달 여부를 판별한다.
   ClaimRegisterForm copyWith({
     int? accountId,
     String? accountName,
@@ -167,11 +167,11 @@ class ClaimRegisterForm {
     File? defectPhoto,
     File? labelPhoto,
     Object? purchaseAmount = _unset,
-    String? purchaseMethodCode,
-    String? purchaseMethodName,
-    File? receiptPhoto,
-    String? requestTypeCode,
-    String? requestTypeName,
+    Object? purchaseMethodCode = _unset,
+    Object? purchaseMethodName = _unset,
+    Object? receiptPhoto = _unset,
+    Object? requestTypeCode = _unset,
+    Object? requestTypeName = _unset,
   }) {
     return ClaimRegisterForm(
       accountId: accountId ?? this.accountId,
@@ -191,11 +191,21 @@ class ClaimRegisterForm {
       purchaseAmount: identical(purchaseAmount, _unset)
           ? this.purchaseAmount
           : purchaseAmount as int?,
-      purchaseMethodCode: purchaseMethodCode ?? this.purchaseMethodCode,
-      purchaseMethodName: purchaseMethodName ?? this.purchaseMethodName,
-      receiptPhoto: receiptPhoto ?? this.receiptPhoto,
-      requestTypeCode: requestTypeCode ?? this.requestTypeCode,
-      requestTypeName: requestTypeName ?? this.requestTypeName,
+      purchaseMethodCode: identical(purchaseMethodCode, _unset)
+          ? this.purchaseMethodCode
+          : purchaseMethodCode as String?,
+      purchaseMethodName: identical(purchaseMethodName, _unset)
+          ? this.purchaseMethodName
+          : purchaseMethodName as String?,
+      receiptPhoto: identical(receiptPhoto, _unset)
+          ? this.receiptPhoto
+          : receiptPhoto as File?,
+      requestTypeCode: identical(requestTypeCode, _unset)
+          ? this.requestTypeCode
+          : requestTypeCode as String?,
+      requestTypeName: identical(requestTypeName, _unset)
+          ? this.requestTypeName
+          : requestTypeName as String?,
     );
   }
 
