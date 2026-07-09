@@ -194,16 +194,19 @@ class SuggestionService(
             val attachments = photos?.mapIndexedNotNull { index, file ->
                 if (file.isEmpty) return@mapIndexedNotNull null
                 val key = fileStorageService.uploadSuggestionPhoto(file, saved.id)
+                // 레거시 `ImageUtil.getFileSize()` 정합 — SF `S3ImageFileSize`/`UploadFile__c.Size__c`(Text) 는
+                // raw byte 정수가 아니라 포맷 문자열("200.0KB")을 저장한다. DB 저장값과 SF 전송값을 동일하게 맞춘다.
+                val formattedSize = formatFileSize(file.size)
                 val uploadFile = UploadFile(
                     name = file.originalFilename,
                     uniqueKey = key,
-                    fileSize = formatFileSize(file.size),
+                    fileSize = formattedSize,
                     parentType = UploadFileParentTypes.SUGGESTION,
                     parentId = saved.id,
                     isDeleted = false
                 )
                 val savedFile = uploadFileRepository.save(uploadFile)
-                photoMetas += SfPhotoMeta(uniqueKey = key, fileSize = file.size, fileName = file.originalFilename)
+                photoMetas += SfPhotoMeta(uniqueKey = key, fileSize = formattedSize, fileName = file.originalFilename)
                 SuggestionAttachment(
                     id = savedFile.id,
                     s3Url = composeS3Url(key),
@@ -316,19 +319,24 @@ class SuggestionService(
         photoMetas.getOrNull(0)?.let {
             put("S3ImageUniqueKey1", it.uniqueKey)
             put("S3ImageFileName1", it.fileName)
-            put("S3ImageFileSize1", it.fileSize.toString())
+            put("S3ImageFileSize1", it.fileSize)
         }
         photoMetas.getOrNull(1)?.let {
             put("S3ImageUniqueKey2", it.uniqueKey)
             put("S3ImageFileName2", it.fileName)
-            put("S3ImageFileSize2", it.fileSize.toString())
+            put("S3ImageFileSize2", it.fileSize)
         }
     }
 
-    /** SF 전송용 첨부 메타 — [Tx1] S3 업로드 결과(클레임의 Base64 와 달리 ProposalRegist 는 키 전송). */
+    /**
+     * SF 전송용 첨부 메타 — [Tx1] S3 업로드 결과(클레임의 Base64 와 달리 ProposalRegist 는 키 전송).
+     *
+     * [fileSize] 는 레거시 `ImageUtil.getFileSize()` 정합의 포맷 문자열("200.0KB"). SF `S3ImageFileSize`/
+     * `UploadFile__c.Size__c`(Text) 는 raw byte 정수가 아니라 이 포맷 문자열을 저장한다.
+     */
     internal data class SfPhotoMeta(
         val uniqueKey: String,
-        val fileSize: Long,
+        val fileSize: String,
         val fileName: String?,
     )
 
@@ -557,10 +565,32 @@ class SuggestionService(
     internal fun composeS3Url(key: String): String =
         storageService.getPresignedUrl(key, StorageConstants.CLAIM_PRESIGN_TTL_SECONDS)
 
-    internal fun formatFileSize(bytes: Long): String =
-        when {
-            bytes >= 1024 * 1024 -> "%.1fMB".format(bytes / (1024.0 * 1024.0))
-            bytes >= 1024 -> "%.1fKB".format(bytes / 1024.0)
-            else -> "${bytes}B"
+    /**
+     * 파일크기 포맷 — 레거시 Heroku `ImageUtil.getFileSize(long)` 완전 재현.
+     *
+     * SF `S3ImageFileSize`/`UploadFile__c.Size__c`(Text) 및 DB `upload_file.size` 에 저장되는 값의 정합을
+     * 위해 레거시와 동일한 포맷을 사용한다. 레거시 특성:
+     *  - `fileSize /= 1024` 를 `long` 으로 수행 → **정수 절삭**(예: 1536B → "1.0KB", "1.5KB" 아님)
+     *  - 단위 배열 `{Byte, KB, MB}` — GB 이상(인덱스 초과)이면 예외 경로로 "0.0 Byte"
+     *  - 0 byte 는 루프 미진입 → "0.0Byte"
+     *  - 숫자는 항상 `.0` 으로 끝남(double 로 승격된 정수), 단위 앞 공백 없음(정상 경로)
+     */
+    internal fun formatFileSize(bytes: Long): String {
+        val units = arrayOf("Byte", "KB", "MB")
+        return try {
+            var fileSize = bytes
+            var unitIndex = 0
+            var changeSize = 0.0
+            var x = 0
+            while (fileSize / 1024.0 > 0) {
+                unitIndex = x
+                changeSize = fileSize.toDouble()
+                x++
+                fileSize /= 1024
+            }
+            "$changeSize${units[unitIndex]}"
+        } catch (ex: Exception) {
+            "0.0 Byte"
         }
+    }
 }

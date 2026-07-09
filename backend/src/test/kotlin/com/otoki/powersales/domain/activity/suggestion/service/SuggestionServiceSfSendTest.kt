@@ -126,19 +126,20 @@ class SuggestionServiceSfSendTest {
         }
 
         @Test
-        fun `이미지는 S3 key-only 1·2 슬롯에 채우고 없는 슬롯은 생략`() {
+        fun `이미지는 S3 key-only 1·2 슬롯에 채우고 없는 슬롯은 생략 — fileSize 는 레거시 포맷 문자열`() {
             val map = service.buildSfApiMap(
                 pwrskey = 1L,
                 category = SuggestionCategory.LOGISTICS_CLAIM,
                 request = request(),
                 employeeCode = "E1",
                 photoMetas = listOf(
-                    SuggestionService.SfPhotoMeta(uniqueKey = "uniq-1", fileSize = 1024L, fileName = "a.jpg"),
+                    SuggestionService.SfPhotoMeta(uniqueKey = "uniq-1", fileSize = "200.0KB", fileName = "a.jpg"),
                 ),
             )
             assertThat(map).containsEntry("S3ImageUniqueKey1", "uniq-1")
             assertThat(map).containsEntry("S3ImageFileName1", "a.jpg")
-            assertThat(map).containsEntry("S3ImageFileSize1", "1024")
+            // 레거시 ImageUtil.getFileSize() 포맷 문자열 그대로 (raw byte 정수 아님).
+            assertThat(map).containsEntry("S3ImageFileSize1", "200.0KB")
             assertThat(map).doesNotContainKey("S3ImageUniqueKey2")
         }
     }
@@ -226,6 +227,47 @@ class SuggestionServiceSfSendTest {
             val result = service.invokeSf(emptyMap())
             assertThat(result.success).isFalse()
             assertThat(result.errorSummary).isEqualTo("timeout")
+        }
+    }
+
+    @Nested
+    @DisplayName("formatFileSize — 레거시 ImageUtil.getFileSize(long) 완전 재현")
+    inner class FormatFileSize {
+
+        @Test
+        fun `KB 는 정수 절삭 — 1536B 는 1_5KB 가 아니라 1_0KB`() {
+            // 레거시는 fileSize /= 1024 를 long 으로 수행해 소수부를 버린다(1536/1024=1).
+            assertThat(service.formatFileSize(1536L)).isEqualTo("1.0KB")
+        }
+
+        @Test
+        fun `정확히 나누어떨어지는 값은 그대로`() {
+            assertThat(service.formatFileSize(204800L)).isEqualTo("200.0KB") // 200KB
+            assertThat(service.formatFileSize(1024L)).isEqualTo("1.0KB")
+        }
+
+        @Test
+        fun `1024 미만은 Byte 단위 (숫자는 _0 접미, 단위 앞 공백 없음)`() {
+            assertThat(service.formatFileSize(512L)).isEqualTo("512.0Byte")
+        }
+
+        @Test
+        fun `0 byte 는 루프 미진입 — 0_0Byte`() {
+            assertThat(service.formatFileSize(0L)).isEqualTo("0.0Byte")
+        }
+
+        @Test
+        fun `MB 단위 — 정수 절삭 유지`() {
+            // 2 * 1024 * 1024 = 2097152 → 2회 나눗셈 후 2.0, 단위 MB.
+            assertThat(service.formatFileSize(2L * 1024 * 1024)).isEqualTo("2.0MB")
+            // 1.5MB 상당(1572864) → 1024 로 두 번 절삭: 1572864→1536→1 → "1.0MB"(레거시 정수절삭).
+            assertThat(service.formatFileSize(1572864L)).isEqualTo("1.0MB")
+        }
+
+        @Test
+        fun `GB 이상은 단위 배열 초과 예외 경로 — 0_0 Byte (공백 있음)`() {
+            // 1GB = 1073741824 → Byte/KB/MB 를 넘어 index 3 접근 시 ArrayIndexOutOfBounds → catch.
+            assertThat(service.formatFileSize(1024L * 1024 * 1024)).isEqualTo("0.0 Byte")
         }
     }
 }
