@@ -159,6 +159,47 @@ class ClaimSfDispatchServiceTest {
     }
 
     @Test
+    @DisplayName("이미지 확장자 정합 — 무확장자·비이미지 확장자 파일명이면 image/jpeg 기준 jpg 로 정규화")
+    fun dispatchNormalizesImageExtension() {
+        val claim = claimWith(ClaimStatus.SF_PENDING)
+        every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
+        every { claimRepository.findById(claimId) } returns Optional.of(claim)
+        // iOS(Simulator) image_picker 임시 파일: 확장자 없음(defect) / 비이미지 확장자 .tmp(part)
+        every {
+            uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.CLAIM, claimId)
+        } returns listOf(
+            UploadFile(
+                name = "image_picker_5A3F",
+                uniqueKey = "uploads/claim/defect",
+                parentType = UploadFileParentTypes.CLAIM,
+                parentId = claimId,
+                uploadKbn = UploadFileKbnTypes.CLAIM_DEFECT,
+                isDeleted = false,
+            ),
+            UploadFile(
+                name = "image_picker_9C2D.tmp",
+                uniqueKey = "uploads/claim/part",
+                parentType = UploadFileParentTypes.CLAIM,
+                parentId = claimId,
+                uploadKbn = UploadFileKbnTypes.CLAIM_PART,
+                isDeleted = false,
+            ),
+        )
+        val apiMapSlot = slot<Map<String, Any?>>()
+        every { sfOutboundClient.callApi("/ClaimRegist", capture(apiMapSlot)) } returns
+            SfApiResponse(resultCode = "200", resultMsg = "OK", rawBody = "{}")
+
+        service.dispatch(claimId, pendingAllowed, onStatusMismatch = { error("호출되면 안 됨") })
+
+        // SF FileExtensionGuard 허용 확장자로 정규화 — 빈 확장자/`tmp` 가 그대로 나가면 등록 거부됨.
+        assertThat(apiMapSlot.captured["ClaimImageFileExtension"]).isEqualTo("jpg")
+        assertThat(apiMapSlot.captured["PartImageFileExtension"]).isEqualTo("jpg")
+        // 파일명(확장자 제외 stem) 은 원본 유지
+        assertThat(apiMapSlot.captured["ClaimImageFileName"]).isEqualTo("image_picker_5A3F")
+        assertThat(apiMapSlot.captured["PartImageFileName"]).isEqualTo("image_picker_9C2D")
+    }
+
+    @Test
     @DisplayName("재전송 경로 channel 유지 - mobile(CAP) 재전송 시 payload Channel=CAP")
     fun dispatchPreservesOriginalChannel() {
         val claim = claimWith(ClaimStatus.SEND_FAILED, channel = ClaimChannel.CAP)

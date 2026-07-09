@@ -215,19 +215,38 @@ class ClaimSfOutboundService(
 
         map["ClaimImageBuffer"] = Base64.getEncoder().encodeToString(claimBytes)
         map["ClaimImageFileName"] = splitFilename(claimFilename).first
-        map["ClaimImageFileExtension"] = splitFilename(claimFilename).second.ifBlank { extFromContentType(claimContentType) }
+        map["ClaimImageFileExtension"] = resolveImageExtension(claimFilename, claimContentType)
 
         map["PartImageBuffer"] = Base64.getEncoder().encodeToString(partBytes)
         map["PartImageFileName"] = splitFilename(partFilename).first
-        map["PartImageFileExtension"] = splitFilename(partFilename).second.ifBlank { extFromContentType(partContentType) }
+        map["PartImageFileExtension"] = resolveImageExtension(partFilename, partContentType)
 
         map["ReceiptImageBuffer"] = receiptBytes?.let { Base64.getEncoder().encodeToString(it) } ?: ""
         map["ReceiptImageFileName"] = receiptFilename?.let { splitFilename(it).first } ?: ""
-        map["ReceiptImageFileExtension"] = receiptFilename?.let { splitFilename(it).second }
-            ?: receiptContentType?.let { extFromContentType(it) }
-            ?: ""
+        map["ReceiptImageFileExtension"] = receiptFilename?.let { resolveImageExtension(it, receiptContentType) } ?: ""
 
         return map
+    }
+
+    /**
+     * SF `ContentVersion` 확장자 결정 — SF `FileExtensionGuard` 의 허용 확장자 정합.
+     *
+     * SF Apex `IF_REST_MOBILE_ClaimRegist` 는 `PathOnClient = 파일명 + '.' + 확장자` 로 조립하고,
+     * `ContentVersionTrigger` → `FileExtensionGuard` 가 이 확장자를 허용목록(File_Extension_Policy__mdt)
+     * 과 대조해 거부하면 `FIELD_CUSTOM_VALIDATION_EXCEPTION` 으로 전 건이 SEND_FAILED 가 된다.
+     *
+     * iOS(Simulator 포함) image_picker 임시 파일은 확장자가 없거나(`...tmp`) 비이미지 확장자로 넘어와
+     * 파일명만 믿으면 빈값/`tmp` 가 그대로 전송돼 차단된다. 클레임 첨부는 항상 이미지이므로:
+     *   1) 파일명 확장자가 허용 이미지 확장자면 그대로 사용,
+     *   2) 아니면 contentType 기반 확장자로 대체,
+     *   3) 그래도 미확정이면 `jpg` 로 안전 fallback (backend 는 image/jpeg 로 인코딩·전송한다).
+     */
+    private fun resolveImageExtension(filename: String, contentType: String?): String {
+        val fromName = splitFilename(filename).second.lowercase()
+        if (fromName in ALLOWED_IMAGE_EXTENSIONS) return fromName
+        val fromContentType = contentType?.let { extFromContentType(it) }.orEmpty()
+        if (fromContentType.isNotBlank()) return fromContentType
+        return DEFAULT_IMAGE_EXTENSION
     }
 
     private fun splitFilename(filename: String): Pair<String, String> {
@@ -239,10 +258,12 @@ class ClaimSfOutboundService(
         }
     }
 
-    private fun extFromContentType(contentType: String): String = when (contentType.lowercase()) {
+    private fun extFromContentType(contentType: String): String = when (contentType.lowercase().substringBefore(';').trim()) {
         "image/jpeg", "image/jpg" -> "jpg"
         "image/png" -> "png"
         "image/gif" -> "gif"
+        "image/heic", "image/heif" -> "heic"
+        "image/tiff" -> "tif"
         else -> ""
     }
 
@@ -280,5 +301,13 @@ class ClaimSfOutboundService(
         // `Date.valueOf(String)` 으로 파싱한다 — Apex `Date.valueOf` 는 'YYYY-MM-DD' (ISO) 만 받으므로
         // 'yyyyMMdd' 를 보내면 Exception → 전송 실패한다. 레거시 Heroku 도 ISO 포맷으로 전송했다.
         private val SF_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+        // SF `FileExtensionGuard` 허용 확장자(File_Extension_Policy__mdt) 중 클레임 첨부에 해당하는 이미지
+        // 확장자. 파일명에서 뽑은 확장자가 이 집합이면 그대로 사용, 아니면 contentType 기반으로 정규화한다.
+        private val ALLOWED_IMAGE_EXTENSIONS = setOf("jpg", "jpeg", "png", "gif", "heic", "jfif", "tif")
+
+        // 확장자를 파일명·contentType 어느 쪽으로도 확정하지 못했을 때의 안전 fallback.
+        // backend 는 이미지를 image/jpeg 로 인코딩·전송하므로 jpg 가 실제 바이트와 정합한다.
+        private const val DEFAULT_IMAGE_EXTENSION = "jpg"
     }
 }
