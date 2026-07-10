@@ -57,7 +57,6 @@ class OrderRequestCreateServiceTest {
     private val inventorySearchClient: SapInventorySearchClient = mockk()
     private val loanInquiryClient: SapLoanInquiryClient = mockk()
     private val orderRequestRegisterSender: OrderRequestRegisterSender = mockk()
-    private val orderDraftService: OrderDraftService = mockk()
     private val orderDeadlineCalculator = OrderDeadlineCalculator()
     private val entityManager: EntityManager = mockk()
     private val nativeQuery: Query = mockk()
@@ -71,7 +70,6 @@ class OrderRequestCreateServiceTest {
         inventorySearchClient,
         loanInquiryClient,
         orderRequestRegisterSender,
-        orderDraftService,
         orderDeadlineCalculator,
         // 프로파일 미설정 = 차단 안 됨 (dev/local 정상 경로)
         OrderRegistrationBlockGuard(MockEnvironment()),
@@ -88,7 +86,6 @@ class OrderRequestCreateServiceTest {
         every { entityManager.createNativeQuery(any<String>()) } returns nativeQuery
         every { nativeQuery.singleResult } returns 42L
         every { orderRequestRepository.findByClientRequestId(any()) } returns null
-        every { orderDraftService.deleteByEmployeeId(any()) } returns Unit
         // 기본: 요청된 productCode 전부 제품 마스터 존재 (SAP 호출 전 마스터 대조 가드 통과).
         // 미존재 거부를 검증하는 테스트는 개별 stub 으로 덮어쓴다.
         every { productRepository.findByProductCodeIn(any()) } answers {

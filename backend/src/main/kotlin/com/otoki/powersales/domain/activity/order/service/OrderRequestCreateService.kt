@@ -59,7 +59,6 @@ class OrderRequestCreateService(
     private val inventorySearchClient: SapInventorySearchClient,
     private val loanInquiryClient: SapLoanInquiryClient,
     private val orderRequestRegisterSender: OrderRequestRegisterSender,
-    private val orderDraftService: OrderDraftService,
     private val orderDeadlineCalculator: OrderDeadlineCalculator,
     private val orderRegistrationBlockGuard: OrderRegistrationBlockGuard,
     private val entityManager: EntityManager,
@@ -184,8 +183,10 @@ class OrderRequestCreateService(
         //      OrderRequestRegisterDispatcher → SapOutboxBatchService.processOne 가 수행.
         eventPublisher.publishEvent(OrderRequestRegisteredEvent(outbox.id))
 
-        // 8. 임시저장 자동 삭제 (Spec #596 Q4 — 레거시 버그 보강).
-        orderDraftService.deleteByEmployeeId(userId)
+        // 주문 등록 성공 후에도 임시저장은 유지한다 (레거시 Heroku reqOrder 정합 — 현업 요청 2026-07-10).
+        // 레거시는 등록 성공 분기에서 tmp_order 를 삭제하지 않아, 다음 주문서 진입 시 직전 임시저장이
+        // 그대로 복원됐다. 임시저장 정리는 사용자의 명시적 삭제/덮어쓰기 시점에만 이뤄진다.
+        // (Spec #596 Q4 자동 삭제는 이 정합 요청으로 철회 — 중복 주문 방지 필요 시 재검토.)
 
         return OrderRequestCreateResponse.from(savedHeader)
     }
