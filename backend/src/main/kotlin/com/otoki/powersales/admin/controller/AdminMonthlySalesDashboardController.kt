@@ -38,14 +38,15 @@ class AdminMonthlySalesDashboardController(
         @RequestParam costCenterCodes: List<String>,
         @RequestParam(required = false) customerKeyword: String?,
         @RequestParam(required = false) accountGroup: String?,
-        @RequestParam(required = false) distributionKeyword: String?,
-        @RequestParam(required = false) accountTypeKeyword: String?,
+        @RequestParam(required = false) distributionChannels: List<String>?,
+        @RequestParam(required = false) accountTypes: List<String>?,
         @RequestParam(required = false) targetRegistration: String?,
         @RequestParam(required = false) deploymentFilter: String?,
     ): ResponseEntity<ApiResponse<MonthlySalesDashboardSummaryResponse>> {
         val response = queryService.getSummary(
             scope, year, month, costCenterCodes, customerKeyword, accountGroup,
-            distributionKeyword, accountTypeKeyword, targetRegistration, deploymentFilter,
+            distributionChannels ?: emptyList(), accountTypes ?: emptyList(),
+            targetRegistration, deploymentFilter,
         )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
@@ -61,8 +62,8 @@ class AdminMonthlySalesDashboardController(
         @RequestParam(required = false) accountIds: List<Long>?,
         @RequestParam(required = false) accountGroup: String?,
         @RequestParam(required = false) customerKeyword: String?,
-        @RequestParam(required = false) distributionKeyword: String?,
-        @RequestParam(required = false) accountTypeKeyword: String?,
+        @RequestParam(required = false) distributionChannels: List<String>?,
+        @RequestParam(required = false) accountTypes: List<String>?,
         @RequestParam(required = false) targetRegistration: String?,
         @RequestParam(required = false) deploymentFilter: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
@@ -73,7 +74,8 @@ class AdminMonthlySalesDashboardController(
             year = year, month = month, costCenterCodes = costCenterCodes,
             accountIds = accountIds ?: emptyList(),
             accountGroup = accountGroup, customerKeyword = customerKeyword,
-            distributionKeyword = distributionKeyword, accountTypeKeyword = accountTypeKeyword,
+            distributionChannels = distributionChannels ?: emptyList(),
+            accountTypes = accountTypes ?: emptyList(),
             targetRegistration = targetRegistration, deploymentFilter = deploymentFilter,
             page = page, size = size, sort = sort,
         )
@@ -92,8 +94,8 @@ class AdminMonthlySalesDashboardController(
         @RequestParam(required = false) accountIds: List<Long>?,
         @RequestParam(required = false) accountGroup: String?,
         @RequestParam(required = false) customerKeyword: String?,
-        @RequestParam(required = false) distributionKeyword: String?,
-        @RequestParam(required = false) accountTypeKeyword: String?,
+        @RequestParam(required = false) distributionChannels: List<String>?,
+        @RequestParam(required = false) accountTypes: List<String>?,
         @RequestParam(required = false) targetRegistration: String?,
         @RequestParam(required = false) deploymentFilter: String?,
         @RequestParam(required = false) sort: String?,
@@ -102,7 +104,8 @@ class AdminMonthlySalesDashboardController(
             year = year, month = month, costCenterCodes = costCenterCodes,
             accountIds = accountIds ?: emptyList(),
             accountGroup = accountGroup, customerKeyword = customerKeyword,
-            distributionKeyword = distributionKeyword, accountTypeKeyword = accountTypeKeyword,
+            distributionChannels = distributionChannels ?: emptyList(),
+            accountTypes = accountTypes ?: emptyList(),
             targetRegistration = targetRegistration, deploymentFilter = deploymentFilter,
             page = 0, size = Int.MAX_VALUE, sort = sort,
         )

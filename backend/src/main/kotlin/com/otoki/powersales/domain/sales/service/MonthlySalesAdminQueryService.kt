@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.sales.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
@@ -50,7 +49,6 @@ import kotlin.collections.get
 @Transactional(readOnly = true)
 class MonthlySalesAdminQueryService(
     private val accountRepository: AccountRepository,
-    private val accountCategoryMasterRepository: AccountCategoryMasterRepository,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
     private val salesProgressRateMasterRepository: SalesProgressRateMasterRepository,
     private val mfeisRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
@@ -73,14 +71,14 @@ class MonthlySalesAdminQueryService(
         costCenterCodes: List<String>,
         customerKeyword: String?,
         accountGroup: String?,
-        distributionKeyword: String? = null,
-        accountTypeKeyword: String? = null,
+        distributionChannels: List<String> = emptyList(),
+        accountTypes: List<String> = emptyList(),
         targetRegistration: String? = null,
         deploymentFilter: String? = null,
     ): MonthlySalesDashboardSummaryResponse {
         validateParams(year, month, costCenterCodes)
         val effectiveCodes = applyScope(scope, costCenterCodes)
-        val candidateAccounts = findAccounts(effectiveCodes, accountGroup, customerKeyword, distributionKeyword, accountTypeKeyword)
+        val candidateAccounts = findAccounts(effectiveCodes, accountGroup, customerKeyword, distributionChannels, accountTypes)
 
         // 목표등록 구분 필터 — 목표 map(row 존재유무) 조회 후 accounts 필터 (목록/추이와 정합).
         val candidateIds = candidateAccounts.map { it.id }
@@ -261,7 +259,7 @@ class MonthlySalesAdminQueryService(
     private fun buildListItems(effectiveCodes: List<String>, request: MonthlySalesDashboardListRequest): List<MonthlySalesDashboardListItem> {
         val accounts = findAccounts(
             effectiveCodes, request.accountGroup, request.customerKeyword,
-            request.distributionKeyword, request.accountTypeKeyword,
+            request.distributionChannels, request.accountTypes,
         )
             .let { all ->
                 if (request.accountIds.isEmpty()) all else all.filter { it.id in request.accountIds }
@@ -408,8 +406,8 @@ class MonthlySalesAdminQueryService(
         effectiveCodes: List<String>,
         accountGroup: String?,
         customerKeyword: String?,
-        distributionKeyword: String? = null,
-        accountTypeKeyword: String? = null,
+        distributionChannels: List<String> = emptyList(),
+        accountTypes: List<String> = emptyList(),
     ): List<Account> {
         val candidates = if (accountGroup != null) {
             effectiveCodes.flatMap { code ->
@@ -425,28 +423,16 @@ class MonthlySalesAdminQueryService(
 
         // 거래처 통합 검색어 — 거래처명 OR 거래처코드(externalKey) 부분일치 (행사마스터 accountName 정합).
         val customerKw = customerKeyword?.trim()?.takeIf { it.isNotEmpty() }
-        // 유통형태 검색어 — 거래처상태코드 부분일치 OR 거래처유형명(accountType) IN
-        // (검색어 부분일치 + useSearch 인 거래처유형마스터 Name). 통합일정 정합.
-        val distributionKw = distributionKeyword?.trim()?.takeIf { it.isNotEmpty() }
-        val distributionTypeNames = distributionKw?.let { kw ->
-            accountCategoryMasterRepository
-                .findByNameContainingIgnoreCaseAndUseSearchTrueAndIsDeletedNot(kw, true)
-                .mapNotNull { it.name }
-                .toSet()
-        }
-        // 거래처유형 검색어 — ABC유형코드 OR ABC유형 부분일치. 통합일정 정합.
-        val accountTypeKw = accountTypeKeyword?.trim()?.takeIf { it.isNotEmpty() }
 
         return candidates.filter { account ->
             val customerMatch = customerKw == null ||
                 account.name?.contains(customerKw, ignoreCase = true) == true ||
                 account.externalKey?.contains(customerKw, ignoreCase = true) == true
-            val distributionMatch = distributionKw == null ||
-                account.accountStatusCode?.contains(distributionKw, ignoreCase = true) == true ||
-                (account.accountType != null && distributionTypeNames?.contains(account.accountType) == true)
-            val accountTypeMatch = accountTypeKw == null ||
-                account.abcTypeCode?.contains(accountTypeKw, ignoreCase = true) == true ||
-                account.abcType?.contains(accountTypeKw, ignoreCase = true) == true
+            // 유통형태(거래처상태코드+거래처타입) / 거래처유형(ABC유형) 라벨 다중 정확일치 — POS매출 정합.
+            val distributionMatch = distributionChannels.isEmpty() ||
+                account.distributionChannelLabel() in distributionChannels
+            val accountTypeMatch = accountTypes.isEmpty() ||
+                account.abcTypeLabel() in accountTypes
             customerMatch && distributionMatch && accountTypeMatch
         }
     }

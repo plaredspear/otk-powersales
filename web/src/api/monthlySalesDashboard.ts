@@ -111,10 +111,10 @@ export interface MonthlySalesDashboardListRequest {
   accountGroup?: string;
   /** 거래처명 OR 거래처코드(externalKey) 통합 부분일치 (행사마스터 정합). */
   customerKeyword?: string;
-  /** 유통형태 — 거래처상태코드 부분일치 OR 거래처유형명 매칭 (통합일정 정합). */
-  distributionKeyword?: string;
-  /** 거래처유형 — ABC유형코드 OR ABC유형 부분일치 (통합일정 정합). */
-  accountTypeKeyword?: string;
+  /** 유통형태 라벨 (예 "01 대형마트(3대)") 다중 정확일치 — POS매출 정합. */
+  distributionChannels?: string[];
+  /** 거래처유형(ABC유형) 라벨 (예 "6111 이마트") 다중 정확일치 — POS매출 정합. */
+  accountTypes?: string[];
   /** 목표등록 구분 — 'registered'(목표 row 존재) | 'unregistered'(미존재) | undefined(전체). */
   targetRegistration?: 'registered' | 'unregistered';
   /** 근무등록 구분 — 'deployed'(여사원 근무등록 거래처) | 'undeployed'(미등록) | undefined(전체). */
@@ -139,8 +139,8 @@ export async function fetchSummary(
   costCenterCodes: string[],
   customerKeyword?: string,
   accountGroup?: string,
-  distributionKeyword?: string,
-  accountTypeKeyword?: string,
+  distributionChannels?: string[],
+  accountTypes?: string[],
   targetRegistration?: 'registered' | 'unregistered',
   deploymentFilter?: 'deployed' | 'undeployed',
 ): Promise<MonthlySalesDashboardSummary> {
@@ -151,8 +151,12 @@ export async function fetchSummary(
       costCenterCodes: costCenterCodes.join(','),
       ...(customerKeyword ? { customerKeyword } : {}),
       ...(accountGroup ? { accountGroup } : {}),
-      ...(distributionKeyword ? { distributionKeyword } : {}),
-      ...(accountTypeKeyword ? { accountTypeKeyword } : {}),
+      ...(distributionChannels && distributionChannels.length > 0
+        ? { distributionChannels: distributionChannels.join(',') }
+        : {}),
+      ...(accountTypes && accountTypes.length > 0
+        ? { accountTypes: accountTypes.join(',') }
+        : {}),
       ...(targetRegistration ? { targetRegistration } : {}),
       ...(deploymentFilter ? { deploymentFilter } : {}),
     },
@@ -177,8 +181,12 @@ export async function fetchList(
         : {}),
       ...(request.accountGroup ? { accountGroup: request.accountGroup } : {}),
       ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
-      ...(request.distributionKeyword ? { distributionKeyword: request.distributionKeyword } : {}),
-      ...(request.accountTypeKeyword ? { accountTypeKeyword: request.accountTypeKeyword } : {}),
+      ...(request.distributionChannels && request.distributionChannels.length > 0
+        ? { distributionChannels: request.distributionChannels.join(',') }
+        : {}),
+      ...(request.accountTypes && request.accountTypes.length > 0
+        ? { accountTypes: request.accountTypes.join(',') }
+        : {}),
       ...(request.targetRegistration ? { targetRegistration: request.targetRegistration } : {}),
       ...(request.deploymentFilter ? { deploymentFilter: request.deploymentFilter } : {}),
       ...(request.page !== undefined ? { page: request.page } : {}),
@@ -201,8 +209,12 @@ export function exportListParams(request: MonthlySalesDashboardListRequest): Rec
       : {}),
     ...(request.accountGroup ? { accountGroup: request.accountGroup } : {}),
     ...(request.customerKeyword ? { customerKeyword: request.customerKeyword } : {}),
-    ...(request.distributionKeyword ? { distributionKeyword: request.distributionKeyword } : {}),
-    ...(request.accountTypeKeyword ? { accountTypeKeyword: request.accountTypeKeyword } : {}),
+    ...(request.distributionChannels && request.distributionChannels.length > 0
+      ? { distributionChannels: request.distributionChannels.join(',') }
+      : {}),
+    ...(request.accountTypes && request.accountTypes.length > 0
+      ? { accountTypes: request.accountTypes.join(',') }
+      : {}),
     ...(request.targetRegistration ? { targetRegistration: request.targetRegistration } : {}),
     ...(request.deploymentFilter ? { deploymentFilter: request.deploymentFilter } : {}),
     ...(request.sort ? { sort: request.sort } : {}),

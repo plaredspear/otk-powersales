@@ -18,6 +18,7 @@ import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useMonthlySalesBranches } from '@/hooks/sales/useMonthlySalesBranches';
+import { fetchFilterOptions } from '@/api/electronicSalesDashboard';
 import MonthlyTrendChart from '@/components/charts/MonthlyTrendChart';
 import MonthlySalesDashboardDetailModal from './MonthlySalesDashboardDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
@@ -30,8 +31,8 @@ interface QueryParams {
   month: number;
   codes: string[];
   customerKeyword?: string;
-  distributionKeyword?: string;
-  accountTypeKeyword?: string;
+  distributionChannels?: string[];
+  accountTypes?: string[];
   targetRegistration?: 'registered' | 'unregistered';
   deploymentFilter?: 'deployed' | 'undeployed';
 }
@@ -74,9 +75,50 @@ export default function MonthlySalesDashboardPage() {
   // 월 매출(물류배부) 전용 지점 셀렉터 — 대시보드와 동일한 지점 기준(전사 권한자 34개 화이트리스트).
   const { data: branches = [] } = useMonthlySalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
-  const [distributionKeyword, setDistributionKeyword] = useState<string>('');
-  const [accountTypeKeyword, setAccountTypeKeyword] = useState<string>('');
+  const [distributionChannels, setDistributionChannels] = useState<string[]>([]);
+  const [accountTypes, setAccountTypes] = useState<string[]>([]);
   const [targetRegistration, setTargetRegistration] = useState<'registered' | 'unregistered' | undefined>(undefined);
+
+  // 유통형태/거래처유형 옵션 — 메인 DB distinct, 전산실적과 동일 endpoint 재사용 (동일 권한).
+  const filterOptionsQuery = useQuery({
+    queryKey: ['electronicSalesDashboard', 'filter-options'],
+    queryFn: fetchFilterOptions,
+    staleTime: 10 * 60 * 1000,
+  });
+  const filterOptions = filterOptionsQuery.data;
+  // 옵션 배열은 useMemo 로 identity 를 고정한다 (다중선택 Select 값 튐 방지).
+  const distributionChannelOptions = useMemo(
+    () => (filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v })),
+    [filterOptions],
+  );
+  // 거래처유형 옵션 — 유통형태 미선택 시 전체, 선택 시 선택된 유통형태들의 종속 거래처유형 합집합.
+  const accountTypeOptions = useMemo(() => {
+    if (!filterOptions) return [];
+    let labels: string[];
+    if (distributionChannels.length === 0) {
+      labels = filterOptions.accountTypes;
+    } else {
+      const union = new Set<string>();
+      distributionChannels.forEach((dist) => {
+        (filterOptions.dependentAccountTypes[dist] ?? []).forEach((t) => union.add(t));
+      });
+      labels = filterOptions.accountTypes.filter((t) => union.has(t));
+    }
+    return labels.map((v) => ({ value: v, label: v }));
+  }, [filterOptions, distributionChannels]);
+
+  // 유통형태 변경 시, 새 유통형태 집합의 종속 거래처유형에 속하지 않는 거래처유형 선택값 정리 (전체 비우면 유지).
+  const handleDistributionChange = (next: string[]) => {
+    setDistributionChannels(next);
+    if (accountTypes.length > 0 && next.length > 0 && filterOptions) {
+      const allowed = new Set<string>();
+      next.forEach((dist) => {
+        (filterOptions.dependentAccountTypes[dist] ?? []).forEach((t) => allowed.add(t));
+      });
+      const kept = accountTypes.filter((t) => allowed.has(t));
+      if (kept.length !== accountTypes.length) setAccountTypes(kept);
+    }
+  };
   // 근무등록 필터 — 첫 진입 기본값 '등록'(deployed): 조회월에 여사원이 근무등록한 거래처만.
   // URL deploymentFilter 파라미터가 있으면 그 값을 초기값으로 반영.
   const [deploymentFilter, setDeploymentFilter] = useState<'deployed' | 'undeployed' | undefined>(initDeployment);
@@ -92,7 +134,7 @@ export default function MonthlySalesDashboardPage() {
       const p = queryParams!;
       return fetchSummary(
         p.year, p.month, p.codes, p.customerKeyword, undefined,
-        p.distributionKeyword, p.accountTypeKeyword, p.targetRegistration, p.deploymentFilter,
+        p.distributionChannels, p.accountTypes, p.targetRegistration, p.deploymentFilter,
       );
     },
     enabled: queryParams != null,
@@ -107,8 +149,8 @@ export default function MonthlySalesDashboardPage() {
         month: p.month,
         costCenterCodes: p.codes,
         customerKeyword: p.customerKeyword,
-        distributionKeyword: p.distributionKeyword,
-        accountTypeKeyword: p.accountTypeKeyword,
+        distributionChannels: p.distributionChannels,
+        accountTypes: p.accountTypes,
         targetRegistration: p.targetRegistration,
         deploymentFilter: p.deploymentFilter,
         page,
@@ -131,8 +173,8 @@ export default function MonthlySalesDashboardPage() {
       month,
       codes: selectedCodes,
       customerKeyword: customerKeyword.trim() || undefined,
-      distributionKeyword: distributionKeyword.trim() || undefined,
-      accountTypeKeyword: accountTypeKeyword.trim() || undefined,
+      distributionChannels,
+      accountTypes,
       targetRegistration,
       deploymentFilter,
     });
@@ -154,8 +196,8 @@ export default function MonthlySalesDashboardPage() {
         month,
         codes: selectedCodes,
         customerKeyword: customerKeyword.trim() || undefined,
-        distributionKeyword: distributionKeyword.trim() || undefined,
-        accountTypeKeyword: accountTypeKeyword.trim() || undefined,
+        distributionChannels,
+        accountTypes,
         targetRegistration,
         deploymentFilter,
       });
@@ -178,8 +220,8 @@ export default function MonthlySalesDashboardPage() {
           month: queryParams.month,
           costCenterCodes: queryParams.codes,
           customerKeyword: queryParams.customerKeyword,
-          distributionKeyword: queryParams.distributionKeyword,
-          accountTypeKeyword: queryParams.accountTypeKeyword,
+          distributionChannels: queryParams.distributionChannels,
+          accountTypes: queryParams.accountTypes,
           targetRegistration: queryParams.targetRegistration,
           deploymentFilter: queryParams.deploymentFilter,
           sort,
@@ -364,26 +406,40 @@ export default function MonthlySalesDashboardPage() {
             <div>
               <span>유통형태:</span>
               <div style={{ marginTop: 4 }}>
-                <Input
-                  placeholder="유통형태 (예: 슈퍼)"
-                  value={distributionKeyword}
-                  onChange={(e) => setDistributionKeyword(e.target.value)}
-                  onPressEnter={handleSearch}
-                  style={{ width: 160 }}
+                <Select
+                  mode="multiple"
+                  value={distributionChannels}
+                  onChange={handleDistributionChange}
+                  options={distributionChannelOptions}
+                  placeholder="전체"
+                  // 폭 고정 — 가변 폭 + responsive 조합의 태그 접힘↔펼침 레이아웃 진동 방지.
+                  style={{ width: 220 }}
+                  maxTagCount="responsive"
                   allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  loading={filterOptionsQuery.isLoading}
+                  notFoundContent="항목 없음"
                 />
               </div>
             </div>
             <div>
               <span>거래처유형:</span>
               <div style={{ marginTop: 4 }}>
-                <Input
-                  placeholder="거래처유형 (예: 이마트)"
-                  value={accountTypeKeyword}
-                  onChange={(e) => setAccountTypeKeyword(e.target.value)}
-                  onPressEnter={handleSearch}
-                  style={{ width: 160 }}
+                <Select
+                  mode="multiple"
+                  value={accountTypes}
+                  onChange={setAccountTypes}
+                  options={accountTypeOptions}
+                  placeholder="전체"
+                  // 폭 고정 — 유통형태 Select 와 동일 이유.
+                  style={{ width: 220 }}
+                  maxTagCount="responsive"
                   allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  loading={filterOptionsQuery.isLoading}
+                  notFoundContent="항목 없음"
                 />
               </div>
             </div>
@@ -473,8 +529,10 @@ export default function MonthlySalesDashboardPage() {
           <Text type="secondary">
             {queryParams.year}-{String(queryParams.month).padStart(2, '0')} · {queryParams.codes.length}개 지점
             {queryParams.customerKeyword && ` · 거래처: ${queryParams.customerKeyword}`}
-            {queryParams.distributionKeyword && ` · 유통형태: ${queryParams.distributionKeyword}`}
-            {queryParams.accountTypeKeyword && ` · 거래처유형: ${queryParams.accountTypeKeyword}`}
+            {queryParams.distributionChannels && queryParams.distributionChannels.length > 0 &&
+              ` · 유통형태: ${queryParams.distributionChannels.join(', ')}`}
+            {queryParams.accountTypes && queryParams.accountTypes.length > 0 &&
+              ` · 거래처유형: ${queryParams.accountTypes.join(', ')}`}
             {queryParams.targetRegistration &&
               ` · 목표등록: ${queryParams.targetRegistration === 'registered' ? '등록' : '미등록'}`}
           </Text>
