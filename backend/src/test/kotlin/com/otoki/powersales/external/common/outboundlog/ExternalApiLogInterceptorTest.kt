@@ -3,6 +3,7 @@ package com.otoki.powersales.external.common.outboundlog
 import com.otoki.powersales.external.common.outboundlog.entity.ExternalApiLog
 import com.otoki.powersales.external.common.outboundlog.service.ExternalApiLogService
 import com.otoki.powersales.external.sf.outbound.SfResponseCountExtractor
+import com.otoki.powersales.external.sf.outbound.SfResponseSuccessExtractor
 import tools.jackson.databind.json.JsonMapper
 import io.mockk.every
 import io.mockk.mockk
@@ -370,9 +371,131 @@ class ExternalApiLogInterceptorTest {
         assertThat(responseCountSlot.captured).isNull()
     }
 
+    /** success resolver 를 주입한 인터셉터를 단 RestClient + MockRestServiceServer 를 만든다. */
+    private fun buildClientWithSuccessResolver(
+        resolver: (Int?, String?) -> OutboundSuccessVerdict?,
+    ): Pair<RestClient, MockRestServiceServer> {
+        val builder = RestClient.builder()
+            .baseUrl("http://api-mock")
+            .requestInterceptor(
+                ExternalApiLogInterceptor(
+                    target = ExternalApiTarget.SF,
+                    logService = logService,
+                    captureBody = false,
+                    responseSuccessResolver = resolver,
+                )
+            )
+        val server = MockRestServiceServer.bindTo(builder).build()
+        return builder.build() to server
+    }
+
+    @Test
+    @DisplayName("success resolver 주입 — HTTP 200 이어도 body 판정이 실패면 success=false + errorDetail 에 사유 적재")
+    fun successResolverOverridesHttp200ToFailure() {
+        val (restClient, server) = buildClientWithSuccessResolver(sfSuccessResolver())
+        // HTTP 200 이지만 SF RESULT_CODE 가 성공(200) 이 아님 → 도메인 실패
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/ClaimRegist"))
+            .andRespond(withSuccess("""{"RESULT_CODE":"500","RESULT_MSG":"필수값 누락"}""", MediaType.APPLICATION_JSON))
+
+        val statusSlot = slot<Int?>()
+        val successSlot = slot<Boolean>()
+        val errorDetailSlot = slot<String?>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = captureNullable(statusSlot),
+                success = capture(successSlot),
+                durationMs = any(),
+                errorDetail = captureNullable(errorDetailSlot),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = any(),
+                responseCount = any()            )
+        } returns mockk<ExternalApiLog>()
+
+        restClient.post().uri("/ClaimRegist").body(mapOf("k" to "v")).retrieve().body(String::class.java)
+
+        assertThat(statusSlot.captured).isEqualTo(200)
+        assertThat(successSlot.captured).isFalse()
+        assertThat(errorDetailSlot.captured).contains("RESULT_CODE=500").contains("필수값 누락")
+    }
+
+    @Test
+    @DisplayName("success resolver 주입 — body 가 성공(RESULT_CODE=200) 이면 success=true")
+    fun successResolverKeepsSuccessWhenResultCodeOk() {
+        val (restClient, server) = buildClientWithSuccessResolver(sfSuccessResolver())
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/ClaimRegist"))
+            .andRespond(withSuccess("""{"RESULT_CODE":"200","RESULT_MSG":"성공"}""", MediaType.APPLICATION_JSON))
+
+        val successSlot = slot<Boolean>()
+        val errorDetailSlot = slot<String?>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = any(),
+                success = capture(successSlot),
+                durationMs = any(),
+                errorDetail = captureNullable(errorDetailSlot),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = any(),
+                responseCount = any()            )
+        } returns mockk<ExternalApiLog>()
+
+        restClient.post().uri("/ClaimRegist").body(mapOf("k" to "v")).retrieve().body(String::class.java)
+
+        assertThat(successSlot.captured).isTrue()
+        assertThat(errorDetailSlot.captured).isNull()
+    }
+
+    @Test
+    @DisplayName("success resolver 가 null(판정 불가) 반환 — HTTP status 판정을 그대로 유지")
+    fun successResolverFallsBackToHttpWhenNull() {
+        val (restClient, server) = buildClientWithSuccessResolver(sfSuccessResolver())
+        // RESULT_CODE 없는 fetch 목록 응답 → resolver null → HTTP 200 판정 유지
+        server.expect(ExpectedCount.once(), requestTo("http://api-mock/list"))
+            .andRespond(withSuccess("""{"Result":[{"a":1}]}""", MediaType.APPLICATION_JSON))
+
+        val successSlot = slot<Boolean>()
+        every {
+            logService.log(
+                targetSystem = any(),
+                endpointKey = any(),
+                httpMethod = any(),
+                uri = any(),
+                httpStatus = any(),
+                success = capture(successSlot),
+                durationMs = any(),
+                errorDetail = any(),
+                requestedAt = any(),
+                completedAt = any(),
+                requestBody = any(),
+                responseBody = any(),
+                responseCount = any()            )
+        } returns mockk<ExternalApiLog>()
+
+        restClient.post().uri("/list").body(mapOf("k" to "v")).retrieve().body(String::class.java)
+
+        assertThat(successSlot.captured).isTrue()
+    }
+
     /** 테스트용 count resolver — 실제 [SfResponseCountExtractor] 로 data 배열 크기를 센다. */
     private fun sfCountResolver(): (String?) -> Int? {
         val extractor = SfResponseCountExtractor(JsonMapper.builder().build())
         return extractor::extract
+    }
+
+    /** 테스트용 success resolver — 실제 [SfResponseSuccessExtractor] 로 RESULT_CODE 를 판정한다. */
+    private fun sfSuccessResolver(): (Int?, String?) -> OutboundSuccessVerdict? {
+        val extractor = SfResponseSuccessExtractor(JsonMapper.builder().build())
+        return extractor::resolve
     }
 }

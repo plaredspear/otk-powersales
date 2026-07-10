@@ -27,7 +27,8 @@ class SfOutboundConfig {
     fun sfOutboundRestClient(
         externalApiLogService: ExternalApiLogService,
         bodyCapture: ExternalApiLogBodyCapture,
-        responseCountExtractor: SfResponseCountExtractor
+        responseCountExtractor: SfResponseCountExtractor,
+        responseSuccessExtractor: SfResponseSuccessExtractor,
     ): RestClient {
         val factory = SimpleClientHttpRequestFactory().apply {
             setConnectTimeout(Duration.ofSeconds(5))
@@ -41,6 +42,8 @@ class SfOutboundConfig {
                     logService = externalApiLogService,
                     captureBody = bodyCapture.enabled,
                     responseCountResolver = responseCountExtractor::extract,
+                    // SF write 응답(RESULT_CODE)은 도메인 실패도 HTTP 200 이라 body 로 성공 재판정.
+                    responseSuccessResolver = responseSuccessExtractor::resolve,
                 )
             )
             .build()

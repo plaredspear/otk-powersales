@@ -46,13 +46,21 @@ class ExternalApiLogInterceptor(
      * 응답 형식 지식은 각 대상 시스템 패키지에 두어 common 이 도메인을 역참조하지 않게 한다.
      */
     private val responseCountResolver: ((responseBody: String?) -> Int?)? = null,
+    /**
+     * 응답 본문 기반으로 성공/실패를 재판정하는 콜백 (선택). 주입되면 `captureBody` 와 무관하게 응답 본문을
+     * 1회 buffering 해 전달한다. 일부 대상(SF Apex REST)은 도메인 실패도 HTTP 200 으로 응답하므로 HTTP status
+     * 만으로는 `success` 를 옳게 기록할 수 없다 — resolver 가 본문을 해석해 [OutboundSuccessVerdict] 로 판정을
+     * override 한다. 판정 불가(비-등록 응답 / 파싱 실패)면 `null` 을 반환해 기존 HTTP status 판정을 유지한다.
+     * 응답 형식 지식은 각 대상 시스템 패키지에 두어 common 이 도메인을 역참조하지 않게 한다.
+     */
+    private val responseSuccessResolver: ((httpStatus: Int?, responseBody: String?) -> OutboundSuccessVerdict?)? = null,
 ) : ClientHttpRequestInterceptor {
 
     private val log = LoggerFactory.getLogger(ExternalApiLogInterceptor::class.java)
 
     /** 응답 본문을 읽어야 하는지 — body 캡처(dev) 또는 도메인 sink / count resolver 주입 시. */
     private val needsResponseBody: Boolean
-        get() = captureBody || responseSink != null || responseCountResolver != null
+        get() = captureBody || responseSink != null || responseCountResolver != null || responseSuccessResolver != null
 
     override fun intercept(
         request: org.springframework.http.HttpRequest,
@@ -68,10 +76,19 @@ class ExternalApiLogInterceptor(
         try {
             val response = execution.execute(request, body)
             val status = runCatching { response.statusCode.value() }.getOrNull()
-            val success = status != null && status in 200..299
+            val httpSuccess = status != null && status in 200..299
 
             // 응답 본문이 필요할 때만 stream 을 읽고 buffering wrapper 로 다시 감싸 다운스트림에 전달한다.
             val (responseBody, returned) = if (needsResponseBody) bufferResponse(response) else (null to response)
+
+            // 대상별 body 기반 재판정(SF `RESULT_CODE` 등). null 이면 HTTP status 판정 유지.
+            val verdict = resolveResponseSuccess(status, responseBody)
+            val success = verdict?.success ?: httpSuccess
+            val errorDetail = when {
+                success -> null
+                verdict != null -> verdict.errorMessage?.takeIf { it.isNotBlank() } ?: "HTTP $status (응답 실패)"
+                else -> "HTTP $status"
+            }
 
             record(
                 method = method,
@@ -80,7 +97,7 @@ class ExternalApiLogInterceptor(
                 success = success,
                 startNanos = startNanos,
                 requestedAt = requestedAt,
-                errorDetail = if (success) null else "HTTP $status",
+                errorDetail = errorDetail,
                 requestBody = if (captureBody) requestBody else null,
                 responseBody = if (captureBody) responseBody else null,
                 responseCount = resolveResponseCount(responseBody)
@@ -174,6 +191,20 @@ class ExternalApiLogInterceptor(
             resolver(responseBody)
         } catch (ex: Exception) {
             log.warn("외부 API 응답 건수 산출 실패 target={} (건수 없이 적재)", target, ex)
+            null
+        }
+    }
+
+    /**
+     * success resolver 가 주입된 경우에만 응답 본문으로 성공/실패를 재판정한다. resolver 실패는 흡수해 null 로
+     * 처리(= HTTP status 판정 fallback) — 판정 로직 오류가 로그 적재나 실제 호출을 막지 않도록 격리한다.
+     */
+    private fun resolveResponseSuccess(httpStatus: Int?, responseBody: String?): OutboundSuccessVerdict? {
+        val resolver = responseSuccessResolver ?: return null
+        return try {
+            resolver(httpStatus, responseBody)
+        } catch (ex: Exception) {
+            log.warn("외부 API 응답 성공 판정 실패 target={} (HTTP status 판정으로 적재)", target, ex)
             null
         }
     }
