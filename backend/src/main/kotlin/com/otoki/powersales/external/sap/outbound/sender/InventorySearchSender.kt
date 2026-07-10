@@ -19,8 +19,8 @@ import java.time.format.DateTimeFormatter
 /**
  * SAP `InventorySearch` (SD03070) 동기 호출 sender.
  *
- * 레거시 `IF_REST_MOBILE_InventorySearch.cls` 동등 — 요청 라인의 productCode 전체를 거래처코드/납기일과
- * 함께 한 번에 조회한다. 레거시 페이로드 형식을 그대로 따라
+ * 레거시 `IF_REST_MOBILE_InventorySearch.cls` 동등 — 요청 라인의 productCode 를 거래처코드/납기일과
+ * 함께 조회한다 (단, 한 호출당 50항목 상한 분할 — [search] KDoc 참조). 레거시 페이로드 형식을 그대로 따라
  * `{"request": [{"SAPAccountCode": "<external_key>", "ProductCode": "<code>", "DeliveryRequestDate": "yyyyMMdd"}, ...]}`
  * 로 POST 하고, 제품별 재고/공급제한/환산수량을 반환한다.
  *
@@ -41,6 +41,11 @@ class InventorySearchSender(
     /**
      * SAP `InventorySearch` 호출.
      *
+     * 한 호출당 최대 [MAX_ITEMS_PER_CALL] 항목으로 분할해 순차 호출 후 결과를 병합한다.
+     * 레거시 SF 재고조회 화면(InventorySearchController) 의 50건 상한 정합 — SAP SD03070 은
+     * 대량 항목 요청을 받아본 적 없는 인터페이스라, 대량 배열(99항목) 요청이 SAP ABAP 내부
+     * 오류(HTTP 500)로 터진 운영 사건이 있다. 분할 중 한 호출이라도 실패하면 예외 전파(전체 실패).
+     *
      * @param externalKey SF `Account.ExternalKey__c` ≡ 신규 `account.external_key` ≡ SAP 거래처 코드
      * @param productCodes 조회할 제품 코드 목록 (요청 라인 전체, 중복 제거 후 전달 권장)
      * @param deliveryDate 납기 요청일 (레거시 `DeliveryRequestDate` — `yyyyMMdd` 포맷으로 전송)
@@ -52,7 +57,16 @@ class InventorySearchSender(
         deliveryDate: LocalDate,
     ): List<InventorySearchSapItem> {
         if (productCodes.isEmpty()) return emptyList()
+        return productCodes.chunked(MAX_ITEMS_PER_CALL).flatMap { chunk ->
+            searchChunk(externalKey, chunk, deliveryDate)
+        }
+    }
 
+    private fun searchChunk(
+        externalKey: String,
+        productCodes: List<String>,
+        deliveryDate: LocalDate,
+    ): List<InventorySearchSapItem> {
         val interfaceId = SapConstants.SAP_INTERFACE_INVENTORY_SEARCH
         val endpointPath = "/$interfaceId"
         val dateStr = deliveryDate.format(YYYYMMDD)
@@ -123,6 +137,11 @@ class InventorySearchSender(
     }
 
     companion object {
+        /**
+         * 한 SAP 호출당 최대 항목 수 — 레거시 SF 재고조회 화면의 50건 상한 정합
+         * (`InventorySearchController.cls` "최대 50건까지만 조회가 가능합니다").
+         */
+        private const val MAX_ITEMS_PER_CALL = 50
         private val YYYYMMDD: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
     }
 }
