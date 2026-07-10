@@ -365,6 +365,13 @@ logging:
     org.springframework.security: ${LOG_LEVEL_SECURITY:DEBUG}
     org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
     org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BIND:TRACE}
+    # 외부 HTTP outbound(SF/SAP) 응답 본문 전문 로그 차단 — 명시 레벨은 root/상속을 이긴다.
+    # RestClient(DefaultRestClient)는 DEBUG 에서 응답 body 전문을 콘솔에 찍는다. root 를 DEBUG 로
+    # 올려도(운영 로그레벨 임시 상향 등) SF 거래처목표(/IF_salesprogresssend) 등 응답 PII 가
+    # stdout 에 새지 않도록 이 패키지를 INFO 로 못 박는다. 이 로거는 런타임 로그레벨 도구
+    # (POST /api/v1/admin/tools/log-levels) 화이트리스트 밖이라 운영 중 임의 상향도 불가.
+    # 진짜 필요할 때만 EB 환경변수 LOG_LEVEL_SPRING_WEB_CLIENT 로 명시 override.
+    org.springframework.web.client: ${LOG_LEVEL_SPRING_WEB_CLIENT:INFO}
 
 ---
 # ---------------------------------------------------------------------------
@@ -428,6 +435,9 @@ logging:
     org.springframework.security: ${LOG_LEVEL_SECURITY:WARN}
     org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:INFO}
     org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BIND:INFO}
+    # 외부 HTTP outbound 응답 본문 전문 로그 차단 (base 와 동일 취지 — prod 에서 이중 명시).
+    # 운영에서 root/앱 로그레벨이 DEBUG 로 상향되어도 SF/SAP 응답 PII 가 콘솔에 새지 않게 못 박는다.
+    org.springframework.web.client: ${LOG_LEVEL_SPRING_WEB_CLIENT:INFO}
 
 app:
   # prod 환경에서 발화할 스케줄 잡 (전역 @EnableScheduling ON + 잡별 enabled 게이팅, 기본 OFF).
