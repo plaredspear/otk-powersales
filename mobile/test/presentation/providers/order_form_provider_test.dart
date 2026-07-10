@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/models/order_form/loan_inquiry_response_model.dart';
 import 'package:mobile/data/models/order_form/order_draft_response_model.dart';
@@ -566,8 +567,94 @@ void main() {
 
         expect(notifier.state.errorMessage, '본인 담당 거래처가 아닙니다.');
       });
+
+      test('등록 INVENTORY_SAP_UNAVAILABLE → 재고 조회 단계 명시 메시지', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+        );
+        formRepo.exceptionToThrow =
+            _apiError('INVENTORY_SAP_UNAVAILABLE', 'SAP HTTP 500');
+
+        await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
+
+        expect(
+          notifier.state.errorMessage,
+          '재고 조회 실패(SAP HTTP 500). 잠시 후 다시 시도해주세요.',
+        );
+      });
+
+      test('등록 INVENTORY_SAP_ERROR → SAP 사유 포함 재고 조회 오류 메시지', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+        );
+        formRepo.exceptionToThrow =
+            _apiError('INVENTORY_SAP_ERROR', '납기일이 유효하지 않습니다');
+
+        await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
+
+        expect(
+          notifier.state.errorMessage,
+          '재고 조회 오류: 납기일이 유효하지 않습니다',
+        );
+      });
+
+      test('등록 LOAN_SAP_UNAVAILABLE → 여신 조회 단계 명시 메시지', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+        );
+        formRepo.exceptionToThrow =
+            _apiError('LOAN_SAP_UNAVAILABLE', 'SAP 네트워크 오류');
+
+        await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
+
+        expect(
+          notifier.state.errorMessage,
+          '여신 조회 실패(SAP 네트워크 오류). 잠시 후 다시 시도해주세요.',
+        );
+      });
+
+      test('등록 코드 있는 서버 메시지에 "SAP" 포함 → 일시 오류로 뭉개지 않고 패스스루', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+        );
+        formRepo.exceptionToThrow = _apiError(
+          'ORD_INVALID_REQUEST',
+          '거래처 SAP 코드(external_key)가 없습니다',
+        );
+
+        await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
+
+        expect(
+          notifier.state.errorMessage,
+          '거래처 SAP 코드(external_key)가 없습니다',
+        );
+      });
     });
   });
+}
+
+/// 서버 표준 에러 응답(`{"error": {"code", "message"}}`) 형태의 DioException 생성.
+DioException _apiError(String code, String message) {
+  final options = RequestOptions(path: '/api/v1/mobile/order-requests');
+  return DioException(
+    requestOptions: options,
+    type: DioExceptionType.badResponse,
+    response: Response(
+      requestOptions: options,
+      statusCode: 500,
+      data: {
+        'error': {'code': code, 'message': message},
+      },
+    ),
+  );
 }
 
 ProductForOrder _product(

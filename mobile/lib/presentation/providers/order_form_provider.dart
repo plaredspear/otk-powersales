@@ -641,6 +641,21 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 
   String _mapSubmitError(Object error) {
     final raw = extractErrorMessage(error);
+    // 서버 error.code 기반 분기 — 주문 등록은 서버에서 재고(SD03070) → 여신(SD03040)
+    // SAP 사전 검증을 거치므로, 어느 단계에서 실패했는지 메시지에 드러낸다.
+    // (문자열 heuristic 보다 코드가 우선 — "SAP" 포함 여부만으로는 단계 구분이 불가능하다.)
+    switch (extractErrorCode(error)) {
+      case 'INVENTORY_SAP_ERROR':
+        return '재고 조회 오류: $raw';
+      case 'INVENTORY_SAP_UNAVAILABLE':
+      case 'INVENTORY_SAP_HTML_RESPONSE':
+        return '재고 조회 실패($raw). 잠시 후 다시 시도해주세요.';
+      case 'LOAN_SAP_ERROR':
+        return '여신 조회 오류: $raw';
+      case 'LOAN_SAP_UNAVAILABLE':
+      case 'LOAN_SAP_HTML_RESPONSE':
+        return '여신 조회 실패($raw). 잠시 후 다시 시도해주세요.';
+    }
     if (raw.contains('ORD_LOAN_EXCEEDED') || raw.contains('여신 한도')) {
       return raw;
     }
@@ -656,16 +671,18 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (raw.contains('ORD_ACCOUNT_FORBIDDEN') || raw.contains('FORBIDDEN')) {
       return '본인 담당 거래처가 아닙니다.';
     }
+    // 서버가 비즈니스 에러 코드를 내려준 경우(마감 ORD_DEADLINE_PASSED 등 위에서 미정의 코드 포함)
+    // 사용자 친화 메시지(error.message)를 그대로 노출한다. 아래 "SAP" 문자열 heuristic 보다
+    // 먼저 둬야 "거래처 SAP 코드(external_key)가 없습니다" 같은 코드 있는 메시지가
+    // 'SAP 일시 오류' 로 뭉개지지 않는다.
+    if (extractErrorCode(error) != null && raw.isNotEmpty) {
+      return raw;
+    }
     if (raw.contains('LOAN_SAP_UNAVAILABLE') || raw.contains('UNAVAILABLE')) {
       return 'SAP 연결 실패. 잠시 후 다시 시도해주세요.';
     }
     if (raw.contains('LOAN_SAP_ERROR') || raw.contains('SAP')) {
       return 'SAP 일시 오류. 잠시 후 다시 시도해주세요.';
-    }
-    // 서버가 비즈니스 에러 코드를 내려준 경우(마감 ORD_DEADLINE_PASSED 등 위에서 미정의 코드 포함)
-    // 사용자 친화 메시지(error.message)를 그대로 노출한다.
-    if (extractErrorCode(error) != null && raw.isNotEmpty) {
-      return raw;
     }
     // 서버 응답이 없는 네트워크/타임아웃(예: SAP InventorySearch 지연) — friendly 메시지 노출.
     if (isNetworkError(error) && raw.isNotEmpty) {
