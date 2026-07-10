@@ -499,12 +499,19 @@ class DisplayWorkScheduleRepositoryCustomImpl(
                 .and(displayWorkSchedule.employee.endDate.goe(date))
         )
 
+    /**
+     * 사원 검색 조건. 사번(employeeCode) 또는 이름(name) 부분 일치 중 하나라도 매칭되면 포함
+     * (파라미터명은 UI 필드 유래로 employeeCode 이나, 실제 매칭은 사번+이름 겸용).
+     */
     private fun buildEmployeeCodeCondition(employeeCode: String?): BooleanExpression? {
         if (employeeCode.isNullOrBlank()) return null
         val matchingIds = JPAExpressions
             .select(employee.id)
             .from(employee)
-            .where(employee.employeeCode.containsIgnoreCase(employeeCode))
+            .where(
+                employee.employeeCode.containsIgnoreCase(employeeCode)
+                    .or(employee.name.containsIgnoreCase(employeeCode))
+            )
         return displayWorkSchedule.employee.id.`in`(matchingIds)
     }
 

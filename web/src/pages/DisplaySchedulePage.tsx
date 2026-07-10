@@ -673,7 +673,7 @@ export default function DisplaySchedulePage() {
             </Tag>
           )}
           <Input
-            placeholder="사원번호"
+            placeholder="사원번호/성명"
             value={filterEmployeeCode}
             onChange={(e) => setFilterEmployeeCode(e.target.value)}
             onPressEnter={handleSearch}

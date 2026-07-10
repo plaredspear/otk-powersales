@@ -15,7 +15,9 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.data.domain.PageRequest
 import com.otoki.powersales.platform.common.config.QueryDslConfig
+import com.querydsl.core.types.dsl.Expressions
 import org.junit.jupiter.api.Nested
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -609,5 +611,55 @@ class DisplayWorkScheduleRepositoryTest {
             typeOfWork1 = typeOfWork1,
             startDate = startDate
         )
+    }
+
+    @Nested
+    @DisplayName("findScheduleList - 사원 검색(사번+성명 겸용) 필터")
+    inner class FindScheduleListEmployeeSearch {
+
+        private fun scheduleFor(employee: Employee): DisplayWorkSchedule =
+            DisplayWorkSchedule(
+                employee = employee,
+                account = testAccount1,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                startDate = today,
+            )
+
+        private fun search(keyword: String?): List<String?> =
+            displayWorkScheduleRepository.findScheduleList(
+                keyword, null, null, null, null, null, null, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            ).content.map { it.employeeName }
+
+        @Test
+        @DisplayName("사번 부분 일치로 조회")
+        fun matchByEmployeeCode() {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "L0250014", name = "조시영"))
+            testEntityManager.persistAndFlush(scheduleFor(emp))
+            testEntityManager.clear()
+
+            assertThat(search("0250014")).containsExactly("조시영")
+        }
+
+        @Test
+        @DisplayName("성명 부분 일치로 조회")
+        fun matchByName() {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "L0250014", name = "조시영"))
+            testEntityManager.persistAndFlush(scheduleFor(emp))
+            testEntityManager.clear()
+
+            assertThat(search("시영")).containsExactly("조시영")
+        }
+
+        @Test
+        @DisplayName("사번·성명 어느 쪽에도 없으면 제외")
+        fun noMatch() {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "L0250014", name = "조시영"))
+            testEntityManager.persistAndFlush(scheduleFor(emp))
+            testEntityManager.clear()
+
+            assertThat(search("없는사람")).isEmpty()
+        }
     }
 }
