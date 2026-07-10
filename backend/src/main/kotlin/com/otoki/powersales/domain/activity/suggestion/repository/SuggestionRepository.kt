@@ -23,6 +23,14 @@ interface SuggestionRepository : JpaRepository<Suggestion, Long>, SuggestionRepo
     fun findByIdAndIsDeletedFalse(id: Long): Suggestion?
 
     /**
+     * 제안번호(SF `Name` = `proposal_number`, UNIQUE) 단건 조회.
+     *
+     * 물류클레임 마스터 sync([com.otoki.powersales.domain.activity.claim.service.AdminLogisticsClaimMasterSyncTestService])
+     * 에서 pwrskey(=suggestion_id) 로 매칭하지 못한 SF 단독 생성분을 제안번호로 fallback 조회하는 데 쓴다.
+     */
+    fun findByProposalNumber(proposalNumber: String): Suggestion?
+
+    /**
      * SF 재전송용 단건 조회 — employee/product/account 를 fetch join 으로 즉시 로드.
      *
      * SF 재전송([com.otoki.powersales.domain.activity.suggestion.service.SuggestionSfResendService]) 시

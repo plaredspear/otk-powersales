@@ -11,7 +11,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
  * 갱신한다(외부→claim 갱신 컬럼의 권위 출처). 그 외 등록 시 확정 필드(제품/거래처/수량 등) 는 갱신 대상이
  * 아니므로 본 레코드에 매핑하지 않는다. 문서 외 필드가 와도 무시하도록 [JsonIgnoreProperties] 를 둔다.
  *
- * @property pwrskey      신규 claim 의 primary key(`claim_id`) — SF 가 echo. 이 값으로 claim 을 조회해 매칭한다.
+ * @property pwrskey      신규 claim 의 primary key(`claim_id`) — 신규 시스템에서 생성한 claim 을 SF 가 echo.
+ *                        존재하면 이 값(claim_id)으로 claim 을 우선 조회해 매칭한다.
+ * @property name         SF 표준 Name(접수번호, EXNUM) — SF 에서 생성한 클레임의 자연키. pwrskey 가 없을 때
+ *                        (SF 단독 생성분) 이 값으로 [com.otoki.powersales.domain.activity.claim.entity.Claim.name] 을 조회해 매칭한다.
  * @property actionStatus 조치 상태 → [com.otoki.powersales.domain.activity.claim.entity.Claim.actionStatus]
  * @property actionCode   조치 코드 → Claim.actionCode
  * @property counselNumber 상담번호 → Claim.counselNumber
@@ -22,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ClaimMasterSfRecord(
     @JsonProperty("pwrskey") val pwrskey: String? = null,
+    @JsonProperty("Name") val name: String? = null,
     @JsonProperty("ActionStatus") val actionStatus: String? = null,
     @JsonProperty("ActionCode") val actionCode: String? = null,
     @JsonProperty("counselNumber") val counselNumber: String? = null,
@@ -30,6 +34,9 @@ data class ClaimMasterSfRecord(
     @JsonProperty("CosmosKey") val cosmosKey: String? = null,
 ) {
 
-    /** pwrskey 를 claim PK(Long) 로 파싱. 비어있거나 숫자가 아니면 null (매칭 불가). */
+    /** pwrskey 를 claim PK(Long) 로 파싱. 비어있거나 숫자가 아니면 null (PK 매칭 불가 — name fallback 대상). */
     fun pwrskeyAsClaimId(): Long? = pwrskey?.takeIf { it.isNotBlank() }?.trim()?.toLongOrNull()
+
+    /** name(접수번호) 을 매칭 키로 정규화. 비어있으면 null (매칭 불가). */
+    fun nameAsClaimName(): String? = name?.trim()?.takeIf { it.isNotBlank() }
 }

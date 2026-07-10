@@ -20,7 +20,7 @@ import org.springframework.transaction.support.TransactionTemplate
 import tools.jackson.databind.ObjectMapper
 import java.util.Optional
 
-@DisplayName("AdminLogisticsClaimMasterSyncTestService (SF IF_SendLogisticsClaimToPWS 조회 + pwrskey 매칭 갱신) 테스트")
+@DisplayName("AdminLogisticsClaimMasterSyncTestService (SF IF_SendLogisticsClaimToPWS 조회 + pwrskey 우선/name fallback 매칭 갱신) 테스트")
 class AdminLogisticsClaimMasterSyncTestServiceTest {
 
     private lateinit var sfOutboundClient: SfOutboundClient
@@ -181,8 +181,8 @@ class AdminLogisticsClaimMasterSyncTestServiceTest {
     }
 
     @Test
-    @DisplayName("pwrskey 가 비었거나 숫자가 아니면 skipped 집계")
-    fun countsSkippedForInvalidPwrskey() {
+    @DisplayName("pwrskey 도 name 도 없으면(또는 pwrskey 무효 + name 부재) skipped 집계")
+    fun countsSkippedWhenNoMatchKey() {
         stubSf(
             """[
               { "pwrskey": "", "ActionStatus": "A" },
@@ -196,6 +196,69 @@ class AdminLogisticsClaimMasterSyncTestServiceTest {
         assertThat(response.fetchedCount).isEqualTo(3)
         assertThat(response.skippedCount).isEqualTo(3)
         assertThat(response.updatedCount).isEqualTo(0)
+    }
+
+    // --- name(제안번호) fallback 매칭 (신규) ---
+
+    @Test
+    @DisplayName("pwrskey 없고 name 만 있으면 name(제안번호) 으로 조회해 갱신")
+    fun matchesByProposalNumberWhenNoPwrskey() {
+        val s = suggestion(55L)
+        every { suggestionRepository.findByProposalNumber("PM-2026-0001") } returns s
+        stubSf("""[{ "Name": "PM-2026-0001", "ActionStatus": "조치중", "ActionNum": "AN-9" }]""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(response.skippedCount).isEqualTo(0)
+        assertThat(response.notFoundCount).isEqualTo(0)
+        assertThat(s.actionStatus).isEqualTo(SuggestionActionStatus.IN_PROGRESS)
+        assertThat(s.actionNum).isEqualTo("AN-9")
+        verify(exactly = 0) { suggestionRepository.findById(any()) }
+        verify(exactly = 1) { suggestionRepository.findByProposalNumber("PM-2026-0001") }
+    }
+
+    @Test
+    @DisplayName("pwrskey 와 name 둘 다 있으면 pwrskey(신규 PK) 를 우선 조회 — name 조회 안 함")
+    fun prefersPwrskeyOverName() {
+        val s = suggestion(88L)
+        every { suggestionRepository.findById(88L) } returns Optional.of(s)
+        stubSf("""[{ "pwrskey": "88", "Name": "PM-2026-0002", "ActionStatus": "조치중" }]""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(s.actionStatus).isEqualTo(SuggestionActionStatus.IN_PROGRESS)
+        verify(exactly = 1) { suggestionRepository.findById(88L) }
+        verify(exactly = 0) { suggestionRepository.findByProposalNumber(any()) }
+    }
+
+    @Test
+    @DisplayName("pwrskey 무효(숫자 아님)여도 name 이 있으면 name 으로 fallback 조회")
+    fun fallsBackToNameWhenPwrskeyInvalid() {
+        val s = suggestion(77L)
+        every { suggestionRepository.findByProposalNumber("PM-2026-0003") } returns s
+        stubSf("""[{ "pwrskey": "not-a-number", "Name": "PM-2026-0003", "ActionStatus": "조치중" }]""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.updatedCount).isEqualTo(1)
+        assertThat(response.skippedCount).isEqualTo(0)
+        assertThat(s.actionStatus).isEqualTo(SuggestionActionStatus.IN_PROGRESS)
+        verify(exactly = 1) { suggestionRepository.findByProposalNumber("PM-2026-0003") }
+    }
+
+    @Test
+    @DisplayName("name 으로도 매칭 제안이 없으면 notFound 집계")
+    fun countsNotFoundWhenNameUnmatched() {
+        every { suggestionRepository.findByProposalNumber("PM-NONE") } returns null
+        stubSf("""[{ "Name": "PM-NONE", "ActionStatus": "조치중" }]""")
+
+        val response = service.test(userId = 1L, request = request())
+
+        assertThat(response.notFoundCount).isEqualTo(1)
+        assertThat(response.updatedCount).isEqualTo(0)
+        assertThat(response.skippedCount).isEqualTo(0)
     }
 
     @Test

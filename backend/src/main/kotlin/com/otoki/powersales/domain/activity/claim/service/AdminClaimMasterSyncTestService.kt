@@ -20,8 +20,8 @@ import java.time.format.DateTimeFormatter
  * SF Apex REST `/IF_SendClaimToPWS` 클레임 마스터 조회 + 갱신 서비스 (개발자 도구 — 외부 API 테스트).
  *
  * `MOD_DT`(기준 일자) 하나를 SF 로 POST 하면 SF 가 해당 일자 기준으로 변경된 클레임 마스터 목록을
- * 응답하는 SF → PWS 조회 인터페이스. 응답의 각 레코드를 `pwrskey`(=claim_id) 로 신규 claim 과 매칭해
- * **조치/상담 필드를 신규 데이터로 갱신**한다.
+ * 응답하는 SF → PWS 조회 인터페이스. 응답의 각 레코드를 `pwrskey`(=claim_id, 신규 생성분) 우선,
+ * 없으면 `Name`(접수번호, SF 생성분) 으로 신규 claim 과 매칭해 **조치/상담 필드를 신규 데이터로 갱신**한다.
  *
  * 갱신 대상 필드(6개) — SF 레거시 inbound Apex(`IF_ClaimStatusUpdate` / `IF_REST_SAP_ClaimReceive`)
  * 가 claim 을 update 로 set 하는 필드 집합과 정합:
@@ -32,7 +32,7 @@ import java.time.format.DateTimeFormatter
  * 처리:
  *  1. `{ "MOD_DT": modDt }` 로 SF POST (클레임 등록과 동일한 OAuth/401 재시도 경로).
  *  2. 응답 rawBody(JSON)에서 클레임 레코드 배열 추출 (wrapper key 후보 탐색).
- *  3. 각 레코드 pwrskey → claim 조회 → 존재하면 6필드 갱신, 없으면 건너뜀(카운트 집계).
+ *  3. 각 레코드 pwrskey → (없으면) name → claim 조회 → 존재하면 6필드 갱신, 없으면 건너뜀(카운트 집계).
  *
  * SF 호출 실패(OAuth/HTTP/파싱)는 throw 하지 않고 실패 응답으로 흡수한다. 갱신은 트랜잭션 안에서 일괄 처리.
  */
@@ -86,7 +86,7 @@ class AdminClaimMasterSyncTestService(
     }
 
     /**
-     * 주기 배치 진입점 — SF fetch → pwrskey 매칭 claim 갱신.
+     * 주기 배치 진입점 — SF fetch → pwrskey(우선)/name(fallback) 매칭 claim 갱신.
      * (통합 잡 [com.otoki.powersales.platform.batch.ClaimMasterSyncBatch] 의 claim 도메인 —
      *  오케스트레이터 [com.otoki.powersales.platform.batch.ClaimMasterSyncBatchService] 가 호출)
      *
@@ -123,7 +123,12 @@ class AdminClaimMasterSyncTestService(
 
     /**
      * 파싱된 레코드들을 한 트랜잭션에서 claim 에 적용한다 (SF I/O 는 트랜잭션 밖 — [test]/[sync] 에서 호출 완료 후 진입).
-     * pwrskey(=claim_id) 로 claim 을 찾아 존재하면 6필드를 신규 데이터로 갱신한다.
+     *
+     * 매칭 키 우선순위:
+     *  1. `pwrskey`(=claim_id) — 신규 시스템에서 생성해 SF 가 echo 한 PK. 존재하면 이 값으로 우선 조회.
+     *  2. `name`(접수번호, EXNUM) — SF 단독 생성분(pwrskey 미보유)의 자연키. pwrskey 로 찾지 못하면 name 으로 조회.
+     *
+     * 두 키 모두 없으면 skipped, 키는 있으나 매칭 claim 이 없으면 notFound, 찾으면 6필드를 신규 데이터로 갱신한다.
      */
     fun applyUpdates(records: List<ClaimMasterSfRecord>): UpdateResult = txTemplate.execute {
         var updated = 0
@@ -132,11 +137,15 @@ class AdminClaimMasterSyncTestService(
 
         for (record in records) {
             val claimId = record.pwrskeyAsClaimId()
-            if (claimId == null) {
+            val claimName = record.nameAsClaimName()
+            if (claimId == null && claimName == null) {
+                // pwrskey(신규 PK) 도 name(SF 접수번호) 도 없으면 매칭 불가 — 건너뜀.
                 skipped++
                 continue
             }
-            val claim = claimRepository.findByIdOrNull(claimId)
+            // pwrskey(신규 시스템 생성) 우선, 없으면 name(SF 생성 접수번호) 으로 fallback 조회.
+            val claim = claimId?.let { claimRepository.findByIdOrNull(it) }
+                ?: claimName?.let { claimRepository.findByName(it) }
             if (claim == null) {
                 notFound++
                 continue

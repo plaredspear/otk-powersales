@@ -20,8 +20,9 @@ import java.time.format.DateTimeFormatter
  * SF Apex REST `/IF_SendLogisticsClaimToPWS` 물류 클레임 마스터 조회 + 갱신 서비스 (개발자 도구 — 외부 API 테스트).
  *
  * `MOD_DT`(기준 일자) 하나를 SF 로 POST 하면 SF 가 해당 일자 기준으로 변경된 물류 클레임(제안) 마스터 목록을
- * 응답한다. 응답의 각 레코드를 `pwrskey`(=suggestion_id) 로 신규 제안([com.otoki.powersales.domain.activity.suggestion.entity.Suggestion])과
- * 매칭해 **조치 계열 6필드를 신규 데이터로 갱신**한다 (일반 클레임 마스터 조회([AdminClaimMasterSyncTestService]) 와 동일 패턴).
+ * 응답한다. 응답의 각 레코드를 `pwrskey`(=suggestion_id, 신규 생성분) 우선, 없으면 `Name`(제안번호, SF 생성분) 으로
+ * 신규 제안([com.otoki.powersales.domain.activity.suggestion.entity.Suggestion])과 매칭해 **조치 계열 6필드를 신규
+ * 데이터로 갱신**한다 (일반 클레임 마스터 조회([AdminClaimMasterSyncTestService]) 와 동일 패턴).
  *
  * 갱신 대상 6필드 — 물류클레임은 레거시에 외부 갱신 inbound Apex 가 없어(조치필드는 SF UI 직접입력), 조회 REST
  * (`IF_REST_MOBILE_LogisticsClaimSearch`) 응답의 **등록 시 미설정 + 나중에 채워지는 조치 계열 필드** 를 권위로 삼는다:
@@ -31,7 +32,7 @@ import java.time.format.DateTimeFormatter
  * 처리:
  *  1. `{ "MOD_DT": modDt }` 로 SF POST (클레임 등록과 동일한 OAuth/401 재시도 경로).
  *  2. 응답 rawBody(JSON)에서 레코드 배열 추출 (wrapper key 후보 탐색).
- *  3. 각 레코드 pwrskey → suggestion 조회 → 존재하면 6필드 갱신, 없으면 건너뜀(카운트 집계).
+ *  3. 각 레코드 pwrskey → (없으면) name → suggestion 조회 → 존재하면 6필드 갱신, 없으면 건너뜀(카운트 집계).
  *
  * SF 호출 실패(OAuth/HTTP/파싱)는 throw 하지 않고 실패 응답으로 흡수한다. 갱신은 트랜잭션 안에서 일괄 처리.
  */
@@ -85,7 +86,7 @@ class AdminLogisticsClaimMasterSyncTestService(
     }
 
     /**
-     * 주기 배치 진입점 — SF fetch → pwrskey 매칭 제안(물류클레임) 갱신.
+     * 주기 배치 진입점 — SF fetch → pwrskey(우선)/name(fallback) 매칭 제안(물류클레임) 갱신.
      * ([com.otoki.powersales.platform.batch.ClaimMasterSyncBatch] — claim 도메인과 통합, logistics 도메인 처리)
      *
      * 테스트 도구([test])와 동일한 fetch/parse/갱신 경로를 쓰되, 응답 DTO 대신 [UpdateResult] 를 반환한다.
@@ -121,7 +122,12 @@ class AdminLogisticsClaimMasterSyncTestService(
 
     /**
      * 파싱된 레코드들을 한 트랜잭션에서 suggestion 에 적용한다 (SF I/O 는 트랜잭션 밖).
-     * pwrskey(=suggestion_id) 로 제안을 찾아 존재하면 조치 6필드를 신규 데이터로 갱신한다.
+     *
+     * 매칭 키 우선순위 (일반 클레임 [AdminClaimMasterSyncTestService.applyUpdates] 정합):
+     *  1. `pwrskey`(=suggestion_id) — 신규 시스템에서 생성해 SF 가 echo 한 PK. 존재하면 우선 조회.
+     *  2. `name`(제안번호, proposal_number) — SF 단독 생성분의 자연키. pwrskey 로 찾지 못하면 제안번호로 조회.
+     *
+     * 두 키 모두 없으면 skipped, 키는 있으나 매칭 제안이 없으면 notFound, 찾으면 조치 6필드를 신규 데이터로 갱신한다.
      */
     fun applyUpdates(records: List<LogisticsClaimMasterSfRecord>): UpdateResult = txTemplate.execute {
         var updated = 0
@@ -130,11 +136,15 @@ class AdminLogisticsClaimMasterSyncTestService(
 
         for (record in records) {
             val suggestionId = record.pwrskeyAsSuggestionId()
-            if (suggestionId == null) {
+            val proposalNumber = record.nameAsProposalNumber()
+            if (suggestionId == null && proposalNumber == null) {
+                // pwrskey(신규 PK) 도 name(SF 제안번호) 도 없으면 매칭 불가 — 건너뜀.
                 skipped++
                 continue
             }
-            val suggestion = suggestionRepository.findByIdOrNull(suggestionId)
+            // pwrskey(신규 시스템 생성) 우선, 없으면 name(SF 생성 제안번호) 으로 fallback 조회.
+            val suggestion = suggestionId?.let { suggestionRepository.findByIdOrNull(it) }
+                ?: proposalNumber?.let { suggestionRepository.findByProposalNumber(it) }
             if (suggestion == null) {
                 notFound++
                 continue
