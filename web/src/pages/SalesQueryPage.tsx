@@ -312,6 +312,8 @@ export default function SalesQueryPage() {
     () => [
       { title: '거래처', dataIndex: 'accountName', width: 200, render: (v) => v ?? '-' },
       { title: 'SAP코드', dataIndex: 'sapAccountCode', width: 120, render: (v) => v ?? '-' },
+      { title: '유통형태', dataIndex: 'distributionChannel', width: 140, render: (v) => v ?? '-' },
+      { title: '거래처유형', dataIndex: 'accountType', width: 140, render: (v) => v ?? '-' },
       { title: '지점', dataIndex: 'branchName', width: 140, render: (v) => v ?? '-' },
     ],
     [],

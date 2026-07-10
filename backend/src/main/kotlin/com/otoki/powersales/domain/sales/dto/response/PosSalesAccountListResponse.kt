@@ -17,11 +17,16 @@ data class PosSalesAccountListResponse(
 
 /**
  * POS매출 1단 거래처 1행 — POS 집계 없는 순수 거래처 메타.
+ *
+ * @property distributionChannel 유통형태 라벨 (예 "01 대형마트(3대)") — 조회 조건과 동일 조합 규칙.
+ * @property accountType 거래처유형(ABC유형) 라벨 (예 "6111 이마트").
  */
 data class PosSalesAccountItem(
     val accountId: Long,
     val accountName: String?,
     val sapAccountCode: String?,
+    val distributionChannel: String?,
+    val accountType: String?,
     val branchCode: String?,
     val branchName: String?,
 )

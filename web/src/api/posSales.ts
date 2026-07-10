@@ -20,6 +20,10 @@ export interface PosSalesAccountItem {
   accountId: number;
   accountName: string | null;
   sapAccountCode: string | null;
+  /** 유통형태 라벨 (예 "01 대형마트(3대)"). */
+  distributionChannel: string | null;
+  /** 거래처유형(ABC유형) 라벨 (예 "6111 이마트"). */
+  accountType: string | null;
   branchCode: string | null;
   branchName: string | null;
 }

@@ -57,7 +57,9 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
             items = listOf(
                 PosSalesAccountItem(
                     accountId = 1, accountName = "거래처A",
-                    sapAccountCode = "SAP1", branchCode = "1000", branchName = "서울지점",
+                    sapAccountCode = "SAP1",
+                    distributionChannel = "01 대형마트(3대)", accountType = "6111 이마트",
+                    branchCode = "1000", branchName = "서울지점",
                 ),
             ),
         )
@@ -75,6 +77,8 @@ class AdminPosSalesControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.totalElements").value(1))
             .andExpect(jsonPath("$.data.items[0].accountId").value(1))
             .andExpect(jsonPath("$.data.items[0].sapAccountCode").value("SAP1"))
+            .andExpect(jsonPath("$.data.items[0].distributionChannel").value("01 대형마트(3대)"))
+            .andExpect(jsonPath("$.data.items[0].accountType").value("6111 이마트"))
 
         verify {
             queryService.getAccounts(

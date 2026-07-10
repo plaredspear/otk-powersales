@@ -55,8 +55,8 @@ function renderPage() {
 const accountsResponse: posApi.PosSalesAccountListResponse = {
   totalElements: 2,
   items: [
-    { accountId: 1, accountName: '이마트 원주점', sapAccountCode: 'S001', branchCode: 'B001', branchName: '원주1지점' },
-    { accountId: 2, accountName: '홈플러스 원주점', sapAccountCode: 'S002', branchCode: 'B001', branchName: '원주1지점' },
+    { accountId: 1, accountName: '이마트 원주점', sapAccountCode: 'S001', distributionChannel: '01 대형마트(3대)', accountType: '6111 이마트', branchCode: 'B001', branchName: '원주1지점' },
+    { accountId: 2, accountName: '홈플러스 원주점', sapAccountCode: 'S002', distributionChannel: '01 대형마트(3대)', accountType: '6112 홈플러스', branchCode: 'B001', branchName: '원주1지점' },
   ],
 };
 
@@ -105,6 +105,10 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
       expect(screen.getByText('이마트 원주점')).toBeInTheDocument();
       expect(screen.getByText('홈플러스 원주점')).toBeInTheDocument();
     });
+    // 거래처 목록에 유통형태·거래처유형 컬럼 값이 표시된다.
+    expect(screen.getByText('6111 이마트')).toBeInTheDocument();
+    expect(screen.getByText('6112 홈플러스')).toBeInTheDocument();
+    expect(screen.getAllByText('01 대형마트(3대)').length).toBeGreaterThan(0);
     expect(mockedAccounts.mock.calls[0][0]).toMatchObject({ costCenterCodes: ['B001'] });
     // 거래처를 선택하지 않았으므로 POS 조회는 아직 발생하지 않음
     expect(mockedList).not.toHaveBeenCalled();
