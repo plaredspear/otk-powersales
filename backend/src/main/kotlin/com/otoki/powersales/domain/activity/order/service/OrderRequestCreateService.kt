@@ -37,7 +37,8 @@ import java.time.LocalDateTime
  * **흐름** (단일 DB 트랜잭션):
  *  1. 멱등 검사 — `clientRequestId` 가 전달되면 기존 row 조회 후 200 OK 멱등 반환 (SAP 호출 없음)
  *  2. 입력 검증 — 형식 / 미래 일자 (거래처 담당 재검증 없음 — 레거시 정합, 일정 기반 셀렉터만 게이트)
- *  3. SAP `InventorySearch` 1회 호출 — 단위 환산/공급제한/제품마스터 메타 일괄 조회 (응답 라인 누락 시 거부)
+ *  3. 제품 마스터 대조 — 클라이언트 제공 productCode 가 마스터에 없으면 SAP 호출 전 즉시 거부
+ *  3-1. SAP `InventorySearch` 1회 호출 — 단위 환산/공급제한/제품마스터 메타 일괄 조회 (응답 라인 누락 시 거부)
  *  4. SAP `LoanInquiry` 호출 — 여신 한도 서버 재검증 (`creditBalance >= totalAmount`)
  *  5. `order_request` 헤더 INSERT — 백엔드 자체 채번 `OR{00000000}` (레거시 SF Auto Number 동폭), 초기 status `SENT`
  *  6. `order_request_product` 라인 일괄 INSERT — `pieces_per_box` 등록 시점 스냅샷 (#595 의존)
@@ -85,8 +86,21 @@ class OrderRequestCreateService(
         // account.employeeCode(거래처 마스터 담당사원) 기준 게이트는 그 일정 기반 조회 집합과
         // 어긋나, 일정만 잡힌(담당자가 다른) 거래처 주문을 잘못 차단했다. → 제거.
 
-        // 3. SAP InventorySearch
+        // 3. 제품 마스터 대조 가드 — SAP InventorySearch 호출 전, 클라이언트(제품검색/임시저장 복원)가
+        //    보낸 productCode 를 제품 마스터와 대조해 미존재 코드는 즉시 거부한다. 비정상 코드가
+        //    SAP SD03070 ABAP 숫자 변환에서 시스템 오류(HTTP 500)로 터진 운영 사건의 재발 방어.
+        //    (레거시도 주문 제품 후보가 마스터 조회 결과로만 구성되어 미존재 코드는 도달 불가 — 동작 동등)
         val productCodes = request.lines.map { it.productCode }.distinct()
+        val productsByCode = productRepository.findByProductCodeIn(productCodes)
+            .associateBy { it.productCode }
+        val unknownCodes = productCodes.filterNot(productsByCode::containsKey)
+        if (unknownCodes.isNotEmpty()) {
+            throw OrderInvalidRequestException(
+                "제품 마스터에 없는 제품코드입니다: ${unknownCodes.joinToString(", ")}"
+            )
+        }
+
+        // 3-1. SAP InventorySearch
         val inventoryMap = inventorySearchClient.search(request.accountId, productCodes, request.deliveryDate)
         validateInventory(request, inventoryMap)
 
@@ -115,10 +129,8 @@ class OrderRequestCreateService(
         val savedHeader = orderRequestRepository.save(header)
 
         // 6. 라인 일괄 INSERT
-        // 제품 마스터 일괄 조회 — product FK(product_id) 채움 (레거시 ProductCode 로 DKRetail__Product__c
-        // 조회해 DKRetail__ProductId__c set 한 동등 처리). 미존재 시 null 허용 (라인은 productCode 로도 보존).
-        val productsByCode = productRepository.findByProductCodeIn(productCodes)
-            .associateBy { it.productCode }
+        // product FK(product_id) 채움 — step 3 제품 마스터 대조 결과 재사용 (레거시 ProductCode 로
+        // DKRetail__Product__c 조회해 DKRetail__ProductId__c set 한 동등 처리).
         val savedLines = request.lines.map { line ->
             val info = inventoryMap.getValue(line.productCode)
             // 레거시 정합: 박스 수량은 총 EA ÷ 환산수량으로 서버가 역산(클라이언트 박스 입력값 비신뢰).

@@ -85,9 +85,11 @@ class OrderRequestCreateServiceTest {
         every { nativeQuery.singleResult } returns 42L
         every { orderRequestRepository.findByClientRequestId(any()) } returns null
         every { orderDraftService.deleteByEmployeeId(any()) } returns Unit
-        // 기본: 제품 마스터 미존재 → product FK null 허용 (라인은 productCode 로 보존).
-        // product FK 채움을 검증하는 테스트는 개별 stub 으로 덮어쓴다.
-        every { productRepository.findByProductCodeIn(any()) } returns emptyList()
+        // 기본: 요청된 productCode 전부 제품 마스터 존재 (SAP 호출 전 마스터 대조 가드 통과).
+        // 미존재 거부를 검증하는 테스트는 개별 stub 으로 덮어쓴다.
+        every { productRepository.findByProductCodeIn(any()) } answers {
+            firstArg<Collection<String>>().map { Product(productCode = it) }
+        }
     }
 
     @Nested
@@ -227,6 +229,21 @@ class OrderRequestCreateServiceTest {
     @Nested
     @DisplayName("검증 실패")
     inner class ErrorCases {
+
+        @Test
+        @DisplayName("제품 마스터 미존재 productCode → ORD_INVALID_REQUEST + SAP 미호출 (사전 가드)")
+        fun unknownProductCodeRejectedBeforeSap() {
+            stubAuthAndAccount()
+            // 마스터 대조 가드: 요청 코드가 제품 마스터에 없으면 SAP InventorySearch 전에 거부.
+            every { productRepository.findByProductCodeIn(listOf("*00")) } returns emptyList()
+
+            assertThatThrownBy { service.create(userId, baseRequest(lines = listOf(line(productCode = "*00")))) }
+                .isInstanceOf(OrderInvalidRequestException::class.java)
+                .hasMessageContaining("*00")
+
+            // 비정상 코드가 SAP 까지 전달되지 않아야 한다 (SD03070 ABAP 시스템 오류 재발 방어).
+            verify(exactly = 0) { inventorySearchClient.search(any(), any(), any()) }
+        }
 
         @Test
         @DisplayName("InventorySearch 응답 라인 누락 → ORD_INVALID_REQUEST")
