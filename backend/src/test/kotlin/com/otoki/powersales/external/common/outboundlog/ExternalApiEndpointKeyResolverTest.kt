@@ -14,6 +14,8 @@ class ExternalApiEndpointKeyResolverTest {
             .isEqualTo("loan-inquiry")
         assertThat(ExternalApiEndpointKeyResolver.resolve(ExternalApiTarget.SAP, "http://sap:50000/RESTAdapter/SD03052"))
             .isEqualTo("order-request-detail")
+        assertThat(ExternalApiEndpointKeyResolver.resolve(ExternalApiTarget.SAP, "http://sap:50000/RESTAdapter/SD03070"))
+            .isEqualTo("inventory-search")
         assertThat(ExternalApiEndpointKeyResolver.resolve(ExternalApiTarget.SAP, "http://sap:50000/RESTAdapter/SD03300"))
             .isEqualTo("ppt-master")
     }
@@ -63,11 +65,12 @@ class ExternalApiEndpointKeyResolverTest {
     }
 
     @Test
-    @DisplayName("ALL_KEYS 는 SAP 7 + SF 6 + sf-oauth-token + naver-geocode = 15개")
+    @DisplayName("ALL_KEYS 는 SAP 8 + SF 6 + sf-oauth-token + naver-geocode = 16개")
     fun allKeys() {
-        assertThat(ExternalApiEndpointKeyResolver.ALL_KEYS).hasSize(15)
+        assertThat(ExternalApiEndpointKeyResolver.ALL_KEYS).hasSize(16)
         assertThat(ExternalApiEndpointKeyResolver.ALL_KEYS).contains(
-            "loan-inquiry", "staff-review-sync", "logistics-claim-regist", "sf-oauth-token", "naver-geocode",
+            "loan-inquiry", "inventory-search", "staff-review-sync",
+            "logistics-claim-regist", "sf-oauth-token", "naver-geocode",
         )
     }
 }

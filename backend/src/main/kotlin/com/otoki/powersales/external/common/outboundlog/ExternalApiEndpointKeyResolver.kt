@@ -23,6 +23,7 @@ object ExternalApiEndpointKeyResolver {
     private val SAP_INTERFACE_TO_KEY: Map<String, String> = mapOf(
         SapConstants.SAP_INTERFACE_LOAN_INQUIRY to "loan-inquiry",
         SapConstants.SAP_INTERFACE_ORDER_REQUEST_DETAIL to "order-request-detail",
+        SapConstants.SAP_INTERFACE_INVENTORY_SEARCH to "inventory-search",
         SapConstants.SAP_INTERFACE_ORDER_REQUEST_CANCEL to "order-request-cancel",
         SapConstants.SAP_INTERFACE_ORDER_REQUEST_REGIST to "order-request-register",
         SapConstants.SAP_INTERFACE_ATTENDANCE to "attendance",
