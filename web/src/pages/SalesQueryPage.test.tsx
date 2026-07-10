@@ -73,9 +73,13 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedFilterOptions.mockResolvedValue({
-      distributionChannels: ['02 슈퍼'],
-      accountTypes: ['6111 이마트'],
+      distributionChannels: ['01 대형마트(3대)', '02 슈퍼'],
+      accountTypes: ['6111 이마트', '6112 홈플러스', '6200 일반슈퍼'],
       categories: [{ category2: '면류', category3s: ['봉지면', '용기면'] }],
+      dependentAccountTypes: {
+        '01 대형마트(3대)': ['6111 이마트', '6112 홈플러스'],
+        '02 슈퍼': ['6200 일반슈퍼'],
+      },
     });
     mockedProductLookup.mockResolvedValue([]);
     mockedAccounts.mockResolvedValue(accountsResponse);
@@ -159,6 +163,54 @@ describe('SalesQueryPage (POS매출 2단 조회)', () => {
     expect(screen.getByText('중분류:')).toBeInTheDocument();
     expect(screen.getByText('소분류:')).toBeInTheDocument();
     expect(screen.getByText('제품 (제품명/제품코드/바코드):')).toBeInTheDocument();
+  });
+
+  it('유통형태 선택 시 거래처유형 옵션이 해당 유통형태의 종속 목록으로 좁혀진다', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(mockedFilterOptions).toHaveBeenCalled());
+
+    // 유통형태 콤보박스(첫 번째 combobox)를 열어 '01 대형마트(3대)' 선택.
+    const comboboxes = screen.getAllByRole('combobox');
+    await user.click(comboboxes[0]);
+    await user.click(await screen.findByTitle('01 대형마트(3대)'));
+
+    // 거래처유형 콤보박스를 열면 대형마트 종속 목록만(이마트/홈플러스) 노출되고 일반슈퍼는 빠진다.
+    await user.click(comboboxes[1]);
+    await waitFor(() => {
+      expect(screen.getByTitle('6111 이마트')).toBeInTheDocument();
+      expect(screen.getByTitle('6112 홈플러스')).toBeInTheDocument();
+      expect(screen.queryByTitle('6200 일반슈퍼')).not.toBeInTheDocument();
+    });
+  });
+
+  it('유통형태 변경으로 종속 목록에서 사라진 거래처유형 선택값은 자동 정리된다', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() => expect(mockedFilterOptions).toHaveBeenCalled());
+
+    const comboboxes = screen.getAllByRole('combobox');
+    // 유통형태 '02 슈퍼' 선택 → 거래처유형 '6200 일반슈퍼' 선택 (종속 허용).
+    await user.click(comboboxes[0]);
+    await user.click(await screen.findByTitle('02 슈퍼'));
+    await user.click(comboboxes[1]);
+    await user.click(await screen.findByTitle('6200 일반슈퍼'));
+
+    // 유통형태를 '01 대형마트(3대)' 로 교체 (02 슈퍼 해제 후 대형마트 선택).
+    await user.click(comboboxes[0]);
+    await user.click(await screen.findByTitle('02 슈퍼')); // 토글 해제
+    await user.click(await screen.findByTitle('01 대형마트(3대)'));
+
+    // 거래처유형 옵션이 대형마트 종속(이마트/홈플러스)으로 좁혀지고, 선택했던 '6200 일반슈퍼' 는
+    // 종속 목록에 없어 선택값이 정리된다 → 거래처유형 조회 조건에 일반슈퍼가 반영되지 않음.
+    // 1단 조회 시 accountTypes 로 확인 (정리되어 빈 배열).
+    fireEvent.click(screen.getByRole('button', { name: /search조회$/ }));
+    await waitFor(() => expect(mockedAccounts).toHaveBeenCalled());
+    const lastAccountsCall = mockedAccounts.mock.calls[mockedAccounts.mock.calls.length - 1];
+    expect(lastAccountsCall[0]).toMatchObject({
+      distributionChannels: ['01 대형마트(3대)'],
+      accountTypes: [],
+    });
   });
 
   it('조회 기간이 31일을 초과하면 경고를 표시하고 POS 조회 버튼이 비활성화된다', async () => {

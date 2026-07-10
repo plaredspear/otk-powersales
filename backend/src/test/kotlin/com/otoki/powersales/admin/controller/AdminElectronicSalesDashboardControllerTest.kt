@@ -165,6 +165,7 @@ class AdminElectronicSalesDashboardControllerTest : AdminControllerTestSupport()
             categories = listOf(
                 ElectronicSalesDashboardFilterOptionsResponse.CategoryGroup("면류", listOf("봉지면")),
             ),
+            dependentAccountTypes = mapOf("02 슈퍼" to listOf("6111 이마트")),
         )
 
         mockMvc.perform(get("/api/v1/admin/sales/electronic/filter-options"))
@@ -173,6 +174,7 @@ class AdminElectronicSalesDashboardControllerTest : AdminControllerTestSupport()
             .andExpect(jsonPath("$.data.accountTypes[0]").value("6111 이마트"))
             .andExpect(jsonPath("$.data.categories[0].category2").value("면류"))
             .andExpect(jsonPath("$.data.categories[0].category3s[0]").value("봉지면"))
+            .andExpect(jsonPath("$.data.dependentAccountTypes['02 슈퍼'][0]").value("6111 이마트"))
     }
 
     @Test

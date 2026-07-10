@@ -78,6 +78,42 @@ export default function ElectronicSalesDashboardPage() {
     staleTime: 10 * 60 * 1000,
   });
   const filterOptions = filterOptionsQuery.data;
+
+  // 드롭다운 옵션 배열은 useMemo 로 identity 를 고정한다. 인라인 .map() 은 매 렌더마다 새 배열을 만들어
+  // mode="multiple" Select 에서 hover/선택 시 활성 항목이 튀는 현상을 유발한다.
+  const distributionChannelOptions = useMemo(
+    () => (filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v })),
+    [filterOptions],
+  );
+  // 거래처유형 옵션 — 유통형태 미선택 시 전체, 선택 시 선택된 유통형태들의 종속 거래처유형 합집합.
+  const accountTypeOptions = useMemo(() => {
+    if (!filterOptions) return [];
+    let labels: string[];
+    if (distributionChannels.length === 0) {
+      labels = filterOptions.accountTypes;
+    } else {
+      const union = new Set<string>();
+      distributionChannels.forEach((dist) => {
+        (filterOptions.dependentAccountTypes[dist] ?? []).forEach((t) => union.add(t));
+      });
+      labels = filterOptions.accountTypes.filter((t) => union.has(t));
+    }
+    return labels.map((v) => ({ value: v, label: v }));
+  }, [filterOptions, distributionChannels]);
+
+  // 유통형태 변경 시, 새 유통형태 집합의 종속 거래처유형에 속하지 않는 거래처유형 선택값 정리 (전체 비우면 유지).
+  const handleDistributionChange = (next: string[]) => {
+    setDistributionChannels(next);
+    if (accountTypes.length > 0 && next.length > 0 && filterOptions) {
+      const allowed = new Set<string>();
+      next.forEach((dist) => {
+        (filterOptions.dependentAccountTypes[dist] ?? []).forEach((t) => allowed.add(t));
+      });
+      const kept = accountTypes.filter((t) => allowed.has(t));
+      if (kept.length !== accountTypes.length) setAccountTypes(kept);
+    }
+  };
+
   const category3Options = useMemo(() => {
     if (!category2) return [];
     return (
@@ -283,10 +319,11 @@ export default function ElectronicSalesDashboardPage() {
                 <Select
                   mode="multiple"
                   value={distributionChannels}
-                  onChange={setDistributionChannels}
-                  options={(filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v }))}
+                  onChange={handleDistributionChange}
+                  options={distributionChannelOptions}
                   placeholder="전체"
-                  style={{ minWidth: 160, maxWidth: 280 }}
+                  // 폭 고정 — 가변 폭 + responsive 조합의 태그 접힘↔펼침 레이아웃 진동 방지.
+                  style={{ width: 220 }}
                   maxTagCount="responsive"
                   allowClear
                   showSearch
@@ -303,9 +340,10 @@ export default function ElectronicSalesDashboardPage() {
                   mode="multiple"
                   value={accountTypes}
                   onChange={setAccountTypes}
-                  options={(filterOptions?.accountTypes ?? []).map((v) => ({ value: v, label: v }))}
+                  options={accountTypeOptions}
                   placeholder="전체"
-                  style={{ minWidth: 160, maxWidth: 280 }}
+                  // 폭 고정 — 가변 폭 + responsive 조합의 태그 접힘↔펼침 레이아웃 진동 방지.
+                  style={{ width: 220 }}
                   maxTagCount="responsive"
                   allowClear
                   showSearch

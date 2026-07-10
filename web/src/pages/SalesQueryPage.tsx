@@ -128,10 +128,23 @@ export default function SalesQueryPage() {
     () => (filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v })),
     [filterOptions],
   );
-  const accountTypeOptions = useMemo(
-    () => (filterOptions?.accountTypes ?? []).map((v) => ({ value: v, label: v })),
-    [filterOptions],
-  );
+  // 거래처유형 옵션 — 유통형태 미선택 시 전체, 선택 시 선택된 유통형태들의 종속 거래처유형 합집합.
+  // (유통형태는 다중선택이므로 각 유통형태의 dependentAccountTypes 를 모두 합친다.)
+  const accountTypeOptions = useMemo(() => {
+    if (!filterOptions) return [];
+    let labels: string[];
+    if (distributionChannels.length === 0) {
+      labels = filterOptions.accountTypes;
+    } else {
+      const union = new Set<string>();
+      distributionChannels.forEach((dist) => {
+        (filterOptions.dependentAccountTypes[dist] ?? []).forEach((t) => union.add(t));
+      });
+      // 전체 목록 순서(정렬)를 유지하도록 accountTypes 기준으로 필터.
+      labels = filterOptions.accountTypes.filter((t) => union.has(t));
+    }
+    return labels.map((v) => ({ value: v, label: v }));
+  }, [filterOptions, distributionChannels]);
   const category2Options = useMemo(
     () => (filterOptions?.categories ?? []).map((c) => ({ value: c.category2, label: c.category2 })),
     [filterOptions],
@@ -177,6 +190,20 @@ export default function SalesQueryPage() {
     setSelectedProducts(
       ids.map((id) => pool.get(id)).filter((p): p is ElectronicSalesProductLookupItem => p != null),
     );
+  };
+
+  // 유통형태 변경 시, 새 유통형태 집합의 종속 거래처유형에 더 이상 속하지 않는 거래처유형 선택값은 정리한다.
+  // (유통형태를 모두 비우면 거래처유형은 전체 대상이 되므로 기존 선택을 유지한다.)
+  const handleDistributionChange = (next: string[]) => {
+    setDistributionChannels(next);
+    if (accountTypes.length > 0 && next.length > 0 && filterOptions) {
+      const allowed = new Set<string>();
+      next.forEach((dist) => {
+        (filterOptions.dependentAccountTypes[dist] ?? []).forEach((t) => allowed.add(t));
+      });
+      const kept = accountTypes.filter((t) => allowed.has(t));
+      if (kept.length !== accountTypes.length) setAccountTypes(kept);
+    }
   };
 
   // 1단 — 거래처 목록 조회
@@ -385,7 +412,7 @@ export default function SalesQueryPage() {
                 <Select
                   mode="multiple"
                   value={distributionChannels}
-                  onChange={setDistributionChannels}
+                  onChange={handleDistributionChange}
                   options={distributionChannelOptions}
                   placeholder="전체"
                   // 폭은 고정한다. minWidth~maxWidth 가변 폭 + maxTagCount="responsive" 조합은,

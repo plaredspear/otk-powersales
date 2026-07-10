@@ -60,6 +60,8 @@ export interface ElectronicSalesFilterOptions {
   distributionChannels: string[];
   accountTypes: string[];
   categories: { category2: string; category3s: string[] }[];
+  /** 유통형태 라벨 → 해당 유통형태에 실제 존재하는 거래처유형 라벨 목록 (종속 필터링용). */
+  dependentAccountTypes: Record<string, string[]>;
 }
 
 /** 조회 조건 제품 검색 결과 1건 (바코드 보유 제품 한정). */

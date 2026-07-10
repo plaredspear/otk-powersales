@@ -5,7 +5,7 @@ import com.otoki.pos.repository.ElectronicSalesProductRow
 import com.otoki.pos.repository.ElectronicSalesRow
 import com.otoki.pos.repository.LiveTotSalesDailyRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.foundation.account.repository.AccountLabelPartsRow
+import com.otoki.powersales.domain.foundation.account.repository.AccountDistributionAbcPairRow
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.repository.CategoryGroupRow
 import com.otoki.powersales.domain.foundation.product.repository.ElectronicSalesProductLookupRow
@@ -425,14 +425,17 @@ class ElectronicSalesAdminQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getFilterOptions — 유통형태/거래처유형 라벨 조합 + 중분류→소분류 트리")
+    @DisplayName("getFilterOptions — (유통형태,거래처유형) pairs 로 축 목록·종속 매핑·카테고리 트리 산출")
     fun filterOptionsCombinesLabelsAndCategories() {
-        every { accountRepository.findDistinctDistributionChannelParts() } returns listOf(
-            AccountLabelPartsRow("02", "슈퍼"),
-            AccountLabelPartsRow(null, null), // 라벨 조합 불가 → 제외
-        )
-        every { accountRepository.findDistinctAbcTypeParts() } returns listOf(
-            AccountLabelPartsRow("6111", "이마트"),
+        // 유통형태·거래처유형은 같은 Account row 의 pairs 로 제공된다.
+        // - 대형마트에는 이마트/홈플러스, 슈퍼에는 일반슈퍼가 붙는다 (종속 매핑).
+        // - 한쪽만 있는 row 도 축 목록에는 포함, 둘 다 있을 때만 종속 매핑에 반영.
+        every { accountRepository.findDistinctDistributionAbcPairs() } returns listOf(
+            AccountDistributionAbcPairRow("01", "대형마트", "6111", "이마트"),
+            AccountDistributionAbcPairRow("01", "대형마트", "6112", "홈플러스"),
+            AccountDistributionAbcPairRow("02", "슈퍼", "6200", "일반슈퍼"),
+            AccountDistributionAbcPairRow("03", "편의점", null, null), // 거래처유형 없음 → 축 목록만
+            AccountDistributionAbcPairRow(null, null, null, null), // 라벨 조합 불가 → 전부 제외
         )
         every { productRepository.findCategoryGroups() } returns listOf(
             CategoryGroupRow("면류", "봉지면"),
@@ -443,8 +446,14 @@ class ElectronicSalesAdminQueryServiceTest {
 
         val result = service.getFilterOptions()
 
-        assertThat(result.distributionChannels).containsExactly("02 슈퍼")
-        assertThat(result.accountTypes).containsExactly("6111 이마트")
+        assertThat(result.distributionChannels).containsExactly("01 대형마트", "02 슈퍼", "03 편의점")
+        assertThat(result.accountTypes).containsExactly("6111 이마트", "6112 홈플러스", "6200 일반슈퍼")
+        // 종속 매핑 — 유통형태별로 실제 붙는 거래처유형만.
+        assertThat(result.dependentAccountTypes["01 대형마트"])
+            .containsExactly("6111 이마트", "6112 홈플러스")
+        assertThat(result.dependentAccountTypes["02 슈퍼"]).containsExactly("6200 일반슈퍼")
+        // 거래처유형이 없는 유통형태는 종속 매핑 키에 없다.
+        assertThat(result.dependentAccountTypes).doesNotContainKey("03 편의점")
         assertThat(result.categories).hasSize(2)
         val noodle = result.categories.first { it.category2 == "면류" }
         assertThat(noodle.category3s).containsExactly("봉지면", "용기면")

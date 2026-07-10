@@ -54,9 +54,13 @@ describe('ElectronicSalesDashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedFilterOptions.mockResolvedValue({
-      distributionChannels: ['02 슈퍼'],
-      accountTypes: ['6111 이마트'],
+      distributionChannels: ['01 대형마트(3대)', '02 슈퍼'],
+      accountTypes: ['6111 이마트', '6112 홈플러스', '6200 일반슈퍼'],
       categories: [{ category2: '면류', category3s: ['봉지면', '용기면'] }],
+      dependentAccountTypes: {
+        '01 대형마트(3대)': ['6111 이마트', '6112 홈플러스'],
+        '02 슈퍼': ['6200 일반슈퍼'],
+      },
     });
     mockedProductLookup.mockResolvedValue([]);
     mockedList.mockResolvedValue(emptyListResponse);

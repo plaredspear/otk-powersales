@@ -177,14 +177,26 @@ class ElectronicSalesAdminQueryService(
      */
     @Cacheable(value = [CacheConfig.CACHE_ELECTRONIC_SALES_FILTER_OPTIONS], key = "'ALL'")
     fun getFilterOptions(): ElectronicSalesDashboardFilterOptionsResponse {
-        val distributionChannels = accountRepository.findDistinctDistributionChannelParts()
-            .mapNotNull { Account.distributionChannelLabel(it.code, it.name) }
-            .distinct()
-            .sorted()
-        val accountTypes = accountRepository.findDistinctAbcTypeParts()
-            .mapNotNull { Account.abcTypeLabel(it.code, it.name) }
-            .distinct()
-            .sorted()
+        // 유통형태·거래처유형은 같은 Account row 에 공존하므로 (유통형태, 거래처유형) 동시출현 pairs 로 한 번에
+        // 산출한다. 축별 전체 목록(distributionChannels/accountTypes)과 종속 매핑(dependentAccountTypes)을
+        // 동일 소스에서 도출해 정합을 보장한다. 한쪽만 있는 row 도 축 목록에는 포함하고, 둘 다 있을 때만
+        // 종속 매핑에 반영한다.
+        val pairs = accountRepository.findDistinctDistributionAbcPairs()
+        val distributionSet = sortedSetOf<String>()
+        val accountTypeSet = sortedSetOf<String>()
+        val dependent = linkedMapOf<String, MutableSet<String>>()
+        for (pair in pairs) {
+            val distLabel = Account.distributionChannelLabel(pair.accountStatusCode, pair.accountType)
+            val abcLabel = Account.abcTypeLabel(pair.abcTypeCode, pair.abcType)
+            if (distLabel != null) distributionSet.add(distLabel)
+            if (abcLabel != null) accountTypeSet.add(abcLabel)
+            if (distLabel != null && abcLabel != null) {
+                dependent.getOrPut(distLabel) { sortedSetOf() }.add(abcLabel)
+            }
+        }
+        val distributionChannels = distributionSet.toList()
+        val accountTypes = accountTypeSet.toList()
+        val dependentAccountTypes = dependent.mapValues { it.value.toList() }
         val categories = productRepository.findCategoryGroups()
             .groupBy { it.category2 }
             .toSortedMap()
@@ -198,6 +210,7 @@ class ElectronicSalesAdminQueryService(
             distributionChannels = distributionChannels,
             accountTypes = accountTypes,
             categories = categories,
+            dependentAccountTypes = dependentAccountTypes,
         )
     }
 
