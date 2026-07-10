@@ -1,9 +1,7 @@
 package com.otoki.powersales.domain.activity.schedule.controller
 
 import com.otoki.powersales.domain.activity.schedule.dto.request.LeaderEventScheduleChangeRequest
-import com.otoki.powersales.domain.activity.schedule.dto.request.LeaderProxyAttendanceRequest
 import com.otoki.powersales.domain.activity.schedule.dto.request.LeaderScheduleCreateRequest
-import com.otoki.powersales.domain.activity.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderAccountListResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailyStatusResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderEventScheduleChangeResponse
@@ -49,21 +47,6 @@ class LeaderScheduleController(
         val response = leaderScheduleService.createTeamMemberSchedule(principal.userId, request)
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(ApiResponse.success(response, "팀원 일정이 등록되었습니다"))
-    }
-
-    /**
-     * 조장 대리출근 등록 (레거시 mngDaily `addScheduleProc`)
-     * POST /api/v1/mobile/leader/attendance
-     *
-     * 진열=display_work_schedule_id, 행사·기배정=schedule_id 중 하나 전달. GPS 미적용.
-     */
-    @PostMapping("/attendance")
-    fun registerProxyAttendance(
-        @AuthenticationPrincipal principal: UserPrincipal,
-        @Valid @RequestBody request: LeaderProxyAttendanceRequest
-    ): ResponseEntity<ApiResponse<AttendanceRegisterResponse>> {
-        val response = leaderScheduleService.registerProxyAttendance(principal.userId, request)
-        return ResponseEntity.ok(ApiResponse.success(response, "대리출근 등록 완료"))
     }
 
     /**

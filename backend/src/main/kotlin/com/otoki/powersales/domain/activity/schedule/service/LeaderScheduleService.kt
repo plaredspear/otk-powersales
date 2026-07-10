@@ -16,24 +16,15 @@ import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoun
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper
 import com.otoki.powersales.domain.activity.schedule.dto.request.LeaderEventScheduleChangeRequest
-import com.otoki.powersales.domain.activity.schedule.dto.request.LeaderProxyAttendanceRequest
 import com.otoki.powersales.domain.activity.schedule.dto.request.LeaderScheduleCreateRequest
-import com.otoki.powersales.domain.activity.schedule.dto.response.AttendanceRegisterResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderEventScheduleChangeResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderAccountListResponse
-import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailyEmployeeItem
-import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailyStatusResponse
-import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailyStatusSummary
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderCalendarDay
-import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailyWorkerItem
+import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailyStatusResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderMonthlyCalendarResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderScheduleCreateResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderTeamMemberListResponse
-import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
-import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
-import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.domain.activity.schedule.exception.LeaderEventScheduleAttendedException
 import com.otoki.powersales.domain.activity.schedule.exception.LeaderEventScheduleClosedException
 import com.otoki.powersales.domain.activity.schedule.exception.LeaderEventScheduleNotEventException
@@ -70,14 +61,12 @@ class LeaderScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
-    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val scheduleConflictValidator: ScheduleConflictValidator,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
-    private val attendanceService: AttendanceService,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val promotionSchedulesUpsertHelper: PromotionSchedulesUpsertHelper,
-    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper
+    private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
+    private val teamDailyStatusCalculator: TeamDailyStatusCalculator
 ) {
 
     companion object {
@@ -90,9 +79,6 @@ class LeaderScheduleService(
 
         /** 레거시 PromotionEmployeeTriggerHandler.removeScheduleOnDelete 마감 삭제 차단 우회 사번. */
         private const val SPECIAL_BYPASS_EMPLOYEE_CODE = "00000009"
-
-        /** 진열 cat2 '임시' 표시값 (레거시 tempList `workingcategory2__c.contains("임시")` 정합). */
-        private val DISPLAY_CATEGORY2_TEMPORARY = TypeOfWork5.TEMPORARY.displayName
     }
 
     @Transactional
@@ -162,37 +148,6 @@ class LeaderScheduleService(
         // step 11: 저장 + 응답
         val saved = teamMemberScheduleRepository.save(newSchedule)
         return LeaderScheduleCreateResponse.from(saved)
-    }
-
-    /**
-     * 조장 대리출근 등록 (레거시 mngDaily `addScheduleProc` 동등).
-     *
-     * 조장 권한 + 대상이 조장 팀원(cost_center_code 일치) 검증 후, 실제 출근 등록은
-     * [AttendanceService.registerProxy] 에 위임 (Orora WorkReport 경로 공유, GPS 스킵).
-     */
-    @Transactional
-    fun registerProxyAttendance(
-        registrantId: Long,
-        request: LeaderProxyAttendanceRequest
-    ): AttendanceRegisterResponse {
-        val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
-
-        val targetEmployeeId = request.targetEmployeeId
-            ?: throw LeaderScheduleTargetEmployeeNotFoundException()
-        val targetEmployee = employeeRepository.findById(targetEmployeeId)
-            .orElseThrow { LeaderScheduleTargetEmployeeNotFoundException() }
-
-        // 팀원 검증 (조장 코스트센터 일치)
-        if (targetEmployee.costCenterCode != registrant.costCenterCode) {
-            throw LeaderScheduleNotTeamMemberException()
-        }
-
-        return attendanceService.registerProxy(
-            targetEmployee = targetEmployee,
-            scheduleId = request.scheduleId,
-            displayWorkScheduleId = request.displayWorkScheduleId
-        )
     }
 
     /**
@@ -354,78 +309,15 @@ class LeaderScheduleService(
         requireLeader(registrant)
 
         val costCenterCode = registrant.costCenterCode
-            ?: return emptyDailyStatus(date)
+            ?: return teamDailyStatusCalculator.emptyDailyStatus(date)
 
         // 코스트센터 전체 인원(내부 PK). 레거시는 sfid 서브쿼리지만 신규는 cost_center_code 직접.
         val teamEmployeeIds = employeeRepository
             .findByCostCenterCodeIn(listOf(costCenterCode))
             .mapNotNull { it.id.takeIf { v -> v != 0L } }
-        if (teamEmployeeIds.isEmpty()) return emptyDailyStatus(date)
 
-        // 일별 진열/행사 워커 집계 (월간 캘린더와 공유하는 핵심 로직).
-        val workers = computeDailyWorkers(teamEmployeeIds, date)
-        val schedules = workers.schedules
-        val rawDisplay = workers.display
-        val rawEvent = workers.event
-
-        // ── 정렬 (레거시 mergedList 버킷 순서, 여사원 단위) ──
-        // 진열: 출근완료 → 임시(미출근) → 정규(미출근), 그 안은 이름·거래처명순.
-        val displayAttendedEmps = rawDisplay.filter { it.attended }.mapNotNull { it.employeeId }.toSet()
-        val displayTempEmps = rawDisplay
-            .filter {
-                it.employeeId != null && it.employeeId !in displayAttendedEmps &&
-                    it.workingCategory2 == DISPLAY_CATEGORY2_TEMPORARY
-            }
-            .mapNotNull { it.employeeId }
-            .toSet()
-        val displayWorkers = rawDisplay.sortedWith(
-            compareBy(
-                { w -> when {
-                    w.employeeId in displayAttendedEmps -> 0
-                    w.employeeId in displayTempEmps -> 1
-                    else -> 2
-                } },
-                { it.employeeName },
-                { it.accountName },
-            )
-        )
-        // 행사: 출근완료 → 미출근, 그 안은 이름·거래처명순.
-        val eventAttendedEmps = rawEvent.filter { it.attended }.mapNotNull { it.employeeId }.toSet()
-        val eventWorkers = rawEvent.sortedWith(
-            compareBy(
-                { w -> if (w.employeeId in eventAttendedEmps) 0 else 1 },
-                { it.employeeName },
-                { it.accountName },
-            )
-        )
-
-        // ── 연차: team_member_schedule ANNUAL_LEAVE (레거시 버그 수정 — 정상 표시) ──
-        val annualLeaveWorkers = schedules
-            .filter { it.workingType == WorkingType.ANNUAL_LEAVE }
-            .mapNotNull { it.employee }
-            .distinctBy { it.id }
-            .sortedBy { it.name }
-            .map { LeaderDailyEmployeeItem(employeeId = it.id, employeeName = it.name, employeeCode = it.employeeCode) }
-
-        // ── 요약: 레거시 dislength/promotelength 와 동일 단위(여사원 distinct) ──
-        // 레거시는 mergedList(여사원 단위)를 돌며 진열·행사 여사원당 1회 카운트(dislength++/promotelength++)
-        // 하므로 분모 = distinct 여사원 수이며, 진열/행사 근무자 목록 헤더 개수와 항상 일치한다.
-        // (cat2/cat3 로 쪼개면 한 여사원이 상시·임시를 동시 보유할 때 목록 개수와 어긋남.)
-        val summary = LeaderDailyStatusSummary(
-            displayTotal = rawDisplay.mapNotNull { it.employeeId }.toSet().size,
-            displayAttended = rawDisplay.filter { it.attended }.mapNotNull { it.employeeId }.toSet().size,
-            eventTotal = rawEvent.mapNotNull { it.employeeId }.toSet().size,
-            eventAttended = rawEvent.filter { it.attended }.mapNotNull { it.employeeId }.toSet().size,
-            annualLeaveCount = annualLeaveWorkers.size,
-        )
-
-        return LeaderDailyStatusResponse(
-            date = date.toString(),
-            summary = summary,
-            displayWorkers = displayWorkers,
-            eventWorkers = eventWorkers,
-            annualLeaveWorkers = annualLeaveWorkers,
-        )
+        // 집계/정렬/요약은 조장·대리출근 공유 계산 코어에 위임.
+        return teamDailyStatusCalculator.computeDailyStatus(teamEmployeeIds, date)
     }
 
     /**
@@ -472,60 +364,12 @@ class LeaderScheduleService(
         val days = mutableListOf<LeaderCalendarDay>()
         var currentDate = startDate
         while (!currentDate.isAfter(endDate)) {
-            val workers = computeDailyWorkers(targetIds, currentDate)
-            val total = workers.display.size + workers.event.size
-            if (total > 0) {
-                val attended =
-                    workers.display.count { it.attended } + workers.event.count { it.attended }
-                days.add(
-                    LeaderCalendarDay(
-                        date = currentDate.toString(),
-                        total = total,
-                        attended = attended
-                    )
-                )
-            }
+            teamDailyStatusCalculator.computeCalendarDay(targetIds, currentDate)?.let { days.add(it) }
             currentDate = currentDate.plusDays(1)
         }
 
         return LeaderMonthlyCalendarResponse(year, month, days)
     }
-
-    /**
-     * 일별 진열/행사 워커 집계 — `getDailyStatus`(일별 현황) 와 월간 캘린더가 공유하는 핵심 로직.
-     * - 진열: `DisplayWorkSchedule`(확정·기간유효) 중 안전점검 제출자만, 거래처별 출근은 진열
-     *   team_member_schedule 행의 attendanceLog 존재로 판정.
-     * - 행사: team_member_schedule cat1=EVENT.
-     */
-    private fun computeDailyWorkers(teamEmployeeIds: List<Long>, date: LocalDate): DailyWorkers {
-        val schedules = teamMemberScheduleRepository.findDailyStatusByEmployeeIds(date, teamEmployeeIds)
-
-        val safetyEmployeeIds = safetyCheckSubmissionRepository
-            .findByEmployeeIdInAndWorkingDate(teamEmployeeIds, date)
-            .mapNotNull { it.employeeId }
-            .toSet()
-        val displayAttendedKeys = schedules
-            .asSequence()
-            .filter { it.workingCategory1 == WorkingCategory1.DISPLAY && it.attendanceLog != null }
-            .mapNotNull { s -> pairOrNull(s.employee?.id, s.account?.id) }
-            .toSet()
-        val display = displayWorkScheduleRepository
-            .findConfirmedValidByEmployeeIdsAndDate(teamEmployeeIds, date)
-            .filter { it.employee?.id in safetyEmployeeIds }
-            .map { it.toDisplayWorkerItem(displayAttendedKeys) }
-
-        val event = schedules
-            .filter { it.workingCategory1 == WorkingCategory1.EVENT }
-            .map { it.toWorkerItem() }
-
-        return DailyWorkers(schedules = schedules, display = display, event = event)
-    }
-
-    private data class DailyWorkers(
-        val schedules: List<TeamMemberSchedule>,
-        val display: List<LeaderDailyWorkerItem>,
-        val event: List<LeaderDailyWorkerItem>
-    )
 
     fun getAccounts(registrantId: Long, keyword: String?): List<LeaderAccountListResponse> {
         val registrant = findRegistrant(registrantId)
@@ -587,56 +431,4 @@ class LeaderScheduleService(
         if (account.accountGroup !in LEADER_ACCOUNT_GROUPS) return false
         return true
     }
-
-    private fun emptyDailyStatus(date: LocalDate): LeaderDailyStatusResponse =
-        LeaderDailyStatusResponse(
-            date = date.toString(),
-            summary = LeaderDailyStatusSummary(0, 0, 0, 0, 0),
-            displayWorkers = emptyList(),
-            eventWorkers = emptyList(),
-            annualLeaveWorkers = emptyList(),
-        )
-
-    private fun TeamMemberSchedule.toWorkerItem(): LeaderDailyWorkerItem =
-        LeaderDailyWorkerItem(
-            scheduleId = id,
-            displayWorkScheduleId = null,
-            employeeId = employee?.id,
-            employeeName = employee?.name.orEmpty(),
-            employeeCode = employee?.employeeCode.orEmpty(),
-            accountName = account?.name.orEmpty(),
-            accountCode = account?.externalKey.orEmpty(),
-            workingCategory1 = workingCategory1?.displayName,
-            workingCategory2 = workingCategory2?.displayName,
-            workingCategory3 = workingCategory3?.displayName,
-            attended = attendanceLog != null,
-        )
-
-    /**
-     * 진열 마스터 → 일별 현황 워커 항목 (레거시 `selectDisplayAccList` 컬럼 매핑).
-     * 진열은 마스터 출처(조회 전용)라 편집용 schedule id 가 없어 [scheduleId] = 0.
-     * 카테고리: typeOfWork1→cat1(진열), typeOfWork5→cat2(상시/임시), typeOfWork3→cat3.
-     */
-    private fun DisplayWorkSchedule.toDisplayWorkerItem(
-        attendedKeys: Set<Pair<Long, Long>>
-    ): LeaderDailyWorkerItem {
-        val empId = employee?.id
-        val accId = account?.id
-        return LeaderDailyWorkerItem(
-            scheduleId = 0L,
-            displayWorkScheduleId = id,
-            employeeId = empId,
-            employeeName = employee?.name.orEmpty(),
-            employeeCode = employee?.employeeCode.orEmpty(),
-            accountName = account?.name.orEmpty(),
-            accountCode = account?.externalKey.orEmpty(),
-            workingCategory1 = typeOfWork1?.displayName,
-            workingCategory2 = typeOfWork5?.displayName,
-            workingCategory3 = typeOfWork3?.displayName,
-            attended = empId != null && accId != null && (empId to accId) in attendedKeys,
-        )
-    }
-
-    private fun pairOrNull(a: Long?, b: Long?): Pair<Long, Long>? =
-        if (a != null && b != null) a to b else null
 }
