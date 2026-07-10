@@ -36,8 +36,12 @@ class ProductCardForAdd extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 전용상품(예외 코드 제외)은 주문서에 추가할 수 없으므로 선택을 막는다.
+    final bool isBlocked = product.isExclusiveBlocked;
+
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      color: isBlocked ? AppColors.surface : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         side: BorderSide(
@@ -46,27 +50,46 @@ class ProductCardForAdd extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: () => onSelectionChanged(!isSelected),
+        // 전용상품은 선택 불가 — 인라인 안내로 사유를 표시한다.
+        onTap: isBlocked ? null : () => onSelectionChanged(!isSelected),
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 체크박스
-              Checkbox(
-                value: isSelected,
-                onChanged: onSelectionChanged,
-                activeColor: AppColors.primary,
-              ),
+              // 체크박스 (전용상품은 선택 불가 → 차단 아이콘)
+              if (isBlocked)
+                const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: Icon(Icons.block, color: AppColors.error),
+                )
+              else
+                Checkbox(
+                  value: isSelected,
+                  onChanged: onSelectionChanged,
+                  activeColor: AppColors.primary,
+                ),
               // 제품 정보
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      product.productName,
-                      style: AppTypography.labelLarge,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            product.productName,
+                            style: AppTypography.labelLarge,
+                          ),
+                        ),
+                        if (isBlocked) ...[
+                          const SizedBox(width: AppSpacing.xs),
+                          _ExclusiveBadge(),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
@@ -114,6 +137,27 @@ class ProductCardForAdd extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (isBlocked) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              '전용상품은 주문이 불가능합니다.',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: AppColors.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -132,6 +176,34 @@ class ProductCardForAdd extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 전용상품 표시 뱃지
+///
+/// 전용상품(`producttype__c == '2'`)은 주문서에 추가할 수 없으므로,
+/// 제품 목록에서 식별할 수 있도록 제품명 옆에 표시합니다.
+class _ExclusiveBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.errorLight,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        border: Border.all(color: AppColors.error),
+      ),
+      child: Text(
+        '전용상품',
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.error,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

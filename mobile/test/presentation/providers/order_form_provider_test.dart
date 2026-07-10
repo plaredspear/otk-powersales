@@ -291,7 +291,7 @@ void main() {
       test('E9 — 전용상품 차단', () {
         final result = notifier.addProductLine(_product('P001', exclusive: true));
         expect(result, false);
-        expect(notifier.state.errorMessage, '전용상품은 추가할 수 없습니다.');
+        expect(notifier.state.errorMessage, '전용상품은 주문이 불가능합니다.');
         expect(notifier.state.orderDraft.items, isEmpty);
       });
 

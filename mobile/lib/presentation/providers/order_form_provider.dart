@@ -281,18 +281,14 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     );
   }
 
-  /// 전용상품 차단 예외 제품코드 — 옛날_구수한끓여먹는누룽지 450g (레거시 poplayer.js 하드코딩 정합).
-  static const String _exclusiveBlockExemptCode = '20010042';
-
   /// 제품 추가 (Spec #598 P3-M §2.1) — 차단 룰 3종 적용 후 라인 추가.
   ///
   /// Returns true 면 라인 추가됨, false 면 차단 (errorMessage 가 SnackBar 로 표시).
   bool addProductLine(ProductForOrder product) {
-    // (1) 전용상품 차단 — 단 제품코드 20010042(옛날_구수한끓여먹는누룽지 450g)는 예외 허용.
+    // (1) 전용상품 차단 — 단 예외 제품코드(옛날_구수한끓여먹는누룽지 450g)는 허용.
     //     레거시 하드코딩 정합(poplayer.js): 1사업부 전용상품이지만 현업 요청으로 주문 허용된 제품.
-    if (product.isExclusive &&
-        product.productCode != _exclusiveBlockExemptCode) {
-      state = state.copyWith(errorMessage: '전용상품은 추가할 수 없습니다.');
+    if (product.isExclusiveBlocked) {
+      state = state.copyWith(errorMessage: '전용상품은 주문이 불가능합니다.');
       return false;
     }
     // (2) 시식·증정용 차단

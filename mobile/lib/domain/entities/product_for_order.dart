@@ -57,8 +57,17 @@ class ProductForOrder {
     this.tasteGiftType,
   });
 
+  /// 전용상품 차단 예외 제품코드 — 옛날_구수한끓여먹는누룽지 450g (레거시 poplayer.js 하드코딩 정합).
+  /// 전용상품이지만 현업 요청으로 주문이 허용된 제품.
+  static const String exclusiveBlockExemptCode = '20010042';
+
   /// 전용상품 여부 (`productType == 'EXCLUSIVE'`).
   bool get isExclusive => productType == 'EXCLUSIVE';
+
+  /// 주문서 추가가 차단되는 전용상품 여부.
+  /// 전용상품이면서 예외 코드([exclusiveBlockExemptCode])가 아닌 경우 true.
+  bool get isExclusiveBlocked =>
+      isExclusive && productCode != exclusiveBlockExemptCode;
 
   /// 시식·증정용 여부 (`tasteGiftType == 'TASTING_GIFT'`).
   bool get isTastingGift => tasteGiftType == 'TASTING_GIFT';
