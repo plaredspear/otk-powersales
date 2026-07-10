@@ -160,6 +160,24 @@ abstract final class MenuConstants {
     ],
   );
 
+  /// AccountViewAll(부서장) 전용 그룹 — 지점 선택형 대리출근.
+  ///
+  /// AccountViewAll 은 전사 성격이라 지점을 직접 선택해 여사원 대리출근을 등록한다
+  /// (조장의 costCenterCode 자동 고정과 다름). `full_menu_drawer` 에서 rawRole=AccountViewAll
+  /// 일 때만 삽입한다.
+  static const MenuGroup proxyAttendanceGroup = MenuGroup(
+    id: 'proxy-attendance',
+    icon: Icons.how_to_reg,
+    label: '대리출근',
+    items: [
+      MenuItem(
+        id: 'proxy-attendance',
+        label: '대리출근 등록',
+        route: '/proxy-attendance',
+      ),
+    ],
+  );
+
   /// 총 메뉴 그룹 수
   static int get groupCount => menuGroups.length;
 

@@ -50,6 +50,7 @@ import 'presentation/screens/change_password_screen.dart';
 import 'presentation/screens/gps_consent_screen.dart';
 import 'presentation/screens/leader_schedule/leader_female_staff_screen.dart';
 import 'presentation/screens/leader_schedule/leader_team_member_schedule_screen.dart';
+import 'presentation/screens/proxy_attendance/proxy_attendance_screen.dart';
 import 'presentation/screens/logistics_sales_screen.dart';
 import 'presentation/screens/login_screen.dart';
 import 'presentation/screens/main_screen.dart';
@@ -113,6 +114,7 @@ class AppRouter {
   static const String myScheduleDetail = '/my-schedule/detail'; // F56: 일정 상세
   static const String leaderFemaleStaff = '/leader/female-staff'; // 레거시 /employee/main: 조장 — 여사원 명단
   static const String leaderSchedule = '/leader/schedule'; // 레거시 /employee/mgnSchedule: 조장 — 일정/등록(월간 캘린더 → 일별현황)
+  static const String proxyAttendance = '/proxy-attendance'; // AccountViewAll — 지점 선택형 대리출근
   static const String appInfo = '/app-info'; // 앱 정보 / 오픈소스 라이선스
   static const String profile = '/profile'; // 내 정보(프로필)
   static const String staffEvaluation = '/staff-evaluation'; // 레거시 /employee/evaluationList: 여사원 평가조회
@@ -273,6 +275,7 @@ class AppRouter {
         promotionDailySalesEntry: (context) => const DailySalesEntryPage(),
         leaderFemaleStaff: (context) => const LeaderFemaleStaffScreen(), // 레거시 /employee/main: 여사원 명단
         leaderSchedule: (context) => const LeaderTeamMemberScheduleScreen(), // 레거시 /employee/mgnSchedule: 일정/등록(월간 캘린더)
+        proxyAttendance: (context) => const ProxyAttendanceScreen(), // AccountViewAll — 지점 선택형 대리출근
         appInfo: (context) => const AppInfoPage(),
         profile: (context) => const ProfilePage(), // 내 정보(프로필)
         staffEvaluation: (context) => const StaffEvaluationPage(), // 레거시 /employee/evaluationList: 여사원 평가조회

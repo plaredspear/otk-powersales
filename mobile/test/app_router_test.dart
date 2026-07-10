@@ -114,7 +114,8 @@ void main() {
       expect(routes.containsKey(AppRouter.suggestionList), true);
       expect(routes.containsKey(AppRouter.staffEvaluation), true);
       expect(routes.containsKey(AppRouter.splash), true);
-      expect(routes.length, 53);
+      expect(routes.containsKey(AppRouter.proxyAttendance), true);
+      expect(routes.length, 54);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {

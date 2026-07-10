@@ -77,8 +77,9 @@ class FullMenuDrawer extends ConsumerWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // 메뉴 그룹 목록 (조장은 "거래처" 다음에 "여사원 관리" 삽입)
-                      ..._buildMenuGroups(context, user?.role),
+                      // 메뉴 그룹 목록 (조장은 "거래처" 다음에 "여사원 관리",
+                      // AccountViewAll 은 "대리출근" 삽입)
+                      ..._buildMenuGroups(context, user?.role, user?.rawRole),
                       // 메뉴 가장 하단에 현재 버전 표시 (메뉴와 함께 스크롤)
                       const _MenuVersionFooter(),
                     ],
@@ -100,9 +101,15 @@ class FullMenuDrawer extends ConsumerWidget {
   ///
   /// 또한 조장(LEADER)·지점장(ADMIN)은 소비기한 기능을 사용하지 않으므로 'expiry'
   /// 메뉴를 제외하며, 제외 후 항목이 비는 그룹(제품)은 그룹 자체를 노출하지 않는다.
-  List<Widget> _buildMenuGroups(BuildContext context, String? role) {
+  List<Widget> _buildMenuGroups(
+    BuildContext context,
+    String? role,
+    String? rawRole,
+  ) {
     final isLeader = role == 'LEADER';
     final hideExpiry = role == 'LEADER' || role == 'ADMIN';
+    // AccountViewAll(부서장)은 도메인 role 로는 USER 로 뭉개지므로 SF 원본 rawRole 로 판별한다.
+    final isAccountViewAll = rawRole == 'AccountViewAll';
 
     // 조건부 삽입할 그룹 목록 구성
     final groups = <domain.MenuGroup>[];
@@ -123,6 +130,10 @@ class FullMenuDrawer extends ConsumerWidget {
       }
       if (isLeader && group.id == 'trade') {
         groups.add(MenuConstants.teamManagementGroup);
+      }
+      // AccountViewAll 전용 대리출근 그룹 — "거래처" 그룹 다음에 삽입.
+      if (isAccountViewAll && group.id == 'trade') {
+        groups.add(MenuConstants.proxyAttendanceGroup);
       }
     }
 
