@@ -21,6 +21,7 @@ import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegiste
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.foundation.product.enums.ProductType
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import jakarta.persistence.EntityManager
@@ -38,7 +39,8 @@ import java.time.LocalDateTime
  *  1. 멱등 검사 — `clientRequestId` 가 전달되면 기존 row 조회 후 200 OK 멱등 반환 (SAP 호출 없음)
  *  2. 입력 검증 — 형식 / 미래 일자 (거래처 담당 재검증 없음 — 레거시 정합, 일정 기반 셀렉터만 게이트)
  *  3. 제품 마스터 대조 — 클라이언트 제공 productCode 가 마스터에 없으면 SAP 호출 전 즉시 거부
- *  3-1. SAP `InventorySearch` 1회 호출 — 단위 환산/공급제한/제품마스터 메타 일괄 조회 (응답 라인 누락 시 거부)
+ *  3-1. 전용상품 차단 — product_type='2' 라인 거부 (20010042 레거시 예외 허용)
+ *  3-2. SAP `InventorySearch` 호출 — 단위 환산/공급제한/제품마스터 메타 일괄 조회 (응답 라인 누락 시 거부)
  *  4. SAP `LoanInquiry` 호출 — 여신 한도 서버 재검증 (`creditBalance >= totalAmount`)
  *  5. `order_request` 헤더 INSERT — 백엔드 자체 채번 `OR{00000000}` (레거시 SF Auto Number 동폭), 초기 status `SENT`
  *  6. `order_request_product` 라인 일괄 INSERT — `pieces_per_box` 등록 시점 스냅샷 (#595 의존)
@@ -100,7 +102,21 @@ class OrderRequestCreateService(
             )
         }
 
-        // 3-1. SAP InventorySearch
+        // 3-1. 전용상품 차단 — 레거시 주문 화면(poplayer.js prdType=='2' 차단) 정합 서버 가드.
+        //      화면 차단을 우회하는 경로(임시저장 복원, 구버전 앱 등) 방어 + SAP 의 불명확한
+        //      거부 메시지("유효한 데이터가 아닙니다") 대신 명확한 사유를 반환한다.
+        //      20010042(옛날_구수한끓여먹는누룽지 450g)는 레거시 하드코딩 예외 동일 적용.
+        val exclusiveCodes = productCodes.filter { code ->
+            code != EXCLUSIVE_BLOCK_EXEMPT_CODE &&
+                productsByCode.getValue(code).productType == ProductType.PRODUCT_TYPE_2
+        }
+        if (exclusiveCodes.isNotEmpty()) {
+            throw OrderInvalidRequestException(
+                "전용상품은 주문할 수 없습니다: ${exclusiveCodes.joinToString(", ")}"
+            )
+        }
+
+        // 3-2. SAP InventorySearch
         val inventoryMap = inventorySearchClient.search(request.accountId, productCodes, request.deliveryDate)
         validateInventory(request, inventoryMap)
 
@@ -237,6 +253,9 @@ class OrderRequestCreateService(
     companion object {
         private const val UNIT_EA = "EA"
         private val ALLOWED_UNITS = setOf("BOX", "EA")
+
+        /** 전용상품 차단 예외 제품코드 — 옛날_구수한끓여먹는누룽지 450g (레거시 poplayer.js 하드코딩 정합). */
+        private const val EXCLUSIVE_BLOCK_EXEMPT_CODE = "20010042"
         private const val ORDER_REQUEST_NUMBER_PREFIX = "OR"
         private const val ORDER_REQUEST_NUMBER_DIGITS = 8
     }

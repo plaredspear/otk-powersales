@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.order.service
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.foundation.product.entity.Product
+import com.otoki.powersales.domain.foundation.product.enums.ProductType
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -243,6 +244,44 @@ class OrderRequestCreateServiceTest {
 
             // 비정상 코드가 SAP 까지 전달되지 않아야 한다 (SD03070 ABAP 시스템 오류 재발 방어).
             verify(exactly = 0) { inventorySearchClient.search(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("전용상품(product_type='2') 라인 → 명확한 사유로 거부 + SAP 미호출")
+        fun exclusiveProductRejectedBeforeSap() {
+            stubAuthAndAccount()
+            every { productRepository.findByProductCodeIn(listOf("P_EXCL")) } returns
+                listOf(Product(productCode = "P_EXCL", productType = ProductType.PRODUCT_TYPE_2))
+
+            assertThatThrownBy { service.create(userId, baseRequest(lines = listOf(line(productCode = "P_EXCL")))) }
+                .isInstanceOf(OrderInvalidRequestException::class.java)
+                .hasMessageContaining("전용상품은 주문할 수 없습니다")
+                .hasMessageContaining("P_EXCL")
+
+            verify(exactly = 0) { inventorySearchClient.search(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("전용상품 예외 — 20010042(누룽지)는 통과 (레거시 하드코딩 정합)")
+        fun exclusiveExemptProductAllowed() {
+            stubAuthAndAccount()
+            every { productRepository.findByProductCodeIn(listOf("20010042")) } returns
+                listOf(Product(productCode = "20010042", productType = ProductType.PRODUCT_TYPE_2))
+            stubInventory(mapOf("20010042" to inventoryInfo("20010042", conv = 1, supply = 1000)))
+            every { loanInquiryClient.inquireCreditBalance(accountId) } returns BigDecimal.valueOf(10_000_000)
+            every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
+            every { orderRequestProductRepository.saveAll(any<List<OrderRequestProduct>>()) } answers { firstArg() }
+            every { orderRequestRegisterSender.enqueue(any(), any()) } returns
+                SapOutbox(domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}")
+
+            val request = baseRequest(
+                lines = listOf(line(productCode = "20010042", quantity = 10, unit = "EA", quantityPieces = 10, quantityBoxes = 0))
+            )
+
+            val response = service.create(userId, request)
+
+            assertThat(response.status).isEqualTo(OrderRequestStatus.SENT.name)
+            verify(exactly = 1) { inventorySearchClient.search(any(), any(), any()) }
         }
 
         @Test
