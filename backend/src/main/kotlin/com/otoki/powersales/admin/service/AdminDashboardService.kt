@@ -6,7 +6,6 @@ import com.otoki.powersales.admin.dto.response.BasicStats
 import com.otoki.powersales.admin.dto.response.ChannelWorkTypeItem
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.dto.response.EtcBreakdownItem
-import com.otoki.powersales.admin.dto.response.PreviousMonthData
 import com.otoki.powersales.admin.dto.response.SalesSummary
 import com.otoki.powersales.admin.dto.response.StaffDeployment
 import com.otoki.powersales.admin.dto.response.StaffTypeCount
@@ -39,7 +38,8 @@ import java.time.format.DateTimeFormatter
  *
  * ## 레거시 매핑 + 신규 차이
  * - 환산인원: SF `MonthlyFemaleEmployeeIntegrationSchedule__c.ConvertedHeadcount__c`(Number 18,4) SUM 정합 — scale=4.
- * - 거래처유형별 투입현황 차트는 SF 와 동일하게 **전월(마감) 고정**(결정 D2). 그 외는 yearMonth 토글.
+ * - 여사원 투입현황 탭 차트는 SF 레거시 대시보드(LAST_MONTH 필터)와 동일하게 **모두 전월(마감) 고정**
+ *   (결정 D2 를 탭 전체로 확장). 매출현황/기본현황은 yearMonth 토글(당월 기본).
  * - 판촉/OSC 구분: `Employee.jobCode`("판촉직" / "OSC직"·"레이디직") — 레거시 `EmployeeTriggerHandler.cls:47` 정합(결정 D6).
  * - 매출현황 탭(salesSummary): 투입 거래처 기준 실적 + 목표 + 달성률 + 기준진도율(달력일) + 전년 비교.
  *   목표는 투입 거래처별 `SalesProgressRateMaster`(연·월 1행) 합계 총합, 달성률 = round(실적/목표×100).
@@ -61,7 +61,7 @@ class AdminDashboardService(
      * [effectiveCodes] 는 컨트롤러가 [DashboardBranchResolver.effectiveBranchCodes] 로 산출한
      * 조회 지점 코드 목록(전사 권한자는 34개 화이트리스트, 지점 사용자는 본인 지점). 빈 목록이면 조회 결과 0건.
      *
-     * 거래처유형별 투입현황은 전월(마감) 고정(D2). 매출현황은 실적+기준진도율만(D7).
+     * 여사원 투입현황은 전 차트 전월(마감) 고정(D2 확장). 매출현황은 실적+기준진도율만(D7).
      */
     fun getDashboard(
         effectiveCodes: List<String>,
@@ -74,15 +74,15 @@ class AdminDashboardService(
         // 단일 지점이면 그 지점명, 복수면 "OO 외 N", effectiveCodes 가 비면(전사 권한 전체) "전체".
         val branchName = resolveBranchLabel(effectiveCodes, branchNamesByCode)
 
-        // 당월 MFEIS 는 세 섹션(매출/투입/기본)이 공유 — 1회만 조회해 재사용 (중복 trip 제거).
-        // 전월 MFEIS 는 투입현황(D2: 전월 마감 고정)에서만 쓰여 해당 빌더가 자체 조회한다.
+        // 당월 MFEIS 는 매출/기본 두 섹션이 공유 — 1회만 조회해 재사용 (중복 trip 제거).
+        // 전월 MFEIS 는 투입현황(D2 확장: 전 차트 전월 마감 고정)에서만 쓰여 해당 빌더가 자체 조회한다.
         val rows = mfeisRepository.findDeploymentDashboardRows(
             ym.year.toString(), ym.monthValue.toString(), effectiveCodes,
         )
 
         return DashboardResponse(
             salesSummary = buildSalesSummary(ym, branchName, rows),
-            staffDeployment = buildStaffDeployment(ym, previousYm, branchName, effectiveCodes, rows),
+            staffDeployment = buildStaffDeployment(ym, previousYm, branchName, effectiveCodes),
             basicStats = buildBasicStats(ym, branchName, effectiveCodes, rows),
         )
     }
@@ -153,9 +153,8 @@ class AdminDashboardService(
         previousYm: YearMonth,
         branchName: String?,
         effectiveCodes: List<String>,
-        rows: List<DashboardDeploymentRow>,
     ): StaffDeployment {
-        // 당월 rows 는 getDashboard 에서 1회 조회분을 공유. 전월(마감)만 자체 조회 (결정 D2)
+        // SF 레거시 대시보드(LAST_MONTH 필터) 정합 — 투입현황 전 차트가 선택월의 전월(마감) 데이터 사용 (D2 확장)
         val previousRows = mfeisRepository.findDeploymentDashboardRows(
             previousYm.year.toString(), previousYm.monthValue.toString(), effectiveCodes,
         )
@@ -164,9 +163,8 @@ class AdminDashboardService(
             yearMonth = ym.format(YEAR_MONTH_FORMATTER),
             branchName = branchName,
             byAccountType = sumByAccountType(previousRows),
-            byWorkType = sumByWorkType(rows),
-            byChannelAndWorkType = sumByChannelAndWorkType(rows),
-            previousMonth = PreviousMonthData(byWorkType = sumByWorkType(previousRows)),
+            byWorkType = sumByWorkType(previousRows),
+            byChannelAndWorkType = sumByChannelAndWorkType(previousRows),
         )
     }
 

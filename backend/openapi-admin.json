@@ -14424,17 +14424,6 @@
         },
         "type" : "object"
       },
-      "PreviousMonthData" : {
-        "properties" : {
-          "byWorkType" : {
-            "items" : {
-              "$ref" : "#/components/schemas/WorkTypeCount"
-            },
-            "type" : "array"
-          }
-        },
-        "type" : "object"
-      },
       "ProductBarcodeItem" : {
         "properties" : {
           "barcode" : {
@@ -17553,9 +17542,6 @@
               "$ref" : "#/components/schemas/WorkTypeCount"
             },
             "type" : "array"
-          },
-          "previousMonth" : {
-            "$ref" : "#/components/schemas/PreviousMonthData"
           },
           "yearMonth" : {
             "type" : "string"

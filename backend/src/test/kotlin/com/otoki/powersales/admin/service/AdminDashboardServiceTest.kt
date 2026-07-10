@@ -104,14 +104,15 @@ class AdminDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("T2 근무유형1 비중 — 진열 960 / 행사 510")
+    @DisplayName("T2 근무유형1 비중 — 진열 960 / 행사 510 (전월 마감 기준)")
     fun sumByWorkType() {
         val rows = listOf(
             mfeis(wc1 = "진열", headcount = BigDecimal("960")),
             mfeis(wc1 = "행사", headcount = BigDecimal("510")),
         )
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
+        // 투입현황 전 차트는 전월(마감) 기준 → previousYm rows 로 반환
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
         every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(
@@ -127,15 +128,16 @@ class AdminDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("T3 유통×근무형태 — 슈퍼 고정 400 / 순회 54.9")
+    @DisplayName("T3 유통×근무형태 — 슈퍼 고정 400 / 순회 54.9 (전월 마감 기준)")
     fun sumByChannelAndWorkType() {
         val superAcc = account(1, "슈퍼")
         val rows = listOf(
             mfeis(wc3 = "고정", headcount = BigDecimal("400"), acc = superAcc),
             mfeis(wc3 = "순회", headcount = BigDecimal("54.9"), acc = superAcc),
         )
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns rows
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns emptyList()
+        // 투입현황 전 차트는 전월(마감) 기준 → previousYm rows 로 반환
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
         every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
         every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
             MonthlySalesAdminQueryService.InvestedAccountSales(

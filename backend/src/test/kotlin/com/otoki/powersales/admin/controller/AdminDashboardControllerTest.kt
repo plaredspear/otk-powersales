@@ -2,7 +2,6 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.dto.response.BasicStats
 import com.otoki.powersales.admin.dto.response.DashboardResponse
-import com.otoki.powersales.admin.dto.response.PreviousMonthData
 import com.otoki.powersales.admin.dto.response.SalesSummary
 import com.otoki.powersales.admin.dto.response.StaffDeployment
 import com.otoki.powersales.admin.dto.response.StaffTypeCount
@@ -75,8 +74,7 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             branchName = null,
             byAccountType = emptyList(),
             byWorkType = emptyList(),
-            byChannelAndWorkType = emptyList(),
-            previousMonth = PreviousMonthData(byWorkType = emptyList())
+            byChannelAndWorkType = emptyList()
         ),
         basicStats = BasicStats(
             branchName = null,
@@ -126,8 +124,6 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.staffDeployment.byWorkType").isEmpty)
                 .andExpect(jsonPath("$.data.staffDeployment.byChannelAndWorkType").isArray)
                 .andExpect(jsonPath("$.data.staffDeployment.byChannelAndWorkType").isEmpty)
-                .andExpect(jsonPath("$.data.staffDeployment.previousMonth.byWorkType").isArray)
-                .andExpect(jsonPath("$.data.staffDeployment.previousMonth.byWorkType").isEmpty)
                 .andExpect(jsonPath("$.data.basicStats").exists())
                 .andExpect(jsonPath("$.data.basicStats.staffType.promotion").value(0))
                 .andExpect(jsonPath("$.data.basicStats.staffType.osc").value(0))

@@ -16215,24 +16215,6 @@
         },
         "type" : "object"
       },
-      "LeaderProxyAttendanceRequest" : {
-        "properties" : {
-          "displayWorkScheduleId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "scheduleId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "targetEmployeeId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          }
-        },
-        "required" : [ "targetEmployeeId" ],
-        "type" : "object"
-      },
       "LeaderScheduleCreateRequest" : {
         "properties" : {
           "accountId" : {
@@ -20145,17 +20127,6 @@
         },
         "type" : "object"
       },
-      "PreviousMonthData" : {
-        "properties" : {
-          "byWorkType" : {
-            "items" : {
-              "$ref" : "#/components/schemas/WorkTypeCount"
-            },
-            "type" : "array"
-          }
-        },
-        "type" : "object"
-      },
       "ProcessingItemResponse" : {
         "properties" : {
           "completeTime" : {
@@ -21654,6 +21625,28 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "ProxyAttendanceRegisterRequest" : {
+        "properties" : {
+          "branchCode" : {
+            "minLength" : 1,
+            "type" : [ "string", "null" ]
+          },
+          "displayWorkScheduleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "scheduleId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "targetEmployeeId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "required" : [ "branchCode", "targetEmployeeId" ],
         "type" : "object"
       },
       "RecalcResult" : {
@@ -23901,9 +23894,6 @@
             },
             "type" : "array"
           },
-          "previousMonth" : {
-            "$ref" : "#/components/schemas/PreviousMonthData"
-          },
           "yearMonth" : {
             "type" : "string"
           }
@@ -25671,7 +25661,7 @@
     },
     "/api/v1/admin/accounts/branches" : {
       "get" : {
-        "operationId" : "getBranches_8",
+        "operationId" : "getBranches_9",
         "responses" : {
           "200" : {
             "content" : {
@@ -26629,7 +26619,7 @@
     },
     "/api/v1/admin/attend-info/branches" : {
       "get" : {
-        "operationId" : "getBranches_7",
+        "operationId" : "getBranches_8",
         "responses" : {
           "200" : {
             "content" : {
@@ -27465,7 +27455,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_6",
+        "operationId" : "getBranches_7",
         "responses" : {
           "200" : {
             "content" : {
@@ -28655,7 +28645,7 @@
     },
     "/api/v1/admin/employees/branches" : {
       "get" : {
-        "operationId" : "getBranches_5",
+        "operationId" : "getBranches_6",
         "responses" : {
           "200" : {
             "content" : {
@@ -29533,7 +29523,7 @@
     },
     "/api/v1/admin/female-employees/branches" : {
       "get" : {
-        "operationId" : "getBranches_4",
+        "operationId" : "getBranches_5",
         "responses" : {
           "200" : {
             "content" : {
@@ -30617,7 +30607,7 @@
     },
     "/api/v1/admin/inspection-themes/branches" : {
       "get" : {
-        "operationId" : "getBranches_3",
+        "operationId" : "getBranches_4",
         "responses" : {
           "200" : {
             "content" : {
@@ -32256,7 +32246,7 @@
     },
     "/api/v1/admin/ppt-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_2",
+        "operationId" : "getBranches_3",
         "responses" : {
           "200" : {
             "content" : {
@@ -34277,7 +34267,7 @@
     },
     "/api/v1/admin/sales-progress-rate-masters/branches" : {
       "get" : {
-        "operationId" : "getBranches_1",
+        "operationId" : "getBranches_2",
         "responses" : {
           "200" : {
             "content" : {
@@ -38621,7 +38611,7 @@
     },
     "/api/v1/admin/team-schedule/branches" : {
       "get" : {
-        "operationId" : "getBranches",
+        "operationId" : "getBranches_1",
         "responses" : {
           "200" : {
             "content" : {
@@ -40375,37 +40365,9 @@
         "tags" : [ "leader-schedule-controller" ]
       }
     },
-    "/api/v1/mobile/leader/attendance" : {
-      "post" : {
-        "operationId" : "registerProxyAttendance",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/LeaderProxyAttendanceRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseAttendanceRegisterResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "leader-schedule-controller" ]
-      }
-    },
     "/api/v1/mobile/leader/daily-status" : {
       "get" : {
-        "operationId" : "getDailyStatus",
+        "operationId" : "getDailyStatus_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "date",
@@ -40564,7 +40526,7 @@
     },
     "/api/v1/mobile/leader/team-members" : {
       "get" : {
-        "operationId" : "getTeamMembers",
+        "operationId" : "getTeamMembers_1",
         "responses" : {
           "200" : {
             "content" : {
@@ -41686,6 +41648,111 @@
           }
         },
         "tags" : [ "promotion-controller" ]
+      }
+    },
+    "/api/v1/mobile/proxy-attendance" : {
+      "post" : {
+        "operationId" : "registerProxyAttendance",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProxyAttendanceRegisterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAttendanceRegisterResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "proxy-attendance-controller" ]
+      }
+    },
+    "/api/v1/mobile/proxy-attendance/branches" : {
+      "get" : {
+        "operationId" : "getBranches",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "proxy-attendance-controller" ]
+      }
+    },
+    "/api/v1/mobile/proxy-attendance/daily-status" : {
+      "get" : {
+        "operationId" : "getDailyStatus",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "date",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderDailyStatusResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "proxy-attendance-controller" ]
+      }
+    },
+    "/api/v1/mobile/proxy-attendance/team-members" : {
+      "get" : {
+        "operationId" : "getTeamMembers",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "branchCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListLeaderTeamMemberListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "proxy-attendance-controller" ]
       }
     },
     "/api/v1/mobile/safety-check/items" : {

@@ -87,16 +87,17 @@ const SALES_CHART_INFO = {
     '당월 실적을 전년 동월 실적으로 나눈 비율(당월 ÷ 전년 동월 × 100)입니다. 100%면 전년과 동일, 100%를 넘으면 증가입니다. 전년 데이터가 없는 경우 "—"로 표시합니다.',
 } as const;
 
-/** 여사원 투입현황 각 그래프의 데이터 집계 기준 안내 문구 (기간/지점 조건은 제외). */
+/**
+ * 여사원 투입현황 각 그래프의 데이터 집계 기준 안내 문구 (기간/지점 조건은 제외).
+ * SF 레거시 대시보드(전월 필터) 정합 — 투입현황 탭의 모든 그래프는 조회월의 전월(마감) 기준.
+ */
 const DEPLOYMENT_CHART_INFO = {
   accountType:
     '전월(마감) 기준 월별 여사원 통합일정을 거래처유형(농협·대형마트·백화점·슈퍼·체인·홀세일 등)별로 묶어 환산인원을 합산하여 집계합니다. 거래처유형을 확인할 수 없는 일정은 미상으로 표시합니다.',
   workType:
-    '당월 기준 월별 여사원 통합일정을 근무형태(진열·행사)별로 묶어 환산인원을 합산하여 집계합니다. 근무형태를 확인할 수 없는 일정은 미상으로 표시합니다.',
-  previousWorkType:
     '전월(마감) 기준 월별 여사원 통합일정을 근무형태(진열·행사)별로 묶어 환산인원을 합산하여 집계합니다. 근무형태를 확인할 수 없는 일정은 미상으로 표시합니다.',
   channelWorkType:
-    '당월 기준 월별 여사원 통합일정을 거래처유형(유통)별로 묶고, 다시 근무형태(고정·격고·순회)로 나누어 환산인원을 합산하여 집계합니다.',
+    '전월(마감) 기준 월별 여사원 통합일정을 거래처유형(유통)별로 묶고, 다시 근무형태(고정·격고·순회)로 나누어 환산인원을 합산하여 집계합니다.',
 } as const;
 
 /** 환산인원(소수) 막대 차트 옵션 — name/value 쌍 리스트. decimals 지정 시 라벨/툴팁을 해당 소수 자리수로 표시. */
@@ -341,7 +342,6 @@ export default function DashboardPage() {
     const sd = data.staffDeployment;
     const accountTypeTotal = sd.byAccountType.reduce((sum, r) => sum + r.convertedHeadcount, 0);
     const workTypeTotal = sd.byWorkType.reduce((sum, r) => sum + r.convertedHeadcount, 0);
-    const prevWorkTypeTotal = sd.previousMonth.byWorkType.reduce((sum, r) => sum + r.convertedHeadcount, 0);
     const channelWorkTypeTotal = sd.byChannelAndWorkType.reduce(
       (sum, i) => sum + i.fixedHeadcount + i.alternatingHeadcount + i.visitingHeadcount,
       0,
@@ -354,17 +354,12 @@ export default function DashboardPage() {
           </Card>
         </Col>
         <Col span={12}>
-          <Card title={cardTitle('근무형태 비중 (진열/행사, 환산인원)', DEPLOYMENT_CHART_INFO.workType)} extra={cardExtra(workTypeTotal, 1)}>
+          <Card title={cardTitle('근무형태 비중 (진열/행사, 전월 마감, 환산인원)', DEPLOYMENT_CHART_INFO.workType)} extra={cardExtra(workTypeTotal, 1)}>
             <ReactECharts option={headcountBarOption(workTypeItems(sd.byWorkType), '#52c41a', '명', 1)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title={cardTitle('전월 근무형태 비중 (진열/행사, 환산인원)', DEPLOYMENT_CHART_INFO.previousWorkType)} extra={cardExtra(prevWorkTypeTotal, 1)}>
-            <ReactECharts option={headcountBarOption(workTypeItems(sd.previousMonth.byWorkType), '#8c8c8c', '명', 1)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title={cardTitle('유통별/근무형태별 여사원 현황 (고정/격고/순회, 환산인원)', DEPLOYMENT_CHART_INFO.channelWorkType)} extra={cardExtra(channelWorkTypeTotal, 1)}>
+          <Card title={cardTitle('유통별/근무형태별 여사원 현황 (고정/격고/순회, 전월 마감, 환산인원)', DEPLOYMENT_CHART_INFO.channelWorkType)} extra={cardExtra(channelWorkTypeTotal, 1)}>
             <ReactECharts option={channelWorkTypeOption(sd.byChannelAndWorkType)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>

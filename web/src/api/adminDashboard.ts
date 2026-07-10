@@ -57,17 +57,16 @@ export interface ChannelWorkTypeItem {
   visitingHeadcount: number;
 }
 
-export interface PreviousMonthData {
-  byWorkType: WorkTypeCount[];
-}
-
+/**
+ * 여사원 투입현황 — SF 레거시 대시보드(LAST_MONTH 필터) 정합으로 모든 집계가
+ * 조회월(yearMonth)의 전월(마감) 데이터 기준. yearMonth 는 조회 조건 echo.
+ */
 export interface StaffDeployment {
   yearMonth: string;
   branchName: string | null;
   byAccountType: AccountTypeCount[];
   byWorkType: WorkTypeCount[];
   byChannelAndWorkType: ChannelWorkTypeItem[];
-  previousMonth: PreviousMonthData;
 }
 
 /** "기타" 항목 세부 내역 1건 — 원본 값(label)과 인원 수(count). null/공백은 "미분류". */

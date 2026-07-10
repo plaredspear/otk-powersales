@@ -35,13 +35,17 @@ data class ChannelSalesItem(
     val progressRate: Double
 )
 
+/**
+ * 여사원 투입현황 — SF 레거시 대시보드(LAST_MONTH 필터) 정합으로 모든 집계(byAccountType /
+ * byWorkType / byChannelAndWorkType)가 조회월(yearMonth)의 **전월(마감)** 데이터 기준.
+ * yearMonth 는 조회 조건 echo (데이터 기준월은 그 전월).
+ */
 data class StaffDeployment(
     val yearMonth: String,
     val branchName: String?,
     val byAccountType: List<AccountTypeCount>,
     val byWorkType: List<WorkTypeCount>,
-    val byChannelAndWorkType: List<ChannelWorkTypeItem>,
-    val previousMonth: PreviousMonthData
+    val byChannelAndWorkType: List<ChannelWorkTypeItem>
 )
 
 data class AccountTypeCount(
@@ -66,10 +70,6 @@ data class ChannelWorkTypeItem(
     val fixedHeadcount: BigDecimal,
     val alternatingHeadcount: BigDecimal,
     val visitingHeadcount: BigDecimal
-)
-
-data class PreviousMonthData(
-    val byWorkType: List<WorkTypeCount>
 )
 
 data class BasicStats(
