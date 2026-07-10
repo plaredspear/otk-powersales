@@ -134,6 +134,18 @@ class OrderInvalidRequestException(detail: String) : BusinessException(
 )
 
 /**
+ * 주문 등록/재전송 일시 차단 (운영(prod) 환경 임시 중단).
+ *
+ * 운영 환경에서 주문 등록·재전송을 임시로 막기 위한 서버 가드. 활성 프로파일에 `prod` 가 포함되면
+ * 주문 등록/재전송 진입부에서 즉시 던져 SAP 호출·DB 적재 이전에 전면 차단한다. dev/local 은 영향 없음.
+ */
+class OrderRegistrationBlockedException : BusinessException(
+    errorCode = "ORD_REGISTRATION_BLOCKED",
+    message = "현재 주문 등록이 일시 중단되었습니다. 잠시 후 다시 시도해 주세요.",
+    httpStatus = HttpStatus.SERVICE_UNAVAILABLE,
+)
+
+/**
  * 주문 등록 마감 시각 초과 (server-side 마감 가드).
  *
  * 레거시 `OrderController.java:485-498` (reqOrder `dateConfirm`) 동등 — 마감 시각
