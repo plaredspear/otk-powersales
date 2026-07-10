@@ -17,7 +17,7 @@ class SapOutboxBatch(
 
     private val log = LoggerFactory.getLogger(SapOutboxBatch::class.java)
 
-    @Scheduled(cron = "\${app.sap.outbox.cron:*/30 * * * * *}")
+    @Scheduled(cron = "\${app.sap.outbox.cron:0 */5 * * * *}")
     @SchedulerLock(name = JOB_NAME, lockAtMostFor = "PT5M", lockAtLeastFor = "PT10S")
     fun run() {
         try {

@@ -107,8 +107,8 @@ object ScheduledJobCatalog {
         ),
         Entry(
             jobName = SapOutboxBatch.JOB_NAME,
-            cron = "\${app.sap.outbox.cron:*/30 * * * * *}",
-            description = "SAP outbox 메시지 worker (기본 30초 주기)",
+            cron = "\${app.sap.outbox.cron:0 */5 * * * *}",
+            description = "SAP outbox 메시지 worker (기본 5분 주기)",
             beanType = SapOutboxBatch::class.java,
         ),
         Entry(

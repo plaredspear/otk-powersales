@@ -493,7 +493,7 @@ app:
   sf:
     resend:
       max-attempt: 3
-  # SAP outbox 송신 워커 (기본 30초 주기). 주문 등록 즉시 전송은 dispatcher 가 별도 수행하고,
+  # SAP outbox 송신 워커 (기본 5분 주기). 주문 등록 즉시 전송은 dispatcher 가 별도 수행하고,
   # 본 워커는 PENDING 잔여/RETRY 건 재처리 안전망 — 미설정 시 SapOutboxBatch 빈 자체가 미등록.
   sap:
     outbox:
@@ -574,7 +574,7 @@ app:
   sf:
     resend:
       max-attempt: 3
-  # SAP outbox 송신 워커 (기본 30초 주기). 주문 등록 즉시 전송은 dispatcher 가 별도 수행하고,
+  # SAP outbox 송신 워커 (기본 5분 주기). 주문 등록 즉시 전송은 dispatcher 가 별도 수행하고,
   # 본 워커는 PENDING 잔여/RETRY 건 재처리 안전망 — 미설정 시 SapOutboxBatch 빈 자체가 미등록.
   sap:
     outbox:
