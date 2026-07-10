@@ -32,6 +32,9 @@ class ExternalApiEndpointKeyResolverTest {
             .isEqualTo("claim-regist")
         assertThat(ExternalApiEndpointKeyResolver.resolve(ExternalApiTarget.SF, "https://x.my.salesforce.com/services/apexrest/IF_SendStaffReviewToPWS"))
             .isEqualTo("staff-review-sync")
+        // 운영 물류클레임 등록(dual-write) 이 호출하는 endpoint
+        assertThat(ExternalApiEndpointKeyResolver.resolve(ExternalApiTarget.SF, "https://x.my.salesforce.com/services/apexrest/mobile/ProposalRegist"))
+            .isEqualTo("logistics-claim-regist")
     }
 
     @Test
@@ -60,11 +63,11 @@ class ExternalApiEndpointKeyResolverTest {
     }
 
     @Test
-    @DisplayName("ALL_KEYS 는 SAP 7 + SF 5 + sf-oauth-token + naver-geocode = 14개")
+    @DisplayName("ALL_KEYS 는 SAP 7 + SF 6 + sf-oauth-token + naver-geocode = 15개")
     fun allKeys() {
-        assertThat(ExternalApiEndpointKeyResolver.ALL_KEYS).hasSize(14)
+        assertThat(ExternalApiEndpointKeyResolver.ALL_KEYS).hasSize(15)
         assertThat(ExternalApiEndpointKeyResolver.ALL_KEYS).contains(
-            "loan-inquiry", "staff-review-sync", "sf-oauth-token", "naver-geocode",
+            "loan-inquiry", "staff-review-sync", "logistics-claim-regist", "sf-oauth-token", "naver-geocode",
         )
     }
 }

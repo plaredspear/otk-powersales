@@ -33,6 +33,8 @@ object ExternalApiEndpointKeyResolver {
     // SF Apex REST resource(마지막 segment) → 탭 key (ExternalApiIntegrationInfoService 의 SF 항목과 1:1)
     private val SF_RESOURCE_TO_KEY: Map<String, String> = mapOf(
         "ClaimRegist" to "claim-regist",
+        // 운영 물류클레임 등록(제안하기 > 물류클레임 dual-write) 이 실제 호출하는 endpoint.
+        "ProposalRegist" to "logistics-claim-regist",
         "IF_SendClaimToPWS" to "claim-status-update",
         "IF_SendLogisticsClaimToPWS" to "logistics-claim-status-update",
         "IF_salesprogresssend" to "sales-progress-rate-master-sync",

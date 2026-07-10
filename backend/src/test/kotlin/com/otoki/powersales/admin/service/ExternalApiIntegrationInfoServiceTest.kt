@@ -38,6 +38,19 @@ class ExternalApiIntegrationInfoServiceTest {
     }
 
     @Test
+    @DisplayName("SF ProposalRegist(운영 물류클레임 등록) — key=logistics-claim-regist, /ProposalRegist, POST")
+    fun logisticsClaimRegistInfo() {
+        val info = service().getIntegrationInfo().items.first { it.key == "logistics-claim-regist" }
+
+        assertThat(info.externalSystem).contains("Salesforce")
+        assertThat(info.endpoint)
+            .isEqualTo("https://ottogi.my.salesforce.com/services/apexrest/mobile/ProposalRegist")
+        assertThat(info.httpMethod).isEqualTo("POST")
+        assertThat(info.authType).contains("OAuth2", "Bearer")
+        assertThat(info.note).contains("dual-write")
+    }
+
+    @Test
     @DisplayName("SF IF_SendClaimToPWS(클레임 마스터 조회) — key=claim-status-update, /IF_SendClaimToPWS, POST")
     fun claimMasterSyncInfo() {
         val info = service().getIntegrationInfo().items.first { it.key == "claim-status-update" }

@@ -27,6 +27,7 @@ class ExternalApiIntegrationInfoService(
         val items = buildList {
             add(naverGeocode())
             add(claimRegist())
+            add(logisticsClaimRegist())
             add(claimMasterSync())
             add(logisticsClaimMasterSync())
             add(salesProgressRateMasterSync())
@@ -52,6 +53,19 @@ class ExternalApiIntegrationInfoService(
         httpMethod = "POST",
         authType = "OAuth2 Client Credentials (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
         note = "Content-Type: application/json. 401 시 토큰 재발급 후 1회 재시도. 환경변수 prefix: sf.outbound.*",
+    )
+
+    // 운영 물류클레임 등록(모바일 제안하기 > 물류클레임)이 dual-write 로 실제 호출하는 SF endpoint.
+    // web "SF 물류 클레임 등록" 테스트 탭은 payload 미리보기 전용이라 SF 호출을 하지 않지만, 운영 등록은
+    // ProposalRegist 로 전송하며 그 호출 이력이 endpoint_key=logistics-claim-regist 로 external_api_log 에 남는다.
+    private fun logisticsClaimRegist() = ExternalApiIntegrationInfo(
+        key = "logistics-claim-regist",
+        externalSystem = "Salesforce (Apex REST)",
+        endpoint = joinUrl(sfOutboundProperties.apexBaseUrl, "/ProposalRegist"),
+        httpMethod = "POST",
+        authType = "OAuth2 Client Credentials (Bearer) — token: ${blankOr(sfOutboundProperties.oauth.tokenUrl)}",
+        note = "Content-Type: application/json. 운영 물류클레임 등록 dual-write 전송(제안하기 > 물류클레임). " +
+            "레거시 IF_REST_MOBILE_ProposalRegist 정합. 401 시 토큰 재발급 후 1회 재시도. 환경변수 prefix: sf.outbound.*",
     )
 
     // key 는 web 탭 식별자("SF 클레임 상태 업데이트" 탭 = claim-status-update)에 의도적으로 맞춘다.

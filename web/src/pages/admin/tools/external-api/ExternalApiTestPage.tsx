@@ -156,13 +156,15 @@ const TAB_ITEMS: NonNullable<TabsProps['items']> = [
           apiKey="logistics-claim-regist"
           title="SF ProposalRegist — 물류 클레임 등록 전송"
         />
+        <IntegrationInfoDescriptions apiKey="logistics-claim-regist" />
         <Alert
           type="info"
           showIcon
-          message="이 탭은 아직 SF 로 전송하지 않습니다 (payload 미리보기 전용)."
-          description="SF 전송 API 정보가 확보되기 전 단계로, 입력 정보로 구성한 전송 payload(apiMap) 미리보기만 제공합니다. 실제 SF 호출은 추후 추가됩니다. SYSTEM_ADMIN 권한 필요."
+          message="이 테스트 탭은 SF 로 전송하지 않습니다 (payload 미리보기 전용)."
+          description="이 탭의 'payload 미리보기' 는 입력 정보로 구성한 전송 payload(apiMap) 만 보여주며 SF 로 전송하지 않습니다. 다만 운영 물류 클레임 등록(모바일 제안하기 > 물류 클레임)은 동일 SF endpoint(ProposalRegist)로 실제 전송(dual-write)하며, 아래 '최근 호출 이력' 은 그 운영 등록 호출 이력입니다. SYSTEM_ADMIN 권한 필요."
         />
         <LogisticsClaimRegistTab />
+        <InlineCallHistory endpointKey="logistics-claim-regist" />
       </Space>
     ),
   },
