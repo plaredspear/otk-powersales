@@ -483,8 +483,12 @@ app:
   sf:
     resend:
       max-attempt: 3
-  # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
+  # SAP outbox 송신 워커 (기본 30초 주기). 주문 등록 즉시 전송은 dispatcher 가 별도 수행하고,
+  # 본 워커는 PENDING 잔여/RETRY 건 재처리 안전망 — 미설정 시 SapOutboxBatch 빈 자체가 미등록.
   sap:
+    outbox:
+      enabled: true
+    # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
     outbound:
       team-member-schedule:
         enabled: true
@@ -560,8 +564,12 @@ app:
   sf:
     resend:
       max-attempt: 3
-  # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
+  # SAP outbox 송신 워커 (기본 30초 주기). 주문 등록 즉시 전송은 dispatcher 가 별도 수행하고,
+  # 본 워커는 PENDING 잔여/RETRY 건 재처리 안전망 — 미설정 시 SapOutboxBatch 빈 자체가 미등록.
   sap:
+    outbox:
+      enabled: true
+    # SAP outbound 전송 배치 (여사원일정 매일 01:00 / 진열마스터 매일 23:00 / PPT마스터 매일 12:00).
     outbound:
       team-member-schedule:
         enabled: true
