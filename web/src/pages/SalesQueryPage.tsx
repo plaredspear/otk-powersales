@@ -115,6 +115,21 @@ export default function SalesQueryPage() {
     staleTime: 10 * 60 * 1000,
   });
   const filterOptions = filterOptionsQuery.data;
+  // 드롭다운 옵션 배열은 useMemo 로 identity 를 고정한다. 인라인 .map() 은 매 렌더마다 새 배열/객체를
+  // 만들어, mode="multiple" + showSearch Select 에서 hover/선택 시 활성 항목·스크롤이 튀는(값이 바뀌는
+  // 것처럼 보이는) 현상을 유발한다.
+  const distributionChannelOptions = useMemo(
+    () => (filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v })),
+    [filterOptions],
+  );
+  const accountTypeOptions = useMemo(
+    () => (filterOptions?.accountTypes ?? []).map((v) => ({ value: v, label: v })),
+    [filterOptions],
+  );
+  const category2Options = useMemo(
+    () => (filterOptions?.categories ?? []).map((c) => ({ value: c.category2, label: c.category2 })),
+    [filterOptions],
+  );
   const category3Options = useMemo(() => {
     if (!category2) return [];
     return (
@@ -365,7 +380,7 @@ export default function SalesQueryPage() {
                   mode="multiple"
                   value={distributionChannels}
                   onChange={setDistributionChannels}
-                  options={(filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v }))}
+                  options={distributionChannelOptions}
                   placeholder="전체"
                   style={{ minWidth: 160, maxWidth: 280 }}
                   maxTagCount="responsive"
@@ -384,7 +399,7 @@ export default function SalesQueryPage() {
                   mode="multiple"
                   value={accountTypes}
                   onChange={setAccountTypes}
-                  options={(filterOptions?.accountTypes ?? []).map((v) => ({ value: v, label: v }))}
+                  options={accountTypeOptions}
                   placeholder="전체"
                   style={{ minWidth: 160, maxWidth: 280 }}
                   maxTagCount="responsive"
@@ -489,10 +504,7 @@ export default function SalesQueryPage() {
                     setCategory2(v);
                     setCategory3(undefined); // 중분류 변경 시 종속 소분류 초기화
                   }}
-                  options={(filterOptions?.categories ?? []).map((c) => ({
-                    value: c.category2,
-                    label: c.category2,
-                  }))}
+                  options={category2Options}
                   placeholder="전체"
                   style={{ width: 140 }}
                   allowClear
