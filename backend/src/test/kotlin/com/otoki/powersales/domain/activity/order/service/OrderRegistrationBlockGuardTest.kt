@@ -20,11 +20,12 @@ class OrderRegistrationBlockGuardTest {
     }
 
     @Test
-    @DisplayName("dev 프로파일은 통과한다")
-    fun passesOnDev() {
+    @DisplayName("dev 프로파일이 활성이면 차단한다 (개발 서버도 대상)")
+    fun blocksOnDev() {
         val guard = OrderRegistrationBlockGuard(MockEnvironment().apply { setActiveProfiles("dev") })
 
-        assertThatCode { guard.assertNotBlocked() }.doesNotThrowAnyException()
+        assertThatThrownBy { guard.assertNotBlocked() }
+            .isInstanceOf(OrderRegistrationBlockedException::class.java)
     }
 
     @Test
@@ -36,9 +37,17 @@ class OrderRegistrationBlockGuardTest {
     }
 
     @Test
+    @DisplayName("프로파일 미설정(테스트 기본)은 통과한다")
+    fun passesWhenNoProfile() {
+        val guard = OrderRegistrationBlockGuard(MockEnvironment())
+
+        assertThatCode { guard.assertNotBlocked() }.doesNotThrowAnyException()
+    }
+
+    @Test
     @DisplayName("여러 프로파일 중 prod 가 포함되면 차단한다")
     fun blocksWhenProdAmongMultiple() {
-        val guard = OrderRegistrationBlockGuard(MockEnvironment().apply { setActiveProfiles("dev", "prod") })
+        val guard = OrderRegistrationBlockGuard(MockEnvironment().apply { setActiveProfiles("local", "prod") })
 
         assertThatThrownBy { guard.assertNotBlocked() }
             .isInstanceOf(OrderRegistrationBlockedException::class.java)

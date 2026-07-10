@@ -134,10 +134,10 @@ class OrderInvalidRequestException(detail: String) : BusinessException(
 )
 
 /**
- * 주문 등록/재전송 일시 차단 (운영(prod) 환경 임시 중단).
+ * 주문 등록/재전송 일시 차단 (운영(prod) + 개발(dev) 서버 임시 중단).
  *
- * 운영 환경에서 주문 등록·재전송을 임시로 막기 위한 서버 가드. 활성 프로파일에 `prod` 가 포함되면
- * 주문 등록/재전송 진입부에서 즉시 던져 SAP 호출·DB 적재 이전에 전면 차단한다. dev/local 은 영향 없음.
+ * 운영·개발 서버에서 주문 등록·재전송을 임시로 막기 위한 서버 가드. 활성 프로파일에 `prod` 또는 `dev`
+ * 가 포함되면 주문 등록/재전송 진입부에서 즉시 던져 SAP 호출·DB 적재 이전에 전면 차단한다. local 은 영향 없음.
  */
 class OrderRegistrationBlockedException : BusinessException(
     errorCode = "ORD_REGISTRATION_BLOCKED",
