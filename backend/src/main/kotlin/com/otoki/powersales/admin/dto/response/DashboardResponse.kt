@@ -36,16 +36,45 @@ data class ChannelSalesItem(
 )
 
 /**
- * 여사원 투입현황 — SF 레거시 대시보드(LAST_MONTH 필터) 정합으로 모든 집계(byAccountType /
- * byWorkType / byChannelAndWorkType)가 조회월(yearMonth)의 **전월(마감)** 데이터 기준.
+ * 여사원 투입현황 — SF 레거시 대시보드 리포트(`근무형태별(상세) 환산인원현황(진열)/(행사)`) 정합.
+ *
+ * SF 는 근무유형1(진열/행사)별로 리포트 2개(가로 누적 막대)를 노출한다. 각 차트는
+ * 행그룹 = 거래처유형(구분), 열그룹 = 근무형태3&4(`WorkTypeForReport__c`), 측정값 = SUM(환산인원).
+ * 조회월(yearMonth)의 **전월(마감)** MFEIS 데이터 기준 (LAST_MONTH 필터).
  * yearMonth 는 조회 조건 echo (데이터 기준월은 그 전월).
+ *
+ * @param display 진열 차트 (스택 = 1.고정/2.격고/3.순회 — 근무유형3 기반)
+ * @param event   행사 차트 (스택 = 4.상온/5.냉동/5.냉장/... — 근무유형4 기반, 값 가변)
  */
 data class StaffDeployment(
     val yearMonth: String,
     val branchName: String?,
-    val byAccountType: List<AccountTypeCount>,
-    val byWorkType: List<WorkTypeCount>,
-    val byChannelAndWorkType: List<ChannelWorkTypeItem>
+    val display: WorkTypeChannelChart,
+    val event: WorkTypeChannelChart
+)
+
+/**
+ * 유통(거래처유형) × 근무형태 스택 누적 막대 1개 — SF 리포트 1개 대응.
+ *
+ * [stackKeys] 는 스택 세그먼트 라벨 순서(SF WorkTypeForReport__c 값의 정렬 순서 — "1.고정","2.격고"...).
+ * [rows] 는 거래처유형별 1행이며, 각 행의 [ChannelStackRow.headcounts] 가 stackKeys 와 같은 순서로 대응한다.
+ */
+data class WorkTypeChannelChart(
+    val stackKeys: List<String>,
+    val rows: List<ChannelStackRow>,
+    // 차트 전체 환산인원 합계 (SF "총 환산인원 합계") — scale=4
+    val totalHeadcount: BigDecimal
+)
+
+/**
+ * 거래처유형(유통) 1행 — 스택 세그먼트별 환산인원.
+ *
+ * @param channelName 거래처유형 displayName (SF AccountType__c). 미상은 "미상".
+ * @param headcounts  차트 [WorkTypeChannelChart.stackKeys] 와 동일 순서의 환산인원 SUM 리스트 (scale=4).
+ */
+data class ChannelStackRow(
+    val channelName: String,
+    val headcounts: List<BigDecimal>
 )
 
 data class AccountTypeCount(

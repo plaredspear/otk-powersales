@@ -113,7 +113,7 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
             where.and(mfeis.costCenterCode.`in`(costCenterCodes))
         }
 
-        // entity/account 전 컬럼 대신 집계가 쓰는 7개 필드만 select (account fetch join 80여 컬럼 회피).
+        // entity/account 전 컬럼 대신 집계가 쓰는 8개 필드만 select (account fetch join 80여 컬럼 회피).
         // account 미연결 row 는 left join 으로 account* 가 null.
         return queryFactory
             .select(
@@ -122,6 +122,7 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
                     mfeis.convertedHeadcount,
                     mfeis.workingCategory1,
                     mfeis.workingCategory3,
+                    mfeis.workingCategory4,
                     account.id,
                     account.externalKey,
                     account.accountType,

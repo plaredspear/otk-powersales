@@ -50,6 +50,7 @@ class MonthlySalesAdminQueryServiceTest {
             convertedHeadcount = BigDecimal(headcount),
             workingCategory1 = workingCategory1,
             workingCategory3 = null,
+            workingCategory4 = null,
             accountId = accountId,
             accountExternalKey = "S00$accountId",
             accountType = null,

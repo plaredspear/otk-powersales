@@ -1,16 +1,15 @@
 package com.otoki.powersales.admin.service
 
-import com.otoki.powersales.admin.dto.response.AccountTypeCount
 import com.otoki.powersales.admin.dto.response.AgeGroupCount
 import com.otoki.powersales.admin.dto.response.BasicStats
-import com.otoki.powersales.admin.dto.response.ChannelWorkTypeItem
+import com.otoki.powersales.admin.dto.response.ChannelStackRow
 import com.otoki.powersales.admin.dto.response.DashboardResponse
 import com.otoki.powersales.admin.dto.response.EtcBreakdownItem
 import com.otoki.powersales.admin.dto.response.SalesSummary
 import com.otoki.powersales.admin.dto.response.StaffDeployment
 import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
-import com.otoki.powersales.admin.dto.response.WorkTypeCount
+import com.otoki.powersales.admin.dto.response.WorkTypeChannelChart
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.domain.org.employee.repository.DashboardEmployeeProjection
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -154,67 +153,75 @@ class AdminDashboardService(
         branchName: String?,
         effectiveCodes: List<String>,
     ): StaffDeployment {
-        // SF 레거시 대시보드(LAST_MONTH 필터) 정합 — 투입현황 전 차트가 선택월의 전월(마감) 데이터 사용 (D2 확장)
+        // SF 레거시 대시보드(LAST_MONTH 필터) 정합 — 투입현황 차트가 선택월의 전월(마감) 데이터 사용 (D2 확장)
         val previousRows = mfeisRepository.findDeploymentDashboardRows(
             previousYm.year.toString(), previousYm.monthValue.toString(), effectiveCodes,
         )
 
+        // SF 는 근무유형1(진열/행사)로 리포트 2개를 분리한다 (WorkTypeForReport__c 스택 축도 진열=WC3 / 행사=WC4 로 갈림).
+        val displayRows = previousRows.filter { it.workingCategory1 == WC1_DISPLAY }
+        val eventRows = previousRows.filter { it.workingCategory1 == WC1_EVENT }
+
         return StaffDeployment(
             yearMonth = ym.format(YEAR_MONTH_FORMATTER),
             branchName = branchName,
-            byAccountType = sumByAccountType(previousRows),
-            byWorkType = sumByWorkType(previousRows),
-            byChannelAndWorkType = sumByChannelAndWorkType(previousRows),
+            display = buildChannelChart(displayRows, DISPLAY_STACK_ORDER),
+            event = buildChannelChart(eventRows, EVENT_STACK_ORDER),
         )
     }
 
-    /** 거래처유형(유통)별 환산인원 SUM — accountType displayName 기준 (결정 D1). */
-    private fun sumByAccountType(rows: List<DashboardDeploymentRow>): List<AccountTypeCount> {
-        return rows
-            .groupBy { it.accountType ?: ACCOUNT_TYPE_UNKNOWN }
-            .map { (accountType, group) ->
-                AccountTypeCount(
-                    accountType = accountType,
-                    count = group.size,
-                    convertedHeadcount = sumHeadcount(group),
-                )
-            }
-            .sortedBy { it.accountType }
-    }
-
-    /** 근무유형1(진열/행사)별 환산인원 SUM. */
-    private fun sumByWorkType(rows: List<DashboardDeploymentRow>): List<WorkTypeCount> {
-        return rows
-            .groupBy { it.workingCategory1 ?: WORK_TYPE_UNKNOWN }
-            .map { (workType, group) ->
-                WorkTypeCount(
-                    workType = workType,
-                    count = group.size,
-                    convertedHeadcount = sumHeadcount(group),
-                )
-            }
-            .sortedBy { it.workType }
-    }
-
-    /** 유통 × 근무형태(고정/격고/순회)별 환산인원 SUM. */
-    private fun sumByChannelAndWorkType(
+    /**
+     * 유통(거래처유형) × 근무형태 스택 누적 막대 1개 — SF 리포트 1개 대응.
+     *
+     * 스택 세그먼트 라벨은 [workTypeLabel] (SF WorkTypeForReport__c formula) 로 산출한다.
+     * [presetOrder] 로 알려진 라벨을 먼저 고정 정렬하고, 그 외 실측 라벨(예: 신규 근무유형4 값)은 뒤에 이름순으로 붙인다.
+     */
+    private fun buildChannelChart(
         rows: List<DashboardDeploymentRow>,
-    ): List<ChannelWorkTypeItem> {
-        return rows
-            .groupBy { it.accountType ?: ACCOUNT_TYPE_UNKNOWN }
+        presetOrder: List<String>,
+    ): WorkTypeChannelChart {
+        // 등장하는 스택 라벨 집합 → preset 순서 우선, 그 외는 이름순으로 뒤에.
+        val presentLabels = rows.mapTo(sortedSetOf()) { workTypeLabel(it) }
+        val stackKeys = presetOrder.filter { it in presentLabels } +
+            presentLabels.filter { it !in presetOrder }
+
+        // 거래처유형(구분) × 스택라벨 별 환산인원 SUM.
+        val byChannel = rows.groupBy { it.accountType ?: ACCOUNT_TYPE_UNKNOWN }
+        val channelRows = byChannel
             .map { (channelName, group) ->
-                val byWc3 = group.groupBy { it.workingCategory3 }
-                ChannelWorkTypeItem(
+                val byLabel = group.groupBy { workTypeLabel(it) }
+                ChannelStackRow(
                     channelName = channelName,
-                    fixed = byWc3[WC3_FIXED]?.size ?: 0,
-                    alternating = byWc3[WC3_ALTERNATING]?.size ?: 0,
-                    visiting = byWc3[WC3_VISITING]?.size ?: 0,
-                    fixedHeadcount = sumHeadcount(byWc3[WC3_FIXED].orEmpty()),
-                    alternatingHeadcount = sumHeadcount(byWc3[WC3_ALTERNATING].orEmpty()),
-                    visitingHeadcount = sumHeadcount(byWc3[WC3_VISITING].orEmpty()),
+                    headcounts = stackKeys.map { key -> sumHeadcount(byLabel[key].orEmpty()) },
                 )
             }
             .sortedBy { it.channelName }
+
+        return WorkTypeChannelChart(
+            stackKeys = stackKeys,
+            rows = channelRows,
+            totalHeadcount = sumHeadcount(rows),
+        )
+    }
+
+    /**
+     * SF `WorkTypeForReport__c`(근무형태3&4) formula 재현 — 스택 세그먼트 라벨.
+     *
+     * - 진열: 근무유형3 → "1.고정" / "2.격고" / "3.순회" (그 외/null → "기타")
+     * - 행사: 근무유형4 = "상온" → "4.상온", 그 외 → "5.{근무유형4}" (null/빈 → "5.")
+     */
+    private fun workTypeLabel(row: DashboardDeploymentRow): String {
+        return if (row.workingCategory1 == WC1_DISPLAY) {
+            when (row.workingCategory3) {
+                WC3_FIXED -> "1.고정"
+                WC3_ALTERNATING -> "2.격고"
+                WC3_VISITING -> "3.순회"
+                else -> WORK_TYPE_LABEL_ETC
+            }
+        } else {
+            val wc4 = row.workingCategory4
+            if (wc4 == WC4_ROOM_TEMP) "4.상온" else "5.${wc4 ?: ""}"
+        }
     }
 
     /** 환산인원 SUM — SF scale=4 정합 (HALF_UP). */
@@ -353,14 +360,25 @@ class AdminDashboardService(
         private const val BRANCH_LABEL_ALL = "전체"
 
         private const val ACCOUNT_TYPE_UNKNOWN = "미상"
-        private const val WORK_TYPE_UNKNOWN = "미상"
         private const val AGE_GROUP_UNKNOWN = "미상"
         private const val ETC_LABEL_UNCLASSIFIED = "미분류"
+        private const val WORK_TYPE_LABEL_ETC = "기타" // 진열인데 WC3 가 고정/격고/순회 외/null
 
-        // 근무형태(WorkingCategory3) 표준값
+        // 근무유형1(WorkingCategory1) — SF 리포트 분리 축 (진열/행사)
+        private const val WC1_DISPLAY = "진열"
+        private const val WC1_EVENT = "행사"
+
+        // 근무형태(WorkingCategory3) 표준값 (진열 스택 + basicStats 근무형태별)
         private const val WC3_FIXED = "고정"
         private const val WC3_ALTERNATING = "격고"
         private const val WC3_VISITING = "순회"
+
+        // 근무유형4(WorkingCategory4) — 행사 스택 상온 판별값 (SF WorkTypeForReport__c: 상온→"4.상온")
+        private const val WC4_ROOM_TEMP = "상온"
+
+        // 스택 세그먼트 preset 정렬 순서 (SF WorkTypeForReport__c 값)
+        private val DISPLAY_STACK_ORDER = listOf("1.고정", "2.격고", "3.순회", WORK_TYPE_LABEL_ETC)
+        private val EVENT_STACK_ORDER = listOf("4.상온", "5.냉동", "5.냉장", "5.라면", "5.만두")
 
         // 재직상태(Employee.status) 표준값
         private const val STATUS_ACTIVE = "재직"

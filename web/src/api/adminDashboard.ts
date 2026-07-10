@@ -35,38 +35,32 @@ export interface SalesSummary {
   hasTargetData: boolean;
 }
 
-export interface AccountTypeCount {
-  accountType: string;
-  count: number;
-  convertedHeadcount: number;
-}
-
-export interface WorkTypeCount {
-  workType: string;
-  count: number;
-  convertedHeadcount: number;
-}
-
-export interface ChannelWorkTypeItem {
+/** 거래처유형(유통) 1행 — headcounts 는 차트 stackKeys 와 동일 순서의 환산인원. */
+export interface ChannelStackRow {
   channelName: string;
-  fixed: number;
-  alternating: number;
-  visiting: number;
-  fixedHeadcount: number;
-  alternatingHeadcount: number;
-  visitingHeadcount: number;
+  headcounts: number[];
 }
 
 /**
- * 여사원 투입현황 — SF 레거시 대시보드(LAST_MONTH 필터) 정합으로 모든 집계가
- * 조회월(yearMonth)의 전월(마감) 데이터 기준. yearMonth 는 조회 조건 echo.
+ * 유통(거래처유형) × 근무형태 스택 누적 막대 1개 — SF 리포트 1개 대응.
+ * stackKeys 는 스택 세그먼트 라벨 순서, 각 row.headcounts 가 같은 순서로 대응.
+ */
+export interface WorkTypeChannelChart {
+  stackKeys: string[];
+  rows: ChannelStackRow[];
+  totalHeadcount: number;
+}
+
+/**
+ * 여사원 투입현황 — SF 레거시 대시보드 리포트(`근무형태별(상세) 환산인원현황(진열)/(행사)`) 정합.
+ * 근무유형1(진열/행사)별 가로 누적 막대 2개. 조회월의 전월(마감) 데이터 기준.
+ * yearMonth 는 조회 조건 echo (데이터 기준월은 그 전월).
  */
 export interface StaffDeployment {
   yearMonth: string;
   branchName: string | null;
-  byAccountType: AccountTypeCount[];
-  byWorkType: WorkTypeCount[];
-  byChannelAndWorkType: ChannelWorkTypeItem[];
+  display: WorkTypeChannelChart;
+  event: WorkTypeChannelChart;
 }
 
 /** "기타" 항목 세부 내역 1건 — 원본 값(label)과 인원 수(count). null/공백은 "미분류". */

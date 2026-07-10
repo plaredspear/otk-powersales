@@ -34,6 +34,7 @@ class AdminDashboardServiceTest {
         accountType: String? = "슈퍼",
         wc1: String? = "진열",
         wc3: String? = "고정",
+        wc4: String? = null,
         headcount: BigDecimal = BigDecimal.ONE,
         acc: Pair<Long, String>? = null,
     ): DashboardDeploymentRow {
@@ -42,6 +43,7 @@ class AdminDashboardServiceTest {
             convertedHeadcount = headcount,
             workingCategory1 = wc1,
             workingCategory3 = wc3,
+            workingCategory4 = wc4,
             accountId = resolved?.first,
             accountExternalKey = resolved?.let { "SAP${it.first}" },
             accountType = resolved?.second,
@@ -74,16 +76,18 @@ class AdminDashboardServiceTest {
     }
 
     @Test
-    @DisplayName("T1 환산인원 SUM (거래처유형별) — 슈퍼 100.5+50.0 / 농협 30.0, scale=4")
-    fun sumByAccountType() {
+    @DisplayName("T1 진열 차트 — 유통×근무형태3 스택 (슈퍼 고정 400 / 순회 54.9, 농협 격고 30), 전월 마감 기준")
+    fun displayChartChannelStack() {
         val superAcc = account(1, "슈퍼")
         val nhAcc = account(2, "농협")
         val rows = listOf(
-            mfeis(headcount = BigDecimal("100.5"), acc = superAcc),
-            mfeis(headcount = BigDecimal("50.0"), acc = superAcc),
-            mfeis(headcount = BigDecimal("30.0"), acc = nhAcc),
+            mfeis(wc1 = "진열", wc3 = "고정", headcount = BigDecimal("400"), acc = superAcc),
+            mfeis(wc1 = "진열", wc3 = "순회", headcount = BigDecimal("54.9"), acc = superAcc),
+            mfeis(wc1 = "진열", wc3 = "격고", headcount = BigDecimal("30"), acc = nhAcc),
+            // 행사 row 는 진열 차트에 미포함
+            mfeis(wc1 = "행사", wc4 = "냉동", headcount = BigDecimal("999"), acc = superAcc),
         )
-        // 거래처유형별 차트는 전월(마감) 기준 → previousYm rows 로 반환
+        // 투입현황 차트는 전월(마감) 기준 → previousYm rows 로 반환
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
         every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
@@ -93,49 +97,31 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(emptyList(), "2026-05")
-        val byType = result.staffDeployment.byAccountType.associateBy { it.accountType }
+        val display = service.getDashboard(emptyList(), "2026-05").staffDeployment.display
 
-        assertThat(byType["슈퍼"]!!.convertedHeadcount)
-            .isEqualByComparingTo(BigDecimal("150.5000"))
-        assertThat(byType["슈퍼"]!!.convertedHeadcount.scale()).isEqualTo(4)
-        assertThat(byType["농협"]!!.convertedHeadcount)
-            .isEqualByComparingTo(BigDecimal("30.0000"))
+        // 스택 키는 preset 순서 (등장 라벨만): 1.고정, 2.격고, 3.순회
+        assertThat(display.stackKeys).containsExactly("1.고정", "2.격고", "3.순회")
+        val superRow = display.rows.first { it.channelName == "슈퍼" }
+        assertThat(superRow.headcounts[0]).isEqualByComparingTo(BigDecimal("400.0000")) // 1.고정
+        assertThat(superRow.headcounts[1]).isEqualByComparingTo(BigDecimal("0.0000")) // 2.격고
+        assertThat(superRow.headcounts[2]).isEqualByComparingTo(BigDecimal("54.9000")) // 3.순회
+        val nhRow = display.rows.first { it.channelName == "농협" }
+        assertThat(nhRow.headcounts[1]).isEqualByComparingTo(BigDecimal("30.0000"))
+        // 총합 = 400 + 54.9 + 30 (행사 999 미포함)
+        assertThat(display.totalHeadcount).isEqualByComparingTo(BigDecimal("484.9000"))
     }
 
     @Test
-    @DisplayName("T2 근무유형1 비중 — 진열 960 / 행사 510 (전월 마감 기준)")
-    fun sumByWorkType() {
-        val rows = listOf(
-            mfeis(wc1 = "진열", headcount = BigDecimal("960")),
-            mfeis(wc1 = "행사", headcount = BigDecimal("510")),
-        )
-        // 투입현황 전 차트는 전월(마감) 기준 → previousYm rows 로 반환
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
-        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
-        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
-        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
-            MonthlySalesAdminQueryService.InvestedAccountSales(
-                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
-                hasActualData = false, hasLastYearData = false, hasTargetData = false,
-            )
-
-        val result = service.getDashboard(emptyList(), "2026-05")
-        val byWork = result.staffDeployment.byWorkType.associateBy { it.workType }
-
-        assertThat(byWork["진열"]!!.convertedHeadcount).isEqualByComparingTo(BigDecimal("960.0000"))
-        assertThat(byWork["행사"]!!.convertedHeadcount).isEqualByComparingTo(BigDecimal("510.0000"))
-    }
-
-    @Test
-    @DisplayName("T3 유통×근무형태 — 슈퍼 고정 400 / 순회 54.9 (전월 마감 기준)")
-    fun sumByChannelAndWorkType() {
+    @DisplayName("T2 행사 차트 — 근무형태4 스택 (4.상온 / 5.냉동), 상온은 4.상온 그 외 5.{값}, 전월 마감 기준")
+    fun eventChartWorkType4Stack() {
         val superAcc = account(1, "슈퍼")
         val rows = listOf(
-            mfeis(wc3 = "고정", headcount = BigDecimal("400"), acc = superAcc),
-            mfeis(wc3 = "순회", headcount = BigDecimal("54.9"), acc = superAcc),
+            mfeis(wc1 = "행사", wc4 = "상온", headcount = BigDecimal("100"), acc = superAcc),
+            mfeis(wc1 = "행사", wc4 = "냉동", headcount = BigDecimal("60"), acc = superAcc),
+            mfeis(wc1 = "행사", wc4 = "만두", headcount = BigDecimal("40"), acc = superAcc),
+            // 진열 row 는 행사 차트에 미포함
+            mfeis(wc1 = "진열", wc3 = "고정", headcount = BigDecimal("999"), acc = superAcc),
         )
-        // 투입현황 전 차트는 전월(마감) 기준 → previousYm rows 로 반환
         every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
         every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
         every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
@@ -145,15 +131,38 @@ class AdminDashboardServiceTest {
                 hasActualData = false, hasLastYearData = false, hasTargetData = false,
             )
 
-        val result = service.getDashboard(emptyList(), "2026-05")
-        val superItem = result.staffDeployment.byChannelAndWorkType
-            .first { it.channelName == "슈퍼" }
+        val event = service.getDashboard(emptyList(), "2026-05").staffDeployment.event
 
-        assertThat(superItem.fixedHeadcount).isEqualByComparingTo(BigDecimal("400.0000"))
-        assertThat(superItem.alternatingHeadcount).isEqualByComparingTo(BigDecimal("0.0000"))
-        assertThat(superItem.visitingHeadcount).isEqualByComparingTo(BigDecimal("54.9000"))
-        assertThat(superItem.fixed).isEqualTo(1)
-        assertThat(superItem.visiting).isEqualTo(1)
+        // preset 순서 (4.상온, 5.냉동, 5.만두 — 5.냉장/5.라면 미등장). 만두는 preset 뒤쪽.
+        assertThat(event.stackKeys).containsExactly("4.상온", "5.냉동", "5.만두")
+        val superRow = event.rows.first { it.channelName == "슈퍼" }
+        assertThat(superRow.headcounts[0]).isEqualByComparingTo(BigDecimal("100.0000")) // 4.상온
+        assertThat(superRow.headcounts[1]).isEqualByComparingTo(BigDecimal("60.0000")) // 5.냉동
+        assertThat(superRow.headcounts[2]).isEqualByComparingTo(BigDecimal("40.0000")) // 5.만두
+        assertThat(event.totalHeadcount).isEqualByComparingTo(BigDecimal("200.0000"))
+    }
+
+    @Test
+    @DisplayName("T3 행사 근무형태4 미지정값(신규) — preset 밖 라벨은 stackKeys 뒤에 이름순으로 붙음")
+    fun eventChartUnknownWc4() {
+        val superAcc = account(1, "슈퍼")
+        val rows = listOf(
+            mfeis(wc1 = "행사", wc4 = "상온", headcount = BigDecimal("10"), acc = superAcc),
+            mfeis(wc1 = "행사", wc4 = "신규품목", headcount = BigDecimal("5"), acc = superAcc),
+        )
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
+            )
+
+        val event = service.getDashboard(emptyList(), "2026-05").staffDeployment.event
+
+        // preset(4.상온) 먼저 + preset 밖("5.신규품목") 뒤에
+        assertThat(event.stackKeys).containsExactly("4.상온", "5.신규품목")
     }
 
     @Test
@@ -370,8 +379,10 @@ class AdminDashboardServiceTest {
         val result = service.getDashboard(emptyList(), "2026-05")
 
         assertThat(result.salesSummary.actualAmount).isZero()
-        assertThat(result.staffDeployment.byAccountType).isEmpty()
-        assertThat(result.staffDeployment.byWorkType).isEmpty()
+        assertThat(result.staffDeployment.display.rows).isEmpty()
+        assertThat(result.staffDeployment.display.stackKeys).isEmpty()
+        assertThat(result.staffDeployment.event.rows).isEmpty()
+        assertThat(result.staffDeployment.display.totalHeadcount).isEqualByComparingTo(BigDecimal.ZERO)
         assertThat(result.basicStats.staffType.promotion).isZero()
         assertThat(result.basicStats.byAgeGroup).isEmpty()
     }

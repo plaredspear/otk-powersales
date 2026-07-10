@@ -11,11 +11,9 @@ import { useDashboardBranches } from '@/hooks/dashboard/useDashboardBranches';
 import { SYSTEM_ADMIN_PROFILE_NAME } from '@/hooks/usePermission';
 import {
   fetchDashboard,
-  type AccountTypeCount,
   type AgeGroupCount,
-  type ChannelWorkTypeItem,
   type DashboardResponse,
-  type WorkTypeCount,
+  type WorkTypeChannelChart,
 } from '@/api/adminDashboard';
 
 interface QueryParams {
@@ -89,16 +87,32 @@ const SALES_CHART_INFO = {
 
 /**
  * 여사원 투입현황 각 그래프의 데이터 집계 기준 안내 문구 (기간/지점 조건은 제외).
- * SF 레거시 대시보드(전월 필터) 정합 — 투입현황 탭의 모든 그래프는 조회월의 전월(마감) 기준.
+ * SF 레거시 대시보드 리포트(전월 필터) 정합 — 진열/행사별 유통 × 근무형태3&4 누적 막대 2개.
  */
 const DEPLOYMENT_CHART_INFO = {
-  accountType:
-    '전월(마감) 기준 월별 여사원 통합일정을 거래처유형(농협·대형마트·백화점·슈퍼·체인·홀세일 등)별로 묶어 환산인원을 합산하여 집계합니다. 거래처유형을 확인할 수 없는 일정은 미상으로 표시합니다.',
-  workType:
-    '전월(마감) 기준 월별 여사원 통합일정을 근무형태(진열·행사)별로 묶어 환산인원을 합산하여 집계합니다. 근무형태를 확인할 수 없는 일정은 미상으로 표시합니다.',
-  channelWorkType:
-    '전월(마감) 기준 월별 여사원 통합일정을 거래처유형(유통)별로 묶고, 다시 근무형태(고정·격고·순회)로 나누어 환산인원을 합산하여 집계합니다.',
+  display:
+    '전월(마감) 기준 월별 여사원 통합일정 중 근무형태(진열)를 거래처유형(유통)별로 묶고, 다시 근무형태(1.고정·2.격고·3.순회)로 나누어 환산인원을 합산하여 집계합니다.',
+  event:
+    '전월(마감) 기준 월별 여사원 통합일정 중 근무형태(행사)를 거래처유형(유통)별로 묶고, 다시 근무형태(4.상온·5.냉동·5.냉장·5.라면·5.만두 등)로 나누어 환산인원을 합산하여 집계합니다.',
 } as const;
+
+/** SF 스택 세그먼트 라벨 → 색상 (스크린샷 정합). 미지정 라벨은 팔레트 순환. */
+const STACK_COLOR: Record<string, string> = {
+  '1.고정': '#1677ff',
+  '2.격고': '#10239e',
+  '3.순회': '#5cdbd3',
+  '4.상온': '#69b1ff',
+  '5.냉동': '#10239e',
+  '5.냉장': '#5cdbd3',
+  '5.라면': '#08979c',
+  '5.만두': '#d4b106',
+};
+/** STACK_COLOR 에 없는 라벨용 순환 팔레트. */
+const STACK_FALLBACK_COLORS = ['#fa8c16', '#722ed1', '#eb2f96', '#a0d911', '#13c2c2'];
+
+function stackColor(label: string, idx: number): string {
+  return STACK_COLOR[label] ?? STACK_FALLBACK_COLORS[idx % STACK_FALLBACK_COLORS.length];
+}
 
 /** 환산인원(소수) 막대 차트 옵션 — name/value 쌍 리스트. decimals 지정 시 라벨/툴팁을 해당 소수 자리수로 표시. */
 function headcountBarOption(
@@ -169,26 +183,6 @@ function donutOption(items: DonutItem[]) {
   };
 }
 
-/** 유통 × 근무형태(고정/격고/순회) 그룹 막대 옵션 (환산인원). */
-function channelWorkTypeOption(items: ChannelWorkTypeItem[]) {
-  return {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      valueFormatter: (v: number | null) => (v == null ? '-' : `${formatHeadcount(v, 1)}명`),
-    },
-    legend: { data: ['고정', '격고', '순회'], top: 0 },
-    grid: { left: 50, right: 20, top: 40, bottom: 40 },
-    xAxis: { type: 'category', data: items.map((i) => i.channelName), axisLabel: { interval: 0, rotate: items.length > 6 ? 30 : 0 } },
-    yAxis: { type: 'value' },
-    series: [
-      { name: '고정', type: 'bar', stack: 'wt', itemStyle: { color: '#1677ff' }, label: stackLabel, data: items.map((i) => i.fixedHeadcount) },
-      { name: '격고', type: 'bar', stack: 'wt', itemStyle: { color: '#52c41a' }, label: stackLabel, data: items.map((i) => i.alternatingHeadcount) },
-      { name: '순회', type: 'bar', stack: 'wt', itemStyle: { color: '#faad14' }, label: stackLabel, data: items.map((i) => i.visitingHeadcount) },
-    ],
-  };
-}
-
 /** 스택 막대 세그먼트 내부 라벨 — 환산인원 소수 1자리. 값이 0이면 숨김. */
 const stackLabel = {
   show: true,
@@ -198,12 +192,34 @@ const stackLabel = {
   formatter: (p: { value: number }) => (p.value > 0 ? formatHeadcount(p.value, 1) : ''),
 };
 
-function accountTypeItems(rows: AccountTypeCount[]) {
-  return rows.map((r) => ({ name: r.accountType, value: r.convertedHeadcount }));
+/**
+ * 유통(거래처유형) × 근무형태3&4 가로 누적 막대 옵션 — SF 리포트 정합.
+ * Y축 = 거래처유형(chart.rows), X축 = 환산인원, 스택 = chart.stackKeys.
+ */
+function channelStackOption(chart: WorkTypeChannelChart) {
+  const channels = chart.rows.map((r) => r.channelName);
+  return {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      valueFormatter: (v: number | null) => (v == null ? '-' : `${formatHeadcount(v, 1)}명`),
+    },
+    legend: { data: chart.stackKeys, top: 0 },
+    grid: { left: 70, right: 30, top: 40, bottom: 40 },
+    xAxis: { type: 'value', name: '총 환산인원 합계', nameLocation: 'middle' as const, nameGap: 28 },
+    // SF 스크린샷은 위→아래로 거래처유형이 나열되므로 y축 역순.
+    yAxis: { type: 'category', data: channels, inverse: true, axisLabel: { interval: 0 } },
+    series: chart.stackKeys.map((key, si) => ({
+      name: key,
+      type: 'bar',
+      stack: 'wt',
+      itemStyle: { color: stackColor(key, si) },
+      label: stackLabel,
+      data: chart.rows.map((r) => r.headcounts[si] ?? 0),
+    })),
+  };
 }
-function workTypeItems(rows: WorkTypeCount[]) {
-  return rows.map((r) => ({ name: r.workType, value: r.convertedHeadcount }));
-}
+
 function ageGroupItems(rows: AgeGroupCount[]) {
   return rows.map((r) => ({ name: r.ageGroup, value: r.count }));
 }
@@ -340,27 +356,22 @@ export default function DashboardPage() {
   const deploymentTab = useMemo(() => {
     if (!data) return null;
     const sd = data.staffDeployment;
-    const accountTypeTotal = sd.byAccountType.reduce((sum, r) => sum + r.convertedHeadcount, 0);
-    const workTypeTotal = sd.byWorkType.reduce((sum, r) => sum + r.convertedHeadcount, 0);
-    const channelWorkTypeTotal = sd.byChannelAndWorkType.reduce(
-      (sum, i) => sum + i.fixedHeadcount + i.alternatingHeadcount + i.visitingHeadcount,
-      0,
-    );
     return (
       <Row gutter={[16, 16]}>
         <Col span={12}>
-          <Card title={cardTitle('거래처유형별 투입현황 (전월 마감, 환산인원)', DEPLOYMENT_CHART_INFO.accountType)} extra={cardExtra(accountTypeTotal, 1)}>
-            <ReactECharts option={headcountBarOption(accountTypeItems(sd.byAccountType), '#1677ff', '명', 1)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
+          <Card
+            title={cardTitle('전월 유통별/근무형태별 여사원현황 (진열)', DEPLOYMENT_CHART_INFO.display)}
+            extra={cardExtra(sd.display.totalHeadcount, 1)}
+          >
+            <ReactECharts option={channelStackOption(sd.display)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={12}>
-          <Card title={cardTitle('근무형태 비중 (진열/행사, 전월 마감, 환산인원)', DEPLOYMENT_CHART_INFO.workType)} extra={cardExtra(workTypeTotal, 1)}>
-            <ReactECharts option={headcountBarOption(workTypeItems(sd.byWorkType), '#52c41a', '명', 1)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card title={cardTitle('유통별/근무형태별 여사원 현황 (고정/격고/순회, 전월 마감, 환산인원)', DEPLOYMENT_CHART_INFO.channelWorkType)} extra={cardExtra(channelWorkTypeTotal, 1)}>
-            <ReactECharts option={channelWorkTypeOption(sd.byChannelAndWorkType)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
+          <Card
+            title={cardTitle('전월 유통별/근무형태별 여사원현황 (행사)', DEPLOYMENT_CHART_INFO.event)}
+            extra={cardExtra(sd.event.totalHeadcount, 1)}
+          >
+            <ReactECharts option={channelStackOption(sd.event)} style={{ height: CHART_HEIGHT, width: '100%' }} notMerge />
           </Card>
         </Col>
         <Col span={24}>

@@ -4,11 +4,12 @@ import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmploye
 import java.math.BigDecimal
 
 /**
- * 투입현황 대시보드 집계 전용 평면 projection — 집계에 실제 쓰이는 MFEIS 4필드 + 투입 거래처 3필드만 노출.
+ * 투입현황 대시보드 집계 전용 평면 projection — 집계에 실제 쓰이는 MFEIS 5필드 + 투입 거래처 3필드만 노출.
  *
  * 기존 [MonthlyFemaleEmployeeIntegrationSchedule] entity 전 컬럼 + [account fetch join] (account 80여 컬럼)
- * 대신 select 페이로드를 7개 컬럼으로 축소한다 (대시보드 3섹션이 쓰는 필드 합집합):
- * - MFEIS: convertedHeadcount(환산인원 SUM), workingCategory1(진열/행사), workingCategory3(고정/격고/순회)
+ * 대신 select 페이로드를 8개 컬럼으로 축소한다 (대시보드 3섹션이 쓰는 필드 합집합):
+ * - MFEIS: convertedHeadcount(환산인원 SUM), workingCategory1(진열/행사), workingCategory3(고정/격고/순회),
+ *   workingCategory4(상온/냉동/냉장/라면/만두 — 행사 스택 축, SF WorkTypeForReport__c 정합)
  * - 거래처: accountId(distinct 키), accountExternalKey(SAP 매출 매칭), accountType(유통 구분 라벨)
  *
  * 투입 거래처 정보가 없는 row 는 account* 가 null.
@@ -17,6 +18,7 @@ data class DashboardDeploymentRow(
     val convertedHeadcount: BigDecimal?,
     val workingCategory1: String?,
     val workingCategory3: String?,
+    val workingCategory4: String?,
     val accountId: Long?,
     val accountExternalKey: String?,
     val accountType: String?,

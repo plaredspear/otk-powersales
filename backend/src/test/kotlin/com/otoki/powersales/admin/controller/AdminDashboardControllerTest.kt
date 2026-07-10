@@ -6,6 +6,7 @@ import com.otoki.powersales.admin.dto.response.SalesSummary
 import com.otoki.powersales.admin.dto.response.StaffDeployment
 import com.otoki.powersales.admin.dto.response.StaffTypeCount
 import com.otoki.powersales.admin.dto.response.TotalByPosition
+import com.otoki.powersales.admin.dto.response.WorkTypeChannelChart
 import com.otoki.powersales.admin.dto.response.WorkTypeStats
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentDataScope
@@ -72,9 +73,8 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         staffDeployment = StaffDeployment(
             yearMonth = yearMonth,
             branchName = null,
-            byAccountType = emptyList(),
-            byWorkType = emptyList(),
-            byChannelAndWorkType = emptyList()
+            display = WorkTypeChannelChart(stackKeys = emptyList(), rows = emptyList(), totalHeadcount = BigDecimal.ZERO),
+            event = WorkTypeChannelChart(stackKeys = emptyList(), rows = emptyList(), totalHeadcount = BigDecimal.ZERO)
         ),
         basicStats = BasicStats(
             branchName = null,
@@ -118,12 +118,12 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.salesSummary.channelSales").isEmpty)
                 .andExpect(jsonPath("$.data.staffDeployment").exists())
                 .andExpect(jsonPath("$.data.staffDeployment.yearMonth").value("2026-03"))
-                .andExpect(jsonPath("$.data.staffDeployment.byAccountType").isArray)
-                .andExpect(jsonPath("$.data.staffDeployment.byAccountType").isEmpty)
-                .andExpect(jsonPath("$.data.staffDeployment.byWorkType").isArray)
-                .andExpect(jsonPath("$.data.staffDeployment.byWorkType").isEmpty)
-                .andExpect(jsonPath("$.data.staffDeployment.byChannelAndWorkType").isArray)
-                .andExpect(jsonPath("$.data.staffDeployment.byChannelAndWorkType").isEmpty)
+                .andExpect(jsonPath("$.data.staffDeployment.display.stackKeys").isArray)
+                .andExpect(jsonPath("$.data.staffDeployment.display.rows").isArray)
+                .andExpect(jsonPath("$.data.staffDeployment.display.rows").isEmpty)
+                .andExpect(jsonPath("$.data.staffDeployment.event.stackKeys").isArray)
+                .andExpect(jsonPath("$.data.staffDeployment.event.rows").isArray)
+                .andExpect(jsonPath("$.data.staffDeployment.event.rows").isEmpty)
                 .andExpect(jsonPath("$.data.basicStats").exists())
                 .andExpect(jsonPath("$.data.basicStats.staffType.promotion").value(0))
                 .andExpect(jsonPath("$.data.basicStats.staffType.osc").value(0))
