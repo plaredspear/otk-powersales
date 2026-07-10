@@ -175,81 +175,11 @@ export const menuRoute: MenuRoute = {
           ],
         },
         {
+          // 12개 variant 를 페이지 내부 좌측 세로 탭으로 통합. 사이드바는 단일 진입점.
+          path: '/converted-headcount-report',
           name: '여사원 환산인원',
-          children: [
-            {
-              path: '/converted-headcount-report-permanent-temp-all',
-              name: '거래처유형별 환산인원 (상시·임시 전체)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-permanent-excl-consign',
-              name: '거래처유형별 환산인원 (상시, 위탁농협 제외)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-temp-all',
-              name: '거래처유형별 환산인원 (임시 전체)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-temp-excl-consign',
-              name: '거래처유형별 환산인원 (임시 전체, 위탁농협 제외)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-team2-permanent-temp-all',
-              name: '(2팀) 거래처유형별 환산인원 (상시·임시 전체)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-agency-permanent-temp-all',
-              name: '대리점 환산인원 (상시·임시 전체)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-agency-permanent-only',
-              name: '대리점 환산인원 (only 상시)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-agency-temp-only',
-              name: '대리점 환산인원 (only 임시)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-hypermarket-permanent',
-              name: '대형마트 환산인원 (상시)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-hypermarket-permanent-wc3',
-              name: '대형마트 환산인원 (상시, 근무유형3 추가)',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-segmented',
-              name: '세분화 거래처유형별 환산인원',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-            {
-              path: '/converted-headcount-report-team2-split-check',
-              name: '거래처유형별 환산인원 (상시·임시, 영업지원2팀 분리) 확인용',
-              entity: 'team_member_schedule',
-              operation: 'READ',
-            },
-          ],
+          entity: 'team_member_schedule',
+          operation: 'READ',
         },
         {
           name: '기타',
