@@ -15,7 +15,6 @@ import com.otoki.powersales.domain.foundation.product.repository.ProductReposito
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
-import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
@@ -23,7 +22,8 @@ import java.time.LocalDateTime
  *
  * - **사번당 1건 정책 (Q2)**: DB UNIQUE(`employee_id`) 강제. UPSERT 시 row lock 직렬화 (§2.5).
  * - **트랜잭션 보강 (Q9)**: 등록/삭제 모두 단일 `@Transactional`. 레거시 부분 적재 결함 보강.
- * - **납기일 미보관 (Q8)**: `tmp_order` 에 컬럼 부재. 사용자가 복원 시 폼에서 재입력.
+ * - **납기일 보관 (레거시 정합)**: 레거시 Heroku `saveTemp` 가 화면 `#DeliveryRequestDate` 를
+ *   `tmp_orderdate` 로 저장·복원했던 것과 동일 — `tmp_order.order_date`(`tmpOrderDate`) 에 담는다.
  * - **정식 등록 후 자동 삭제 (Q4)**: `OrderRequestCreateService` 가 본 서비스의
  *   [deleteByEmployeeId] 를 호출 (#592 트랜잭션 내).
  */
@@ -67,7 +67,8 @@ class OrderDraftService(
         val draft = TmpOrder(
             tmpEmployeeCode = employee.employeeCode,
             tmpAccountCode = account.externalKey,
-            tmpOrderDate = LocalDate.now(),
+            // 레거시 정합: tmp_orderdate 컬럼에 실제로는 납기일(DeliveryRequestDate)을 저장했다.
+            tmpOrderDate = request.deliveryDate,
             tmpTotalAmount = request.totalAmount.toString(),
             accountId = request.accountId,
             employeeId = userId,
@@ -140,6 +141,7 @@ class OrderDraftService(
             accountId = draft.accountId ?: 0,
             accountName = account?.name.orEmpty(),
             accountExternalKey = account?.externalKey,
+            deliveryDate = draft.tmpOrderDate,
             totalAmount = draft.tmpTotalAmount?.toLongOrNull() ?: 0L,
             savedAt = draft.updatedAt,
             lines = lines,

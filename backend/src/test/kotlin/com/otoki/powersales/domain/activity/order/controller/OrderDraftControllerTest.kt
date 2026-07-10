@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @WebMvcTest(OrderDraftController::class)
@@ -139,6 +140,7 @@ class OrderDraftControllerTest : MobileControllerTestSupport() {
                 accountId = 5678L,
                 accountName = "홍길동상회",
                 accountExternalKey = "EK001",
+                deliveryDate = LocalDate.of(2026, 5, 10),
                 totalAmount = 1234567,
                 savedAt = LocalDateTime.of(2026, 5, 4, 10, 0),
                 lines = listOf(
@@ -162,6 +164,7 @@ class OrderDraftControllerTest : MobileControllerTestSupport() {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.draftId").value(99))
                 .andExpect(jsonPath("$.data.accountName").value("홍길동상회"))
+                .andExpect(jsonPath("$.data.deliveryDate").value("2026-05-10"))
                 .andExpect(jsonPath("$.data.totalAmount").value(1234567))
                 .andExpect(jsonPath("$.data.lines[0].productCode").value("P001"))
                 .andExpect(jsonPath("$.data.lines[0].unit").value("BOX"))

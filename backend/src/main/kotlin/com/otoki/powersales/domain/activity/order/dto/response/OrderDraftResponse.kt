@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.order.dto.response
 
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 /**
@@ -14,13 +15,15 @@ data class OrderDraftSaveResponse(
 /**
  * 주문 임시저장 조회 응답 — `GET /api/v1/mobile/orders/draft` (Spec #596).
  *
- * 거래처명/external_key/`totalAmount` 헤더 + 라인 List. 납기일 미반환 (Q8 — 레거시 정합).
+ * 거래처명/external_key/`totalAmount` 헤더 + 라인 List. 납기일(`deliveryDate`)은
+ * 레거시 `tmp_orderdate` 정합으로 `tmp_order.order_date` 에서 복원 (없으면 null).
  */
 data class OrderDraftDetailResponse(
     val draftId: Long,
     val accountId: Long,
     val accountName: String,
     val accountExternalKey: String?,
+    val deliveryDate: LocalDate?,
     val totalAmount: Long,
     val savedAt: LocalDateTime,
     val lines: List<OrderDraftLineResponse>,

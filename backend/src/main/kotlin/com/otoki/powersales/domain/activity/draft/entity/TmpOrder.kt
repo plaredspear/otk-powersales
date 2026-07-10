@@ -15,7 +15,8 @@ import com.otoki.powersales.platform.common.entity.FieldName
  * 임시저장 주문 헤더 — Heroku 호환 + Spec #596 보강.
  *
  * 사번당 1건 정책 (Q2). DB UNIQUE(`employee_id`) 제약은 V29 마이그레이션에서 추가.
- * 납기일 컬럼은 보유하지 않음 (Q8 — 레거시 정합).
+ * 납기일은 `order_date`(`tmpOrderDate`) 에 보관 — 레거시 Heroku `saveTemp` 가 화면
+ * 납기일(`#DeliveryRequestDate`)을 `tmp_orderdate` 컬럼에 저장·복원했던 것과 정합.
  */
 @DomainName("임시저장 주문")
 @Entity
@@ -44,8 +45,9 @@ class TmpOrder(
     @Column(name = "account_code", length = 80)
     var tmpAccountCode: String? = null,
 
+    // 컬럼명은 tmp_orderdate(주문일자)지만 레거시 정합상 실제 담기는 값은 납기일(DeliveryRequestDate).
     @HCColumn("tmp_orderdate")
-    @FieldName("주문일시")
+    @FieldName("납기일")
     @Column(name = "order_date")
     var tmpOrderDate: LocalDate? = null,
 

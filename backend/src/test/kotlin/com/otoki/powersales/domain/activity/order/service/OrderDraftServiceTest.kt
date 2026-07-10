@@ -14,6 +14,7 @@ import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.util.Optional
 
 @DisplayName("OrderDraftService 테스트 (#596)")
@@ -66,8 +68,12 @@ class OrderDraftServiceTest {
         amount = BigDecimal("123450"),
     )
 
-    private fun req(lines: List<OrderDraftLineRequest> = listOf(line())) = OrderDraftRequest(
+    private fun req(
+        lines: List<OrderDraftLineRequest> = listOf(line()),
+        deliveryDate: LocalDate? = LocalDate.of(2026, 5, 10),
+    ) = OrderDraftRequest(
         accountId = accountId,
+        deliveryDate = deliveryDate,
         totalAmount = 123450,
         lines = lines,
     )
@@ -89,7 +95,8 @@ class OrderDraftServiceTest {
             every { accountRepository.findById(eq(accountId)) } returns Optional.of(account())
             every { tmpOrderRepository.findByEmployeeIdForUpdate(userId) } returns null
             every { productRepository.findByProductCodeIn(any()) } returns listOf(Product(id = 99L, productCode = "P001", name = "진라면"))
-            every { tmpOrderRepository.save(any<TmpOrder>()) } answers {
+            val savedSlot = slot<TmpOrder>()
+            every { tmpOrderRepository.save(capture(savedSlot)) } answers {
                 val o = firstArg<TmpOrder>()
                 setId(o, 99L)
                 o
@@ -98,6 +105,8 @@ class OrderDraftServiceTest {
             val response = service.save(userId, req())
 
             assertThat(response.draftId).isEqualTo(99L)
+            // 납기일은 레거시 정합상 tmp_orderdate(order_date) 컬럼에 저장된다.
+            assertThat(savedSlot.captured.tmpOrderDate).isEqualTo(LocalDate.of(2026, 5, 10))
             verify(exactly = 0) { tmpOrderRepository.delete(any<TmpOrder>()) }
             verify { tmpOrderRepository.save(any<TmpOrder>()) }
         }
@@ -185,6 +194,7 @@ class OrderDraftServiceTest {
                 id = 99L,
                 tmpEmployeeCode = employeeCode,
                 tmpAccountCode = "EK001",
+                tmpOrderDate = LocalDate.of(2026, 5, 10),
                 tmpTotalAmount = "1234567",
                 accountId = accountId,
                 employeeId = userId,
@@ -225,6 +235,7 @@ class OrderDraftServiceTest {
             assertThat(response.accountId).isEqualTo(accountId)
             assertThat(response.accountName).isEqualTo("테스트거래처")
             assertThat(response.accountExternalKey).isEqualTo("EK001")
+            assertThat(response.deliveryDate).isEqualTo(LocalDate.of(2026, 5, 10))
             assertThat(response.totalAmount).isEqualTo(1234567L)
             assertThat(response.lines).hasSize(1)
             assertThat(response.lines[0].productCode).isEqualTo("P001")
