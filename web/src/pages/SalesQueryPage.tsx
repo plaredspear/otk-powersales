@@ -39,6 +39,7 @@ import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { usePosSalesBranches } from '@/hooks/sales/usePosSalesBranches';
+import type { Branch } from '@/api/team-schedule';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import PosSalesDetailModal from './PosSalesDetailModal';
@@ -48,6 +49,10 @@ const { Text } = Typography;
 // 조회 가능한 최대 기간(두 끝점 일수 차이) — 레거시 posmain.jsp daterangepicker maxSpan: { days: 31 }
 // 정합. backend PosSalesAdminQueryService.MAX_RANGE_DAYS 정합.
 const MAX_RANGE_DAYS = 31;
+
+// 지점 목록 미로드(undefined) 시 기본값 — 모듈 상수로 identity 를 고정한다. 인라인 `?? []` 는 매 렌더마다
+// 새 배열을 만들어, 그 배열을 소비하는 PeriodBranchFilterBar 의 useMemo/useEffect 를 재트리거한다.
+const EMPTY_BRANCHES: Branch[] = [];
 
 /** 1단 거래처 조회 조건 (조회 버튼 클릭 시점에 확정). */
 interface AccountQueryParams {
@@ -83,7 +88,8 @@ export default function SalesQueryPage() {
   // 1단 거래처 조회 조건 (버퍼)
   const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
   // POS매출 전용 지점 셀렉터 (monthly_sales_history 게이팅) — 조직 트리 스코프.
-  const { data: branches = [] } = usePosSalesBranches();
+  // data 가 undefined 여도 안정된 EMPTY_BRANCHES 참조를 넘겨 필터바의 불필요한 재계산을 막는다.
+  const { data: branches = EMPTY_BRANCHES } = usePosSalesBranches();
   const [customerKeyword, setCustomerKeyword] = useState<string>('');
   const [distributionChannels, setDistributionChannels] = useState<string[]>([]);
   const [accountTypes, setAccountTypes] = useState<string[]>([]);
@@ -382,7 +388,10 @@ export default function SalesQueryPage() {
                   onChange={setDistributionChannels}
                   options={distributionChannelOptions}
                   placeholder="전체"
-                  style={{ minWidth: 160, maxWidth: 280 }}
+                  // 폭은 고정한다. minWidth~maxWidth 가변 폭 + maxTagCount="responsive" 조합은,
+                  // 긴 라벨 하나가 컨테이너 경계 길이에 걸리면 태그 접힘↔펼침 측정이 무한 반복돼
+                  // 값이 해제/재선택되는 것처럼 깜빡이는 레이아웃 진동을 일으킨다.
+                  style={{ width: 220 }}
                   maxTagCount="responsive"
                   allowClear
                   showSearch
@@ -401,7 +410,8 @@ export default function SalesQueryPage() {
                   onChange={setAccountTypes}
                   options={accountTypeOptions}
                   placeholder="전체"
-                  style={{ minWidth: 160, maxWidth: 280 }}
+                  // 폭 고정 — 유통형태 Select 와 동일 이유(가변 폭 + responsive 진동 방지).
+                  style={{ width: 220 }}
                   maxTagCount="responsive"
                   allowClear
                   showSearch
@@ -542,7 +552,8 @@ export default function SalesQueryPage() {
                   onSearch={handleProductSearch}
                   options={productOptions}
                   placeholder="검색 후 추가 (미선택 시 전체)"
-                  style={{ minWidth: 260, maxWidth: 420 }}
+                  // 폭 고정 — 유통형태 Select 와 동일 이유(가변 폭 + responsive 진동 방지).
+                  style={{ width: 420 }}
                   maxTagCount="responsive"
                   allowClear
                   showSearch

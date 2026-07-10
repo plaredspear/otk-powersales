@@ -99,6 +99,12 @@ function PeriodBranchFilterBarView({
   // 본인 지점을 자동 선택하고 선택 UI 대신 고정 Tag 로 표시한다. 빈 placeholder("지점 선택")가
   // 떠 있어 "미선택"으로 오해하게 만드는 문제를 방지. 다중지점/전사 권한은 기존 선택 UI 유지.
   const singleBranch = branches.length === 1;
+  const firstBranchCode = branches[0]?.branchCode;
+  // 아래 stale-정리 effect 의 의존성은 배열 identity(allCodes/selectedCodes) 가 아니라 내용을 직렬화한
+  // 원시 문자열로 잡는다. 소비 측에서 branches 배열이 매 렌더마다 새 identity 로 들어와도(내용 동일)
+  // effect 가 재실행돼 onCodesChange 를 호출하는 리렌더 루프를 방지한다.
+  const allCodesKey = allCodes.join(',');
+  const selectedCodesKey = selectedCodes.join(',');
   useEffect(() => {
     if (branches.length === 0) return;
     // 권한 주체가 바뀌면(예: 대행 종료 후 관리자 복귀) 이전 사용자 지점 목록에서 선택했던
@@ -109,10 +115,11 @@ function PeriodBranchFilterBarView({
       return;
     }
     // 단일지점 사용자는 본인 지점을 자동 선택.
-    if (singleBranch && selectedCodes.length === 0) {
-      onCodesChange([branches[0].branchCode]);
+    if (singleBranch && selectedCodes.length === 0 && firstBranchCode) {
+      onCodesChange([firstBranchCode]);
     }
-  }, [singleBranch, branches, allCodes, selectedCodes, onCodesChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [singleBranch, firstBranchCode, allCodesKey, selectedCodesKey, onCodesChange]);
 
   const handleToggleAll = () => {
     onCodesChange(allSelected ? [] : allCodes);
@@ -150,7 +157,9 @@ function PeriodBranchFilterBarView({
               onChange={(values) => onCodesChange(values as string[])}
               options={branchOptions}
               placeholder="지점 선택"
-              style={{ minWidth: 320, maxWidth: 520 }}
+              // 폭 고정 — 가변 폭(minWidth~maxWidth) + maxTagCount="responsive" 는 긴 지점명 하나가
+              // 컨테이너 경계 길이에 걸릴 때 태그 접힘↔펼침 측정이 무한 반복되는 레이아웃 진동을 일으킨다.
+              style={{ width: 520 }}
               maxTagCount="responsive"
               allowClear
               showSearch
