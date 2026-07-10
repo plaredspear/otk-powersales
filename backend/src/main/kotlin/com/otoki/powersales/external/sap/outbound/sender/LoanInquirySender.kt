@@ -73,9 +73,11 @@ class LoanInquirySender(
         }
 
         val resultCode = parsed["resultCode"]?.asString()
+        // SAP 응답 원문(resutlMsg 는 SAP 스펙상 오타 필드명) — SAP 오류 문구를 그대로 relay 하되,
+        // 어느 SAP 인터페이스에서 난 오류인지 식별 가능하도록 prefix 만 덧붙인다(레거시 relay 정합 유지).
         val resultMsg = parsed["resutlMsg"]?.asString() ?: parsed["resultMsg"]?.asString()
         if (resultCode != "S") {
-            throw LoanSapErrorException(resultMsg)
+            throw LoanSapErrorException(withSapPrefix(resultMsg))
         }
 
         val result = parsed["result"] ?: throw LoanSapErrorException("SAP 응답 result 필드 누락")
@@ -93,6 +95,21 @@ class LoanInquirySender(
             BigDecimal(v)
         } catch (_: NumberFormatException) {
             null
+        }
+    }
+
+    companion object {
+        /** SAP 여신조회 오류임을 식별하기 위한 접두어. */
+        private const val SAP_ERROR_PREFIX = "[SAP여신조회]"
+
+        /**
+         * SAP 오류 원문에 인터페이스 식별 prefix 를 덧붙인다.
+         * 원문이 없으면(null/공란) prefix 만 붙이지 않고 null 을 반환해
+         * [LoanSapErrorException] 의 기본 문구가 쓰이도록 한다.
+         */
+        private fun withSapPrefix(resultMsg: String?): String? {
+            val trimmed = resultMsg?.trim()
+            return if (trimmed.isNullOrEmpty()) resultMsg else "$SAP_ERROR_PREFIX $trimmed"
         }
     }
 }

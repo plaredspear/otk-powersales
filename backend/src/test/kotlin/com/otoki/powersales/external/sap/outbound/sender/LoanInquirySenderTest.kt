@@ -54,7 +54,7 @@ class LoanInquirySenderTest {
     }
 
     @Test
-    @DisplayName("resultCode != 'S' → LOAN_SAP_ERROR + resutlMsg 패스스루")
+    @DisplayName("resultCode != 'S' → LOAN_SAP_ERROR + [SAP여신조회] prefix + resutlMsg 패스스루")
     fun sapError() {
         server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03040"))
             .andRespond(
@@ -66,7 +66,7 @@ class LoanInquirySenderTest {
 
         assertThatThrownBy { sender.inquire("EK_BAD") }
             .isInstanceOf(LoanSapErrorException::class.java)
-            .hasMessageContaining("거래처 미존재")
+            .hasMessage("[SAP여신조회] 거래처 미존재")
     }
 
     @Test

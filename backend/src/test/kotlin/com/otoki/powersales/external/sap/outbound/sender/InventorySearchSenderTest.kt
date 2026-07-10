@@ -1,5 +1,6 @@
 package com.otoki.powersales.external.sap.outbound.sender
 
+import com.otoki.powersales.domain.activity.order.exception.InventorySapErrorException
 import com.otoki.powersales.domain.activity.order.exception.InventorySapUnavailableException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -97,6 +98,22 @@ class InventorySearchSenderTest {
 
         assertThat(result).isEmpty()
         server.verify()
+    }
+
+    @Test
+    @DisplayName("resultCode != 'S' → INVENTORY_SAP_ERROR + [SAP재고조회] prefix + resutlMsg 패스스루")
+    fun sapErrorPrefixed() {
+        server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03070"))
+            .andRespond(
+                withSuccess(
+                    """{"resultCode":"E","resutlMsg":"조회 가능한 거래처가 아닙니다"}""",
+                    MediaType.APPLICATION_JSON
+                )
+            )
+
+        assertThatThrownBy { sender.search("1005139", listOf("P001"), deliveryDate) }
+            .isInstanceOf(InventorySapErrorException::class.java)
+            .hasMessage("[SAP재고조회] 조회 가능한 거래처가 아닙니다")
     }
 
     private fun successBody(codes: List<String>): String {
