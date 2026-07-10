@@ -295,6 +295,17 @@ void main() {
         expect(notifier.state.orderDraft.items, isEmpty);
       });
 
+      test('E9 예외 — 전용상품이라도 20010042(누룽지)는 추가 허용 (레거시 하드코딩 정합)', () {
+        final result =
+            notifier.addProductLine(_product('20010042', exclusive: true));
+        expect(result, true);
+        expect(notifier.state.errorMessage, isNull);
+        expect(
+          notifier.state.orderDraft.items.single.productCode,
+          '20010042',
+        );
+      });
+
       test('E10 — 시식·증정 차단', () {
         final result = notifier.addProductLine(_product('P002', tasting: true));
         expect(result, false);
