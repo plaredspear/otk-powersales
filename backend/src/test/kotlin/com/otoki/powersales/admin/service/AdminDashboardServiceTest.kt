@@ -166,6 +166,54 @@ class AdminDashboardServiceTest {
     }
 
     @Test
+    @DisplayName("T4 ①거래처유형별 + ②유통×진열/행사 + ③진열/행사 도넛 + ④All 누적 — 진열+행사 합산, 전월 기준")
+    fun sixChartAggregation() {
+        val superAcc = account(1, "슈퍼")
+        val nhAcc = account(2, "농협")
+        val rows = listOf(
+            mfeis(wc1 = "진열", wc3 = "고정", headcount = BigDecimal("400"), acc = superAcc),
+            mfeis(wc1 = "행사", wc4 = "냉동", headcount = BigDecimal("100"), acc = superAcc),
+            mfeis(wc1 = "진열", wc3 = "격고", headcount = BigDecimal("30"), acc = nhAcc),
+            mfeis(wc1 = "행사", wc4 = "상온", headcount = BigDecimal("20"), acc = nhAcc),
+        )
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "4", any()) } returns rows
+        every { mfeisRepository.findDeploymentDashboardRows("2026", "5", any()) } returns emptyList()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns emptyList()
+        every { monthlySalesAdminQueryService.sumInvestedAccountSales(any(), any(), any()) } returns
+            MonthlySalesAdminQueryService.InvestedAccountSales(
+                actualAmount = 0L, targetAmount = 0L, lastYearAmount = 0L,
+                hasActualData = false, hasLastYearData = false, hasTargetData = false,
+            )
+
+        val sd = service.getDashboard(emptyList(), "2026-05").staffDeployment
+
+        // ① 거래처유형별 (진열+행사 합): 슈퍼 400+100=500, 농협 30+20=50
+        val byType = sd.byAccountType.associateBy { it.accountType }
+        assertThat(byType["슈퍼"]!!.convertedHeadcount).isEqualByComparingTo(BigDecimal("500.0000"))
+        assertThat(byType["농협"]!!.convertedHeadcount).isEqualByComparingTo(BigDecimal("50.0000"))
+
+        // ② 유통 × 진열/행사: 슈퍼 진열 400 / 행사 100
+        assertThat(sd.channelWorkType1.stackKeys).containsExactly("진열", "행사")
+        val superCwt = sd.channelWorkType1.rows.first { it.channelName == "슈퍼" }
+        assertThat(superCwt.headcounts[0]).isEqualByComparingTo(BigDecimal("400.0000")) // 진열
+        assertThat(superCwt.headcounts[1]).isEqualByComparingTo(BigDecimal("100.0000")) // 행사
+
+        // ③ 진열/행사 도넛: 진열 430(400+30) / 행사 120(100+20)
+        val ratio = sd.workType1Ratio.associateBy { it.workType }
+        assertThat(ratio["진열"]!!.convertedHeadcount).isEqualByComparingTo(BigDecimal("430.0000"))
+        assertThat(ratio["행사"]!!.convertedHeadcount).isEqualByComparingTo(BigDecimal("120.0000"))
+
+        // ④ All 누적 (근무형태3&4 전체): 슈퍼 1.고정 400 + 5.냉동 100
+        assertThat(sd.all.stackKeys).contains("1.고정", "2.격고", "4.상온", "5.냉동")
+        val superAll = sd.all.rows.first { it.channelName == "슈퍼" }
+        val fixedIdx = sd.all.stackKeys.indexOf("1.고정")
+        val frozenIdx = sd.all.stackKeys.indexOf("5.냉동")
+        assertThat(superAll.headcounts[fixedIdx]).isEqualByComparingTo(BigDecimal("400.0000"))
+        assertThat(superAll.headcounts[frozenIdx]).isEqualByComparingTo(BigDecimal("100.0000"))
+        assertThat(sd.all.totalHeadcount).isEqualByComparingTo(BigDecimal("550.0000"))
+    }
+
+    @Test
     @DisplayName("T3-1 기본현황 근무형태별(고정/격고/순회)은 환산인원 SUM — 고정 400+1=401 / 순회 54.9, scale=4")
     fun basicStatsByWorkTypeUsesConvertedHeadcount() {
         val rows = listOf(

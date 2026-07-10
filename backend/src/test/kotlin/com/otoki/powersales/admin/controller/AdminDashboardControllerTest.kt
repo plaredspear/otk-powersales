@@ -54,6 +54,9 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
             DataScope(branchCodes = emptyList(), isAllBranches = true)
     }
 
+    private fun emptyChart() =
+        WorkTypeChannelChart(stackKeys = emptyList(), rows = emptyList(), totalHeadcount = BigDecimal.ZERO)
+
     private fun emptyDashboardResponse(yearMonth: String): DashboardResponse = DashboardResponse(
         salesSummary = SalesSummary(
             yearMonth = yearMonth,
@@ -73,8 +76,12 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
         staffDeployment = StaffDeployment(
             yearMonth = yearMonth,
             branchName = null,
-            display = WorkTypeChannelChart(stackKeys = emptyList(), rows = emptyList(), totalHeadcount = BigDecimal.ZERO),
-            event = WorkTypeChannelChart(stackKeys = emptyList(), rows = emptyList(), totalHeadcount = BigDecimal.ZERO)
+            byAccountType = emptyList(),
+            channelWorkType1 = emptyChart(),
+            workType1Ratio = emptyList(),
+            all = emptyChart(),
+            display = emptyChart(),
+            event = emptyChart()
         ),
         basicStats = BasicStats(
             branchName = null,
@@ -118,6 +125,11 @@ class AdminDashboardControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.salesSummary.channelSales").isEmpty)
                 .andExpect(jsonPath("$.data.staffDeployment").exists())
                 .andExpect(jsonPath("$.data.staffDeployment.yearMonth").value("2026-03"))
+                .andExpect(jsonPath("$.data.staffDeployment.byAccountType").isArray)
+                .andExpect(jsonPath("$.data.staffDeployment.byAccountType").isEmpty)
+                .andExpect(jsonPath("$.data.staffDeployment.channelWorkType1.rows").isArray)
+                .andExpect(jsonPath("$.data.staffDeployment.workType1Ratio").isArray)
+                .andExpect(jsonPath("$.data.staffDeployment.all.rows").isArray)
                 .andExpect(jsonPath("$.data.staffDeployment.display.stackKeys").isArray)
                 .andExpect(jsonPath("$.data.staffDeployment.display.rows").isArray)
                 .andExpect(jsonPath("$.data.staffDeployment.display.rows").isEmpty)

@@ -267,6 +267,21 @@
         },
         "type" : "object"
       },
+      "AccountTypeCount" : {
+        "properties" : {
+          "accountType" : {
+            "type" : "string"
+          },
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "AdminAccountCreateRequest" : {
         "properties" : {
           "employeeCode" : {
@@ -17492,14 +17507,32 @@
       },
       "StaffDeployment" : {
         "properties" : {
+          "all" : {
+            "$ref" : "#/components/schemas/WorkTypeChannelChart"
+          },
           "branchName" : {
             "type" : [ "string", "null" ]
+          },
+          "byAccountType" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccountTypeCount"
+            },
+            "type" : "array"
+          },
+          "channelWorkType1" : {
+            "$ref" : "#/components/schemas/WorkTypeChannelChart"
           },
           "display" : {
             "$ref" : "#/components/schemas/WorkTypeChannelChart"
           },
           "event" : {
             "$ref" : "#/components/schemas/WorkTypeChannelChart"
+          },
+          "workType1Ratio" : {
+            "items" : {
+              "$ref" : "#/components/schemas/WorkTypeCount"
+            },
+            "type" : "array"
           },
           "yearMonth" : {
             "type" : "string"
@@ -18501,6 +18534,21 @@
           },
           "totalHeadcount" : {
             "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "WorkTypeCount" : {
+        "properties" : {
+          "convertedHeadcount" : {
+            "type" : "number"
+          },
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "workType" : {
+            "type" : "string"
           }
         },
         "type" : "object"

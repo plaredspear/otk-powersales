@@ -35,6 +35,18 @@ export interface SalesSummary {
   hasTargetData: boolean;
 }
 
+export interface AccountTypeCount {
+  accountType: string;
+  count: number;
+  convertedHeadcount: number;
+}
+
+export interface WorkTypeCount {
+  workType: string;
+  count: number;
+  convertedHeadcount: number;
+}
+
 /** 거래처유형(유통) 1행 — headcounts 는 차트 stackKeys 와 동일 순서의 환산인원. */
 export interface ChannelStackRow {
   channelName: string;
@@ -42,7 +54,7 @@ export interface ChannelStackRow {
 }
 
 /**
- * 유통(거래처유형) × 근무형태 스택 누적 막대 1개 — SF 리포트 1개 대응.
+ * 유통(거래처유형) × 스택 누적 가로막대 1개 — SF 리포트 1개 대응.
  * stackKeys 는 스택 세그먼트 라벨 순서, 각 row.headcounts 가 같은 순서로 대응.
  */
 export interface WorkTypeChannelChart {
@@ -52,13 +64,23 @@ export interface WorkTypeChannelChart {
 }
 
 /**
- * 여사원 투입현황 — SF 레거시 대시보드 리포트(`근무형태별(상세) 환산인원현황(진열)/(행사)`) 정합.
- * 근무유형1(진열/행사)별 가로 누적 막대 2개. 조회월의 전월(마감) 데이터 기준.
- * yearMonth 는 조회 조건 echo (데이터 기준월은 그 전월).
+ * 여사원 투입현황 — SF 레거시 조장 대시보드 "투입현황" 6개 차트 정합.
+ * 모두 조회월의 전월(마감) MFEIS 전건을 서로 다르게 집계. yearMonth 는 조회 조건 echo.
+ *
+ * - byAccountType: ① 거래처유형별 투입현황 (단일 가로막대)
+ * - channelWorkType1: ② 근무형태별/유통별 인원현황 (유통 × 진열/행사 누적)
+ * - workType1Ratio: ③ 근무형태 비중 (진열/행사 도넛)
+ * - all: ④ 유통별/근무형태별(All) (유통 × 근무형태3&4 누적)
+ * - display: ⑤ 유통별/근무형태별(진열)
+ * - event: ⑥ 유통별/근무형태별(행사)
  */
 export interface StaffDeployment {
   yearMonth: string;
   branchName: string | null;
+  byAccountType: AccountTypeCount[];
+  channelWorkType1: WorkTypeChannelChart;
+  workType1Ratio: WorkTypeCount[];
+  all: WorkTypeChannelChart;
   display: WorkTypeChannelChart;
   event: WorkTypeChannelChart;
 }
