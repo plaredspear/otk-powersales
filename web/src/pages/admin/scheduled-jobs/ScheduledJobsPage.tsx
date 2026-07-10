@@ -219,6 +219,9 @@ const METADATA_LABELS: Record<string, string> = {
   reverted: '복원',
   resetCount: '리셋',
   applied: '반영',
+  // 클레임 업데이트 배치: 도메인별 중첩 집계 (claim / logistics)
+  claim: '클레임',
+  logistics: '물류클레임',
 };
 
 /** 결과 컬럼에서 숨길 metadata 키 — 수치가 아닌 실행 맥락 값이라 표에는 불필요. */
@@ -234,8 +237,40 @@ const METADATA_HIDDEN_KEYS = new Set([
 ]);
 
 /**
+ * metadata 의 단일 (key, value) 를 결과 컬럼용 조각으로 변환한다.
+ * - 숨김 키 / 빈 값 → null (표시 안 함).
+ * - boolean → 의미 있는 쪽만 라벨로 노출: enabled=false → "비활성", error=true → "오류",
+ *   그 외 boolean(정상값 포함)은 노이즈라 숨김.
+ * - 중첩 객체(예: 클레임 업데이트 배치의 claim/logistics) → 재귀 요약 후 "라벨(내부 요약)".
+ * - 그 외 스칼라 → "라벨 값".
+ */
+function metadataEntryToPart(key: string, value: unknown): string | null {
+  if (METADATA_HIDDEN_KEYS.has(key) || value == null || value === '') return null;
+  const label = METADATA_LABELS[key] ?? key;
+  if (typeof value === 'boolean') {
+    if (key === 'enabled') return value ? null : '비활성';
+    if (key === 'error') return value ? '오류' : null;
+    return value ? label : null;
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const inner = summarizeMetadataObject(value as Record<string, unknown>);
+    return inner === '-' ? null : `${label}(${inner})`;
+  }
+  return `${label} ${value}`;
+}
+
+/** metadata 객체(파싱 완료) 를 한 줄 요약 문자열로 변환한다. 표시할 조각이 없으면 '-'. */
+function summarizeMetadataObject(obj: Record<string, unknown>): string {
+  const parts = Object.entries(obj)
+    .map(([key, value]) => metadataEntryToPart(key, value))
+    .filter((part): part is string => part != null);
+  return parts.length > 0 ? parts.join(', ') : '-';
+}
+
+/**
  * metadata JSON 문자열을 이력 표 '결과' 컬럼용 한 줄 요약으로 변환한다.
  * 예: {"fetched":120,"updated":5,"skipped":2} → "조회 120, 갱신 5, 스킵 2".
+ * 중첩 객체(claim/logistics 등)는 "클레임(조회 10, 갱신 2)" 처럼 재귀 펼침.
  * 파싱 불가/빈 값이면 '-' 를 반환한다.
  */
 function summarizeMetadata(raw: string | null | undefined): string {
@@ -249,10 +284,7 @@ function summarizeMetadata(raw: string | null | undefined): string {
   if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return raw;
   }
-  const parts = Object.entries(parsed as Record<string, unknown>)
-    .filter(([key, value]) => !METADATA_HIDDEN_KEYS.has(key) && value != null && value !== '')
-    .map(([key, value]) => `${METADATA_LABELS[key] ?? key} ${value}`);
-  return parts.length > 0 ? parts.join(', ') : '-';
+  return summarizeMetadataObject(parsed as Record<string, unknown>);
 }
 
 const ALL_JOBS_KEY = '__all__';
