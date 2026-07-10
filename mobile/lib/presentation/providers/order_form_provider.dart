@@ -97,19 +97,20 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   Future<void> initialize({
     int? orderId,
   }) async {
-    // 신규 폼 — UUID v4 멱등키 발급 (P1-M state 필드)
-    final newClientRequestId = orderId == null ? _uuid.v4() : null;
-
-    state = state.copyWith(
-      clientRequestId: newClientRequestId,
-    );
-
     // 수정 모드 (향후 구현)
     if (orderId != null) {
+      state = state.copyWith(clearClientRequestId: true);
       return;
     }
 
-    // 신규 작성 모드: 임시저장 데이터 확인
+    // 신규 작성 모드: 직전 세션 잔여 상태(등록 완료·이탈 후 재진입 등)를 폐기하고
+    // 빈 폼 + 새 멱등키(UUID v4)로 시작한다. Provider 가 autoDispose 가 아니어서
+    // 재진입 시 이전 품목/거래처/납기일이 남아 있는 문제를 방지한다.
+    state = OrderFormState.initial().copyWith(
+      clientRequestId: _uuid.v4(),
+    );
+
+    // 임시저장 데이터 확인
     try {
       final draft = await _getOrderDraft.call();
       if (draft != null) {
