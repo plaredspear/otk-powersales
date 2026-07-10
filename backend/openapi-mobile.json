@@ -5065,6 +5065,10 @@
           "accountName" : {
             "type" : "string"
           },
+          "deliveryDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
           "draftId" : {
             "format" : "int64",
             "type" : "integer"
@@ -5171,6 +5175,10 @@
             "format" : "int64",
             "minimum" : 1,
             "type" : "integer"
+          },
+          "deliveryDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
           },
           "lines" : {
             "items" : {
