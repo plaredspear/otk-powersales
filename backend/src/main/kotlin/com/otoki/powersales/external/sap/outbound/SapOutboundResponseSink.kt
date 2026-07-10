@@ -45,8 +45,10 @@ class SapOutboundResponseSink(
 
         val (resultCode, resultMsg, errorDetail) = when {
             networkError -> Triple(RESULT_CODE_FAIL, "NETWORK_ERROR", null)
+            // HTML 에러 응답(SAP/proxy 5xx 에러 페이지 등)은 전문을 error_detail 에 그대로 남긴다.
+            // error_detail 은 TEXT 라 절단하지 않는다 — 원인 진단에 응답 전문이 필요하다.
             !SapResponseHtmlGuard.isValid(responseBody) ->
-                Triple(RESULT_CODE_INVALID_RESPONSE, "HTML_RESPONSE_DETECTED", responseBody?.take(MAX_ERROR_DETAIL_LENGTH))
+                Triple(RESULT_CODE_INVALID_RESPONSE, "HTML_RESPONSE_DETECTED", responseBody)
             else -> {
                 val interpreted = SapResponseInterpreter.interpret(objectMapper, responseBody)
                 val code = if (interpreted.success) RESULT_CODE_SUCCESS else RESULT_CODE_FAIL
@@ -60,7 +62,9 @@ class SapOutboundResponseSink(
                 endpointPath = endpointPath,
                 requestCount = requestCount,
                 httpStatus = httpStatus,
-                resultCode = resultCode,
+                // result_code 는 컬럼(length 30) 초과 시 INSERT 가 실패해 이력 전체가 유실되므로
+                // 방어적으로 절단한다 (현재 어휘 최장 'INVALID_RESPONSE' 16자라 실제 절단은 없음).
+                resultCode = resultCode?.take(MAX_RESULT_CODE_LENGTH),
                 resultMsg = resultMsg?.take(MAX_RESULT_MSG_LENGTH),
                 attemptCount = 1,
                 durationMs = durationMs,
@@ -91,11 +95,12 @@ class SapOutboundResponseSink(
     }
 
     companion object {
-        private const val MAX_ERROR_DETAIL_LENGTH = 4000
         // sap_outbound_log.result_msg 컬럼 length 500 정합 (절단).
         private const val MAX_RESULT_MSG_LENGTH = 500
+        // sap_outbound_log.result_code 컬럼 length 30 정합 (INSERT 실패로 인한 이력 유실 방지 방어절단).
+        private const val MAX_RESULT_CODE_LENGTH = 30
 
-        // sap_outbound_log.result_code 어휘 (length 10 정합). 배치 sender 의 "SUCCESS"/"FAIL" 와 동일.
+        // sap_outbound_log.result_code 어휘. 배치 sender 의 "SUCCESS"/"FAIL" 와 동일.
         private const val RESULT_CODE_SUCCESS = "SUCCESS"
         private const val RESULT_CODE_FAIL = "FAIL"
         private const val RESULT_CODE_INVALID_RESPONSE = "INVALID_RESPONSE"

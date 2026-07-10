@@ -27,6 +27,9 @@ class SapOutboundResponseSinkTest {
 
     private val requestedAt = LocalDateTime.of(2026, 6, 23, 9, 0, 0)
 
+    // SapOutboundLog.resultCode @Column(length = 30) 정합.
+    private val SAP_OUTBOUND_LOG_RESULT_CODE_LENGTH = 30
+
     @BeforeEach
     fun setUp() {
         logService = mockk(relaxed = true)
@@ -150,6 +153,77 @@ class SapOutboundResponseSinkTest {
             )
         }
         assertThat(errorDetail.captured).contains("<html>")
+    }
+
+    @Test
+    @DisplayName("HTML 에러 페이지 전문 보존 — error_detail 을 절단하지 않는다 (TEXT 컬럼)")
+    fun htmlResponseFullBodyPreserved() {
+        // SAP/proxy 5xx 에러 페이지는 수 KB 에 이를 수 있다. 원인 진단을 위해 전문을 절단 없이 남겨야 한다.
+        val bigHtml = "<html><body>" + "e".repeat(20_000) + "</body></html>"
+
+        sink.accept(
+            uri = "http://sap-mock/SD03300",
+            requestBody = """{"REQUEST":[{"a":"1"}]}""",
+            httpStatus = 500,
+            responseBody = bigHtml,
+            requestedAt = requestedAt,
+            durationMs = 45,
+            networkError = false,
+        )
+
+        val errorDetail = slot<String?>()
+        verify(exactly = 1) {
+            logService.log(
+                interfaceId = "SD03300",
+                endpointPath = "/SD03300",
+                requestCount = 1,
+                httpStatus = 500,
+                resultCode = "INVALID_RESPONSE",
+                resultMsg = "HTML_RESPONSE_DETECTED",
+                attemptCount = 1,
+                durationMs = 45,
+                errorDetail = captureNullable(errorDetail),
+                requestedAt = requestedAt,
+                completedAt = any(),
+            )
+        }
+        // 절단되지 않고 응답 전문이 그대로 전달되어야 한다.
+        assertThat(errorDetail.captured).isEqualTo(bigHtml)
+    }
+
+    @Test
+    @DisplayName("result_code 는 컬럼 length(30) 이내로 전달된다 — INSERT 실패로 인한 이력 유실 방지")
+    fun resultCodeWithinColumnLength() {
+        // 이번 회귀의 핵심: sink 어휘 'INVALID_RESPONSE'(16자) 가 컬럼(과거 length 10)을 초과해
+        // INSERT 가 실패, 이력 전체가 유실됐다. sink 가 넘기는 result_code 는 항상 컬럼 length 이내여야 한다.
+        sink.accept(
+            uri = "http://sap-mock/SD03300",
+            requestBody = """{"REQUEST":[{"a":"1"}]}""",
+            httpStatus = 500,
+            responseBody = "<html>error</html>",
+            requestedAt = requestedAt,
+            durationMs = 10,
+            networkError = false,
+        )
+
+        val resultCode = slot<String?>()
+        verify(exactly = 1) {
+            logService.log(
+                interfaceId = "SD03300",
+                endpointPath = "/SD03300",
+                requestCount = 1,
+                httpStatus = 500,
+                resultCode = captureNullable(resultCode),
+                resultMsg = "HTML_RESPONSE_DETECTED",
+                attemptCount = 1,
+                durationMs = 10,
+                errorDetail = any(),
+                requestedAt = requestedAt,
+                completedAt = any(),
+            )
+        }
+        assertThat(resultCode.captured).isEqualTo("INVALID_RESPONSE")
+        assertThat(resultCode.captured!!.length).isLessThanOrEqualTo(SAP_OUTBOUND_LOG_RESULT_CODE_LENGTH)
     }
 
     @Test

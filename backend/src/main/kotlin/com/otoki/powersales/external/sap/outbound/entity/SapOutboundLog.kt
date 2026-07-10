@@ -37,7 +37,7 @@ class SapOutboundLog(
     val httpStatus: Int? = null,
 
     @FieldName("결과코드")
-    @Column(name = "result_code", length = 10)
+    @Column(name = "result_code", length = 30)
     val resultCode: String? = null,
 
     @FieldName("결과메시지")
