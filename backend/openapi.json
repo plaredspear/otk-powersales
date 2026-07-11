@@ -25301,11 +25301,19 @@
       },
       "WorkDayDto" : {
         "properties" : {
+          "completedCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "date" : {
             "type" : "string"
           },
           "hasWork" : {
             "type" : "boolean"
+          },
+          "totalCount" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "workingType" : {
             "type" : [ "string", "null" ]
