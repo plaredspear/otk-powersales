@@ -173,7 +173,10 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : _buildBody(state, notifier),
-      bottomNavigationBar: _buildBottomBar(state, notifier),
+      // 고정 근무자는 거래처 목록 바로 아래에 버튼을 배치하므로 하단 고정 바를 두지 않는다.
+      bottomNavigationBar: state.isFixedWorker
+          ? null
+          : _buildBottomBar(state, notifier),
     );
   }
 
@@ -207,28 +210,42 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
           ),
 
         // 거래처 리스트
-        Expanded(
-          child: state.filteredAccounts.isEmpty
-              ? _buildNoSearchResult()
-              : ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: state.filteredAccounts.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final account = state.filteredAccounts[index];
-                    return AccountListItem(
-                      account: account,
-                      isSelected: _isAccountSelected(account, state),
-                      onTap: () {
-                        if (!account.isRegistered) {
-                          notifier.selectAccount(account);
-                        }
-                      },
-                    );
-                  },
-                ),
-        ),
+        // 고정 근무자는 거래처가 소수이므로 목록 높이만큼만 차지하고
+        // 바로 아래에 등록 버튼을 이어 붙인다. 그 외에는 목록이 화면을 채우고
+        // 버튼은 하단에 고정된다.
+        if (state.isFixedWorker)
+          _buildAccountList(state, notifier)
+        else
+          Expanded(child: _buildAccountList(state, notifier)),
+
+        if (state.isFixedWorker) _buildRegisterButton(state, notifier),
       ],
+    );
+  }
+
+  Widget _buildAccountList(dynamic state, AttendanceNotifier notifier) {
+    if (state.filteredAccounts.isEmpty) return _buildNoSearchResult();
+
+    return ListView.separated(
+      shrinkWrap: state.isFixedWorker,
+      physics: state.isFixedWorker
+          ? const NeverScrollableScrollPhysics()
+          : null,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: state.filteredAccounts.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      itemBuilder: (context, index) {
+        final account = state.filteredAccounts[index];
+        return AccountListItem(
+          account: account,
+          isSelected: _isAccountSelected(account, state),
+          onTap: () {
+            if (!account.isRegistered) {
+              notifier.selectAccount(account);
+            }
+          },
+        );
+      },
     );
   }
 
@@ -286,9 +303,6 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
   }
 
   Widget? _buildBottomBar(dynamic state, AttendanceNotifier notifier) {
-    final canRegister =
-        state.selectedScheduleId != null && state.safetyCheckCompleted;
-
     if (state.allAccounts.isEmpty) return null;
 
     return SafeArea(
@@ -299,14 +313,31 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
           color: AppColors.white,
           border: Border(top: BorderSide(color: AppColors.border)),
         ),
-        child: PrimaryButton(
-          text: '등록하기',
-          isLoading: state.isRegistering,
-          onPressed: canRegister && !state.isRegistering
-              ? () => throttledTapAsync(() => _handleRegister(notifier, state))
-              : null,
-        ),
+        child: _buildRegisterButton(state, notifier),
       ),
     );
+  }
+
+  /// 등록하기 버튼. 고정 근무자는 거래처 목록 바로 아래에, 그 외에는 하단 고정 바에서 사용.
+  Widget _buildRegisterButton(dynamic state, AttendanceNotifier notifier) {
+    final canRegister =
+        state.selectedScheduleId != null && state.safetyCheckCompleted;
+
+    final button = PrimaryButton(
+      text: '등록하기',
+      isLoading: state.isRegistering,
+      onPressed: canRegister && !state.isRegistering
+          ? () => throttledTapAsync(() => _handleRegister(notifier, state))
+          : null,
+    );
+
+    // 목록 바로 아래에 붙는 인라인 배치일 때만 상하 여백을 준다.
+    if (state.isFixedWorker) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        child: button,
+      );
+    }
+    return button;
   }
 }
