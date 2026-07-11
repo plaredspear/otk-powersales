@@ -7,7 +7,6 @@ import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundExcepti
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import org.slf4j.LoggerFactory
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
@@ -27,7 +26,8 @@ class OrderCancelCommitter(
     /** @return (refreshed orderRequest, cancelledLines) — 응답 매핑용 */
     @Transactional
     fun commit(orderRequestId: Long, lineIds: List<Long>, employeeCode: String): CommitResult {
-        val orderRequest = orderRequestRepository.findByIdOrNull(orderRequestId)
+        // 등록 outbox 워커의 상태 전이와 직렬화 — 동일 행에 PESSIMISTIC_WRITE 락 획득 후 상태 변경.
+        val orderRequest = orderRequestRepository.findByIdForUpdate(orderRequestId)
             ?: throw OrderNotFoundException()
         val lines = orderRequestProductRepository
             .findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId)

@@ -30,9 +30,18 @@ class OrderRequestSapOutboxStatusHandler(
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     override fun handle(outbox: SapOutbox, success: Boolean, resultMessage: String?) {
-        val order = orderRequestRepository.findById(outbox.aggregateId).orElse(null)
+        // 취소 커밋과 직렬화 — 동일 행에 PESSIMISTIC_WRITE 락 획득 후 상태 판정/갱신.
+        val order = orderRequestRepository.findByIdForUpdate(outbox.aggregateId)
         if (order == null) {
             log.warn("OrderRequest 미존재 outboxId={} aggregateId={}", outbox.id, outbox.aggregateId)
+            return
+        }
+        // 경합 방어: 이미 취소(CANCELED, 터미널)된 주문을 등록 응답으로 되살리지 않는다.
+        if (order.orderRequestStatus == OrderRequestStatus.CANCELED) {
+            log.info(
+                "OrderRequest 이미 취소됨 - 등록 응답 상태전이 스킵 orderRequestId={} success={}",
+                order.id, success
+            )
             return
         }
         order.orderRequestStatus = if (success) OrderRequestStatus.APPROVED else OrderRequestStatus.SEND_FAILED
