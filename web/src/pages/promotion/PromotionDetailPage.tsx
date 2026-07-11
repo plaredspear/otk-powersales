@@ -53,8 +53,8 @@ import PromotionProductSection, {
 import PromotionTargetActualSection from './sections/PromotionTargetActualSection';
 import PromotionPosProductSection from './sections/PromotionPosProductSection';
 import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
-import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import ResizableTable from '@/components/common/ResizableTable';
+import DetailLink from '@/components/common/DetailLink';
 
 const { Title } = Typography;
 
@@ -153,11 +153,6 @@ export default function PromotionDetailPage() {
   const canReadEmployee = canReadFemaleEmployee || hasEntityPermission('employee', 'READ');
 
   // NO.(행사사원 코드) 클릭 시 해당 사원 상세로 이동 — SF 레거시의 행사사원 레코드 링크 대체.
-  // female_employee 권한 보유 시 여사원 상세 URL 로, 그 외(employee 권한만) 는 사원 상세 URL 로
-  // 진입 — 각 URL prefix 가 상세 페이지의 권한 자원/조회 endpoint 를 결정하기 때문.
-  const goToEmployee = useThrottleClick((employeeId: number) =>
-    navigate(canReadFemaleEmployee ? `/female-employee/${employeeId}` : `/employee/${employeeId}`),
-  );
 
   // --- 행사 인라인 편집 상태 ---
   const [promotionEditing, setPromotionEditing] = useState(false);
@@ -772,7 +767,17 @@ export default function PromotionDetailPage() {
         align: 'center' as const,
         render: (name: string | null, record: PromotionEmployee) =>
           name && canReadEmployee && record.employeeId != null ? (
-            <a onClick={() => goToEmployee(record.employeeId!)}>{name}</a>
+            // female_employee 권한 보유 시 여사원 상세 URL, 그 외(employee 권한만)는 사원 상세 URL —
+            // URL prefix 가 상세 페이지의 권한 자원/조회 endpoint 를 결정한다.
+            <DetailLink
+              to={
+                canReadFemaleEmployee
+                  ? `/female-employee/${record.employeeId}`
+                  : `/employee/${record.employeeId}`
+              }
+            >
+              {name}
+            </DetailLink>
           ) : (
             name ?? '-'
           ),

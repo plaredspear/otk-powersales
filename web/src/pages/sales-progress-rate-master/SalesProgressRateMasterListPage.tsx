@@ -1,15 +1,14 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { Button, Input, Select, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useSalesProgressRateMasters } from '@/hooks/sales-progress-rate-master/useSalesProgressRateMasters';
 import { useSalesProgressRateMasterBranches } from '@/hooks/sales-progress-rate-master/useSalesProgressRateMasterBranches';
-import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import type { SalesProgressRateMasterListItem } from '@/api/salesProgressRateMaster';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import DetailLink from '@/components/common/DetailLink';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
@@ -23,8 +22,6 @@ function formatRate(value: number | null): string {
 }
 
 export default function SalesProgressRateMasterListPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
   // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
   // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
@@ -56,10 +53,6 @@ export default function SalesProgressRateMasterListPage() {
     });
   };
 
-  const goToDetail = useThrottleClick((id: number) =>
-    navigate(`/sales-progress-rate-masters/${id}`, { state: { listSearch: location.search } }),
-  );
-
   const { data, isLoading, refetch, isFetching } = useSalesProgressRateMasters({
     keyword: keyword || undefined,
     targetYear: targetYear || undefined,
@@ -78,11 +71,11 @@ export default function SalesProgressRateMasterListPage() {
       render: (val: string | null, record) =>
         val ? (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <a onClick={() => goToDetail(record.id)}>{val}</a>
+            <DetailLink to={`/sales-progress-rate-masters/${record.id}`}>{val}</DetailLink>
             <Typography.Text copyable={{ text: val, tooltips: ['이름 복사', '복사됨'] }} />
           </span>
         ) : (
-          <a onClick={() => goToDetail(record.id)}>(이름 없음)</a>
+          <DetailLink to={`/sales-progress-rate-masters/${record.id}`}>(이름 없음)</DetailLink>
         ),
     },
     {

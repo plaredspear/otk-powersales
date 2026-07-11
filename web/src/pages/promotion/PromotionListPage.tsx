@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button, DatePicker, Input, Select, Space, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import RefreshButton from '@/components/common/RefreshButton';
+import DetailLink from '@/components/common/DetailLink';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
 import { usePromotionBranches } from '@/hooks/promotion/usePromotionBranches';
@@ -45,7 +46,6 @@ function formatDateTime(value: string): string {
 
 export default function PromotionListPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   // 페이지 전체 스크롤 제거 — 컨테이너 높이/테이블 body 스크롤을 상단 가변 요소(헤더/브레드크럼/대행 배너)
   // 와 레이아웃 하단 padding 을 실측해 산출. 테이블 body(행) 만 세로 스크롤되고 헤더/필터/페이지네이션은
   // 화면에 고정된다.
@@ -130,11 +130,6 @@ export default function PromotionListPage() {
   };
 
   const { data: formMeta } = usePromotionFormMeta();
-  // 행사번호/대표제품 링크는 <Link>(href 부여)로 직접 이동 — Ctrl/Cmd/중간클릭 새 탭 지원.
-  // state.listSearch 로 현재 목록 query string 을 넘겨 상세의 "목록으로" 가 직전 조건으로 복귀하게 한다.
-  const goToUser = useThrottleClick((userId: number) =>
-    navigate(`/users/${userId}`, { state: { listSearch: location.search } }),
-  );
   const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
   const { run: runExport, downloading: exporting } = useExcelDownload();
   const { data, isLoading, refetch, isFetching } = usePromotions({
@@ -189,10 +184,7 @@ export default function PromotionListPage() {
       fixed: 'left',
       render: (val: string, record) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          {/* Link 로 실제 href 부여 — Ctrl/Cmd/중간클릭은 브라우저가 새 탭으로, 일반 클릭은 SPA 이동. */}
-          <Link to={`/promotions/${record.id}`} state={{ listSearch: location.search }}>
-            {val}
-          </Link>
+          <DetailLink to={`/promotions/${record.id}`}>{val}</DetailLink>
           <Typography.Text copyable={{ text: val, tooltips: ['행사번호 복사', '복사됨'] }} />
         </span>
       ),
@@ -263,13 +255,7 @@ export default function PromotionListPage() {
       ellipsis: true,
       render: (val: string | null, record) =>
         val && record.primaryProductCode ? (
-          // Link 로 실제 href 부여 — Ctrl/Cmd/중간클릭은 새 탭, 일반 클릭은 SPA 이동.
-          <Link
-            to={`/product/${encodeURIComponent(record.primaryProductCode)}`}
-            state={{ listSearch: location.search }}
-          >
-            {val}
-          </Link>
+          <DetailLink to={`/product/${encodeURIComponent(record.primaryProductCode)}`}>{val}</DetailLink>
         ) : (
           val ?? '-'
         ),
@@ -349,7 +335,7 @@ export default function PromotionListPage() {
       ellipsis: true,
       render: (val: string | null, record) =>
         val && canReadUser && record.createdById != null ? (
-          <a onClick={() => goToUser(record.createdById!)}>{val}</a>
+          <DetailLink to={`/users/${record.createdById}`}>{val}</DetailLink>
         ) : (
           val ?? '-'
         ),

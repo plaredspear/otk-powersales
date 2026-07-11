@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip } from 'antd';
 import { DownloadOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import DetailLink from '@/components/common/DetailLink';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { buildListPagination } from '@/lib/listPagination';
@@ -79,14 +79,9 @@ const headerWithInfo = (title: string, tooltip: string) => (
 );
 
 export default function EmployeePage() {
-  const navigate = useNavigate();
-  const location = useLocation();
   // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
   // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
-  // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
-  const goToDetail = (id: number) =>
-    navigate(`/female-employee/${id}`, { state: { listSearch: location.search } });
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
@@ -179,15 +174,7 @@ export default function EmployeePage() {
       dataIndex: 'employeeCode',
       width: 100,
       render: (val: string, record: Employee) => (
-        <a
-          onClick={(e) => {
-            e.preventDefault();
-            goToDetail(record.id);
-          }}
-          href={`/female-employee/${record.id}`}
-        >
-          {val}
-        </a>
+        <DetailLink to={`/female-employee/${record.id}`}>{val}</DetailLink>
       ),
     },
     {

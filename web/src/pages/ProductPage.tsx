@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, Button, Input, Select, Space, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { useProducts, useProductCategories } from '@/hooks/product/useProducts';
@@ -11,6 +10,7 @@ import InventorySearchModal from '@/components/product/InventorySearchModal';
 import SelectedProductsCompareModal from '@/components/product/SelectedProductsCompareModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import DetailLink from '@/components/common/DetailLink';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
@@ -43,11 +43,6 @@ function shelfLifeUnitLabel(unit: string | null): string {
 }
 
 export default function ProductPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
-  const goToDetail = (code: string) =>
-    navigate(`/product/${encodeURIComponent(code)}`, { state: { listSearch: location.search } });
   // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
   // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
@@ -184,14 +179,7 @@ export default function ProductPage() {
       width: 110,
       render: (val: string | null) =>
         val ? (
-          <a
-            onClick={(e) => {
-              e.stopPropagation();
-              goToDetail(val);
-            }}
-          >
-            {val}
-          </a>
+          <DetailLink to={`/product/${encodeURIComponent(val)}`}>{val}</DetailLink>
         ) : (
           '-'
         ),
@@ -202,19 +190,10 @@ export default function ProductPage() {
       width: 200,
       ellipsis: true,
       render: (val: string | null, record) =>
-        val ? (
-          <a
-            onClick={(e) => {
-              e.stopPropagation();
-              if (record.productCode) {
-                goToDetail(record.productCode);
-              }
-            }}
-          >
-            {val}
-          </a>
+        val && record.productCode ? (
+          <DetailLink to={`/product/${encodeURIComponent(record.productCode)}`}>{val}</DetailLink>
         ) : (
-          '-'
+          val ?? '-'
         ),
     },
     { title: '대분류', dataIndex: 'category1', width: 100, render: (val: string | null) => val ?? '-' },

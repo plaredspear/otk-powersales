@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, Input, Popconfirm, Select, Space, Tag, Tooltip, message } from 'antd';
 import { PlusOutlined, DownloadOutlined, UploadOutlined, CheckOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -22,6 +21,7 @@ import {
 } from '@/constants/pptTeamType';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import DetailLink from '@/components/common/DetailLink';
 import PermissionGate from '@/components/PermissionGate';
 
 const PPT_ENTITY = 'professional_promotion_team_master';
@@ -257,7 +257,7 @@ export default function PPTMasterPage() {
       align: 'center',
       render: (val: string, record) =>
         record.employeeId ? (
-          <Link to={`${employeeDetailBasePath}/${record.employeeId}`}>{val}</Link>
+          <DetailLink to={`${employeeDetailBasePath}/${record.employeeId}`}>{val}</DetailLink>
         ) : (
           val
         ),
@@ -275,7 +275,7 @@ export default function PPTMasterPage() {
       width: 150,
       ellipsis: true,
       render: (val: string | null, record) =>
-        val && record.accountId ? <Link to={`/account/${record.accountId}`}>{val}</Link> : (val ?? '-'),
+        val && record.accountId ? <DetailLink to={`/account/${record.accountId}`}>{val}</DetailLink> : (val ?? '-'),
     },
     {
       title: '거래처유형',

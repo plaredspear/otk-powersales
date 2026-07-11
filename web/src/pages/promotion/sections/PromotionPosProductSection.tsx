@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Button, Dropdown, Popconfirm, Space, Typography, message } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { Link } from 'react-router-dom';
 import { usePromotionPosProducts } from '@/hooks/promotion/usePromotionPosProducts';
 import { useDeletePromotionPosProduct } from '@/hooks/promotion/usePromotionPosProductMutation';
 import type { PromotionPosProduct } from '@/api/promotionPosProduct';
 import PromotionPosProductFormModal from '../components/PromotionPosProductFormModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import DetailLink from '@/components/common/DetailLink';
 
 const { Title } = Typography;
 
@@ -49,11 +49,7 @@ export default function PromotionPosProductSection({ promotionId }: Props) {
       render: (_, r) => {
         const name = r.productName ?? '-';
         if (!r.productCode) return name;
-        return (
-          <Link to={`/product/${encodeURIComponent(r.productCode)}`}>
-            {name}
-          </Link>
-        );
+        return <DetailLink to={`/product/${encodeURIComponent(r.productCode)}`}>{name}</DetailLink>;
       },
     },
     {

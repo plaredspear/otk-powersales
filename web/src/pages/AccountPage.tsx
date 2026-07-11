@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Alert, Button, Checkbox, Input, Select, Space, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useLocation, useNavigate } from 'react-router-dom';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import DetailLink from '@/components/common/DetailLink';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
@@ -40,7 +40,6 @@ const STATUS_OPTIONS = [
 ];
 
 export default function AccountPage() {
-  const location = useLocation();
   // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
   // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
@@ -68,7 +67,6 @@ export default function AccountPage() {
     () => filters.coordinatesMissing === 'true',
   );
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const navigate = useNavigate();
   const { data: branches } = useAccountBranches();
   const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
   const singleBranch = branches?.length === 1 ? branches[0] : null;
@@ -79,12 +77,6 @@ export default function AccountPage() {
   const canDeleteAccount = hasEntityPermission('account', 'DELETE');
   // 거래처 수정(주소)은 상세 페이지로 일원화 — 목록 "관리" 컬럼은 삭제 액션만 담당.
   const showActionsColumn = canDeleteAccount;
-
-  // 상세 페이지에서 "목록으로" 복귀 시 직전 검색 조건(applied 기준)을 복원하기 위한 query string.
-  // URL 에는 applied 필터/page/size 만 기록되므로 현재 query string 을 그대로 전달한다.
-  const goToDetail = (id: number) => {
-    navigate(`/account/${id}`, { state: { listSearch: location.search } });
-  };
 
   const handleSearch = () => {
     setFilters({
@@ -114,9 +106,7 @@ export default function AccountPage() {
       width: 180,
       ellipsis: true,
       render: (val: string | null, account: Account) => (
-        <Button type="link" style={{ padding: 0, height: 'auto' }} onClick={() => goToDetail(account.id)}>
-          {val ?? '-'}
-        </Button>
+        <DetailLink to={`/account/${account.id}`}>{val ?? '-'}</DetailLink>
       ),
     },
     {

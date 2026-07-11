@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip, message } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -15,6 +14,7 @@ import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
 import EmployeeRegisterModal from '@/pages/employee/components/EmployeeRegisterModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import DetailLink from '@/components/common/DetailLink';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
@@ -43,14 +43,9 @@ const PASSWORD_TOOLTIP =
 const INACTIVE_NOTICE = '앱 로그인이 비활성화된 사원입니다. 사원 정보를 먼저 활성화해 주세요.';
 
 export default function EmployeeListPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
   // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
   // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
-  // 상세 진입 시 현재 목록의 query string 을 state 로 넘겨, 상세의 "목록으로" 버튼이 직전 조건으로 복귀하게 한다.
-  const goToDetail = (id: number) =>
-    navigate(`/employee/${id}`, { state: { listSearch: location.search } });
   const handleCopyEmployeeCode = async (code: string) => {
     try {
       await navigator.clipboard.writeText(code);
@@ -106,15 +101,7 @@ export default function EmployeeListPage() {
       width: 120,
       render: (val: string, record: Employee) => (
         <Space size={4}>
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              goToDetail(record.id);
-            }}
-            href={`/employee/${record.id}`}
-          >
-            {val}
-          </a>
+          <DetailLink to={`/employee/${record.id}`}>{val}</DetailLink>
           <Tooltip title="사번 복사">
             <CopyOutlined
               style={{ color: '#1677ff', cursor: 'pointer' }}

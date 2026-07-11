@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button, Card, DatePicker, Input, Select, Space, Tag, Tooltip } from 'antd';
 import { DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
 import { usePermission } from '@/hooks/usePermission';
@@ -19,6 +18,7 @@ import {
 import PPTHistoryDetailModal from './components/PPTHistoryDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
+import DetailLink from '@/components/common/DetailLink';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
@@ -167,12 +167,7 @@ export default function PPTHistoryPage() {
       align: 'center',
       render: (val: string | null, record) =>
         val && record.employeeId ? (
-          <Link
-            to={`${employeeDetailBasePath}/${record.employeeId}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {val}
-          </Link>
+          <DetailLink to={`${employeeDetailBasePath}/${record.employeeId}`}>{val}</DetailLink>
         ) : (
           (val ?? '-')
         ),
@@ -206,11 +201,7 @@ export default function PPTHistoryPage() {
       ellipsis: true,
       render: (val: string | null, record) => {
         if (val && record.accountId) {
-          return (
-            <Link to={`/account/${record.accountId}`} onClick={(e) => e.stopPropagation()}>
-              {val}
-            </Link>
-          );
+          return <DetailLink to={`/account/${record.accountId}`}>{val}</DetailLink>;
         }
         if (val) return val;
         // 거래처가 없는 이력은 레거시(알라딘) 마이그레이션분 — 당시 거래처를 기록하지 않아 존재하지 않는다.
