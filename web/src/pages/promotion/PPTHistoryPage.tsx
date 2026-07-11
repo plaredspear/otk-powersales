@@ -15,7 +15,6 @@ import {
   PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL,
   getPPTTeamTypeColor,
 } from '@/constants/pptTeamType';
-import PPTHistoryDetailModal from './components/PPTHistoryDetailModal';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import DetailLink from '@/components/common/DetailLink';
@@ -74,9 +73,6 @@ export default function PPTHistoryPage() {
         : null,
   );
 
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [selectedHistory, setSelectedHistory] = useState<PPTHistory | null>(null);
-
   const { run: runExport, downloading: exporting } = useExcelDownload();
 
   const { data, isLoading, refetch, isFetching } = usePPTHistories({
@@ -117,10 +113,6 @@ export default function PPTHistoryPage() {
     });
   };
 
-  const handleRowClick = (record: PPTHistory) => {
-    setSelectedHistory(record);
-    setDetailOpen(true);
-  };
 
   // 현재 적용된 검색 조건(URL filters)을 그대로 전량 export (목록과 동일 가시 범위).
   const handleExport = () => {
@@ -309,20 +301,10 @@ export default function PPTHistoryPage() {
             onPageChange: setPage,
             onSizeChange: setSize,
           })}
-          onRow={(record) => ({
-            onClick: () => handleRowClick(record),
-            style: { cursor: 'pointer' },
-          })}
           // 테이블 body(행) 만 세로 스크롤. y 는 wrapper 실측 높이(하드코딩 없음).
           scroll={{ x: 970, y: scrollY }}
         />
       </div>
-
-      <PPTHistoryDetailModal
-        open={detailOpen}
-        history={selectedHistory}
-        onClose={() => setDetailOpen(false)}
-      />
     </div>
   );
 }
