@@ -12,4 +12,10 @@ interface SafetyCheckSubmissionRepository : JpaRepository<SafetyCheckSubmission,
     fun findByEmployeeIdAndWorkingDate(employeeId: Long, workingDate: LocalDate): Optional<SafetyCheckSubmission>
 
     fun findByEmployeeIdInAndWorkingDate(employeeIds: List<Long>, workingDate: LocalDate): List<SafetyCheckSubmission>
+
+    fun findByEmployeeIdAndWorkingDateBetween(
+        employeeId: Long,
+        startWorkingDate: LocalDate,
+        endWorkingDate: LocalDate
+    ): List<SafetyCheckSubmission>
 }

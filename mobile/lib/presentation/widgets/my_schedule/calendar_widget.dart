@@ -6,8 +6,18 @@ import '../../../domain/entities/monthly_schedule_day.dart';
 
 /// 커스텀 캘린더 위젯
 ///
-/// 월간 일정을 표시하며, 근무일에 "근무" 마커를 표시합니다.
+/// 월간 일정을 표시하며, 근무일 셀에 `보고완료 / 총건` 숫자를 표시합니다.
+/// (레거시 mgnSchedule calSchedule 셀 = sum/cnt 정합)
 class CalendarWidget extends StatelessWidget {
+  /// 보고 미완료(과거·오늘) — 레거시 #dc2c34
+  static const Color _incompleteColor = Color(0xFFDC2C34);
+
+  /// 보고 완료(과거·오늘) — 레거시 #00b52a
+  static const Color _completeColor = Color(0xFF00B52A);
+
+  /// 미래 근무일 — 레거시 #cccccc
+  static const Color _futureColor = Color(0xFFCCCCCC);
+
   /// 표시할 연도
   final int year;
 
@@ -36,27 +46,15 @@ class CalendarWidget extends StatelessWidget {
     this.substituteHolidayCount = 0,
   });
 
-  /// 해당 날짜가 근무일인지 확인
-  bool _isWorkDay(DateTime date) {
-    return workDays.any(
-      (workDay) =>
-          workDay.hasWork &&
-          workDay.date.year == date.year &&
-          workDay.date.month == date.month &&
-          workDay.date.day == date.day,
-    );
-  }
-
-  /// 해당 날짜의 근무유형 조회
-  String? _getWorkingType(DateTime date) {
-    final day = workDays.cast<MonthlyScheduleDay?>().firstWhere(
+  /// 해당 날짜의 일정 항목 조회 (없으면 null)
+  MonthlyScheduleDay? _getWorkDay(DateTime date) {
+    return workDays.cast<MonthlyScheduleDay?>().firstWhere(
       (workDay) =>
           workDay!.date.year == date.year &&
           workDay.date.month == date.month &&
           workDay.date.day == date.day,
       orElse: () => null,
     );
-    return day?.workingType;
   }
 
   /// 해당 날짜가 오늘인지 확인
@@ -108,9 +106,10 @@ class CalendarWidget extends StatelessWidget {
     if (date == null) {
       return SizedBox(height: height);
     }
-    final isWorkDay = _isWorkDay(date);
+    final workDay = _getWorkDay(date);
+    final isWorkDay = workDay?.hasWork ?? false;
     final isToday = _isToday(date);
-    final workingType = _getWorkingType(date);
+    final workingType = workDay?.workingType;
     final isAnnualLeave = workingType == '연차';
     final isSubstituteHoliday = workingType == '대휴';
     final isSunday = weekday == 0;
@@ -169,22 +168,48 @@ class CalendarWidget extends StatelessWidget {
                     ),
                   ),
                 )
-              // 근무 표시
-              else if (isWorkDay)
+              // 근무 표시 — 보고완료 / 총건 (레거시 calSchedule 셀 sum/cnt)
+              else if (isWorkDay && workDay != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 2.0),
-                  child: Text(
-                    '근무',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.otokiRed,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  child: _buildReportCount(date, workDay),
                 ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 근무일 셀의 `보고완료 / 총건` 숫자쌍 (레거시 calSchedule 셀 정합).
+  /// 보고완료 숫자 색: 과거·오늘 미완료=빨강, 과거·오늘 완료=초록, 미래=회색. 분모(/총건)는 검정.
+  Widget _buildReportCount(DateTime date, MonthlyScheduleDay day) {
+    final now = DateTime.now();
+    final target = DateTime(date.year, date.month, date.day);
+    final today = DateTime(now.year, now.month, now.day);
+    final isFuture = target.isAfter(today);
+
+    final Color completedColor = isFuture
+        ? _futureColor
+        : (day.completedCount < day.totalCount ? _incompleteColor : _completeColor);
+
+    final baseStyle = AppTypography.labelSmall.copyWith(
+      fontSize: 10,
+      fontWeight: FontWeight.w600,
+    );
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '${day.completedCount}',
+            style: baseStyle.copyWith(color: completedColor),
+          ),
+          TextSpan(
+            text: ' / ${day.totalCount}',
+            style: baseStyle.copyWith(color: AppColors.textPrimary),
+          ),
+        ],
       ),
     );
   }

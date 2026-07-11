@@ -7,6 +7,8 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
+import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -32,10 +34,12 @@ class MyScheduleServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository = mockk()
     private val myScheduleService = MyScheduleService(
         employeeRepository,
         displayWorkScheduleRepository,
         teamMemberScheduleRepository,
+        safetyCheckSubmissionRepository,
     )
 
     // ========== 월간 일정 조회 Tests ==========
@@ -45,18 +49,19 @@ class MyScheduleServiceTest {
     inner class GetMonthlySchedule {
 
         @Test
-        @DisplayName("성공 - 근무일이 있는 경우")
-        fun getMonthlySchedule_withWorkDays_success() {
+        @DisplayName("성공 - 진열 근무일은 안전점검 제출일에만 표시 (레거시 comm_cnt>0 게이트)")
+        fun getMonthlySchedule_displayGatedBySafetyCheck() {
             // Given
             val userId = 1L
             val year = 2020
             val month = 8
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
-            // 단일일 진열 마스터 3건(8/1, 8/4, 8/10) — 기간 전개 결과 각 1일씩만 근무일
+            val account = Account(id = 10L, name = "거래처")
+            // 단일일 진열 마스터 3건(8/1, 8/4, 8/10)
             val masters = listOf(
-                createMockSchedule(startDate = LocalDate.of(2020, 8, 1)),
-                createMockSchedule(startDate = LocalDate.of(2020, 8, 4)),
-                createMockSchedule(startDate = LocalDate.of(2020, 8, 10))
+                createMockSchedule(account = account, startDate = LocalDate.of(2020, 8, 1)),
+                createMockSchedule(account = account, startDate = LocalDate.of(2020, 8, 4)),
+                createMockSchedule(account = account, startDate = LocalDate.of(2020, 8, 10))
             )
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
@@ -68,6 +73,13 @@ class MyScheduleServiceTest {
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
             ) } returns emptyList()
+            // 안전점검 제출은 8/1, 8/4 만 → 8/10 마스터는 근무일로 표시되지 않음
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), eq(LocalDate.of(2020, 8, 1)), eq(LocalDate.of(2020, 8, 31))
+            ) } returns listOf(
+                createMockSafety(userId, LocalDate.of(2020, 8, 1)),
+                createMockSafety(userId, LocalDate.of(2020, 8, 4))
+            )
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
@@ -76,76 +88,98 @@ class MyScheduleServiceTest {
             assertThat(result.year).isEqualTo(2020)
             assertThat(result.month).isEqualTo(8)
             assertThat(result.workDays).hasSize(31) // 8월은 31일
-            assertThat(result.workDays.filter { it.hasWork }).hasSize(3)
-            assertThat(result.workDays[0].date).isEqualTo("2020-08-01")
-            assertThat(result.workDays[0].hasWork).isTrue()
-            assertThat(result.workDays[3].date).isEqualTo("2020-08-04")
-            assertThat(result.workDays[3].hasWork).isTrue()
-            assertThat(result.workDays[1].hasWork).isFalse()
+            assertThat(result.workDays.filter { it.hasWork }.map { it.date })
+                .containsExactly("2020-08-01", "2020-08-04")
+            // 안전점검 없는 8/10 은 마스터가 있어도 근무일 아님
+            assertThat(result.workDays.first { it.date == "2020-08-10" }.hasWork).isFalse()
             assertThat(result.annualLeaveCount).isEqualTo(0)
         }
 
         @Test
-        @DisplayName("성공 - 진열 마스터 기간(startDate~endDate)이 여러 날이면 전체를 근무일로 전개")
-        fun getMonthlySchedule_expandsMultiDayPeriod() {
+        @DisplayName("성공 - 마스터 기간이 여러 날이어도 안전점검 제출일만 근무일로 표시")
+        fun getMonthlySchedule_multiDayPeriodGatedBySafetyCheck() {
             // Given
             val userId = 1L
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val account = Account(id = 10L, name = "거래처")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
             // 8/4 ~ 8/6 기간 마스터 1건
             every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId), eq(LocalDate.of(2020, 8, 1)), eq(LocalDate.of(2020, 8, 31))
             ) } returns listOf(
-                createMockSchedule(startDate = LocalDate.of(2020, 8, 4), endDate = LocalDate.of(2020, 8, 6))
+                createMockSchedule(account = account, startDate = LocalDate.of(2020, 8, 4), endDate = LocalDate.of(2020, 8, 6))
             )
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
             ) } returns emptyList()
+            // 기간(8/4~8/6) 중 안전점검은 8/5 만 → 8/5 만 근무일
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), any(), any()
+            ) } returns listOf(createMockSafety(userId, LocalDate.of(2020, 8, 5)))
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, 2020, 8)
 
-            // Then — 기간 3일 전체가 근무일
+            // Then — 기간 겹침(3일)이어도 안전점검 제출일(8/5)만 근무일
             assertThat(result.workDays.filter { it.hasWork }.map { it.date })
-                .containsExactly("2020-08-04", "2020-08-05", "2020-08-06")
+                .containsExactly("2020-08-05")
         }
 
         @Test
-        @DisplayName("성공 - endDate NULL(진행 중) 마스터는 시작일부터 월말까지 전개 (전월 이전 시작 포함)")
-        fun getMonthlySchedule_expandsOngoingPeriodClampedToMonth() {
+        @DisplayName("성공 - 보고완료/총건 카운트 (안전점검일 거래처 수 = total, 출근등록 = completed)")
+        fun getMonthlySchedule_reportCounts() {
             // Given
             val userId = 1L
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val date = LocalDate.of(2020, 8, 4)
+            val accA = Account(id = 10L, name = "거래처A")
+            val accB = Account(id = 20L, name = "거래처B")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
-            // startDate 전월(7월) 시작, endDate NULL → 8월 전체가 근무일
+            // 8/4 담당 거래처 2건
             every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
-                eq(userId), eq(LocalDate.of(2020, 8, 1)), eq(LocalDate.of(2020, 8, 31))
+                eq(userId), any(), any()
             ) } returns listOf(
-                createMockSchedule(startDate = LocalDate.of(2020, 7, 15), endDate = null)
+                createMockSchedule(account = accA, startDate = date),
+                createMockSchedule(account = accB, startDate = date)
             )
+            // 거래처A 만 출근등록(attendanceLog) 완료
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
-            ) } returns emptyList()
+            ) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date,
+                    workingType = WorkingType.WORK,
+                    account = accA,
+                    attendanceLog = AttendanceLog(id = 100L),
+                    workingCategory1 = WorkingCategory1.DISPLAY
+                )
+            )
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), any(), any()
+            ) } returns listOf(createMockSafety(userId, date))
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, 2020, 8)
 
-            // Then — 월 시작일(8/1)부터 월말(8/31)까지 전부 근무일 (조회 범위로 clamp)
-            assertThat(result.workDays.filter { it.hasWork }).hasSize(31)
-            assertThat(result.workDays.first { it.date == "2020-08-01" }.hasWork).isTrue()
-            assertThat(result.workDays.first { it.date == "2020-08-31" }.hasWork).isTrue()
+            // Then — 총건 2, 보고완료 1
+            val day4 = result.workDays.first { it.date == "2020-08-04" }
+            assertThat(day4.hasWork).isTrue()
+            assertThat(day4.totalCount).isEqualTo(2)
+            assertThat(day4.completedCount).isEqualTo(1)
         }
 
         @Test
-        @DisplayName("성공 - 행사(EVENT) 근무일이 진열에 없어도 hasWork 로 표시")
+        @DisplayName("성공 - 행사(EVENT)는 안전점검 게이트 없이 hasWork 로 표시")
         fun getMonthlySchedule_unionsEventDays() {
             // Given
             val userId = 1L
             val year = 2020
             val month = 8
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val account = Account(id = 10L, name = "거래처")
+            val eventAccount = Account(id = 30L, name = "행사거래처")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
             // 진열: 8/4 만
@@ -153,25 +187,31 @@ class MyScheduleServiceTest {
                 eq(userId),
                 eq(LocalDate.of(2020, 8, 1)),
                 eq(LocalDate.of(2020, 8, 31))
-            ) } returns listOf(createMockSchedule(startDate = LocalDate.of(2020, 8, 4)))
-            // TMS: 8/10 행사(EVENT) → union 대상, 8/15 진열(DISPLAY) → 진열 마스터에 없으면 미표시
+            ) } returns listOf(createMockSchedule(account = account, startDate = LocalDate.of(2020, 8, 4)))
+            // TMS: 8/10 행사(EVENT) → 안전점검 없이도 표시, 8/15 진열(DISPLAY) → 진열 마스터에 없으면 미표시
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
             ) } returns listOf(
                 createMockMemberSchedule(
                     workingDate = LocalDate.of(2020, 8, 10),
+                    account = eventAccount,
                     workingCategory1 = WorkingCategory1.EVENT
                 ),
                 createMockMemberSchedule(
                     workingDate = LocalDate.of(2020, 8, 15),
+                    account = account,
                     workingCategory1 = WorkingCategory1.DISPLAY
                 )
             )
+            // 안전점검은 8/4 만 (행사 8/10 은 안전점검 없이도 표시되어야 함)
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), any(), any()
+            ) } returns listOf(createMockSafety(userId, LocalDate.of(2020, 8, 4)))
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
 
-            // Then — 진열(8/4) ∪ 행사(8/10) 만 hasWork
+            // Then — 진열(8/4, 안전점검) ∪ 행사(8/10, 게이트 없음) 만 hasWork
             assertThat(result.workDays.filter { it.hasWork }.map { it.date })
                 .containsExactlyInAnyOrder("2020-08-04", "2020-08-10")
             // 진열 카테고리 TMS(8/15)는 진열 마스터에 없으므로 마커 아님
@@ -196,6 +236,9 @@ class MyScheduleServiceTest {
             ) } returns emptyList()
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
+            ) } returns emptyList()
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), any(), any()
             ) } returns emptyList()
 
             // When
@@ -226,6 +269,9 @@ class MyScheduleServiceTest {
             ) } returns emptyList()
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
+            ) } returns emptyList()
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), any(), any()
             ) } returns emptyList()
 
             // When
@@ -258,6 +304,9 @@ class MyScheduleServiceTest {
                 createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 12), workingType = WorkingType.ALT_HOLIDAY),
                 createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 20), workingType = WorkingType.ANNUAL_LEAVE)
             )
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), any(), any()
+            ) } returns emptyList()
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
@@ -283,6 +332,9 @@ class MyScheduleServiceTest {
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
             ) } returns emptyList()
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), any(), any()
+            ) } returns emptyList()
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
@@ -292,20 +344,21 @@ class MyScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 연차 2건 있는 월 → annualLeaveCount=2, workingType 매핑")
+        @DisplayName("성공 - 연차 날은 근무일 아님(hasWork=false)이고 workingType='연차' 마커만 표시")
         fun getMonthlySchedule_withAnnualLeave() {
             // Given
             val userId = 1L
             val year = 2026
             val month = 3
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
+            val account = Account(id = 10L, name = "거래처")
 
             every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
             every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
                 eq(userId), any(), any()
             ) } returns listOf(
-                createMockSchedule(startDate = LocalDate.of(2026, 3, 5)),
-                createMockSchedule(startDate = LocalDate.of(2026, 3, 10))
+                createMockSchedule(account = account, startDate = LocalDate.of(2026, 3, 5)),
+                createMockSchedule(account = account, startDate = LocalDate.of(2026, 3, 10))
             )
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)),
@@ -317,16 +370,21 @@ class MyScheduleServiceTest {
                 createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 10), WorkingType.WORK),
                 createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 20), WorkingType.ANNUAL_LEAVE)
             )
+            // 3/5 는 연차라 안전점검이 있어도 근무일 아님을 확인하기 위해 3/5 안전점검 제출
+            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
+                eq(userId), any(), any()
+            ) } returns listOf(createMockSafety(userId, LocalDate.of(2026, 3, 5)))
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
 
             // Then
             assertThat(result.annualLeaveCount).isEqualTo(2)
-            // 3/5 → workingType = WorkingType.ANNUAL_LEAVE
+            // 3/5 → 연차라 hasWork=false (거래처 집계 없음), workingType 마커만
             val day5 = result.workDays.first { it.date == "2026-03-05" }
             assertThat(day5.workingType).isEqualTo("연차")
-            assertThat(day5.hasWork).isTrue()
+            assertThat(day5.hasWork).isFalse()
+            assertThat(day5.totalCount).isEqualTo(0)
             // 3/10 → workingType = WorkingType.WORK
             val day10 = result.workDays.first { it.date == "2026-03-10" }
             assertThat(day10.workingType).isEqualTo("근무")
@@ -598,6 +656,10 @@ class MyScheduleServiceTest {
             orgName = "서울지점",
             sfid = sfid
         )
+    }
+
+    private fun createMockSafety(employeeId: Long, workingDate: LocalDate): SafetyCheckSubmission {
+        return SafetyCheckSubmission(employeeId = employeeId, workingDate = workingDate)
     }
 
     private fun createMockMemberSchedule(

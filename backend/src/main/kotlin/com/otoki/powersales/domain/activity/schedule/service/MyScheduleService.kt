@@ -5,8 +5,10 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.DisplayWorkSch
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyScheduleResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.ReportProgressDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkDayDto
+import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
@@ -23,7 +25,8 @@ import java.time.YearMonth
 class MyScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository
     // private val attendanceRepository: AttendanceRepository  // Phase2: PG 대응 테이블 없음
 ) {
 
@@ -52,49 +55,75 @@ class MyScheduleService(
         val startDate = yearMonth.atDay(1)
         val endDate = yearMonth.atEndOfMonth()
 
-        // 진열 마스터를 기간(startDate~endDate)으로 전개해 월 내 근무일 집합 생성.
-        // 레거시 calSchedule 의 GENERATE_SERIES(startdate__c, enddate__c) 정합 — 마스터 시작일 하루만이
-        // 아니라 기간에 걸친 모든 날을 근무일로 표시한다(전월 이전 시작·진행 중(endDate NULL) 마스터 포함).
-        // 기간 판정 기준(confirmed=true, period overlap)은 홈/여사원 일별현황과 동일.
-        val workDates = displayWorkScheduleRepository
+        // 진열 마스터 (확정·기간유효, 월과 기간 겹침). 마스터는 기간형이라 하루 단위 근무일 판정은
+        // 안전점검 제출일 게이트로 좁힌다(아래 참조 — 레거시/조장 캘린더 정합).
+        val masters = displayWorkScheduleRepository
             .findConfirmedValidByEmployeeIdAndDateRange(employee.id, startDate, endDate)
-            .flatMap { master ->
-                val periodStart = master.startDate ?: return@flatMap emptyList<LocalDate>()
-                val rangeStart = maxOf(periodStart, startDate)
-                val rangeEnd = minOf(master.endDate ?: endDate, endDate)
-                generateSequence(rangeStart) { it.plusDays(1) }
-                    .takeWhile { !it.isAfter(rangeEnd) }
-                    .toList()
-            }
+
+        // 안전점검 제출일 집합 = 실제 진열 근무일 신호.
+        // 레거시 calSchedule/mngDaily 는 진열 거래처를 comm_cnt>0(safetycheck__workschedule__member 존재)
+        // 인 날에만 노출한다. 진열 마스터 기간겹침만으로는 근무일을 특정할 수 없으므로 이 게이트가 필수다.
+        // (조장 일별현황 [TeamDailyStatusCalculator.computeDailyWorkers] 와 동일 기준)
+        val safetyDates = safetyCheckSubmissionRepository
+            .findByEmployeeIdAndWorkingDateBetween(employee.id, startDate, endDate)
+            .mapNotNull { it.workingDate }
             .toSet()
 
-        // TeamMemberSchedule에서 날짜별 workingType 조회
+        // TeamMemberSchedule: 행사 거래처·출근(attendanceLog)·workingType(연차/대휴) 소스. (account/attendanceLog fetch join)
         val memberSchedules = teamMemberScheduleRepository
             .findMonthlyByEmployeeIds(listOf(employee.id), startDate, endDate)
+        val schedulesByDate = memberSchedules.groupBy { it.workingDate }
         val workingTypeByDate = memberSchedules
             .groupBy { it.workingDate }
             .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType?.displayName }
-
-        // 행사 근무일 (레거시 selectHomeSchedulePromote: workingcategory1 = '행사').
-        // 진열 마스터에 없는 행사 전용 근무일도 캘린더 마커로 표시 (HomeService 와 동일 기준).
-        val eventDates = memberSchedules
-            .filter { it.workingCategory1 == WorkingCategory1.EVENT }
-            .mapNotNull { it.workingDate }
-            .toSet()
 
         // 연차/대휴 건수 카운트
         val annualLeaveCount = memberSchedules.count { it.workingType == WorkingType.ANNUAL_LEAVE }
         val substituteHolidayCount = memberSchedules.count { it.workingType == WorkingType.ALT_HOLIDAY }
 
-        // 해당 월의 모든 날짜에 대해 근무 여부 판정 (진열 ∪ 행사)
+        // 날짜별 근무 여부 + 보고완료/총건 산출 (레거시 calSchedule 셀 = sum/cnt, cnt>0 만 표시).
         val workDays = mutableListOf<WorkDayDto>()
         var currentDate = startDate
         while (!currentDate.isAfter(endDate)) {
+            val daySchedules = schedulesByDate[currentDate].orEmpty()
+
+            // 대휴/연차 날은 거래처 집계 없음 (레거시 mngDaily: workingType=연차/대휴 → accList 비움).
+            val isLeave = daySchedules.any {
+                it.workingType == WorkingType.ANNUAL_LEAVE || it.workingType == WorkingType.ALT_HOLIDAY
+            }
+
+            // 진열 거래처: 안전점검 제출일에만, 마스터 기간이 그날을 포함하는 것 (레거시 comm_cnt>0 게이트).
+            val displayAccountIds = if (!isLeave && currentDate in safetyDates) {
+                masters.filter { it.overlapsDate(currentDate) }.mapNotNull { it.account?.id }.toSet()
+            } else {
+                emptySet()
+            }
+
+            // 행사 거래처: 안전점검 게이트 없이 EVENT team_member_schedule (레거시 selectHomeSchedulePromote 정합).
+            val eventAccountIds = if (!isLeave) {
+                daySchedules
+                    .filter { it.workingCategory1 == WorkingCategory1.EVENT }
+                    .mapNotNull { it.account?.id }
+                    .toSet()
+            } else {
+                emptySet()
+            }
+
+            val accountIds = displayAccountIds + eventAccountIds
+
+            // 보고완료(sum): 그날 attendanceLog 존재하는 거래처 (진열/행사 공통, 레거시 commutelogid 유무).
+            val attendedAccountIds = daySchedules
+                .filter { it.attendanceLog != null }
+                .mapNotNull { it.account?.id }
+                .toSet()
+
             workDays.add(
                 WorkDayDto(
                     date = currentDate.toString(),
-                    hasWork = workDates.contains(currentDate) || eventDates.contains(currentDate),
-                    workingType = workingTypeByDate[currentDate]
+                    hasWork = accountIds.isNotEmpty(),
+                    workingType = workingTypeByDate[currentDate],
+                    completedCount = accountIds.count { it in attendedAccountIds },
+                    totalCount = accountIds.size
                 )
             )
             currentDate = currentDate.plusDays(1)
@@ -216,5 +245,11 @@ class MyScheduleService(
             ),
             accounts = accountItems
         )
+    }
+
+    /** 진열 마스터 기간(startDate~endDate, endDate NULL=무기한)이 특정 날짜를 포함하는지. */
+    private fun DisplayWorkSchedule.overlapsDate(date: LocalDate): Boolean {
+        val start = startDate ?: return false
+        return !date.isBefore(start) && (endDate == null || !date.isAfter(endDate))
     }
 }

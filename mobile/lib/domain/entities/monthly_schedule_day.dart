@@ -9,10 +9,18 @@ class MonthlyScheduleDay {
   /// 근무유형 (예: "근무", "연차" 등). 스케줄 없는 날은 null
   final String? workingType;
 
+  /// 보고완료 거래처 수 (레거시 캘린더 셀 sum)
+  final int completedCount;
+
+  /// 담당 거래처 수 (레거시 캘린더 셀 cnt)
+  final int totalCount;
+
   const MonthlyScheduleDay({
     required this.date,
     required this.hasWork,
     this.workingType,
+    this.completedCount = 0,
+    this.totalCount = 0,
   });
 
   /// 연차 여부
@@ -25,11 +33,15 @@ class MonthlyScheduleDay {
     DateTime? date,
     bool? hasWork,
     String? workingType,
+    int? completedCount,
+    int? totalCount,
   }) {
     return MonthlyScheduleDay(
       date: date ?? this.date,
       hasWork: hasWork ?? this.hasWork,
       workingType: workingType ?? this.workingType,
+      completedCount: completedCount ?? this.completedCount,
+      totalCount: totalCount ?? this.totalCount,
     );
   }
 
@@ -38,6 +50,8 @@ class MonthlyScheduleDay {
       'date': date.toIso8601String(),
       'hasWork': hasWork,
       'workingType': workingType,
+      'completedCount': completedCount,
+      'totalCount': totalCount,
     };
   }
 
@@ -46,6 +60,8 @@ class MonthlyScheduleDay {
       date: DateTime.parse(json['date'] as String),
       hasWork: json['hasWork'] as bool,
       workingType: json['workingType'] as String?,
+      completedCount: json['completedCount'] as int? ?? 0,
+      totalCount: json['totalCount'] as int? ?? 0,
     );
   }
 
@@ -55,14 +71,18 @@ class MonthlyScheduleDay {
     return other is MonthlyScheduleDay &&
         other.date == date &&
         other.hasWork == hasWork &&
-        other.workingType == workingType;
+        other.workingType == workingType &&
+        other.completedCount == completedCount &&
+        other.totalCount == totalCount;
   }
 
   @override
-  int get hashCode => Object.hash(date, hasWork, workingType);
+  int get hashCode =>
+      Object.hash(date, hasWork, workingType, completedCount, totalCount);
 
   @override
   String toString() {
-    return 'MonthlyScheduleDay(date: $date, hasWork: $hasWork, workingType: $workingType)';
+    return 'MonthlyScheduleDay(date: $date, hasWork: $hasWork, workingType: $workingType, '
+        'completedCount: $completedCount, totalCount: $totalCount)';
   }
 }
