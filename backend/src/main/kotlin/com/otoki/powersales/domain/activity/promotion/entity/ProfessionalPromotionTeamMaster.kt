@@ -61,6 +61,12 @@ class ProfessionalPromotionTeamMaster(
     @Column(name = "team_type", length = 255)
     var teamType: ProfessionalPromotionTeamType? = null,
 
+    // team_type 컬럼의 raw 문자열 read-only 매핑 — 컨버터를 거치지 않은 원본 값.
+    // enum 이 legacyAlias('카레행사조') 로 흡수하는 값까지 저장 문자열 그대로 필터링해야 할 때 쓴다.
+    // (예: '카레세일조' 필터가 DB 의 '카레세일조'·'카레행사조' 두 문자열을 IN 으로 함께 조회). 쓰기 금지.
+    @Column(name = "team_type", length = 255, insertable = false, updatable = false)
+    val teamTypeRaw: String? = null,
+
     @SFField("StartDate__c")
     @FieldName("시작일")
     @Column(name = "start_date", nullable = false)

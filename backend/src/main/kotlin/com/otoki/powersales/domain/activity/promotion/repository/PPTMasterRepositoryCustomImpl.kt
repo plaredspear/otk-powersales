@@ -42,7 +42,10 @@ class PPTMasterRepositoryCustomImpl(
         }
 
         if (teamType != null) {
-            builder.and(professionalPromotionTeamMaster.teamType.eq(teamType))
+            // enum 의 displayName + legacyAliases 를 모두 IN 으로 매칭한다. team_type 은 한글 문자열로
+            // 저장돼 있고, 표시명이 바뀐 유형(카레세일조 ← 카레행사조)은 DB 에 옛 문자열이 남아 있으므로
+            // raw 컬럼을 storedValues 로 비교해 신·구 저장 문자열을 함께 조회한다.
+            builder.and(professionalPromotionTeamMaster.teamTypeRaw.`in`(teamType.storedValues))
         }
 
         // 지점 스코프 — 데이터의 branch_code 컬럼(빈값)이 아니라 사원 소속 지점(costCenterCode) 기준.

@@ -154,11 +154,11 @@ class PPTMasterPayloadFactoryTest {
     }
 
     @Test
-    @DisplayName("ProfessionalPromotionTeam — enum displayName 한글 그대로")
+    @DisplayName("ProfessionalPromotionTeam — enum displayName 한글 그대로 (CURRY_PROMOTION → '카레세일조')")
     fun build_teamTypeDisplayName() {
         val master = master(teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION)
         val payload = factory.build(listOf(master), today)
-        assertThat(payload.REQUEST.single().ProfessionalPromotionTeam).isEqualTo("카레행사조")
+        assertThat(payload.REQUEST.single().ProfessionalPromotionTeam).isEqualTo("카레세일조")
     }
 
     private fun employee(

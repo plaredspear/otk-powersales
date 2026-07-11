@@ -13,7 +13,7 @@ describe('pptTeamType', () => {
     it('PPT_TEAM_TYPES는 6개 값을 포함한다', () => {
       expect(PPT_TEAM_TYPES).toHaveLength(6);
       expect(PPT_TEAM_TYPES).toContain('일반');
-      expect(PPT_TEAM_TYPES).toContain('카레행사조');
+      expect(PPT_TEAM_TYPES).toContain('카레세일조');
     });
 
     it('PPT_TEAM_TYPES_FOR_MASTER는 5개(일반 제외) 값을 포함한다', () => {
@@ -38,8 +38,12 @@ describe('pptTeamType', () => {
       expect(getPPTTeamTypeColor('프레시세일조_냉장')).toBe('blue');
       expect(getPPTTeamTypeColor('프레시세일조_냉동')).toBe('cyan');
       expect(getPPTTeamTypeColor('프레시세일조_만두')).toBe('green');
-      expect(getPPTTeamTypeColor('카레행사조')).toBe('orange');
+      expect(getPPTTeamTypeColor('카레세일조')).toBe('orange');
       expect(getPPTTeamTypeColor('일반')).toBe('default');
+    });
+
+    it("legacy 표시명 '카레행사조'도 orange 로 방어 매핑한다", () => {
+      expect(getPPTTeamTypeColor('카레행사조')).toBe('orange');
     });
 
     it('null/undefined/미정의 값은 default 반환', () => {

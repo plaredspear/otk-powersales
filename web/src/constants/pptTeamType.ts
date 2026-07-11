@@ -11,7 +11,7 @@ export type PPTTeamType =
   | '프레시세일조_냉장'
   | '프레시세일조_냉동'
   | '프레시세일조_만두'
-  | '카레행사조';
+  | '카레세일조';
 
 export const PPT_TEAM_TYPES: readonly PPTTeamType[] = [
   '일반',
@@ -19,7 +19,7 @@ export const PPT_TEAM_TYPES: readonly PPTTeamType[] = [
   '프레시세일조_냉장',
   '프레시세일조_냉동',
   '프레시세일조_만두',
-  '카레행사조',
+  '카레세일조',
 ] as const;
 
 /** 마스터 등록 가능한 5개 (일반 제외) */
@@ -28,7 +28,7 @@ export const PPT_TEAM_TYPES_FOR_MASTER: readonly PPTTeamType[] = [
   '프레시세일조_냉장',
   '프레시세일조_냉동',
   '프레시세일조_만두',
-  '카레행사조',
+  '카레세일조',
 ] as const;
 
 interface SelectOption {
@@ -55,6 +55,16 @@ export const PPT_TEAM_TYPE_COLORS: Record<PPTTeamType, string> = {
   '프레시세일조_냉장': 'blue',
   '프레시세일조_냉동': 'cyan',
   '프레시세일조_만두': 'green',
+  '카레세일조': 'orange',
+};
+
+/**
+ * 표시명이 바뀐 유형의 이전(legacy) 문자열 → 색상 매핑.
+ *
+ * Backend 는 응답을 항상 신규 표시명('카레세일조')으로 정규화하므로 통상 legacy 문자열이
+ * 화면에 도달하지 않지만, 만일의 경우('카레행사조')에도 색상이 깨지지 않도록 방어적으로 매핑한다.
+ */
+const PPT_TEAM_TYPE_LEGACY_COLORS: Record<string, string> = {
   '카레행사조': 'orange',
 };
 
@@ -64,7 +74,7 @@ export const PPT_TEAM_TYPE_COLORS: Record<PPTTeamType, string> = {
  */
 export function getPPTTeamTypeColor(type: string | null | undefined): string {
   if (type == null) return 'default';
-  return PPT_TEAM_TYPE_COLORS[type as PPTTeamType] ?? 'default';
+  return PPT_TEAM_TYPE_COLORS[type as PPTTeamType] ?? PPT_TEAM_TYPE_LEGACY_COLORS[type] ?? 'default';
 }
 
 export function isPPTTeamType(value: unknown): value is PPTTeamType {

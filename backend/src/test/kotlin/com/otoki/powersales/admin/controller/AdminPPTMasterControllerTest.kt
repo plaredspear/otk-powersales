@@ -341,7 +341,7 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content[0].orgName").value("서울지점"))
                 .andExpect(jsonPath("$.data.content[0].name").value("PH0014972"))
                 .andExpect(jsonPath("$.data.content[0].oldValue").value("라면세일조"))
-                .andExpect(jsonPath("$.data.content[0].newValue").value("카레행사조"))
+                .andExpect(jsonPath("$.data.content[0].newValue").value("카레세일조"))
         }
 
         @Test

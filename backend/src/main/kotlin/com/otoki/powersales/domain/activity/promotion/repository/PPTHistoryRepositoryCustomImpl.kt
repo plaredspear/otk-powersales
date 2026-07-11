@@ -51,7 +51,9 @@ class PPTHistoryRepositoryCustomImpl(
                     .or(professionalPromotionTeamHistory.newValueRaw.eq(ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME))
             )
         } else if (teamType != null) {
-            builder.and(professionalPromotionTeamHistory.newValue.eq(teamType))
+            // enum 의 displayName + legacyAliases 를 raw 컬럼으로 IN 매칭 — 표시명이 바뀐 유형
+            // (카레세일조 ← 카레행사조)의 신·구 저장 문자열을 이력에서도 함께 조회한다.
+            builder.and(professionalPromotionTeamHistory.newValueRaw.`in`(teamType.storedValues))
         }
 
         if (changedAtFrom != null) {

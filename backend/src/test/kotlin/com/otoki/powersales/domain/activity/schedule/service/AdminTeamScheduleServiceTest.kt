@@ -373,7 +373,7 @@ class AdminTeamScheduleServiceTest {
             assertThat(result.branches[0].branchCode).isEqualTo("5457")
             assertThat(result.members).hasSize(1)
             assertThat(result.professionalPromotionTeams).containsExactly(
-                "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조"
+                "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조"
             )
             assertThat(result.accounts).hasSize(1)
             assertThat(result.accounts[0].accountId).isEqualTo(1)

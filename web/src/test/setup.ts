@@ -32,3 +32,14 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
     }),
   });
 }
+
+// jsdom 에는 ResizeObserver 가 없으므로 no-op stub 을 제공한다.
+// 테이블 높이 자동 계산 훅(useFlexTableScrollY) 등 ResizeObserver 를 쓰는 컴포넌트를
+// 렌더하는 테스트가 ReferenceError 로 실패하지 않도록 한다.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}

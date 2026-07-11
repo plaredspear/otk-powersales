@@ -398,7 +398,7 @@ export interface EmployeeWorkHistoryItem {
   workingCategory1: string | null;
   workingCategory3: string | null;
   workingCategory4: string | null;
-  /** 전문행사조 (라면세일조/카레행사조 등) */
+  /** 전문행사조 (라면세일조/카레세일조 등) */
   professionalPromotionTeam: string | null;
   accountName: string | null;
   accountExternalKey: string | null;

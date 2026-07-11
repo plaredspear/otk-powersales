@@ -11,6 +11,7 @@ import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.emplo
 import com.otoki.powersales.domain.activity.schedule.entity.QAttendanceLog.Companion.attendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.otoki.powersales.domain.activity.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
@@ -209,8 +210,11 @@ open class TeamMemberScheduleRepositoryCustomImpl(
     }
 
     private fun professionalPromotionTeamIn(teams: List<String>?): BooleanExpression? {
-        return if (teams.isNullOrEmpty()) null
-        else teamMemberSchedule.professionalPromotionTeam.`in`(teams)
+        if (teams.isNullOrEmpty()) return null
+        // 표시명이 바뀐 유형(카레세일조 ← 카레행사조)의 신·구 저장 문자열을 함께 매칭한다.
+        // professional_promotion_team 은 한글 문자열 컬럼이라, 필터 표시명을 storedValues 로 확장해 IN 한다.
+        val expanded = ProfessionalPromotionTeamType.expandStoredValues(teams)
+        return teamMemberSchedule.professionalPromotionTeam.`in`(expanded)
     }
 
     override fun aggregateDailySummaryByEmployeeIds(

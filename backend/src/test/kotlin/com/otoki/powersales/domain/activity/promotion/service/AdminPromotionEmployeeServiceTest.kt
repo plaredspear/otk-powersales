@@ -281,7 +281,7 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
-        @DisplayName("UC-07: 만두행사 + 카레행사조 사원 -> 매칭 OK (카레는 모든 카테고리 허용)")
+        @DisplayName("UC-07: 만두행사 + 카레세일조 사원 -> 매칭 OK (카레는 모든 카테고리 허용)")
         fun createEmployee_uc07_manduWithCurryTeam_success() {
             val promotion = createPromotion(category1 = "만두")
             val employee = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사")

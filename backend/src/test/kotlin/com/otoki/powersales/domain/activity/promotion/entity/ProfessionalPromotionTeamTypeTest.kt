@@ -22,7 +22,15 @@ class ProfessionalPromotionTeamTypeTest {
             assertThat(ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED.displayName).isEqualTo("프레시세일조_냉장")
             assertThat(ProfessionalPromotionTeamType.FRESH_SALE_FROZEN.displayName).isEqualTo("프레시세일조_냉동")
             assertThat(ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING.displayName).isEqualTo("프레시세일조_만두")
-            assertThat(ProfessionalPromotionTeamType.CURRY_PROMOTION.displayName).isEqualTo("카레행사조")
+            assertThat(ProfessionalPromotionTeamType.CURRY_PROMOTION.displayName).isEqualTo("카레세일조")
+        }
+
+        @Test
+        @DisplayName("CURRY_PROMOTION 은 legacy alias '카레행사조' 를 보유하고 storedValues 로 신·구 표시명 모두 노출")
+        fun curryPromotionLegacyAlias() {
+            assertThat(ProfessionalPromotionTeamType.CURRY_PROMOTION.legacyAliases).containsExactly("카레행사조")
+            assertThat(ProfessionalPromotionTeamType.CURRY_PROMOTION.storedValues)
+                .containsExactly("카레세일조", "카레행사조")
         }
     }
 
@@ -31,12 +39,16 @@ class ProfessionalPromotionTeamTypeTest {
     inner class FromDisplayNameTests {
 
         @Test
-        @DisplayName("성공 - 유효한 한글 -> enum 반환")
+        @DisplayName("성공 - 유효한 한글 -> enum 반환 (legacy alias '카레행사조' 포함)")
         fun fromDisplayName_success() {
             assertThat(ProfessionalPromotionTeamType.fromDisplayName("라면세일조"))
                 .isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
             assertThat(ProfessionalPromotionTeamType.fromDisplayName("프레시세일조_냉장"))
                 .isEqualTo(ProfessionalPromotionTeamType.FRESH_SALE_REFRIGERATED)
+            assertThat(ProfessionalPromotionTeamType.fromDisplayName("카레세일조"))
+                .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
+            assertThat(ProfessionalPromotionTeamType.fromDisplayName("카레행사조"))
+                .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
         }
 
         @Test
@@ -53,8 +65,10 @@ class ProfessionalPromotionTeamTypeTest {
     inner class FromDisplayNameOrNullTests {
 
         @Test
-        @DisplayName("성공 - 유효한 한글 -> enum 반환")
+        @DisplayName("성공 - 신규 표시명 '카레세일조' 와 legacy '카레행사조' 모두 CURRY_PROMOTION 으로 매핑")
         fun fromDisplayNameOrNull_success() {
+            assertThat(ProfessionalPromotionTeamType.fromDisplayNameOrNull("카레세일조"))
+                .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
             assertThat(ProfessionalPromotionTeamType.fromDisplayNameOrNull("카레행사조"))
                 .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
         }
@@ -76,16 +90,20 @@ class ProfessionalPromotionTeamTypeTest {
         private val converter = ProfessionalPromotionTeamTypeConverter()
 
         @Test
-        @DisplayName("Entity -> DB: enum의 displayName 반환")
+        @DisplayName("Entity -> DB: enum의 displayName 반환 (CURRY_PROMOTION 은 신규 표시명 '카레세일조' 로 write)")
         fun convertToDatabaseColumn_success() {
             assertThat(converter.convertToDatabaseColumn(ProfessionalPromotionTeamType.RAMEN_SALE))
                 .isEqualTo("라면세일조")
+            assertThat(converter.convertToDatabaseColumn(ProfessionalPromotionTeamType.CURRY_PROMOTION))
+                .isEqualTo("카레세일조")
             assertThat(converter.convertToDatabaseColumn(null)).isNull()
         }
 
         @Test
-        @DisplayName("DB -> Entity: 한글 -> enum")
+        @DisplayName("DB -> Entity: 신규 '카레세일조' 와 legacy '카레행사조' 모두 CURRY_PROMOTION 으로 read")
         fun convertToEntityAttribute_success() {
+            assertThat(converter.convertToEntityAttribute("카레세일조"))
+                .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
             assertThat(converter.convertToEntityAttribute("카레행사조"))
                 .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
             assertThat(converter.convertToEntityAttribute(null)).isNull()

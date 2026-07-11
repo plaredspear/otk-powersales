@@ -20,7 +20,7 @@ data class EmployeeWorkHistoryItem(
     val workingCategory1: String?,
     val workingCategory3: String?,
     val workingCategory4: String?,
-    /** 전문행사조 (SF ProfessionalPromotionTeam__c) — 라면세일조/카레행사조 등. */
+    /** 전문행사조 (SF ProfessionalPromotionTeam__c) — 라면세일조/카레세일조 등. */
     val professionalPromotionTeam: String?,
     val accountName: String?,
     val accountExternalKey: String?,
