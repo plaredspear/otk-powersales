@@ -57,6 +57,11 @@ class ProfessionalPromotionTeamHistory(
     @Column(name = "old_value", length = 255)
     val oldValue: ProfessionalPromotionTeamType? = null,
 
+    // old_value 컬럼의 raw 문자열 read-only 매핑 — 컨버터를 거치지 않은 원본 값 (newValueRaw 와 동일 목적).
+    // 유형 필터를 "변경 전 OR 변경 후" 기준으로 조회할 때 old_value 를 storedValues 로 직접 비교한다 (쓰기 금지).
+    @Column(name = "old_value", length = 255, insertable = false, updatable = false)
+    val oldValueRaw: String? = null,
+
     @SFField("newValue__c")
     @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @FieldName("변경 후")

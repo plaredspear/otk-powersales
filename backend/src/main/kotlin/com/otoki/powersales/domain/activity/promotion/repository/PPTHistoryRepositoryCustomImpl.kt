@@ -51,9 +51,14 @@ class PPTHistoryRepositoryCustomImpl(
                     .or(professionalPromotionTeamHistory.newValueRaw.eq(ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME))
             )
         } else if (teamType != null) {
-            // enum 의 displayName + legacyAliases 를 raw 컬럼으로 IN 매칭 — 표시명이 바뀐 유형
-            // (카레세일조 ← 카레행사조)의 신·구 저장 문자열을 이력에서도 함께 조회한다.
-            builder.and(professionalPromotionTeamHistory.newValueRaw.`in`(teamType.storedValues))
+            // 유형 필터는 "변경 전(oldValue) OR 변경 후(newValue)" 기준 — 해당 유형이 관여된 모든 변경 이력
+            // (배정/해제/교체)을 조회한다. SF 레거시에는 이력 유형 필터 자체가 없어 신규 정책으로 결정됨.
+            // storedValues 로 표시명 변경 유형(카레세일조 ← 카레행사조)의 신·구 저장 문자열을 함께 매칭한다.
+            val storedValues = teamType.storedValues
+            builder.and(
+                professionalPromotionTeamHistory.newValueRaw.`in`(storedValues)
+                    .or(professionalPromotionTeamHistory.oldValueRaw.`in`(storedValues))
+            )
         }
 
         if (changedAtFrom != null) {

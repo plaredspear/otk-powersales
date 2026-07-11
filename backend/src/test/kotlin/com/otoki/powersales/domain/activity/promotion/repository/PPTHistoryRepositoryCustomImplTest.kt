@@ -19,7 +19,7 @@ import org.springframework.test.context.ActiveProfiles
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ActiveProfiles("test")
 @Import(QueryDslConfig::class)
-@DisplayName("PPTHistoryRepositoryCustomImpl - searchHistories teamType 필터 (변경 후 기준)")
+@DisplayName("PPTHistoryRepositoryCustomImpl - searchHistories teamType 필터 (변경 전 OR 변경 후 기준)")
 class PPTHistoryRepositoryCustomImplTest {
 
     @Autowired private lateinit var repository: PPTHistoryRepository
@@ -81,6 +81,23 @@ class PPTHistoryRepositoryCustomImplTest {
             .singleResult as Number).toLong()
     }
 
+    // old_value / new_value 를 컨버터 우회로 raw 문자열 직접 적재 (legacy '카레행사조' 등 enum 밖 값 포함).
+    private fun persistRaw(oldValueRaw: String?, newValueRaw: String?): Long {
+        em.entityManager
+            .createNativeQuery(
+                "INSERT INTO professional_promotion_team_history (old_value, new_value, created_at, updated_at) " +
+                    "VALUES (:o, :n, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+            )
+            .setParameter("o", oldValueRaw)
+            .setParameter("n", newValueRaw)
+            .executeUpdate()
+        return (em.entityManager
+            .createNativeQuery(
+                "SELECT MAX(professional_promotion_team_history_id) FROM professional_promotion_team_history"
+            )
+            .singleResult as Number).toLong()
+    }
+
     private fun search(
         teamType: ProfessionalPromotionTeamType? = null,
         teamTypeGeneral: Boolean = false,
@@ -133,19 +150,45 @@ class PPTHistoryRepositoryCustomImplTest {
     }
 
     @Test
-    @DisplayName("teamType 지정(일반 아님) → 변경 후 가 해당 조인 이력만 조회 (기존 동작 유지)")
-    fun searchHistories_teamTypeFilter_returnsMatchingNewValue() {
-        persist(oldValue = ProfessionalPromotionTeamType.RAMEN_SALE, newValue = null)
+    @DisplayName("teamType 지정(일반 아님) → 변경 전(oldValue) 또는 변경 후(newValue) 가 해당 유형인 이력을 모두 조회 (OR 정책)")
+    fun searchHistories_teamTypeFilter_returnsMatchingOldOrNewValue() {
+        // 변경 전이 RAMEN (RAMEN 에서 해제/교체) — OR 정책으로 잡혀야 함
+        val fromRamen = persist(oldValue = ProfessionalPromotionTeamType.RAMEN_SALE, newValue = null)
+        // 변경 후가 RAMEN (RAMEN 으로 배정)
         val toRamen = persist(oldValue = null, newValue = ProfessionalPromotionTeamType.RAMEN_SALE)
-        persist(
+        // 변경 전이 RAMEN → 다른 유형으로 교체 (RAMEN 관여) — OR 정책으로 잡혀야 함
+        val ramenToDumpling = persist(
             oldValue = ProfessionalPromotionTeamType.RAMEN_SALE,
+            newValue = ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
+        )
+        // RAMEN 이 전혀 관여하지 않은 이력 — 잡히면 안 됨
+        persist(
+            oldValue = ProfessionalPromotionTeamType.FRESH_SALE_FROZEN,
             newValue = ProfessionalPromotionTeamType.FRESH_SALE_DUMPLING,
         )
         em.clear()
 
         val ids = search(teamType = ProfessionalPromotionTeamType.RAMEN_SALE)
 
-        assertThat(ids).containsExactly(toRamen.id)
+        assertThat(ids).containsExactlyInAnyOrder(fromRamen.id, toRamen.id, ramenToDumpling.id)
+    }
+
+    @Test
+    @DisplayName("teamType 지정 → 표시명 변경 유형(카레세일조 ← 카레행사조)의 신·구 저장값을 변경 전/후 양쪽에서 조회")
+    fun searchHistories_teamTypeFilter_curryLegacyAliasBothColumns() {
+        // 신규 저장값 '카레세일조' 가 변경 후
+        val toCurryNewId = persist(oldValue = null, newValue = ProfessionalPromotionTeamType.CURRY_PROMOTION).id
+        // legacy 저장값 '카레행사조' 가 변경 후 (raw 문자열로 직접 적재)
+        val toCurryLegacyId = persistRaw(oldValueRaw = null, newValueRaw = "카레행사조")
+        // legacy '카레행사조' 가 변경 전 (라면세일조 로 교체) — OR 정책 + alias 로 잡혀야 함
+        val fromCurryLegacyId = persistRaw(oldValueRaw = "카레행사조", newValueRaw = "라면세일조")
+        // 무관 이력 — 잡히면 안 됨
+        persist(oldValue = ProfessionalPromotionTeamType.RAMEN_SALE, newValue = null)
+        em.clear()
+
+        val ids = search(teamType = ProfessionalPromotionTeamType.CURRY_PROMOTION)
+
+        assertThat(ids).containsExactlyInAnyOrder(toCurryNewId, toCurryLegacyId, fromCurryLegacyId)
     }
 
     @Test
