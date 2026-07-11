@@ -382,7 +382,8 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
                 ref.read(clientOrderListProvider.notifier).searchOrders();
               },
             ),
-            // 결과 헤더 (검색 후에만 표시)
+            // 안내 문구 (항상 표시) + 결과 헤더 (검색 후에만 표시)
+            _buildClientOrderNotice(),
             if (state.hasSearched) _buildClientOrderResultHeader(state),
             // 주문 목록
             Expanded(
@@ -391,6 +392,37 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
           ],
         );
       },
+    );
+  }
+
+  /// 거래처별 주문 안내 문구
+  ///
+  /// 거래처별 주문은 담당 사원 조건 없이 (거래처 + 납기일)로만 조회하므로
+  /// 본인이 아닌 다른 사원이 등록한 주문도 함께 표시된다는 점을 안내한다.
+  /// (레거시 SF `IF_REST_MOBILE_ClientOrderSearch` — OwnerId/사원 필터 부재 정합)
+  Widget _buildClientOrderNotice() {
+    return Container(
+      width: double.infinity,
+      // ignore: deprecated_member_use
+      color: AppColors.info.withOpacity(0.08),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: AppColors.info),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              '거래처별 주문은 해당 거래처의 전체 주문을 표시합니다. '
+              '본인이 아닌 다른 사원이 등록한 주문도 함께 조회됩니다.',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.info),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
