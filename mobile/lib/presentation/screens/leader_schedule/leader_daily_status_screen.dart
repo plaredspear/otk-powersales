@@ -304,20 +304,16 @@ class _LeaderDailyStatusScreenState
     );
   }
 
-  /// 등록 탭 공통 빌더 (전체/단일 공유) — 등록 가능 배너 + 등록 전 필터 + 사람별 밴드 + 거래처별 등록 상태.
-  /// 레거시 mngDaily `#commute` 영역 동등. 등록 버튼은 항상 노출하되 조건(당일·17시 전) 미충족 시
-  /// 비활성 + 탭하면 사유 안내(A안 — 레거시 alert 동등), 탭 상단에 등록 가능 여부 배너 노출(B안).
+  /// 등록 탭 공통 빌더 (전체/단일 공유) — 등록 전 필터 + 사람별 밴드 + 거래처별 등록 상태.
+  /// 레거시 mngDaily `#commute` 영역 동등. 대리출근 등록은 레거시가 2024-12-10
+  /// ("황도연차장님 요청으로 대리출근 기능 정지") 등록 버튼을 전면 비활성화했으므로
+  /// 조장 화면에서도 등록 버튼을 노출하지 않고, 이 탭은 미등록/등록완료 조회 전용으로 유지한다.
   Widget _buildRegisterTab(
     LeaderDailyStatusState state,
     List<_GroupedWorker> displayGroups,
     List<_GroupedWorker> eventGroups,
   ) {
     final loadingOrError = _loadingOrError(state);
-
-    // 대리등록 가능 조건: 조회 날짜가 오늘 + 17시 이전 (레거시 mngDaily 동일).
-    final now = DateTime.now();
-    final eligibility = _proxyEligibility(state.selectedDate, now);
-    final canRegister = eligibility.canRegister;
 
     final sections = <Widget>[];
     void addGroups(List<_GroupedWorker> groups, String category) {
@@ -326,18 +322,10 @@ class _LeaderDailyStatusScreenState
             ? g.rows.where((r) => !r.attended).toList()
             : g.rows;
         if (rows.isEmpty) continue;
-        // 미등록 1곳 이상이면 등록 버튼 노출. 조건(당일·17시 전) 미충족 시에도
-        // 버튼은 노출하되 비활성 + 탭 시 사유 안내(A안 — 레거시 alert 동등).
-        final hasUnregistered = g.rows.any((r) => !r.attended);
+        // 대리출근 등록 버튼 미노출 (레거시 정합) — 사람별 밴드는 그룹 헤더 역할만.
         sections.add(_RegisterPersonBand(
           name: g.employeeName,
           category: category,
-          enabled: canRegister,
-          onRegister: !hasUnregistered
-              ? null
-              : (canRegister
-                  ? () => _openProxyRegisterSheet(g)
-                  : () => _showProxyBlockedReason(eligibility)),
         ));
         for (final r in rows) {
           sections.add(_RegisterAccountRow(row: r));
@@ -353,8 +341,6 @@ class _LeaderDailyStatusScreenState
 
     return Column(
       children: [
-        // B안: 현재 대리출근 등록 가능 여부/사유 안내 배너.
-        _RegisterEligibilityBanner(eligibility: eligibility, now: now),
         _UnregisteredFilterBar(
           value: _registerUnregisteredOnly,
           onChanged: (v) => setState(() => _registerUnregisteredOnly = v),
@@ -389,72 +375,6 @@ class _LeaderDailyStatusScreenState
         ),
       ],
     );
-  }
-
-  /// 대리출근 불가 사유 안내 (A안 — 레거시 mngDaily alert 동등).
-  /// 날짜≠오늘 / 17시 이후일 때 비활성 등록 버튼 탭 시 SnackBar 로 사유 노출.
-  void _showProxyBlockedReason(_ProxyEligibility eligibility) {
-    final reason = eligibility.reason;
-    if (reason == null) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(reason)),
-    );
-  }
-
-  /// 대리출근 등록 시트 — 해당 여사원의 미등록 거래처를 선택해 일괄 등록.
-  /// 레거시 mngDaily addSchedule(체크박스 목록) 동등.
-  void _openProxyRegisterSheet(_GroupedWorker group) {
-    throttledTapAsync(() async {
-      final unregistered = group.rows.where((r) => !r.attended).toList();
-      if (unregistered.isEmpty) return;
-      final employeeId = group.rows.first.employeeId;
-      if (employeeId == null) return;
-
-      final selected = await showModalBottomSheet<List<LeaderDailyWorker>>(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusLg)),
-        ),
-        builder: (_) => _ProxyRegisterSheet(
-          employeeName: group.employeeName,
-          accounts: unregistered,
-        ),
-      );
-      if (selected == null || selected.isEmpty || !mounted) return;
-
-      final notifier = ref.read(leaderDailyStatusProvider.notifier);
-      // 레거시 mngDaily addScheduleProc 정합: 한 건이 실패해도 break 하지 않고
-      // 나머지 건을 계속 등록한다 (EmployeeController.java:869-927 — 비즈니스 실패 시 루프 관통).
-      // 각 건은 독립 요청·독립 커밋이라 앞 건 성공은 그대로 유지된다(롤백 없음).
-      // 레거시는 부분 실패를 전체 ERROR + 마지막 메시지로 뭉뚱그리나, 신규는 성공/실패 건수를
-      // 함께 보고해 어느 건이 남았는지 사용자가 인지하도록 개선한다.
-      String? firstError;
-      var successCount = 0;
-      var failCount = 0;
-      for (final r in selected) {
-        final err = await notifier.registerProxyAttendance(
-          targetEmployeeId: employeeId,
-          scheduleId: r.displayWorkScheduleId == null ? r.scheduleId : null,
-          displayWorkScheduleId: r.displayWorkScheduleId,
-        );
-        if (err != null) {
-          firstError ??= err;
-          failCount++;
-          continue;
-        }
-        successCount++;
-      }
-      if (!mounted) return;
-      final messenger = ScaffoldMessenger.of(context);
-      final message = failCount == 0
-          ? '$successCount건 대리출근 등록이 완료되었습니다.'
-          : successCount == 0
-              ? '대리출근 등록에 실패했습니다: $firstError'
-              : '$successCount건 등록 완료, $failCount건 실패했습니다: $firstError';
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-    });
   }
 
   /// 행사 일정 변경/삭제 흐름 (레거시 scheduleChangePromo).
@@ -1183,104 +1103,19 @@ class _UnregisteredFilterBar extends StatelessWidget {
   }
 }
 
-/// 대리출근 등록 가능 여부 (레거시 mngDaily 가드: 당일 + 17시 이전).
-enum _ProxyEligibility { ok, notToday, afterCutoff }
-
-/// 선택 날짜·현재 시각으로 대리출근 가능 여부 판정 (레거시 mngDaily `btn-add-sch` 동등).
-_ProxyEligibility _proxyEligibility(DateTime selectedDate, DateTime now) {
-  final isToday = selectedDate.year == now.year &&
-      selectedDate.month == now.month &&
-      selectedDate.day == now.day;
-  if (!isToday) return _ProxyEligibility.notToday;
-  if (now.hour >= 17) return _ProxyEligibility.afterCutoff;
-  return _ProxyEligibility.ok;
-}
-
-extension _ProxyEligibilityX on _ProxyEligibility {
-  bool get canRegister => this == _ProxyEligibility.ok;
-
-  /// 불가 사유 (레거시 alert 문구 정합). ok 면 null.
-  String? get reason {
-    switch (this) {
-      case _ProxyEligibility.ok:
-        return null;
-      case _ProxyEligibility.notToday:
-        return '당일 일정만 대리출근 등록할 수 있습니다.';
-      case _ProxyEligibility.afterCutoff:
-        return '오후 5시 이후에는 대리출근 등록할 수 없습니다.';
-    }
-  }
-}
-
-/// 등록 탭 상단 안내 배너 (B안) — 현재 대리출근 등록 가능 여부/사유를 한 줄로 표시.
-/// 가능: 네이비 + "오늘 HH:mm · 17:00까지 등록 가능", 불가: 주황 + 사유.
-class _RegisterEligibilityBanner extends StatelessWidget {
-  final _ProxyEligibility eligibility;
-  final DateTime now;
-
-  const _RegisterEligibilityBanner({
-    required this.eligibility,
-    required this.now,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final ok = eligibility.canRegister;
-    final color = ok ? AppColors.secondary : AppColors.warning;
-    final icon = ok ? Icons.check_circle_outline : Icons.info_outline;
-    final text = ok
-        ? '오늘 ${DateFormat('HH:mm').format(now)} · 17:00까지 대리출근 등록 가능'
-        : (eligibility.reason ?? '');
-
-    return Container(
-      width: double.infinity,
-      color: color.withValues(alpha: 0.08),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: AppSpacing.xs),
-          Expanded(
-            child: Text(
-              text,
-              style: AppTypography.bodySmall.copyWith(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 등록 탭 사람별 밴드 — "이름 (진열/행사)" + (조건부) 등록 버튼 (레거시 list_title + 등록).
+/// 등록 탭 사람별 밴드 — "이름 (진열/행사)" 그룹 헤더 (레거시 list_title).
+/// 대리출근 등록 버튼은 레거시 정합(2024-12-10 대리출근 기능 정지)으로 제거됨.
 class _RegisterPersonBand extends StatelessWidget {
   final String name;
   final String category;
 
-  /// 등록 가능(활성) 여부. false 면 회색 비활성 스타일(탭 시 사유 안내).
-  final bool enabled;
-
-  /// 등록 버튼 탭 콜백. null 이면 버튼 미노출(미등록 0곳).
-  /// 비활성(enabled=false)이어도 탭은 가능 — 사유 안내용(A안).
-  final VoidCallback? onRegister;
-
   const _RegisterPersonBand({
     required this.name,
     required this.category,
-    this.enabled = true,
-    this.onRegister,
   });
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = enabled ? AppColors.secondary : AppColors.border;
-    final textColor = enabled ? AppColors.secondary : AppColors.textSecondary;
     return Container(
       width: double.infinity,
       color: AppColors.surface,
@@ -1288,147 +1123,11 @@ class _RegisterPersonBand extends StatelessWidget {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              '$name ($category)',
-              style: AppTypography.bodyMedium.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          if (onRegister != null)
-            InkWell(
-              onTap: onRegister,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.xxs,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Text(
-                  '등록',
-                  style: AppTypography.labelSmall.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 대리출근 등록 바텀시트 — 여사원의 미등록 거래처 다중 선택(기본 전체 선택) 후 등록.
-class _ProxyRegisterSheet extends StatefulWidget {
-  final String employeeName;
-  final List<LeaderDailyWorker> accounts;
-
-  const _ProxyRegisterSheet({
-    required this.employeeName,
-    required this.accounts,
-  });
-
-  @override
-  State<_ProxyRegisterSheet> createState() => _ProxyRegisterSheetState();
-}
-
-class _ProxyRegisterSheetState extends State<_ProxyRegisterSheet> {
-  late final Set<int> _selected; // accounts 인덱스 집합
-
-  @override
-  void initState() {
-    super.initState();
-    // 기본 전체 선택 (레거시 addSchedule 미등록 항목 일괄).
-    _selected = {for (var i = 0; i < widget.accounts.length; i++) i};
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${widget.employeeName} 대리출근 등록',
-              style: AppTypography.bodyLarge.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '등록할 거래처를 선택하세요. 안전점검 미완료 거래처는 등록되지 않습니다.',
-              style: AppTypography.bodySmall
-                  .copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: widget.accounts.length,
-                itemBuilder: (context, i) {
-                  final a = widget.accounts[i];
-                  final checked = _selected.contains(i);
-                  return CheckboxListTile(
-                    value: checked,
-                    activeColor: AppColors.secondary,
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text(
-                      a.accountName,
-                      style: AppTypography.bodyMedium
-                          .copyWith(color: AppColors.textPrimary),
-                    ),
-                    subtitle: a.workCategoryLabel.isEmpty
-                        ? null
-                        : Text(
-                            a.workCategoryLabel,
-                            style: AppTypography.bodySmall
-                                .copyWith(color: AppColors.textSecondary),
-                          ),
-                    onChanged: (v) => setState(() {
-                      if (v == true) {
-                        _selected.add(i);
-                      } else {
-                        _selected.remove(i);
-                      }
-                    }),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondary,
-                  foregroundColor: AppColors.white,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                ),
-                onPressed: _selected.isEmpty
-                    ? null
-                    : () => Navigator.of(context).pop(
-                          [for (final i in _selected) widget.accounts[i]],
-                        ),
-                child: Text('등록 (${_selected.length})'),
-              ),
-            ),
-          ],
+      child: Text(
+        '$name ($category)',
+        style: AppTypography.bodyMedium.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
         ),
       ),
     );
