@@ -73,7 +73,13 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
     final selectedItems = notifier.getSelectedOrderDraftItems();
 
     int addedCount = 0;
+    bool capped = false;
     for (final item in selectedItems) {
+      // 100개 상한 도달 시 더 이상 담지 않고 중단.
+      if (ref.read(orderFormProvider).items.length >= 100) {
+        capped = true;
+        break;
+      }
       // addProductToOrder ignores duplicates
       final beforeCount = ref.read(orderFormProvider).items.length;
       orderFormNotifier.addProductToOrder(item);
@@ -83,7 +89,11 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
       }
     }
 
-    if (addedCount > 0) {
+    if (capped) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('100개 이하로 등록해주세요')),
+      );
+    } else if (addedCount > 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('$addedCount개 제품이 추가되었습니다.')),
       );

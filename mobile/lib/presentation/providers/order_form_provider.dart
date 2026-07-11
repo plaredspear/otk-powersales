@@ -303,6 +303,11 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       state = state.copyWith(errorMessage: '이미 추가된 제품입니다.');
       return false;
     }
+    // (4) 100개 상한 — 담기 단계에서 사전 차단 (제출 검증 (F) 와 동일 상한).
+    if (state.orderDraft.items.length >= 100) {
+      state = state.copyWith(errorMessage: '100개 이하로 등록해주세요');
+      return false;
+    }
 
     final newItem = OrderDraftItem(
       productCode: product.productCode,
@@ -377,6 +382,10 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     final isDuplicate = state.orderDraft.items
         .any((existing) => existing.productCode == item.productCode);
     if (isDuplicate) {
+      return;
+    }
+    // 100개 상한 — 담기 단계에서 사전 차단 (제출 검증 (F) 와 동일 상한).
+    if (state.orderDraft.items.length >= 100) {
       return;
     }
 
@@ -553,7 +562,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     }
     // (F) 라인 100개 초과
     if (state.orderDraft.items.length > 100) {
-      return '제품은 100개 이하로 추가해주세요';
+      return '100개 이하로 등록해주세요';
     }
     // (G) 여신 한도 초과 / 조회 중 — 레거시 write.jsp:188-191 `loan < total` 차단 정합.
     final creditBalance = state.creditBalance;
