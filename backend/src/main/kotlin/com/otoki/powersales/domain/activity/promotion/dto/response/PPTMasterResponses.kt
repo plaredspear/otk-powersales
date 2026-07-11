@@ -108,7 +108,8 @@ data class PPTMasterHistoryResponse(
     val oldValue: ProfessionalPromotionTeamType?,
     val newValue: ProfessionalPromotionTeamType?,
     val changedAt: LocalDateTime?,
-    // 이력을 유발한 마스터(masterId)의 거래처 — masterId 가 null 인 이력은 두 값 모두 null.
+    // 이력을 유발한 마스터(masterId)의 거래처 — masterId 가 null 인 이력(알라딘 마이그레이션분 등)은 세 값 모두 null.
+    val accountId: Long? = null,
     val accountCode: String? = null,
     val accountName: String? = null
 ) {
@@ -118,6 +119,7 @@ data class PPTMasterHistoryResponse(
             employeeName: String?,
             employeeCode: String?,
             orgName: String?,
+            accountId: Long? = null,
             accountCode: String? = null,
             accountName: String? = null
         ): PPTMasterHistoryResponse {
@@ -131,6 +133,7 @@ data class PPTMasterHistoryResponse(
                 oldValue = history.oldValue,
                 newValue = history.newValue,
                 changedAt = history.changedAt,
+                accountId = accountId,
                 accountCode = accountCode,
                 accountName = accountName
             )

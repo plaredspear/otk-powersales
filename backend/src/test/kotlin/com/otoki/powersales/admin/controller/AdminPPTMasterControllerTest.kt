@@ -326,7 +326,10 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                         employeeCode = "EMP005", orgName = "서울지점",
                         oldValue = ProfessionalPromotionTeamType.RAMEN_SALE,
                         newValue = ProfessionalPromotionTeamType.CURRY_PROMOTION,
-                        changedAt = LocalDateTime.of(2026, 5, 18, 14, 30)
+                        changedAt = LocalDateTime.of(2026, 5, 18, 14, 30),
+                        accountId = 55L,
+                        accountCode = "SAP001",
+                        accountName = "이마트 강남점"
                     )
                 ),
                 totalElements = 1, totalPages = 1, number = 0, size = 20
@@ -342,6 +345,9 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content[0].name").value("PH0014972"))
                 .andExpect(jsonPath("$.data.content[0].oldValue").value("라면세일조"))
                 .andExpect(jsonPath("$.data.content[0].newValue").value("카레세일조"))
+                // 거래처 상세 링크용 accountId 가 응답에 포함된다 (거래처명 링크 렌더 근거).
+                .andExpect(jsonPath("$.data.content[0].accountId").value(55))
+                .andExpect(jsonPath("$.data.content[0].accountName").value("이마트 강남점"))
         }
 
         @Test

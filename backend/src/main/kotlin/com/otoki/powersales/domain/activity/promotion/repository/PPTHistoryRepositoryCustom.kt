@@ -42,6 +42,7 @@ data class PPTHistorySearchResult(
     val employeeName: String?,
     val employeeCode: String?,
     val orgName: String?,
+    val accountId: Long?,
     val accountCode: String?,
     val accountName: String?,
 )

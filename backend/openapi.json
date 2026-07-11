@@ -1609,7 +1609,7 @@
             "type" : [ "string", "null" ]
           },
           "professionalPromotionTeam" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : [ "string", "null" ]
           },
           "role" : {
@@ -1816,7 +1816,7 @@
             "type" : [ "string", "null" ]
           },
           "professionalPromotionTeam" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : [ "string", "null" ]
           },
           "role" : {
@@ -13861,6 +13861,15 @@
             },
             "type" : "array"
           },
+          "dependentAccountTypes" : {
+            "additionalProperties" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            },
+            "type" : "object"
+          },
           "distributionChannels" : {
             "items" : {
               "type" : "string"
@@ -18794,7 +18803,7 @@
             "type" : "string"
           },
           "teamType" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : "string"
           }
         },
@@ -18850,7 +18859,7 @@
             "type" : "string"
           },
           "teamType" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : "string"
           }
         },
@@ -18889,6 +18898,10 @@
           "accountCode" : {
             "type" : [ "string", "null" ]
           },
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
           "accountName" : {
             "type" : [ "string", "null" ]
           },
@@ -18914,11 +18927,11 @@
             "type" : [ "string", "null" ]
           },
           "newValue" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : [ "string", "null" ]
           },
           "oldValue" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : [ "string", "null" ]
           },
           "orgName" : {
@@ -19018,7 +19031,7 @@
             "type" : "string"
           },
           "teamType" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : [ "string", "null" ]
           },
           "updatedAt" : {
@@ -19063,7 +19076,7 @@
             "type" : "string"
           },
           "teamType" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레행사조" ],
+            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : "string"
           }
         },
@@ -19929,10 +19942,16 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
           "branchCode" : {
             "type" : [ "string", "null" ]
           },
           "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "distributionChannel" : {
             "type" : [ "string", "null" ]
           },
           "sapAccountCode" : {
@@ -34965,17 +34984,23 @@
           }
         }, {
           "in" : "query",
-          "name" : "distributionKeyword",
+          "name" : "distributionChannels",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
-          "name" : "accountTypeKeyword",
+          "name" : "accountTypes",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
@@ -35095,17 +35120,23 @@
           }
         }, {
           "in" : "query",
-          "name" : "distributionKeyword",
+          "name" : "distributionChannels",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
-          "name" : "accountTypeKeyword",
+          "name" : "accountTypes",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
@@ -35197,17 +35228,23 @@
           }
         }, {
           "in" : "query",
-          "name" : "distributionKeyword",
+          "name" : "distributionChannels",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",
-          "name" : "accountTypeKeyword",
+          "name" : "accountTypes",
           "required" : false,
           "schema" : {
-            "type" : "string"
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           }
         }, {
           "in" : "query",

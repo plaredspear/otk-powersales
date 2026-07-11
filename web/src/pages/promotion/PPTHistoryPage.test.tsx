@@ -15,6 +15,7 @@ const sampleHistory: PPTHistory = {
   oldValue: '라면세일조',
   newValue: '카레세일조',
   changedAt: '2026-05-18T14:30:00',
+  accountId: 55,
   accountCode: 'SAP001',
   accountName: '이마트 강남점',
 };
@@ -29,7 +30,8 @@ const deletedEmployeeHistory: PPTHistory = {
   oldValue: null,
   newValue: '라면세일조',
   changedAt: '2026-05-17T09:00:00',
-  // masterId 없는 이력 — 거래처도 null.
+  // masterId 없는 이력(알라딘 마이그레이션분) — 거래처 3필드 모두 null.
+  accountId: null,
   accountCode: null,
   accountName: null,
 };
@@ -81,6 +83,22 @@ describe('PPTHistoryPage', () => {
     renderPage();
     const cells = screen.getAllByText('-');
     expect(cells.length).toBeGreaterThan(0);
+  });
+
+  it('사원명은 사원 상세 링크, 거래처명은 거래처 상세 링크로 렌더', () => {
+    renderPage();
+    // 사원명 링크 — female_employee 권한 없으면 /employee prefix (테스트 미인증 기본).
+    const employeeLink = screen.getByRole('link', { name: '백은경' });
+    expect(employeeLink).toHaveAttribute('href', '/employee/100');
+    // 거래처명 링크 — accountId 기반.
+    const accountLink = screen.getByRole('link', { name: '이마트 강남점' });
+    expect(accountLink).toHaveAttribute('href', '/account/55');
+  });
+
+  it('거래처가 없는 이력(알라딘 마이그레이션분)은 "알라딘" 으로 표기', () => {
+    renderPage();
+    // accountId/accountName 이 모두 null 인 두 번째 행은 '-' 가 아니라 '알라딘' 으로 출처를 표기.
+    expect(screen.getByText('알라딘')).toBeInTheDocument();
   });
 
   it('[조회] 버튼 클릭 시 hook params 업데이트', () => {

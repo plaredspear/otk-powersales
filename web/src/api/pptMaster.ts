@@ -205,7 +205,8 @@ export interface PPTHistory {
   oldValue: string | null;
   newValue: string;
   changedAt: string;
-  // 이력을 유발한 마스터의 거래처 — masterId 가 없는 이력(만료/삭제 해제·구 데이터)은 null.
+  // 이력을 유발한 마스터의 거래처 — masterId 가 없는 이력(만료/삭제 해제·알라딘 마이그레이션분)은 세 값 모두 null.
+  accountId: number | null;
   accountCode: string | null;
   accountName: string | null;
 }

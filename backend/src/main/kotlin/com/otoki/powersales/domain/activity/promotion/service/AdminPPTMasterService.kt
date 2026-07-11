@@ -260,7 +260,7 @@ class AdminPPTMasterService(
     /** [PPTHistorySearchResult] projection → 응답 DTO (사원 컨텍스트 + 원인 마스터 거래처 포함). */
     private fun PPTHistorySearchResult.toResponse(): PPTMasterHistoryResponse =
         PPTMasterHistoryResponse.from(
-            history, employeeName, employeeCode, orgName, accountCode, accountName
+            history, employeeName, employeeCode, orgName, accountId, accountCode, accountName
         )
 
     fun getAllHistory(

@@ -978,6 +978,7 @@ class AdminPPTMasterServiceTest {
                 employeeName = "홍길동",
                 employeeCode = "12345678",
                 orgName = "서울지점",
+                accountId = 55L,
                 accountCode = "SAP001",
                 accountName = "이마트 강남점",
             )
@@ -1069,6 +1070,7 @@ class AdminPPTMasterServiceTest {
                 employeeName = null,
                 employeeCode = null,
                 orgName = null,
+                accountId = null,
                 accountCode = null,
                 accountName = null,
             )
@@ -1140,6 +1142,7 @@ class AdminPPTMasterServiceTest {
                 employeeName = "홍길동",
                 employeeCode = "12345678",
                 orgName = "서울지점",
+                accountId = 55L,
                 accountCode = "SAP001",
                 accountName = "이마트 강남점",
             )
@@ -1351,6 +1354,7 @@ class AdminPPTMasterServiceTest {
                 employeeName = "홍길동",
                 employeeCode = "12345678",
                 orgName = "서울지점",
+                accountId = 55L,
                 accountCode = "SAP001",
                 accountName = "이마트 강남점",
             )

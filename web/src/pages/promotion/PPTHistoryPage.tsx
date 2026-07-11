@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Button, Card, DatePicker, Input, Select, Space, Tag } from 'antd';
-import { DownloadOutlined } from '@ant-design/icons';
+import { Button, Card, DatePicker, Input, Select, Space, Tag, Tooltip } from 'antd';
+import { DownloadOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs, { type Dayjs } from 'dayjs';
+import { usePermission } from '@/hooks/usePermission';
 import { usePPTHistories } from '@/hooks/promotion/usePPTHistories';
 import { usePPTBranches } from '@/hooks/promotion/usePPTBranches';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
@@ -40,6 +42,14 @@ export default function PPTHistoryPage() {
       changedAtTo: '',
     },
   });
+
+  // 전문행사조 사원은 여사원이므로 사원명 클릭 시 여사원 상세(female_employee) 로 이동한다.
+  // female_employee READ 를 우선 판정(조장 등 여사원 권한만 가진 직책 포함)하고, 전체 사원 관리(employee)
+  // 권한만 가진 관리자는 사원 상세로 진입시킨다 — URL prefix 가 상세 페이지의 권한 자원/조회 endpoint 를
+  // 결정하기 때문. (PPTMasterPage 와 동일 정책)
+  const { hasEntityPermission } = usePermission();
+  const canReadFemaleEmployee = hasEntityPermission('female_employee', 'READ');
+  const employeeDetailBasePath = canReadFemaleEmployee ? '/female-employee' : '/employee';
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트.
   //  - 다중 지점: Select 로 선택
@@ -155,7 +165,17 @@ export default function PPTHistoryPage() {
       dataIndex: 'employeeName',
       width: 100,
       align: 'center',
-      render: (val: string | null) => val ?? '-',
+      render: (val: string | null, record) =>
+        val && record.employeeId ? (
+          <Link
+            to={`${employeeDetailBasePath}/${record.employeeId}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {val}
+          </Link>
+        ) : (
+          (val ?? '-')
+        ),
     },
     {
       title: '변경 전',
@@ -182,9 +202,28 @@ export default function PPTHistoryPage() {
     {
       title: '거래처명',
       dataIndex: 'accountName',
-      width: 160,
+      width: 180,
       ellipsis: true,
-      render: (val: string | null) => val ?? '-',
+      render: (val: string | null, record) => {
+        if (val && record.accountId) {
+          return (
+            <Link to={`/account/${record.accountId}`} onClick={(e) => e.stopPropagation()}>
+              {val}
+            </Link>
+          );
+        }
+        if (val) return val;
+        // 거래처가 없는 이력은 레거시(알라딘) 마이그레이션분 — 당시 거래처를 기록하지 않아 존재하지 않는다.
+        // 사용자가 "누락"으로 오인하지 않도록 출처를 '알라딘'으로 표기하고 툴팁으로 설명한다.
+        return (
+          <Tooltip title="알라딘(레거시) 시스템에서 이관된 이력입니다. 당시 거래처 정보를 기록하지 않아 표시할 수 없습니다.">
+            <Space size={4} style={{ color: 'rgba(0, 0, 0, 0.45)' }}>
+              <span>알라딘</span>
+              <QuestionCircleOutlined />
+            </Space>
+          </Tooltip>
+        );
+      },
     },
     {
       title: '거래처코드',
