@@ -36,6 +36,8 @@ class ProductListSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasSelectedItems = items.any((item) => item.isSelected);
+    // 100개 상한 도달 시 제품 추가 차단 (바코드/추가 버튼 비활성화).
+    final canAddMore = items.length < 100;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,36 +63,36 @@ class ProductListSection extends StatelessWidget {
             ),
             const Spacer(),
             OutlinedButton.icon(
-              onPressed: onBarcodeScan,
+              onPressed: canAddMore ? onBarcodeScan : null,
               icon: const Icon(Icons.qr_code_scanner, size: 18),
               label: const Text('바코드'),
               style: OutlinedButton.styleFrom(
-                // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
-                minimumSize: Size.zero,
+                // Row 안 무한폭 제약 크래시 방지 (폭 min 0), 높이는 44px 탭영역 확보.
+                minimumSize: const Size(0, 44),
                 foregroundColor: AppColors.textPrimary,
+                disabledForegroundColor: AppColors.textTertiary,
                 side: BorderSide(color: AppColors.textSecondary),
                 shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
                 ),
-                visualDensity: VisualDensity.compact,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
             OutlinedButton.icon(
-              onPressed: onAddProduct,
+              onPressed: canAddMore ? onAddProduct : null,
               icon: const Icon(Icons.add, size: 18),
               label: const Text('추가'),
               style: OutlinedButton.styleFrom(
-                // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
-                minimumSize: Size.zero,
+                // Row 안 무한폭 제약 크래시 방지 (폭 min 0), 높이는 44px 탭영역 확보.
+                minimumSize: const Size(0, 44),
                 foregroundColor: AppColors.textPrimary,
+                disabledForegroundColor: AppColors.textTertiary,
                 side: BorderSide(color: AppColors.textSecondary),
                 shape: const StadiumBorder(),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
                 ),
-                visualDensity: VisualDensity.compact,
               ),
             ),
           ],

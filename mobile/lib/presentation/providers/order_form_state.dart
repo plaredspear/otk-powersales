@@ -139,6 +139,9 @@ class OrderFormState {
   /// 필수 입력이 완료되었는지 여부
   bool get isRequiredFieldsFilled => orderDraft.isRequiredFieldsFilled;
 
+  /// 승인요청 가능한 필수 입력 상태 (거래처/납기일/제품 + 모든 라인 수량 > 0)
+  bool get isReadyForApproval => orderDraft.isReadyForApproval;
+
   /// 유효성 에러가 있는지 여부
   bool get hasValidationErrors => validationErrors.isNotEmpty;
 

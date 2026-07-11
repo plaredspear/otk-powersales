@@ -79,6 +79,12 @@ class OrderDraft {
     return clientId != null && deliveryDate != null && items.isNotEmpty;
   }
 
+  /// 승인요청 가능한 필수 입력 상태 — 거래처/납기일/제품 + 모든 라인 수량(총EA) > 0.
+  bool get isReadyForApproval {
+    return isRequiredFieldsFilled &&
+        items.every((item) => item.totalPieces > 0);
+  }
+
   OrderDraft copyWith({
     int? id,
     int? clientId,
@@ -221,11 +227,13 @@ class OrderDraftItem {
     this.validationError,
   });
 
+  /// 총 낱개수(총EA) = (박스 × 입수) + 낱개.
+  int get totalPieces => (quantityBoxes * boxSize).round() + quantityPieces;
+
   /// 총액을 수량과 단가에서 재계산.
   /// 레거시(write.jsp fnTotalPrice / SF Get_Product_Sales_By_Account)는 금액 = 총낱개수 × 낱개단가.
   /// unitPrice 는 낱개단가(standardUnitPrice + supertax)이므로 boxSize 로 나누지 않는다.
   int get calculatedTotalPrice {
-    final totalPieces = (quantityBoxes * boxSize).round() + quantityPieces;
     return totalPieces * unitPrice;
   }
 

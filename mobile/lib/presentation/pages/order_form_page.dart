@@ -8,6 +8,7 @@ import '../providers/order_form_state.dart';
 import '../screens/barcode_scanner_screen.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../widgets/account/account_selector_field.dart';
+import '../widgets/common/single_date_picker_sheet.dart';
 import '../widgets/order_form/credit_balance_display.dart';
 import '../widgets/order_form/delivery_date_picker.dart';
 import '../widgets/order_form/delivery_date_warning_dialog.dart';
@@ -65,12 +66,12 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     DateTime? currentDate,
   ) async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
+    final picked = await SingleDatePickerSheet.show(
+      context,
       initialDate: currentDate ?? now,
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
-      locale: const Locale('ko', 'KR'),
+      title: '납기일 선택',
     );
     if (picked != null) {
       notifier.setDeliveryDate(picked);
@@ -323,7 +324,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                     onSaveDraft: () => notifier.saveDraft(),
                     onSubmit: () => notifier.validateAndSubmitOrder(),
                     isSubmitting: state.isSubmitting,
-                    hasItems: state.hasItems,
+                    requiredFieldsFilled: state.isReadyForApproval,
                     loanExceeded: state.isLoanExceeded,
                   ),
                 ],

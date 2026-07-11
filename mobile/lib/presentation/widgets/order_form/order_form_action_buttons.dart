@@ -8,7 +8,10 @@ class OrderFormActionButtons extends StatelessWidget {
   final VoidCallback onSaveDraft;
   final VoidCallback onSubmit;
   final bool isSubmitting;
-  final bool hasItems;
+
+  /// 필수 항목(거래처/납기일/제품 + 모든 라인 수량 > 0) 입력 완료 여부.
+  /// 미완료 시 승인요청 버튼을 비활성화한다.
+  final bool requiredFieldsFilled;
 
   /// 여신 한도 초과 여부 — 레거시 write.jsp:188 처럼 초과 시 승인요청을 막는다.
   final bool loanExceeded;
@@ -19,15 +22,16 @@ class OrderFormActionButtons extends StatelessWidget {
     required this.onSaveDraft,
     required this.onSubmit,
     required this.isSubmitting,
-    required this.hasItems,
+    required this.requiredFieldsFilled,
     this.loanExceeded = false,
   });
 
   @override
   Widget build(BuildContext context) {
     // 레거시 write.jsp 하단 고정 바: 삭제(회색) / 임시저장(다크) / 승인요청(옐로) 풀폭 3분할.
-    // 승인요청은 제품이 있고 제출 중이 아니며 여신 한도를 넘지 않았을 때만 활성.
-    final bool submitEnabled = !isSubmitting && hasItems && !loanExceeded;
+    // 승인요청은 필수 항목이 모두 입력되고 제출 중이 아니며 여신 한도를 넘지 않았을 때만 활성.
+    final bool submitEnabled =
+        !isSubmitting && requiredFieldsFilled && !loanExceeded;
 
     return SafeArea(
       top: false,
