@@ -123,7 +123,7 @@ class _SafetyCheckPageState extends ConsumerState<SafetyCheckPage> {
                     category: category,
                     equipmentAnswers: state.equipmentAnswers,
                     precautionChecks: state.precautionChecks,
-                    expandedItemIndex: state.expandedItemIndex,
+                    expandedSeqNums: state.expandedSeqNums,
                     onRadioSelect: (seqNum, answer) {
                       ref
                           .read(safetyCheckProvider.notifier)

@@ -141,50 +141,56 @@ void main() {
     });
 
     group('toggleExpand (아코디언)', () {
-      test('접힌 항목을 펼친다', () async {
+      test('로딩 직후 RADIO 항목 전체가 펼쳐진 상태다', () async {
         mockRepository.categoriesToReturn = testCategories;
         await notifier.fetchItems();
 
-        notifier.toggleExpand(1);
-        expect(notifier.state.expandedItemIndex, 1);
+        expect(notifier.state.expandedSeqNums, {1, 2, 3});
       });
 
-      test('펼쳐진 항목을 다시 탭하면 접는다', () async {
+      test('펼쳐진 항목을 탭하면 접는다', () async {
         mockRepository.categoriesToReturn = testCategories;
         await notifier.fetchItems();
 
         notifier.toggleExpand(1);
-        notifier.toggleExpand(1);
-        expect(notifier.state.expandedItemIndex, isNull);
+        expect(notifier.state.expandedSeqNums.contains(1), false);
       });
 
-      test('다른 항목을 탭하면 기존 항목이 접히고 새 항목이 펼쳐진다', () async {
+      test('접힌 항목을 다시 탭하면 펼친다', () async {
         mockRepository.categoriesToReturn = testCategories;
         await notifier.fetchItems();
 
-        notifier.toggleExpand(1);
-        expect(notifier.state.expandedItemIndex, 1);
+        notifier.toggleExpand(1); // 접힘
+        notifier.toggleExpand(1); // 다시 펼침
+        expect(notifier.state.expandedSeqNums.contains(1), true);
+      });
 
-        notifier.toggleExpand(3);
-        expect(notifier.state.expandedItemIndex, 3);
+      test('여러 항목이 동시에 펼쳐진 상태를 유지한다', () async {
+        mockRepository.categoriesToReturn = testCategories;
+        await notifier.fetchItems();
+
+        // 기본으로 1,2,3 모두 펼침 → 1만 접어도 2,3은 그대로
+        notifier.toggleExpand(1);
+        expect(notifier.state.expandedSeqNums, {2, 3});
       });
     });
 
-    test('setEquipmentAnswer 후 300ms 뒤 자동 접힘', () async {
+    test('setEquipmentAnswer 후 300ms 뒤 해당 항목만 자동 접힘', () async {
       mockRepository.categoriesToReturn = testCategories;
       await notifier.fetchItems();
 
-      notifier.toggleExpand(1);
-      expect(notifier.state.expandedItemIndex, 1);
+      // 기본 펼침 상태: {1, 2, 3}
+      expect(notifier.state.expandedSeqNums.contains(1), true);
 
       notifier.setEquipmentAnswer(1, '예');
       expect(notifier.state.equipmentAnswers[1], '예');
       // 아직 펼쳐진 상태
-      expect(notifier.state.expandedItemIndex, 1);
+      expect(notifier.state.expandedSeqNums.contains(1), true);
 
-      // 300ms 후 접힘
+      // 300ms 후 응답한 항목만 접힘, 나머지는 유지
       await Future.delayed(const Duration(milliseconds: 350));
-      expect(notifier.state.expandedItemIndex, isNull);
+      expect(notifier.state.expandedSeqNums.contains(1), false);
+      expect(notifier.state.expandedSeqNums, {2, 3});
     });
 
     test('submit 성공 시 제출 완료 상태', () async {

@@ -58,21 +58,22 @@ class SafetyCheckNotifier extends StateNotifier<SafetyCheckState> {
     }
   }
 
-  /// 아코디언 토글: 항목 탭 시 펼침/접힘
+  /// 아코디언 토글: 항목 탭 시 펼침/접힘 (여러 항목 동시 펼침 허용)
   void toggleExpand(int seqNum) {
-    if (state.expandedItemIndex == seqNum) {
-      state = state.copyWith(clearExpandedItemIndex: true);
-    } else {
-      state = state.copyWith(expandedItemIndex: seqNum);
+    final next = Set<int>.from(state.expandedSeqNums);
+    if (!next.remove(seqNum)) {
+      next.add(seqNum);
     }
+    state = state.copyWith(expandedSeqNums: next);
   }
 
-  /// 섹션 1: 장비 라디오 응답 설정 + 300ms 후 자동 접힘
+  /// 섹션 1: 장비 라디오 응답 설정 + 300ms 후 해당 항목 자동 접힘
   void setEquipmentAnswer(int seqNum, String answer) {
     state = state.setEquipmentAnswer(seqNum, answer);
     Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted && state.expandedItemIndex == seqNum) {
-        state = state.copyWith(clearExpandedItemIndex: true);
+      if (mounted && state.expandedSeqNums.contains(seqNum)) {
+        final next = Set<int>.from(state.expandedSeqNums)..remove(seqNum);
+        state = state.copyWith(expandedSeqNums: next);
       }
     });
   }

@@ -14,8 +14,8 @@ class SafetyCheckCategorySection extends StatelessWidget {
   /// 섹션 2: 예방사항 체크박스 (seqNum → checked)
   final Map<int, bool> precautionChecks;
 
-  /// 현재 펼쳐진 항목의 seqNum (아코디언용)
-  final int? expandedItemIndex;
+  /// 현재 펼쳐진 항목의 seqNum 집합 (아코디언용, 다중 펼침 허용)
+  final Set<int> expandedSeqNums;
 
   /// 라디오 선택 콜백
   final void Function(int seqNum, String answer)? onRadioSelect;
@@ -31,7 +31,7 @@ class SafetyCheckCategorySection extends StatelessWidget {
     required this.category,
     this.equipmentAnswers = const {},
     this.precautionChecks = const {},
-    this.expandedItemIndex,
+    this.expandedSeqNums = const {},
     this.onRadioSelect,
     this.onCheckboxToggle,
     this.onToggleExpand,
@@ -87,7 +87,7 @@ class SafetyCheckCategorySection extends StatelessWidget {
               displayNumber: entry.key + 1,
               selectedAnswer: equipmentAnswers[entry.value.seqNum],
               options: category.options ?? ['예', '해당없음'],
-              isExpanded: expandedItemIndex == entry.value.seqNum,
+              isExpanded: expandedSeqNums.contains(entry.value.seqNum),
               onTap: () => onToggleExpand?.call(entry.value.seqNum),
               onSelect: (seqNum, answer) {
                 onRadioSelect?.call(seqNum, answer);

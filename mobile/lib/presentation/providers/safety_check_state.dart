@@ -10,8 +10,9 @@ class SafetyCheckState {
   /// 섹션 2: 예방사항 체크박스 (seqNum → checked)
   final Map<int, bool> precautionChecks;
 
-  /// 현재 펼쳐진 질문1 항목의 seqNum (null이면 모두 접힘)
-  final int? expandedItemIndex;
+  /// 현재 펼쳐진 질문1 항목의 seqNum 집합 (비어 있으면 모두 접힘).
+  /// 초기 로딩 시 장비(RADIO) 항목 전체가 펼쳐진 상태로 시작한다.
+  final Set<int> expandedSeqNums;
 
   /// 화면 진입 시각
   final DateTime? startTime;
@@ -25,7 +26,7 @@ class SafetyCheckState {
     this.categories,
     this.equipmentAnswers = const {},
     this.precautionChecks = const {},
-    this.expandedItemIndex,
+    this.expandedSeqNums = const {},
     this.startTime,
     this.isLoading = false,
     this.isSubmitting = false,
@@ -37,11 +38,21 @@ class SafetyCheckState {
     return SafetyCheckState(startTime: DateTime.now());
   }
 
+  /// 장비(RADIO) 항목 전체 seqNum — 초기 펼침 상태 계산용
+  static Set<int> _defaultExpandedSeqNums(List<SafetyCheckCategory> data) {
+    return {
+      for (final category in data)
+        if (category.inputType == 'RADIO')
+          for (final item in category.items) item.seqNum,
+    };
+  }
+
   SafetyCheckState toLoading() {
     return SafetyCheckState(
       categories: categories,
       equipmentAnswers: equipmentAnswers,
       precautionChecks: precautionChecks,
+      expandedSeqNums: expandedSeqNums,
       startTime: startTime,
       isLoading: true,
     );
@@ -52,6 +63,8 @@ class SafetyCheckState {
       categories: data,
       equipmentAnswers: const {},
       precautionChecks: const {},
+      // 초기값: 장비 항목 전체를 펼친 상태로 시작
+      expandedSeqNums: _defaultExpandedSeqNums(data),
       startTime: startTime,
     );
   }
@@ -61,6 +74,7 @@ class SafetyCheckState {
       categories: categories,
       equipmentAnswers: equipmentAnswers,
       precautionChecks: precautionChecks,
+      expandedSeqNums: expandedSeqNums,
       startTime: startTime,
       errorMessage: message,
     );
@@ -71,6 +85,7 @@ class SafetyCheckState {
       categories: categories,
       equipmentAnswers: equipmentAnswers,
       precautionChecks: precautionChecks,
+      expandedSeqNums: expandedSeqNums,
       startTime: startTime,
       isSubmitting: true,
     );
@@ -81,6 +96,7 @@ class SafetyCheckState {
       categories: categories,
       equipmentAnswers: equipmentAnswers,
       precautionChecks: precautionChecks,
+      expandedSeqNums: expandedSeqNums,
       startTime: startTime,
       isSubmitted: true,
     );
@@ -94,7 +110,7 @@ class SafetyCheckState {
       categories: categories,
       equipmentAnswers: newAnswers,
       precautionChecks: precautionChecks,
-      expandedItemIndex: expandedItemIndex,
+      expandedSeqNums: expandedSeqNums,
       startTime: startTime,
       isLoading: isLoading,
       isSubmitting: isSubmitting,
@@ -111,7 +127,7 @@ class SafetyCheckState {
       categories: categories,
       equipmentAnswers: equipmentAnswers,
       precautionChecks: newChecks,
-      expandedItemIndex: expandedItemIndex,
+      expandedSeqNums: expandedSeqNums,
       startTime: startTime,
       isLoading: isLoading,
       isSubmitting: isSubmitting,
@@ -142,8 +158,7 @@ class SafetyCheckState {
     List<SafetyCheckCategory>? categories,
     Map<int, String>? equipmentAnswers,
     Map<int, bool>? precautionChecks,
-    int? expandedItemIndex,
-    bool clearExpandedItemIndex = false,
+    Set<int>? expandedSeqNums,
     DateTime? startTime,
     bool? isLoading,
     bool? isSubmitting,
@@ -154,9 +169,7 @@ class SafetyCheckState {
       categories: categories ?? this.categories,
       equipmentAnswers: equipmentAnswers ?? this.equipmentAnswers,
       precautionChecks: precautionChecks ?? this.precautionChecks,
-      expandedItemIndex: clearExpandedItemIndex
-          ? null
-          : (expandedItemIndex ?? this.expandedItemIndex),
+      expandedSeqNums: expandedSeqNums ?? this.expandedSeqNums,
       startTime: startTime ?? this.startTime,
       isLoading: isLoading ?? this.isLoading,
       isSubmitting: isSubmitting ?? this.isSubmitting,

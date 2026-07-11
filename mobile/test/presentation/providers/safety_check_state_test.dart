@@ -39,7 +39,7 @@ void main() {
         expect(state.categories, isNull);
         expect(state.equipmentAnswers, isEmpty);
         expect(state.precautionChecks, isEmpty);
-        expect(state.expandedItemIndex, isNull);
+        expect(state.expandedSeqNums, isEmpty);
         expect(state.startTime, isNotNull);
         expect(state.isLoading, false);
         expect(state.isSubmitting, false);
@@ -114,24 +114,25 @@ void main() {
       });
     });
 
-    group('expandedItemIndex (아코디언)', () {
-      test('copyWith으로 expandedItemIndex를 설정한다', () {
-        final state = SafetyCheckState.initial().copyWith(expandedItemIndex: 3);
-        expect(state.expandedItemIndex, 3);
+    group('expandedSeqNums (아코디언)', () {
+      test('toLoaded는 RADIO 항목 전체를 펼친 상태로 초기화한다', () {
+        final state =
+            SafetyCheckState.initial().toLoaded(TestData.testCategories);
+        // section1(RADIO) 항목 seqNum 1, 2 만 포함, section2(CHECKBOX)는 제외
+        expect(state.expandedSeqNums, {1, 2});
       });
 
-      test('clearExpandedItemIndex로 null로 초기화한다', () {
-        final state = SafetyCheckState.initial()
-            .copyWith(expandedItemIndex: 3)
-            .copyWith(clearExpandedItemIndex: true);
-        expect(state.expandedItemIndex, isNull);
+      test('copyWith으로 expandedSeqNums를 설정한다', () {
+        final state =
+            SafetyCheckState.initial().copyWith(expandedSeqNums: {3});
+        expect(state.expandedSeqNums, {3});
       });
 
-      test('다른 상태 전환 시 expandedItemIndex가 유지된다', () {
+      test('다른 상태 전환 시 expandedSeqNums가 유지된다', () {
         final state = SafetyCheckState.initial()
-            .copyWith(expandedItemIndex: 5)
+            .copyWith(expandedSeqNums: {5})
             .setEquipmentAnswer(1, '예');
-        expect(state.expandedItemIndex, 5);
+        expect(state.expandedSeqNums, {5});
       });
     });
 
