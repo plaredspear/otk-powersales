@@ -615,6 +615,7 @@ class AdminPPTMasterService(
         if (newTeamType != null) {
             pptHistoryRepository.save(
                 ProfessionalPromotionTeamHistory(
+                    name = generateHistoryName(),
                     employeeId = employee.id,
                     masterId = masterId,
                     oldValue = oldValue,
@@ -622,6 +623,11 @@ class AdminPPTMasterService(
                 )
             )
         }
+    }
+
+    private fun generateHistoryName(): String {
+        val seq = pptHistoryRepository.getNextNameSeq()
+        return "PH" + String.format("%07d", seq)
     }
 
     private fun validateBulkItem(

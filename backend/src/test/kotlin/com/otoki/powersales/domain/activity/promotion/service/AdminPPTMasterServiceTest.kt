@@ -71,6 +71,8 @@ class AdminPPTMasterServiceTest {
         )
         // 마스터 번호(name) 채번 시퀀스 — 별도 지정 없으면 1 반환 (PM0000001)
         every { pptMasterRepository.getNextNameSeq() } returns 1L
+        // 이력 번호(name) 채번 시퀀스 — 별도 지정 없으면 1 반환 (PH0000001)
+        every { pptHistoryRepository.getNextNameSeq() } returns 1L
     }
 
     private fun createEmployee(
@@ -835,6 +837,39 @@ class AdminPPTMasterServiceTest {
             service.createMaster(request)
 
             verify { teamMemberScheduleRepository.deleteFutureWorkSchedulesByEmployeeId(1L, today) }
+        }
+
+        @Test
+        @DisplayName("성공 - 이력 생성 시 name(PH+7자리) 채번 (SF AutoNumber PH{0000000} 정합)")
+        fun updateEmployeeTeam_generatesHistoryName() {
+            val today = LocalDate.now()
+            val request = PPTMasterCreateRequest(
+                employeeId = 1L, accountId = 1, teamType = ProfessionalPromotionTeamType.RAMEN_SALE,
+                startDate = today, isConfirmed = true
+            )
+            val employee = createEmployee(professionalPromotionTeam = null)
+            every { employeeRepository.findById(1L) } returns Optional.of(employee)
+            every { accountRepository.findById(1) } returns Optional.of(createAccount())
+            every {
+                pptMasterRepository.findValidMastersByEmployeeIdAndTeamType(any(), any(), any(), any(), any())
+            } returns emptyList()
+            every { pptMasterRepository.findByEmployeeIdAndEndDateIsNull(1L) } returns emptyList()
+            every {
+                pptMasterRepository.save(any<ProfessionalPromotionTeamMaster>())
+            } answers { firstArg() }
+            every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+            // 이력 채번 시퀀스가 17650 반환 → name = PH0017650 (7자리 zero-pad)
+            every { pptHistoryRepository.getNextNameSeq() } returns 17650L
+            val historySlot = slot<ProfessionalPromotionTeamHistory>()
+            every {
+                pptHistoryRepository.save(capture(historySlot))
+            } answers { firstArg() }
+            stubTeamMemberScheduleDelete()
+
+            service.createMaster(request)
+
+            verify { pptHistoryRepository.getNextNameSeq() }
+            assertThat(historySlot.captured.name).isEqualTo("PH0017650")
         }
 
         @Test
