@@ -237,6 +237,12 @@ class ClientOrderDetail {
   /// 총 승인 금액 (원)
   final int? totalApprovedAmount;
 
+  /// 주문자명 (주문 등록 사원)
+  final String? ordererName;
+
+  /// 주문자 사번
+  final String? ordererCode;
+
   /// 주문한 제품 수
   final int orderedItemCount;
 
@@ -251,6 +257,8 @@ class ClientOrderDetail {
     this.orderDate,
     this.deliveryDate,
     this.totalApprovedAmount,
+    this.ordererName,
+    this.ordererCode,
     required this.orderedItemCount,
     required this.orderedItems,
   });
@@ -263,6 +271,8 @@ class ClientOrderDetail {
     DateTime? orderDate,
     DateTime? deliveryDate,
     int? totalApprovedAmount,
+    String? ordererName,
+    String? ordererCode,
     int? orderedItemCount,
     List<ClientOrderItem>? orderedItems,
   }) {
@@ -274,6 +284,8 @@ class ClientOrderDetail {
       orderDate: orderDate ?? this.orderDate,
       deliveryDate: deliveryDate ?? this.deliveryDate,
       totalApprovedAmount: totalApprovedAmount ?? this.totalApprovedAmount,
+      ordererName: ordererName ?? this.ordererName,
+      ordererCode: ordererCode ?? this.ordererCode,
       orderedItemCount: orderedItemCount ?? this.orderedItemCount,
       orderedItems: orderedItems ?? this.orderedItems,
     );
@@ -288,6 +300,8 @@ class ClientOrderDetail {
       'orderDate': orderDate?.toIso8601String(),
       'deliveryDate': deliveryDate?.toIso8601String(),
       'totalApprovedAmount': totalApprovedAmount,
+      'ordererName': ordererName,
+      'ordererCode': ordererCode,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
     };
@@ -306,6 +320,8 @@ class ClientOrderDetail {
           ? DateTime.parse(json['deliveryDate'] as String)
           : null,
       totalApprovedAmount: json['totalApprovedAmount'] as int?,
+      ordererName: json['ordererName'] as String?,
+      ordererCode: json['ordererCode'] as String?,
       orderedItemCount: json['orderedItemCount'] as int,
       orderedItems: (json['orderedItems'] as List<dynamic>)
           .map((e) => ClientOrderItem.fromJson(e as Map<String, dynamic>))
@@ -324,6 +340,8 @@ class ClientOrderDetail {
     if (other.orderDate != orderDate) return false;
     if (other.deliveryDate != deliveryDate) return false;
     if (other.totalApprovedAmount != totalApprovedAmount) return false;
+    if (other.ordererName != ordererName) return false;
+    if (other.ordererCode != ordererCode) return false;
     if (other.orderedItemCount != orderedItemCount) return false;
     if (other.orderedItems.length != orderedItems.length) return false;
     for (var i = 0; i < orderedItems.length; i++) {
@@ -342,6 +360,8 @@ class ClientOrderDetail {
       orderDate,
       deliveryDate,
       totalApprovedAmount,
+      ordererName,
+      ordererCode,
       orderedItemCount,
       Object.hashAll(orderedItems),
     );

@@ -35,6 +35,14 @@ class ClientOrderInfoHeader extends StatelessWidget {
     return '$name ($deadline 마감)';
   }
 
+  String _formatOrderer(ClientOrderDetail detail) {
+    final name = detail.ordererName;
+    if (name == null || name.isEmpty) return '-';
+    final code = detail.ordererCode;
+    if (code == null || code.isEmpty) return name;
+    return '$name ($code)';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -76,6 +84,26 @@ class ClientOrderInfoHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   _formatClient(detail),
+                  style: AppTypography.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              SizedBox(
+                width: 80,
+                child: Text(
+                  '주문자',
+                  style: AppTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  _formatOrderer(detail),
                   style: AppTypography.bodyMedium,
                 ),
               ),

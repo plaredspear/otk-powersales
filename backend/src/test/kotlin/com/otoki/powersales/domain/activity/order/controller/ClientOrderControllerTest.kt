@@ -112,6 +112,8 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                 orderDate = LocalDate.of(2026, 5, 4),
                 deliveryDate = LocalDate.of(2026, 5, 6),
                 totalApprovedAmount = BigDecimal.valueOf(1_250_000L),
+                ordererName = "김영업",
+                ordererCode = "E12345",
                 orderedItemCount = 1,
                 orderedItems = listOf(
                     ClientOrderItemResponse(
@@ -136,6 +138,8 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.sapAccountCode").value("0001234567"))
                 .andExpect(jsonPath("$.data.sapAccountName").value("홍길동마트"))
                 .andExpect(jsonPath("$.data.clientDeadlineTime").value("13:50"))
+                .andExpect(jsonPath("$.data.ordererName").value("김영업"))
+                .andExpect(jsonPath("$.data.ordererCode").value("E12345"))
                 .andExpect(jsonPath("$.data.orderedItemCount").value(1))
                 .andExpect(jsonPath("$.data.orderedItems[0].productCode").value("P001"))
                 .andExpect(jsonPath("$.data.orderedItems[0].deliveredQuantity").value("10 BOX"))

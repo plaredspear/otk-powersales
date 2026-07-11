@@ -203,6 +203,8 @@ class ClientOrderDetailModel {
   final String? orderDate;
   final String? deliveryDate;
   final int? totalApprovedAmount;
+  final String? ordererName;
+  final String? ordererCode;
   final int orderedItemCount;
   final List<ClientOrderItemModel> orderedItems;
 
@@ -214,6 +216,8 @@ class ClientOrderDetailModel {
     this.orderDate,
     this.deliveryDate,
     this.totalApprovedAmount,
+    this.ordererName,
+    this.ordererCode,
     required this.orderedItemCount,
     required this.orderedItems,
   });
@@ -232,6 +236,8 @@ class ClientOrderDetailModel {
       orderDate: data['orderDate'] as String?,
       deliveryDate: data['deliveryDate'] as String?,
       totalApprovedAmount: (data['totalApprovedAmount'] as num?)?.toInt(),
+      ordererName: data['ordererName'] as String?,
+      ordererCode: data['ordererCode'] as String?,
       orderedItemCount: (data['orderedItemCount'] as num).toInt(),
       orderedItems: itemsJson
           .map((e) =>
@@ -249,6 +255,8 @@ class ClientOrderDetailModel {
       'orderDate': orderDate,
       'deliveryDate': deliveryDate,
       'totalApprovedAmount': totalApprovedAmount,
+      'ordererName': ordererName,
+      'ordererCode': ordererCode,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
     };
@@ -264,6 +272,8 @@ class ClientOrderDetailModel {
       deliveryDate:
           deliveryDate != null ? DateTime.parse(deliveryDate!) : null,
       totalApprovedAmount: totalApprovedAmount,
+      ordererName: ordererName,
+      ordererCode: ordererCode,
       orderedItemCount: orderedItemCount,
       orderedItems: orderedItems.map((e) => e.toEntity()).toList(),
     );
@@ -278,6 +288,8 @@ class ClientOrderDetailModel {
       orderDate: entity.orderDate?.toIso8601String().split('T')[0],
       deliveryDate: entity.deliveryDate?.toIso8601String().split('T')[0],
       totalApprovedAmount: entity.totalApprovedAmount,
+      ordererName: entity.ordererName,
+      ordererCode: entity.ordererCode,
       orderedItemCount: entity.orderedItemCount,
       orderedItems: entity.orderedItems
           .map((e) => ClientOrderItemModel.fromEntity(e))
@@ -296,6 +308,8 @@ class ClientOrderDetailModel {
     if (other.orderDate != orderDate) return false;
     if (other.deliveryDate != deliveryDate) return false;
     if (other.totalApprovedAmount != totalApprovedAmount) return false;
+    if (other.ordererName != ordererName) return false;
+    if (other.ordererCode != ordererCode) return false;
     if (other.orderedItemCount != orderedItemCount) return false;
     if (other.orderedItems.length != orderedItems.length) return false;
     for (var i = 0; i < orderedItems.length; i++) {
@@ -314,6 +328,8 @@ class ClientOrderDetailModel {
       orderDate,
       deliveryDate,
       totalApprovedAmount,
+      ordererName,
+      ordererCode,
       orderedItemCount,
       Object.hashAll(orderedItems),
     );

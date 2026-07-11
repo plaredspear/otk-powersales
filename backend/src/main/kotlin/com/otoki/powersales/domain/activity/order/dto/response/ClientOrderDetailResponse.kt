@@ -24,6 +24,8 @@ data class ClientOrderDetailResponse(
     val orderDate: LocalDate?,
     val deliveryDate: LocalDate?,
     val totalApprovedAmount: BigDecimal?,
+    val ordererName: String?,
+    val ordererCode: String?,
     val orderedItemCount: Int,
     val orderedItems: List<ClientOrderItemResponse>
 ) {
@@ -44,6 +46,9 @@ data class ClientOrderDetailResponse(
                 orderDate = order.orderDate,
                 deliveryDate = order.deliveryRequestDate,
                 totalApprovedAmount = order.orderSalesAmount,
+                // 주문자(사원) — 거래처별 주문은 담당자 무관 전체 노출이라 라인마다 주문자가 다를 수 있어 헤더에 명시.
+                ordererName = order.employeeName,
+                ordererCode = order.employeeCode,
                 orderedItemCount = items.size,
                 orderedItems = items
             )
