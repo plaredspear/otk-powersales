@@ -105,17 +105,19 @@ class AttendInfoToScheduleConverter(
                     val toSave = mutableListOf<TeamMemberSchedule>()
                     var date: LocalDate = startDate
                     while (!date.isAfter(endDate)) {
-                        if (teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
-                                employee, date, ANNUAL_LEAVE_TYPE
-                            )
-                        ) {
+                        val existing = teamMemberScheduleRepository
+                            .findByEmployeeAndWorkingDateAndWorkingType(employee, date, ANNUAL_LEAVE_TYPE)
+                        if (existing != null) {
+                            // 이미 존재하는 연차 일정은 신규 생성하지 않되(멱등), 파생 원본을 최신 AttendInfo 로 재링크.
+                            existing.attendInfo = record
                             skippedIdempotent++
                         } else {
                             toSave += TeamMemberSchedule(
                                 employee = employee,
                                 workingDate = date,
                                 workingType = ANNUAL_LEAVE_TYPE,
-                                ownerUser = employee.costCenterCode?.let { ownerByCostCenterCode[it] }
+                                ownerUser = employee.costCenterCode?.let { ownerByCostCenterCode[it] },
+                                attendInfo = record
                             )
                         }
                         date = date.plusDays(1)

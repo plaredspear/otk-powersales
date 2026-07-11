@@ -81,21 +81,18 @@ class AttendInfoToScheduleConverterTest {
         @DisplayName("정상 변환 (Status='N') - 3일 범위, converted=3")
         fun convert_status_N_threeDays() {
             val emp = employee()
+            val source = attendInfo(id = 77L, startDate = "20260427", endDate = "20260429", status = "N")
             every { employeeRepository.findByEmployeeCodeIn(listOf("100123")) } returns listOf(emp)
             every {
-                teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
+                teamMemberScheduleRepository.findByEmployeeAndWorkingDateAndWorkingType(
                     eq(emp), any(), eq(WorkingType.ANNUAL_LEAVE)
                 )
-            } returns false
+            } returns null
             every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
                 firstArg<List<TeamMemberSchedule>>()
             }
 
-            val result = converter.convert(
-                listOf(
-                    attendInfo(startDate = "20260427", endDate = "20260429", status = "N")
-                )
-            )
+            val result = converter.convert(listOf(source))
 
             assertThat(result.convertedScheduleCount).isEqualTo(3)
             assertThat(result.deletedScheduleCount).isEqualTo(0)
@@ -110,6 +107,8 @@ class AttendInfoToScheduleConverterTest {
                 LocalDate.of(2026, 4, 29)
             )
             assertThat(saved).allMatch { it.workingType == WorkingType.ANNUAL_LEAVE && it.employee == emp }
+            // 신규 생성 일정은 파생 원본 AttendInfo 로 링크된다.
+            assertThat(saved).allMatch { it.attendInfo === source }
         }
 
         @Test
@@ -155,8 +154,8 @@ class AttendInfoToScheduleConverterTest {
             val emp = employee()
             every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
             every {
-                teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
-            } returns false
+                teamMemberScheduleRepository.findByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
+            } returns null
             every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
                 firstArg<List<TeamMemberSchedule>>()
             }
@@ -179,30 +178,34 @@ class AttendInfoToScheduleConverterTest {
         }
 
         @Test
-        @DisplayName("멱등성 - 이미 존재하는 일정은 skipped_idempotent 증가")
+        @DisplayName("멱등성 - 이미 존재하는 일정은 skipped_idempotent 증가 + 최신 AttendInfo 로 재링크")
         fun idempotent_skip() {
             val emp = employee()
+            val source = attendInfo(id = 99L, startDate = "20260427", endDate = "20260428", status = "N")
+            val existing = TeamMemberSchedule().apply {
+                workingDate = LocalDate.of(2026, 4, 27); workingType = WorkingType.ANNUAL_LEAVE; this.employee = emp
+            }
             every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
             every {
-                teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
+                teamMemberScheduleRepository.findByEmployeeAndWorkingDateAndWorkingType(
                     eq(emp), eq(LocalDate.of(2026, 4, 27)), eq(WorkingType.ANNUAL_LEAVE)
                 )
-            } returns true
+            } returns existing
             every {
-                teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(
+                teamMemberScheduleRepository.findByEmployeeAndWorkingDateAndWorkingType(
                     eq(emp), eq(LocalDate.of(2026, 4, 28)), eq(WorkingType.ANNUAL_LEAVE)
                 )
-            } returns false
+            } returns null
             every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
                 firstArg<List<TeamMemberSchedule>>()
             }
 
-            val result = converter.convert(
-                listOf(attendInfo(startDate = "20260427", endDate = "20260428", status = "N"))
-            )
+            val result = converter.convert(listOf(source))
 
             assertThat(result.convertedScheduleCount).isEqualTo(1)
             assertThat(result.skippedIdempotent).isEqualTo(1)
+            // 이미 존재하던 4/27 일정은 신규 생성 대신 최신 AttendInfo 로 재링크(dirty checking flush).
+            assertThat(existing.attendInfo).isSameAs(source)
         }
     }
 
@@ -338,8 +341,8 @@ class AttendInfoToScheduleConverterTest {
             val emp = employee(employeeCode = "100123")
             every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
             every {
-                teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
-            } returns false
+                teamMemberScheduleRepository.findByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
+            } returns null
             every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
                 firstArg<List<TeamMemberSchedule>>()
             }
@@ -391,8 +394,8 @@ class AttendInfoToScheduleConverterTest {
             val emp = employee()
             every { employeeRepository.findByEmployeeCodeIn(any()) } returns listOf(emp)
             every {
-                teamMemberScheduleRepository.existsByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
-            } returns false
+                teamMemberScheduleRepository.findByEmployeeAndWorkingDateAndWorkingType(any(), any(), any())
+            } returns null
             every { teamMemberScheduleRepository.saveAll(any<List<TeamMemberSchedule>>()) } answers {
                 firstArg<List<TeamMemberSchedule>>()
             }

@@ -76,6 +76,13 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     fun existsByEmployeeAndWorkingDateAndWorkingType(employee: Employee, workingDate: LocalDate, workingType: WorkingType): Boolean
 
     /**
+     * Spec #553 - SAP attend_info Status='N' 분기 멱등 처리용 단건 조회.
+     * `(employee, working_date, working_type='연차')` 응용 레벨 유일 키. 이미 존재하는 연차 일정을
+     * 최신 AttendInfo 로 재링크(attend_info FK 갱신)할 때 사용한다.
+     */
+    fun findByEmployeeAndWorkingDateAndWorkingType(employee: Employee, workingDate: LocalDate, workingType: WorkingType): TeamMemberSchedule?
+
+    /**
      * Spec #553 - SAP attend_info Status='Y' 분기에서 동일 직원·기간·workingType 일정 일괄 삭제 대상 조회.
      */
     fun findAllByEmployeeAndWorkingDateBetweenAndWorkingType(

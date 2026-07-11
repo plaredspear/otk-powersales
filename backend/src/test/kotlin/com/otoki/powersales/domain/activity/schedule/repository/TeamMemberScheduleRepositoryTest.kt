@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.activity.schedule.entity.AttendInfo
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
@@ -870,6 +871,82 @@ class TeamMemberScheduleRepositoryTest {
             )
 
             assertThat(result.content.map { it.employeeCode }).containsExactly("M1")
+        }
+    }
+
+    @Nested
+    @DisplayName("attendInfo FK - 연차 일정 → AttendInfo 링크 매핑")
+    inner class AttendInfoFkMapping {
+
+        private fun persistAttendInfo(employeeCode: String): AttendInfo =
+            testEntityManager.persistAndFlush(
+                AttendInfo(
+                    employeeCode = employeeCode,
+                    startDate = "20260427",
+                    endDate = "20260427",
+                    attendType = "14",
+                    status = "N",
+                )
+            )
+
+        @Test
+        @DisplayName("attendInfo 를 링크한 연차 일정을 persist 하면 attend_info_id FK 가 저장·재조회된다")
+        fun persistAndReadAttendInfoFk() {
+            val attendInfo = persistAttendInfo("EMP001")
+            val schedule = TeamMemberSchedule(
+                employee = testEmployee,
+                workingDate = LocalDate.of(2026, 4, 27),
+                workingType = WorkingType.ANNUAL_LEAVE,
+                attendInfo = attendInfo,
+            )
+            val savedId = testEntityManager.persistAndFlush(schedule).id
+            testEntityManager.clear()
+
+            val reloaded = teamMemberScheduleRepository.findById(savedId).orElseThrow()
+            assertThat(reloaded.attendInfo).isNotNull
+            assertThat(reloaded.attendInfo!!.id).isEqualTo(attendInfo.id)
+        }
+
+        @Test
+        @DisplayName("기존 연차 일정의 attendInfo 를 최신 AttendInfo 로 재링크하면 dirty checking 으로 UPDATE 된다")
+        fun relinkAttendInfoUpdatesFk() {
+            val first = persistAttendInfo("EMP001")
+            val schedule = TeamMemberSchedule(
+                employee = testEmployee,
+                workingDate = LocalDate.of(2026, 4, 27),
+                workingType = WorkingType.ANNUAL_LEAVE,
+                attendInfo = first,
+            )
+            val savedId = testEntityManager.persistAndFlush(schedule).id
+            testEntityManager.clear()
+
+            // 최신 AttendInfo 로 재링크 (converter STATUS_NEW 멱등 분기 동작 재현).
+            val second = persistAttendInfo("EMP001")
+            val managed = teamMemberScheduleRepository.findById(savedId).orElseThrow()
+            managed.attendInfo = second
+            testEntityManager.flush()
+            testEntityManager.clear()
+
+            val reloaded = teamMemberScheduleRepository.findById(savedId).orElseThrow()
+            assertThat(reloaded.attendInfo!!.id).isEqualTo(second.id)
+        }
+
+        @Test
+        @DisplayName("findByEmployeeAndWorkingDateAndWorkingType - 멱등 단건 조회로 기존 연차 일정을 찾는다")
+        fun findSingleForIdempotency() {
+            val schedule = TeamMemberSchedule(
+                employee = testEmployee,
+                workingDate = LocalDate.of(2026, 4, 27),
+                workingType = WorkingType.ANNUAL_LEAVE,
+            )
+            testEntityManager.persistAndFlush(schedule)
+            testEntityManager.clear()
+
+            val found = teamMemberScheduleRepository.findByEmployeeAndWorkingDateAndWorkingType(
+                testEmployee, LocalDate.of(2026, 4, 27), WorkingType.ANNUAL_LEAVE
+            )
+            assertThat(found).isNotNull
+            assertThat(found!!.workingType).isEqualTo(WorkingType.ANNUAL_LEAVE)
         }
     }
 }

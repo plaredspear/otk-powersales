@@ -360,6 +360,16 @@ class TeamMemberSchedule(
     @JoinColumn(name = "attendance_log_id")
     var attendanceLog: AttendanceLog? = null,
 
+    /**
+     * 연차 일정을 파생시킨 SAP 근태정보(AttendInfo) 링크.
+     * SAP 인바운드(`AttendInfoToScheduleConverter`) 가 연차류 근태를 날짜별 일정으로 펼칠 때 원본 AttendInfo 를 가리킨다 (1 AttendInfo → N schedule).
+     * SF 원본에 두 오브젝트 간 lookup 이 없어 SF sfid resolve 대상이 아니므로 `attend_info_sfid` 컬럼은 두지 않는다 (신규 인바운드 forward 채우기 전용).
+     * 연차 외 경로(진열/행사/출근 등)로 생성된 일정은 NULL.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "attend_info_id")
+    var attendInfo: AttendInfo? = null,
+
     ) : BaseEntity() {
 
     // -- Spec #762 Formula 컬럼 7건 computed property 재현 (§6.7 entity 컬럼 추가 금지 정책 정합) --
