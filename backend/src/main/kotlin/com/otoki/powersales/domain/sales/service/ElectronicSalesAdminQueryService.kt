@@ -276,6 +276,8 @@ class ElectronicSalesAdminQueryService(
                 accountId = account.id,
                 accountName = account.name,
                 sapAccountCode = account.externalKey,
+                distributionChannel = account.distributionChannelLabel(),
+                accountType = account.abcTypeLabel(),
                 branchCode = account.branchCode,
                 branchName = account.branchName,
                 salesAmount = amount,

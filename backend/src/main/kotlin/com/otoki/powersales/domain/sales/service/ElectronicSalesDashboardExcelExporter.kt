@@ -23,7 +23,7 @@ class ElectronicSalesDashboardExcelExporter : BaseExcelExporter<ElectronicSalesD
     override val freezeHeader = false
 
     override val headers = listOf(
-        "거래처명", "SAP코드", "지점코드", "지점명",
+        "거래처명", "SAP코드", "유통형태", "거래처유형", "지점코드", "지점명",
         "전산매출 금액", "전산매출 수량",
     )
 
@@ -39,6 +39,8 @@ class ElectronicSalesDashboardExcelExporter : BaseExcelExporter<ElectronicSalesD
         var col = 0
         row.createCell(col++).setCellValue(item.accountName ?: "")
         row.createCell(col++).setCellValue(item.sapAccountCode ?: "")
+        row.createCell(col++).setCellValue(item.distributionChannel ?: "")
+        row.createCell(col++).setCellValue(item.accountType ?: "")
         row.createCell(col++).setCellValue(item.branchCode ?: "")
         row.createCell(col++).setCellValue(item.branchName ?: "")
         row.createCell(col++).setCellValue(item.salesAmount.toDouble())

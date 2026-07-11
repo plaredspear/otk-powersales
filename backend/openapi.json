@@ -13888,10 +13888,16 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
           "branchCode" : {
             "type" : [ "string", "null" ]
           },
           "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "distributionChannel" : {
             "type" : [ "string", "null" ]
           },
           "salesAmount" : {

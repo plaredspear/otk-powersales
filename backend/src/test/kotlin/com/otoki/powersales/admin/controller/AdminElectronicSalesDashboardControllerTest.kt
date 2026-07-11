@@ -59,7 +59,8 @@ class AdminElectronicSalesDashboardControllerTest : AdminControllerTestSupport()
             items = listOf(
                 ElectronicSalesDashboardListItem(
                     accountId = 1, accountName = "거래처A",
-                    sapAccountCode = "SAP1", branchCode = "1000", branchName = "서울지점",
+                    sapAccountCode = "SAP1", distributionChannel = "02 슈퍼", accountType = "6111 이마트",
+                    branchCode = "1000", branchName = "서울지점",
                     salesAmount = 5_000_000L, salesQuantity = 1_200L,
                 )
             ),

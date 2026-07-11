@@ -247,6 +247,8 @@ export default function ElectronicSalesDashboardPage() {
         ),
       },
       { title: 'SAP코드', dataIndex: 'sapAccountCode', width: 110, render: (v) => v ?? '-' },
+      { title: '유통형태', dataIndex: 'distributionChannel', width: 120, render: (v) => v ?? '-' },
+      { title: '거래처유형', dataIndex: 'accountType', width: 120, render: (v) => v ?? '-' },
       { title: '지점', dataIndex: 'branchName', width: 120, render: (v) => v ?? '-' },
       {
         title: '전산매출 금액',

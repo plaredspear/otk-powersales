@@ -20,6 +20,8 @@ class ElectronicSalesDashboardExcelExporterTest {
         accountId = id,
         accountName = name,
         sapAccountCode = "SAP$id",
+        distributionChannel = "02 슈퍼",
+        accountType = "6111 이마트",
         branchCode = "1000",
         branchName = "서울지점",
         salesAmount = 1_500_000L,
@@ -49,9 +51,12 @@ class ElectronicSalesDashboardExcelExporterTest {
             val sheet = wb.getSheetAt(0)
             assertThat(sheet.lastRowNum).isEqualTo(2) // 헤더 1 + 데이터 2
             assertThat(sheet.getRow(1).getCell(0).stringCellValue).isEqualTo("거래처A")
-            // 전산매출 금액(4) / 수량(5) 컬럼 — 매출연도/매출월 컬럼 제거 후 좌측으로 이동
-            assertThat(sheet.getRow(1).getCell(4).numericCellValue).isEqualTo(1_500_000.0)
-            assertThat(sheet.getRow(1).getCell(5).numericCellValue).isEqualTo(320.0)
+            // 유통형태(2) / 거래처유형(3) 컬럼 — SAP코드 뒤 삽입
+            assertThat(sheet.getRow(1).getCell(2).stringCellValue).isEqualTo("02 슈퍼")
+            assertThat(sheet.getRow(1).getCell(3).stringCellValue).isEqualTo("6111 이마트")
+            // 전산매출 금액(6) / 수량(7) 컬럼 — 유통형태/거래처유형 2컬럼 삽입으로 우측 이동
+            assertThat(sheet.getRow(1).getCell(6).numericCellValue).isEqualTo(1_500_000.0)
+            assertThat(sheet.getRow(1).getCell(7).numericCellValue).isEqualTo(320.0)
             wb.close()
         }
     }

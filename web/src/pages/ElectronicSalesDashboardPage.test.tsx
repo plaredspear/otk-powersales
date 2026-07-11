@@ -87,6 +87,8 @@ describe('ElectronicSalesDashboardPage', () => {
           accountId: 1,
           accountName: '이마트 원주점',
           sapAccountCode: 'S001',
+          distributionChannel: '02 슈퍼',
+          accountType: '6111 이마트',
           branchCode: 'B001',
           branchName: '원주1지점',
           salesAmount: 1_234_567,

@@ -13,6 +13,10 @@ export interface ElectronicSalesDashboardListItem {
   accountId: number;
   accountName: string | null;
   sapAccountCode: string | null;
+  /** 유통형태 — 거래처상태코드+거래처타입 조합 라벨 */
+  distributionChannel: string | null;
+  /** 거래처유형 — ABC유형코드+ABC유형 조합 라벨 */
+  accountType: string | null;
   branchCode: string | null;
   branchName: string | null;
   salesAmount: number;
