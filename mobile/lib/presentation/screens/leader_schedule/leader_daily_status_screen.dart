@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -42,6 +43,9 @@ class LeaderDailyStatusScreen extends ConsumerStatefulWidget {
       _LeaderDailyStatusScreenState();
 }
 
+/// 바로가기 섹션 — 스크롤 위치에 따라 현재 보고 있는 항목을 표시.
+enum _JumpSection { display, event, annual }
+
 class _LeaderDailyStatusScreenState
     extends ConsumerState<LeaderDailyStatusScreen> with ThrottledTapMixin {
   final TextEditingController _searchController = TextEditingController();
@@ -52,12 +56,16 @@ class _LeaderDailyStatusScreenState
   final GlobalKey _eventSectionKey = GlobalKey();
   final GlobalKey _annualSectionKey = GlobalKey();
 
+  /// 스크롤로 판정된 현재 섹션(바로가기 강조용). 초기값 = 최상단 진열.
+  _JumpSection _activeSection = _JumpSection.display;
+
   /// 등록 탭 "등록 전" 필터 — 체크 시 미등록 거래처만 노출(레거시 #before-comm-btn).
   bool _registerUnregisteredOnly = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final notifier = ref.read(leaderDailyStatusProvider.notifier);
       if (widget.initialDate != null) {
@@ -72,8 +80,49 @@ class _LeaderDailyStatusScreenState
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 스크롤 위치 기준으로 현재 보고 있는 섹션을 판정해 바로가기 강조를 갱신.
+  /// 각 섹션 헤더가 뷰포트 최상단에 닿는 스크롤 오프셋을 구해, 현재 오프셋이
+  /// 그 지점을 지난 마지막 섹션을 현재로 본다(화면 좌표 비의존).
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final offset = _scrollController.offset;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    // 헤더가 상단에 완전히 닿기 조금 전부터 현재로 인식하는 여유값.
+    const tolerance = 48.0;
+
+    // 헤더 top 이 뷰포트 최상단에 정렬되는 스크롤 오프셋.
+    // 내용이 적은 최하단 섹션은 헤더가 최상단까지 못 올라가므로 maxScrollExtent 로
+    // 클램프 — 바닥까지 스크롤하면 해당 섹션이 활성으로 인식되도록 한다.
+    double? revealOffsetOf(GlobalKey key) {
+      final ctx = key.currentContext;
+      final ro = ctx?.findRenderObject();
+      if (ro == null || !ro.attached) return null;
+      final reveal = RenderAbstractViewport.of(ro).getOffsetToReveal(ro, 0.0).offset;
+      return reveal < maxExtent ? reveal : maxExtent;
+    }
+
+    var next = _JumpSection.display;
+    final displayAt = revealOffsetOf(_displaySectionKey);
+    final eventAt = revealOffsetOf(_eventSectionKey);
+    final annualAt = revealOffsetOf(_annualSectionKey);
+    if (displayAt != null && offset >= displayAt - tolerance) {
+      next = _JumpSection.display;
+    }
+    if (eventAt != null && offset >= eventAt - tolerance) {
+      next = _JumpSection.event;
+    }
+    if (annualAt != null && offset >= annualAt - tolerance) {
+      next = _JumpSection.annual;
+    }
+
+    if (next != _activeSection && mounted) {
+      setState(() => _activeSection = next);
+    }
   }
 
   void _shiftDate(int days) {
@@ -103,7 +152,12 @@ class _LeaderDailyStatusScreenState
     });
   }
 
-  void _jumpTo(GlobalKey key) {
+  void _jumpTo(GlobalKey key, _JumpSection section) {
+    // 탭한 항목은 즉시 현재로 강조 — 내용이 적어 헤더가 최상단까지 못 올라가는
+    // 최하단(연차) 섹션도 확실히 선택 표시되도록 스크롤 판정과 별개로 반영.
+    if (section != _activeSection && mounted) {
+      setState(() => _activeSection = section);
+    }
     final ctx = key.currentContext;
     if (ctx == null) return;
     Scrollable.ensureVisible(
@@ -181,9 +235,16 @@ class _LeaderDailyStatusScreenState
                 Column(
                   children: [
                     _QuickJumpBar(
-                      onDisplay: () => _jumpTo(_displaySectionKey),
-                      onEvent: () => _jumpTo(_eventSectionKey),
-                      onAnnual: () => _jumpTo(_annualSectionKey),
+                      activeSection: _activeSection,
+                      displayCount: displayGroups.length,
+                      eventCount: eventGroups.length,
+                      annualCount: annualLeaveWorkers.length,
+                      onDisplay: () =>
+                          _jumpTo(_displaySectionKey, _JumpSection.display),
+                      onEvent: () =>
+                          _jumpTo(_eventSectionKey, _JumpSection.event),
+                      onAnnual: () =>
+                          _jumpTo(_annualSectionKey, _JumpSection.annual),
                     ),
                     Expanded(
                       child: _buildBody(
@@ -927,11 +988,19 @@ class _SearchField extends StatelessWidget {
 
 /// 상단 바로가기 (레거시 "바로가기 | 진열 행사 연차" 앵커).
 class _QuickJumpBar extends StatelessWidget {
+  final _JumpSection activeSection;
+  final int displayCount;
+  final int eventCount;
+  final int annualCount;
   final VoidCallback onDisplay;
   final VoidCallback onEvent;
   final VoidCallback onAnnual;
 
   const _QuickJumpBar({
+    required this.activeSection,
+    required this.displayCount,
+    required this.eventCount,
+    required this.annualCount,
     required this.onDisplay,
     required this.onEvent,
     required this.onAnnual,
@@ -960,11 +1029,29 @@ class _QuickJumpBar extends StatelessWidget {
           Container(width: 1, height: 12, color: AppColors.border),
           const SizedBox(width: AppSpacing.sm),
           // 섹션별 구분색: 웹 여사원 일정관리(SF FullCalendar 정합) 색 차용.
-          _JumpLink(label: '진열', color: AppColors.workDisplay, onTap: onDisplay),
+          _JumpLink(
+            label: '진열',
+            count: displayCount,
+            color: AppColors.workDisplay,
+            active: activeSection == _JumpSection.display,
+            onTap: onDisplay,
+          ),
           const SizedBox(width: AppSpacing.md),
-          _JumpLink(label: '행사', color: AppColors.workEvent, onTap: onEvent),
+          _JumpLink(
+            label: '행사',
+            count: eventCount,
+            color: AppColors.workEvent,
+            active: activeSection == _JumpSection.event,
+            onTap: onEvent,
+          ),
           const SizedBox(width: AppSpacing.md),
-          _JumpLink(label: '연차', color: AppColors.workAnnualLeave, onTap: onAnnual),
+          _JumpLink(
+            label: '연차',
+            count: annualCount,
+            color: AppColors.workAnnualLeave,
+            active: activeSection == _JumpSection.annual,
+            onTap: onAnnual,
+          ),
         ],
       ),
     );
@@ -973,30 +1060,54 @@ class _QuickJumpBar extends StatelessWidget {
 
 class _JumpLink extends StatelessWidget {
   final String label;
+  final int count;
   final Color color;
+  final bool active;
   final VoidCallback onTap;
 
   const _JumpLink({
     required this.label,
+    required this.count,
     required this.color,
+    required this.active,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    // 현재 섹션은 옅은 색 배경 pill + 밑줄로 강조(스크롤에 따라 이동).
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-      child: Padding(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.xs,
           vertical: AppSpacing.xxs,
         ),
-        child: Text(
-          label,
-          style: AppTypography.bodyMedium.copyWith(
-            color: color,
-            fontWeight: FontWeight.w700,
+        decoration: BoxDecoration(
+          color: active ? color.withValues(alpha: 0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          border: Border(
+            bottom: BorderSide(
+              color: active ? color : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text.rich(
+          TextSpan(
+            style: AppTypography.bodyMedium.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+            children: [
+              TextSpan(text: label),
+              TextSpan(
+                text: ' $count',
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ],
           ),
         ),
       ),
