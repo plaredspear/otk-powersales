@@ -108,6 +108,11 @@ class OrderRequestListState {
   /// 검색 결과가 없는지 (검색 후)
   bool get isEmpty => hasSearched && allOrderRequests.isEmpty;
 
+  /// 전송 처리 중(과도상태 SENT)인 주문이 하나라도 있는지 여부.
+  /// 등록 직후 SAP 비동기 전송 대기 구간 — 한시적 자동 폴링/안내 문구 노출 판정에 사용.
+  bool get hasTransientOrders =>
+      allOrderRequests.any((o) => o.orderRequestStatus == OrderStatusCode.sent);
+
   /// 필터가 적용되어 있는지 여부
   bool get hasActiveFilter =>
       selectedClientId != null || selectedStatus != null;

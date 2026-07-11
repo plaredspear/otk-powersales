@@ -74,6 +74,40 @@ class OrderRequestListNotifier extends StateNotifier<OrderRequestListState> {
     }
   }
 
+  /// 무음 갱신 — 로딩 스피너/페이지 리셋 없이 현재 조건으로 재조회.
+  ///
+  /// 등록 직후 과도상태(SENT) 주문의 상태 전이를 한시적 자동 폴링으로 반영하기 위한 백그라운드 갱신.
+  /// 현재 페이지를 보존하되, 결과가 줄어 페이지 범위를 벗어나면 0으로 클램프한다.
+  /// 폴링 중 에러는 화면을 흔들지 않도록 조용히 무시(다음 폴링/수동 새로고침에서 복구).
+  Future<void> refreshSilently() async {
+    try {
+      final result = await _getMyOrderRequests.call(
+        clientId: state.selectedClientId,
+        status: state.selectedStatus,
+        deliveryDateFrom: state.deliveryDateFrom,
+        deliveryDateTo: state.deliveryDateTo,
+        sortBy: state.sortType.sortBy,
+        sortDir: state.sortType.sortDir,
+      );
+
+      final newTotalPages = result.orders.isEmpty
+          ? 0
+          : (result.orders.length / state.pageSize).ceil();
+      final clampedPage =
+          state.currentPage >= newTotalPages ? 0 : state.currentPage;
+
+      state = state.copyWith(
+        allOrderRequests: result.orders,
+        truncated: result.truncated,
+        fetchedAt: result.fetchedAt,
+        currentPage: clampedPage,
+        errorMessage: null,
+      );
+    } catch (_) {
+      // 백그라운드 폴링 실패는 무시 — 화면 상태 유지.
+    }
+  }
+
   /// 페이지 이동 (추가 API 호출 없음 — 클라이언트 슬라이스).
   void goToPage(int page) {
     if (page < 0 || page >= state.totalPages) return;

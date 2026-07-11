@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,6 +39,12 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  /// 과도상태(SENT) 주문 자동 폴링용 — 등록 직후 상태 전이를 새로고침 없이 반영.
+  Timer? _pollTimer;
+  int _pollCount = 0;
+  static const int _maxPolls = 5; // 3초 × 5회 ≈ 15초 후 중단
+  static const Duration _pollInterval = Duration(seconds: 3);
+
   @override
   void initState() {
     super.initState();
@@ -54,8 +62,36 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
 
   @override
   void dispose() {
+    _stopPolling();
     _tabController.dispose();
     super.dispose();
+  }
+
+  /// 과도상태 주문 유무에 따라 한시적 폴링을 시작/중단한다.
+  void _syncTransientPolling(OrderRequestListState state) {
+    if (state.hasTransientOrders) {
+      _startPollingIfNeeded();
+    } else {
+      _stopPolling();
+    }
+  }
+
+  void _startPollingIfNeeded() {
+    if (_pollTimer != null) return;
+    _pollCount = 0;
+    _pollTimer = Timer.periodic(_pollInterval, (timer) {
+      _pollCount++;
+      if (_pollCount > _maxPolls) {
+        _stopPolling();
+        return;
+      }
+      ref.read(orderRequestListProvider.notifier).refreshSilently();
+    });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
   }
 
   /// 주문 카드 탭 → 주문 상세 화면으로 이동
@@ -88,7 +124,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   Widget build(BuildContext context) {
     final state = ref.watch(orderRequestListProvider);
 
-    // 에러 메시지 리스닝
+    // 에러 메시지 리스닝 + 과도상태 폴링 동기화
     ref.listen(orderRequestListProvider, (previous, next) {
       if (next.errorMessage != null && previous?.errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -99,6 +135,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
         );
         ref.read(orderRequestListProvider.notifier).clearError();
       }
+      _syncTransientPolling(next);
     });
 
     return Scaffold(
@@ -178,6 +215,8 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
             ref.read(orderRequestListProvider.notifier).searchOrders();
           },
         ),
+        // 전송 처리 중 안내 (과도상태 주문이 있을 때만)
+        if (state.hasTransientOrders) _buildTransientNotice(),
         // 결과 헤더 (건수 + 정렬)
         _buildResultHeader(state),
         // 주문 목록
@@ -185,6 +224,36 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
           child: _buildOrderList(state),
         ),
       ],
+    );
+  }
+
+  /// 전송 처리 중 안내 문구 (비개발자 사용자용).
+  ///
+  /// 등록 직후 SAP 비동기 전송 대기 구간에는 상태가 '전송'으로 표시되며,
+  /// 화면이 잠시 후 자동 갱신되고 수동 새로고침도 가능함을 안내한다.
+  Widget _buildTransientNotice() {
+    return Container(
+      width: double.infinity,
+      // ignore: deprecated_member_use
+      color: AppColors.info.withOpacity(0.08),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.sync, size: 16, color: AppColors.info),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              "'전송' 상태 주문은 등록 처리 중입니다. 잠시 후 자동으로 갱신되며, "
+              '화면을 아래로 당겨 새로고침할 수도 있어요.',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.info),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -312,15 +381,20 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
     return Column(
       children: [
         Expanded(
-          child: ListView.builder(
-            itemCount: pagedItems.length,
-            itemBuilder: (context, index) {
-              final order = pagedItems[index];
-              return OrderRequestCard(
-                order: order,
-                onTap: () => _onOrderTap(order),
-              );
-            },
+          child: RefreshIndicator(
+            onRefresh: () =>
+                ref.read(orderRequestListProvider.notifier).searchOrders(),
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: pagedItems.length,
+              itemBuilder: (context, index) {
+                final order = pagedItems[index];
+                return OrderRequestCard(
+                  order: order,
+                  onTap: () => _onOrderTap(order),
+                );
+              },
+            ),
           ),
         ),
         if (state.totalPages > 1)
