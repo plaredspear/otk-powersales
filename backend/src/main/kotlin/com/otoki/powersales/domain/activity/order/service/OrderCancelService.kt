@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.activity.order.exception.ForbiddenOrderAccessException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelDeadlinePassedException
+import com.otoki.powersales.domain.activity.order.exception.OrderCancelInFlightException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelInvalidStatusException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelLineNotFoundException
 import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundException
@@ -14,7 +15,10 @@ import com.otoki.powersales.domain.activity.order.repository.OrderRequestReposit
 import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
+import com.otoki.powersales.external.sap.outbox.SapOutbox
+import com.otoki.powersales.external.sap.outbox.SapOutboxRepository
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
@@ -39,6 +43,7 @@ class OrderCancelService(
     private val orderRequestCancelPayloadFactory: OrderRequestCancelPayloadFactory,
     private val orderRequestCancelSender: OrderRequestCancelSender,
     private val orderCancelCommitter: OrderCancelCommitter,
+    private val sapOutboxRepository: SapOutboxRepository,
 ) {
 
     fun cancel(orderRequestId: Long, userId: Long, orderProductIds: List<Long>): OrderCancelResponse {
@@ -74,6 +79,16 @@ class OrderCancelService(
         if (!orderDeadlineCalculator.isCancellable(deliveryDate)) {
             throw OrderCancelDeadlinePassedException()
         }
+        // 경합 방어(Spec #597): 등록 SAP 전송이 아직 진행 중(outbox PENDING/RETRY)이면 취소 보류.
+        // 등록(생성)이 SAP 에 도달하기 전 취소(삭제)가 나가는 순서 역전을 차단한다. SENT 전이 후 재시도 가능.
+        if (sapOutboxRepository.existsByDomainTypeAndAggregateIdAndStatusIn(
+                SapConstants.SAP_DOMAIN_ORDER_REQUEST_REGISTER,
+                orderRequestId,
+                IN_FLIGHT_OUTBOX_STATUSES,
+            )
+        ) {
+            throw OrderCancelInFlightException()
+        }
         return orderRequest
     }
 
@@ -98,6 +113,12 @@ class OrderCancelService(
             OrderRequestStatus.SENT,
             OrderRequestStatus.APPROVED,
             OrderRequestStatus.SEND_FAILED,
+        )
+
+        /** 등록 SAP 전송 in-flight(미확정) 로 판정하는 outbox 상태 — 이 구간엔 취소 보류. */
+        private val IN_FLIGHT_OUTBOX_STATUSES = listOf(
+            SapOutbox.STATUS_PENDING,
+            SapOutbox.STATUS_RETRY,
         )
     }
 }

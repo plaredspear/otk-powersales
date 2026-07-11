@@ -46,3 +46,16 @@ class OrderCancelSapFailedException(detail: String? = null) : BusinessException(
     message = detail ?: "SAP 송신에 실패했습니다",
     httpStatus = HttpStatus.BAD_GATEWAY,
 )
+
+/**
+ * 등록 SAP 전송이 아직 진행 중이라 취소 보류 (Spec #597 경합 방어).
+ *
+ * 등록 outbox 가 `PENDING`/`RETRY`(SAP 미확정) 인 구간에 취소(삭제)가 나가면, 등록(생성) 메시지가
+ * SAP 에 도달하기 전/재시도 중에 삭제가 먼저 도달하는 순서 역전이 생길 수 있다. 등록 outbox 가
+ * `SENT`(SAP 응답 수신) 로 전이될 때까지 취소를 보류하며, 사용자는 잠시 후 재시도하면 된다.
+ */
+class OrderCancelInFlightException : BusinessException(
+    errorCode = "ORD_CANCEL_IN_FLIGHT",
+    message = "주문 등록 처리가 진행 중입니다. 잠시 후 다시 시도해 주세요.",
+    httpStatus = HttpStatus.CONFLICT,
+)

@@ -10,12 +10,14 @@ import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.activity.order.exception.ForbiddenOrderAccessException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelDeadlinePassedException
+import com.otoki.powersales.domain.activity.order.exception.OrderCancelInFlightException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelInvalidStatusException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelLineNotFoundException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelSapFailedException
 import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundException
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.external.sap.outbox.SapOutboxRepository
 import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
@@ -44,6 +46,7 @@ class OrderCancelServiceTest {
     private lateinit var payloadFactory: OrderRequestCancelPayloadFactory
     private lateinit var sender: OrderRequestCancelSender
     private lateinit var committer: OrderCancelCommitter
+    private lateinit var sapOutboxRepository: SapOutboxRepository
     private lateinit var service: OrderCancelService
 
     private val userId = 1L
@@ -64,6 +67,11 @@ class OrderCancelServiceTest {
         payloadFactory = OrderRequestCancelPayloadFactory()
         sender = mockk()
         committer = mockk()
+        sapOutboxRepository = mockk()
+        // 기본: 등록 outbox in-flight 아님 (취소 허용). in-flight 게이트 테스트에서만 true 로 override.
+        every {
+            sapOutboxRepository.existsByDomainTypeAndAggregateIdAndStatusIn(any(), any(), any())
+        } returns false
         service = OrderCancelService(
             orderRequestRepository = orderRequestRepository,
             orderRequestProductRepository = orderRequestProductRepository,
@@ -72,6 +80,7 @@ class OrderCancelServiceTest {
             orderRequestCancelPayloadFactory = payloadFactory,
             orderRequestCancelSender = sender,
             orderCancelCommitter = committer,
+            sapOutboxRepository = sapOutboxRepository,
         )
     }
 
@@ -222,6 +231,21 @@ class OrderCancelServiceTest {
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderCancelSapFailedException::class.java)
         verify(exactly = 0) { committer.commit(any(), any(), any()) }
+    }
+
+    // ───────── EP8: 등록 SAP 전송 진행중 (outbox in-flight) ─────────
+    @Test
+    @DisplayName("EP8 — 등록 outbox PENDING/RETRY → ORD_CANCEL_IN_FLIGHT, SAP 미호출")
+    fun ep8_registerInFlight() {
+        val orderRequest = orderRequest(status = OrderRequestStatus.SENT)
+        every { orderRequestRepository.findById(orderRequestId) } returns Optional.of(orderRequest)
+        every {
+            sapOutboxRepository.existsByDomainTypeAndAggregateIdAndStatusIn(any(), any(), any())
+        } returns true
+
+        assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
+            .isInstanceOf(OrderCancelInFlightException::class.java)
+        verify(exactly = 0) { sender.send(any()) }
     }
 
     // ───────── EP10: 존재하지 않는 orderRequestId ─────────
