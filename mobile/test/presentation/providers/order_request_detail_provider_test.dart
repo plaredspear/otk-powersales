@@ -20,6 +20,8 @@ OrderDetail _createOrderDetail({
   int? totalApprovedAmount,
   String orderRequestStatus = OrderStatusCode.approved,
   bool isClosed = false,
+  bool cancelable = true,
+  bool registrationInFlight = false,
   int orderedItemCount = 2,
   List<OrderedItem>? orderedItems,
   List<OrderProcessingStatus>? orderProcessingStatusList,
@@ -44,6 +46,8 @@ OrderDetail _createOrderDetail({
     orderRequestStatus: orderRequestStatus,
     orderRequestStatusName: statusName,
     isClosed: isClosed,
+    cancelable: cancelable,
+    registrationInFlight: registrationInFlight,
     orderedItemCount: orderedItemCount,
     orderedItems: orderedItems ?? [],
     orderProcessingStatusList: orderProcessingStatusList,
@@ -218,10 +222,22 @@ void main() {
         ),
       );
 
+      // Should not show: 등록 SAP 전송 진행 중(cancelable=false) → 대신 안내 노출
+      final stateInFlight = OrderRequestDetailState(
+        orderDetail: _createOrderDetail(
+          isClosed: false,
+          orderRequestStatus: OrderStatusCode.sent,
+          cancelable: false,
+          registrationInFlight: true,
+        ),
+      );
+
       expect(stateShowCancel.showCancelButton, true);
       expect(stateSendFailed.showCancelButton, false);
       expect(stateAllCancelled.showCancelButton, false);
       expect(stateClosed.showCancelButton, false);
+      expect(stateInFlight.showCancelButton, false);
+      expect(stateInFlight.showRegistrationInFlightNotice, true);
     });
 
     test('showResendButton logic works correctly', () {

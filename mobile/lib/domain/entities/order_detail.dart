@@ -497,6 +497,13 @@ class OrderDetail {
   /// 마감 여부
   final bool isClosed;
 
+  /// 취소 가능 여부 (서버 권위 판정: 상태 + 마감 + 등록 SAP 전송 not in-flight).
+  /// 취소 버튼 노출 게이트의 단일 진실원 — 서버 취소 가드와 정합.
+  final bool cancelable;
+
+  /// 등록 SAP 전송이 아직 진행 중(전송 처리 중)인지 여부. 취소 불가 사유 안내용.
+  final bool registrationInFlight;
+
   /// 주문한 제품 수
   final int orderedItemCount;
 
@@ -526,6 +533,8 @@ class OrderDetail {
     required this.orderRequestStatus,
     required this.orderRequestStatusName,
     required this.isClosed,
+    this.cancelable = false,
+    this.registrationInFlight = false,
     required this.orderedItemCount,
     required this.orderedItems,
     this.orderProcessingStatusList,
@@ -553,6 +562,8 @@ class OrderDetail {
     String? orderRequestStatus,
     String? orderRequestStatusName,
     bool? isClosed,
+    bool? cancelable,
+    bool? registrationInFlight,
     int? orderedItemCount,
     List<OrderedItem>? orderedItems,
     List<OrderProcessingStatus>? orderProcessingStatusList,
@@ -572,6 +583,8 @@ class OrderDetail {
       orderRequestStatusName:
           orderRequestStatusName ?? this.orderRequestStatusName,
       isClosed: isClosed ?? this.isClosed,
+      cancelable: cancelable ?? this.cancelable,
+      registrationInFlight: registrationInFlight ?? this.registrationInFlight,
       orderedItemCount: orderedItemCount ?? this.orderedItemCount,
       orderedItems: orderedItems ?? this.orderedItems,
       orderProcessingStatusList:
@@ -594,6 +607,8 @@ class OrderDetail {
       'orderRequestStatus': orderRequestStatus,
       'orderRequestStatusName': orderRequestStatusName,
       'isClosed': isClosed,
+      'cancelable': cancelable,
+      'registrationInFlight': registrationInFlight,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
       'orderProcessingStatusList':
@@ -616,6 +631,8 @@ class OrderDetail {
       orderRequestStatus: json['orderRequestStatus'] as String,
       orderRequestStatusName: json['orderRequestStatusName'] as String,
       isClosed: json['isClosed'] as bool,
+      cancelable: json['cancelable'] as bool? ?? false,
+      registrationInFlight: json['registrationInFlight'] as bool? ?? false,
       orderedItemCount: json['orderedItemCount'] as int,
       orderedItems: (json['orderedItems'] as List<dynamic>)
           .map((e) => OrderedItem.fromJson(e as Map<String, dynamic>))
@@ -650,6 +667,8 @@ class OrderDetail {
     if (other.orderRequestStatus != orderRequestStatus) return false;
     if (other.orderRequestStatusName != orderRequestStatusName) return false;
     if (other.isClosed != isClosed) return false;
+    if (other.cancelable != cancelable) return false;
+    if (other.registrationInFlight != registrationInFlight) return false;
     if (other.orderedItemCount != orderedItemCount) return false;
     if (other.orderedItems.length != orderedItems.length) return false;
     for (var i = 0; i < orderedItems.length; i++) {
@@ -692,6 +711,8 @@ class OrderDetail {
       orderRequestStatus,
       orderRequestStatusName,
       isClosed,
+      cancelable,
+      registrationInFlight,
       orderedItemCount,
       Object.hashAll(orderedItems),
       orderProcessingStatusList != null

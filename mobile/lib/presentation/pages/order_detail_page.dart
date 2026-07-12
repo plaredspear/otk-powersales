@@ -146,6 +146,12 @@ class OrderDetailPage extends ConsumerWidget {
               if (state.showCancelButton || state.showResendButton)
                 const SizedBox(height: AppSpacing.lg),
 
+              // 전송 처리 중 안내 — 등록 SAP 전송이 진행 중이라 아직 취소할 수 없음
+              if (state.showRegistrationInFlightNotice) ...[
+                _buildInFlightNotice(),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
               // 주문한 제품 목록 (마감전에는 바로 표시)
               OrderedItemList(items: detail.orderedItems),
             ],
@@ -182,6 +188,36 @@ class OrderDetailPage extends ConsumerWidget {
             const SizedBox(height: AppSpacing.xxxl),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 전송 처리 중 안내 배너 — 등록 SAP 전송이 진행 중이라 취소 버튼 대신 노출.
+  Widget _buildInFlightNotice() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        // ignore: deprecated_member_use
+        color: AppColors.info.withOpacity(0.08),
+        borderRadius: AppSpacing.buttonBorderRadius,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.sync, size: 16, color: AppColors.info),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              '주문 등록을 전송 처리 중입니다. 잠시 후 취소할 수 있어요. '
+              '화면을 아래로 당겨 새로고침해 주세요.',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.info),
+            ),
+          ),
+        ],
       ),
     );
   }

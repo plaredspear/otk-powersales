@@ -118,6 +118,9 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
     if (value.contains('ORD_CANCEL_SAP_FAILED')) {
       return '주문 취소 전송에 실패했습니다. 잠시 후 다시 시도해주세요';
     }
+    if (value.contains('ORD_CANCEL_IN_FLIGHT')) {
+      return '주문 등록을 전송 처리 중입니다. 잠시 후 다시 시도해주세요';
+    }
     // 공통 / 레거시 코드
     if (value.contains('ALREADY_CANCELLED')) {
       return '이미 취소된 제품이 포함되어 있습니다';

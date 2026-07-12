@@ -238,6 +238,8 @@ class OrderRequestDetailModel {
   final String orderRequestStatus;
   final String orderRequestStatusName;
   final bool isClosed;
+  final bool cancelable;
+  final bool registrationInFlight;
   final int orderedItemCount;
   final List<OrderedItemModel> orderedItems;
 
@@ -258,6 +260,8 @@ class OrderRequestDetailModel {
     required this.orderRequestStatus,
     required this.orderRequestStatusName,
     required this.isClosed,
+    this.cancelable = false,
+    this.registrationInFlight = false,
     required this.orderedItemCount,
     required this.orderedItems,
     this.orderProcessingStatusList,
@@ -288,6 +292,8 @@ class OrderRequestDetailModel {
       orderRequestStatus: data['orderRequestStatus'] as String,
       orderRequestStatusName: data['orderRequestStatusName'] as String,
       isClosed: data['isClosed'] as bool,
+      cancelable: data['cancelable'] as bool? ?? false,
+      registrationInFlight: data['registrationInFlight'] as bool? ?? false,
       orderedItemCount: (data['orderedItemCount'] as num).toInt(),
       orderedItems: orderedItemsJson
           .map((e) => OrderedItemModel.fromJson(e as Map<String, dynamic>))
@@ -322,6 +328,8 @@ class OrderRequestDetailModel {
       'orderRequestStatus': orderRequestStatus,
       'orderRequestStatusName': orderRequestStatusName,
       'isClosed': isClosed,
+      'cancelable': cancelable,
+      'registrationInFlight': registrationInFlight,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
       'orderProcessingStatusList':
@@ -345,6 +353,8 @@ class OrderRequestDetailModel {
       orderRequestStatus: orderRequestStatus,
       orderRequestStatusName: orderRequestStatusName,
       isClosed: isClosed,
+      cancelable: cancelable,
+      registrationInFlight: registrationInFlight,
       orderedItemCount: orderedItemCount,
       orderedItems: orderedItems.map((e) => e.toEntity()).toList(),
       orderProcessingStatusList:
