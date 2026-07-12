@@ -743,6 +743,13 @@ export default function PromotionDetailPage() {
     return v.toLocaleString();
   };
 
+  // 목표금액 = 기준단가 × 목표수량. SF 레거시 formula(DKRetail__DailyTargetAmount__c)를 재현.
+  // SF formula 의 formulaTreatBlanksAs=BlankAsZero 정합: 피연산자 null 은 0 으로 취급한다.
+  const calcTargetAmount = (
+    basePrice: number | null | undefined,
+    dailyTargetCount: number | null | undefined,
+  ): number => (basePrice ?? 0) * (dailyTargetCount ?? 0);
+
   // SF 여사원마감(Formula_PromoCloseByTm__c): IF(PromoCloseByTm__c = true, '✔️', '❌')
   // 여사원 모바일 일매출 마감 완료(true) 시 ✔️, 미마감(false) 시 ❌
   const closeColumn = {
@@ -835,11 +842,13 @@ export default function PromotionDetailPage() {
         render: (v: number | null) => fmtNum(v),
       },
       {
+        // 편집 모드와 동일하게 기준단가 × 목표수량 파생 계산으로 표시.
+        // 서버 저장값 targetAmount 는 특정 경로에서 null/0 으로 비어 있을 수 있어 그대로 쓰지 않는다.
         title: '목표금액',
-        dataIndex: 'targetAmount',
         width: 110,
         align: 'right' as const,
-        render: (v: number | null) => fmtNum(v),
+        render: (_: unknown, record: PromotionEmployee) =>
+          fmtNum(calcTargetAmount(record.basePrice, record.dailyTargetCount)),
       },
       {
         title: '대표품목 매출',
@@ -854,9 +863,11 @@ export default function PromotionDetailPage() {
         width: 70,
         align: 'right' as const,
         render: (_: unknown, record: PromotionEmployee) => {
-          if (!record.targetAmount || record.targetAmount === 0) return '0%';
+          // 진도율 분모(목표금액)도 저장값이 아닌 기준단가 × 목표수량 파생 계산 사용 (편집 모드/SF 정합)
+          const targetAmount = calcTargetAmount(record.basePrice, record.dailyTargetCount);
+          if (targetAmount === 0) return '0%';
           if (record.primaryProductAmount == null) return '0%';
-          return `${Math.floor((record.primaryProductAmount / record.targetAmount) * 100)}%`;
+          return `${Math.floor((record.primaryProductAmount / targetAmount) * 100)}%`;
         },
       },
       {
@@ -1075,12 +1086,8 @@ export default function PromotionDetailPage() {
         title: '목표금액',
         width: 110,
         align: 'right' as const,
-        render: (_: unknown, record: EditableRow) => {
-          if (record.basePrice != null && record.dailyTargetCount != null) {
-            return fmtNum(record.basePrice * record.dailyTargetCount);
-          }
-          return '';
-        },
+        render: (_: unknown, record: EditableRow) =>
+          fmtNum(calcTargetAmount(record.basePrice, record.dailyTargetCount)),
       },
       {
         title: '대표품목 매출',
@@ -1102,10 +1109,8 @@ export default function PromotionDetailPage() {
         width: 70,
         align: 'right' as const,
         render: (_: unknown, record: EditableRow) => {
-          const targetAmount = (record.basePrice != null && record.dailyTargetCount != null)
-            ? record.basePrice * record.dailyTargetCount
-            : null;
-          if (!targetAmount || targetAmount === 0) return '0%';
+          const targetAmount = calcTargetAmount(record.basePrice, record.dailyTargetCount);
+          if (targetAmount === 0) return '0%';
           if (record.primaryProductAmount == null) return '0%';
           return `${Math.floor((record.primaryProductAmount / targetAmount) * 100)}%`;
         },
