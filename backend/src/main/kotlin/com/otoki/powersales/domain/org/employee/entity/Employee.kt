@@ -93,6 +93,16 @@ class Employee(
     @Column(name = "org_name", length = 100)
     var orgName: String? = null,
 
+    // ⚠️ 필드명은 CostCenterCode 이나 **실제 담긴 값은 HR OrgCode** (= SAP 발령 obj.OrgCode, Org__c.OrgCodeLevel*__c 축).
+    //    진짜 CostCenter 코드(Org__c.CostCenterLevel*__c) 가 아니다 — 이름에 속지 말 것.
+    // 값은 "사원이 직접 소속된 조직의 OrgCode" 라 **임의 레벨**(5레벨 지점이 아닐 수 있음. 발령 조직에 따라 4/3/2레벨 가능).
+    // [Account.branchCode] 와 **같은 OrgCode 축**이라 지점 매칭에 쓰지만,
+    // ⚠️ 양쪽 다 레벨이 어긋날 수 있어 account.branch_code ↔ cost_center_code 단순 = / IN 매칭은 누락 발생 (불완전).
+    //    SF 소비처가 전부 OrgCodeLevel5/4/3/2 OR fallback 을 두는 이유. 현재 데이터가 우연히 5레벨 일치해도
+    //    미래에 다른 레벨 지정될 수 있으니 단순 IN 축약 금지. Organization 조직트리 정규화 + BranchCodeExpander 확장을
+    //    거쳐 트리 전체 레벨 코드 집합으로 IN 매칭해야 레벨 무관하게 정합 (SF CurrentUserBranchNameList 등가).
+    // ⚠️ [Account.branchCostCenter](거래처지점 CC코드) 와는 도메인이 달라 매칭하면 안 된다.
+    // 별개 필드 주의: [dkCostCenterCode](DKRetail__CostCenterCode__c, "CC Code", length=3) 는 이 필드와 다르다.
     @SFField("CostCenterCode__c")
     @FieldName("조직유형")
     @Column(name = "cost_center_code", length = 10)

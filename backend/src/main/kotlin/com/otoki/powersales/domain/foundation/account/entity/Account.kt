@@ -89,6 +89,16 @@ class Account(
     @Column(name = "account_group", length = 10)
     var accountGroup: String? = null,
 
+    // 값 도메인 = HR OrgCode 축 (= Org__c.OrgCodeLevel*__c). SAP ClientMaster 적재 시 대개 5레벨(지점)
+    // OrgCode 지만, 상위조직만 매핑된 거래처는 4/3레벨로 강등 저장될 수 있다 (IF_REST_SAP_ClientMasterReceive fallback).
+    // [Employee.costCenterCode] 와 **같은 OrgCode 축**이라 지점 매칭에 쓰지만, 사원 costCenterCode 도 임의 레벨일 수 있어
+    // ⚠️ 단순 = / IN 매칭은 레벨이 어긋나면 누락된다 (원리적으로 불완전).
+    //    SF 소비처가 하나같이 OrgCodeLevel5/4/3/2 OR fallback (CurrentUserBranchNameList, OrgCCCodeMatchHelper 등)
+    //    을 두는 이유가 이 레벨 편차. 현재 데이터 분포에 의존한 단순 IN 축약 금지 — 미래에 다른 레벨로 지정될 수 있다.
+    //    지점 소속 사원 조회 시엔 Organization(orgCodeLevel2~5 비정규화 계층) 으로 조직트리 정규화 + BranchCodeExpander
+    //    확장을 거쳐 트리 전체 레벨 코드 집합으로 IN 매칭해야 레벨 무관하게 정합.
+    // ⚠️ 이름 함정: 매칭 상대는 [branchCostCenter](BranchCostCenter__c) 가 **아니다**. branchCostCenter 는
+    //    진짜 CostCenter 코드(Org__c.CostCenterLevel*__c) 도메인이라 cost_center_code 와 매칭하면 틀린 지점이 나온다.
     @SFField("BranchCode__c")
     @FieldName("거래처지점코드")
     @Column(name = "branch_code", length = 100)
@@ -268,6 +278,10 @@ class Account(
     @Column(name = "account_source", length = 255)
     var accountSource: AccountSource? = null,
 
+    // 값 도메인 = 진짜 CostCenter 코드 (= Org__c.CostCenterLevel*__c, SAP 원본 CC코드).
+    // ⚠️ 이름이 "CC코드" 라서 [Employee.costCenterCode] 와 매칭될 것 같지만 **도메인이 다르다** — 매칭 금지.
+    //    사원 소속 지점 매칭에는 [branchCode](HR OrgCode 도메인) 를 써야 한다. (근거: SF IF_REST_SAP_ClientMasterReceive —
+    //    branchCode 는 org.OrgCodeLevel5__c 로, branchCostCenter 는 SAP 원본 BranchCode(CC코드) 로 각각 다른 출처에서 채워짐.)
     @SFField("BranchCostCenter__c")
     @FieldName("거래처지점 CC코드")
     @Column(name = "branch_cost_center", length = 50)
