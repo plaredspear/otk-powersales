@@ -237,7 +237,7 @@ export default function PromotionFormPage() {
           style={{ marginBottom: 16, backgroundColor: '#e6f4ff', borderColor: '#91caff' }}
         >
           원본 행사마스터 {promotion?.promotionNumber ? `[${promotion.promotionNumber}] ` : ''}
-          값을 복사했습니다. 거래처·기간·대표상품 등을 수정한 뒤 저장하면 신규 행사로 등록됩니다.
+          값을 복사했습니다. 거래처·기간·대표제품 등을 수정한 뒤 저장하면 신규 행사로 등록됩니다.
         </Card>
       )}
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
@@ -356,13 +356,13 @@ export default function PromotionFormPage() {
             <Col xs={24} sm={12}>
               <Form.Item
                 name="primaryProductId"
-                label="대표상품"
-                rules={[{ required: true, message: '대표상품을 선택해주세요' }]}
+                label="대표제품"
+                rules={[{ required: true, message: '대표제품을 선택해주세요' }]}
               >
                 <Select
                   showSearch
                   allowClear
-                  placeholder="상품 검색 (2자 이상 입력)"
+                  placeholder="제품 검색 (2자 이상 입력)"
                   filterOption={false}
                   onSearch={handleProductSearch}
                   loading={productSearching}
@@ -374,7 +374,7 @@ export default function PromotionFormPage() {
             <Col xs={24} sm={12}>
               <Form.Item
                 name="otherProduct"
-                label="기타상품"
+                label="기타제품"
                 rules={[{ max: 200, message: '200자 이하로 입력해주세요' }]}
               >
                 <Input maxLength={200} />
