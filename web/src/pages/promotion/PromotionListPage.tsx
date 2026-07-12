@@ -277,14 +277,14 @@ export default function PromotionListPage() {
       render: formatDate,
     },
     {
-      title: '목표금액',
+      title: '목표금액(원)',
       dataIndex: 'targetAmount',
       width: 120,
       align: 'right',
       render: (val: number | null) => (val != null ? val.toLocaleString() : '-'),
     },
     {
-      title: '실적금액 (원)',
+      title: '실적금액(원)',
       dataIndex: 'actualAmount',
       width: 120,
       align: 'right',
