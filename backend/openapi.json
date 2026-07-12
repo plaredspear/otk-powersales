@@ -13139,6 +13139,9 @@
           "clientName" : {
             "type" : "string"
           },
+          "mine" : {
+            "type" : "boolean"
+          },
           "sapOrderNumber" : {
             "type" : "string"
           },
