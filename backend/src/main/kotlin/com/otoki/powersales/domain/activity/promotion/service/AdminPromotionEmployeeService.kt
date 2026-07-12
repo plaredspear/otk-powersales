@@ -31,7 +31,10 @@ import com.otoki.powersales.domain.activity.promotion.exception.TeamCategoryMism
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper
 import com.otoki.powersales.platform.common.storage.StorageConstants
@@ -48,6 +51,7 @@ class AdminPromotionEmployeeService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val promotionRepository: PromotionRepository,
     private val employeeRepository: EmployeeRepository,
+    private val branchCodeExpander: BranchCodeExpander,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
     private val policyEvaluator: SharingRulePolicyEvaluator,
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
@@ -140,6 +144,67 @@ class AdminPromotionEmployeeService(
         return employees.map { pe ->
             PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
         }
+    }
+
+    /**
+     * 행사사원 추가 시 후보 여사원 검색 — 행사 거래처가 속한 지점 소속 여사원만.
+     *
+     * ## 정책 배경
+     * SF 레거시(`RelatedListDataGridController.getLookupCandidates`)의 행사사원 후보 검색은 `Name LIKE + Status='재직'
+     * LIMIT 5` 뿐 — 지점/직책 필터가 없었다(재직자 전원, OWD Private + with sharing 암묵 가시성만). 본 메서드의
+     * "거래처 지점 소속 여사원만" 제한은 **레거시에 없던 신규 정책**이나, 그 **지점 매칭 방식은 SF 여사원일정 최신 경로
+     * (`ScheduleSearchByTeamMemberController` → `Util.getIncludedBranchCode`) 정합**으로 구현한다.
+     *
+     * ## 매칭 (SF 정합 — 여사원일정 [AdminTeamScheduleService.getMembers] 와 동일 패턴)
+     * 1. 행사 거래처(`promotion.account.branchCode`, HR OrgCode 축)를 지점 코드로 사용.
+     * 2. [BranchCodeExpander.expand] (= SF `getIncludedBranchCode`, BranchMapping 이력/포함 지점 확장) 로 확장.
+     * 3. [com.otoki.powersales.domain.org.employee.repository.EmployeeRepositoryCustom.findActiveWomenByCostCenterCodes]
+     *    로 `employee.cost_center_code IN (확장집합)` + `role=여사원`(AppAuthority.WOMAN) + 앱로그인활성 조회.
+     *
+     * 참고: 여사원일정 경로와 동일하게 Organization 조직트리 레벨 정규화(orgCodeLevel2~5 승격)는 태우지 않는다
+     * (SF `ScheduleSearchByTeamMemberController` 가 getIncludedBranchCode 만 쓰는 것과 정합).
+     *
+     * ## 가시성
+     * 부모 Promotion 가시 범위를 [validateParentVisible] 로 검증(ControlledByParent) — 타 지점 행사 promotionId
+     * 추측으로 후보를 열람하는 과다노출 방지.
+     *
+     * 거래처 또는 거래처지점코드가 없으면 빈 결과. 응답은 [EmployeeListResponse] 재사용(기존 사원 lookup 정합).
+     */
+    fun lookupEmployeeCandidates(
+        scope: DataScope,
+        promotionId: Long,
+        keyword: String?,
+        size: Int,
+    ): EmployeeListResponse {
+        val promotion = findActivePromotion(promotionId)
+        validateParentVisible(scope, promotion)
+
+        val branchCode = promotion.account?.branchCode?.takeIf { it.isNotBlank() }
+            ?: return EmployeeListResponse(content = emptyList(), page = 0, size = size, totalElements = 0, totalPages = 0)
+
+        val expandedBranchCodes = branchCodeExpander.expand(setOf(branchCode)).toList()
+        val today = LocalDate.now()
+        val kw = keyword?.trim()?.takeIf { it.isNotBlank() }
+
+        val matched = employeeRepository.findActiveWomenByCostCenterCodes(expandedBranchCodes)
+            .asSequence()
+            .filter { emp ->
+                // 이름 / 사번 부분일치 (SF 후보 검색 Name LIKE 정합, 사번도 함께 허용)
+                kw == null ||
+                    emp.name.contains(kw, ignoreCase = true) ||
+                    (emp.employeeCode?.contains(kw, ignoreCase = true) == true)
+            }
+            .take(size)
+            .map { EmployeeListItem.from(it, today) }
+            .toList()
+
+        return EmployeeListResponse(
+            content = matched,
+            page = 0,
+            size = size,
+            totalElements = matched.size.toLong(),
+            totalPages = 1,
+        )
     }
 
     /**

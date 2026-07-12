@@ -211,11 +211,36 @@ export async function getEmployeeBranches(): Promise<EmployeeBranch[]> {
  *
  * Employee READ 권한 없이도 호출 가능 (SF PromotionEmployee__c.EmployeeId__c Lookup
  * 메커니즘 정합). 검색 범위는 서버에서 재직 사원으로 항상 고정되므로 status 파라미터를 받지 않는다.
+ *
+ * 주의: 전사 재직 사원 검색이다. 행사마스터 상세에서 "행사 거래처 지점 소속 여사원만" 으로 제한된
+ * 후보가 필요하면 [fetchEmployeeCandidatesForPromotion] 을 쓴다(전문행사조 마스터 폼 등 행사 컨텍스트가
+ * 없는 화면은 이 전사 lookup 을 그대로 사용).
  */
 export async function fetchEmployeesForPromotionLookup(
   params: Pick<FetchEmployeesParams, 'keyword' | 'page' | 'size'>,
 ): Promise<EmployeeListData> {
   const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/employees/lookup', { params });
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '사원 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 행사마스터 상세의 행사사원 후보 lookup search — 행사 거래처가 속한 지점 소속 여사원(role=WOMAN)만 반환.
+ *
+ * SF 여사원일정 지점 스코프(getIncludedBranchCode) 정합. 전사 사원을 검색하는
+ * [fetchEmployeesForPromotionLookup] 과 달리 promotionId 로 거래처 지점을 스코프로 적용한다.
+ * promotion READ 권한으로 가드.
+ */
+export async function fetchEmployeeCandidatesForPromotion(
+  promotionId: number,
+  params: Pick<FetchEmployeesParams, 'keyword' | 'size'>,
+): Promise<EmployeeListData> {
+  const res = await client.get<ApiResponse<EmployeeListData>>(
+    `/api/v1/admin/promotions/${promotionId}/employees/lookup`,
+    { params },
+  );
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '사원 검색에 실패했습니다');
   }

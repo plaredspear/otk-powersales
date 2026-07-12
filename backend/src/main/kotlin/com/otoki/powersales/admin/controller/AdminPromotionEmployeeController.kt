@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.BatchUpdatePr
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionConfirmResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionEmployeeListResponse
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionConfirmService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionEmployeeService
 import com.otoki.powersales.platform.common.dto.ApiResponse
@@ -34,6 +35,25 @@ class AdminPromotionEmployeeController(
         @PathVariable promotionId: Long
     ): ResponseEntity<ApiResponse<List<PromotionEmployeeListResponse>>> {
         val response = adminPromotionEmployeeService.getEmployees(scope, promotionId)
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 행사사원 추가 시 후보 여사원 검색 — 행사 거래처가 속한 지점 소속 여사원만.
+     *
+     * SF 여사원일정 지점 스코프(getIncludedBranchCode) 정합. 전사 사원 lookup(`/employees/lookup`)과 달리
+     * 행사 거래처 지점 + 여사원(role=WOMAN) 으로 후보를 제한한다. promotion READ 권한으로 가드.
+     */
+    @GetMapping("/api/v1/admin/promotions/{promotionId}/employees/lookup")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun lookupEmployeeCandidates(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+        @CurrentDataScope scope: DataScope,
+        @PathVariable promotionId: Long,
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false, defaultValue = "5") size: Int
+    ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
+        val response = adminPromotionEmployeeService.lookupEmployeeCandidates(scope, promotionId, keyword, size)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

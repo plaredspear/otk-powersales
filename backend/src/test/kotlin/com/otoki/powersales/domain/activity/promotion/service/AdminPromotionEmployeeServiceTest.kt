@@ -50,6 +50,8 @@ class AdminPromotionEmployeeServiceTest {
     private val promotionEmployeeRepository: PromotionEmployeeRepository = mockk(relaxUnitFun = true)
     private val promotionRepository: PromotionRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
+    private val branchCodeExpander: com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander =
+        mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
     private val policyEvaluator: SharingRulePolicyEvaluator =
         mockk(relaxed = true)
@@ -67,6 +69,7 @@ class AdminPromotionEmployeeServiceTest {
         promotionEmployeeRepository = promotionEmployeeRepository,
         promotionRepository = promotionRepository,
         employeeRepository = employeeRepository,
+        branchCodeExpander = branchCodeExpander,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         policyEvaluator = policyEvaluator,
         teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
@@ -149,6 +152,7 @@ class AdminPromotionEmployeeServiceTest {
                 promotionEmployeeRepository = promotionEmployeeRepository,
                 promotionRepository = promotionRepository,
                 employeeRepository = employeeRepository,
+                branchCodeExpander = branchCodeExpander,
                 teamMemberScheduleRepository = teamMemberScheduleRepository,
                 policyEvaluator = policyEvaluator,
                 teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
@@ -187,6 +191,97 @@ class AdminPromotionEmployeeServiceTest {
             )
             assertThatThrownBy { service.getEmployees(restrictedScope, 10L) }
                 .isInstanceOf(PromotionForbiddenException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("lookupEmployeeCandidates - 행사 거래처 지점 소속 여사원 검색")
+    inner class LookupEmployeeCandidatesTests {
+
+        // 거래처 branch_code = "5691" 인 행사. (HR OrgCode 축)
+        private fun promotionWithBranch(branchCode: String? = "5691") = Promotion(
+            id = 10L, promotionNumber = "PM00000001",
+            account = Account(id = 100, name = "테스트거래처").also { it.branchCode = branchCode },
+            startDate = LocalDate.of(2026, 3, 10), endDate = LocalDate.of(2026, 3, 20),
+            isDeleted = false,
+        )
+
+        private fun woman(id: Long, name: String, code: String, cc: String) =
+            Employee(id = id, sfid = "a0B5g00000W$id", employeeCode = code, name = name).also {
+                it.role = AppAuthority.WOMAN
+                it.costCenterCode = cc
+            }
+
+        @Test
+        @DisplayName("정상 - 거래처 branch_code 를 BranchCodeExpander 확장 후 여사원 조회")
+        fun lookup_success_expandsBranchAndQueriesWomen() {
+            every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch("5691"))
+            // BranchMapping 1:N 확장 (SF getIncludedBranchCode 정합)
+            every { branchCodeExpander.expand(setOf("5691")) } returns setOf("5691", "5692", "5693")
+            every { employeeRepository.findActiveWomenByCostCenterCodes(match { it.toSet() == setOf("5691", "5692", "5693") }) } returns
+                listOf(woman(1L, "김여사", "20030117", "5692"), woman(2L, "이여사", "20030118", "5693"))
+
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5)
+
+            assertThat(result.content).hasSize(2)
+            assertThat(result.content.map { it.name }).containsExactly("김여사", "이여사")
+            verify(exactly = 1) { branchCodeExpander.expand(setOf("5691")) }
+        }
+
+        @Test
+        @DisplayName("keyword - 이름/사번 부분일치만 반환")
+        fun lookup_keywordFilters() {
+            every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch("5691"))
+            every { branchCodeExpander.expand(setOf("5691")) } returns setOf("5691")
+            every { employeeRepository.findActiveWomenByCostCenterCodes(any()) } returns
+                listOf(woman(1L, "김여사", "20030117", "5691"), woman(2L, "박여사", "20030118", "5691"))
+
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = "박", size = 5)
+
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].name).isEqualTo("박여사")
+        }
+
+        @Test
+        @DisplayName("size - 상위 N 건으로 제한")
+        fun lookup_limitsSize() {
+            every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch("5691"))
+            every { branchCodeExpander.expand(setOf("5691")) } returns setOf("5691")
+            every { employeeRepository.findActiveWomenByCostCenterCodes(any()) } returns
+                (1L..10L).map { woman(it, "여사$it", "200301$it", "5691") }
+
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 3)
+
+            assertThat(result.content).hasSize(3)
+        }
+
+        @Test
+        @DisplayName("거래처지점코드 없음 -> 빈 결과 (여사원 조회/확장 미호출)")
+        fun lookup_noBranchCode_returnsEmpty() {
+            every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch(branchCode = null))
+
+            val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5)
+
+            assertThat(result.content).isEmpty()
+            verify(exactly = 0) { branchCodeExpander.expand(any()) }
+            verify(exactly = 0) { employeeRepository.findActiveWomenByCostCenterCodes(any()) }
+        }
+
+        @Test
+        @DisplayName("가시 범위 밖 행사 -> PromotionForbiddenException (ControlledByParent)")
+        fun lookup_outOfScope() {
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            val restrictedScope = DataScope(branchCodes = listOf("ZZZ99"), isAllBranches = false)
+            assertThatThrownBy { service.lookupEmployeeCandidates(restrictedScope, 10L, null, 5) }
+                .isInstanceOf(PromotionForbiddenException::class.java)
+        }
+
+        @Test
+        @DisplayName("행사 미존재 -> PromotionNotFoundException")
+        fun lookup_promotionNotFound() {
+            every { promotionRepository.findById(999L) } returns Optional.empty()
+            assertThatThrownBy { service.lookupEmployeeCandidates(allBranchesScope, 999L, null, 5) }
+                .isInstanceOf(PromotionNotFoundException::class.java)
         }
     }
 

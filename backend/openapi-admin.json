@@ -27236,6 +27236,56 @@
         "tags" : [ "admin-promotion-employee-controller" ]
       }
     },
+    "/api/v1/admin/promotions/{promotionId}/employees/lookup" : {
+      "get" : {
+        "operationId" : "lookupEmployeeCandidates",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "scope",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DataScope"
+          }
+        }, {
+          "in" : "path",
+          "name" : "promotionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 5,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-employee-controller" ]
+      }
+    },
     "/api/v1/admin/push/test" : {
       "post" : {
         "operationId" : "test_2",

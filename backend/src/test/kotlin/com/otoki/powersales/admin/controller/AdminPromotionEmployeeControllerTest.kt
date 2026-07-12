@@ -8,6 +8,9 @@ import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionEmployeeRequest
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionEmployeeDetailResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionEmployeeListResponse
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
+import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionConfirmService
 import com.otoki.powersales.domain.activity.promotion.service.AdminPromotionEmployeeService
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionEmployeeNotFoundException
@@ -81,6 +84,42 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
             every { adminPromotionEmployeeService.getEmployees(any(), eq(999L)) } throws PromotionNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/promotions/999/employees"))
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("$.success").value(false))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/promotions/{promotionId}/employees/lookup - 행사사원 후보(거래처 지점 여사원) 검색")
+    inner class LookupEmployeeCandidates {
+
+        @Test
+        @DisplayName("성공 - 후보 여사원 목록 반환 (keyword/size 파라미터 전달)")
+        fun lookup_success() {
+            val item = EmployeeListItem.from(
+                Employee(id = 1L, sfid = "a0B", employeeCode = "20030117", name = "김여사"),
+                java.time.LocalDate.of(2026, 3, 15),
+            )
+            val response = EmployeeListResponse(content = listOf(item), page = 0, size = 5, totalElements = 1, totalPages = 1)
+            every { adminPromotionEmployeeService.lookupEmployeeCandidates(any(), eq(10L), eq("김"), eq(5)) } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/promotions/10/employees/lookup")
+                    .param("keyword", "김")
+                    .param("size", "5"),
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.content[0].name").value("김여사"))
+                .andExpect(jsonPath("$.data.content[0].employeeCode").value("20030117"))
+        }
+
+        @Test
+        @DisplayName("실패 - 행사 미존재")
+        fun lookup_promotionNotFound() {
+            every { adminPromotionEmployeeService.lookupEmployeeCandidates(any(), eq(999L), any(), any()) } throws PromotionNotFoundException()
+
+            mockMvc.perform(get("/api/v1/admin/promotions/999/employees/lookup").param("keyword", "김"))
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("$.success").value(false))
         }

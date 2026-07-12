@@ -29,6 +29,8 @@ class AdminPromotionEmployeeSharingPolicyTest {
     private val promotionEmployeeRepository: PromotionEmployeeRepository = mockk()
     private val promotionRepository: PromotionRepository = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
+    private val branchCodeExpander: com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander =
+        mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
     private val policyEvaluator: SharingRulePolicyEvaluator = mockk()
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper =
@@ -43,6 +45,7 @@ class AdminPromotionEmployeeSharingPolicyTest {
         promotionEmployeeRepository = promotionEmployeeRepository,
         promotionRepository = promotionRepository,
         employeeRepository = employeeRepository,
+        branchCodeExpander = branchCodeExpander,
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         policyEvaluator = policyEvaluator,
         teamMemberScheduleCascadeHelper = teamMemberScheduleCascadeHelper,
