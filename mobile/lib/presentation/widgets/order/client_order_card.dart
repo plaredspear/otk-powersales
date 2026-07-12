@@ -66,6 +66,15 @@ class ClientOrderCard extends StatelessWidget {
                 order.clientName,
                 style: AppTypography.headlineSmall,
               ),
+              if ((order.ordererName ?? '').isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  '주문자 ${order.ordererName}',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.xs),
               Text(
                 '총 주문금액 ${_formatAmount(order.totalAmount)}원',

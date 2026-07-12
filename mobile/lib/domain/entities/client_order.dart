@@ -20,12 +20,16 @@ class ClientOrder {
   /// 로그인 사용자가 등록한 주문인지 여부 (서버 권위 판정). 목록에서 "내 주문" 강조용.
   final bool isMine;
 
+  /// 주문자명 (사번 기반 서버 배치 조회로 해석한 실제 이름). 담당자 무관 목록에서 누가 넣은 주문인지 표시.
+  final String? ordererName;
+
   const ClientOrder({
     required this.sapOrderNumber,
     required this.clientId,
     required this.clientName,
     required this.totalAmount,
     this.isMine = false,
+    this.ordererName,
   });
 
   ClientOrder copyWith({
@@ -34,6 +38,7 @@ class ClientOrder {
     String? clientName,
     int? totalAmount,
     bool? isMine,
+    String? ordererName,
   }) {
     return ClientOrder(
       sapOrderNumber: sapOrderNumber ?? this.sapOrderNumber,
@@ -41,6 +46,7 @@ class ClientOrder {
       clientName: clientName ?? this.clientName,
       totalAmount: totalAmount ?? this.totalAmount,
       isMine: isMine ?? this.isMine,
+      ordererName: ordererName ?? this.ordererName,
     );
   }
 
@@ -51,6 +57,7 @@ class ClientOrder {
       'clientName': clientName,
       'totalAmount': totalAmount,
       'isMine': isMine,
+      'ordererName': ordererName,
     };
   }
 
@@ -61,6 +68,7 @@ class ClientOrder {
       clientName: json['clientName'] as String,
       totalAmount: json['totalAmount'] as int,
       isMine: json['isMine'] as bool? ?? false,
+      ordererName: json['ordererName'] as String?,
     );
   }
 
@@ -72,7 +80,8 @@ class ClientOrder {
         other.clientId == clientId &&
         other.clientName == clientName &&
         other.totalAmount == totalAmount &&
-        other.isMine == isMine;
+        other.isMine == isMine &&
+        other.ordererName == ordererName;
   }
 
   @override
@@ -83,6 +92,7 @@ class ClientOrder {
       clientName,
       totalAmount,
       isMine,
+      ordererName,
     );
   }
 
@@ -90,7 +100,8 @@ class ClientOrder {
   String toString() {
     return 'ClientOrder(sapOrderNumber: $sapOrderNumber, '
         'clientId: $clientId, clientName: $clientName, '
-        'totalAmount: $totalAmount, isMine: $isMine)';
+        'totalAmount: $totalAmount, isMine: $isMine, '
+        'ordererName: $ordererName)';
   }
 }
 

@@ -10,6 +10,7 @@ class ClientOrderModel {
   final String clientName;
   final int totalAmount;
   final bool isMine;
+  final String? ordererName;
 
   const ClientOrderModel({
     required this.sapOrderNumber,
@@ -17,6 +18,7 @@ class ClientOrderModel {
     required this.clientName,
     required this.totalAmount,
     this.isMine = false,
+    this.ordererName,
   });
 
   /// snake_case JSON에서 파싱
@@ -27,6 +29,7 @@ class ClientOrderModel {
       clientName: json['clientName'] as String,
       totalAmount: (json['totalAmount'] as num).toInt(),
       isMine: json['isMine'] as bool? ?? false,
+      ordererName: json['ordererName'] as String?,
     );
   }
 
@@ -38,6 +41,7 @@ class ClientOrderModel {
       'clientName': clientName,
       'totalAmount': totalAmount,
       'isMine': isMine,
+      'ordererName': ordererName,
     };
   }
 
@@ -49,6 +53,7 @@ class ClientOrderModel {
       clientName: clientName,
       totalAmount: totalAmount,
       isMine: isMine,
+      ordererName: ordererName,
     );
   }
 
@@ -60,6 +65,7 @@ class ClientOrderModel {
       clientName: entity.clientName,
       totalAmount: entity.totalAmount,
       isMine: entity.isMine,
+      ordererName: entity.ordererName,
     );
   }
 
@@ -71,20 +77,22 @@ class ClientOrderModel {
         other.clientId == clientId &&
         other.clientName == clientName &&
         other.totalAmount == totalAmount &&
-        other.isMine == isMine;
+        other.isMine == isMine &&
+        other.ordererName == ordererName;
   }
 
   @override
   int get hashCode {
-    return Object.hash(
-        sapOrderNumber, clientId, clientName, totalAmount, isMine);
+    return Object.hash(sapOrderNumber, clientId, clientName, totalAmount,
+        isMine, ordererName);
   }
 
   @override
   String toString() {
     return 'ClientOrderModel(sapOrderNumber: $sapOrderNumber, '
         'clientId: $clientId, clientName: $clientName, '
-        'totalAmount: $totalAmount, isMine: $isMine)';
+        'totalAmount: $totalAmount, isMine: $isMine, '
+        'ordererName: $ordererName)';
   }
 }
 
