@@ -101,7 +101,15 @@ class ClientOrderQueryService(
             ?: throw SapOrderNotFoundException()
 
         val products = erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber)
-        return ClientOrderDetailResponse.from(order, products)
+
+        // 주문자명은 erp_order.employee_name(시스템 계정명 오적재 가능) 대신 사번으로 Employee 마스터에서 해석.
+        // 단건 상세라 조회 1회 — N+1 아님. 미해석 시 기존 employee_name 로 폴백.
+        val ordererName = order.employeeCode
+            ?.takeIf { it.isNotBlank() }
+            ?.let { employeeRepository.findByEmployeeCode(it).orElse(null)?.name }
+            ?: order.employeeName
+
+        return ClientOrderDetailResponse.from(order, products, ordererName)
     }
 
     private fun validatePagination(page: Int, size: Int) {

@@ -36,7 +36,16 @@ data class ClientOrderDetailResponse(
          */
         const val CLIENT_DEADLINE_TIME: String = "13:50"
 
-        fun from(order: ErpOrder, products: List<ErpOrderProduct>): ClientOrderDetailResponse {
+        /**
+         * @param ordererName 주문자 사번으로 Employee 마스터에서 해석한 실제 주문자명.
+         *   `erp_order.employee_name`(SF `EmployeeName__c`)은 시스템 계정명이 적재되는 경우가 있어 신뢰하지 않고,
+         *   서비스가 `employee_code` 로 조회한 이름을 주입한다. 미해석 시 `order.employeeName` 로 폴백.
+         */
+        fun from(
+            order: ErpOrder,
+            products: List<ErpOrderProduct>,
+            ordererName: String?,
+        ): ClientOrderDetailResponse {
             val items = products.map(ClientOrderItemResponse::from)
             return ClientOrderDetailResponse(
                 sapOrderNumber = order.sapOrderNumber,
@@ -47,7 +56,7 @@ data class ClientOrderDetailResponse(
                 deliveryDate = order.deliveryRequestDate,
                 totalApprovedAmount = order.orderSalesAmount,
                 // 주문자(사원) — 거래처별 주문은 담당자 무관 전체 노출이라 라인마다 주문자가 다를 수 있어 헤더에 명시.
-                ordererName = order.employeeName,
+                ordererName = ordererName,
                 ordererCode = order.employeeCode,
                 orderedItemCount = items.size,
                 orderedItems = items

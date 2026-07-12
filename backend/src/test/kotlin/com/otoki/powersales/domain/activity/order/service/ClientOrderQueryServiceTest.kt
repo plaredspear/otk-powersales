@@ -51,6 +51,8 @@ class ClientOrderQueryServiceTest {
     init {
         // 기본값 — 로그인 사원 미해석(내 주문 아님). isMine 테스트에서만 override.
         every { employeeRepository.findById(any()) } returns Optional.empty()
+        // 기본값 — 주문자 사번 미해석(주문자명 폴백). 해석 테스트에서만 override.
+        every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
     }
 
     @Nested
@@ -84,6 +86,34 @@ class ClientOrderQueryServiceTest {
             assertThat(result.orderedItems[1].deliveryStatus).isEqualTo(DeliveryStatus.DELIVERED)
             // 레거시 `#,###.##` 정합 — 천단위 구분 + 소수 최대 2자리
             assertThat(result.orderedItems[1].deliveredQuantity).isEqualTo("1,234.5 BOX")
+        }
+
+        @Test
+        @DisplayName("정상 - 주문자명은 사번으로 Employee 마스터에서 해석 (employee_name 무시)")
+        fun ordererNameResolvedByEmployeeCode() {
+            val order = createOrder(employeeCode = employeeCode) // employeeName="사원1"(시스템 계정명)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
+            every { employeeRepository.findByEmployeeCode(employeeCode) } returns
+                Optional.of(Employee(id = 7L, employeeCode = employeeCode, name = "김영업"))
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            assertThat(result.ordererCode).isEqualTo(employeeCode)
+            assertThat(result.ordererName).isEqualTo("김영업")
+        }
+
+        @Test
+        @DisplayName("정상 - 사번으로 사원 미해석 시 employee_name 으로 폴백")
+        fun ordererNameFallsBackWhenEmployeeNotFound() {
+            val order = createOrder(employeeCode = employeeCode) // employeeName="사원1"
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
+            // findByEmployeeCode 는 기본 stub(Optional.empty()) — 미해석
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            assertThat(result.ordererName).isEqualTo("사원1")
         }
 
         @Test
