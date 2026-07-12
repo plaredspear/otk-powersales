@@ -11,9 +11,12 @@ import com.otoki.powersales.domain.activity.order.exception.InvalidSapOrderNumbe
 import com.otoki.powersales.domain.activity.order.exception.SapOrderNotFoundException
 import com.otoki.powersales.domain.activity.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.domain.activity.order.repository.ErpOrderRepository
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import java.util.Optional
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
@@ -34,13 +37,21 @@ class ClientOrderQueryServiceTest {
     private val erpOrderRepository: ErpOrderRepository = mockk()
     private val erpOrderProductRepository: ErpOrderProductRepository = mockk()
     private val accountRepository: AccountRepository = mockk()
+    private val employeeRepository: EmployeeRepository = mockk()
     private val today = LocalDate.of(2026, 5, 6)
     private val clock = Clock.fixed(today.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneId.of("UTC"))
-    private val service =
-        ClientOrderQueryService(erpOrderRepository, erpOrderProductRepository, accountRepository, clock)
+    private val service = ClientOrderQueryService(
+        erpOrderRepository, erpOrderProductRepository, accountRepository, employeeRepository, clock,
+    )
 
+    private val userId = 1L
     private val sapOrderNumber = "0300011396"
     private val employeeCode = "20030117"
+
+    init {
+        // 기본값 — 로그인 사원 미해석(내 주문 아님). isMine 테스트에서만 override.
+        every { employeeRepository.findById(any()) } returns Optional.empty()
+    }
 
     @Nested
     @DisplayName("getClientOrderDetail - 정상 조회")
@@ -182,7 +193,7 @@ class ClientOrderQueryServiceTest {
                 erpOrderRepository.findClientOrders(clientId, deliveryDate, any())
             } returns PageImpl(listOf(order), PageRequest.of(0, 20), 1)
 
-            val result = service.getClientOrders(clientId, deliveryDate, null, null)
+            val result = service.getClientOrders(userId, clientId, deliveryDate, null, null)
 
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.content).hasSize(1)
@@ -190,6 +201,26 @@ class ClientOrderQueryServiceTest {
             assertThat(result.content[0].clientId).isEqualTo(clientId)
             assertThat(result.content[0].clientName).isEqualTo("홍길동마트")
             assertThat(result.content[0].totalAmount).isEqualTo(1_250_000L)
+            // 로그인 사원 미해석(기본 stub) → 내 주문 아님
+            assertThat(result.content[0].isMine).isFalse()
+        }
+
+        @Test
+        @DisplayName("정상 - 주문자사번 == 로그인 사원 사번 → isMine=true (내 주문 강조)")
+        fun isMineTrueWhenEmployeeCodeMatches() {
+            val order = createOrder(employeeCode = "MINE_CODE").apply {
+                account = Account(id = clientId, name = "홍길동마트")
+            }
+            every { accountRepository.existsById(clientId) } returns true
+            every { employeeRepository.findById(userId) } returns
+                Optional.of(Employee(id = userId, employeeCode = "MINE_CODE", name = "me"))
+            every {
+                erpOrderRepository.findClientOrders(clientId, deliveryDate, any())
+            } returns PageImpl(listOf(order), PageRequest.of(0, 20), 1)
+
+            val result = service.getClientOrders(userId, clientId, deliveryDate, null, null)
+
+            assertThat(result.content[0].isMine).isTrue()
         }
 
         @Test
@@ -201,7 +232,7 @@ class ClientOrderQueryServiceTest {
                 erpOrderRepository.findClientOrders(clientId, today, capture(pageableSlot))
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
-            service.getClientOrders(clientId, null, null, null)
+            service.getClientOrders(userId, clientId, null, null, null)
 
             assertThat(pageableSlot.captured.pageNumber).isEqualTo(0)
             assertThat(pageableSlot.captured.pageSize).isEqualTo(20)
@@ -218,7 +249,7 @@ class ClientOrderQueryServiceTest {
                 erpOrderRepository.findClientOrders(eq(clientId), capture(deliveryDateSlot), any())
             } returns PageImpl(emptyList(), PageRequest.of(0, 20), 0)
 
-            service.getClientOrders(clientId, null, null, null)
+            service.getClientOrders(userId, clientId, null, null, null)
 
             assertThat(deliveryDateSlot.captured).isEqualTo(today)
         }
@@ -228,21 +259,21 @@ class ClientOrderQueryServiceTest {
         fun clientNotFound() {
             every { accountRepository.existsById(clientId) } returns false
 
-            assertThatThrownBy { service.getClientOrders(clientId, deliveryDate, null, null) }
+            assertThatThrownBy { service.getClientOrders(userId, clientId, deliveryDate, null, null) }
                 .isInstanceOf(ClientNotFoundException::class.java)
         }
 
         @Test
         @DisplayName("실패 - 페이지 음수 → InvalidOrderParameterException")
         fun negativePage() {
-            assertThatThrownBy { service.getClientOrders(clientId, deliveryDate, -1, null) }
+            assertThatThrownBy { service.getClientOrders(userId, clientId, deliveryDate, -1, null) }
                 .isInstanceOf(InvalidOrderParameterException::class.java)
         }
 
         @Test
         @DisplayName("실패 - 페이지 크기 초과 → InvalidOrderParameterException")
         fun sizeTooLarge() {
-            assertThatThrownBy { service.getClientOrders(clientId, deliveryDate, 0, 101) }
+            assertThatThrownBy { service.getClientOrders(userId, clientId, deliveryDate, 0, 101) }
                 .isInstanceOf(InvalidOrderParameterException::class.java)
         }
     }

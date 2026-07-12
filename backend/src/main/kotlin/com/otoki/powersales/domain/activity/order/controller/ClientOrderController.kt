@@ -42,7 +42,8 @@ class ClientOrderController(
         @RequestParam(required = false) page: Int?,
         @RequestParam(required = false) size: Int?
     ): ResponseEntity<ApiResponse<Page<ClientOrderSummaryResponse>>> {
-        val response = clientOrderQueryService.getClientOrders(clientId, deliveryDate, page, size)
+        val response =
+            clientOrderQueryService.getClientOrders(principal.userId, clientId, deliveryDate, page, size)
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }
 

@@ -45,14 +45,15 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                         sapOrderNumber = "0300011396",
                         clientId = 10L,
                         clientName = "홍길동마트",
-                        totalAmount = 1_250_000L
+                        totalAmount = 1_250_000L,
+                        isMine = true
                     )
                 ),
                 PageRequest.of(0, 20),
                 1
             )
             every {
-                clientOrderQueryService.getClientOrders(eq(10L), eq(LocalDate.of(2026, 5, 6)), null, null)
+                clientOrderQueryService.getClientOrders(any(), eq(10L), eq(LocalDate.of(2026, 5, 6)), null, null)
             } returns page
 
             mockMvc.perform(
@@ -66,6 +67,7 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content[0].clientId").value(10))
                 .andExpect(jsonPath("$.data.content[0].clientName").value("홍길동마트"))
                 .andExpect(jsonPath("$.data.content[0].totalAmount").value(1_250_000))
+                .andExpect(jsonPath("$.data.content[0].isMine").value(true))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
                 .andExpect(jsonPath("$.data.totalPages").value(1))
                 .andExpect(jsonPath("$.data.number").value(0))
@@ -77,7 +79,7 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
         @DisplayName("실패 - 거래처 미존재 시 404 CLIENT_NOT_FOUND")
         fun clientNotFound() {
             every {
-                clientOrderQueryService.getClientOrders(eq(99L), any(), null, null)
+                clientOrderQueryService.getClientOrders(any(), eq(99L), any(), null, null)
             } throws ClientNotFoundException()
 
             mockMvc.perform(

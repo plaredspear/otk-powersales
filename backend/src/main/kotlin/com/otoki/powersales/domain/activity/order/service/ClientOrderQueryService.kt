@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.activity.order.exception.SapOrderNotFoundExce
 import com.otoki.powersales.domain.activity.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.domain.activity.order.repository.ErpOrderRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
+import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -33,6 +34,7 @@ class ClientOrderQueryService(
     private val erpOrderRepository: ErpOrderRepository,
     private val erpOrderProductRepository: ErpOrderProductRepository,
     private val accountRepository: AccountRepository,
+    private val employeeRepository: EmployeeRepository,
     private val clock: Clock = Clock.systemDefaultZone()
 ) {
 
@@ -48,12 +50,14 @@ class ClientOrderQueryService(
      * 레거시 `ClientOrderSearch`(`DeliveryRequestDate__c =: 단일 날짜`) 와 동등하게 **납기일 단일 날짜**로 조회한다.
      * 레거시 화면이 납기일을 항상 전송(기본 오늘)하므로, null 입력 시 오늘로 기본 적용한다 (전체 조회 아님 — 레거시 데이터 조회 결과 정합).
      *
+     * @param userId 로그인 사용자 ID (내 주문 강조용 `isMine` 판정)
      * @param clientId 거래처 ID (필수)
      * @param deliveryDate 납기일 (null 이면 오늘 기준)
      * @param page 페이지 번호 (기본 0)
      * @param size 페이지 크기 (기본 20, 최대 100)
      */
     fun getClientOrders(
+        userId: Long,
         clientId: Long,
         deliveryDate: LocalDate?,
         page: Int?,
@@ -68,6 +72,9 @@ class ClientOrderQueryService(
             throw ClientNotFoundException()
         }
 
+        // 로그인 사원 사번 — 각 주문의 주문자사번과 비교해 "내 주문"(isMine) 판정. 미존재 시 전부 false.
+        val currentEmployeeCode = employeeRepository.findById(userId).orElse(null)?.employeeCode
+
         // 최근 납기일 → 최신 주문번호 순 정렬 (레거시 ClientOrderSearch 와 동등한 기본 정렬)
         val pageable = PageRequest.of(
             resolvedPage,
@@ -76,7 +83,7 @@ class ClientOrderQueryService(
         )
 
         return erpOrderRepository.findClientOrders(clientId, resolvedDeliveryDate, pageable)
-            .map(ClientOrderSummaryResponse.Companion::from)
+            .map { ClientOrderSummaryResponse.from(it, currentEmployeeCode) }
     }
 
     /**
