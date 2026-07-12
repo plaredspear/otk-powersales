@@ -9,12 +9,14 @@ class ClientOrderModel {
   final int clientId;
   final String clientName;
   final int totalAmount;
+  final bool isMine;
 
   const ClientOrderModel({
     required this.sapOrderNumber,
     required this.clientId,
     required this.clientName,
     required this.totalAmount,
+    this.isMine = false,
   });
 
   /// snake_case JSON에서 파싱
@@ -24,6 +26,7 @@ class ClientOrderModel {
       clientId: json['clientId'] as int,
       clientName: json['clientName'] as String,
       totalAmount: (json['totalAmount'] as num).toInt(),
+      isMine: json['isMine'] as bool? ?? false,
     );
   }
 
@@ -34,6 +37,7 @@ class ClientOrderModel {
       'clientId': clientId,
       'clientName': clientName,
       'totalAmount': totalAmount,
+      'isMine': isMine,
     };
   }
 
@@ -44,6 +48,7 @@ class ClientOrderModel {
       clientId: clientId,
       clientName: clientName,
       totalAmount: totalAmount,
+      isMine: isMine,
     );
   }
 
@@ -54,6 +59,7 @@ class ClientOrderModel {
       clientId: entity.clientId,
       clientName: entity.clientName,
       totalAmount: entity.totalAmount,
+      isMine: entity.isMine,
     );
   }
 
@@ -64,19 +70,21 @@ class ClientOrderModel {
         other.sapOrderNumber == sapOrderNumber &&
         other.clientId == clientId &&
         other.clientName == clientName &&
-        other.totalAmount == totalAmount;
+        other.totalAmount == totalAmount &&
+        other.isMine == isMine;
   }
 
   @override
   int get hashCode {
-    return Object.hash(sapOrderNumber, clientId, clientName, totalAmount);
+    return Object.hash(
+        sapOrderNumber, clientId, clientName, totalAmount, isMine);
   }
 
   @override
   String toString() {
     return 'ClientOrderModel(sapOrderNumber: $sapOrderNumber, '
         'clientId: $clientId, clientName: $clientName, '
-        'totalAmount: $totalAmount)';
+        'totalAmount: $totalAmount, isMine: $isMine)';
   }
 }
 

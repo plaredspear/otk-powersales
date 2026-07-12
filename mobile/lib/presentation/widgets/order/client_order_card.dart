@@ -24,6 +24,7 @@ class ClientOrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isMine = order.isMine;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -35,17 +36,30 @@ class ClientOrderCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
+            // 내 주문은 네이비 테두리(굵게) + 옅은 배경으로 강조 — 담당자 무관 전체 목록에서 본인 주문 식별.
+            // ignore: deprecated_member_use
+            color: isMine ? AppColors.otokiBlue.withOpacity(0.06) : null,
+            border: Border.all(
+              color: isMine ? AppColors.otokiBlue : AppColors.border,
+              width: isMine ? 1.5 : 1,
+            ),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'SAP 주문번호: ${order.sapOrderNumber}',
-                style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.textTertiary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'SAP 주문번호: ${order.sapOrderNumber}',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ),
+                  if (isMine) _buildMineBadge(),
+                ],
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
@@ -63,6 +77,27 @@ class ClientOrderCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// "내 주문" 뱃지 — 본인이 등록한 주문 표시.
+  Widget _buildMineBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.otokiBlue,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '내 주문',
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.white,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

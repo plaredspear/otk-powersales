@@ -17,11 +17,15 @@ class ClientOrder {
   /// 총 주문금액 (원)
   final int totalAmount;
 
+  /// 로그인 사용자가 등록한 주문인지 여부 (서버 권위 판정). 목록에서 "내 주문" 강조용.
+  final bool isMine;
+
   const ClientOrder({
     required this.sapOrderNumber,
     required this.clientId,
     required this.clientName,
     required this.totalAmount,
+    this.isMine = false,
   });
 
   ClientOrder copyWith({
@@ -29,12 +33,14 @@ class ClientOrder {
     int? clientId,
     String? clientName,
     int? totalAmount,
+    bool? isMine,
   }) {
     return ClientOrder(
       sapOrderNumber: sapOrderNumber ?? this.sapOrderNumber,
       clientId: clientId ?? this.clientId,
       clientName: clientName ?? this.clientName,
       totalAmount: totalAmount ?? this.totalAmount,
+      isMine: isMine ?? this.isMine,
     );
   }
 
@@ -44,6 +50,7 @@ class ClientOrder {
       'clientId': clientId,
       'clientName': clientName,
       'totalAmount': totalAmount,
+      'isMine': isMine,
     };
   }
 
@@ -53,6 +60,7 @@ class ClientOrder {
       clientId: json['clientId'] as int,
       clientName: json['clientName'] as String,
       totalAmount: json['totalAmount'] as int,
+      isMine: json['isMine'] as bool? ?? false,
     );
   }
 
@@ -63,7 +71,8 @@ class ClientOrder {
         other.sapOrderNumber == sapOrderNumber &&
         other.clientId == clientId &&
         other.clientName == clientName &&
-        other.totalAmount == totalAmount;
+        other.totalAmount == totalAmount &&
+        other.isMine == isMine;
   }
 
   @override
@@ -73,6 +82,7 @@ class ClientOrder {
       clientId,
       clientName,
       totalAmount,
+      isMine,
     );
   }
 
@@ -80,7 +90,7 @@ class ClientOrder {
   String toString() {
     return 'ClientOrder(sapOrderNumber: $sapOrderNumber, '
         'clientId: $clientId, clientName: $clientName, '
-        'totalAmount: $totalAmount)';
+        'totalAmount: $totalAmount, isMine: $isMine)';
   }
 }
 
