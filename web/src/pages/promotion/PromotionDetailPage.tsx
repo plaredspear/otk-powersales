@@ -396,7 +396,7 @@ export default function PromotionDetailPage() {
   // --- 행사마스터 자식 포함 복제 (1클릭 — UC-12) ---
   const handleCloneWithChildren = () => {
     Modal.confirm({
-      title: '자식 포함 복제',
+      title: '행사사원 포함 복제',
       content: '행사마스터 정보 및 행사사원을 모두 복제하시겠습니까?',
       okText: '복제',
       cancelText: '취소',
@@ -1325,7 +1325,7 @@ export default function PromotionDetailPage() {
               onClick={handleCloneWithChildren}
               loading={cloneWithChildrenMutation.isPending}
             >
-              자식 포함 복제
+              행사사원 포함 복제
             </Button>
             <Button danger onClick={handleDelete}>
               삭제
