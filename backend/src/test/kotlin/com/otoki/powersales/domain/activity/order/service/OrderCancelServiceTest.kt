@@ -76,11 +76,10 @@ class OrderCancelServiceTest {
             orderRequestRepository = orderRequestRepository,
             orderRequestProductRepository = orderRequestProductRepository,
             employeeRepository = employeeRepository,
-            orderDeadlineCalculator = deadlineCalculator,
+            orderCancelPolicy = OrderCancelPolicy(deadlineCalculator, sapOutboxRepository),
             orderRequestCancelPayloadFactory = payloadFactory,
             orderRequestCancelSender = sender,
             orderCancelCommitter = committer,
-            sapOutboxRepository = sapOutboxRepository,
         )
     }
 

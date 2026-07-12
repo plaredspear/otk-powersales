@@ -143,6 +143,8 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                 orderRequestStatus = OrderRequestStatus.APPROVED.name,
                 orderRequestStatusName = OrderRequestStatus.APPROVED.displayName,
                 isClosed = true,
+                cancelable = false,
+                registrationInFlight = false,
                 orderedItemCount = 1,
                 orderedItems = listOf(
                     OrderedItemResponse(

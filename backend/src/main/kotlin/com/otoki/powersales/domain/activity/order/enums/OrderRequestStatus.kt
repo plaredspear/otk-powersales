@@ -30,6 +30,9 @@ enum class OrderRequestStatus(
     fun toJson(): String = displayName
 
     companion object {
+        /** 취소 가능 상태 (Spec #597). `DRAFT` / `CANCELED` 는 취소 불가. */
+        val CANCELLABLE: Set<OrderRequestStatus> = setOf(SENT, APPROVED, SEND_FAILED)
+
         @JvmStatic
         @JsonCreator
         fun fromDisplayName(value: String): OrderRequestStatus =

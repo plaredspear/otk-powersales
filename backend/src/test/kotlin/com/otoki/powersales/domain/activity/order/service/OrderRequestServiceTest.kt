@@ -16,7 +16,9 @@ import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundExcepti
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderHistoryRow
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.external.sap.outbox.SapOutboxRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -41,11 +43,15 @@ class OrderRequestServiceTest {
     private val orderRequestDetailSapSender: OrderRequestDetailSapSender = mockk()
     private val orderRequestDetailMapper = OrderRequestDetailMapper()
     private val productRepository: ProductRepository = mockk()
+    private val sapOutboxRepository: SapOutboxRepository = mockk()
 
     private val fixedClock: Clock = Clock.fixed(
         LocalDateTime.of(2026, 5, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
         ZoneId.of("Asia/Seoul"),
     )
+
+    private val orderCancelPolicy =
+        OrderCancelPolicy(OrderDeadlineCalculator(fixedClock), sapOutboxRepository)
 
     private lateinit var service: OrderRequestService
 
@@ -57,10 +63,15 @@ class OrderRequestServiceTest {
             orderRequestDetailSapSender,
             orderRequestDetailMapper,
             productRepository,
+            orderCancelPolicy,
             fixedClock,
         )
         // 기본값 — 상세 조회 시 제품명 일괄조회. 개별 테스트에서 필요 시 override.
         every { productRepository.findByProductCodeIn(any()) } returns emptyList()
+        // 기본값 — 등록 outbox in-flight 아님 (취소 가능 판정용).
+        every {
+            sapOutboxRepository.existsByDomainTypeAndAggregateIdAndStatusIn(any(), any(), any())
+        } returns false
     }
 
     @Nested

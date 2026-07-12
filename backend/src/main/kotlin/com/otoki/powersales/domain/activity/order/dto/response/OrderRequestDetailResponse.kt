@@ -30,6 +30,10 @@ data class OrderRequestDetailResponse(
     val orderRequestStatus: String?,
     val orderRequestStatusName: String?,
     val isClosed: Boolean,
+    // 취소 가능 여부(서버 권위 판정: 상태 + 마감 + 등록 SAP 전송 not in-flight). 모바일 취소 버튼 게이트 단일 진실원.
+    val cancelable: Boolean,
+    // 등록 SAP 전송이 아직 진행 중(outbox PENDING/RETRY)인지 — 취소 불가 사유가 "전송 처리 중"임을 안내하기 위함.
+    val registrationInFlight: Boolean,
     val orderedItemCount: Int,
     val orderedItems: List<OrderedItemResponse>,
     val orderProcessingStatusList: List<OrderProcessingStatusResponse>?,
@@ -39,6 +43,8 @@ data class OrderRequestDetailResponse(
         fun of(
             orderRequest: OrderRequest,
             isClosed: Boolean,
+            cancelable: Boolean,
+            registrationInFlight: Boolean,
             orderedItems: List<OrderedItemResponse>,
             orderProcessingStatusList: List<OrderProcessingStatusResponse>?,
             rejectedItems: List<RejectedItemResponse>?,
@@ -56,6 +62,8 @@ data class OrderRequestDetailResponse(
                 orderRequestStatus = orderRequest.orderRequestStatus?.name,
                 orderRequestStatusName = orderRequest.orderRequestStatus?.displayName,
                 isClosed = isClosed,
+                cancelable = cancelable,
+                registrationInFlight = registrationInFlight,
                 orderedItemCount = orderedItems.size,
                 orderedItems = orderedItems,
                 orderProcessingStatusList = orderProcessingStatusList,

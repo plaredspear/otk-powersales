@@ -104,5 +104,8 @@ class SapOutbox(
         const val STATUS_FAILED = "FAILED"
         const val MAX_ERROR_LENGTH = 4000
         const val MAX_RETRY_COUNT = 5
+
+        /** SAP 전송 in-flight(미확정) 로 판정하는 상태 — 주문 취소 경합 방어(Spec #597) 에서 사용. */
+        val IN_FLIGHT_STATUSES = listOf(STATUS_PENDING, STATUS_RETRY)
     }
 }

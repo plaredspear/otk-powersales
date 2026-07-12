@@ -35,6 +35,7 @@ class OrderRequestService(
     private val orderRequestDetailSapSender: OrderRequestDetailSapSender,
     private val orderRequestDetailMapper: OrderRequestDetailMapper,
     private val productRepository: ProductRepository,
+    private val orderCancelPolicy: OrderCancelPolicy,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) {
 
@@ -223,9 +224,15 @@ class OrderRequestService(
             )
         }
 
+        // 취소 가능 여부 — 취소 엔드포인트 가드와 동일한 [OrderCancelPolicy] 로 판정 (버튼/409 불일치 방지).
+        val registrationInFlight = orderCancelPolicy.isRegistrationInFlight(orderRequest.id)
+        val cancelable = orderCancelPolicy.isCancelable(orderRequest)
+
         return OrderRequestDetailResponse.of(
             orderRequest = orderRequest,
             isClosed = isClosed,
+            cancelable = cancelable,
+            registrationInFlight = registrationInFlight,
             orderedItems = orderedItems,
             orderProcessingStatusList = finalProcessingGroups,
             rejectedItems = rejectedItems,
