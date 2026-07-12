@@ -13076,6 +13076,12 @@
             },
             "type" : "array"
           },
+          "ordererCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "ordererName" : {
+            "type" : [ "string", "null" ]
+          },
           "sapAccountCode" : {
             "type" : [ "string", "null" ]
           },
@@ -18302,6 +18308,9 @@
       },
       "OrderRequestDetailResponse" : {
         "properties" : {
+          "cancelable" : {
+            "type" : "boolean"
+          },
           "clientDeadlineTime" : {
             "type" : [ "string", "null" ]
           },
@@ -18351,6 +18360,9 @@
               "$ref" : "#/components/schemas/OrderedItemResponse"
             },
             "type" : "array"
+          },
+          "registrationInFlight" : {
+            "type" : "boolean"
           },
           "rejectedItems" : {
             "items" : {
