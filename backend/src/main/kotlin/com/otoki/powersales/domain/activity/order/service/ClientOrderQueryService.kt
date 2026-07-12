@@ -82,8 +82,25 @@ class ClientOrderQueryService(
             Sort.by(Sort.Direction.DESC, "deliveryRequestDate", "sapOrderNumber")
         )
 
-        return erpOrderRepository.findClientOrders(clientId, resolvedDeliveryDate, pageable)
-            .map { ClientOrderSummaryResponse.from(it, currentEmployeeCode) }
+        val orders = erpOrderRepository.findClientOrders(clientId, resolvedDeliveryDate, pageable)
+
+        // 주문자명은 employee_name(시스템 계정명 오적재 가능) 대신 사번으로 해석.
+        // 페이지 내 사번을 모아 findByEmployeeCodeIn 1회로 조회 → map 재주입 (N+1 방지). 미해석 시 employee_name 폴백.
+        val ordererNameByCode: Map<String, String> = orders.content
+            .mapNotNull { it.employeeCode?.takeIf(String::isNotBlank) }
+            .distinct()
+            .takeIf { it.isNotEmpty() }
+            ?.let { codes ->
+                employeeRepository.findByEmployeeCodeIn(codes)
+                    .mapNotNull { emp -> emp.employeeCode?.let { it to emp.name } }
+                    .toMap()
+            }
+            ?: emptyMap()
+
+        return orders.map {
+            val ordererName = it.employeeCode?.let(ordererNameByCode::get) ?: it.employeeName
+            ClientOrderSummaryResponse.from(it, currentEmployeeCode, ordererName)
+        }
     }
 
     /**

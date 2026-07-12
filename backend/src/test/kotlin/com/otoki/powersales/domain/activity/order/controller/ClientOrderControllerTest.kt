@@ -46,7 +46,8 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                         clientId = 10L,
                         clientName = "홍길동마트",
                         totalAmount = 1_250_000L,
-                        isMine = true
+                        isMine = true,
+                        ordererName = "홍길동"
                     )
                 ),
                 PageRequest.of(0, 20),
@@ -68,6 +69,7 @@ class ClientOrderControllerTest : MobileControllerTestSupport() {
                 .andExpect(jsonPath("$.data.content[0].clientName").value("홍길동마트"))
                 .andExpect(jsonPath("$.data.content[0].totalAmount").value(1_250_000))
                 .andExpect(jsonPath("$.data.content[0].isMine").value(true))
+                .andExpect(jsonPath("$.data.content[0].ordererName").value("홍길동"))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
                 .andExpect(jsonPath("$.data.totalPages").value(1))
                 .andExpect(jsonPath("$.data.number").value(0))
