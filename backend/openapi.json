@@ -13142,6 +13142,9 @@
           "mine" : {
             "type" : "boolean"
           },
+          "ordererName" : {
+            "type" : [ "string", "null" ]
+          },
           "sapOrderNumber" : {
             "type" : "string"
           },
