@@ -36,14 +36,10 @@ class OrderRequestResendService(
     private val orderRequestProductRepository: OrderRequestProductRepository,
     private val orderDeadlineCalculator: OrderDeadlineCalculator,
     private val orderRequestRegisterSender: OrderRequestRegisterSender,
-    private val orderRegistrationBlockGuard: OrderRegistrationBlockGuard,
 ) {
 
     @Transactional
     fun resend(orderRequestId: Long, userId: Long) {
-        // 운영(prod) 환경 임시 차단 — 등록과 동일하게 재전송도 막는다
-        orderRegistrationBlockGuard.assertNotBlocked()
-
         val orderRequest = loadAndValidate(orderRequestId, userId)
         val lines = orderRequestProductRepository
             .findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId)

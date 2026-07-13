@@ -25,7 +25,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.springframework.mock.env.MockEnvironment
 import java.math.BigDecimal
 import java.time.Clock
 import java.time.LocalDate
@@ -60,8 +59,6 @@ class OrderRequestResendServiceTest {
             orderRequestProductRepository = orderRequestProductRepository,
             orderDeadlineCalculator = deadlineCalculator,
             orderRequestRegisterSender = registerSender,
-            // 프로파일 미설정 = 차단 안 됨 (dev/local 정상 경로)
-            orderRegistrationBlockGuard = OrderRegistrationBlockGuard(MockEnvironment()),
         )
     }
 

@@ -39,7 +39,6 @@ import org.junit.jupiter.api.Nested
 import com.otoki.powersales.domain.activity.order.event.OrderRequestRegisteredEvent
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.mock.env.MockEnvironment
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -71,8 +70,6 @@ class OrderRequestCreateServiceTest {
         loanInquiryClient,
         orderRequestRegisterSender,
         orderDeadlineCalculator,
-        // 프로파일 미설정 = 차단 안 됨 (dev/local 정상 경로)
-        OrderRegistrationBlockGuard(MockEnvironment()),
         entityManager,
         eventPublisher,
     )

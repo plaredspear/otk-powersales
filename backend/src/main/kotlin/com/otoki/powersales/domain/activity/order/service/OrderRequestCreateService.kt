@@ -60,16 +60,12 @@ class OrderRequestCreateService(
     private val loanInquiryClient: SapLoanInquiryClient,
     private val orderRequestRegisterSender: OrderRequestRegisterSender,
     private val orderDeadlineCalculator: OrderDeadlineCalculator,
-    private val orderRegistrationBlockGuard: OrderRegistrationBlockGuard,
     private val entityManager: EntityManager,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     @Transactional
     fun create(userId: Long, request: OrderRequestCreateRequest): OrderRequestCreateResponse {
-        // 0. 운영(prod) 환경 임시 차단 — 멱등 검사보다 앞서 전면 차단
-        orderRegistrationBlockGuard.assertNotBlocked()
-
         // 1. 멱등 검사
         if (!request.clientRequestId.isNullOrBlank()) {
             val existing = orderRequestRepository.findByClientRequestId(request.clientRequestId)
