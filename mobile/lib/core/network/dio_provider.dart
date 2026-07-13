@@ -17,7 +17,10 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
     baseUrl: AppConfig.baseUrl,
     connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
+    // 주문취소(SD03051) 등 SAP 경유 API 는 백엔드→SAP 처리에만 8~10초+ 걸려,
+    // 10초 수신 타임아웃은 서버가 정상 처리 중인데도 클라이언트가 먼저 끊어 "응답 지연" 에러를
+    // 냈다. 백엔드 SAP read-timeout(30초)보다 여유 있게 잡아 서버 처리 완료를 기다린다.
+    receiveTimeout: const Duration(seconds: 35),
   ));
 
   // 생명주기 취소 토큰을 모든 요청에 자동 첨부 — AuthInterceptor 보다 먼저 등록해

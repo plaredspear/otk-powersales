@@ -137,7 +137,11 @@ sap:
     username: ${SAP_OUTBOUND_USERNAME:}
     password: ${SAP_OUTBOUND_PASSWORD:}
     connect-timeout-ms: ${SAP_OUTBOUND_CONNECT_TIMEOUT_MS:5000}
-    read-timeout-ms: ${SAP_OUTBOUND_READ_TIMEOUT_MS:10000}
+    # SD03051(주문취소) 등 무거운 SAP 인터페이스는 정상 처리에도 8~10초+ 소요 —
+    # 10초 read timeout 은 SAP 가 처리 완료하기 전에 EMPTY_RESPONSE 로 끊어 "정상 처리됐으나
+    # 응답 지연 에러" 를 냈고, 이를 본 사용자의 수동 재취소로 SAP 중복 전송을 유발했다.
+    # 관측 최대치(~10초)의 3배로 여유 확보해 false timeout 을 제거한다.
+    read-timeout-ms: ${SAP_OUTBOUND_READ_TIMEOUT_MS:30000}
     retry:
       max-attempts: ${SAP_OUTBOUND_RETRY_MAX_ATTEMPTS:3}
       delay-ms: ${SAP_OUTBOUND_RETRY_DELAY_MS:1000}
