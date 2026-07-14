@@ -7,7 +7,6 @@ import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -15,6 +14,8 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager
 import org.springframework.context.annotation.Import
+import org.springframework.core.io.ClassPathResource
+import org.springframework.data.jpa.repository.Query
 import org.springframework.test.context.ActiveProfiles
 
 @DataJpaTest
@@ -76,16 +77,35 @@ class SuggestionRepositoryTest {
         assertThat(found).isNull()
     }
 
+    /**
+     * `nextProposalNumberSeqValue()` 는 PostgreSQL 전용 `nextval('...seq')` 네이티브 쿼리라
+     * H2 in-memory 에서는 실행 자체가 불가(SQLGrammarException)하다. DB 실행 대신
+     * 쿼리에 박힌 SQL 이 실제 Flyway 마이그레이션이 만드는 시퀀스와 정합함을 검증한다.
+     *
+     * 1) `@Query` 가 참조하는 시퀀스명(`powersales.suggestion_proposal_number_seq`) 이
+     *    2) 마이그레이션(V173)의 `CREATE SEQUENCE` 대상과 동일하고
+     *    3) 그 시퀀스가 START WITH 100000 (기존 테스트의 `>= 100000` 기대치의 출처) 임을 확인한다.
+     */
     @Test
-    @Disabled("PostgreSQL sequence 의존 — H2 in-memory 에서는 미지원. 통합 테스트 (실 PG) 로 보강 예정")
-    @DisplayName("nextProposalNumberSeqValue() 는 단조 증가 (race condition free 보장은 DB sequence 위임)")
-    fun nextProposalNumberSeqValueMonotonic() {
-        val first = suggestionRepository.nextProposalNumberSeqValue()
-        val second = suggestionRepository.nextProposalNumberSeqValue()
-        val third = suggestionRepository.nextProposalNumberSeqValue()
+    @DisplayName("nextProposalNumberSeqValue() 쿼리 SQL 이 Flyway 시퀀스 DDL 과 정합한다 (H2 미실행)")
+    fun nextProposalNumberSeqValueSqlMatchesMigration() {
+        val query = SuggestionRepository::class.java
+            .getMethod("nextProposalNumberSeqValue")
+            .getAnnotation(Query::class.java)
 
-        assertThat(first).isGreaterThanOrEqualTo(100000)
-        assertThat(second).isEqualTo(first + 1)
-        assertThat(third).isEqualTo(first + 2)
+        assertThat(query).isNotNull
+        assertThat(query.nativeQuery).isTrue()
+
+        val sequenceName = "powersales.suggestion_proposal_number_seq"
+        // 쿼리는 정확히 해당 시퀀스를 nextval() 로 읽어야 한다.
+        assertThat(query.value.replace(" ", ""))
+            .isEqualToIgnoringCase("SELECTnextval('$sequenceName')")
+
+        // 마이그레이션이 동일 시퀀스를 START WITH 100000 으로 생성함을 교차 검증.
+        val ddl = ClassPathResource("db/migration/V173__create_suggestion.sql")
+            .inputStream.bufferedReader().use { it.readText() }
+        val normalized = ddl.replace(Regex("\\s+"), " ")
+
+        assertThat(normalized).contains("CREATE SEQUENCE $sequenceName START WITH 100000")
     }
 }
