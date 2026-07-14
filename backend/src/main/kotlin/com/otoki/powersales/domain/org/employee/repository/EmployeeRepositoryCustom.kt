@@ -28,6 +28,22 @@ interface EmployeeRepositoryCustom {
     fun findActiveWomenByCostCenterCodes(costCenterCodes: List<String>?): List<Employee>
 
     /**
+     * 행사사원 후보 여사원 검색 전용 — SF 레거시 `RelatedListDataGridController.getLookupCandidates` 정합.
+     *
+     * SF 원본 lookup 은 `DKRetail__Status__c='재직'` 만 걸고 `APPLoginActive` 는 걸지 않는다
+     * (여사원일정 계열 [findActiveWomenByCostCenterCodes] 와 다른 축). 확정 검증
+     * ([com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper] 의 status
+     * '휴직'/'퇴직' 차단) 과 동일하게 `status='재직'` 으로 걸어, lookup↔확정 기준을 status 로 일치시켜
+     * "퇴직인데 후보엔 뜨는" 불일치를 제거한다.
+     *
+     * `DKRetail__Employee__c WHERE CostCenterCode__c IN :codes AND DKRetail__AppAuthority__c='여사원'
+     *                              AND DKRetail__Status__c='재직' AND is_deleted != true ORDER BY Name`
+     *
+     * @param costCenterCodes  필터링할 cost center 코드 집합. `null` 또는 비어있으면 전사 조회.
+     */
+    fun findActiveWomenForPromotionByCostCenterCodes(costCenterCodes: List<String>?): List<Employee>
+
+    /**
      * 여사원 목록 조회 — [findActiveWomenByCostCenterCodes] 와 달리 `app_login_active` 조건을 제외해
      * 퇴사/휴직 등 비활성 여사원도 포함한다. 근무기간 조회(과거 근무내역 조회) 화면 전용.
      *

@@ -218,7 +218,7 @@ class AdminPromotionEmployeeServiceTest {
             every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch("5691"))
             // BranchMapping 1:N 확장 (SF getIncludedBranchCode 정합)
             every { branchCodeExpander.expand(setOf("5691")) } returns setOf("5691", "5692", "5693")
-            every { employeeRepository.findActiveWomenByCostCenterCodes(match { it.toSet() == setOf("5691", "5692", "5693") }) } returns
+            every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(match { it.toSet() == setOf("5691", "5692", "5693") }) } returns
                 listOf(woman(1L, "김여사", "20030117", "5692"), woman(2L, "이여사", "20030118", "5693"))
 
             val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5, loginCostCenterCode = "1234")
@@ -233,7 +233,7 @@ class AdminPromotionEmployeeServiceTest {
         fun lookup_keywordFilters() {
             every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch("5691"))
             every { branchCodeExpander.expand(setOf("5691")) } returns setOf("5691")
-            every { employeeRepository.findActiveWomenByCostCenterCodes(any()) } returns
+            every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(any()) } returns
                 listOf(woman(1L, "김여사", "20030117", "5691"), woman(2L, "박여사", "20030118", "5691"))
 
             val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = "박", size = 5, loginCostCenterCode = "1234")
@@ -247,7 +247,7 @@ class AdminPromotionEmployeeServiceTest {
         fun lookup_limitsSize() {
             every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch("5691"))
             every { branchCodeExpander.expand(setOf("5691")) } returns setOf("5691")
-            every { employeeRepository.findActiveWomenByCostCenterCodes(any()) } returns
+            every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(any()) } returns
                 (1L..10L).map { woman(it, "여사$it", "200301$it", "5691") }
 
             val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 3, loginCostCenterCode = "1234")
@@ -264,7 +264,7 @@ class AdminPromotionEmployeeServiceTest {
 
             assertThat(result.content).isEmpty()
             verify(exactly = 0) { branchCodeExpander.expand(any()) }
-            verify(exactly = 0) { employeeRepository.findActiveWomenByCostCenterCodes(any()) }
+            verify(exactly = 0) { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(any()) }
         }
 
         @Test
@@ -289,7 +289,7 @@ class AdminPromotionEmployeeServiceTest {
         fun lookup_salesSupport2_returnsAllBranchWomen() {
             every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch("5691"))
             // costCenterCode 필터 없이 전사 조회 → repository 인자 null
-            every { employeeRepository.findActiveWomenByCostCenterCodes(null) } returns
+            every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(null) } returns
                 listOf(woman(1L, "김여사", "20030117", "5692"), woman(2L, "타지점여사", "20030118", "9999"))
 
             val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5, loginCostCenterCode = "4889")
@@ -297,14 +297,14 @@ class AdminPromotionEmployeeServiceTest {
             assertThat(result.content.map { it.name }).containsExactly("김여사", "타지점여사")
             // 거래처 지점 확장을 타지 않음
             verify(exactly = 0) { branchCodeExpander.expand(any()) }
-            verify(exactly = 1) { employeeRepository.findActiveWomenByCostCenterCodes(null) }
+            verify(exactly = 1) { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(null) }
         }
 
         @Test
         @DisplayName("영업지원2팀(4889) 로그인 -> 거래처지점코드 없어도 전체 여사원 조회")
         fun lookup_salesSupport2_noBranchCode_stillReturnsAllWomen() {
             every { promotionRepository.findById(10L) } returns Optional.of(promotionWithBranch(branchCode = null))
-            every { employeeRepository.findActiveWomenByCostCenterCodes(null) } returns
+            every { employeeRepository.findActiveWomenForPromotionByCostCenterCodes(null) } returns
                 listOf(woman(1L, "김여사", "20030117", "5692"))
 
             val result = service.lookupEmployeeCandidates(allBranchesScope, 10L, keyword = null, size = 5, loginCostCenterCode = "4889")

@@ -85,6 +85,24 @@ class EmployeeRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findActiveWomenForPromotionByCostCenterCodes(costCenterCodes: List<String>?): List<Employee> {
+        // 행사사원 후보 전용 — SF `RelatedListDataGridController.getLookupCandidates` 정합.
+        // appLoginActive 대신 status='재직' 으로 걸어 확정 검증(status 휴직/퇴직 차단)과 축을 일치시킨다.
+        val builder = BooleanBuilder()
+        builder.and(employee.role.eq(AppAuthority.WOMAN))
+        builder.and(employee.status.eq(EmploymentStatus.ACTIVE.code))
+        builder.and(employee.isDeleted.isNull.or(employee.isDeleted.isFalse))
+        if (!costCenterCodes.isNullOrEmpty()) {
+            builder.and(employee.costCenterCode.`in`(costCenterCodes))
+        }
+        return queryFactory
+            .selectFrom(employee)
+            .leftJoin(employee.employeeInfo, employeeInfo).fetchJoin()
+            .where(builder)
+            .orderBy(employee.name.asc())
+            .fetch()
+    }
+
     override fun findWomenByCostCenterCodes(costCenterCodes: List<String>?): List<Employee> {
         // findActiveWomenByCostCenterCodes 와 동일하되 appLoginActive 조건 제외 — 퇴사/휴직 여사원 포함.
         val builder = BooleanBuilder()

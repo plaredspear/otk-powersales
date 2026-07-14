@@ -161,11 +161,13 @@ class AdminPromotionEmployeeService(
      * "거래처 지점 소속 여사원만" 제한은 **레거시에 없던 신규 정책**이나, 그 **지점 매칭 방식은 SF 여사원일정 최신 경로
      * (`ScheduleSearchByTeamMemberController` → `Util.getIncludedBranchCode`) 정합**으로 구현한다.
      *
-     * ## 매칭 (SF 정합 — 여사원일정 [AdminTeamScheduleService.getMembers] 와 동일 패턴)
+     * ## 매칭 (SF 정합)
      * 1. 행사 거래처(`promotion.account.branchCode`, HR OrgCode 축)를 지점 코드로 사용.
      * 2. [BranchCodeExpander.expand] (= SF `getIncludedBranchCode`, BranchMapping 이력/포함 지점 확장) 로 확장.
-     * 3. [com.otoki.powersales.domain.org.employee.repository.EmployeeRepositoryCustom.findActiveWomenByCostCenterCodes]
-     *    로 `employee.cost_center_code IN (확장집합)` + `role=여사원`(AppAuthority.WOMAN) + 앱로그인활성 조회.
+     * 3. [com.otoki.powersales.domain.org.employee.repository.EmployeeRepositoryCustom.findActiveWomenForPromotionByCostCenterCodes]
+     *    로 `employee.cost_center_code IN (확장집합)` + `role=여사원`(AppAuthority.WOMAN) + `status='재직'` 조회.
+     *    상태 필터는 SF 원본 lookup(`getLookupCandidates` 의 `Status='재직'`) 및 확정 검증(status 휴직/퇴직 차단)과
+     *    동일한 status 축이라 lookup↔확정 기준이 일치한다(appLoginActive 축은 사용하지 않음).
      *
      * 참고: 여사원일정 경로와 동일하게 Organization 조직트리 레벨 정규화(orgCodeLevel2~5 승격)는 태우지 않는다
      * (SF `ScheduleSearchByTeamMemberController` 가 getIncludedBranchCode 만 쓰는 것과 정합).
@@ -204,7 +206,7 @@ class AdminPromotionEmployeeService(
         val today = LocalDate.now()
         val kw = keyword?.trim()?.takeIf { it.isNotBlank() }
 
-        val matched = employeeRepository.findActiveWomenByCostCenterCodes(expandedBranchCodes)
+        val matched = employeeRepository.findActiveWomenForPromotionByCostCenterCodes(expandedBranchCodes)
             .asSequence()
             .filter { emp ->
                 // 이름 / 사번 부분일치 (SF 후보 검색 Name LIKE 정합, 사번도 함께 허용)
