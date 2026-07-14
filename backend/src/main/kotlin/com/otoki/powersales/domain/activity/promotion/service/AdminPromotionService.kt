@@ -4,8 +4,13 @@ import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionCreat
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionPosProductRequest
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionDetailResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterMeta
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterOption
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterType
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFormMetaResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListDefaults
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListItem
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListMetaResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionPosProductResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTypeOption
@@ -65,6 +70,49 @@ class AdminPromotionService(
     companion object {
         // 엑셀 export 최대 건수 — 기존 엑셀 다운로드(전문행사조마스터) 정합. 초과분은 잘라냄.
         private const val EXPORT_MAX_ROWS = 50_000
+
+        // 목록 최초 조회 기본값 — 클라이언트가 추측하지 않도록 서버 단일 출처로 제공.
+        private const val LIST_DEFAULT_PAGE_SIZE = 50
+        private const val LIST_DEFAULT_SORT = "createdAt,DESC"
+
+        // 제품유형(대표제품 category1) 조회 옵션 — 상온/냉동/냉장/만두/라면 고정.
+        // 기존 web 하드코딩(CATEGORY1_OPTIONS)을 서버 단일 출처로 이전.
+        private val CATEGORY1_OPTIONS = listOf("상온", "냉동", "냉장", "만두", "라면")
+    }
+
+    /**
+     * 행사마스터 목록 화면의 정적 조회 조건(권한 무관) + 기본값.
+     *
+     * 지점(branchCode) 옵션은 권한 의존이라 여기 포함하지 않는다 — 컨트롤러가
+     * [com.otoki.powersales.admin.service.WhitelistBranchScopeResolver] 로 산출해 조립한다.
+     */
+    fun getPromotionListMetaStatic(): PromotionListMetaResponse {
+        val promotionTypeOptions = PromotionType.entries
+            .sortedBy { it.displayOrder }
+            .map { PromotionFilterOption(value = it.displayName, label = it.displayName) }
+
+        val category1Options = CATEGORY1_OPTIONS
+            .map { PromotionFilterOption(value = it, label = it) }
+
+        val filters = listOf(
+            PromotionFilterMeta("promotionType", PromotionFilterType.SELECT, promotionTypeOptions),
+            PromotionFilterMeta("category1", PromotionFilterType.SELECT, category1Options),
+            PromotionFilterMeta("keyword", PromotionFilterType.TEXT),
+            PromotionFilterMeta("accountName", PromotionFilterType.TEXT),
+            PromotionFilterMeta("accountNumber", PromotionFilterType.TEXT),
+            PromotionFilterMeta("primaryProduct", PromotionFilterType.TEXT),
+            PromotionFilterMeta("employeeKeyword", PromotionFilterType.TEXT),
+            PromotionFilterMeta("startDate", PromotionFilterType.DATE),
+            PromotionFilterMeta("endDate", PromotionFilterType.DATE),
+        )
+
+        return PromotionListMetaResponse(
+            filters = filters,
+            defaults = PromotionListDefaults(
+                pageSize = LIST_DEFAULT_PAGE_SIZE,
+                sort = LIST_DEFAULT_SORT,
+            ),
+        )
     }
 
     fun getPromotionFormMeta(): PromotionFormMetaResponse {

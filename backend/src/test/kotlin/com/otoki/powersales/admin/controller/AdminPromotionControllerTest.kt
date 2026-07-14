@@ -102,6 +102,64 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/admin/promotions/meta - 목록 조회 조건 로드")
+    inner class GetPromotionListMeta {
+
+        private fun staticMeta() = com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListMetaResponse(
+            filters = listOf(
+                com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterMeta(
+                    key = "promotionType",
+                    type = com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterType.SELECT,
+                    options = listOf(
+                        com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterOption("시식", "시식"),
+                    ),
+                ),
+            ),
+            defaults = com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListDefaults(
+                pageSize = 50,
+                sort = "createdAt,DESC",
+            ),
+        )
+
+        @Test
+        @DisplayName("성공 - 전사 권한자: 지점 옵션 다건이 filters 에 조립되어 반환")
+        fun getListMeta_allBranches() {
+            every { adminPromotionService.getPromotionListMetaStatic() } returns staticMeta()
+            every { whitelistBranchScopeResolver.getBranches(any()) } returns listOf(
+                com.otoki.powersales.platform.common.dto.response.BranchResponse("1101", "서울지점"),
+                com.otoki.powersales.platform.common.dto.response.BranchResponse("1102", "부산지점"),
+            )
+
+            mockMvc.perform(get("/api/v1/admin/promotions/meta"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.defaults.pageSize").value(50))
+                .andExpect(jsonPath("$.data.filters[0].key").value("promotionType"))
+                // branchCode 필터가 정적 메타 뒤에 조립됨
+                .andExpect(jsonPath("$.data.filters[1].key").value("branchCode"))
+                .andExpect(jsonPath("$.data.filters[1].type").value("SELECT"))
+                .andExpect(jsonPath("$.data.filters[1].options[0].value").value("1101"))
+                .andExpect(jsonPath("$.data.filters[1].options[0].label").value("서울지점"))
+                .andExpect(jsonPath("$.data.filters[1].options[1].value").value("1102"))
+        }
+
+        @Test
+        @DisplayName("성공 - 지점 사용자: 본인 지점 1건만 조립")
+        fun getListMeta_singleBranch() {
+            every { adminPromotionService.getPromotionListMetaStatic() } returns staticMeta()
+            every { whitelistBranchScopeResolver.getBranches(any()) } returns listOf(
+                com.otoki.powersales.platform.common.dto.response.BranchResponse("1101", "서울지점"),
+            )
+
+            mockMvc.perform(get("/api/v1/admin/promotions/meta"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.filters[1].key").value("branchCode"))
+                .andExpect(jsonPath("$.data.filters[1].options.length()").value(1))
+                .andExpect(jsonPath("$.data.filters[1].options[0].value").value("1101"))
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/v1/admin/promotions - 목록 조회")
     inner class GetPromotions {
 

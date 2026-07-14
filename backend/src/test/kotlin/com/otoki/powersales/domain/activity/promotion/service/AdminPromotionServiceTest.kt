@@ -125,6 +125,54 @@ class AdminPromotionServiceTest {
     }
 
     @Nested
+    @DisplayName("getPromotionListMetaStatic - 목록 조회 조건 로드(정적)")
+    inner class GetPromotionListMetaStaticTests {
+
+        @Test
+        @DisplayName("행사유형 옵션 = PromotionType displayName 3개(시식/권장/모음전), displayOrder 정렬")
+        fun promotionTypeOptions() {
+            val result = adminPromotionService.getPromotionListMetaStatic()
+
+            val promotionType = result.filters.first { it.key == "promotionType" }
+            assertThat(promotionType.type.name).isEqualTo("SELECT")
+            assertThat(promotionType.options).extracting("value")
+                .containsExactly("시식", "권장", "모음전")
+            assertThat(promotionType.options).extracting("label")
+                .containsExactly("시식", "권장", "모음전")
+        }
+
+        @Test
+        @DisplayName("제품유형(category1) 옵션 = 상온/냉동/냉장/만두/라면 서버 상수 5종")
+        fun category1Options() {
+            val result = adminPromotionService.getPromotionListMetaStatic()
+
+            val category1 = result.filters.first { it.key == "category1" }
+            assertThat(category1.type.name).isEqualTo("SELECT")
+            assertThat(category1.options).extracting("value")
+                .containsExactly("상온", "냉동", "냉장", "만두", "라면")
+        }
+
+        @Test
+        @DisplayName("텍스트/날짜 필터는 options 없음, 정적 메타에 branchCode 미포함(권한 의존은 컨트롤러 조립)")
+        fun textDateFiltersAndNoBranch() {
+            val result = adminPromotionService.getPromotionListMetaStatic()
+
+            assertThat(result.filters.first { it.key == "keyword" }.options).isNull()
+            assertThat(result.filters.first { it.key == "startDate" }.type.name).isEqualTo("DATE")
+            assertThat(result.filters.map { it.key }).doesNotContain("branchCode")
+        }
+
+        @Test
+        @DisplayName("기본값 — pageSize 50 / sort createdAt,DESC")
+        fun defaults() {
+            val result = adminPromotionService.getPromotionListMetaStatic()
+
+            assertThat(result.defaults.pageSize).isEqualTo(50)
+            assertThat(result.defaults.sort).isEqualTo("createdAt,DESC")
+        }
+    }
+
+    @Nested
     @DisplayName("getPromotions - 행사마스터 목록 조회")
     inner class GetPromotionsTests {
 

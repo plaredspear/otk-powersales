@@ -5,7 +5,11 @@ import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionCreateRequest
 import com.otoki.powersales.domain.activity.promotion.dto.request.PromotionPosProductRequest
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionDetailResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterMeta
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterOption
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFilterType
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionFormMetaResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListMetaResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionListResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionPosProductResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PromotionTargetActualReportResponse
@@ -73,6 +77,31 @@ class AdminPromotionController(
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
     fun getPromotionFormMeta(): ResponseEntity<ApiResponse<PromotionFormMetaResponse>> {
         val response = adminPromotionService.getPromotionFormMeta()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 행사마스터 목록 화면 조회 조건 로드 — "권한 기반 조건 로드" 표준 패턴 파일럿.
+     *
+     * 기존 `/branches`(지점 셀렉터) + `/form-meta`(행사유형)로 분산됐던 목록 조건 로드를 단일 응답으로 통합.
+     * 정적 조건(행사유형·제품유형·텍스트·날짜)과 기본값은 서비스가, 권한 의존 지점 옵션은
+     * [WhitelistBranchScopeResolver] 결과를 컨트롤러가 조립해 붙인다(셀렉터-조회 스코프 동일 출처).
+     */
+    @GetMapping("/meta")
+    @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
+    fun getPromotionListMeta(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<PromotionListMetaResponse>> {
+        val base = adminPromotionService.getPromotionListMetaStatic()
+        val branchOptions = whitelistBranchScopeResolver.getBranches(principal)
+            .map { PromotionFilterOption(value = it.branchCode, label = it.branchName) }
+        val response = base.copy(
+            filters = base.filters + PromotionFilterMeta(
+                key = "branchCode",
+                type = PromotionFilterType.SELECT,
+                options = branchOptions,
+            ),
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

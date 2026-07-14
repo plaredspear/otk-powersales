@@ -6,8 +6,7 @@ import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import RefreshButton from '@/components/common/RefreshButton';
 import DetailLink from '@/components/common/DetailLink';
 import { usePromotions } from '@/hooks/promotion/usePromotions';
-import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
-import { usePromotionBranches } from '@/hooks/promotion/usePromotionBranches';
+import { usePromotionListMeta } from '@/hooks/promotion/usePromotionListMeta';
 import { usePermission } from '@/hooks/usePermission';
 import { useThrottleClick } from '@/hooks/common/useThrottleClick';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
@@ -23,18 +22,12 @@ import ResizableTable from '@/components/common/ResizableTable';
 // 엑셀 다운로드 최대 건수 — 서버 export 상한(EXPORT_MAX_ROWS) 정합. 초과 시 안내 후 진행.
 const EXPORT_MAX_ROWS = 50000;
 
+// 행사유형 태그색 — PromotionType enum displayName(시식/권장/모음전) 정합.
 const PROMOTION_TYPE_TAG: Record<string, string> = {
   시식: 'blue',
-  시음: 'cyan',
-  판촉: 'green',
-  증정: 'gold',
+  권장: 'green',
+  모음전: 'gold',
 };
-
-// 제품유형(대표제품 category1) 조회 옵션 — 상온/냉동/냉장/만두/라면 고정.
-const CATEGORY1_OPTIONS = ['상온', '냉동', '냉장', '만두', '라면'].map((v) => ({
-  value: v,
-  label: v,
-}));
 
 function formatDate(value: string): string {
   return dayjs(value).format('YYYY-MM-DD');
@@ -58,6 +51,11 @@ export default function PromotionListPage() {
   // 작성자 → 사용자 상세(/users/:id) 링크는 user READ 권한 보유자(시스템 관리자급)에게만.
   // SF 레거시 동등 + 신규 user 조회가 관리자 전용이라, 미보유자(조장/사원)는 이름 텍스트만 노출.
   const canReadUser = hasEntityPermission('user', 'READ');
+  // 조회 조건 로드 — 지점 셀렉터 + 행사유형 + 제품유형 옵션 + 기본값을 단일 응답으로 로드.
+  // 기존 usePromotionBranches + usePromotionFormMeta 2회 호출 대체(진입 3회→2회).
+  const { data: listMeta } = usePromotionListMeta();
+  // 기본 페이지 크기 — 서버 defaults 를 단일 출처로. meta 미수신(초기 렌더) 시 서버값과 동일한 50 fallback.
+  const defaultPageSize = listMeta?.defaults.pageSize ?? 50;
   // page/필터/페이지 사이즈를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입/새로고침/링크 공유 시 직전 조건 복원.
   const { page, setPage, size: pageSize, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
@@ -73,7 +71,7 @@ export default function PromotionListPage() {
       branchCode: '',
       ownerOnly: '',
     },
-    defaultPageSize: 50,
+    defaultPageSize,
   });
   const {
     promotionType,
@@ -89,17 +87,19 @@ export default function PromotionListPage() {
     ownerOnly,
   } = filters;
 
+  // meta.filters 에서 지정 key 의 SELECT 옵션을 추출.
+  const filterOptions = (key: string) =>
+    listMeta?.filters.find((f) => f.key === key)?.options ?? [];
+
   // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조 정합).
   //  - 다중 지점(전사 권한자): Select 로 선택
   //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. branchCode 는 빈 값이라 backend 가 본인 소속 지점으로
   //    자동 스코프하므로 별도 전송 불필요.
-  const { data: branches } = usePromotionBranches();
+  const branchFilterOptions = filterOptions('branchCode');
   // 옵션은 지점명(label) 가나다순으로 정렬해 노출한다 (대시보드 지점 셀렉터 정합, 한국어 로케일).
-  const branchOptions = (branches ?? [])
-    .map((b) => ({ value: b.branchCode, label: b.branchName }))
-    .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
-  const singleBranch = branches?.length === 1 ? branches[0] : null;
-  const isMultiBranch = (branches?.length ?? 0) > 1;
+  const branchOptions = [...branchFilterOptions].sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+  const singleBranch = branchFilterOptions.length === 1 ? branchFilterOptions[0] : null;
+  const isMultiBranch = branchFilterOptions.length > 1;
 
   // 조회버튼 분리형: 입력 위젯은 로컬 편집 버퍼, URL filters 가 source of truth.
   // 마운트 시 URL 값으로 1회 초기화하여 새로고침/복귀 시 위젯 표시가 맞도록 한다.
@@ -129,7 +129,6 @@ export default function PromotionListPage() {
     });
   };
 
-  const { data: formMeta } = usePromotionFormMeta();
   const handleCreate = useThrottleClick(() => navigate('/promotions/new'));
   const { run: runExport, downloading: exporting } = useExcelDownload();
   const { data, isLoading, refetch, isFetching } = usePromotions({
@@ -150,7 +149,7 @@ export default function PromotionListPage() {
 
   const promotionTypeOptions = [
     { value: '', label: '전체' },
-    ...(formMeta?.promotionTypes.map((t) => ({ value: t.name, label: t.name })) ?? []),
+    ...filterOptions('promotionType'),
   ];
 
   const handleExport = () =>
@@ -394,7 +393,7 @@ export default function PromotionListPage() {
         )}
         {singleBranch && (
           <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
-            지점: {singleBranch.branchName}
+            지점: {singleBranch.label}
           </Tag>
         )}
         <Select
@@ -442,7 +441,7 @@ export default function PromotionListPage() {
           value={filterCategory1 || undefined}
           onChange={(v) => setFilterCategory1(v ?? '')}
           style={{ width: 150 }}
-          options={CATEGORY1_OPTIONS}
+          options={filterOptions('category1')}
           allowClear
         />
         <Input

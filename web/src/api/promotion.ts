@@ -112,30 +112,50 @@ export interface PromotionFormMeta {
 
 // --- API functions ---
 
-/** 행사마스터 목록 화면 지점 셀렉터 옵션. */
-export interface PromotionBranch {
-  branchCode: string;
-  branchName: string;
-}
-
-/**
- * 행사마스터 목록 화면 지점 셀렉터 옵션 조회.
- *
- * 전사 권한자는 전 지점, 그 외는 본인 지점 1건을 반환한다(권한별 화이트리스트).
- * 프론트는 응답 길이로 단일/다중을 판별한다(단일이면 Tag 표시, 다중이면 Select).
- */
-export async function fetchPromotionBranches(): Promise<PromotionBranch[]> {
-  const res = await client.get<ApiResponse<PromotionBranch[]>>('/api/v1/admin/promotions/branches');
-  if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
-  }
-  return res.data.data;
-}
-
 export async function fetchPromotionFormMeta(): Promise<PromotionFormMeta> {
   const res = await client.get<ApiResponse<PromotionFormMeta>>('/api/v1/admin/promotions/form-meta');
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '행사마스터 폼 메타 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+// --- 목록 조회 조건 로드(meta) — "권한 기반 조건 로드" 표준 패턴 ---
+
+export type PromotionFilterType = 'TEXT' | 'SELECT' | 'DATE';
+
+export interface PromotionFilterOption {
+  value: string;
+  label: string;
+}
+
+export interface PromotionFilterMeta {
+  key: string;
+  type: PromotionFilterType;
+  options?: PromotionFilterOption[] | null;
+}
+
+export interface PromotionListDefaults {
+  pageSize: number;
+  sort: string;
+}
+
+export interface PromotionListMeta {
+  filters: PromotionFilterMeta[];
+  defaults: PromotionListDefaults;
+}
+
+/**
+ * 행사마스터 목록 화면 조회 조건 로드.
+ *
+ * 지점 셀렉터(권한 의존) + 행사유형 + 제품유형 + 텍스트/날짜 필터 + 기본값을 한 번에 반환한다.
+ * 기존 `/branches` + `/form-meta` 2회 호출을 대체(진입 3회→2회).
+ * 지점(branchCode) 옵션 길이로 프론트가 단일/다중을 판별한다(단일이면 Tag, 다중이면 Select).
+ */
+export async function fetchPromotionListMeta(): Promise<PromotionListMeta> {
+  const res = await client.get<ApiResponse<PromotionListMeta>>('/api/v1/admin/promotions/meta');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '행사마스터 조회 조건 로드에 실패했습니다');
   }
   return res.data.data;
 }

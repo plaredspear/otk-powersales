@@ -9551,6 +9551,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePromotionListMetaResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PromotionListMetaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePromotionListResponse" : {
         "properties" : {
           "data" : {
@@ -21423,6 +21452,35 @@
         },
         "type" : "object"
       },
+      "PromotionFilterMeta" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "options" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionFilterOption"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "type" : {
+            "enum" : [ "TEXT", "SELECT", "DATE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionFilterOption" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "PromotionFormMetaResponse" : {
         "properties" : {
           "promotionTypes" : {
@@ -21436,6 +21494,18 @@
               "$ref" : "#/components/schemas/StandLocationOption"
             },
             "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionListDefaults" : {
+        "properties" : {
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -21517,6 +21587,20 @@
           "targetAmount" : {
             "format" : "double",
             "type" : [ "number", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "PromotionListMetaResponse" : {
+        "properties" : {
+          "defaults" : {
+            "$ref" : "#/components/schemas/PromotionListDefaults"
+          },
+          "filters" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PromotionFilterMeta"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -28990,13 +29074,6 @@
           }
         }, {
           "in" : "query",
-          "name" : "status",
-          "required" : false,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "in" : "query",
           "name" : "keyword",
           "required" : false,
           "schema" : {
@@ -33749,6 +33826,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePromotionFormMetaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-promotion-controller" ]
+      }
+    },
+    "/api/v1/admin/promotions/meta" : {
+      "get" : {
+        "operationId" : "getPromotionListMeta",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePromotionListMetaResponse"
                 }
               }
             },
