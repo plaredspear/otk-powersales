@@ -1016,7 +1016,7 @@ export default function PromotionDetailPage() {
             >
               {options.map((emp) => (
                 <Select.Option key={emp.id} value={emp.id}>
-                  {emp.name} ({emp.employeeCode})
+                  {emp.name} ({emp.employeeCode}){emp.orgName ? ` · ${emp.orgName}` : ''}
                 </Select.Option>
               ))}
             </Select>
