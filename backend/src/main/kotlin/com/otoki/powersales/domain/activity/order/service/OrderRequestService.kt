@@ -224,9 +224,13 @@ class OrderRequestService(
             )
         }
 
-        // 취소 가능 여부 — 취소 엔드포인트 가드와 동일한 [OrderCancelPolicy] 로 판정 (버튼/409 불일치 방지).
+        // 취소 가능 여부 — 취소 엔드포인트 가드와 동일한 [OrderCancelPolicy](상태+마감+outbox) 판정에
+        // 더해, SD03052 응답상 주문 전체가 납품완료면 취소 버튼을 내린다. SAP 는 이미 납품완료된 주문의
+        // OrderChange(취소)를 거부하는데 로컬 상태(order_request)로는 이를 알 수 없어, 버튼이 떴다가
+        // 클릭 시 실패하던 문제를 선제 차단(레거시엔 없던 신규 가드). 취소 엔드포인트의 최종 방어는 SAP.
         val registrationInFlight = orderCancelPolicy.isRegistrationInFlight(orderRequest.id)
-        val cancelable = orderCancelPolicy.isCancelable(orderRequest)
+        val cancelable = orderCancelPolicy.isCancelable(orderRequest) &&
+            !orderRequestDetailMapper.isFullyDelivered(sapLines)
 
         return OrderRequestDetailResponse.of(
             orderRequest = orderRequest,

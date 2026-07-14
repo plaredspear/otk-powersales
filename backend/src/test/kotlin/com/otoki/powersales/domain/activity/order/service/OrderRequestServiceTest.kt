@@ -401,6 +401,41 @@ class OrderRequestServiceTest {
         }
 
         @Test
+        @DisplayName("성공 — 마감 전 + SD03052 전 라인 납품완료 → cancelable=false (완료 건 취소 버튼 비활성화)")
+        fun fullyDeliveredDisablesCancel() {
+            // 마감 전(취소 가능 시점)이고 APPROVED 라 원래는 cancelable=true 지만, SAP 응답상 전 라인
+            // 납품완료(CompleteTime 채워짐)면 취소 버튼을 내린다.
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLine("1000023", "0300004993", "143000"))
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            assertThat(response.isClosed).isFalse() // 마감 전
+            assertThat(response.cancelable).isFalse() // 납품완료라 취소 버튼 비활성화
+        }
+
+        @Test
+        @DisplayName("성공 — 마감 전 + SD03052 미납품(CompleteTime 없음) → cancelable=true (정상 취소 가능)")
+        fun notFullyDeliveredKeepsCancel() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            // CompleteTime '000000' (미납품) → 납품완료 아님
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLine("1000023", "0300004993", "000000"))
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            assertThat(response.isClosed).isFalse()
+            assertThat(response.cancelable).isTrue() // 미납품이라 취소 가능 유지
+        }
+
+        @Test
         @DisplayName("성공 — SAP null 반환 → orderProcessingStatusList = null, rejectedItems = null, 200 유지")
         fun sapFailureFallback() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))

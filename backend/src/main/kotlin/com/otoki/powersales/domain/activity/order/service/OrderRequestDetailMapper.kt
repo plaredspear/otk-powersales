@@ -229,6 +229,34 @@ class OrderRequestDetailMapper {
         }
     }
 
+    /**
+     * SD03052 응답 기준 **주문 전체가 납품완료** 인지 판정한다 (취소 버튼 비활성화용).
+     *
+     * 취소 시점(마감 전)에는 처리현황 그룹이 응답에서 null 로 강제되지만, SAP 호출 자체는 마감 여부와
+     * 무관하게 수행되므로([OrderRequestService] `fetchDetail`) 원본 [sapLines] 로 납품완료를 판정할 수 있다.
+     *
+     * 판정 규칙:
+     *  - 결품(`DefaultReason` 채워짐)·반려(`SAPOrderNumber` 빈값 && `LineItemStatus` 채워짐) 라인은 제외.
+     *  - 남은 **정상 배송 대상 라인이 1개 이상** 있고, 그 **전부가 배송완료**(`ShippingCompleteTime`
+     *    ≠null/빈/'000000') 이면 true.
+     *  - 정상 라인이 하나도 없으면(전부 결품/반려, 또는 응답 없음) false — 납품완료로 단정하지 않는다.
+     *
+     * 레거시엔 없던 신규 취소 가드 — SAP 가 이미 납품완료된 주문의 OrderChange(취소)를 거부하는데,
+     * 로컬 상태(order_request)로는 이를 알 수 없어 취소 버튼이 떴다가 클릭 시 실패하던 문제를 선제 차단.
+     */
+    fun isFullyDelivered(sapLines: List<SapOrderRequestDetailLine>?): Boolean {
+        if (sapLines.isNullOrEmpty()) return false
+        val deliverableLines = sapLines.filter { line ->
+            val isOutOfStock = !line.defaultReason.isNullOrEmpty()
+            val isRejected = line.sapOrderNumber.isNullOrEmpty() && !line.lineItemStatus.isNullOrEmpty()
+            !isOutOfStock && !isRejected
+        }
+        if (deliverableLines.isEmpty()) return false
+        return deliverableLines.all { line ->
+            !line.shippingCompleteTime.isNullOrEmpty() && line.shippingCompleteTime != ZERO_TIME
+        }
+    }
+
     private fun parseDecimalOrNull(s: String?): BigDecimal? {
         if (s.isNullOrBlank()) return null
         return try {

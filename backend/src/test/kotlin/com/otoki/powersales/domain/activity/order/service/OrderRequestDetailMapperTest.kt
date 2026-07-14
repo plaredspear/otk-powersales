@@ -121,6 +121,56 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
+    @DisplayName("isFullyDelivered — 전 라인 CompleteTime 채워짐 → true (취소 버튼 비활성화 대상)")
+    fun fullyDeliveredAllComplete() {
+        val sap = listOf(
+            line(productCode = "P1", sapOrderNumber = "S1", shippingCompleteTime = "143000"),
+            line(productCode = "P2", sapOrderNumber = "S1", shippingCompleteTime = "150000"),
+        )
+        assertThat(mapper.isFullyDelivered(sap)).isTrue()
+    }
+
+    @Test
+    @DisplayName("isFullyDelivered — 일부 라인만 CompleteTime → false (부분 납품은 취소 가능 유지)")
+    fun fullyDeliveredPartial() {
+        val sap = listOf(
+            line(productCode = "P1", sapOrderNumber = "S1", shippingCompleteTime = "143000"),
+            line(productCode = "P2", sapOrderNumber = "S1", shippingCompleteTime = "000000"),
+        )
+        assertThat(mapper.isFullyDelivered(sap)).isFalse()
+    }
+
+    @Test
+    @DisplayName("isFullyDelivered — 결품/반려 라인은 제외하고 나머지 정상 라인 전부 완료면 true")
+    fun fullyDeliveredExcludesOutOfStockAndRejected() {
+        val sap = listOf(
+            line(productCode = "P1", sapOrderNumber = "S1", shippingCompleteTime = "143000"),
+            // 결품(DefaultReason 채워짐) — 배송 대상 아님, 판정에서 제외
+            line(productCode = "P2", sapOrderNumber = "S1", defaultReason = "재고부족", shippingCompleteTime = "000000"),
+            // 반려(SAPOrderNumber 빈 + LineItemStatus 채워짐) — 제외
+            line(productCode = "P3", sapOrderNumber = "", lineItemStatus = "반려사유", shippingCompleteTime = "000000"),
+        )
+        assertThat(mapper.isFullyDelivered(sap)).isTrue()
+    }
+
+    @Test
+    @DisplayName("isFullyDelivered — 정상 라인이 하나도 없으면(전부 결품/반려) false")
+    fun fullyDeliveredNoDeliverableLines() {
+        val sap = listOf(
+            line(productCode = "P1", sapOrderNumber = "S1", defaultReason = "재고부족"),
+            line(productCode = "P2", sapOrderNumber = "", lineItemStatus = "반려사유"),
+        )
+        assertThat(mapper.isFullyDelivered(sap)).isFalse()
+    }
+
+    @Test
+    @DisplayName("isFullyDelivered — 응답 없음/빈 리스트 → false")
+    fun fullyDeliveredNullOrEmpty() {
+        assertThat(mapper.isFullyDelivered(null)).isFalse()
+        assertThat(mapper.isFullyDelivered(emptyList())).isFalse()
+    }
+
+    @Test
     @DisplayName("결품 — DefaultReason 채워짐 → 처리현황/반려 아닌 outOfStockReasons 로 분리 (레거시 view.jsp:414 동등)")
     fun outOfStockGoesToOrderedItems() {
         val sap = listOf(
