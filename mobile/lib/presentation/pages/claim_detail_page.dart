@@ -152,6 +152,7 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
         _row('출고처', d.logisticsCenter),
         _row('소비기한',
             d.expirationDate != null ? _fmtDate(d.expirationDate!) : null),
+        _row('주문번호', d.orderNumber),
       ]);
 
   /// 클레임정보 (레거시 view.jsp '클레임정보' 섹션)
@@ -198,6 +199,7 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
             d.interfaceDate != null ? _fmtDateTime(d.interfaceDate!) : null),
         _row('접수채널', d.channelLabel ?? d.channel),
         _row('작성자', d.employeeName),
+        _row('직위', d.jikwee),
         _row('영업사원 연락처', d.employeePhone),
       ]);
 

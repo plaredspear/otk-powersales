@@ -46,6 +46,7 @@ export interface ClaimDetail {
   manufacturingDate: string | null;
   logisticsCenter: string | null;
   expirationDate: string | null;
+  orderNumber: string | null;
   // 클레임정보
   claimNo: string | null;
   storeName: string | null;
@@ -73,6 +74,7 @@ export interface ClaimDetail {
   employeeName: string;
   employeeCode: string;
   employeePhone: string | null;
+  jikwee: string | null;
   // 처리·조치정보
   counselNumber: string | null;
   actionCode: string | null;

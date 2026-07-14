@@ -10,6 +10,7 @@ class ClaimDetailModel {
   final String? manufacturingDate;
   final String? logisticsCenter;
   final String? expirationDate;
+  final String? orderNumber;
   // 클레임정보
   final String? claimNo;
   final String? accountName;
@@ -37,6 +38,7 @@ class ClaimDetailModel {
   final String? channelLabel;
   final String? employeeName;
   final String? employeePhone;
+  final String? jikwee;
   // 처리·조치정보
   final String? counselNumber;
   final String? actionCode;
@@ -54,6 +56,7 @@ class ClaimDetailModel {
     this.manufacturingDate,
     this.logisticsCenter,
     this.expirationDate,
+    this.orderNumber,
     this.claimNo,
     this.accountName,
     this.accountCode,
@@ -78,6 +81,7 @@ class ClaimDetailModel {
     this.channelLabel,
     this.employeeName,
     this.employeePhone,
+    this.jikwee,
     this.counselNumber,
     this.actionCode,
     this.actionStatus,
@@ -95,6 +99,7 @@ class ClaimDetailModel {
       manufacturingDate: json['manufacturingDate'] as String?,
       logisticsCenter: json['logisticsCenter'] as String?,
       expirationDate: json['expirationDate'] as String?,
+      orderNumber: json['orderNumber'] as String?,
       claimNo: json['claimNo'] as String?,
       accountName: json['accountName'] as String?,
       accountCode: json['accountCode'] as String?,
@@ -119,6 +124,7 @@ class ClaimDetailModel {
       channelLabel: json['channelLabel'] as String?,
       employeeName: json['employeeName'] as String?,
       employeePhone: json['employeePhone'] as String?,
+      jikwee: json['jikwee'] as String?,
       counselNumber: json['counselNumber'] as String?,
       actionCode: json['actionCode'] as String?,
       actionStatus: json['actionStatus'] as String?,
@@ -141,6 +147,7 @@ class ClaimDetailModel {
         manufacturingDate: _parseDate(manufacturingDate),
         logisticsCenter: logisticsCenter,
         expirationDate: _parseDate(expirationDate),
+        orderNumber: orderNumber,
         claimNo: claimNo,
         accountName: accountName,
         accountCode: accountCode,
@@ -165,6 +172,7 @@ class ClaimDetailModel {
         channelLabel: channelLabel,
         employeeName: employeeName,
         employeePhone: employeePhone,
+        jikwee: jikwee,
         counselNumber: counselNumber,
         actionCode: actionCode,
         actionStatus: actionStatus,

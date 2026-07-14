@@ -296,7 +296,10 @@ class AdminClaimServiceTest {
         @Test
         @DisplayName("SF 상세 화면 항목 매핑 - 채널/처리·조치/출고처·세부점포명 등 전 항목이 응답에 노출됨")
         fun getClaimDetail_mapsAllSfDetailFields() {
-            val claim = createClaim(id = 1L, employee = createEmployee(phone = "010-1234-5678")).apply {
+            val claim = createClaim(
+                id = 1L,
+                employee = createEmployee(phone = "010-1234-5678", jobCode = "판촉직"),
+            ).apply {
                 name = "CL00041998"
                 logisticsCenter = "[물류]남양주물류"
                 manufacturingDate = LocalDate.of(2026, 6, 1)
@@ -305,6 +308,7 @@ class AdminClaimServiceTest {
                 customerDeliveryDate = LocalDate.of(2026, 7, 5)
                 detailSnsName = "리테일점"
                 division = "영업1부"
+                returnOrderNumber = "ORD-20260710-001"
                 channel = ClaimChannel.CAP
                 interfaceDate = LocalDateTime.of(2026, 7, 10, 17, 49, 0)
                 counselNumber = "00655293"
@@ -324,6 +328,8 @@ class AdminClaimServiceTest {
             assertThat(result.logisticsCenter).isEqualTo("[물류]남양주물류")
             assertThat(result.manufacturingDate).isEqualTo(LocalDate.of(2026, 6, 1))
             assertThat(result.expirationDate).isEqualTo(LocalDate.of(2026, 7, 10))
+            // SF OrderNumber__c formula (= returnOrderNumber 재노출)
+            assertThat(result.orderNumber).isEqualTo("ORD-20260710-001")
             // 클레임정보
             assertThat(result.claimNo).isEqualTo("CL00041998")
             assertThat(result.sampleCollectionFlag).isTrue()
@@ -335,6 +341,8 @@ class AdminClaimServiceTest {
             assertThat(result.channelLabel).isEqualTo("CAP CRM(CAP)")
             assertThat(result.interfaceDate).isEqualTo(LocalDateTime.of(2026, 7, 10, 17, 49, 0))
             assertThat(result.employeePhone).isEqualTo("010-1234-5678")
+            // SF Jikwee__c formula (= Employee.jobCode)
+            assertThat(result.jikwee).isEqualTo("판촉직")
             // 처리·조치 정보
             assertThat(result.counselNumber).isEqualTo("00655293")
             assertThat(result.actionCode).isEqualTo("AC01")
@@ -350,12 +358,14 @@ class AdminClaimServiceTest {
         id: Long = 1L,
         employeeCode: String = "10023456",
         name: String = "김영업",
-        phone: String? = null
+        phone: String? = null,
+        jobCode: String? = null
     ): Employee = Employee(
         id = id,
         employeeCode = employeeCode,
         name = name,
-        phone = phone
+        phone = phone,
+        jobCode = jobCode
     )
 
     private fun createAccount(

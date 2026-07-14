@@ -132,6 +132,7 @@ export default function ClaimDetailPage() {
           <Descriptions.Item label="제조일자">{orDash(claim.manufacturingDate)}</Descriptions.Item>
           <Descriptions.Item label="유통기한">{orDash(claim.expirationDate)}</Descriptions.Item>
           <Descriptions.Item label="출고처">{orDash(claim.logisticsCenter)}</Descriptions.Item>
+          <Descriptions.Item label="주문번호">{orDash(claim.orderNumber)}</Descriptions.Item>
         </Descriptions>
       </Card>
 
@@ -170,6 +171,7 @@ export default function ClaimDetailPage() {
           <Descriptions.Item label="접수채널">{orDash(claim.channelLabel ?? claim.channel)}</Descriptions.Item>
           <Descriptions.Item label="전송일자">{fmtDateTime(claim.interfaceDate)}</Descriptions.Item>
           <Descriptions.Item label="작성자">{orDash(claim.employeeName)}</Descriptions.Item>
+          <Descriptions.Item label="직위">{orDash(claim.jikwee)}</Descriptions.Item>
           <Descriptions.Item label="영업사원 연락처">{orDash(claim.employeePhone)}</Descriptions.Item>
         </Descriptions>
       </Card>

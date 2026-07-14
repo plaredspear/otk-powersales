@@ -70,6 +70,8 @@ data class AdminClaimDetailResponse(
     val manufacturingDate: LocalDate?,
     val logisticsCenter: String?,
     val expirationDate: LocalDate?,
+    // SF OrderNumber__c formula (= DKRetail__ReturnOrderNumber__c 재노출).
+    val orderNumber: String?,
     // Information (클레임정보)
     val claimNo: String?,
     val storeName: String?,
@@ -97,6 +99,8 @@ data class AdminClaimDetailResponse(
     val employeeName: String?,
     val employeeCode: String?,
     val employeePhone: String?,
+    // SF Jikwee__c formula (= DKRetail__EmployeeId__r.DKRetail__JobCode__c).
+    val jikwee: String?,
     // 처리·조치 정보
     val counselNumber: String?,
     val actionCode: String?,
@@ -120,6 +124,8 @@ data class AdminClaimDetailResponse(
             manufacturingDate = claim.manufacturingDate,
             logisticsCenter = claim.logisticsCenter,
             expirationDate = claim.expirationDate,
+            // SF OrderNumber__c = DKRetail__ReturnOrderNumber__c 재노출 formula 정합.
+            orderNumber = claim.returnOrderNumber,
             // Information (클레임정보)
             claimNo = claim.name,
             storeName = claim.account?.name,
@@ -147,6 +153,8 @@ data class AdminClaimDetailResponse(
             employeeName = claim.employee?.name,
             employeeCode = claim.employee?.employeeCode,
             employeePhone = claim.employee?.phone,
+            // SF Jikwee__c = Employee.JobCode 파생 formula 정합.
+            jikwee = claim.employee?.jobCode,
             // 처리·조치 정보
             counselNumber = claim.counselNumber,
             actionCode = claim.actionCode,

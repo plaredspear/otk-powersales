@@ -9,6 +9,7 @@ class ClaimDetail {
   final DateTime? manufacturingDate;
   final String? logisticsCenter;
   final DateTime? expirationDate;
+  final String? orderNumber;
   // 클레임정보
   final String? claimNo;
   final String? accountName;
@@ -36,6 +37,7 @@ class ClaimDetail {
   final String? channelLabel;
   final String? employeeName;
   final String? employeePhone;
+  final String? jikwee;
   // 처리·조치정보
   final String? counselNumber;
   final String? actionCode;
@@ -53,6 +55,7 @@ class ClaimDetail {
     this.manufacturingDate,
     this.logisticsCenter,
     this.expirationDate,
+    this.orderNumber,
     this.claimNo,
     this.accountName,
     this.accountCode,
@@ -77,6 +80,7 @@ class ClaimDetail {
     this.channelLabel,
     this.employeeName,
     this.employeePhone,
+    this.jikwee,
     this.counselNumber,
     this.actionCode,
     this.actionStatus,
