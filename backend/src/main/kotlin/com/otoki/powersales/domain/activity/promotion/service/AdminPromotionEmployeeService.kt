@@ -37,6 +37,7 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper
+import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.platform.common.storage.StorageConstants
 import com.otoki.powersales.platform.common.storage.StorageService
 import org.springframework.core.env.Environment
@@ -110,8 +111,10 @@ class AdminPromotionEmployeeService(
         // 행사사원 후보 lookup 에서 거래처 지점 무관 전체 지점 여사원 조회를 허용하는 조직코드.
         // 영업지원2팀(costCenterCode = 4889, org_nm3="영업지원실" / org_nm4="영업지원2팀") 소속 사용자는
         // 시스템 관리자와 동일하게 전사 여사원을 후보로 조회한다(2026-07-14 요구). 로그인 사용자의
-        // costCenterCode(대행 시 대행 대상 기준)로 판정. 조직 개편으로 코드가 바뀌면 본 상수만 변경.
-        private const val ALL_BRANCH_LOOKUP_COST_CENTER_CODE = "4889"
+        // costCenterCode(대행 시 대행 대상 기준)로 판정. 거래처 lookup(AdminAccountService) 과 동일 정책이라
+        // 조직코드는 WomenScheduleBranchResolver 의 단일 상수를 공유한다.
+        private const val ALL_BRANCH_LOOKUP_COST_CENTER_CODE =
+            WomenScheduleBranchResolver.ALL_BRANCH_LOOKUP_COST_CENTER_CODE
 
         // 레거시 PromotionEmployeeTriggerHandler 의 대표제품 vs 전문행사조 매칭 룰
         // 좌변 promotion.category1 == 카테고리 정확 일치 (레거시 `Category1__c == '라면'` 동등)

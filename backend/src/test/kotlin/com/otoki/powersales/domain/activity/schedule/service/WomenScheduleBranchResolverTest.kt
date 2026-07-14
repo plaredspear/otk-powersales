@@ -72,6 +72,19 @@ class WomenScheduleBranchResolverTest {
     }
 
     @Test
+    @DisplayName("isAllBranchLookupUser - 영업지원2팀(4889) 이면 true")
+    fun isAllBranchLookupUser_salesSupport2() {
+        assertThat(resolver.isAllBranchLookupUser(principalOf(costCenterCode = "4889"))).isTrue()
+    }
+
+    @Test
+    @DisplayName("isAllBranchLookupUser - 그 외 costCenterCode / null 이면 false")
+    fun isAllBranchLookupUser_others() {
+        assertThat(resolver.isAllBranchLookupUser(principalOf(costCenterCode = "5457"))).isFalse()
+        assertThat(resolver.isAllBranchLookupUser(principalOf(costCenterCode = null))).isFalse()
+    }
+
+    @Test
     @DisplayName("isBranchAllowed - 허용 목록에 있으면 true, 없으면 false")
     fun isBranchAllowed() {
         every { organizationRepository.findTeamScheduleBranches("5457", false) } returns

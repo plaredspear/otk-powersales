@@ -259,6 +259,8 @@ class AdminAccountServiceTest {
         @Test
         @DisplayName("지점 화이트리스트 → BranchCodeExpander 확장 → branch_code IN 매칭, buildPredicate 미호출")
         fun myBranchScopeUsesBranchCodeIn() {
+            // 영업지원2팀 예외 아님 → 지점 화이트리스트 경로
+            every { womenScheduleBranchResolver.isAllBranchLookupUser(principal) } returns false
             // resolver 가 SF CurrentUserBranchNameList 정합으로 허용 지점 산출
             every { womenScheduleBranchResolver.resolveBranches(principal) } returns
                 listOf(BranchResponse(branchCode = "5832", branchName = "원주1지점"))
@@ -301,6 +303,7 @@ class AdminAccountServiceTest {
         @Test
         @DisplayName("허용 지점 없음 → 매칭 0건 (false predicate)")
         fun myBranchScopeNoBranchBlocksAll() {
+            every { womenScheduleBranchResolver.isAllBranchLookupUser(principal) } returns false
             every { womenScheduleBranchResolver.resolveBranches(principal) } returns emptyList()
 
             val composedSlot = slot<Predicate>()
@@ -323,6 +326,72 @@ class AdminAccountServiceTest {
                 null, null, null, null, 0, 20, myBranchScopePrincipal = principal
             )
 
+            assertThat(composedSlot.captured.toString()).doesNotContain("account.branchCode in")
+            verify(exactly = 0) { branchCodeExpander.expand(any()) }
+        }
+
+        @Test
+        @DisplayName("영업지원2팀(4889) → 지점 제한 없이 전 지점 거래처, resolveBranches/expand 미호출")
+        fun allBranchLookupUserBypassesBranchScope() {
+            // 영업지원2팀 사용자 → 전사 조회
+            every { womenScheduleBranchResolver.isAllBranchLookupUser(principal) } returns true
+
+            val composedSlot = slot<Predicate>()
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = capture(composedSlot),
+                    keyword = any(),
+                    abcType = any(),
+                    accountType = any(),
+                    accountStatusName = any(),
+                    applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
+                    pageable = any(),
+                )
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+
+            adminAccountService.getAccounts(
+                DataScope(branchCodes = emptyList(), isAllBranches = false),
+                null, null, null, null, 0, 20, myBranchScopePrincipal = principal
+            )
+
+            // 지점 제한 predicate 미포함 (전 지점) — branch_code IN / false predicate 아님
+            assertThat(composedSlot.captured.toString()).doesNotContain("account.branchCode in")
+            // 지점 화이트리스트 산출/확장 경로는 타지 않음
+            verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
+            verify(exactly = 0) { branchCodeExpander.expand(any()) }
+            // sharing policy(owner/hierarchy) 경로도 아님
+            verify(exactly = 0) { policyEvaluator.buildPredicate(any(), any(), any()) }
+        }
+
+        @Test
+        @DisplayName("영업지원2팀 + branchCode request param → 요청 지점만 AND 합성 (전사 중 지점 필터)")
+        fun allBranchLookupUserWithBranchCodeParam() {
+            every { womenScheduleBranchResolver.isAllBranchLookupUser(principal) } returns true
+
+            val composedSlot = slot<Predicate>()
+            every {
+                accountRepository.findAllAccessibleByPolicy(
+                    policyPredicate = capture(composedSlot),
+                    keyword = any(),
+                    abcType = any(),
+                    accountType = any(),
+                    accountStatusName = any(),
+                    applyPromotionFilter = any(),
+                    excludeClosedAccount = any(),
+                    coordinatesMissing = any(),
+                    pageable = any(),
+                )
+            } returns PageImpl(emptyList(), PageRequest.of(0, 20, Sort.by("name").ascending()), 0L)
+
+            adminAccountService.getAccounts(
+                DataScope(branchCodes = emptyList(), isAllBranches = false),
+                null, null, "A001", null, 0, 20, myBranchScopePrincipal = principal
+            )
+
+            // 전사 predicate(true) + branchCode request param AND 합성만 — 지점 화이트리스트 IN 아님
+            assertThat(composedSlot.captured.toString()).contains("account.branchCode = A001")
             assertThat(composedSlot.captured.toString()).doesNotContain("account.branchCode in")
             verify(exactly = 0) { branchCodeExpander.expand(any()) }
         }
