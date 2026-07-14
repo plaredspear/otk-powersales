@@ -224,12 +224,87 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
-    @DisplayName("ShippingQuantity_Box 비숫자 → 0 BOX (catch)")
+    @DisplayName("ShippingQuantity_Box 비숫자 → 주문수량 폴백 (여기선 총수량도 0 이라 0 BOX (0 EA))")
     fun invalidShippingQty() {
         val sap = listOf(line(productCode = "P1", sapOrderNumber = "S1", shippingCompleteTime = "143000", shippingQuantityBox = "-"))
         val crm = mapOf("P1" to product("P1", "P1", 30))
         val result = mapper.map(requestNumber, sap, crm)
+        // shippingQuantityBox 파싱 실패 → 주문수량(totalQuantityBox/totalQuantity, 헬퍼 기본 "0") 폴백.
         assertThat(result.processingGroups[0].items[0].deliveredQuantity).isEqualTo("0 BOX (0 EA)")
+    }
+
+    @Test
+    @DisplayName("출하수량 null → 주문수량(TotalQuantity_Box/TotalQuantity) 폴백 (레거시 view.jsp:532-535 동등)")
+    fun shippingQtyNullFallsBackToOrderQty() {
+        val sap = listOf(
+            line(
+                productCode = "P1",
+                sapOrderNumber = "S1",
+                shippingCompleteTime = "143000",
+                shippingQuantityBox = null,
+                totalQuantityBox = "10",
+                totalQuantity = "300",
+            ),
+        )
+        val crm = mapOf("P1" to product("P1", "P1", boxReceivingQuantity = 30))
+        val result = mapper.map(requestNumber, sap, crm)
+        // 출하수량이 없으면 0 BOX 가 아니라 주문수량(10 BOX, EA 는 SAP TotalQuantity 300 그대로).
+        assertThat(result.processingGroups[0].items[0].deliveredQuantity).isEqualTo("10 BOX (300 EA)")
+    }
+
+    @Test
+    @DisplayName("출하수량 빈문자 → 주문수량 폴백 (빈문자도 미도래로 간주)")
+    fun shippingQtyBlankFallsBackToOrderQty() {
+        val sap = listOf(
+            line(
+                productCode = "P1",
+                sapOrderNumber = "S1",
+                shippingCompleteTime = "143000",
+                shippingQuantityBox = "",
+                totalQuantityBox = "7",
+                totalQuantity = "210",
+            ),
+        )
+        val crm = mapOf("P1" to product("P1", "P1", boxReceivingQuantity = 30))
+        val result = mapper.map(requestNumber, sap, crm)
+        assertThat(result.processingGroups[0].items[0].deliveredQuantity).isEqualTo("7 BOX (210 EA)")
+    }
+
+    @Test
+    @DisplayName("출하수량 null + 주문 EA 없음 → BOX 만 표시")
+    fun shippingQtyNullOrderEaMissingShowsBoxOnly() {
+        val sap = listOf(
+            line(
+                productCode = "P1",
+                sapOrderNumber = "S1",
+                shippingCompleteTime = "143000",
+                shippingQuantityBox = null,
+                totalQuantityBox = "4",
+                totalQuantity = null,
+            ),
+        )
+        val crm = mapOf("P1" to product("P1", "P1", boxReceivingQuantity = 30))
+        val result = mapper.map(requestNumber, sap, crm)
+        assertThat(result.processingGroups[0].items[0].deliveredQuantity).isEqualTo("4 BOX")
+    }
+
+    @Test
+    @DisplayName("출하수량 있음 → 기존대로 box × 박스입수량 EA 환산 (폴백 미적용)")
+    fun shippingQtyPresentUsesShippingNotFallback() {
+        val sap = listOf(
+            line(
+                productCode = "P1",
+                sapOrderNumber = "S1",
+                shippingCompleteTime = "143000",
+                shippingQuantityBox = "2",
+                totalQuantityBox = "10",
+                totalQuantity = "300",
+            ),
+        )
+        val crm = mapOf("P1" to product("P1", "P1", boxReceivingQuantity = 30))
+        val result = mapper.map(requestNumber, sap, crm)
+        // 출하수량 2 BOX 가 우선 — 주문수량(10/300) 폴백 아님. EA = 2 × 30 = 60.
+        assertThat(result.processingGroups[0].items[0].deliveredQuantity).isEqualTo("2 BOX (60 EA)")
     }
 
     @Test
@@ -298,6 +373,8 @@ class OrderRequestDetailMapperTest {
         shippingScheduleTime: String? = "000000",
         shippingCompleteTime: String? = "000000",
         shippingQuantityBox: String? = "0",
+        totalQuantityBox: String? = "0",
+        totalQuantity: String? = "0",
         defaultReason: String? = "",
         shippingDriverName: String? = "",
         shippingVehicle: String? = "",
@@ -307,7 +384,7 @@ class OrderRequestDetailMapperTest {
         productCode = productCode,
         productName = productName,
         lineItemStatus = lineItemStatus,
-        totalQuantity = "0",
+        totalQuantity = totalQuantity,
         unit = "BOX",
         sapOrderNumber = sapOrderNumber,
         orderSalesAmount = "0",
@@ -318,7 +395,7 @@ class OrderRequestDetailMapperTest {
         shippingDriverPhone = shippingDriverPhone,
         shippingScheduleTime = shippingScheduleTime,
         shippingCompleteTime = shippingCompleteTime,
-        totalQuantityBox = "0",
+        totalQuantityBox = totalQuantityBox,
         shippingQuantityBox = shippingQuantityBox,
         defaultReason = defaultReason,
     )

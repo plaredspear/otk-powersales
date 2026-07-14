@@ -172,37 +172,52 @@ class OrderRequestDetailMapper {
     /**
      * `"<box> BOX (<ea> EA)"` 또는 EA 미포함 시 `"<box> BOX"`.
      *
-     * EA 환산: 레거시 `cls:147,151` 동등 — SAP `ShippingQuantity_Box` × 제품 마스터
-     * `Product.BoxReceivingQuantity__c` (박스입수량 실측값). `OrderRequestProduct` 등록 시점
-     * 스냅샷이 아니다 — 주문 후 박스입수량이 갱신되면 갱신값으로 환산된다.
+     * **출하수량 폴백 (레거시 `view.jsp:527-536` 동등)**: SAP `ShippingQuantity_Box` 가
+     * 없으면(null/빈문자/파싱불가) 출하수량 대신 **주문수량**(`TotalQuantity_Box` / `TotalQuantity`)
+     * 으로 대체 표시한다. 레거시는 출하수량이 아직 안 온 라인을 `0 BOX` 가 아니라 주문한 만큼으로
+     * 보여줬다(납품문서 생성 전 가정). 과거 신규 구현은 이 폴백을 누락해 완료 건도 `0 BOX` 로
+     * 오표시하는 회귀가 있었다.
+     *
+     * EA 환산:
+     *  - 출하수량 경로: 레거시 `cls:147,151` 동등 — `ShippingQuantity_Box` × 제품 마스터
+     *    `Product.BoxReceivingQuantity__c`(박스입수량 실측값). 등록 시점 스냅샷이 아니라 조회 시점 값.
+     *  - 주문수량 폴백 경로: 레거시 `view.jsp:533` 동등 — SAP 응답 `TotalQuantity`(EA)를 그대로 사용
+     *    (박스입수량 재환산이 아니라 SAP 가 준 EA 값).
      */
     private fun formatDeliveredQuantity(
         line: SapOrderRequestDetailLine,
         crmProduct: OrderRequestProduct?,
         requestNumber: String,
     ): String {
-        val boxRaw = line.shippingQuantityBox.orEmpty()
-        val box = parseDecimalOrNull(boxRaw) ?: run {
-            if (boxRaw.isNotEmpty()) {
+        val shippingBox = parseDecimalOrNull(line.shippingQuantityBox)
+        if (shippingBox != null) {
+            // 출하수량 있음 — box × 박스입수량으로 EA 환산 (레거시 cls:147,151).
+            val boxReceivingQuantity = crmProduct?.product?.boxReceivingQuantity
+            if (boxReceivingQuantity == null || boxReceivingQuantity <= BigDecimal.ZERO) {
                 log.warn(
-                    "sap.outbound.detail.invalid-shipping-qty requestNumber={} value={}",
-                    requestNumber, boxRaw,
+                    "order-request.detail.invalid-box-receiving-quantity requestNumber={} productCode={} box_receiving_quantity={}",
+                    requestNumber, line.productCode, boxReceivingQuantity,
                 )
+                return "${shippingBox.stripTrailingZeros().toPlainString()} BOX"
             }
-            BigDecimal.ZERO
+            val ea = shippingBox.multiply(boxReceivingQuantity)
+            return "${shippingBox.stripTrailingZeros().toPlainString()} BOX (${ea.stripTrailingZeros().toPlainString()} EA)"
         }
 
-        val boxReceivingQuantity = crmProduct?.product?.boxReceivingQuantity
-        if (boxReceivingQuantity == null || boxReceivingQuantity <= BigDecimal.ZERO) {
+        // 출하수량 없음 — 주문수량(TotalQuantity_Box / TotalQuantity)으로 폴백 (레거시 view.jsp:532-535).
+        if (!line.shippingQuantityBox.isNullOrEmpty()) {
             log.warn(
-                "order-request.detail.invalid-box-receiving-quantity requestNumber={} productCode={} box_receiving_quantity={}",
-                requestNumber, line.productCode, boxReceivingQuantity,
+                "sap.outbound.detail.invalid-shipping-qty requestNumber={} value={}",
+                requestNumber, line.shippingQuantityBox,
             )
-            return "${box.stripTrailingZeros().toPlainString()} BOX"
         }
-
-        val ea = box.multiply(boxReceivingQuantity)
-        return "${box.stripTrailingZeros().toPlainString()} BOX (${ea.stripTrailingZeros().toPlainString()} EA)"
+        val orderBox = parseDecimalOrNull(line.totalQuantityBox) ?: BigDecimal.ZERO
+        val orderEa = parseDecimalOrNull(line.totalQuantity)
+        return if (orderEa != null) {
+            "${orderBox.stripTrailingZeros().toPlainString()} BOX (${orderEa.stripTrailingZeros().toPlainString()} EA)"
+        } else {
+            "${orderBox.stripTrailingZeros().toPlainString()} BOX"
+        }
     }
 
     private fun parseDecimalOrNull(s: String?): BigDecimal? {
