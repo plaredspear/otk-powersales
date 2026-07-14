@@ -102,6 +102,14 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
     final response = await _dio.post(
       '/api/v1/mobile/me/order-requests/$orderId/cancel',
       data: request.toJson(),
+      options: Options(
+        // 주문 취소는 백엔드가 SAP(SD03051)를 동기 1회 호출한다 — 취소 라인 전체를 단일
+        // payload 배열로 묶어 보내므로 라인 수와 무관하게 1회. 백엔드 read-timeout(30초) +
+        // DB 커밋/검증 여유를 더해 45초로 잡는다. 전역 Dio receiveTimeout(35초)은 SAP
+        // 정상 처리(관측 8~10초)에도 마진이 얇아, 이 요청에만 per-request 상향한다.
+        // (등록은 SAP 동기 다회라 100초 — order_form_api_datasource 참고. 취소는 1회라 45초.)
+        receiveTimeout: const Duration(seconds: 45),
+      ),
     );
 
     return OrderCancelResponseModel.fromJson(
