@@ -217,7 +217,7 @@ export default function ProposalDetailPage() {
         <Col xs={24} lg={16}>
           {editMode ? (
             <Form form={form} layout="vertical">
-              <Card title="기본 정보" style={{ marginBottom: 16 }}>
+              <Card title="제안사항" style={{ marginBottom: 16 }}>
                 <Form.Item name="title" label="제목" rules={[{ required: true, message: '제목을 입력해주세요' }, { max: 250 }]}>
                   <Input />
                 </Form.Item>
@@ -228,7 +228,7 @@ export default function ProposalDetailPage() {
 
               {isClaim && (
                 <>
-                  <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
+                  <Card title="물류클레임" style={{ marginBottom: 16 }}>
                     <Form.Item name="claimType" label="클레임 항목" rules={[{ required: true, max: 200 }]}>
                       <Input />
                     </Form.Item>
@@ -243,7 +243,7 @@ export default function ProposalDetailPage() {
                     </Form.Item>
                   </Card>
 
-                  <Card title="조치 정보" style={{ marginBottom: 16 }}>
+                  <Card title="OLS 조치사항" style={{ marginBottom: 16 }}>
                     <Form.Item name="actionStatus" label="조치상태">
                       <Select options={ACTION_STATUS_OPTIONS} allowClear />
                     </Form.Item>
@@ -266,7 +266,7 @@ export default function ProposalDetailPage() {
             </Form>
           ) : (
             <>
-              <Card title="기본 정보" style={{ marginBottom: 16 }}>
+              <Card title="제안사항" style={{ marginBottom: 16 }}>
                 <Descriptions column={2}>
                   <Descriptions.Item label="제안번호">{suggestion.proposalNumber}</Descriptions.Item>
                   <Descriptions.Item label="제안구분">
@@ -302,7 +302,7 @@ export default function ProposalDetailPage() {
 
               {isClaim && (
                 <>
-                  <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
+                  <Card title="물류클레임" style={{ marginBottom: 16 }}>
                     <Descriptions column={2}>
                       <Descriptions.Item label="클레임 항목">{suggestion.claimType ?? '-'}</Descriptions.Item>
                       <Descriptions.Item label="클레임 발생일자">{suggestion.claimDate ?? '-'}</Descriptions.Item>

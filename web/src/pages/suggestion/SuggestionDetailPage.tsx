@@ -204,7 +204,7 @@ export default function SuggestionDetailPage() {
         <Col xs={24} lg={16}>
           {editMode ? (
             <Form form={form} layout="vertical">
-              <Card title="기본 정보" style={{ marginBottom: 16 }}>
+              <Card title="제안사항" style={{ marginBottom: 16 }}>
                 <Form.Item name="title" label="제목" rules={[{ required: true, message: '제목을 입력해주세요' }, { max: 250 }]}>
                   <Input />
                 </Form.Item>
@@ -213,7 +213,7 @@ export default function SuggestionDetailPage() {
                 </Form.Item>
               </Card>
 
-              <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
+              <Card title="물류클레임" style={{ marginBottom: 16 }}>
                 <Form.Item name="claimType" label="클레임 항목" rules={[{ required: true, max: 200 }]}>
                   <Input />
                 </Form.Item>
@@ -228,7 +228,7 @@ export default function SuggestionDetailPage() {
                 </Form.Item>
               </Card>
 
-              <Card title="조치 정보" style={{ marginBottom: 16 }}>
+              <Card title="OLS 조치사항" style={{ marginBottom: 16 }}>
                 <Form.Item name="actionStatus" label="조치상태">
                   <Select options={ACTION_STATUS_OPTIONS} allowClear />
                 </Form.Item>
@@ -249,19 +249,28 @@ export default function SuggestionDetailPage() {
             </Form>
           ) : (
             <>
-              <Card title="기본 정보" style={{ marginBottom: 16 }}>
+              <Card title="제안사항" style={{ marginBottom: 16 }}>
                 <Descriptions column={2}>
                   <Descriptions.Item label="제안번호" span={2}>{suggestion.proposalNumber}</Descriptions.Item>
                   <Descriptions.Item label="제목" span={2}>{suggestion.title}</Descriptions.Item>
-                  <Descriptions.Item label="작성자">{suggestion.employeeName ?? '-'}</Descriptions.Item>
-                  <Descriptions.Item label="사번">{suggestion.employeeCode ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="거래처명">{suggestion.accountName ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="거래처코드">{suggestion.accountCode ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="제품명">{suggestion.productName ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="제품코드">{suggestion.productCode ?? '-'}</Descriptions.Item>
-                  <Descriptions.Item label="등록일시" span={2}>
+                  <Descriptions.Item label="제품유형">{suggestion.productType ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="등록일시">
                     {suggestion.createdAt?.substring(0, 16).replace('T', ' ')}
                   </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              <Card title="오뚜기 접수사원" style={{ marginBottom: 16 }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="접수사원">{suggestion.employeeName ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="사번">{suggestion.employeeCode ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="영업/여사원">{suggestion.employeeCategory ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="소속">{suggestion.orgName ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="직위">{suggestion.jikwee ?? '-'}</Descriptions.Item>
                 </Descriptions>
               </Card>
 
@@ -271,7 +280,7 @@ export default function SuggestionDetailPage() {
                 </Typography.Paragraph>
               </Card>
 
-              <Card title="물류 클레임 정보" style={{ marginBottom: 16 }}>
+              <Card title="물류클레임" style={{ marginBottom: 16 }}>
                 <Descriptions column={2}>
                   <Descriptions.Item label="클레임 항목">{suggestion.claimType ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="클레임 발생일자">{suggestion.claimDate ?? '-'}</Descriptions.Item>
@@ -282,12 +291,16 @@ export default function SuggestionDetailPage() {
                 </Descriptions>
               </Card>
 
-              <Card title="조치 정보" style={{ marginBottom: 16 }}>
+              <Card title="OLS 조치사항" style={{ marginBottom: 16 }}>
                 <Descriptions column={2}>
+                  <Descriptions.Item label="조치번호">{suggestion.actionNum ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="조치상태">
                     {actionStatusTag ? <Tag color={actionStatusTag.color}>{actionStatusTag.label}</Tag> : '-'}
                   </Descriptions.Item>
+                  <Descriptions.Item label="조치담당자(직급/이름)">{suggestion.actionManager ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="중복 제안번호">{suggestion.duplicateProposalNum ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="클레임 항목(조치사항)">{suggestion.claimTypeMeasures ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="조치내용" span={2}>{suggestion.actionContent ?? '-'}</Descriptions.Item>
                 </Descriptions>
               </Card>
             </>
