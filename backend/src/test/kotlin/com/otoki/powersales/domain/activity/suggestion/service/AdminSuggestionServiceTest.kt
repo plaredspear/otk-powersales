@@ -9,6 +9,7 @@ import com.otoki.powersales.platform.common.entity.UploadFile
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
 import com.otoki.powersales.platform.common.service.FileStorageService
 import com.otoki.powersales.platform.common.storage.UploadFileParentTypes
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.service.OrgCostCenterMatchService
@@ -105,6 +106,7 @@ class AdminSuggestionServiceTest {
     private fun suggestionOf(
         employee: Employee?,
         account: Account? = null,
+        product: Product? = null,
         actionNum: String? = null,
         actionManager: String? = null,
         actionContent: String? = null,
@@ -119,6 +121,7 @@ class AdminSuggestionServiceTest {
         isDeleted = false,
         employee = employee,
         account = account,
+        product = product,
         actionNum = actionNum,
         actionManager = actionManager,
         actionContent = actionContent,
@@ -251,6 +254,58 @@ class AdminSuggestionServiceTest {
             assertThat(result.actionManager).isEqualTo("물류책임/확인중")
             assertThat(result.actionContent).isEqualTo("테스트 조치내용")
             assertThat(result.claimTypeMeasures).isEqualTo("취급부주의 제품 파손")
+        }
+
+        @Test
+        @DisplayName("SF formula 재현 - 직위/소속/영업·여사원/제품유형이 join 원천에서 계산됨")
+        fun mapsFormulaFields() {
+            val employee = Employee(
+                id = otherEmployeeId,
+                employeeCode = "EMP002",
+                name = "강미란",
+            ).apply {
+                jikwee = "OSPJ"
+                orgName = "원주1지점"
+                jobCode = "판촉직" // 여사원 판정 대상
+            }
+            val product = Product(
+                id = 300L,
+                productCode = "19010001",
+                name = "3분쇠고기카레 200G",
+            ).apply {
+                storeConditionText = "냉동" // 냉동/냉장 판정 대상
+            }
+            val suggestion = suggestionOf(employee, product = product)
+            every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns suggestion
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
+            } returns emptyList()
+
+            val result = service.getDetail(allowAllScope, suggestionId)
+
+            assertThat(result.jikwee).isEqualTo("OSPJ")
+            assertThat(result.orgName).isEqualTo("원주1지점")
+            assertThat(result.employeeCategory).isEqualTo("여사원")
+            assertThat(result.productType).isEqualTo("냉동/냉장")
+        }
+
+        @Test
+        @DisplayName("SF formula 재현 - 영업직 JobCode + 상온 제품은 '영업'/'상온'")
+        fun mapsFormulaFieldsForSalesAndRoomTemp() {
+            val employee = Employee(id = otherEmployeeId, employeeCode = "EMP002", name = "영업사원")
+                .apply { jobCode = "영업직" }
+            val product = Product(id = 301L, productCode = "P2", name = "상온제품")
+                .apply { storeConditionText = "실온" }
+            val suggestion = suggestionOf(employee, product = product)
+            every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns suggestion
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
+            } returns emptyList()
+
+            val result = service.getDetail(allowAllScope, suggestionId)
+
+            assertThat(result.employeeCategory).isEqualTo("영업")
+            assertThat(result.productType).isEqualTo("상온")
         }
 
         @Test

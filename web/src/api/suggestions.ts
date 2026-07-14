@@ -86,6 +86,10 @@ export interface SuggestionDetail {
   employeeId: number | null;
   employeeName: string | null;
   employeeCode: string | null;
+  jikwee: string | null;
+  orgName: string | null;
+  employeeCategory: string | null;
+  productType: string | null;
   orgCostCenterCode: string | null;
   claimType: string | null;
   claimTypeMeasures: string | null;

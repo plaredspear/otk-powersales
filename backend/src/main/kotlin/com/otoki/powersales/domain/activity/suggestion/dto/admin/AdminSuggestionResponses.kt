@@ -110,6 +110,11 @@ data class AdminSuggestionDetailResponse(
     val employeeId: Long?,
     val employeeName: String?,
     val employeeCode: String?,
+    // SF formula 파생 (§6.7 미저장 — join 원천에서 조회 시 계산). SF 상세 화면 표시 항목 정합.
+    val jikwee: String?,
+    val orgName: String?,
+    val employeeCategory: String?,
+    val productType: String?,
     val orgCostCenterCode: String?,
     val claimType: String?,
     val claimTypeMeasures: String?,
@@ -147,6 +152,13 @@ data class AdminSuggestionDetailResponse(
                 employeeId = suggestion.employee?.id,
                 employeeName = suggestion.employee?.name,
                 employeeCode = suggestion.employee?.employeeCode,
+                // SF formula 재현 — Jikwee__c / OrgName__c 는 사원 필드 직결.
+                jikwee = suggestion.employee?.jikwee,
+                orgName = suggestion.employee?.orgName,
+                // SF EmployeeCategory__c formula: JobCode__c ∈ {OSC직, 판촉직, 레이디직} → '여사원', else '영업'.
+                employeeCategory = employeeCategoryOf(suggestion.employee?.jobCode),
+                // SF ProductCategory__c formula: StoreCondition__c ∈ {냉동, 냉장, 만두} → '냉동/냉장', else '상온'.
+                productType = productTypeOf(suggestion.product?.storeConditionText),
                 orgCostCenterCode = suggestion.orgCostCenterCode,
                 claimType = suggestion.claimType,
                 claimTypeMeasures = suggestion.claimTypeMeasures,
@@ -165,5 +177,33 @@ data class AdminSuggestionDetailResponse(
                 createdAt = suggestion.createdAt,
                 attachments = attachments
             )
+
+        /**
+         * SF `EmployeeCategory__c` formula 재현.
+         * `IF(JobCode__c ∈ {OSC직, 판촉직, 레이디직}, '여사원', '영업')`.
+         * jobCode 가 null 이면 판정 원천이 없으므로 null (SF formula 는 null 사원 참조 시 '영업' 이지만,
+         * 신규는 사원 미연결 제안에 영업/여사원을 단정하지 않고 미표시).
+         */
+        private fun employeeCategoryOf(jobCode: String?): String? {
+            if (jobCode == null) return null
+            return if (jobCode in FEMALE_STAFF_JOB_CODES) "여사원" else "영업"
+        }
+
+        /**
+         * SF `ProductCategory__c` formula 재현.
+         * `IF(StoreCondition__c ∈ {냉동, 냉장, 만두}, '냉동/냉장', '상온')`.
+         * 원천은 제품의 보관조건 텍스트([com.otoki.powersales.domain.foundation.product.entity.Product.storeConditionText],
+         * SF `StoreCondition__c` 원본 — 신규 enum(실온/냉장)엔 없는 냉동/만두 값도 보존). null 이면 미표시.
+         */
+        private fun productTypeOf(storeConditionText: String?): String? {
+            if (storeConditionText == null) return null
+            return if (storeConditionText in COLD_STORE_CONDITIONS) "냉동/냉장" else "상온"
+        }
+
+        /** SF EmployeeCategory__c formula 의 '여사원' 판정 JobCode 집합. */
+        private val FEMALE_STAFF_JOB_CODES = setOf("OSC직", "판촉직", "레이디직")
+
+        /** SF ProductCategory__c formula 의 '냉동/냉장' 판정 StoreCondition 집합. */
+        private val COLD_STORE_CONDITIONS = setOf("냉동", "냉장", "만두")
     }
 }

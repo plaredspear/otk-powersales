@@ -273,15 +273,24 @@ export default function ProposalDetailPage() {
                     {categoryTag ? <Tag color={categoryTag.color}>{categoryTag.label}</Tag> : '-'}
                   </Descriptions.Item>
                   <Descriptions.Item label="제목" span={2}>{suggestion.title}</Descriptions.Item>
-                  <Descriptions.Item label="작성자">{suggestion.employeeName ?? '-'}</Descriptions.Item>
-                  <Descriptions.Item label="사번">{suggestion.employeeCode ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="거래처명">{suggestion.accountName ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="거래처코드">{suggestion.accountCode ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="제품명">{suggestion.productName ?? '-'}</Descriptions.Item>
                   <Descriptions.Item label="제품코드">{suggestion.productCode ?? '-'}</Descriptions.Item>
-                  <Descriptions.Item label="등록일시" span={2}>
+                  <Descriptions.Item label="제품유형">{suggestion.productType ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="등록일시">
                     {suggestion.createdAt?.substring(0, 16).replace('T', ' ')}
                   </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              <Card title="오뚜기 접수사원" style={{ marginBottom: 16 }}>
+                <Descriptions column={2}>
+                  <Descriptions.Item label="접수사원">{suggestion.employeeName ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="사번">{suggestion.employeeCode ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="영업/여사원">{suggestion.employeeCategory ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="소속">{suggestion.orgName ?? '-'}</Descriptions.Item>
+                  <Descriptions.Item label="직위">{suggestion.jikwee ?? '-'}</Descriptions.Item>
                 </Descriptions>
               </Card>
 
