@@ -1175,19 +1175,44 @@
       },
       "AdminClaimDetailResponse" : {
         "properties" : {
+          "actContent" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionStatus" : {
+            "type" : [ "string", "null" ]
+          },
           "categoryLabel" : {
             "type" : [ "string", "null" ]
           },
           "categoryValue" : {
             "type" : [ "string", "null" ]
           },
+          "channel" : {
+            "type" : [ "string", "null" ]
+          },
+          "channelLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "claimId" : {
             "format" : "int64",
             "type" : "integer"
           },
+          "claimNo" : {
+            "type" : [ "string", "null" ]
+          },
+          "counselNumber" : {
+            "type" : [ "string", "null" ]
+          },
           "createdAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "customerDeliveryDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
           },
           "date" : {
             "format" : "date",
@@ -1202,10 +1227,40 @@
           "defectQuantity" : {
             "type" : [ "number", "null" ]
           },
+          "detailSnsName" : {
+            "type" : [ "string", "null" ]
+          },
+          "division" : {
+            "type" : [ "string", "null" ]
+          },
           "employeeCode" : {
             "type" : [ "string", "null" ]
           },
           "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeePhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "expirationDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "interfaceDate" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "jikwee" : {
+            "type" : [ "string", "null" ]
+          },
+          "logisticsCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "manufacturingDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "orderNumber" : {
             "type" : [ "string", "null" ]
           },
           "photos" : {
@@ -1226,8 +1281,14 @@
           "purchaseMethodName" : {
             "type" : [ "string", "null" ]
           },
+          "reasonType" : {
+            "type" : [ "string", "null" ]
+          },
           "requestTypeName" : {
             "type" : [ "string", "null" ]
+          },
+          "sampleCollectionFlag" : {
+            "type" : [ "boolean", "null" ]
           },
           "status" : {
             "type" : [ "string", "null" ]
@@ -2512,6 +2573,15 @@
           "accountName" : {
             "type" : [ "string", "null" ]
           },
+          "actionContent" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionManager" : {
+            "type" : [ "string", "null" ]
+          },
+          "actionNum" : {
+            "type" : [ "string", "null" ]
+          },
           "actionStatus" : {
             "enum" : [ "UNCONFIRMED", "IN_PROGRESS", "COMPLETED", "DUPLICATE_RECEPTION" ],
             "type" : [ "string", "null" ]
@@ -2555,6 +2625,9 @@
           "duplicateProposalNum" : {
             "type" : [ "string", "null" ]
           },
+          "employeeCategory" : {
+            "type" : [ "string", "null" ]
+          },
           "employeeCode" : {
             "type" : [ "string", "null" ]
           },
@@ -2569,16 +2642,25 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "jikwee" : {
+            "type" : [ "string", "null" ]
+          },
           "logisticsResponsibility" : {
             "type" : [ "string", "null" ]
           },
           "orgCostCenterCode" : {
             "type" : [ "string", "null" ]
           },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
           "productCode" : {
             "type" : [ "string", "null" ]
           },
           "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "productType" : {
             "type" : [ "string", "null" ]
           },
           "proposalNumber" : {

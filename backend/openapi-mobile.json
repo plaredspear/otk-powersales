@@ -2953,11 +2953,17 @@
             "format" : "date-time",
             "type" : [ "string", "null" ]
           },
+          "jikwee" : {
+            "type" : [ "string", "null" ]
+          },
           "logisticsCenter" : {
             "type" : [ "string", "null" ]
           },
           "manufacturingDate" : {
             "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "orderNumber" : {
             "type" : [ "string", "null" ]
           },
           "photos" : {
