@@ -81,6 +81,7 @@ const JOB_LABELS: Record<string, string> = {
   'orora-daily-sales-materialize-batch': 'ORORA 일매출',
   'orora-monthly-sales-materialize-batch': 'ORORA 월매출',
   'erpOrder.retention': 'ERP주문 정리',
+  'sf-claim-resend': '클레임 재전송',
 };
 
 function jobLabel(jobName: string): string {
@@ -107,6 +108,7 @@ const JOB_SCHEDULES: Record<string, string> = {
   'orora-daily-sales-materialize-batch': '기본 매일 04:30',
   'orora-monthly-sales-materialize-batch': '기본 매월 3일 05시',
   'erpOrder.retention': '기본 매주 일요일 04시',
+  'sf-claim-resend': '기본 매시간 50분',
 };
 
 /** 잡 이름 → 해당 스케줄 작업이 무슨 일을 하는지에 대한 자연어 설명. */
@@ -143,6 +145,8 @@ const JOB_DESCRIPTIONS: Record<string, string> = {
     'ORORA 영업시스템의 월별 마감 view(ABC/물류 마감실적)를 거래처 범위 단위로 조회하여 monthly_sales_history 테이블에 적재(upsert)합니다. 익월 초에 전월 마감분을 적재하며, 운영 목표/비고/마감확정 컬럼은 보존합니다. 아래에서 특정 월을 지정해 수동 재적재할 수 있습니다. (legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등)',
   'erpOrder.retention':
     '주문생성일이 보관주기(6개월)를 초과한 ERP 주문 헤더와 라인아이템을 영구 삭제(hard delete)합니다. FK 정합을 위해 자식 라인 → 부모 헤더 순으로 지우며, 아카이빙 없이 삭제만 수행하는 보존 정책 정리 배치입니다. (legacy Batch_ERPOrderDel + Batch_ERPOrderProductDel 동등)',
+  'sf-claim-resend':
+    'SF(알라딘) 전송에 실패해 SEND_FAILED 상태로 남은 클레임 건을 재전송합니다. 제품클레임(/ClaimRegist)과 물류클레임(/ProposalRegist)을 한 잡에서 순차 처리하며, 동일 SF 서버·토큰을 공유하므로 부하를 직렬화합니다. 시도횟수가 상한(기본 3회) 미만인 건만 대상으로 삼아 영구 실패 건이 매 배치마다 반복 재시도되는 것을 막습니다. 관리자 화면에서 개별 건을 수동 재전송할 수도 있습니다.',
 };
 
 /** ORORA 월매출 수동 트리거 대상 jobName (해당 탭에서만 수동 적재 UI 노출). */
