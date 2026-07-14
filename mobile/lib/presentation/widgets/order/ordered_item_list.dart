@@ -78,10 +78,12 @@ class OrderedItemList extends StatelessWidget {
   }
 
   Widget _buildItemRow(OrderedItem item) {
-    // 레거시 view.jsp:272-273 동등 — 취소/결품 제품은 회색 처리 + '[주문 취소]' 접두 공통.
+    // 취소/결품 제품은 짙은 회색 처리 + '[주문 취소]' 접두(빨간색) 공통.
+    // (레거시 view.jsp:272-273 은 연한 회색 #CCC 였으나, 취소 항목 가독성 개선으로 짙은 회색 +
+    //  접두만 빨간색으로 변경.)
     final isGrayed = item.isCancelled || item.isOutOfStock;
     final nameColor =
-        isGrayed ? AppColors.textTertiary : AppColors.textPrimary;
+        isGrayed ? AppColors.textSecondary : AppColors.textPrimary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,7 +100,8 @@ class OrderedItemList extends StatelessWidget {
                       TextSpan(
                         text: '[주문 취소] ',
                         style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.textTertiary,
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     // 레거시 view.jsp:273 동등 — 제품명 (제품코드) 순서.
@@ -131,7 +134,7 @@ class OrderedItemList extends StatelessWidget {
           Text(
             '결품사유: ${item.outOfStockReason}',
             style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textTertiary,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
