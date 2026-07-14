@@ -1,6 +1,8 @@
 package com.otoki.powersales.domain.activity.claim.repository
 
 import com.otoki.powersales.domain.activity.claim.entity.Claim
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -229,6 +231,64 @@ class ClaimRepositoryCustomTest {
         @DisplayName("존재하지 않는 id 는 null 을 반환한다")
         fun returnsNullWhenMissing() {
             assertThat(claimRepository.findByIdWithSfRefs(999999L)).isNull()
+        }
+    }
+
+    @Nested
+    @DisplayName("findResendTargetIds — SF 재전송 대상 (신규 등록 건만, 마이그레이션 제외)")
+    inner class FindResendTargetIds {
+
+        private fun persistClaimWith(
+            sfSendStatus: ClaimSfSendStatus?,
+            sfSendAttemptCount: Int = 0,
+            status: ClaimStatus? = null,
+        ): Claim {
+            val claim = Claim(
+                date = LocalDate.of(2026, 6, 1),
+                status = status,
+                sfSendStatus = sfSendStatus,
+                sfSendAttemptCount = sfSendAttemptCount,
+            )
+            return em.persistAndFlush(claim)
+        }
+
+        @Test
+        @DisplayName("SF origin 마이그레이션 건(sfSendStatus=NULL)은 status='전송실패'여도 재전송 대상이 아니다")
+        fun excludesMigratedRows() {
+            // 마이그레이션 건: 코스모스 전송상태(status)=전송실패 지만 신규→SF 전송상태(sfSendStatus)=NULL.
+            val migrated = persistClaimWith(sfSendStatus = null, status = ClaimStatus.SEND_FAILED)
+            // 신규 등록 후 SF 전송실패 건: sfSendStatus=전송실패.
+            val newFailed = persistClaimWith(sfSendStatus = ClaimSfSendStatus.SEND_FAILED)
+
+            val targets = claimRepository.findResendTargetIds(ClaimSfSendStatus.SEND_FAILED, maxAttempt = 3)
+
+            assertThat(targets).containsExactly(newFailed.id)
+            assertThat(targets).doesNotContain(migrated.id)
+        }
+
+        @Test
+        @DisplayName("sfSendStatus=SENT/PENDING 건은 대상이 아니고, SEND_FAILED 만 대상이다")
+        fun onlySendFailed() {
+            val sent = persistClaimWith(sfSendStatus = ClaimSfSendStatus.SENT)
+            val pending = persistClaimWith(sfSendStatus = ClaimSfSendStatus.PENDING)
+            val failed = persistClaimWith(sfSendStatus = ClaimSfSendStatus.SEND_FAILED)
+
+            val targets = claimRepository.findResendTargetIds(ClaimSfSendStatus.SEND_FAILED, maxAttempt = 3)
+
+            assertThat(targets).containsExactly(failed.id)
+            assertThat(targets).doesNotContain(sent.id, pending.id)
+        }
+
+        @Test
+        @DisplayName("시도횟수 상한(sfSendAttemptCount >= maxAttempt) 건은 제외된다")
+        fun excludesAttemptCapExceeded() {
+            val underCap = persistClaimWith(sfSendStatus = ClaimSfSendStatus.SEND_FAILED, sfSendAttemptCount = 2)
+            val atCap = persistClaimWith(sfSendStatus = ClaimSfSendStatus.SEND_FAILED, sfSendAttemptCount = 3)
+
+            val targets = claimRepository.findResendTargetIds(ClaimSfSendStatus.SEND_FAILED, maxAttempt = 3)
+
+            assertThat(targets).containsExactly(underCap.id)
+            assertThat(targets).doesNotContain(atCap.id)
         }
     }
 }

@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.activity.claim.service
 
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.event.ClaimRegisteredEvent
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
@@ -32,10 +32,10 @@ class ClaimSfPushDispatcher(
         runCatching {
             dispatchService.dispatch(
                 claimId = event.claimId,
-                allowedStatuses = setOf(ClaimStatus.SF_PENDING),
-                // 이미 전송된(SF_PENDING 이 아닌) claim 이면 중복 전송하지 않고 skip.
+                allowedStatuses = setOf(ClaimSfSendStatus.PENDING),
+                // 이미 전송된(PENDING 이 아닌) claim 이면 중복 전송하지 않고 skip.
                 onStatusMismatch = { status ->
-                    log.warn("클레임 SF 송신 트리거 skip — claimId={} status={}", event.claimId, status)
+                    log.warn("클레임 SF 송신 트리거 skip — claimId={} sfSendStatus={}", event.claimId, status)
                 },
             )
         }.onFailure { log.warn("클레임 등록 SF 송신(/ClaimRegist) 트리거 실패 claimId=${event.claimId}", it) }

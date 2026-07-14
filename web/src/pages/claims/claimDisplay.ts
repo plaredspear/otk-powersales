@@ -1,9 +1,11 @@
 // 클레임 목록 표시용 공용 상수 (테이블/카드 뷰 공유)
 
-/** 상태값 -> Tag 색/한글 라벨 매핑 */
+/**
+ * status(SF DKRetail__Status__c, 코스모스 전송상태) -> Tag 색/한글 라벨 매핑.
+ * 신규→SF 전송상태(sfSendStatus)는 별도 축이며 상세 화면에서 표시한다.
+ */
 export const STATUS_TAG: Record<string, { color: string; label: string }> = {
   DRAFT: { color: 'default', label: '임시저장' },
-  SF_PENDING: { color: 'processing', label: '전송대기' },
   SENT: { color: 'green', label: '전송완료' },
   SEND_FAILED: { color: 'red', label: '전송실패' },
   // 레거시/구버전 표시값 호환

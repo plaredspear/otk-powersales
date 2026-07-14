@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.activity.claim.service
 
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.event.ClaimRegisteredEvent
 import io.mockk.every
 import io.mockk.mockk
@@ -18,7 +18,7 @@ import kotlin.reflect.full.findAnnotation
 /**
  * ClaimSfPushDispatcher 테스트 — 등록 직후 SF 송신 트리거의 계약.
  *
- * 핵심 계약: ① AFTER_COMMIT(커밋 후) + @Async(요청 스레드 분리), ② SF_PENDING 가드 전달,
+ * 핵심 계약: ① AFTER_COMMIT(커밋 후) + @Async(요청 스레드 분리), ② PENDING 가드 전달,
  * ③ 디스패치 실패가 전파되지 않음(runCatching 격리 — HTTP 응답에 영향 없음).
  */
 @DisplayName("ClaimSfPushDispatcher 테스트")
@@ -40,14 +40,14 @@ class ClaimSfPushDispatcherTest {
     }
 
     @Test
-    @DisplayName("SF_PENDING 만 허용하는 가드로 dispatch 위임")
+    @DisplayName("PENDING 만 허용하는 가드로 dispatch 위임")
     fun delegatesWithPendingGuard() {
-        val allowedSlot = slot<Set<ClaimStatus>>()
+        val allowedSlot = slot<Set<ClaimSfSendStatus>>()
         every { dispatchService.dispatch(7L, capture(allowedSlot), any()) } returns null
 
         dispatcher.onClaimRegistered(ClaimRegisteredEvent(7L))
 
-        assertThat(allowedSlot.captured).containsExactly(ClaimStatus.SF_PENDING)
+        assertThat(allowedSlot.captured).containsExactly(ClaimSfSendStatus.PENDING)
         verify { dispatchService.dispatch(7L, any(), any()) }
     }
 

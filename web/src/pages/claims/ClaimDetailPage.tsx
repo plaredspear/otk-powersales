@@ -5,9 +5,9 @@ import { useClaimDetail } from '@/hooks/claims/useClaimDetail';
 import { useResendClaim } from '@/hooks/claims/useResendClaim';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
+// status : SF DKRetail__Status__c (코스모스 전송상태). 표시 전용.
 const STATUS_TAG: Record<string, { color: string; label: string }> = {
   DRAFT: { color: 'default', label: '임시저장' },
-  SF_PENDING: { color: 'processing', label: '전송대기' },
   SENT: { color: 'green', label: '전송완료' },
   SEND_FAILED: { color: 'red', label: '전송실패' },
   // 레거시/구버전 호환
@@ -15,6 +15,13 @@ const STATUS_TAG: Record<string, { color: string; label: string }> = {
   IN_PROGRESS: { color: 'orange', label: '처리중' },
   RESOLVED: { color: 'green', label: '처리완료' },
   REJECTED: { color: 'red', label: '반려' },
+};
+
+// sfSendStatus : 신규→SF 전송상태. null 이면 SF origin 마이그레이션 건(재전송 대상 아님) → 미표시.
+const SF_SEND_STATUS_TAG: Record<string, { color: string; label: string }> = {
+  PENDING: { color: 'processing', label: '전송대기' },
+  SENT: { color: 'green', label: '전송완료' },
+  SEND_FAILED: { color: 'red', label: '전송실패' },
 };
 
 const DATE_TYPE_LABEL: Record<string, string> = {
@@ -48,7 +55,7 @@ export default function ClaimDetailPage() {
   const handleResend = () => {
     resendClaim(id, {
       onSuccess: (data) => {
-        if (data.status === 'SENT') {
+        if (data.sfSendStatus === 'SENT') {
           message.success('SF 재전송에 성공했습니다');
         } else {
           message.warning(`SF 재전송에 실패했습니다: ${data.sfResultMsg ?? '연동 오류'}`);
@@ -87,6 +94,7 @@ export default function ClaimDetailPage() {
   }
 
   const statusTag = STATUS_TAG[claim.status];
+  const sfSendStatusTag = claim.sfSendStatus ? SF_SEND_STATUS_TAG[claim.sfSendStatus] : null;
   const dateTypeLabel = claim.dateType ? DATE_TYPE_LABEL[claim.dateType] : null;
 
   return (
@@ -97,7 +105,7 @@ export default function ClaimDetailPage() {
         </Button>
       </div>
 
-      {claim.status === 'SEND_FAILED' && (
+      {claim.sfSendStatus === 'SEND_FAILED' && (
         <Alert
           type="warning"
           showIcon
@@ -117,6 +125,13 @@ export default function ClaimDetailPage() {
           <Descriptions.Item label="접수번호">{orDash(claim.claimNo)}</Descriptions.Item>
           <Descriptions.Item label="상태">
             {statusTag ? <Tag color={statusTag.color}>{statusTag.label}</Tag> : <Tag>{claim.status}</Tag>}
+          </Descriptions.Item>
+          <Descriptions.Item label="SF전송상태">
+            {sfSendStatusTag ? (
+              <Tag color={sfSendStatusTag.color}>{sfSendStatusTag.label}</Tag>
+            ) : (
+              orDash(null)
+            )}
           </Descriptions.Item>
           <Descriptions.Item label="사원명">{claim.employeeName}</Descriptions.Item>
           <Descriptions.Item label="사번">{claim.employeeCode}</Descriptions.Item>

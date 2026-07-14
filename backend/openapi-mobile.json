@@ -2993,6 +2993,12 @@
           "sampleCollectionFlag" : {
             "type" : [ "boolean", "null" ]
           },
+          "sfSendStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfSendStatusLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "status" : {
             "type" : [ "string", "null" ]
           },
@@ -3183,6 +3189,12 @@
             "type" : [ "string", "null" ]
           },
           "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfSendStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfSendStatusLabel" : {
             "type" : [ "string", "null" ]
           },
           "status" : {

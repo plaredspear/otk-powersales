@@ -1,6 +1,6 @@
 package com.otoki.powersales.domain.activity.claim.service
 
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.exception.ClaimNotResendableException
 import com.otoki.powersales.external.sf.outbound.SfApiResponse
 import io.mockk.every
@@ -29,7 +29,7 @@ class AdminClaimResendServiceTest {
     @Test
     @DisplayName("SEND_FAILED 만 허용하는 가드 전달 + SF 결과를 응답에 매핑")
     fun resendDelegatesWithSendFailedGuard() {
-        val allowedSlot = slot<Set<ClaimStatus>>()
+        val allowedSlot = slot<Set<ClaimSfSendStatus>>()
         every {
             dispatchService.dispatch(claimId, capture(allowedSlot), any())
         } returns ClaimSfDispatchService.DispatchResult(
@@ -38,15 +38,15 @@ class AdminClaimResendServiceTest {
                 apiResponse = SfApiResponse(resultCode = "200", resultMsg = "OK", rawBody = "{}"),
                 errorSummary = null,
             ),
-            status = ClaimStatus.SENT,
+            sfSendStatus = ClaimSfSendStatus.SENT,
         )
 
         val result = service.resend(claimId)
 
         // 재전송은 SEND_FAILED 상태만 허용
-        assertThat(allowedSlot.captured).containsExactly(ClaimStatus.SEND_FAILED)
+        assertThat(allowedSlot.captured).containsExactly(ClaimSfSendStatus.SEND_FAILED)
         assertThat(result.claimId).isEqualTo(claimId)
-        assertThat(result.status).isEqualTo("SENT")
+        assertThat(result.sfSendStatus).isEqualTo("SENT")
         assertThat(result.sfResultCode).isEqualTo("200")
         assertThat(result.sfResultMsg).isEqualTo("OK")
     }
@@ -56,7 +56,7 @@ class AdminClaimResendServiceTest {
     fun resendThrowsWhenDispatchSkips() {
         // 상태 불일치로 dispatch 가 onStatusMismatch 호출 후 null 반환하는 경우.
         every { dispatchService.dispatch(claimId, any(), any()) } answers {
-            thirdArg<(ClaimStatus?) -> Unit>().invoke(ClaimStatus.SENT)
+            thirdArg<(ClaimSfSendStatus?) -> Unit>().invoke(ClaimSfSendStatus.SENT)
             null
         }
 

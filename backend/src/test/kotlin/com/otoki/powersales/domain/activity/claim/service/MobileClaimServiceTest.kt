@@ -7,7 +7,7 @@ import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.exception.ClaimTypeHierarchyMismatchException
 import com.otoki.powersales.domain.activity.claim.exception.InvalidClaimDateException
 import com.otoki.powersales.domain.activity.claim.exception.InvalidClaimType1Exception
@@ -152,21 +152,21 @@ class MobileClaimServiceTest {
     }
 
     @Test
-    @DisplayName("등록 시 channel=CAP INSERT(status=SF_PENDING) + SF 송신 이벤트 발행")
+    @DisplayName("등록 시 channel=CAP INSERT(sfSendStatus=PENDING) + SF 송신 이벤트 발행")
     fun insertsWithCapChannelAndPublishesSfEvent() {
         stubCreateDeps()
         val claimSlot = slot<Claim>()
         // save 가 PK 가 채워진 영속 entity 를 반환하도록 — 이벤트의 claimId 검증용.
-        val persisted = Claim(id = 77L, status = ClaimStatus.SF_PENDING, channel = ClaimChannel.CAP)
+        val persisted = Claim(id = 77L, sfSendStatus = ClaimSfSendStatus.PENDING, channel = ClaimChannel.CAP)
         every { claimRepository.save(capture(claimSlot)) } returns persisted
         val eventSlot = slot<ClaimRegisteredEvent>()
         every { eventPublisher.publishEvent(capture(eventSlot)) } answers {}
 
         val result = service.createClaim(userId, validRequest(), mockPhoto("d"), mockPhoto("l"), null)
 
-        // INSERT 시점 channel=CAP (레거시 모바일 정합) + 등록 직후 상태는 SF_PENDING (전송대기)
+        // INSERT 시점 channel=CAP (레거시 모바일 정합) + 등록 직후 SF 전송상태는 PENDING (전송대기)
         assertThat(claimSlot.captured.channel).isEqualTo(ClaimChannel.CAP)
-        assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SF_PENDING)
+        assertThat(claimSlot.captured.sfSendStatus).isEqualTo(ClaimSfSendStatus.PENDING)
         // 응답은 claim 정보만 (SF 결과 미포함)
         assertThat(result.id).isEqualTo(77L)
         // 커밋 후 SF 송신을 트리거할 이벤트가 (PK 가 채워진) claimId 로 발행됨

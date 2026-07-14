@@ -4,7 +4,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType2
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
@@ -32,10 +32,10 @@ import java.time.LocalDate
 import java.util.Optional
 
 /**
- * ClaimSfDispatchService 테스트 — claimId 기준 SF `/ClaimRegist` push + status 전이.
+ * ClaimSfDispatchService 테스트 — claimId 기준 SF `/ClaimRegist` push + sfSendStatus 전이.
  *
  * 신규 등록 직후 비동기 송신([ClaimSfPushDispatcher])과 수동 재전송([AdminClaimResendService])이
- * 공유하는 전송 골격 (snapshot 복원 → S3 이미지 회수 → SF 호출 → status update) 을 검증한다.
+ * 공유하는 전송 골격 (snapshot 복원 → S3 이미지 회수 → SF 호출 → sfSendStatus update) 을 검증한다.
  */
 @DisplayName("ClaimSfDispatchService 테스트")
 class ClaimSfDispatchServiceTest {
@@ -53,9 +53,9 @@ class ClaimSfDispatchServiceTest {
 
     private val claimId = 42L
 
-    // 등록 직후 비동기 전송: SF_PENDING 허용. 재전송: SEND_FAILED 허용.
-    private val pendingAllowed = setOf(ClaimStatus.SF_PENDING)
-    private val resendAllowed = setOf(ClaimStatus.SEND_FAILED)
+    // 등록 직후 비동기 전송: PENDING 허용. 재전송: SEND_FAILED 허용.
+    private val pendingAllowed = setOf(ClaimSfSendStatus.PENDING)
+    private val resendAllowed = setOf(ClaimSfSendStatus.SEND_FAILED)
 
     @BeforeEach
     fun setup() {
@@ -66,7 +66,7 @@ class ClaimSfDispatchServiceTest {
     }
 
     private fun claimWith(
-        status: ClaimStatus,
+        sfSendStatus: ClaimSfSendStatus,
         channel: ClaimChannel = ClaimChannel.WEB,
     ) = Claim(
         id = claimId,
@@ -79,7 +79,7 @@ class ClaimSfDispatchServiceTest {
         claimType2 = ClaimType2.AA,
         defectDescription = "이물질",
         defectQuantity = BigDecimal.valueOf(2L),
-        status = status,
+        sfSendStatus = sfSendStatus,
         channel = channel,
     )
 
@@ -102,9 +102,9 @@ class ClaimSfDispatchServiceTest {
     }
 
     @Test
-    @DisplayName("SF_PENDING dispatch 성공 → status=SENT + sendAttemptCount 1")
+    @DisplayName("PENDING dispatch 성공 → sfSendStatus=SENT + sfSendAttemptCount 1")
     fun dispatchPendingSucceeds() {
-        val claim = claimWith(ClaimStatus.SF_PENDING)
+        val claim = claimWith(ClaimSfSendStatus.PENDING)
         every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         stubPhotos()
@@ -113,17 +113,17 @@ class ClaimSfDispatchServiceTest {
 
         val result = service.dispatch(claimId, pendingAllowed, onStatusMismatch = { error("호출되면 안 됨") })
 
-        assertThat(claim.status).isEqualTo(ClaimStatus.SENT)
-        assertThat(claim.sendAttemptCount).isEqualTo(1)
-        assertThat(claim.sentAt).isNotNull()
-        assertThat(result?.status).isEqualTo(ClaimStatus.SENT)
+        assertThat(claim.sfSendStatus).isEqualTo(ClaimSfSendStatus.SENT)
+        assertThat(claim.sfSendAttemptCount).isEqualTo(1)
+        assertThat(claim.sfSentAt).isNotNull()
+        assertThat(result?.sfSendStatus).isEqualTo(ClaimSfSendStatus.SENT)
         assertThat(result?.sfResult?.success).isTrue()
     }
 
     @Test
-    @DisplayName("SF 호출 실패 → status=SEND_FAILED + 예외 미전파")
+    @DisplayName("SF 호출 실패 → sfSendStatus=SEND_FAILED + 예외 미전파")
     fun dispatchKeepsFailedStatusOnSfError() {
-        val claim = claimWith(ClaimStatus.SF_PENDING)
+        val claim = claimWith(ClaimSfSendStatus.PENDING)
         every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         stubPhotos()
@@ -131,15 +131,15 @@ class ClaimSfDispatchServiceTest {
 
         val result = service.dispatch(claimId, pendingAllowed, onStatusMismatch = { error("호출되면 안 됨") })
 
-        assertThat(claim.status).isEqualTo(ClaimStatus.SEND_FAILED)
-        assertThat(result?.status).isEqualTo(ClaimStatus.SEND_FAILED)
+        assertThat(claim.sfSendStatus).isEqualTo(ClaimSfSendStatus.SEND_FAILED)
+        assertThat(result?.sfSendStatus).isEqualTo(ClaimSfSendStatus.SEND_FAILED)
         assertThat(result?.sfResult?.success).isFalse()
     }
 
     @Test
     @DisplayName("apiMap 정합 — Channel/pwrskey/EmployeeCode/SAPAccountCode + ExpirationDate, ManufacturingDate=\"\"")
     fun dispatchBuildsApiMap() {
-        val claim = claimWith(ClaimStatus.SF_PENDING, channel = ClaimChannel.WEB)
+        val claim = claimWith(ClaimSfSendStatus.PENDING, channel = ClaimChannel.WEB)
         every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         stubPhotos()
@@ -161,7 +161,7 @@ class ClaimSfDispatchServiceTest {
     @Test
     @DisplayName("이미지 확장자 정합 — 무확장자·비이미지 확장자 파일명이면 image/jpeg 기준 jpg 로 정규화")
     fun dispatchNormalizesImageExtension() {
-        val claim = claimWith(ClaimStatus.SF_PENDING)
+        val claim = claimWith(ClaimSfSendStatus.PENDING)
         every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         // iOS(Simulator) image_picker 임시 파일: 확장자 없음(defect) / 비이미지 확장자 .tmp(part)
@@ -202,7 +202,7 @@ class ClaimSfDispatchServiceTest {
     @Test
     @DisplayName("재전송 경로 channel 유지 - mobile(CAP) 재전송 시 payload Channel=CAP")
     fun dispatchPreservesOriginalChannel() {
-        val claim = claimWith(ClaimStatus.SEND_FAILED, channel = ClaimChannel.CAP)
+        val claim = claimWith(ClaimSfSendStatus.SEND_FAILED, channel = ClaimChannel.CAP)
         every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
         every { claimRepository.findById(claimId) } returns Optional.of(claim)
         stubPhotos()
@@ -219,14 +219,14 @@ class ClaimSfDispatchServiceTest {
     @DisplayName("허용 상태 외 - onStatusMismatch 위임 + SF 미호출 + null 반환")
     fun dispatchSkipsWhenStatusMismatch() {
         // SENT 상태인 claim 에 재전송(SEND_FAILED 만 허용) 시도 → skip.
-        val claim = claimWith(ClaimStatus.SENT)
+        val claim = claimWith(ClaimSfSendStatus.SENT)
         every { claimRepository.findByIdWithSfRefs(claimId) } returns claim
-        var mismatchStatus: ClaimStatus? = null
+        var mismatchStatus: ClaimSfSendStatus? = null
 
         val result = service.dispatch(claimId, resendAllowed, onStatusMismatch = { mismatchStatus = it })
 
         assertThat(result).isNull()
-        assertThat(mismatchStatus).isEqualTo(ClaimStatus.SENT)
+        assertThat(mismatchStatus).isEqualTo(ClaimSfSendStatus.SENT)
         verify(exactly = 0) { sfOutboundClient.callApi(any(), any()) }
     }
 }

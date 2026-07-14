@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.batch
 
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.domain.activity.claim.service.ClaimSfDispatchService
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionSfSendStatus
@@ -61,16 +61,16 @@ class SfClaimResendBatchService(
     }
 
     private fun resendClaims(): DomainResult {
-        val targetIds = claimRepository.findResendTargetIds(ClaimStatus.SEND_FAILED, maxAttempt)
+        val targetIds = claimRepository.findResendTargetIds(ClaimSfSendStatus.SEND_FAILED, maxAttempt)
         var sent = 0
         var failed = 0
         var skipped = 0
         for (id in targetIds) {
-            // dispatch 는 SF 실패를 throw 하지 않고 status 로 반영하나, 조회/트랜잭션 예외는 건별 격리한다.
+            // dispatch 는 SF 실패를 throw 하지 않고 sfSendStatus 로 반영하나, 조회/트랜잭션 예외는 건별 격리한다.
             val outcome = runCatching {
                 claimSfDispatchService.dispatch(
                     claimId = id,
-                    allowedStatuses = setOf(ClaimStatus.SEND_FAILED),
+                    allowedStatuses = setOf(ClaimSfSendStatus.SEND_FAILED),
                     onStatusMismatch = { /* 배치 조회 후 상태 변동(이미 SENT 등) — skip */ },
                 )
             }.onFailure { log.warn("[sf-resend] 제품클레임 재전송 실패 claimId={}", id, it) }
@@ -78,7 +78,7 @@ class SfClaimResendBatchService(
             when {
                 // dispatch 가 null = 상태 가드 mismatch(이미 SENT 등) → skip (실패 아님).
                 outcome.isSuccess && outcome.getOrNull() == null -> skipped++
-                outcome.getOrNull()?.status == ClaimStatus.SENT -> sent++
+                outcome.getOrNull()?.sfSendStatus == ClaimSfSendStatus.SENT -> sent++
                 else -> failed++
             }
         }

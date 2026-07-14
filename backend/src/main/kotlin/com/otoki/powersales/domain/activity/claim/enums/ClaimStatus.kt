@@ -6,7 +6,10 @@ import com.fasterxml.jackson.annotation.JsonValue
 /**
  * Salesforce `DKRetail__Claim__c.DKRetail__Status__c` (상태) picklist enum.
  *
- * 단일 권위: Salesforce Object 메타 (`DKRetail__Claim__c`) (선택 목록 3개)
+ * **의미**: SF → 외부(코스모스) 전송상태. 마이그레이션 시 SF 값 그대로 적재되며 표시/보고서 필터 전용이다.
+ * 신규 시스템 → SF 전송상태는 별도 [ClaimSfSendStatus] (sfSendStatus 컬럼) 가 담당한다 — 두 축은 별개 차원.
+ *
+ * 단일 권위: Salesforce Object 메타 (`DKRetail__Claim__c`) picklist (임시저장/전송완료/전송실패 3개)
  *
  * Spec #705 Q4 결정:
  *   - SF 옵션값으로 정합 (DRAFT/SENT/SEND_FAILED) — 기존 ClaimStatus 4개 (SUBMITTED/IN_PROGRESS/RESOLVED/REJECTED) 폐기
@@ -18,7 +21,6 @@ enum class ClaimStatus(
     val displayName: String
 ) {
     DRAFT("임시저장"),
-    SF_PENDING("전송대기"),
     SENT("전송완료"),
     SEND_FAILED("전송실패");
 

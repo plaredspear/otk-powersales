@@ -11,6 +11,7 @@ import com.otoki.powersales.domain.activity.claim.entity.sfpicklist.PurchaseMeth
 import com.otoki.powersales.domain.activity.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType2
@@ -316,20 +317,27 @@ class Claim(
     @JoinColumn(name = "product_id")
     var product: Product? = null,
 
-    // -- Spec #829: SF outbound dual-write 추적 (web admin 등록 경로 한정) --
-    // SF 매핑 없음 — backend 내부 lifecycle 만 관리.
+    // -- SF outbound 전송상태 추적 (web admin / mobile 클레임 등록 dual-write — /ClaimRegist).
+    //    SF 매핑 없음(@SFField 미부착) — backend 내부 lifecycle 전용. 기존 status(DKRetail__Status__c,
+    //    코스모스 전송상태) 와는 다른 차원이다. SF origin 마이그레이션 row 는 sf_send_status=NULL 로
+    //    남아 본 경로 전송(재전송) 대상이 아님을 표현한다. 물류클레임(Suggestion) 컬럼 세트와 정합. --
 
-    @FieldName("전송시각")
-    @Column(name = "sent_at")
-    var sentAt: LocalDateTime? = null,
+    @Enumerated(EnumType.STRING)
+    @FieldName("SF전송상태")
+    @Column(name = "sf_send_status", length = 20)
+    var sfSendStatus: ClaimSfSendStatus? = null,
 
-    @FieldName("전송실패메시지")
-    @Column(name = "send_fail_message", length = 1000)
-    var sendFailMessage: String? = null,
+    @FieldName("SF전송시각")
+    @Column(name = "sf_sent_at")
+    var sfSentAt: LocalDateTime? = null,
 
-    @FieldName("전송시도횟수")
-    @Column(name = "send_attempt_count", nullable = false)
-    var sendAttemptCount: Int = 0
+    @FieldName("SF전송실패메시지")
+    @Column(name = "sf_send_fail_message", length = 1000)
+    var sfSendFailMessage: String? = null,
+
+    @FieldName("SF전송시도횟수")
+    @Column(name = "sf_send_attempt_count", nullable = false)
+    var sfSendAttemptCount: Int = 0
 ) : BaseEntity() {
 
     companion object {
@@ -338,7 +346,11 @@ class Claim(
          * mobile ([com.otoki.powersales.domain.activity.claim.service.MobileClaimService]) 공용 factory.
          *
          * 등록 시 SF 정합 필드를 한 곳에 가둔다 (진입점별 중복 방지):
-         *  - status = SF_PENDING — SF 송신은 등록 커밋 후 비동기 처리.
+         *  - status = DRAFT (임시저장) — status 는 SF DKRetail__Status__c(코스모스 전송상태) 표시 축이며
+         *    신규 등록 시점엔 아직 코스모스로 전송된 적이 없으므로 임시저장으로 둔다. 신규→SF 전송상태는
+         *    별도 sfSendStatus 가 담당한다.
+         *  - sfSendStatus = PENDING (전송대기) — SF 송신은 등록 커밋 후 비동기 처리. 전송 성공/실패에 따라
+         *    ClaimSfOutboundService.applySfResultToClaim 이 SENT/SEND_FAILED 로 전이한다.
          *  - costCenterCode = 거래처(Account) BranchCode (SF ClaimRegist.cls:90 정합,
          *    CostCenter__c formula = AccountId__r.BranchCode__c 와 동일).
          *  - division = null — IF_REST_MOBILE_ClaimRegist 컨트롤러가 set 안 함 + 트리거는
@@ -370,7 +382,8 @@ class Claim(
             purchaseAmount = amount,
             purchaseMethodCode = purchaseMethod,
             requestTypeCode = requestTypes,
-            status = ClaimStatus.SF_PENDING,
+            status = ClaimStatus.DRAFT,
+            sfSendStatus = ClaimSfSendStatus.PENDING,
             channel = channel,
             product = product,
             costCenterCode = account.branchCode,

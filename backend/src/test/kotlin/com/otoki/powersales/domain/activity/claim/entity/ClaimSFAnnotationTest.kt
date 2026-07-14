@@ -190,15 +190,14 @@ class ClaimSFAnnotationTest {
     inner class ClaimStatusEnumConsistency {
 
         @Test
-        @DisplayName("ClaimStatus.values() = 4개 멤버 (#829 dual-write 추가: SF_PENDING)")
+        @DisplayName("ClaimStatus.values() = 3개 멤버 (SF DKRetail__Status__c picklist 정합)")
         fun claimStatusMembers() {
-            // SF `DKRetail__Status__c` picklist (3개 — 임시저장/전송완료/전송실패) + #829 SF_PENDING 신설.
-            // SF picklist 측은 운영자가 별도로 '전송대기' 값을 추가하거나, backend → SF push 직전 임시 상태로만 사용.
-            assertThat(ClaimStatus.entries).hasSize(4)
+            // SF `DKRetail__Status__c` picklist (임시저장/전송완료/전송실패) 정합. status 는 SF → 외부(코스모스)
+            // 전송상태 표시 축이며, 신규→SF 전송상태는 별도 ClaimSfSendStatus (sfSendStatus 컬럼) 가 담당한다.
+            assertThat(ClaimStatus.entries).hasSize(3)
             assertThat(ClaimStatus.entries.map { it.name })
-                .containsExactlyInAnyOrder("DRAFT", "SF_PENDING", "SENT", "SEND_FAILED")
+                .containsExactlyInAnyOrder("DRAFT", "SENT", "SEND_FAILED")
             assertThat(ClaimStatus.DRAFT.displayName).isEqualTo("임시저장")
-            assertThat(ClaimStatus.SF_PENDING.displayName).isEqualTo("전송대기")
             assertThat(ClaimStatus.SENT.displayName).isEqualTo("전송완료")
             assertThat(ClaimStatus.SEND_FAILED.displayName).isEqualTo("전송실패")
         }

@@ -4,7 +4,7 @@ import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.entity.sfpicklist.PurchaseMethod
 import com.otoki.powersales.domain.activity.claim.entity.sfpicklist.RequestType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType2
 import com.otoki.powersales.platform.common.storage.StorageService
@@ -129,14 +129,16 @@ class ClaimSfOutboundService(
     }
 
     fun applySfResultToClaim(claim: Claim, result: SfPushResult) {
-        claim.sendAttemptCount = claim.sendAttemptCount + 1
+        // 신규→SF 전송상태(sfSendStatus) 만 전이한다. status(DKRetail__Status__c, 코스모스 전송상태)는
+        // 별개 축이므로 여기서 건드리지 않는다.
+        claim.sfSendAttemptCount = claim.sfSendAttemptCount + 1
         if (result.success) {
-            claim.status = ClaimStatus.SENT
-            claim.sentAt = LocalDateTime.now()
-            claim.sendFailMessage = null
+            claim.sfSendStatus = ClaimSfSendStatus.SENT
+            claim.sfSentAt = LocalDateTime.now()
+            claim.sfSendFailMessage = null
         } else {
-            claim.status = ClaimStatus.SEND_FAILED
-            claim.sendFailMessage = (result.apiResponse?.resultMsg ?: result.errorSummary)?.take(1000)
+            claim.sfSendStatus = ClaimSfSendStatus.SEND_FAILED
+            claim.sfSendFailMessage = (result.apiResponse?.resultMsg ?: result.errorSummary)?.take(1000)
         }
     }
 

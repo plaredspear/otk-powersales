@@ -1167,7 +1167,7 @@
           "sfResultMsg" : {
             "type" : [ "string", "null" ]
           },
-          "status" : {
+          "sfSendStatus" : {
             "type" : "string"
           }
         },
@@ -1290,6 +1290,12 @@
           "sampleCollectionFlag" : {
             "type" : [ "boolean", "null" ]
           },
+          "sfSendStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfSendStatusLabel" : {
+            "type" : [ "string", "null" ]
+          },
           "status" : {
             "type" : [ "string", "null" ]
           },
@@ -1337,6 +1343,9 @@
             "type" : [ "string", "null" ]
           },
           "representativeImageUrl" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfSendStatus" : {
             "type" : [ "string", "null" ]
           },
           "status" : {

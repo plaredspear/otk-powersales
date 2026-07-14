@@ -44,7 +44,7 @@ import java.time.LocalDate
  * 모바일 클레임 등록 (UC-02/UC-10) — SF dual-write (channel=CAP).
  *
  * 모바일 입력 파싱 + 의존 entity 조회(userId/accountId/productCode 기반) + draft 삭제 정책을 책임지고,
- * 트랜잭션 안에서 claim + photo 를 INSERT(status=SF_PENDING)한 뒤 [ClaimRegisteredEvent] 를 발행한다.
+ * 트랜잭션 안에서 claim + photo 를 INSERT(sfSendStatus=PENDING)한 뒤 [ClaimRegisteredEvent] 를 발행한다.
  * SF `/ClaimRegist` 송신은 커밋 후 [ClaimSfPushDispatcher] 가 비동기로 수행하므로 본 service 는 SF I/O 무관.
  *
  * 레거시 ClaimTrigger / IF_REST_MOBILE_ClaimRegist 정합:
@@ -125,7 +125,7 @@ class MobileClaimService(
             fileStorageService.uploadClaimPhoto(it, userId, 0L, UploadFileKbnTypes.CLAIM_RECEIPT)
         }
 
-        // 3. Tx INSERT (status=SF_PENDING) + draft 삭제 + 커밋 후 SF 송신 이벤트 발행.
+        // 3. Tx INSERT (status=DRAFT, sfSendStatus=PENDING) + draft 삭제 + 커밋 후 SF 송신 이벤트 발행.
         // SF 송신은 커밋 후 비동기(ClaimSfPushDispatcher) — 본 응답은 claim 정보만 반환한다.
         val claim = txTemplate.execute {
             val saved = claimRepository.save(

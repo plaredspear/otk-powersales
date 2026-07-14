@@ -24,7 +24,10 @@ export interface ClaimListItem {
   subcategoryValue: string | null;
   subcategoryLabel: string | null;
   defectQuantity: number | null;
+  /** SF DKRetail__Status__c (코스모스 전송상태) — 표시 전용. */
   status: string;
+  /** 신규→SF 전송상태. SF origin 마이그레이션 건은 null. 재전송 필요 건(SEND_FAILED) 식별용. */
+  sfSendStatus: string | null;
   createdAt: string;
   /** 카드 뷰 배경용 대표 이미지 URL (불량 사진 우선, 없으면 첫 사진). 사진 없으면 null. */
   representativeImageUrl: string | null;
@@ -56,7 +59,11 @@ export interface ClaimDetail {
   subcategoryLabel: string | null;
   defectQuantity: number | null;
   sampleCollectionFlag: boolean | null;
+  /** SF DKRetail__Status__c (코스모스 전송상태) — 표시 전용. */
   status: string;
+  /** 신규→SF 전송상태. SF origin 마이그레이션 건은 null (재전송 대상 아님). 재전송 버튼 판정 축. */
+  sfSendStatus: string | null;
+  sfSendStatusLabel: string | null;
   customerDeliveryDate: string | null;
   detailSnsName: string | null;
   dateType: string | null;
@@ -96,7 +103,8 @@ export interface ClaimPhoto {
 
 // --- Spec #829: Admin 클레임 등록 + SF 재전송 ---
 
-export type ClaimSendStatus = 'SENT' | 'SEND_FAILED' | 'SF_PENDING' | 'DRAFT';
+/** 신규→SF 전송상태 (backend ClaimSfSendStatus). 코스모스 전송상태(claim.status)와는 다른 축. */
+export type ClaimSfSendStatus = 'PENDING' | 'SENT' | 'SEND_FAILED';
 
 export interface AdminClaimCreateInput {
   sapAccountCode: string;
@@ -120,7 +128,8 @@ export interface AdminClaimCreateInput {
 
 export interface AdminClaimCreateResult {
   claimId: number;
-  status: ClaimSendStatus;
+  /** 신규→SF 전송상태. 등록 직후엔 PENDING, 재전송 시엔 SENT/SEND_FAILED. */
+  sfSendStatus: ClaimSfSendStatus | '';
   sfResultCode: string | null;
   sfResultMsg: string | null;
 }

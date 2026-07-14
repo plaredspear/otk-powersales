@@ -77,7 +77,7 @@ class AdminClaimController(
      * Web admin 클레임 등록 — Spec #829.
      *
      * dual-write: backend.claim INSERT 후 SF Apex `IF_REST_MOBILE_ClaimRegist` 호출.
-     * SF 실패도 HTTP 200 으로 응답 (`data.status=SEND_FAILED`) — backend.claim 적재 사실 우선.
+     * SF 실패도 HTTP 200 으로 응답 (`data.sfSendStatus=SEND_FAILED`) — backend.claim 적재 사실 우선.
      */
     @PostMapping(consumes = ["multipart/form-data"])
     @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.CREATE)
@@ -88,15 +88,17 @@ class AdminClaimController(
         @RequestParam(required = false) receiptPhoto: MultipartFile?,
     ): ResponseEntity<ApiResponse<AdminClaimCreateResponse>> {
         val response = adminClaimCreateService.createClaim(request, claimPhoto, partPhoto, receiptPhoto)
-        val message = when (response.status) {
+        // 등록 응답은 sfSendStatus=PENDING (SF 송신은 커밋 후 비동기). 전송 성공/실패는 상세 화면에서 확인.
+        val message = when (response.sfSendStatus) {
             "SENT" -> "클레임이 등록되었으며 SF에 전송되었습니다"
-            else -> "클레임은 등록되었으나 SF 전송에 실패했습니다. 재전송이 필요합니다"
+            "SEND_FAILED" -> "클레임은 등록되었으나 SF 전송에 실패했습니다. 재전송이 필요합니다"
+            else -> "클레임이 등록되었습니다"
         }
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response, message))
     }
 
     /**
-     * SF 재전송 — `claim.status == SEND_FAILED` 인 경우만 허용.
+     * SF 재전송 — `claim.sfSendStatus == SEND_FAILED` 인 경우만 허용.
      */
     @PostMapping("/{claimId}/sf-resend")
     @RequiresSfPermission(entity = "claim", operation = SfPermissionOperation.CREATE)
@@ -104,7 +106,7 @@ class AdminClaimController(
         @PathVariable claimId: Long,
     ): ResponseEntity<ApiResponse<AdminClaimCreateResponse>> {
         val response = adminClaimResendService.resend(claimId)
-        val message = when (response.status) {
+        val message = when (response.sfSendStatus) {
             "SENT" -> "SF 재전송에 성공했습니다"
             else -> "SF 재전송에 실패했습니다"
         }

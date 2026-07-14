@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { resendClaim, type AdminClaimCreateResult } from '@/api/claims';
 
 /**
- * Spec #829: SF 재전송 (claim.status == SEND_FAILED 일 때만 허용).
+ * Spec #829: SF 재전송 (claim.sfSendStatus == SEND_FAILED 일 때만 허용).
  */
 export function useResendClaim() {
   const queryClient = useQueryClient();

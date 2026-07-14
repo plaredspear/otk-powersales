@@ -1,6 +1,6 @@
 package com.otoki.powersales.platform.batch
 
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.domain.activity.claim.service.ClaimSfDispatchService
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionSfSendStatus
@@ -28,25 +28,25 @@ class SfClaimResendBatchServiceTest {
         claimRepository, claimSfDispatchService, suggestionRepository, suggestionSfResendService, maxAttempt,
     )
 
-    private fun claimDispatchResult(status: ClaimStatus) =
-        ClaimSfDispatchService.DispatchResult(sfResult = mockk(relaxed = true), status = status)
+    private fun claimDispatchResult(sfSendStatus: ClaimSfSendStatus) =
+        ClaimSfDispatchService.DispatchResult(sfResult = mockk(relaxed = true), sfSendStatus = sfSendStatus)
 
     @Test
     fun `대상 조회는 SEND_FAILED + maxAttempt 상한으로 호출`() {
-        every { claimRepository.findResendTargetIds(ClaimStatus.SEND_FAILED, maxAttempt) } returns emptyList()
+        every { claimRepository.findResendTargetIds(ClaimSfSendStatus.SEND_FAILED, maxAttempt) } returns emptyList()
         every { suggestionRepository.findResendTargetIds(SuggestionSfSendStatus.SEND_FAILED, maxAttempt) } returns emptyList()
 
         service().resendAll()
 
-        verify { claimRepository.findResendTargetIds(ClaimStatus.SEND_FAILED, maxAttempt) }
+        verify { claimRepository.findResendTargetIds(ClaimSfSendStatus.SEND_FAILED, maxAttempt) }
         verify { suggestionRepository.findResendTargetIds(SuggestionSfSendStatus.SEND_FAILED, maxAttempt) }
     }
 
     @Test
     fun `두 도메인 재전송 후 metadata 에 도메인별 집계 기록`() {
         every { claimRepository.findResendTargetIds(any(), any()) } returns listOf(1L, 2L)
-        every { claimSfDispatchService.dispatch(1L, any(), any()) } returns claimDispatchResult(ClaimStatus.SENT)
-        every { claimSfDispatchService.dispatch(2L, any(), any()) } returns claimDispatchResult(ClaimStatus.SEND_FAILED)
+        every { claimSfDispatchService.dispatch(1L, any(), any()) } returns claimDispatchResult(ClaimSfSendStatus.SENT)
+        every { claimSfDispatchService.dispatch(2L, any(), any()) } returns claimDispatchResult(ClaimSfSendStatus.SEND_FAILED)
 
         every { suggestionRepository.findResendTargetIds(any(), any()) } returns listOf(10L)
         every { suggestionSfResendService.resend(10L) } returns
@@ -116,7 +116,7 @@ class SfClaimResendBatchServiceTest {
     fun `건별 dispatch 예외는 격리되어 failed 로 집계되고 다음 건 진행`() {
         every { claimRepository.findResendTargetIds(any(), any()) } returns listOf(1L, 2L)
         every { claimSfDispatchService.dispatch(1L, any(), any()) } throws RuntimeException("일시 오류")
-        every { claimSfDispatchService.dispatch(2L, any(), any()) } returns claimDispatchResult(ClaimStatus.SENT)
+        every { claimSfDispatchService.dispatch(2L, any(), any()) } returns claimDispatchResult(ClaimSfSendStatus.SENT)
         every { suggestionRepository.findResendTargetIds(any(), any()) } returns emptyList()
 
         val ctx = ScheduledJobRunContext("sf-claim-resend")

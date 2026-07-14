@@ -1,7 +1,7 @@
 package com.otoki.powersales.domain.activity.claim.repository
 
 import com.otoki.powersales.domain.activity.claim.entity.Claim
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -14,23 +14,26 @@ interface ClaimRepository : JpaRepository<Claim, Long>, ClaimRepositoryCustom {
     fun findByName(name: String): Claim?
 
     /**
-     * SF 재전송 배치 대상 claim id 조회 — 전송실패(SEND_FAILED) + 재시도 상한 미만.
+     * SF 재전송 배치 대상 claim id 조회 — SF 전송실패(sfSendStatus=SEND_FAILED) + 재시도 상한 미만.
+     *
+     * 신규→SF 전송상태(sfSendStatus) 로 판별하므로, SF origin 마이그레이션 row(sfSendStatus=NULL)는
+     * 자연히 제외된다 — 마이그레이션 데이터는 재전송 대상이 아니고 신규 등록 건만 대상이다.
      *
      * 영구 실패(예: SF Apex 미배포로 strict 파싱 실패)가 매 배치마다 재시도되어 이력을 오염시키지
-     * 않도록 `sendAttemptCount < maxAttempt` 로 상한을 건다. 실제 전송/상태전이는
+     * 않도록 `sfSendAttemptCount < maxAttempt` 로 상한을 건다. 실제 전송/상태전이는
      * [com.otoki.powersales.domain.activity.claim.service.ClaimSfDispatchService.dispatch] 가 담당하므로
      * 여기서는 id 만 조회한다(락 경합 최소화 + 건별 트랜잭션 분리).
      */
     @Query(
         """
         select c.id from Claim c
-        where c.status = :status
-          and c.sendAttemptCount < :maxAttempt
+        where c.sfSendStatus = :status
+          and c.sfSendAttemptCount < :maxAttempt
         order by c.id asc
         """,
     )
     fun findResendTargetIds(
-        @Param("status") status: ClaimStatus,
+        @Param("status") status: ClaimSfSendStatus,
         @Param("maxAttempt") maxAttempt: Int,
     ): List<Long>
 

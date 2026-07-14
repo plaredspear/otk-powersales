@@ -17,8 +17,12 @@ data class ClaimListItemResponse(
     val subcategoryLabel: String?,
     val defectQuantity: BigDecimal?,
     val defectDescription: String? = null,
+    // status/statusLabel : SF DKRetail__Status__c (코스모스 전송상태) — 표시 전용.
     val status: String?,
     val statusLabel: String?,
+    // sfSendStatus/sfSendStatusLabel : 신규→SF 전송상태. SF origin 마이그레이션 건은 null.
+    val sfSendStatus: String? = null,
+    val sfSendStatusLabel: String? = null,
     // 발생일자(SF ClaimDate) — 레거시 list.jsp 의 목록 표시/필터 기준 날짜.
     val date: LocalDate? = null,
     val createdAt: LocalDateTime
@@ -38,6 +42,8 @@ data class ClaimListItemResponse(
             defectDescription = claim.defectDescription,
             status = claim.status?.name,
             statusLabel = claim.status?.displayName,
+            sfSendStatus = claim.sfSendStatus?.name,
+            sfSendStatusLabel = claim.sfSendStatus?.displayName,
             date = claim.date,
             createdAt = claim.createdAt
         )

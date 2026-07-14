@@ -43,7 +43,7 @@ import java.time.LocalDate
  * Web admin 클레임 등록 — dual-write (Spec #829).
  *
  * web 입력(AdminClaimCreateRequest) 파싱·검증 + 의존 entity 조회(employeeCode/externalKey 기반) 를 책임지고,
- * 트랜잭션 안에서 claim + photo 를 INSERT(status=SF_PENDING)한 뒤 [ClaimRegisteredEvent] 를 발행한다.
+ * 트랜잭션 안에서 claim + photo 를 INSERT(sfSendStatus=PENDING)한 뒤 [ClaimRegisteredEvent] 를 발행한다.
  * SF `/ClaimRegist` 송신은 커밋 후 [ClaimSfPushDispatcher] 가 비동기로 수행한다.
  *
  * SF 호출 실패는 claim 을 SEND_FAILED 로 보존한다 — 사용자는 [AdminClaimResendService] 로 수동 재전송 가능.
@@ -87,8 +87,8 @@ class AdminClaimCreateService(
             fileStorageService.uploadClaimPhoto(it, employee.id, 0L, UploadFileKbnTypes.CLAIM_RECEIPT)
         }
 
-        // 4. Tx INSERT (status=SF_PENDING) + 커밋 후 SF 송신 이벤트 발행.
-        // SF 전송 결과는 응답에 쓰지 않는다 — 등록(SF_PENDING) 사실만 반환하고,
+        // 4. Tx INSERT (status=DRAFT, sfSendStatus=PENDING) + 커밋 후 SF 송신 이벤트 발행.
+        // SF 전송 결과는 응답에 쓰지 않는다 — 등록(sfSendStatus=PENDING) 사실만 반환하고,
         // 전송 성공/실패는 상세 화면의 상태 배너/재전송 버튼으로 확인한다.
         val claim = txTemplate.execute {
             val saved = claimRepository.save(
@@ -118,7 +118,7 @@ class AdminClaimCreateService(
 
         return AdminClaimCreateResponse(
             claimId = claim.id,
-            status = claim.status?.name ?: "",
+            sfSendStatus = claim.sfSendStatus?.name ?: "",
         )
     }
 

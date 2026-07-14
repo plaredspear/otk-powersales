@@ -2,7 +2,7 @@ package com.otoki.powersales.domain.activity.claim.service
 
 import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.domain.activity.claim.repository.ClaimRepository
 import com.otoki.powersales.platform.common.repository.UploadFileRepository
@@ -34,17 +34,17 @@ class ClaimSfDispatchService(
 ) {
 
     /**
-     * claimId 기준으로 SF 전송을 수행하고 status 를 전이한다.
+     * claimId 기준으로 SF 전송을 수행하고 sfSendStatus 를 전이한다.
      *
-     * @param allowedStatuses 전송 허용 상태. 등록 직후 트리거는 [ClaimStatus.SF_PENDING],
-     *   수동 재전송은 [ClaimStatus.SEND_FAILED] 만 허용한다. 그 외 상태면 [onStatusMismatch] 위임.
+     * @param allowedStatuses 전송 허용 상태. 등록 직후 트리거는 [ClaimSfSendStatus.PENDING],
+     *   수동 재전송은 [ClaimSfSendStatus.SEND_FAILED] 만 허용한다. 그 외 상태면 [onStatusMismatch] 위임.
      * @param onStatusMismatch 상태 가드 위반 시 동작 (재전송은 409 throw, 등록 트리거는 skip 로깅).
-     * @return SF push 결과 + 전이 완료된 claim 상태 ([DispatchResult]). 가드 위반으로 skip 시 null.
+     * @return SF push 결과 + 전이 완료된 claim SF 전송상태 ([DispatchResult]). 가드 위반으로 skip 시 null.
      */
     fun dispatch(
         claimId: Long,
-        allowedStatuses: Set<ClaimStatus>,
-        onStatusMismatch: (ClaimStatus?) -> Unit,
+        allowedStatuses: Set<ClaimSfSendStatus>,
+        onStatusMismatch: (ClaimSfSendStatus?) -> Unit,
     ): DispatchResult? {
         // 1. 트랜잭션 안에서 claim + 이미지 좌표 복원 (snapshot).
         val snapshot = txTemplate.execute {
@@ -52,8 +52,8 @@ class ClaimSfDispatchService(
             // enhancement 환경에서 미초기화되어 null 로 평가되는 문제 회피 (findByIdWithSfRefs KDoc 참조).
             val claim = claimRepository.findByIdWithSfRefs(claimId)
                 ?: throw ClaimNotFoundException(claimId)
-            if (claim.status !in allowedStatuses) {
-                onStatusMismatch(claim.status)
+            if (claim.sfSendStatus !in allowedStatuses) {
+                onStatusMismatch(claim.sfSendStatus)
                 return@execute null
             }
             val photos = uploadFileRepository
@@ -120,20 +120,20 @@ class ClaimSfDispatchService(
             receiptPhotoContentType = snapshot.receiptContentType,
         )
 
-        // 3. Transaction 2 — status update (SENT / SEND_FAILED).
+        // 3. Transaction 2 — sfSendStatus update (SENT / SEND_FAILED).
         val finalStatus = txTemplate.execute {
             val claim = claimRepository.findByIdOrNull(snapshot.claimId)
                 ?: throw ClaimNotFoundException(snapshot.claimId)
             sfOutboundService.applySfResultToClaim(claim, sfResult)
-            claim.status
+            claim.sfSendStatus
         }
-        return DispatchResult(sfResult = sfResult, status = finalStatus)
+        return DispatchResult(sfResult = sfResult, sfSendStatus = finalStatus)
     }
 
-    /** SF push 결과 + 전이 완료된 claim status. */
+    /** SF push 결과 + 전이 완료된 claim SF 전송상태. */
     data class DispatchResult(
         val sfResult: ClaimSfOutboundService.SfPushResult,
-        val status: ClaimStatus?,
+        val sfSendStatus: ClaimSfSendStatus?,
     )
 
     private data class ResendSnapshot(

@@ -5,7 +5,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.domain.activity.claim.dto.request.AdminClaimCreateRequest
 import com.otoki.powersales.domain.activity.claim.entity.Claim
 import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
-import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
+import com.otoki.powersales.domain.activity.claim.enums.ClaimSfSendStatus
 import com.otoki.powersales.domain.activity.claim.event.ClaimRegisteredEvent
 import com.otoki.powersales.domain.activity.claim.exception.InvalidClaimDateException
 import com.otoki.powersales.domain.activity.claim.exception.ReceiptRequiredException
@@ -41,7 +41,7 @@ import java.util.Optional
  *
  * SF push(/ClaimRegist 호출, apiMap 구성, status 전이)는 등록 트랜잭션 커밋 후 비동기로 분리됐다
  * ([ClaimSfPushDispatcher] → [ClaimSfDispatchService]). 해당 검증은 ClaimSfDispatchServiceTest 책임이며,
- * 본 테스트는 등록(SF_PENDING) 응답과 이벤트 발행만 다룬다.
+ * 본 테스트는 등록(sfSendStatus=PENDING) 응답과 이벤트 발행만 다룬다.
  */
 @DisplayName("AdminClaimCreateService 테스트")
 class AdminClaimCreateServiceTest {
@@ -158,13 +158,13 @@ class AdminClaimCreateServiceTest {
     }
 
     @Test
-    @DisplayName("정상 등록 → status=SF_PENDING + claimId 반환 + SF 송신 이벤트 발행 (channel=WEB INSERT)")
+    @DisplayName("정상 등록 → sfSendStatus=PENDING + claimId 반환 + SF 송신 이벤트 발행 (channel=WEB INSERT)")
     fun create_success() {
         stubLookups()
         stubClaimSave()
         val claimSlot = slot<Claim>()
         every { claimRepository.save(capture(claimSlot)) } answers {
-            Claim(id = 42L, status = claimSlot.captured.status, channel = claimSlot.captured.channel)
+            Claim(id = 42L, sfSendStatus = claimSlot.captured.sfSendStatus, channel = claimSlot.captured.channel)
         }
         val eventSlot = slot<ClaimRegisteredEvent>()
         every { eventPublisher.publishEvent(capture(eventSlot)) } answers {}
@@ -176,14 +176,14 @@ class AdminClaimCreateServiceTest {
             receiptPhoto = null,
         )
 
-        // 등록 직후 상태는 SF_PENDING (SF 송신은 커밋 후 비동기)
+        // 등록 직후 SF 전송상태는 PENDING (SF 송신은 커밋 후 비동기)
         assertThat(response.claimId).isEqualTo(42L)
-        assertThat(response.status).isEqualTo("SF_PENDING")
+        assertThat(response.sfSendStatus).isEqualTo("PENDING")
         assertThat(response.sfResultCode).isNull()
         assertThat(response.sfResultMsg).isNull()
         // INSERT 시점 channel=WEB
         assertThat(claimSlot.captured.channel).isEqualTo(ClaimChannel.WEB)
-        assertThat(claimSlot.captured.status).isEqualTo(ClaimStatus.SF_PENDING)
+        assertThat(claimSlot.captured.sfSendStatus).isEqualTo(ClaimSfSendStatus.PENDING)
         // 커밋 후 SF 송신 트리거 이벤트가 claimId 로 발행됨
         verify { eventPublisher.publishEvent(any<ClaimRegisteredEvent>()) }
         assertThat(eventSlot.captured.claimId).isEqualTo(42L)
@@ -216,7 +216,7 @@ class AdminClaimCreateServiceTest {
         stubLookups()
         val claimSlot = slot<Claim>()
         every { claimRepository.save(capture(claimSlot)) } answers {
-            Claim(id = 42L, status = claimSlot.captured.status, channel = claimSlot.captured.channel)
+            Claim(id = 42L, sfSendStatus = claimSlot.captured.sfSendStatus, channel = claimSlot.captured.channel)
         }
 
         service.createClaim(

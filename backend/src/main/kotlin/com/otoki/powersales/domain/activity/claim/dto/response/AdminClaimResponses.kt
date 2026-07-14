@@ -26,7 +26,10 @@ data class AdminClaimListItem(
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
     val defectQuantity: BigDecimal?,
+    // status : SF DKRetail__Status__c (코스모스 전송상태) — 표시 전용.
     val status: String?,
+    // sfSendStatus : 신규→SF 전송상태. SF origin 마이그레이션 건은 null. 재전송 필요 건(SEND_FAILED) 식별용.
+    val sfSendStatus: String?,
     val createdAt: LocalDateTime,
     /**
      * 목록 카드 뷰 배경용 대표 이미지 URL.
@@ -48,6 +51,7 @@ data class AdminClaimListItem(
             subcategoryLabel = claim.claimType2?.label,
             defectQuantity = claim.defectQuantity,
             status = claim.status?.name,
+            sfSendStatus = claim.sfSendStatus?.name,
             createdAt = claim.createdAt,
             representativeImageUrl = representativeImageUrl
         )
@@ -81,7 +85,12 @@ data class AdminClaimDetailResponse(
     val subcategoryLabel: String?,
     val defectQuantity: BigDecimal?,
     val sampleCollectionFlag: Boolean?,
+    // status : SF DKRetail__Status__c (코스모스 전송상태) — 표시 전용.
     val status: String?,
+    // sfSendStatus/sfSendStatusLabel : 신규→SF 전송상태 (ClaimSfSendStatus). 재전송 버튼 판정 축.
+    // SF origin 마이그레이션 건은 null (재전송 대상 아님).
+    val sfSendStatus: String?,
+    val sfSendStatusLabel: String?,
     val customerDeliveryDate: LocalDate?,
     val detailSnsName: String?,
     val dateType: String?,
@@ -136,6 +145,8 @@ data class AdminClaimDetailResponse(
             defectQuantity = claim.defectQuantity,
             sampleCollectionFlag = claim.sampleCollectionFlag,
             status = claim.status?.name,
+            sfSendStatus = claim.sfSendStatus?.name,
+            sfSendStatusLabel = claim.sfSendStatus?.displayName,
             customerDeliveryDate = claim.customerDeliveryDate,
             detailSnsName = claim.detailSnsName,
             dateType = claim.dateType?.name,
