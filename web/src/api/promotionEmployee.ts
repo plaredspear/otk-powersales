@@ -10,6 +10,7 @@ export interface PromotionEmployee {
   employeeId: number | null;
   employeeCode: string | null;
   employeeName: string | null;
+  orgName: string | null;
   scheduleDate: string | null;
   workStatus: string | null;
   workType1: string | null;

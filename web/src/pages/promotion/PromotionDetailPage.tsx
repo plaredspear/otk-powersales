@@ -90,6 +90,7 @@ interface EditableRow {
   promoCloseByTm: boolean;
   // Read-only display fields
   employeeName: string | null;
+  orgName: string | null;
   scheduleId: number | null;
   currentProfessionalPromotionTeam: string | null;
 }
@@ -111,6 +112,7 @@ function toEditableRow(pe: PromotionEmployee): EditableRow {
     targetAmount: pe.targetAmount,
     actualAmount: pe.actualAmount,
     employeeName: pe.employeeName,
+    orgName: pe.orgName,
     scheduleId: pe.scheduleId,
     currentProfessionalPromotionTeam: pe.currentProfessionalPromotionTeam,
     promoCloseByTm: pe.promoCloseByTm,
@@ -798,6 +800,20 @@ export default function PromotionDetailPage() {
           name ?? record.employeeCode ?? '-',
       },
       {
+        title: '사번',
+        dataIndex: 'employeeCode',
+        width: 100,
+        align: 'center' as const,
+        render: (v: string | null) => v ?? '-',
+      },
+      {
+        title: '지점',
+        dataIndex: 'orgName',
+        width: 120,
+        align: 'center' as const,
+        render: (v: string | null) => v ?? '-',
+      },
+      {
         title: '전문행사조(현재)',
         dataIndex: 'currentProfessionalPromotionTeam',
         width: 130,
@@ -986,6 +1002,7 @@ export default function PromotionDetailPage() {
                 updateField(record.id, 'employeeId', opt.value);
                 updateField(record.id, 'employeeCode', selected?.employeeCode ?? null);
                 updateField(record.id, 'employeeName', selected?.name ?? opt.label);
+                updateField(record.id, 'orgName', selected?.orgName ?? null);
               }}
               notFoundContent={loading ? <Spin size="small" /> : '검색 결과 없음'}
               style={{ width: '100%' }}
@@ -994,6 +1011,7 @@ export default function PromotionDetailPage() {
                 updateField(record.id, 'employeeId', null);
                 updateField(record.id, 'employeeCode', null);
                 updateField(record.id, 'employeeName', null);
+                updateField(record.id, 'orgName', null);
               }}
             >
               {options.map((emp) => (
@@ -1005,6 +1023,20 @@ export default function PromotionDetailPage() {
             </Space>
           );
         },
+      },
+      {
+        title: '사번',
+        dataIndex: 'employeeCode',
+        width: 100,
+        align: 'center' as const,
+        render: (v: string | null) => v ?? '-',
+      },
+      {
+        title: '지점',
+        dataIndex: 'orgName',
+        width: 120,
+        align: 'center' as const,
+        render: (v: string | null) => v ?? '-',
       },
       {
         title: '전문행사조(현재)',

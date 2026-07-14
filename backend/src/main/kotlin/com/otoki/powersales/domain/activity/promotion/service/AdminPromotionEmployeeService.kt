@@ -132,7 +132,7 @@ class AdminPromotionEmployeeService(
             "대표제품이 만두인 행사에는 전문행사조가 프레시세일조_냉동, 프레시세일조_만두, 일반인 사원만 들어갈 수 있습니다."
     }
 
-    private data class ResolvedEmployee(val id: Long?, val name: String?, val employeeCode: String?)
+    private data class ResolvedEmployee(val id: Long?, val name: String?, val employeeCode: String?, val orgName: String?)
 
     /**
      * 행사 진열사원 일람 — SF `DKRetail__PromotionEmployee__c` = ControlledByParent (parent = Promotion).
@@ -148,7 +148,7 @@ class AdminPromotionEmployeeService(
         val employees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
 
         return employees.map { pe ->
-            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
+            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, pe.employee?.orgName, siteImageUrl(pe.s3ImageUniqueKey))
         }
     }
 
@@ -239,7 +239,7 @@ class AdminPromotionEmployeeService(
 
     fun getEmployee(id: Long): PromotionEmployeeDetailResponse {
         val pe = findPromotionEmployeeById(id)
-        return PromotionEmployeeDetailResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
+        return PromotionEmployeeDetailResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, pe.employee?.orgName, siteImageUrl(pe.s3ImageUniqueKey))
     }
 
     @Transactional
@@ -278,7 +278,7 @@ class AdminPromotionEmployeeService(
             )
         )
 
-        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
+        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode, resolved?.orgName, siteImageUrl(pe.s3ImageUniqueKey))
     }
 
     @Transactional
@@ -335,7 +335,7 @@ class AdminPromotionEmployeeService(
 
         promotionEmployeeRepository.save(pe)
 
-        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
+        return PromotionEmployeeDetailResponse.from(pe, resolved?.name, resolved?.employeeCode, resolved?.orgName, siteImageUrl(pe.s3ImageUniqueKey))
     }
 
     @Transactional
@@ -422,7 +422,7 @@ class AdminPromotionEmployeeService(
         // 전체 행사사원 목록 조회하여 응답
         val allEmployees = promotionEmployeeRepository.findWithEmployeeByPromotionId(promotionId)
         val responseItems = allEmployees.map { pe ->
-            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, siteImageUrl(pe.s3ImageUniqueKey))
+            PromotionEmployeeListResponse.from(pe, pe.employee?.name, pe.employee?.employeeCode, pe.employee?.orgName, siteImageUrl(pe.s3ImageUniqueKey))
         }
 
         return BatchUpdatePromotionEmployeeResponse(
@@ -460,8 +460,8 @@ class AdminPromotionEmployeeService(
     private fun resolveEmployee(employeeId: Long?): ResolvedEmployee? {
         if (employeeId == null) return null
         val employee = employeeRepository.findById(employeeId).orElse(null)
-            ?: return ResolvedEmployee(id = employeeId, name = null, employeeCode = null)
-        return ResolvedEmployee(id = employee.id, name = employee.name, employeeCode = employee.employeeCode)
+            ?: return ResolvedEmployee(id = employeeId, name = null, employeeCode = null, orgName = null)
+        return ResolvedEmployee(id = employee.id, name = employee.name, employeeCode = employee.employeeCode, orgName = employee.orgName)
     }
 
     private fun calculateTargetAmount(basePrice: BigDecimal?, dailyTargetCount: BigDecimal?): Long? {

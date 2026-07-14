@@ -114,6 +114,9 @@ class AdminPromotionEmployeeServiceTest {
             val result = service.getEmployees(allBranchesScope, 10L)
             assertThat(result).hasSize(2)
             assertThat(result[0].employeeName).isEqualTo("김여사")
+            // 사번 + 소속 조직명(지점) 을 사원 마스터에서 주입 — 상세 화면 사번/지점 컬럼 노출
+            assertThat(result[0].employeeCode).isEqualTo("20030117")
+            assertThat(result[0].orgName).isEqualTo("이마트 원주점")
         }
 
         @Test
@@ -1621,6 +1624,7 @@ class AdminPromotionEmployeeServiceTest {
 
     private fun createEmployee(role: String? = null) = Employee(id = 1L, sfid = "a0B5g00000XYZabc", employeeCode = "20030117", name = "김여사").also {
         it.role = role
+        it.orgName = "이마트 원주점"
     }
 
     private fun createBatchItem(

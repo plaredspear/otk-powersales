@@ -12,6 +12,8 @@ data class PromotionEmployeeListResponse(
     val employeeId: Long?,
     val employeeCode: String?,
     val employeeName: String?,
+    // 사원 소속 조직명 (Employee.orgName = DKRetail__OrgName__c "조직명") — 상세 화면 지점 표시용
+    val orgName: String?,
     val scheduleDate: LocalDate?,
     val workStatus: String?,
     val workType1: String?,
@@ -41,6 +43,7 @@ data class PromotionEmployeeListResponse(
             entity: PromotionEmployee,
             employeeName: String?,
             employeeCode: String? = null,
+            orgName: String? = null,
             siteImageUrl: String? = null
         ): PromotionEmployeeListResponse =
             PromotionEmployeeListResponse(
@@ -50,6 +53,7 @@ data class PromotionEmployeeListResponse(
                 employeeId = entity.employeeId,
                 employeeCode = employeeCode,
                 employeeName = employeeName,
+                orgName = orgName,
                 scheduleDate = entity.scheduleDate,
                 workStatus = entity.workStatus?.displayName,
                 workType1 = entity.workType1?.displayName,
@@ -80,6 +84,8 @@ data class PromotionEmployeeDetailResponse(
     val employeeId: Long?,
     val employeeCode: String?,
     val employeeName: String?,
+    // 사원 소속 조직명 (Employee.orgName = DKRetail__OrgName__c "조직명") — 상세 화면 지점 표시용
+    val orgName: String?,
     val scheduleDate: LocalDate?,
     val workStatus: String?,
     val workType1: String?,
@@ -110,6 +116,7 @@ data class PromotionEmployeeDetailResponse(
             entity: PromotionEmployee,
             employeeName: String?,
             employeeCode: String? = null,
+            orgName: String? = null,
             siteImageUrl: String? = null
         ): PromotionEmployeeDetailResponse =
             PromotionEmployeeDetailResponse(
@@ -119,6 +126,7 @@ data class PromotionEmployeeDetailResponse(
                 employeeId = entity.employeeId,
                 employeeCode = employeeCode,
                 employeeName = employeeName,
+                orgName = orgName,
                 scheduleDate = entity.scheduleDate,
                 workStatus = entity.workStatus?.displayName,
                 workType1 = entity.workType1?.displayName,
