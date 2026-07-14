@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Alert, Button, Input, Select, Space, Tag, Tooltip, message } from 'antd';
-import { CopyOutlined } from '@ant-design/icons';
+import { CopyOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useListQueryParams } from '@/hooks/common/useListQueryParams';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
@@ -35,6 +35,35 @@ const STATUS_OPTIONS = [
   { value: '휴직', label: '휴직' },
   { value: '퇴직', label: '퇴직' },
 ];
+
+// 권한(role) 필터 설명 — 각 role(SF AppAuthority)이 앱에서 실제로 결정하는 조회 범위/기능을 안내.
+// 운영자 권한(Profile)이 아니라 현장사원 앱 권한 기준이라는 점을 명시.
+const ROLE_FILTER_NOTICE = (
+  <div style={{ maxWidth: 320 }}>
+    사원의 <b>앱 권한</b>(현장사원)으로, 모바일 앱의 조회 범위·기능 노출을 결정합니다.
+    <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+      <li>여사원: 본인 담당분만 조회(클레임·일정 등)</li>
+      <li>조장: 같은 지점(원가센터) 팀원까지 조회, 여사원 관리 기능</li>
+      <li>지점장: 지점 단위 조회, 마감 행사 수정 등 관리 권한</li>
+      <li>영업부장 (AccountViewAll): 전사 거래처 조회, 대리출근 등록</li>
+    </ul>
+  </div>
+);
+
+// 필터 앞에 붙는 라벨. 권한 필터는 info 아이콘(hover tooltip)으로 설명을 곁들인다.
+const FilterLabel = ({ text, tooltip }: { text: string; tooltip?: ReactNode }) => (
+  <span style={{ fontSize: 13, color: '#595959', whiteSpace: 'nowrap' }}>
+    {text}
+    {tooltip && (
+      <>
+        {' '}
+        <Tooltip title={tooltip}>
+          <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help' }} />
+        </Tooltip>
+      </>
+    )}
+  </span>
+);
 
 const DEVICE_TOOLTIP =
   '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
@@ -215,37 +244,49 @@ export default function EmployeeListPage() {
       }}
     >
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
-        <Select
-          style={{ width: 140 }}
-          value={statusInput ?? ''}
-          options={STATUS_OPTIONS}
-          onChange={(val) => setStatusInput(val || '')}
-        />
-        <Select
-          placeholder="지점 (전체)"
-          style={{ width: 160 }}
-          value={costCenterCodeInput || undefined}
-          options={branchOptions}
-          allowClear
-          showSearch
-          optionFilterProp="label"
-          onChange={(val) => setCostCenterCodeInput(val || '')}
-        />
-        <Select
-          style={{ width: 140 }}
-          value={roleInput ?? ''}
-          options={ROLE_FILTER_OPTIONS}
-          onChange={(val) => setRoleInput(val || '')}
-        />
-        <Input
-          placeholder="사번 또는 이름 검색"
-          allowClear
-          value={keywordInput ?? ''}
-          style={{ width: 240 }}
-          onChange={(e) => setKeywordInput(e.target.value)}
-          onPressEnter={handleSearch}
-        />
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap', alignItems: 'flex-end', flexShrink: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <FilterLabel text="상태" />
+          <Select
+            style={{ width: 140 }}
+            value={statusInput ?? ''}
+            options={STATUS_OPTIONS}
+            onChange={(val) => setStatusInput(val || '')}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <FilterLabel text="지점" />
+          <Select
+            placeholder="지점 (전체)"
+            style={{ width: 160 }}
+            value={costCenterCodeInput || undefined}
+            options={branchOptions}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            onChange={(val) => setCostCenterCodeInput(val || '')}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <FilterLabel text="권한" tooltip={ROLE_FILTER_NOTICE} />
+          <Select
+            style={{ width: 140 }}
+            value={roleInput ?? ''}
+            options={ROLE_FILTER_OPTIONS}
+            onChange={(val) => setRoleInput(val || '')}
+          />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <FilterLabel text="검색" />
+          <Input
+            placeholder="사번 또는 이름 검색"
+            allowClear
+            value={keywordInput ?? ''}
+            style={{ width: 240 }}
+            onChange={(e) => setKeywordInput(e.target.value)}
+            onPressEnter={handleSearch}
+          />
+        </div>
         <Button type="primary" onClick={handleSearch}>
           조회
         </Button>
