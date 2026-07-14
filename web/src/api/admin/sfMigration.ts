@@ -248,3 +248,37 @@ export async function runUserRoleHierarchyRecalc(): Promise<UserRoleHierarchyRec
   }
   return res.data.data;
 }
+
+/**
+ * Stage 2-F — User.profile_id 를 SF `profile_sfid` 기준으로 최종 정합 (override).
+ *
+ * 일반 FK Resolve 는 `profile_id = COALESCE(...)` + `WHERE profile_id IS NULL` 가드라
+ * provisioning 이 이미 채운 값(예: fallback `5.영업사원`, 옛 `9. Staff`)을 덮어쓰지 못한다.
+ * 본 substep 은 `profile_sfid → profile.sfid` 조인으로 SF 정답 profile_id 를 산출해
+ * `COALESCE` 없이 무조건 override 한다 — SF User.Profile 이 최종 권위. 멱등 (이미 일치 row skip).
+ * `시스템 관리자` 로 격상된 계정은 override 대상에서 제외 (관리자 권한 보존).
+ *
+ * FK Resolve substep 직후 1회 실행. 동기 실행 — 보통 수 초 내 완료.
+ */
+export interface UserProfileReconcileSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface UserProfileReconcileResponse {
+  substep: string;
+  results: UserProfileReconcileSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runUserProfileSfidReconcile(): Promise<UserProfileReconcileResponse> {
+  const res = await client.post<ApiResponse<UserProfileReconcileResponse>>(
+    '/api/v1/admin/sf-migration/stage2/user-profile-reconcile',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || 'User Profile 정합 실행에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}

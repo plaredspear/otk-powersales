@@ -7,6 +7,7 @@ import {
   runPicklistAll,
   runPicklistColumn,
   runUploadFilePolymorphicParent,
+  runUserProfileSfidReconcile,
   runUserRoleHierarchyRecalc,
   startFkResolve,
   type FkResolveProgress,
@@ -15,6 +16,7 @@ import {
   type PicklistColumn,
   type PicklistResponse,
   type UploadFileParentResponse,
+  type UserProfileReconcileResponse,
   type UserRoleHierarchyRecalcResponse,
 } from '@/api/admin/sfMigration';
 
@@ -97,6 +99,12 @@ export function useRunUploadFilePolymorphicParent() {
 export function useRunUserRoleHierarchyRecalc() {
   return useMutation<UserRoleHierarchyRecalcResponse>({
     mutationFn: runUserRoleHierarchyRecalc,
+  });
+}
+
+export function useRunUserProfileSfidReconcile() {
+  return useMutation<UserProfileReconcileResponse>({
+    mutationFn: runUserProfileSfidReconcile,
   });
 }
 

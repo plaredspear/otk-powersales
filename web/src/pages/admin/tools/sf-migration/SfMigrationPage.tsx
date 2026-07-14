@@ -23,6 +23,7 @@ import {
   useRunPicklistAll,
   useRunPicklistColumn,
   useRunUploadFilePolymorphicParent,
+  useRunUserProfileSfidReconcile,
   useRunUserRoleHierarchyRecalc,
   useStartFkResolve,
 } from '@/hooks/admin/useSfMigration';
@@ -34,6 +35,7 @@ import type {
   NoticeRtaPlaceholderSubstepResult,
   PicklistSubstepResult,
   UploadFileParentSubstepResult,
+  UserProfileReconcileSubstepResult,
 } from '@/api/admin/sfMigration';
 import ResizableTable from '@/components/common/ResizableTable';
 
@@ -89,6 +91,7 @@ export default function SfMigrationPage() {
   const runNaturalKeyFkMutation = useRunNaturalKeyFkResolve();
   const runUploadFileParentMutation = useRunUploadFilePolymorphicParent();
   const runHierarchyRecalcMutation = useRunUserRoleHierarchyRecalc();
+  const runProfileReconcileMutation = useRunUserProfileSfidReconcile();
   const runNoticeRtaMutation = useRunNoticeRtaPlaceholder();
 
   // 공지 본문 placeholder 치환은 비가역 UPDATE — 기본 dry-run, apply 명시 선택 시에만 실제 변경.
@@ -120,6 +123,10 @@ export default function SfMigrationPage() {
   const hierarchyResult = runHierarchyRecalcMutation.data;
   const hierarchyError = runHierarchyRecalcMutation.error as Error | null;
   const hierarchyPending = runHierarchyRecalcMutation.isPending;
+
+  const profileReconcileResult = runProfileReconcileMutation.data;
+  const profileReconcileError = runProfileReconcileMutation.error as Error | null;
+  const profileReconcilePending = runProfileReconcileMutation.isPending;
 
   const noticeRtaResult = runNoticeRtaMutation.data;
   const noticeRtaError = runNoticeRtaMutation.error as Error | null;
@@ -571,6 +578,78 @@ export default function SfMigrationPage() {
                 <Text type="success">snapshot 재계산 완료 (상세 row 수는 서버 logger 참조)</Text>
               </Descriptions.Item>
             </Descriptions>
+          </div>
+        )}
+      </Card>
+
+      <Card title="User Profile 정합 (SF profile_sfid override)" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          <Text code>user.profile_id</Text> 를 SF <Text code>profile_sfid</Text> 기준으로 최종
+          정합한다. 일반 FK Resolve 는 <Text code>profile_id = COALESCE(...)</Text> +{' '}
+          <Text code>WHERE profile_id IS NULL</Text> 가드라, provisioning 이 이미 채운 값(fallback{' '}
+          <Text code>5.영업사원</Text> / 옛 <Text code>9. Staff</Text>)을 덮어쓰지 못한다. 본
+          substep 은 <Text code>profile_sfid → profile.sfid</Text> 조인으로 SF 정답 profile_id 를
+          산출해 <Text strong>무조건 override</Text> 한다 — SF User.Profile 이 최종 권위. 멱등 —
+          이미 일치하는 row 는 skip. 단 <Text code>시스템 관리자</Text> 로 격상된 계정은 override
+          대상에서 제외(관리자 권한 보존). <Text strong>위 FK Resolve 완료 후</Text> 1회 실행. 동기
+          실행 — 보통 수 초 내 완료.
+        </Paragraph>
+
+        <Space>
+          <Button
+            type="primary"
+            loading={profileReconcilePending}
+            disabled={profileReconcilePending}
+            onClick={() => {
+              runProfileReconcileMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {profileReconcileError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="User Profile 정합 실패"
+            description={profileReconcileError.message}
+            closable
+            onClose={() => {
+              runProfileReconcileMutation.reset();
+            }}
+          />
+        )}
+
+        {profileReconcileResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{profileReconcileResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="override 적용 row">
+                {profileReconcileResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            <ResizableTable<UserProfileReconcileSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={profileReconcileResult.results}
+            />
           </div>
         )}
       </Card>
