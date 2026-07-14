@@ -261,6 +261,42 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(again.totalRowsAffected).isEqualTo(0)
     }
 
+    @Test
+    @Transactional
+    @DisplayName("user profile reconcile — SystemAdminGrantList 지정 사번은 SF(9.Staff) override 대신 시스템 관리자로 강제 격상 + 멱등")
+    fun runUserProfileSfidReconcile_systemAdminGrantList() {
+        // profile 2종: 9. Staff (SF 정답) / 시스템 관리자 (지정 격상 목표)
+        em.createNativeQuery("INSERT INTO powersales.profile (profile_id, sfid, name) VALUES (9, '00e9x000000STAFAAA', '9. Staff')").executeUpdate()
+        em.createNativeQuery("INSERT INTO powersales.profile (profile_id, sfid, name) VALUES (1, '00e0x000000ADMIAAA', '시스템 관리자')").executeUpdate()
+
+        // 지정 사번 (SystemAdminGrantList 실제 사번 2개 샘플) — SF profile_sfid 는 9. Staff.
+        // reset 직후 시나리오: 현재 profile_id 를 SF 정답(9)으로 선점해 둔 상태 (아직 관리자 아님).
+        val grantCode1 = "20000531" // 강현배
+        val grantCode2 = "20210359" // 하헌준
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_sfid, profile_id) VALUES ('$grantCode1', '00e9x000000STAFAAA', 9)").executeUpdate()
+        // 이미 관리자(1)로 격상돼 있는 지정 사번 → 멱등 (변화 없음)
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_sfid, profile_id) VALUES ('$grantCode2', '00e9x000000STAFAAA', 1)").executeUpdate()
+        // 비지정 사번 (SF 9. Staff, 현재도 9) → SF override 대상이나 이미 일치라 무변화
+        em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, profile_sfid, profile_id) VALUES ('OTHER', '00e9x000000STAFAAA', 9)").executeUpdate()
+
+        val response = service.runUserProfileSfidReconcile()
+
+        assertThat(response.substep).isEqualTo("userProfileSfidReconcile")
+        // grantCode1 만 9 → 1 (시스템 관리자) 로 격상. grantCode2 는 이미 1 (멱등). OTHER 는 override 대상이나 이미 9 라 무변화.
+        assertThat(response.totalRowsAffected).isEqualTo(1)
+
+        // 지정 사번 grantCode1 → 시스템 관리자(1) 로 강제 격상 (SF 9.Staff override 아님)
+        assertThat(longOf("SELECT profile_id FROM powersales.\"user\" WHERE employee_code = '$grantCode1'")).isEqualTo(1L)
+        // 지정 사번 grantCode2 → 이미 관리자 유지 (1)
+        assertThat(longOf("SELECT profile_id FROM powersales.\"user\" WHERE employee_code = '$grantCode2'")).isEqualTo(1L)
+        // 비지정 OTHER → SF 정답 9 유지 (격상 안 됨)
+        assertThat(longOf("SELECT profile_id FROM powersales.\"user\" WHERE employee_code = 'OTHER'")).isEqualTo(9L)
+
+        // 멱등 — 재실행 시 변경 0
+        val again = service.runUserProfileSfidReconcile()
+        assertThat(again.totalRowsAffected).isEqualTo(0)
+    }
+
     // Stage 2-D permission substep 은 spec #801 SF 권한 모델 전면 적용으로 폐기됨.
     // user_permission 테이블 자체가 DROP (V186) 되어 본 테스트도 의미 상실.
 

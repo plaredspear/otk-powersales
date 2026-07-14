@@ -4,6 +4,8 @@ import com.otoki.powersales.platform.common.storage.UPLOAD_FILE_POLYMORPHIC_PARE
 import com.otoki.powersales.domain.support.notice.service.NoticeImagePlaceholder
 import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.dto.SubstepResult
+import com.otoki.powersales.platform.auth.permission.SystemAdminGrantList
+import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -347,15 +349,24 @@ class SfMigrationStage2Service(
      * FK Resolve 를 재실행해도 provisioning 선점이 재발할 수 있으므로, cut-over 시점 fk substep **직후 1회**
      * 실행하여 profile_id 를 SF 정답으로 수렴시킨다. 멱등 (이미 일치하는 row 는 IS DISTINCT FROM 조건으로 skip).
      *
-     * ## 시스템 관리자 격상 보존
-     * 운영에서 SF Profile(`9. Staff` 등)보다 높게 격상된 `시스템 관리자` 계정
-     * ([com.otoki.powersales.platform.common.config.ProdAdminBootstrapInitializer] 등이 부여) 은
-     * SF 정답(9.Staff)으로 되돌리면 관리자 권한을 박탈하게 된다. 따라서 **현재 profile 이 '시스템 관리자'면
-     * override 대상에서 제외** 한다.
+     * ## 시스템 관리자 격상 보존 + 지정 사번 강제 격상
+     * 운영에서 SF Profile(`9. Staff` 등)보다 높게 격상된 `시스템 관리자` 계정 은 SF 정답(9.Staff)으로
+     * 되돌리면 관리자 권한을 박탈하게 된다. 따라서 두 가지로 방어한다:
+     * 1. **현재 profile 이 '시스템 관리자'면 override 대상에서 제외** (이미 격상된 계정 보존 — 예:
+     *    [com.otoki.powersales.platform.common.config.ProdAdminBootstrapInitializer] 부트스트랩 계정).
+     * 2. **[SystemAdminGrantList] 사번은 override 대상에서 제외 + 별도로 '시스템 관리자' 로 강제 upsert**.
+     *    이 사번들은 SF 상 `9. Staff` (비관리자) 라 override 하면 관리자에서 탈락하고, DB reset 직후에는
+     *    현재 profile 이 아직 관리자가 아니라 1번 가드도 안 걸린다. 따라서 "현재 상태 보존" 이 아니라
+     *    "지정 사번 강제 격상" 이 필요하며, 그 지정 출처가 [SystemAdminGrantList] SoT 다. reset 후에도
+     *    본 substep 이 멱등 재현한다.
      */
     @Transactional
     fun runUserProfileSfidReconcile(): SfMigrationStage2Response {
-        val rows = em.createNativeQuery(
+        val grantCodes = SystemAdminGrantList.EMPLOYEE_CODES
+
+        // ① SF override — profile_sfid → SF 정답 profile_id 로 무조건 정합.
+        //    단 (a) 이미 시스템 관리자로 격상된 계정, (b) SystemAdminGrantList 지정 사번 은 제외.
+        val overrideRows = em.createNativeQuery(
             """
             UPDATE powersales."user" u
             SET profile_id = p_sf.profile_id
@@ -363,17 +374,47 @@ class SfMigrationStage2Service(
             WHERE p_sf.sfid = u.profile_sfid
               AND u.profile_sfid IS NOT NULL
               AND u.profile_id IS DISTINCT FROM p_sf.profile_id
+              AND u.employee_code NOT IN (:grantCodes)
               AND NOT EXISTS (
                 SELECT 1 FROM powersales.profile p_now
                 WHERE p_now.profile_id = u.profile_id
-                  AND p_now.name = '시스템 관리자'
+                  AND p_now.name = :sysAdminName
               )
             """.trimIndent()
-        ).executeUpdate()
-        return singleResultResponse(
+        )
+            .setParameter("grantCodes", grantCodes)
+            .setParameter("sysAdminName", SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME)
+            .executeUpdate()
+
+        // ② 지정 사번 강제 격상 — SystemAdminGrantList 사번의 profile_id 를 '시스템 관리자' 로 upsert.
+        //    이미 시스템 관리자면 IS DISTINCT FROM 으로 skip (멱등).
+        val grantRows = em.createNativeQuery(
+            """
+            UPDATE powersales."user" u
+            SET profile_id = p_admin.profile_id
+            FROM powersales.profile p_admin
+            WHERE p_admin.name = :sysAdminName
+              AND u.employee_code IN (:grantCodes)
+              AND u.profile_id IS DISTINCT FROM p_admin.profile_id
+            """.trimIndent()
+        )
+            .setParameter("sysAdminName", SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME)
+            .setParameter("grantCodes", grantCodes)
+            .executeUpdate()
+
+        return SfMigrationStage2Response(
             substep = "userProfileSfidReconcile",
-            label = "User.profile_id (SF profile_sfid override — 시스템 관리자 격상 보존)",
-            rows = rows,
+            results = listOf(
+                SubstepResult(
+                    label = "User.profile_id (SF profile_sfid override — 관리자/지정 사번 제외)",
+                    rowsAffected = overrideRows,
+                ),
+                SubstepResult(
+                    label = "User.profile_id (시스템 관리자 지정 사번 강제 격상 — SystemAdminGrantList)",
+                    rowsAffected = grantRows,
+                ),
+            ),
+            totalRowsAffected = overrideRows + grantRows,
         )
     }
 }
