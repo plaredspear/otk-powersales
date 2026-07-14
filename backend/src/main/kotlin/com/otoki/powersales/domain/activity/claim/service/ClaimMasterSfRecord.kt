@@ -6,10 +6,16 @@ import com.fasterxml.jackson.annotation.JsonProperty
 /**
  * SF `IF_SendClaimToPWS` Response 한 건의 raw 역직렬화 표현 ("알라딘 클레임 마스터 API" 문서 정합).
  *
- * SF → PWS 방향 조회 응답 항목 1건. 응답에는 32개 필드가 오지만, 신규는 **SF 레거시 inbound Apex
- * (`IF_ClaimStatusUpdate` / `IF_REST_SAP_ClaimReceive`) 가 claim 을 update 로 set 하는 필드 집합** 만
- * 갱신한다(외부→claim 갱신 컬럼의 권위 출처). 그 외 등록 시 확정 필드(제품/거래처/수량 등) 는 갱신 대상이
+ * SF → PWS 방향 조회 응답 항목 1건. 응답에는 32개 필드가 오지만, 신규는 **SF 레거시 inbound Apex 두 개가
+ * claim 을 update 로 set 하는 조치 필드의 합집합(6개)** 만 갱신한다(외부→claim 갱신 컬럼의 권위 출처):
+ *  - `IF_ClaimStatusUpdate` (`/if_claimstatusupdate/`): actionStatus·actionCode·counselNumber·reasonType·actContent 5개.
+ *  - `IF_REST_SAP_ClaimReceive` (`/sap/ClaimReceive/`): 위 5개 + cosmosKey (즉 cosmosKey 는 이 API 에서만 set).
+ * 두 API 모두 매칭 키는 claim `Name`(접수번호/EXNUM). 그 외 등록 시 확정 필드(제품/거래처/수량 등) 는 갱신 대상이
  * 아니므로 본 레코드에 매핑하지 않는다. 문서 외 필드가 와도 무시하도록 [JsonIgnoreProperties] 를 둔다.
+ *
+ * 주의: 응답 스키마에 있는 `ActionDate`(조치일시)·`ClaimSequence`(COSMOS 상담번호) 는 레거시 Apex 가 claim 에
+ * write 하지 않으므로(SELECT 조회에만 사용) 본 레코드에도 매핑하지 않는다. `IF_REST_SAP_ClaimReceive` 는 SAP
+ * 페이로드의 `ClaimSequence` 값을 `ClaimSequence__c` 가 아니라 counselNumber(상담번호) 로 저장한다.
  *
  * @property pwrskey      신규 claim 의 primary key(`claim_id`) — 신규 시스템에서 생성한 claim 을 SF 가 echo.
  *                        존재하면 이 값(claim_id)으로 claim 을 우선 조회해 매칭한다.
@@ -20,7 +26,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
  * @property counselNumber 상담번호 → Claim.counselNumber
  * @property reasonType   사유 유형(원인별 분류) → Claim.reasonType
  * @property actContent   조치 내용 → Claim.actContent
- * @property cosmosKey    COSMOS 접수번호 → Claim.cosmosKey (문서 응답 스키마에 없을 수 있어 null 허용)
+ * @property cosmosKey    COSMOS 접수번호 → Claim.cosmosKey. 레거시상 `IF_REST_SAP_ClaimReceive` 에서만 set
+ *                        (`IF_ClaimStatusUpdate` 는 미갱신) — 문서 응답 스키마에 없을 수 있어 null 허용.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ClaimMasterSfRecord(

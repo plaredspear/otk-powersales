@@ -24,10 +24,13 @@ import java.time.format.DateTimeFormatter
  * 없으면 `Name`(접수번호, SF 생성분) 으로 신규 claim 과 매칭해 **조치/상담 필드를 신규 데이터로 갱신**한다.
  *
  * 갱신 대상 필드(6개) — SF 레거시 inbound Apex(`IF_ClaimStatusUpdate` / `IF_REST_SAP_ClaimReceive`)
- * 가 claim 을 update 로 set 하는 필드 집합과 정합:
- *   actionStatus / actionCode / counselNumber / reasonType / actContent / cosmosKey.
- * 등록 시 확정 필드(제품/거래처/수량/금액 등) 는 갱신하지 않는다. SF 레거시에서도 inbound 갱신은
- * `ClaimTrigger` 의 'Interface' 유저 가드로 상태 검증을 우회하므로, 본 갱신도 claim status 와 무관하게 적용한다.
+ * 가 claim 을 update 로 set 하는 필드의 합집합과 정합:
+ *   actionStatus / actionCode / counselNumber / reasonType / actContent / cosmosKey
+ *   (cosmosKey 는 `IF_REST_SAP_ClaimReceive` 에서만 set).
+ * 등록 시 확정 필드(제품/거래처/수량/금액 등) 는 갱신하지 않는다. SF 레거시 `ClaimTriggerHandler` 의
+ * before-update 게이트는 status 가 '임시저장' 이 아니면 수정을 차단하나(시스템 관리자 프로필 예외),
+ * inbound 갱신 API 는 그 예외 권한으로 실행돼 status 와 무관하게 조치 필드를 갱신한다. 신규는 배치 pull
+ * 방식이라 해당 트리거 게이트가 없으므로 동일하게 claim status 와 무관하게 적용한다.
  *
  * 처리:
  *  1. `{ "MOD_DT": modDt }` 로 SF POST (클레임 등록과 동일한 OAuth/401 재시도 경로).
