@@ -80,6 +80,14 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
   }) async {
     final response = await _dio.get(
       '/api/v1/mobile/me/order-requests/$orderId',
+      options: Options(
+        // 주문 상세 조회는 백엔드가 SAP(SD03052)를 동기 1회 호출한다(백엔드는 SAP 실패 시
+        // null fallback 으로 200 유지). 백엔드 read-timeout(30초) + DB/네트워크 여유를 더해
+        // 45초로 잡는다. 전역 Dio receiveTimeout(35초)은 마진이 얇아 서버 처리 중 false
+        // timeout 이 나면 상세를 못 받으므로, 이 요청에만 per-request 상향한다. (취소/여신
+        // 동기 1회와 동일 근거 — 45초.)
+        receiveTimeout: const Duration(seconds: 45),
+      ),
     );
 
     return OrderRequestDetailModel.fromJson(

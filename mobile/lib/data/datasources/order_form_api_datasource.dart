@@ -26,6 +26,14 @@ class OrderFormApiDataSource {
   }) async {
     final response = await _dio.get(
       '/api/v1/mobile/clients/$externalKey/loan-inquiry',
+      options: Options(
+        // 여신 조회는 백엔드가 SAP(SD03040)를 동기 1회 호출한다. 백엔드
+        // read-timeout(30초) + DB/검증 + 모바일↔백엔드 네트워크 왕복 여유를 더해 45초로
+        // 잡는다. 전역 Dio receiveTimeout(35초)은 SAP 정상 처리(관측 8~10초)에도 마진이
+        // 얇아, 서버가 처리 중인데 클라이언트가 먼저 끊는 false timeout 이 나므로 이 요청에만
+        // per-request 상향한다. (주문 취소 SD03051 동기 1회와 동일 근거 — 45초.)
+        receiveTimeout: const Duration(seconds: 45),
+      ),
     );
     return LoanInquiryResponseModel.fromJson(
       response.data['data'] as Map<String, dynamic>,

@@ -29,7 +29,14 @@ class SuggestionApiDataSource implements SuggestionRemoteDataSource {
     final response = await _dio.post(
       '/api/v1/mobile/suggestions',
       data: formData,
-      options: Options(contentType: 'multipart/form-data'),
+      options: Options(
+        contentType: 'multipart/form-data',
+        // 건의 등록은 백엔드가 SF(/ProposalRegist)를 요청 스레드에서 inline 동기 1회 호출한다.
+        // 백엔드 read-timeout + SF 응답 지연 + 사진 업로드/네트워크 여유를 더해 45초로 잡는다.
+        // 전역 Dio receiveTimeout(35초)은 SF 지연 시 서버 처리 중 false timeout 을 낼 수
+        // 있어, 이 요청에만 per-request 상향한다. (SAP/SF 동기 1회 = 45초 통일.)
+        receiveTimeout: const Duration(seconds: 45),
+      ),
     );
 
     return SuggestionRegisterResultModel.fromJson(
