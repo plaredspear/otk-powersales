@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import org.apache.poi.ss.usermodel.*
-import org.apache.poi.ss.util.CellRangeAddress
 import org.apache.poi.xssf.usermodel.XSSFColor
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.springframework.stereotype.Component
@@ -33,6 +32,9 @@ class ScheduleTemplateGenerator {
     fun generate(employees: List<Employee>): ByteArray {
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("Template")
+
+        // 첫 행 고정 (SF 레거시 stickyRowsCount: 1 정합)
+        sheet.createFreezePane(0, 1)
 
         // 컬럼 너비 설정
         COLUMN_WIDTHS.forEachIndexed { i, width ->
@@ -114,9 +116,7 @@ class ScheduleTemplateGenerator {
         font.color = IndexedColors.RED.index
         style.setFont(font)
         cell.cellStyle = style
-
-        // A1~K1 병합
-        sheet.addMergedRegion(CellRangeAddress(0, 0, 0, 10))
+        // SF 레거시(writeExcelFile)는 셀 병합 없이 A1 에만 값을 넣으므로 병합하지 않는다
     }
 
     private fun createGuideRow(workbook: XSSFWorkbook, sheet: Sheet) {

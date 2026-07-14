@@ -57,15 +57,28 @@ class ScheduleTemplateGeneratorTest {
         }
 
         @Test
-        @DisplayName("1행 병합 - A1:K1 (0~10)")
-        fun generate_mergedRegion() {
+        @DisplayName("1행 병합 없음 - SF 레거시(writeExcelFile)는 A1 셀에만 값을 넣고 병합하지 않음")
+        fun generate_noMergedRegion() {
             val bytes = generator.generate(emptyList())
             val workbook = XSSFWorkbook(ByteArrayInputStream(bytes))
             val sheet = workbook.getSheetAt(0)
 
-            val mergedRegion = sheet.getMergedRegion(0)
-            assertThat(mergedRegion.firstColumn).isEqualTo(0)
-            assertThat(mergedRegion.lastColumn).isEqualTo(10)
+            assertThat(sheet.numMergedRegions).isEqualTo(0)
+
+            workbook.close()
+        }
+
+        @Test
+        @DisplayName("첫 행 고정 - SF 레거시 stickyRowsCount: 1 정합")
+        fun generate_freezePane() {
+            val bytes = generator.generate(emptyList())
+            val workbook = XSSFWorkbook(ByteArrayInputStream(bytes))
+            val sheet = workbook.getSheetAt(0)
+
+            val pane = sheet.paneInformation
+            assertThat(pane).isNotNull
+            assertThat(pane.horizontalSplitPosition.toInt()).isEqualTo(1)
+            assertThat(pane.verticalSplitPosition.toInt()).isEqualTo(0)
 
             workbook.close()
         }
