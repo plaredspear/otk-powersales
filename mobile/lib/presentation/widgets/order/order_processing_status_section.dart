@@ -14,6 +14,16 @@ class OrderProcessingStatusSection extends StatelessWidget {
     this.onItemTap,
   });
 
+  /// 주문상세 처리현황의 배송상태 라벨.
+  ///
+  /// 배송완료는 SF **조회 클래스**(IF_REST_MOBILE_OrderRequestDetail.cls:157) 정합으로 공백 없는
+  /// '배송완료' 로 표시한다. enum 의 displayName('배송 완료', 공백)은 거래처주문(SF inbound cls:158)
+  /// 도메인 표기라, 주문상세에서는 이 함수로 별도 매핑한다.
+  String _statusLabel(DeliveryStatus status) {
+    if (status == DeliveryStatus.delivered) return '배송완료';
+    return status.displayName;
+  }
+
   Color _getStatusColor(DeliveryStatus status) {
     switch (status) {
       case DeliveryStatus.pending:
@@ -24,6 +34,9 @@ class OrderProcessingStatusSection extends StatelessWidget {
         return AppColors.success;
       case DeliveryStatus.outOfStock:
         return AppColors.error;
+      // 레거시 빈 상태(status='') — 대기와 동일하게 회색 처리, 라벨은 빈 문자열.
+      case DeliveryStatus.unknown:
+        return AppColors.textSecondary;
     }
   }
 
@@ -147,7 +160,7 @@ class OrderProcessingStatusSection extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              item.deliveryStatus.displayName,
+              _statusLabel(item.deliveryStatus),
               style: AppTypography.bodyMedium.copyWith(
                 color: _getStatusColor(item.deliveryStatus),
                 fontWeight: FontWeight.w700,

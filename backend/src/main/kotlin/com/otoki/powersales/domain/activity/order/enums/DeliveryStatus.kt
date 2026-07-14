@@ -12,8 +12,17 @@ package com.otoki.powersales.domain.activity.order.enums
 enum class DeliveryStatus(val koreanLabel: String) {
     PENDING("대기"),
     SHIPPING("배송중"),
+    // koreanLabel 은 **거래처주문 도메인**(SF inbound ClientOrderReceive.cls:158)의 표기 '배송 완료'(공백)
+    // 에 묶여 있다 — erp_order_product.delivery_status 저장값이자 fromKoreanLabel 매칭 키라 바꾸면
+    // 거래처주문 조회가 깨진다. 주문상세(SF 조회 클래스 cls:157 은 공백 없는 '배송완료')의 화면 표기는
+    // 별도로 클라이언트(주문상세 처리현황 위젯)에서 매핑한다 — 두 도메인 표기가 SF 원문상 다르기 때문.
     DELIVERED("배송 완료"),
-    OUT_OF_STOCK("결품");
+    OUT_OF_STOCK("결품"),
+
+    // 레거시 조회 클래스 cls:153-159 는 5개 독립 if 로 상태를 파생하며, 어느 조건에도 안 걸리면
+    // status 가 최종 ''(빈 문자열)로 남는다 (예: 정상 라인이지만 LineItemStatus 만 채워지고 배차/완료
+    // 시각이 없는 케이스). 신규는 이를 '대기'로 뭉개지 않고 UNKNOWN(빈 라벨)으로 구분해 SF 정합을 맞춘다.
+    UNKNOWN("");
 
     companion object {
         /**

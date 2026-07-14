@@ -7,8 +7,14 @@
 enum DeliveryStatus {
   pending('대기', 'PENDING'),
   shipping('배송중', 'SHIPPING'),
+  // displayName 은 **거래처주문 도메인**(SF inbound ClientOrderReceive.cls:158) 표기 '배송 완료'(공백).
+  // 주문상세(SF 조회 클래스 cls:157 은 공백 없는 '배송완료')는 처리현황 위젯이 별도 라벨로 표시한다
+  // — 두 도메인 표기가 SF 원문상 달라 공유 enum 라벨 하나로 둘 다 만족 불가하기 때문.
   delivered('배송 완료', 'DELIVERED'),
-  outOfStock('결품', 'OUT_OF_STOCK');
+  outOfStock('결품', 'OUT_OF_STOCK'),
+  // 레거시 cls:153-159 가 어느 조건에도 안 걸려 status='' 로 남기는 케이스 (예: LineItemStatus 만
+  // 채워지고 배차/완료 시각 없음). 레거시 화면은 빈 상태 텍스트로 표시하므로 displayName 도 ''.
+  unknown('', 'UNKNOWN');
 
   const DeliveryStatus(this.displayName, this.code);
 

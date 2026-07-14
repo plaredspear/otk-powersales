@@ -151,22 +151,31 @@ class OrderRequestDetailMapper {
 
     /**
      * 레거시 `cls:153-159` 의 **독립 if 5개** 중 처리현황 그룹에 들어오는 라인의 배송 차원만 매핑한다.
-     * 결품(평가 5)/반려(평가 1)는 [map] 에서 이미 분리되었으므로 여기서는 대기/배송중/배송완료 3개만 판정.
+     * 결품(평가 5)/반려(평가 1)는 [map] 에서 이미 분리되었으므로 여기서는 대기/배송중/배송완료 + 빈상태만 판정.
      *
-     * - 평가 2 (대기): ScheduleTime 빈/000000 — fallback
-     * - 평가 3 (배송중): ScheduleTime 채워짐(≠000000) && (CompleteTime 빈/000000)
-     * - 평가 4 (배송완료): CompleteTime 채워짐(≠000000) — 마지막 매칭 우선
+     * 레거시는 `String status=''` 에서 시작해 5개 독립 if 를 순차 실행하고 **아래 if 일수록 우선**(마지막
+     * 참 조건이 최종값)이다. 여기서는 결품(158)/반려(154)가 이미 분리됐으므로 155~157 만 재현한다.
+     * SF 원문 (조회 클래스, 공백 없는 '배송완료'):
+     *  - cls:155 (대기): `DefaultReason 빈 && LineItemStatus 빈 && ScheduleTime(빈|000000)`
+     *      (DefaultReason 빈은 정상 라인이라 이미 성립 → LineItemStatus 빈 && ScheduleTime 미도래)
+     *  - cls:156 (배송중): `ScheduleTime≠000000 && CompleteTime(빈|000000)`
+     *  - cls:157 (배송완료): `CompleteTime≠000000`
+     *  - 어느 것도 아니면 status='' → [DeliveryStatus.UNKNOWN] (예: LineItemStatus 만 채워지고 시각 없음).
+     *    과거 신규는 이 케이스를 '대기'로 뭉갰으나 SF 는 빈 문자열로 남긴다 → 정합 위해 UNKNOWN 구분.
      */
     private fun computeDeliveryStatus(line: SapOrderRequestDetailLine): DeliveryStatus {
         val scheduleFilled = !line.shippingScheduleTime.isNullOrEmpty() && line.shippingScheduleTime != ZERO_TIME
         val completeFilled = !line.shippingCompleteTime.isNullOrEmpty() && line.shippingCompleteTime != ZERO_TIME
+        val lineItemStatusFilled = !line.lineItemStatus.isNullOrEmpty()
 
-        // 평가 4 (배송완료)
+        // cls:157 (배송완료) — 최우선
         if (completeFilled) return DeliveryStatus.DELIVERED
-        // 평가 3 (배송중)
+        // cls:156 (배송중)
         if (scheduleFilled) return DeliveryStatus.SHIPPING
-        // 평가 2 (대기) — 그 외 모든 경우 fallback
-        return DeliveryStatus.PENDING
+        // cls:155 (대기) — LineItemStatus 빈 && ScheduleTime 미도래. (DefaultReason 빈은 정상 라인 전제로 성립)
+        if (!lineItemStatusFilled) return DeliveryStatus.PENDING
+        // 어느 조건에도 안 걸림 → 레거시 status='' 정합.
+        return DeliveryStatus.UNKNOWN
     }
 
     /**

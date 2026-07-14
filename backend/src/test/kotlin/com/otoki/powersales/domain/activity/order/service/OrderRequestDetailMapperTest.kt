@@ -91,6 +91,36 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
+    @DisplayName("derived = UNKNOWN — 정상 라인이나 LineItemStatus 채워짐 + 시각 없음 (레거시 cls:155-157 status='')")
+    fun deliveryStatusUnknown() {
+        // 결품(DefaultReason 없음)·반려(SAPOrderNumber 있음) 아닌 정상 라인인데, LineItemStatus 만
+        // 채워지고 배차/완료 시각이 없으면 레거시는 어느 if 에도 안 걸려 status='' → UNKNOWN.
+        val sap = listOf(
+            line(
+                productCode = "P1",
+                sapOrderNumber = "S1",
+                lineItemStatus = "SOMESTATUS",
+                shippingScheduleTime = "000000",
+                shippingCompleteTime = "000000",
+                shippingQuantityBox = "0",
+            ),
+        )
+        val result = mapper.map(requestNumber, sap, mapOf("P1" to product("P1", "P1Name", 10)))
+        val item = result.processingGroups[0].items[0]
+        // 과거엔 '대기'(PENDING)로 뭉갰던 케이스 — SF 정합상 빈 상태(UNKNOWN).
+        assertThat(item.deliveryStatus).isEqualTo(DeliveryStatus.UNKNOWN)
+        assertThat(item.deliveryStatus.koreanLabel).isEqualTo("")
+    }
+
+    @Test
+    @DisplayName("DELIVERED koreanLabel 은 거래처주문 inbound 정합 '배송 완료'(공백) — 주문상세 표기는 클라이언트가 별도 매핑")
+    fun deliveredKoreanLabelBelongsToClientOrderDomain() {
+        // koreanLabel 은 erp_order_product.delivery_status 저장/매칭 키(거래처주문, SF inbound cls:158)라
+        // 공백 있는 '배송 완료'. 주문상세(SF 조회 cls:157 공백 없음)의 화면 표기는 mobile 위젯이 담당한다.
+        assertThat(DeliveryStatus.DELIVERED.koreanLabel).isEqualTo("배송 완료")
+    }
+
+    @Test
     @DisplayName("결품 — DefaultReason 채워짐 → 처리현황/반려 아닌 outOfStockReasons 로 분리 (레거시 view.jsp:414 동등)")
     fun outOfStockGoesToOrderedItems() {
         val sap = listOf(

@@ -29,6 +29,9 @@ class DeliveryInfoPopup extends StatelessWidget {
         return AppColors.success;
       case DeliveryStatus.outOfStock:
         return AppColors.error;
+      // 빈 상태(unknown) — 방어용(팝업은 배송중/배송완료 라인에서만 열림). 대기와 동일 회색.
+      case DeliveryStatus.unknown:
+        return AppColors.textSecondary;
     }
   }
 
@@ -42,6 +45,8 @@ class DeliveryInfoPopup extends StatelessWidget {
         return '배송이 완료되었습니다.';
       case DeliveryStatus.outOfStock:
         return '결품으로 인해 배송할 수 없습니다.';
+      case DeliveryStatus.unknown:
+        return '';
     }
   }
 
