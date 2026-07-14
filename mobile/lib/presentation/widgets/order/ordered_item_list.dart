@@ -13,6 +13,9 @@ class OrderedItemList extends StatelessWidget {
     required this.items,
   });
 
+  /// 취소된 라인 수 (isCancelled). 결품(isOutOfStock)은 취소가 아니므로 제외.
+  int get _cancelledCount => items.where((i) => i.isCancelled).length;
+
   // 레거시 view.jsp:274 동등 — 박스 수량은 소수 2자리까지(#,###.##).
   String _formatBoxes(double boxes) {
     return NumberFormat('#,##0.##').format(boxes);
@@ -37,12 +40,29 @@ class OrderedItemList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '주문한 제품 (${items.length})',
-            style: AppTypography.headlineSmall.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '주문한 제품 (${items.length})',
+                style: AppTypography.headlineSmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              // 취소 건수 — 취소 라인이 1건 이상일 때만 노출 (예: "중 취소 3건").
+              if (_cancelledCount > 0) ...[
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  '중 취소 $_cancelledCount건',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ],
           ),
           SizedBox(height: AppSpacing.md),
           if (items.isEmpty)

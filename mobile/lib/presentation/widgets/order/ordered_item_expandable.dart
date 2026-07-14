@@ -19,6 +19,9 @@ class OrderedItemExpandable extends StatelessWidget {
     required this.onToggle,
   });
 
+  /// 취소된 라인 수 (isCancelled). 결품(isOutOfStock)은 취소가 아니므로 제외.
+  int get _cancelledCount => items.where((i) => i.isCancelled).length;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -58,6 +61,17 @@ class OrderedItemExpandable extends StatelessWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
+                      // 취소 건수 — 취소 라인이 1건 이상일 때만 노출 (예: "중 취소 3건").
+                      if (_cancelledCount > 0) ...[
+                        SizedBox(width: AppSpacing.sm),
+                        Text(
+                          '중 취소 $_cancelledCount건',
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                   Row(
