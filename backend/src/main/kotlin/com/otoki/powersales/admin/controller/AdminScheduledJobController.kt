@@ -15,6 +15,7 @@ import com.otoki.powersales.admin.dto.response.OroraDailyChunkCatalogResponse
 import com.otoki.powersales.admin.dto.response.OroraMaterializeAcceptedResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkCatalogResponse
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
+import com.otoki.powersales.admin.dto.response.ScheduledJobDailyStatusResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobManualTriggerResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
@@ -70,6 +71,21 @@ class AdminScheduledJobController(
             )
         )
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 대시보드 "일별 스케줄 실행현황" — 기준일의 `(전일 22:00 ~ 당일 22:00)` KST 윈도우 내
+     * 대상 스케줄별 실행 여부/실제·예상 횟수를 조회한다.
+     *
+     * `date` 미지정 시 서버 오늘 날짜. 미래 날짜도 조회 가능하다 (당일 22시~자정 사이 조회 등).
+     */
+    @GetMapping("/api/v1/admin/scheduled-jobs/daily-status")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
+    fun getDailyStatus(
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) date: java.time.LocalDate?,
+    ): ResponseEntity<ApiResponse<ScheduledJobDailyStatusResponse>> {
+        val target = date ?: java.time.LocalDate.now()
+        return ResponseEntity.ok(ApiResponse.success(adminScheduledJobService.dailyStatus(target)))
     }
 
     @GetMapping("/api/v1/admin/scheduled-jobs/catalog")

@@ -9,6 +9,7 @@ import {
   type LoggerLevel,
   type LoggerListResponse,
 } from '@/api/admin/logLevel';
+import DailyScheduleStatusCard from './DailyScheduleStatusCard';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -111,7 +112,11 @@ export default function ToolsDashboardPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Title level={3}>로그 레벨 관리</Title>
+      <Title level={3}>대시보드</Title>
+
+      <DailyScheduleStatusCard />
+
+      <Title level={4}>로그 레벨 관리</Title>
       <Paragraph type="secondary">
         운영 중 로그 레벨을 임시로 조정합니다. 진단이 필요할 때만 DEBUG 로 올리고, 확인 후 반드시
         원래 레벨(INFO)로 되돌리세요. DEBUG/TRACE 는 CPU·메모리·로그를 크게 늘리며, SQL 바인딩

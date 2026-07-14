@@ -38,4 +38,40 @@ interface ScheduledJobRunRepositoryCustom {
      * UI 필터 드롭다운에서 [com.otoki.powersales.platform.batch.ScheduledJobCatalog] 와 union 하여 사용한다.
      */
     fun findDistinctJobNames(): List<String>
+
+    /**
+     * `started_at IN [from, to)` 범위 내 잡별 실행 집계.
+     *
+     * 대시보드 일별 실행현황 위젯 용 — 잡마다 (전체/성공/실패/스킵/실행중 수 + 마지막 실행 시각·상태) 를
+     * 단일 조회로 산출한다. [jobNames] 로 대상 잡을 제한하며, 이력이 0건인 잡은 결과에 포함되지 않는다
+     * (호출부에서 미실행으로 처리).
+     */
+    fun aggregateByJobNameWithin(
+        jobNames: Collection<String>,
+        from: LocalDateTime,
+        to: LocalDateTime,
+    ): List<JobRunAggregate>
 }
+
+/**
+ * 잡 1개의 윈도우 내 실행 집계.
+ *
+ * @property jobName 잡 이름
+ * @property totalCount 윈도우 내 전체 실행 row 수 (모든 status 합)
+ * @property successCount SUCCESS 수
+ * @property failureCount FAILURE 수
+ * @property skippedCount SKIPPED 수 (런타임 토글 OFF 로 발화했으나 본문 미실행)
+ * @property runningCount RUNNING 수 (미종료)
+ * @property lastStartedAt 윈도우 내 가장 최근 실행 시작 시각 (없으면 null — 호출부에서 미실행)
+ * @property lastStatus 가장 최근 실행의 status
+ */
+data class JobRunAggregate(
+    val jobName: String,
+    val totalCount: Long,
+    val successCount: Long,
+    val failureCount: Long,
+    val skippedCount: Long,
+    val runningCount: Long,
+    val lastStartedAt: LocalDateTime?,
+    val lastStatus: String?,
+)

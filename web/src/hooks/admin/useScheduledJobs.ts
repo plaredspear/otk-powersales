@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import {
   getOroraDailyChunks,
   getOroraMonthlyChunks,
   getScheduledJobCatalog,
+  getScheduledJobDailyStatus,
   getScheduledJobRuns,
   getScheduledJobSummary,
   triggerMonthlyReaggregate,
@@ -19,6 +21,9 @@ import {
 } from '@/api/admin/scheduledJob';
 
 const KEY_BASE = ['admin', 'scheduled-jobs'] as const;
+
+/** 실행현황/요약 위젯의 자동 갱신 주기 (ms). */
+const POLL_INTERVAL_MS = 60_000;
 
 export function useScheduledJobRuns(query: ScheduledJobRunsQuery) {
   return useQuery({
@@ -55,7 +60,23 @@ export function useScheduledJobSummary(windowHours: number = 24) {
   return useQuery({
     queryKey: [...KEY_BASE, 'summary', windowHours],
     queryFn: () => getScheduledJobSummary(windowHours),
-    refetchInterval: 60_000,
+    refetchInterval: POLL_INTERVAL_MS,
+  });
+}
+
+/**
+ * 대시보드 일별 스케줄 실행현황 조회. `date`(`YYYY-MM-DD`) 미지정 시 서버 오늘 날짜.
+ *
+ * 자동 갱신은 **오늘 조회 시에만** 켠다 — 과거/미래 날짜는 윈도우가 이미 확정돼 값이 변하지 않으므로
+ * 폴링이 무의미하다. 백그라운드 탭에서는 갱신을 멈춰 불필요한 반복 호출을 줄인다.
+ */
+export function useScheduledJobDailyStatus(date?: string) {
+  const isToday = !date || date === dayjs().format('YYYY-MM-DD');
+  return useQuery({
+    queryKey: [...KEY_BASE, 'daily-status', date ?? 'today'],
+    queryFn: () => getScheduledJobDailyStatus(date),
+    refetchInterval: isToday ? POLL_INTERVAL_MS : false,
+    refetchIntervalInBackground: false,
   });
 }
 

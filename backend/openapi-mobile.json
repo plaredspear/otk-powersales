@@ -3322,7 +3322,7 @@
             "type" : "string"
           },
           "deliveryStatus" : {
-            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK" ],
+            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK", "UNKNOWN" ],
             "type" : "string"
           },
           "driverName" : {
@@ -5906,7 +5906,7 @@
             "type" : "string"
           },
           "deliveryStatus" : {
-            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK" ],
+            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK", "UNKNOWN" ],
             "type" : "string"
           },
           "driverName" : {

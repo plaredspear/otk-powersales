@@ -10517,6 +10517,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseScheduledJobDailyStatusResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduledJobDailyStatusResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseScheduledJobManualTriggerResponse" : {
         "properties" : {
           "data" : {
@@ -13273,7 +13302,7 @@
             "type" : "string"
           },
           "deliveryStatus" : {
-            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK" ],
+            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK", "UNKNOWN" ],
             "type" : "string"
           },
           "driverName" : {
@@ -20331,7 +20360,7 @@
             "type" : "string"
           },
           "deliveryStatus" : {
-            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK" ],
+            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK", "UNKNOWN" ],
             "type" : "string"
           },
           "driverName" : {
@@ -21288,6 +21317,9 @@
           "name" : {
             "type" : [ "string", "null" ]
           },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
           "otherSalesAmount" : {
             "type" : [ "number", "null" ]
           },
@@ -21377,6 +21409,9 @@
             "type" : "integer"
           },
           "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgName" : {
             "type" : [ "string", "null" ]
           },
           "otherSalesAmount" : {
@@ -23774,6 +23809,86 @@
             "type" : "integer"
           },
           "uploadId" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduledJobDailyStatusItem" : {
+        "properties" : {
+          "actualCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "executed" : {
+            "type" : "boolean"
+          },
+          "expectedCount" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "failureCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "jobName" : {
+            "type" : "string"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "lastStartedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "lastStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "note" : {
+            "type" : [ "string", "null" ]
+          },
+          "runningCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "scheduleText" : {
+            "type" : "string"
+          },
+          "skippedCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "successCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduledJobDailyStatusResponse" : {
+        "properties" : {
+          "date" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ScheduledJobDailyStatusItem"
+            },
+            "type" : "array"
+          },
+          "windowFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "windowTo" : {
+            "format" : "date-time",
             "type" : "string"
           }
         },
@@ -36925,6 +37040,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListRegisteredScheduledJobDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-scheduled-job-controller" ]
+      }
+    },
+    "/api/v1/admin/scheduled-jobs/daily-status" : {
+      "get" : {
+        "operationId" : "getDailyStatus_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "date",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduledJobDailyStatusResponse"
                 }
               }
             },

@@ -30,6 +30,61 @@ data class ScheduledJobSummaryResponse(
     val distinctJobNames: List<String>,
 )
 
+/**
+ * 대시보드 "일별 스케줄 실행현황" 응답.
+ *
+ * 시간 윈도우는 `(선택일 - 1일) 22:00 ~ 선택일 22:00` (KST). 미래 날짜도 조회 가능하다
+ * (당일 22시~자정 사이 조회 등). [windowFrom]/[windowTo] 는 서버가 산출한 실제 윈도우 경계다.
+ *
+ * @property date 조회 기준일 (`YYYY-MM-DD`)
+ * @property windowFrom 윈도우 시작 (KST, 포함) — `(date-1) 22:00:00`
+ * @property windowTo 윈도우 끝 (KST, 제외) — `date 22:00:00`
+ * @property items 대상 스케줄별 실행현황 (backend 정의 순서 고정)
+ */
+data class ScheduledJobDailyStatusResponse(
+    val date: String,
+    val windowFrom: LocalDateTime,
+    val windowTo: LocalDateTime,
+    val items: List<ScheduledJobDailyStatusItem>,
+)
+
+/**
+ * 대시보드 일별 실행현황 — 스케줄 1개의 윈도우 내 실행 요약.
+ *
+ * @property jobName 잡 이름 (`scheduled_job_run.job_name`)
+ * @property label 화면 표시용 한글 라벨
+ * @property scheduleText 사람이 읽는 실행 주기 (예: "매일 01시", "매시간 정각")
+ * @property note 잡별 추가 안내 문구 (예: ORORA 월매출 "매월 3일 실행"). 없으면 null
+ * @property enabled 현재 환경에서 스케줄링 활성 여부 (빈 등록 기준). false 면 자동 실행 안 됨
+ * @property executed 윈도우 내 1회 이상 실행됐는지 (SKIPPED 제외한 실제 실행 기준)
+ * @property expectedCount 정상 실행 시 윈도우 내 예상 발화 횟수. cron 파싱 실패/미등록 시 null
+ * @property actualCount 윈도우 내 실제 실행 횟수 (SKIPPED 제외 — 본문을 실제로 돈 횟수)
+ * @property totalCount 윈도우 내 전체 이력 row 수 (SKIPPED 포함, 참고용)
+ * @property successCount SUCCESS 수
+ * @property failureCount FAILURE 수
+ * @property skippedCount SKIPPED 수 (런타임 토글 OFF)
+ * @property runningCount RUNNING 수 (미종료)
+ * @property lastStartedAt 윈도우 내 마지막 실행 시작 시각 (없으면 null)
+ * @property lastStatus 마지막 실행 status
+ */
+data class ScheduledJobDailyStatusItem(
+    val jobName: String,
+    val label: String,
+    val scheduleText: String,
+    val note: String?,
+    val enabled: Boolean,
+    val executed: Boolean,
+    val expectedCount: Int?,
+    val actualCount: Long,
+    val totalCount: Long,
+    val successCount: Long,
+    val failureCount: Long,
+    val skippedCount: Long,
+    val runningCount: Long,
+    val lastStartedAt: LocalDateTime?,
+    val lastStatus: String?,
+)
+
 data class RegisteredScheduledJobDto(
     val jobName: String,
     val cron: String,

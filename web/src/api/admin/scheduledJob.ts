@@ -60,6 +60,65 @@ export interface ScheduledJobRunsQuery {
   size?: number;
 }
 
+/**
+ * 대시보드 일별 실행현황 — 스케줄 1개의 윈도우 내 실행 요약.
+ * 윈도우는 `(선택일 - 1일) 22:00 ~ 선택일 22:00` (KST).
+ */
+export interface ScheduledJobDailyStatusItem {
+  jobName: string;
+  /** 화면 표시용 한글 라벨. */
+  label: string;
+  /** 사람이 읽는 실행 주기 (예: "매일 01시"). */
+  scheduleText: string;
+  /** 잡별 추가 안내 문구 (예: ORORA 월매출 "매월 3일 실행"). 없으면 null. */
+  note: string | null;
+  /** 현재 환경에서 스케줄링 활성 여부 (빈 등록 기준). false 면 자동 실행 안 됨. */
+  enabled: boolean;
+  /** 윈도우 내 1회 이상 실제 실행됐는지 (SKIPPED 제외). */
+  executed: boolean;
+  /** 정상 실행 시 윈도우 내 예상 발화 횟수. cron 파싱 실패/미등록 시 null. */
+  expectedCount: number | null;
+  /** 윈도우 내 실제 실행 횟수 (SKIPPED 제외). */
+  actualCount: number;
+  /** 윈도우 내 전체 이력 row 수 (SKIPPED 포함). */
+  totalCount: number;
+  successCount: number;
+  failureCount: number;
+  /** SKIPPED 수 (런타임 토글 OFF). */
+  skippedCount: number;
+  runningCount: number;
+  /** 윈도우 내 마지막 실행 시작 시각 (없으면 null). */
+  lastStartedAt: string | null;
+  lastStatus: ScheduledJobStatus | null;
+}
+
+export interface ScheduledJobDailyStatusResponse {
+  /** 조회 기준일 (`YYYY-MM-DD`). */
+  date: string;
+  /** 윈도우 시작 (KST, 포함) — `(date-1) 22:00`. */
+  windowFrom: string;
+  /** 윈도우 끝 (KST, 제외) — `date 22:00`. */
+  windowTo: string;
+  items: ScheduledJobDailyStatusItem[];
+}
+
+/**
+ * 대시보드 일별 스케줄 실행현황 조회. `date` 미지정 시 서버 오늘 날짜.
+ * 미래 날짜도 조회 가능하다 (당일 22시~자정 사이 조회 등). `VIEW_ALL_DATA` 권한 필요.
+ */
+export async function getScheduledJobDailyStatus(
+  date?: string,
+): Promise<ScheduledJobDailyStatusResponse> {
+  const res = await client.get<ApiResponse<ScheduledJobDailyStatusResponse>>(
+    '/api/v1/admin/scheduled-jobs/daily-status',
+    { params: date ? { date } : {} },
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '일별 스케줄 실행현황 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
+
 export async function getScheduledJobRuns(
   query: ScheduledJobRunsQuery = {},
 ): Promise<ScheduledJobRunListResponse> {

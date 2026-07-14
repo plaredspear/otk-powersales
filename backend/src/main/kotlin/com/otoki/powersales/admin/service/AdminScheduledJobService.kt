@@ -6,6 +6,8 @@ import com.otoki.powersales.admin.dto.response.OroraMaterializeAcceptedResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkCatalogResponse
 import com.otoki.powersales.admin.dto.response.OroraMonthlyChunkInfo
 import com.otoki.powersales.admin.dto.response.RegisteredScheduledJobDto
+import com.otoki.powersales.admin.dto.response.ScheduledJobDailyStatusItem
+import com.otoki.powersales.admin.dto.response.ScheduledJobDailyStatusResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunDto
 import com.otoki.powersales.admin.dto.response.ScheduledJobRunListResponse
 import com.otoki.powersales.admin.dto.response.ScheduledJobSummaryResponse
@@ -25,7 +27,8 @@ import java.time.LocalDateTime
 /**
  * 운영자 admin 화면용 `@Scheduled` 잡 실행 이력 조회 서비스.
  *
- * 시각 필드는 모두 UTC wall clock `LocalDateTime` 으로 처리한다 (전사 컨벤션 — 스펙 #564).
+ * 시각 필드는 모두 KST wall-clock `LocalDateTime` 으로 처리한다 (JVM TZ=Asia/Seoul 이라
+ * `ScheduledJobRunner` 의 `LocalDateTime.now()` 기록·조회·윈도우 계산이 동일 KST 축).
  * 요약 위젯의 `windowFrom`/`windowTo` 는 서버 `LocalDateTime.now()` 기준이며 응답에 그대로 포함되어
  * 화면이 사용자에게 윈도우 시각을 표기할 수 있다.
  */
@@ -37,6 +40,7 @@ class AdminScheduledJobService(
     private val ororaMaterializeAsyncRunner: OroraMaterializeAsyncRunner,
     private val beanFactory: ListableBeanFactory,
     private val scheduledJobToggleStore: ScheduledJobToggleStore,
+    private val scheduledJobCronResolver: ScheduledJobCronResolver,
 ) {
 
     fun search(query: AdminScheduledJobQuery): ScheduledJobRunListResponse {
@@ -79,6 +83,67 @@ class AdminScheduledJobService(
             successCount = success,
             failureCount = failure,
             distinctJobNames = distinctMerged,
+        )
+    }
+
+    /**
+     * 대시보드 "일별 스케줄 실행현황" — 특정 기준일의 `(전일 22:00 ~ 당일 22:00)` KST 윈도우 내
+     * 대상 스케줄별 실행 여부/실제·예상 횟수를 산출한다.
+     *
+     * 윈도우 경계 및 저장 시각은 모두 KST wall-clock `LocalDateTime` (전사 컨벤션 — JVM TZ=Asia/Seoul).
+     * 미래 날짜도 조회 가능하다 (당일 22시~자정 사이 조회 시 등). `executed` 는 SKIPPED 를 제외한
+     * 실제 실행(SUCCESS/FAILURE/RUNNING) 1회 이상 여부이며, `expectedCount` 는 [scheduledJobCronResolver]
+     * 가 해석한 실제 cron 으로 윈도우 내 발화 횟수를 계산한다 (비활성/파싱 실패 시 null).
+     *
+     * @param date 조회 기준일. 윈도우는 `[date-1일 22:00, date 22:00)`.
+     */
+    fun dailyStatus(date: java.time.LocalDate): ScheduledJobDailyStatusResponse {
+        val windowFrom = date.minusDays(1).atTime(WINDOW_BOUNDARY_HOUR, 0)
+        val windowTo = date.atTime(WINDOW_BOUNDARY_HOUR, 0)
+
+        val aggregates = scheduledJobRunRepository
+            .aggregateByJobNameWithin(DashboardScheduledJobTargets.JOB_NAMES, windowFrom, windowTo)
+            .associateBy { it.jobName }
+
+        val resolvedCron = scheduledJobCronResolver.resolvedCronByJobName()
+
+        val items = DashboardScheduledJobTargets.TARGETS.map { target ->
+            val agg = aggregates[target.jobName]
+            val enabled = beanFactory.getBeanNamesForType(
+                ScheduledJobCatalog.ENTRIES.first { it.jobName == target.jobName }.beanType,
+            ).isNotEmpty()
+
+            // SKIPPED 는 본문 미실행이라 실제 실행 횟수에서 제외한다.
+            val actualCount = agg?.let { it.totalCount - it.skippedCount } ?: 0L
+
+            val expectedCount = resolvedCron[target.jobName]?.let { cron ->
+                scheduledJobCronResolver.expectedFireCount(cron, windowFrom, windowTo)
+            }
+
+            ScheduledJobDailyStatusItem(
+                jobName = target.jobName,
+                label = target.label,
+                scheduleText = target.scheduleText,
+                note = target.note,
+                enabled = enabled,
+                executed = actualCount > 0,
+                expectedCount = expectedCount,
+                actualCount = actualCount,
+                totalCount = agg?.totalCount ?: 0L,
+                successCount = agg?.successCount ?: 0L,
+                failureCount = agg?.failureCount ?: 0L,
+                skippedCount = agg?.skippedCount ?: 0L,
+                runningCount = agg?.runningCount ?: 0L,
+                lastStartedAt = agg?.lastStartedAt,
+                lastStatus = agg?.lastStatus,
+            )
+        }
+
+        return ScheduledJobDailyStatusResponse(
+            date = date.toString(),
+            windowFrom = windowFrom,
+            windowTo = windowTo,
+            items = items,
         )
     }
 
@@ -298,5 +363,8 @@ class AdminScheduledJobService(
     companion object {
         const val MAX_PAGE_SIZE = 100
         const val MAX_WINDOW_HOURS = 24L * 90
+
+        /** 일별 실행현황 윈도우 경계 시각 (KST). 전일 22:00 ~ 당일 22:00. */
+        const val WINDOW_BOUNDARY_HOUR = 22
     }
 }

@@ -115,6 +115,57 @@ class ScheduledJobRunRepositoryCustomImplTest {
     }
 
     @Test
+    @DisplayName("aggregateByJobNameWithin - 잡별 status 카운트 + 마지막 실행이 정확하고 윈도우 밖/미대상 잡은 제외")
+    fun aggregateByJobNameWithin_perJobCounts() {
+        val baseTime = LocalDateTime.of(2026, 7, 14, 22, 0, 0)
+        val to = LocalDateTime.of(2026, 7, 15, 22, 0, 0)
+
+        // jobA: 성공 2 + 실패 1 + 스킵 1. 마지막 실행은 가장 늦은 시각(성공).
+        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(1, ChronoUnit.HOURS))
+        persist("jobA", ScheduledJobRun.STATUS_FAILURE, baseTime.plus(2, ChronoUnit.HOURS))
+        persist("jobA", ScheduledJobRun.STATUS_SKIPPED, baseTime.plus(3, ChronoUnit.HOURS))
+        val jobALast = persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(4, ChronoUnit.HOURS))
+        // jobB: 실행중 1.
+        persist("jobB", ScheduledJobRun.STATUS_RUNNING, baseTime.plus(5, ChronoUnit.HOURS))
+        // 윈도우 경계 밖 (to 이후) — 제외돼야 함.
+        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, to.plus(1, ChronoUnit.MINUTES))
+        // 대상 목록에 없는 잡 — 제외돼야 함.
+        persist("jobZ", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(1, ChronoUnit.HOURS))
+
+        val result = repository.aggregateByJobNameWithin(listOf("jobA", "jobB"), baseTime, to)
+            .associateBy { it.jobName }
+
+        assertThat(result).containsOnlyKeys("jobA", "jobB")
+
+        val jobA = result.getValue("jobA")
+        assertThat(jobA.totalCount).isEqualTo(4L)
+        assertThat(jobA.successCount).isEqualTo(2L)
+        assertThat(jobA.failureCount).isEqualTo(1L)
+        assertThat(jobA.skippedCount).isEqualTo(1L)
+        assertThat(jobA.runningCount).isEqualTo(0L)
+        assertThat(jobA.lastStartedAt).isEqualTo(jobALast.startedAt)
+        assertThat(jobA.lastStatus).isEqualTo(ScheduledJobRun.STATUS_SUCCESS)
+
+        val jobB = result.getValue("jobB")
+        assertThat(jobB.totalCount).isEqualTo(1L)
+        assertThat(jobB.runningCount).isEqualTo(1L)
+        assertThat(jobB.lastStatus).isEqualTo(ScheduledJobRun.STATUS_RUNNING)
+    }
+
+    @Test
+    @DisplayName("aggregateByJobNameWithin - 이력이 0건인 잡은 결과에 포함되지 않는다")
+    fun aggregateByJobNameWithin_noRowsExcluded() {
+        val baseTime = LocalDateTime.of(2026, 7, 14, 22, 0, 0)
+        val to = LocalDateTime.of(2026, 7, 15, 22, 0, 0)
+        persist("jobA", ScheduledJobRun.STATUS_SUCCESS, baseTime.plus(1, ChronoUnit.HOURS))
+
+        val result = repository.aggregateByJobNameWithin(listOf("jobA", "jobNoHistory"), baseTime, to)
+
+        assertThat(result).hasSize(1)
+        assertThat(result[0].jobName).isEqualTo("jobA")
+    }
+
+    @Test
     @DisplayName("findDistinctJobNames - 중복 제거 + 가나다순 정렬")
     fun findDistinctJobNames_distinctSorted() {
         val baseTime = LocalDateTime.of(2026, 5, 18, 0, 0, 0)
