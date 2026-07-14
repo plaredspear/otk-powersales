@@ -96,6 +96,9 @@ export interface SuggestionDetail {
   responsibleLogisticsCenter: string | null;
   actionStatus: SuggestionActionStatus | null;
   actionStatusName: string | null;
+  actionNum: string | null;
+  actionManager: string | null;
+  actionContent: string | null;
   duplicateProposalNum: string | null;
   status: SuggestionStatus;
   createdAt: string;

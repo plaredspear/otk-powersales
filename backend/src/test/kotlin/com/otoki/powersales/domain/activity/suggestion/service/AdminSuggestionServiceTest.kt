@@ -102,7 +102,14 @@ class AdminSuggestionServiceTest {
         every { suggestionRepository.existsVisibleById(any(), any()) } returns true
     }
 
-    private fun suggestionOf(employee: Employee?, account: Account? = null): Suggestion = Suggestion(
+    private fun suggestionOf(
+        employee: Employee?,
+        account: Account? = null,
+        actionNum: String? = null,
+        actionManager: String? = null,
+        actionContent: String? = null,
+        claimTypeMeasures: String? = null,
+    ): Suggestion = Suggestion(
         id = suggestionId,
         proposalNumber = "S-20260527-000001",
         title = "테스트 제안",
@@ -111,7 +118,11 @@ class AdminSuggestionServiceTest {
         status = SuggestionStatus.SUBMITTED,
         isDeleted = false,
         employee = employee,
-        account = account
+        account = account,
+        actionNum = actionNum,
+        actionManager = actionManager,
+        actionContent = actionContent,
+        claimTypeMeasures = claimTypeMeasures,
     )
 
     private fun photoOf(deleted: Boolean = false, key: String = "uploads/suggestion/x.jpg"): UploadFile = UploadFile(
@@ -217,6 +228,29 @@ class AdminSuggestionServiceTest {
             assertThat(result.id).isEqualTo(suggestionId)
             assertThat(result.attachments).hasSize(1)
             assertThat(result.attachments[0].s3Url).contains("uploads/suggestion/x.jpg")
+        }
+
+        @Test
+        @DisplayName("OLS 조치사항 매핑 - 조치번호/조치담당자/조치내용/클레임항목(조치사항)이 응답에 노출됨")
+        fun mapsActionFields() {
+            val suggestion = suggestionOf(
+                otherEmployee,
+                actionNum = "A00000953",
+                actionManager = "물류책임/확인중",
+                actionContent = "테스트 조치내용",
+                claimTypeMeasures = "취급부주의 제품 파손",
+            )
+            every { suggestionRepository.findByIdAndIsDeletedFalse(suggestionId) } returns suggestion
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse(UploadFileParentTypes.SUGGESTION, suggestionId)
+            } returns emptyList()
+
+            val result = service.getDetail(allowAllScope, suggestionId)
+
+            assertThat(result.actionNum).isEqualTo("A00000953")
+            assertThat(result.actionManager).isEqualTo("물류책임/확인중")
+            assertThat(result.actionContent).isEqualTo("테스트 조치내용")
+            assertThat(result.claimTypeMeasures).isEqualTo("취급부주의 제품 파손")
         }
 
         @Test

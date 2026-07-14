@@ -304,12 +304,16 @@ export default function ProposalDetailPage() {
                     </Descriptions>
                   </Card>
 
-                  <Card title="조치 정보" style={{ marginBottom: 16 }}>
+                  <Card title="OLS 조치사항" style={{ marginBottom: 16 }}>
                     <Descriptions column={2}>
+                      <Descriptions.Item label="조치번호">{suggestion.actionNum ?? '-'}</Descriptions.Item>
                       <Descriptions.Item label="조치상태">
                         {actionStatusTag ? <Tag color={actionStatusTag.color}>{actionStatusTag.label}</Tag> : '-'}
                       </Descriptions.Item>
+                      <Descriptions.Item label="조치담당자(직급/이름)">{suggestion.actionManager ?? '-'}</Descriptions.Item>
                       <Descriptions.Item label="중복 제안번호">{suggestion.duplicateProposalNum ?? '-'}</Descriptions.Item>
+                      <Descriptions.Item label="클레임 항목(조치사항)">{suggestion.claimTypeMeasures ?? '-'}</Descriptions.Item>
+                      <Descriptions.Item label="조치내용" span={2}>{suggestion.actionContent ?? '-'}</Descriptions.Item>
                     </Descriptions>
                   </Card>
                 </>
