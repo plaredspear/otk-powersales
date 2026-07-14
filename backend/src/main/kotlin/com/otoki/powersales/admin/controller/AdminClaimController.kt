@@ -90,8 +90,8 @@ class AdminClaimController(
         val response = adminClaimCreateService.createClaim(request, claimPhoto, partPhoto, receiptPhoto)
         // 등록 응답은 sfSendStatus=PENDING (SF 송신은 커밋 후 비동기). 전송 성공/실패는 상세 화면에서 확인.
         val message = when (response.sfSendStatus) {
-            "SENT" -> "클레임이 등록되었으며 SF에 전송되었습니다"
-            "SEND_FAILED" -> "클레임은 등록되었으나 SF 전송에 실패했습니다. 재전송이 필요합니다"
+            "SENT" -> "클레임이 등록되었으며 알라딘에 전송되었습니다"
+            "SEND_FAILED" -> "클레임은 등록되었으나 알라딘 전송에 실패했습니다. 재전송이 필요합니다"
             else -> "클레임이 등록되었습니다"
         }
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(response, message))
@@ -107,8 +107,8 @@ class AdminClaimController(
     ): ResponseEntity<ApiResponse<AdminClaimCreateResponse>> {
         val response = adminClaimResendService.resend(claimId)
         val message = when (response.sfSendStatus) {
-            "SENT" -> "SF 재전송에 성공했습니다"
-            else -> "SF 재전송에 실패했습니다"
+            "SENT" -> "알라딘 재전송에 성공했습니다"
+            else -> "알라딘 재전송에 실패했습니다"
         }
         return ResponseEntity.ok(ApiResponse.success(response, message))
     }

@@ -56,9 +56,9 @@ export default function ClaimDetailPage() {
     resendClaim(id, {
       onSuccess: (data) => {
         if (data.sfSendStatus === 'SENT') {
-          message.success('SF 재전송에 성공했습니다');
+          message.success('알라딘 재전송에 성공했습니다');
         } else {
-          message.warning(`SF 재전송에 실패했습니다: ${data.sfResultMsg ?? '연동 오류'}`);
+          message.warning(`알라딘 재전송에 실패했습니다: ${data.sfResultMsg ?? '연동 오류'}`);
         }
       },
       onError: (err) => {
@@ -110,11 +110,11 @@ export default function ClaimDetailPage() {
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
-          message="SF 전송 실패"
-          description="이 클레임은 SF에 전송되지 않았습니다. 우측 버튼으로 재전송하세요."
+          message="알라딘 전송 실패"
+          description="이 클레임은 알라딘에 전송되지 않았습니다. 우측 버튼으로 재전송하세요."
           action={
             <Button danger size="small" loading={isResending} onClick={handleResend}>
-              SF 재전송
+              알라딘 재전송
             </Button>
           }
         />
@@ -126,7 +126,7 @@ export default function ClaimDetailPage() {
           <Descriptions.Item label="상태">
             {statusTag ? <Tag color={statusTag.color}>{statusTag.label}</Tag> : <Tag>{claim.status}</Tag>}
           </Descriptions.Item>
-          <Descriptions.Item label="SF전송상태">
+          <Descriptions.Item label="알라딘전송상태">
             {sfSendStatusTag ? (
               <Tag color={sfSendStatusTag.color}>{sfSendStatusTag.label}</Tag>
             ) : (

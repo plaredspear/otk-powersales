@@ -19,8 +19,12 @@ class ClaimDetailModel {
   final String? subcategoryLabel;
   final num? defectQuantity;
   final bool? sampleCollectionFlag;
+  // status/statusLabel : 알라딘 DKRetail__Status__c (알라딘→코스모스 전송상태) — 표시 전용.
   final String status;
   final String statusLabel;
+  // sfSendStatus/sfSendStatusLabel : 신규→알라딘 전송상태. 알라딘 이관(마이그레이션) 건은 null.
+  final String? sfSendStatus;
+  final String? sfSendStatusLabel;
   final String? customerDeliveryDate;
   final String? detailSnsName;
   final String? dateType;
@@ -66,6 +70,8 @@ class ClaimDetailModel {
     this.sampleCollectionFlag,
     required this.status,
     required this.statusLabel,
+    this.sfSendStatus,
+    this.sfSendStatusLabel,
     this.customerDeliveryDate,
     this.detailSnsName,
     this.dateType,
@@ -109,6 +115,8 @@ class ClaimDetailModel {
       sampleCollectionFlag: json['sampleCollectionFlag'] as bool?,
       status: json['status'] as String,
       statusLabel: json['statusLabel'] as String,
+      sfSendStatus: json['sfSendStatus'] as String?,
+      sfSendStatusLabel: json['sfSendStatusLabel'] as String?,
       customerDeliveryDate: json['customerDeliveryDate'] as String?,
       detailSnsName: json['detailSnsName'] as String?,
       dateType: json['dateType'] as String?,
@@ -157,6 +165,8 @@ class ClaimDetailModel {
         sampleCollectionFlag: sampleCollectionFlag,
         status: status,
         statusLabel: statusLabel,
+        sfSendStatus: sfSendStatus,
+        sfSendStatusLabel: sfSendStatusLabel,
         customerDeliveryDate: _parseDate(customerDeliveryDate),
         detailSnsName: detailSnsName,
         dateType: dateType,

@@ -162,6 +162,8 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
         .join(' > ');
     return _buildCard('클레임정보', [
       _row('접수번호', d.claimNo),
+      // 신규→알라딘 전송상태. 알라딘 이관(마이그레이션) 건은 null 이라 행 자체가 생략된다.
+      _row('알라딘전송상태', d.sfSendStatusLabel),
       _row('거래처', d.accountName ?? '-'),
       _row('거래처코드', d.accountCode),
       _row('클레임 종류', category.isNotEmpty ? category : '-'),

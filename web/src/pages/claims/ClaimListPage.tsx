@@ -17,10 +17,10 @@ import { STATUS_TAG } from './claimDisplay';
 
 const { RangePicker } = DatePicker;
 
+// 상태(status = 알라딘 DKRetail__Status__c 전송상태) 필터 옵션 — SF picklist 3값 정합.
 const STATUS_OPTIONS = [
   { value: '', label: '전체' },
   { value: 'DRAFT', label: '임시저장' },
-  { value: 'SF_PENDING', label: '전송대기' },
   { value: 'SENT', label: '전송완료' },
   { value: 'SEND_FAILED', label: '전송실패' },
 ];

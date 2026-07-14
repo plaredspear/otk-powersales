@@ -158,7 +158,7 @@ export default function ClaimCreatePage() {
         onSuccess: (data) => {
           // SF 송신은 등록 후 비동기 처리된다. 등록 직후엔 SF_PENDING(전송대기) 상태이며,
           // 전송 성공/실패는 상세 화면의 상태 배너·재전송 버튼으로 확인한다.
-          message.success('클레임이 등록되었습니다. SF 전송은 잠시 후 처리됩니다');
+          message.success('클레임이 등록되었습니다. 알라딘 전송은 잠시 후 처리됩니다');
           navigate(`/claims/${data.claimId}`);
         },
         onError: (err) => {
