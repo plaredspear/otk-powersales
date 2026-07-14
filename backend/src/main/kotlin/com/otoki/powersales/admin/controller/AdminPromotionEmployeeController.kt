@@ -43,6 +43,9 @@ class AdminPromotionEmployeeController(
      *
      * SF 여사원일정 지점 스코프(getIncludedBranchCode) 정합. 전사 사원 lookup(`/employees/lookup`)과 달리
      * 행사 거래처 지점 + 여사원(role=WOMAN) 으로 후보를 제한한다. promotion READ 권한으로 가드.
+     *
+     * 예외: 영업지원2팀(costCenterCode=4889) 로그인 시에는 거래처 지점 무관 전체 지점 여사원 조회
+     * (판정에 로그인 사용자의 [WebUserPrincipal.costCenterCode] 사용 — 대행 시 대행 대상 기준).
      */
     @GetMapping("/api/v1/admin/promotions/{promotionId}/employees/lookup")
     @RequiresSfPermission(entity = "promotion", operation = SfPermissionOperation.READ)
@@ -53,7 +56,9 @@ class AdminPromotionEmployeeController(
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false, defaultValue = "5") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
-        val response = adminPromotionEmployeeService.lookupEmployeeCandidates(scope, promotionId, keyword, size)
+        val response = adminPromotionEmployeeService.lookupEmployeeCandidates(
+            scope, promotionId, keyword, size, principal.costCenterCode
+        )
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 

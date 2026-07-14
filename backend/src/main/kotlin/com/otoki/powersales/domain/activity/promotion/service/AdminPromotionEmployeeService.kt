@@ -107,6 +107,12 @@ class AdminPromotionEmployeeService(
         // 레거시 동등: 여사원 마감 행 삭제 차단 우회 대상 사번
         private const val SPECIAL_BYPASS_EMPLOYEE_CODE = "00000009"
 
+        // 행사사원 후보 lookup 에서 거래처 지점 무관 전체 지점 여사원 조회를 허용하는 조직코드.
+        // 영업지원2팀(costCenterCode = 4889, org_nm3="영업지원실" / org_nm4="영업지원2팀") 소속 사용자는
+        // 시스템 관리자와 동일하게 전사 여사원을 후보로 조회한다(2026-07-14 요구). 로그인 사용자의
+        // costCenterCode(대행 시 대행 대상 기준)로 판정. 조직 개편으로 코드가 바뀌면 본 상수만 변경.
+        private const val ALL_BRANCH_LOOKUP_COST_CENTER_CODE = "4889"
+
         // 레거시 PromotionEmployeeTriggerHandler 의 대표제품 vs 전문행사조 매칭 룰
         // 좌변 promotion.category1 == 카테고리 정확 일치 (레거시 `Category1__c == '라면'` 동등)
         // 우변 team contains 키워드 부분 매칭 (예: 사원 team "라면세일조" contains "라면" → OK)
@@ -164,25 +170,37 @@ class AdminPromotionEmployeeService(
      * 참고: 여사원일정 경로와 동일하게 Organization 조직트리 레벨 정규화(orgCodeLevel2~5 승격)는 태우지 않는다
      * (SF `ScheduleSearchByTeamMemberController` 가 getIncludedBranchCode 만 쓰는 것과 정합).
      *
+     * ## 영업지원2팀 예외 — 전체 지점 조회
+     * 로그인 사용자([loginCostCenterCode], 대행 시 대행 대상 기준)가 영업지원2팀
+     * ([ALL_BRANCH_LOOKUP_COST_CENTER_CODE] = 4889) 이면 거래처 지점 제한을 건너뛰고 시스템 관리자와 동일하게
+     * 전체 지점 여사원을 후보로 조회한다([EmployeeRepositoryCustom.findActiveWomenByCostCenterCodes] 인자 null
+     * = costCenterCode 필터 스킵). 이 경우 거래처지점코드가 없어도 후보를 반환한다.
+     *
      * ## 가시성
      * 부모 Promotion 가시 범위를 [validateParentVisible] 로 검증(ControlledByParent) — 타 지점 행사 promotionId
      * 추측으로 후보를 열람하는 과다노출 방지.
      *
-     * 거래처 또는 거래처지점코드가 없으면 빈 결과. 응답은 [EmployeeListResponse] 재사용(기존 사원 lookup 정합).
+     * 거래처 또는 거래처지점코드가 없으면 빈 결과(영업지원2팀 예외 제외). 응답은 [EmployeeListResponse] 재사용(기존 사원 lookup 정합).
      */
     fun lookupEmployeeCandidates(
         scope: DataScope,
         promotionId: Long,
         keyword: String?,
         size: Int,
+        loginCostCenterCode: String?,
     ): EmployeeListResponse {
         val promotion = findActivePromotion(promotionId)
         validateParentVisible(scope, promotion)
 
-        val branchCode = promotion.account?.branchCode?.takeIf { it.isNotBlank() }
-            ?: return EmployeeListResponse(content = emptyList(), page = 0, size = size, totalElements = 0, totalPages = 0)
-
-        val expandedBranchCodes = branchCodeExpander.expand(setOf(branchCode)).toList()
+        // 영업지원2팀(4889) 은 거래처 지점 무관 전체 지점 여사원 조회(costCenterCode 필터 스킵).
+        // 그 외에는 거래처 지점(없으면 빈 결과) 확장 집합으로 제한.
+        val expandedBranchCodes: List<String>? = if (loginCostCenterCode == ALL_BRANCH_LOOKUP_COST_CENTER_CODE) {
+            null
+        } else {
+            val branchCode = promotion.account?.branchCode?.takeIf { it.isNotBlank() }
+                ?: return EmployeeListResponse(content = emptyList(), page = 0, size = size, totalElements = 0, totalPages = 0)
+            branchCodeExpander.expand(setOf(branchCode)).toList()
+        }
         val today = LocalDate.now()
         val kw = keyword?.trim()?.takeIf { it.isNotBlank() }
 

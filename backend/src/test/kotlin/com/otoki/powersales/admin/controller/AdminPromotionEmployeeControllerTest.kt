@@ -101,7 +101,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
                 java.time.LocalDate.of(2026, 3, 15),
             )
             val response = EmployeeListResponse(content = listOf(item), page = 0, size = 5, totalElements = 1, totalPages = 1)
-            every { adminPromotionEmployeeService.lookupEmployeeCandidates(any(), eq(10L), eq("김"), eq(5)) } returns response
+            every { adminPromotionEmployeeService.lookupEmployeeCandidates(any(), eq(10L), eq("김"), eq(5), any()) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/promotions/10/employees/lookup")
@@ -117,7 +117,7 @@ class AdminPromotionEmployeeControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 행사 미존재")
         fun lookup_promotionNotFound() {
-            every { adminPromotionEmployeeService.lookupEmployeeCandidates(any(), eq(999L), any(), any()) } throws PromotionNotFoundException()
+            every { adminPromotionEmployeeService.lookupEmployeeCandidates(any(), eq(999L), any(), any(), any()) } throws PromotionNotFoundException()
 
             mockMvc.perform(get("/api/v1/admin/promotions/999/employees/lookup").param("keyword", "김"))
                 .andExpect(status().isNotFound)
