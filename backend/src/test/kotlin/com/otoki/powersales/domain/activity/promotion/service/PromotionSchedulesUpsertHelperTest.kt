@@ -313,17 +313,30 @@ class PromotionSchedulesUpsertHelperTest {
         }
 
         @Test
-        @DisplayName("목표금액 0 -> 400 VALUES_REQUIRED")
-        fun confirm_zeroTargetAmount() {
+        @DisplayName("목표금액 0/null -> 확정 성공 (SF 레거시 동등 — 목표금액은 확정 필수 아님)")
+        fun confirm_zeroOrNullTargetAmount_success() {
             val promotion = createPromotion()
+            // target_amount = 0 (SF 마이그레이션 적재분 NULL 과 동일하게 확정 검증 통과해야 함)
             val employees = listOf(
                 createPE(id = 1L, employeeId = 1L, targetAmount = 0L)
             )
-            setupMocks(promotion, employees)
+            setupMocksForSuccess(promotion, employees)
 
-            assertThatThrownBy { helper.upsert(10L) }
-                .isInstanceOf(ValuesRequiredException::class.java)
-                .hasMessageContaining("목표금액")
+            val result = helper.upsert(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("목표금액 null -> 확정 성공 (SF 마이그레이션 적재분 정합)")
+        fun confirm_nullTargetAmount_success() {
+            val promotion = createPromotion()
+            val employees = listOf(
+                createPE(id = 1L, employeeId = 1L, targetAmount = null)
+            )
+            setupMocksForSuccess(promotion, employees)
+
+            val result = helper.upsert(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
         }
     }
 

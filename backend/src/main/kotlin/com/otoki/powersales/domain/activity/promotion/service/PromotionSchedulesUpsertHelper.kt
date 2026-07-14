@@ -157,8 +157,10 @@ class PromotionSchedulesUpsertHelper(
             if (pe.workType3 == null) missingFields.add("근무유형3")
             if (pe.basePrice == null) missingFields.add("기준단가")
             if (pe.dailyTargetCount == null) missingFields.add("목표수량")
-            // 목표금액은 기준단가 × 목표수량 파생값. 계산 결과가 없거나 0 이면 미입력으로 간주.
-            if (pe.targetAmount == null || pe.targetAmount == 0L) missingFields.add("목표금액")
+            // 목표금액(target_amount = 기준단가 × 목표수량 파생값)은 확정 필수에서 제외.
+            // SF 레거시(PromotionToScheduleQuickActionController) 확정 필수는 직원·투입일·근무유형1·근무유형3·근무상태
+            // 5개뿐이고 목표금액은 formula(required=false, BlankAsZero)라 검증 대상이 아니었다. SF 마이그레이션
+            // 적재 row 는 target_amount 미매핑으로 NULL 이라 이 조건을 두면 이관분이 전건 확정 탈락 → 레거시 동등 복원.
 
             if (missingFields.isNotEmpty()) {
                 val name = pe.employeeId?.let { resolveEmployeeName(it, userByIdMap) } ?: pe.id.toString()
