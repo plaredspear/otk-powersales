@@ -37,6 +37,7 @@ import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import { useAuthStore } from '@/stores/authStore';
+import { usePermission } from '@/hooks/usePermission';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -275,6 +276,7 @@ export default function DisplaySchedulePage() {
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
   // 확정 해제 권한 — backend isAdminGrade(시스템 관리자 OR 영업지원실) 정합. 비관리자는 버튼 미노출.
   const user = useAuthStore((s) => s.user);
+  const { isSystemAdmin } = usePermission();
   const canUnconfirm = user?.profileName === '시스템 관리자' || user?.isSalesSupport === true;
   const { run: runTemplate, downloading } = useExcelDownload();
   const { run: runExport, downloading: exporting } = useExcelDownload();
@@ -540,13 +542,16 @@ export default function DisplaySchedulePage() {
       <Card title="진열스케줄마스터" style={{ flexShrink: 0 }}>
         <Space direction="vertical" size="middle" style={{ width: '100%' }}>
           <Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setCreateModalOpen(true)}
-            >
-              신규 등록
-            </Button>
+            <Tooltip title={isSystemAdmin ? '시스템 관리자는 등록할 수 없습니다.' : ''}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setCreateModalOpen(true)}
+                disabled={isSystemAdmin}
+              >
+                신규 등록
+              </Button>
+            </Tooltip>
             <Button
               icon={<DownloadOutlined />}
               loading={downloading}

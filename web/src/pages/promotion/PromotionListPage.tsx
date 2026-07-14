@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, DatePicker, Input, Select, Space, Tag, Typography } from 'antd';
+import { Button, DatePicker, Input, Select, Space, Tag, Tooltip, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import RefreshButton from '@/components/common/RefreshButton';
@@ -46,7 +46,7 @@ export default function PromotionListPage() {
   //  - headerReserve: 테이블 헤더 행(≈39) + 페이지네이션(margin 포함 ≈56). wrapper 높이에 포함되므로
   //    scrollY 에서 빼야 마지막 행이 잘리지 않고 body 가 wrapper 안에 들어간다.
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
-  const { hasEntityPermission } = usePermission();
+  const { hasEntityPermission, isSystemAdmin } = usePermission();
   const canWrite = hasEntityPermission('promotion', 'EDIT');
   // 작성자 → 사용자 상세(/users/:id) 링크는 user READ 권한 보유자(시스템 관리자급)에게만.
   // SF 레거시 동등 + 신규 user 조회가 관리자 전용이라, 미보유자(조장/사원)는 이름 텍스트만 노출.
@@ -371,9 +371,16 @@ export default function PromotionListPage() {
             엑셀 다운로드
           </Button>
           {canWrite && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-              행사마스터 등록
-            </Button>
+            <Tooltip title={isSystemAdmin ? '시스템 관리자는 등록할 수 없습니다.' : ''}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleCreate}
+                disabled={isSystemAdmin}
+              >
+                행사마스터 등록
+              </Button>
+            </Tooltip>
           )}
         </Space>
       </div>

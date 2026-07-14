@@ -68,5 +68,5 @@ export function usePermission() {
   const hasAnyEntityPermission = (entity: string, operations: SfEntityOperation[]): boolean =>
     operations.some((op) => hasEntityPermission(entity, op));
 
-  return { hasEntityPermission, hasSystemPermission, hasAnyEntityPermission };
+  return { hasEntityPermission, hasSystemPermission, hasAnyEntityPermission, isSystemAdmin };
 }
