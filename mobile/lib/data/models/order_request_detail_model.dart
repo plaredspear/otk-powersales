@@ -136,7 +136,7 @@ class ProcessingItemModel {
       productCode: productCode,
       productName: productName,
       deliveredQuantity: deliveredQuantity,
-      deliveryStatus: DeliveryStatus.fromCode(deliveryStatus),
+      deliveryStatus: deliveryStatus,
       driverName: driverName,
       vehicle: vehicle,
       driverPhone: driverPhone,

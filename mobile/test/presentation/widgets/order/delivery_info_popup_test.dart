@@ -12,25 +12,25 @@ void main() {
 
   group('DeliveryInfoPopup - 4종 메시지 분기', () {
     testWidgets('PENDING — 대기 메시지 표시', (tester) async {
-      await tester.pumpWidget(buildPopup(_item(DeliveryStatus.pending)));
+      await tester.pumpWidget(buildPopup(_item(OrderDeliveryStatus.pending)));
       expect(find.text('배송 대기 중입니다.'), findsOneWidget);
       expect(find.text('대기'), findsOneWidget);
     });
 
     testWidgets('SHIPPING — 배송중 메시지 표시', (tester) async {
-      await tester.pumpWidget(buildPopup(_item(DeliveryStatus.shipping)));
+      await tester.pumpWidget(buildPopup(_item(OrderDeliveryStatus.shipping)));
       expect(find.text('배송이 진행 중입니다.'), findsOneWidget);
       expect(find.text('배송중'), findsOneWidget);
     });
 
     testWidgets('DELIVERED — 배송 완료 메시지 표시', (tester) async {
-      await tester.pumpWidget(buildPopup(_item(DeliveryStatus.delivered)));
+      await tester.pumpWidget(buildPopup(_item(OrderDeliveryStatus.delivered)));
       expect(find.text('배송이 완료되었습니다.'), findsOneWidget);
       expect(find.text('배송 완료'), findsOneWidget);
     });
 
     testWidgets('OUT_OF_STOCK — 결품 메시지 표시', (tester) async {
-      await tester.pumpWidget(buildPopup(_item(DeliveryStatus.outOfStock)));
+      await tester.pumpWidget(buildPopup(_item(OrderDeliveryStatus.outOfStock)));
       expect(find.text('결품으로 인해 배송할 수 없습니다.'), findsOneWidget);
       expect(find.text('결품'), findsOneWidget);
     });
@@ -42,7 +42,7 @@ void main() {
         productCode: 'P001',
         productName: '진라면 매운맛',
         deliveredQuantity: '10 BOX (300 EA)',
-        deliveryStatus: DeliveryStatus.shipping,
+        deliveryStatus: OrderDeliveryStatus.shipping,
         driverName: '홍길동',
         vehicle: '12가3456',
         driverPhone: '010-1234-5678',
@@ -68,7 +68,7 @@ void main() {
         productCode: 'P001',
         productName: '진라면 매운맛',
         deliveredQuantity: '10 BOX (300 EA)',
-        deliveryStatus: DeliveryStatus.delivered,
+        deliveryStatus: OrderDeliveryStatus.delivered,
         driverName: '홍길동',
         vehicle: '12가3456',
         driverPhone: '010-1234-5678',
@@ -88,7 +88,7 @@ void main() {
     });
 
     testWidgets('차량/기사 5필드 모두 null — 차량/기사 행 모두 미표시', (tester) async {
-      await tester.pumpWidget(buildPopup(_item(DeliveryStatus.delivered)));
+      await tester.pumpWidget(buildPopup(_item(OrderDeliveryStatus.delivered)));
 
       expect(find.text('차량번호'), findsNothing);
       expect(find.text('기사명'), findsNothing);
@@ -105,7 +105,7 @@ void main() {
         productCode: 'P001',
         productName: 'n',
         deliveredQuantity: '0 BOX',
-        deliveryStatus: DeliveryStatus.pending,
+        deliveryStatus: OrderDeliveryStatus.pending,
       );
       expect(item.hasNoDeliveryDetail, isTrue);
     });
@@ -115,7 +115,7 @@ void main() {
         productCode: 'P001',
         productName: 'n',
         deliveredQuantity: '0 BOX',
-        deliveryStatus: DeliveryStatus.shipping,
+        deliveryStatus: OrderDeliveryStatus.shipping,
         driverName: '홍길동',
       );
       expect(item.hasNoDeliveryDetail, isFalse);
@@ -123,7 +123,7 @@ void main() {
   });
 }
 
-ProcessingItem _item(DeliveryStatus status) => ProcessingItem(
+ProcessingItem _item(String status) => ProcessingItem(
       productCode: 'P001',
       productName: '예시 상품',
       deliveredQuantity: '0 EA',

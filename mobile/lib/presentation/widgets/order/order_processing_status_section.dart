@@ -19,29 +19,29 @@ class OrderProcessingStatusSection extends StatelessWidget {
   /// 배송완료는 SF **조회 클래스**(IF_REST_MOBILE_OrderRequestDetail.cls:157) 정합으로 공백 없는
   /// '배송완료' 로 표시한다. enum 의 displayName('배송 완료', 공백)은 거래처주문(SF inbound cls:158)
   /// 도메인 표기라, 주문상세에서는 이 함수로 별도 매핑한다.
-  String _statusLabel(DeliveryStatus status) {
-    if (status == DeliveryStatus.delivered) return '배송완료';
-    return status.displayName;
+  String _statusLabel(String status) {
+    if (status == OrderDeliveryStatus.delivered) return '배송완료';
+    return OrderDeliveryStatus.displayName(status);
   }
 
-  Color _getStatusColor(DeliveryStatus status) {
+  Color _getStatusColor(String status) {
     switch (status) {
-      case DeliveryStatus.pending:
-        return AppColors.textSecondary;
-      case DeliveryStatus.shipping:
+      case OrderDeliveryStatus.shipping:
         return AppColors.warning;
-      case DeliveryStatus.delivered:
+      case OrderDeliveryStatus.delivered:
         return AppColors.success;
-      case DeliveryStatus.outOfStock:
+      case OrderDeliveryStatus.outOfStock:
         return AppColors.error;
-      // 레거시 빈 상태(status='') — 대기와 동일하게 회색 처리, 라벨은 빈 문자열.
-      case DeliveryStatus.unknown:
+      // 대기 / 빈상태(unknown, status='') / 미정의 코드 — 회색(default 로 crash 방어).
+      case OrderDeliveryStatus.pending:
+      default:
         return AppColors.textSecondary;
     }
   }
 
-  bool _isItemTappable(DeliveryStatus status) {
-    return status == DeliveryStatus.shipping || status == DeliveryStatus.delivered;
+  bool _isItemTappable(String status) {
+    return status == OrderDeliveryStatus.shipping ||
+        status == OrderDeliveryStatus.delivered;
   }
 
   @override

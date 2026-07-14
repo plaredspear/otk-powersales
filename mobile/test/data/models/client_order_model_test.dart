@@ -4,14 +4,14 @@ import 'package:mobile/domain/entities/order_detail.dart';
 
 void main() {
   group('ClientOrderItemModel.fromJson', () {
-    test('영문 코드 4종 → enum 매핑', () {
+    test('영문 코드 4종 → 문자열 그대로 보유', () {
       final pending = ClientOrderItemModel.fromJson({
         'productCode': 'P001',
         'productName': '예시',
         'deliveredQuantity': '0 BOX',
         'deliveryStatus': 'PENDING',
       });
-      expect(pending.toEntity().deliveryStatus, DeliveryStatus.pending);
+      expect(pending.toEntity().deliveryStatus, OrderDeliveryStatus.pending);
 
       final shipping = ClientOrderItemModel.fromJson({
         'productCode': 'P001',
@@ -19,7 +19,7 @@ void main() {
         'deliveredQuantity': '5 BOX',
         'deliveryStatus': 'SHIPPING',
       });
-      expect(shipping.toEntity().deliveryStatus, DeliveryStatus.shipping);
+      expect(shipping.toEntity().deliveryStatus, OrderDeliveryStatus.shipping);
 
       final delivered = ClientOrderItemModel.fromJson({
         'productCode': 'P001',
@@ -27,7 +27,8 @@ void main() {
         'deliveredQuantity': '10 BOX',
         'deliveryStatus': 'DELIVERED',
       });
-      expect(delivered.toEntity().deliveryStatus, DeliveryStatus.delivered);
+      expect(
+          delivered.toEntity().deliveryStatus, OrderDeliveryStatus.delivered);
 
       final outOfStock = ClientOrderItemModel.fromJson({
         'productCode': 'P001',
@@ -35,17 +36,21 @@ void main() {
         'deliveredQuantity': '0 BOX',
         'deliveryStatus': 'OUT_OF_STOCK',
       });
-      expect(outOfStock.toEntity().deliveryStatus, DeliveryStatus.outOfStock);
+      expect(
+          outOfStock.toEntity().deliveryStatus, OrderDeliveryStatus.outOfStock);
     });
 
-    test('미정의 코드 → pending fallback', () {
+    test('미정의 코드 → 문자열 그대로 보유 (crash 없이 안전)', () {
+      // enum fromCode fallback 제거 — 서버 미정의 코드도 그대로 보유해 파싱 예외를 원천 차단.
       final unknown = ClientOrderItemModel.fromJson({
         'productCode': 'P001',
         'productName': '예시',
         'deliveredQuantity': '0 BOX',
         'deliveryStatus': 'UNKNOWN_CODE',
       });
-      expect(unknown.toEntity().deliveryStatus, DeliveryStatus.pending);
+      expect(unknown.toEntity().deliveryStatus, 'UNKNOWN_CODE');
+      // 표시명은 미정의 코드에 대해 빈 문자열(crash 대신).
+      expect(OrderDeliveryStatus.displayName('UNKNOWN_CODE'), '');
     });
   });
 
@@ -83,7 +88,7 @@ void main() {
       expect(entity.totalApprovedAmount, 1250000);
       expect(entity.orderedItemCount, 1);
       expect(entity.orderedItems.first.deliveryStatus,
-          DeliveryStatus.delivered);
+          OrderDeliveryStatus.delivered);
     });
 
     test('nullable 필드 누락 허용', () {
@@ -108,21 +113,18 @@ void main() {
     });
   });
 
-  group('DeliveryStatus.fromCode', () {
-    test('영문 4종 + 미정의 → pending fallback', () {
-      expect(DeliveryStatus.fromCode('PENDING'), DeliveryStatus.pending);
-      expect(DeliveryStatus.fromCode('SHIPPING'), DeliveryStatus.shipping);
-      expect(DeliveryStatus.fromCode('DELIVERED'), DeliveryStatus.delivered);
-      expect(DeliveryStatus.fromCode('OUT_OF_STOCK'),
-          DeliveryStatus.outOfStock);
-      expect(DeliveryStatus.fromCode('XXX'), DeliveryStatus.pending);
+  group('OrderDeliveryStatus.displayName', () {
+    test('영문 4종 → heroku 권위 한글', () {
+      expect(OrderDeliveryStatus.displayName('PENDING'), '대기');
+      expect(OrderDeliveryStatus.displayName('SHIPPING'), '배송중');
+      expect(OrderDeliveryStatus.displayName('DELIVERED'), '배송 완료');
+      expect(OrderDeliveryStatus.displayName('OUT_OF_STOCK'), '결품');
     });
 
-    test('displayName heroku 권위 한글 4종', () {
-      expect(DeliveryStatus.pending.displayName, '대기');
-      expect(DeliveryStatus.shipping.displayName, '배송중');
-      expect(DeliveryStatus.delivered.displayName, '배송 완료');
-      expect(DeliveryStatus.outOfStock.displayName, '결품');
+    test('빈상태(UNKNOWN)/미정의/null → 빈 문자열 (crash 대신)', () {
+      expect(OrderDeliveryStatus.displayName('UNKNOWN'), '');
+      expect(OrderDeliveryStatus.displayName('XXX'), '');
+      expect(OrderDeliveryStatus.displayName(null), '');
     });
   });
 }

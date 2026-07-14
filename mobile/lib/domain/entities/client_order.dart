@@ -119,8 +119,8 @@ class ClientOrderItem {
   /// 납품 수량 (예: "0 BOX")
   final String deliveredQuantity;
 
-  /// 배송 상태
-  final DeliveryStatus deliveryStatus;
+  /// 배송 상태 코드 (서버 문자열 그대로 — [OrderDeliveryStatus] 상수와 비교). enum 미사용(crash 방어).
+  final String deliveryStatus;
 
   /// 배송 정보 5필드 (배송중/배송완료 라인 탭 팝업용), 없으면 null
   final String? driverName;
@@ -145,7 +145,7 @@ class ClientOrderItem {
     String? productCode,
     String? productName,
     String? deliveredQuantity,
-    DeliveryStatus? deliveryStatus,
+    String? deliveryStatus,
     String? driverName,
     String? vehicle,
     String? driverPhone,
@@ -170,7 +170,7 @@ class ClientOrderItem {
       'productCode': productCode,
       'productName': productName,
       'deliveredQuantity': deliveredQuantity,
-      'deliveryStatus': deliveryStatus.code,
+      'deliveryStatus': deliveryStatus,
       'driverName': driverName,
       'vehicle': vehicle,
       'driverPhone': driverPhone,
@@ -184,8 +184,8 @@ class ClientOrderItem {
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
       deliveredQuantity: json['deliveredQuantity'] as String,
-      deliveryStatus:
-          DeliveryStatus.fromCode(json['deliveryStatus'] as String),
+      // 서버 문자열 그대로 보유 — enum 파싱 없음(미정의 코드에도 crash 없이 안전).
+      deliveryStatus: json['deliveryStatus'] as String,
       driverName: json['driverName'] as String?,
       vehicle: json['vehicle'] as String?,
       driverPhone: json['driverPhone'] as String?,

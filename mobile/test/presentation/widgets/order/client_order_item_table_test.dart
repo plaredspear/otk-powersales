@@ -27,7 +27,7 @@ void main() {
     });
 
     testWidgets('SHIPPING/DELIVERED 만 onItemTap 활성', (tester) async {
-      final tapped = <DeliveryStatus>[];
+      final tapped = <String>[];
       await tester.pumpWidget(buildTable(
         items: _items4,
         onItemTap: (item) => tapped.add(item.deliveryStatus),
@@ -41,7 +41,8 @@ void main() {
 
       expect(
         tapped,
-        containsAllInOrder([DeliveryStatus.shipping, DeliveryStatus.delivered]),
+        containsAllInOrder(
+            [OrderDeliveryStatus.shipping, OrderDeliveryStatus.delivered]),
       );
       expect(tapped, hasLength(2));
     });
@@ -53,24 +54,24 @@ const _items4 = [
     productCode: 'P001',
     productName: '대기 상품',
     deliveredQuantity: '0 BOX',
-    deliveryStatus: DeliveryStatus.pending,
+    deliveryStatus: OrderDeliveryStatus.pending,
   ),
   ClientOrderItem(
     productCode: 'P002',
     productName: '배송중 상품',
     deliveredQuantity: '5 BOX',
-    deliveryStatus: DeliveryStatus.shipping,
+    deliveryStatus: OrderDeliveryStatus.shipping,
   ),
   ClientOrderItem(
     productCode: 'P003',
     productName: '배송완료 상품',
     deliveredQuantity: '10 BOX',
-    deliveryStatus: DeliveryStatus.delivered,
+    deliveryStatus: OrderDeliveryStatus.delivered,
   ),
   ClientOrderItem(
     productCode: 'P004',
     productName: '결품 상품',
     deliveredQuantity: '0 BOX',
-    deliveryStatus: DeliveryStatus.outOfStock,
+    deliveryStatus: OrderDeliveryStatus.outOfStock,
   ),
 ];

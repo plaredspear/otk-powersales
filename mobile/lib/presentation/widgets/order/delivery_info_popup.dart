@@ -19,33 +19,33 @@ class DeliveryInfoPopup extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(DeliveryStatus status) {
+  Color _getStatusColor(String status) {
     switch (status) {
-      case DeliveryStatus.pending:
-        return AppColors.textSecondary;
-      case DeliveryStatus.shipping:
+      case OrderDeliveryStatus.shipping:
         return AppColors.warning;
-      case DeliveryStatus.delivered:
+      case OrderDeliveryStatus.delivered:
         return AppColors.success;
-      case DeliveryStatus.outOfStock:
+      case OrderDeliveryStatus.outOfStock:
         return AppColors.error;
-      // 빈 상태(unknown) — 방어용(팝업은 배송중/배송완료 라인에서만 열림). 대기와 동일 회색.
-      case DeliveryStatus.unknown:
+      // 대기 / 빈상태(unknown) / 미정의 코드 — 회색(default 로 crash 방어).
+      case OrderDeliveryStatus.pending:
+      default:
         return AppColors.textSecondary;
     }
   }
 
-  String _getStatusMessage(DeliveryStatus status) {
+  String _getStatusMessage(String status) {
     switch (status) {
-      case DeliveryStatus.pending:
+      case OrderDeliveryStatus.pending:
         return '배송 대기 중입니다.';
-      case DeliveryStatus.shipping:
+      case OrderDeliveryStatus.shipping:
         return '배송이 진행 중입니다.';
-      case DeliveryStatus.delivered:
+      case OrderDeliveryStatus.delivered:
         return '배송이 완료되었습니다.';
-      case DeliveryStatus.outOfStock:
+      case OrderDeliveryStatus.outOfStock:
         return '결품으로 인해 배송할 수 없습니다.';
-      case DeliveryStatus.unknown:
+      // 빈상태(unknown) / 미정의 코드 — 빈 메시지(default 로 crash 방어).
+      default:
         return '';
     }
   }
@@ -70,7 +70,7 @@ class DeliveryInfoPopup extends StatelessWidget {
           SizedBox(height: AppSpacing.md),
           _buildInfoRow(
             '배송 상태',
-            processingItem.deliveryStatus.displayName,
+            OrderDeliveryStatus.displayName(processingItem.deliveryStatus),
             valueColor: _getStatusColor(processingItem.deliveryStatus),
           ),
           // 차량/기사 정보 (Spec #595 Q5) — SHIPPING/DELIVERED 라인의 운영 추적 정보.

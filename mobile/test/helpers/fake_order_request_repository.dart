@@ -461,9 +461,9 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
 
     final items = _getMockOrderedItems(order.id);
     final statuses = [
-      DeliveryStatus.pending,
-      DeliveryStatus.shipping,
-      DeliveryStatus.delivered,
+      OrderDeliveryStatus.pending,
+      OrderDeliveryStatus.shipping,
+      OrderDeliveryStatus.delivered,
     ];
     final random = Random(order.id);
 
@@ -1016,9 +1016,9 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     ];
 
     final statuses = [
-      DeliveryStatus.pending,
-      DeliveryStatus.shipping,
-      DeliveryStatus.delivered,
+      OrderDeliveryStatus.pending,
+      OrderDeliveryStatus.shipping,
+      OrderDeliveryStatus.delivered,
     ];
 
     final orderedItems = List.generate(itemCount, (index) {

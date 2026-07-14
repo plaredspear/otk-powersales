@@ -19,22 +19,24 @@ class ClientOrderItemTable extends StatelessWidget {
     this.onItemTap,
   });
 
-  Color _getStatusColor(DeliveryStatus status) {
+  Color _getStatusColor(String status) {
     switch (status) {
-      case DeliveryStatus.pending:
-        return AppColors.textSecondary;
-      case DeliveryStatus.shipping:
+      case OrderDeliveryStatus.shipping:
         return AppColors.warning;
-      case DeliveryStatus.delivered:
+      case OrderDeliveryStatus.delivered:
         return AppColors.success;
-      case DeliveryStatus.outOfStock:
+      case OrderDeliveryStatus.outOfStock:
         return AppColors.error;
+      // 대기 / 미정의 코드 — 회색(default 로 crash 방어).
+      case OrderDeliveryStatus.pending:
+      default:
+        return AppColors.textSecondary;
     }
   }
 
   bool _canTapItem(ClientOrderItem item) {
-    return item.deliveryStatus == DeliveryStatus.shipping ||
-        item.deliveryStatus == DeliveryStatus.delivered;
+    return item.deliveryStatus == OrderDeliveryStatus.shipping ||
+        item.deliveryStatus == OrderDeliveryStatus.delivered;
   }
 
   @override
@@ -130,7 +132,7 @@ class ClientOrderItemTable extends StatelessWidget {
                     SizedBox(
                       width: 80,
                       child: Text(
-                        item.deliveryStatus.displayName,
+                        OrderDeliveryStatus.displayName(item.deliveryStatus),
                         style: AppTypography.bodyMedium.copyWith(
                           color: _getStatusColor(item.deliveryStatus),
                           fontWeight: FontWeight.bold,

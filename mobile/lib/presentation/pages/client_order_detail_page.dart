@@ -41,8 +41,8 @@ class _ClientOrderDetailPageState
   /// _onItemTap: When a ClientOrderItem with shipping/delivered status is tapped,
   /// create a ProcessingItem and show DeliveryInfoPopup
   void _onItemTap(ClientOrderItem item) {
-    if (item.deliveryStatus == DeliveryStatus.pending ||
-        item.deliveryStatus == DeliveryStatus.outOfStock) return;
+    if (item.deliveryStatus == OrderDeliveryStatus.pending ||
+        item.deliveryStatus == OrderDeliveryStatus.outOfStock) return;
 
     // Convert ClientOrderItem to ProcessingItem for the popup
     final processingItem = ProcessingItem(

@@ -1,39 +1,42 @@
 
-/// 배송 상태 열거형
+/// 배송 상태 코드 상수 (서버 `deliveryStatus` 코드값).
 ///
-/// 주문 처리 현황 + 거래처 출하 상세에서 각 제품의 배송 상태를 나타냅니다.
+/// **enum 이 아니라 문자열 상수**로 관리한다 — 서버가 미정의 상태 코드를 내려줘도 enum 파싱/exhaustive
+/// switch 에서 crash 나지 않도록 하기 위함(방어). 엔티티의 `deliveryStatus` 는 서버 문자열을 그대로
+/// 보유하고, 화면은 이 상수와 `==` 로 비교하거나 [OrderDeliveryStatus.displayName] 로 라벨을 얻는다.
+///
+/// 주문 처리 현황 + 거래처 출하 상세에서 각 제품의 배송 상태를 나타낸다.
 /// 백엔드 권위: heroku 의 한글 4종 (`'대기'`/`'배송중'`/`'배송 완료'`/`'결품'`) 과 1:1 대응.
-/// 응답은 영문 코드(`PENDING`/`SHIPPING`/`DELIVERED`/`OUT_OF_STOCK`)로 직렬화됩니다.
-enum DeliveryStatus {
-  pending('대기', 'PENDING'),
-  shipping('배송중', 'SHIPPING'),
-  // displayName 은 **거래처주문 도메인**(SF inbound ClientOrderReceive.cls:158) 표기 '배송 완료'(공백).
-  // 주문상세(SF 조회 클래스 cls:157 은 공백 없는 '배송완료')는 처리현황 위젯이 별도 라벨로 표시한다
-  // — 두 도메인 표기가 SF 원문상 달라 공유 enum 라벨 하나로 둘 다 만족 불가하기 때문.
-  delivered('배송 완료', 'DELIVERED'),
-  outOfStock('결품', 'OUT_OF_STOCK'),
-  // 레거시 cls:153-159 가 어느 조건에도 안 걸려 status='' 로 남기는 케이스 (예: LineItemStatus 만
-  // 채워지고 배차/완료 시각 없음). 레거시 화면은 빈 상태 텍스트로 표시하므로 displayName 도 ''.
-  unknown('', 'UNKNOWN');
+/// 응답은 영문 코드(`PENDING`/`SHIPPING`/`DELIVERED`/`OUT_OF_STOCK`, 빈 상태는 `UNKNOWN`)로 직렬화된다.
+abstract final class OrderDeliveryStatus {
+  static const String pending = 'PENDING';
+  static const String shipping = 'SHIPPING';
+  static const String delivered = 'DELIVERED';
+  static const String outOfStock = 'OUT_OF_STOCK';
 
-  const DeliveryStatus(this.displayName, this.code);
+  /// 레거시 cls:153-159 가 어느 조건에도 안 걸려 status='' 로 남기는 케이스(예: LineItemStatus 만
+  /// 채워지고 배차/완료 시각 없음). 화면은 빈 라벨로 표시.
+  static const String unknown = 'UNKNOWN';
 
-  /// 화면에 표시되는 이름
-  final String displayName;
-
-  /// API 코드 값
-  final String code;
-
-  /// API 코드에서 DeliveryStatus로 변환. 미정의 코드는 안전 기본값 [pending] 으로 fallback.
-  static DeliveryStatus fromCode(String code) {
-    return DeliveryStatus.values.firstWhere(
-      (status) => status.code == code,
-      orElse: () => DeliveryStatus.pending,
-    );
+  /// 상태 코드별 화면 표시명. 미정의/`null` 코드는 빈 문자열(crash 대신 빈 라벨).
+  ///
+  /// delivered 는 **거래처주문 도메인**(SF inbound ClientOrderReceive.cls:158) 표기 '배송 완료'(공백).
+  /// 주문상세(SF 조회 클래스 cls:157 은 공백 없는 '배송완료')는 처리현황 위젯이 별도 라벨로 표시한다.
+  static String displayName(String? code) {
+    switch (code) {
+      case pending:
+        return '대기';
+      case shipping:
+        return '배송중';
+      case delivered:
+        return '배송 완료';
+      case outOfStock:
+        return '결품';
+      case unknown:
+      default:
+        return '';
+    }
   }
-
-  String toJson() => code;
-  static DeliveryStatus fromJson(String json) => fromCode(json);
 }
 
 /// 주문한 제품 엔티티
@@ -180,8 +183,8 @@ class ProcessingItem {
   /// 납품 수량 (예: "10 BOX (300 EA)")
   final String deliveredQuantity;
 
-  /// 배송 상태
-  final DeliveryStatus deliveryStatus;
+  /// 배송 상태 코드 (서버 문자열 그대로 — [OrderDeliveryStatus] 상수와 비교). enum 미사용(crash 방어).
+  final String deliveryStatus;
 
   /// 기사명 (배송중/배송완료 라인 팝업용)
   final String? driverName;
@@ -222,7 +225,7 @@ class ProcessingItem {
     String? productCode,
     String? productName,
     String? deliveredQuantity,
-    DeliveryStatus? deliveryStatus,
+    String? deliveryStatus,
     String? driverName,
     String? vehicle,
     String? driverPhone,
@@ -247,7 +250,7 @@ class ProcessingItem {
       'productCode': productCode,
       'productName': productName,
       'deliveredQuantity': deliveredQuantity,
-      'deliveryStatus': deliveryStatus.code,
+      'deliveryStatus': deliveryStatus,
       'driverName': driverName,
       'vehicle': vehicle,
       'driverPhone': driverPhone,
@@ -261,8 +264,8 @@ class ProcessingItem {
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
       deliveredQuantity: json['deliveredQuantity'] as String,
-      deliveryStatus:
-          DeliveryStatus.fromCode(json['deliveryStatus'] as String),
+      // 서버 문자열 그대로 보유 — enum 파싱 없음(미정의 코드에도 crash 없이 안전).
+      deliveryStatus: json['deliveryStatus'] as String,
       driverName: json['driverName'] as String?,
       vehicle: json['vehicle'] as String?,
       driverPhone: json['driverPhone'] as String?,
