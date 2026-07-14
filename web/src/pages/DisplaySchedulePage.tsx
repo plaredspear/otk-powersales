@@ -25,7 +25,7 @@ import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
 import { useScheduleList } from '@/hooks/schedule/useScheduleList';
-import { useScheduleBranches } from '@/hooks/schedule/useScheduleBranches';
+import { useScheduleListMeta } from '@/hooks/schedule/useScheduleListMeta';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
 import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
 import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem } from '@/api/schedule';
@@ -283,20 +283,29 @@ export default function DisplaySchedulePage() {
   const uploadMutation = useScheduleUpload();
   const confirmMutation = useScheduleConfirm();
 
+  // 조회 조건 로드(meta) — "권한 기반 조건 로드" 표준 패턴 (행사마스터 정합).
+  // 지점 셀렉터(권한 의존) + 근무유형3/확정상태 옵션 + 기본값(pageSize)을 단일 응답으로 로드.
+  const { data: listMeta } = useScheduleListMeta();
+  const filterOptions = (key: string): { value: string; label: string }[] =>
+    listMeta?.filters.find((f) => f.key === key)?.options ?? [];
+
   // 지점 셀렉터 — 권한별 지점 화이트리스트 (행사마스터/전문행사조 정합).
   //  - 다중 지점(전사 권한자): Select 로 선택
   //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. branchCode 는 빈 값이라 backend 가 본인 소속 지점으로
   //    자동 스코프하므로 별도 전송 불필요.
-  const { data: branches } = useScheduleBranches();
-  const branchOptions = (branches ?? [])
-    .map((b) => ({ value: b.branchCode, label: b.branchName }))
+  const branchOptions = filterOptions('branchCode')
+    .slice()
     .sort((a, b) => a.label.localeCompare(b.label, 'ko'));
-  const singleBranch = branches?.length === 1 ? branches[0] : null;
-  const isMultiBranch = (branches?.length ?? 0) > 1;
+  const branchCount = filterOptions('branchCode').length;
+  const singleBranch = branchCount === 1 ? filterOptions('branchCode')[0] : null;
+  const isMultiBranch = branchCount > 1;
+
+  // 목록 최초 페이지 크기 — 서버 meta 기본값을 단일 출처로 사용(미로드 시 50 폴백, 기존 하드코딩 정합).
+  const defaultPageSize = listMeta?.defaults.pageSize ?? 50;
 
   // Schedule list state
   const [listPage, setListPage] = useState(0);
-  const [listSize, setListSize] = useState(50);
+  const [listSize, setListSize] = useState(defaultPageSize);
   const [filterEmployeeCode, setFilterEmployeeCode] = useState('');
   const [filterAccountName, setFilterAccountName] = useState('');
   const [filterAccountType, setFilterAccountType] = useState('');
@@ -669,7 +678,7 @@ export default function DisplaySchedulePage() {
           )}
           {singleBranch && (
             <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
-              지점: {singleBranch.branchName}
+              지점: {singleBranch.label}
             </Tag>
           )}
           <Input
@@ -702,11 +711,7 @@ export default function DisplaySchedulePage() {
             onChange={(v) => setFilterTypeOfWork3(v)}
             allowClear
             style={{ width: 120 }}
-            options={[
-              { label: '고정', value: '고정' },
-              { label: '격고', value: '격고' },
-              { label: '순회', value: '순회' },
-            ]}
+            options={filterOptions('typeOfWork3')}
           />
           <Select
             placeholder="확정상태"
@@ -714,10 +719,11 @@ export default function DisplaySchedulePage() {
             onChange={(v) => setFilterConfirmed(v)}
             allowClear
             style={{ width: 120 }}
-            options={[
-              { label: '확정', value: true },
-              { label: '미확정', value: false },
-            ]}
+            // 서버 meta 는 boolean 값을 문자열("true"/"false")로 내려주므로 value 로 매핑.
+            options={filterOptions('confirmed').map((o) => ({
+              label: o.label,
+              value: o.value === 'true',
+            }))}
           />
           <RangePicker
             value={

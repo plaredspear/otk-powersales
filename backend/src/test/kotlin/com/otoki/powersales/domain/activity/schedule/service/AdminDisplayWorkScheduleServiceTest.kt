@@ -149,6 +149,58 @@ class AdminDisplayWorkScheduleServiceTest {
     }
 
     @Nested
+    @DisplayName("getScheduleListMetaStatic - 목록 조회 조건 로드(정적)")
+    inner class GetScheduleListMetaStaticTests {
+
+        @Test
+        @DisplayName("근무유형3 옵션 = TypeOfWork3 displayName 3종(고정/격고/순회)")
+        fun typeOfWork3Options() {
+            val result = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
+
+            val typeOfWork3 = result.filters.first { it.key == "typeOfWork3" }
+            assertThat(typeOfWork3.type.name).isEqualTo("SELECT")
+            assertThat(typeOfWork3.options).extracting("value")
+                .containsExactly("고정", "격고", "순회")
+            assertThat(typeOfWork3.options).extracting("label")
+                .containsExactly("고정", "격고", "순회")
+        }
+
+        @Test
+        @DisplayName("확정상태 옵션 = boolean 을 문자열 value 로(true=확정 / false=미확정)")
+        fun confirmedOptions() {
+            val result = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
+
+            val confirmed = result.filters.first { it.key == "confirmed" }
+            assertThat(confirmed.type.name).isEqualTo("SELECT")
+            assertThat(confirmed.options).extracting("value")
+                .containsExactly("true", "false")
+            assertThat(confirmed.options).extracting("label")
+                .containsExactly("확정", "미확정")
+        }
+
+        @Test
+        @DisplayName("텍스트/날짜 필터는 options 없음, 정적 메타에 branchCode 미포함(권한 의존은 컨트롤러 조립)")
+        fun textDateFiltersAndNoBranch() {
+            val result = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
+
+            assertThat(result.filters.first { it.key == "employeeCode" }.options).isNull()
+            assertThat(result.filters.first { it.key == "accountName" }.options).isNull()
+            assertThat(result.filters.first { it.key == "accountType" }.options).isNull()
+            assertThat(result.filters.first { it.key == "startDate" }.type.name).isEqualTo("DATE")
+            assertThat(result.filters.map { it.key }).doesNotContain("branchCode")
+        }
+
+        @Test
+        @DisplayName("기본값 — pageSize 50 / sort startDate,DESC")
+        fun defaults() {
+            val result = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
+
+            assertThat(result.defaults.pageSize).isEqualTo(50)
+            assertThat(result.defaults.sort).isEqualTo("startDate,DESC")
+        }
+    }
+
+    @Nested
     @DisplayName("generateTemplate - 양식 다운로드")
     inner class GenerateTemplateTests {
 

@@ -14,7 +14,11 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchU
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleDetailDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleFilterMeta
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleFilterOption
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleFilterType
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListItemDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListMetaResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
@@ -56,6 +60,34 @@ class AdminDisplayWorkScheduleController(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
         return ResponseEntity.ok(ApiResponse.success(whitelistBranchScopeResolver.getBranches(principal)))
+    }
+
+    /**
+     * 진열스케줄마스터 목록 화면 조회 조건 로드 — "권한 기반 조건/UI 제어" 표준 패턴.
+     *
+     * 정적 조건(근무유형3/확정상태/텍스트/날짜 필터 + 기본값)은 서비스가, 권한 의존 지점(branchCode)
+     * 셀렉터 옵션은 컨트롤러가 [WhitelistBranchScopeResolver] 로 산출해 조립한다. 셀렉터-조회 스코프가
+     * 동일 리졸버를 공유해 드리프트를 방지한다(목록/엑셀 [resolveBranchCodes] 와 동일 출처).
+     *
+     * 지점(branchCode) 옵션 길이로 프론트가 단일/다중을 판별한다(단일이면 Tag, 다중이면 Select).
+     * 화면 게이팅과 동일한 display_work_schedule READ 로 가드.
+     */
+    @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.READ)
+    @GetMapping("/meta")
+    fun getScheduleListMeta(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<ScheduleListMetaResponse>> {
+        val base = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
+        val branchOptions = whitelistBranchScopeResolver.getBranches(principal)
+            .map { ScheduleFilterOption(value = it.branchCode, label = it.branchName) }
+        val response = base.copy(
+            filters = base.filters + ScheduleFilterMeta(
+                key = "branchCode",
+                type = ScheduleFilterType.SELECT,
+                options = branchOptions,
+            ),
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.READ)

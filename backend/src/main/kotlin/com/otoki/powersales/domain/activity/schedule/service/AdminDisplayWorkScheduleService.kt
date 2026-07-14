@@ -13,7 +13,12 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleBatchU
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleConfirmResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleCreateResultDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleDetailDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleFilterMeta
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleFilterOption
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleFilterType
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListDefaults
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListItemDto
+import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListMetaResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
@@ -99,6 +104,48 @@ class AdminDisplayWorkScheduleService(
 
         /** SF 시스템 관리자 Profile.Name ([SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME] 와 동일 값). */
         private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
+
+        // 목록 최초 조회 기본값 — 클라이언트가 추측하지 않도록 서버 단일 출처로 제공.
+        // pageSize 는 기존 web 하드코딩(listSize=50) 정합. sort 는 기존 목록 기본 정렬(정렬 미지정) 표기용.
+        private const val LIST_DEFAULT_PAGE_SIZE = 50
+        private const val LIST_DEFAULT_SORT = "startDate,DESC"
+    }
+
+    /**
+     * 진열스케줄마스터 목록 화면의 정적 조회 조건(권한 무관) + 기본값.
+     *
+     * 근무유형3(고정/격고/순회) 옵션은 [TypeOfWork3] enum(SF picklist SoT)에서 파생하고,
+     * 확정상태(확정/미확정) 옵션은 boolean 값을 문자열("true"/"false")로 표현해 공통 [ScheduleFilterOption]
+     * 구조에 담는다. 기존 web 하드코딩(근무유형3/확정상태 Select options)을 서버 단일 출처로 이전.
+     *
+     * 지점(branchCode) 옵션은 권한 의존이라 여기 포함하지 않는다 — 컨트롤러가
+     * [com.otoki.powersales.admin.service.WhitelistBranchScopeResolver] 로 산출해 조립한다.
+     */
+    fun getScheduleListMetaStatic(): ScheduleListMetaResponse {
+        val typeOfWork3Options = TypeOfWork3.entries
+            .map { ScheduleFilterOption(value = it.displayName, label = it.displayName) }
+
+        val confirmedOptions = listOf(
+            ScheduleFilterOption(value = "true", label = "확정"),
+            ScheduleFilterOption(value = "false", label = "미확정"),
+        )
+
+        val filters = listOf(
+            ScheduleFilterMeta("employeeCode", ScheduleFilterType.TEXT),
+            ScheduleFilterMeta("accountName", ScheduleFilterType.TEXT),
+            ScheduleFilterMeta("accountType", ScheduleFilterType.TEXT),
+            ScheduleFilterMeta("typeOfWork3", ScheduleFilterType.SELECT, typeOfWork3Options),
+            ScheduleFilterMeta("confirmed", ScheduleFilterType.SELECT, confirmedOptions),
+            ScheduleFilterMeta("startDate", ScheduleFilterType.DATE),
+        )
+
+        return ScheduleListMetaResponse(
+            filters = filters,
+            defaults = ScheduleListDefaults(
+                pageSize = LIST_DEFAULT_PAGE_SIZE,
+                sort = LIST_DEFAULT_SORT,
+            ),
+        )
     }
 
     /**

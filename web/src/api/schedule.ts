@@ -234,24 +234,44 @@ export function scheduleExportParams(
   return queryParams;
 }
 
-/** 진열스케줄마스터 목록 화면 지점 셀렉터 옵션. */
-export interface ScheduleBranch {
-  branchCode: string;
-  branchName: string;
+// --- 목록 조회 조건 로드(meta) — "권한 기반 조건 로드" 표준 패턴 (행사마스터 정합) ---
+
+export type ScheduleFilterType = 'TEXT' | 'SELECT' | 'DATE';
+
+export interface ScheduleFilterOption {
+  value: string;
+  label: string;
+}
+
+export interface ScheduleFilterMeta {
+  key: string;
+  type: ScheduleFilterType;
+  options?: ScheduleFilterOption[] | null;
+}
+
+export interface ScheduleListDefaults {
+  pageSize: number;
+  sort: string;
+}
+
+export interface ScheduleListMeta {
+  filters: ScheduleFilterMeta[];
+  defaults: ScheduleListDefaults;
 }
 
 /**
- * 진열스케줄마스터 목록 화면 지점 셀렉터 옵션 조회.
+ * 진열스케줄마스터 목록 화면 조회 조건 로드.
  *
- * 전사 권한자는 전 지점, 그 외는 본인 지점 1건을 반환한다(권한별 화이트리스트).
- * 프론트는 응답 길이로 단일/다중을 판별한다(단일이면 Tag 표시, 다중이면 Select).
+ * 지점 셀렉터(권한 의존) + 근무유형3 + 확정상태 + 텍스트/날짜 필터 + 기본값을 한 번에 반환한다.
+ * 기존 `/branches` 단독 호출 + web 하드코딩(근무유형3/확정상태 options)을 대체한다.
+ * 지점(branchCode) 옵션 길이로 프론트가 단일/다중을 판별한다(단일이면 Tag, 다중이면 Select).
  */
-export async function fetchScheduleBranches(): Promise<ScheduleBranch[]> {
-  const res = await client.get<ApiResponse<ScheduleBranch[]>>(
-    '/api/v1/admin/display-work-schedule/branches',
+export async function fetchScheduleListMeta(): Promise<ScheduleListMeta> {
+  const res = await client.get<ApiResponse<ScheduleListMeta>>(
+    '/api/v1/admin/display-work-schedule/meta',
   );
   if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.error?.message || res.data.message || '지점 목록 조회에 실패했습니다');
+    throw new Error(res.data.error?.message || res.data.message || '진열스케줄 조회 조건 로드에 실패했습니다');
   }
   return res.data.data;
 }

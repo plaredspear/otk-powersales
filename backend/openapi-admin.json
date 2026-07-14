@@ -8538,6 +8538,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseScheduleListMetaResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ScheduleListMetaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseScheduleUploadResultDto" : {
         "properties" : {
           "data" : {
@@ -17303,6 +17332,47 @@
         "required" : [ "ids" ],
         "type" : "object"
       },
+      "ScheduleFilterMeta" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "options" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ScheduleFilterOption"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "type" : {
+            "enum" : [ "TEXT", "SELECT", "DATE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduleFilterOption" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduleListDefaults" : {
+        "properties" : {
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ScheduleListItemDto" : {
         "properties" : {
           "accountCode" : {
@@ -17377,6 +17447,20 @@
           },
           "validData" : {
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "ScheduleListMetaResponse" : {
+        "properties" : {
+          "defaults" : {
+            "$ref" : "#/components/schemas/ScheduleListDefaults"
+          },
+          "filters" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ScheduleFilterMeta"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -21144,6 +21228,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponsePageScheduleListItemDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-display-work-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/display-work-schedule/meta" : {
+      "get" : {
+        "operationId" : "getScheduleListMeta",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseScheduleListMetaResponse"
                 }
               }
             },
