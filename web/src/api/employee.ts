@@ -284,7 +284,8 @@ export async function fetchEmployeesForProductLookup(
  * 메커니즘 정합).
  */
 export async function fetchEmployeesForScheduleLookup(
-  params: Pick<FetchEmployeesParams, 'keyword' | 'status' | 'page' | 'size'>,
+  // status/role 은 서버가 재직·여사원으로 고정하므로 클라이언트는 keyword/page/size 만 전달.
+  params: Pick<FetchEmployeesParams, 'keyword' | 'page' | 'size'>,
 ): Promise<EmployeeListData> {
   const res = await client.get<ApiResponse<EmployeeListData>>('/api/v1/admin/employees/lookup-for-schedule', { params });
   if (!res.data.success || !res.data.data) {

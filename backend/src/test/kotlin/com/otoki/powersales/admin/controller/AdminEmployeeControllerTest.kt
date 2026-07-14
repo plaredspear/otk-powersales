@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.platform.auth.permission.SfPermissionInspectionService
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
@@ -211,12 +212,20 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
     inner class LookupForSchedule {
 
         @Test
-        @DisplayName("본인 지점 스코프(applyBranchScope=true) 적용 — SF ManageScheduleComponent 정합")
+        @DisplayName("본인 지점 스코프(applyBranchScope=true) + 여사원·재직 서버 고정 — SF ManageScheduleComponent 정합")
         fun lookupForSchedule_appliesBranchScope() {
             val response = EmployeeListResponse(content = emptyList(), page = 0, size = 20, totalElements = 0, totalPages = 0)
+            // 인자 순서: scope, status, costCenterCode, keyword, role, page, size, applyBranchScope
             every {
                 adminEmployeeService.getEmployees(
-                    any(), any(), any(), any(), any(), any(), any(), applyBranchScope = eq(true)
+                    any(),
+                    status = eq(EmploymentStatus.ACTIVE.code),
+                    costCenterCode = any(),
+                    keyword = any(),
+                    role = eq(AppAuthority.WOMAN),
+                    page = any(),
+                    size = any(),
+                    applyBranchScope = eq(true),
                 )
             } returns response
 
@@ -226,7 +235,14 @@ class AdminEmployeeControllerTest : AdminControllerTestSupport() {
 
             verify(exactly = 1) {
                 adminEmployeeService.getEmployees(
-                    any(), any(), any(), any(), any(), any(), any(), applyBranchScope = eq(true)
+                    any(),
+                    status = eq(EmploymentStatus.ACTIVE.code),
+                    costCenterCode = any(),
+                    keyword = any(),
+                    role = eq(AppAuthority.WOMAN),
+                    page = any(),
+                    size = any(),
+                    applyBranchScope = eq(true),
                 )
             }
         }

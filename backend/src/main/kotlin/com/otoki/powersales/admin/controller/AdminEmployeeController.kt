@@ -15,6 +15,7 @@ import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListRespons
 import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
 import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
@@ -184,23 +185,25 @@ class AdminEmployeeController(
      *
      * 사원 후보는 본인 소속 지점(costCenterCode) 으로 제한 — SF `ManageScheduleComponent`
      * (`CostCenterCode__c IN currentUserCcCode`) / `UplExcelSchduleMaster` 정합.
+     *
+     * 후보는 여사원(role='여사원') + 재직(status='재직') 으로 서버에서 고정한다 — 진열스케줄 배정 대상은
+     * 재직 중인 여사원이므로, 호출 측 status 파라미터에 의존하지 않고 퇴직/휴직·타 직책을 후보에서 배제한다.
      */
     @GetMapping("/lookup-for-schedule")
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     fun lookupEmployeesForSchedule(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @CurrentDataScope scope: DataScope,
-        @RequestParam(required = false) status: String?,
         @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
         val response = adminEmployeeService.getEmployees(
             scope = scope,
-            status = status,
+            status = EmploymentStatus.ACTIVE.code,
             costCenterCode = null,
             keyword = keyword,
-            role = null,
+            role = AppAuthority.WOMAN,
             page = page,
             size = size,
             applyBranchScope = true,
