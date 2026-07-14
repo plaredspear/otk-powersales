@@ -162,6 +162,8 @@ class _ClaimDetailPageState extends ConsumerState<ClaimDetailPage> {
         .join(' > ');
     return _buildCard('클레임정보', [
       _row('접수번호', d.claimNo),
+      // 코스모스(고객상담 처리 시스템) 전송상태. 상단 뱃지와 동일 값이나 무엇의 상태인지 명확히 하기 위해 행으로도 표기.
+      _row('코스모스전송상태', d.statusLabel),
       // 신규→알라딘 전송상태. 알라딘 이관(마이그레이션) 건은 null 이라 행 자체가 생략된다.
       _row('알라딘전송상태', d.sfSendStatusLabel),
       _row('거래처', d.accountName ?? '-'),

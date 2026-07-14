@@ -17,7 +17,7 @@ import { STATUS_TAG } from './claimDisplay';
 
 const { RangePicker } = DatePicker;
 
-// 상태(status = 알라딘 DKRetail__Status__c 전송상태) 필터 옵션 — SF picklist 3값 정합.
+// 코스모스전송상태(status = DKRetail__Status__c, 코스모스 고객상담 처리 시스템 전송상태) 필터 옵션 — SF picklist 3값 정합.
 const STATUS_OPTIONS = [
   { value: '', label: '전체' },
   { value: 'DRAFT', label: '임시저장' },
@@ -119,9 +119,9 @@ export default function ClaimListPage() {
       render: (val: number | null) => val ?? '-',
     },
     {
-      title: '상태',
+      title: '코스모스전송상태',
       dataIndex: 'status',
-      width: 90,
+      width: 130,
       render: (val: string) => {
         const tag = STATUS_TAG[val];
         return tag ? <Tag color={tag.color}>{tag.label}</Tag> : <Tag>{val}</Tag>;
@@ -165,7 +165,7 @@ export default function ClaimListPage() {
             }}
             format="YYYY-MM-DD"
           />
-          <span>상태:</span>
+          <span>코스모스전송상태:</span>
           <Select
             style={{ width: 120 }}
             value={status}

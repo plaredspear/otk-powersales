@@ -5,7 +5,7 @@ import { useClaimDetail } from '@/hooks/claims/useClaimDetail';
 import { useResendClaim } from '@/hooks/claims/useResendClaim';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 
-// status : SF DKRetail__Status__c (코스모스 전송상태). 표시 전용.
+// status : SF DKRetail__Status__c — 코스모스(고객상담 처리 시스템) 전송상태. 표시 전용.
 const STATUS_TAG: Record<string, { color: string; label: string }> = {
   DRAFT: { color: 'default', label: '임시저장' },
   SENT: { color: 'green', label: '전송완료' },
@@ -123,7 +123,7 @@ export default function ClaimDetailPage() {
       <Card title="기본정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
           <Descriptions.Item label="접수번호">{orDash(claim.claimNo)}</Descriptions.Item>
-          <Descriptions.Item label="상태">
+          <Descriptions.Item label="코스모스전송상태">
             {statusTag ? <Tag color={statusTag.color}>{statusTag.label}</Tag> : <Tag>{claim.status}</Tag>}
           </Descriptions.Item>
           <Descriptions.Item label="알라딘전송상태">

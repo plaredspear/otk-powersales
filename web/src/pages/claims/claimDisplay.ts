@@ -1,8 +1,9 @@
 // 클레임 목록 표시용 공용 상수 (테이블/카드 뷰 공유)
 
 /**
- * status(SF DKRetail__Status__c, 코스모스 전송상태) -> Tag 색/한글 라벨 매핑.
- * 신규→SF 전송상태(sfSendStatus)는 별도 축이며 상세 화면에서 표시한다.
+ * status(SF DKRetail__Status__c) -> Tag 색/한글 라벨 매핑.
+ * status = 코스모스(고객상담 처리 시스템) 전송상태. 신규→알라딘 전송상태(sfSendStatus)는
+ * 별개 축이며 상세 화면에서 별도 표시한다.
  */
 export const STATUS_TAG: Record<string, { color: string; label: string }> = {
   DRAFT: { color: 'default', label: '임시저장' },
