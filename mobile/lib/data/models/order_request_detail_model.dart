@@ -184,7 +184,9 @@ class OrderProcessingStatusModel {
 class RejectedItemModel {
   final String productCode;
   final String productName;
-  final int orderQuantityBoxes;
+
+  /// 서버 `BigDecimal` 정합 — 소수 박스 반려 시 `toInt()` 절단/예외를 피하기 위해 `double`.
+  final double orderQuantityBoxes;
   final String rejectionReason;
 
   const RejectedItemModel({
@@ -198,7 +200,7 @@ class RejectedItemModel {
     return RejectedItemModel(
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
-      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toInt(),
+      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toDouble(),
       rejectionReason: json['rejectionReason'] as String,
     );
   }
@@ -235,8 +237,10 @@ class OrderRequestDetailModel {
   final String deliveryDate;
   final int totalAmount;
   final int? totalApprovedAmount;
-  final String orderRequestStatus;
-  final String orderRequestStatusName;
+
+  /// 서버 SF nillable=true 정합 — 마이그레이션 SF NULL row 는 두 필드 모두 `null` 로 온다.
+  final String? orderRequestStatus;
+  final String? orderRequestStatusName;
   final bool isClosed;
   final bool cancelable;
   final bool registrationInFlight;
@@ -289,8 +293,8 @@ class OrderRequestDetailModel {
       deliveryDate: data['deliveryDate'] as String,
       totalAmount: (data['totalAmount'] as num).toInt(),
       totalApprovedAmount: (data['totalApprovedAmount'] as num?)?.toInt(),
-      orderRequestStatus: data['orderRequestStatus'] as String,
-      orderRequestStatusName: data['orderRequestStatusName'] as String,
+      orderRequestStatus: data['orderRequestStatus'] as String?,
+      orderRequestStatusName: data['orderRequestStatusName'] as String?,
       isClosed: data['isClosed'] as bool,
       cancelable: data['cancelable'] as bool? ?? false,
       registrationInFlight: data['registrationInFlight'] as bool? ?? false,

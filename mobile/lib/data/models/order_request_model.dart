@@ -11,8 +11,10 @@ class OrderRequestModel {
   final String orderDate;
   final String deliveryDate;
   final int totalAmount;
-  final String orderRequestStatus;
-  final String orderRequestStatusName;
+
+  /// 서버 SF nillable=true 정합 — 마이그레이션 SF NULL row 는 두 필드 모두 `null` 로 온다.
+  final String? orderRequestStatus;
+  final String? orderRequestStatusName;
   final bool isClosed;
 
   const OrderRequestModel({
@@ -38,8 +40,8 @@ class OrderRequestModel {
       orderDate: json['orderDate'] as String,
       deliveryDate: json['deliveryDate'] as String,
       totalAmount: (json['totalAmount'] as num).toInt(),
-      orderRequestStatus: json['orderRequestStatus'] as String,
-      orderRequestStatusName: json['orderRequestStatusName'] as String,
+      orderRequestStatus: json['orderRequestStatus'] as String?,
+      orderRequestStatusName: json['orderRequestStatusName'] as String?,
       isClosed: json['isClosed'] as bool,
     );
   }

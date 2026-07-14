@@ -382,8 +382,9 @@ class RejectedItem {
   /// 제품명
   final String productName;
 
-  /// 주문 수량 (BOX)
-  final int orderQuantityBoxes;
+  /// 주문 수량 (BOX). 서버가 `BigDecimal` 로 내려주므로 소수 박스가 올 수 있어 `double` 로 받는다
+  /// (`OrderedItem.totalQuantityBoxes` 와 동일 정합 — `as int` 캐스팅은 소수 값에서 파싱 예외).
+  final double orderQuantityBoxes;
 
   /// 반려 사유
   final String rejectionReason;
@@ -398,7 +399,7 @@ class RejectedItem {
   RejectedItem copyWith({
     String? productCode,
     String? productName,
-    int? orderQuantityBoxes,
+    double? orderQuantityBoxes,
     String? rejectionReason,
   }) {
     return RejectedItem(
@@ -422,7 +423,7 @@ class RejectedItem {
     return RejectedItem(
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
-      orderQuantityBoxes: json['orderQuantityBoxes'] as int,
+      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toDouble(),
       rejectionReason: json['rejectionReason'] as String,
     );
   }
@@ -489,10 +490,13 @@ class OrderDetail {
   final int? totalApprovedAmount;
 
   /// 승인상태 코드 (서버 `orderRequestStatus`, 예: APPROVED). 색상/분기 로직용.
-  final String orderRequestStatus;
+  ///
+  /// 서버가 SF nillable=true 정합으로 `null` 을 내려줄 수 있다(마이그레이션 SF NULL row 보존).
+  /// 그런 경우 색상은 회색, 취소/재전송 분기 비교는 어느 상태 코드와도 불일치로 처리된다.
+  final String? orderRequestStatus;
 
-  /// 승인상태 표시명 (서버 `orderRequestStatusName`, 예: 승인완료). 화면 출력용.
-  final String orderRequestStatusName;
+  /// 승인상태 표시명 (서버 `orderRequestStatusName`, 예: 승인완료). 화면 출력용. 서버 `null` 가능.
+  final String? orderRequestStatusName;
 
   /// 마감 여부
   final bool isClosed;
@@ -628,8 +632,8 @@ class OrderDetail {
       deliveryDate: DateTime.parse(json['deliveryDate'] as String),
       totalAmount: json['totalAmount'] as int,
       totalApprovedAmount: json['totalApprovedAmount'] as int?,
-      orderRequestStatus: json['orderRequestStatus'] as String,
-      orderRequestStatusName: json['orderRequestStatusName'] as String,
+      orderRequestStatus: json['orderRequestStatus'] as String?,
+      orderRequestStatusName: json['orderRequestStatusName'] as String?,
       isClosed: json['isClosed'] as bool,
       cancelable: json['cancelable'] as bool? ?? false,
       registrationInFlight: json['registrationInFlight'] as bool? ?? false,

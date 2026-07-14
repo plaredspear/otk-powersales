@@ -504,7 +504,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
         .map((p) => RejectedItem(
               productCode: p.$1,
               productName: p.$2,
-              orderQuantityBoxes: p.$3,
+              orderQuantityBoxes: p.$3.toDouble(),
               rejectionReason: p.$4,
             ))
         .toList();

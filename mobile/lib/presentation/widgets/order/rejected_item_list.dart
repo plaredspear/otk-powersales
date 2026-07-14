@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -11,6 +12,9 @@ class RejectedItemList extends StatelessWidget {
     super.key,
     required this.rejectedItems,
   });
+
+  /// BOX 수량 포맷 — 소수 박스는 표시하되 정수는 후행 소수 억제 (`OrderedItemList._formatBoxes` 정합).
+  String _formatBoxes(double boxes) => NumberFormat('#,##0.##').format(boxes);
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +96,7 @@ class RejectedItemList extends StatelessWidget {
             Expanded(
               flex: 2,
               child: Text(
-                '${item.orderQuantityBoxes} BOX',
+                '${_formatBoxes(item.orderQuantityBoxes)} BOX',
                 style: AppTypography.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),

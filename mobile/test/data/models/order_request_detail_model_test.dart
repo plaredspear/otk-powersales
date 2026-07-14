@@ -207,4 +207,73 @@ void main() {
       expect(roundTrip.outOfStockReason, '재고부족');
     });
   });
+
+  group('OrderRequestDetailModel.fromJson - 상태 null (SF nillable NULL row)', () {
+    Map<String, dynamic> data({
+      dynamic status = 'APPROVED',
+      dynamic statusName = '승인완료',
+    }) {
+      return {
+        'data': {
+          'id': 1,
+          'orderRequestNumber': 'OR-0001234',
+          'clientId': 5678,
+          'clientName': '홍길동상회',
+          'clientDeadlineTime': '13:50',
+          'orderDate': '2026-05-04T10:00:00',
+          'deliveryDate': '2026-05-06',
+          'totalAmount': 1000,
+          'totalApprovedAmount': null,
+          'orderRequestStatus': status,
+          'orderRequestStatusName': statusName,
+          'isClosed': false,
+          'orderedItemCount': 0,
+          'orderedItems': <dynamic>[],
+          'orderProcessingStatusList': null,
+          'rejectedItems': null,
+        },
+      };
+    }
+
+    test('상태 코드/표시명이 null 이어도 파싱 예외 없이 null 로 매핑 (크래시 방지)', () {
+      final model =
+          OrderRequestDetailModel.fromJson(data(status: null, statusName: null));
+      expect(model.orderRequestStatus, isNull);
+      expect(model.orderRequestStatusName, isNull);
+      // 엔티티 변환도 예외 없이 통과.
+      final entity = model.toEntity();
+      expect(entity.orderRequestStatus, isNull);
+      expect(entity.orderRequestStatusName, isNull);
+    });
+
+    test('상태가 정상 값이면 그대로 매핑', () {
+      final model = OrderRequestDetailModel.fromJson(data());
+      expect(model.orderRequestStatus, 'APPROVED');
+      expect(model.orderRequestStatusName, '승인완료');
+    });
+  });
+
+  group('RejectedItemModel.fromJson - 소수 박스 (BigDecimal 정합)', () {
+    test('정수 박스 → double 로 파싱', () {
+      final model = RejectedItemModel.fromJson({
+        'productCode': 'P1',
+        'productName': '진라면',
+        'orderQuantityBoxes': 3,
+        'rejectionReason': '재고 부족',
+      });
+      expect(model.orderQuantityBoxes, 3.0);
+      expect(model.toEntity().orderQuantityBoxes, 3.0);
+    });
+
+    test('소수 박스 → 절단 없이 double 로 파싱 (기존 int 캐스팅이면 예외)', () {
+      final model = RejectedItemModel.fromJson({
+        'productCode': 'P1',
+        'productName': '진라면',
+        'orderQuantityBoxes': 2.5,
+        'rejectionReason': '단가 불일치',
+      });
+      expect(model.orderQuantityBoxes, 2.5);
+      expect(model.toEntity().orderQuantityBoxes, 2.5);
+    });
+  });
 }

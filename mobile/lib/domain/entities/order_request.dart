@@ -12,8 +12,8 @@ abstract final class OrderStatusCode {
   static const String sendFailed = 'SEND_FAILED';
   static const String canceled = 'CANCELED';
 
-  /// 상태 코드별 뱃지 색상. 미정의 코드는 회색.
-  static Color color(String code) {
+  /// 상태 코드별 뱃지 색상. 미정의 코드/`null`(SF nillable NULL row)은 회색.
+  static Color color(String? code) {
     switch (code) {
       case sent:
         return Colors.blue;
@@ -85,10 +85,13 @@ class OrderRequest {
   final int totalAmount;
 
   /// 승인상태 코드 (서버 `orderRequestStatus`, 예: APPROVED). 색상/분기 로직용.
-  final String orderRequestStatus;
+  ///
+  /// 서버가 SF nillable=true 정합으로 `null` 을 내려줄 수 있다(마이그레이션 SF NULL row 보존).
+  /// 그런 경우 색상은 회색, 분기 비교는 어느 상태 코드와도 불일치로 처리된다.
+  final String? orderRequestStatus;
 
-  /// 승인상태 표시명 (서버 `orderRequestStatusName`, 예: 승인완료). 화면 출력용.
-  final String orderRequestStatusName;
+  /// 승인상태 표시명 (서버 `orderRequestStatusName`, 예: 승인완료). 화면 출력용. 서버 `null` 가능.
+  final String? orderRequestStatusName;
 
   /// 마감 여부
   final bool isClosed;
@@ -157,8 +160,8 @@ class OrderRequest {
       orderDate: DateTime.parse(json['orderDate'] as String),
       deliveryDate: DateTime.parse(json['deliveryDate'] as String),
       totalAmount: json['totalAmount'] as int,
-      orderRequestStatus: json['orderRequestStatus'] as String,
-      orderRequestStatusName: json['orderRequestStatusName'] as String,
+      orderRequestStatus: json['orderRequestStatus'] as String?,
+      orderRequestStatusName: json['orderRequestStatusName'] as String?,
       isClosed: json['isClosed'] as bool,
     );
   }
