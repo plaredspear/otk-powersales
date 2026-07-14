@@ -15,6 +15,7 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import type { SfEntityOperation, SfSystemPermission } from '@/hooks/usePermission';
+import { SALES_SUPPORT_TEAM2_COST_CENTER_CODE } from '@/hooks/usePermission';
 
 export interface MenuItem {
   path?: string;
@@ -35,6 +36,12 @@ export interface MenuItem {
    * user.profileName 매칭이 안 되면 메뉴 숨김. (라우터 가드와 동일 의미)
    */
   allowedProfileNames?: string[];
+  /**
+   * 차단 costCenterCode 집합 (deny-list). 지정 시 entity/systemPermission 충족 여부와
+   * 무관하게 user.costCenterCode 가 이 집합에 포함되면 메뉴 숨김. 특정 조직/팀에게만
+   * 메뉴를 감추는 용도. (라우터 가드 `PermissionRoute.deniedCostCenterCodes` 와 동일 의미)
+   */
+  deniedForCostCenterCodes?: string[];
   /**
    * 사이드바에는 노출하지 않지만 PageAccessGuide 같은 라우트 인벤토리에는 포함할 sub-route.
    * 모페이지(list page) 아래에 등록/수정/상세 같은 항목을 묶을 때 사용.
@@ -66,7 +73,14 @@ export const menuRoute: MenuRoute = {
             { path: '/promotions/:id/edit', name: '행사마스터 수정', entity: 'promotion', operation: 'EDIT' },
           ],
         },
-        { path: '/display-work-schedules', name: '진열스케줄마스터', entity: 'display_work_schedule', operation: 'READ' },
+        {
+          path: '/display-work-schedules',
+          name: '진열스케줄마스터',
+          entity: 'display_work_schedule',
+          operation: 'READ',
+          // 영업지원2팀(4889) 에게는 진열스케줄마스터 메뉴 숨김 (라우트 가드와 동일).
+          deniedForCostCenterCodes: [SALES_SUPPORT_TEAM2_COST_CENTER_CODE],
+        },
       ],
     },
     {

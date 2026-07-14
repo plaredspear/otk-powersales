@@ -5,6 +5,7 @@ import RouteErrorBoundary from '@/components/RouteErrorBoundary';
 import PageSpinner from '@/components/common/PageSpinner';
 import PermissionRoute from '@/components/PermissionRoute';
 import RoleRoute from '@/components/RoleRoute';
+import { SALES_SUPPORT_TEAM2_COST_CENTER_CODE } from '@/hooks/usePermission';
 import AdminLayout from '@/layouts/AdminLayout';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -271,9 +272,23 @@ export const router = createBrowserRouter(
                   ],
                 },
                 {
-                  element: <PermissionRoute entity="display_work_schedule" operation="READ" />,
+                  // 영업지원2팀(4889) 은 진열스케줄마스터 화면 접근 차단 (menuConfig 메뉴 숨김과 대칭).
+                  // URL 직접 진입 시 ForbiddenResult. 확정 보고서(/valid-employee-confirmed-report)는
+                  // 별도 메뉴 항목이라 차단 대상에서 제외 — 아래 그룹으로 분리.
+                  element: (
+                    <PermissionRoute
+                      entity="display_work_schedule"
+                      operation="READ"
+                      deniedCostCenterCodes={[SALES_SUPPORT_TEAM2_COST_CENTER_CODE]}
+                    />
+                  ),
                   children: [
                     { path: '/display-work-schedules', element: <LazyWrapper><DisplaySchedulePage /></LazyWrapper> },
+                  ],
+                },
+                {
+                  element: <PermissionRoute entity="display_work_schedule" operation="READ" />,
+                  children: [
                     // 진열스케줄 데이터 기반 확정 보고서 — 호출 API(/display-work-schedule/list·/export)와 동일
                     // display_work_schedule 가드로 게이팅 (menuConfig 정합).
                     { path: '/valid-employee-confirmed-report', element: <LazyWrapper><ValidEmployeeConfirmedReportPage /></LazyWrapper> },

@@ -29,6 +29,7 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
   const profileName = user?.profileName ?? null;
+  const costCenterCode = user?.costCenterCode ?? null;
   const { hasEntityPermission, hasSystemPermission } = usePermission();
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -48,6 +49,10 @@ export default function AdminLayout() {
       if (item.allowedProfileNames && (!profileName || !item.allowedProfileNames.includes(profileName))) {
         return false;
       }
+      // deniedForCostCenterCodes 는 deny-list. 사용자 costCenterCode 가 포함되면 권한 무관 즉시 차단.
+      if (item.deniedForCostCenterCodes && costCenterCode && item.deniedForCostCenterCodes.includes(costCenterCode)) {
+        return false;
+      }
       const requiresEntity = !!(item.entity && item.operation);
       const requiresSystem = !!item.systemPermission;
       if (!requiresEntity && !requiresSystem) return true;
@@ -61,7 +66,7 @@ export default function AdminLayout() {
         .map((item) => (item.children ? { ...item, children: filterItems(item.children) } : item))
         .filter((item) => !item.children || item.children.length > 0);
     return { ...menuRoute, children: filterItems(menuRoute.children) };
-  }, [hasEntityPermission, hasSystemPermission, profileName]);
+  }, [hasEntityPermission, hasSystemPermission, profileName, costCenterCode]);
 
   // 권한 필터된 트리를 검색어로 한 번 더 좁힌다. 검색어 없으면 그대로 통과.
   // withMenuCategoryKeys 로 모든 카테고리에 안정 key + placeholder path 를 주입한다.

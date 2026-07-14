@@ -31,6 +31,14 @@ export function systemPermissionKey(permission: SfSystemPermission): string {
 export const SYSTEM_ADMIN_PROFILE_NAME = '시스템 관리자';
 
 /**
+ * 영업지원2팀 조직코드 (costCenterCode = 4889, org_nm3="영업지원실" / org_nm4="영업지원2팀").
+ * Backend `WomenScheduleBranchResolver.ALL_BRANCH_LOOKUP_COST_CENTER_CODE` 와 대칭 —
+ * 백엔드에선 행사마스터 거래처 전사 조회 예외에, web 에선 진열스케줄마스터 메뉴/라우트 차단에 사용.
+ * 조직 개편으로 코드가 바뀌면 본 상수만 변경.
+ */
+export const SALES_SUPPORT_TEAM2_COST_CENTER_CODE = '4889';
+
+/**
  * Spec #802 — SF 권한 모델 기반 client 가드 hook.
  *
  * Backend `SfPermissionResolver` 가 평탄화한 string set 을 그대로 검사한다.
