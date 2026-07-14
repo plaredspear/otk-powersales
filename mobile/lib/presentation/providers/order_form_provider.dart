@@ -216,6 +216,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   /// 거래처 선택 (Spec #598 P2-M §2.3).
   void selectClient(int clientId, String clientName, [String? externalKey]) {
     final resolvedExternalKey = externalKey;
+    final willFetch =
+        resolvedExternalKey != null && resolvedExternalKey.isNotEmpty;
 
     state = state.copyWith(
       orderDraft: state.orderDraft.copyWith(
@@ -224,18 +226,22 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       ),
       selectedAccountId: clientId,
       selectedExternalKey: resolvedExternalKey,
+      // externalKey 없는 거래처면 조회하지 않으므로 idle 로 리셋(이전 실패 상태 잔존 방지).
+      loanInquiryStatus: willFetch ? null : LoanInquiryStatus.idle,
     );
 
-    if (resolvedExternalKey != null && resolvedExternalKey.isNotEmpty) {
+    if (willFetch) {
       _fetchLoanInquiry(resolvedExternalKey);
     }
   }
 
   /// 여신 잔액 조회 (Spec #598 P2-M §2.3) — 내부 헬퍼.
   Future<void> _fetchLoanInquiry(String externalKey) async {
-    // creditBalance 를 null 로 클리어해 스피너 표시 유도
+    // creditBalance 를 null 로 클리어해 스피너 표시 유도. loanInquiryStatus=loading 으로
+    // "조회 중" 을 명시(실패와 구분).
     state = state.copyWith(
       orderDraft: state.orderDraft.copyWith(creditBalance: null),
+      loanInquiryStatus: LoanInquiryStatus.loading,
       isLoading: true,
       clearError: true,
     );
@@ -244,16 +250,28 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       final response = await _getLoanInquiry.call(externalKey: externalKey);
       state = state.copyWith(
         isLoading: false,
+        loanInquiryStatus: LoanInquiryStatus.success,
         orderDraft: state.orderDraft.copyWith(
           creditBalance: response.creditBalance,
         ),
       );
     } catch (e) {
+      // 실패를 명시 — creditBalance 는 null 로 남지만 status=failed 라 "조회 중" 오표시 없이
+      // 재조회 버튼을 노출한다. errorMessage 는 SnackBar 로 1회 안내.
       state = state.copyWith(
         isLoading: false,
+        loanInquiryStatus: LoanInquiryStatus.failed,
         errorMessage: _mapLoanInquiryError(e),
       );
     }
+  }
+
+  /// 여신조회 재시도 — 실패 후 사용자가 "다시 조회" 를 눌렀을 때 현재 선택된 거래처로 재조회.
+  /// 거래처 재선택 없이도 여신조회만 다시 시도할 수 있게 한다.
+  Future<void> retryLoanInquiry() async {
+    final externalKey = state.selectedExternalKey;
+    if (externalKey == null || externalKey.isEmpty) return;
+    await _fetchLoanInquiry(externalKey);
   }
 
   String _mapLoanInquiryError(Object error) {
@@ -564,10 +582,13 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (state.orderDraft.items.length > 100) {
       return '100개 이하로 등록해주세요';
     }
-    // (G) 여신 한도 초과 / 조회 중 — 레거시 write.jsp:188-191 `loan < total` 차단 정합.
+    // (G) 여신 한도 초과 / 조회 중 / 실패 — 레거시 write.jsp:188-191 `loan < total` 차단 정합.
     final creditBalance = state.creditBalance;
     if (creditBalance == null && state.selectedExternalKey != null) {
-      return '여신 조회 중입니다. 잠시 후 다시 시도해주세요';
+      // 실패와 조회중을 구분해 안내 — 실패 시엔 재조회를 유도한다.
+      return state.isLoanInquiryFailed
+          ? '여신 조회에 실패했습니다. 여신 잔액을 다시 조회해주세요'
+          : '여신 조회 중입니다. 잠시 후 다시 시도해주세요';
     }
     if (creditBalance != null && state.totalAmount > creditBalance) {
       // 승인요청 버튼은 한도 초과 시 disabled 이지만, 비-UI 호출 방어를 위해 여기서도 차단한다.

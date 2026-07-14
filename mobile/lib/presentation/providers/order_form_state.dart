@@ -2,6 +2,25 @@ import '../../data/models/order_form/order_draft_response_model.dart';
 import '../../domain/entities/order_draft.dart';
 import '../../domain/entities/validation_error.dart';
 
+/// 여신조회(SD03040) 진행 상태.
+///
+/// creditBalance(null) 단일 값으로는 "미조회 / 조회중 / 실패" 를 구분할 수 없어, 실패 시에도
+/// "조회 중" 으로 오표시되고 재시도 수단이 거래처 재선택뿐이었다. 이를 명시적 상태로 분리해
+/// 실패를 구분하고 "다시 조회" UX 를 제공한다.
+enum LoanInquiryStatus {
+  /// 거래처 미선택 — 조회 시작 전.
+  idle,
+
+  /// 조회 진행 중.
+  loading,
+
+  /// 조회 성공 (creditBalance 유효).
+  success,
+
+  /// 조회 실패 (SAP 오류/timeout) — 재조회 필요.
+  failed,
+}
+
 /// 주문서 작성 화면 상태
 ///
 /// 작성 중인 주문서, 거래처 목록, 유효성 검증 결과, 로딩/에러 상태를 포함합니다.
@@ -43,6 +62,9 @@ class OrderFormState {
   /// 거래처 SAP 코드 (Account.externalKey) — `getLoanInquiry` 호출 입력.
   final String? selectedExternalKey;
 
+  /// 여신조회(SD03040) 진행 상태 — 실패를 조회중과 구분해 재조회 UX 를 제공하기 위함.
+  final LoanInquiryStatus loanInquiryStatus;
+
   /// 거래처 PK — `submitOrderRequest` 페이로드 `accountId`.
   final int? selectedAccountId;
 
@@ -72,6 +94,7 @@ class OrderFormState {
     this.clientRequestId,
     this.draftId,
     this.selectedExternalKey,
+    this.loanInquiryStatus = LoanInquiryStatus.idle,
     this.selectedAccountId,
     this.pendingDraft,
     this.requiresDeliveryDateConfirm = false,
@@ -115,6 +138,14 @@ class OrderFormState {
 
   /// 여신 잔액
   int? get creditBalance => orderDraft.creditBalance;
+
+  /// 여신조회 진행 중 여부.
+  bool get isLoanInquiryLoading =>
+      loanInquiryStatus == LoanInquiryStatus.loading;
+
+  /// 여신조회 실패 여부 — 재조회 버튼 노출 판정.
+  bool get isLoanInquiryFailed =>
+      loanInquiryStatus == LoanInquiryStatus.failed;
 
   /// 납기일
   DateTime? get deliveryDate => orderDraft.deliveryDate;
@@ -160,6 +191,7 @@ class OrderFormState {
     String? clientRequestId,
     int? draftId,
     String? selectedExternalKey,
+    LoanInquiryStatus? loanInquiryStatus,
     int? selectedAccountId,
     OrderDraftResponseModel? pendingDraft,
     bool? requiresDeliveryDateConfirm,
@@ -196,6 +228,7 @@ class OrderFormState {
       selectedExternalKey: clearSelectedExternalKey
           ? null
           : (selectedExternalKey ?? this.selectedExternalKey),
+      loanInquiryStatus: loanInquiryStatus ?? this.loanInquiryStatus,
       selectedAccountId: clearSelectedAccountId
           ? null
           : (selectedAccountId ?? this.selectedAccountId),

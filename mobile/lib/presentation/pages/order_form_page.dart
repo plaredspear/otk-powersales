@@ -275,7 +275,9 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                       const SizedBox(height: AppSpacing.lg),
                       CreditBalanceDisplay(
                         creditBalance: state.creditBalance,
-                        isLoading: state.isLoading,
+                        isLoading: state.isLoanInquiryLoading,
+                        isFailed: state.isLoanInquiryFailed,
+                        onRetry: notifier.retryLoanInquiry,
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       DeliveryDatePicker(

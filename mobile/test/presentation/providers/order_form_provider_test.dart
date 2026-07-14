@@ -11,6 +11,7 @@ import 'package:mobile/domain/usecases/order_form/save_order_draft.dart';
 import 'package:mobile/domain/usecases/order_form/submit_order_request.dart';
 import 'package:mobile/domain/usecases/search_products_for_order_usecase.dart';
 import 'package:mobile/presentation/providers/order_form_provider.dart';
+import 'package:mobile/presentation/providers/order_form_state.dart';
 import 'package:uuid/data.dart';
 import 'package:uuid/uuid.dart';
 
@@ -174,7 +175,7 @@ void main() {
         expect(formRepo.lastExternalKey, 'EK001');
       });
 
-      test('E2 — 여신 조회 5xx → 한국어 SnackBar', () async {
+      test('E2 — 여신 조회 5xx → 한국어 SnackBar + status=failed', () async {
         formRepo.exceptionToThrow = Exception('SAP error');
 
         notifier.selectClient(5678, '거래처A', 'EK001');
@@ -182,13 +183,47 @@ void main() {
 
         expect(notifier.state.creditBalance, isNull);
         expect(notifier.state.errorMessage, contains('여신 조회 중 오류'));
+        // 실패를 명시 상태로 구분 — "조회 중" 오표시 없이 재조회 UX 노출 근거.
+        expect(notifier.state.loanInquiryStatus, LoanInquiryStatus.failed);
+        expect(notifier.state.isLoanInquiryFailed, true);
       });
 
-      test('externalKey 없으면 여신 호출 안 함', () async {
+      test('retryLoanInquiry — 실패 후 재조회 성공 → creditBalance 표시 + status=success',
+          () async {
+        // 1) 첫 조회 실패
+        formRepo.exceptionToThrow = Exception('SAP error');
+        notifier.selectClient(5678, '거래처A', 'EK001');
+        await Future<void>.delayed(Duration.zero);
+        expect(notifier.state.loanInquiryStatus, LoanInquiryStatus.failed);
+
+        // 2) SAP 회복 후 거래처 재선택 없이 재조회
+        formRepo.exceptionToThrow = null;
+        formRepo.loanInquiryToReturn = const LoanInquiryResponseModel(
+          externalKey: 'EK001',
+          totalCredit: 5000000,
+          creditBalance: 1500000,
+          currency: 'KRW',
+          dataAsOf: '2026-05-04T03:00:00+09:00',
+        );
+        await notifier.retryLoanInquiry();
+
+        expect(notifier.state.creditBalance, 1500000);
+        expect(notifier.state.loanInquiryStatus, LoanInquiryStatus.success);
+        expect(formRepo.lastExternalKey, 'EK001');
+      });
+
+      test('retryLoanInquiry — externalKey 없으면 no-op', () async {
+        // 거래처 미선택 상태에서 retry 호출 → 여신 호출 없음
+        await notifier.retryLoanInquiry();
+        expect(formRepo.lastExternalKey, isNull);
+      });
+
+      test('externalKey 없으면 여신 호출 안 함 + status=idle', () async {
         notifier.selectClient(5678, '거래처A', '');
         await Future<void>.delayed(Duration.zero);
 
         expect(formRepo.lastExternalKey, isNull);
+        expect(notifier.state.loanInquiryStatus, LoanInquiryStatus.idle);
       });
     });
 
@@ -387,16 +422,32 @@ void main() {
           ),
         );
         await notifier.validateAndSubmitOrder();
-        expect(notifier.state.errorMessage, '제품은 100개 이하로 추가해주세요');
+        expect(notifier.state.errorMessage, '100개 이하로 등록해주세요');
       });
 
       test('E6 (G) — 여신 호출 중 (creditBalance null + externalKey 있음)', () async {
         seedValidState();
         notifier.state = notifier.state.copyWith(
           orderDraft: notifier.state.orderDraft.copyWith(creditBalance: null),
+          loanInquiryStatus: LoanInquiryStatus.loading,
         );
         await notifier.validateAndSubmitOrder();
         expect(notifier.state.errorMessage, '여신 조회 중입니다. 잠시 후 다시 시도해주세요');
+      });
+
+      test('E6-c (G) — 여신 조회 실패 시 등록 차단 + 재조회 유도 메시지', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: null),
+          loanInquiryStatus: LoanInquiryStatus.failed,
+        );
+        await notifier.validateAndSubmitOrder();
+        // 실패는 "조회 중" 이 아니라 재조회를 유도하는 메시지로 안내.
+        expect(
+          notifier.state.errorMessage,
+          '여신 조회에 실패했습니다. 여신 잔액을 다시 조회해주세요',
+        );
+        expect(formRepo.submitOrderRequestCount, 0);
       });
 
       test('E7 (H) — 라인 총EA = 0 → SnackBar', () async {
