@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.claim.service
 import com.otoki.powersales.domain.activity.claim.exception.ClaimNotFoundException
 import com.otoki.powersales.domain.activity.claim.repository.AdminClaimRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.activity.claim.enums.ClaimChannel
 import com.otoki.powersales.domain.activity.claim.enums.ClaimDateType
 import com.otoki.powersales.domain.activity.claim.enums.ClaimStatus
 import com.otoki.powersales.domain.activity.claim.enums.ClaimType1
@@ -291,6 +292,56 @@ class AdminClaimServiceTest {
             assertThatThrownBy { adminClaimService.getClaimDetail(999L) }
                 .isInstanceOf(ClaimNotFoundException::class.java)
         }
+
+        @Test
+        @DisplayName("SF 상세 화면 항목 매핑 - 채널/처리·조치/출고처·세부점포명 등 전 항목이 응답에 노출됨")
+        fun getClaimDetail_mapsAllSfDetailFields() {
+            val claim = createClaim(id = 1L, employee = createEmployee(phone = "010-1234-5678")).apply {
+                name = "CL00041998"
+                logisticsCenter = "[물류]남양주물류"
+                manufacturingDate = LocalDate.of(2026, 6, 1)
+                expirationDate = LocalDate.of(2026, 7, 10)
+                sampleCollectionFlag = true
+                customerDeliveryDate = LocalDate.of(2026, 7, 5)
+                detailSnsName = "리테일점"
+                division = "영업1부"
+                channel = ClaimChannel.CAP
+                interfaceDate = LocalDateTime.of(2026, 7, 10, 17, 49, 0)
+                counselNumber = "00655293"
+                actionCode = "AC01"
+                actionStatus = "완료"
+                reasonType = "원인별 분류"
+                actContent = "테스트"
+            }
+            every { adminClaimRepository.findById(1L) } returns Optional.of(claim)
+            every {
+                uploadFileRepository.findByParentTypeAndParentIdAndIsDeletedFalse("Claim", 1L)
+            } returns emptyList()
+
+            val result = adminClaimService.getClaimDetail(1L)
+
+            // 제품정보
+            assertThat(result.logisticsCenter).isEqualTo("[물류]남양주물류")
+            assertThat(result.manufacturingDate).isEqualTo(LocalDate.of(2026, 6, 1))
+            assertThat(result.expirationDate).isEqualTo(LocalDate.of(2026, 7, 10))
+            // 클레임정보
+            assertThat(result.claimNo).isEqualTo("CL00041998")
+            assertThat(result.sampleCollectionFlag).isTrue()
+            assertThat(result.customerDeliveryDate).isEqualTo(LocalDate.of(2026, 7, 5))
+            assertThat(result.detailSnsName).isEqualTo("리테일점")
+            assertThat(result.division).isEqualTo("영업1부")
+            // 채널정보
+            assertThat(result.channel).isEqualTo("CAP")
+            assertThat(result.channelLabel).isEqualTo("CAP CRM(CAP)")
+            assertThat(result.interfaceDate).isEqualTo(LocalDateTime.of(2026, 7, 10, 17, 49, 0))
+            assertThat(result.employeePhone).isEqualTo("010-1234-5678")
+            // 처리·조치 정보
+            assertThat(result.counselNumber).isEqualTo("00655293")
+            assertThat(result.actionCode).isEqualTo("AC01")
+            assertThat(result.actionStatus).isEqualTo("완료")
+            assertThat(result.reasonType).isEqualTo("원인별 분류")
+            assertThat(result.actContent).isEqualTo("테스트")
+        }
     }
 
     // -- Helpers --
@@ -298,11 +349,13 @@ class AdminClaimServiceTest {
     private fun createEmployee(
         id: Long = 1L,
         employeeCode: String = "10023456",
-        name: String = "김영업"
+        name: String = "김영업",
+        phone: String? = null
     ): Employee = Employee(
         id = id,
         employeeCode = employeeCode,
-        name = name
+        name = name,
+        phone = phone
     )
 
     private fun createAccount(

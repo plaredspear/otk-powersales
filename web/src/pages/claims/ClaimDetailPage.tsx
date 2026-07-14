@@ -22,6 +22,14 @@ const DATE_TYPE_LABEL: Record<string, string> = {
   MANUFACTURE_DATE: '제조일자',
 };
 
+/** 값이 없으면 '-' 로 표시. */
+const orDash = (v: string | number | null | undefined): string =>
+  v === null || v === undefined || v === '' ? '-' : String(v);
+
+/** 'YYYY-MM-DDTHH:mm:ss...' → 'YYYY-MM-DD HH:mm'. */
+const fmtDateTime = (v: string | null | undefined): string =>
+  v ? v.substring(0, 16).replace('T', ' ') : '-';
+
 const PHOTO_TYPE_LABEL: Record<string, string> = {
   DEFECT: '클레임',
   LABEL: '일부인',
@@ -106,40 +114,74 @@ export default function ClaimDetailPage() {
 
       <Card title="기본정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
-          <Descriptions.Item label="사원명">{claim.employeeName}</Descriptions.Item>
-          <Descriptions.Item label="사번">{claim.employeeCode}</Descriptions.Item>
-          <Descriptions.Item label="거래처명">{claim.storeName ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="등록일">{claim.createdAt?.substring(0, 16).replace('T', ' ')}</Descriptions.Item>
+          <Descriptions.Item label="접수번호">{orDash(claim.claimNo)}</Descriptions.Item>
           <Descriptions.Item label="상태">
             {statusTag ? <Tag color={statusTag.color}>{statusTag.label}</Tag> : <Tag>{claim.status}</Tag>}
           </Descriptions.Item>
+          <Descriptions.Item label="사원명">{claim.employeeName}</Descriptions.Item>
+          <Descriptions.Item label="사번">{claim.employeeCode}</Descriptions.Item>
+          <Descriptions.Item label="거래처명">{orDash(claim.storeName)}</Descriptions.Item>
+          <Descriptions.Item label="등록일">{fmtDateTime(claim.createdAt)}</Descriptions.Item>
         </Descriptions>
       </Card>
 
       <Card title="제품정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
-          <Descriptions.Item label="제품코드">{claim.productCode ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="제품명">{claim.productName ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label={dateTypeLabel ?? '날짜'}>
-            {dateTypeLabel && claim.date ? claim.date : '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label="불량수량">
-            {claim.defectQuantity != null ? `${claim.defectQuantity} EA` : '-'}
-          </Descriptions.Item>
+          <Descriptions.Item label="제품코드">{orDash(claim.productCode)}</Descriptions.Item>
+          <Descriptions.Item label="제품명">{orDash(claim.productName)}</Descriptions.Item>
+          <Descriptions.Item label="제조일자">{orDash(claim.manufacturingDate)}</Descriptions.Item>
+          <Descriptions.Item label="유통기한">{orDash(claim.expirationDate)}</Descriptions.Item>
+          <Descriptions.Item label="출고처">{orDash(claim.logisticsCenter)}</Descriptions.Item>
         </Descriptions>
       </Card>
 
       <Card title="클레임 정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
-          <Descriptions.Item label="대분류">{claim.categoryLabel ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="소분류">{claim.subcategoryLabel ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="구매방법">{claim.purchaseMethodName ?? '-'}</Descriptions.Item>
+          <Descriptions.Item label="대분류">{orDash(claim.categoryLabel)}</Descriptions.Item>
+          <Descriptions.Item label="소분류">{orDash(claim.subcategoryLabel)}</Descriptions.Item>
+          <Descriptions.Item label="불량수량">
+            {claim.defectQuantity != null ? `${claim.defectQuantity} EA` : '-'}
+          </Descriptions.Item>
+          <Descriptions.Item label="샘플회수여부">
+            {claim.sampleCollectionFlag == null ? '-' : claim.sampleCollectionFlag ? '회수' : '미회수'}
+          </Descriptions.Item>
+          <Descriptions.Item label={dateTypeLabel ? `발생일자(${dateTypeLabel})` : '발생일자'}>
+            {orDash(claim.date)}
+          </Descriptions.Item>
+          <Descriptions.Item label="거래처납품일자">{orDash(claim.customerDeliveryDate)}</Descriptions.Item>
+          <Descriptions.Item label="세부점포명">{orDash(claim.detailSnsName)}</Descriptions.Item>
+          <Descriptions.Item label="구매방법">{orDash(claim.purchaseMethodName)}</Descriptions.Item>
           <Descriptions.Item label="구매금액">
             {claim.purchaseAmount != null ? `${claim.purchaseAmount.toLocaleString()}원` : '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="요청사항">{claim.requestTypeName ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label="불만내역" span={2}>
-            {claim.defectDescription ?? '-'}
+          <Descriptions.Item label="요청사항">{orDash(claim.requestTypeName)}</Descriptions.Item>
+          <Descriptions.Item label="부서">{orDash(claim.division)}</Descriptions.Item>
+        </Descriptions>
+      </Card>
+
+      <Card title="불만 정보" style={{ marginBottom: 16 }}>
+        <Descriptions column={1}>
+          <Descriptions.Item label="불만내역">{orDash(claim.defectDescription)}</Descriptions.Item>
+        </Descriptions>
+      </Card>
+
+      <Card title="채널정보" style={{ marginBottom: 16 }}>
+        <Descriptions column={2}>
+          <Descriptions.Item label="접수채널">{orDash(claim.channelLabel ?? claim.channel)}</Descriptions.Item>
+          <Descriptions.Item label="전송일자">{fmtDateTime(claim.interfaceDate)}</Descriptions.Item>
+          <Descriptions.Item label="작성자">{orDash(claim.employeeName)}</Descriptions.Item>
+          <Descriptions.Item label="영업사원 연락처">{orDash(claim.employeePhone)}</Descriptions.Item>
+        </Descriptions>
+      </Card>
+
+      <Card title="처리·조치 정보" style={{ marginBottom: 16 }}>
+        <Descriptions column={2}>
+          <Descriptions.Item label="상담번호">{orDash(claim.counselNumber)}</Descriptions.Item>
+          <Descriptions.Item label="조치코드">{orDash(claim.actionCode)}</Descriptions.Item>
+          <Descriptions.Item label="조치상태">{orDash(claim.actionStatus)}</Descriptions.Item>
+          <Descriptions.Item label="원인별 분류">{orDash(claim.reasonType)}</Descriptions.Item>
+          <Descriptions.Item label="조치내용" span={2}>
+            {orDash(claim.actContent)}
           </Descriptions.Item>
         </Descriptions>
       </Card>

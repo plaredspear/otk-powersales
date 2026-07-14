@@ -54,25 +54,56 @@ data class AdminClaimListItem(
     }
 }
 
+/**
+ * 클레임 상세 응답 (web admin).
+ *
+ * 표시 항목은 레거시 SF 클레임 상세(알라딘) 화면의 섹션 — 제품정보 / Information / 불만 정보 /
+ * 채널정보 / 처리·조치 정보 — 전 항목을 매핑한다 (모바일 [ClaimDetailResponse] 와 동일 범위).
+ * SF formula(파생) 필드(제품코드/거래처지점명/직위/주문번호 등)는 §6.7 정책에 따라 재현하지 않고,
+ * 이미 보유한 FK join 값(사번·제품코드·연락처)으로 대체한다.
+ */
 data class AdminClaimDetailResponse(
     val claimId: Long,
-    val employeeName: String?,
-    val employeeCode: String?,
-    val storeName: String?,
+    // 제품정보
     val productCode: String?,
     val productName: String?,
-    val dateType: String?,
-    val date: LocalDate?,
+    val manufacturingDate: LocalDate?,
+    val logisticsCenter: String?,
+    val expirationDate: LocalDate?,
+    // Information (클레임정보)
+    val claimNo: String?,
+    val storeName: String?,
     val categoryValue: String?,
     val categoryLabel: String?,
     val subcategoryValue: String?,
     val subcategoryLabel: String?,
-    val defectDescription: String?,
     val defectQuantity: BigDecimal?,
-    val purchaseAmount: BigDecimal?,
-    val purchaseMethodName: String?,
-    val requestTypeName: String?,
+    val sampleCollectionFlag: Boolean?,
     val status: String?,
+    val customerDeliveryDate: LocalDate?,
+    val detailSnsName: String?,
+    val dateType: String?,
+    val date: LocalDate?,
+    val purchaseMethodName: String?,
+    val purchaseAmount: BigDecimal?,
+    val requestTypeName: String?,
+    val division: String?,
+    // 불만 정보
+    val defectDescription: String?,
+    // 채널정보
+    val interfaceDate: LocalDateTime?,
+    val channel: String?,
+    val channelLabel: String?,
+    val employeeName: String?,
+    val employeeCode: String?,
+    val employeePhone: String?,
+    // 처리·조치 정보
+    val counselNumber: String?,
+    val actionCode: String?,
+    val actionStatus: String?,
+    val reasonType: String?,
+    val actContent: String?,
+    // 메타
     val createdAt: LocalDateTime,
     val photos: List<ClaimPhotoResponse>
 ) {
@@ -83,23 +114,46 @@ data class AdminClaimDetailResponse(
             urlResolver: (String?) -> String?
         ): AdminClaimDetailResponse = AdminClaimDetailResponse(
             claimId = claim.id,
-            employeeName = claim.employee?.name,
-            employeeCode = claim.employee?.employeeCode,
-            storeName = claim.account?.name,
+            // 제품정보
             productCode = claim.product?.productCode,
             productName = claim.product?.name,
-            dateType = claim.dateType?.name,
-            date = claim.date,
+            manufacturingDate = claim.manufacturingDate,
+            logisticsCenter = claim.logisticsCenter,
+            expirationDate = claim.expirationDate,
+            // Information (클레임정보)
+            claimNo = claim.name,
+            storeName = claim.account?.name,
             categoryValue = claim.claimType1?.value,
             categoryLabel = claim.claimType1?.label,
             subcategoryValue = claim.claimType2?.value,
             subcategoryLabel = claim.claimType2?.label,
-            defectDescription = claim.defectDescription,
             defectQuantity = claim.defectQuantity,
-            purchaseAmount = claim.purchaseAmount,
-            purchaseMethodName = claim.purchaseMethodCode?.displayName,
-            requestTypeName = claim.requestTypeCode.joinToString(";") { it.displayName }.ifBlank { null },
+            sampleCollectionFlag = claim.sampleCollectionFlag,
             status = claim.status?.name,
+            customerDeliveryDate = claim.customerDeliveryDate,
+            detailSnsName = claim.detailSnsName,
+            dateType = claim.dateType?.name,
+            date = claim.date,
+            purchaseMethodName = claim.purchaseMethodCode?.displayName,
+            purchaseAmount = claim.purchaseAmount,
+            requestTypeName = claim.requestTypeCode.joinToString(";") { it.displayName }.ifBlank { null },
+            division = claim.division,
+            // 불만 정보
+            defectDescription = claim.defectDescription,
+            // 채널정보
+            interfaceDate = claim.interfaceDate,
+            channel = claim.channel?.name,
+            channelLabel = claim.channel?.displayName,
+            employeeName = claim.employee?.name,
+            employeeCode = claim.employee?.employeeCode,
+            employeePhone = claim.employee?.phone,
+            // 처리·조치 정보
+            counselNumber = claim.counselNumber,
+            actionCode = claim.actionCode,
+            actionStatus = claim.actionStatus,
+            reasonType = claim.reasonType,
+            actContent = claim.actContent,
+            // 메타
             createdAt = claim.createdAt,
             photos = uploadFiles.mapNotNull { ClaimPhotoResponse.from(it, urlResolver) }
         )

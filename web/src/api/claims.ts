@@ -40,23 +40,46 @@ export interface ClaimListData {
 
 export interface ClaimDetail {
   claimId: number;
-  employeeName: string;
-  employeeCode: string;
-  storeName: string | null;
+  // 제품정보
   productCode: string | null;
   productName: string | null;
-  dateType: string | null;
-  date: string | null;
+  manufacturingDate: string | null;
+  logisticsCenter: string | null;
+  expirationDate: string | null;
+  // 클레임정보
+  claimNo: string | null;
+  storeName: string | null;
   categoryValue: string | null;
   categoryLabel: string | null;
   subcategoryValue: string | null;
   subcategoryLabel: string | null;
-  defectDescription: string | null;
   defectQuantity: number | null;
-  purchaseAmount: number | null;
-  purchaseMethodName: string | null;
-  requestTypeName: string | null;
+  sampleCollectionFlag: boolean | null;
   status: string;
+  customerDeliveryDate: string | null;
+  detailSnsName: string | null;
+  dateType: string | null;
+  date: string | null;
+  purchaseMethodName: string | null;
+  purchaseAmount: number | null;
+  requestTypeName: string | null;
+  division: string | null;
+  // 불만정보
+  defectDescription: string | null;
+  // 채널정보
+  interfaceDate: string | null;
+  channel: string | null;
+  channelLabel: string | null;
+  employeeName: string;
+  employeeCode: string;
+  employeePhone: string | null;
+  // 처리·조치정보
+  counselNumber: string | null;
+  actionCode: string | null;
+  actionStatus: string | null;
+  reasonType: string | null;
+  actContent: string | null;
+  // 메타
   createdAt: string;
   photos: ClaimPhoto[];
 }
