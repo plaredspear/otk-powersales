@@ -40,10 +40,21 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   late TabController _tabController;
 
   /// 과도상태(SENT) 주문 자동 폴링용 — 등록 직후 상태 전이를 새로고침 없이 반영.
+  ///
+  /// 주문 등록은 백엔드에서 SAP 동기 사전검증(재고/여신) + 비동기 전송(SD03050)을 거치는데,
+  /// 제품 다건이면 SAP 처리에만 최대 ~90초가 걸릴 수 있다. 폴링 창이 짧으면 그 사이 상태 전이를
+  /// 못 잡고 SENT 로 남아 사용자가 수동 새로고침해야 한다. 초기엔 촘촘히, 이후 간격을 늘려
+  /// (백오프) 약 105초까지 커버한다 (아래 스케줄 참고).
   Timer? _pollTimer;
   int _pollCount = 0;
-  static const int _maxPolls = 5; // 3초 × 5회 ≈ 15초 후 중단
-  static const Duration _pollInterval = Duration(seconds: 3);
+
+  /// 폴링 회차별 간격(초) 스케줄. 합계 = 3×5 + 6×5 + 12×5 = 15+30+60 = 105초 (총 15회) 후 중단.
+  /// 앞부분은 촘촘(정상 전이 빠른 케이스), 뒤로 갈수록 성글게(SAP 지연/재시도 케이스).
+  static const List<int> _pollBackoffSeconds = [
+    3, 3, 3, 3, 3, // 0~15s
+    6, 6, 6, 6, 6, // 15~45s
+    12, 12, 12, 12, 12, // 45~105s
+  ];
 
   @override
   void initState() {
@@ -79,13 +90,26 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
   void _startPollingIfNeeded() {
     if (_pollTimer != null) return;
     _pollCount = 0;
-    _pollTimer = Timer.periodic(_pollInterval, (timer) {
+    _scheduleNextPoll();
+  }
+
+  /// 백오프 스케줄에 따라 다음 폴링을 예약한다. 회차마다 간격이 달라 Timer.periodic 대신 단발 Timer 재귀.
+  void _scheduleNextPoll() {
+    if (_pollCount >= _pollBackoffSeconds.length) {
+      _stopPolling();
+      return;
+    }
+    final seconds = _pollBackoffSeconds[_pollCount];
+    _pollTimer = Timer(Duration(seconds: seconds), () async {
       _pollCount++;
-      if (_pollCount > _maxPolls) {
+      await ref.read(orderRequestListProvider.notifier).refreshSilently();
+      if (!mounted) return;
+      // 과도상태가 남아있을 때만 다음 회차 예약 — 전이 완료(SENT 소진) 시 조기 종료.
+      if (ref.read(orderRequestListProvider).hasTransientOrders) {
+        _scheduleNextPoll();
+      } else {
         _stopPolling();
-        return;
       }
-      ref.read(orderRequestListProvider.notifier).refreshSilently();
     });
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,7 +28,7 @@ import '../widgets/order/resend_confirm_dialog.dart';
 /// - 마감전: 주문정보 + 주문취소/재전송 버튼 + 주문한 제품 목록
 /// - 마감후: 주문정보 + 주문한 제품 접기/펼치기 + 주문처리현황
 /// - 마감후_반려: 주문정보 + 주문반려제품 목록
-class OrderDetailPage extends ConsumerWidget {
+class OrderDetailPage extends ConsumerStatefulWidget {
   /// 주문 ID (라우트 arguments로 전달)
   final int orderId;
 
@@ -36,10 +38,73 @@ class OrderDetailPage extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrderDetailPage> createState() => _OrderDetailPageState();
+}
+
+class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
+  /// 과도상태(SENT / 등록 SAP 전송 in-flight) 자동 폴링용 — 상세 화면에서도 상태 전이를
+  /// 수동 새로고침 없이 반영. 목록(order_list_page)과 동일한 백오프 스케줄로 약 105초까지 커버한다.
+  Timer? _pollTimer;
+  int _pollCount = 0;
+  static const List<int> _pollBackoffSeconds = [
+    3, 3, 3, 3, 3, // 0~15s
+    6, 6, 6, 6, 6, // 15~45s
+    12, 12, 12, 12, 12, // 45~105s
+  ];
+
+  @override
+  void dispose() {
+    _stopPolling();
+    super.dispose();
+  }
+
+  /// 과도상태 유무에 따라 한시적 폴링을 시작/중단한다.
+  void _syncTransientPolling(OrderRequestDetailState state) {
+    if (state.hasTransientRegistration) {
+      _startPollingIfNeeded();
+    } else {
+      _stopPolling();
+    }
+  }
+
+  void _startPollingIfNeeded() {
+    if (_pollTimer != null) return;
+    _pollCount = 0;
+    _scheduleNextPoll();
+  }
+
+  /// 백오프 스케줄에 따라 다음 폴링을 예약한다 (회차별 간격 가변 → 단발 Timer 재귀).
+  void _scheduleNextPoll() {
+    if (_pollCount >= _pollBackoffSeconds.length) {
+      _stopPolling();
+      return;
+    }
+    final seconds = _pollBackoffSeconds[_pollCount];
+    _pollTimer = Timer(Duration(seconds: seconds), () async {
+      _pollCount++;
+      await ref
+          .read(orderRequestDetailProvider(widget.orderId).notifier)
+          .refreshSilently(orderId: widget.orderId);
+      if (!mounted) return;
+      if (ref.read(orderRequestDetailProvider(widget.orderId)).hasTransientRegistration) {
+        _scheduleNextPoll();
+      } else {
+        _stopPolling();
+      }
+    });
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final orderId = widget.orderId;
     final state = ref.watch(orderRequestDetailProvider(orderId));
 
-    // 에러 메시지 리스닝
+    // 에러 메시지 리스닝 + 과도상태 폴링 동기화
     ref.listen(orderRequestDetailProvider(orderId), (previous, next) {
       if (next.errorMessage != null && previous?.errorMessage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -50,6 +115,7 @@ class OrderDetailPage extends ConsumerWidget {
         );
         ref.read(orderRequestDetailProvider(orderId).notifier).clearError();
       }
+      _syncTransientPolling(next);
     });
 
     return Scaffold(
@@ -60,15 +126,15 @@ class OrderDetailPage extends ConsumerWidget {
           onPressed: () => AppRouter.goBack(context),
         ),
       ),
-      body: _buildBody(context, ref, state),
+      body: _buildBody(context, state),
     );
   }
 
   Widget _buildBody(
     BuildContext context,
-    WidgetRef ref,
     OrderRequestDetailState state,
   ) {
+    final orderId = widget.orderId;
     // 로딩 상태
     if (state.isLoading && !state.hasData) {
       return const Center(child: CircularProgressIndicator());
@@ -139,8 +205,8 @@ class OrderDetailPage extends ConsumerWidget {
                 showCancelButton: state.showCancelButton,
                 showResendButton: state.showResendButton,
                 isResending: state.isResending,
-                onCancel: () => _onCancelOrder(context, ref),
-                onResend: () => _onResendOrder(context, ref),
+                onCancel: () => _onCancelOrder(context),
+                onResend: () => _onResendOrder(context),
               ),
 
               if (state.showCancelButton || state.showResendButton)
@@ -213,7 +279,7 @@ class OrderDetailPage extends ConsumerWidget {
           Expanded(
             child: Text(
               '주문 등록을 전송 처리 중입니다. 잠시 후 취소할 수 있어요. '
-              '화면을 아래로 당겨 새로고침해 주세요.',
+              '처리 결과는 자동으로 갱신됩니다.',
               style: AppTypography.bodySmall.copyWith(color: AppColors.info),
             ),
           ),
@@ -223,7 +289,8 @@ class OrderDetailPage extends ConsumerWidget {
   }
 
   /// 주문 취소 버튼 탭
-  Future<void> _onCancelOrder(BuildContext context, WidgetRef ref) async {
+  Future<void> _onCancelOrder(BuildContext context) async {
+    final orderId = widget.orderId;
     final state = ref.read(orderRequestDetailProvider(orderId));
     final detail = state.orderDetail;
     if (detail == null) return;
@@ -246,7 +313,8 @@ class OrderDetailPage extends ConsumerWidget {
   }
 
   /// 주문 재전송 버튼 탭
-  Future<void> _onResendOrder(BuildContext context, WidgetRef ref) async {
+  Future<void> _onResendOrder(BuildContext context) async {
+    final orderId = widget.orderId;
     // 레거시 정합: 재전송 전 사용자 확인 (confirm('재전송 하시겠습니까?'))
     final confirmed = await ResendConfirmDialog.show(context);
     if (confirmed != true) return;

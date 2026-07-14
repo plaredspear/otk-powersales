@@ -24,12 +24,16 @@ class OrderRequestSapOutboxStatusHandlerTest {
 
     private val orderRequestId = 100L
 
-    private fun outbox() = SapOutbox(
+    // 워커(SapOutboxBatchService.processOne)가 handle 호출 전에 outbox.status 를 확정한다:
+    //  - 성공 → SENT / 최종 실패(재시도 초과) → FAILED / 재시도 대기 → RETRY.
+    // 핸들러는 이 status 로 "최종 실패" 와 "재시도 중" 을 구분하므로, 테스트도 실제 status 를 넘겨 검증.
+    private fun outbox(status: String = SapOutbox.STATUS_SENT) = SapOutbox(
         id = 1L,
         domainType = SapConstants.SAP_DOMAIN_ORDER_REQUEST_REGISTER,
         aggregateId = orderRequestId,
         interfaceId = "SD03050",
         payload = "{}",
+        status = status,
     )
 
     private fun order(status: OrderRequestStatus) = OrderRequest(
@@ -51,15 +55,27 @@ class OrderRequestSapOutboxStatusHandlerTest {
     }
 
     @Test
-    @DisplayName("실패 응답 → SENT 주문을 SEND_FAILED 로 전이")
-    fun failure_transitions_to_send_failed() {
+    @DisplayName("최종 실패(outbox FAILED) → SENT 주문을 SEND_FAILED 로 전이")
+    fun final_failure_transitions_to_send_failed() {
         val order = order(OrderRequestStatus.SENT)
         every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns order
 
-        handler.handle(outbox(), success = false, resultMessage = "E")
+        handler.handle(outbox(SapOutbox.STATUS_FAILED), success = false, resultMessage = "E")
 
         assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.SEND_FAILED)
         verify(exactly = 1) { orderRequestRepository.save(order) }
+    }
+
+    @Test
+    @DisplayName("재시도 대기(outbox RETRY) 실패 → SEND_FAILED 로 내리지 않고 SENT 유지 + save 미호출")
+    fun retry_pending_failure_keeps_sent() {
+        val order = order(OrderRequestStatus.SENT)
+        every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns order
+
+        handler.handle(outbox(SapOutbox.STATUS_RETRY), success = false, resultMessage = "NETWORK_ERROR")
+
+        assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.SENT)
+        verify(exactly = 0) { orderRequestRepository.save(any()) }
     }
 
     @Test

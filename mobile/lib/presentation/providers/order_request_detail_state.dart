@@ -62,6 +62,14 @@ class OrderRequestDetailState {
       !orderDetail!.allItemsCancelled &&
       orderDetail!.registrationInFlight;
 
+  /// 전송 처리 중(과도상태)인지 여부 — 한시적 자동 폴링 판정에 사용.
+  /// 등록 SAP 전송이 outbox in-flight(registrationInFlight) 이거나 주문 상태가 SENT(전송 중) 이면
+  /// 아직 APPROVED/SEND_FAILED 로 확정되지 않은 구간이라 폴링으로 전이를 반영한다.
+  bool get hasTransientRegistration =>
+      hasData &&
+      (orderDetail!.registrationInFlight ||
+          orderDetail!.orderRequestStatus == OrderStatusCode.sent);
+
   /// 재전송 버튼 표시 여부
   /// 마감전 + 전송실패 상태
   bool get showResendButton =>

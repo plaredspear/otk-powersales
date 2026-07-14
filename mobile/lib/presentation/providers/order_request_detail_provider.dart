@@ -56,6 +56,19 @@ class OrderRequestDetailNotifier extends StateNotifier<OrderRequestDetailState> 
     }
   }
 
+  /// 무음 갱신 — 로딩 스피너 없이 현재 주문 상세를 재조회.
+  ///
+  /// 등록 직후 과도상태(SENT / 등록 SAP 전송 in-flight) 주문의 상태 전이를 한시적 자동 폴링으로
+  /// 반영하기 위한 백그라운드 갱신. 폴링 중 에러는 화면을 흔들지 않도록 조용히 무시한다.
+  Future<void> refreshSilently({required int orderId}) async {
+    try {
+      final detail = await _getOrderDetail.call(orderId: orderId);
+      state = state.copyWith(orderDetail: detail, errorMessage: null);
+    } catch (_) {
+      // 백그라운드 폴링 실패는 무시 — 화면 상태 유지.
+    }
+  }
+
   /// 주문 재전송
   ///
   /// 전송실패 상태의 주문을 재전송합니다.

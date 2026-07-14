@@ -15,7 +15,10 @@ import org.springframework.transaction.annotation.Transactional
  *
  * 상태 전이:
  *  - SAP `resultCode='S'` → `APPROVED`
- *  - SAP `resultCode='E'` 또는 HTML 응답 또는 timeout → `SEND_FAILED`
+ *  - SAP 송신 실패이고 재시도 한도 초과(outbox `FAILED`) → `SEND_FAILED`
+ *  - SAP 송신 실패이나 재시도 대기(outbox `RETRY`/`PENDING`, in-flight) → **상태 미변경(SENT 유지)**.
+ *    재시도 진행 중을 최종 "전송실패" 로 오표시하지 않기 위함이다. SENT 로 남겨두면 목록/상세의
+ *    과도상태 자동 폴링 대상으로 유지되어, 이후 재시도가 성공하면 APPROVED 로 자연스럽게 전이한다.
  *
  * 워커 트랜잭션 외부에서 호출되므로 본 핸들러가 자체 트랜잭션 (`REQUIRES_NEW`) 으로 도메인 상태 갱신.
  */
@@ -41,6 +44,15 @@ class OrderRequestSapOutboxStatusHandler(
             log.info(
                 "OrderRequest 이미 취소됨 - 등록 응답 상태전이 스킵 orderRequestId={} success={}",
                 order.id, success
+            )
+            return
+        }
+        // 재시도 대기(outbox in-flight) 중인 실패는 아직 "최종 실패" 가 아니므로 SEND_FAILED 로 내리지 않고
+        // SENT(전송 중) 를 유지한다 — 이후 재시도 성공 시 APPROVED 로 전이. 최종 실패(outbox FAILED)만 SEND_FAILED.
+        if (!success && outbox.status in SapOutbox.IN_FLIGHT_STATUSES) {
+            log.info(
+                "OrderRequest 등록 SAP 재시도 대기 - SEND_FAILED 전이 보류(SENT 유지) orderRequestId={} outboxStatus={} resultMsg={}",
+                order.id, outbox.status, resultMessage
             )
             return
         }

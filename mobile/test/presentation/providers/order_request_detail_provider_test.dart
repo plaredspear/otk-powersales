@@ -169,6 +169,35 @@ void main() {
       expect(stateWithoutRejected.hasRejectedItems, false);
     });
 
+    test('hasTransientRegistration is true when SENT or registration in-flight', () {
+      // SENT 상태 → 전이 대기(과도상태)
+      final stateSent = OrderRequestDetailState(
+        orderDetail: _createOrderDetail(
+          orderRequestStatus: OrderStatusCode.sent,
+        ),
+      );
+      // registrationInFlight(outbox PENDING/RETRY) → 과도상태
+      final stateInFlight = OrderRequestDetailState(
+        orderDetail: _createOrderDetail(
+          orderRequestStatus: OrderStatusCode.approved,
+          registrationInFlight: true,
+        ),
+      );
+      // APPROVED 확정 + not in-flight → 과도상태 아님
+      final stateApproved = OrderRequestDetailState(
+        orderDetail: _createOrderDetail(
+          orderRequestStatus: OrderStatusCode.approved,
+        ),
+      );
+      // 데이터 없음 → false
+      const stateNoData = OrderRequestDetailState();
+
+      expect(stateSent.hasTransientRegistration, true);
+      expect(stateInFlight.hasTransientRegistration, true);
+      expect(stateApproved.hasTransientRegistration, false);
+      expect(stateNoData.hasTransientRegistration, false);
+    });
+
     test('showCancelButton logic works correctly', () {
       // Should show: before close + not sendFailed + not all cancelled
       final stateShowCancel = OrderRequestDetailState(
@@ -352,6 +381,34 @@ void main() {
           OrderStatusCode.sendFailed);
       expect(notifier.state.orderDetail!.isClosed, false);
       expect(notifier.state.showResendButton, true);
+    });
+
+    test('refreshSilently updates detail without setting loading spinner',
+        () async {
+      await notifier.loadOrderDetail(orderId: 1);
+      expect(notifier.state.orderDetail, isNotNull);
+
+      await notifier.refreshSilently(orderId: 1);
+
+      // 무음 갱신 — 스피너 없이 데이터 유지/갱신, 에러 없음
+      expect(notifier.state.isLoading, false);
+      expect(notifier.state.orderDetail, isNotNull);
+      expect(notifier.state.orderDetail!.id, 1);
+      expect(notifier.state.errorMessage, isNull);
+    });
+
+    test('refreshSilently swallows errors and keeps current state', () async {
+      // 정상 데이터를 먼저 로드해 둔다
+      await notifier.loadOrderDetail(orderId: 1);
+      final before = notifier.state.orderDetail;
+      expect(before, isNotNull);
+
+      // 존재하지 않는 주문으로 무음 갱신 → 에러를 삼키고 기존 상태 유지
+      await notifier.refreshSilently(orderId: 9999);
+
+      expect(notifier.state.orderDetail, same(before));
+      expect(notifier.state.errorMessage, isNull);
+      expect(notifier.state.isLoading, false);
     });
 
     test('resendOrderRequest succeeds for sendFailed order and refreshes detail',
