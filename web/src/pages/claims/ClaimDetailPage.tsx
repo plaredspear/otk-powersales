@@ -176,7 +176,7 @@ export default function ClaimDetailPage() {
         </Descriptions>
       </Card>
 
-      <Card title="처리·조치 정보" style={{ marginBottom: 16 }}>
+      <Card title="처리/조치 정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2}>
           <Descriptions.Item label="상담번호">{orDash(claim.counselNumber)}</Descriptions.Item>
           <Descriptions.Item label="조치코드">{orDash(claim.actionCode)}</Descriptions.Item>
