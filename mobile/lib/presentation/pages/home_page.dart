@@ -87,14 +87,37 @@ class _HomePageState extends ConsumerState<HomePage>
     }
 
     // 데이터 있음 → 배경+콘텐츠가 함께 스크롤
-    return RefreshIndicator(
-      onRefresh: _onRefresh,
-      color: AppColors.legacyNavy,
-      backgroundColor: Colors.white,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: _buildContent(state, userRole),
-      ),
+    //
+    // pull-to-refresh(iOS bounce)로 콘텐츠가 위/아래로 밀릴 때
+    // safe area 전체가 올바른 색으로 채워지도록, 스크롤 뒤에
+    // 화면 전체를 덮는 정적 배경(위=노랑 헤더 / 아래=흰 그라데이션 끝)을 깐다.
+    // 이 배경은 오버스크롤로 콘텐츠가 밀렸을 때만 드러난다.
+    return Stack(
+      children: [
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.legacyYellow,
+                  AppColors.homeBgGradientEnd,
+                ],
+              ),
+            ),
+          ),
+        ),
+        RefreshIndicator(
+          onRefresh: _onRefresh,
+          color: AppColors.legacyNavy,
+          backgroundColor: Colors.white,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: _buildContent(state, userRole),
+          ),
+        ),
+      ],
     );
   }
 
