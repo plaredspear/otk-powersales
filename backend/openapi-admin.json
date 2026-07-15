@@ -13781,6 +13781,19 @@
         },
         "type" : "object"
       },
+      "PPTMasterSingleTestRequest" : {
+        "properties" : {
+          "masterId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "referenceDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "PPTMasterTestRequest" : {
         "properties" : {
           "pageSize" : {
@@ -30032,6 +30045,62 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/OrderRequestRegisterTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestSendResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/ppt-master-single/preview" : {
+      "post" : {
+        "operationId" : "previewPPTMasterSingle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PPTMasterSingleTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/ppt-master-single/send" : {
+      "post" : {
+        "operationId" : "sendPPTMasterSingle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PPTMasterSingleTestRequest"
               }
             }
           },

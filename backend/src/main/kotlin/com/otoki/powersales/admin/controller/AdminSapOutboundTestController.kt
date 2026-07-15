@@ -8,6 +8,7 @@ import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestRegisterTestRequest
 import com.otoki.powersales.admin.dto.request.PPTMasterTestRequest
+import com.otoki.powersales.admin.dto.request.PPTMasterSingleTestRequest
 import com.otoki.powersales.admin.dto.request.TeamMemberScheduleSingleTestRequest
 import com.otoki.powersales.admin.dto.response.SapOutboundTestPreviewResponse
 import com.otoki.powersales.admin.dto.response.SapOutboundTestSendResponse
@@ -213,4 +214,20 @@ class AdminSapOutboundTestController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun sendPPTMasterEmpty(): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
         ResponseEntity.ok(ApiResponse.success(service.sendPPTMasterEmpty()))
+
+    // ===== PPTMaster 단건 =====
+
+    @PostMapping("/ppt-master-single/preview")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
+    fun previewPPTMasterSingle(
+        @RequestBody req: PPTMasterSingleTestRequest,
+    ): ResponseEntity<ApiResponse<SapOutboundTestPreviewResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.previewPPTMasterSingle(req)))
+
+    @PostMapping("/ppt-master-single/send")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun sendPPTMasterSingle(
+        @RequestBody req: PPTMasterSingleTestRequest,
+    ): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.sendPPTMasterSingle(req)))
 }

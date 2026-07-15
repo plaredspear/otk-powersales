@@ -78,6 +78,19 @@ data class DisplayMasterSingleTestRequest(
     val workDate: LocalDate? = null,
 )
 
+/**
+ * 전문행사조 마스터(PPT) SAP **단건** 테스트 송신 입력.
+ *
+ * @property masterId professional_promotion_team_master.id — 송신할 마스터 단건 식별자.
+ * @property referenceDate payload 기준일. `ValidData`(유효/예정/종료)·`ValidConditionData`(재직/퇴직 등)·
+ *   `YearMonth` 가 이 기준일에 따라 산출되므로, 발송 당시 payload 를 재현하려면 그 배치가 돌았던 날짜를 지정한다.
+ *   미지정 시 오늘(batch 기본 동작과 정합).
+ */
+data class PPTMasterSingleTestRequest(
+    val masterId: Long,
+    val referenceDate: LocalDate? = null,
+)
+
 /** PPTMaster sender 입력. 당월 활성 마스터 조회만 사용. */
 data class PPTMasterTestRequest(
     val targetDate: LocalDate? = null,

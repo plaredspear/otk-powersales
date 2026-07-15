@@ -230,6 +230,17 @@ class PPTMasterRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findByIdForSapOutbound(masterId: Long): ProfessionalPromotionTeamMaster? {
+        // findSapOutboundTargets 와 동일한 fetchJoin(employee/account) 으로 payload 변환 시 LAZY 미초기화를
+        // 방지한다. batch 필터(월 기간/유효)는 적용하지 않고 id 로만 특정한다.
+        return queryFactory
+            .selectFrom(professionalPromotionTeamMaster)
+            .leftJoin(professionalPromotionTeamMaster.employee, employee).fetchJoin()
+            .leftJoin(professionalPromotionTeamMaster.account, account).fetchJoin()
+            .where(professionalPromotionTeamMaster.id.eq(masterId))
+            .fetchOne()
+    }
+
     /**
      * 레거시 SOQL 의 `ValidConditionData__c != '미확정'` 절을 재현한다.
      *

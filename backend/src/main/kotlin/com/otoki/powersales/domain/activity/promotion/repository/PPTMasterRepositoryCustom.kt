@@ -41,6 +41,15 @@ interface PPTMasterRepositoryCustom {
     fun findSapOutboundTargets(monthFirstDay: LocalDate, monthLastDay: LocalDate): List<ProfessionalPromotionTeamMaster>
 
     /**
+     * 전문행사조 마스터 SAP **단건** 테스트 송신용 조회 (admin SAP outbound 테스트 탭).
+     * `findSapOutboundTargets` 와 동일하게 employee/account 를 fetchJoin 하여 payload 변환 시
+     * LAZY 미초기화(ValidConditionData 등 사원 필드 참조)를 방지한다. batch 의 월 기간/유효 필터는
+     * 적용하지 않고 id 로만 특정한다 — 테스트 목적상 임의 마스터 1건을 그대로 송신 payload 로 만들 수 있게 한다.
+     * 존재하지 않으면 null.
+     */
+    fun findByIdForSapOutbound(masterId: Long): ProfessionalPromotionTeamMaster?
+
+    /**
      * 전문행사조 확정 인원 보고서 조회 (Spec #846 — SF Report `new_report_swJ` 이식).
      * `professional_promotion_team_master` ⋈ employee ⋈ account.
      * 필터: isConfirmed=true (확정), soft-delete 제외.

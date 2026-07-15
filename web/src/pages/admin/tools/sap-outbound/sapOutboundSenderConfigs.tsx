@@ -414,6 +414,50 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
       return body;
     },
   },
+  {
+    kind: 'ppt-master-single',
+    interfaceId: 'SD03300',
+    title: '전문행사조 마스터 단건 (SD03300)',
+    tabLabel: '전문행사조 마스터 단건',
+    description:
+      '전문행사조 마스터 1건(masterId)을 골라 SAP 으로 송신합니다. 같은 월의 다른 마스터는 포함되지 않습니다. sap_outbound_log 적재됨.',
+    triggerTag: 'BATCH',
+    renderForm: (state, update) => (
+      <Form layout="vertical">
+        <Form.Item label="masterId (professional_promotion_team_master.id)" required>
+          <InputNumber
+            style={{ width: '100%' }}
+            min={1}
+            value={state.masterId as number | undefined}
+            onChange={(v) => update({ masterId: v ?? undefined })}
+          />
+        </Form.Item>
+        <Form.Item
+          label="referenceDate (기준일 — 비우면 오늘)"
+          help="ValidData(유효/예정/종료)·ValidConditionData(재직/퇴직)·YearMonth 가 이 기준일로 산출됩니다. 발송 당시 payload 를 재현하려면 그 배치가 돌았던 날짜를 지정하세요."
+        >
+          <DatePicker
+            style={{ width: '100%' }}
+            value={state.referenceDate as Dayjs | undefined}
+            onChange={(v) => update({ referenceDate: v ?? undefined })}
+          />
+        </Form.Item>
+        <Alert
+          showIcon
+          type="info"
+          message="사원·거래처 등 식별값은 선택한 마스터 자신의 정보를 사용합니다. batch 의 월 기간/유효 필터는 적용하지 않고 id 로만 특정합니다."
+        />
+      </Form>
+    ),
+    toBody: (state) => {
+      const masterId = state.masterId as number | undefined;
+      if (!masterId) throw new Error('masterId 를 입력하세요');
+      const body: Record<string, unknown> = { masterId };
+      const d = state.referenceDate as Dayjs | undefined;
+      if (d) body.referenceDate = d.format('YYYY-MM-DD');
+      return body;
+    },
+  },
 ];
 
 function batchDateToBody(state: Record<string, unknown>): Record<string, unknown> {

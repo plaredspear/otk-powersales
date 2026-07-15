@@ -5,12 +5,16 @@ import com.otoki.powersales.admin.dto.request.LoanInquiryTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.TeamMemberScheduleSingleTestRequest
 import com.otoki.powersales.admin.dto.request.DisplayMasterSingleTestRequest
+import com.otoki.powersales.admin.dto.request.PPTMasterSingleTestRequest
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
 import com.otoki.powersales.domain.activity.order.sap.sender.OrderRequestRegisterSender
 import com.otoki.powersales.domain.activity.promotion.repository.PPTMasterRepository
 import com.otoki.powersales.domain.activity.promotion.sap.PPTMasterPayloadFactory
+import com.otoki.powersales.domain.activity.promotion.sap.PPTMasterSapPayload
+import com.otoki.powersales.domain.activity.promotion.entity.ProfessionalPromotionTeamMaster
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbound.sender.TeamMemberScheduleSapSender
 import com.otoki.powersales.external.sap.outbound.sender.DisplayMasterSapSender
@@ -322,7 +326,7 @@ class AdminSapOutboundTestServiceTest {
         displayMasterPayloadFactory = DisplayMasterPayloadFactory(),
         displayWorkScheduleRepository = displayWorkScheduleRepository,
         pptMasterSapSender = pptMasterSapSender,
-        pptMasterPayloadFactory = pptMasterPayloadFactory,
+        pptMasterPayloadFactory = PPTMasterPayloadFactory(),
         pptMasterRepository = pptMasterRepository,
         orderRequestRepository = orderRequestRepository,
         orderRequestProductRepository = orderRequestProductRepository,
@@ -537,5 +541,124 @@ class AdminSapOutboundTestServiceTest {
             )
         }.hasMessageContaining("999")
         verify(exactly = 0) { displayMasterSapSender.sendPage(any()) }
+    }
+
+    // ===== PPTMaster 단건 =====
+
+    private fun pptMaster(
+        masterId: Long,
+        startDate: LocalDate = LocalDate.of(2026, 7, 1),
+        endDate: LocalDate? = null,
+        isConfirmed: Boolean = true,
+    ): ProfessionalPromotionTeamMaster {
+        val emp: Employee = mockk(relaxed = true)
+        every { emp.name } returns "홍길동"
+        every { emp.employeeCode } returns "E001"
+        every { emp.orgName } returns "서울지점"
+        every { emp.jikwee } returns "사원"
+        every { emp.status } returns "재직"
+        every { emp.appLoginActive } returns true
+        every { emp.endDate } returns null
+
+        val acct: Account = mockk(relaxed = true)
+        every { acct.id } returns 100L
+        every { acct.accountStatusName } returns "정상"
+        every { acct.accountType } returns "일반"
+        every { acct.externalKey } returns "1032619"
+
+        val master: ProfessionalPromotionTeamMaster = mockk(relaxed = true)
+        every { master.id } returns masterId
+        every { master.name } returns "PPT-0001"
+        every { master.teamType } returns ProfessionalPromotionTeamType.RAMEN_SALE
+        every { master.account } returns acct
+        every { master.employee } returns emp
+        every { master.startDate } returns startDate
+        every { master.endDate } returns endDate
+        every { master.isConfirmed } returns isConfirmed
+        every { master.branchCode } returns "1000"
+        return master
+    }
+
+    @Test
+    @DisplayName("previewPPTMasterSingle: masterId 로 단건 조회 후 payload 1건 빌드 + SAP 미송신")
+    fun previewPPTMasterSingle_buildsSingleRowPayload() {
+        every { pptMasterRepository.findByIdForSapOutbound(33L) } returns
+            pptMaster(33L, startDate = LocalDate.of(2026, 7, 1))
+
+        val res = serviceWithRealFactory.previewPPTMasterSingle(
+            PPTMasterSingleTestRequest(masterId = 33L, referenceDate = LocalDate.of(2026, 7, 15)),
+        )
+
+        assertThat(res.interfaceId).isEqualTo(SapConstants.SAP_INTERFACE_PPT_MASTER)
+        val payload = res.payload as PPTMasterSapPayload
+        assertThat(payload.REQUEST).hasSize(1)
+        val row = payload.REQUEST[0]
+        assertThat(row.Name).isEqualTo("PPT-0001")
+        assertThat(row.EmployeeNumber).isEqualTo("E001")
+        assertThat(row.AccountCode).isEqualTo("1032619")
+        // referenceDate=2026-07-15, 확정+기간 내 → ValidData=유효, YearMonth=202607
+        assertThat(row.ValidData).isEqualTo("유효")
+        assertThat(row.ValidConditionData).isEqualTo("재직")
+        assertThat(row.YearMonth).isEqualTo("202607")
+        assertThat(res.summary).contains("masterId=33").contains("referenceDate=2026-07-15")
+        verify(exactly = 0) { pptMasterSapSender.sendPage(any()) }
+    }
+
+    @Test
+    @DisplayName("previewPPTMasterSingle: referenceDate 가 startDate 이전 → ValidData=예정")
+    fun previewPPTMasterSingle_referenceDateBeforeStart_isUpcoming() {
+        every { pptMasterRepository.findByIdForSapOutbound(1L) } returns
+            pptMaster(1L, startDate = LocalDate.of(2026, 8, 1))
+
+        val res = serviceWithRealFactory.previewPPTMasterSingle(
+            PPTMasterSingleTestRequest(masterId = 1L, referenceDate = LocalDate.of(2026, 7, 15)),
+        )
+
+        val payload = res.payload as PPTMasterSapPayload
+        // startDate(8/1) > referenceDate(7/15) + endDate null → 예정
+        assertThat(payload.REQUEST[0].ValidData).isEqualTo("예정")
+    }
+
+    @Test
+    @DisplayName("sendPPTMasterSingle: 조회 후 sender.sendPage 로 payload 1건 송신 → success=true")
+    fun sendPPTMasterSingle_successPath() {
+        every { pptMasterRepository.findByIdForSapOutbound(44L) } returns pptMaster(44L)
+        val captured = slot<PPTMasterSapPayload>()
+        every { pptMasterSapSender.sendPage(capture(captured)) } returns true
+
+        val res = serviceWithRealFactory.sendPPTMasterSingle(
+            PPTMasterSingleTestRequest(masterId = 44L),
+        )
+
+        assertThat(res.success).isTrue
+        assertThat(captured.captured.REQUEST).hasSize(1)
+        verify(exactly = 1) { pptMasterSapSender.sendPage(any()) }
+    }
+
+    @Test
+    @DisplayName("sendPPTMasterSingle: sender 가 false 반환 → success=false + message 에 실패 표기")
+    fun sendPPTMasterSingle_failurePath() {
+        every { pptMasterRepository.findByIdForSapOutbound(44L) } returns pptMaster(44L)
+        every { pptMasterSapSender.sendPage(any()) } returns false
+
+        val res = serviceWithRealFactory.sendPPTMasterSingle(
+            PPTMasterSingleTestRequest(masterId = 44L),
+        )
+
+        assertThat(res.success).isFalse
+        assertThat(res.message).contains("실패")
+    }
+
+    @Test
+    @DisplayName("sendPPTMasterSingle: 존재하지 않는 masterId → NOT_FOUND 예외 + sender 미호출")
+    fun sendPPTMasterSingle_notFound_throws() {
+        every { pptMasterRepository.findByIdForSapOutbound(999L) } returns null
+
+        assertThatThrownBy {
+            serviceWithRealFactory.sendPPTMasterSingle(
+                PPTMasterSingleTestRequest(masterId = 999L),
+            )
+        }.hasMessageContaining("999")
+        verify(exactly = 0) { pptMasterSapSender.sendPage(any()) }
     }
 }

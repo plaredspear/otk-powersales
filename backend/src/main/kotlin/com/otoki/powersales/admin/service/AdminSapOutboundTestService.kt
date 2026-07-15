@@ -8,6 +8,7 @@ import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestRegisterTestRequest
 import com.otoki.powersales.admin.dto.request.PPTMasterTestRequest
+import com.otoki.powersales.admin.dto.request.PPTMasterSingleTestRequest
 import com.otoki.powersales.admin.dto.request.TeamMemberScheduleSingleTestRequest
 import com.otoki.powersales.admin.dto.response.SapOutboundTestPreviewResponse
 import com.otoki.powersales.admin.dto.response.SapOutboundTestSendResponse
@@ -560,6 +561,49 @@ class AdminSapOutboundTestService(
             message = if (ok) "빈 배열 송신 성공 (연결성 확인) — sap_outbound_log 확인"
             else "빈 배열 송신 실패 — sap_outbound_log 확인",
         )
+    }
+
+    // ===== PPTMaster 단건 (Batch sender 재사용) =====
+
+    fun previewPPTMasterSingle(req: PPTMasterSingleTestRequest): SapOutboundTestPreviewResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_PPT_MASTER
+        val (payload, summary) = buildPPTMasterSinglePayload(req)
+        return SapOutboundTestPreviewResponse(
+            interfaceId = interfaceId,
+            endpointPath = "/$interfaceId",
+            payload = payload,
+            summary = summary,
+        )
+    }
+
+    fun sendPPTMasterSingle(req: PPTMasterSingleTestRequest): SapOutboundTestSendResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_PPT_MASTER
+        val (payload, summary) = buildPPTMasterSinglePayload(req)
+        val ok = pptMasterSapSender.sendPage(payload)
+        return SapOutboundTestSendResponse(
+            interfaceId = interfaceId,
+            success = ok,
+            message = if (ok) "송신 성공 ($summary)" else "송신 실패 ($summary) — sap_outbound_log 확인",
+        )
+    }
+
+    /**
+     * masterId 단건을 payload 1건으로 빌드한다.
+     * referenceDate(미지정 시 오늘) 가 ValidData/ValidConditionData/YearMonth 파생 필드의 기준일이 된다 —
+     * 발송 당시 payload 재현이 필요하면 호출부가 그 배치가 돌았던 날짜를 넘긴다.
+     */
+    private fun buildPPTMasterSinglePayload(req: PPTMasterSingleTestRequest):
+            Pair<PPTMasterSapPayload, String> {
+        val master = pptMasterRepository.findByIdForSapOutbound(req.masterId)
+            ?: throw BusinessException(
+                errorCode = "PPT_MASTER_NOT_FOUND",
+                message = "전문행사조 마스터를 찾을 수 없습니다: masterId=${req.masterId}",
+                httpStatus = HttpStatus.NOT_FOUND,
+            )
+        val referenceDate = req.referenceDate ?: LocalDate.now()
+        val payload = pptMasterPayloadFactory.build(listOf(master), referenceDate)
+        val summary = "masterId=${req.masterId} referenceDate=$referenceDate"
+        return payload to summary
     }
 
     private fun buildPPTMasterPayload(req: PPTMasterTestRequest):
