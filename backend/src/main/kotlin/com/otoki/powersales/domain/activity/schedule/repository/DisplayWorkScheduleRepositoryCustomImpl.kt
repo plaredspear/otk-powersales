@@ -68,12 +68,16 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
-    override fun findByEmployeeIdInAndNotDeleted(employeeIds: List<Long>): List<DisplayWorkSchedule> {
+    override fun findByEmployeeIdInAndNotDeleted(
+        employeeIds: List<Long>,
+        policyPredicate: Predicate,
+    ): List<DisplayWorkSchedule> {
         return queryFactory
             .selectFrom(displayWorkSchedule)
             .where(
                 displayWorkSchedule.employee.id.`in`(employeeIds),
-                isNotDeleted()
+                isNotDeleted(),
+                policyPredicate,
             )
             .fetch()
     }

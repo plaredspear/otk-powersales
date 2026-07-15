@@ -693,8 +693,13 @@ class AdminDisplayWorkScheduleService(
         }
 
         // 동일 사원 기존 스케줄 조회 (V8 + C1~C3 검증용). 사원이 존재할 때만 조회.
+        // 등록자 가시 범위(schedulePolicyPredicate) 내로 제한 — 목록 조회와 동일 스코프.
+        // SF 레거시(without sharing, 사번 전역)와의 의도적 deviation: 전출 사원의 이전 지점
+        // 종료일 무기한 스케줄(목록엔 안 보임)이 중복검사에만 잡혀 신규 등록을 영구 차단하던 문제 해소.
         val existingSchedules = if (employee != null) {
-            scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(employee.id))
+            scheduleRepository.findByEmployeeIdInAndNotDeleted(
+                listOf(employee.id), schedulePolicyPredicate(scope)
+            )
         } else {
             emptyList()
         }
@@ -835,8 +840,11 @@ class AdminDisplayWorkScheduleService(
             requireCostCenterCodeScope(scope, employee.costCenterCode)
         }
 
+        // 등록자 가시 범위 내로 제한 (createSchedule 과 동일 스코프 — 전출 사원 이전 지점 스케줄 제외).
         val existingSchedules = if (employee != null) {
-            scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(employee.id))
+            scheduleRepository.findByEmployeeIdInAndNotDeleted(
+                listOf(employee.id), schedulePolicyPredicate(scope)
+            )
         } else {
             emptyList()
         }
