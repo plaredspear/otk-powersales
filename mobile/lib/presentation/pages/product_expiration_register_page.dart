@@ -7,7 +7,7 @@ import '../widgets/account/account_selector_sheet.dart';
 import '../providers/pos_sales_provider.dart';
 import '../providers/product_expiration_form_provider.dart';
 import '../screens/barcode_scanner_screen.dart';
-import '../widgets/product_expiration/product_expiration_add_product_sheet.dart';
+import '../widgets/order_form/add_product_bottom_sheet.dart';
 import '../widgets/product_expiration/product_expiration_register_form.dart';
 
 /// 소비기한 등록 페이지
@@ -78,16 +78,17 @@ class _ProductExpirationRegisterPageState
                 }
               },
               onSelectProduct: () async {
-                final result = await ProductExpirationAddProductSheet.show(
+                final selected = await AddProductBottomSheet.show(
                   context,
-                  accountCode: state.selectedAccountCode,
+                  title: '제품 선택',
+                  multiSelect: false,
                 );
-                if (result != null) {
-                  ref.read(productExpirationFormProvider.notifier).selectProduct(
-                        result.productCode,
-                        result.productName,
-                      );
-                }
+                if (selected == null || selected.isEmpty) return;
+                final product = selected.first;
+                ref.read(productExpirationFormProvider.notifier).selectProduct(
+                      product.productCode,
+                      product.productName,
+                    );
               },
               onScanBarcode: _handleBarcodeScan,
               onExpiryDateChanged: (date) {

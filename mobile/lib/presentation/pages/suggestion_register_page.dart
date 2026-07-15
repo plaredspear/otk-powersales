@@ -11,7 +11,7 @@ import '../providers/suggestion_register_provider.dart';
 import '../providers/suggestion_register_state.dart';
 import '../screens/barcode_scanner_screen.dart';
 import '../widgets/account/account_selector_sheet.dart';
-import '../widgets/product/product_selector_sheet.dart';
+import '../widgets/order_form/add_product_bottom_sheet.dart';
 import '../widgets/suggestion/suggestion_category_selector.dart';
 import '../widgets/suggestion/suggestion_logistics_claim_fields.dart';
 import '../widgets/suggestion/suggestion_photo_field.dart';
@@ -340,10 +340,15 @@ class _SuggestionRegisterPageState
     }
   }
 
-  /// 대표 제품 선택 — 제품명/코드 검색 바텀시트에서 1건 선택.
+  /// 대표 제품 선택 — 공용 제품검색 모달(단건 선택)에서 1건 선택.
   Future<void> _showProductSelector(BuildContext context) async {
-    final product = await ProductSelectorSheet.show(context);
-    if (product == null || !mounted) return;
+    final selected = await AddProductBottomSheet.show(
+      context,
+      title: '제품 선택',
+      multiSelect: false,
+    );
+    if (selected == null || selected.isEmpty || !mounted) return;
+    final product = selected.first;
     ref
         .read(suggestionRegisterProvider.notifier)
         .selectProduct(product.productCode, product.productName);

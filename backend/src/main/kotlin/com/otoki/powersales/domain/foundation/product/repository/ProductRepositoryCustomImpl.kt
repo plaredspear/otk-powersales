@@ -316,6 +316,24 @@ class ProductRepositoryCustomImpl(
         return pagedSearch(where, pageable)
     }
 
+    override fun findOrderRowsByProductCodes(productCodes: Collection<String>): List<ProductSearchRow> {
+        if (productCodes.isEmpty()) return emptyList()
+
+        val matchedBarcode = unitMatchedBarcode()
+
+        return queryFactory
+            .select(product, matchedBarcode)
+            .from(product)
+            .where(product.productCode.`in`(productCodes))
+            .fetch()
+            .map { tuple ->
+                ProductSearchRow(
+                    product = tuple.get(product)!!,
+                    barcode = tuple.get(matchedBarcode),
+                )
+            }
+    }
+
     override fun findBarcodesForElectronicSales(
         productIds: List<Long>,
         category2: String?,

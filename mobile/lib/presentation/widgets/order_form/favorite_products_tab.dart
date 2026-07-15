@@ -10,10 +10,14 @@ import 'product_card_for_add.dart';
 /// 즐겨찾기 제품 탭
 class FavoriteProductsTab extends ConsumerWidget {
   final ScrollController scrollController;
+  final bool requireBarcode;
+  final bool blockExclusive;
 
   const FavoriteProductsTab({
     super.key,
     required this.scrollController,
+    this.requireBarcode = false,
+    this.blockExclusive = false,
   });
 
   @override
@@ -25,7 +29,15 @@ class FavoriteProductsTab extends ConsumerWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.favoriteProducts.isEmpty) {
+    // 바코드 필수 화면(POS/전산 매출조회)에서는 바코드 없는 제품을 목록에서
+    // 제외한다(레거시 productMapper `is not null` 정합 — 노출 후 차단이 아님).
+    final products = requireBarcode
+        ? state.favoriteProducts
+            .where((p) => p.barcode.trim().isNotEmpty)
+            .toList()
+        : state.favoriteProducts;
+
+    if (products.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -57,9 +69,9 @@ class FavoriteProductsTab extends ConsumerWidget {
     return ListView.builder(
       controller: scrollController,
       padding: AppSpacing.screenAll,
-      itemCount: state.favoriteProducts.length,
+      itemCount: products.length,
       itemBuilder: (context, index) {
-        final product = state.favoriteProducts[index];
+        final product = products[index];
         return ProductCardForAdd(
           product: product,
           isSelected: state.isProductSelected(product.productCode),
@@ -70,6 +82,7 @@ class FavoriteProductsTab extends ConsumerWidget {
             notifier.removeFromFavorites(product.productCode);
           },
           isFavoriteTab: true,
+          blockExclusive: blockExclusive,
         );
       },
     );

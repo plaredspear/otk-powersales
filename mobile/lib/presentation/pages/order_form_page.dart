@@ -5,6 +5,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../app_router.dart';
 import '../providers/order_form_provider.dart';
 import '../providers/order_form_state.dart';
+import '../../domain/entities/order_draft.dart';
 import '../screens/barcode_scanner_screen.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../widgets/account/account_selector_field.dart';
@@ -86,6 +87,58 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     final barcode = await BarcodeScannerScreen.show(context);
     if (barcode == null || !mounted) return;
     await notifier.addProductByBarcode(barcode);
+  }
+
+  /// 제품 추가 모달(공용)에서 선택한 제품들을 주문 라인에 담는다.
+  /// 100개 상한/중복 무시/추가 결과 안내는 여기(호출부)에서 처리한다.
+  Future<void> _handleAddProduct(OrderFormNotifier notifier) async {
+    final messenger = ScaffoldMessenger.of(context);
+    // 주문서 작성만 전용상품 추가를 막는다(주문 불가 룰). 그 외 화면은 선택 가능.
+    final selected = await AddProductBottomSheet.show(
+      context,
+      blockExclusive: true,
+    );
+    if (selected == null || selected.isEmpty || !mounted) return;
+
+    int addedCount = 0;
+    bool capped = false;
+    for (final product in selected) {
+      // 100개 상한 도달 시 더 이상 담지 않고 중단.
+      if (ref.read(orderFormProvider).items.length >= 100) {
+        capped = true;
+        break;
+      }
+      // addProductToOrder 는 중복을 무시한다.
+      final beforeCount = ref.read(orderFormProvider).items.length;
+      notifier.addProductToOrder(
+        OrderDraftItem(
+          productCode: product.productCode,
+          productName: product.productName,
+          quantityBoxes: 0,
+          quantityPieces: 0,
+          unitPrice: product.unitPrice,
+          boxSize: product.boxSize,
+          totalPrice: 0,
+        ),
+      );
+      if (ref.read(orderFormProvider).items.length > beforeCount) {
+        addedCount++;
+      }
+    }
+
+    if (capped) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('100개 이하로 등록해주세요')),
+      );
+    } else if (addedCount > 0) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('$addedCount개 제품이 추가되었습니다.')),
+      );
+    } else {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('이미 추가된 제품입니다.')),
+      );
+    }
   }
 
   /// 페이지 이탈 시 호출. 라인/거래처 입력 있으면 다이얼로그.
@@ -295,9 +348,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                         allItemsSelected: state.allItemsSelected,
                         onToggleSelection: notifier.toggleProductSelection,
                         onToggleSelectAll: notifier.toggleSelectAllProducts,
-                        onAddProduct: () {
-                          AddProductBottomSheet.show(context);
-                        },
+                        onAddProduct: () => _handleAddProduct(notifier),
                         onBarcodeScan: () => _handleBarcodeScan(notifier),
                         onRemoveSelected: notifier.removeSelectedProducts,
                         onQuantityChanged: notifier.updateProductQuantity,

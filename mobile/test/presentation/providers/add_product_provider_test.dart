@@ -318,6 +318,26 @@ void main() {
         // Assert
         expect(notifier.state.selectedProductCodes, {'P002'});
       });
+
+      test('단건 선택 모드면 새 제품이 기존 선택을 대체', () {
+        // Arrange - 단건 선택 모드 + 기존 선택
+        notifier.state = notifier.state.copyWith(
+          multiSelect: false,
+          selectedProductCodes: {'P001'},
+        );
+
+        // Act - 다른 제품 선택
+        notifier.toggleProductSelection('P002');
+
+        // Assert - 기존 선택은 대체되고 1건만 유지
+        expect(notifier.state.selectedProductCodes, {'P002'});
+
+        // Act - 같은 제품 다시 탭하면 해제
+        notifier.toggleProductSelection('P002');
+
+        // Assert
+        expect(notifier.state.selectedProductCodes, isEmpty);
+      });
     });
 
     group('clearSelection', () {
@@ -430,8 +450,8 @@ void main() {
       });
     });
 
-    group('getSelectedOrderDraftItems', () {
-      test('선택된 제품들을 OrderDraftItem으로 변환', () {
+    group('getSelectedProducts', () {
+      test('선택된 제품들을 ProductForOrder로 반환', () {
         // Arrange
         final favorites = [
           _createTestProduct(
@@ -453,25 +473,17 @@ void main() {
         );
 
         // Act
-        final items = notifier.getSelectedOrderDraftItems();
+        final items = notifier.getSelectedProducts();
 
         // Assert
         expect(items.length, 2);
-        expect(items[0].productCode, 'P001');
-        expect(items[0].productName, '진라면');
-        expect(items[0].quantityBoxes, 0);
-        expect(items[0].quantityPieces, 0);
-        expect(items[0].unitPrice, 5000);
-        expect(items[0].boxSize, 20);
-        expect(items[0].totalPrice, 0);
-
-        expect(items[1].productCode, 'P002');
-        expect(items[1].productName, '진짬뽕');
-        expect(items[1].quantityBoxes, 0);
-        expect(items[1].quantityPieces, 0);
-        expect(items[1].unitPrice, 6000);
-        expect(items[1].boxSize, 24);
-        expect(items[1].totalPrice, 0);
+        final byCode = {for (final p in items) p.productCode: p};
+        expect(byCode['P001']!.productName, '진라면');
+        expect(byCode['P001']!.unitPrice, 5000);
+        expect(byCode['P001']!.boxSize, 20);
+        expect(byCode['P002']!.productName, '진짬뽕');
+        expect(byCode['P002']!.unitPrice, 6000);
+        expect(byCode['P002']!.boxSize, 24);
       });
 
       test('모든 탭의 제품을 통합하여 수집', () {
@@ -500,7 +512,7 @@ void main() {
         );
 
         // Act
-        final items = notifier.getSelectedOrderDraftItems();
+        final items = notifier.getSelectedProducts();
 
         // Assert
         expect(items.length, 3);
@@ -519,7 +531,7 @@ void main() {
         );
 
         // Act
-        final items = notifier.getSelectedOrderDraftItems();
+        final items = notifier.getSelectedProducts();
 
         // Assert
         expect(items.length, 1);
@@ -538,7 +550,7 @@ void main() {
         );
 
         // Act
-        final items = notifier.getSelectedOrderDraftItems();
+        final items = notifier.getSelectedProducts();
 
         // Assert
         expect(items.length, 1);

@@ -1,7 +1,6 @@
 import '../../core/utils/error_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../domain/entities/order_draft.dart';
 import '../../domain/entities/product_for_order.dart';
 import '../../domain/usecases/add_to_favorites_usecase.dart';
 import '../../domain/usecases/get_favorite_products_usecase.dart';
@@ -62,8 +61,9 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
         _removeFromFavorites = removeFromFavorites,
         super(AddProductState.initial());
 
-  /// 초기화 — 즐겨찾기 탭 데이터 로드
-  Future<void> initialize() async {
+  /// 초기화 — 선택 모드 설정 + 즐겨찾기 탭 데이터 로드
+  Future<void> initialize({bool multiSelect = true}) async {
+    state = state.copyWith(multiSelect: multiSelect);
     await loadFavoriteProducts();
   }
 
@@ -98,7 +98,11 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   }) async {
     state = state.copyWith(searchQuery: query);
 
-    if (query.trim().isEmpty) {
+    // 검색어가 비어도 분류(중/소)가 지정되면 분류 검색을 허용한다(전산매출 등).
+    final hasCategory =
+        (categoryMid != null && categoryMid.isNotEmpty) ||
+            (categorySub != null && categorySub.isNotEmpty);
+    if (query.trim().isEmpty && !hasCategory) {
       state = state.copyWith(searchResults: []);
       return;
     }
@@ -149,9 +153,21 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   }
 
   /// 제품 선택 토글
+  ///
+  /// 단건 선택 모드(`multiSelect == false`)에서는 새 제품을 고르면
+  /// 기존 선택을 대체하고, 같은 제품을 다시 누르면 선택 해제한다.
   void toggleProductSelection(String productCode) {
+    final isSelected = state.selectedProductCodes.contains(productCode);
+
+    if (!state.multiSelect) {
+      state = state.copyWith(
+        selectedProductCodes: isSelected ? const {} : {productCode},
+      );
+      return;
+    }
+
     final updatedSelection = Set<String>.from(state.selectedProductCodes);
-    if (updatedSelection.contains(productCode)) {
+    if (isSelected) {
       updatedSelection.remove(productCode);
     } else {
       updatedSelection.add(productCode);
@@ -219,10 +235,12 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     }
   }
 
-  /// 선택된 제품들을 OrderDraftItem 목록으로 변환
+  /// 선택된 제품들을 [ProductForOrder] 목록으로 반환
   ///
-  /// 모든 탭의 제품을 통합하여 선택된 제품만 반환
-  List<OrderDraftItem> getSelectedOrderDraftItems() {
+  /// 모든 탭의 제품을 productCode 기준으로 통합하여 선택된 것만 반환한다.
+  /// 주문/클레임/매출조회 등 호출 화면이 이 결과를 각자 필요한 모델로
+  /// 매핑해서 사용한다(모달은 주문 도메인에 결합되지 않는다).
+  List<ProductForOrder> getSelectedProducts() {
     final allProducts = <String, ProductForOrder>{};
 
     // 모든 탭의 제품을 productCode 기준으로 수집
@@ -238,21 +256,10 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       }
     }
 
-    // 선택된 제품만 OrderDraftItem으로 변환
     return state.selectedProductCodes
         .where((code) => allProducts.containsKey(code))
-        .map((code) {
-      final product = allProducts[code]!;
-      return OrderDraftItem(
-        productCode: product.productCode,
-        productName: product.productName,
-        quantityBoxes: 0,
-        quantityPieces: 0,
-        unitPrice: product.unitPrice,
-        boxSize: product.boxSize,
-        totalPrice: 0,
-      );
-    }).toList();
+        .map((code) => allProducts[code]!)
+        .toList();
   }
 
   /// 에러 초기화

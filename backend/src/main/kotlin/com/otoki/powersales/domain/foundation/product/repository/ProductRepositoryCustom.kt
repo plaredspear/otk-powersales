@@ -30,6 +30,15 @@ interface ProductRepositoryCustom {
     ): Page<ProductSearchRow>
 
     /**
+     * 제품코드 목록으로 주문/즐겨찾기용 행을 조회한다(발주 단위 매칭 대표 바코드 포함).
+     *
+     * 즐겨찾기 목록이 검색 결과와 동일하게 대표 바코드(ProductBarcode.barcode)를 갖도록 하기 위한
+     * 조회. orderable 필터는 적용하지 않는다(사용자가 담은 즐겨찾기는 그대로 노출).
+     * 바코드가 없는 제품은 barcode = null 로 반환한다.
+     */
+    fun findOrderRowsByProductCodes(productCodes: Collection<String>): List<ProductSearchRow>
+
+    /**
      * 레거시 제품추가 팝업(productMapper.xml `selectProduct`) 정합 — 제품명/바코드/중분류/소분류 조합 검색.
      * 모든 조건은 선택적이며, 모두 비어 있으면 orderable 제품 전체를 페이지로 반환한다.
      */

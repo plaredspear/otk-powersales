@@ -34,13 +34,16 @@ class FavoriteProductService(
         val favorites = favoriteProductRepository.findByEmployeeCodeOrderByCreatedAtDesc(employeeCode)
         if (favorites.isEmpty()) return emptyList()
 
-        val productsByCode = productRepository
-            .findByProductCodeIn(favorites.map { it.productCode })
-            .associateBy { it.productCode }
+        // 검색 결과와 동일하게 발주 단위 매칭 대표 바코드를 포함해 조회한다.
+        // (from(product) 만 쓰면 barcode 가 logisticsBarcode 폴백→대개 빈 값이 되어,
+        //  POS/전산 매출조회처럼 바코드로 필터링하는 화면에서 즐겨찾기가 전부 누락된다.)
+        val rowsByCode = productRepository
+            .findOrderRowsByProductCodes(favorites.map { it.productCode })
+            .associateBy { it.product.productCode }
 
         return favorites.mapNotNull { favorite ->
-            productsByCode[favorite.productCode]?.let { product ->
-                OrderProductDto.from(product).copy(isFavorite = true)
+            rowsByCode[favorite.productCode]?.let { row ->
+                OrderProductDto.from(row.product, row.barcode).copy(isFavorite = true)
             }
         }
     }

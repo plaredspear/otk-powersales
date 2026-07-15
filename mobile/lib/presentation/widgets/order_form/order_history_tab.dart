@@ -12,10 +12,14 @@ import 'product_card_for_add.dart';
 /// 주문 이력 탭
 class OrderHistoryTab extends ConsumerWidget {
   final ScrollController scrollController;
+  final bool requireBarcode;
+  final bool blockExclusive;
 
   const OrderHistoryTab({
     super.key,
     required this.scrollController,
+    this.requireBarcode = false,
+    this.blockExclusive = false,
   });
 
   @override
@@ -84,6 +88,13 @@ class OrderHistoryTab extends ConsumerWidget {
       itemCount: state.orderHistoryGroups.length,
       itemBuilder: (context, index) {
         final OrderHistoryGroup group = state.orderHistoryGroups[index];
+        // 바코드 필수 화면(POS/전산 매출조회)에서는 바코드 없는 제품을 제외한다
+        // (레거시 productMapper `is not null` 정합).
+        final groupProducts = requireBarcode
+            ? group.products
+                .where((p) => p.barcode.trim().isNotEmpty)
+                .toList()
+            : group.products;
         return Card(
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
           shape: RoundedRectangleBorder(
@@ -100,12 +111,12 @@ class OrderHistoryTab extends ConsumerWidget {
               style: AppTypography.labelLarge,
             ),
             subtitle: Text(
-              '${group.products.length}개 제품',
+              '${groupProducts.length}개 제품',
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
-            children: group.products.map((product) {
+            children: groupProducts.map((product) {
               return ProductCardForAdd(
                 product: product,
                 isSelected: state.isProductSelected(product.productCode),
@@ -117,6 +128,7 @@ class OrderHistoryTab extends ConsumerWidget {
                 onFavoriteToggle: null,
                 isFavoriteTab: false,
                 showFavoriteButton: false,
+                blockExclusive: blockExclusive,
               );
             }).toList(),
           ),

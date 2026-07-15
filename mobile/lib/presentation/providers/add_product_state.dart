@@ -69,6 +69,9 @@ class AddProductState {
   /// 선택된 제품 코드 Set (탭과 무관하게 통합 관리)
   final Set<String> selectedProductCodes;
 
+  /// 다건 선택 여부. false 면 단건 선택(선택 시 기존 선택 대체).
+  final bool multiSelect;
+
   /// 검색어
   final String searchQuery;
 
@@ -93,6 +96,7 @@ class AddProductState {
     this.searchResults = const [],
     this.orderHistoryGroups = const [],
     this.selectedProductCodes = const {},
+    this.multiSelect = true,
     this.searchQuery = '',
     this.historyDateFrom,
     this.historyDateTo,
@@ -159,6 +163,7 @@ class AddProductState {
     List<ProductForOrder>? searchResults,
     List<OrderHistoryGroup>? orderHistoryGroups,
     Set<String>? selectedProductCodes,
+    bool? multiSelect,
     String? searchQuery,
     DateTime? historyDateFrom,
     DateTime? historyDateTo,
@@ -174,6 +179,7 @@ class AddProductState {
       searchResults: searchResults ?? this.searchResults,
       orderHistoryGroups: orderHistoryGroups ?? this.orderHistoryGroups,
       selectedProductCodes: selectedProductCodes ?? this.selectedProductCodes,
+      multiSelect: multiSelect ?? this.multiSelect,
       searchQuery: searchQuery ?? this.searchQuery,
       historyDateFrom: historyDateFrom ?? this.historyDateFrom,
       historyDateTo: historyDateTo ?? this.historyDateTo,

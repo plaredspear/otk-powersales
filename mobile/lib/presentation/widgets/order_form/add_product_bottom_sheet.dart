@@ -4,22 +4,57 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../domain/entities/product_for_order.dart';
 import '../../providers/add_product_provider.dart';
 import '../../providers/add_product_state.dart';
-import '../../providers/order_form_provider.dart';
 import 'favorite_products_tab.dart';
 import 'search_products_tab.dart';
 import 'order_history_tab.dart';
 
-/// 제품 추가 BottomSheet
+/// 제품 선택 BottomSheet (공용)
 ///
-/// 3개 탭 (즐겨찾기/제품검색/주문이력)으로 구성된 Full Screen BottomSheet입니다.
+/// 즐겨찾기/제품검색/주문이력 3개 탭으로 구성된 Full Screen BottomSheet.
+/// 주문서 작성뿐 아니라 클레임·현장점검·제안·유통기한·매출조회 등
+/// 제품을 고르는 모든 화면에서 공용으로 사용한다.
+///
+/// 주문 도메인에 결합되지 않으며, 선택 결과를 `List<ProductForOrder>`로
+/// [Navigator.pop] 반환한다. 호출 화면이 결과를 각자 모델로 매핑해 쓴다.
 class AddProductBottomSheet extends ConsumerStatefulWidget {
-  const AddProductBottomSheet({super.key});
+  /// 헤더 제목
+  final String title;
 
-  /// BottomSheet 표시
-  static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
+  /// 다건 선택 여부. false 면 단건 선택.
+  final bool multiSelect;
+
+  /// 검색 탭에 중/소분류 필터를 노출할지 여부(전산매출 등 분류검색용).
+  final bool showCategoryFilter;
+
+  /// 바코드가 없는 제품 선택을 차단할지 여부(POS/전산 등 바코드 필터용).
+  final bool requireBarcode;
+
+  /// 전용상품 선택을 차단할지 여부. 주문서 작성에서만 true(주문 불가 룰),
+  /// 그 외 화면(클레임/점검/제안/유통기한/매출조회)은 전용상품도 선택 가능.
+  final bool blockExclusive;
+
+  const AddProductBottomSheet({
+    super.key,
+    this.title = '제품 추가',
+    this.multiSelect = true,
+    this.showCategoryFilter = false,
+    this.requireBarcode = false,
+    this.blockExclusive = false,
+  });
+
+  /// BottomSheet 표시 — 선택된 제품 목록을 반환(취소 시 null).
+  static Future<List<ProductForOrder>?> show(
+    BuildContext context, {
+    String title = '제품 추가',
+    bool multiSelect = true,
+    bool showCategoryFilter = false,
+    bool requireBarcode = false,
+    bool blockExclusive = false,
+  }) {
+    return showModalBottomSheet<List<ProductForOrder>>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -28,7 +63,13 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
           top: Radius.circular(AppSpacing.radiusXl),
         ),
       ),
-      builder: (sheetContext) => const AddProductBottomSheet(),
+      builder: (sheetContext) => AddProductBottomSheet(
+        title: title,
+        multiSelect: multiSelect,
+        showCategoryFilter: showCategoryFilter,
+        requireBarcode: requireBarcode,
+        blockExclusive: blockExclusive,
+      ),
     );
   }
 
@@ -56,7 +97,9 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(addProductProvider.notifier).initialize();
+      ref
+          .read(addProductProvider.notifier)
+          .initialize(multiSelect: widget.multiSelect);
     });
   }
 
@@ -66,44 +109,11 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
     super.dispose();
   }
 
-  void _onAddProducts() {
-    final notifier = ref.read(addProductProvider.notifier);
-    final orderFormNotifier = ref.read(orderFormProvider.notifier);
-
-    final selectedItems = notifier.getSelectedOrderDraftItems();
-
-    int addedCount = 0;
-    bool capped = false;
-    for (final item in selectedItems) {
-      // 100개 상한 도달 시 더 이상 담지 않고 중단.
-      if (ref.read(orderFormProvider).items.length >= 100) {
-        capped = true;
-        break;
-      }
-      // addProductToOrder ignores duplicates
-      final beforeCount = ref.read(orderFormProvider).items.length;
-      orderFormNotifier.addProductToOrder(item);
-      final afterCount = ref.read(orderFormProvider).items.length;
-      if (afterCount > beforeCount) {
-        addedCount++;
-      }
-    }
-
-    if (capped) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('100개 이하로 등록해주세요')),
-      );
-    } else if (addedCount > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$addedCount개 제품이 추가되었습니다.')),
-      );
-    } else if (selectedItems.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('이미 추가된 제품입니다.')),
-      );
-    }
-
-    Navigator.of(context).pop();
+  /// 선택 확정 — 선택된 제품 목록을 반환하고 닫는다.
+  /// 반환값 처리(주문 담기/폼 반영/조회 필터 등)는 호출 화면이 담당한다.
+  void _onConfirm() {
+    final selected = ref.read(addProductProvider.notifier).getSelectedProducts();
+    Navigator.of(context).pop(selected);
   }
 
   @override
@@ -139,7 +149,7 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
               child: Row(
                 children: [
                   Text(
-                    '제품 추가',
+                    widget.title,
                     style: AppTypography.headlineMedium,
                   ),
                   const Spacer(),
@@ -168,12 +178,19 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
                 children: [
                   FavoriteProductsTab(
                     scrollController: scrollController,
+                    requireBarcode: widget.requireBarcode,
+                    blockExclusive: widget.blockExclusive,
                   ),
                   SearchProductsTab(
                     scrollController: scrollController,
+                    showCategoryFilter: widget.showCategoryFilter,
+                    requireBarcode: widget.requireBarcode,
+                    blockExclusive: widget.blockExclusive,
                   ),
                   OrderHistoryTab(
                     scrollController: scrollController,
+                    requireBarcode: widget.requireBarcode,
+                    blockExclusive: widget.blockExclusive,
                   ),
                 ],
               ),
@@ -191,7 +208,7 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: state.hasSelection ? _onAddProducts : null,
+                    onPressed: state.hasSelection ? _onConfirm : null,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 48),
                       backgroundColor: AppColors.primary,
@@ -204,9 +221,11 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
                       ),
                     ),
                     child: Text(
-                      state.hasSelection
-                          ? '제품 추가 (${state.selectedCount}개)'
-                          : '제품 추가',
+                      widget.multiSelect
+                          ? (state.hasSelection
+                              ? '제품 추가 (${state.selectedCount}개)'
+                              : '제품 추가')
+                          : '선택',
                     ),
                   ),
                 ),

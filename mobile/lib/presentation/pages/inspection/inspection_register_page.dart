@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app_router.dart';
+import '../../widgets/order_form/add_product_bottom_sheet.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/image_picker_helper.dart';
-import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/my_account_repository.dart';
 import '../../providers/inspection_register_provider.dart';
 import '../../providers/inspection_register_state.dart';
@@ -300,17 +299,18 @@ class _InspectionRegisterPageState
     );
   }
 
-  /// 제품 선택 — 제품검색(선택 모드)으로 이동 후 고른 제품을 폼에 반영
+  /// 제품 선택 — 공용 제품검색 모달(단건 선택)에서 고른 제품을 폼에 반영
   Future<void> _showProductSelector(BuildContext context) async {
-    final selected = await AppRouter.navigateTo<Product>(
+    final selected = await AddProductBottomSheet.show(
       context,
-      AppRouter.productSearch,
-      arguments: true,
+      title: '제품 선택',
+      multiSelect: false,
     );
-    if (selected == null || !mounted) return;
+    if (selected == null || selected.isEmpty || !mounted) return;
+    final product = selected.first;
     ref
         .read(inspectionRegisterProvider.notifier)
-        .selectProduct(selected.productCode, selected.productName);
+        .selectProduct(product.productCode, product.productName);
   }
 
   /// 바코드 스캔 — 카메라로 제품 바코드를 스캔해 자사 제품을 선택한다.

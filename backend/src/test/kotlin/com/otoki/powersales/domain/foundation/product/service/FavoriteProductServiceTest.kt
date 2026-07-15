@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.foundation.product.entity.FavoriteProduct
 import com.otoki.powersales.domain.foundation.product.entity.Product
 import com.otoki.powersales.domain.foundation.product.repository.FavoriteProductRepository
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
+import com.otoki.powersales.domain.foundation.product.repository.ProductSearchRow
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.common.exception.AlreadyFavoritedException
@@ -58,10 +59,11 @@ class FavoriteProductServiceTest {
             FavoriteProduct(employeeCode = employeeCode, productCode = "P_GONE"),
             FavoriteProduct(employeeCode = employeeCode, productCode = "P2"),
         )
-        // P_GONE 은 제품 마스터에 없음(단종/삭제) → 결과에서 제외
-        every { productRepository.findByProductCodeIn(listOf("P1", "P_GONE", "P2")) } returns listOf(
-            product("P1", "열라면"),
-            product("P2", "참깨라면"),
+        // P_GONE 은 제품 마스터에 없음(단종/삭제) → 결과에서 제외.
+        // 검색과 동일하게 발주 단위 매칭 대표 바코드(ProductBarcode.barcode)를 함께 내려준다.
+        every { productRepository.findOrderRowsByProductCodes(listOf("P1", "P_GONE", "P2")) } returns listOf(
+            ProductSearchRow(product("P1", "열라면"), "8801111"),
+            ProductSearchRow(product("P2", "참깨라면"), "8802222"),
         )
 
         val result = service.getMyFavoriteProducts(userId)
@@ -69,6 +71,8 @@ class FavoriteProductServiceTest {
         assertThat(result).hasSize(2)
         assertThat(result.map { it.productCode }).containsExactly("P1", "P2")
         assertThat(result).allMatch { it.isFavorite }
+        // 대표 바코드가 채워져야 한다(logisticsBarcode 폴백이 아님) — POS/전산 매출조회 필터 정합.
+        assertThat(result.map { it.barcode }).containsExactly("8801111", "8802222")
     }
 
     @Test
@@ -80,7 +84,7 @@ class FavoriteProductServiceTest {
         val result = service.getMyFavoriteProducts(userId)
 
         assertThat(result).isEmpty()
-        verify(exactly = 0) { productRepository.findByProductCodeIn(any()) }
+        verify(exactly = 0) { productRepository.findOrderRowsByProductCodes(any()) }
     }
 
     @Test

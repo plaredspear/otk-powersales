@@ -17,6 +17,10 @@ class ProductCardForAdd extends StatelessWidget {
   final bool isFavoriteTab;
   final bool showFavoriteButton;
 
+  /// 전용상품 선택을 차단할지 여부. 주문서 작성에서만 true(주문 불가 룰),
+  /// 그 외 화면(클레임/점검/제안/유통기한/매출조회)은 전용상품도 선택 가능.
+  final bool blockExclusive;
+
   const ProductCardForAdd({
     super.key,
     required this.product,
@@ -25,6 +29,7 @@ class ProductCardForAdd extends StatelessWidget {
     this.onFavoriteToggle,
     this.isFavoriteTab = false,
     this.showFavoriteButton = true,
+    this.blockExclusive = false,
   });
 
   String _formatNumber(int value) {
@@ -36,8 +41,13 @@ class ProductCardForAdd extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 전용상품(예외 코드 제외)은 주문서에 추가할 수 없으므로 선택을 막는다.
-    final bool isBlocked = product.isExclusiveBlocked;
+    // 전용상품(예외 코드 제외)은 주문서 작성에서만 추가를 막는다(blockExclusive).
+    // 그 외 화면은 전용상품도 선택 가능하다.
+    // (바코드 없는 제품은 목록 단계에서 제외되므로 카드에서 별도 차단하지 않는다.)
+    final bool exclusiveBlocked = blockExclusive && product.isExclusiveBlocked;
+    final bool isBlocked = exclusiveBlocked;
+    final String? blockReason =
+        exclusiveBlocked ? '전용상품은 주문이 불가능합니다.' : null;
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -85,7 +95,7 @@ class ProductCardForAdd extends StatelessWidget {
                             style: AppTypography.labelLarge,
                           ),
                         ),
-                        if (isBlocked) ...[
+                        if (exclusiveBlocked) ...[
                           const SizedBox(width: AppSpacing.xs),
                           _ExclusiveBadge(),
                         ],
@@ -137,7 +147,7 @@ class ProductCardForAdd extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (isBlocked) ...[
+                    if (blockReason != null) ...[
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
@@ -149,7 +159,7 @@ class ProductCardForAdd extends StatelessWidget {
                           const SizedBox(width: AppSpacing.xs),
                           Expanded(
                             child: Text(
-                              '전용상품은 주문이 불가능합니다.',
+                              blockReason,
                               style: AppTypography.labelSmall.copyWith(
                                 color: AppColors.error,
                               ),

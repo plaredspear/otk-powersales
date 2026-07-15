@@ -9,7 +9,7 @@ import '../providers/pos_sales_provider.dart';
 import '../providers/pos_sales_state.dart';
 import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/common/range_calendar_picker.dart';
-import '../widgets/pos/pos_product_search_sheet.dart';
+import '../widgets/order_form/add_product_bottom_sheet.dart';
 import 'barcode_scanner_screen.dart';
 
 /// POS 매출 조회 화면.
@@ -153,11 +153,22 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
       trailing: _pillButton(
         label: '제품명',
         onPressed: () async {
-          final products = await PosProductSearchSheet.show(context);
+          // 공용 제품검색 모달(다건 선택). POS 매출조회는 선택 제품의 바코드를
+          // 필터(BARCODE IN)로 넘기므로 바코드 없는 제품 선택은 차단한다.
+          final products = await AddProductBottomSheet.show(
+            context,
+            title: '제품 선택',
+            multiSelect: true,
+            requireBarcode: true,
+          );
           if (products == null || products.isEmpty) return;
           final notifier = ref.read(posSalesProvider.notifier);
           for (final p in products) {
-            notifier.addProduct(p);
+            notifier.addProduct(PosProduct(
+              productCode: p.productCode,
+              productName: p.productName,
+              barcode: p.barcode,
+            ));
           }
         },
       ),

@@ -16,8 +16,8 @@ import '../widgets/account/account_selector_sheet.dart';
 import '../widgets/common/error_view.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/common/range_calendar_picker.dart';
-import '../widgets/electronic/electronic_product_picker_sheet.dart';
 import '../widgets/electronic/electronic_sales_result_list.dart';
+import '../widgets/order_form/add_product_bottom_sheet.dart';
 import 'barcode_scanner_screen.dart';
 
 /// 매출 조회 제품(추가된 제품) 1건.
@@ -128,21 +128,28 @@ class _ElectronicSalesScreenState extends ConsumerState<ElectronicSalesScreen> {
   }
 
   /// 제품명 팝업에서 제품 선택 → 매출 조회 제품에 추가
+  ///
+  /// 공용 제품검색 모달(중/소분류 필터 + 다건 선택). 전산매출 조회는 선택 제품의
+  /// 바코드(`UPC_CD`)를 필터로 넘기므로 바코드 없는 제품 선택은 차단한다.
   Future<void> _pickProduct() async {
-    final item = await ElectronicProductPickerSheet.show(context);
-    if (item == null || !mounted) return;
-    final barcode = item.barcode;
-    if (barcode == null || barcode.isEmpty) {
-      _showSnack('바코드가 없는 제품은 추가할 수 없습니다');
-      return;
-    }
-    _addProduct(
-      _PickedProduct(
-        productCode: item.productCode,
-        productName: item.productName,
-        barcode: barcode,
-      ),
+    final selected = await AddProductBottomSheet.show(
+      context,
+      title: '제품 선택',
+      multiSelect: true,
+      showCategoryFilter: true,
+      requireBarcode: true,
     );
+    if (selected == null || selected.isEmpty || !mounted) return;
+    for (final p in selected) {
+      if (p.barcode.trim().isEmpty) continue;
+      _addProduct(
+        _PickedProduct(
+          productCode: p.productCode,
+          productName: p.productName,
+          barcode: p.barcode,
+        ),
+      );
+    }
   }
 
   /// 바코드 스캔 → 제품 조회 후 매출 조회 제품에 추가

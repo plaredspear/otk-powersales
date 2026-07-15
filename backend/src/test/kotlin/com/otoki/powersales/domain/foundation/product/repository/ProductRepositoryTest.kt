@@ -384,4 +384,47 @@ class ProductRepositoryTest {
             assertThat(result.content).isEmpty()
         }
     }
+
+    // ========== 즐겨찾기용 제품+대표바코드 조회 (findOrderRowsByProductCodes) ==========
+
+    @Nested
+    @DisplayName("findOrderRowsByProductCodes - 제품코드로 제품+발주단위 대표바코드 조회")
+    inner class FindOrderRowsByProductCodes {
+
+        @Test
+        @DisplayName("발주 단위 매칭 대표 바코드를 함께 반환한다(logisticsBarcode 폴백 아님)")
+        fun returnsRepresentativeBarcode() {
+            val saved = testEntityManager.persistAndFlush(
+                createProduct("즐겨찾기라면", "88880001", "9990000000001", unit = "EA")
+            )
+            testEntityManager.persistAndFlush(createBarcode(saved.id, "EA", "8801234567890"))
+            testEntityManager.clear()
+
+            val rows = productRepository.findOrderRowsByProductCodes(listOf("88880001"))
+
+            assertThat(rows).hasSize(1)
+            assertThat(rows[0].product.productCode).isEqualTo("88880001")
+            assertThat(rows[0].barcode).isEqualTo("8801234567890")
+        }
+
+        @Test
+        @DisplayName("orderable 필터 없이 조회 — 바코드 없는 제품도 barcode=null 로 반환한다")
+        fun returnsProductWithoutBarcodeAsNull() {
+            testEntityManager.persistAndFlush(
+                createProduct("바코드없는즐겨찾기", "88880002", "9990000000002", category3 = "기타")
+            )
+            testEntityManager.clear()
+
+            val rows = productRepository.findOrderRowsByProductCodes(listOf("88880002"))
+
+            assertThat(rows).hasSize(1)
+            assertThat(rows[0].barcode).isNull()
+        }
+
+        @Test
+        @DisplayName("빈 코드 목록 → 빈 결과")
+        fun emptyInput() {
+            assertThat(productRepository.findOrderRowsByProductCodes(emptyList())).isEmpty()
+        }
+    }
 }
