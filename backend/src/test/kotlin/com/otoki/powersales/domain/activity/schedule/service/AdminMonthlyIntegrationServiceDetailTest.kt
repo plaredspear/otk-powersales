@@ -3,7 +3,6 @@ package com.otoki.powersales.domain.activity.schedule.service
 import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -43,7 +42,6 @@ class AdminMonthlyIntegrationServiceDetailTest {
     private val organizationRepository: OrganizationRepository = mockk(relaxed = true)
     private val employeeRepository: EmployeeRepository = mockk(relaxed = true)
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxed = true)
-    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk(relaxed = true)
     private val accountRepository: AccountRepository = mockk(relaxed = true)
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk(relaxed = true)
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository =
@@ -67,7 +65,6 @@ class AdminMonthlyIntegrationServiceDetailTest {
             organizationRepository,
             employeeRepository,
             teamMemberScheduleRepository,
-            displayWorkScheduleRepository,
             accountRepository,
             monthlySalesHistoryGateway,
             monthlyIntegrationScheduleRepository,

@@ -2,7 +2,6 @@ package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
-import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -44,7 +43,6 @@ class AdminMonthlyIntegrationServiceRefreshTest {
     private val organizationRepository: OrganizationRepository = mockk(relaxed = true)
     private val employeeRepository: EmployeeRepository = mockk(relaxed = true)
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxed = true)
-    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk(relaxed = true)
     private val accountRepository: AccountRepository = mockk(relaxed = true)
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway = mockk(relaxed = true)
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository =
@@ -68,7 +66,6 @@ class AdminMonthlyIntegrationServiceRefreshTest {
             organizationRepository,
             employeeRepository,
             teamMemberScheduleRepository,
-            displayWorkScheduleRepository,
             accountRepository,
             monthlySalesHistoryGateway,
             monthlyIntegrationScheduleRepository,
@@ -170,6 +167,42 @@ class AdminMonthlyIntegrationServiceRefreshTest {
             assertThat(it.workingDaysMonth).isEqualByComparingTo(BigDecimal("3"))
             assertThat(it.convertedHeadcount).isEqualByComparingTo(BigDecimal("0.3333"))
         }
+    }
+
+    @Test
+    @DisplayName("환산인원 사원 합계 — 날짜별 N 이 제각각인 비대칭 케이스도 SF 동형 Double 계산으로 정확히 1.0000 (0.9999/1.0001 오차 없음)")
+    fun convertedHeadcountEmployeeSumIsExactlyOne() {
+        val accA = account(100L)
+        val accB = account(200L)
+        val accC = account(300L)
+        // D = 3일 근무. 날짜별 그날 투입 거래처 수 N 이 3 → 2 → 1 로 제각각인 비대칭 구조.
+        //   6/15: A,B,C (N=3) / 6/16: A,B (N=2) / 6/17: A (N=1)
+        // SF 는 1/N 을 Double 로 반올림 없이 누적 후 /D, 저장 직전 4자리 반올림 1회.
+        //   A행 = (1/3+1/2+1/1)/3 = 0.6111, B행 = (1/3+1/2)/3 = 0.2778, C행 = (1/3)/3 = 0.1111
+        //   사원 합계 = 0.6111+0.2778+0.1111 = 1.0000 (날짜별 몫 합 = 1 의 D 배 / D)
+        // BigDecimal 로 행마다 divide(4,HALF_UP) 선반올림하면 이 합이 0.9999/1.0001 로 어긋난다.
+        stubPopulation(
+            listOf(
+                schedule(1L, accA, LocalDate.of(2026, 6, 15)),
+                schedule(2L, accB, LocalDate.of(2026, 6, 15)),
+                schedule(3L, accC, LocalDate.of(2026, 6, 15)),
+                schedule(4L, accA, LocalDate.of(2026, 6, 16)),
+                schedule(5L, accB, LocalDate.of(2026, 6, 16)),
+                schedule(6L, accA, LocalDate.of(2026, 6, 17)),
+            )
+        )
+
+        service.refreshIntegration(10L, yearMonth)
+
+        val saved = savedRecords()
+        assertThat(saved).hasSize(3)
+        assertThat(saved).allSatisfy {
+            assertThat(it.workingDaysMonth).isEqualByComparingTo(BigDecimal("3"))
+        }
+        val sum = saved.mapNotNull { it.convertedHeadcount }
+            .fold(BigDecimal.ZERO) { acc, v -> acc.add(v) }
+        // 저장값(4자리) 단순 합산이 정확히 1.0000 — 이미지의 알라딘 실측치 정합
+        assertThat(sum).isEqualByComparingTo(BigDecimal("1.0000"))
     }
 
     @Test

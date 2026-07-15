@@ -14,7 +14,6 @@ import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmploye
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
-import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -48,7 +47,6 @@ class AdminMonthlyIntegrationService(
     private val organizationRepository: OrganizationRepository,
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val accountRepository: AccountRepository,
     private val monthlySalesHistoryGateway: MonthlySalesHistoryQueryGateway,
     private val monthlyIntegrationScheduleRepository: MonthlyFemaleEmployeeIntegrationScheduleRepository,
@@ -441,20 +439,24 @@ class AdminMonthlyIntegrationService(
             val employee = rep.employee
             val account = rep.account
 
-            // 환산근무일수 — 전정밀도(스케일 16) 누적 후 최종 4자리 HALF_UP
-            // (레거시 Double 합산 + SF Number(18,4) 저장 반올림 동등 — row 별 선반올림 금지)
-            var equivalentRaw = BigDecimal.ZERO
+            // 환산근무일수 / 환산인원 — SF 레거시(`TeamMemberScheduleTriggerHandler.cls:981,769`) 완전 동형.
+            // SF 는 `1.0/N` 과 `Σ(1/N)/D` 를 IEEE-754 Double 로 중간 반올림 없이 계산하고,
+            // Number(18,4) 필드 저장 시점에만 4자리 round-half-up 을 1회 적용한다.
+            // BigDecimal 로 row 별 선반올림하면 `N × (1/N) = 1` 의 Double 대칭 소거가 깨져
+            // 사원 1인 환산인원 합계가 0.9999 / 1.0001 로 어긋난다 → Double 산술로 재현.
+            var equivalentRawDouble = 0.0
             for (row in rows) {
                 val n = rowCountByDate[row.workingDate!!] ?: 1
-                equivalentRaw = equivalentRaw.add(
-                    BigDecimal.ONE.divide(BigDecimal(n), 16, RoundingMode.HALF_UP)
-                )
+                equivalentRawDouble += 1.0 / n.toDouble()
             }
-            val equivalentWorkingDays = equivalentRaw.setScale(4, RoundingMode.HALF_UP)
+            // 환산근무일수 = Σ(1/N) — 저장 직전 4자리 반올림 1회 (SF Number(18,4) 저장 동등)
+            val equivalentWorkingDays = BigDecimal(equivalentRawDouble).setScale(4, RoundingMode.HALF_UP)
 
             val workingDaysMonth = workingDaysByCostCenter[rep.costCenterCode] ?: 0
+            // 환산인원 = Σ(1/N) / D — 미반올림 Double 나눗셈 후 저장 직전 4자리 반올림 1회
             val convertedHeadcount = if (workingDaysMonth > 0) {
-                equivalentRaw.divide(BigDecimal(workingDaysMonth), 4, RoundingMode.HALF_UP)
+                BigDecimal(equivalentRawDouble / workingDaysMonth.toDouble())
+                    .setScale(4, RoundingMode.HALF_UP)
             } else {
                 BigDecimal.ZERO
             }
@@ -633,176 +635,6 @@ class AdminMonthlyIntegrationService(
         }
     }
 
-    internal fun buildIntegrationItems(
-        year: Int,
-        month: Int,
-        costCenterCodes: List<String>
-    ): List<MonthlyIntegrationScheduleItem> {
-        // 1. Cost center expansion — 조직 계층 펼침 + BranchMapping 이력 합집합 (SF Util.getIncludedBranchCode 동등)
-        val orgExpanded = organizationRepository.expandCostCenterCodes(costCenterCodes)
-        val expandedCodes = branchCodeExpander.expand(orgExpanded).toList()
-        if (expandedCodes.isEmpty()) return emptyList()
-
-        // 2. Find employees with these cost center codes
-        val employees = employeeRepository.findByCostCenterCodeInAndStatus(expandedCodes, "재직")
-        if (employees.isEmpty()) return emptyList()
-
-        val employeeMap = employees.associateBy { it.id }
-        val employeeIds = employees.map { it.id }
-
-        // 3. Query schedule records
-        val ym = YearMonth.of(year, month)
-        val from = ym.atDay(1)
-        val to = ym.atEndOfMonth()
-
-        val records = teamMemberScheduleRepository.findIntegrationScheduleRecords(employeeIds, from, to)
-        if (records.isEmpty()) return emptyList()
-
-        // 4. Resolve working_category5 from display_work_schedule
-        val category5Map = resolveWorkingCategory5(records)
-
-        // 5. Calculate equivalent working days denominator:
-        //    for each employee + each working_date → count of distinct accounts
-        val employeeDateAccountCount = records
-            .groupBy { it.employee!!.id to it.workingDate!! }
-            .mapValues { (_, recs) -> recs.map { it.account!!.id }.distinct().size }
-
-        // 6. Calculate monthly working days per employee (distinct working dates for the employee in month)
-        val monthlyWorkingDays = records
-            .groupBy { it.employee!!.id }
-            .mapValues { (_, recs) -> recs.map { it.workingDate!! }.distinct().size }
-
-        // 7. Grouping key → aggregate
-        data class GroupKey(
-            val employeeId: Long,
-            val accountId: Long,
-            val workingCategory1: String?,
-            val workingCategory3: String?,
-            val workingCategory4: String?,
-            val workingCategory5: String?
-        )
-
-        val grouped = records.groupBy { rec ->
-            GroupKey(
-                employeeId = rec.employee!!.id,
-                accountId = rec.account!!.id,
-                workingCategory1 = rec.workingCategory1?.displayName,
-                workingCategory3 = rec.workingCategory3?.displayName,
-                workingCategory4 = rec.workingCategory4,
-                workingCategory5 = category5Map[rec.id]
-            )
-        }
-
-        // 8. Collect account IDs for ABC closing amount
-        val accountIds = grouped.keys.map { it.accountId }.distinct()
-        val accounts = accountRepository.findByIdIn(accountIds).associateBy { it.id }
-
-        // 9. Calculate 6-month ABC closing amount — Q12 옵션 1 (#680): MFEIS persist 우선 + 동기 fallback.
-        // batch 가 매월 1일 03시에 전월 기준 this_month_amount 를 persist 한다 (MfeisThisMonthRevenueBatch).
-        // 본 조회 시점에 employee+account+year+month 의 MFEIS 가 존재 + thisMonthAmount not null 이면 그 값 사용,
-        // 그 외 (당월 / persist 미적용 / 등) 는 calculateAvgClosingAmounts 동기 계산 fallback.
-        val yearStr = year.toString()
-        // MFEIS month 는 레거시 Month__c 포맷 (zero-pad 없음) — refreshIntegration 저장 포맷과 동일
-        val monthStr = month.toString()
-        val employeeAccountPersistedAmounts: Map<Pair<Long, Long>, BigDecimal> = grouped.keys
-            .map { it.employeeId to it.accountId }
-            .distinct()
-            .mapNotNull { (empId, accId) ->
-                val amount = monthlyIntegrationScheduleRepository
-                    .findByEmployeeIdAndAccountIdAndYearAndMonth(empId, accId, yearStr, monthStr)
-                    .firstNotNullOfOrNull { it.thisMonthAmount }
-                    ?: return@mapNotNull null
-                (empId to accId) to amount
-            }
-            .toMap()
-        val avgClosingAmounts = calculateAvgClosingAmounts(year, month, accounts.values.toList())
-
-        // 10. Get org name map for branch names
-        val orgNameMap = getOrgNameMap(expandedCodes)
-
-        // 11. Build items
-        val items = grouped.map { (key, recs) ->
-            val employee = employeeMap[key.employeeId]
-            val account = accounts[key.accountId]
-
-            val totalInputCount = recs.map { it.workingDate!! }.distinct().size
-
-            var equivalentWorkingDays = BigDecimal.ZERO
-            for (rec in recs) {
-                val n = employeeDateAccountCount[rec.employee!!.id to rec.workingDate!!] ?: 1
-                equivalentWorkingDays = equivalentWorkingDays.add(
-                    BigDecimal.ONE.divide(BigDecimal(n), 6, RoundingMode.HALF_UP)
-                )
-            }
-            equivalentWorkingDays = equivalentWorkingDays.setScale(3, RoundingMode.HALF_UP)
-
-            val empMonthlyDays = monthlyWorkingDays[key.employeeId] ?: 1
-            val convertedHeadcount = if (empMonthlyDays > 0) {
-                equivalentWorkingDays.divide(BigDecimal(empMonthlyDays), 3, RoundingMode.HALF_UP)
-            } else {
-                BigDecimal.ZERO
-            }
-
-            // Q12 옵션 1 (#680): MFEIS persist 우선 + 동기 fallback
-            val persisted = employeeAccountPersistedAmounts[key.employeeId to key.accountId]
-            val avgAmount = persisted?.toLong()
-                ?: account?.id?.let { avgClosingAmounts[it] }
-                ?: 0L
-            val branchName = employee?.costCenterCode?.let { orgNameMap[it] } ?: employee?.orgName ?: ""
-
-            MonthlyIntegrationScheduleItem(
-                branchName = branchName,
-                accountBranchName = account?.branchName,
-                accountCode = account?.externalKey ?: "",
-                accountName = account?.name ?: "",
-                distributionChannelLabel = account?.distributionChannelLabel(),
-                abcTypeLabel = account?.abcTypeLabel(),
-                employeeCode = employee?.employeeCode ?: "",
-                title = null,
-                employeeName = employee?.name ?: "",
-                workingCategory1 = key.workingCategory1 ?: "",
-                workingCategory3 = key.workingCategory3,
-                workingCategory4 = key.workingCategory4,
-                workingCategory5 = key.workingCategory5,
-                totalInputCount = totalInputCount,
-                equivalentWorkingDays = equivalentWorkingDays,
-                convertedHeadcount = convertedHeadcount,
-                avgClosingAmount = avgAmount
-            )
-        }.sortedWith(compareBy({ it.branchName }, { it.accountCode }, { it.employeeCode }))
-
-        return items
-    }
-
-    private fun resolveWorkingCategory5(records: List<TeamMemberSchedule>): Map<Long, String?> {
-        val employeeAccountPairs = records.map { (it.employee!!.id to it.account!!.id) }.distinct()
-
-        if (employeeAccountPairs.isEmpty()) return emptyMap()
-
-        val employeeIds = employeeAccountPairs.map { it.first }.distinct()
-        val accountIds = employeeAccountPairs.map { it.second }.distinct()
-
-        val displaySchedules = displayWorkScheduleRepository.findByEmployeeIdsAndAccountIds(
-            employeeIds, accountIds
-        )
-
-        val result = mutableMapOf<Long, String?>()
-        for (rec in records) {
-            val matching = displaySchedules.find { dws ->
-                dws.employee?.id == rec.employee?.id &&
-                    dws.account?.id == rec.account?.id &&
-                    dws.confirmed == true &&
-                    rec.workingDate != null &&
-                    dws.startDate != null &&
-                    dws.endDate != null &&
-                    !rec.workingDate!!.isBefore(dws.startDate) &&
-                    !rec.workingDate!!.isAfter(dws.endDate)
-            }
-            result[rec.id] = matching?.typeOfWork5?.displayName
-        }
-        return result
-    }
-
     private fun calculateAvgClosingAmounts(
         year: Int,
         month: Int,
@@ -854,13 +686,6 @@ class AdminMonthlyIntegrationService(
                     0L
                 }
             }
-    }
-
-    private fun getOrgNameMap(costCenterCodes: List<String>): Map<String, String> {
-        val orgs = organizationRepository.searchForAdmin(null, null, costCenterCodes)
-        return orgs
-            .filter { it.costCenterLevel5 != null && it.orgNameLevel5 != null }
-            .associate { it.costCenterLevel5!! to it.orgNameLevel5!! }
     }
 
     private fun buildCategoryItems(
