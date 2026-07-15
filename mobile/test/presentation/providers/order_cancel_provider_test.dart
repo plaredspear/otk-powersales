@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/client_order.dart';
@@ -380,6 +381,76 @@ void main() {
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.errorMessage, 'Unknown error');
+    });
+
+    test('cancelOrderRequest: receiveTimeout → 미확정(inconclusive)로 처리', () async {
+      // timeout 은 "실패" 가 아니라 "결과 미확정" — 백엔드/SAP 가 마저 처리했을 수 있음.
+      final reqOpts = RequestOptions(path: '/cancel');
+      mockRepository.errorToThrow = DioException(
+        requestOptions: reqOpts,
+        type: DioExceptionType.receiveTimeout,
+      );
+
+      final notifier = container.read(orderCancelProvider(params).notifier);
+      notifier.toggleProduct(101);
+
+      final result = await notifier.cancelOrderRequest();
+
+      final state = container.read(orderCancelProvider(params));
+      expect(result, false);
+      expect(state.cancelInconclusive, true); // 미확정
+      expect(state.cancelSuccess, false);
+      expect(state.errorMessage, isNull); // 실패 메시지 미표시 (에러 스낵바 대신 재조회 유도)
+    });
+
+    test('cancelOrderRequest: 게이트웨이 504 → 미확정(inconclusive)로 처리', () async {
+      // CloudFront/ALB/nginx 가 백엔드보다 먼저 끊어 504 HTML 을 내린 경우.
+      final reqOpts = RequestOptions(path: '/cancel');
+      mockRepository.errorToThrow = DioException(
+        requestOptions: reqOpts,
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: reqOpts,
+          statusCode: 504,
+          data: '<html>504 Gateway Time-out</html>',
+        ),
+      );
+
+      final notifier = container.read(orderCancelProvider(params).notifier);
+      notifier.toggleProduct(101);
+
+      final result = await notifier.cancelOrderRequest();
+
+      final state = container.read(orderCancelProvider(params));
+      expect(result, false);
+      expect(state.cancelInconclusive, true);
+      expect(state.errorMessage, isNull);
+    });
+
+    test('cancelOrderRequest: 백엔드 error.code(502 SAP 실패)는 확정 실패로 처리', () async {
+      // 백엔드가 error.code 를 담아 502 를 응답했다면 결과가 확정된 것 — 미확정 아님.
+      final reqOpts = RequestOptions(path: '/cancel');
+      mockRepository.errorToThrow = DioException(
+        requestOptions: reqOpts,
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: reqOpts,
+          statusCode: 502,
+          data: {
+            'error': {'code': 'ORD_CANCEL_SAP_FAILED', 'message': 'x'},
+          },
+        ),
+      );
+
+      final notifier = container.read(orderCancelProvider(params).notifier);
+      notifier.toggleProduct(101);
+
+      final result = await notifier.cancelOrderRequest();
+
+      final state = container.read(orderCancelProvider(params));
+      expect(result, false);
+      expect(state.cancelInconclusive, false); // 미확정 아님 — 확정 실패
+      expect(state.errorMessage, '주문 취소 전송에 실패했습니다. 잠시 후 다시 시도해주세요');
     });
 
     test('clearError clears the error message', () {

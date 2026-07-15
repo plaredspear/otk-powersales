@@ -295,7 +295,7 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     final detail = state.orderDetail;
     if (detail == null) return;
 
-    final result = await AppRouter.navigateTo<bool>(
+    final result = await AppRouter.navigateTo<OrderCancelResult>(
       context,
       AppRouter.orderCancel,
       arguments: OrderCancelPageArgs(
@@ -304,8 +304,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       ),
     );
 
-    // 취소 성공 시 상세 화면 새로고침
-    if (result == true && context.mounted) {
+    // 취소 성공(success) 뿐 아니라 결과 미확정(inconclusive, timeout/게이트웨이 5xx)에도
+    // 상세를 재조회한다. 미확정 시 서버/SAP 가 취소를 마저 처리했을 수 있어, 재조회로 실제
+    // 반영 여부를 화면에 정확히 반영해야 '실패 오표시 → 재취소 → SAP 중복 전송' 을 막는다.
+    // dismissed(사용자가 그냥 닫음)만 재조회하지 않는다.
+    final shouldRefresh = result == OrderCancelResult.success ||
+        result == OrderCancelResult.inconclusive;
+    if (shouldRefresh && context.mounted) {
       ref
           .read(orderRequestDetailProvider(orderId).notifier)
           .loadOrderDetail(orderId: orderId);

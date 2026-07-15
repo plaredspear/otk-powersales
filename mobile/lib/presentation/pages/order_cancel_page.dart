@@ -55,7 +55,23 @@ class OrderCancelPage extends ConsumerWidget {
             duration: Duration(seconds: 2),
           ),
         );
-        Navigator.of(context).pop(true);
+        Navigator.of(context).pop(OrderCancelResult.success);
+      }
+    });
+
+    // 취소 결과 미확정(timeout / 게이트웨이 5xx) 리스닝.
+    // 서버는 취소를 마저 처리했을 수 있으므로 '실패' 가 아니라 '결과 확인 중' 으로 안내하고
+    // 화면을 닫는다. 상세 화면이 이 결과를 받아 재조회로 실제 취소 반영 여부를 확인한다.
+    ref.listen(orderCancelProvider(params), (previous, next) {
+      if (next.cancelInconclusive &&
+          !(previous?.cancelInconclusive ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('취소 요청을 전송했습니다. 처리 결과를 확인 중입니다.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        Navigator.of(context).pop(OrderCancelResult.inconclusive);
       }
     });
 
@@ -66,7 +82,7 @@ class OrderCancelPage extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(context).pop(OrderCancelResult.dismissed),
           ),
         ],
       ),
@@ -280,3 +296,12 @@ class OrderCancelPageArgs {
     required this.allItems,
   });
 }
+
+/// 주문 취소 페이지 반환 결과.
+///
+/// 호출측(주문 상세)은 이 값으로 상세 재조회 여부를 결정한다:
+///  - [success]      : 취소 성공 확정 → 재조회로 취소 반영 화면 표시.
+///  - [inconclusive] : timeout/게이트웨이 5xx 로 결과 미확정 → 서버가 마저 처리했을 수
+///                     있으므로 **재조회**로 실제 취소 반영 여부를 확인해야 한다.
+///  - [dismissed]    : 사용자가 취소 없이 화면을 닫음 → 재조회 불필요.
+enum OrderCancelResult { success, inconclusive, dismissed }

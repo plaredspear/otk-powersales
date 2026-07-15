@@ -74,6 +74,13 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
       state = state.toSuccess();
       return true;
     } catch (e) {
+      // timeout / 게이트웨이 5xx = 결과 미확정. 백엔드/SAP 는 취소를 마저 처리했을 수
+      // 있으므로 "실패" 로 단정하지 않고, 화면을 닫아 상세 재조회로 실제 반영 여부를
+      // 확인하게 한다 (중복 전송/오표시 방지). 서버 error.code 가 있는 확정 오류는 제외.
+      if (isInconclusiveError(e)) {
+        state = state.toInconclusive();
+        return false;
+      }
       final errorMsg = _parseErrorMessage(e);
       state = state.toError(errorMsg);
       return false;

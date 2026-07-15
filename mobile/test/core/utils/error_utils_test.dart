@@ -121,6 +121,49 @@ void main() {
     });
   });
 
+  group('isInconclusiveError', () {
+    test('receiveTimeout 은 미확정', () {
+      expect(isInconclusiveError(dioWith(type: DioExceptionType.receiveTimeout)), isTrue);
+    });
+
+    test('connectionError 는 미확정', () {
+      expect(isInconclusiveError(dioWith(type: DioExceptionType.connectionError)), isTrue);
+    });
+
+    test('게이트웨이 5xx(HTML, code 없음)는 미확정', () {
+      for (final status in [502, 503, 504]) {
+        final e = dioWith(
+          type: DioExceptionType.badResponse,
+          response: responseWith(status, '<html>$status</html>'),
+        );
+        expect(isInconclusiveError(e), isTrue, reason: 'status=$status');
+      }
+    });
+
+    test('백엔드 error.code 가 있는 5xx 는 확정(미확정 아님)', () {
+      // 백엔드가 명시적 에러를 응답 = 결과 확정. 재조회 대상 아님.
+      final e = dioWith(
+        type: DioExceptionType.badResponse,
+        response: responseWith(502, {
+          'error': {'code': 'ORD_CANCEL_SAP_FAILED', 'message': 'x'},
+        }),
+      );
+      expect(isInconclusiveError(e), isFalse);
+    });
+
+    test('4xx 는 미확정 아님 (클라이언트 오류 = 결과 확정)', () {
+      final e = dioWith(
+        type: DioExceptionType.badResponse,
+        response: responseWith(400, {'error': {'code': 'X', 'message': 'y'}}),
+      );
+      expect(isInconclusiveError(e), isFalse);
+    });
+
+    test('DioException 아닌 것은 미확정 아님', () {
+      expect(isInconclusiveError(Exception('boom')), isFalse);
+    });
+  });
+
   group('isNetworkError', () {
     test('response 있는 5xx 는 네트워크 에러로 보지 않는다 (기존 동작 유지)', () {
       final e = dioWith(

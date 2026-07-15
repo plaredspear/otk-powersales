@@ -22,6 +22,12 @@ class OrderCancelState {
   /// 취소 성공 여부 (성공 시 화면 닫기 트리거)
   final bool cancelSuccess;
 
+  /// 취소 결과 미확정 여부 (timeout / 게이트웨이 5xx).
+  ///
+  /// 백엔드/SAP 는 요청을 마저 처리했을 수 있어 "실패" 로 단정할 수 없다. 이 경우
+  /// 화면을 닫고 상세를 재조회해 실제 취소 반영 여부를 확인한다 (중복 전송/오표시 방지).
+  final bool cancelInconclusive;
+
   const OrderCancelState({
     required this.orderId,
     this.cancellableItems = const [],
@@ -29,6 +35,7 @@ class OrderCancelState {
     this.isCancelling = false,
     this.errorMessage,
     this.cancelSuccess = false,
+    this.cancelInconclusive = false,
   });
 
   /// 초기 상태
@@ -83,6 +90,15 @@ class OrderCancelState {
     );
   }
 
+  /// 취소 결과 미확정 상태로 전환 (timeout / 게이트웨이 5xx).
+  OrderCancelState toInconclusive() {
+    return copyWith(
+      isCancelling: false,
+      cancelInconclusive: true,
+      clearError: true,
+    );
+  }
+
   OrderCancelState copyWith({
     int? orderId,
     List<OrderedItem>? cancellableItems,
@@ -90,6 +106,7 @@ class OrderCancelState {
     bool? isCancelling,
     String? errorMessage,
     bool? cancelSuccess,
+    bool? cancelInconclusive,
     bool clearError = false,
   }) {
     return OrderCancelState(
@@ -100,6 +117,7 @@ class OrderCancelState {
       isCancelling: isCancelling ?? this.isCancelling,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       cancelSuccess: cancelSuccess ?? this.cancelSuccess,
+      cancelInconclusive: cancelInconclusive ?? this.cancelInconclusive,
     );
   }
 }
