@@ -9,9 +9,10 @@ import '../common/range_calendar_picker.dart';
 
 /// 소비기한 검색 필터 바
 ///
-/// 레거시(otg_PowerSales `product/expiration/list.jsp`)의 `search_top` 정합:
+/// 레거시(otg_PowerSales `product/expiration/list.jsp`)의 `search_top` 을 기반으로 하되,
+/// 모바일 UX 상 검색 버튼을 제거하고 즉시 조회 방식으로 변경했다:
 /// - 거래처 전체 선택 (공용 [AccountSelectorField] 바텀시트, flat full-width 행)
-/// - "소비기한 [기간]" 한 줄 + 우측 노란 pill `검색` 버튼
+/// - "소비기한 [기간]" 한 줄 (탭 → 달력 → 범위 선택 즉시 조회)
 class ProductExpirationFilterBar extends StatelessWidget {
   /// 선택된 거래처명 (미선택 시 전체)
   final String? selectedAccountName;
@@ -25,14 +26,8 @@ class ProductExpirationFilterBar extends StatelessWidget {
   /// 거래처 선택 콜백
   final void Function(String? accountCode, String? accountName) onAccountChanged;
 
-  /// 시작일 변경 콜백
-  final void Function(DateTime date) onFromDateChanged;
-
-  /// 종료일 변경 콜백
-  final void Function(DateTime date) onToDateChanged;
-
-  /// 검색 버튼 콜백
-  final VoidCallback onSearch;
+  /// 소비기한 범위 선택 콜백 (시작일/종료일 동시 확정)
+  final void Function(DateTime from, DateTime to) onDateRangeChanged;
 
   const ProductExpirationFilterBar({
     super.key,
@@ -40,9 +35,7 @@ class ProductExpirationFilterBar extends StatelessWidget {
     required this.fromDate,
     required this.toDate,
     required this.onAccountChanged,
-    required this.onFromDateChanged,
-    required this.onToDateChanged,
-    required this.onSearch,
+    required this.onDateRangeChanged,
   });
 
   // 레거시 search_top 의 행 구분선/높이
@@ -83,7 +76,7 @@ class ProductExpirationFilterBar extends StatelessWidget {
 
     return Container(
       height: _rowHeight,
-      padding: const EdgeInsets.only(left: 20, right: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: _rowBorder)),
       ),
@@ -94,7 +87,7 @@ class ProductExpirationFilterBar extends StatelessWidget {
             style: AppTypography.bodyLarge.copyWith(color: AppColors.textPrimary),
           ),
           const SizedBox(width: 12),
-          // 기간 (단일 행, 탭 시 기간 선택)
+          // 기간 (단일 행, 탭 시 달력에서 범위 선택 즉시 조회 — 검색 버튼 없음)
           Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -104,26 +97,6 @@ class ProductExpirationFilterBar extends StatelessWidget {
                 style: AppTypography.bodyMedium
                     .copyWith(color: AppColors.textPrimary),
               ),
-            ),
-          ),
-          // 검색 pill (레거시 #FFE40C, 57x32, radius 50)
-          SizedBox(
-            width: 57,
-            height: 32,
-            child: ElevatedButton(
-              onPressed: onSearch,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.legacyYellow,
-                foregroundColor: AppColors.black,
-                elevation: 0,
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                textStyle:
-                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-              ),
-              child: const Text('검색'),
             ),
           ),
         ],
@@ -143,8 +116,7 @@ class ProductExpirationFilterBar extends StatelessWidget {
       maxRangeDays: null,
     );
     if (picked != null) {
-      onFromDateChanged(picked.start);
-      onToDateChanged(picked.end);
+      onDateRangeChanged(picked.start, picked.end);
     }
   }
 }

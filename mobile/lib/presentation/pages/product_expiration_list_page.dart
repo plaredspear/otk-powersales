@@ -98,17 +98,21 @@ class _ProductExpirationListPageState extends ConsumerState<ProductExpirationLis
             selectedAccountName: state.selectedAccountName,
             fromDate: state.fromDate,
             toDate: state.toDate,
+            // 필터 변경 시 별도 검색 버튼 없이 즉시 조회한다.
+            // select/update 는 동기적으로 state 를 갱신하므로,
+            // 이어지는 searchProductExpiration 이 방금 바뀐 조건으로 fetch 한다.
             onAccountChanged: (code, name) {
-              ref.read(productExpirationListProvider.notifier).selectAccount(code, name);
+              final notifier =
+                  ref.read(productExpirationListProvider.notifier);
+              notifier.selectAccount(code, name);
+              notifier.searchProductExpiration();
             },
-            onFromDateChanged: (date) {
-              ref.read(productExpirationListProvider.notifier).updateFromDate(date);
-            },
-            onToDateChanged: (date) {
-              ref.read(productExpirationListProvider.notifier).updateToDate(date);
-            },
-            onSearch: () {
-              ref.read(productExpirationListProvider.notifier).searchProductExpiration();
+            onDateRangeChanged: (from, to) {
+              final notifier =
+                  ref.read(productExpirationListProvider.notifier);
+              notifier.updateFromDate(from);
+              notifier.updateToDate(to);
+              notifier.searchProductExpiration();
             },
           ),
 
