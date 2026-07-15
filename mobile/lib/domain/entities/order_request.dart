@@ -30,8 +30,12 @@ abstract final class OrderStatusCode {
   }
 
   /// 상태 필터 옵션 (코드, 표시명) — 목록 화면 상태 필터 드롭다운용.
+  ///
+  /// `DRAFT`(임시저장)는 제외한다 — 임시저장은 별도 `tmp_order` 도메인에서만 관리되어
+  /// `order_request` 헤더가 `DRAFT` 로 생성되는 경로가 없다(생성 즉시 `SENT`). 즉 목록 조회에
+  /// `임시저장` 상태의 주문이 나타나지 않으므로, 항상 0건인 dead 필터 옵션을 노출하지 않는다.
+  /// (레거시 Heroku `list.jsp` 도 임시저장을 상태 필터에서 제외 — 필터 UX 정합.)
   static const List<({String code, String label})> filterOptions = [
-    (code: draft, label: '임시저장'),
     (code: sent, label: '전송'),
     (code: approved, label: '승인완료'),
     (code: sendFailed, label: '전송실패'),
