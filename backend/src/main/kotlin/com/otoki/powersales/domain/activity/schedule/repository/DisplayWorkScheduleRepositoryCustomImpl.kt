@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
+import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
@@ -108,6 +109,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        validData: ScheduleValidData?,
         branchCodes: List<String>?,
         policyPredicate: Predicate,
         pageable: Pageable
@@ -125,6 +127,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildStartDateToCondition(startDateTo))
             .and(buildBranchCodesCondition(branchCodes))
             .and(buildPresetCondition(preset, today))
+            .and(buildValidDataCondition(validData, today))
 
         val content = queryFactory
             .select(
@@ -246,6 +249,63 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     private fun validPeriodCondition(date: LocalDate): BooleanExpression =
         displayWorkSchedule.startDate.loe(date)
             .and(displayWorkSchedule.endDate.goe(date).or(displayWorkSchedule.endDate.isNull))
+
+    /**
+     * 「유효여부」 조회 필터 (유효/예정/종료) → WHERE 조건 변환.
+     *
+     * 화면 「유효」 신호등 dot 판정 ([ScheduleDisplayStatusCalculator.validData]) 과 100% 일치하도록,
+     * 동일한 복합식 (사원 status/appLoginActive/endDate + 스케줄 startDate/endDate + TODAY) 을 SQL 로 이관한다.
+     * 계산기의 각 분기를 아래 boolean expression 으로 1:1 대응시킨다:
+     *
+     * - resigned      = status='퇴직' OR appLoginActive != true
+     * - periodActive  = startDate ≤ TODAY AND (endDate IS NULL OR TODAY ≤ endDate)
+     * - 유효(VALID)   = (status='재직' AND periodActive) OR (resigned AND periodActive AND empEndDate ≥ TODAY)
+     * - 예정(PLANNED) = (status≠'퇴직' AND (startDate > TODAY OR (status='휴직' AND periodActive)))
+     *                    OR (resigned AND empEndDate > TODAY AND startDate > TODAY)
+     * - 종료(END)     = startDate IS NOT NULL AND NOT 유효 AND NOT 예정 (계산기 최종 fallthrough)
+     *
+     * 세 분류 모두 startDate 가 NULL 이면 계산기가 validData=null (신호등 없음) 으로 처리하므로 필터 대상에서 제외.
+     * empEndDate/appLoginActive 의 NULL 은 QueryDSL 비교(.goe/.eq)가 자연스럽게 false 로 수렴 (계산기 동치).
+     */
+    private fun buildValidDataCondition(validData: ScheduleValidData?, today: LocalDate): BooleanBuilder? {
+        if (validData == null) return null
+
+        val startDate = displayWorkSchedule.startDate
+        val endDate = displayWorkSchedule.endDate
+        val empStatus = displayWorkSchedule.employee.status
+        val empAppLoginActive = displayWorkSchedule.employee.appLoginActive
+        val empEndDate = displayWorkSchedule.employee.endDate
+
+        // resigned = status='퇴직' OR appLoginActive != true (NULL 포함)
+        val resigned: BooleanExpression = empStatus.eq(EmploymentStatus.RESIGNED.code)
+            .or(empAppLoginActive.ne(true).or(empAppLoginActive.isNull))
+
+        // periodActive = startDate ≤ TODAY AND (endDate IS NULL OR TODAY ≤ endDate)
+        val periodActive: BooleanExpression = startDate.loe(today)
+            .and(endDate.isNull.or(endDate.goe(today)))
+
+        // 유효
+        val validCase: BooleanExpression = empStatus.eq(EmploymentStatus.ACTIVE.code).and(periodActive)
+            .or(resigned.and(periodActive).and(empEndDate.goe(today)))
+
+        // 예정
+        val plannedCase: BooleanExpression = empStatus.ne(EmploymentStatus.RESIGNED.code)
+            .and(
+                startDate.gt(today)
+                    .or(empStatus.eq(EmploymentStatus.ON_LEAVE.code).and(periodActive))
+            )
+            .or(resigned.and(empEndDate.gt(today)).and(startDate.gt(today)))
+
+        return when (validData) {
+            ScheduleValidData.VALID ->
+                BooleanBuilder(startDate.isNotNull).and(validCase)
+            ScheduleValidData.PLANNED ->
+                // 계산기상 유효 판정이 예정보다 우선하므로 유효 케이스는 배제.
+                BooleanBuilder(startDate.isNotNull).and(validCase.not()).and(plannedCase)
+            ScheduleValidData.END ->
+                BooleanBuilder(startDate.isNotNull).and(validCase.not()).and(plannedCase.not())
+        }
+    }
 
     /**
      * Pageable.sort 를 QueryDSL OrderSpecifier 로 변환.

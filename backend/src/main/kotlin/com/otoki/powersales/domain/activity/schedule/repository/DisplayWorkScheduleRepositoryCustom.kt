@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.schedule.repository
 
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
+import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
@@ -92,6 +93,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        validData: ScheduleValidData?,
         branchCodes: List<String>?,
         policyPredicate: Predicate,
         pageable: Pageable

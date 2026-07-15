@@ -28151,6 +28151,14 @@
           }
         }, {
           "in" : "query",
+          "name" : "validData",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "VALID", "PLANNED", "END" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "branchCode",
           "required" : false,
           "schema" : {
@@ -28272,6 +28280,14 @@
           "required" : false,
           "schema" : {
             "enum" : [ "INPUT_TODAY", "ALL", "VALID", "VALID_CONFIRMED", "VALID_NOT_CONFIRMED", "FIXED_VALID", "BIFURCATION_VALID", "PATROL_VALID", "VALID_CONFIRMED_TEMP", "END" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "validData",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "VALID", "PLANNED", "END" ],
             "type" : "string"
           }
         }, {

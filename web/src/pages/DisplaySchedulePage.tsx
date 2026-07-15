@@ -28,7 +28,7 @@ import { useScheduleList } from '@/hooks/schedule/useScheduleList';
 import { useScheduleListMeta } from '@/hooks/schedule/useScheduleListMeta';
 import { useScheduleBatchConfirm, useScheduleBatchUnconfirm, useScheduleBatchDelete } from '@/hooks/schedule/useScheduleBatchConfirm';
 import { SCHEDULE_TEMPLATE_PATH, SCHEDULE_EXPORT_PATH, SCHEDULE_EXPORT_ALL_PATH, scheduleExportParams } from '@/api/schedule';
-import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem } from '@/api/schedule';
+import type { ScheduleUploadResult, RowError, RowPreview, ScheduleListItem, ScheduleValidData } from '@/api/schedule';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import ScheduleCreateModal from './schedule/components/ScheduleCreateModal';
@@ -313,6 +313,7 @@ export default function DisplaySchedulePage() {
   const [filterAccountType, setFilterAccountType] = useState('');
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
+  const [filterValidData, setFilterValidData] = useState<ScheduleValidData | undefined>(undefined);
   const [filterStartDateRange, setFilterStartDateRange] = useState<[string, string] | null>(null);
   const [filterBranchCode, setFilterBranchCode] = useState('');
   const [sortBy, setSortBy] = useState<string | undefined>(undefined);
@@ -325,6 +326,7 @@ export default function DisplaySchedulePage() {
     accountType?: string;
     typeOfWork3?: string;
     confirmed?: boolean;
+    validData?: ScheduleValidData;
     startDateFrom?: string;
     startDateTo?: string;
     branchCode?: string;
@@ -411,6 +413,7 @@ export default function DisplaySchedulePage() {
       accountType: filterAccountType || undefined,
       typeOfWork3: filterTypeOfWork3,
       confirmed: filterConfirmed,
+      validData: filterValidData,
       startDateFrom: filterStartDateRange?.[0],
       startDateTo: filterStartDateRange?.[1],
       branchCode: filterBranchCode || undefined,
@@ -423,6 +426,7 @@ export default function DisplaySchedulePage() {
     setFilterAccountType('');
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
+    setFilterValidData(undefined);
     setFilterStartDateRange(null);
     setFilterBranchCode('');
     setSortBy(undefined);
@@ -741,6 +745,18 @@ export default function DisplaySchedulePage() {
             options={filterOptions('confirmed').map((o) => ({
               label: o.label,
               value: o.value === 'true',
+            }))}
+          />
+          <Select
+            placeholder="유효여부"
+            value={filterValidData}
+            onChange={(v) => setFilterValidData(v)}
+            allowClear
+            style={{ width: 120 }}
+            // 서버 meta value(VALID/PLANNED/END)를 그대로 validData 쿼리 파라미터로 전송.
+            options={filterOptions('validData').map((o) => ({
+              label: o.label,
+              value: o.value as ScheduleValidData,
             }))}
           />
           <RangePicker

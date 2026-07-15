@@ -95,6 +95,9 @@ export type SchedulePreset =
   | 'VALID_CONFIRMED_TEMP'
   | 'END';
 
+/** 유효여부 필터 — 화면 「유효」 신호등 dot 판정(유효/예정/종료)과 1:1 대응 (SF formula ValidData__c). */
+export type ScheduleValidData = 'VALID' | 'PLANNED' | 'END';
+
 export interface ScheduleListParams {
   page?: number;
   size?: number;
@@ -106,6 +109,8 @@ export interface ScheduleListParams {
   startDateFrom?: string;
   startDateTo?: string;
   preset?: SchedulePreset;
+  /** 유효여부(유효/예정/종료) — 화면 「유효」 신호등 dot 판정 기준. */
+  validData?: ScheduleValidData;
   /** 지점 스코프 — 스케줄 소속 지점(costCenterCode) 필터. 전사 권한자만 선택 가능(그 외는 본인 지점 자동 스코프). */
   branchCode?: string;
   sortBy?: string;
@@ -228,6 +233,7 @@ export function scheduleExportParams(
   if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
   if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
   if (params.preset) queryParams.preset = params.preset;
+  if (params.validData) queryParams.validData = params.validData;
   if (params.branchCode) queryParams.branchCode = params.branchCode;
   if (params.sortBy) queryParams.sortBy = params.sortBy;
   if (params.sortDir) queryParams.sortDir = params.sortDir;
@@ -318,6 +324,7 @@ export async function fetchScheduleList(params: ScheduleListParams): Promise<Sch
   if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
   if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
   if (params.preset) queryParams.preset = params.preset;
+  if (params.validData) queryParams.validData = params.validData;
   if (params.branchCode) queryParams.branchCode = params.branchCode;
   if (params.sortBy) queryParams.sortBy = params.sortBy;
   if (params.sortDir) queryParams.sortDir = params.sortDir;

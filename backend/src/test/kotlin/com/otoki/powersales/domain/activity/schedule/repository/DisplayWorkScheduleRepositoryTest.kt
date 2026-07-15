@@ -3,7 +3,9 @@ package com.otoki.powersales.domain.activity.schedule.repository
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
+import com.otoki.powersales.domain.activity.schedule.service.internal.ScheduleDisplayStatusCalculator
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -628,7 +630,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun search(keyword: String?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                keyword, null, null, null, null, null, null, null, null,
+                keyword, null, null, null, null, null, null, null, null, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -689,7 +691,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun searchByBranch(branchCodes: List<String>?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, branchCodes,
+                null, null, null, null, null, null, null, null, null, branchCodes,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -739,6 +741,108 @@ class DisplayWorkScheduleRepositoryTest {
             testEntityManager.clear()
 
             assertThat(searchByBranch(null)).containsExactly("홍유미")
+        }
+    }
+
+    @Nested
+    @DisplayName("findScheduleList - 유효여부 필터(validData) 는 화면 신호등 dot 판정과 일치")
+    inner class FindScheduleListValidDataFilter {
+
+        private val calculator = ScheduleDisplayStatusCalculator()
+
+        /**
+         * 다양한 (사원 재직상태 × 스케줄 기간) 조합의 스케줄을 만들고,
+         * 계산기 [ScheduleDisplayStatusCalculator.validData] 가 내는 분류(dot)와
+         * SQL 필터([DisplayWorkScheduleRepositoryCustomImpl.buildValidDataCondition]) 결과가
+         * 모든 케이스에서 일치하는지 교차 검증한다.
+         */
+        private fun persistCase(
+            name: String,
+            status: String?,
+            appLoginActive: Boolean?,
+            empEndDate: LocalDate?,
+            scheduleStart: LocalDate?,
+            scheduleEnd: LocalDate?,
+        ): Employee {
+            val emp = testEntityManager.persistAndFlush(
+                Employee(employeeCode = "E-$name", name = name, status = status, appLoginActive = appLoginActive, endDate = empEndDate)
+            )
+            testEntityManager.persistAndFlush(
+                DisplayWorkSchedule(
+                    employee = emp,
+                    account = testAccount1,
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    startDate = scheduleStart,
+                    endDate = scheduleEnd,
+                )
+            )
+            return emp
+        }
+
+        private fun searchByValidData(validData: ScheduleValidData): List<String?> =
+            displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, validData, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            ).content.map { it.employeeName }
+
+        @Test
+        @DisplayName("유효/예정/종료 각 필터 결과가 계산기(dot) 분류와 완전 일치")
+        fun matchesCalculatorClassification() {
+            // 대표 시나리오 (사원 재직상태 × 스케줄 기간 조합).
+            data class Case(
+                val name: String,
+                val status: String?,
+                val appLoginActive: Boolean?,
+                val empEndDate: LocalDate?,
+                val start: LocalDate?,
+                val end: LocalDate?,
+            )
+
+            val cases = listOf(
+                // 재직 + 진행 중 → 유효
+                Case("재직진행", "재직", true, null, today.minusDays(3), today.plusDays(3)),
+                // 재직 + 종료일 없음 + 진행 중 → 유효
+                Case("재직무기한", "재직", true, null, today.minusDays(3), null),
+                // 재직 + 미래 시작 → 예정
+                Case("재직미래", "재직", true, null, today.plusDays(5), today.plusDays(10)),
+                // 재직 + 종료일 지남 → 종료
+                Case("재직종료", "재직", true, null, today.minusDays(10), today.minusDays(1)),
+                // 휴직 + 진행 중 → 예정
+                Case("휴직진행", "휴직", true, null, today.minusDays(3), today.plusDays(3)),
+                // 휴직 + 종료 → 종료
+                Case("휴직종료", "휴직", true, null, today.minusDays(10), today.minusDays(1)),
+                // 퇴직 + 진행 중 + 사원 endDate 미래 → 유효
+                Case("퇴직진행유효", "퇴직", false, today.plusDays(30), today.minusDays(3), today.plusDays(3)),
+                // 퇴직 + 진행 중 + 사원 endDate 과거 → 종료 (유효 아님)
+                Case("퇴직진행종료", "퇴직", false, today.minusDays(1), today.minusDays(3), today.plusDays(3)),
+                // 퇴직 + 미래 시작 + 사원 endDate 미래 → 예정
+                Case("퇴직미래예정", "퇴직", false, today.plusDays(30), today.plusDays(5), today.plusDays(10)),
+                // appLoginActive=false(비활성) + 진행 중 + 사원 endDate 미래 → 유효
+                Case("비활성진행유효", "재직", false, today.plusDays(30), today.minusDays(3), today.plusDays(3)),
+            )
+
+            cases.forEach { c ->
+                persistCase(c.name, c.status, c.appLoginActive, c.empEndDate, c.start, c.end)
+            }
+            testEntityManager.clear()
+
+            // 계산기 기준 기대 분류 산출 (dot 판정 진리값).
+            val expectedByValidData: Map<ScheduleValidData, List<String>> = ScheduleValidData.entries.associateWith { vd ->
+                cases.filter { c ->
+                    calculator.validData(c.status, c.appLoginActive, c.empEndDate, c.start, c.end, today) == vd.displayName
+                }.map { it.name }
+            }
+
+            ScheduleValidData.entries.forEach { vd ->
+                assertThat(searchByValidData(vd))
+                    .describedAs("validData=%s 필터 결과가 계산기 분류와 일치", vd.displayName)
+                    .containsExactlyInAnyOrderElementsOf(expectedByValidData.getValue(vd))
+            }
+
+            // 세 분류의 합집합이 전체 케이스와 동일해야 함 (누락/중복 없음).
+            val union = ScheduleValidData.entries.flatMap { searchByValidData(it) }
+            assertThat(union).containsExactlyInAnyOrderElementsOf(cases.map { it.name })
         }
     }
 }

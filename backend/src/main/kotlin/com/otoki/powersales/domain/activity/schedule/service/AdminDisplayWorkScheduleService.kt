@@ -22,6 +22,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListMe
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUploadResultDto
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
+import com.otoki.powersales.domain.activity.schedule.enums.ScheduleValidData
 import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
@@ -134,12 +135,18 @@ class AdminDisplayWorkScheduleService(
             ScheduleFilterOption(value = "false", label = "미확정"),
         )
 
+        // 유효여부(유효/예정/종료) — 화면 「유효」 신호등 dot 판정값과 1:1 대응. enum name 을 value 로 내려
+        // 프론트가 그대로 validData 쿼리 파라미터로 전송한다.
+        val validDataOptions = ScheduleValidData.entries
+            .map { ScheduleFilterOption(value = it.name, label = it.displayName) }
+
         val filters = listOf(
             ScheduleFilterMeta("employeeCode", ScheduleFilterType.TEXT),
             ScheduleFilterMeta("accountName", ScheduleFilterType.TEXT),
             ScheduleFilterMeta("accountType", ScheduleFilterType.TEXT),
             ScheduleFilterMeta("typeOfWork3", ScheduleFilterType.SELECT, typeOfWork3Options),
             ScheduleFilterMeta("confirmed", ScheduleFilterType.SELECT, confirmedOptions),
+            ScheduleFilterMeta("validData", ScheduleFilterType.SELECT, validDataOptions),
             ScheduleFilterMeta("startDate", ScheduleFilterType.DATE),
         )
 
@@ -424,6 +431,7 @@ class AdminDisplayWorkScheduleService(
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        validData: ScheduleValidData?,
         branchCodes: List<String>?,
         sort: Sort,
     ): Page<ScheduleListItemDto> {
@@ -444,7 +452,7 @@ class AdminDisplayWorkScheduleService(
         val policyPredicate = schedulePolicyPredicate(scope)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, branchCodes, policyPredicate, pageable
+            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, validData, branchCodes, policyPredicate, pageable
         )
 
         // 페이지 단위 출근등록 수 집계 (N+1 회피 — id IN + GROUP BY 1쿼리)
@@ -470,6 +478,7 @@ class AdminDisplayWorkScheduleService(
         startDateFrom: LocalDate?,
         startDateTo: LocalDate?,
         preset: SchedulePreset?,
+        validData: ScheduleValidData?,
         branchCodes: List<String>?,
         sort: Sort,
     ): ExcelResult {
@@ -486,7 +495,7 @@ class AdminDisplayWorkScheduleService(
         val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, sort)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, branchCodes, policyPredicate, pageable
+            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, validData, branchCodes, policyPredicate, pageable
         )
 
         val items = schedulePage.content.map { toListItemDto(it) }
