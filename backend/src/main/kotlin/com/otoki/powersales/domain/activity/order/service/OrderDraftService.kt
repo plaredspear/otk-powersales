@@ -24,8 +24,10 @@ import java.time.LocalDateTime
  * - **트랜잭션 보강 (Q9)**: 등록/삭제 모두 단일 `@Transactional`. 레거시 부분 적재 결함 보강.
  * - **납기일 보관 (레거시 정합)**: 레거시 Heroku `saveTemp` 가 화면 `#DeliveryRequestDate` 를
  *   `tmp_orderdate` 로 저장·복원했던 것과 동일 — `tmp_order.order_date`(`tmpOrderDate`) 에 담는다.
- * - **정식 등록 후 자동 삭제 (Q4)**: `OrderRequestCreateService` 가 본 서비스의
- *   [deleteByEmployeeId] 를 호출 (#592 트랜잭션 내).
+ * - **정식 등록 후에도 임시저장 유지 (레거시 Heroku reqOrder 정합 — 현업 요청 2026-07-10)**:
+ *   Spec #596 Q4 의 "정식 등록 후 자동 삭제" 는 철회됐다. `OrderRequestCreateService` 는
+ *   [deleteByEmployeeId] 를 호출하지 않으며, 임시저장 정리는 사용자의 명시적 삭제/덮어쓰기
+ *   시점에만 이뤄진다. [deleteByEmployeeId] 는 사용자 명시적 DELETE(OrderDraftController)에서만 쓰인다.
  */
 @Service
 @Transactional(readOnly = true)
