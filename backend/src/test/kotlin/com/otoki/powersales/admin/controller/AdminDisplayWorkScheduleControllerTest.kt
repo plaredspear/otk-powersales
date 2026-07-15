@@ -911,7 +911,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @DisplayName("성공 - 등록 완료")
         fun confirm_success() {
             val confirmResult = ScheduleConfirmResultDto(insertedCount = 10)
-            every { adminDisplayWorkScheduleService.confirmUpload("test-uuid") } returns confirmResult
+            every { adminDisplayWorkScheduleService.confirmUpload("test-uuid", any()) } returns confirmResult
 
             val request = ScheduleConfirmRequest(uploadId = "test-uuid")
 
@@ -929,7 +929,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 만료된 upload_id")
         fun confirm_notFound() {
-            every { adminDisplayWorkScheduleService.confirmUpload("expired-id") } throws ScheduleUploadNotFoundException()
+            every { adminDisplayWorkScheduleService.confirmUpload("expired-id", any()) } throws ScheduleUploadNotFoundException()
 
             val request = ScheduleConfirmRequest(uploadId = "expired-id")
 
@@ -945,7 +945,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         @Test
         @DisplayName("실패 - 에러 있는 상태 확정")
         fun confirm_hasErrors() {
-            every { adminDisplayWorkScheduleService.confirmUpload("error-id") } throws ScheduleHasValidationErrorsException()
+            every { adminDisplayWorkScheduleService.confirmUpload("error-id", any()) } throws ScheduleHasValidationErrorsException()
 
             val request = ScheduleConfirmRequest(uploadId = "error-id")
 

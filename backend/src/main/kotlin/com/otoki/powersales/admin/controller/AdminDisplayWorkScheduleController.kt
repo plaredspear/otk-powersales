@@ -284,9 +284,10 @@ class AdminDisplayWorkScheduleController(
     @RequiresSfPermission(entity = "display_work_schedule", operation = SfPermissionOperation.CREATE)
     @PostMapping("/upload/confirm")
     fun confirmUpload(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: ScheduleConfirmRequest
     ): ResponseEntity<ApiResponse<ScheduleConfirmResultDto>> {
-        val result = adminDisplayWorkScheduleService.confirmUpload(request.uploadId)
+        val result = adminDisplayWorkScheduleService.confirmUpload(request.uploadId, principal.requireEmployeeId())
         return ResponseEntity.ok(ApiResponse.success(result, "등록이 완료되었습니다"))
     }
 }

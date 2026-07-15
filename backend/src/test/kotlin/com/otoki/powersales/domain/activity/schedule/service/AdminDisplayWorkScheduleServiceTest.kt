@@ -17,6 +17,7 @@ import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpa
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.activity.schedule.service.internal.LastMonthRevenueLookup
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.auth.entity.Profile
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
@@ -146,6 +147,16 @@ class AdminDisplayWorkScheduleServiceTest {
         every { organizationRepository.findAllLeafBranchCodes() } returns emptyList()
         // SF 가시 범위 — 단건 검증(requireScheduleScope/export/batchDelete) 기본 통과. forbidden 케이스는 개별 override.
         every { scheduleRepository.existsVisibleById(any(), any()) } returns true
+        // SF setOwner 정합 — '6.조장' Profile 조회 default (owner User 게이트용).
+        every { profileRepository.findByName(LEADER_PROFILE_NAME_TEST) } returns Profile(id = LEADER_PROFILE_ID_TEST, name = LEADER_PROFILE_NAME_TEST)
+        // owner 등록자 fallback default — 개별 테스트가 override (조장 부재 + 등록자 User 없음 → ownerUser=null).
+        every { employeeRepository.findById(any()) } returns Optional.empty()
+    }
+
+    companion object {
+        private const val LEADER_PROFILE_NAME_TEST = "6.조장"
+        private const val LEADER_PROFILE_ID_TEST = 60L
+        private const val REGISTRANT_EMP_ID_TEST = 500L
     }
 
     @Nested
@@ -795,7 +806,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { redisTemplate.delete(any<String>()) } returns true
 
             // When
-            val result = adminDisplayWorkScheduleService.confirmUpload(uploadId)
+            val result = adminDisplayWorkScheduleService.confirmUpload(uploadId, REGISTRANT_EMP_ID_TEST)
 
             // Then
             assertThat(result.insertedCount).isEqualTo(1)
@@ -815,7 +826,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { redisTemplate.opsForValue() } returns valueOperations
             every { valueOperations.get(any()) } returns null
 
-            assertThatThrownBy { adminDisplayWorkScheduleService.confirmUpload("expired-id") }
+            assertThatThrownBy { adminDisplayWorkScheduleService.confirmUpload("expired-id", REGISTRANT_EMP_ID_TEST) }
                 .isInstanceOf(ScheduleUploadNotFoundException::class.java)
         }
 
@@ -831,7 +842,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { redisTemplate.opsForValue() } returns valueOperations
             every { valueOperations.get(any()) } returns json
 
-            assertThatThrownBy { adminDisplayWorkScheduleService.confirmUpload("error-upload-id") }
+            assertThatThrownBy { adminDisplayWorkScheduleService.confirmUpload("error-upload-id", REGISTRANT_EMP_ID_TEST) }
                 .isInstanceOf(ScheduleHasValidationErrorsException::class.java)
         }
 
@@ -859,7 +870,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
             every { redisTemplate.delete(any<String>()) } returns true
 
-            adminDisplayWorkScheduleService.confirmUpload(uploadId)
+            adminDisplayWorkScheduleService.confirmUpload(uploadId, REGISTRANT_EMP_ID_TEST)
 
             verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].costCenterCode == "A10010"
@@ -882,7 +893,8 @@ class AdminDisplayWorkScheduleServiceTest {
             )
             val json = objectMapper.writeValueAsString(cacheData)
             val manager = createEmployee(employeeCode = "20030099", name = "조장사원", costCenterCode = "A10010", role = AppAuthority.LEADER)
-            val leaderUser = createUser(id = 1099L, employeeCode = "20030099")
+            // SF 게이트: isActive=true + Profile='6.조장'(id=60) 인 User 만 owner 채택.
+            val leaderUser = createUser(id = 1099L, employeeCode = "20030099", isActive = true, profileId = LEADER_PROFILE_ID_TEST)
 
             every { redisTemplate.opsForValue() } returns valueOperations
             every { valueOperations.get("schedule:upload:$uploadId") } returns json
@@ -890,10 +902,13 @@ class AdminDisplayWorkScheduleServiceTest {
             every { accountRepository.findByIdIn(listOf(1)) } returns listOf(createAccount(id = 1))
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns listOf(manager)
             every { userRepository.findByEmployeeCodeIn(listOf("20030099")) } returns listOf(leaderUser)
+            // 등록자(fallback) 조회 — 조장이 채택되므로 실제로는 안 쓰이지만 lenient default.
+            every { employeeRepository.findById(REGISTRANT_EMP_ID_TEST) } returns Optional.of(createEmployee(id = REGISTRANT_EMP_ID_TEST, employeeCode = "20030500"))
+            every { userRepository.findByEmployeeCode("20030500") } returns createUser(id = 1500L, employeeCode = "20030500")
             every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
             every { redisTemplate.delete(any<String>()) } returns true
 
-            adminDisplayWorkScheduleService.confirmUpload(uploadId)
+            adminDisplayWorkScheduleService.confirmUpload(uploadId, REGISTRANT_EMP_ID_TEST)
 
             verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].ownerUser?.id == leaderUser.id
@@ -901,7 +916,7 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("ownerId 자동 설정 - 조장 미존재 시 null")
+        @DisplayName("ownerId 자동 설정 - 조장 미존재 시 등록자(업로드 관리자) fallback (SF setOwner 정합)")
         fun confirmUpload_ownerIdWithoutManager() {
             val uploadId = "test-no-manager"
             val cacheData = AdminDisplayWorkScheduleService.UploadCacheData(
@@ -915,19 +930,62 @@ class AdminDisplayWorkScheduleServiceTest {
                 errorCount = 0
             )
             val json = objectMapper.writeValueAsString(cacheData)
+            // 조장 부재 → 등록자(업로드 관리자) 가 owner.
+            val registrantUser = createUser(id = 1500L, employeeCode = "20030500")
 
             every { redisTemplate.opsForValue() } returns valueOperations
             every { valueOperations.get("schedule:upload:$uploadId") } returns json
             every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
             every { accountRepository.findByIdIn(listOf(1)) } returns listOf(createAccount(id = 1))
             every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns emptyList()
+            every { employeeRepository.findById(REGISTRANT_EMP_ID_TEST) } returns Optional.of(createEmployee(id = REGISTRANT_EMP_ID_TEST, employeeCode = "20030500"))
+            every { userRepository.findByEmployeeCode("20030500") } returns registrantUser
             every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
             every { redisTemplate.delete(any<String>()) } returns true
 
-            adminDisplayWorkScheduleService.confirmUpload(uploadId)
+            adminDisplayWorkScheduleService.confirmUpload(uploadId, REGISTRANT_EMP_ID_TEST)
 
             verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
-                list.size == 1 && list[0].ownerUser == null
+                list.size == 1 && list[0].ownerUser?.id == registrantUser.id
+            }) }
+        }
+
+        @Test
+        @DisplayName("ownerId 게이트 - 조장 사원이어도 User 가 비활성/타프로필이면 등록자 fallback (SF setOwner 정합)")
+        fun confirmUpload_ownerGateExcludesInactiveOrWrongProfileUser() {
+            val uploadId = "test-owner-gate"
+            val cacheData = AdminDisplayWorkScheduleService.UploadCacheData(
+                validRows = listOf(
+                    ScheduleUploadValidator.ValidatedRow(
+                        1L, "20030001", 1, "고정", "상온", "상시",
+                        LocalDate.of(2026, 4, 1), null,
+                        costCenterCode = "A10010", accountExternalKey = "EXT001"
+                    )
+                ),
+                errorCount = 0
+            )
+            val json = objectMapper.writeValueAsString(cacheData)
+            val manager = createEmployee(employeeCode = "20030099", name = "조장사원", costCenterCode = "A10010", role = AppAuthority.LEADER)
+            // 조장 사원이지만 대응 User 는 프로필이 6.조장 이 아님(id=99) → 게이트 탈락.
+            val nonLeaderProfileUser = createUser(id = 1099L, employeeCode = "20030099", isActive = true, profileId = 99L)
+            val registrantUser = createUser(id = 1500L, employeeCode = "20030500")
+
+            every { redisTemplate.opsForValue() } returns valueOperations
+            every { valueOperations.get("schedule:upload:$uploadId") } returns json
+            every { employeeRepository.findAllById(listOf(1L)) } returns listOf(createEmployee(id = 1L))
+            every { accountRepository.findByIdIn(listOf(1)) } returns listOf(createAccount(id = 1))
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns listOf(manager)
+            every { userRepository.findByEmployeeCodeIn(listOf("20030099")) } returns listOf(nonLeaderProfileUser)
+            every { employeeRepository.findById(REGISTRANT_EMP_ID_TEST) } returns Optional.of(createEmployee(id = REGISTRANT_EMP_ID_TEST, employeeCode = "20030500"))
+            every { userRepository.findByEmployeeCode("20030500") } returns registrantUser
+            every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
+            every { redisTemplate.delete(any<String>()) } returns true
+
+            adminDisplayWorkScheduleService.confirmUpload(uploadId, REGISTRANT_EMP_ID_TEST)
+
+            // 게이트 탈락 → 조장 User 안 씀 → 등록자 fallback.
+            verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
+                list.size == 1 && list[0].ownerUser?.id == registrantUser.id
             }) }
         }
 
@@ -957,7 +1015,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
             every { redisTemplate.delete(any<String>()) } returns true
 
-            adminDisplayWorkScheduleService.confirmUpload(uploadId)
+            adminDisplayWorkScheduleService.confirmUpload(uploadId, REGISTRANT_EMP_ID_TEST)
 
             verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].lastMonthRevenue?.compareTo(BigDecimal("5000000")) == 0
@@ -988,7 +1046,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
             every { redisTemplate.delete(any<String>()) } returns true
 
-            adminDisplayWorkScheduleService.confirmUpload(uploadId)
+            adminDisplayWorkScheduleService.confirmUpload(uploadId, REGISTRANT_EMP_ID_TEST)
 
             verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].lastMonthRevenue == null
@@ -1018,7 +1076,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { scheduleRepository.saveAll(any<List<DisplayWorkSchedule>>()) } answers { firstArg<List<DisplayWorkSchedule>>() }
             every { redisTemplate.delete(any<String>()) } returns true
 
-            adminDisplayWorkScheduleService.confirmUpload(uploadId)
+            adminDisplayWorkScheduleService.confirmUpload(uploadId, REGISTRANT_EMP_ID_TEST)
 
             verify { scheduleRepository.saveAll(match<List<DisplayWorkSchedule>> { list ->
                 list.size == 1 && list[0].ownerUser == null && list[0].costCenterCode == null
@@ -1994,7 +2052,8 @@ class AdminDisplayWorkScheduleServiceTest {
                 costCenterCode = "A10010", accountExternalKey = "ACC001"
             )
             val leaderEmp = createEmployee(employeeCode = "20030099", costCenterCode = "A10010", role = AppAuthority.LEADER)
-            val leaderUser = createUser(id = 1099L, employeeCode = "20030099")
+            // SF 게이트: isActive=true + Profile='6.조장'(id=60) 인 User 만 owner 채택.
+            val leaderUser = createUser(id = 1099L, employeeCode = "20030099", isActive = true, profileId = LEADER_PROFILE_ID_TEST)
 
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
             every { accountRepository.findByExternalKey("ACC001") } returns account
@@ -2012,6 +2071,42 @@ class AdminDisplayWorkScheduleServiceTest {
 
             verify { scheduleRepository.save(match<DisplayWorkSchedule> {
                 it.ownerUser?.id == 1099L
+            }) }
+        }
+
+        @Test
+        @DisplayName("조장 부재 - 등록자(실행 사용자) fallback (SF setOwner 정합)")
+        fun createSchedule_ownerFallbackToRegistrant() {
+            val scope = mockAdminScope()
+            val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val account = createAccount(id = 1, externalKey = "ACC001")
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = LocalDate.of(2026, 5, 1), endDate = null,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+            // 등록자(userId=1L Employee) → employeeCode → User.
+            val registrantEmp = createEmployee(id = userId, employeeCode = "20030500")
+            val registrantUser = createUser(id = 1500L, employeeCode = "20030500")
+
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
+            every { accountRepository.findByExternalKey("ACC001") } returns account
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
+            every { uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns emptyList()
+            every { employeeRepository.findById(userId) } returns Optional.of(registrantEmp)
+            every { userRepository.findByEmployeeCode("20030500") } returns registrantUser
+            every { lastMonthRevenueLookup.forAccount(eq(account), any()) } returns null
+            every { scheduleRepository.save(any<DisplayWorkSchedule>()) } answers { firstArg<DisplayWorkSchedule>() }
+
+            adminDisplayWorkScheduleService.createSchedule(scope, userId, baseRequest)
+
+            verify { scheduleRepository.save(match<DisplayWorkSchedule> {
+                it.ownerUser?.id == 1500L
             }) }
         }
 
@@ -2122,11 +2217,15 @@ class AdminDisplayWorkScheduleServiceTest {
         id: Long = 1L,
         employeeCode: String = "20030001",
         username: String = "user-$employeeCode",
-        password: String = "pwd"
+        password: String = "pwd",
+        isActive: Boolean = true,
+        profileId: Long? = null
     ): User = User(
         id = id,
         username = username,
         employeeCode = employeeCode,
-        password = password
+        password = password,
+        isActive = isActive,
+        profileId = profileId
     )
 }

@@ -60,6 +60,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.http.HttpStatus
+import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -104,6 +105,9 @@ class AdminDisplayWorkScheduleService(
 
         /** SF 시스템 관리자 Profile.Name ([SystemAdminProfilePolicy.SYSTEM_ADMIN_PROFILE_NAME] 와 동일 값). */
         private const val SYSTEM_ADMIN_PROFILE_NAME = "시스템 관리자"
+
+        // SF `setOwner` (L390) 의 `Profile.Name = '6.조장'` owner User 게이트 정합.
+        private const val LEADER_PROFILE_NAME = "6.조장"
 
         // 목록 최초 조회 기본값 — 클라이언트가 추측하지 않도록 서버 단일 출처로 제공.
         // pageSize 는 기존 web 하드코딩(listSize=50) 정합. sort 는 기존 목록 기본 정렬(정렬 미지정) 표기용.
@@ -316,7 +320,7 @@ class AdminDisplayWorkScheduleService(
     }
 
     @Transactional
-    fun confirmUpload(uploadId: String): ScheduleConfirmResultDto {
+    fun confirmUpload(uploadId: String, registrantEmployeeId: Long): ScheduleConfirmResultDto {
         val redisKey = "$REDIS_KEY_PREFIX$uploadId"
         val json = redisTemplate.opsForValue().get(redisKey)
             ?: throw ScheduleUploadNotFoundException()
@@ -341,11 +345,13 @@ class AdminDisplayWorkScheduleService(
             emptyMap()
         }
 
-        // 조장 일괄 조회: costCenterCode 목록 → role=LEADER 사원 → User 매핑.
-        // 레거시 SF DisplayWorkScheduleMasterTriggerHandler.setOwner() 와 동등한 chain:
-        // 여사원(FullName__c) → CostCenterCode → 조장 Employee → Employee.employeeCode == User.employeeCode → User.
+        // 조장 일괄 조회 (SF DisplayWorkScheduleMasterTriggerHandler.setOwner() 정합, 배치 최적화):
+        // 여사원(FullName__c) → CostCenterCode → 조장 Employee(AppAuthority=조장 + APPLoginActive) →
+        //   User(사번 매칭 + IsActive=true + Profile='6.조장') → owner. 부재 시 등록자(업로드 관리자) fallback.
+        // [resolveOwnerUser] 와 동일 규칙이나 대량 처리라 N+1 회피 위해 인라인 배치 조회.
+        val leaderProfileId = profileRepository.findByName(LEADER_PROFILE_NAME)?.id
         val costCenterCodes = cacheData.validRows.mapNotNull { it.costCenterCode }.distinct()
-        val leadersByCostCenter = if (costCenterCodes.isNotEmpty()) {
+        val leadersByCostCenter = if (costCenterCodes.isNotEmpty() && leaderProfileId != null) {
             employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(costCenterCodes, AppAuthority.LEADER)
                 .groupBy { it.costCenterCode }
         } else {
@@ -355,25 +361,33 @@ class AdminDisplayWorkScheduleService(
             .flatten()
             .mapNotNull { it.employeeCode }
             .distinct()
+        // SF User 게이트: IsActive=true + Profile='6.조장' 인 User 만 owner 후보.
         val userByEmployeeCode = if (leaderEmployeeCodes.isNotEmpty()) {
-            userRepository.findByEmployeeCodeIn(leaderEmployeeCodes).associateBy { it.employeeCode }
+            userRepository.findByEmployeeCodeIn(leaderEmployeeCodes)
+                .filter { it.isActive && it.profileId == leaderProfileId }
+                .associateBy { it.employeeCode }
         } else {
             emptyMap()
         }
+        // SF: 조장 owner 부재 시 등록자(업로드 실행 관리자) fallback.
+        val registrantUser = employeeRepository.findById(registrantEmployeeId).orElse(null)
+            ?.employeeCode
+            ?.let { userRepository.findByEmployeeCode(it) }
 
         // 전월 매출 일괄 조회
         val revenueByAccountId = lastMonthRevenueLookup.forAccounts(accountMap.values.toList())
 
         val entities = cacheData.validRows.map { row ->
             val costCenterCode = row.costCenterCode
-            val ownerUser = if (!costCenterCode.isNullOrBlank()) {
+            val leaderUser = if (!costCenterCode.isNullOrBlank()) {
                 leadersByCostCenter[costCenterCode]
-                    ?.firstOrNull()
+                    ?.firstOrNull { it.employeeCode != null && userByEmployeeCode.containsKey(it.employeeCode) }
                     ?.employeeCode
                     ?.let { userByEmployeeCode[it] }
             } else {
                 null
             }
+            val ownerUser = leaderUser ?: registrantUser
             val lastMonthRevenue = revenueByAccountId[row.accountId]
 
             DisplayWorkSchedule(
@@ -721,18 +735,9 @@ class AdminDisplayWorkScheduleService(
         // 자동채움 1: 전월 매출액 (월별 매출 이력에서 lastMonth 의 lastMonthResults 조회)
         val lastMonthRevenue = lastMonthRevenueLookup.forAccount(account)
 
-        // 자동채움 2: 소속 조장 사용자 (조장 Employee.employeeCode → User)
+        // 자동채움 2: 소속 조장 사용자 (SF setOwner 정합 — 조장 부재 시 등록자 fallback)
         val costCenterCode = validatedRow.costCenterCode
-        val ownerUser = if (!costCenterCode.isNullOrBlank()) {
-            val leaders = employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
-                listOf(costCenterCode), AppAuthority.LEADER
-            )
-            leaders.firstOrNull()
-                ?.employeeCode
-                ?.let { code -> userRepository.findByEmployeeCodeIn(listOf(code)).firstOrNull() }
-        } else {
-            null
-        }
+        val ownerUser = resolveOwnerUser(costCenterCode, userId)
 
         val entity = DisplayWorkSchedule(
             employee = employee,
@@ -865,15 +870,8 @@ class AdminDisplayWorkScheduleService(
         val lastMonthRevenue = lastMonthRevenueLookup.forAccount(account)
 
         val costCenterCode = validatedRow.costCenterCode
-        val ownerUser = if (!costCenterCode.isNullOrBlank()) {
-            employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(
-                listOf(costCenterCode), AppAuthority.LEADER
-            ).firstOrNull()
-                ?.employeeCode
-                ?.let { code -> userRepository.findByEmployeeCodeIn(listOf(code)).firstOrNull() }
-        } else {
-            null
-        }
+        // SF setOwner 정합 — 조장 부재 시 등록자(편집 실행자) fallback.
+        val ownerUser = resolveOwnerUser(costCenterCode, userId)
 
         schedule.employee = employee
         schedule.account = account
@@ -1042,6 +1040,49 @@ class AdminDisplayWorkScheduleService(
         if (!scope.validateAccess(costCenterCode)) {
             throw ScheduleForbiddenException()
         }
+    }
+
+    /**
+     * SF `DisplayWorkScheduleMasterTriggerHandler.setOwner` (L364-408) 정합 — 스케줄 owner(User) 산출.
+     *
+     * ## SF 로직 (chain)
+     * 1. 사원(`FullName__r`)의 현재 `CostCenterCode__c` 로 조장 사원 조회:
+     *    `WHERE CostCenterCode__c IN :cc AND DKRetail__AppAuthority__c = '조장' AND DKRetail__APPLoginActive__c = true`
+     *    (재직(Status) 조건 없음 — [findByCostCenterCodeInAndRoleAndAppLoginActiveTrue] 정합).
+     * 2. 조장 사원의 사번(`EmpCode`) → User 매핑 시 **`Profile.Name = '6.조장' AND IsActive = true`** 게이트 (L390).
+     *    사원레코드가 조장이어도 대응 User 가 비활성이거나 프로필이 6.조장 이 아니면 owner 후보에서 탈락.
+     * 3. 조장 부재(또는 게이트 전원 탈락) 시 SF 는 `OwnerId` 를 대입하지 않아 **등록자(실행 사용자)** 가 owner 로 남는다
+     *    (L404 `if (ownerId != null)`). 신규는 이를 명시적으로 [registrantUserId] User fallback 으로 재현.
+     *
+     * ## Deviation 주의 (프로필 범위)
+     * SF 는 `Profile.Name = '6.조장'` **단일**만 게이트한다. 신규에 존재하는 `7.영업사원 + 조장` 조장계열
+     * 프로필은 SF `setOwner` 기준상 owner 후보에 포함되지 않으므로 본 게이트도 `6.조장` 단일로 맞춘다.
+     *
+     * @param costCenterCode 등록/편집 대상 사원의 현재 costCenterCode (SF setCostCenterCode 와 동일 소스)
+     * @param registrantEmployeeId 등록/편집 실행 사용자 Employee.id (`principal.requireEmployeeId()`)
+     *        — 조장 부재 시 이 사원의 employeeCode → User 로 owner fallback
+     */
+    private fun resolveOwnerUser(costCenterCode: String?, registrantEmployeeId: Long): User? {
+        val leaderProfileId = profileRepository.findByName(LEADER_PROFILE_NAME)?.id
+        val leaderUser = if (!costCenterCode.isNullOrBlank() && leaderProfileId != null) {
+            val leaderEmployeeCodes = employeeRepository
+                .findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf(costCenterCode), AppAuthority.LEADER)
+                .mapNotNull { it.employeeCode }
+            if (leaderEmployeeCodes.isNotEmpty()) {
+                userRepository.findByEmployeeCodeIn(leaderEmployeeCodes)
+                    .firstOrNull { it.isActive && it.profileId == leaderProfileId }
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+        if (leaderUser != null) return leaderUser
+        // SF: 조장 owner 부재 시 등록자(실행 사용자) 유지. registrantEmployeeId 는 Employee.id 이므로
+        // employeeCode 로 User 를 역매핑한다.
+        return employeeRepository.findById(registrantEmployeeId).orElse(null)
+            ?.employeeCode
+            ?.let { userRepository.findByEmployeeCode(it) }
     }
 
     /**
