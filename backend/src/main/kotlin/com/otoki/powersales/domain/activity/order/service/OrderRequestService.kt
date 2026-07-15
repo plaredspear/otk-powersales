@@ -36,6 +36,7 @@ class OrderRequestService(
     private val orderRequestDetailMapper: OrderRequestDetailMapper,
     private val productRepository: ProductRepository,
     private val orderCancelPolicy: OrderCancelPolicy,
+    private val orderCancelReconciler: OrderCancelReconciler,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) {
 
@@ -204,6 +205,11 @@ class OrderRequestService(
         val rejectedItems = mapped?.rejectedItems?.takeIf { it.isNotEmpty() }
         val outOfStockReasons = mapped?.outOfStockReasons.orEmpty()
 
+        // 취소 SAP timeout 미확정 라인의 정합 (Spec #858) — 취소 요청 흔적이 있으면서 SAP DefaultReason
+        // 으로 돌아온 라인을 line_change_type='X' 로 승격한다. 정합은 별도 REQUIRES_NEW 트랜잭션(readOnly
+        // 조회와 격리)이며, 실패해도 조회 응답은 정상 반환한다(best-effort, 다음 조회에서 멱등 재시도).
+        val promotedCancelledCodes = reconcileTimedOutCancels(orderRequestId, outOfStockReasons.keys)
+
         // 마감 전 — 그룹 응답 매핑 생략 (Q6, 레거시 동등). SAP 호출은 이미 수행.
         val finalProcessingGroups = if (isClosed) processingGroups else null
 
@@ -216,11 +222,14 @@ class OrderRequestService(
             .toMap()
 
         // 결품(SAP DefaultReason) 제품은 "주문한 제품" 리스트에 결품 플래그로 표시 (레거시 view.jsp:414 동등).
+        // 정합 승격된 라인(Spec #858)은 forceCancelled 로 isCancelled=true 를 반영 — 조회 엔티티는 정합
+        // (별도 트랜잭션) 반영 전 상태이므로 승격 결과를 응답에 직접 반영한다.
         val orderedItems = crmProducts.map {
             OrderedItemResponse.from(
                 it,
                 productName = productNamesByCode[it.productCode],
                 outOfStockReason = outOfStockReasons[it.productCode],
+                forceCancelled = it.productCode != null && it.productCode in promotedCancelledCodes,
             )
         }
 
@@ -241,6 +250,27 @@ class OrderRequestService(
             orderProcessingStatusList = finalProcessingGroups,
             rejectedItems = rejectedItems,
         )
+    }
+
+    /**
+     * 취소 SAP timeout 미확정 라인의 정합 위임 (Spec #858).
+     *
+     * 정합은 조회(readOnly)와 격리된 별도 트랜잭션([OrderCancelReconciler])에서 수행하며, 실패해도
+     * 로그만 남기고 빈 집합을 반환해 조회 응답은 정상 반환한다(Q2 옵션 1 — best-effort, 다음 조회 재시도).
+     *
+     * @return 정합 승격된 productCode 집합 (실패 시 빈 집합)
+     */
+    private fun reconcileTimedOutCancels(orderRequestId: Long, defaultReasonProductCodes: Set<String>): Set<String> {
+        if (defaultReasonProductCodes.isEmpty()) return emptySet()
+        return try {
+            orderCancelReconciler.reconcileTimedOutCancels(orderRequestId, defaultReasonProductCodes)
+        } catch (e: Exception) {
+            log.warn(
+                "order.cancel.reconcile-failed orderRequestId={} — 조회 응답은 정상 반환, 다음 조회에서 재시도",
+                orderRequestId, e,
+            )
+            emptySet()
+        }
     }
 
     /**

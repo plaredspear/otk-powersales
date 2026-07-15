@@ -21,10 +21,16 @@ data class OrderedItemResponse(
     val outOfStockReason: String? = null,
 ) {
     companion object {
+        /**
+         * @param forceCancelled 상세조회 정합(Spec #858)으로 취소 승격된 라인이면 true — 조회 트랜잭션의
+         *   엔티티는 정합(별도 REQUIRES_NEW 트랜잭션) 반영 전 상태이므로, 승격된 productCode 는
+         *   `isCancelled` 를 강제로 true 로 반영한다.
+         */
         fun from(
             item: OrderRequestProduct,
             productName: String? = null,
             outOfStockReason: String? = null,
+            forceCancelled: Boolean = false,
         ): OrderedItemResponse =
             OrderedItemResponse(
                 orderProductId = item.id,
@@ -33,7 +39,7 @@ data class OrderedItemResponse(
                 // SF nillable=true 정합으로 수량이 nullable — 응답은 0 으로 보정 (기존 의미 보존).
                 totalQuantityBoxes = item.quantityBoxes ?: BigDecimal.ZERO,
                 totalQuantityPieces = item.quantityPieces ?: BigDecimal.ZERO,
-                isCancelled = item.isCancelled(),
+                isCancelled = item.isCancelled() || forceCancelled,
                 isOutOfStock = outOfStockReason != null,
                 outOfStockReason = outOfStockReason,
             )

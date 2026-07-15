@@ -44,6 +44,7 @@ class OrderRequestServiceTest {
     private val orderRequestDetailMapper = OrderRequestDetailMapper()
     private val productRepository: ProductRepository = mockk()
     private val sapOutboxRepository: SapOutboxRepository = mockk()
+    private val orderCancelReconciler: OrderCancelReconciler = mockk()
 
     private val fixedClock: Clock = Clock.fixed(
         LocalDateTime.of(2026, 5, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
@@ -64,6 +65,7 @@ class OrderRequestServiceTest {
             orderRequestDetailMapper,
             productRepository,
             orderCancelPolicy,
+            orderCancelReconciler,
             fixedClock,
         )
         // 기본값 — 상세 조회 시 제품명 일괄조회. 개별 테스트에서 필요 시 override.
@@ -72,6 +74,8 @@ class OrderRequestServiceTest {
         every {
             sapOutboxRepository.existsByDomainTypeAndAggregateIdAndStatusIn(any(), any(), any())
         } returns false
+        // 기본값 — 정합 대상 없음. 개별 테스트에서 필요 시 override (#858).
+        every { orderCancelReconciler.reconcileTimedOutCancels(any(), any()) } returns emptySet()
     }
 
     @Nested
@@ -467,6 +471,27 @@ class OrderRequestServiceTest {
             assertThat(response.orderedItems[0].productCode).isEqualTo("19310235")
             assertThat(response.orderedItems[0].productName).isEqualTo("오뚜기밥")
         }
+
+        @Test
+        @DisplayName("성공 — 정합 승격된 라인(#858)은 응답 orderedItems.isCancelled=true 로 반영")
+        fun reconciledLineReflectedAsCancelled() {
+            // SAP DefaultReason 으로 취소가 반영됐고 정합 컴포넌트가 해당 productCode 를 승격했다고 가정.
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            // SAP 응답에 DefaultReason(취소 반영) 채워진 라인.
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLineWithDefaultReason("1000023", "S1"))
+            // 정합 컴포넌트가 해당 productCode 를 승격했다고 stub.
+            every { orderCancelReconciler.reconcileTimedOutCancels(100L, setOf("1000023")) } returns setOf("1000023")
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            val item = response.orderedItems.first { it.productCode == "1000023" }
+            assertThat(item.isCancelled).isTrue() // 정합 승격 반영 (조회 엔티티는 미반영이나 forceCancelled)
+            assertThat(item.isOutOfStock).isTrue() // DefaultReason 존재로 결품 플래그도 여전히 true
+        }
     }
 
     private fun createOrderRequest(
@@ -573,5 +598,31 @@ class OrderRequestServiceTest {
             totalQuantityBox = "10",
             shippingQuantityBox = "10",
             defaultReason = "",
+        )
+
+    /** DefaultReason(취소 반영) 채워진 SAP 라인 — #858 정합 대상. */
+    private fun buildSapLineWithDefaultReason(
+        productCode: String,
+        defaultReason: String,
+    ): SapOrderRequestDetailLine =
+        SapOrderRequestDetailLine(
+            lineNumber = "00001",
+            productCode = productCode,
+            productName = "name",
+            lineItemStatus = "",
+            totalQuantity = "10",
+            unit = "BOX",
+            sapOrderNumber = "",
+            orderSalesAmount = "120000",
+            deliveryRequestDate = "20260506",
+            orderDate = "20260504",
+            shippingDriverName = "",
+            shippingVehicle = "",
+            shippingDriverPhone = "",
+            shippingScheduleTime = "000000",
+            shippingCompleteTime = "000000",
+            totalQuantityBox = "10",
+            shippingQuantityBox = "10",
+            defaultReason = defaultReason,
         )
 }

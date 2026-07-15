@@ -25,6 +25,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -46,6 +47,7 @@ class OrderCancelServiceTest {
     private lateinit var payloadFactory: OrderRequestCancelPayloadFactory
     private lateinit var sender: OrderRequestCancelSender
     private lateinit var committer: OrderCancelCommitter
+    private lateinit var requestRecorder: OrderCancelRequestRecorder
     private lateinit var sapOutboxRepository: SapOutboxRepository
     private lateinit var service: OrderCancelService
 
@@ -67,6 +69,7 @@ class OrderCancelServiceTest {
         payloadFactory = OrderRequestCancelPayloadFactory()
         sender = mockk()
         committer = mockk()
+        requestRecorder = mockk(relaxed = true)
         sapOutboxRepository = mockk()
         // 기본: 등록 outbox in-flight 아님 (취소 허용). in-flight 게이트 테스트에서만 true 로 override.
         every {
@@ -80,6 +83,7 @@ class OrderCancelServiceTest {
             orderRequestCancelPayloadFactory = payloadFactory,
             orderRequestCancelSender = sender,
             orderCancelCommitter = committer,
+            orderCancelRequestRecorder = requestRecorder,
         )
     }
 
@@ -106,6 +110,48 @@ class OrderCancelServiceTest {
         assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED.name)
         assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.CANCELED.displayName)
         assertThat(response.cancelledLines).hasSize(2)
+    }
+
+    // ───────── HP1b: 취소 흔적 기록이 SAP 호출 전에 수행 (#858) ─────────
+    @Test
+    @DisplayName("HP1b — 취소 요청 흔적 기록이 SAP 송신 전에 호출됨 (#858)")
+    fun hp1b_recordCancelRequestedBeforeSap() {
+        val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
+        val lines = listOf(
+            product(101, BigDecimal.valueOf(10L), "P001", orderRequest),
+            product(102, BigDecimal.valueOf(20L), "P002", orderRequest),
+        )
+        stubLoad(orderRequest, lines)
+        stubEmployee()
+        every { sender.send(any()) } returns Unit
+        every { committer.commit(eq(orderRequestId), any(), eq(employeeCode)) } returns
+            commitResult(orderRequest.copy(status = OrderRequestStatus.CANCELED), lines)
+
+        service.cancel(orderRequestId, userId, emptyList())
+
+        // 흔적 기록(recorder) → SAP 송신(sender) 순서 보장 — timeout 미확정 시 정합 근거 선기록.
+        verifyOrder {
+            requestRecorder.recordCancelRequested(eq(orderRequestId), listOf(101L, 102L), eq(employeeCode))
+            sender.send(any())
+        }
+    }
+
+    // ───────── EP7b: SAP 실패 시에도 흔적은 기록됨 (#858) ─────────
+    @Test
+    @DisplayName("EP7b — SAP 실패(timeout 포함) 시에도 흔적 기록은 선행됨 (#858)")
+    fun ep7b_recordEvenOnSapFailure() {
+        val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
+        val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
+        stubLoad(orderRequest, lines)
+        stubEmployee()
+        every { sender.send(any()) } throws OrderCancelSapFailedException("SAP timeout")
+
+        assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
+            .isInstanceOf(OrderCancelSapFailedException::class.java)
+
+        // SAP 실패 전에 흔적 기록은 이미 별도 트랜잭션으로 커밋됨 → 상세조회 정합 근거 유지.
+        verify { requestRecorder.recordCancelRequested(eq(orderRequestId), listOf(101L), eq(employeeCode)) }
+        verify(exactly = 0) { committer.commit(any(), any(), any()) }
     }
 
     // ───────── HP2: 부분 취소 (3개 중 2개 라인) ─────────
