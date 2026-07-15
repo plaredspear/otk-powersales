@@ -90,6 +90,10 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
   const isEdit = editTarget != null;
   const mutation = isEdit ? updateMutation : createMutation;
 
+  // 근무형태5=임시 이면 종료일 필수 (backend V7a 정합). 값 변경 시 종료일 rule/라벨이 즉시 반응하도록 감시.
+  const watchedTypeOfWork5 = Form.useWatch('typeOfWork5', form);
+  const endDateRequired = watchedTypeOfWork5 === '임시';
+
   const { data: detail, isLoading: detailLoading } = useScheduleDetail(editTarget?.id ?? null, open && isEdit);
 
   /**
@@ -250,7 +254,12 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
             </Form.Item>
 
             <Form.Item name="typeOfWork5" label="근무형태5" rules={[{ required: true, message: '근무형태5는 필수입니다' }]}>
-              <Select placeholder="상시 / 임시" options={WORK_TYPE5_OPTIONS} />
+              <Select
+                placeholder="상시 / 임시"
+                options={WORK_TYPE5_OPTIONS}
+                // 임시↔상시 전환 시 종료일 필수 rule 이 바뀌므로 종료일을 즉시 재검증 (stale 에러/누락 방지).
+                onChange={() => form.validateFields(['endDate']).catch(() => {})}
+              />
             </Form.Item>
 
             <Form.Item name="startDate" label="시작일" rules={[{ required: true, message: '시작일은 필수입니다' }]}>
@@ -258,8 +267,18 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
             </Form.Item>
 
             {/* 확정된 스케줄도 종료일만은 수정 가능 (backend UC-05 허용 필드). Form 의 disabled 를 개별 해제. */}
-            <Form.Item name="endDate" label="종료일">
-              <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} placeholder="종료일 (선택)" disabled={false} />
+            {/* 근무형태5=임시 이면 종료일 필수 (backend V7a 정합). */}
+            <Form.Item
+              name="endDate"
+              label="종료일"
+              rules={endDateRequired ? [{ required: true, message: '임시 배치는 종료일이 필수입니다' }] : undefined}
+            >
+              <DatePicker
+                format="YYYY-MM-DD"
+                style={{ width: '100%' }}
+                placeholder={endDateRequired ? '종료일' : '종료일 (선택)'}
+                disabled={false}
+              />
             </Form.Item>
           </Form>
         </Col>

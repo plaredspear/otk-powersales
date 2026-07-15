@@ -191,6 +191,11 @@ class ScheduleUploadValidator {
                 rowErrors.add(RowError(row.rowNumber, "G", "근무형태3", typeOfWork3, "행 ${row.rowNumber}: 임시 배치는 순회만 가능"))
             }
 
+            // V7a: 임시 배치는 종료일 필수 (한시적 배치이므로 종료 시점이 반드시 지정되어야 함)
+            if (typeOfWork5 == "임시" && endDate == null) {
+                rowErrors.add(RowError(row.rowNumber, "K", "종료일", row.endDateStr, "행 ${row.rowNumber}: 임시 배치는 종료일이 필수입니다"))
+            }
+
             // V4: 시작일 <= 종료일
             if (endDate != null && startDate.isAfter(endDate)) {
                 rowErrors.add(
@@ -380,6 +385,11 @@ class ScheduleUploadValidator {
         // V7: 임시 + 순회만 허용
         if (typeOfWork5 == "임시" && typeOfWork3 != "순회") {
             messages.add("임시 배치는 순회만 가능합니다")
+        }
+
+        // V7a: 임시 배치는 종료일 필수 (한시적 배치이므로 종료 시점이 반드시 지정되어야 함)
+        if (typeOfWork5 == "임시" && endDate == null) {
+            messages.add("임시 배치는 종료일이 필수입니다")
         }
 
         // V4: 시작일 <= 종료일

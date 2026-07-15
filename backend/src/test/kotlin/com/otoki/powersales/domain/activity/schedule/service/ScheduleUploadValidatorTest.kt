@@ -427,8 +427,9 @@ class ScheduleUploadValidatorTest {
         @Test
         @DisplayName("임시 + 고정 조합 - 에러")
         fun v7_tempWithFixed() {
+            // 종료일을 채워 V7a(임시 종료일 필수) 와 분리 — 순수 V7(순회만) 위반만 검증.
             val rows = listOf(
-                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "임시", "2026-04-01", null)
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "임시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -442,6 +443,48 @@ class ScheduleUploadValidatorTest {
         fun v7_tempWithRound() {
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", "2026-04-30")
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("V7a - 임시는 종료일 필수")
+    inner class V7aTests {
+
+        @Test
+        @DisplayName("임시 + 종료일 없음 - 에러")
+        fun v7a_tempWithoutEndDate() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("임시 배치는 종료일이 필수입니다")
+        }
+
+        @Test
+        @DisplayName("임시 + 종료일 있음 - 정상")
+        fun v7a_tempWithEndDate() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", "2026-04-30")
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+        }
+
+        @Test
+        @DisplayName("상시 + 종료일 없음 - 정상 (임시가 아니면 종료일 선택)")
+        fun v7a_permanentWithoutEndDate() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "상시", "2026-04-01", null)
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
@@ -756,6 +799,46 @@ class ScheduleUploadValidatorTest {
 
             assertThat(result.messages).anyMatch { it.contains("임시 배치는 순회만 가능") }
             assertThat(result.validatedRow).isNull()
+        }
+
+        @Test
+        @DisplayName("V7a 임시 + 종료일 없음 - 차단")
+        fun validateSingle_temporaryWithoutEndDate() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "순회",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "임시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = null,
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList()
+            )
+
+            assertThat(result.messages).anyMatch { it.contains("임시 배치는 종료일이 필수입니다") }
+            assertThat(result.validatedRow).isNull()
+        }
+
+        @Test
+        @DisplayName("V7a 임시 + 종료일 있음 - 통과")
+        fun validateSingle_temporaryWithEndDate() {
+            val result = validator.validateSingle(
+                employeeCode = "20030001",
+                accountCode = "ACC001",
+                typeOfWork3 = "순회",
+                typeOfWork4 = "상온",
+                typeOfWork5 = "임시",
+                startDate = LocalDate.of(2026, 5, 1),
+                endDate = LocalDate.of(2026, 5, 31),
+                employee = employee,
+                account = account,
+                existingSchedules = emptyList()
+            )
+
+            assertThat(result.messages).isEmpty()
+            assertThat(result.validatedRow).isNotNull
         }
 
         @Test
