@@ -20,7 +20,6 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
-import com.otoki.powersales.domain.activity.schedule.entity.QDisplayWorkSchedule.Companion.displayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.SchedulePreset
 import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
@@ -1423,7 +1422,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { employeeRepository.findById(userId) } returns Optional.of(user)
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
             every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), any()) } returns listOf(schedule)
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
             every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
@@ -1488,7 +1487,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { employeeRepository.findById(userId) } returns Optional.of(adminUser)
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
             every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), any()) } returns listOf(schedule)
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(baseRequest.startDate), eq(baseRequest.endDate!!),
@@ -1533,7 +1532,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { employeeRepository.findById(userId) } returns Optional.of(user)
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
             every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), any()) } returns listOf(schedule)
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
             every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
@@ -1573,7 +1572,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { employeeRepository.findById(userId) } returns Optional.of(user)
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
             every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), any()) } returns listOf(schedule)
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
             every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
@@ -1914,7 +1913,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
             every { accountRepository.findByExternalKey("ACC001") } returns account
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), any()) } returns emptyList()
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
@@ -1947,7 +1946,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
             every { accountRepository.findByExternalKey("ACC001") } returns account
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), any()) } returns emptyList()
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
@@ -1999,7 +1998,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
             every { accountRepository.findByExternalKey("ACC001") } returns account
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), any()) } returns emptyList()
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
@@ -2034,47 +2033,6 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("중복검사 조회는 가시 범위(policyPredicate) 로 제한 - 전출 사원 이전 지점 스케줄 제외")
-        fun createSchedule_duplicateCheckScopedByPolicyPredicate() {
-            // 전출 시나리오: 사원은 현재 지점(A10010) 소속이나, 이전 지점(B20020) 소속으로 남은
-            // 종료일 무기한 스케줄이 DB 에 존재. 목록 조회와 동일한 가시 범위 predicate 를 중복검사에도
-            // 적용하면, repository 가 이전 지점 스케줄을 걸러내 빈 결과를 돌려주고 → 중복검사 통과 → 저장.
-            // (SF 레거시는 without sharing/사번 전역이라 이 케이스가 차단되던 것을 의도적으로 deviation)
-            val scope = mockAdminScope()
-            val employee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
-            val account = createAccount(id = 1, externalKey = "ACC001")
-            val validatedRow = ScheduleUploadValidator.ValidatedRow(
-                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
-                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
-                startDate = LocalDate.of(2026, 5, 1), endDate = null,
-                costCenterCode = "A10010", accountExternalKey = "ACC001"
-            )
-            // 서비스가 산출해 넘길 가시 범위 predicate — repository stub 이 이 predicate 로 호출됨을 검증한다.
-            val visibilityPredicate = displayWorkSchedule.costCenterCode.`in`(listOf("A10010"))
-            every {
-                policyEvaluator.buildPredicate(scope, "DisplayWorkScheduleMaster__c", any())
-            } returns visibilityPredicate
-
-            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
-            every { accountRepository.findByExternalKey("ACC001") } returns account
-            // 가시 범위 밖(이전 지점) 스케줄은 repository 가 이미 제외 → 빈 결과.
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), visibilityPredicate) } returns emptyList()
-            every { uploadValidator.validateSingle(
-                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
-                eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null
-            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
-            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns emptyList()
-            every { lastMonthRevenueLookup.forAccount(eq(account), any()) } returns null
-            every { scheduleRepository.save(any<DisplayWorkSchedule>()) } answers { firstArg<DisplayWorkSchedule>() }
-
-            adminDisplayWorkScheduleService.createSchedule(scope, userId, baseRequest)
-
-            // 중복검사 조회가 정확히 가시 범위 predicate 로 호출되었는지 확인 (핵심 회귀 방지).
-            verify { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), visibilityPredicate) }
-            verify { scheduleRepository.save(any<DisplayWorkSchedule>()) }
-        }
-
-        @Test
         @DisplayName("전월 매출 자동채움 - lastMonthRevenue BigDecimal 매핑")
         fun createSchedule_lastMonthRevenue() {
             val scope = mockAdminScope()
@@ -2088,7 +2046,7 @@ class AdminDisplayWorkScheduleServiceTest {
             )
             every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(employee)
             every { accountRepository.findByExternalKey("ACC001") } returns account
-            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L), any()) } returns emptyList()
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns emptyList()
             every { uploadValidator.validateSingle(
                 eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
                 eq(LocalDate.of(2026, 5, 1)), null, eq(employee), eq(account), eq(emptyList()), null

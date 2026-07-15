@@ -51,24 +51,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         endDate: LocalDate
     ): List<Long>
 
-    /**
-     * 동일 사원(들)의 미삭제 스케줄을 **등록자 가시 범위(`policyPredicate`) 내로 제한**하여 조회한다.
-     *
-     * 단건 등록/편집의 기간 중복 검사(V8 / C1~C3) 전용. 목록 조회와 동일한 SF 가시 범위 Predicate
-     * ([com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator] 산출 — OWD Private →
-     * owner / role hierarchy / sharing rule / legacy branch OR 합성) 를 AND 로 합성한다.
-     *
-     * ## SF 레거시 deviation (의도적)
-     * SF `DisplayWorkScheduleMasterTriggerHandler.duplicateCheck` 는 `without sharing` + WHERE 가
-     * 사번(`EmpLoyeeNumber__c`)+기간만이라 **가시 범위를 무시하고 전역**으로 겹침을 판정했다. 이 경우
-     * 사원이 지점을 전출한 뒤 이전 지점 소속으로 남은 종료일 무기한 스케줄이, 새 지점 관리자 목록에는
-     * (OWD Private sharing 으로) 보이지 않는데도 중복검사에는 잡혀 신규 등록을 영구 차단하는 문제가 있었다.
-     * 신규는 "조회에 안 보이는 스케줄은 중복검사에서도 제외" 하도록 가시 범위를 중복검사에 동일 적용한다.
-     */
-    fun findByEmployeeIdInAndNotDeleted(
-        employeeIds: List<Long>,
-        policyPredicate: Predicate,
-    ): List<DisplayWorkSchedule>
+    fun findByEmployeeIdInAndNotDeleted(employeeIds: List<Long>): List<DisplayWorkSchedule>
 
     /**
      * SF `UplExcelBtnSchduleMasterController.checkResult` (L205) 정합 —

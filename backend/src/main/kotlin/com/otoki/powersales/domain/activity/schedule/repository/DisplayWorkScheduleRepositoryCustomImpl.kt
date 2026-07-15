@@ -68,16 +68,12 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .filterNotNull()
     }
 
-    override fun findByEmployeeIdInAndNotDeleted(
-        employeeIds: List<Long>,
-        policyPredicate: Predicate,
-    ): List<DisplayWorkSchedule> {
+    override fun findByEmployeeIdInAndNotDeleted(employeeIds: List<Long>): List<DisplayWorkSchedule> {
         return queryFactory
             .selectFrom(displayWorkSchedule)
             .where(
                 displayWorkSchedule.employee.id.`in`(employeeIds),
-                isNotDeleted(),
-                policyPredicate,
+                isNotDeleted()
             )
             .fetch()
     }
@@ -558,13 +554,25 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     }
 
     /**
-     * 지점 스코프 — 스케줄 소속 지점(`DisplayWorkSchedule.costCenterCode`) IN 필터.
+     * 지점 스코프 — 스케줄 owner(조장 User)의 소속 지점(`ownerUser.costCenterCode`) IN 필터.
      * null 이면 미적용(가시 범위 전건), emptyList(NoAccess 산출값) 이면 매칭 0건(IDOR 차단).
+     *
+     * ## SF 정합 근거 (지점 판정 축)
+     * SF `DisplayWorkScheduleMaster__c` 리스트뷰는 지점 필터 기능 자체가 없고, 조회 가시성은
+     * OWD Private + Owner sharing 으로만 결정된다 (owner = 저장 시점 사원의 현재 소속 조직 조장 User,
+     * SF `setOwner`). 지점명 표시(`BranchName__c` formula)도 스케줄 필드가 아니라 사원의 현재 조직명이다.
+     *
+     * 신규는 운영 요구로 지점 셀렉터(UI 필터)를 추가했는데, 그 필터 축을 **스케줄의 `costCenterCode`**
+     * (= 저장 시점 사원 조직코드 스냅샷) 로 잡으면, 사원이 전출/발령된 뒤에도 스냅샷은 옛 조직코드로
+     * 고정되어(SF `setCostCenterCode` 스냅샷 성격), 현재 지점 관리자가 지점 필터로 조회할 때 owner 는
+     * 현재 지점(발령 후 조장)인데도 스케줄 스냅샷 코드가 달라 목록에서 누락되는 문제가 있었다.
+     * SF 의 지점 귀속 기준(owner 조장의 소속 지점)에 맞춰 owner 의 `costCenterCode` 로 판정한다.
+     * (owner_user_id 는 발령 시 재계산되어 항상 현재 조직 조장을 가리킨다 — SF `setOwner` before update.)
      */
     private fun buildBranchCodesCondition(branchCodes: List<String>?): BooleanExpression? {
         if (branchCodes == null) return null
         if (branchCodes.isEmpty()) return Expressions.FALSE.isTrue // NoAccess — 매칭 0건
-        return displayWorkSchedule.costCenterCode.`in`(branchCodes)
+        return displayWorkSchedule.ownerUser.costCenterCode.`in`(branchCodes)
     }
 
     override fun existsVisibleById(id: Long, policyPredicate: Predicate): Boolean {

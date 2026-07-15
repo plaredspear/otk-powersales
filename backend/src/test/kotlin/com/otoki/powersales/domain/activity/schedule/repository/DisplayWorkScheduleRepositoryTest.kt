@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
+import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -660,6 +661,84 @@ class DisplayWorkScheduleRepositoryTest {
             testEntityManager.clear()
 
             assertThat(search("없는사람")).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("findScheduleList - 지점 필터(branchCodes) 는 owner 소속 지점 기준")
+    inner class FindScheduleListBranchScope {
+
+        private fun ownerWithCostCenter(costCenterCode: String?): User =
+            testEntityManager.persistAndFlush(
+                User(username = "owner-$costCenterCode-${System.nanoTime()}", employeeCode = null, password = "x", costCenterCode = costCenterCode)
+            )
+
+        private fun scheduleOwnedBy(
+            employee: Employee,
+            owner: User?,
+            scheduleCostCenterCode: String?,
+        ): DisplayWorkSchedule =
+            DisplayWorkSchedule(
+                employee = employee,
+                account = testAccount1,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                startDate = today,
+                costCenterCode = scheduleCostCenterCode,
+                ownerUser = owner,
+            )
+
+        private fun searchByBranch(branchCodes: List<String>?): List<String?> =
+            displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, null, null, branchCodes,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            ).content.map { it.employeeName }
+
+        @Test
+        @DisplayName("스케줄 costCenterCode 가 옛 지점(5453)이라도 owner 소속(5816)이 필터에 포함되면 조회됨")
+        fun matchByOwnerBranchNotScheduleSnapshot() {
+            // 사원 전출 후: 스케줄 costCenterCode 는 저장 시점 스냅샷(5453)으로 고정,
+            // owner 는 현재 조직 조장(5816) 으로 재계산된 상태 (홍유미/임연숙 운영 케이스 재현).
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "20210283", name = "홍유미"))
+            val owner = ownerWithCostCenter("5816")
+            testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner, scheduleCostCenterCode = "5453"))
+            testEntityManager.clear()
+
+            // 지점 5816 으로 필터 → owner 소속이 5816 이므로 조회되어야 함 (스케줄 스냅샷 5453 무관).
+            assertThat(searchByBranch(listOf("5816"))).containsExactly("홍유미")
+        }
+
+        @Test
+        @DisplayName("owner 소속 지점이 필터 밖이면 제외 (스케줄 costCenterCode 가 필터에 있어도)")
+        fun excludeWhenOwnerBranchOutsideEvenIfScheduleSnapshotInside() {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "20210283", name = "홍유미"))
+            val owner = ownerWithCostCenter("9999")
+            // 스케줄 스냅샷은 필터(5816)에 들어가지만 owner 소속(9999)은 밖 → 제외되어야 함.
+            testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner, scheduleCostCenterCode = "5816"))
+            testEntityManager.clear()
+
+            assertThat(searchByBranch(listOf("5816"))).isEmpty()
+        }
+
+        @Test
+        @DisplayName("owner 가 없으면(null) 지점 필터 적용 시 제외")
+        fun excludeWhenOwnerNull() {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "20210283", name = "홍유미"))
+            testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner = null, scheduleCostCenterCode = "5816"))
+            testEntityManager.clear()
+
+            assertThat(searchByBranch(listOf("5816"))).isEmpty()
+        }
+
+        @Test
+        @DisplayName("branchCodes=null 이면 지점 필터 미적용 (owner 무관 전건)")
+        fun noBranchFilterReturnsAll() {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "20210283", name = "홍유미"))
+            val owner = ownerWithCostCenter("5816")
+            testEntityManager.persistAndFlush(scheduleOwnedBy(emp, owner, scheduleCostCenterCode = "5453"))
+            testEntityManager.clear()
+
+            assertThat(searchByBranch(null)).containsExactly("홍유미")
         }
     }
 }
