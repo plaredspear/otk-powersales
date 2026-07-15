@@ -397,6 +397,11 @@ export default function DisplaySchedulePage() {
     });
   };
 
+  const handleCancelUpload = () => {
+    // 업로드 결과를 사용하지 않고 파기 (서버 캐시는 TTL 30분 후 자동 만료).
+    setUploadResult(null);
+  };
+
   const handleSearch = () => {
     setListPage(0);
     setSelectedRowKeys([]);
@@ -642,14 +647,22 @@ export default function DisplaySchedulePage() {
           )}
 
           <div style={{ textAlign: 'right', marginTop: 16 }}>
-            <Button
-              type="primary"
-              disabled={!canConfirmUpload}
-              loading={confirmMutation.isPending}
-              onClick={handleConfirmUpload}
-            >
-              등록
-            </Button>
+            <Space>
+              <Button
+                disabled={confirmMutation.isPending}
+                onClick={handleCancelUpload}
+              >
+                취소
+              </Button>
+              <Button
+                type="primary"
+                disabled={!canConfirmUpload}
+                loading={confirmMutation.isPending}
+                onClick={handleConfirmUpload}
+              >
+                등록
+              </Button>
+            </Space>
           </div>
 
           {hasErrors && (
