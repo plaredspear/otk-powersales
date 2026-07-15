@@ -7,6 +7,7 @@ import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestRegisterTestRequest
 import com.otoki.powersales.admin.dto.request.PPTMasterTestRequest
+import com.otoki.powersales.admin.dto.request.TeamMemberScheduleSingleTestRequest
 import com.otoki.powersales.admin.dto.response.SapOutboundTestPreviewResponse
 import com.otoki.powersales.admin.dto.response.SapOutboundTestSendResponse
 import com.otoki.powersales.admin.service.AdminSapOutboundTestService
@@ -135,6 +136,22 @@ class AdminSapOutboundTestController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun sendAttendanceEmpty(): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
         ResponseEntity.ok(ApiResponse.success(service.sendAttendanceEmpty()))
+
+    // ===== Attendance 단건 =====
+
+    @PostMapping("/attendance-single/preview")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
+    fun previewAttendanceSingle(
+        @RequestBody req: TeamMemberScheduleSingleTestRequest,
+    ): ResponseEntity<ApiResponse<SapOutboundTestPreviewResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.previewAttendanceSingle(req)))
+
+    @PostMapping("/attendance-single/send")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun sendAttendanceSingle(
+        @RequestBody req: TeamMemberScheduleSingleTestRequest,
+    ): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.sendAttendanceSingle(req)))
 
     // ===== DisplayMaster =====
 

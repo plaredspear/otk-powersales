@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.LoanInquiryTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
+import com.otoki.powersales.admin.dto.request.TeamMemberScheduleSingleTestRequest
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
@@ -22,9 +23,13 @@ import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSe
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayload
+import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadRow
+import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterPayloadFactory
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -290,5 +295,145 @@ class AdminSapOutboundTestServiceTest {
 
         assertThat(res.success).isFalse
         assertThat(res.message).contains("실패")
+    }
+
+    // ===== Attendance 단건 =====
+
+    /** 실제 payload factory 를 주입한 service — 전일보정(WorkingCategory4) 채움 판정까지 검증하기 위함. */
+    private val serviceWithRealFactory = AdminSapOutboundTestService(
+        loanInquirySender = loanInquirySender,
+        orderRequestDetailSapSender = orderRequestDetailSapSender,
+        inventorySearchSender = inventorySearchSender,
+        orderRequestCancelSender = orderRequestCancelSender,
+        orderRequestCancelPayloadFactory = orderRequestCancelPayloadFactory,
+        orderRequestRegisterSender = orderRequestRegisterSender,
+        teamMemberScheduleSapSender = teamMemberScheduleSapSender,
+        teamMemberScheduleSapPayloadFactory = TeamMemberScheduleSapPayloadFactory(),
+        teamMemberScheduleRepository = teamMemberScheduleRepository,
+        displayMasterSapSender = displayMasterSapSender,
+        displayMasterPayloadFactory = displayMasterPayloadFactory,
+        displayWorkScheduleRepository = displayWorkScheduleRepository,
+        pptMasterSapSender = pptMasterSapSender,
+        pptMasterPayloadFactory = pptMasterPayloadFactory,
+        pptMasterRepository = pptMasterRepository,
+        orderRequestRepository = orderRequestRepository,
+        orderRequestProductRepository = orderRequestProductRepository,
+    )
+
+    private fun sapRow(
+        scheduleId: Long,
+        workingDate: LocalDate,
+        secondWorkType: SecondWorkType? = null,
+    ) = TeamMemberScheduleSapPayloadRow(
+        scheduleId = scheduleId,
+        workingDate = workingDate,
+        employeeCode = "E001",
+        accountExternalKey = "1032619",
+        workingCategory1 = null,
+        workingCategory2 = null,
+        workingCategory3 = null,
+        secondWorkType = secondWorkType,
+    )
+
+    @Test
+    @DisplayName("previewAttendanceSingle: scheduleId 로 단건 조회 후 payload 1건 빌드 + SAP 미송신")
+    fun previewAttendanceSingle_buildsSingleRowPayload() {
+        val workingDate = LocalDate.of(2026, 7, 15)
+        every { teamMemberScheduleRepository.findByIdForSap(42L) } returns sapRow(42L, workingDate)
+
+        val res = serviceWithRealFactory.previewAttendanceSingle(
+            TeamMemberScheduleSingleTestRequest(scheduleId = 42L),
+        )
+
+        assertThat(res.interfaceId).isEqualTo(SapConstants.SAP_INTERFACE_ATTENDANCE)
+        val payload = res.payload as TeamMemberScheduleSapPayload
+        assertThat(payload.request).hasSize(1)
+        assertThat(payload.request[0].EmployeeCode).isEqualTo("E001")
+        assertThat(res.summary).contains("scheduleId=42").contains("당일분")
+        // 미리보기는 송신하지 않는다.
+        verify(exactly = 0) { teamMemberScheduleSapSender.sendPage(any()) }
+    }
+
+    @Test
+    @DisplayName("previewAttendanceSingle: referenceDate 미지정 → 당일분(WorkingCategory4=null)")
+    fun previewAttendanceSingle_defaultReferenceDate_isSameDay() {
+        val workingDate = LocalDate.of(2026, 7, 15)
+        every { teamMemberScheduleRepository.findByIdForSap(1L) } returns
+            sapRow(1L, workingDate, secondWorkType = SecondWorkType.ROOM_TEMP)
+
+        val res = serviceWithRealFactory.previewAttendanceSingle(
+            TeamMemberScheduleSingleTestRequest(scheduleId = 1L),
+        )
+
+        val payload = res.payload as TeamMemberScheduleSapPayload
+        // referenceDate = workingDate → isBefore(false) → WorkingCategory4 는 채우지 않는다.
+        assertThat(payload.request[0].WorkDate).isEqualTo("20260715")
+        assertThat(payload.request[0].WorkingCategory4).isNull()
+    }
+
+    @Test
+    @DisplayName("previewAttendanceSingle: referenceDate=workingDate+1 → 전일보정분(WorkingCategory4 채움)")
+    fun previewAttendanceSingle_referenceDatePlusOne_fillsCategory4() {
+        val workingDate = LocalDate.of(2026, 7, 15)
+        every { teamMemberScheduleRepository.findByIdForSap(1L) } returns
+            sapRow(1L, workingDate, secondWorkType = SecondWorkType.FROZEN_REFRIGERATED)
+
+        val res = serviceWithRealFactory.previewAttendanceSingle(
+            TeamMemberScheduleSingleTestRequest(
+                scheduleId = 1L,
+                referenceDate = workingDate.plusDays(1),
+            ),
+        )
+
+        val payload = res.payload as TeamMemberScheduleSapPayload
+        // workingDate < referenceDate → 전일보정분으로 판정 → secondWorkType 의 displayName 이 채워진다.
+        assertThat(payload.request[0].WorkDate).isEqualTo("20260715")
+        assertThat(payload.request[0].WorkingCategory4).isEqualTo("냉동/냉장")
+        assertThat(res.summary).contains("전일보정분")
+    }
+
+    @Test
+    @DisplayName("sendAttendanceSingle: 조회 후 sender.sendPage 로 payload 1건 송신 → success=true")
+    fun sendAttendanceSingle_successPath() {
+        val workingDate = LocalDate.of(2026, 7, 15)
+        every { teamMemberScheduleRepository.findByIdForSap(7L) } returns sapRow(7L, workingDate)
+        val captured = slot<TeamMemberScheduleSapPayload>()
+        every { teamMemberScheduleSapSender.sendPage(capture(captured)) } returns true
+
+        val res = serviceWithRealFactory.sendAttendanceSingle(
+            TeamMemberScheduleSingleTestRequest(scheduleId = 7L),
+        )
+
+        assertThat(res.success).isTrue
+        assertThat(captured.captured.request).hasSize(1)
+        verify(exactly = 1) { teamMemberScheduleSapSender.sendPage(any()) }
+    }
+
+    @Test
+    @DisplayName("sendAttendanceSingle: sender 가 false 반환 → success=false + message 에 실패 표기")
+    fun sendAttendanceSingle_failurePath() {
+        every { teamMemberScheduleRepository.findByIdForSap(7L) } returns
+            sapRow(7L, LocalDate.of(2026, 7, 15))
+        every { teamMemberScheduleSapSender.sendPage(any()) } returns false
+
+        val res = serviceWithRealFactory.sendAttendanceSingle(
+            TeamMemberScheduleSingleTestRequest(scheduleId = 7L),
+        )
+
+        assertThat(res.success).isFalse
+        assertThat(res.message).contains("실패")
+    }
+
+    @Test
+    @DisplayName("sendAttendanceSingle: 존재하지 않는 scheduleId → NOT_FOUND 예외 + sender 미호출")
+    fun sendAttendanceSingle_notFound_throws() {
+        every { teamMemberScheduleRepository.findByIdForSap(999L) } returns null
+
+        assertThatThrownBy {
+            serviceWithRealFactory.sendAttendanceSingle(
+                TeamMemberScheduleSingleTestRequest(scheduleId = 999L),
+            )
+        }.hasMessageContaining("999")
+        verify(exactly = 0) { teamMemberScheduleSapSender.sendPage(any()) }
     }
 }

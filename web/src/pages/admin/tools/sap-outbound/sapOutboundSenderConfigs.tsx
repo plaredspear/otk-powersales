@@ -279,6 +279,50 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
     toBody: (state) => batchDateToBody(state),
   },
   {
+    kind: 'attendance-single',
+    interfaceId: 'SD03130',
+    title: '여사원일정 스케줄 단건 (TeamMemberSchedule)',
+    tabLabel: '여사원일정 단건',
+    description:
+      '여사원 일정 1건(scheduleId)을 골라 SAP 으로 송신합니다. 같은 날짜의 다른 일정은 포함되지 않습니다. sap_outbound_log 적재됨.',
+    triggerTag: 'BATCH',
+    renderForm: (state, update) => (
+      <Form layout="vertical">
+        <Form.Item label="scheduleId (team_member_schedule.id)" required>
+          <InputNumber
+            style={{ width: '100%' }}
+            min={1}
+            value={state.scheduleId as number | undefined}
+            onChange={(v) => update({ scheduleId: v ?? undefined })}
+          />
+        </Form.Item>
+        <Form.Item
+          label="referenceDate (기준일 — 비우면 일정의 근무일 사용)"
+          help="전일 보정분(WorkingCategory4 채움)으로 나갔던 payload 를 재현하려면 근무일 + 1일 로 지정하세요. 당일분은 비워두면 됩니다."
+        >
+          <DatePicker
+            style={{ width: '100%' }}
+            value={state.referenceDate as Dayjs | undefined}
+            onChange={(v) => update({ referenceDate: v ?? undefined })}
+          />
+        </Form.Item>
+        <Alert
+          showIcon
+          type="info"
+          message="근무형태·거래처 등 식별값은 선택한 일정 자신의 정보를 사용합니다. batch 의 근무형태 필터(‘근무’)나 날짜 조건은 적용하지 않고 id 로만 특정합니다."
+        />
+      </Form>
+    ),
+    toBody: (state) => {
+      const scheduleId = state.scheduleId as number | undefined;
+      if (!scheduleId) throw new Error('scheduleId 를 입력하세요');
+      const body: Record<string, unknown> = { scheduleId };
+      const d = state.referenceDate as Dayjs | undefined;
+      if (d) body.referenceDate = d.format('YYYY-MM-DD');
+      return body;
+    },
+  },
+  {
     kind: 'display-master',
     interfaceId: 'SD03131',
     title: '여사원 진열마스터 스케줄 배치 (TeamMemberMasterSchedule)',

@@ -52,6 +52,19 @@ data class BatchDateTestRequest(
     val pageSize: Int? = null,
 )
 
+/**
+ * 여사원일정 근무 SAP **단건** 테스트 송신 입력.
+ *
+ * @property scheduleId team_member_schedule.id — 송신할 일정 단건 식별자.
+ * @property referenceDate payload 기준일(WorkDate 판정용). 미지정 시 일정 자신의 workingDate 를 사용한다.
+ *   `WorkingCategory4`(전일 보정분) 는 `workingDate < referenceDate` 일 때만 채워지므로, 배치 전일 보정분으로
+ *   나갔던 payload 를 재현하려면 referenceDate 를 `workingDate + 1일` 로 지정한다 (당일분은 미지정=workingDate).
+ */
+data class TeamMemberScheduleSingleTestRequest(
+    val scheduleId: Long,
+    val referenceDate: LocalDate? = null,
+)
+
 /** PPTMaster sender 입력. 당월 활성 마스터 조회만 사용. */
 data class PPTMasterTestRequest(
     val targetDate: LocalDate? = null,

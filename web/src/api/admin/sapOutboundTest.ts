@@ -32,6 +32,7 @@ export type SapOutboundTestKind =
   | 'order-request-cancel'
   | 'order-request-register'
   | 'attendance'
+  | 'attendance-single'
   | 'display-master'
   | 'ppt-master';
 

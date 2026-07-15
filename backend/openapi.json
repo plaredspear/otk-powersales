@@ -25031,6 +25031,19 @@
         },
         "type" : "object"
       },
+      "TeamMemberScheduleSingleTestRequest" : {
+        "properties" : {
+          "referenceDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "scheduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "TeamScheduleAccountDto" : {
         "properties" : {
           "accountId" : {
@@ -36434,6 +36447,62 @@
           }
         },
         "tags" : [ "admin-sap-integration-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/attendance-single/preview" : {
+      "post" : {
+        "operationId" : "previewAttendanceSingle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TeamMemberScheduleSingleTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/attendance-single/send" : {
+      "post" : {
+        "operationId" : "sendAttendanceSingle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TeamMemberScheduleSingleTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestSendResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
       }
     },
     "/api/v1/admin/sap-integration/outbound/test/attendance/preview" : {

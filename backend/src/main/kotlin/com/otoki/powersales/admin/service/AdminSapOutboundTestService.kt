@@ -7,6 +7,7 @@ import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestRegisterTestRequest
 import com.otoki.powersales.admin.dto.request.PPTMasterTestRequest
+import com.otoki.powersales.admin.dto.request.TeamMemberScheduleSingleTestRequest
 import com.otoki.powersales.admin.dto.response.SapOutboundTestPreviewResponse
 import com.otoki.powersales.admin.dto.response.SapOutboundTestSendResponse
 import com.otoki.powersales.platform.common.exception.BusinessException
@@ -355,6 +356,51 @@ class AdminSapOutboundTestService(
             message = if (ok) "빈 배열 송신 성공 (연결성 확인) — sap_outbound_log 확인"
             else "빈 배열 송신 실패 — sap_outbound_log 확인",
         )
+    }
+
+    // ===== Attendance 단건 (Batch sender 재사용) =====
+
+    fun previewAttendanceSingle(req: TeamMemberScheduleSingleTestRequest): SapOutboundTestPreviewResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_ATTENDANCE
+        val (payload, summary) = buildAttendanceSinglePayload(req)
+        return SapOutboundTestPreviewResponse(
+            interfaceId = interfaceId,
+            endpointPath = "/$interfaceId",
+            payload = payload,
+            summary = summary,
+        )
+    }
+
+    fun sendAttendanceSingle(req: TeamMemberScheduleSingleTestRequest): SapOutboundTestSendResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_ATTENDANCE
+        val (payload, summary) = buildAttendanceSinglePayload(req)
+        val ok = teamMemberScheduleSapSender.sendPage(payload)
+        return SapOutboundTestSendResponse(
+            interfaceId = interfaceId,
+            success = ok,
+            message = if (ok) "송신 성공 ($summary)" else "송신 실패 ($summary) — sap_outbound_log 확인",
+        )
+    }
+
+    /**
+     * scheduleId 단건을 payload 1건으로 빌드한다.
+     * 기준일(referenceDate)이 없으면 일정 자신의 workingDate 를 기준으로 삼는다 — 이 경우
+     * `workingDate.isBefore(referenceDate)` 가 false 라 WorkingCategory4 는 null(=당일분 payload).
+     * 전일 보정분 payload 재현이 필요하면 호출부가 referenceDate=workingDate+1일 을 넘긴다.
+     */
+    private fun buildAttendanceSinglePayload(req: TeamMemberScheduleSingleTestRequest):
+            Pair<TeamMemberScheduleSapPayload, String> {
+        val row = teamMemberScheduleRepository.findByIdForSap(req.scheduleId)
+            ?: throw BusinessException(
+                errorCode = "TEAM_MEMBER_SCHEDULE_NOT_FOUND",
+                message = "여사원 일정을 찾을 수 없거나 사원/거래처 정보가 비어 송신할 수 없습니다: scheduleId=${req.scheduleId}",
+                httpStatus = HttpStatus.NOT_FOUND,
+            )
+        val referenceDate = req.referenceDate ?: row.workingDate
+        val payload = teamMemberScheduleSapPayloadFactory.build(listOf(row), referenceDate)
+        val correction = if (row.workingDate.isBefore(referenceDate)) "전일보정분(WorkingCategory4 채움)" else "당일분"
+        val summary = "scheduleId=${req.scheduleId} workingDate=${row.workingDate} referenceDate=$referenceDate ($correction)"
+        return payload to summary
     }
 
     private fun buildAttendancePayload(req: BatchDateTestRequest):

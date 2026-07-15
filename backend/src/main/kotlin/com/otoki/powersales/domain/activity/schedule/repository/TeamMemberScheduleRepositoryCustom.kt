@@ -152,6 +152,17 @@ interface TeamMemberScheduleRepositoryCustom {
     ): List<TeamMemberScheduleSapPayloadRow>
 
     /**
+     * 여사원일정 근무 SAP **단건** 테스트 송신용 조회 (admin SAP outbound 테스트 탭).
+     * `findRegularAttendancesForSapPaged` 와 동일한 [TeamMemberScheduleSapPayloadRow] projection 을
+     * scheduleId 단건으로 조회한다. batch 의 WHERE 필터(workingType='근무'/날짜 branch)는 적용하지 않고
+     * id 로만 특정한다 — 테스트 목적상 임의 일정 1건을 그대로 송신 payload 로 만들 수 있게 한다.
+     * `WorkingCategory4`(전일 보정분) 채움 여부는 상위 [TeamMemberScheduleSapPayloadFactory] 가
+     * 기준일(today) 대비 `workingDate.isBefore(today)` 로 판정하므로, 발송 당시 payload 를 재현하려면
+     * 호출부가 기준일을 그에 맞게 전달한다. 존재하지 않으면 null.
+     */
+    fun findByIdForSap(scheduleId: Long): TeamMemberScheduleSapPayloadRow?
+
+    /**
      * 여사원 배치 점검 조회 (Spec #839 — SF Report `InternalSalesReportFolder/new_report_4Ic` 이식).
      * `team_member_schedule` ⋈ employee ⋈ account.
      * 필터: workingDate ∈ [from, to], workingType='근무', employee.role ∈ {여사원, 조장},

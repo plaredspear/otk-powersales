@@ -527,6 +527,31 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findByIdForSap(scheduleId: Long): TeamMemberScheduleSapPayloadRow? {
+        // findRegularAttendancesForSapPaged 와 동일 projection·JOIN 구조를 id 단건으로 좁힌다.
+        // batch WHERE 필터(workingType/날짜 branch)는 적용하지 않는다 — 테스트 목적상 임의 일정 1건 송신 허용.
+        return queryFactory
+            .select(
+                Projections.constructor(
+                    TeamMemberScheduleSapPayloadRow::class.java,
+                    teamMemberSchedule.id,
+                    teamMemberSchedule.workingDate,
+                    employee.employeeCode,
+                    account.externalKey,
+                    teamMemberSchedule.workingCategory1,
+                    teamMemberSchedule.workingCategory2,
+                    teamMemberSchedule.workingCategory3,
+                    attendanceLog.secondWorkType
+                )
+            )
+            .from(teamMemberSchedule)
+            .join(teamMemberSchedule.employee, employee)
+            .join(teamMemberSchedule.account, account)
+            .leftJoin(attendanceLog).on(teamMemberSchedule.attendanceLog.id.eq(attendanceLog.id))
+            .where(teamMemberSchedule.id.eq(scheduleId))
+            .fetchOne()
+    }
+
     override fun findPlacementCheck(
         from: LocalDate,
         to: LocalDate,
