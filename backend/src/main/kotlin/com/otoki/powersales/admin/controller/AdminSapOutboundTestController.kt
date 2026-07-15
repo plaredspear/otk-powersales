@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.controller
 import com.otoki.powersales.admin.dto.request.BatchDateTestRequest
 import com.otoki.powersales.admin.dto.request.LoanInquiryTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestCancelTestRequest
+import com.otoki.powersales.admin.dto.request.DisplayMasterSingleTestRequest
 import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestRegisterTestRequest
@@ -174,6 +175,22 @@ class AdminSapOutboundTestController(
     @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
     fun sendDisplayMasterEmpty(): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
         ResponseEntity.ok(ApiResponse.success(service.sendDisplayMasterEmpty()))
+
+    // ===== DisplayMaster 단건 =====
+
+    @PostMapping("/display-master-single/preview")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.VIEW_ALL_DATA)
+    fun previewDisplayMasterSingle(
+        @RequestBody req: DisplayMasterSingleTestRequest,
+    ): ResponseEntity<ApiResponse<SapOutboundTestPreviewResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.previewDisplayMasterSingle(req)))
+
+    @PostMapping("/display-master-single/send")
+    @RequiresSfPermission(operation = SfPermissionOperation.SYSTEM, systemPermission = SfSystemPermission.MODIFY_ALL_DATA)
+    fun sendDisplayMasterSingle(
+        @RequestBody req: DisplayMasterSingleTestRequest,
+    ): ResponseEntity<ApiResponse<SapOutboundTestSendResponse>> =
+        ResponseEntity.ok(ApiResponse.success(service.sendDisplayMasterSingle(req)))
 
     // ===== PPTMaster =====
 

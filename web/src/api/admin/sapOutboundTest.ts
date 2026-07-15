@@ -34,6 +34,7 @@ export type SapOutboundTestKind =
   | 'attendance'
   | 'attendance-single'
   | 'display-master'
+  | 'display-master-single'
   | 'ppt-master';
 
 async function call<Req, Res>(

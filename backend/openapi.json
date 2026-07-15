@@ -13789,6 +13789,19 @@
         },
         "type" : "object"
       },
+      "DisplayMasterSingleTestRequest" : {
+        "properties" : {
+          "scheduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "workDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "DisplayWorkScheduleItemDto" : {
         "properties" : {
           "accountId" : {
@@ -36564,6 +36577,62 @@
     "/api/v1/admin/sap-integration/outbound/test/attendance/send-empty" : {
       "post" : {
         "operationId" : "sendAttendanceEmpty",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestSendResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/display-master-single/preview" : {
+      "post" : {
+        "operationId" : "previewDisplayMasterSingle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DisplayMasterSingleTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSapOutboundTestPreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-sap-outbound-test-controller" ]
+      }
+    },
+    "/api/v1/admin/sap-integration/outbound/test/display-master-single/send" : {
+      "post" : {
+        "operationId" : "sendDisplayMasterSingle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DisplayMasterSingleTestRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {

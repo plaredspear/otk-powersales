@@ -506,6 +506,17 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findByIdForDisplayMasterSap(scheduleId: Long): DisplayWorkSchedule? {
+        // findValidForDisplayMasterSapPaged 와 동일한 fetchJoin(employee/account) 으로 payload row 변환 시
+        // LAZY 미초기화를 방지한다. batch 필터(유효/확정/기간)는 적용하지 않고 id 로만 특정한다.
+        return queryFactory
+            .selectFrom(displayWorkSchedule)
+            .leftJoin(displayWorkSchedule.employee).fetchJoin()
+            .leftJoin(displayWorkSchedule.account).fetchJoin()
+            .where(displayWorkSchedule.id.eq(scheduleId))
+            .fetchOne()
+    }
+
     override fun findValidForLastMonthRevenuePaged(
         date: LocalDate,
         limit: Int,

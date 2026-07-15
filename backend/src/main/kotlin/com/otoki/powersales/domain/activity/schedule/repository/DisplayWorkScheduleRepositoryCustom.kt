@@ -148,6 +148,15 @@ interface DisplayWorkScheduleRepositoryCustom {
     fun findValidForDisplayMasterSapPaged(date: LocalDate, limit: Int, offset: Int): List<DisplayWorkSchedule>
 
     /**
+     * 진열마스터 SAP **단건** 테스트 송신용 조회 (admin SAP outbound 테스트 탭).
+     * `findValidForDisplayMasterSapPaged` 와 동일하게 employee/account 를 fetchJoin 하여
+     * payload row 변환 시 LAZY 미초기화를 방지한다. batch 의 유효/확정/기간 필터는 적용하지 않고
+     * id 로만 특정한다 — 테스트 목적상 임의 진열마스터 1건을 그대로 송신 payload 로 만들 수 있게 한다.
+     * 존재하지 않으면 null.
+     */
+    fun findByIdForDisplayMasterSap(scheduleId: Long): DisplayWorkSchedule?
+
+    /**
      * DISPLAY lastMonthRevenue daily batch 용 페이지 조회 (spec #690).
      *
      * legacy `UpdateLastMonthRevenueBatch.cls:7-15` SOQL `WHERE ValidData__c='유효'` 100% 동등.

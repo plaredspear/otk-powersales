@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.LoanInquiryTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.TeamMemberScheduleSingleTestRequest
+import com.otoki.powersales.admin.dto.request.DisplayMasterSingleTestRequest
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
 import com.otoki.powersales.domain.activity.order.sap.OrderRequestCancelPayloadFactory
@@ -27,6 +28,13 @@ import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPa
 import com.otoki.powersales.domain.activity.schedule.sap.TeamMemberScheduleSapPayloadRow
 import com.otoki.powersales.domain.activity.schedule.enums.SecondWorkType
 import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterPayloadFactory
+import com.otoki.powersales.domain.activity.schedule.sap.DisplayMasterSapPayload
+import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
+import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
+import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
+import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -311,7 +319,7 @@ class AdminSapOutboundTestServiceTest {
         teamMemberScheduleSapPayloadFactory = TeamMemberScheduleSapPayloadFactory(),
         teamMemberScheduleRepository = teamMemberScheduleRepository,
         displayMasterSapSender = displayMasterSapSender,
-        displayMasterPayloadFactory = displayMasterPayloadFactory,
+        displayMasterPayloadFactory = DisplayMasterPayloadFactory(),
         displayWorkScheduleRepository = displayWorkScheduleRepository,
         pptMasterSapSender = pptMasterSapSender,
         pptMasterPayloadFactory = pptMasterPayloadFactory,
@@ -435,5 +443,99 @@ class AdminSapOutboundTestServiceTest {
             )
         }.hasMessageContaining("999")
         verify(exactly = 0) { teamMemberScheduleSapSender.sendPage(any()) }
+    }
+
+    // ===== DisplayMaster 단건 =====
+
+    private fun displaySchedule(
+        scheduleId: Long,
+        employeeCode: String? = "E001",
+        accountExternalKey: String? = "1032619",
+        typeOfWork1: TypeOfWork1? = TypeOfWork1.DISPLAY,
+        typeOfWork3: TypeOfWork3? = TypeOfWork3.FIXED,
+        typeOfWork5: TypeOfWork5? = TypeOfWork5.REGULAR,
+    ): DisplayWorkSchedule {
+        val employeeMock: Employee? = employeeCode?.let { code ->
+            mockk { every { this@mockk.employeeCode } returns code }
+        }
+        val accountMock: Account? = accountExternalKey?.let { key ->
+            mockk { every { externalKey } returns key }
+        }
+        return mockk {
+            every { id } returns scheduleId
+            every { this@mockk.employee } returns employeeMock
+            every { this@mockk.account } returns accountMock
+            every { this@mockk.typeOfWork1 } returns typeOfWork1
+            every { this@mockk.typeOfWork3 } returns typeOfWork3
+            every { this@mockk.typeOfWork5 } returns typeOfWork5
+        }
+    }
+
+    @Test
+    @DisplayName("previewDisplayMasterSingle: scheduleId 로 단건 조회 후 payload 1건 빌드 + SAP 미송신")
+    fun previewDisplayMasterSingle_buildsSingleRowPayload() {
+        every { displayWorkScheduleRepository.findByIdForDisplayMasterSap(11L) } returns
+            displaySchedule(11L)
+
+        val res = serviceWithRealFactory.previewDisplayMasterSingle(
+            DisplayMasterSingleTestRequest(scheduleId = 11L, workDate = LocalDate.of(2026, 7, 15)),
+        )
+
+        assertThat(res.interfaceId).isEqualTo(SapConstants.SAP_INTERFACE_DISPLAY_MASTER)
+        val payload = res.payload as DisplayMasterSapPayload
+        assertThat(payload.request).hasSize(1)
+        assertThat(payload.request[0].EmployeeCode).isEqualTo("E001")
+        assertThat(payload.request[0].SAPAccountCode).isEqualTo("1032619")
+        assertThat(payload.request[0].WorkDate).isEqualTo("20260715")
+        assertThat(payload.request[0].WorkingCategory1).isEqualTo("진열")
+        assertThat(payload.request[0].WorkingCategory3).isEqualTo("고정")
+        assertThat(payload.request[0].WorkingCategory5).isEqualTo("상시")
+        assertThat(res.summary).contains("scheduleId=11").contains("workDate=2026-07-15")
+        verify(exactly = 0) { displayMasterSapSender.sendPage(any()) }
+    }
+
+    @Test
+    @DisplayName("sendDisplayMasterSingle: 조회 후 sender.sendPage 로 payload 1건 송신 → success=true")
+    fun sendDisplayMasterSingle_successPath() {
+        every { displayWorkScheduleRepository.findByIdForDisplayMasterSap(22L) } returns
+            displaySchedule(22L)
+        val captured = slot<DisplayMasterSapPayload>()
+        every { displayMasterSapSender.sendPage(capture(captured)) } returns true
+
+        val res = serviceWithRealFactory.sendDisplayMasterSingle(
+            DisplayMasterSingleTestRequest(scheduleId = 22L),
+        )
+
+        assertThat(res.success).isTrue
+        assertThat(captured.captured.request).hasSize(1)
+        verify(exactly = 1) { displayMasterSapSender.sendPage(any()) }
+    }
+
+    @Test
+    @DisplayName("sendDisplayMasterSingle: sender 가 false 반환 → success=false + message 에 실패 표기")
+    fun sendDisplayMasterSingle_failurePath() {
+        every { displayWorkScheduleRepository.findByIdForDisplayMasterSap(22L) } returns
+            displaySchedule(22L)
+        every { displayMasterSapSender.sendPage(any()) } returns false
+
+        val res = serviceWithRealFactory.sendDisplayMasterSingle(
+            DisplayMasterSingleTestRequest(scheduleId = 22L),
+        )
+
+        assertThat(res.success).isFalse
+        assertThat(res.message).contains("실패")
+    }
+
+    @Test
+    @DisplayName("sendDisplayMasterSingle: 존재하지 않는 scheduleId → NOT_FOUND 예외 + sender 미호출")
+    fun sendDisplayMasterSingle_notFound_throws() {
+        every { displayWorkScheduleRepository.findByIdForDisplayMasterSap(999L) } returns null
+
+        assertThatThrownBy {
+            serviceWithRealFactory.sendDisplayMasterSingle(
+                DisplayMasterSingleTestRequest(scheduleId = 999L),
+            )
+        }.hasMessageContaining("999")
+        verify(exactly = 0) { displayMasterSapSender.sendPage(any()) }
     }
 }

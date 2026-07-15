@@ -65,6 +65,19 @@ data class TeamMemberScheduleSingleTestRequest(
     val referenceDate: LocalDate? = null,
 )
 
+/**
+ * 진열마스터(DISPLAY) SAP **단건** 테스트 송신 입력.
+ *
+ * @property scheduleId display_work_schedule.id — 송신할 진열마스터 단건 식별자.
+ * @property workDate payload 의 `WorkDate` 값. 진열마스터 batch 는 실행 시점 today 를 그대로 WorkDate 로
+ *   쓰므로(전일보정 개념 없음), 발송 당시 payload 를 재현하려면 그 배치가 돌았던 날짜를 지정한다.
+ *   미지정 시 오늘(batch 기본 동작과 정합).
+ */
+data class DisplayMasterSingleTestRequest(
+    val scheduleId: Long,
+    val workDate: LocalDate? = null,
+)
+
 /** PPTMaster sender 입력. 당월 활성 마스터 조회만 사용. */
 data class PPTMasterTestRequest(
     val targetDate: LocalDate? = null,

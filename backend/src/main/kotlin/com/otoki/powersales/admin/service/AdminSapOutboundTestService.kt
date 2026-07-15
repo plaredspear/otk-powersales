@@ -3,6 +3,7 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.request.BatchDateTestRequest
 import com.otoki.powersales.admin.dto.request.LoanInquiryTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestCancelTestRequest
+import com.otoki.powersales.admin.dto.request.DisplayMasterSingleTestRequest
 import com.otoki.powersales.admin.dto.request.InventorySearchTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestDetailTestRequest
 import com.otoki.powersales.admin.dto.request.OrderRequestRegisterTestRequest
@@ -455,6 +456,49 @@ class AdminSapOutboundTestService(
             message = if (ok) "빈 배열 송신 성공 (연결성 확인) — sap_outbound_log 확인"
             else "빈 배열 송신 실패 — sap_outbound_log 확인",
         )
+    }
+
+    // ===== DisplayMaster 단건 (Batch sender 재사용) =====
+
+    fun previewDisplayMasterSingle(req: DisplayMasterSingleTestRequest): SapOutboundTestPreviewResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER
+        val (payload, summary) = buildDisplayMasterSinglePayload(req)
+        return SapOutboundTestPreviewResponse(
+            interfaceId = interfaceId,
+            endpointPath = "/$interfaceId",
+            payload = payload,
+            summary = summary,
+        )
+    }
+
+    fun sendDisplayMasterSingle(req: DisplayMasterSingleTestRequest): SapOutboundTestSendResponse {
+        val interfaceId = SapConstants.SAP_INTERFACE_DISPLAY_MASTER
+        val (payload, summary) = buildDisplayMasterSinglePayload(req)
+        val ok = displayMasterSapSender.sendPage(payload)
+        return SapOutboundTestSendResponse(
+            interfaceId = interfaceId,
+            success = ok,
+            message = if (ok) "송신 성공 ($summary)" else "송신 실패 ($summary) — sap_outbound_log 확인",
+        )
+    }
+
+    /**
+     * scheduleId 단건을 payload 1건으로 빌드한다.
+     * `WorkDate` 는 workDate(미지정 시 오늘) 를 그대로 사용한다 — 진열마스터는 전일보정 개념이 없어
+     * 배치와 동일하게 기준일이 곧 WorkDate 다. 발송 당시 payload 재현 시 그 배치가 돌았던 날짜를 넘긴다.
+     */
+    private fun buildDisplayMasterSinglePayload(req: DisplayMasterSingleTestRequest):
+            Pair<DisplayMasterSapPayload, String> {
+        val entity = displayWorkScheduleRepository.findByIdForDisplayMasterSap(req.scheduleId)
+            ?: throw BusinessException(
+                errorCode = "DISPLAY_WORK_SCHEDULE_NOT_FOUND",
+                message = "진열마스터를 찾을 수 없습니다: scheduleId=${req.scheduleId}",
+                httpStatus = HttpStatus.NOT_FOUND,
+            )
+        val workDate = req.workDate ?: LocalDate.now()
+        val payload = displayMasterPayloadFactory.build(listOf(entity.toSapPayloadRow()), workDate)
+        val summary = "scheduleId=${req.scheduleId} workDate=$workDate"
+        return payload to summary
     }
 
     private fun buildDisplayMasterPayload(req: BatchDateTestRequest):

@@ -334,6 +334,50 @@ export const SENDER_CONFIGS: SenderCardConfig[] = [
     toBody: (state) => batchDateToBody(state),
   },
   {
+    kind: 'display-master-single',
+    interfaceId: 'SD03131',
+    title: '여사원 진열마스터 스케줄 단건 (TeamMemberMasterSchedule)',
+    tabLabel: '여사원 진열마스터 단건',
+    description:
+      '진열마스터 1건(scheduleId)을 골라 SAP 으로 송신합니다. 같은 날짜의 다른 마스터는 포함되지 않습니다. sap_outbound_log 적재됨.',
+    triggerTag: 'BATCH',
+    renderForm: (state, update) => (
+      <Form layout="vertical">
+        <Form.Item label="scheduleId (display_work_schedule.id)" required>
+          <InputNumber
+            style={{ width: '100%' }}
+            min={1}
+            value={state.scheduleId as number | undefined}
+            onChange={(v) => update({ scheduleId: v ?? undefined })}
+          />
+        </Form.Item>
+        <Form.Item
+          label="workDate (payload 의 WorkDate — 비우면 오늘)"
+          help="진열마스터는 전일 보정 개념이 없어 기준일이 곧 WorkDate 입니다. 발송 당시 payload 를 재현하려면 그 배치가 돌았던 날짜를 지정하세요."
+        >
+          <DatePicker
+            style={{ width: '100%' }}
+            value={state.workDate as Dayjs | undefined}
+            onChange={(v) => update({ workDate: v ?? undefined })}
+          />
+        </Form.Item>
+        <Alert
+          showIcon
+          type="info"
+          message="사원·거래처·근무형태 등 식별값은 선택한 마스터 자신의 정보를 사용합니다. batch 의 유효/확정/기간 필터는 적용하지 않고 id 로만 특정합니다."
+        />
+      </Form>
+    ),
+    toBody: (state) => {
+      const scheduleId = state.scheduleId as number | undefined;
+      if (!scheduleId) throw new Error('scheduleId 를 입력하세요');
+      const body: Record<string, unknown> = { scheduleId };
+      const d = state.workDate as Dayjs | undefined;
+      if (d) body.workDate = d.format('YYYY-MM-DD');
+      return body;
+    },
+  },
+  {
     kind: 'ppt-master',
     interfaceId: 'SD03300',
     title: '전문행사조 마스터 batch (SD03300)',
