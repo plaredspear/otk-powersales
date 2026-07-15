@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../domain/entities/suggestion_form.dart';
+import '../common/single_date_picker_sheet.dart';
 
 // ============================================================
 // 레거시 suggestWrite.jsp 정합 디자인 토큰
@@ -339,8 +340,9 @@ class SuggestionClaimDateField extends StatelessWidget {
         icon: Icons.calendar_today,
         onTap: () async {
           final now = DateTime.now();
-          final picked = await showDatePicker(
-            context: context,
+          // 날짜를 탭하면 즉시 확정하고 모달이 닫힌다(확인 버튼 불필요). 취소 대신 "닫기" 제공.
+          final picked = await SingleDatePickerSheet.show(
+            context,
             initialDate: value ?? now,
             firstDate: DateTime(now.year - 5),
             lastDate: now,
