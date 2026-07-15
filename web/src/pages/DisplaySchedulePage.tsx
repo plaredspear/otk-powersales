@@ -391,7 +391,7 @@ export default function DisplaySchedulePage() {
         scheduleListQuery.refetch();
       },
       onError: (err) => {
-        const errorMessage = err instanceof Error ? err.message : '등록 확정에 실패했습니다';
+        const errorMessage = err instanceof Error ? err.message : '등록에 실패했습니다';
         message.error(errorMessage);
       },
     });
@@ -648,7 +648,7 @@ export default function DisplaySchedulePage() {
               loading={confirmMutation.isPending}
               onClick={handleConfirmUpload}
             >
-              등록 확정
+              등록
             </Button>
           </div>
 

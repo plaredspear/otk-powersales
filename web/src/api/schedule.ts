@@ -300,7 +300,7 @@ export async function confirmScheduleUpload(uploadId: string): Promise<ScheduleC
   );
 
   if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.error?.message || res.data.message || '등록 확정에 실패했습니다');
+    throw new Error(res.data.error?.message || res.data.message || '등록에 실패했습니다');
   }
 
   return res.data.data;
