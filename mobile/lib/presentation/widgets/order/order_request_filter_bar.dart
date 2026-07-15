@@ -11,8 +11,10 @@ import 'order_filter_styles.dart';
 
 /// 주문 필터 바 위젯
 ///
-/// 거래처 선택(바텀시트), 상태 드롭다운, 납기일 범위, 검색 버튼을 포함합니다.
-/// Heroku 레거시(order/list.jsp - 내 주문 탭)의 플랫 검색 영역 디자인에 정합합니다.
+/// 거래처 선택(바텀시트), 상태 드롭다운, 납기일 범위를 포함합니다.
+/// 필터를 변경하면 별도 검색 버튼 없이 즉시 조회합니다(각 콜백이 조회를 트리거).
+/// Heroku 레거시(order/list.jsp - 내 주문 탭)의 플랫 검색 영역 디자인을 기반으로 하되,
+/// 모바일 UX 상 검색 버튼을 제거하고 즉시 조회 방식으로 변경했습니다.
 class OrderRequestFilterBar extends StatelessWidget {
   /// 선택된 거래처명 (미선택 시 전체)
   final String? selectedClientName;
@@ -38,9 +40,6 @@ class OrderRequestFilterBar extends StatelessWidget {
   /// 납기일 범위 선택 콜백
   final void Function(String? from, String? to) onDateRangeChanged;
 
-  /// 검색 버튼 콜백
-  final VoidCallback onSearch;
-
   const OrderRequestFilterBar({
     super.key,
     this.selectedClientName,
@@ -51,7 +50,6 @@ class OrderRequestFilterBar extends StatelessWidget {
     required this.onClientChanged,
     required this.onStatusChanged,
     required this.onDateRangeChanged,
-    required this.onSearch,
   });
 
   @override
@@ -72,18 +70,10 @@ class OrderRequestFilterBar extends StatelessWidget {
             ),
           ),
           const OrderFilterRowDivider(),
-          // 2행: 납기일 범위 + 검색 버튼
+          // 2행: 납기일 범위 (선택 즉시 조회 — 검색 버튼 없음)
           SizedBox(
             height: OrderFilterStyles.rowHeight,
-            child: Row(
-              children: [
-                Expanded(child: _buildDateRangeSelector(context)),
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.lg),
-                  child: OrderSearchButton(onPressed: onSearch),
-                ),
-              ],
-            ),
+            child: _buildDateRangeSelector(context),
           ),
           // 필터 영역과 목록 사이의 굵은 회색 밴드 (레거시 .bline)
           const OrderFilterBand(),

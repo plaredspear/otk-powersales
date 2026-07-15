@@ -36,6 +36,200 @@ Future<DateTimeRange?> showRangeCalendar(
   );
 }
 
+/// 단일 날짜 선택 달력 다이얼로그.
+///
+/// [showRangeCalendar] 와 동일한 달력 UI 를 쓰되, 날짜를 탭하면 확인 버튼 없이
+/// 즉시 그 날짜를 반환하고 닫힌다(레거시/모바일 즉시 선택 UX).
+/// [firstDate]/[lastDate] 를 생략하면 2000~2100 안에서 자유롭게 탐색할 수 있다.
+Future<DateTime?> showSingleDateCalendar(
+  BuildContext context, {
+  required DateTime initialDate,
+  DateTime? firstDate,
+  DateTime? lastDate,
+}) {
+  return showDialog<DateTime>(
+    context: context,
+    builder: (_) => _SingleDateCalendarDialog(
+      initialDate: initialDate,
+      firstDate: firstDate ?? DateTime(2000),
+      lastDate: lastDate ?? DateTime(2100),
+    ),
+  );
+}
+
+class _SingleDateCalendarDialog extends StatefulWidget {
+  final DateTime initialDate;
+  final DateTime firstDate;
+  final DateTime lastDate;
+
+  const _SingleDateCalendarDialog({
+    required this.initialDate,
+    required this.firstDate,
+    required this.lastDate,
+  });
+
+  @override
+  State<_SingleDateCalendarDialog> createState() =>
+      _SingleDateCalendarDialogState();
+}
+
+class _SingleDateCalendarDialogState extends State<_SingleDateCalendarDialog> {
+  static const List<String> _weekdayLabels = ['일', '월', '화', '수', '목', '금', '토'];
+
+  late DateTime _selected;
+  late DateTime _focusedMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = _dateOnly(widget.initialDate);
+    _focusedMonth = DateTime(_selected.year, _selected.month);
+  }
+
+  static DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  bool _isSameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  bool _isSelectable(DateTime day) {
+    return !day.isBefore(_dateOnly(widget.firstDate)) &&
+        !day.isAfter(_dateOnly(widget.lastDate));
+  }
+
+  void _onDayTap(DateTime day) {
+    // 확인 버튼 없이 탭 즉시 선택 확정 후 닫는다.
+    Navigator.of(context).pop(day);
+  }
+
+  void _changeMonth(int delta) {
+    setState(() {
+      _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + delta);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+            const SizedBox(height: 12),
+            _buildWeekdayRow(),
+            const SizedBox(height: 4),
+            _buildDayGrid(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          onPressed: () => _changeMonth(-1),
+          icon: const Icon(Icons.chevron_left),
+          color: AppColors.textPrimary,
+        ),
+        Text(
+          '${_focusedMonth.year}년 ${_focusedMonth.month}월',
+          style: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+        ),
+        IconButton(
+          onPressed: () => _changeMonth(1),
+          icon: const Icon(Icons.chevron_right),
+          color: AppColors.textPrimary,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeekdayRow() {
+    return Row(
+      children: List.generate(7, (i) {
+        return Expanded(
+          child: Center(
+            child: Text(
+              _weekdayLabels[i],
+              style: AppTypography.bodySmall.copyWith(
+                color: i == 0
+                    ? AppColors.otokiRed
+                    : (i == 6 ? AppColors.otokiBlue : AppColors.textSecondary),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildDayGrid() {
+    final firstOfMonth = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
+    final leadingBlanks = firstOfMonth.weekday % 7;
+    final gridStart = firstOfMonth.subtract(Duration(days: leadingBlanks));
+
+    return Column(
+      children: List.generate(6, (week) {
+        return Row(
+          children: List.generate(7, (dow) {
+            final day = gridStart.add(Duration(days: week * 7 + dow));
+            return Expanded(child: _buildDayCell(day));
+          }),
+        );
+      }),
+    );
+  }
+
+  Widget _buildDayCell(DateTime day) {
+    final inMonth = day.month == _focusedMonth.month;
+    final selectable = inMonth && _isSelectable(day);
+    final isSelected = inMonth && _isSameDay(day, _selected);
+
+    Color? bgColor;
+    if (isSelected) bgColor = AppColors.otokiBlue;
+
+    Color textColor;
+    if (isSelected) {
+      textColor = AppColors.onSecondary;
+    } else if (!inMonth || !selectable) {
+      textColor = AppColors.textTertiary;
+    } else {
+      textColor = AppColors.textPrimary;
+    }
+
+    final isDisabledInMonth = inMonth && !selectable;
+
+    return GestureDetector(
+      onTap: selectable ? () => _onDayTap(day) : null,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        height: 40,
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '${day.day}',
+          style: AppTypography.bodyMedium.copyWith(
+            color: textColor,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w300,
+            decoration: isDisabledInMonth ? TextDecoration.lineThrough : null,
+            decorationColor: AppColors.textTertiary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RangeCalendarDialog extends StatefulWidget {
   final DateTime initialStart;
   final DateTime initialEnd;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 
 /// 주문 현황 필터 영역의 공통 디자인 토큰/위젯.
@@ -68,39 +67,6 @@ class OrderFilterBand extends StatelessWidget {
     return Container(
       height: OrderFilterStyles.bandHeight,
       color: OrderFilterStyles.dividerColor,
-    );
-  }
-}
-
-/// 노란 pill 검색 버튼 (레거시 `.type_btn button` - #FFE40C, 둥근 pill, bold)
-class OrderSearchButton extends StatelessWidget {
-  final VoidCallback? onPressed;
-
-  const OrderSearchButton({super.key, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 32,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.legacyYellow,
-          foregroundColor: AppColors.onPrimary,
-          disabledBackgroundColor: AppColors.border,
-          disabledForegroundColor: AppColors.textTertiary,
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          minimumSize: const Size(57, 32),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: const StadiumBorder(),
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        child: const Text('검색'),
-      ),
     );
   }
 }

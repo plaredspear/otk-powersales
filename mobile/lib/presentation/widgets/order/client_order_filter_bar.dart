@@ -4,12 +4,16 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../domain/repositories/my_account_repository.dart';
 import '../account/account_selector_field.dart';
+import '../common/range_calendar_picker.dart';
 import 'order_filter_styles.dart';
 
 /// 거래처별 주문 필터 바
 ///
-/// 거래처 선택(바텀시트), 납기일 선택, 검색 버튼으로 구성됩니다.
-/// Heroku 레거시(order/list.jsp - 거래처별 주문 탭)의 플랫 검색 영역 디자인에 정합합니다.
+/// 거래처 선택(바텀시트), 납기일 선택으로 구성됩니다.
+/// 거래처를 선택하거나 납기일을 바꾸면 별도 검색 버튼 없이 즉시 조회합니다
+/// (거래처 미선택 시에는 조회가 no-op 이므로 안전).
+/// Heroku 레거시(order/list.jsp - 거래처별 주문 탭)의 플랫 검색 영역 디자인을 기반으로 하되,
+/// 모바일 UX 상 검색 버튼을 제거하고 즉시 조회 방식으로 변경했습니다.
 /// 내 주문 탭과 달리 거래처는 필수 선택(전체 옵션 없음)이며 상태/정렬이 없습니다.
 class ClientOrderFilterBar extends StatelessWidget {
   final String? selectedAccountName;
@@ -17,8 +21,6 @@ class ClientOrderFilterBar extends StatelessWidget {
   final String selectedDeliveryDate; // YYYY-MM-DD
   final ValueChanged<MapEntry<int, String>?> onAccountChanged; // null = clear
   final ValueChanged<String> onDeliveryDateChanged;
-  final VoidCallback onSearch;
-  final bool canSearch; // false if no account selected
 
   const ClientOrderFilterBar({
     super.key,
@@ -27,8 +29,6 @@ class ClientOrderFilterBar extends StatelessWidget {
     required this.selectedDeliveryDate,
     required this.onAccountChanged,
     required this.onDeliveryDateChanged,
-    required this.onSearch,
-    this.canSearch = false,
   });
 
   @override
@@ -43,20 +43,10 @@ class ClientOrderFilterBar extends StatelessWidget {
             child: _buildAccountDropdown(),
           ),
           const OrderFilterRowDivider(),
-          // 2행: 납기일 + 검색 버튼
+          // 2행: 납기일 (선택 즉시 조회 — 검색 버튼 없음)
           SizedBox(
             height: OrderFilterStyles.rowHeight,
-            child: Row(
-              children: [
-                Expanded(child: _buildDateSelector(context)),
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.lg),
-                  child: OrderSearchButton(
-                    onPressed: canSearch ? onSearch : null,
-                  ),
-                ),
-              ],
-            ),
+            child: _buildDateSelector(context),
           ),
           // 필터 영역과 목록 사이의 굵은 회색 밴드 (레거시 .bline)
           const OrderFilterBand(),
@@ -80,12 +70,12 @@ class ClientOrderFilterBar extends StatelessWidget {
   Widget _buildDateSelector(BuildContext context) {
     return InkWell(
       onTap: () async {
-        final pickedDate = await showDatePicker(
-          context: context,
+        // 확인 버튼 없이 날짜를 탭하면 즉시 선택 확정되는 커스텀 달력.
+        final pickedDate = await showSingleDateCalendar(
+          context,
           initialDate: DateTime.parse(selectedDeliveryDate),
           firstDate: DateTime(2020),
           lastDate: DateTime(2030),
-          locale: const Locale('ko', 'KR'),
         );
         if (pickedDate != null) {
           onDeliveryDateChanged(DateFormat('yyyy-MM-dd').format(pickedDate));

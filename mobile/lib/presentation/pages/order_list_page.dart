@@ -222,21 +222,23 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
           selectedStatus: state.selectedStatus,
           deliveryDateFrom: state.deliveryDateFrom,
           deliveryDateTo: state.deliveryDateTo,
+          // 필터 변경 시 별도 검색 버튼 없이 즉시 조회한다.
+          // 각 update* 는 동기적으로 state 를 갱신하므로,
+          // 이어지는 searchOrders 가 방금 바뀐 조건으로 fetch 한다.
           onClientChanged: (clientId, clientName) {
-            ref
-                .read(orderRequestListProvider.notifier)
-                .updateClientFilter(clientId, clientName);
+            final notifier = ref.read(orderRequestListProvider.notifier);
+            notifier.updateClientFilter(clientId, clientName);
+            notifier.searchOrders();
           },
           onStatusChanged: (status) {
-            ref.read(orderRequestListProvider.notifier).updateStatusFilter(status);
+            final notifier = ref.read(orderRequestListProvider.notifier);
+            notifier.updateStatusFilter(status);
+            notifier.searchOrders();
           },
           onDateRangeChanged: (from, to) {
-            ref
-                .read(orderRequestListProvider.notifier)
-                .updateDeliveryDateRange(from, to);
-          },
-          onSearch: () {
-            ref.read(orderRequestListProvider.notifier).searchOrders();
+            final notifier = ref.read(orderRequestListProvider.notifier);
+            notifier.updateDeliveryDateRange(from, to);
+            notifier.searchOrders();
           },
         ),
         // 전송 처리 중 안내 (과도상태 주문이 있을 때만)
@@ -459,25 +461,22 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
               selectedAccountName: state.selectedAccountName,
               selectedAccountId: state.selectedAccountId,
               selectedDeliveryDate: state.selectedDeliveryDate,
-              canSearch: state.canSearch,
+              // 거래처 선택/납기일 변경 시 별도 검색 버튼 없이 즉시 조회한다.
+              // select/update 는 동기적으로 state 를 갱신하며, searchOrders 는
+              // 거래처 미선택 시 no-op 이라 날짜만 먼저 바꾸는 경우에도 안전하다.
               onAccountChanged: (entry) {
+                final notifier = ref.read(clientOrderListProvider.notifier);
                 if (entry == null) {
-                  ref
-                      .read(clientOrderListProvider.notifier)
-                      .selectAccount(null, null);
+                  notifier.selectAccount(null, null);
                 } else {
-                  ref
-                      .read(clientOrderListProvider.notifier)
-                      .selectAccount(entry.key, entry.value);
+                  notifier.selectAccount(entry.key, entry.value);
                 }
+                notifier.searchOrders();
               },
               onDeliveryDateChanged: (date) {
-                ref
-                    .read(clientOrderListProvider.notifier)
-                    .updateDeliveryDate(date);
-              },
-              onSearch: () {
-                ref.read(clientOrderListProvider.notifier).searchOrders();
+                final notifier = ref.read(clientOrderListProvider.notifier);
+                notifier.updateDeliveryDate(date);
+                notifier.searchOrders();
               },
             ),
             // 안내 문구 (항상 표시) + 결과 헤더 (검색 후에만 표시)
@@ -624,7 +623,7 @@ class _OrderListPageState extends ConsumerState<OrderListPage>
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              '거래처와 납기일을 선택 후 검색해주세요',
+              '거래처를 선택하면 주문을 조회합니다',
               style: AppTypography.bodyLarge.copyWith(
                 color: AppColors.textSecondary,
               ),
