@@ -140,8 +140,10 @@ sap:
     # SD03051(주문취소) 등 무거운 SAP 인터페이스는 정상 처리에도 8~10초+ 소요 —
     # 10초 read timeout 은 SAP 가 처리 완료하기 전에 EMPTY_RESPONSE 로 끊어 "정상 처리됐으나
     # 응답 지연 에러" 를 냈고, 이를 본 사용자의 수동 재취소로 SAP 중복 전송을 유발했다.
-    # 관측 최대치(~10초)의 3배로 여유 확보해 false timeout 을 제거한다.
-    read-timeout-ms: ${SAP_OUTBOUND_READ_TIMEOUT_MS:30000}
+    # 30초로 상향 후에도 SD03051 이 30초를 초과해 EMPTY_RESPONSE(duration≈30000ms) 로 끊긴 사례가
+    # 관측되어 300초로 재상향한다. false timeout(정상 처리인데 응답 지연으로 끊김) 을 우선 제거하고,
+    # 추후 sap_outbound_log 의 SUCCESS 건 duration 분포를 보고 재조정한다.
+    read-timeout-ms: ${SAP_OUTBOUND_READ_TIMEOUT_MS:300000}
     retry:
       max-attempts: ${SAP_OUTBOUND_RETRY_MAX_ATTEMPTS:3}
       delay-ms: ${SAP_OUTBOUND_RETRY_DELAY_MS:1000}
