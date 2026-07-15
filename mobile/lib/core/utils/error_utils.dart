@@ -28,6 +28,16 @@ String extractErrorMessage(dynamic e) {
         return '서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.';
       case DioExceptionType.connectionError:
         return '네트워크 연결을 확인해주세요.';
+      case DioExceptionType.badResponse:
+        // 여기 도달 = 응답 body 에서 서버 표준 error.message / message 파싱이 모두 실패한 상태.
+        // CloudFront/ALB/nginx 등 중간 게이트웨이가 백엔드보다 먼저 끊으면 502/503/504 를
+        // HTML 에러 페이지로 내려주는데(우리 error 포맷 아님), 그대로 두면 마지막 fallback 의
+        // raw Dio 문자열이 사용자에게 노출된다. 5xx 는 게이트웨이 지연/장애로 간주해 친화 메시지로.
+        final status = e.response?.statusCode ?? 0;
+        if (status >= 500) {
+          return '서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.';
+        }
+        break;
       default:
         break;
     }
