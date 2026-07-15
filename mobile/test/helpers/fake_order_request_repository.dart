@@ -9,6 +9,9 @@ import 'package:mobile/domain/repositories/order_request_repository.dart';
 
 /// 테스트용 주문 Fake Repository
 class FakeOrderRequestRepository implements OrderRequestRepository {
+  /// [getOrderRequestDetail] 호출 횟수 — 쿨다운 등 "API 미호출" 검증용.
+  int getOrderRequestDetailCallCount = 0;
+
   /// 네트워크 지연 시뮬레이션 (300ms)
   Future<void> _simulateDelay() async {
     await Future.delayed(const Duration(milliseconds: 300));
@@ -512,6 +515,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
 
   @override
   Future<OrderDetail> getOrderRequestDetail({required int orderId}) async {
+    getOrderRequestDetailCallCount++;
     await _simulateDelay();
 
     final order = _mockOrders.firstWhere(

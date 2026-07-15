@@ -29,6 +29,14 @@ class OrderRequestDetailNotifier extends StateNotifier<OrderRequestDetailState> 
   final GetOrderDetail _getOrderDetail;
   final ResendOrder _resendOrder;
 
+  /// 주문 상세 조회는 SD03052 SAP 를 동기 호출해 latency 가 크다. 사용자가 pull-to-refresh 로
+  /// 짧은 간격에 반복 당기면 SAP 왕복이 누적되므로, 마지막 성공 조회로부터 [_refreshCooldown]
+  /// 이내의 **수동** 새로고침은 API 호출 없이 억제한다(자동 폴링/최초 진입/재전송 후 재조회는 예외).
+  static const Duration _refreshCooldown = Duration(seconds: 30);
+
+  /// 마지막으로 SAP 상세 조회에 성공한 시각. 쿨다운 판정 기준(수동 새로고침에만 적용).
+  DateTime? _lastLoadedAt;
+
   OrderRequestDetailNotifier({
     required GetOrderDetail getOrderRequestDetail,
     required ResendOrder resendOrderRequest,
@@ -39,11 +47,26 @@ class OrderRequestDetailNotifier extends StateNotifier<OrderRequestDetailState> 
   /// 주문 상세 조회
   ///
   /// [orderId]: 조회할 주문 ID
-  Future<void> loadOrderDetail({required int orderId}) async {
+  /// [respectCooldown]: true 이면 마지막 성공 조회로부터 30초 이내 재조회를 억제한다
+  ///   (pull-to-refresh 전용). 최초 진입/재전송 후 재조회는 false 로 항상 조회한다.
+  Future<void> loadOrderDetail({
+    required int orderId,
+    bool respectCooldown = false,
+  }) async {
+    if (respectCooldown && _isWithinCooldown()) {
+      // SAP 호출을 건너뛰고 안내만 노출 — 기존 화면 데이터는 그대로 유지.
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: '방금 조회했습니다. 잠시 후 다시 시도해주세요.',
+      );
+      return;
+    }
+
     state = state.toLoading();
 
     try {
       final detail = await _getOrderDetail.call(orderId: orderId);
+      _lastLoadedAt = DateTime.now();
       state = state.copyWith(
         orderDetail: detail,
         isLoading: false,
@@ -56,6 +79,13 @@ class OrderRequestDetailNotifier extends StateNotifier<OrderRequestDetailState> 
     }
   }
 
+  /// 마지막 성공 조회로부터 쿨다운(30초) 이내인지 여부.
+  bool _isWithinCooldown() {
+    final last = _lastLoadedAt;
+    if (last == null) return false;
+    return DateTime.now().difference(last) < _refreshCooldown;
+  }
+
   /// 무음 갱신 — 로딩 스피너 없이 현재 주문 상세를 재조회.
   ///
   /// 등록 직후 과도상태(SENT / 등록 SAP 전송 in-flight) 주문의 상태 전이를 한시적 자동 폴링으로
@@ -63,6 +93,8 @@ class OrderRequestDetailNotifier extends StateNotifier<OrderRequestDetailState> 
   Future<void> refreshSilently({required int orderId}) async {
     try {
       final detail = await _getOrderDetail.call(orderId: orderId);
+      // 자동 폴링도 SAP 를 왕복했으므로 쿨다운 기준을 갱신 — 폴링 직후 수동 새로고침 억제.
+      _lastLoadedAt = DateTime.now();
       state = state.copyWith(orderDetail: detail, errorMessage: null);
     } catch (_) {
       // 백그라운드 폴링 실패는 무시 — 화면 상태 유지.

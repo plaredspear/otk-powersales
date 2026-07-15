@@ -496,5 +496,56 @@ void main() {
       expect(notifier.state.orderDetail!.id, 4);
       expect(notifier.state.isResending, false);
     });
+
+    // ───────── pull-to-refresh 30초 쿨다운 (수동 새로고침 억제) ─────────
+
+    test('respectCooldown: 최초 조회는 항상 API 를 호출한다', () async {
+      // 마지막 조회 기록이 없으므로 respectCooldown=true 여도 정상 조회.
+      await notifier.loadOrderDetail(orderId: 1, respectCooldown: true);
+
+      expect(mockRepository.getOrderRequestDetailCallCount, 1);
+      expect(notifier.state.orderDetail, isNotNull);
+      expect(notifier.state.errorMessage, isNull);
+    });
+
+    test('respectCooldown: 30초 이내 수동 새로고침은 API 를 호출하지 않고 안내한다', () async {
+      // 1차 조회 성공 → 쿨다운 기준 시각 기록.
+      await notifier.loadOrderDetail(orderId: 1);
+      expect(mockRepository.getOrderRequestDetailCallCount, 1);
+      final before = notifier.state.orderDetail;
+
+      // 곧바로 pull-to-refresh(respectCooldown=true) → 쿨다운 걸려 API 미호출.
+      await notifier.loadOrderDetail(orderId: 1, respectCooldown: true);
+
+      expect(mockRepository.getOrderRequestDetailCallCount, 1); // 증가 없음
+      expect(notifier.state.orderDetail, same(before)); // 기존 데이터 유지
+      expect(notifier.state.isLoading, false);
+      expect(notifier.state.errorMessage, isNotNull);
+      expect(notifier.state.errorMessage, contains('방금 조회'));
+    });
+
+    test('respectCooldown=false(재전송·재시도 경로)는 쿨다운 무시하고 항상 조회한다', () async {
+      await notifier.loadOrderDetail(orderId: 1);
+      expect(mockRepository.getOrderRequestDetailCallCount, 1);
+
+      // 명시적 재조회(기본 respectCooldown=false) → 쿨다운과 무관하게 재호출.
+      await notifier.loadOrderDetail(orderId: 1);
+
+      expect(mockRepository.getOrderRequestDetailCallCount, 2);
+      expect(notifier.state.errorMessage, isNull);
+    });
+
+    test('refreshSilently(자동 폴링) 성공도 쿨다운 기준을 갱신한다', () async {
+      await notifier.loadOrderDetail(orderId: 1);
+      // 자동 폴링 1회 → 마지막 조회 시각 갱신.
+      await notifier.refreshSilently(orderId: 1);
+      final callsAfterPoll = mockRepository.getOrderRequestDetailCallCount;
+
+      // 폴링 직후 수동 새로고침 → 쿨다운으로 억제.
+      await notifier.loadOrderDetail(orderId: 1, respectCooldown: true);
+
+      expect(mockRepository.getOrderRequestDetailCallCount, callsAfterPoll);
+      expect(notifier.state.errorMessage, contains('방금 조회'));
+    });
   });
 }
