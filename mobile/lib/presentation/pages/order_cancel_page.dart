@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/entities/order_detail.dart';
+import '../widgets/common/info_notice_banner.dart';
 import '../providers/order_cancel_provider.dart';
 import '../providers/order_cancel_state.dart';
 import '../widgets/order/cancel_confirm_dialog.dart';
@@ -216,53 +217,62 @@ class OrderCancelPage extends ConsumerWidget {
     OrderCancelState state,
     OrderCancelParams params,
   ) {
-    return SafeArea(
-      child: Container(
-        padding: EdgeInsets.all(AppSpacing.lg),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border(
-            top: BorderSide(
-              color: AppColors.divider,
-              width: 1,
-            ),
-          ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const InfoNoticeBanner(
+          message: '품목이 많은 경우, 최대 5분이 걸릴 수 있습니다.',
         ),
-        child: SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            onPressed: state.canCancel
-                ? () => _onCancelPressed(context, ref, state, params)
-                : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.error,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: AppColors.border,
-              disabledForegroundColor: AppColors.textTertiary,
-              shape: RoundedRectangleBorder(
-                borderRadius: AppSpacing.buttonBorderRadius,
+        SafeArea(
+          child: Container(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              border: Border(
+                top: BorderSide(
+                  color: AppColors.divider,
+                  width: 1,
+                ),
               ),
             ),
-            child: state.isCancelling
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Text(
-                    '주문 취소 (${state.selectedCount})',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: state.canCancel
+                    ? () => _onCancelPressed(context, ref, state, params)
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.border,
+                  disabledForegroundColor: AppColors.textTertiary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppSpacing.buttonBorderRadius,
                   ),
+                ),
+                child: state.isCancelling
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Text(
+                        '주문 취소 (${state.selectedCount})',
+                        style: AppTypography.labelLarge.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 

@@ -9,6 +9,7 @@ import '../../domain/entities/order_draft.dart';
 import '../screens/barcode_scanner_screen.dart';
 import '../../domain/repositories/my_account_repository.dart';
 import '../widgets/account/account_selector_field.dart';
+import '../widgets/common/info_notice_banner.dart';
 import '../widgets/common/single_date_picker_sheet.dart';
 import '../widgets/order_form/credit_balance_display.dart';
 import '../widgets/order_form/delivery_date_picker.dart';
@@ -365,6 +366,9 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  const InfoNoticeBanner(
+                    message: '승인처리에 최대 5분이 걸릴 수 있습니다.',
+                  ),
                   TotalAmountDisplay(
                     totalAmount: state.totalAmount,
                     creditBalance: state.creditBalance,
