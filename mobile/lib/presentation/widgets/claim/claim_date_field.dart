@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../domain/entities/claim_code.dart';
+import '../common/single_date_picker_sheet.dart';
 import 'claim_form_row.dart';
 
 /// 클레임 기한 입력 필드
@@ -124,12 +125,12 @@ class _DatePickerInline extends StatelessWidget {
   }
 
   Future<void> _showDatePicker(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
+    // 날짜를 탭하면 즉시 확정하고 모달이 닫힌다(확인 버튼 불필요). 취소 대신 "닫기" 제공.
+    final picked = await SingleDatePickerSheet.show(
+      context,
       initialDate: date,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      locale: const Locale('ko', 'KR'),
     );
 
     if (picked != null) {
