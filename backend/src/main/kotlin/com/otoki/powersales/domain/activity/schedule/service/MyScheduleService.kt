@@ -8,7 +8,6 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.WorkDayDto
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
-import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
@@ -25,8 +24,7 @@ import java.time.YearMonth
 class MyScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
-    private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
-    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository
+    private val teamMemberScheduleRepository: TeamMemberScheduleRepository
     // private val attendanceRepository: AttendanceRepository  // Phase2: PG 대응 테이블 없음
 ) {
 
@@ -55,19 +53,17 @@ class MyScheduleService(
         val startDate = yearMonth.atDay(1)
         val endDate = yearMonth.atEndOfMonth()
 
-        // 진열 마스터 (확정·기간유효, 월과 기간 겹침). 마스터는 기간형이라 하루 단위 근무일 판정은
-        // 안전점검 제출일 게이트로 좁힌다(아래 참조 — 레거시/조장 캘린더 정합).
+        // 진열 마스터 (확정·기간유효, 월과 기간 겹침). 마스터는 기간형이므로 그날이 마스터 기간에
+        // 포함되면 진열 근무일로 본다(안전점검 제출 여부와 무관).
+        //
+        // 여사원 본인 앱 캘린더는 "내가 그날 가야 할 진열 계획"을 보여주는 사전 안내 화면이다.
+        // 레거시 SF 모바일(FullCalendarComponentController)은 안전점검을 진열 표시의 전제로 걸지
+        // 않는다 — 안전점검은 근무 당일 여사원이 남기는 하류 결과물이라 근무 전에는 존재하지 않으며,
+        // 게이트로 걸면 예정 진열 근무가 캘린더에서 사라져 계획 안내 기능 자체를 잃는다.
+        // (안전점검 제출자만 노출하는 comm_cnt>0 게이트는 조장이 조원 실적을 확인하는 화면
+        //  [TeamDailyStatusCalculator]의 사후 실적 기준이며, 본인 계획 화면에는 적용하지 않는다.)
         val masters = displayWorkScheduleRepository
             .findConfirmedValidByEmployeeIdAndDateRange(employee.id, startDate, endDate)
-
-        // 안전점검 제출일 집합 = 실제 진열 근무일 신호.
-        // 레거시 calSchedule/mngDaily 는 진열 거래처를 comm_cnt>0(safetycheck__workschedule__member 존재)
-        // 인 날에만 노출한다. 진열 마스터 기간겹침만으로는 근무일을 특정할 수 없으므로 이 게이트가 필수다.
-        // (조장 일별현황 [TeamDailyStatusCalculator.computeDailyWorkers] 와 동일 기준)
-        val safetyDates = safetyCheckSubmissionRepository
-            .findByEmployeeIdAndWorkingDateBetween(employee.id, startDate, endDate)
-            .mapNotNull { it.workingDate }
-            .toSet()
 
         // TeamMemberSchedule: 행사 거래처·출근(attendanceLog)·workingType(연차/대휴) 소스. (account/attendanceLog fetch join)
         val memberSchedules = teamMemberScheduleRepository
@@ -92,8 +88,8 @@ class MyScheduleService(
                 it.workingType == WorkingType.ANNUAL_LEAVE || it.workingType == WorkingType.ALT_HOLIDAY
             }
 
-            // 진열 거래처: 안전점검 제출일에만, 마스터 기간이 그날을 포함하는 것 (레거시 comm_cnt>0 게이트).
-            val displayAccountIds = if (!isLeave && currentDate in safetyDates) {
+            // 진열 거래처: 마스터 기간이 그날을 포함하면 노출 (안전점검 게이트 없음 — 여사원 본인 계획 화면).
+            val displayAccountIds = if (!isLeave) {
                 masters.filter { it.overlapsDate(currentDate) }.mapNotNull { it.account?.id }.toSet()
             } else {
                 emptySet()

@@ -7,8 +7,6 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingType
-import com.otoki.powersales.domain.activity.safetycheck.entity.SafetyCheckSubmission
-import com.otoki.powersales.domain.activity.safetycheck.repository.SafetyCheckSubmissionRepository
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -34,12 +32,10 @@ class MyScheduleServiceTest {
     private val employeeRepository: EmployeeRepository = mockk()
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
-    private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository = mockk()
     private val myScheduleService = MyScheduleService(
         employeeRepository,
         displayWorkScheduleRepository,
         teamMemberScheduleRepository,
-        safetyCheckSubmissionRepository,
     )
 
     // ========== 월간 일정 조회 Tests ==========
@@ -49,8 +45,8 @@ class MyScheduleServiceTest {
     inner class GetMonthlySchedule {
 
         @Test
-        @DisplayName("성공 - 진열 근무일은 안전점검 제출일에만 표시 (레거시 comm_cnt>0 게이트)")
-        fun getMonthlySchedule_displayGatedBySafetyCheck() {
+        @DisplayName("성공 - 진열 근무일은 안전점검 게이트 없이 마스터 기간이면 표시 (여사원 본인 계획 화면)")
+        fun getMonthlySchedule_displayShownWithoutSafetyGate() {
             // Given
             val userId = 1L
             val year = 2020
@@ -73,31 +69,22 @@ class MyScheduleServiceTest {
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
             ) } returns emptyList()
-            // 안전점검 제출은 8/1, 8/4 만 → 8/10 마스터는 근무일로 표시되지 않음
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), eq(LocalDate.of(2020, 8, 1)), eq(LocalDate.of(2020, 8, 31))
-            ) } returns listOf(
-                createMockSafety(userId, LocalDate.of(2020, 8, 1)),
-                createMockSafety(userId, LocalDate.of(2020, 8, 4))
-            )
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
 
-            // Then
+            // Then — 안전점검 제출 여부와 무관하게 마스터가 있는 3일 모두 근무일
             assertThat(result.year).isEqualTo(2020)
             assertThat(result.month).isEqualTo(8)
             assertThat(result.workDays).hasSize(31) // 8월은 31일
             assertThat(result.workDays.filter { it.hasWork }.map { it.date })
-                .containsExactly("2020-08-01", "2020-08-04")
-            // 안전점검 없는 8/10 은 마스터가 있어도 근무일 아님
-            assertThat(result.workDays.first { it.date == "2020-08-10" }.hasWork).isFalse()
+                .containsExactly("2020-08-01", "2020-08-04", "2020-08-10")
             assertThat(result.annualLeaveCount).isEqualTo(0)
         }
 
         @Test
-        @DisplayName("성공 - 마스터 기간이 여러 날이어도 안전점검 제출일만 근무일로 표시")
-        fun getMonthlySchedule_multiDayPeriodGatedBySafetyCheck() {
+        @DisplayName("성공 - 마스터 기간(여러 날)의 모든 날이 근무일로 표시 (안전점검 게이트 없음)")
+        fun getMonthlySchedule_multiDayPeriodShownEveryDay() {
             // Given
             val userId = 1L
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")
@@ -113,17 +100,13 @@ class MyScheduleServiceTest {
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
             ) } returns emptyList()
-            // 기간(8/4~8/6) 중 안전점검은 8/5 만 → 8/5 만 근무일
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), any(), any()
-            ) } returns listOf(createMockSafety(userId, LocalDate.of(2020, 8, 5)))
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, 2020, 8)
 
-            // Then — 기간 겹침(3일)이어도 안전점검 제출일(8/5)만 근무일
+            // Then — 기간(8/4~8/6) 전체가 근무일 (안전점검 제출과 무관)
             assertThat(result.workDays.filter { it.hasWork }.map { it.date })
-                .containsExactly("2020-08-05")
+                .containsExactly("2020-08-04", "2020-08-05", "2020-08-06")
         }
 
         @Test
@@ -156,9 +139,6 @@ class MyScheduleServiceTest {
                     workingCategory1 = WorkingCategory1.DISPLAY
                 )
             )
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), any(), any()
-            ) } returns listOf(createMockSafety(userId, date))
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, 2020, 8)
@@ -203,15 +183,11 @@ class MyScheduleServiceTest {
                     workingCategory1 = WorkingCategory1.DISPLAY
                 )
             )
-            // 안전점검은 8/4 만 (행사 8/10 은 안전점검 없이도 표시되어야 함)
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), any(), any()
-            ) } returns listOf(createMockSafety(userId, LocalDate.of(2020, 8, 4)))
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
 
-            // Then — 진열(8/4, 안전점검) ∪ 행사(8/10, 게이트 없음) 만 hasWork
+            // Then — 진열(8/4) ∪ 행사(8/10) 만 hasWork
             assertThat(result.workDays.filter { it.hasWork }.map { it.date })
                 .containsExactlyInAnyOrder("2020-08-04", "2020-08-10")
             // 진열 카테고리 TMS(8/15)는 진열 마스터에 없으므로 마커 아님
@@ -236,9 +212,6 @@ class MyScheduleServiceTest {
             ) } returns emptyList()
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
-            ) } returns emptyList()
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), any(), any()
             ) } returns emptyList()
 
             // When
@@ -269,9 +242,6 @@ class MyScheduleServiceTest {
             ) } returns emptyList()
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
-            ) } returns emptyList()
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), any(), any()
             ) } returns emptyList()
 
             // When
@@ -304,9 +274,6 @@ class MyScheduleServiceTest {
                 createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 12), workingType = WorkingType.ALT_HOLIDAY),
                 createMockMemberSchedule(workingDate = LocalDate.of(2026, 4, 20), workingType = WorkingType.ANNUAL_LEAVE)
             )
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), any(), any()
-            ) } returns emptyList()
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
@@ -331,9 +298,6 @@ class MyScheduleServiceTest {
             ) } returns emptyList()
             every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
                 eq(listOf(userId)), any(), any(), any()
-            ) } returns emptyList()
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), any(), any()
             ) } returns emptyList()
 
             // When
@@ -370,10 +334,6 @@ class MyScheduleServiceTest {
                 createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 10), WorkingType.WORK),
                 createMockMemberSchedule("20030117", LocalDate.of(2026, 3, 20), WorkingType.ANNUAL_LEAVE)
             )
-            // 3/5 는 연차라 안전점검이 있어도 근무일 아님을 확인하기 위해 3/5 안전점검 제출
-            every { safetyCheckSubmissionRepository.findByEmployeeIdAndWorkingDateBetween(
-                eq(userId), any(), any()
-            ) } returns listOf(createMockSafety(userId, LocalDate.of(2026, 3, 5)))
 
             // When
             val result = myScheduleService.getMonthlySchedule(userId, year, month)
@@ -656,10 +616,6 @@ class MyScheduleServiceTest {
             orgName = "서울지점",
             sfid = sfid
         )
-    }
-
-    private fun createMockSafety(employeeId: Long, workingDate: LocalDate): SafetyCheckSubmission {
-        return SafetyCheckSubmission(employeeId = employeeId, workingDate = workingDate)
     }
 
     private fun createMockMemberSchedule(
