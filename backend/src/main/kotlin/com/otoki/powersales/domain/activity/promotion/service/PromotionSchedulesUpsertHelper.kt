@@ -21,6 +21,7 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleOwnerResolver
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleNameGenerator
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -31,6 +32,7 @@ class PromotionSchedulesUpsertHelper(
     private val promotionRepository: PromotionRepository,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator,
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
@@ -108,6 +110,7 @@ class PromotionSchedulesUpsertHelper(
                 teamMemberSchedulesToSave.add(existing)
             } else {
                 val newTeamMemberSchedule = TeamMemberSchedule(
+                    name = teamMemberScheduleNameGenerator.next(),
                     employee = empEntity,
                     account = promotion.account,
                     workingDate = pe.scheduleDate!!,

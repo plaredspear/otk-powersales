@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.activity.schedule.enums.AttendType
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleOwnerResolver
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleNameGenerator
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
@@ -33,6 +34,7 @@ import java.time.format.DateTimeParseException
 class AttendInfoToScheduleConverter(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
 
@@ -113,6 +115,7 @@ class AttendInfoToScheduleConverter(
                             skippedIdempotent++
                         } else {
                             toSave += TeamMemberSchedule(
+                                name = teamMemberScheduleNameGenerator.next(),
                                 employee = employee,
                                 workingDate = date,
                                 workingType = ANNUAL_LEAVE_TYPE,

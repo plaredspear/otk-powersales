@@ -61,6 +61,7 @@ class LeaderScheduleService(
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator,
     private val scheduleConflictValidator: ScheduleConflictValidator,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver,
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
@@ -134,6 +135,7 @@ class LeaderScheduleService(
         // TeamMemberScheduleTriggerHandler.insertOwner 동등.
         val ownerUser = teamMemberScheduleOwnerResolver.resolveOwner(targetEmployee)
         val newSchedule = TeamMemberSchedule(
+            name = teamMemberScheduleNameGenerator.next(),
             employee = targetEmployee,
             account = account,
             workingDate = workingDate,

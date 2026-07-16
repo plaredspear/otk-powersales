@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.activity.schedule.entity.AttendInfo
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleOwnerResolver
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleNameGenerator
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -23,15 +24,18 @@ class AttendInfoToScheduleConverterTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator = mockk()
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
     private val converter = AttendInfoToScheduleConverter(
         employeeRepository,
         teamMemberScheduleRepository,
+        teamMemberScheduleNameGenerator,
         teamMemberScheduleOwnerResolver,
     )
 
     init {
         every { teamMemberScheduleOwnerResolver.resolveOwnersByCostCenterCode(any()) } returns emptyMap()
+        every { teamMemberScheduleNameGenerator.next() } returns "TS00000001"
     }
 
     private fun attendInfo(

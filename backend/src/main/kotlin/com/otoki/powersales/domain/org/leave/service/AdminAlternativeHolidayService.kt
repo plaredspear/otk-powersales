@@ -19,6 +19,7 @@ import com.otoki.powersales.domain.org.leave.repository.AlternativeHolidayReposi
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleOwnerResolver
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleNameGenerator
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -30,6 +31,7 @@ class AdminAlternativeHolidayService(
     private val employeeRepository: EmployeeRepository,
     private val validator: AlternativeHolidayValidator,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator,
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver
 ) {
 
@@ -100,6 +102,7 @@ class AdminAlternativeHolidayService(
         val ownerUser = teamMemberScheduleOwnerResolver.resolveOwner(employee)
         teamMemberScheduleRepository.save(
             TeamMemberSchedule(
+                name = teamMemberScheduleNameGenerator.next(),
                 employee = employee,
                 workingDate = confirmDate,
                 workingType = WorkingType.ALT_HOLIDAY,

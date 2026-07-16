@@ -65,6 +65,7 @@ import java.time.format.DateTimeFormatter
 class AttendanceService(
     private val employeeRepository: EmployeeRepository,
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator,
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository,
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository,
     private val attendanceRegistrar: AttendanceRegistrar,
@@ -573,6 +574,7 @@ class AttendanceService(
         val teamLeader = findTeamLeader(employee.costCenterCode)
         val ownerUser = teamMemberScheduleOwnerResolver.resolveOwner(employee)
         val newSchedule = TeamMemberSchedule(
+            name = teamMemberScheduleNameGenerator.next(),
             employee = employee,
             account = account,
             workingDate = today,

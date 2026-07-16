@@ -49,6 +49,8 @@ class LeaderScheduleServiceTest {
 
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
 
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator = mockk()
+
     private val scheduleConflictValidator: ScheduleConflictValidator = mockk(relaxUnitFun = true)
 
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
@@ -67,6 +69,7 @@ class LeaderScheduleServiceTest {
         employeeRepository,
         accountRepository,
         teamMemberScheduleRepository,
+        teamMemberScheduleNameGenerator,
         scheduleConflictValidator,
         teamMemberScheduleOwnerResolver,
         promotionEmployeeRepository,
@@ -76,6 +79,7 @@ class LeaderScheduleServiceTest {
     )
 
     init {
+        every { teamMemberScheduleNameGenerator.next() } returns "TS00000001"
         every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
     }
 

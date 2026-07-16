@@ -144,4 +144,35 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
         startDate: LocalDate,
         endDate: LocalDate,
     ): List<TeamMemberSchedule>
+
+    /**
+     * team_member_schedule.name 채번 — SF AutoNumber(Name, "TS{00000000}") 재현.
+     *
+     * name 은 SF AutoNumber 와 동일한 번호 공간(TS + 8자리)을 공유한다. SF 데이터 sync 가 신규 시스템
+     * 시퀀스보다 큰 번호를 적재하면 nextval 만으로는 기존 값과 겹칠 수 있다. 또한 시퀀스 동기화를 특정
+     * 시점에 한 번만 하면(Flyway setval 등) SF 데이터 마이그레이션과의 실행 순서에 의존해 다시 뒤처질 수 있다.
+     *
+     * 이를 시점 의존 없이 해소하기 위해, 채번 때마다 nextval 과 "현재 데이터 최대 번호 + 1" 중 큰 값을
+     * setval 로 확정한다. setval 반환값이 곧 발급 번호이며, 항상 기존 데이터 최대값을 추월하므로 겹치지 않는다.
+     * setval 이 시퀀스 내부값을 즉시 갱신하므로, 한 번 따라잡은 뒤에는 일반 시퀀스처럼 동작한다(MAX 스캔은 항상 작은 값).
+     * (promotion_number 와 동일 패턴 — `PromotionRepository.getNextPromotionNumberSeq`.)
+     */
+    @Query(
+        value = """
+            SELECT setval(
+                'powersales.team_member_schedule_name_seq',
+                GREATEST(
+                    nextval('powersales.team_member_schedule_name_seq'),
+                    COALESCE(
+                        (SELECT MAX(NULLIF(regexp_replace(name, '\D', '', 'g'), '')::bigint)
+                           FROM powersales.team_member_schedule
+                          WHERE name ~ '^TS[0-9]+$'),
+                        0
+                    ) + 1
+                )
+            )
+        """,
+        nativeQuery = true
+    )
+    fun getNextNameSeq(): Long
 }

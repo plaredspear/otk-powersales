@@ -60,6 +60,11 @@ class AdminTeamScheduleServiceTest {
 
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
 
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator =
+        mockk<TeamMemberScheduleNameGenerator>().apply {
+            every { next() } returns "TS00000001"
+        }
+
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk(relaxUnitFun = true)
 
     private val employeeRepository: EmployeeRepository = mockk(relaxUnitFun = true)
@@ -84,6 +89,7 @@ class AdminTeamScheduleServiceTest {
         )
         service = AdminTeamScheduleService(
             teamMemberScheduleRepository = teamMemberScheduleRepository,
+            teamMemberScheduleNameGenerator = teamMemberScheduleNameGenerator,
             employeeRepository = employeeRepository,
             accountRepository = accountRepository,
             adminMonthlyIntegrationService = adminMonthlyIntegrationService,

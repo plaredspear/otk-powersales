@@ -67,6 +67,7 @@ class AttendanceServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk(relaxUnitFun = true)
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator = mockk()
     private val displayWorkScheduleRepository: DisplayWorkScheduleRepository = mockk()
     private val safetyCheckSubmissionRepository: SafetyCheckSubmissionRepository = mockk(relaxUnitFun = true)
     private val attendanceRegistrar: AttendanceRegistrar = mockk()
@@ -78,6 +79,7 @@ class AttendanceServiceTest {
     private val attendanceService = AttendanceService(
         employeeRepository,
         teamMemberScheduleRepository,
+        teamMemberScheduleNameGenerator,
         displayWorkScheduleRepository,
         safetyCheckSubmissionRepository,
         attendanceRegistrar,
@@ -88,6 +90,7 @@ class AttendanceServiceTest {
     )
 
     init {
+        every { teamMemberScheduleNameGenerator.next() } returns "TS00000001"
         every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
     }
 

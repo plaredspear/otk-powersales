@@ -22,6 +22,7 @@ import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleOwnerResolver
+import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleNameGenerator
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -40,6 +41,7 @@ class PromotionSchedulesUpsertHelperTest {
     private val promotionRepository: PromotionRepository = mockk()
     private val promotionEmployeeRepository: PromotionEmployeeRepository = mockk()
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository = mockk()
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
     private val teamMemberScheduleOwnerResolver: TeamMemberScheduleOwnerResolver = mockk()
 
@@ -47,12 +49,14 @@ class PromotionSchedulesUpsertHelperTest {
         promotionRepository,
         promotionEmployeeRepository,
         teamMemberScheduleRepository,
+        teamMemberScheduleNameGenerator,
         employeeRepository,
         teamMemberScheduleOwnerResolver,
     )
 
     init {
         every { teamMemberScheduleOwnerResolver.resolveOwnersByCostCenterCode(any()) } returns emptyMap()
+        every { teamMemberScheduleNameGenerator.next() } returns "TS00000001"
     }
 
     private val startDate = LocalDate.of(2026, 3, 1)

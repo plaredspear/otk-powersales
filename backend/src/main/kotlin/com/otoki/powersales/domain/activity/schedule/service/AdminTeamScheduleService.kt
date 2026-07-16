@@ -43,6 +43,7 @@ import java.time.temporal.ChronoUnit
 @Transactional(readOnly = true)
 class AdminTeamScheduleService(
     private val teamMemberScheduleRepository: TeamMemberScheduleRepository,
+    private val teamMemberScheduleNameGenerator: TeamMemberScheduleNameGenerator,
     private val employeeRepository: EmployeeRepository,
     private val accountRepository: AccountRepository,
     private val adminMonthlyIntegrationService: AdminMonthlyIntegrationService,
@@ -304,6 +305,7 @@ class AdminTeamScheduleService(
         // teamLeader(= 등록 관리자 principal)와는 별개의 필드.
         val ownerUser = teamMemberScheduleOwnerResolver.resolveOwner(employee)
         val schedule = TeamMemberSchedule(
+            name = teamMemberScheduleNameGenerator.next(),
             employee = employee,
             workingDate = workingDate,
             workingType = request.workingType,
