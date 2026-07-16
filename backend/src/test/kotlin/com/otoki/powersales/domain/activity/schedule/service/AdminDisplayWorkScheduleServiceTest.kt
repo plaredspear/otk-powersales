@@ -27,7 +27,7 @@ import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteConstraintException
-import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterConfirmException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterAttendanceException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEmptyFileException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileTooLargeException
@@ -1499,8 +1499,8 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("UC-05 차단 — 확정 + LEADER + 거래처 변경 시 ScheduleEditBlockedAfterConfirmException")
-        fun updateSchedule_blockedAfterConfirm_leaderChangesAccount() {
+        @DisplayName("근무등록 시작된 스케줄 - LEADER 가 거래처 변경 시 ScheduleEditBlockedAfterAttendanceException")
+        fun updateSchedule_blockedAfterAttendance_leaderChangesAccount() {
             val scope = mockAdminScope()
             val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001")
             val originalAccount = createAccount(id = 1, externalKey = "ACC_ORIGINAL")
@@ -1509,15 +1509,49 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(user)
-            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns true
 
             assertThatThrownBy {
                 adminDisplayWorkScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest.copy(accountCode = "ACC001"))
-            }.isInstanceOf(ScheduleEditBlockedAfterConfirmException::class.java)
+            }.isInstanceOf(ScheduleEditBlockedAfterAttendanceException::class.java)
 
             verify(exactly = 0) { uploadValidator.validateSingle(
                 any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
             ) }
+        }
+
+        @Test
+        @DisplayName("확정됐지만 근무등록 미시작 - LEADER 가 거래처 변경 시 수정 성공 (확정여부와 무관하게 근무등록 전이면 허용)")
+        fun updateSchedule_confirmedButNoAttendance_leaderChangesAccount() {
+            val scope = mockAdminScope()
+            val originalEmployee = createEmployee(id = 1L, employeeCode = "20030001", costCenterCode = "A10010")
+            val originalAccount = createAccount(id = 1, externalKey = "ACC001")
+            val schedule = createSchedule(id = scheduleId, confirmed = true, employee = originalEmployee, account = originalAccount)
+            val user = createEmployee(id = userId, role = AppAuthority.LEADER)
+            val validatedRow = ScheduleUploadValidator.ValidatedRow(
+                userId = 1L, userEmployeeCode = "20030001", accountId = 1,
+                typeOfWork3 = "고정", typeOfWork4 = "상온", typeOfWork5 = "상시",
+                startDate = baseRequest.startDate, endDate = baseRequest.endDate,
+                costCenterCode = "A10010", accountExternalKey = "ACC001"
+            )
+
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(user)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule) } returns false
+            every { employeeRepository.findByEmployeeCode("20030001") } returns Optional.of(originalEmployee)
+            every { accountRepository.findByExternalKey("ACC001") } returns originalAccount
+            every { scheduleRepository.findByEmployeeIdInAndNotDeleted(listOf(1L)) } returns listOf(schedule)
+            every { uploadValidator.validateSingle(
+                eq("20030001"), eq("ACC001"), eq("고정"), eq("상온"), eq("상시"),
+                eq(baseRequest.startDate), eq(baseRequest.endDate!!),
+                eq(originalEmployee), eq(originalAccount), eq(listOf(schedule)), eq(scheduleId)
+            ) } returns ScheduleUploadValidator.SingleValidationResult(emptyList(), validatedRow)
+            every { employeeRepository.findByCostCenterCodeInAndRoleAndAppLoginActiveTrue(listOf("A10010"), AppAuthority.LEADER) } returns emptyList()
+            every { lastMonthRevenueLookup.forAccount(eq(originalAccount), any()) } returns null
+
+            val result = adminDisplayWorkScheduleService.updateSchedule(scope, userId, scheduleId, baseRequest.copy(accountCode = "ACC001"))
+
+            assertThat(result.id).isEqualTo(scheduleId)
         }
 
         @Test
@@ -1678,22 +1712,23 @@ class AdminDisplayWorkScheduleServiceTest {
             assertThat(result.failures).isEmpty()
             assertThat(s1.isDeleted).isTrue()
             assertThat(s2.isDeleted).isTrue()
-            verify(exactly = 0) { teamMemberScheduleRepository.existsByDisplayWorkSchedule(any()) }
+            verify(exactly = 0) { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(any()) }
         }
 
         @Test
-        @DisplayName("LEADER - partial success: 확정+FK 연결 건만 차단, 나머지 삭제")
+        @DisplayName("LEADER - partial success: 근무등록 시작 건만 차단, 나머지 삭제 (확정 무관)")
         fun batchDelete_leaderPartialSuccess() {
             val leader = createEmployee(id = userId, role = AppAuthority.LEADER)
             val scope = mockAdminScopeForUser(leader)
-            val blocked = createSchedule(id = 21L, confirmed = true) // FK 연결 있음
-            val confirmedNoLink = createSchedule(id = 22L, confirmed = true)
+            val blocked = createSchedule(id = 21L, confirmed = true) // 근무등록(출근보고) 시작됨
+            val confirmedNoAttendance = createSchedule(id = 22L, confirmed = true) // 확정됐으나 근무등록 미시작
             val unconfirmed = createSchedule(id = 23L, confirmed = false)
 
             every { employeeRepository.findById(userId) } returns Optional.of(leader)
-            every { scheduleRepository.findAllById(listOf(21L, 22L, 23L)) } returns listOf(blocked, confirmedNoLink, unconfirmed)
-            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(blocked)) } returns true
-            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(confirmedNoLink)) } returns false
+            every { scheduleRepository.findAllById(listOf(21L, 22L, 23L)) } returns listOf(blocked, confirmedNoAttendance, unconfirmed)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(blocked)) } returns true
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(confirmedNoAttendance)) } returns false
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(unconfirmed)) } returns false
 
             val result = adminDisplayWorkScheduleService.batchDelete(scope, userId, listOf(21L, 22L, 23L))
 
@@ -1703,7 +1738,7 @@ class AdminDisplayWorkScheduleServiceTest {
             assertThat(result.failures[0].id).isEqualTo(21L)
             assertThat(result.failures[0].errorCode).isEqualTo("SCHEDULE_DELETE_CONSTRAINT")
             assertThat(blocked.isDeleted).isNotEqualTo(true)
-            assertThat(confirmedNoLink.isDeleted).isEqualTo(true)
+            assertThat(confirmedNoAttendance.isDeleted).isEqualTo(true)
             assertThat(unconfirmed.isDeleted).isEqualTo(true)
         }
 
@@ -1718,6 +1753,7 @@ class AdminDisplayWorkScheduleServiceTest {
             every { employeeRepository.findById(userId) } returns Optional.of(branch)
             every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(s1, s2)
             every { scheduleRepository.existsVisibleById(any(), any()) } returns true
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(any()) } returns false
 
             val result = adminDisplayWorkScheduleService.batchDelete(scope, userId, listOf(11L, 12L))
 
@@ -1737,6 +1773,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(leader)
             every { scheduleRepository.findAllById(listOf(31L, 32L, 99L)) } returns listOf(valid, deletedAlready)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(any()) } returns false
 
             val result = adminDisplayWorkScheduleService.batchDelete(scope, userId, listOf(31L, 32L, 99L))
 
@@ -1747,7 +1784,7 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("LEADER - 전체 차단되는 케이스 (deletedCount=0)")
+        @DisplayName("LEADER - 전체 차단되는 케이스 (근무등록 시작 건, deletedCount=0)")
         fun batchDelete_leaderAllBlocked() {
             val leader = createEmployee(id = userId, role = AppAuthority.LEADER)
             val scope = mockAdminScopeForUser(leader)
@@ -1756,7 +1793,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { employeeRepository.findById(userId) } returns Optional.of(leader)
             every { scheduleRepository.findAllById(listOf(41L, 42L)) } returns listOf(blocked1, blocked2)
-            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(any()) } returns true
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(any()) } returns true
 
             val result = adminDisplayWorkScheduleService.batchDelete(scope, userId, listOf(41L, 42L))
 
@@ -1821,27 +1858,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-
-            adminDisplayWorkScheduleService.deleteSchedule(scope, userId, scheduleId)
-
-            assertThat(schedule.isDeleted).isTrue()
-        }
-
-        @Test
-        @DisplayName("일반 사용자 확정+FK 연결 없음 - 삭제 성공")
-        fun deleteSchedule_normalUser_confirmedNoLinked_success() {
-            val scope = mockAdminScope()
-            val scheduleEmployee = createEmployee(id = 2L)
-            val scheduleAccount = createAccount(id = 100)
-            val schedule = createSchedule(
-                id = scheduleId, confirmed = true,
-                employee = scheduleEmployee, account = scheduleAccount
-            )
-            val employee = createEmployee(id = userId, role = AppAuthority.LEADER)
-
-            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
-            every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule)) } returns false
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(schedule)) } returns false
 
             adminDisplayWorkScheduleService.deleteSchedule(scope, userId, scheduleId)
 
@@ -1877,6 +1894,7 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(schedule)) } returns false
 
             adminDisplayWorkScheduleService.deleteSchedule(scope, userId, scheduleId)
 
@@ -1884,8 +1902,8 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("확정+FK 연결 여사원일정 존재 - ScheduleDeleteConstraintException")
-        fun deleteSchedule_confirmedWithLinked_constraint() {
+        @DisplayName("근무등록 시작된 스케줄 - ScheduleDeleteConstraintException (확정 무관)")
+        fun deleteSchedule_attendanceStarted_constraint() {
             val scope = mockAdminScope()
             val scheduleEmployee = createEmployee(id = 2L)
             val scheduleAccount = createAccount(id = 100)
@@ -1897,10 +1915,31 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule)) } returns true
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(schedule)) } returns true
 
             assertThatThrownBy { adminDisplayWorkScheduleService.deleteSchedule(scope, userId, scheduleId) }
                 .isInstanceOf(ScheduleDeleteConstraintException::class.java)
+        }
+
+        @Test
+        @DisplayName("확정됐지만 근무등록 미시작 - 삭제 성공 (확정여부와 무관하게 근무등록 전이면 허용)")
+        fun deleteSchedule_confirmedButNoAttendance_success() {
+            val scope = mockAdminScope()
+            val scheduleEmployee = createEmployee(id = 2L)
+            val scheduleAccount = createAccount(id = 100)
+            val schedule = createSchedule(
+                id = scheduleId, confirmed = true,
+                employee = scheduleEmployee, account = scheduleAccount
+            )
+            val employee = createEmployee(id = userId, role = AppAuthority.LEADER)
+
+            every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(schedule)) } returns false
+
+            adminDisplayWorkScheduleService.deleteSchedule(scope, userId, scheduleId)
+
+            assertThat(schedule.isDeleted).isTrue()
         }
 
         @Test
@@ -1921,10 +1960,10 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("UC-06 FK null 일정만 존재 - 삭제 허용 (값 매칭 대비 false positive 회피)")
-        fun deleteSchedule_fkNullLinkedOnly_allowsDelete() {
-            // 시나리오: 동일 (사원, 거래처, 기간) 의 여사원일정이 존재하지만 FK 가 null 인 케이스
-            // 레거시 SF 와 동등하게 진열마스터 FK 가 연결되지 않은 일정은 "연결 없음" 으로 간주.
+        @DisplayName("연결 여사원일정 존재하나 출근보고 미발생 - 삭제 허용 (근무등록 시작 여부로 판정)")
+        fun deleteSchedule_linkedButNoAttendance_allowsDelete() {
+            // 시나리오: 진열마스터에 여사원일정이 편성(FK 연결)되어 있으나 아직 출근보고
+            // (commuteReportDatetime)가 없는 케이스. 근무등록이 시작되지 않았으므로 삭제 허용.
             val scope = mockAdminScope()
             val scheduleEmployee = createEmployee(id = 2L)
             val scheduleAccount = createAccount(id = 100)
@@ -1936,8 +1975,8 @@ class AdminDisplayWorkScheduleServiceTest {
 
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
-            // FK 매칭 — FK null 인 일정은 매치되지 않으므로 false 반환
-            every { teamMemberScheduleRepository.existsByDisplayWorkSchedule(eq(schedule)) } returns false
+            // 출근보고된 연결 일정 없음 → 근무등록 미시작 → 삭제 허용
+            every { teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(eq(schedule)) } returns false
 
             adminDisplayWorkScheduleService.deleteSchedule(scope, userId, scheduleId)
 

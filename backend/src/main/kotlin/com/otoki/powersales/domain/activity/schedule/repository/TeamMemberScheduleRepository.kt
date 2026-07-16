@@ -93,15 +93,11 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     ): List<TeamMemberSchedule>
 
     /**
-     * UC-06 진열마스터 단건 삭제 차단 — 레거시 SF lookup FK 매칭 동등.
-     * `TeamMemberSchedule.displayWorkSchedule` (FK) 가 진열마스터를 가리키는 일정이 1건이라도 있으면 true.
-     */
-    fun existsByDisplayWorkSchedule(displayWorkSchedule: DisplayWorkSchedule): Boolean
-
-    /**
-     * 진열마스터 수정 차단 — 연결 여사원일정 중 **실제 출근한 건**(출근보고시각 `commuteReportDatetime` 채워짐)이
-     * 1건이라도 있으면 true. 단순 FK 매칭(행사확정 등 미출근 연결)과 구분하기 위해 출근보고시각 NOT NULL 조건 추가.
+     * 진열마스터 수정/삭제 차단 — 연결 여사원일정 중 **근무등록(출근보고)이 시작된 건**
+     * (출근보고시각 `commuteReportDatetime` 채워짐)이 1건이라도 있으면 true.
+     * 단순 FK 매칭(편성만 되고 미출근인 연결)과 구분하기 위해 출근보고시각 NOT NULL 조건 사용.
      * SF 의 출근(commute) semantics (`CommuteReportDateTime__c`/`CommuteLogId__c` 채워짐) 정합.
+     * 근무등록이 시작되지 않았다면 확정여부와 무관하게 수정/삭제를 허용한다.
      */
     fun existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(displayWorkSchedule: DisplayWorkSchedule): Boolean
 

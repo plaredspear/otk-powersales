@@ -97,15 +97,12 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
   const { data: detail, isLoading: detailLoading } = useScheduleDetail(editTarget?.id ?? null, open && isEdit);
 
   /**
-   * 확정 또는 출근 등록된 스케줄은 편집 모드에서 종료일 외 모든 입력 항목을 비활성화한다 (권한 무관).
-   * backend 수정 차단 룰(확정 OR 출근 → 종료일만 허용)과 정합.
-   * 상세 조회가 끝나기 전에는 row 데이터(editTarget.confirmed)로 즉시 잠금 상태를 결정해
-   * "활성 상태로 잠깐 보였다가 disabled 되는" 깜빡임을 막는다. 조회가 끝나면 detail 값을 권위로 사용.
+   * 근무등록(출근보고)이 시작된 스케줄만 편집 모드에서 종료일 외 모든 입력 항목을 비활성화한다 (권한 무관).
+   * backend 수정 차단 룰(근무등록 시작 → 종료일만 허용, 확정여부 무관)과 정합.
    * 출근여부(attendanceCount)는 상세 DTO 에 없어 목록 row 데이터로만 판단한다.
    */
-  const isConfirmedLocked = isEdit && (detail?.confirmed ?? editTarget?.confirmed) === true;
   const isAttendanceLocked = isEdit && (editTarget?.attendanceCount ?? 0) > 0;
-  const isLocked = isConfirmedLocked || isAttendanceLocked;
+  const isLocked = isAttendanceLocked;
 
   useEffect(() => {
     if (!open) return;
@@ -192,11 +189,7 @@ export default function ScheduleCreateModal({ open, onClose, onSuccess, editTarg
       {isLocked && (
         <Alert
           type="warning"
-          message={
-            isConfirmedLocked
-              ? '확정된 스케줄입니다. 종료일만 변경할 수 있습니다.'
-              : '출근 등록된 스케줄입니다. 종료일만 변경할 수 있습니다.'
-          }
+          message="근무등록이 시작된 스케줄입니다. 종료일만 변경할 수 있습니다."
           style={{ marginBottom: 16 }}
         />
       )}

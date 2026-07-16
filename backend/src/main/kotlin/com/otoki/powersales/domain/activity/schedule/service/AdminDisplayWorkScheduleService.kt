@@ -29,7 +29,6 @@ import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteConstraintException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterAttendanceException
-import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterConfirmException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEmptyFileException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileTooLargeException
@@ -805,14 +804,15 @@ class AdminDisplayWorkScheduleService(
         requireScheduleScope(scope, schedule)
 
         // 수정 차단 룰 (ADMIN_GRADE 외 사용자 + 종료일 외 키 필드 변경 시):
-        //  - UC-05: 확정(Confirmed) 된 스케줄
-        //  - 출근 차단: 연결 여사원일정 중 실제 출근(commuteReportDatetime 채워짐)한 건이 있는 스케줄
-        // 둘 중 하나라도 해당되면 종료일을 제외한 키 필드 변경을 차단한다.
+        //  - 연결 여사원일정 중 실제 근무등록(출근보고, commuteReportDatetime 채워짐)이 시작된 건이 있으면 차단.
+        // 근무등록이 한 번도 시작되지 않았다면 확정여부와 무관하게 종료일 외 키 필드 변경을 허용한다.
+        // (사용자 요청: 확정된 스케줄이라도 근무등록 전이면 수정 가능 — SF ValidationRule
+        //  `EditDisableForDisplayMaster`(확정만으로 차단) 대비 의도적 deviation, 근무등록 시작 여부로 완화.)
         if (!isAdminGrade(user.employeeCode)) {
             val attendanceReported =
                 teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule)
 
-            if (schedule.confirmed == true || attendanceReported) {
+            if (attendanceReported) {
                 val originalEmployeeCode = schedule.employee?.employeeCode
                 val originalAccountCode = schedule.account?.externalKey
                 val originalType1 = schedule.typeOfWork1?.displayName
@@ -830,12 +830,7 @@ class AdminDisplayWorkScheduleService(
                         originalType5 != request.typeOfWork5 ||
                         originalStart != request.startDate
                 if (blockedFieldChanged) {
-                    // 확정 사유 우선, 확정 아닌데 출근만으로 막힌 경우 출근 메시지로 안내
-                    if (schedule.confirmed == true) {
-                        throw ScheduleEditBlockedAfterConfirmException()
-                    } else {
-                        throw ScheduleEditBlockedAfterAttendanceException()
-                    }
+                    throw ScheduleEditBlockedAfterAttendanceException()
                 }
             }
         }
@@ -954,15 +949,17 @@ class AdminDisplayWorkScheduleService(
                 continue
             }
 
-            // UC-06 차단 룰: ADMIN_GRADE 외 사용자 + 확정 + FK 매칭 여사원일정 존재 시 차단
-            if (!isAdmin && schedule.confirmed == true) {
-                val hasLinkedSchedule = teamMemberScheduleRepository.existsByDisplayWorkSchedule(schedule)
-                if (hasLinkedSchedule) {
+            // 삭제 차단 룰: ADMIN_GRADE 외 사용자 + 근무등록(출근보고, commuteReportDatetime 채워짐) 시작 시 차단.
+            // 근무등록 전이면 확정여부와 무관하게 삭제 허용 (단건 deleteSchedule 과 동일 축, SF deleteCheck 대비 deviation).
+            if (!isAdmin) {
+                val attendanceReported =
+                    teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule)
+                if (attendanceReported) {
                     failures.add(
                         ScheduleBatchDeleteFailure(
                             id = id,
                             errorCode = "SCHEDULE_DELETE_CONSTRAINT",
-                            message = "확정된 스케줄에 연결된 여사원 일정이 존재하여 삭제할 수 없습니다"
+                            message = "근무등록이 시작된 스케줄은 삭제할 수 없습니다"
                         )
                     )
                     continue
@@ -1001,14 +998,14 @@ class AdminDisplayWorkScheduleService(
         // 지점장 전용 삭제 차단 하드코딩은 SF 레거시 `deleteCheck` 에 없던 정책이었고,
         // 수정은 허용되면서 삭제만 막히는 비대칭을 만들어 제거함.
 
-        // UC-06 차단 룰: 확정 + ADMIN_GRADE 외 사용자 + FK 로 본 진열마스터를 가리키는 여사원일정 존재 시 차단.
-        // 레거시 SF `DisplayWorkScheduleMasterTriggerHandler.deleteCheck` 의 lookup FK 매칭
-        // (WHERE DisplayWorkScheduleMaster__c IN :masterIds) 와 동등.
-        if (schedule.confirmed == true) {
-            val hasLinkedSchedule = teamMemberScheduleRepository.existsByDisplayWorkSchedule(schedule)
-            if (hasLinkedSchedule) {
-                throw ScheduleDeleteConstraintException()
-            }
+        // 삭제 차단 룰: 연결 여사원일정 중 실제 근무등록(출근보고, commuteReportDatetime 채워짐)이
+        // 시작된 건이 있으면 차단. 근무등록이 한 번도 시작되지 않았다면 확정여부와 무관하게 삭제 허용.
+        // (사용자 요청: 근무등록 전이면 확정 스케줄도 삭제 가능 — 수정 가드와 동일한 근무등록 시작 여부 축.
+        //  SF 레거시 `deleteCheck`(확정 + FK 연결 lookup 매칭) 대비 의도적 deviation.)
+        val attendanceReported =
+            teamMemberScheduleRepository.existsByDisplayWorkScheduleAndCommuteReportDatetimeIsNotNull(schedule)
+        if (attendanceReported) {
+            throw ScheduleDeleteConstraintException()
         }
 
         schedule.isDeleted = true

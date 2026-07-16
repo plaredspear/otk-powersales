@@ -217,26 +217,20 @@ function buildListColumns(
       render: (_, row) => (
         <Space size={4}>
           {row.attendanceCount > 0 && row.endDate != null ? (
-            <Tooltip placement="left" title={`출근 등록(${row.attendanceCount}건)된 스케줄은 수정할 수 없습니다`}>
+            <Tooltip placement="left" title={`근무등록(${row.attendanceCount}건)된 스케줄은 수정할 수 없습니다`}>
               <Button size="small" disabled>
                 수정
               </Button>
             </Tooltip>
           ) : row.attendanceCount > 0 ? (
-            // 출근 등록되어도 종료일이 없으면 종료일 입력을 위해 수정 허용 (모달에서 종료일만 편집 가능)
-            <Tooltip placement="left" title={`출근 등록 ${row.attendanceCount}건, 종료일만 수정 가능합니다`}>
-              <Button size="small" onClick={() => onEdit(row)}>
-                수정
-              </Button>
-            </Tooltip>
-          ) : row.confirmed ? (
-            // 확정된 스케줄은 출근 없어도 종료일만 수정 가능 (모달 잠금 정합)
-            <Tooltip placement="left" title="종료일만 수정 가능합니다">
+            // 근무등록되어도 종료일이 없으면 종료일 입력을 위해 수정 허용 (모달에서 종료일만 편집 가능)
+            <Tooltip placement="left" title={`근무등록 ${row.attendanceCount}건, 종료일만 수정 가능합니다`}>
               <Button size="small" onClick={() => onEdit(row)}>
                 수정
               </Button>
             </Tooltip>
           ) : (
+            // 근무등록 전이면 확정여부와 무관하게 전체 수정 가능
             <Button size="small" onClick={() => onEdit(row)}>
               수정
             </Button>
@@ -502,7 +496,7 @@ export default function DisplaySchedulePage() {
     const ids = selectedRowKeys as number[];
     Modal.confirm({
       title: '선택 삭제',
-      content: `${ids.length}건을 삭제하시겠습니까? (확정 + 여사원일정 연결 건은 차단됩니다)`,
+      content: `${ids.length}건을 삭제하시겠습니까? (근무등록이 시작된 건은 차단됩니다)`,
       okType: 'danger',
       onOk: () =>
         batchDeleteMutation.mutateAsync(ids).then((result) => {

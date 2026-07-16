@@ -41,7 +41,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleCreate
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleDetailDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUploadResultDto
-import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterConfirmException
+import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterAttendanceException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEmptyFileException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleHasValidationErrorsException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleInvalidFileTypeException
@@ -424,8 +424,8 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
         }
 
         @Test
-        @DisplayName("실패 - 확정 후 차단 (UC-05) → 409")
-        fun update_blockedAfterConfirm() {
+        @DisplayName("실패 - 근무등록 시작 후 차단 → 409")
+        fun update_blockedAfterAttendance() {
             val request = AdminScheduleUpdateRequest(
                 employeeCode = "20030001",
                 accountCode = "ACC_NEW",
@@ -436,7 +436,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 startDate = LocalDate.of(2026, 5, 1),
                 endDate = LocalDate.of(2026, 12, 31)
             )
-            every { adminDisplayWorkScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()) } throws ScheduleEditBlockedAfterConfirmException()
+            every { adminDisplayWorkScheduleService.updateSchedule(any(), eq(1L), eq(10L), any()) } throws ScheduleEditBlockedAfterAttendanceException()
 
             mockMvc.perform(
                 put("/api/v1/admin/display-work-schedule/10")
@@ -444,7 +444,7 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                     .content(objectMapper.writeValueAsString(request))
             )
                 .andExpect(status().isConflict)
-                .andExpect(jsonPath("$.error.code").value("SCHEDULE_EDIT_BLOCKED_AFTER_CONFIRM"))
+                .andExpect(jsonPath("$.error.code").value("SCHEDULE_EDIT_BLOCKED_AFTER_ATTENDANCE"))
         }
 
         @Test

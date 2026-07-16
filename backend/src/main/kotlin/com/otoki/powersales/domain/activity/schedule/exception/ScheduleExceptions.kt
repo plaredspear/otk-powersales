@@ -53,7 +53,7 @@ class ScheduleNotFoundException(message: String = "존재하지 않거나 삭제
 
 class ScheduleDeleteConstraintException : BusinessException(
     errorCode = "SCHEDULE_DELETE_CONSTRAINT",
-    message = "확정된 스케줄에 연결된 여사원 일정이 존재하여 삭제할 수 없습니다",
+    message = "근무등록이 시작된 스케줄은 삭제할 수 없습니다",
     httpStatus = HttpStatus.CONFLICT
 )
 
@@ -61,16 +61,6 @@ class ScheduleValidationException(message: String) : BusinessException(
     errorCode = "SCHEDULE_VALIDATION_FAILED",
     message = message,
     httpStatus = HttpStatus.BAD_REQUEST
-)
-
-/**
- * UC-05: 확정된 스케줄에서 조장이 종료일 외 필드를 변경 시도하면 차단.
- * 레거시 SF Validation Rule `EditDisableForDisplayMaster` 동등.
- */
-class ScheduleEditBlockedAfterConfirmException : BusinessException(
-    errorCode = "SCHEDULE_EDIT_BLOCKED_AFTER_CONFIRM",
-    message = "확정 후에는 종료일 이외는 편집할 수 없습니다. 시스템 관리자에게 문의하십시오",
-    httpStatus = HttpStatus.CONFLICT
 )
 
 /**
