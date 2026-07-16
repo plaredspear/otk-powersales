@@ -91,6 +91,11 @@ class FakeLeaderScheduleRepository implements LeaderScheduleRepository {
   }
 
   @override
+  Future<LeaderTeamMember> getTeamMemberDetail(int employeeId) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> resetTeamMemberDevice(int employeeId) async {
     throw UnimplementedError();
   }

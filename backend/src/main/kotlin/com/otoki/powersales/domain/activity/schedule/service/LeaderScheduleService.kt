@@ -294,6 +294,17 @@ class LeaderScheduleService(
     }
 
     /**
+     * 조장 — 본인 팀원(여사원) 단건 상세 조회.
+     *
+     * 목록(getTeamMembers)이 넘겨준 값에 의존하지 않고 상세 화면 진입 시 최신 상태
+     * (앱 로그인 활성/단말 등록 여부)를 권위 있게 재조회한다. 지점 소속 검증 포함.
+     */
+    fun getTeamMemberDetail(registrantId: Long, targetEmployeeId: Long): LeaderTeamMemberListResponse {
+        val target = requireTeamMember(registrantId, targetEmployeeId)
+        return LeaderTeamMemberListResponse.from(target)
+    }
+
+    /**
      * 조장 — 본인 팀원(여사원) 단말 초기화 (deviceUuid 회수 + 기존 기기 즉시 로그아웃).
      *
      * 레거시 SF `EmployeeUUIDReset` Quick Action(조장 레이아웃) 을 신규 모바일 조장 경로로 이관.

@@ -40,6 +40,9 @@ abstract class LeaderScheduleRepository {
   /// 조장 본인 거래처 목록 조회. [keyword] 부분 일치 검색 (선택).
   Future<List<LeaderAccount>> getAccounts({String? keyword});
 
+  /// 팀원(여사원) 단건 상세 조회 (최신 계정 상태).
+  Future<LeaderTeamMember> getTeamMemberDetail(int employeeId);
+
   /// 팀원(여사원) 단말 초기화 (레거시 SF UUIDReset).
   Future<void> resetTeamMemberDevice(int employeeId);
 

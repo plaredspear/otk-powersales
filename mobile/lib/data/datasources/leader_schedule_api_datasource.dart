@@ -23,6 +23,15 @@ class LeaderScheduleApiDataSource {
         .toList();
   }
 
+  /// 팀원(여사원) 단건 상세 조회. 상세 화면 진입 시 최신 계정 상태 재조회.
+  Future<LeaderTeamMemberModel> getTeamMemberDetail(int employeeId) async {
+    final response =
+        await _dio.get('/api/v1/mobile/leader/team-members/$employeeId');
+    return LeaderTeamMemberModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
   /// 팀원(여사원) 단말 초기화 (레거시 SF UUIDReset). deviceUuid 회수 + 기존 기기 즉시 로그아웃.
   Future<void> resetTeamMemberDevice(int employeeId) async {
     await _dio.post('/api/v1/mobile/leader/team-members/$employeeId/reset-device');

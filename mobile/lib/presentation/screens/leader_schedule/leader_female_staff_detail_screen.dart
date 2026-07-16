@@ -29,15 +29,48 @@ class LeaderFemaleStaffDetailScreen extends ConsumerStatefulWidget {
 
 class _LeaderFemaleStaffDetailScreenState
     extends ConsumerState<LeaderFemaleStaffDetailScreen> with ThrottledTapMixin {
-  /// 단말 초기화 성공 시 로컬로 갱신(뱃지 즉시 반영).
-  late bool _deviceBound = widget.member.deviceBound;
+  /// 서버에서 재조회한 최신 상세. 목록에서 넘어온 값에 의존하지 않는다.
+  LeaderTeamMember? _detail;
+  bool _loadingDetail = true;
+  String? _detailError;
 
   /// 초기화가 한 번이라도 실행되면 목록 갱신을 위해 true 로 pop.
   bool _changed = false;
 
   bool _busy = false;
 
+  /// 조회/네비게이션 기준(id 등)은 목록 전달값, 표시값은 재조회 우선.
   LeaderTeamMember get member => widget.member;
+  LeaderTeamMember get display => _detail ?? widget.member;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetail();
+  }
+
+  Future<void> _loadDetail() async {
+    setState(() {
+      _loadingDetail = true;
+      _detailError = null;
+    });
+    try {
+      final detail = await ref
+          .read(leaderScheduleRepositoryProvider)
+          .getTeamMemberDetail(member.id);
+      if (!mounted) return;
+      setState(() {
+        _detail = detail;
+        _loadingDetail = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _detailError = extractErrorMessage(e);
+        _loadingDetail = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,16 +109,16 @@ class _LeaderFemaleStaffDetailScreenState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            member.name,
+            display.name,
             style: AppTypography.headlineSmall.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          _infoRow('사원번호', member.employeeCode),
-          _infoRow('재직상태', member.status ?? '-'),
+          _infoRow('사원번호', display.employeeCode),
+          _infoRow('재직상태', display.status ?? '-'),
           _infoRow('연락처',
-              member.hasPhone ? member.phone!.trim() : '등록된 연락처 없음'),
+              display.hasPhone ? display.phone!.trim() : '등록된 연락처 없음'),
         ],
       ),
     );
@@ -132,31 +165,79 @@ class _LeaderFemaleStaffDetailScreenState
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _badge(
-                label: member.loginActive ? '앱 로그인 활성' : '앱 로그인 비활성',
-                color: member.loginActive ? AppColors.success : AppColors.error,
-              ),
-              _badge(
-                label: _deviceBound ? '단말 등록됨' : '단말 미등록',
-                color: _deviceBound ? AppColors.otokiBlue : AppColors.textSecondary,
-              ),
-            ],
-          ),
-          if (!member.loginActive) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '앱 로그인이 비활성 상태인 사원은 초기화할 수 없습니다.',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.error,
-              ),
-            ),
-          ],
+          _statusBody(),
         ],
       ),
+    );
+  }
+
+  Widget _statusBody() {
+    if (_loadingDetail) {
+      return Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            '계정 상태를 확인하는 중...',
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (_detailError != null) {
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              _detailError!,
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.error),
+            ),
+          ),
+          TextButton(
+            onPressed: () => throttledTap(_loadDetail),
+            child: const Text('다시 시도'),
+          ),
+        ],
+      );
+    }
+
+    final loginActive = display.loginActive;
+    final deviceBound = display.deviceBound;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            _badge(
+              label: loginActive ? '앱 로그인 활성' : '앱 로그인 비활성',
+              color: loginActive ? AppColors.success : AppColors.error,
+            ),
+            _badge(
+              label: deviceBound ? '단말 등록됨' : '단말 미등록',
+              color:
+                  deviceBound ? AppColors.otokiBlue : AppColors.textSecondary,
+            ),
+          ],
+        ),
+        if (!loginActive) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '앱 로그인이 비활성 상태인 사원은 초기화할 수 없습니다.',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.error,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -183,7 +264,10 @@ class _LeaderFemaleStaffDetailScreenState
 
   // ── 초기화 액션 ────────────────────────────────────────────
   Widget _actionSection() {
-    final enabled = member.loginActive && !_busy;
+    final enabled = !_loadingDetail &&
+        _detailError == null &&
+        display.loginActive &&
+        !_busy;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -284,7 +368,7 @@ class _LeaderFemaleStaffDetailScreenState
           .read(leaderScheduleRepositoryProvider)
           .resetTeamMemberDevice(member.id),
       successMessage: '단말이 초기화되었습니다. 사원이 다음 로그인 시 새 단말로 등록됩니다.',
-      onSuccess: () => setState(() => _deviceBound = false),
+      onSuccess: _loadDetail, // 최신 상태(단말 미등록) 재조회
     );
   }
 

@@ -93,6 +93,21 @@ class LeaderScheduleController(
     }
 
     /**
+     * 본인 팀원(여사원) 단건 상세 조회
+     * GET /api/v1/mobile/leader/team-members/{employeeId}
+     *
+     * 상세 화면 진입 시 최신 계정 상태(loginActive/deviceBound)를 재조회. 지점 소속 검증 포함.
+     */
+    @GetMapping("/team-members/{employeeId}")
+    fun getTeamMemberDetail(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable employeeId: Long
+    ): ResponseEntity<ApiResponse<LeaderTeamMemberListResponse>> {
+        val response = leaderScheduleService.getTeamMemberDetail(principal.userId, employeeId)
+        return ResponseEntity.ok(ApiResponse.success(response, "여사원 상세 조회 성공"))
+    }
+
+    /**
      * 조장 — 본인 팀원(여사원) 단말 초기화 (레거시 SF UUIDReset Quick Action)
      * POST /api/v1/mobile/leader/team-members/{employeeId}/reset-device
      *

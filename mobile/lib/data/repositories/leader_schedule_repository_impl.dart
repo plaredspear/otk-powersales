@@ -79,6 +79,12 @@ class LeaderScheduleRepositoryImpl implements LeaderScheduleRepository {
   }
 
   @override
+  Future<LeaderTeamMember> getTeamMemberDetail(int employeeId) async {
+    final model = await _dataSource.getTeamMemberDetail(employeeId);
+    return model.toEntity();
+  }
+
+  @override
   Future<void> resetTeamMemberDevice(int employeeId) {
     return _dataSource.resetTeamMemberDevice(employeeId);
   }
