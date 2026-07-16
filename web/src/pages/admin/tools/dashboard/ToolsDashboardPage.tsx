@@ -1,4 +1,4 @@
-import { Alert, Card, Select, Space, Tag, Typography, message } from 'antd';
+import { Alert, Card, Select, Space, Tabs, Tag, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import { listTableLocale } from '@/lib/listTableLocale';
@@ -35,7 +35,7 @@ const LEVEL_COLOR: Record<string, string> = {
  * 조정으로 앱 재시작 시 서버 기본값(운영=INFO)으로 복귀한다. 시스템 관리자 전용
  * (백엔드 가드) — 비관리자는 API 403 으로 차단된다.
  */
-export default function ToolsDashboardPage() {
+function LogLevelSection() {
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery<LoggerListResponse>({
@@ -111,12 +111,7 @@ export default function ToolsDashboardPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={3}>대시보드</Title>
-
-      <DailyScheduleStatusCard />
-
-      <Title level={4}>로그 레벨 관리</Title>
+    <>
       <Paragraph type="secondary">
         운영 중 로그 레벨을 임시로 조정합니다. 진단이 필요할 때만 DEBUG 로 올리고, 확인 후 반드시
         원래 레벨(INFO)로 되돌리세요. DEBUG/TRACE 는 CPU·메모리·로그를 크게 늘리며, SQL 바인딩
@@ -149,6 +144,33 @@ export default function ToolsDashboardPage() {
           />
         </Space>
       </Card>
+    </>
+  );
+}
+
+/**
+ * 개발자 도구 - 대시보드. 일별 스케줄 실행현황과 로그 레벨 관리를 탭으로 구분한다.
+ */
+export default function ToolsDashboardPage() {
+  return (
+    <div style={{ padding: 24 }}>
+      <Title level={3}>대시보드</Title>
+
+      <Tabs
+        defaultActiveKey="schedule"
+        items={[
+          {
+            key: 'schedule',
+            label: '일별 스케줄 실행현황',
+            children: <DailyScheduleStatusCard />,
+          },
+          {
+            key: 'log-level',
+            label: '로그 레벨 관리',
+            children: <LogLevelSection />,
+          },
+        ]}
+      />
     </div>
   );
 }

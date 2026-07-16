@@ -172,8 +172,6 @@ export default function DailyScheduleStatusCard() {
   return (
     <Card
       size="small"
-      style={{ marginBottom: 24 }}
-      title="일별 스케줄 실행현황"
       extra={
         <Link to="/admin/tools/scheduled-jobs">스케줄 잡 상세 →</Link>
       }
