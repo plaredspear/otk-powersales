@@ -159,6 +159,7 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
             context,
             title: '제품 선택',
             multiSelect: true,
+            showCategoryFilter: true,
             requireBarcode: true,
           );
           if (products == null || products.isEmpty) return;

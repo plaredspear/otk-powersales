@@ -346,6 +346,7 @@ class _SuggestionRegisterPageState
       context,
       title: '제품 선택',
       multiSelect: false,
+      showCategoryFilter: true,
     );
     if (selected == null || selected.isEmpty || !mounted) return;
     final product = selected.first;

@@ -97,6 +97,7 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     // 주문서 작성만 전용상품 추가를 막는다(주문 불가 룰). 그 외 화면은 선택 가능.
     final selected = await AddProductBottomSheet.show(
       context,
+      showCategoryFilter: true,
       blockExclusive: true,
     );
     if (selected == null || selected.isEmpty || !mounted) return;
