@@ -49,6 +49,7 @@ import com.otoki.powersales.domain.activity.schedule.entity.QDisplayWorkSchedule
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
+import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
@@ -138,10 +139,19 @@ class AdminDisplayWorkScheduleService(
         val validDataOptions = ScheduleValidData.entries
             .map { ScheduleFilterOption(value = it.name, label = it.displayName) }
 
+        // 거래처유형(ABC유형) 옵션 — 월매출(전산실적) 화면과 동일 축·동일 소스. abcTypeCode + abcType 결합
+        // 라벨("1110 식품대리점_일반")을 distinct 로 뽑아 Select 옵션으로 제공한다. value=label 로 내려
+        // 프론트가 그대로 accountType 쿼리 파라미터로 전송하고, 목록 조회는 동일 라벨을 재현해 정확 일치 매칭한다.
+        val accountTypeOptions = accountRepository.findDistinctDistributionAbcPairs()
+            .mapNotNull { Account.abcTypeLabel(it.abcTypeCode, it.abcType) }
+            .distinct()
+            .sorted()
+            .map { ScheduleFilterOption(value = it, label = it) }
+
         val filters = listOf(
             ScheduleFilterMeta("employeeCode", ScheduleFilterType.TEXT),
             ScheduleFilterMeta("accountName", ScheduleFilterType.TEXT),
-            ScheduleFilterMeta("accountType", ScheduleFilterType.TEXT),
+            ScheduleFilterMeta("accountType", ScheduleFilterType.SELECT, accountTypeOptions),
             ScheduleFilterMeta("typeOfWork3", ScheduleFilterType.SELECT, typeOfWork3Options),
             ScheduleFilterMeta("confirmed", ScheduleFilterType.SELECT, confirmedOptions),
             ScheduleFilterMeta("validData", ScheduleFilterType.SELECT, validDataOptions),

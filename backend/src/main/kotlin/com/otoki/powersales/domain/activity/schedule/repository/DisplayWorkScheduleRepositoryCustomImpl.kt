@@ -14,8 +14,10 @@ import com.querydsl.core.types.OrderSpecifier
 import com.querydsl.core.types.Predicate
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
+import com.querydsl.core.types.dsl.CaseBuilder
 import com.querydsl.core.types.dsl.ComparableExpressionBase
 import com.querydsl.core.types.dsl.Expressions
+import com.querydsl.core.types.dsl.StringExpression
 import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -144,7 +146,9 @@ class DisplayWorkScheduleRepositoryCustomImpl(
                     account.id,
                     account.externalKey,
                     account.name,
-                    account.accountType,
+                    // 거래처유형 — 월매출(전산실적) 화면과 동일 축(ABC유형: abcTypeCode + abcType 결합 라벨).
+                    // 기존 account.accountType(SF Account.Type, 순수 명칭) 대신 abcTypeLabel 표현식으로 통일.
+                    abcTypeLabelExpr(account.abcTypeCode, account.abcType),
                     account.accountStatusName,
                     displayWorkSchedule.typeOfWork3,
                     displayWorkSchedule.typeOfWork4,
@@ -593,7 +597,11 @@ class DisplayWorkScheduleRepositoryCustomImpl(
     }
 
     /**
-     * 거래처유형 (`Account.Type`) 부분 일치 필터.
+     * 거래처유형 (ABC유형: `ABCTypeCode__c` + `ABCType__c` 결합 라벨) 정확 일치 필터.
+     *
+     * 월매출(전산실적) 화면과 동일 축으로 통일 — Select 옵션 값이 "1110 식품대리점_일반" 형태의
+     * abcTypeLabel 결합 문자열이므로, DB 두 컬럼을 동일 규칙으로 재현한 라벨과 정확 일치(eq)로 매칭한다.
+     * (기존 `Account.Type` 순수 명칭 부분일치에서 전환.)
      *
      * countQuery 가 account 를 join 하지 않으므로, [buildEmployeeCodeCondition] 와 동일하게
      * 매칭 account id 서브쿼리 IN 으로 구성 (implicit join 회피).
@@ -603,8 +611,27 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         val matchingIds = JPAExpressions
             .select(account.id)
             .from(account)
-            .where(account.accountType.containsIgnoreCase(accountType))
+            .where(abcTypeLabelExpr(account.abcTypeCode, account.abcType).eq(accountType))
         return displayWorkSchedule.account.id.`in`(matchingIds)
+    }
+
+    /**
+     * 거래처유형(ABC유형) 라벨 재현 표현식 — `Account.abcTypeLabel` companion 정본과 동일 규칙.
+     *
+     * - 코드/명칭 둘 다 non-blank → "코드 명칭" (공백 1개 결합)
+     * - 한쪽만 non-blank → 그 파트만
+     * - 둘 다 blank/null → "" (Select 옵션은 blank 라벨을 만들지 않으므로 어떤 입력과도 불일치)
+     *
+     * 판정은 isNotBlank(trim 후 비어있지 않음)로, concat 은 원본 값으로 (정본이 trim 하지 않고 원본을 join).
+     */
+    private fun abcTypeLabelExpr(codeCol: StringExpression, nameCol: StringExpression): StringExpression {
+        val codePresent = codeCol.isNotNull.and(codeCol.trim().ne(""))
+        val namePresent = nameCol.isNotNull.and(nameCol.trim().ne(""))
+        return CaseBuilder()
+            .`when`(codePresent.and(namePresent)).then(codeCol.concat(" ").concat(nameCol))
+            .`when`(codePresent).then(codeCol)
+            .`when`(namePresent).then(nameCol)
+            .otherwise("")
     }
 
     private fun buildConfirmedCondition(confirmed: Boolean?): BooleanExpression? {

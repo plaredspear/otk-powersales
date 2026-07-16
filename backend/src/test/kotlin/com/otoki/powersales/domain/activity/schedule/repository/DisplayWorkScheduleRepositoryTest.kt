@@ -745,6 +745,90 @@ class DisplayWorkScheduleRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findScheduleList - 거래처유형 필터(accountType) 는 ABC유형 결합 라벨 정확 일치")
+    inner class FindScheduleListAccountTypeFilter {
+        // 월매출(전산실적) 화면과 동일 축 — abcTypeCode + abcType 결합 라벨("1110 식품대리점_일반")로 매칭.
+        // 기존 account_type(SF Account.Type, 순수 명칭) 부분일치에서 전환된 것을 회귀 검증한다.
+
+        private fun scheduleForAccount(account: Account, employeeName: String): DisplayWorkSchedule {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "E-$employeeName", name = employeeName))
+            return DisplayWorkSchedule(
+                employee = emp,
+                account = account,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                startDate = today,
+            )
+        }
+
+        private fun searchByAccountType(accountType: String?): List<String?> =
+            displayWorkScheduleRepository.findScheduleList(
+                null, null, accountType, null, null, null, null, null, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            ).content.map { it.employeeName }
+
+        @Test
+        @DisplayName("코드+명칭 결합 라벨 정확 일치로 조회")
+        fun matchByCombinedLabel() {
+            val acc = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ABC1", name = "이마트점", abcTypeCode = "1110", abcType = "식품대리점_일반")
+            )
+            testEntityManager.persistAndFlush(scheduleForAccount(acc, "김유효"))
+            testEntityManager.clear()
+
+            assertThat(searchByAccountType("1110 식품대리점_일반")).containsExactly("김유효")
+        }
+
+        @Test
+        @DisplayName("명칭만으로는(코드 누락) 매칭되지 않음 - 부분일치 아님(정확 일치)")
+        fun noMatchByNameOnly() {
+            val acc = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ABC2", name = "이마트점", abcTypeCode = "1110", abcType = "식품대리점_일반")
+            )
+            testEntityManager.persistAndFlush(scheduleForAccount(acc, "김유효"))
+            testEntityManager.clear()
+
+            assertThat(searchByAccountType("식품대리점_일반")).isEmpty()
+        }
+
+        @Test
+        @DisplayName("코드/명칭 한쪽만 있는 거래처는 그 파트만으로 라벨이 구성되어 매칭")
+        fun matchWhenOnlyOnePartPresent() {
+            val acc = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ABC3", name = "코드만점", abcTypeCode = "9999", abcType = null)
+            )
+            testEntityManager.persistAndFlush(scheduleForAccount(acc, "박부분"))
+            testEntityManager.clear()
+
+            assertThat(searchByAccountType("9999")).containsExactly("박부분")
+        }
+
+        @Test
+        @DisplayName("다른 거래처유형 라벨은 제외")
+        fun excludeOtherLabel() {
+            val acc = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ABC4", name = "라면점", abcTypeCode = "1510", abcType = "전문대리점_라면")
+            )
+            testEntityManager.persistAndFlush(scheduleForAccount(acc, "이라면"))
+            testEntityManager.clear()
+
+            assertThat(searchByAccountType("1110 식품대리점_일반")).isEmpty()
+        }
+
+        @Test
+        @DisplayName("accountType=null 이면 거래처유형 필터 미적용 (전건)")
+        fun noFilterReturnsAll() {
+            val acc = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ABC5", name = "이마트점", abcTypeCode = "1110", abcType = "식품대리점_일반")
+            )
+            testEntityManager.persistAndFlush(scheduleForAccount(acc, "전건조회"))
+            testEntityManager.clear()
+
+            assertThat(searchByAccountType(null)).contains("전건조회")
+        }
+    }
+
+    @Nested
     @DisplayName("findScheduleList - 유효여부 필터(validData) 는 화면 신호등 dot 판정과 일치")
     inner class FindScheduleListValidDataFilter {
 

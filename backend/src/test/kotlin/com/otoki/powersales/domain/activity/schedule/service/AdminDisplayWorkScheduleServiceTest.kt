@@ -10,6 +10,7 @@ import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.foundation.account.repository.AccountDistributionAbcPairRow
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.activity.schedule.service.internal.ScheduleDisplayStatusCalculator
@@ -162,6 +163,19 @@ class AdminDisplayWorkScheduleServiceTest {
     @DisplayName("getScheduleListMetaStatic - 목록 조회 조건 로드(정적)")
     inner class GetScheduleListMetaStaticTests {
 
+        @BeforeEach
+        fun stubAbcPairs() {
+            // 거래처유형(ABC유형) 옵션 소스 — 월매출과 동일 distinct pair 조회를 mock.
+            every { accountRepository.findDistinctDistributionAbcPairs() } returns listOf(
+                AccountDistributionAbcPairRow(accountStatusCode = null, accountType = null, abcTypeCode = "1110", abcType = "식품대리점_일반"),
+                AccountDistributionAbcPairRow(accountStatusCode = null, accountType = null, abcTypeCode = "1510", abcType = "전문대리점_라면"),
+                // 중복 pair — distinct 로 접혀야 한다.
+                AccountDistributionAbcPairRow(accountStatusCode = "S1", accountType = "슈퍼", abcTypeCode = "1110", abcType = "식품대리점_일반"),
+                // 코드/명 모두 없는 pair — 라벨 null 이라 옵션에서 제외되어야 한다.
+                AccountDistributionAbcPairRow(accountStatusCode = null, accountType = null, abcTypeCode = null, abcType = null),
+            )
+        }
+
         @Test
         @DisplayName("근무유형3 옵션 = TypeOfWork3 displayName 3종(고정/격고/순회)")
         fun typeOfWork3Options() {
@@ -195,9 +209,22 @@ class AdminDisplayWorkScheduleServiceTest {
 
             assertThat(result.filters.first { it.key == "employeeCode" }.options).isNull()
             assertThat(result.filters.first { it.key == "accountName" }.options).isNull()
-            assertThat(result.filters.first { it.key == "accountType" }.options).isNull()
             assertThat(result.filters.first { it.key == "startDate" }.type.name).isEqualTo("DATE")
             assertThat(result.filters.map { it.key }).doesNotContain("branchCode")
+        }
+
+        @Test
+        @DisplayName("거래처유형 옵션 = ABC유형 결합 라벨(월매출 동일 축) distinct·정렬, value=label")
+        fun accountTypeOptions() {
+            val result = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
+
+            val accountType = result.filters.first { it.key == "accountType" }
+            assertThat(accountType.type.name).isEqualTo("SELECT")
+            // 중복 pair 는 접히고, 코드/명 모두 없는 pair(null 라벨)는 제외, 정렬(문자열 오름차순).
+            assertThat(accountType.options).extracting("value")
+                .containsExactly("1110 식품대리점_일반", "1510 전문대리점_라면")
+            assertThat(accountType.options).extracting("label")
+                .containsExactly("1110 식품대리점_일반", "1510 전문대리점_라면")
         }
 
         @Test

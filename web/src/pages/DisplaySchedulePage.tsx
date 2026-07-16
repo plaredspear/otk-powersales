@@ -697,6 +697,30 @@ export default function DisplaySchedulePage() {
               지점: {singleBranch.label}
             </Tag>
           )}
+          <Select
+            placeholder="유효여부"
+            value={filterValidData}
+            onChange={(v) => setFilterValidData(v)}
+            allowClear
+            style={{ width: 120 }}
+            // 서버 meta value(VALID/PLANNED/END)를 그대로 validData 쿼리 파라미터로 전송.
+            options={filterOptions('validData').map((o) => ({
+              label: o.label,
+              value: o.value as ScheduleValidData,
+            }))}
+          />
+          <Select
+            placeholder="확정상태"
+            value={filterConfirmed}
+            onChange={(v) => setFilterConfirmed(v)}
+            allowClear
+            style={{ width: 120 }}
+            // 서버 meta 는 boolean 값을 문자열("true"/"false")로 내려주므로 value 로 매핑.
+            options={filterOptions('confirmed').map((o) => ({
+              label: o.label,
+              value: o.value === 'true',
+            }))}
+          />
           <Input
             placeholder="사원번호/성명"
             value={filterEmployeeCode}
@@ -713,13 +737,16 @@ export default function DisplaySchedulePage() {
             style={{ width: 180 }}
             allowClear
           />
-          <Input
+          <Select
             placeholder="거래처유형"
-            value={filterAccountType}
-            onChange={(e) => setFilterAccountType(e.target.value)}
-            onPressEnter={handleSearch}
-            style={{ width: 140 }}
+            value={filterAccountType || undefined}
+            onChange={(v) => setFilterAccountType(v ?? '')}
             allowClear
+            showSearch
+            optionFilterProp="label"
+            // 월매출(물류배부)과 동일 축(ABC유형) 옵션 — "코드 명칭" 결합 라벨이라 폭을 넓힌다.
+            style={{ width: 200 }}
+            options={filterOptions('accountType')}
           />
           <Select
             placeholder="근무유형3"
@@ -728,30 +755,6 @@ export default function DisplaySchedulePage() {
             allowClear
             style={{ width: 120 }}
             options={filterOptions('typeOfWork3')}
-          />
-          <Select
-            placeholder="확정상태"
-            value={filterConfirmed}
-            onChange={(v) => setFilterConfirmed(v)}
-            allowClear
-            style={{ width: 120 }}
-            // 서버 meta 는 boolean 값을 문자열("true"/"false")로 내려주므로 value 로 매핑.
-            options={filterOptions('confirmed').map((o) => ({
-              label: o.label,
-              value: o.value === 'true',
-            }))}
-          />
-          <Select
-            placeholder="유효여부"
-            value={filterValidData}
-            onChange={(v) => setFilterValidData(v)}
-            allowClear
-            style={{ width: 120 }}
-            // 서버 meta value(VALID/PLANNED/END)를 그대로 validData 쿼리 파라미터로 전송.
-            options={filterOptions('validData').map((o) => ({
-              label: o.label,
-              value: o.value as ScheduleValidData,
-            }))}
           />
           <RangePicker
             value={
