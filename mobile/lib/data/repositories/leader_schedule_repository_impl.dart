@@ -79,6 +79,16 @@ class LeaderScheduleRepositoryImpl implements LeaderScheduleRepository {
   }
 
   @override
+  Future<void> resetTeamMemberDevice(int employeeId) {
+    return _dataSource.resetTeamMemberDevice(employeeId);
+  }
+
+  @override
+  Future<void> resetTeamMemberPassword(int employeeId) {
+    return _dataSource.resetTeamMemberPassword(employeeId);
+  }
+
+  @override
   Future<LeaderScheduleCreated> createTeamMemberSchedule({
     required int targetEmployeeId,
     required DateTime workingDate,

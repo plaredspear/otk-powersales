@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.foundation.account.repository.AccountReposito
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.activity.schedule.dto.request.LeaderScheduleCreateRequest
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderCalendarDay
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderDailyStatusResponse
@@ -65,6 +66,8 @@ class LeaderScheduleServiceTest {
     // 여기서는 조장 권한/팀원 검증 + 대상 인원 스코프(costCenterCode) 후 위임 여부만 확인한다.
     private val teamDailyStatusCalculator: TeamDailyStatusCalculator = mockk()
 
+    private val adminEmployeeCredentialService: AdminEmployeeCredentialService = mockk()
+
     private val leaderScheduleService = LeaderScheduleService(
         employeeRepository,
         accountRepository,
@@ -76,6 +79,7 @@ class LeaderScheduleServiceTest {
         promotionSchedulesUpsertHelper,
         teamMemberScheduleCascadeHelper,
         teamDailyStatusCalculator,
+        adminEmployeeCredentialService,
     )
 
     init {

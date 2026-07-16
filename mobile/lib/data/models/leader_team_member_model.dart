@@ -8,6 +8,8 @@ class LeaderTeamMemberModel {
   final String? status;
   final String? costCenterCode;
   final String? phone;
+  final bool deviceBound;
+  final bool loginActive;
 
   const LeaderTeamMemberModel({
     required this.id,
@@ -16,6 +18,8 @@ class LeaderTeamMemberModel {
     required this.status,
     required this.costCenterCode,
     required this.phone,
+    this.deviceBound = false,
+    this.loginActive = false,
   });
 
   factory LeaderTeamMemberModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,8 @@ class LeaderTeamMemberModel {
       status: json['status'] as String?,
       costCenterCode: json['costCenterCode'] as String?,
       phone: json['phone'] as String?,
+      deviceBound: json['deviceBound'] as bool? ?? false,
+      loginActive: json['loginActive'] as bool? ?? false,
     );
   }
 
@@ -36,5 +42,7 @@ class LeaderTeamMemberModel {
         status: status,
         costCenterCode: costCenterCode,
         phone: phone,
+        deviceBound: deviceBound,
+        loginActive: loginActive,
       );
 }

@@ -89,6 +89,16 @@ class FakeLeaderScheduleRepository implements LeaderScheduleRepository {
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return createResult!;
   }
+
+  @override
+  Future<void> resetTeamMemberDevice(int employeeId) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> resetTeamMemberPassword(int employeeId) async {
+    throw UnimplementedError();
+  }
 }
 
 void main() {

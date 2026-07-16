@@ -9,6 +9,8 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderMonthlyC
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderScheduleCreateResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.LeaderTeamMemberListResponse
 import com.otoki.powersales.domain.activity.schedule.service.LeaderScheduleService
+import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
+import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
 import jakarta.validation.Valid
@@ -88,6 +90,36 @@ class LeaderScheduleController(
     ): ResponseEntity<ApiResponse<List<LeaderTeamMemberListResponse>>> {
         val response = leaderScheduleService.getTeamMembers(principal.userId)
         return ResponseEntity.ok(ApiResponse.success(response, "팀원 목록 조회 성공"))
+    }
+
+    /**
+     * 조장 — 본인 팀원(여사원) 단말 초기화 (레거시 SF UUIDReset Quick Action)
+     * POST /api/v1/mobile/leader/team-members/{employeeId}/reset-device
+     *
+     * 조장 권한 + 본인 지점 소속 검증 후 deviceUuid 회수 + 기존 기기 즉시 로그아웃.
+     */
+    @PostMapping("/team-members/{employeeId}/reset-device")
+    fun resetTeamMemberDevice(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable employeeId: Long
+    ): ResponseEntity<ApiResponse<ResetDeviceResponse>> {
+        val response = leaderScheduleService.resetTeamMemberDevice(principal.userId, employeeId)
+        return ResponseEntity.ok(ApiResponse.success(response, "단말이 초기화되었습니다"))
+    }
+
+    /**
+     * 조장 — 본인 팀원(여사원) 비밀번호 초기화 (레거시 SF PasswordReset Quick Action)
+     * POST /api/v1/mobile/leader/team-members/{employeeId}/reset-password
+     *
+     * 임시 비밀번호 발급 + 다음 로그인 강제 변경. 조장 권한 + 본인 지점 소속 검증.
+     */
+    @PostMapping("/team-members/{employeeId}/reset-password")
+    fun resetTeamMemberPassword(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @PathVariable employeeId: Long
+    ): ResponseEntity<ApiResponse<ResetPasswordResponse>> {
+        val response = leaderScheduleService.resetTeamMemberPassword(principal.userId, employeeId)
+        return ResponseEntity.ok(ApiResponse.success(response, "비밀번호가 초기화되었습니다"))
     }
 
     /**

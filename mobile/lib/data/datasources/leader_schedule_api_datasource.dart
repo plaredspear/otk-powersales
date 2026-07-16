@@ -23,6 +23,16 @@ class LeaderScheduleApiDataSource {
         .toList();
   }
 
+  /// 팀원(여사원) 단말 초기화 (레거시 SF UUIDReset). deviceUuid 회수 + 기존 기기 즉시 로그아웃.
+  Future<void> resetTeamMemberDevice(int employeeId) async {
+    await _dio.post('/api/v1/mobile/leader/team-members/$employeeId/reset-device');
+  }
+
+  /// 팀원(여사원) 비밀번호 초기화 (레거시 SF PasswordReset). 임시비번 발급 + 다음 로그인 강제 변경.
+  Future<void> resetTeamMemberPassword(int employeeId) async {
+    await _dio.post('/api/v1/mobile/leader/team-members/$employeeId/reset-password');
+  }
+
   /// 본인 거래처 목록 조회.
   Future<List<LeaderAccountModel>> getAccounts({String? keyword}) async {
     final queryParams = <String, dynamic>{};

@@ -139,11 +139,13 @@ class LeaderScheduleControllerTest : MobileControllerTestSupport() {
             every { leaderScheduleService.getTeamMembers(eq(leaderId)) } returns listOf(
                 LeaderTeamMemberListResponse(
                     id = 5012, employeeCode = "20300001", name = "팀원1",
-                    status = "활동", costCenterCode = "C001", phone = "010-1111-2222"
+                    status = "활동", costCenterCode = "C001", phone = "010-1111-2222",
+                    deviceBound = true, loginActive = true
                 ),
                 LeaderTeamMemberListResponse(
                     id = 5013, employeeCode = "20300002", name = "팀원2",
-                    status = "휴직", costCenterCode = "C001", phone = null
+                    status = "휴직", costCenterCode = "C001", phone = null,
+                    deviceBound = false, loginActive = true
                 )
             )
 

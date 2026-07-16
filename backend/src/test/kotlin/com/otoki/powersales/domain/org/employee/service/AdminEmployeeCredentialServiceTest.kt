@@ -5,6 +5,8 @@ import com.otoki.powersales.domain.org.employee.exception.EmployeeLoginInactiveE
 import com.otoki.powersales.domain.org.employee.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
+import com.otoki.powersales.platform.common.security.ActiveDeviceStore
+import com.otoki.powersales.platform.common.security.JwtTokenProvider
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -21,10 +23,14 @@ class AdminEmployeeCredentialServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
     private val passwordEncoder: PasswordEncoder = mockk()
+    private val activeDeviceStore: ActiveDeviceStore = mockk(relaxed = true)
+    private val jwtTokenProvider: JwtTokenProvider = mockk(relaxed = true)
 
     private val service = AdminEmployeeCredentialService(
         employeeRepository,
         passwordEncoder,
+        activeDeviceStore,
+        jwtTokenProvider,
     )
 
     private fun activeEmployee(
@@ -57,6 +63,9 @@ class AdminEmployeeCredentialServiceTest {
             assertThat(response.employeeId).isEqualTo(12345L)
             assertThat(response.employeeCode).isEqualTo("100123")
             assertThat(response.previousDeviceBound).isTrue
+            // 기존 기기 즉시 차단: 활성기기 캐시 제거 + refresh token 무효화
+            verify(exactly = 1) { activeDeviceStore.clearActiveDevice(12345L) }
+            verify(exactly = 1) { jwtTokenProvider.deleteRefreshTokenByUserId(12345L) }
         }
 
         @Test

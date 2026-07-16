@@ -9,9 +9,12 @@ import com.otoki.powersales.platform.common.enums.WorkingCategory3
 import com.otoki.powersales.platform.common.enums.WorkingType
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
+import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
+import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper
@@ -67,7 +70,8 @@ class LeaderScheduleService(
     private val promotionEmployeeRepository: PromotionEmployeeRepository,
     private val promotionSchedulesUpsertHelper: PromotionSchedulesUpsertHelper,
     private val teamMemberScheduleCascadeHelper: TeamMemberScheduleCascadeHelper,
-    private val teamDailyStatusCalculator: TeamDailyStatusCalculator
+    private val teamDailyStatusCalculator: TeamDailyStatusCalculator,
+    private val adminEmployeeCredentialService: AdminEmployeeCredentialService
 ) {
 
     companion object {
@@ -287,6 +291,54 @@ class LeaderScheduleService(
             .filter { it.status != EmploymentStatus.RESIGNED.code }
             .sortedBy { it.name }
             .map { LeaderTeamMemberListResponse.from(it) }
+    }
+
+    /**
+     * 조장 — 본인 팀원(여사원) 단말 초기화 (deviceUuid 회수 + 기존 기기 즉시 로그아웃).
+     *
+     * 레거시 SF `EmployeeUUIDReset` Quick Action(조장 레이아웃) 을 신규 모바일 조장 경로로 이관.
+     * 레거시엔 없던 **본인 지점 소속 검증** 을 추가한다(costCenterCode 일치 + 조장/지점장 제외).
+     * 실제 초기화/캐시·토큰 정리는 [AdminEmployeeCredentialService.resetDevice] 에 위임.
+     */
+    @Transactional
+    fun resetTeamMemberDevice(registrantId: Long, targetEmployeeId: Long): ResetDeviceResponse {
+        requireTeamMember(registrantId, targetEmployeeId)
+        return adminEmployeeCredentialService.resetDevice(targetEmployeeId)
+    }
+
+    /**
+     * 조장 — 본인 팀원(여사원) 비밀번호 임시 초기화 (임시비번 `pwrs1234!` + 강제 변경).
+     *
+     * 레거시 SF `EmployeePasswordReset` Quick Action(조장 레이아웃) 을 신규 모바일 조장 경로로 이관.
+     * 본인 지점 소속 검증 후 [AdminEmployeeCredentialService.resetPassword] 에 위임.
+     */
+    @Transactional
+    fun resetTeamMemberPassword(registrantId: Long, targetEmployeeId: Long): ResetPasswordResponse {
+        requireTeamMember(registrantId, targetEmployeeId)
+        return adminEmployeeCredentialService.resetPassword(targetEmployeeId)
+    }
+
+    /**
+     * 초기화 대상이 조장 본인 팀원(여사원)인지 검증.
+     *
+     * getTeamMembers 명단 범위와 동일: 조장 costCenterCode 일치 + 조장/지점장 제외.
+     * 타 지점/타 팀이면 [LeaderScheduleNotTeamMemberException].
+     */
+    private fun requireTeamMember(registrantId: Long, targetEmployeeId: Long): Employee {
+        val registrant = findRegistrant(registrantId)
+        requireLeader(registrant)
+
+        val target = employeeRepository.findById(targetEmployeeId)
+            .orElseThrow { LeaderScheduleTargetEmployeeNotFoundException() }
+
+        val sameBranch = registrant.costCenterCode != null &&
+            target.costCenterCode == registrant.costCenterCode
+        val isFemaleStaff = target.role != AppAuthority.LEADER &&
+            target.role != AppAuthority.BRANCH_MANAGER
+        if (!sameBranch || !isFemaleStaff) {
+            throw LeaderScheduleNotTeamMemberException()
+        }
+        return target
     }
 
     /**
