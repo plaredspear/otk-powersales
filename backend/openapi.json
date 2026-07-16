@@ -4881,6 +4881,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseBackfillResult" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BackfillResult"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseBatchUpdatePromotionEmployeeResponse" : {
         "properties" : {
           "data" : {
@@ -9270,6 +9299,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePreviewResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PreviewResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseProductDetail" : {
         "properties" : {
           "data" : {
@@ -11959,6 +12017,23 @@
               "$ref" : "#/components/schemas/SfObjectResource"
             },
             "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "BackfillResult" : {
+        "properties" : {
+          "processed" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "remaining" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "updated" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -20373,6 +20448,15 @@
           },
           "yearMonth" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PreviewResponse" : {
+        "properties" : {
+          "missing" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -39294,6 +39378,51 @@
           }
         },
         "tags" : [ "admin-suggestion-controller" ]
+      }
+    },
+    "/api/v1/admin/team-member-schedule/name-backfill/execute" : {
+      "post" : {
+        "operationId" : "execute",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBackfillResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-team-member-schedule-name-backfill-controller" ]
+      }
+    },
+    "/api/v1/admin/team-member-schedule/name-backfill/preview" : {
+      "get" : {
+        "operationId" : "preview",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePreviewResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-team-member-schedule-name-backfill-controller" ]
       }
     },
     "/api/v1/admin/team-member-search/category" : {

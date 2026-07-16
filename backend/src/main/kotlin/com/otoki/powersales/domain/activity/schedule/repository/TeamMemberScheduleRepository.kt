@@ -171,4 +171,44 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
         nativeQuery = true
     )
     fun getNextNameSeq(): Long
+
+    /** name 이 비어(NULL/공백) 채번이 필요한 일정 건수 — 백필 도구 preview 용. */
+    @Query(
+        value = "SELECT COUNT(*) FROM powersales.team_member_schedule WHERE name IS NULL OR name = ''",
+        nativeQuery = true
+    )
+    fun countMissingName(): Long
+
+    /**
+     * name 이 비어 채번이 필요한 일정 id 를 오래된 순(id ASC)으로 상한(limit)만큼 조회 — 백필 도구용.
+     * 채번은 호출부가 id 별로 [getNextNameSeq] 를 돌려 [updateNameById] 로 반영한다.
+     */
+    @Query(
+        value = """
+            SELECT team_member_schedule_id
+              FROM powersales.team_member_schedule
+             WHERE name IS NULL OR name = ''
+             ORDER BY team_member_schedule_id ASC
+             LIMIT :limit
+        """,
+        nativeQuery = true
+    )
+    fun findMissingNameIds(@Param("limit") limit: Int): List<Long>
+
+    /**
+     * 백필 도구 전용 — 단건 name 을 native UPDATE (name 은 entity 에서 val 이라 JPA dirty update 불가).
+     * @LastModifiedDate 등 audit 컬럼은 건드리지 않는다 (name 만 채우는 데이터 정합 목적).
+     * @return 갱신 row 수 (1 이면 성공, 0 이면 id 부재 또는 그새 name 이 채워짐).
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(
+        value = """
+            UPDATE powersales.team_member_schedule
+               SET name = :name
+             WHERE team_member_schedule_id = :id
+               AND (name IS NULL OR name = '')
+        """,
+        nativeQuery = true
+    )
+    fun updateNameById(@Param("id") id: Long, @Param("name") name: String): Int
 }

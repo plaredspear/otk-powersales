@@ -89,6 +89,7 @@ const SfMigrationStage1Page = lazy(() => import('@/pages/admin/tools/sf-migratio
 const HerokuMigrationPage = lazy(() => import('@/pages/admin/tools/heroku-migration/HerokuMigrationPage'));
 const HerokuMigrationStage1Page = lazy(() => import('@/pages/admin/tools/heroku-migration-stage1/HerokuMigrationStage1Page'));
 const CacheManagementPage = lazy(() => import('@/pages/admin/cache/CacheManagementPage'));
+const ScheduleNameBackfillPage = lazy(() => import('@/pages/admin/tools/schedule-name-backfill/ScheduleNameBackfillPage'));
 const AgreementWordsPage = lazy(() => import('@/pages/admin/agreement-words/AgreementWordsPage'));
 const WorkingDayMastersPage = lazy(() => import('@/pages/admin/working-day-masters/WorkingDayMastersPage'));
 const UserListPage = lazy(() => import('@/pages/users/UserListPage'));
@@ -356,6 +357,7 @@ export const router = createBrowserRouter(
                   children: [
                     { path: '/admin/tools/external-api', element: <LazyWrapper><ExternalApiTestPage /></LazyWrapper> },
                     { path: '/admin/tools/naver-geocode', element: <LazyWrapper><NaverGeocodeTestPage /></LazyWrapper> },
+                    { path: '/admin/tools/schedule-name-backfill', element: <LazyWrapper><ScheduleNameBackfillPage /></LazyWrapper> },
                     { path: '/admin/app-packages', element: <LazyWrapper><AppPackagePage /></LazyWrapper> },
                   ],
                 },
