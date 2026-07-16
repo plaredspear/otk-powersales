@@ -204,7 +204,8 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<LoginResult> login(String employeeCode, String password) {
+  Future<LoginResult> login(String employeeCode, String password,
+      {bool autoLogin = false}) {
     throw UnimplementedError();
   }
 

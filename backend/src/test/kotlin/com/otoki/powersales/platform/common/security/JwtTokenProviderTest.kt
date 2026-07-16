@@ -25,6 +25,7 @@ class JwtTokenProviderTest {
         secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
         accessExpiration = 3600000,  // 1 hour
         refreshExpiration = 604800000,  // 7 days
+        refreshExpirationLong = 5184000000,  // 60 days
         redisTemplate = redisTemplate,
         objectMapper = objectMapper
     )
@@ -63,6 +64,42 @@ class JwtTokenProviderTest {
     }
 
     @Test
+    @DisplayName("getLongLivedFromToken - longLived 인자에 따라 long_lived 클레임이 심긴다")
+    fun getLongLivedFromToken_reflectsCreateArgument() {
+        // Given
+        val userId = 12345L
+        val defaultToken = jwtTokenProvider.createRefreshToken(userId, "f", "t1")
+        val longLivedToken = jwtTokenProvider.createRefreshToken(userId, "f", "t2", longLived = true)
+
+        // Then: 기본은 false(구 토큰 호환), longLived=true 발급은 true
+        assertFalse(jwtTokenProvider.getLongLivedFromToken(defaultToken))
+        assertTrue(jwtTokenProvider.getLongLivedFromToken(longLivedToken))
+    }
+
+    @Test
+    @DisplayName("longLived=true 는 장수명 TTL 로 발급된다 - 기본 TTL 만료 후에도 유효")
+    fun createRefreshToken_longLived_usesLongTtl() {
+        // Given: 기본 refresh 는 1ms, 장수명은 60일인 provider
+        val provider = JwtTokenProvider(
+            secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
+            accessExpiration = 3600000,
+            refreshExpiration = 1,  // 1ms
+            refreshExpirationLong = 5184000000,  // 60 days
+            redisTemplate = redisTemplate,
+            objectMapper = objectMapper
+        )
+        val shortToken = provider.createRefreshToken(1L, "f", "t1")  // longLived=false → 1ms
+        val longToken = provider.createRefreshToken(1L, "f", "t2", longLived = true)  // 60일
+
+        // When: 기본 TTL(1ms) 이 지나도록 대기
+        Thread.sleep(10)
+
+        // Then: 기본 토큰은 만료, 장수명 토큰은 유효
+        assertFalse(provider.validateToken(shortToken))
+        assertTrue(provider.validateToken(longToken))
+    }
+
+    @Test
     @DisplayName("validateToken은 유효한 토큰에 대해 true를 반환한다")
     fun validateToken_returnsTrue_forValidToken() {
         // Given
@@ -85,6 +122,7 @@ class JwtTokenProviderTest {
             secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
             accessExpiration = 1,  // 1ms
             refreshExpiration = 1,  // 1ms
+            refreshExpirationLong = 1,  // 1ms
             redisTemplate = redisTemplate,
             objectMapper = objectMapper
         )
@@ -270,6 +308,7 @@ class JwtTokenProviderTest {
             secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
             accessExpiration = 1,
             refreshExpiration = 1,
+            refreshExpirationLong = 1,
             redisTemplate = redisTemplate,
             objectMapper = objectMapper
         )
@@ -399,6 +438,7 @@ class JwtTokenProviderTest {
                 secret = "test-secret-key-that-is-at-least-256-bits-long-for-hmac-sha256-algorithm",
                 accessExpiration = 1,
                 refreshExpiration = 1,
+                refreshExpirationLong = 1,
                 redisTemplate = redisTemplate,
                 objectMapper = objectMapper
             )

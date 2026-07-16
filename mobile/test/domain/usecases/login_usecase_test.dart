@@ -12,6 +12,7 @@ class MockAuthRepository implements AuthRepository {
 
   String? lastLoginEmployeeNumber;
   String? lastLoginPassword;
+  bool? lastLoginAutoLogin;
   String? lastRefreshToken;
   String? lastCurrentPassword;
   String? lastNewPassword;
@@ -19,9 +20,11 @@ class MockAuthRepository implements AuthRepository {
   bool recordGpsConsentCalled = false;
 
   @override
-  Future<LoginResult> login(String employeeCode, String password) async {
+  Future<LoginResult> login(String employeeCode, String password,
+      {bool autoLogin = false}) async {
     lastLoginEmployeeNumber = employeeCode;
     lastLoginPassword = password;
+    lastLoginAutoLogin = autoLogin;
     if (exceptionToThrow != null) throw exceptionToThrow!;
     return loginResult!;
   }
@@ -105,13 +108,15 @@ void main() {
         employeeCode: '20010585',
         password: 'test1234',
         rememberEmployeeNumber: false,
-        autoLogin: false,
+        autoLogin: true,
       );
 
       // Assert
       expect(result, equals(expectedLoginResult));
       expect(result.user, equals(expectedUser));
       expect(result.token, equals(expectedToken));
+      // autoLogin 이 repository(→ 서버 장수명 토큰 발급)로 전달되어야 한다.
+      expect(mockRepository.lastLoginAutoLogin, isTrue);
     });
 
     test('사번이 빈 문자열이면 ArgumentError 발생', () async {

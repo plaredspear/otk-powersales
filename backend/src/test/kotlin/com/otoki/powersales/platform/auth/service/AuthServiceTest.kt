@@ -118,6 +118,39 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("자동로그인 ON 로그인 - autoLogin=true 면 장수명(longLived) refresh token 을 발급한다")
+    fun login_autoLogin_issuesLongLivedRefreshToken() {
+        // Given
+        val employeeCode = "12345678"
+        val rawPassword = "password123"
+        val encodedPassword = "encoded_password"
+        val employee = createTestEmployee(
+            id = 1L,
+            employeeCode = employeeCode,
+            password = encodedPassword,
+            passwordChangeRequired = false,
+            agreementFlag = true
+        )
+        val loginRequest = LoginRequest(employeeCode, rawPassword, deviceId = "device-123", autoLogin = true)
+
+        every { employeeRepository.findWithEmployeeInfoByEmployeeCode(employeeCode) } returns employee
+        every { passwordEncoder.matches(rawPassword, encodedPassword) } returns true
+        every { uuidCheckProperties.enabled } returns false
+        every { jwtTokenProvider.createAccessToken(employee.id, any<String>(), true, any()) } returns "access"
+        every { jwtTokenProvider.createRefreshToken(employee.id, any(), any(), true) } returns "long-refresh"
+        every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+        every { loginHistoryRepository.save(any<LoginHistory>()) } answers { firstArg() }
+
+        // When
+        val response = authService.login(loginRequest)
+
+        // Then: longLived=true 로 발급 + Redis 저장
+        assertThat(response.token.refreshToken).isEqualTo("long-refresh")
+        verify { jwtTokenProvider.createRefreshToken(employee.id, any(), any(), true) }
+        verify { jwtTokenProvider.storeRefreshToken(any(), employee.id, any(), true) }
+    }
+
+    @Test
     @DisplayName("로그인 성공 시 이력 기록 - empCode가 설정된 LoginHistory가 저장된다")
     fun login_success_savesLoginHistory() {
         // Given
@@ -336,6 +369,7 @@ class AuthServiceTest {
             every { jwtTokenProvider.isTokenFamilyRevoked(familyId) } returns false
             every { jwtTokenProvider.isRefreshTokenStored(tokenId) } returns true
             every { jwtTokenProvider.getUserIdFromToken(refreshToken) } returns userId
+            every { jwtTokenProvider.getLongLivedFromToken(refreshToken) } returns false
             every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
             every { jwtTokenProvider.createAccessToken(userId, any<String>(), false, any()) } returns newAccessToken
             every { jwtTokenProvider.createRefreshToken(userId, familyId, any()) } returns newRefreshToken
@@ -350,6 +384,39 @@ class AuthServiceTest {
             assertThat(response.expiresIn).isEqualTo(expiresIn)
             verify { jwtTokenProvider.deleteRefreshToken(tokenId) }
             verify { jwtTokenProvider.storeRefreshToken(any(), userId, familyId) }
+        }
+
+        @Test
+        @DisplayName("장수명 유지 - long_lived=true 토큰 회전 시 새 refresh 도 longLived=true 로 재발급")
+        fun refreshAccessToken_preservesLongLived() {
+            // Given
+            val userId = 1L
+            val refreshToken = "long_lived_refresh_token"
+            val request = RefreshTokenRequest(refreshToken)
+            val tokenId = "token-id-123"
+            val familyId = "family-id-456"
+            val employee = createTestEmployee(id = userId)
+
+            every { jwtTokenProvider.validateToken(refreshToken) } returns true
+            every { jwtTokenProvider.getTokenType(refreshToken) } returns "refresh"
+            every { jwtTokenProvider.getTokenIdFromToken(refreshToken) } returns tokenId
+            every { jwtTokenProvider.getFamilyIdFromToken(refreshToken) } returns familyId
+            every { jwtTokenProvider.isTokenFamilyRevoked(familyId) } returns false
+            every { jwtTokenProvider.isRefreshTokenStored(tokenId) } returns true
+            every { jwtTokenProvider.getUserIdFromToken(refreshToken) } returns userId
+            every { jwtTokenProvider.getLongLivedFromToken(refreshToken) } returns true
+            every { employeeRepository.findWithEmployeeInfoById(userId) } returns employee
+            every { jwtTokenProvider.createAccessToken(userId, any<String>(), false, any()) } returns "new-access"
+            every { jwtTokenProvider.createRefreshToken(userId, familyId, any(), true) } returns "new-long-refresh"
+            every { jwtTokenProvider.getAccessTokenExpirationSeconds() } returns 3600
+
+            // When
+            val response = authService.refreshAccessToken(request)
+
+            // Then: 원 토큰의 long_lived 를 읽어 새 토큰도 longLived=true 로 발급
+            assertThat(response.refreshToken).isEqualTo("new-long-refresh")
+            verify { jwtTokenProvider.createRefreshToken(userId, familyId, any(), true) }
+            verify { jwtTokenProvider.storeRefreshToken(any(), userId, familyId, true) }
         }
 
         @Test

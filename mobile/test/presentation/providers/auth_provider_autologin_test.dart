@@ -103,17 +103,33 @@ class _FakeFcmTokenRegistrar extends FcmTokenRegistrar {
 }
 
 /// 호출되지 않는 UseCase 의존을 위한 최소 Mock Repository.
+///
+/// tryAutoLogin(세션 복원) 검증을 위해 refreshToken/getMe 결과를 주입 가능하게 한다.
 class _MockAuthRepository implements AuthRepository {
+  /// tryAutoLogin 이 refreshToken 을 호출했는지 여부.
+  bool refreshCalled = false;
+  String? lastRefreshToken;
+
+  /// refreshToken 이 반환할 토큰(주입). null 이면 UnimplementedError.
+  AuthToken? refreshResult;
+
+  /// getMe 가 반환할 사용자(주입). null 이면 UnimplementedError.
+  User? meResult;
+
   @override
-  Future<LoginResult> login(String employeeCode, String password) async =>
+  Future<LoginResult> login(String employeeCode, String password,
+          {bool autoLogin = false}) async =>
       throw UnimplementedError();
 
   @override
-  Future<User> getMe() async => throw UnimplementedError();
+  Future<User> getMe() async => meResult ?? (throw UnimplementedError());
 
   @override
-  Future<AuthToken> refreshToken(String refreshToken) async =>
-      throw UnimplementedError();
+  Future<AuthToken> refreshToken(String refreshToken) async {
+    refreshCalled = true;
+    lastRefreshToken = refreshToken;
+    return refreshResult ?? (throw UnimplementedError());
+  }
 
   @override
   Future<AuthToken> changePassword({
@@ -232,6 +248,67 @@ void main() {
       expect(notifier.state.savedEmployeeNumber, '20010585');
       expect(notifier.state.rememberEmployeeNumber, isTrue);
       expect(notifier.state.autoLogin, isTrue);
+    });
+  });
+
+  group('AuthNotifier.tryAutoLogin (세션 복원 — 자동로그인 체크와 독립)', () {
+    late _FakeAuthLocalDataSource localDataSource;
+    late _MockAuthRepository repository;
+
+    setUp(() {
+      localDataSource = _FakeAuthLocalDataSource();
+      repository = _MockAuthRepository();
+    });
+
+    AuthNotifier buildNotifier() {
+      return AuthNotifier(
+        loginUseCase: LoginUseCase(repository),
+        autoLoginUseCase: AutoLoginUseCase(repository),
+        changePasswordUseCase: ChangePasswordUseCase(repository),
+        logoutUseCase: LogoutUseCase(repository),
+        localDataSource: localDataSource,
+        repository: repository,
+        fcmTokenRegistrar: _FakeFcmTokenRegistrar(),
+      );
+    }
+
+    test('auto_login=false 라도 refresh token 이 있으면 세션을 복원한다 (앱 종료≠로그아웃)',
+        () async {
+      // 자동로그인 OFF 지만 이전 세션의 refresh token 이 남아 있는 상태.
+      await localDataSource.setAutoLogin(false);
+      await localDataSource.saveRefreshToken('stored-refresh');
+      repository.refreshResult = const AuthToken(
+        accessToken: 'rotated-access',
+        refreshToken: 'rotated-refresh',
+        expiresIn: 3600,
+      );
+      repository.meResult = const User(
+        id: 1,
+        employeeCode: '20010585',
+        name: '홍길동',
+        role: 'ROLE_USER',
+      );
+      final notifier = buildNotifier();
+
+      await notifier.tryAutoLogin();
+
+      // 체크박스 OFF 여도 refresh 로 세션을 복원해 인증 상태가 되어야 한다.
+      expect(repository.refreshCalled, isTrue);
+      expect(notifier.state.isAuthenticated, isTrue);
+      expect(notifier.state.user?.employeeCode, '20010585');
+      // 회전된 토큰이 저장돼 다음 실행에서 재사용된다.
+      expect(await localDataSource.getRefreshToken(), 'rotated-refresh');
+    });
+
+    test('refresh token 이 없으면 미인증(로그인 화면)으로 떨어진다', () async {
+      await localDataSource.setAutoLogin(true);
+      // refresh token 미저장.
+      final notifier = buildNotifier();
+
+      await notifier.tryAutoLogin();
+
+      expect(repository.refreshCalled, isFalse);
+      expect(notifier.state.isAuthenticated, isFalse);
     });
   });
 }

@@ -21,6 +21,7 @@ class JwtTokenProvider(
     @Value("\${jwt.secret}") private val secret: String,
     @Value("\${jwt.expiration}") private val accessExpiration: Long,
     @Value("\${jwt.refresh-expiration}") private val refreshExpiration: Long,
+    @Value("\${jwt.refresh-expiration-long}") private val refreshExpirationLong: Long,
     private val redisTemplate: RedisTemplate<String, String>,
     private val objectMapper: ObjectMapper
 ) {
@@ -72,11 +73,19 @@ class JwtTokenProvider(
      *
      * family_id: Token Family ID (최초 로그인 시 생성, UUID)
      * token_id: 개별 Token ID (매 갱신 시 새로 생성, UUID)
+     * @param longLived 자동로그인 ON 세션 여부. true 면 장수명 TTL([refreshExpirationLong])로
+     *  발급하고 `long_lived=true` 클레임을 심는다. 회전(refreshAccessToken)은 이 클레임을 읽어
+     *  동일 TTL 을 유지하므로, ON 세션은 회전 후에도 장수명이 이어진다. false(기본)면 7일 TTL.
      * @return audience="mobile" claim 이 박힌 refresh JWT (Spec #760).
      */
-    fun createRefreshToken(userId: Long, familyId: String, tokenId: String): String {
+    fun createRefreshToken(
+        userId: Long,
+        familyId: String,
+        tokenId: String,
+        longLived: Boolean = false
+    ): String {
         val now = Date()
-        val expiry = Date(now.time + refreshExpiration)
+        val expiry = Date(now.time + refreshTtlMillis(longLived))
 
         return Jwts.builder()
             .subject(userId.toString())
@@ -84,11 +93,16 @@ class JwtTokenProvider(
             .claim("audience", AUDIENCE_MOBILE)
             .claim("family_id", familyId)
             .claim("token_id", tokenId)
+            .claim("long_lived", longLived)
             .issuedAt(now)
             .expiration(expiry)
             .signWith(key)
             .compact()
     }
+
+    /** 자동로그인 여부에 따른 refresh token TTL(ms) — ON=장수명(60일), OFF=기본(7일). */
+    private fun refreshTtlMillis(longLived: Boolean): Long =
+        if (longLived) refreshExpirationLong else refreshExpiration
 
     /**
      * 토큰 검증 (만료, 서명, 블랙리스트 확인)
@@ -170,6 +184,14 @@ class JwtTokenProvider(
     }
 
     /**
+     * refresh 토큰의 long_lived(자동로그인 ON) 클레임 추출.
+     * 클레임이 없는 구 토큰은 `false`(7일 세션)로 간주해 동작 호환을 유지한다.
+     */
+    fun getLongLivedFromToken(token: String): Boolean {
+        return parseClaims(token).get("long_lived", java.lang.Boolean::class.java)?.booleanValue() ?: false
+    }
+
+    /**
      * 토큰의 audience claim 추출 — "web" / "mobile" / null (구 토큰).
      *
      * Spec #760 — Mobile JWT 로 Web 호출 / Web JWT 로 Mobile 호출 차단을 위해
@@ -214,17 +236,22 @@ class JwtTokenProvider(
     // ========== Redis operations for Refresh Token Rotation ==========
 
     /**
-     * Refresh Token 메타데이터를 Redis에 저장
+     * Refresh Token 메타데이터를 Redis에 저장.
+     *
+     * @param longLived 자동로그인 ON 세션이면 Redis TTL 도 장수명(60일)으로 맞춘다. JWT TTL 과
+     *  일치시키지 않으면 7일 뒤 Redis 메타데이터가 먼저 소멸해, 아직 유효한 refresh JWT 가
+     *  isRefreshTokenStored=false 로 탈취 오탐되어 family 가 무효화된다.
      */
-    fun storeRefreshToken(tokenId: String, userId: Long, familyId: String) {
+    fun storeRefreshToken(tokenId: String, userId: Long, familyId: String, longLived: Boolean = false) {
+        val ttlMillis = refreshTtlMillis(longLived)
         val metadata = mapOf(
             "userId" to userId,
             "familyId" to familyId,
             "issuedAt" to System.currentTimeMillis(),
-            "expiresAt" to System.currentTimeMillis() + refreshExpiration
+            "expiresAt" to System.currentTimeMillis() + ttlMillis
         )
         val json = objectMapper.writeValueAsString(metadata)
-        val ttl = Duration.ofMillis(refreshExpiration)
+        val ttl = Duration.ofMillis(ttlMillis)
         redisTemplate.opsForValue().set("refresh:$tokenId", json, ttl)
         redisTemplate.opsForValue().set("user_refresh:$userId", tokenId, ttl)
     }

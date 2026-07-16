@@ -19,13 +19,15 @@ class AuthApiDataSource implements AuthRemoteDataSource {
 
   @override
   Future<LoginResponseModel> login(
-      String employeeCode, String password, String deviceId) async {
+      String employeeCode, String password, String deviceId, bool autoLogin) async {
     final response = await _dio.post(
       '/api/v1/mobile/auth/login',
       data: {
         'employeeCode': employeeCode,
         'password': password,
         'deviceId': deviceId,
+        // 자동로그인 ON 이면 서버가 장수명(60일) refresh token 을 발급한다.
+        'autoLogin': autoLogin,
         // 현재 사용 중인 앱 버전 보고 (서버가 사용자별 현재 버전 기록).
         ...await appVersionFields(),
       },
@@ -91,10 +93,12 @@ class AuthApiDataSource implements AuthRemoteDataSource {
   Future<AuthTokenModel> changePassword({
     String? currentPassword,
     required String newPassword,
+    bool autoLogin = false,
   }) async {
     final request = ChangePasswordRequest(
       currentPassword: currentPassword,
       newPassword: newPassword,
+      autoLogin: autoLogin,
     );
     final response = await _dio.post(
       '/api/v1/mobile/auth/change-password',

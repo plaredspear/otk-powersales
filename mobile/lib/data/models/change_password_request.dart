@@ -7,9 +7,14 @@ class ChangePasswordRequest {
   final String? currentPassword;
   final String newPassword;
 
+  /// 자동로그인 선택 여부. 변경 시 새 refresh family 로 재발급되므로, 저장된 선호를
+  /// 전달해 ON 세션의 장수명(60일)을 유지한다. 기본 false = 7일 세션.
+  final bool autoLogin;
+
   const ChangePasswordRequest({
     this.currentPassword,
     required this.newPassword,
+    this.autoLogin = false,
   });
 
   /// camelCase JSON 직렬화 (백엔드 Jackson LOWER_CAMEL_CASE 와 정합).
@@ -19,6 +24,7 @@ class ChangePasswordRequest {
       if (currentPassword != null && currentPassword!.isNotEmpty)
         'currentPassword': currentPassword,
       'newPassword': newPassword,
+      'autoLogin': autoLogin,
     };
   }
 }

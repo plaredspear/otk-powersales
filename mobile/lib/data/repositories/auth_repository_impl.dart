@@ -18,10 +18,11 @@ class AuthRepositoryImpl implements AuthRepository {
         _localDataSource = localDataSource;
 
   @override
-  Future<LoginResult> login(String employeeCode, String password) async {
+  Future<LoginResult> login(String employeeCode, String password,
+      {bool autoLogin = false}) async {
     final deviceId = await _localDataSource.getDeviceId();
-    final response =
-        await _remoteDataSource.login(employeeCode, password, deviceId);
+    final response = await _remoteDataSource.login(
+        employeeCode, password, deviceId, autoLogin);
     final result = response.toLoginResult();
 
     // 토큰을 로컬 저장소에 저장
@@ -53,9 +54,12 @@ class AuthRepositoryImpl implements AuthRepository {
     String? currentPassword,
     required String newPassword,
   }) async {
+    // 저장된 자동로그인 선호를 전달 → 변경 후에도 ON 세션의 장수명(60일)을 유지.
+    final autoLogin = await _localDataSource.isAutoLoginEnabled();
     final tokenModel = await _remoteDataSource.changePassword(
       currentPassword: currentPassword,
       newPassword: newPassword,
+      autoLogin: autoLogin,
     );
     final token = tokenModel.toEntity();
     // 새 토큰 페어 저장 (클레임 passwordChangeRequired=false 반영)

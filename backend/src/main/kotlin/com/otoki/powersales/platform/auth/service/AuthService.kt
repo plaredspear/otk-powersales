@@ -110,8 +110,9 @@ class AuthService(
             activeDeviceStore.setActiveDevice(employee.id, activeDeviceId)
         }
 
-        // Refresh Token Rotation: 신규 familyId 로 발급
-        val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString())
+        // Refresh Token Rotation: 신규 familyId 로 발급.
+        // 자동로그인 ON(request.autoLogin) 이면 장수명(60일) refresh token 을 발급한다.
+        val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString(), request.autoLogin)
 
         // 현재 사용 중인 앱 버전 기록 (같은 트랜잭션 dirty checking 으로 영속. 미보고면 no-op).
         employee.recordAppVersion(
@@ -233,7 +234,9 @@ class AuthService(
             false,
             activeDeviceIdFor(employee)
         )
-        val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString())
+        // 비밀번호 변경 시 새 family 로 재발급되므로, 클라이언트가 보낸 자동로그인 선호
+        // (request.autoLogin)를 반영해 ON 세션의 장수명(60일)을 유지한다.
+        val refreshToken = issueRefreshToken(employee.id, UUID.randomUUID().toString(), request.autoLogin)
 
         return ChangePasswordResponse(
             accessToken = accessToken,
@@ -312,7 +315,9 @@ class AuthService(
         if (activeDeviceId != null) {
             activeDeviceStore.setActiveDevice(employee.id, activeDeviceId)
         }
-        val newRefreshToken = issueRefreshToken(employee.id, familyId)
+        // 회전 후에도 원 refresh token 의 long_lived 를 유지 → 자동로그인 ON 세션은 장수명이 이어진다.
+        val longLived = jwtTokenProvider.getLongLivedFromToken(request.refreshToken)
+        val newRefreshToken = issueRefreshToken(employee.id, familyId, longLived)
 
         return TokenResponse(
             accessToken = newAccessToken,
@@ -327,10 +332,10 @@ class AuthService(
      * 신규 발급(login/changePassword)은 호출처에서 새 [familyId] 를 생성해 전달하고,
      * rotation(refreshAccessToken)은 기존 [familyId] 를 그대로 전달해 family 를 유지한다.
      */
-    private fun issueRefreshToken(employeeId: Long, familyId: String): String {
+    private fun issueRefreshToken(employeeId: Long, familyId: String, longLived: Boolean = false): String {
         val tokenId = UUID.randomUUID().toString()
-        val refreshToken = jwtTokenProvider.createRefreshToken(employeeId, familyId, tokenId)
-        jwtTokenProvider.storeRefreshToken(tokenId, employeeId, familyId)
+        val refreshToken = jwtTokenProvider.createRefreshToken(employeeId, familyId, tokenId, longLived)
+        jwtTokenProvider.storeRefreshToken(tokenId, employeeId, familyId, longLived)
         return refreshToken
     }
 

@@ -132,15 +132,6 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     with WidgetsBindingObserver {
   StreamSubscription<String>? _tokenRefreshSub;
 
-  /// 자동로그인 OFF 사용자의 "리줌(백그라운드 복귀) 타임아웃" 임계값.
-  ///
-  /// 레거시 Heroku 의 세션 비활동 만료(Spring Session Redis 기본 30분)에 정합한다.
-  /// 자동로그인 ON 은 refresh token 으로 세션이 유지되므로 이 타임아웃을 적용하지 않는다.
-  static const Duration _resumeReloginTimeout = Duration(minutes: 30);
-
-  /// 앱이 백그라운드(paused/detached)로 전환된 시각. 복귀 시 경과 시간 계산용.
-  DateTime? _pausedAt;
-
   /// authProvider 리스너가 마지막으로 네비게이션한 라우트.
   ///
   /// 동일 목적지로의 중복 push 를 막아 로그인 화면이 무한히 쌓이는 루프를 차단한다.
@@ -216,8 +207,6 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
       _onResumed();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      // 리줌 타임아웃 계산용으로 백그라운드 진입 시각을 기록.
-      _pausedAt = DateTime.now();
       // 백그라운드/종료 전환 시 진행 중인 느린 외부 요청을 취소한다.
       // 취소하지 않으면 요청이 timeout 까지 매달려, 재개 시 stale 응답이 상태를
       // 뒤늦게 덮어쓸 수 있다. 토큰은 내부에서 새 것으로 교체되어 재개 후 요청은 정상.
@@ -225,42 +214,13 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     }
   }
 
-  /// 포그라운드 복귀 시: ① 리줌 타임아웃 적용 → ② GPS 동의 선제 확인.
-  /// 타임아웃으로 로그아웃되면 GPS 확인은 생략한다(로그인 화면으로 전환되므로).
-  Future<void> _onResumed() async {
-    final loggedOut = await _enforceResumeReloginTimeout();
-    if (loggedOut) return;
-    await _checkGpsConsentOnResume();
-  }
-
-  /// 자동로그인 OFF 사용자가 [_resumeReloginTimeout] 이상 백그라운드에 머문 뒤
-  /// 복귀하면 세션을 정리하고 로그인 화면으로 보낸다(레거시 세션 비활동 만료 정합).
+  /// 포그라운드 복귀 시 GPS 동의 상태를 선제 확인한다.
   ///
-  /// 자동로그인 ON 은 refresh token 으로 세션이 유지되므로 적용하지 않는다.
-  /// 반환값: 타임아웃으로 로그아웃을 수행했으면 true.
-  Future<bool> _enforceResumeReloginTimeout() async {
-    final pausedAt = _pausedAt;
-    _pausedAt = null;
-    if (pausedAt == null) return false;
-
-    // 보호할 활성 세션이 없으면(이미 로그인 화면 등) 무시.
-    if (!ref.read(authProvider).isAuthenticated) return false;
-
-    // 백그라운드 체류 시간이 임계값 미만이면 유지.
-    if (DateTime.now().difference(pausedAt) < _resumeReloginTimeout) {
-      return false;
-    }
-
-    // 자동로그인 ON 은 세션 유지(레거시: 앱이 자격증명 재제출로 무중단 재인증).
-    final autoLogin =
-        await ref.read(authLocalDataSourceProvider).isAutoLoginEnabled();
-    if (!mounted || autoLogin) return false;
-
-    // 세션 정리 + 루트 ProviderScope 재생성 → 로그인 화면(사유 1회 안내).
-    await ref.read(authLocalDataSourceProvider).clearTokens();
-    SessionResetController.instance
-        .requestReset(reason: LogoutReason.inactivityTimeout);
-    return true;
+  /// 세션 지속은 refresh token 유효성으로 관리하므로(일반적인 토큰 관리), 백그라운드
+  /// 체류 시간 기반 비활동 만료는 두지 않는다 — 만료된 세션은 다음 API 호출의 401 →
+  /// 인터셉터 refresh 실패 시점에 정리된다.
+  Future<void> _onResumed() async {
+    await _checkGpsConsentOnResume();
   }
 
   /// 포그라운드 복귀 시 GPS 동의 상태 선제 확인

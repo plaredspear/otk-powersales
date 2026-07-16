@@ -144,22 +144,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  /// 자동 로그인 시도
+  /// 세션 복원 시도 (앱 시작 시)
   ///
-  /// Secure Storage에서 Refresh Token을 확인하고,
-  /// 유효하면 자동 로그인을 수행합니다.
+  /// Secure Storage에 유효한 Refresh Token이 있으면 자동로그인 체크 여부와 무관하게
+  /// 세션을 복원한다(일반적인 토큰 관리 — 앱을 종료해도 refresh token 이 살아있는 한
+  /// 로그인 유지). 자동로그인 ON/OFF 는 세션 지속 여부가 아니라 서버가 발급하는 refresh
+  /// token 의 유효기간(ON=60일 장수명 / OFF=7일 기본)만 결정하며, 그 만료 판단은 서버가
+  /// refresh 응답의 성공/실패로 내린다. Refresh Token 이 없으면(로그인 이력 없음/로그아웃)
+  /// 로그인 화면으로 떨어진다.
   Future<void> tryAutoLogin() async {
     try {
-      final isAutoLogin = await _localDataSource.isAutoLoginEnabled();
+      final refreshToken = await _localDataSource.getRefreshToken();
       // 앱 종료/ProviderScope 재생성으로 notifier 가 dispose 되면 state 대입은
       // 예외를 던진다. await 뒤마다 mounted 를 확인해 dispose 후 작업을 가드한다.
-      if (!mounted) return;
-      if (!isAutoLogin) {
-        state = state.toUnauthenticated();
-        return;
-      }
-
-      final refreshToken = await _localDataSource.getRefreshToken();
       if (!mounted) return;
       if (refreshToken == null || refreshToken.isEmpty) {
         state = state.toUnauthenticated();

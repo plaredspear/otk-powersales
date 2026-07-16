@@ -35,7 +35,7 @@ class LoginUseCase {
       throw ArgumentError('비밀번호를 입력해주세요');
     }
 
-    // Repository에서 로그인 수행
-    return await _repository.login(employeeCode, password);
+    // Repository에서 로그인 수행 (autoLogin → 서버 장수명 토큰 발급 결정)
+    return await _repository.login(employeeCode, password, autoLogin: autoLogin);
   }
 }

@@ -7,8 +7,11 @@ import '../models/user_model.dart';
 /// API 서버와의 인증 관련 통신을 추상화합니다.
 abstract class AuthRemoteDataSource {
   /// 로그인 API 호출
+  ///
+  /// [autoLogin] 자동로그인 선택 여부. true 면 서버가 장수명(60일) refresh token 을
+  /// 발급해 오래 방치해도 세션이 유지된다. false 면 기본 7일 롤링 세션.
   Future<LoginResponseModel> login(
-      String employeeCode, String password, String deviceId);
+      String employeeCode, String password, String deviceId, bool autoLogin);
 
   /// 토큰 갱신 API 호출
   Future<AuthTokenModel> refreshToken(String refreshToken);
@@ -22,9 +25,12 @@ abstract class AuthRemoteDataSource {
   /// 비밀번호 변경 API 호출 (Spec #584).
   ///
   /// 강제 변경 시 [currentPassword] 는 null 로 호출 가능. 응답에 새 토큰 페어 포함.
+  /// [autoLogin] 자동로그인 선택 여부. 변경 시 새 refresh family 로 재발급되므로,
+  /// 저장된 선호를 전달해 ON 세션의 장수명(60일)을 유지한다.
   Future<AuthTokenModel> changePassword({
     String? currentPassword,
     required String newPassword,
+    bool autoLogin = false,
   });
 
   /// 로그아웃 API 호출

@@ -27,9 +27,12 @@ class PasswordRepositoryImpl implements PasswordRepository {
     required String currentPassword,
     required String newPassword,
   }) async {
+    // 저장된 자동로그인 선호를 전달 → 변경 후에도 ON 세션의 장수명(60일)을 유지.
+    final autoLogin = await _localDataSource.isAutoLoginEnabled();
     final tokenModel = await _remoteDataSource.changePassword(
       currentPassword: currentPassword,
       newPassword: newPassword,
+      autoLogin: autoLogin,
     );
     final token = tokenModel.toEntity();
     await _localDataSource.saveAccessToken(token.accessToken);

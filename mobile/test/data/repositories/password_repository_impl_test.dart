@@ -58,6 +58,17 @@ void main() {
         expect(fakeLocalDataSource.savedAccessToken, 'new-access');
         expect(fakeLocalDataSource.savedRefreshToken, 'new-refresh');
       });
+
+      test('저장된 자동로그인 선호(ON)를 remote 로 전달한다', () async {
+        fakeLocalDataSource.autoLoginEnabled = true;
+
+        await repository.changePassword(
+          currentPassword: 'old123',
+          newPassword: 'newpass1',
+        );
+
+        expect(fakeRemoteDataSource.lastAutoLogin, true);
+      });
     });
   });
 }
@@ -70,6 +81,7 @@ class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   int changePasswordCalls = 0;
   String? lastOldPassword;
   String? lastNewPassword;
+  bool? lastAutoLogin;
   AuthTokenModel changePasswordResult = const AuthTokenModel(
     accessToken: 'mock',
     refreshToken: 'mock',
@@ -87,16 +99,18 @@ class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   Future<AuthTokenModel> changePassword({
     String? currentPassword,
     required String newPassword,
+    bool autoLogin = false,
   }) async {
     changePasswordCalls++;
     lastOldPassword = currentPassword;
     lastNewPassword = newPassword;
+    lastAutoLogin = autoLogin;
     return changePasswordResult;
   }
 
   @override
   Future<LoginResponseModel> login(
-      String employeeCode, String password, String deviceId) {
+      String employeeCode, String password, String deviceId, bool autoLogin) {
     throw UnimplementedError();
   }
 
@@ -134,6 +148,7 @@ class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
 class _FakeAuthLocalDataSource extends AuthLocalDataSource {
   String? savedAccessToken;
   String? savedRefreshToken;
+  bool autoLoginEnabled = false;
 
   @override
   Future<void> saveAccessToken(String token) async {
@@ -144,4 +159,7 @@ class _FakeAuthLocalDataSource extends AuthLocalDataSource {
   Future<void> saveRefreshToken(String token) async {
     savedRefreshToken = token;
   }
+
+  @override
+  Future<bool> isAutoLoginEnabled() async => autoLoginEnabled;
 }

@@ -98,11 +98,15 @@ management:
 
 jwt:
   # access: 1시간 (3600000ms). 짧게 유지해 폐기(revocation) 지연을 줄인다.
-  #   refresh 회전이 7일 롤링 세션을 유지하므로 사용자 체감 변화는 없다.
-  # refresh: 7일 (604800000ms). 회전 시 TTL 재부여되는 슬라이딩 윈도우 = 비활동 한계.
+  #   refresh 회전이 롤링 세션을 유지하므로 사용자 체감 변화는 없다.
+  # refresh: 7일 (604800000ms). 자동로그인 OFF 세션의 기본값. 회전 시 TTL 재부여되는
+  #   슬라이딩 윈도우 = 비활동 한계.
+  # refresh-long: 60일 (5184000000ms). 자동로그인 ON 세션에 발급되는 장수명 refresh token.
+  #   로그인 시 autoLogin=true 면 이 TTL 로 발급하고, 회전 시에도 long_lived 클레임으로 유지된다.
   secret: ${JWT_SECRET:otoki-internal-dev-secret-key-change-in-production-minimum-256-bits}
   expiration: ${JWT_EXPIRATION:3600000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+  refresh-expiration-long: ${JWT_REFRESH_EXPIRATION_LONG:5184000000}
 
 # ---------------------------------------------------------------------------
 # SAP 인바운드 인증

@@ -25,6 +25,10 @@ data class LoginRequest(
     @field:NotBlank(message = "단말기 식별자는 필수입니다")
     val deviceId: String,
 
+    // 자동로그인 선택 여부. true 면 장수명(60일) refresh token 을 발급해 오래 방치해도 세션이
+    // 유지된다. false(기본 — 구버전 클라이언트 미전송 포함)면 기본 7일 롤링 세션.
+    val autoLogin: Boolean = false,
+
     // 현재 사용 중인 앱 버전 보고 (선택 — 구버전 클라이언트는 미전송). 서버가 사용자별 현재 버전 기록용.
     val appVersionName: String? = null,
     val appVersionCode: Long? = null,
@@ -43,7 +47,11 @@ data class ChangePasswordRequest(
     val currentPassword: String? = null,
 
     @field:NotBlank(message = "새 비밀번호는 필수입니다")
-    val newPassword: String
+    val newPassword: String,
+
+    // 자동로그인 선택 여부(로그인 화면 체크박스와 동일). 변경 시 새 refresh family 로 재발급되므로,
+    // 클라이언트가 현재 선호를 전달해 ON 세션의 장수명(60일)을 유지한다. 기본 false = 7일 세션.
+    val autoLogin: Boolean = false
 )
 
 /**
