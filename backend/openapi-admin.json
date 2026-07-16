@@ -5334,6 +5334,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseFeatureToggleItem" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FeatureToggleItem"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseFeatureToggleListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FeatureToggleListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseFemaleEmployeePlacementCheckResponse" : {
         "properties" : {
           "data" : {
@@ -11532,6 +11590,34 @@
           },
           "uri" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FeatureToggleItem" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "FeatureToggleListResponse" : {
+        "properties" : {
+          "features" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FeatureToggleItem"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -18617,6 +18703,24 @@
         },
         "type" : "object"
       },
+      "UpdateFeatureToggleRequest" : {
+        "properties" : {
+          "code" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "enabled" : {
+            "type" : "boolean"
+          },
+          "reason" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "code" ],
+        "type" : "object"
+      },
       "UpdateLoggerLevelRequest" : {
         "properties" : {
           "level" : {
@@ -19891,7 +19995,7 @@
     },
     "/api/v1/admin/app-package" : {
       "get" : {
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "platform",
@@ -20176,7 +20280,7 @@
     },
     "/api/v1/admin/attend-info" : {
       "get" : {
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "parameters" : [ {
           "in" : "query",
           "name" : "filter",
@@ -20493,7 +20597,7 @@
     },
     "/api/v1/admin/attendance-log" : {
       "get" : {
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "filter",
@@ -20648,7 +20752,7 @@
     },
     "/api/v1/admin/cache" : {
       "get" : {
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "responses" : {
           "200" : {
             "content" : {
@@ -21994,7 +22098,7 @@
     },
     "/api/v1/admin/employee-input-criteria-masters" : {
       "get" : {
-        "operationId" : "list_1",
+        "operationId" : "list_2",
         "parameters" : [ {
           "in" : "query",
           "name" : "status",
@@ -30281,7 +30385,7 @@
     },
     "/api/v1/admin/saved-searches" : {
       "get" : {
-        "operationId" : "list",
+        "operationId" : "list_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "resourceKey",
@@ -32749,6 +32853,50 @@
           }
         },
         "tags" : [ "admin-team-schedule-controller" ]
+      }
+    },
+    "/api/v1/admin/tools/feature-toggles" : {
+      "get" : {
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFeatureToggleListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "feature-toggle-controller" ]
+      },
+      "post" : {
+        "operationId" : "update_5",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateFeatureToggleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFeatureToggleItem"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "feature-toggle-controller" ]
       }
     },
     "/api/v1/admin/tools/log-levels" : {

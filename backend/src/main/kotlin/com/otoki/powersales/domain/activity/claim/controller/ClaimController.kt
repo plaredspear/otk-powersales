@@ -8,6 +8,8 @@ import com.otoki.powersales.domain.activity.claim.service.ClaimDraftService
 import com.otoki.powersales.domain.activity.claim.service.ClaimService
 import com.otoki.powersales.domain.activity.claim.service.ClaimUpdateRequest
 import com.otoki.powersales.domain.activity.claim.service.MobileClaimService
+import com.otoki.powersales.admin.tools.feature.FeatureFlag
+import com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
 import jakarta.validation.Valid
@@ -34,11 +36,14 @@ import org.springframework.web.multipart.MultipartFile
 class ClaimController(
     private val claimService: ClaimService,
     private val mobileClaimService: MobileClaimService,
-    private val claimDraftService: ClaimDraftService
+    private val claimDraftService: ClaimDraftService,
+    private val featureToggleService: FeatureToggleService
 ) {
 
     /**
      * UC-02 / UC-10: 클레임 신규 등록.
+     *
+     * 개발자 도구 > 기능 활성화 에서 제품 클레임 등록이 비활성이면 409 로 차단한다.
      */
     @PostMapping(consumes = ["multipart/form-data"])
     fun createClaim(
@@ -48,6 +53,7 @@ class ClaimController(
         @RequestParam labelPhoto: MultipartFile,
         @RequestParam(required = false) receiptPhoto: MultipartFile?
     ): ResponseEntity<ApiResponse<ClaimCreateResponse>> {
+        featureToggleService.ensureEnabled(FeatureFlag.PRODUCT_CLAIM)
         val result = mobileClaimService.createClaim(
             userId = principal.userId,
             request = request,

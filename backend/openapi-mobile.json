@@ -2760,6 +2760,9 @@
       },
       "ChangePasswordRequest" : {
         "properties" : {
+          "autoLogin" : {
+            "type" : "boolean"
+          },
           "currentPassword" : {
             "type" : [ "string", "null" ]
           },
@@ -4367,6 +4370,9 @@
           },
           "appVersionName" : {
             "type" : [ "string", "null" ]
+          },
+          "autoLogin" : {
+            "type" : "boolean"
           },
           "deviceId" : {
             "minLength" : 1,

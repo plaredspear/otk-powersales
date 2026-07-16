@@ -13,6 +13,8 @@ import com.otoki.powersales.domain.activity.order.service.OrderCancelService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestCreateService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestResendService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestService
+import com.otoki.powersales.admin.tools.feature.FeatureFlag
+import com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 import jakarta.validation.Valid
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.HttpStatus
@@ -35,6 +37,7 @@ class OrderRequestController(
     private val orderRequestCreateService: OrderRequestCreateService,
     private val orderCancelService: OrderCancelService,
     private val orderRequestResendService: OrderRequestResendService,
+    private val featureToggleService: FeatureToggleService,
 ) {
 
     /**
@@ -143,6 +146,7 @@ class OrderRequestController(
         @RequestHeader(value = "Idempotency-Key", required = false) idempotencyKey: String?,
         @Valid @RequestBody request: OrderRequestCreateRequest,
     ): ResponseEntity<ApiResponse<OrderRequestCreateResponse>> {
+        featureToggleService.ensureEnabled(FeatureFlag.ORDER_REQUEST)
         val resolved = if (!idempotencyKey.isNullOrBlank()) {
             request.copy(clientRequestId = idempotencyKey)
         } else request

@@ -10,6 +10,7 @@ import {
   type LoggerListResponse,
 } from '@/api/admin/logLevel';
 import DailyScheduleStatusCard from './DailyScheduleStatusCard';
+import FeatureToggleSection from './FeatureToggleSection';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -163,6 +164,11 @@ export default function ToolsDashboardPage() {
             key: 'schedule',
             label: '일별 스케줄 실행현황',
             children: <DailyScheduleStatusCard />,
+          },
+          {
+            key: 'feature-toggle',
+            label: '기능 활성화',
+            children: <FeatureToggleSection />,
           },
           {
             key: 'log-level',

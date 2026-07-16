@@ -1,6 +1,8 @@
 package com.otoki.powersales.domain.activity.order.controller
 
 import com.ninjasquad.springmockk.MockkBean
+import com.otoki.powersales.admin.tools.feature.FeatureFlag
+import com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreateLine
 import com.otoki.powersales.domain.activity.order.dto.request.OrderRequestCreateRequest
@@ -12,7 +14,10 @@ import com.otoki.powersales.domain.activity.order.service.OrderCancelService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestCreateService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestResendService
 import com.otoki.powersales.domain.activity.order.service.OrderRequestService
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,6 +43,13 @@ class OrderRequestCreatePostTest : MobileControllerTestSupport() {
     @MockkBean private lateinit var orderRequestCreateService: OrderRequestCreateService
     @MockkBean private lateinit var orderCancelService: OrderCancelService
     @MockkBean private lateinit var orderRequestResendService: OrderRequestResendService
+    @MockkBean private lateinit var featureToggleService: FeatureToggleService
+
+    @BeforeEach
+    fun setUpFeatureToggle() {
+        // 기본은 주문 등록 활성 — gate 통과.
+        every { featureToggleService.ensureEnabled(FeatureFlag.ORDER_REQUEST) } just Runs
+    }
 
     @Test
     @DisplayName("성공 — 201 Created + 응답 검증")

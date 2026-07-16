@@ -10,6 +10,8 @@ import com.otoki.powersales.domain.activity.suggestion.dto.response.SuggestionRe
 import com.otoki.powersales.domain.activity.suggestion.entity.SuggestionCategory
 import com.otoki.powersales.domain.activity.suggestion.service.SuggestionDraftService
 import com.otoki.powersales.domain.activity.suggestion.service.SuggestionService
+import com.otoki.powersales.admin.tools.feature.FeatureFlag
+import com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
 import jakarta.validation.Valid
@@ -32,7 +34,8 @@ import java.time.LocalDate
 @RequestMapping("/api/v1/mobile/suggestions")
 class SuggestionController(
     private val suggestionService: SuggestionService,
-    private val suggestionDraftService: SuggestionDraftService
+    private val suggestionDraftService: SuggestionDraftService,
+    private val featureToggleService: FeatureToggleService
 ) {
 
     @PostMapping(consumes = ["multipart/form-data"])
@@ -41,6 +44,10 @@ class SuggestionController(
         @Valid @RequestPart("request") request: SuggestionCreateRequest,
         @RequestPart(required = false) photos: List<MultipartFile>?
     ): ResponseEntity<ApiResponse<SuggestionCreateResponse>> {
+        // 물류 클레임 category 만 기능 토글로 차단한다 (신제품/기존제품 제안은 별개 기능).
+        if (request.category == SuggestionCategory.LOGISTICS_CLAIM) {
+            featureToggleService.ensureEnabled(FeatureFlag.LOGISTICS_CLAIM)
+        }
         val result = suggestionService.create(
             employeeId = principal.userId,
             request = request,

@@ -59,6 +59,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
     @MockkBean private lateinit var orderRequestCreateService: OrderRequestCreateService
     @MockkBean private lateinit var orderCancelService: OrderCancelService
     @MockkBean private lateinit var orderRequestResendService: OrderRequestResendService
+    @MockkBean private lateinit var featureToggleService: com.otoki.powersales.admin.tools.feature.service.FeatureToggleService
 
     @Nested
     @DisplayName("GET /api/v1/mobile/me/order-requests - 목록 조회")
