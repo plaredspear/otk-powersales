@@ -78,7 +78,11 @@ class _LeaderFemaleStaffScreenState
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
-      body: _buildBody(state, orgName),
+      // 상단은 AppBar가 처리하므로 하단(홈 인디케이터) 안전영역만 적용.
+      body: SafeArea(
+        top: false,
+        child: _buildBody(state, orgName),
+      ),
     );
   }
 
@@ -415,13 +419,13 @@ class _FemaleStaffRow extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: FilledButton.icon(
                     onPressed: onDetailTap,
                     icon: const Icon(Icons.person_outline, size: 18),
                     label: const Text('상세'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.otokiBlue,
-                      side: const BorderSide(color: AppColors.otokiBlue),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.otokiBlue,
+                      foregroundColor: AppColors.white,
                     ),
                   ),
                 ),
@@ -433,6 +437,7 @@ class _FemaleStaffRow extends StatelessWidget {
                     label: const Text('일정'),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.otokiBlue,
+                      foregroundColor: AppColors.white,
                     ),
                   ),
                 ),
