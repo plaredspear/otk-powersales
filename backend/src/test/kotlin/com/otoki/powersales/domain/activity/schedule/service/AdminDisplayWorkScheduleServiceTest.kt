@@ -214,6 +214,19 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("거래처상태 옵션 = 거래/폐업/출고중지 3종 고정, value=label")
+        fun accountStatusOptions() {
+            val result = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
+
+            val accountStatus = result.filters.first { it.key == "accountStatus" }
+            assertThat(accountStatus.type.name).isEqualTo("SELECT")
+            assertThat(accountStatus.options).extracting("value")
+                .containsExactly("거래", "폐업", "출고중지")
+            assertThat(accountStatus.options).extracting("label")
+                .containsExactly("거래", "폐업", "출고중지")
+        }
+
+        @Test
         @DisplayName("거래처유형 옵션 = ABC유형 결합 라벨(월매출 동일 축) distinct·정렬, value=label")
         fun accountTypeOptions() {
             val result = adminDisplayWorkScheduleService.getScheduleListMetaStatic()
@@ -490,11 +503,11 @@ class AdminDisplayWorkScheduleServiceTest {
                 PageRequest.of(0, 50_000), 2
             )
             every {
-                scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any(), any(), any(), any())
+                scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any())
             } returns page
 
             val result = adminDisplayWorkScheduleService.exportAllSchedules(
-                scope, null, null, null, null, null, null, null, null, null, null, Sort.unsorted()
+                scope, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted()
             )
 
             assertThat(result.filename).startsWith("진열스케줄_").endsWith(".xlsx")
@@ -516,15 +529,15 @@ class AdminDisplayWorkScheduleServiceTest {
             } returns listOf(Account(id = 100, externalKey = "ACC100", name = "이마트 강남점"))
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 50_000), 0)
             every {
-                scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any(), any(), any(), any())
+                scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, null, any(), any(), any(), any())
             } returns emptyPage
 
             adminDisplayWorkScheduleService.exportAllSchedules(
-                scope, null, "이마트", null, null, null, null, null, null, null, null, Sort.unsorted()
+                scope, null, "이마트", null, null, null, null, null, null, null, null, null, Sort.unsorted()
             )
 
             verify {
-                scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any(), any(), any(), any())
+                scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, null, any(), any(), any(), any())
             }
         }
 
@@ -536,17 +549,17 @@ class AdminDisplayWorkScheduleServiceTest {
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 50_000, sort), 0)
             every {
                 scheduleRepository.findScheduleList(
-                    null, null, null, null, null, null, null, SchedulePreset.END, any(), any(), any(), any()
+                    null, null, null, null, null, null, null, null, SchedulePreset.END, any(), any(), any(), any()
                 )
             } returns emptyPage
 
             adminDisplayWorkScheduleService.exportAllSchedules(
-                scope, null, null, null, null, null, null, null, SchedulePreset.END, null, null, sort
+                scope, null, null, null, null, null, null, null, null, SchedulePreset.END, null, null, sort
             )
 
             verify {
                 scheduleRepository.findScheduleList(
-                    null, null, null, null, null, null, null, SchedulePreset.END, any(), any(), any(), any()
+                    null, null, null, null, null, null, null, null, SchedulePreset.END, any(), any(), any(), any()
                 )
             }
         }
@@ -1163,10 +1176,10 @@ class AdminDisplayWorkScheduleServiceTest {
             )
             val page = PageImpl(listOf(row), PageRequest.of(0, 20), 1)
 
-            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any(), any(), any(), any()) } returns page
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any()) } returns page
             every { teamMemberScheduleRepository.countAttendedByDisplayWorkScheduleIds(listOf(1L)) } returns emptyMap()
 
-            val result = adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
+            val result = adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
 
             assertThat(result.totalElements).isEqualTo(1)
             assertThat(result.content[0].employeeCode).isEqualTo("20030001")
@@ -1180,9 +1193,9 @@ class AdminDisplayWorkScheduleServiceTest {
         fun listSchedules_empty() {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
-            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any(), any(), any(), any()) } returns emptyPage
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any()) } returns emptyPage
 
-            val result = adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
+            val result = adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
 
             assertThat(result.totalElements).isEqualTo(0)
             assertThat(result.content).isEmpty()
@@ -1197,11 +1210,11 @@ class AdminDisplayWorkScheduleServiceTest {
                 accountRepository.findByNameContainingIgnoreCaseOrExternalKeyContainingIgnoreCase("이마트", "이마트")
             } returns listOf(account)
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
-            every { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any(), any(), any(), any()) } returns emptyPage
+            every { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, null, any(), any(), any(), any()) } returns emptyPage
 
-            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, "이마트", null, null, null, null, null, null, null, null, Sort.unsorted())
+            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, "이마트", null, null, null, null, null, null, null, null, null, Sort.unsorted())
 
-            verify { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, any(), any(), any(), any()) }
+            verify { scheduleRepository.findScheduleList(null, eq(listOf(100)), null, null, null, null, null, null, null, any(), any(), any(), any()) }
         }
 
         @Test
@@ -1209,12 +1222,12 @@ class AdminDisplayWorkScheduleServiceTest {
         fun listSchedules_pageSizeLimit() {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 100), 0)
-            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, any(), any(), any(), any()) } returns emptyPage
+            every { scheduleRepository.findScheduleList(null, null, null, null, null, null, null, null, null, any(), any(), any(), any()) } returns emptyPage
 
-            adminDisplayWorkScheduleService.listSchedules(scope, 0, 200, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
+            adminDisplayWorkScheduleService.listSchedules(scope, 0, 200, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
 
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, any(), any(), any(), match<Pageable> { it.pageSize == 100 }
+                null, null, null, null, null, null, null, null, null, any(), any(), any(), match<Pageable> { it.pageSize == 100 }
             ) }
         }
 
@@ -1224,13 +1237,13 @@ class AdminDisplayWorkScheduleServiceTest {
             val scope = mockAdminScope()
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, eq(SchedulePreset.END), any(), any(), any(), any()
+                null, null, null, null, null, null, null, null, eq(SchedulePreset.END), any(), any(), any(), any()
             ) } returns emptyPage
 
-            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, SchedulePreset.END, null, null, Sort.unsorted())
+            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, SchedulePreset.END, null, null, Sort.unsorted())
 
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, eq(SchedulePreset.END), any(), any(), any(), any()
+                null, null, null, null, null, null, null, null, eq(SchedulePreset.END), any(), any(), any(), any()
             ) }
         }
 
@@ -1241,13 +1254,13 @@ class AdminDisplayWorkScheduleServiceTest {
             val sort = Sort.by(Sort.Direction.DESC, "endDate")
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20, sort), 0)
             every { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, any(), any(), any(), any()
+                null, null, null, null, null, null, null, null, null, any(), any(), any(), any()
             ) } returns emptyPage
 
-            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, sort)
+            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, null, sort)
 
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, any(), any(), any(),
+                null, null, null, null, null, null, null, null, null, any(), any(), any(),
                 match { it.sort == sort }
             ) }
         }
@@ -1258,15 +1271,15 @@ class AdminDisplayWorkScheduleServiceTest {
             val scope = DataScope(branchCodes = listOf("A10010"), isAllBranches = false)
             val emptyPage = PageImpl<ScheduleListRow>(emptyList(), PageRequest.of(0, 20), 0)
             every { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, any(), any(), any(), any()
+                null, null, null, null, null, null, null, null, null, any(), any(), any(), any()
             ) } returns emptyPage
 
-            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
+            adminDisplayWorkScheduleService.listSchedules(scope, 0, 20, null, null, null, null, null, null, null, null, null, null, null, Sort.unsorted())
 
             // SF DisplayWorkScheduleMaster__c 가시 범위를 evaluator 가 산출하고 그 Predicate 가 repo 로 전달
             verify { policyEvaluator.buildPredicate(scope, "DisplayWorkScheduleMaster__c", any()) }
             verify { scheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, any(), any(), any(), any()
+                null, null, null, null, null, null, null, null, null, any(), any(), any(), any()
             ) }
         }
     }

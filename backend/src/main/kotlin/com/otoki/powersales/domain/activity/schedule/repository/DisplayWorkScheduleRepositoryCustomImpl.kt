@@ -106,6 +106,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         employeeCode: String?,
         accountIds: List<Long>?,
         accountType: String?,
+        accountStatus: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
@@ -123,6 +124,7 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildEmployeeCodeCondition(employeeCode))
             .and(buildAccountIdsCondition(accountIds))
             .and(buildAccountTypeCondition(accountType))
+            .and(buildAccountStatusCondition(accountStatus))
             .and(buildConfirmedCondition(confirmed))
             .and(buildTypeOfWork3Condition(typeOfWork3))
             .and(buildStartDateFromCondition(startDateFrom))
@@ -612,6 +614,22 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .select(account.id)
             .from(account)
             .where(abcTypeLabelExpr(account.abcTypeCode, account.abcType).eq(accountType))
+        return displayWorkSchedule.account.id.`in`(matchingIds)
+    }
+
+    /**
+     * 거래처상태 (`AccountStatusName__c`: 거래/폐업/출고중지) 정확 일치 필터.
+     *
+     * 옵션 값이 서버 meta 고정 목록이므로 정확 일치(eq)로 매칭한다.
+     * countQuery 가 account 를 join 하지 않으므로 [buildAccountTypeCondition] 와 동일하게
+     * 매칭 account id 서브쿼리 IN 으로 구성 (implicit join 회피).
+     */
+    private fun buildAccountStatusCondition(accountStatus: String?): BooleanExpression? {
+        if (accountStatus.isNullOrBlank()) return null
+        val matchingIds = JPAExpressions
+            .select(account.id)
+            .from(account)
+            .where(account.accountStatusName.eq(accountStatus))
         return displayWorkSchedule.account.id.`in`(matchingIds)
     }
 

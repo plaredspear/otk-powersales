@@ -101,6 +101,7 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) accountName: String?,
         @RequestParam(required = false) accountType: String?,
+        @RequestParam(required = false) accountStatus: String?,
         @RequestParam(required = false) confirmed: Boolean?,
         @RequestParam(required = false) typeOfWork3: String?,
         @RequestParam(required = false) startDateFrom: LocalDate?,
@@ -113,7 +114,7 @@ class AdminDisplayWorkScheduleController(
     ): ResponseEntity<ApiResponse<Page<ScheduleListItemDto>>> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.listSchedules(
-            scope, page, size, employeeCode, accountName, accountType, confirmed,
+            scope, page, size, employeeCode, accountName, accountType, accountStatus, confirmed,
             typeOfWork3, startDateFrom, startDateTo, preset, validData, resolveBranchCodes(principal, branchCode), sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
@@ -128,6 +129,7 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) employeeCode: String?,
         @RequestParam(required = false) accountName: String?,
         @RequestParam(required = false) accountType: String?,
+        @RequestParam(required = false) accountStatus: String?,
         @RequestParam(required = false) confirmed: Boolean?,
         @RequestParam(required = false) typeOfWork3: String?,
         @RequestParam(required = false) startDateFrom: LocalDate?,
@@ -140,7 +142,7 @@ class AdminDisplayWorkScheduleController(
     ): ResponseEntity<ByteArray> {
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.exportAllSchedules(
-            scope, employeeCode, accountName, accountType, confirmed,
+            scope, employeeCode, accountName, accountType, accountStatus, confirmed,
             typeOfWork3, startDateFrom, startDateTo, preset, validData, resolveBranchCodes(principal, branchCode), sort
         )
         return ExcelResponseUtils.build(result)

@@ -113,6 +113,9 @@ class AdminDisplayWorkScheduleService(
         // pageSize 는 기존 web 하드코딩(listSize=50) 정합. sort 는 기존 목록 기본 정렬(정렬 미지정) 표기용.
         private const val LIST_DEFAULT_PAGE_SIZE = 50
         private const val LIST_DEFAULT_SORT = "startDate,DESC"
+
+        // 거래처상태(`AccountStatusName__c`) 조회 조건 옵션 — 운영 사용 값 3종 고정.
+        private val ACCOUNT_STATUS_FILTER_VALUES = listOf("거래", "폐업", "출고중지")
     }
 
     /**
@@ -148,10 +151,16 @@ class AdminDisplayWorkScheduleService(
             .sorted()
             .map { ScheduleFilterOption(value = it, label = it) }
 
+        // 거래처상태(`AccountStatusName__c`) 옵션 — 운영 사용 값 3종 고정. value=label 로 내려
+        // 프론트가 그대로 accountStatus 쿼리 파라미터로 전송하고, 목록 조회는 정확 일치 매칭한다.
+        val accountStatusOptions = ACCOUNT_STATUS_FILTER_VALUES
+            .map { ScheduleFilterOption(value = it, label = it) }
+
         val filters = listOf(
             ScheduleFilterMeta("employeeCode", ScheduleFilterType.TEXT),
             ScheduleFilterMeta("accountName", ScheduleFilterType.TEXT),
             ScheduleFilterMeta("accountType", ScheduleFilterType.SELECT, accountTypeOptions),
+            ScheduleFilterMeta("accountStatus", ScheduleFilterType.SELECT, accountStatusOptions),
             ScheduleFilterMeta("typeOfWork3", ScheduleFilterType.SELECT, typeOfWork3Options),
             ScheduleFilterMeta("confirmed", ScheduleFilterType.SELECT, confirmedOptions),
             ScheduleFilterMeta("validData", ScheduleFilterType.SELECT, validDataOptions),
@@ -434,6 +443,7 @@ class AdminDisplayWorkScheduleService(
         employeeCode: String?,
         accountName: String?,
         accountType: String?,
+        accountStatus: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
@@ -460,7 +470,7 @@ class AdminDisplayWorkScheduleService(
         val policyPredicate = schedulePolicyPredicate(scope)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, validData, branchCodes, policyPredicate, pageable
+            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, validData, branchCodes, policyPredicate, pageable
         )
 
         // 페이지 단위 출근등록 수 집계 (N+1 회피 — id IN + GROUP BY 1쿼리)
@@ -481,6 +491,7 @@ class AdminDisplayWorkScheduleService(
         employeeCode: String?,
         accountName: String?,
         accountType: String?,
+        accountStatus: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,
@@ -503,7 +514,7 @@ class AdminDisplayWorkScheduleService(
         val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, sort)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, validData, branchCodes, policyPredicate, pageable
+            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, validData, branchCodes, policyPredicate, pageable
         )
 
         val items = schedulePage.content.map { toListItemDto(it) }

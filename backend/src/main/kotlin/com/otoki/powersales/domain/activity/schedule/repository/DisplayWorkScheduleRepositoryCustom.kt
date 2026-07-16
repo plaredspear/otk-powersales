@@ -88,6 +88,7 @@ interface DisplayWorkScheduleRepositoryCustom {
         employeeCode: String?,
         accountIds: List<Long>?,
         accountType: String?,
+        accountStatus: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
         startDateFrom: LocalDate?,

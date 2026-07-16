@@ -305,6 +305,7 @@ export default function DisplaySchedulePage() {
   const [filterEmployeeCode, setFilterEmployeeCode] = useState('');
   const [filterAccountName, setFilterAccountName] = useState('');
   const [filterAccountType, setFilterAccountType] = useState('');
+  const [filterAccountStatus, setFilterAccountStatus] = useState('');
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
   const [filterValidData, setFilterValidData] = useState<ScheduleValidData | undefined>(undefined);
@@ -318,6 +319,7 @@ export default function DisplaySchedulePage() {
     employeeCode?: string;
     accountName?: string;
     accountType?: string;
+    accountStatus?: string;
     typeOfWork3?: string;
     confirmed?: boolean;
     validData?: ScheduleValidData;
@@ -405,6 +407,7 @@ export default function DisplaySchedulePage() {
       employeeCode: filterEmployeeCode || undefined,
       accountName: filterAccountName || undefined,
       accountType: filterAccountType || undefined,
+      accountStatus: filterAccountStatus || undefined,
       typeOfWork3: filterTypeOfWork3,
       confirmed: filterConfirmed,
       validData: filterValidData,
@@ -418,6 +421,7 @@ export default function DisplaySchedulePage() {
     setFilterEmployeeCode('');
     setFilterAccountName('');
     setFilterAccountType('');
+    setFilterAccountStatus('');
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
     setFilterValidData(undefined);
@@ -747,6 +751,14 @@ export default function DisplaySchedulePage() {
             // 월매출(물류배부)과 동일 축(ABC유형) 옵션 — "코드 명칭" 결합 라벨이라 폭을 넓힌다.
             style={{ width: 200 }}
             options={filterOptions('accountType')}
+          />
+          <Select
+            placeholder="거래처상태"
+            value={filterAccountStatus || undefined}
+            onChange={(v) => setFilterAccountStatus(v ?? '')}
+            allowClear
+            style={{ width: 120 }}
+            options={filterOptions('accountStatus')}
           />
           <Select
             placeholder="근무유형3"

@@ -630,7 +630,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun search(keyword: String?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                keyword, null, null, null, null, null, null, null, null, null,
+                keyword, null, null, null, null, null, null, null, null, null, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -691,7 +691,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun searchByBranch(branchCodes: List<String>?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, null, branchCodes,
+                null, null, null, null, null, null, null, null, null, null, branchCodes,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -762,7 +762,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun searchByAccountType(accountType: String?): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, accountType, null, null, null, null, null, null, null,
+                null, null, accountType, null, null, null, null, null, null, null, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
@@ -829,6 +829,62 @@ class DisplayWorkScheduleRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findScheduleList - 거래처상태 필터(accountStatus) 는 AccountStatusName 정확 일치")
+    inner class FindScheduleListAccountStatusFilter {
+
+        private fun scheduleForAccount(account: Account, employeeName: String): DisplayWorkSchedule {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "E-$employeeName", name = employeeName))
+            return DisplayWorkSchedule(
+                employee = emp,
+                account = account,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                startDate = today,
+            )
+        }
+
+        private fun searchByAccountStatus(accountStatus: String?): List<String?> =
+            displayWorkScheduleRepository.findScheduleList(
+                null, null, null, accountStatus, null, null, null, null, null, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            ).content.map { it.employeeName }
+
+        @Test
+        @DisplayName("거래처상태 정확 일치로 조회 - 다른 상태는 제외")
+        fun matchByStatusExactly() {
+            val active = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ST1", name = "거래점", accountStatusName = "거래")
+            )
+            val closed = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ST2", name = "폐업점", accountStatusName = "폐업")
+            )
+            val stopped = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ST3", name = "중지점", accountStatusName = "출고중지")
+            )
+            testEntityManager.persistAndFlush(scheduleForAccount(active, "김거래"))
+            testEntityManager.persistAndFlush(scheduleForAccount(closed, "이폐업"))
+            testEntityManager.persistAndFlush(scheduleForAccount(stopped, "박중지"))
+            testEntityManager.clear()
+
+            assertThat(searchByAccountStatus("거래")).containsExactly("김거래")
+            assertThat(searchByAccountStatus("폐업")).containsExactly("이폐업")
+            assertThat(searchByAccountStatus("출고중지")).containsExactly("박중지")
+        }
+
+        @Test
+        @DisplayName("accountStatus=null 이면 거래처상태 필터 미적용 (전건)")
+        fun noFilterReturnsAll() {
+            val acc = testEntityManager.persistAndFlush(
+                Account(externalKey = "ACC-ST4", name = "거래점", accountStatusName = "거래")
+            )
+            testEntityManager.persistAndFlush(scheduleForAccount(acc, "전건상태"))
+            testEntityManager.clear()
+
+            assertThat(searchByAccountStatus(null)).contains("전건상태")
+        }
+    }
+
+    @Nested
     @DisplayName("findScheduleList - 유효여부 필터(validData) 는 화면 신호등 dot 판정과 일치")
     inner class FindScheduleListValidDataFilter {
 
@@ -865,7 +921,7 @@ class DisplayWorkScheduleRepositoryTest {
 
         private fun searchByValidData(validData: ScheduleValidData): List<String?> =
             displayWorkScheduleRepository.findScheduleList(
-                null, null, null, null, null, null, null, null, validData, null,
+                null, null, null, null, null, null, null, null, null, validData, null,
                 Expressions.TRUE,
                 PageRequest.of(0, 50),
             ).content.map { it.employeeName }
