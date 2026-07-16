@@ -6473,6 +6473,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseLeaderTeamMemberListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LeaderTeamMemberListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListAccountCategoryOptionResponse" : {
         "properties" : {
           "data" : {
@@ -16664,12 +16693,18 @@
           "costCenterCode" : {
             "type" : [ "string", "null" ]
           },
+          "deviceBound" : {
+            "type" : "boolean"
+          },
           "employeeCode" : {
             "type" : [ "string", "null" ]
           },
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "loginActive" : {
+            "type" : "boolean"
           },
           "name" : {
             "type" : "string"
@@ -41617,6 +41652,87 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListLeaderTeamMemberListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
+    "/api/v1/mobile/leader/team-members/{employeeId}" : {
+      "get" : {
+        "operationId" : "getTeamMemberDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLeaderTeamMemberListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
+    "/api/v1/mobile/leader/team-members/{employeeId}/reset-device" : {
+      "post" : {
+        "operationId" : "resetTeamMemberDevice",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseResetDeviceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "leader-schedule-controller" ]
+      }
+    },
+    "/api/v1/mobile/leader/team-members/{employeeId}/reset-password" : {
+      "post" : {
+        "operationId" : "resetTeamMemberPassword",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "employeeId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseResetPasswordResponse"
                 }
               }
             },
