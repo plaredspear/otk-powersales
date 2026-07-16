@@ -41,7 +41,6 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleCreate
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleDetailDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleListItemDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.ScheduleUploadResultDto
-import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteForbiddenException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterConfirmException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEmptyFileException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleHasValidationErrorsException
@@ -720,20 +719,6 @@ class AdminDisplayWorkScheduleControllerTest : AdminControllerTestSupport() {
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.deletedCount").value(3))
                 .andExpect(jsonPath("$.message").value("3건이 삭제되었습니다"))
-        }
-
-        @Test
-        @DisplayName("실패 - BRANCH_MANAGER → 403")
-        fun batchDelete_branchManagerForbidden() {
-            every { adminDisplayWorkScheduleService.batchDelete(any(), eq(1L), any()) } throws ScheduleDeleteForbiddenException()
-
-            mockMvc.perform(
-                post("/api/v1/admin/display-work-schedule/batch-delete")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("""{"ids": [1, 2]}""")
-            )
-                .andExpect(status().isForbidden)
-                .andExpect(jsonPath("$.error.code").value("FORBIDDEN"))
         }
 
         @Test

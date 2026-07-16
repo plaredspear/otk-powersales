@@ -27,7 +27,6 @@ import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteConstraintException
-import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteForbiddenException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterConfirmException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEmptyFileException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleFileRequiredException
@@ -1709,15 +1708,23 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("BRANCH_MANAGER - 전체 거부 (ScheduleDeleteForbiddenException)")
-        fun batchDelete_branchManagerRejected() {
+        @DisplayName("BRANCH_MANAGER - 일반 사용자와 동일하게 미확정 스케줄 일괄 삭제 성공 (지점장 전용 차단 제거)")
+        fun batchDelete_branchManager_success() {
             val branch = createEmployee(id = userId, role = AppAuthority.BRANCH_MANAGER)
+            val scope = mockAdminScopeForUser(branch)
+            val s1 = createSchedule(id = 11L, confirmed = false)
+            val s2 = createSchedule(id = 12L, confirmed = false)
+
             every { employeeRepository.findById(userId) } returns Optional.of(branch)
+            every { scheduleRepository.findAllById(listOf(11L, 12L)) } returns listOf(s1, s2)
+            every { scheduleRepository.existsVisibleById(any(), any()) } returns true
 
-            assertThatThrownBy { adminDisplayWorkScheduleService.batchDelete(mockAdminScopeForUser(branch), userId, listOf(11L, 12L)) }
-                .isInstanceOf(ScheduleDeleteForbiddenException::class.java)
+            val result = adminDisplayWorkScheduleService.batchDelete(scope, userId, listOf(11L, 12L))
 
-            verify(exactly = 0) { scheduleRepository.findAllById(any<List<Long>>()) }
+            assertThat(result.deletedCount).isEqualTo(2)
+            assertThat(result.failedCount).isEqualTo(0)
+            assertThat(s1.isDeleted).isEqualTo(true)
+            assertThat(s2.isDeleted).isEqualTo(true)
         }
 
         @Test
@@ -1862,17 +1869,18 @@ class AdminDisplayWorkScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("지점장 삭제 시도 - ScheduleDeleteForbiddenException")
-        fun deleteSchedule_branchManager_forbidden() {
+        @DisplayName("지점장 미확정 삭제 - 일반 사용자와 동일하게 삭제 성공 (지점장 전용 차단 제거)")
+        fun deleteSchedule_branchManager_unconfirmed_success() {
             val scope = mockAdminScope()
             val employee = createEmployee(id = userId, role = AppAuthority.BRANCH_MANAGER)
-            val schedule = createSchedule(id = scheduleId)
+            val schedule = createSchedule(id = scheduleId, confirmed = false)
 
             every { scheduleRepository.findById(scheduleId) } returns Optional.of(schedule)
             every { employeeRepository.findById(userId) } returns Optional.of(employee)
 
-            assertThatThrownBy { adminDisplayWorkScheduleService.deleteSchedule(scope, userId, scheduleId) }
-                .isInstanceOf(ScheduleDeleteForbiddenException::class.java)
+            adminDisplayWorkScheduleService.deleteSchedule(scope, userId, scheduleId)
+
+            assertThat(schedule.isDeleted).isEqualTo(true)
         }
 
         @Test

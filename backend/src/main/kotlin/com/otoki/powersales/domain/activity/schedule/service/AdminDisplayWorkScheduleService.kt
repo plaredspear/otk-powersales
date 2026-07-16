@@ -28,7 +28,6 @@ import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteConstraintException
-import com.otoki.powersales.domain.activity.schedule.exception.ScheduleDeleteForbiddenException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterAttendanceException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEditBlockedAfterConfirmException
 import com.otoki.powersales.domain.activity.schedule.exception.ScheduleEmptyFileException
@@ -914,16 +913,13 @@ class AdminDisplayWorkScheduleService(
      * UC-07 일괄 삭제 — partial success.
      * 레거시 SF Mass Delete 와 동등 — 각 레코드에 UC-06 차단 룰 적용 후
      * 차단된 건만 실패로 기록하고 나머지는 삭제 진행.
-     * BRANCH_MANAGER 는 전체 거부 (단건 deleteSchedule 정책과 동등).
+     * 삭제 권한은 수정(update)과 동일하게 SF profile (`display_work_schedule:E`) 이 결정한다
+     * (지점장 전용 삭제 차단 하드코딩은 SF 레거시 미정합 + 수정/삭제 비대칭으로 제거).
      */
     @Transactional
     fun batchDelete(scope: DataScope, userId: Long, ids: List<Long>): ScheduleBatchDeleteResultDto {
         val user = employeeRepository.findById(userId)
             .orElseThrow { EmployeeNotFoundException() }
-
-        if (user.role == AppAuthority.BRANCH_MANAGER) {
-            throw ScheduleDeleteForbiddenException()
-        }
 
         val isAdmin = isAdminGrade(user.employeeCode)
         val schedules = scheduleRepository.findAllById(ids).associateBy { it.id }
@@ -996,16 +992,14 @@ class AdminDisplayWorkScheduleService(
         // UC-12 사업소 가시 범위 검증 — 본인 담당 사업소 외 레코드 차단 (ADMIN_GRADE 는 무제한)
         requireScheduleScope(scope, schedule)
 
-        val role = employee.role
-
         if (isAdminGrade(employee.employeeCode)) {
             schedule.isDeleted = true
             return
         }
 
-        if (role == AppAuthority.BRANCH_MANAGER) {
-            throw ScheduleDeleteForbiddenException()
-        }
+        // 삭제 권한은 수정(update)과 동일하게 SF profile (`display_work_schedule:E`) 이 결정한다.
+        // 지점장 전용 삭제 차단 하드코딩은 SF 레거시 `deleteCheck` 에 없던 정책이었고,
+        // 수정은 허용되면서 삭제만 막히는 비대칭을 만들어 제거함.
 
         // UC-06 차단 룰: 확정 + ADMIN_GRADE 외 사용자 + FK 로 본 진열마스터를 가리키는 여사원일정 존재 시 차단.
         // 레거시 SF `DisplayWorkScheduleMasterTriggerHandler.deleteCheck` 의 lookup FK 매칭
