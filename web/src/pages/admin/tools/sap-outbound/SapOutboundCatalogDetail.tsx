@@ -42,13 +42,18 @@ const METHOD_COLOR: Record<string, string> = {
  * 외부 연동 정보 / 테스트 송신 폼은 `item.interfaceId` 로 `SENDER_CONFIGS` 를 역조회해
  * 얻은 kind 로 조회/렌더링한다. 매칭되는 설정이 없으면(테스트 미지원 인터페이스) 외부 연동
  * 정보 행과 송신 섹션은 생략하고 카탈로그 메타만 표시한다.
+ *
+ * 한 인터페이스(interfaceId)에 배치 카드 + 단건 카드처럼 여러 sender config 가 매핑될 수
+ * 있으므로 전부(`filter`) 렌더링한다. 연동 정보 표(Endpoint/비고/메타)는 대표 카드
+ * (첫 매칭) 기준으로 1회만 표시한다.
  */
 export default function SapOutboundCatalogDetail({
   item,
 }: {
   item: SapOutboundCatalogItem;
 }) {
-  const senderConfig = SENDER_CONFIGS.find((c) => c.interfaceId === item.interfaceId);
+  const senderConfigs = SENDER_CONFIGS.filter((c) => c.interfaceId === item.interfaceId);
+  const senderConfig = senderConfigs[0];
   const { info, isLoading, isError } = useExternalApiIntegrationInfo(
     senderConfig?.kind ?? '',
   );
@@ -133,8 +138,12 @@ export default function SapOutboundCatalogDetail({
             message="이 섹션은 실제 SAP 시스템으로 송신을 트리거합니다."
             description="'실송신' 버튼은 현재 환경의 SAP REST Adapter 로 호출이 전송됩니다 (sap_outbound_log / sap_outbox 적재됨). 페이로드 형식 확인만 필요하면 '미리보기' 만 사용하세요. SYSTEM_ADMIN 권한 필요."
           />
-          {/* key 로 인터페이스 전환(탭 이동) 시 카드 state 를 초기화 */}
-          <SapOutboundSenderCard key={senderConfig.kind} config={senderConfig} />
+          {/* 동일 interfaceId 에 매핑된 카드(배치/단건 등)를 모두 렌더링. key 로 카드 state 격리 */}
+          {senderConfigs.map((config, idx) => (
+            <div key={config.kind} style={idx > 0 ? { marginTop: 16 } : undefined}>
+              <SapOutboundSenderCard config={config} />
+            </div>
+          ))}
         </>
       )}
 
