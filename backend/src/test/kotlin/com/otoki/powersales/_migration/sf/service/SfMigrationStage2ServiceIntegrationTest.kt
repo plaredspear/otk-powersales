@@ -192,7 +192,7 @@ class SfMigrationStage2ServiceIntegrationTest {
 
     @Test
     @Transactional
-    @DisplayName("Stage 2-C password — sfid IS NOT NULL + password NULL 인 user 의 password 를 BCrypt 로 채움")
+    @DisplayName("Stage 2-C password — sfid IS NOT NULL + password NULL 인 user 의 password 를 고정 상수 BCrypt 로 채움")
     fun runPasswordHash() {
         em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, sfid) VALUES ('E100', '005AAAAAA000001AAA')").executeUpdate()
         em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, sfid, password) VALUES ('E101', '005AAAAAA000002AAA', '')").executeUpdate()
@@ -204,15 +204,26 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(response.substep).isEqualTo("password")
         assertThat(response.totalRowsAffected).isEqualTo(2)
 
+        val initial = SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD
         val pw100 = strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'E100'")
         val pw101 = strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'E101'")
         assertThat(pw100).startsWith("\$2a\$")
         assertThat(pw101).startsWith("\$2a\$")
-        assertThat(BCryptPasswordEncoder().matches("E100", pw100)).isTrue()
-        assertThat(BCryptPasswordEncoder().matches("E101", pw101)).isTrue()
+        // 평문은 사번이 아니라 고정 공통 상수. salt 랜덤이라 hash 는 사용자별로 다름.
+        assertThat(BCryptPasswordEncoder().matches(initial, pw100)).isTrue()
+        assertThat(BCryptPasswordEncoder().matches(initial, pw101)).isTrue()
+        assertThat(BCryptPasswordEncoder().matches("E100", pw100)).isFalse()
+        assertThat(pw100).isNotEqualTo(pw101)
+
+        // password_change_required 강제 변경 플래그 설정 확인.
+        assertThat(boolOf("SELECT password_change_required FROM powersales.\"user\" WHERE employee_code = 'E100'")).isTrue()
 
         assertThat(strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'E102'")).isEqualTo("ALREADY-HASHED")
         assertThat(objOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'E103'")).isNull()
+
+        // 멱등 — 재실행 시 변경 0.
+        val again = service.runPasswordHash()
+        assertThat(again.totalRowsAffected).isEqualTo(0)
     }
 
     @Test
@@ -488,6 +499,7 @@ class SfMigrationStage2ServiceIntegrationTest {
 
     private fun strOf(sql: String): String? = objOf(sql)?.toString()
     private fun longOf(sql: String): Long = (objOf(sql) as Number).toLong()
+    private fun boolOf(sql: String): Boolean = objOf(sql) as Boolean
     private fun objOf(sql: String): Any? {
         val rows = em.createNativeQuery(sql).resultList
         return if (rows.isEmpty()) null else rows[0]

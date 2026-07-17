@@ -126,10 +126,15 @@ object HerokuStage1Targets {
      *   신규 앱 로그인/토큰 리프레시 때 재등록되게 한다. 만료·재발급 특성상 이전 실익도 없다.
      * - EmployeeInfo.device_uuid: 기기 UUID(PII/보안). 레거시 값은 이전하지 않고, 신규 앱 로그인 시
      *   재등록되게 한다.
+     * - EmployeeInfo.password: 레거시 평문 비밀번호(emp_pwd). 신규 DB 에 레거시 평문을 적재하지 않고
+     *   NULL 로 두었다가 Stage 2 password substep
+     *   ([com.otoki.powersales._migration.heroku.service.HerokuMigrationStage2Service.runPasswordHash])
+     *   이 고정 초기 비밀번호(BCrypt)로 채운다. SF User.password 재해시 절차와 대칭.
      */
     private val EXCLUDED_COLUMNS: Set<Pair<String, String>> = setOf(
         "EmployeeInfo" to "fcm_token",
         "EmployeeInfo" to "device_uuid",
+        "EmployeeInfo" to "password",
     )
 
     private val ALL: Map<String, HerokuEntityMeta> =

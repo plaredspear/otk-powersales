@@ -3,7 +3,9 @@ package com.otoki.powersales._migration.heroku.controller
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales._migration.heroku.service.HerokuFkResolveProgress
 import com.otoki.powersales._migration.heroku.service.HerokuFkResolveService
+import com.otoki.powersales._migration.heroku.service.HerokuMigrationStage2Service
 import com.otoki.powersales._migration.sf.dto.SfFkResolveProgressResponse
+import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.service.SfFkResolveProgress
 import com.otoki.powersales._migration.sf.service.SfMigrationStage2FkService
 import org.slf4j.LoggerFactory
@@ -39,6 +41,7 @@ class HerokuMigrationStage2Controller(
     private val fkProgress: HerokuFkResolveProgress,
     private val sfFkService: SfMigrationStage2FkService,
     private val sfFkProgress: SfFkResolveProgress,
+    private val stage2Service: HerokuMigrationStage2Service,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -123,5 +126,17 @@ class HerokuMigrationStage2Controller(
     fun getSfidFkProgress(): ResponseEntity<ApiResponse<SfFkResolveProgressResponse>> {
         // sfid resolve 는 SF progress 공유 — Redis 스냅샷 우선 조회 (다중 인스턴스 대응).
         return ResponseEntity.ok(ApiResponse.success(sfFkProgress.loadResponse()))
+    }
+
+    /**
+     * EmployeeInfo(mobile) 초기 비밀번호를 고정 상수의 BCrypt hash 로 채운다.
+     *
+     * SF `POST /sf-migration/stage2/password` (User.password 재해시) 와 대칭. fk 와 달리 동기 실행이라
+     * executor/progress 없이 즉시 처리. 멱등 (password IS NULL/'' 가드). cut-over 시점 curl 1회 실행.
+     */
+    @PostMapping("/api/v1/admin/heroku-migration/stage2/password")
+    fun runPasswordHash(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = stage2Service.runPasswordHash()
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 }

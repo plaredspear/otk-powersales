@@ -115,11 +115,13 @@ class HerokuStage1TargetsTest {
         }
 
         @Test
-        @DisplayName("EmployeeInfo password/pwd_yn 매핑 (Q2 raw 적재)")
-        fun employeeInfoPassword() {
+        @DisplayName("EmployeeInfo password(emp_pwd) 는 마이그레이션 제외 — 레거시 평문 미적재 (Stage2 password substep 이 고정 상수 BCrypt 로 채움)")
+        fun employeeInfoPasswordExcluded() {
             val ei = HerokuStage1Targets.get("EmployeeInfo")!!
+            assertThat(ei.columns.map { it.dbColumn }).doesNotContain("password")
+            assertThat(ei.columns.map { it.herokuColumn }).doesNotContain("emp_pwd")
+            // pwd_yn(password_change_required) 은 제외 대상 아님 — 매핑 유지.
             val byHeroku = ei.columns.associate { it.herokuColumn to it.dbColumn }
-            assertThat(byHeroku["emp_pwd"]).isEqualTo("password")
             assertThat(byHeroku["pwd_yn"]).isEqualTo("password_change_required")
         }
 
@@ -129,8 +131,8 @@ class HerokuStage1TargetsTest {
             val ei = HerokuStage1Targets.get("EmployeeInfo")!!
             assertThat(ei.columns.map { it.dbColumn }).doesNotContain("fcm_token", "device_uuid")
             assertThat(ei.columns.map { it.herokuColumn }).doesNotContain("emp_token", "emp_uuid")
-            // 다른 EmployeeInfo 매핑은 정상 유지 (제외가 PII 컬럼에만 적용)
-            assertThat(ei.columns.map { it.dbColumn }).contains("password", "employee_code")
+            // 다른 EmployeeInfo 매핑은 정상 유지 (제외가 PII/password 컬럼에만 적용)
+            assertThat(ei.columns.map { it.dbColumn }).contains("employee_code")
         }
 
         @Test

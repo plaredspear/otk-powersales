@@ -21390,6 +21390,13 @@
           }
         }, {
           "in" : "query",
+          "name" : "accountStatus",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "confirmed",
           "required" : false,
           "schema" : {
@@ -21517,6 +21524,13 @@
         }, {
           "in" : "query",
           "name" : "accountType",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "accountStatus",
           "required" : false,
           "schema" : {
             "type" : "string"
@@ -24047,6 +24061,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseHerokuFkResolveProgressResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "heroku-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/heroku-migration/stage2/password" : {
+      "post" : {
+        "operationId" : "runPasswordHash_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
                 }
               }
             },
