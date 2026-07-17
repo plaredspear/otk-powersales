@@ -421,13 +421,66 @@ class ScheduleUploadValidatorTest {
     }
 
     @Nested
+    @DisplayName("V6b - 엑셀 업로드는 임시 배치 금지")
+    inner class V6bTests {
+
+        @Test
+        @DisplayName("근무형태5 임시 - 에러 (근무형태3 무관)")
+        fun v6b_temporaryRejected() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", "2026-04-30")
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].row).isEqualTo(4)
+            assertThat(result.errors[0].field).isEqualTo("근무형태5")
+            assertThat(result.errors[0].message).contains("엑셀 업로드로는 임시 배치를 등록할 수 없습니다")
+            assertThat(result.validRows).isEmpty()
+            assertThat(result.previews).isEmpty()
+        }
+
+        @Test
+        @DisplayName("근무형태5 상시 - 정상 통과")
+        fun v6b_permanentAllowed() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "상시", "2026-04-01", null)
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).isEmpty()
+            assertThat(result.validRows).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("상시 행 + 임시 행 혼재 - 임시 행만 에러, 상시 행은 통과 (부분 리포트)")
+        fun v6b_mixedRows() {
+            val rows = listOf(
+                createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "상시", "2026-04-01", null),
+                createParsedRow(5, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-06-01", "2026-06-30")
+            )
+
+            val result = validator.validate(rows, employeeMap, accountMap, emptyList())
+
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].row).isEqualTo(5)
+            assertThat(result.errors[0].message).contains("엑셀 업로드로는 임시 배치를 등록할 수 없습니다")
+            assertThat(result.validRows).hasSize(1)
+            assertThat(result.previews).hasSize(1)
+            assertThat(result.previews[0].row).isEqualTo(4)
+        }
+    }
+
+    @Nested
     @DisplayName("V7 - 임시는 순회만")
     inner class V7Tests {
 
         @Test
-        @DisplayName("임시 + 고정 조합 - 에러")
+        @DisplayName("임시 + 고정 조합 - 엑셀 업로드 금지 (V6b 우선)")
         fun v7_tempWithFixed() {
-            // 종료일을 채워 V7a(임시 종료일 필수) 와 분리 — 순수 V7(순회만) 위반만 검증.
+            // 엑셀 업로드에서는 임시 금지(V6b)가 순회만 허용(V7)보다 우선 적용된다.
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "고정", "상온", "임시", "2026-04-01", "2026-04-30")
             )
@@ -435,19 +488,21 @@ class ScheduleUploadValidatorTest {
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
-            assertThat(result.errors[0].message).contains("임시 배치는 순회만 가능")
+            assertThat(result.errors[0].message).contains("엑셀 업로드로는 임시 배치를 등록할 수 없습니다")
         }
 
         @Test
-        @DisplayName("임시 + 순회 - 정상")
+        @DisplayName("임시 + 순회 - 엑셀 업로드 금지 (V6b)")
         fun v7_tempWithRound() {
+            // 단건 등록에서는 임시+순회가 정상이지만, 엑셀 대량 업로드에서는 임시 자체가 금지된다.
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
-            assertThat(result.errors).isEmpty()
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("엑셀 업로드로는 임시 배치를 등록할 수 없습니다")
         }
     }
 
@@ -456,8 +511,9 @@ class ScheduleUploadValidatorTest {
     inner class V7aTests {
 
         @Test
-        @DisplayName("임시 + 종료일 없음 - 에러")
+        @DisplayName("임시 + 종료일 없음 - 엑셀 업로드 금지 (V6b 우선)")
         fun v7a_tempWithoutEndDate() {
+            // 엑셀 업로드에서는 임시 금지(V6b)가 종료일 필수(V7a)보다 우선 적용된다.
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", null)
             )
@@ -465,19 +521,21 @@ class ScheduleUploadValidatorTest {
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
             assertThat(result.errors).hasSize(1)
-            assertThat(result.errors[0].message).contains("임시 배치는 종료일이 필수입니다")
+            assertThat(result.errors[0].message).contains("엑셀 업로드로는 임시 배치를 등록할 수 없습니다")
         }
 
         @Test
-        @DisplayName("임시 + 종료일 있음 - 정상")
+        @DisplayName("임시 + 종료일 있음 - 엑셀 업로드 금지 (V6b)")
         fun v7a_tempWithEndDate() {
+            // 종료일이 채워져 있어도 엑셀 업로드에서는 임시 배치를 등록할 수 없다.
             val rows = listOf(
                 createParsedRow(4, "20030001", "홍길동", "ACC001", null, "순회", "상온", "임시", "2026-04-01", "2026-04-30")
             )
 
             val result = validator.validate(rows, employeeMap, accountMap, emptyList())
 
-            assertThat(result.errors).isEmpty()
+            assertThat(result.errors).hasSize(1)
+            assertThat(result.errors[0].message).contains("엑셀 업로드로는 임시 배치를 등록할 수 없습니다")
         }
 
         @Test
@@ -667,8 +725,9 @@ class ScheduleUploadValidatorTest {
     inner class C3Tests {
 
         @Test
-        @DisplayName("임시 1개 존재 시 추가 불가 - 에러")
+        @DisplayName("임시 행은 조합 규칙 이전에 엑셀 업로드 금지 (V6b 우선)")
         fun c3_tempLimit() {
+            // C3(임시 최대 1개) 조합 규칙에 도달하기 전에 V6b(임시 업로드 금지)가 먼저 차단한다.
             val existingSchedules = listOf(
                 DisplayWorkSchedule(employee = Employee(id = 1L, employeeCode = "20030001", name = "테스트"), account = Account(id = 101), startDate = LocalDate.of(2026, 3, 1), endDate = LocalDate.of(2026, 5, 1), typeOfWork3 = TypeOfWork3.ROTATION, typeOfWork5 = TypeOfWork5.TEMPORARY)
             )
@@ -679,7 +738,7 @@ class ScheduleUploadValidatorTest {
             val result = validator.validate(rows, employeeMap, accountMap, existingSchedules)
 
             assertThat(result.errors).hasSize(1)
-            assertThat(result.errors[0].message).contains("임시 배치가 이미 존재")
+            assertThat(result.errors[0].message).contains("엑셀 업로드로는 임시 배치를 등록할 수 없습니다")
         }
     }
 

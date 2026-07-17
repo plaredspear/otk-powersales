@@ -106,6 +106,23 @@ class ScheduleUploadValidator {
             val startDate = row.startDate!!
             val endDate = row.endDate
 
+            // V6b: 엑셀 대량 업로드에서는 '임시' 배치를 등록할 수 없다.
+            // 임시(한시적) 배치는 반드시 화면에서 개별 등록해야 하므로, 업로드 파일에 '임시' 행이 있으면
+            // 해당 행을 즉시 에러로 리포트하고 이후 검증(V7/V7a/C3 등 임시 세부 규칙)은 건너뛴다.
+            // 단건 등록(validateSingle) 에는 적용하지 않는다 — '임시'는 화면 등록에서 계속 허용.
+            if (typeOfWork5 == "임시") {
+                errors.add(
+                    RowError(
+                        row.rowNumber,
+                        "I",
+                        "근무형태5",
+                        typeOfWork5,
+                        "행 ${row.rowNumber}: 엑셀 업로드로는 임시 배치를 등록할 수 없습니다"
+                    )
+                )
+                continue
+            }
+
             // V1: 사원번호 존재
             val employee = usersByEmployeeCode[employeeCode]
             if (employee == null) {
