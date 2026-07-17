@@ -59,6 +59,7 @@ class SecurityConfig(
                 mvcMatcher.matcher("/api/v1/admin/**"),
                 mvcMatcher.matcher("/api/v1/sap/**"),
                 mvcMatcher.matcher("/api/v1/sf/**"),
+                mvcMatcher.matcher("/api/v1/rdp/**"),
             )
         )
         http

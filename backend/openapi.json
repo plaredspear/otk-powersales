@@ -43534,6 +43534,61 @@
         "tags" : [ "suggestion-controller" ]
       }
     },
+    "/api/v1/rdp/oauth/token" : {
+      "post" : {
+        "operationId" : "issueTokenForm_2",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "Authorization",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TokenRequest"
+              }
+            },
+            "application/x-www-form-urlencoded" : {
+              "schema" : {
+                "properties" : {
+                  "client_id" : {
+                    "type" : "string"
+                  },
+                  "client_secret" : {
+                    "type" : "string"
+                  },
+                  "grant_type" : {
+                    "type" : "string"
+                  },
+                  "scope" : {
+                    "type" : "string"
+                  }
+                },
+                "type" : "object"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "rdp-token-controller" ]
+      }
+    },
     "/api/v1/sap/account" : {
       "post" : {
         "description" : "\n            SAP 거래처 마스터(매장) 데이터를 SAPAccountCode 기준으로 UPSERT 합니다.\n            EmployeeCode 가 직원 마스터에 존재하지 않으면 행 단위 부분 실패로 보고됩니다.\n\n            **레거시 호환**\n            - 레거시 엔드포인트: `POST /services/apexrest/sap/ClientMasterReceive`\n            - 레거시 Apex 클래스: `IF_REST_SAP_ClientMasterReceive`\n\n            **레거시 정정**: `BusinessLiicenseNumber` (오타) → `BusinessLicenseNumber`\n        ",
