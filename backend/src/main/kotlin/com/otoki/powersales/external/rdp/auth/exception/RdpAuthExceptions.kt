@@ -32,3 +32,9 @@ class RdpInsufficientScopeException : BusinessException(
     message = "권한 없음",
     httpStatus = HttpStatus.FORBIDDEN
 )
+
+class RdpInvalidParameterException(detail: String? = null) : BusinessException(
+    errorCode = "INVALID_PARAMETER",
+    message = detail ?: "잘못된 요청 파라미터",
+    httpStatus = HttpStatus.BAD_REQUEST
+)

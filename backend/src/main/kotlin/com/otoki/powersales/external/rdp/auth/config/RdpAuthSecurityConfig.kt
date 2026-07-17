@@ -4,6 +4,7 @@ import com.otoki.powersales.external.rdp.auth.audit.RdpInboundAuditService
 import com.otoki.powersales.external.rdp.auth.filter.RdpAuthErrorWriter
 import com.otoki.powersales.external.rdp.auth.filter.RdpBearerTokenFilter
 import com.otoki.powersales.external.rdp.auth.service.RdpJwtCodec
+import com.otoki.powersales.external.rdp.inbound.config.RdpInboundProperties
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -25,7 +26,7 @@ import tools.jackson.databind.ObjectMapper
 // securityMatcher 가 서로 다르므로 충돌 없음.
 // SF 와 동일 구조 (IP allowlist filter 없음, RFC 6749 표준 OAuth 에러 형식 사용).
 @Configuration
-@EnableConfigurationProperties(RdpAuthProperties::class)
+@EnableConfigurationProperties(RdpAuthProperties::class, RdpInboundProperties::class)
 class RdpAuthSecurityConfig(
     private val properties: RdpAuthProperties,
     private val rdpJwtCodec: RdpJwtCodec,

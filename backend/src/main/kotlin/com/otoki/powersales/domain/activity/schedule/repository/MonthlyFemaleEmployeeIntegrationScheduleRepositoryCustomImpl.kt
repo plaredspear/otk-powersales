@@ -95,6 +95,64 @@ class MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustomImpl(
             .fetch()
     }
 
+    override fun findSnapshotByKeyset(
+        year: String,
+        month: String,
+        cursor: Long?,
+        limit: Int,
+    ): List<MfeisSnapshotRow> {
+        val mfeis = monthlyFemaleEmployeeIntegrationSchedule
+
+        val where = BooleanBuilder()
+            .and(mfeis.year.eq(year))
+            .and(mfeis.month.eq(month))
+            // soft delete 제외 (SF 자동 제외 정합)
+            .and(mfeis.isDeleted.isFalse.or(mfeis.isDeleted.isNull))
+
+        // keyset 커서 — 직전 페이지 마지막 id 초과분만. null 이면 처음부터.
+        if (cursor != null) {
+            where.and(mfeis.id.gt(cursor))
+        }
+
+        // entity/account/employee 전 컬럼 대신 노출 필드만 select (fetch join 80여 컬럼 회피).
+        // account/employee 미연결 row 는 left join 으로 해당 컬럼이 null.
+        return queryFactory
+            .select(
+                Projections.constructor(
+                    MfeisSnapshotRow::class.java,
+                    mfeis.id,
+                    mfeis.sfid,
+                    mfeis.externalKey,
+                    mfeis.year,
+                    mfeis.month,
+                    mfeis.costCenterCode,
+                    employee.orgName,
+                    employee.employeeCode,
+                    employee.name,
+                    employee.jikwee,
+                    account.externalKey,
+                    account.name,
+                    account.branchName,
+                    account.accountType,
+                    account.abcType,
+                    mfeis.workingCategory1,
+                    mfeis.workingCategory3,
+                    mfeis.workingCategory4,
+                    mfeis.workingCategory5,
+                    mfeis.numberOfInputs,
+                    mfeis.equivalentNumberOfWorkingDays,
+                    mfeis.convertedHeadcount,
+                ),
+            )
+            .from(mfeis)
+            .leftJoin(mfeis.employee, employee)
+            .leftJoin(mfeis.account, account)
+            .where(where)
+            .orderBy(mfeis.id.asc())
+            .limit(limit.toLong())
+            .fetch()
+    }
+
     override fun findDeploymentDashboardRows(
         year: String,
         month: String,

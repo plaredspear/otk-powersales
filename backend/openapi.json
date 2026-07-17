@@ -17036,6 +17036,115 @@
         },
         "type" : "object"
       },
+      "MfeisPageResponse" : {
+        "properties" : {
+          "hasNext" : {
+            "type" : "boolean"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MfeisScheduleRow"
+            },
+            "type" : "array"
+          },
+          "nextCursor" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "MfeisScheduleRow" : {
+        "properties" : {
+          "abcType" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountBranchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "convertedHeadcount" : {
+            "type" : [ "number", "null" ]
+          },
+          "costCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "equivalentNumberOfWorkingDays" : {
+            "type" : [ "number", "null" ]
+          },
+          "externalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "month" : {
+            "type" : [ "string", "null" ]
+          },
+          "numberOfInputs" : {
+            "type" : [ "number", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "title" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory1" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory3" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory4" : {
+            "type" : [ "string", "null" ]
+          },
+          "workingCategory5" : {
+            "type" : [ "string", "null" ]
+          },
+          "year" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "MfeisSearchRequest" : {
+        "properties" : {
+          "cursor" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "month" : {
+            "type" : [ "string", "null" ]
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : [ "integer", "null" ]
+          },
+          "year" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "MobilePromotionDetailResponse" : {
         "properties" : {
           "accountId" : {
@@ -22169,6 +22278,20 @@
           }
         },
         "required" : [ "branchCode", "targetEmployeeId" ],
+        "type" : "object"
+      },
+      "RdpResultWrapperMfeisPageResponse" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/MfeisPageResponse"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "RecalcResult" : {
@@ -43532,6 +43655,39 @@
           }
         },
         "tags" : [ "suggestion-controller" ]
+      }
+    },
+    "/api/v1/rdp/mfeis/search" : {
+      "post" : {
+        "description" : "year+월 필수. cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지.",
+        "operationId" : "search",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MfeisSearchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RdpResultWrapperMfeisPageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "Bearer" : [ ]
+        } ],
+        "summary" : "MFEIS 전량 스냅샷 조회 (keyset 페이지네이션)",
+        "tags" : [ "rdp-mfeis-controller" ]
       }
     },
     "/api/v1/rdp/oauth/token" : {

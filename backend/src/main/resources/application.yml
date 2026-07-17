@@ -188,7 +188,12 @@ rdp:
     jwt-signing-key: ${RDP_INBOUND_JWT_SIGNING_KEY:otoki-rdp-inbound-dev-signing-key-change-in-production-256-bits}
     token-ttl-seconds: 86400
     allowed-scopes:
+      - rdp.read
       - rdp.write
+  inbound:
+    mfeis:
+      default-page-size: 100
+      max-page-size: 1000
 
 springdoc:
   swagger-ui:

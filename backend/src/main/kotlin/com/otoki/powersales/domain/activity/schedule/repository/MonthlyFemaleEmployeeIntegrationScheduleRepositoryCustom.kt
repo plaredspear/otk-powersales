@@ -25,9 +25,62 @@ data class DashboardDeploymentRow(
 )
 
 /**
+ * MFEIS 외부 조회(RDP inbound) 전량 스냅샷 projection — 레거시 여사원 통합일정 조회/엑셀 export 컬럼 셋 정합.
+ *
+ * entity 전 컬럼 + account/employee fetch join(80여 컬럼) 대신 노출 필드만 명시 select 하여
+ * select 페이로드를 축소한다 (전량 스냅샷 배치 조회 부하 방지). [id] 는 keyset 커서 기준.
+ * 관계(account/employee) 미연결 row 는 해당 컬럼이 null (left join).
+ */
+data class MfeisSnapshotRow(
+    val id: Long,
+    val sfid: String?,
+    val externalKey: String?,
+    val year: String?,
+    val month: String?,
+    val costCenterCode: String?,
+    val orgName: String?,
+    val employeeCode: String?,
+    val employeeName: String?,
+    val title: String?,
+    val accountCode: String?,
+    val accountName: String?,
+    val accountBranchName: String?,
+    val accountType: String?,
+    val abcType: String?,
+    val workingCategory1: String?,
+    val workingCategory3: String?,
+    val workingCategory4: String?,
+    val workingCategory5: String?,
+    val numberOfInputs: BigDecimal?,
+    val equivalentNumberOfWorkingDays: BigDecimal?,
+    val convertedHeadcount: BigDecimal?,
+)
+
+/**
  * MFEIS Querydsl 확장 — 거래처유형별 환산인원 현황 보고서 조회 (Spec #847).
  */
 interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
+
+    /**
+     * MFEIS 전량 스냅샷 keyset 페이지 조회 (RDP inbound).
+     *
+     * `year` + `month` 로 좁힌 뒤 PK keyset(`id > cursor`) 으로 순차 인출한다. isDeleted 제외.
+     * account/employee 는 left join 하여 노출 필드만 [MfeisSnapshotRow] projection 으로 select
+     * (fetch join 회피). ORDER BY id ASC 로 결정적 순서 보장.
+     *
+     * year+month 를 요청마다 고정하므로 단일 연월 안에서 PK 커서가 이동 → PK 단일 커서로 충분.
+     *
+     * @param year   연도 (entity year 가 String — 문자열 비교)
+     * @param month  월 (entity month 가 String)
+     * @param cursor 직전 페이지 마지막 id. null 이면 처음부터 (id 조건 미적용)
+     * @param limit  최대 조회 건수. hasNext 판정을 위해 호출자가 (pageSize + 1) 을 넘긴다
+     */
+    fun findSnapshotByKeyset(
+        year: String,
+        month: String,
+        cursor: Long?,
+        limit: Int,
+    ): List<MfeisSnapshotRow>
 
     /**
      * MFEIS 단건 + employee/account fetch join — 상세(집계 근거) 조회용.
