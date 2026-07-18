@@ -315,3 +315,47 @@ export async function runLeaderProfileFlags(): Promise<LeaderProfileFlagsRespons
   }
   return res.data.data;
 }
+
+/**
+ * Sharing Recalc — OWD / RecordType / FLS / SharingRule 관련 cache 일괄 무효화 (spec #792).
+ *
+ * cut-over 최종 단계에서 Stage 2 substep 을 모두 마친 뒤 1회 실행한다. 데이터 재계산이 아니라
+ * cache evict 만 수행하며 (재계산 자체는 evaluator 가 매 read 시점 runtime 처리), 멱등이다.
+ *
+ * 주의: 본 엔드포인트는 Stage 1·2 substep 과 달리 `MODIFY_ALL_DATA` 권한 가드가 걸려 있다.
+ * 시스템 관리자 Profile 이 연결된 계정으로 실행해야 하며, `user.profile_id` 가 NULL 인 계정
+ * (예: SF Profile 적재 전에 생성된 부트스트랩 계정) 은 403 이 난다.
+ */
+export interface SharingRecalcResult {
+  evictedCount: number;
+  durationMs: number;
+}
+
+export interface SharingRecalcStatus {
+  lastRecalcAt: string | null;
+  lastRecalcScope: string | null;
+  lastRecalcSObjectName: string | null;
+  lastRecalcTriggeredByUserId: number | null;
+  lastEvictedCount: number | null;
+  lastDurationMs: number | null;
+}
+
+export async function runSharingRecalcAll(): Promise<SharingRecalcResult> {
+  const res = await client.post<ApiResponse<SharingRecalcResult>>(
+    '/api/v1/admin/sharing/recalc/all',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Sharing Recalc 실행에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+export async function getSharingRecalcStatus(): Promise<SharingRecalcStatus> {
+  const res = await client.get<ApiResponse<SharingRecalcStatus>>(
+    '/api/v1/admin/sharing/recalc/status',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || 'Sharing Recalc 상태 조회에 실패했습니다');
+  }
+  return res.data.data;
+}

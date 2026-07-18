@@ -2,18 +2,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getFkResolvableTables,
   getFkResolveProgress,
+  getSharingRecalcStatus,
   runLeaderProfileFlags,
   runNaturalKeyFkResolve,
   runNoticeRtaPlaceholder,
   runPicklistAll,
   runPicklistColumn,
   runUploadFilePolymorphicParent,
+  runSharingRecalcAll,
   runUserProfileSfidReconcile,
   runUserRoleHierarchyRecalc,
   startFkResolve,
   type FkResolveProgress,
   type LeaderProfileFlagsResponse,
   type NaturalKeyFkResponse,
+  type SharingRecalcResult,
+  type SharingRecalcStatus,
   type NoticeRtaPlaceholderResponse,
   type PicklistColumn,
   type PicklistResponse,
@@ -25,6 +29,7 @@ import {
 const KEY_BASE = ['admin', 'sf-migration'] as const;
 const PROGRESS_KEY = [...KEY_BASE, 'fk-progress'] as const;
 const TABLES_KEY = [...KEY_BASE, 'fk-tables'] as const;
+const SHARING_RECALC_STATUS_KEY = [...KEY_BASE, 'sharing-recalc-status'] as const;
 
 /**
  * 실행 시작 직후 ~ 백그라운드 스레드가 progress.begin() 으로 status 를 RUNNING 으로 올리기 전까지의
@@ -119,6 +124,38 @@ export function useRunUserProfileSfidReconcile() {
 export function useRunLeaderProfileFlags() {
   return useMutation<LeaderProfileFlagsResponse>({
     mutationFn: runLeaderProfileFlags,
+  });
+}
+
+/**
+ * Sharing Recalc 최종 실행 이력 조회.
+ *
+ * cut-over 최종 단계라 실행 전 "언제 마지막으로 돌았는지" 확인용. 폴링은 하지 않고
+ * (동기 실행 — 즉시 완료) 실행 성공 시 invalidate 로 갱신한다.
+ */
+export function useSharingRecalcStatus() {
+  return useQuery<SharingRecalcStatus>({
+    queryKey: SHARING_RECALC_STATUS_KEY,
+    queryFn: getSharingRecalcStatus,
+    // 마이그레이션 도구라 자동 refetch 불요 — 실행 후 invalidate 로만 갱신.
+    refetchOnWindowFocus: false,
+    // 권한(MODIFY_ALL_DATA) 부족 시 403 — 재시도해도 동일하므로 즉시 에러 노출.
+    retry: false,
+  });
+}
+
+/**
+ * Sharing Recalc 일괄 실행 Mutation 훅 (OWD / RecordType / FLS / SharingRule 캐시 evict).
+ *
+ * 성공 시 실행 이력(status)을 invalidate 하여 화면의 "최근 실행" 표기를 갱신한다.
+ */
+export function useRunSharingRecalcAll() {
+  const queryClient = useQueryClient();
+  return useMutation<SharingRecalcResult>({
+    mutationFn: runSharingRecalcAll,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: SHARING_RECALC_STATUS_KEY });
+    },
   });
 }
 

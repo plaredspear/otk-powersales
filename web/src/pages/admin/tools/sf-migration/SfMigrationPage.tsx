@@ -23,9 +23,11 @@ import {
   useRunNoticeRtaPlaceholder,
   useRunPicklistAll,
   useRunPicklistColumn,
+  useRunSharingRecalcAll,
   useRunUploadFilePolymorphicParent,
   useRunUserProfileSfidReconcile,
   useRunUserRoleHierarchyRecalc,
+  useSharingRecalcStatus,
   useStartFkResolve,
 } from '@/hooks/admin/useSfMigration';
 import type {
@@ -95,6 +97,8 @@ export default function SfMigrationPage() {
   const runHierarchyRecalcMutation = useRunUserRoleHierarchyRecalc();
   const runProfileReconcileMutation = useRunUserProfileSfidReconcile();
   const runLeaderProfileFlagsMutation = useRunLeaderProfileFlags();
+  const runSharingRecalcMutation = useRunSharingRecalcAll();
+  const sharingRecalcStatusQuery = useSharingRecalcStatus();
   const runNoticeRtaMutation = useRunNoticeRtaPlaceholder();
 
   // 공지 본문 placeholder 치환은 비가역 UPDATE — 기본 dry-run, apply 명시 선택 시에만 실제 변경.
@@ -134,6 +138,12 @@ export default function SfMigrationPage() {
   const leaderProfileFlagsResult = runLeaderProfileFlagsMutation.data;
   const leaderProfileFlagsError = runLeaderProfileFlagsMutation.error as Error | null;
   const leaderProfileFlagsPending = runLeaderProfileFlagsMutation.isPending;
+
+  const sharingRecalcResult = runSharingRecalcMutation.data;
+  const sharingRecalcError = runSharingRecalcMutation.error as Error | null;
+  const sharingRecalcPending = runSharingRecalcMutation.isPending;
+  const sharingRecalcStatus = sharingRecalcStatusQuery.data;
+  const sharingRecalcStatusError = sharingRecalcStatusQuery.error as Error | null;
 
   const noticeRtaResult = runNoticeRtaMutation.data;
   const noticeRtaError = runNoticeRtaMutation.error as Error | null;
@@ -838,6 +848,111 @@ export default function SfMigrationPage() {
               dataSource={picklistResult.results}
             />
           </div>
+        )}
+      </Card>
+
+      <Card title="Sharing Recalc (cut-over 최종 단계)" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          OWD / RecordType / FLS / SharingRule 관련 cache 를 일괄 무효화한다. 데이터 재계산이 아니라{' '}
+          <Text strong>cache evict 만</Text> 수행하며 (재계산 자체는 evaluator 가 매 read 시점 runtime
+          처리), 멱등이라 여러 번 실행해도 안전하다.
+          <br />
+          <Text strong>위 Stage 2 substep 을 모두 마친 뒤 마지막에 1회</Text> 실행한다 — 메타 적재가
+          끝나기 전에 돌리면 evict 후 다시 옛 값이 캐시된다.
+        </Paragraph>
+
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="권한 주의 — 본 기능만 MODIFY_ALL_DATA 가드가 있습니다"
+          description={
+            <>
+              Stage 1·2 substep 은 로그인만 요구하지만, Sharing Recalc 는{' '}
+              <Text code>MODIFY_ALL_DATA</Text> 권한이 필요하다. 시스템 관리자 Profile 이 연결된
+              계정으로 실행해야 하며, <Text code>user.profile_id</Text> 가 NULL 인 계정(예: SF Profile
+              적재 전에 생성된 부트스트랩 계정)은 <Text code>403</Text> 이 난다. 403 이 발생하면 먼저
+              해당 계정의 Profile 연결을 확인한다.
+            </>
+          }
+        />
+
+        {sharingRecalcStatus && (
+          <Descriptions
+            column={{ xs: 1, sm: 2 }}
+            bordered
+            size="small"
+            style={{ marginBottom: 12 }}
+            title="최근 실행 이력"
+          >
+            <Descriptions.Item label="최종 실행 시각">
+              {sharingRecalcStatus.lastRecalcAt ?? '실행 이력 없음'}
+            </Descriptions.Item>
+            <Descriptions.Item label="범위">
+              {sharingRecalcStatus.lastRecalcScope ?? '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="evict 캐시 수">
+              {sharingRecalcStatus.lastEvictedCount?.toLocaleString() ?? '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="소요 시간">
+              {sharingRecalcStatus.lastDurationMs != null
+                ? `${sharingRecalcStatus.lastDurationMs.toLocaleString()} ms`
+                : '-'}
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+
+        {sharingRecalcStatusError && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="실행 이력 조회 실패"
+            description={`${sharingRecalcStatusError.message} — 권한(MODIFY_ALL_DATA) 부족일 수 있습니다. 이력 조회 실패와 무관하게 아래 실행은 시도할 수 있습니다.`}
+          />
+        )}
+
+        <Space>
+          <Button
+            type="primary"
+            loading={sharingRecalcPending}
+            disabled={sharingRecalcPending}
+            onClick={() => {
+              runSharingRecalcMutation.mutate();
+            }}
+          >
+            전체 Recalc 실행
+          </Button>
+        </Space>
+
+        {sharingRecalcError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="Sharing Recalc 실패"
+            description={sharingRecalcError.message}
+            closable
+            onClose={() => {
+              runSharingRecalcMutation.reset();
+            }}
+          />
+        )}
+
+        {sharingRecalcResult && (
+          <Descriptions
+            column={{ xs: 1, sm: 2 }}
+            bordered
+            size="small"
+            style={{ marginTop: 16 }}
+          >
+            <Descriptions.Item label="evict 된 캐시 수">
+              {sharingRecalcResult.evictedCount.toLocaleString()}
+            </Descriptions.Item>
+            <Descriptions.Item label="소요 시간">
+              {sharingRecalcResult.durationMs.toLocaleString()} ms
+            </Descriptions.Item>
+          </Descriptions>
         )}
       </Card>
     </div>
