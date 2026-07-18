@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getFkResolvableTables,
   getFkResolveProgress,
+  runLeaderProfileFlags,
   runNaturalKeyFkResolve,
   runNoticeRtaPlaceholder,
   runPicklistAll,
@@ -11,6 +12,7 @@ import {
   runUserRoleHierarchyRecalc,
   startFkResolve,
   type FkResolveProgress,
+  type LeaderProfileFlagsResponse,
   type NaturalKeyFkResponse,
   type NoticeRtaPlaceholderResponse,
   type PicklistColumn,
@@ -105,6 +107,18 @@ export function useRunUserRoleHierarchyRecalc() {
 export function useRunUserProfileSfidReconcile() {
   return useMutation<UserProfileReconcileResponse>({
     mutationFn: runUserProfileSfidReconcile,
+  });
+}
+
+/**
+ * 조장 ProfileFlags SoT 적용 Mutation 훅.
+ *
+ * FK Resolve → Natural Key FK 해소 이후 실행. backend 가 적용 시 권한/데이터스코프 캐시를
+ * 자동 invalidate 하므로 프론트에서 별도 무효화할 캐시 화면은 없다 (1회성 cut-over 도구).
+ */
+export function useRunLeaderProfileFlags() {
+  return useMutation<LeaderProfileFlagsResponse>({
+    mutationFn: runLeaderProfileFlags,
   });
 }
 

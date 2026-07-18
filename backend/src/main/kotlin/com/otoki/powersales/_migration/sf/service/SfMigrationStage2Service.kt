@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.common.storage.UPLOAD_FILE_POLYMORPHIC_PARE
 import com.otoki.powersales.domain.support.notice.service.NoticeImagePlaceholder
 import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.dto.SubstepResult
+import com.otoki.powersales.platform.auth.permission.LeaderProfileFlagsSeed
 import com.otoki.powersales.platform.auth.permission.SystemAdminGrantList
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import jakarta.persistence.EntityManager
@@ -44,6 +45,15 @@ class SfMigrationStage2Service(
          * 적재 시 `password_change_required = TRUE` 로 최초 로그인 시 강제 변경을 유도한다.
          */
         const val MIGRATION_INITIAL_PASSWORD = "pwrs1234!"
+
+        /**
+         * `leader-profile-flags` substep 의 적용 대상 profile.name.
+         *
+         * [LeaderProfileFlagsSeed.SEEDS] 는 조장 계열 2종(`6.조장` / `7.영업사원 + 조장`) 을 정의하나,
+         * 본 substep 은 그중 `6.조장` 만 적용한다 (사용자 결정). `7.영업사원 + 조장` 은 web admin
+         * 권한 편집으로 수동 처리. 대상 확대 시 본 집합에 이름을 추가하면 된다.
+         */
+        val LEADER_FLAGS_TARGET_PROFILE_NAMES = setOf("6.조장")
 
         // 본문 HTML 의 <img ...> 태그 전체 (rtaImage 포함 여부는 src 추출 후 판정).
         private val RTA_IMG_REGEX = Regex("""<img\b[^>]*>""", RegexOption.IGNORE_CASE)
@@ -426,6 +436,114 @@ class SfMigrationStage2Service(
                 ),
             ),
             totalRowsAffected = overrideRows + grantRows,
+        )
+    }
+
+    /**
+     * 조장 Profile 의 ProfileFlags 초기 권한 적용 — [LeaderProfileFlagsSeed] SoT 기준.
+     *
+     * ## 왜 부팅 Runner 가 아니라 Stage 2 substep 인가
+     * 과거 `LeaderProfileFlagsSyncRunner` 가 부팅 시 동일 sync 를 수행했으나, Stage 1 적재 **이전**에
+     * 실행되어 `findByProfileId` 가 SF row 를 못 찾고 (profile_name=NULL, profile_id=존재) row 를
+     * 별도 create → Stage 1 의 (profile_name=존재, profile_id=NULL) row 와 공존 →
+     * Stage 2 FK Resolve 가 profile_id 를 채우는 순간 `profile_flags_profile_id_key` UNIQUE 위반이
+     * 발생했다 (운영 관측). 그래서 Runner 는 비활성화(@Component 미부착)되어 있다.
+     *
+     * 본 substep 은 그 sync 를 **사용자가 순서를 통제하는 Stage 2 시점**으로 옮긴 것이다. 호출 시점에는
+     * 이미 Stage 1 적재 + `fk-natural-key` 가 profile_flags.profile_id 를 채워둔 상태라 create 분기가
+     * 불필요하며, 실제로 **create 를 하지 않는다** (아래 skip 정책).
+     *
+     * ## 적용 규칙
+     * - **row 부재 시 create 하지 않고 skip** — UNIQUE 충돌 재발 방지. row 는 Stage 1 SF 적재분이
+     *   유일 출처이며, 부재는 "Stage 1/fk-natural-key 미완료" 를 뜻하므로 조용히 만들지 않고 보고한다.
+     * - **`is_locally_modified = TRUE` (web admin 편집분) 은 skip** — 운영 편집 자율성 보존
+     *   (SF 재적재 dirty-skip 정책과 동일).
+     * - 그 외에는 SoT 값으로 update + `is_locally_modified = FALSE` 유지.
+     *
+     * ## 적용 대상
+     * [LeaderProfileFlagsSeed.SEEDS] 중 **`6.조장` 단건**. `7.영업사원 + 조장` 은 web admin 수동 편집
+     * 대상으로 남긴다 (사용자 결정). 대상 확대가 필요하면 [LEADER_FLAGS_TARGET_PROFILE_NAMES] 에 추가.
+     *
+     * ## 실행 순서
+     * `fk` → `fk-natural-key` **이후**에 호출해야 한다. 그 전에는 profile_flags.profile_id 가 NULL 이라
+     * profile 조인이 전건 미해소되어 skip 만 보고된다.
+     *
+     * 멱등 — 동일 값 재적용은 rowsAffected 0.
+     */
+    @Transactional
+    fun runLeaderProfileFlags(): SfMigrationStage2Response {
+        val results = mutableListOf<SubstepResult>()
+
+        for (seed in LeaderProfileFlagsSeed.SEEDS) {
+            if (seed.profileName !in LEADER_FLAGS_TARGET_PROFILE_NAMES) continue
+
+            // profile.name → profile_flags row 조회. Stage 1 적재 + fk-natural-key 로 profile_id 가
+            // 채워져 있어야 매칭된다 (create 분기 없음 — 부재 시 skip).
+            val existing = em.createNativeQuery(
+                """
+                SELECT pf.is_locally_modified
+                FROM powersales.profile_flags pf
+                JOIN powersales.profile p ON p.profile_id = pf.profile_id
+                WHERE p.name = :profileName
+                """.trimIndent()
+            )
+                .setParameter("profileName", seed.profileName)
+                .resultList
+                .firstOrNull() as? Boolean
+
+            if (existing == null) {
+                results += SubstepResult(
+                    label = "profile_flags['${seed.profileName}'] skip — row 부재 " +
+                        "(Stage 1 적재 / fk-natural-key 선행 필요)",
+                    rowsAffected = 0,
+                )
+                continue
+            }
+            if (existing) {
+                results += SubstepResult(
+                    label = "profile_flags['${seed.profileName}'] skip — web admin 편집분 보존 " +
+                        "(is_locally_modified=TRUE)",
+                    rowsAffected = 0,
+                )
+                continue
+            }
+
+            val updated = em.createNativeQuery(
+                """
+                UPDATE powersales.profile_flags pf
+                SET permissions_view_all_data = :viewAllData,
+                    permissions_modify_all_data = :modifyAllData,
+                    permissions_view_all_users = :viewAllUsers,
+                    permissions_manage_users = :manageUsers,
+                    permissions_api_enabled = :apiEnabled,
+                    object_permissions = CAST(:objectPermissions AS jsonb),
+                    custom_permissions = CAST(:customPermissions AS jsonb)
+                FROM powersales.profile p
+                WHERE p.profile_id = pf.profile_id
+                  AND p.name = :profileName
+                  AND pf.is_locally_modified = FALSE
+                """.trimIndent()
+            )
+                .setParameter("viewAllData", seed.viewAllData)
+                .setParameter("modifyAllData", seed.modifyAllData)
+                .setParameter("viewAllUsers", seed.viewAllUsers)
+                .setParameter("manageUsers", seed.manageUsers)
+                .setParameter("apiEnabled", seed.apiEnabled)
+                .setParameter("objectPermissions", seed.objectPermissionsJson)
+                .setParameter("customPermissions", seed.customPermissionsJson)
+                .setParameter("profileName", seed.profileName)
+                .executeUpdate()
+
+            results += SubstepResult(
+                label = "profile_flags['${seed.profileName}'] SoT 적용 (LeaderProfileFlagsSeed)",
+                rowsAffected = updated,
+            )
+        }
+
+        return SfMigrationStage2Response(
+            substep = "leaderProfileFlags",
+            results = results,
+            totalRowsAffected = results.sumOf { it.rowsAffected },
         )
     }
 }

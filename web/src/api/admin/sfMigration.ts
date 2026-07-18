@@ -282,3 +282,36 @@ export async function runUserProfileSfidReconcile(): Promise<UserProfileReconcil
   }
   return res.data.data;
 }
+
+/**
+ * 조장 ProfileFlags SoT 적용 (Stage 2).
+ *
+ * SF frozen snapshot 에 없는 신규 조장 권한을 backend 코드 SoT (LeaderProfileFlagsSeed) 기준으로 적용.
+ * 적용 대상은 `6.조장` 단건 (`7.영업사원 + 조장` 은 web admin 권한 편집으로 수동 처리).
+ *
+ * FK Resolve → Natural Key FK 해소 **이후** 실행해야 한다 (그 전에는 profile_flags.profile_id 가
+ * NULL 이라 전건 skip). row 를 새로 만들지 않고 기존 row 만 갱신하며,
+ * web admin 편집분(is_locally_modified=TRUE) 은 보존한다. 동기 실행 — 보통 수 초 내 완료.
+ */
+export interface LeaderProfileFlagsSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface LeaderProfileFlagsResponse {
+  substep: string;
+  results: LeaderProfileFlagsSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runLeaderProfileFlags(): Promise<LeaderProfileFlagsResponse> {
+  const res = await client.post<ApiResponse<LeaderProfileFlagsResponse>>(
+    '/api/v1/admin/sf-migration/stage2/leader-profile-flags',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(
+      res.data.message || '조장 ProfileFlags 적용에 실패했습니다',
+    );
+  }
+  return res.data.data;
+}

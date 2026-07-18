@@ -18,6 +18,7 @@ import dayjs from 'dayjs';
 import {
   useFkResolvableTables,
   useFkResolveProgress,
+  useRunLeaderProfileFlags,
   useRunNaturalKeyFkResolve,
   useRunNoticeRtaPlaceholder,
   useRunPicklistAll,
@@ -31,6 +32,7 @@ import type {
   FkResolveProgress,
   FkResolveStatus,
   FkResolveTableResult,
+  LeaderProfileFlagsSubstepResult,
   NaturalKeyFkSubstepResult,
   NoticeRtaPlaceholderSubstepResult,
   PicklistSubstepResult,
@@ -92,6 +94,7 @@ export default function SfMigrationPage() {
   const runUploadFileParentMutation = useRunUploadFilePolymorphicParent();
   const runHierarchyRecalcMutation = useRunUserRoleHierarchyRecalc();
   const runProfileReconcileMutation = useRunUserProfileSfidReconcile();
+  const runLeaderProfileFlagsMutation = useRunLeaderProfileFlags();
   const runNoticeRtaMutation = useRunNoticeRtaPlaceholder();
 
   // 공지 본문 placeholder 치환은 비가역 UPDATE — 기본 dry-run, apply 명시 선택 시에만 실제 변경.
@@ -127,6 +130,10 @@ export default function SfMigrationPage() {
   const profileReconcileResult = runProfileReconcileMutation.data;
   const profileReconcileError = runProfileReconcileMutation.error as Error | null;
   const profileReconcilePending = runProfileReconcileMutation.isPending;
+
+  const leaderProfileFlagsResult = runLeaderProfileFlagsMutation.data;
+  const leaderProfileFlagsError = runLeaderProfileFlagsMutation.error as Error | null;
+  const leaderProfileFlagsPending = runLeaderProfileFlagsMutation.isPending;
 
   const noticeRtaResult = runNoticeRtaMutation.data;
   const noticeRtaError = runNoticeRtaMutation.error as Error | null;
@@ -649,6 +656,89 @@ export default function SfMigrationPage() {
                 },
               ]}
               dataSource={profileReconcileResult.results}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Card title="조장 ProfileFlags 권한 적용 (6.조장)" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          SF frozen snapshot 에 없는 <Text strong>신규 조장 권한</Text>을 backend 코드 SoT
+          (<Text code>LeaderProfileFlagsSeed</Text>) 기준으로 <Text code>profile_flags</Text> 에
+          적용한다. 적용 대상은 <Text code>6.조장</Text> 단건 —{' '}
+          <Text code>7.영업사원 + 조장</Text> 은 web admin 권한 편집으로 수동 처리한다.
+          <br />
+          <Text strong>위 FK Resolve → Natural Key FK 해소 완료 후</Text> 1회 실행한다. 그 전에는{' '}
+          <Text code>profile_flags.profile_id</Text> 가 NULL 이라 전건 skip 으로 보고된다. row 를 새로
+          만들지 않고 <Text strong>기존 row 만 갱신</Text>하며(과거 부팅 Runner 의 UNIQUE 충돌 회피),{' '}
+          <Text code>is_locally_modified=TRUE</Text> 인 web admin 편집분은 보존한다. 멱등 — 동일 값
+          재적용은 0 row. 적용 시 권한/데이터스코프 캐시가 자동 무효화된다. 동기 실행 — 보통 수 초 내
+          완료.
+        </Paragraph>
+
+        <Space>
+          <Button
+            type="primary"
+            loading={leaderProfileFlagsPending}
+            disabled={leaderProfileFlagsPending}
+            onClick={() => {
+              runLeaderProfileFlagsMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {leaderProfileFlagsError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="조장 ProfileFlags 적용 실패"
+            description={leaderProfileFlagsError.message}
+            closable
+            onClose={() => {
+              runLeaderProfileFlagsMutation.reset();
+            }}
+          />
+        )}
+
+        {leaderProfileFlagsResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{leaderProfileFlagsResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="적용 row">
+                {leaderProfileFlagsResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            {leaderProfileFlagsResult.totalRowsAffected === 0 && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: 12 }}
+                message="적용된 row 가 없습니다"
+                description="아래 사유를 확인하세요 — row 부재(Stage 1 적재 / Natural Key FK 해소 선행 필요), web admin 편집분 보존(is_locally_modified=TRUE), 또는 이미 동일 값이 적용된 상태(멱등)."
+              />
+            )}
+            <ResizableTable<LeaderProfileFlagsSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={leaderProfileFlagsResult.results}
             />
           </div>
         )}

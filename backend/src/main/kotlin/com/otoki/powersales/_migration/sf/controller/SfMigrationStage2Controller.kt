@@ -10,7 +10,9 @@ import com.otoki.powersales._migration.sf.service.SfMigrationStage2FkService
 import com.otoki.powersales._migration.sf.service.SfMigrationStage2NaturalKeyFkService
 import com.otoki.powersales._migration.sf.service.SfMigrationStage2Service
 import com.otoki.powersales.platform.auth.permission.AdminPermissionCache
+import com.otoki.powersales.platform.common.config.CacheConfig
 import org.slf4j.LoggerFactory
+import org.springframework.cache.CacheManager
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -40,6 +42,7 @@ class SfMigrationStage2Controller(
     private val hierarchyTraversal: UserRoleHierarchyTraversal,
     private val adminPermissionCache: AdminPermissionCache,
     private val adminDataScopeCache: com.otoki.powersales.admin.security.AdminDataScopeCache,
+    private val cacheManager: CacheManager,
 ) {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -182,6 +185,34 @@ class SfMigrationStage2Controller(
     @PostMapping("/api/v1/admin/sf-migration/stage2/password")
     fun runPasswordHash(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
         val response = service.runPasswordHash()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 조장 Profile 의 ProfileFlags 초기 권한 적용 — [com.otoki.powersales.platform.auth.permission.LeaderProfileFlagsSeed] SoT 기준.
+     *
+     * SF frozen snapshot 에는 없는 신규 조장 권한을 코드 SoT 로 관리하여 적용한다. 과거 부팅 Runner
+     * (`LeaderProfileFlagsSyncRunner`) 가 Stage 1 이전에 실행되어 profile_flags UNIQUE 충돌을 일으켰던
+     * 문제를 substep 으로 옮겨 해소했다 — 본 endpoint 는 row 를 **create 하지 않고** 기존 row 만 update 한다.
+     *
+     * 실행 순서: `fk` → `fk-natural-key` **이후** 1회 호출 (그 전에는 profile_flags.profile_id 가 NULL 이라
+     * 전건 skip 으로 보고된다). `is_locally_modified=TRUE` 인 web admin 편집분은 보존. 멱등.
+     *
+     * 적용 후 권한/데이터스코프 캐시를 무효화한다 (마이그레이션 직후 권한 어긋남 방지 — fk substep 과 동일 정책).
+     */
+    @PostMapping("/api/v1/admin/sf-migration/stage2/leader-profile-flags")
+    fun runLeaderProfileFlags(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = service.runLeaderProfileFlags()
+        if (response.totalRowsAffected > 0) {
+            // profile_flags 를 직접 UPDATE 하므로 fk substep(admin 캐시 2종)보다 넓게 무효화한다 —
+            // profileFlags / permission-matrix 캐시가 남으면 갱신된 권한이 즉시 반영되지 않는다.
+            // (비활성화된 LeaderProfileFlagsSyncRunner.invalidateCaches() 와 동일 범위.)
+            cacheManager.getCache(CacheConfig.CACHE_PROFILE_FLAGS)?.clear()
+            cacheManager.getCache(CacheConfig.CACHE_PERMISSION_MATRIX)?.clear()
+            adminPermissionCache.invalidateAll()
+            adminDataScopeCache.invalidateAll()
+            log.info("[leader-profile-flags] 권한 캐시 invalidate — rowsAffected={}", response.totalRowsAffected)
+        }
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
