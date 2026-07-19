@@ -13,7 +13,6 @@ import com.otoki.powersales.domain.activity.schedule.entity.EmployeeInputCriteri
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
-import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -548,9 +547,10 @@ class AdminMonthlyIntegrationService(
                     // 레거시 WorkingCategory4__c = TMS.SecondWorkType__c (240304)
                     workingCategory4 = rep.secondWorkType,
                     workingCategory5 = workingCategory5,
-                    professionalPromotionTeam = ProfessionalPromotionTeamType.fromDisplayNameOrNull(
-                        rep.professionalPromotionTeam
-                    ),
+                    // 레거시 `TeamMemberScheduleTriggerHandler.cls:874` 동등 — TMS 의 전문행사조 값을
+                    // 무변환 복사 (SF 3계층 모두 Text). 미배정 사원은 AttendanceService 가 TMS 에
+                    // '일반' 을 stamp 하므로 그대로 '일반' 이 실린다 (마이그레이션 row 와 동일 값).
+                    professionalPromotionTeam = rep.professionalPromotionTeam,
                     empBranchName = employee?.orgName,
                     workingDaysMonth = BigDecimal(workingDaysMonth),
                     numberOfInputs = numberOfInputs,

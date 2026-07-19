@@ -6,8 +6,6 @@ import com.otoki.powersales.platform.common.salesforce.SFObject
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.entity.Group
-import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
-import com.otoki.powersales.domain.activity.promotion.entity.converter.ProfessionalPromotionTeamTypeConverter
 import com.otoki.powersales.user.entity.User
 import jakarta.persistence.*
 import java.math.BigDecimal
@@ -94,11 +92,16 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
     @Column(name = "emp_branch_name", length = 255)
     var empBranchName: String? = null,
 
+    // 전문행사조 — TMS 의 stamp 값(String, 미배정은 '일반')을 무변환 저장한다. Employee/MFEIS 를
+    // enum(ProfessionalPromotionTeamType) 으로 강타입화하면 converter 가 '일반' 을 5개 정식 조가 아니라며
+    // null 로 떨어뜨려, 재집계 row 만 null 이 되고 SF 마이그레이션 row('일반' 문자열)와 값이 어긋난다.
+    // 레거시 SF 는 3계층(Employee/TMS/MFEIS) 모두 Text(255) 로 '일반' 을 그대로 흘려보내므로,
+    // MFEIS 컬럼은 String 원본을 유지해 마이그레이션 ↔ 재집계 저장값을 일치시킨다.
+    // (이 컬럼은 필터/집계/응답/SF전송 어디에서도 read 되지 않아 String 화의 하위 영향이 없다.)
     @SFField("ProfessionalPromotionTeam__c")
-    @Convert(converter = ProfessionalPromotionTeamTypeConverter::class)
     @FieldName("전문행사조")
     @Column(name = "professional_promotion_team", length = 255)
-    val professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
+    val professionalPromotionTeam: String? = null,
 
     @SFField("WorkingDaysMonth__c")
     @FieldName("당월 근무일수")

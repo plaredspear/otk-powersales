@@ -137,6 +137,23 @@ class AdminMonthlyIntegrationServiceRefreshTest {
         assertThat(saved.workingCategory1).isEqualTo("진열")
         assertThat(saved.workingCategory3).isEqualTo("고정")
         assertThat(saved.empBranchName).isEqualTo("서울1지점")
+        // 미배정('일반') TMS 값을 무변환 저장 — enum 변환 없이 String 그대로 (SF 마이그레이션 row 와 동일 값).
+        // 과거 enum 변환(fromDisplayNameOrNull) 은 '일반' 을 null 로 떨어뜨려 재집계 row 만 null 이 되는 회귀가 있었다.
+        assertThat(saved.professionalPromotionTeam).isEqualTo("일반")
+    }
+
+    @Test
+    @DisplayName("전문행사조 — 정식 조 배정 사원은 TMS 값(조 이름)을 그대로 MFEIS 에 저장")
+    fun professionalPromotionTeamAssigned() {
+        val acc = account(100L, "1234567")
+        stubPopulation(
+            listOf(schedule(1L, acc, LocalDate.of(2026, 6, 15), professionalPromotionTeam = "프레시세일조_냉동"))
+        )
+
+        service.refreshIntegration(10L, yearMonth)
+
+        val saved = savedRecords().single()
+        assertThat(saved.professionalPromotionTeam).isEqualTo("프레시세일조_냉동")
     }
 
     @Test
