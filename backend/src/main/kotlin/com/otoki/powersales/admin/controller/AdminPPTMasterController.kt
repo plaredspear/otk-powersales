@@ -188,7 +188,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/bulk")
-    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.CREATE)
     fun validateBulk(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterBulkValidateRequest
@@ -198,7 +198,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters/bulk/confirm")
-    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.CREATE)
     fun confirmBulk(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterBulkValidateRequest

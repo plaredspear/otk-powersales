@@ -458,15 +458,13 @@ export default function PPTMasterPage() {
           <Button icon={<DownloadOutlined />} onClick={handleExport} loading={exporting}>
             엑셀 다운로드
           </Button>
-          <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate} loading={templateDownloading}>
-            엑셀 템플릿 다운로드
-          </Button>
-          <PermissionGate
-            entity={PPT_ENTITY}
-            operation="EDIT"
-            mode="disable"
-            deniedTooltip="전문행사조 업로드 권한이 없습니다"
-          >
+          {/* 엑셀 템플릿 다운로드 + 엑셀 업로드는 일괄 등록 흐름 — 등록 권한(CREATE) 없으면 숨김. */}
+          <PermissionGate entity={PPT_ENTITY} operation="CREATE">
+            <Button icon={<DownloadOutlined />} onClick={handleDownloadTemplate} loading={templateDownloading}>
+              엑셀 템플릿 다운로드
+            </Button>
+          </PermissionGate>
+          <PermissionGate entity={PPT_ENTITY} operation="CREATE">
             <Button icon={<UploadOutlined />} onClick={() => setUploadOpen(true)}>
               엑셀 업로드
             </Button>

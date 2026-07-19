@@ -85,9 +85,14 @@ describe('PPTMasterPage 권한 게이팅', () => {
       expect(screen.queryByRole('button', { name: /마스터 등록/ })).not.toBeInTheDocument();
     });
 
-    it('엑셀 업로드 버튼은 비활성으로 표시된다', () => {
+    it('엑셀 업로드 버튼은 숨겨진다 (CREATE 미보유)', () => {
       renderPage();
-      expect(screen.getByRole('button', { name: /엑셀 업로드/ })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: /엑셀 업로드/ })).not.toBeInTheDocument();
+    });
+
+    it('엑셀 템플릿 다운로드 버튼은 숨겨진다 (CREATE 미보유)', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: /엑셀 템플릿 다운로드/ })).not.toBeInTheDocument();
     });
 
     it('행 액션(수정/복제/삭제) 버튼은 숨겨진다', () => {
@@ -104,6 +109,7 @@ describe('PPTMasterPage 권한 게이팅', () => {
 
     it('엑셀 다운로드(READ) 버튼은 노출된다', () => {
       renderPage();
+      // READ only 에서는 '엑셀 템플릿 다운로드'가 숨겨지므로 /엑셀 다운로드/ 는 '엑셀 다운로드'만 매칭.
       expect(screen.getByRole('button', { name: /엑셀 다운로드/ })).toBeEnabled();
     });
   });
@@ -124,6 +130,12 @@ describe('PPTMasterPage 권한 게이팅', () => {
       expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
     });
+
+    it('엑셀 업로드 + 엑셀 템플릿 다운로드 버튼이 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /엑셀 업로드/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /엑셀 템플릿 다운로드/ })).toBeInTheDocument();
+    });
   });
 
   describe('EDIT 권한만 보유', () => {
@@ -141,6 +153,12 @@ describe('PPTMasterPage 권한 게이팅', () => {
       expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '복제' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+    });
+
+    it('엑셀 업로드 + 엑셀 템플릿 다운로드 버튼은 숨겨진다 (CREATE 미보유)', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: /엑셀 업로드/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /엑셀 템플릿 다운로드/ })).not.toBeInTheDocument();
     });
 
     it('선택 일괄 확정 버튼이 노출된다 (EDIT)', () => {
