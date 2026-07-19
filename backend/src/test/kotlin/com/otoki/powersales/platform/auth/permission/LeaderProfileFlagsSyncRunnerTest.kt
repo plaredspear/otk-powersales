@@ -76,6 +76,34 @@ class LeaderProfileFlagsSyncRunnerTest {
         assertThat(leader6.customPermissions).contains("female_employee")
         assertThat(leader6.objectPermissions).contains("MonthlyFemaleEmployeeIntegrationSchedule__c")
         assertThat(leader6.objectPermissions).doesNotContain("\n")
+        // 6.조장 의 education_post 는 read 전용 (사용자 결정) — 과거 CRUD 4비트에서 축소.
+        // 쓰기 비트가 되살아나는 회귀를 막는다. 7.영업사원+조장 은 CRUD 유지라 프로필별로 다르다.
+        // JSON 을 파싱해 키/비트를 정확히 검증한다 (문자열 contains 는 education_post 가
+        // education_post_attachment 의 접두사라 오탐/누락이 생긴다).
+        val leader6Custom = ObjectMapper().readTree(leader6.customPermissions)
+        val educationPost = leader6Custom.get("education_post")
+        assertThat(educationPost).isNotNull
+        assertThat(educationPost.get("allowRead")?.asBoolean()).isTrue
+        // read 외 비트는 부재하거나 false 여야 한다.
+        listOf("allowCreate", "allowEdit", "allowDelete").forEach { bit ->
+            assertThat(educationPost.get(bit)?.asBoolean() ?: false)
+                .describedAs("6.조장 education_post.%s 는 부여되지 않아야 한다", bit)
+                .isFalse
+        }
+        // 교육 세부 자원은 가드 entity 가 아니라 (AdminEducationController 는 education_post 단일 가드)
+        // SoT 에 기재하지 않는다 — 죽은 키가 유입되는 회귀 방지.
+        listOf("education_code", "education_post_attachment", "education_view_history").forEach { key ->
+            assertThat(leader6Custom.has(key))
+                .describedAs("%s 는 가드 entity 가 아니므로 SoT 에 없어야 한다", key)
+                .isFalse
+        }
+        // PPT 마스터/이력 조회 권한 (요청 확인분 — 이미 부여돼 있어야 한다).
+        val leader6Object = ObjectMapper().readTree(leader6.objectPermissions)
+        listOf("ProfessionalPromotionTeamMaster__c", "ProfessionalPromotionTeamHistory__c").forEach { obj ->
+            assertThat(leader6Object.get(obj)?.get("allowRead")?.asBoolean())
+                .describedAs("6.조장 %s 는 read 가 부여돼야 한다", obj)
+                .isTrue
+        }
 
         val leader7 = saved.first { it.profileId == 7L }
         assertThat(leader7.permissionsApiEnabled).isTrue
