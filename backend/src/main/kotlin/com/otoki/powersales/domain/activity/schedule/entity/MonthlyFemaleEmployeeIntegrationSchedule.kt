@@ -105,7 +105,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @SFField("WorkingDaysMonth__c")
     @FieldName("당월 근무일수")
-    @Column(name = "working_days_month", precision = 18, scale = 4)
+    @Column(name = "working_days_month", precision = 30, scale = 18)
     var workingDaysMonth: BigDecimal? = null,
 
     @SFField("NumberOfInputs__c")
@@ -115,12 +115,12 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @SFField("EquivalentNumberOfWorkingDays__c")
     @FieldName("총 환산근무일수")
-    @Column(name = "equivalent_number_of_working_days", precision = 18, scale = 4)
+    @Column(name = "equivalent_number_of_working_days", precision = 30, scale = 18)
     var equivalentNumberOfWorkingDays: BigDecimal? = null,
 
     @SFField("ConvertedHeadcount__c")
     @FieldName("총 환산인원")
-    @Column(name = "converted_headcount", precision = 18, scale = 4)
+    @Column(name = "converted_headcount", precision = 30, scale = 18)
     var convertedHeadcount: BigDecimal? = null,
 
     @SFField("EDI_POS__c")
@@ -135,7 +135,7 @@ class MonthlyFemaleEmployeeIntegrationSchedule(
 
     @SFField("AccountConvertedHeadcount__c")
     @FieldName("【검증용】총 진열환산인원(거래처별)")
-    @Column(name = "account_converted_headcount", precision = 18, scale = 4)
+    @Column(name = "account_converted_headcount", precision = 30, scale = 18)
     var accountConvertedHeadcount: BigDecimal? = null,
 
     @SFField("EmployeeInputCriteriaMaster__c")

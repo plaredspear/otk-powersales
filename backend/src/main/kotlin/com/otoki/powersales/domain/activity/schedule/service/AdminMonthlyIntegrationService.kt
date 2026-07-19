@@ -462,22 +462,26 @@ class AdminMonthlyIntegrationService(
 
             // 환산근무일수 / 환산인원 — SF 레거시(`TeamMemberScheduleTriggerHandler.cls:981,769`) 완전 동형.
             // SF 는 `1.0/N` 과 `Σ(1/N)/D` 를 IEEE-754 Double 로 중간 반올림 없이 계산하고,
-            // Number(18,4) 필드 저장 시점에만 4자리 round-half-up 을 1회 적용한다.
-            // BigDecimal 로 row 별 선반올림하면 `N × (1/N) = 1` 의 Double 대칭 소거가 깨져
-            // 사원 1인 환산인원 합계가 0.9999 / 1.0001 로 어긋난다 → Double 산술로 재현.
+            // 그 결과를 `setScale` 없이 필드에 직접 대입한다. field-meta 의 scale=4 는 UI 입력/표시
+            // 제약일 뿐 저장 정밀도의 하드 제약이 아니며 (describe `soapType = xsd:double`),
+            // 운영 실측값이 `0.058823529411764705` (= 1/17) 처럼 전정밀도로 남아 있다.
+            // 저장 시점에 4자리로 자르면 그 손실이 화면의 3자리 반올림에서 증폭되어 지점 합계가
+            // SF 와 어긋나므로 (2026-05 강북4지점 순회 4.166 vs 4.167), 반올림 없이 그대로 적재한다.
+            // `BigDecimal(double)` 대신 `valueOf` 를 쓰는 이유: 전자는 이진 표현의 잔여 오차까지
+            // 50여 자리로 펼쳐 컬럼 scale(18) 을 넘기지만, 후자는 `Double.toString` 의 최단 왕복
+            // 10진 표현을 취해 SF 가 API/엑셀로 노출하는 값과 동일한 자릿수가 된다.
             var equivalentRawDouble = 0.0
             for (row in rows) {
                 val n = rowCountByDate[row.workingDate!!] ?: 1
                 equivalentRawDouble += 1.0 / n.toDouble()
             }
-            // 환산근무일수 = Σ(1/N) — 저장 직전 4자리 반올림 1회 (SF Number(18,4) 저장 동등)
-            val equivalentWorkingDays = BigDecimal(equivalentRawDouble).setScale(4, RoundingMode.HALF_UP)
+            // 환산근무일수 = Σ(1/N) — SF 동등, 반올림 없음
+            val equivalentWorkingDays = BigDecimal.valueOf(equivalentRawDouble)
 
             val workingDaysMonth = workingDaysByCostCenter[rep.costCenterCode] ?: 0
-            // 환산인원 = Σ(1/N) / D — 미반올림 Double 나눗셈 후 저장 직전 4자리 반올림 1회
+            // 환산인원 = Σ(1/N) / D — SF 동등, 반올림 없음
             val convertedHeadcount = if (workingDaysMonth > 0) {
-                BigDecimal(equivalentRawDouble / workingDaysMonth.toDouble())
-                    .setScale(4, RoundingMode.HALF_UP)
+                BigDecimal.valueOf(equivalentRawDouble / workingDaysMonth.toDouble())
             } else {
                 BigDecimal.ZERO
             }
@@ -506,7 +510,8 @@ class AdminMonthlyIntegrationService(
                 val othersSum = others
                     .mapNotNull { it.convertedHeadcount }
                     .fold(BigDecimal.ZERO) { acc, v -> acc.add(v) }
-                othersSum.add(convertedHeadcount).setScale(4, RoundingMode.HALF_UP)
+                // SF `MonthlyEmpIntegrationSchTriggerHandler.cls:154,183` — 합산값 setScale 없이 직접 대입
+                othersSum.add(convertedHeadcount)
             } else null
 
             // thisMonthAmount — Q12 옵션 1: batch persist 결과 우선 + 동기 fallback

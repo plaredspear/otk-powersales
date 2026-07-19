@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -182,22 +183,25 @@ class AdminMonthlyIntegrationServiceRefreshTest {
             assertThat(it.equivalentNumberOfWorkingDays).isEqualByComparingTo(BigDecimal("1.0000"))
             // 당월근무일수 = 사원+costCenter distinct 날짜 3 / 환산인원 = 1.0 / 3
             assertThat(it.workingDaysMonth).isEqualByComparingTo(BigDecimal("3"))
-            assertThat(it.convertedHeadcount).isEqualByComparingTo(BigDecimal("0.3333"))
+            // SF 정합 — 저장 시 반올림 없이 Double 전정밀도 그대로 (SF 실측 0.3333333333333333 형태)
+            assertThat(it.convertedHeadcount).isEqualByComparingTo(BigDecimal.valueOf(1.0 / 3.0))
         }
     }
 
     @Test
-    @DisplayName("환산인원 사원 합계 — 날짜별 N 이 제각각인 비대칭 케이스도 SF 동형 Double 계산으로 정확히 1.0000 (0.9999/1.0001 오차 없음)")
+    @DisplayName("환산인원 사원 합계 — 날짜별 N 이 제각각인 비대칭 케이스도 표시 반올림 시 1.0 (선반올림 0.9999/1.0001 오차 없음)")
     fun convertedHeadcountEmployeeSumIsExactlyOne() {
         val accA = account(100L)
         val accB = account(200L)
         val accC = account(300L)
         // D = 3일 근무. 날짜별 그날 투입 거래처 수 N 이 3 → 2 → 1 로 제각각인 비대칭 구조.
         //   6/15: A,B,C (N=3) / 6/16: A,B (N=2) / 6/17: A (N=1)
-        // SF 는 1/N 을 Double 로 반올림 없이 누적 후 /D, 저장 직전 4자리 반올림 1회.
-        //   A행 = (1/3+1/2+1/1)/3 = 0.6111, B행 = (1/3+1/2)/3 = 0.2778, C행 = (1/3)/3 = 0.1111
-        //   사원 합계 = 0.6111+0.2778+0.1111 = 1.0000 (날짜별 몫 합 = 1 의 D 배 / D)
-        // BigDecimal 로 행마다 divide(4,HALF_UP) 선반올림하면 이 합이 0.9999/1.0001 로 어긋난다.
+        // SF 는 1/N 을 Double 로 반올림 없이 누적 후 /D, 그 결과를 setScale 없이 저장한다.
+        //   A행 = (1/3+1/2+1/1)/3, B행 = (1/3+1/2)/3, C행 = (1/3)/3
+        // 전정밀도 저장이므로 세 행의 10진 합은 Double 자체 반올림이 흡수하던 오차가 드러나
+        // 0.99999999999999983 이 된다 — 이는 SF 도 동일한 구조적 성질이며, 화면/엑셀이 3자리·1자리로
+        // 반올림하므로 사용자에게는 1.0 으로 보인다. 따라서 표시 반올림 기준으로 검증한다.
+        // (행마다 divide(4,HALF_UP) 선반올림하는 방식이면 0.9999/1.0001 로 표시 단계에서도 어긋난다.)
         stubPopulation(
             listOf(
                 schedule(1L, accA, LocalDate.of(2026, 6, 15)),
@@ -218,8 +222,9 @@ class AdminMonthlyIntegrationServiceRefreshTest {
         }
         val sum = saved.mapNotNull { it.convertedHeadcount }
             .fold(BigDecimal.ZERO) { acc, v -> acc.add(v) }
-        // 저장값(4자리) 단순 합산이 정확히 1.0000 — 이미지의 알라딘 실측치 정합
-        assertThat(sum).isEqualByComparingTo(BigDecimal("1.0000"))
+        // 화면 표시 단계(3자리) 기준 1.000 — 알라딘 실측치 정합.
+        // 전정밀도 원값은 0.99999999999999983 (SF 동일) 이라 여기서 등가 비교하지 않는다.
+        assertThat(sum.setScale(3, RoundingMode.HALF_UP)).isEqualByComparingTo(BigDecimal("1.000"))
     }
 
     @Test
@@ -261,6 +266,28 @@ class AdminMonthlyIntegrationServiceRefreshTest {
         assertThat(saved).hasSize(2)
         assertThat(saved.map { it.workingCategory3 }).containsExactlyInAnyOrder("고정", "순회")
         saved.forEach { assertThat(it.equivalentNumberOfWorkingDays).isEqualByComparingTo(BigDecimal("1.0000")) }
+    }
+
+    @Test
+    @DisplayName("환산인원 전정밀도 저장 — SF 는 setScale 없이 Double 원값 적재 (4자리 절단 금지)")
+    fun storesConvertedHeadcountAtFullPrecision() {
+        val acc = account(100L, "1234567")
+        // 17 일 근무, 각 날 단독 투입 → 환산근무일수 17, 당월근무일수 17 이 되지 않도록
+        // 하루만 해당 거래처에 투입하고 나머지 16 일은 다른 거래처로 분산 → 환산인원 = 1/17
+        val other = account(200L, "7654321")
+        val rows = mutableListOf<TeamMemberSchedule>()
+        rows += schedule(1L, acc, LocalDate.of(2026, 6, 1))
+        for (d in 2..17) {
+            rows += schedule(d.toLong(), other, LocalDate.of(2026, 6, d))
+        }
+        stubPopulation(rows)
+
+        service.refreshIntegration(10L, yearMonth)
+
+        val target = savedRecords().single { it.account?.id == 100L }
+        // 1/17 = 0.058823529411764705 — 4 자리로 자르면 0.0588 이 되어 SF 실측(운영 엑셀)과 어긋난다
+        assertThat(target.convertedHeadcount).isEqualByComparingTo(BigDecimal.valueOf(1.0 / 17.0))
+        assertThat(target.convertedHeadcount!!.scale()).isGreaterThan(4)
     }
 
     @Test
