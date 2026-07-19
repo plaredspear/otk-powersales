@@ -194,6 +194,13 @@ rdp:
     mfeis:
       default-page-size: 100
       max-page-size: 1000
+    # 거래처/사원은 entity 전 컬럼을 노출해 row 당 페이로드가 MFEIS projection 보다 크므로 상한을 낮게 둔다.
+    account:
+      default-page-size: 100
+      max-page-size: 500
+    employee:
+      default-page-size: 100
+      max-page-size: 500
 
 springdoc:
   swagger-ui:

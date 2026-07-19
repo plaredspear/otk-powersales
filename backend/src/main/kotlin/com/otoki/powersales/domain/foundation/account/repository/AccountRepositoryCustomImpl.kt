@@ -234,6 +234,42 @@ class AccountRepositoryCustomImpl(
             .filterNotNull()
     }
 
+    override fun findSnapshotByKeyset(cursor: Long?, limit: Int): List<AccountSnapshotRow> {
+        val where = BooleanBuilder()
+            // soft delete 제외 (SF 자동 제외 정합 — MFEIS 스냅샷과 동일 규약)
+            .and(account.isDeleted.isFalse.or(account.isDeleted.isNull))
+
+        // keyset 커서 — 직전 페이지 마지막 id 초과분만. null 이면 처음부터.
+        if (cursor != null) {
+            where.and(account.id.gt(cursor))
+        }
+
+        // 관계 FK 는 `account.parent.id` 형태로 **FK 컬럼만** select 한다 — 연관 엔티티를 join 하지 않으므로
+        // 결과 row 수도 늘지 않고, 호출 측이 entity 의 LAZY 필드에 의존할 필요도 없어진다.
+        return queryFactory
+            .select(
+                account,
+                account.ownerUser.id,
+                account.createdBy.id,
+                account.lastModifiedBy.id,
+                account.parent.id,
+            )
+            .from(account)
+            .where(where)
+            .orderBy(account.id.asc())
+            .limit(limit.toLong())
+            .fetch()
+            .map { tuple ->
+                AccountSnapshotRow(
+                    account = tuple.get(account)!!,
+                    ownerUserId = tuple.get(account.ownerUser.id),
+                    createdById = tuple.get(account.createdBy.id),
+                    lastModifiedById = tuple.get(account.lastModifiedBy.id),
+                    parentId = tuple.get(account.parent.id),
+                )
+            }
+    }
+
     /**
      * 고급 검색 필터 드롭다운 distinct 조회의 공통 WHERE — 실제 검색 결과와 동일 게이팅.
      * notDeleted + 지점 스코프(predicate) + promotionLookupFilter + 폐업 제외.

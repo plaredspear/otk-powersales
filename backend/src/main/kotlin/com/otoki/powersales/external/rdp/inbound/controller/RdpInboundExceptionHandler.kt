@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 @RestControllerAdvice(
     assignableTypes = [
         RdpTokenController::class,
-        RdpMfeisController::class
+        RdpMfeisController::class,
+        RdpAccountController::class,
+        RdpEmployeeController::class
     ]
 )
 @Order(Ordered.HIGHEST_PRECEDENCE)

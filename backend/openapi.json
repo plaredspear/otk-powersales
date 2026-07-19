@@ -337,6 +337,253 @@
         },
         "type" : "object"
       },
+      "AccountRow" : {
+        "properties" : {
+          "abcType" : {
+            "type" : [ "string", "null" ]
+          },
+          "abcTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountGroup" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountSource" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountStatusCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountStatusName" : {
+            "type" : [ "string", "null" ]
+          },
+          "accountType" : {
+            "type" : [ "string", "null" ]
+          },
+          "address1" : {
+            "type" : [ "string", "null" ]
+          },
+          "address2" : {
+            "type" : [ "string", "null" ]
+          },
+          "annualRevenue" : {
+            "type" : [ "number", "null" ]
+          },
+          "branchCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchCostCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "branchName" : {
+            "type" : [ "string", "null" ]
+          },
+          "businessCategory" : {
+            "type" : [ "string", "null" ]
+          },
+          "businessLicenseNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "businessType" : {
+            "type" : [ "string", "null" ]
+          },
+          "closingTime1" : {
+            "type" : [ "string", "null" ]
+          },
+          "closingTime2" : {
+            "type" : [ "string", "null" ]
+          },
+          "closingTime3" : {
+            "type" : [ "string", "null" ]
+          },
+          "consignmentAcc" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "createdById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "createdBySfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "deleted" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "distribution" : {
+            "type" : [ "string", "null" ]
+          },
+          "divisionCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "divisionCostCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "divisionName" : {
+            "type" : [ "string", "null" ]
+          },
+          "email" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "externalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "fax" : {
+            "type" : [ "string", "null" ]
+          },
+          "firstInstalled" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "freezerInstalled" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "freezerType" : {
+            "type" : [ "string", "null" ]
+          },
+          "geocodeUnresolved" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "industry" : {
+            "type" : [ "string", "null" ]
+          },
+          "isDeleted" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "isPriorityRecord" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "lastModifiedById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "lastModifiedBySfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "latitude" : {
+            "type" : [ "string", "null" ]
+          },
+          "logisticsCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "logisticsName" : {
+            "type" : [ "string", "null" ]
+          },
+          "longitude" : {
+            "type" : [ "string", "null" ]
+          },
+          "mapCoordinate" : {
+            "type" : [ "string", "null" ]
+          },
+          "mobilePhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "numberOfEmployees" : {
+            "type" : [ "number", "null" ]
+          },
+          "orderEndTime" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerSfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "ownership" : {
+            "type" : [ "string", "null" ]
+          },
+          "parentId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "parentSfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "phone" : {
+            "type" : [ "string", "null" ]
+          },
+          "priorityRecord" : {
+            "type" : "boolean"
+          },
+          "rating" : {
+            "type" : [ "string", "null" ]
+          },
+          "remainingCredit" : {
+            "type" : [ "number", "null" ]
+          },
+          "representative" : {
+            "type" : [ "string", "null" ]
+          },
+          "salesDeptCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "salesDeptCostCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "salesDeptName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "site" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalCredit" : {
+            "type" : [ "number", "null" ]
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "website" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk1" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk1Tx" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk2" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk2Tx" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk3" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk3Tx" : {
+            "type" : [ "string", "null" ]
+          },
+          "zipCode" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "AccountTypeCount" : {
         "properties" : {
           "accountType" : {
@@ -14950,6 +15197,183 @@
         },
         "type" : "object"
       },
+      "EmployeeRow" : {
+        "properties" : {
+          "agreementFlag" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "appLoginActive" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "appointmentDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "birthDate" : {
+            "type" : [ "string", "null" ]
+          },
+          "costCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "createdById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "createdBySfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "crmWorkStartDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "crmWorkType" : {
+            "type" : [ "string", "null" ]
+          },
+          "deleted" : {
+            "type" : "boolean"
+          },
+          "dkCostCenterCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "email" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "endDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "gender" : {
+            "type" : [ "string", "null" ]
+          },
+          "homePhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "isDeleted" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "jikchak" : {
+            "type" : [ "string", "null" ]
+          },
+          "jikgub" : {
+            "type" : [ "string", "null" ]
+          },
+          "jikjong" : {
+            "type" : [ "string", "null" ]
+          },
+          "jikwee" : {
+            "type" : [ "string", "null" ]
+          },
+          "jobCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "lastModifiedById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "lastModifiedBySfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "locationCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "lockingFlag" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "managerId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "managerSfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "officePhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "ordDetailNode" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgName" : {
+            "type" : [ "string", "null" ]
+          },
+          "origin" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerGroupId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "ownerSfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "phone" : {
+            "type" : [ "string", "null" ]
+          },
+          "postponedAppointmentId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "postponedAppointmentSfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "professionalPromotionTeam" : {
+            "type" : [ "string", "null" ]
+          },
+          "role" : {
+            "type" : [ "string", "null" ]
+          },
+          "sfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "status" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalAnnualLeave" : {
+            "type" : [ "number", "null" ]
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "usedAnnualLeave" : {
+            "type" : [ "number", "null" ]
+          },
+          "workArea" : {
+            "type" : [ "string", "null" ]
+          },
+          "workEmail" : {
+            "type" : [ "string", "null" ]
+          },
+          "workPhone" : {
+            "type" : [ "string", "null" ]
+          },
+          "workType" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "EmployeeWorkHistoryItem" : {
         "properties" : {
           "abcType" : {
@@ -22345,6 +22769,34 @@
         },
         "type" : "object"
       },
+      "RdpResultWrapperSnapshotPageResponseAccountRow" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/SnapshotPageResponseAccountRow"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "RdpResultWrapperSnapshotPageResponseEmployeeRow" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/SnapshotPageResponseEmployeeRow"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "RecalcResult" : {
         "properties" : {
           "durationMs" : {
@@ -24683,6 +25135,55 @@
           },
           "themeId" : {
             "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "SnapshotPageResponseAccountRow" : {
+        "properties" : {
+          "hasNext" : {
+            "type" : "boolean"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccountRow"
+            },
+            "type" : "array"
+          },
+          "nextCursor" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "SnapshotPageResponseEmployeeRow" : {
+        "properties" : {
+          "hasNext" : {
+            "type" : "boolean"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EmployeeRow"
+            },
+            "type" : "array"
+          },
+          "nextCursor" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "SnapshotSearchRequest" : {
+        "properties" : {
+          "cursor" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "size" : {
+            "format" : "int32",
             "type" : [ "integer", "null" ]
           }
         },
@@ -43742,6 +44243,72 @@
           }
         },
         "tags" : [ "suggestion-controller" ]
+      }
+    },
+    "/api/v1/rdp/account/search" : {
+      "post" : {
+        "description" : "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
+        "operationId" : "search_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SnapshotSearchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RdpResultWrapperSnapshotPageResponseAccountRow"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "Bearer" : [ ]
+        } ],
+        "summary" : "거래처 전량 스냅샷 조회 (keyset 페이지네이션)",
+        "tags" : [ "rdp-account-controller" ]
+      }
+    },
+    "/api/v1/rdp/employee/search" : {
+      "post" : {
+        "description" : "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
+        "operationId" : "search_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SnapshotSearchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RdpResultWrapperSnapshotPageResponseEmployeeRow"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "Bearer" : [ ]
+        } ],
+        "summary" : "사원 전량 스냅샷 조회 (keyset 페이지네이션)",
+        "tags" : [ "rdp-employee-controller" ]
       }
     },
     "/api/v1/rdp/mfeis/search" : {

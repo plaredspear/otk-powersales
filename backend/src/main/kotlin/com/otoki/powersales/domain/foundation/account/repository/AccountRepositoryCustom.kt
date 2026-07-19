@@ -139,7 +139,36 @@ interface AccountRepositoryCustom {
 
     /** [findDistinctAccountTypes] 와 동일 게이팅으로 거래상태(accountStatusName) distinct 값 조회. */
     fun findDistinctAccountStatusNames(predicate: Predicate): List<String>
+
+    /**
+     * 외부 조회(RDP inbound) 전량 스냅샷 — PK keyset 페이지 1건 분량.
+     *
+     * MFEIS 스냅샷과 달리 **entity 전 컬럼**을 노출하므로 projection 축소 없이 entity 를 그대로 반환한다.
+     *
+     * 관계 FK(ownerUser/createdBy/lastModifiedBy/parent)는 **entity 가 아니라 [AccountSnapshotRow] 의
+     * 별도 필드로 함께 select** 한다. `entity.parent?.id` 로 읽어도 (식별자 접근은 프록시를 초기화하지
+     * 않으므로) 추가 쿼리는 없지만, FK 를 쿼리에서 직접 가져오면 관계 필드에 의존하지 않아 그 성질이
+     * 깨질 여지 자체가 없다. 회귀 감시는 `RdpSnapshotKeysetRepositoryTest` 의 **쿼리 1회** 단언이 담당한다.
+     *
+     * @param cursor 직전 페이지 마지막 id. null 이면 처음부터
+     * @param limit  조회 상한 (hasNext 판정을 위해 호출 측이 pageSize + 1 을 넘긴다)
+     */
+    fun findSnapshotByKeyset(cursor: Long?, limit: Int): List<AccountSnapshotRow>
 }
+
+/**
+ * 거래처 전량 스냅샷 1건 — entity + 관계 FK id.
+ *
+ * 관계 FK 를 entity 의 LAZY 필드에 의존하지 않고 쿼리에서 함께 뽑아 오기 위한 묶음
+ * (근거는 [AccountRepositoryCustom.findSnapshotByKeyset] KDoc).
+ */
+data class AccountSnapshotRow(
+    val account: Account,
+    val ownerUserId: Long?,
+    val createdById: Long?,
+    val lastModifiedById: Long?,
+    val parentId: Long?,
+)
 
 /** 거래처 라벨 구성요소 distinct 1건 — (코드, 명칭) 쌍. */
 data class AccountLabelPartsRow(
