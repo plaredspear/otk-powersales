@@ -6,8 +6,10 @@ import com.otoki.powersales.domain.activity.schedule.service.TeamMemberCategoryS
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleSearchService
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -28,6 +30,7 @@ class TeamMemberSearchController(
 
     /**
      * 카테고리별 인원 현황 검색 — SF `CategorySearchByTeamMemberController.getCategory(year, month, orgValues)` 동등.
+     * principal 기반 지점 교집합 가드 (SF `CurrentUserBranchNameList` ∩ orgValues) 는 service 내부에서 적용.
      */
     @RequiresSfPermission(entity = "monthly_female_employee_integration_schedule", operation = SfPermissionOperation.READ)
     @GetMapping("/category")
@@ -35,8 +38,9 @@ class TeamMemberSearchController(
         @RequestParam year: String,
         @RequestParam month: String,
         @RequestParam(required = false) orgValues: List<String>?,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<TeamMemberCategorySearchResult>> {
-        val result = categoryService.search(year, month, orgValues.orEmpty())
+        val result = categoryService.search(year, month, orgValues.orEmpty(), principal)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 

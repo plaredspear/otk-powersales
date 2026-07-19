@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmploye
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.org.organization.entity.QOrganization.Companion.organization
 import com.otoki.powersales.domain.activity.schedule.entity.QMonthlyFemaleEmployeeIntegrationSchedule.Companion.monthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -26,19 +27,44 @@ import java.math.RoundingMode
 class TeamMemberCategorySearchService(
     private val expander: BranchCodeExpander,
     private val queryFactory: JPAQueryFactory,
+    private val branchResolver: WomenScheduleBranchResolver,
 ) {
 
     /**
      * SF `getCategory(year, month, orgValues)` 동등.
+     *
+     * SF cls:44-59 정합 — 요청 지점을 본인 허용 지점 목록(`CurrentUserBranchNameList.getBranchNames()`
+     * = [WomenScheduleBranchResolver.resolveBranches]) 과 교집합한 뒤에만 조회한다. UI 게이팅과 별개로
+     * 서버가 타 지점 코드 조회(IDOR)를 차단. 교집합이 비면 SF 와 동일하게 빈 결과 + "검색결과가 없습니다.".
+     * 행 순서는 SF cls:56-60 정합 — 지점 한글명 오름차순.
+     *
      * @param year 년 ("2026")
      * @param month 월 ("5" / "05" 모두 허용)
      * @param orgValues 사용자 선택 지점 코드 리스트 (LWC 의 orgMap.values() 동등)
+     * @param principal 로그인 사용자 — 허용 지점 화이트리스트 산출 기준 (대행 시 대상자 기준)
      */
-    fun search(year: String, month: String, orgValues: List<String>): TeamMemberCategorySearchResult {
+    fun search(
+        year: String,
+        month: String,
+        orgValues: List<String>,
+        principal: WebUserPrincipal,
+    ): TeamMemberCategorySearchResult {
         val normMonth = month.toInt().toString()
         val (lastYear, lastMonth) = previousYearMonth(year, normMonth)
 
-        val expandedCodes = expander.expand(orgValues)
+        // SF getCategory cls:44-55 — orgValues ∩ 본인 허용 지점 (미허용 코드는 조용히 탈락)
+        val allowedOrgValues = intersectPermitted(orgValues, principal)
+
+        // SF `CurrentUserBranchNameList.getBranchNames()` 의 `{OrgCodeLevel5__c: OrgNameLevel5__c}` map 대응 —
+        // 사용자가 선택한 orgValue (= OrgCodeLevel5 차원) 를 `aggregateCountMap` 의 key 차원 (`employee.orgName`,
+        // = SF `BranchName__c` formula = `FullName__r.DKRetail__OrgName__c`) 으로 변환한다.
+        // 이 변환을 거치지 않으면 countMap 의 key 가 한글 지점명인 반면 lookup 은 코드값이라 영원히 매칭 불가.
+        val orgNameByCode = fetchOrgNameByCode(allowedOrgValues)
+
+        // SF cls:56-60 `branhchNamesForSort.sort()` — 지점 한글명 오름차순으로 행 순서 결정
+        val sortedOrgValues = sortByBranchName(allowedOrgValues, orgNameByCode)
+
+        val expandedCodes = expander.expand(sortedOrgValues)
         if (expandedCodes.isEmpty()) {
             return TeamMemberCategorySearchResult(resultCode = "S", resultMsg = "검색결과가 없습니다.", result = emptyList())
         }
@@ -50,13 +76,7 @@ class TeamMemberCategorySearchService(
         val lastCountMap = aggregateCountMap(lastMonthRows, lastMonth)
         val countMap = currentCountMap + lastCountMap  // SF L97 putAll 동등
 
-        // SF `CurrentUserBranchNameList.getBranchNames()` 의 `{OrgCodeLevel5__c: OrgNameLevel5__c}` map 대응 —
-        // 사용자가 선택한 orgValue (= OrgCodeLevel5 차원) 를 `aggregateCountMap` 의 key 차원 (`employee.orgName`,
-        // = SF `BranchName__c` formula = `FullName__r.DKRetail__OrgName__c`) 으로 변환한다.
-        // 이 변환을 거치지 않으면 countMap 의 key 가 한글 지점명인 반면 lookup 은 코드값이라 영원히 매칭 불가.
-        val orgNameByCode = fetchOrgNameByCode(orgValues)
-
-        val items = orgValues.map { orgValue ->
+        val items = sortedOrgValues.map { orgValue ->
             val branchName = orgNameByCode[orgValue] ?: orgValue
             buildResultItem(branchName, normMonth, lastMonth, countMap)
         }
@@ -67,6 +87,22 @@ class TeamMemberCategorySearchService(
             result = items,
         )
     }
+
+    /**
+     * SF getCategory cls:44-55 — 요청 지점 ∩ 본인 허용 지점 교집합 (요청 순서 유지).
+     * SF 는 `CurrentUserBranchNameList` 의 org 목록을 돌며 `orgValues.contains(code)` 로 걸렀다.
+     */
+    internal fun intersectPermitted(orgValues: List<String>, principal: WebUserPrincipal): List<String> {
+        val permitted = branchResolver.resolveBranches(principal).map { it.branchCode }.toSet()
+        return orgValues.filter { it in permitted }
+    }
+
+    /**
+     * SF getCategory cls:56-60 — 지점 한글명 오름차순 정렬. 이름 미해석 코드는 코드값 자체로 정렬
+     * (SF 는 본인 org 목록에서 온 label 만 다루므로 미해석 케이스가 없음 — fallback 은 결정적 순서 보장용).
+     */
+    internal fun sortByBranchName(orgValues: List<String>, orgNameByCode: Map<String, String>): List<String> =
+        orgValues.sortedBy { orgNameByCode[it] ?: it }
 
     /**
      * `Organization.orgCodeLevel5 IN orgValues` → `{orgCodeLevel5: orgNameLevel5}` Map.

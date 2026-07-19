@@ -197,7 +197,7 @@ class AdminMonthlyIntegrationControllerTest : AdminControllerTestSupport() {
                     )
                 )
             )
-            every { adminMonthlyIntegrationService.getCategorySchedule(eq(2026), eq(3), any()) } returns response
+            every { adminMonthlyIntegrationService.getCategorySchedule(eq(2026), eq(3), any(), any()) } returns response
 
             mockMvc.perform(
                 get("/api/v1/admin/schedules/monthly-integration/category")

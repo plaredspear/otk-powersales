@@ -82,22 +82,26 @@ export interface MonthlyIntegrationFilterOptions {
   dependentAccountTypes: Record<string, string[]>;
 }
 
+/**
+ * 근무형태별 여사원인원현황 행. 수치 필드는 nullable —
+ * 당월/전월 합계가 모두 0 인 지점은 행을 유지하되 모든 수치가 null 로 온다 (빈 칸 표시).
+ */
 export interface CategoryScheduleItem {
   branchName: string;
-  currentMonthTotal: number;
-  previousMonthTotal: number;
-  totalChange: number;
-  displayFixed: number;
-  displayAlternate: number;
-  displayPatrol: number;
-  currentMonthDisplayTotal: number;
-  previousMonthDisplayTotal: number;
-  displayChange: number;
-  eventAmbient: number;
-  eventFrozenChilled: number;
-  currentMonthEventTotal: number;
-  previousMonthEventTotal: number;
-  eventChange: number;
+  currentMonthTotal: number | null;
+  previousMonthTotal: number | null;
+  totalChange: number | null;
+  displayFixed: number | null;
+  displayAlternate: number | null;
+  displayPatrol: number | null;
+  currentMonthDisplayTotal: number | null;
+  previousMonthDisplayTotal: number | null;
+  displayChange: number | null;
+  eventAmbient: number | null;
+  eventFrozenChilled: number | null;
+  currentMonthEventTotal: number | null;
+  previousMonthEventTotal: number | null;
+  eventChange: number | null;
 }
 
 export interface CategoryScheduleResponse {

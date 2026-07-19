@@ -105,20 +105,26 @@ data class CategoryScheduleResponse(
     val items: List<CategoryScheduleItem>
 )
 
+/**
+ * 근무형태별 여사원인원현황 행 — SF `CategorySearchByTeamMemberController.ResultItems` 동등.
+ *
+ * 수치 필드는 전부 nullable — SF `setNull()` (양월 합계 모두 0 인 지점은 행을 유지하되
+ * 모든 수치를 null 로 비움) 정합. 화면/엑셀은 null 을 빈 칸으로 표시한다.
+ */
 data class CategoryScheduleItem(
     val branchName: String,
-    val currentMonthTotal: BigDecimal,
-    val previousMonthTotal: BigDecimal,
-    val totalChange: BigDecimal,
-    val displayFixed: BigDecimal,
-    val displayAlternate: BigDecimal,
-    val displayPatrol: BigDecimal,
-    val currentMonthDisplayTotal: BigDecimal,
-    val previousMonthDisplayTotal: BigDecimal,
-    val displayChange: BigDecimal,
-    val eventAmbient: BigDecimal,
-    val eventFrozenChilled: BigDecimal,
-    val currentMonthEventTotal: BigDecimal,
-    val previousMonthEventTotal: BigDecimal,
-    val eventChange: BigDecimal
+    val currentMonthTotal: BigDecimal?,
+    val previousMonthTotal: BigDecimal?,
+    val totalChange: BigDecimal?,
+    val displayFixed: BigDecimal?,
+    val displayAlternate: BigDecimal?,
+    val displayPatrol: BigDecimal?,
+    val currentMonthDisplayTotal: BigDecimal?,
+    val previousMonthDisplayTotal: BigDecimal?,
+    val displayChange: BigDecimal?,
+    val eventAmbient: BigDecimal?,
+    val eventFrozenChilled: BigDecimal?,
+    val currentMonthEventTotal: BigDecimal?,
+    val previousMonthEventTotal: BigDecimal?,
+    val eventChange: BigDecimal?
 )

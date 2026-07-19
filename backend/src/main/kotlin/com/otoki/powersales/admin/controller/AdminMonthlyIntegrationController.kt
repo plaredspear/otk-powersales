@@ -7,9 +7,11 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegra
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationFilterOptionsResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlyIntegrationScheduleResponse
 import com.otoki.powersales.domain.activity.schedule.service.AdminMonthlyIntegrationService
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -74,14 +76,17 @@ class AdminMonthlyIntegrationController(
         return ExcelResponseUtils.build(result)
     }
 
+    // 근무형태별 인원현황 2종은 SF getCategory 정합으로 principal 기반 지점 교집합 가드 적용
+    // (SF CurrentUserBranchNameList ∩ orgValues). 통합일정 계열은 SF getSchedule 에 교집합이 없어 미적용.
     @GetMapping("/category")
     @RequiresSfPermission(entity = "team_member_schedule", operation = SfPermissionOperation.READ)
     fun getCategorySchedule(
         @RequestParam year: Int,
         @RequestParam month: Int,
-        @RequestParam costCenterCodes: List<String>
+        @RequestParam costCenterCodes: List<String>,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<CategoryScheduleResponse>> {
-        val response = adminMonthlyIntegrationService.getCategorySchedule(year, month, costCenterCodes)
+        val response = adminMonthlyIntegrationService.getCategorySchedule(year, month, costCenterCodes, principal)
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
@@ -90,9 +95,10 @@ class AdminMonthlyIntegrationController(
     fun exportCategorySchedule(
         @RequestParam year: Int,
         @RequestParam month: Int,
-        @RequestParam costCenterCodes: List<String>
+        @RequestParam costCenterCodes: List<String>,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ByteArray> {
-        val result = adminMonthlyIntegrationService.exportCategorySchedule(year, month, costCenterCodes)
+        val result = adminMonthlyIntegrationService.exportCategorySchedule(year, month, costCenterCodes, principal)
         return ExcelResponseUtils.build(result)
     }
 }

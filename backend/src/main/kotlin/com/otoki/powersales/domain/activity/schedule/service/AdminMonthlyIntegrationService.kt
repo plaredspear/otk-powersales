@@ -16,6 +16,7 @@ import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.foundation.account.entity.Account
@@ -133,15 +134,19 @@ class AdminMonthlyIntegrationService(
     fun getCategorySchedule(
         year: Int,
         month: Int,
-        costCenterCodes: List<String>
+        costCenterCodes: List<String>,
+        principal: WebUserPrincipal,
     ): CategoryScheduleResponse {
         validateParams(year, month, costCenterCodes)
         val sf = teamMemberCategorySearchService.search(
             year = year.toString(),
             month = month.toString(),
             orgValues = costCenterCodes,
+            principal = principal,
         )
-        val items = sf.result.mapNotNull { it.toCategoryItem() }
+        // SF 정합 — 양월 0 지점도 행 유지 (setNull 상태 그대로, 수치는 null). mapNotNull 로 행을
+        // 제거하면 SF (Aura 도 무필터 바인딩 — 지점명 + 빈 칸 행 표시) 와 달라진다.
+        val items = sf.result.map { it.toCategoryItem() }
         return CategoryScheduleResponse(year = year, month = month, items = items)
     }
 
@@ -225,8 +230,13 @@ class AdminMonthlyIntegrationService(
         return ExcelResult(bytes, filename)
     }
 
-    fun exportCategorySchedule(year: Int, month: Int, costCenterCodes: List<String>): ExcelResult {
-        val response = getCategorySchedule(year, month, costCenterCodes)
+    fun exportCategorySchedule(
+        year: Int,
+        month: Int,
+        costCenterCodes: List<String>,
+        principal: WebUserPrincipal,
+    ): ExcelResult {
+        val response = getCategorySchedule(year, month, costCenterCodes, principal)
         val workbook = XSSFWorkbook()
         val sheet = workbook.createSheet("근무형태별 여사원인원현황")
 
@@ -271,23 +281,35 @@ class AdminMonthlyIntegrationService(
         }
         sheet.createFreezePane(0, 2)
 
+        // SF setNull 정합 — 양월 0 지점 행의 null 수치는 빈 셀로 출력 (화면의 빈 칸 표시와 동일)
+        fun org.apache.poi.ss.usermodel.Row.createDecimalCell(
+            col: Int,
+            value: BigDecimal?,
+            style: org.apache.poi.ss.usermodel.CellStyle,
+        ) {
+            createCell(col).apply {
+                value?.let { setCellValue(it.toDouble()) }
+                cellStyle = style
+            }
+        }
+
         response.items.forEachIndexed { rowIdx, item ->
             val row = sheet.createRow(rowIdx + 2)
             row.createCell(0).setCellValue(item.branchName)
-            row.createCell(1).apply { setCellValue(item.currentMonthTotal.toDouble()); cellStyle = decimal1Style }
-            row.createCell(2).apply { setCellValue(item.previousMonthTotal.toDouble()); cellStyle = decimal1Style }
-            row.createCell(3).apply { setCellValue(item.totalChange.toDouble()); cellStyle = decimal1Style }
-            row.createCell(4).apply { setCellValue(item.displayFixed.toDouble()); cellStyle = decimal3Style }
-            row.createCell(5).apply { setCellValue(item.displayAlternate.toDouble()); cellStyle = decimal3Style }
-            row.createCell(6).apply { setCellValue(item.displayPatrol.toDouble()); cellStyle = decimal3Style }
-            row.createCell(7).apply { setCellValue(item.currentMonthDisplayTotal.toDouble()); cellStyle = decimal3Style }
-            row.createCell(8).apply { setCellValue(item.previousMonthDisplayTotal.toDouble()); cellStyle = decimal3Style }
-            row.createCell(9).apply { setCellValue(item.displayChange.toDouble()); cellStyle = decimal3Style }
-            row.createCell(10).apply { setCellValue(item.eventAmbient.toDouble()); cellStyle = decimal3Style }
-            row.createCell(11).apply { setCellValue(item.eventFrozenChilled.toDouble()); cellStyle = decimal3Style }
-            row.createCell(12).apply { setCellValue(item.currentMonthEventTotal.toDouble()); cellStyle = decimal3Style }
-            row.createCell(13).apply { setCellValue(item.previousMonthEventTotal.toDouble()); cellStyle = decimal3Style }
-            row.createCell(14).apply { setCellValue(item.eventChange.toDouble()); cellStyle = decimal3Style }
+            row.createDecimalCell(1, item.currentMonthTotal, decimal1Style)
+            row.createDecimalCell(2, item.previousMonthTotal, decimal1Style)
+            row.createDecimalCell(3, item.totalChange, decimal1Style)
+            row.createDecimalCell(4, item.displayFixed, decimal3Style)
+            row.createDecimalCell(5, item.displayAlternate, decimal3Style)
+            row.createDecimalCell(6, item.displayPatrol, decimal3Style)
+            row.createDecimalCell(7, item.currentMonthDisplayTotal, decimal3Style)
+            row.createDecimalCell(8, item.previousMonthDisplayTotal, decimal3Style)
+            row.createDecimalCell(9, item.displayChange, decimal3Style)
+            row.createDecimalCell(10, item.eventAmbient, decimal3Style)
+            row.createDecimalCell(11, item.eventFrozenChilled, decimal3Style)
+            row.createDecimalCell(12, item.currentMonthEventTotal, decimal3Style)
+            row.createDecimalCell(13, item.previousMonthEventTotal, decimal3Style)
+            row.createDecimalCell(14, item.eventChange, decimal3Style)
         }
 
         header2Labels.indices.forEach { sheet.autoSizeColumn(it) }
@@ -812,25 +834,23 @@ private fun TeamMemberScheduleResultItem.toMonthlyIntegrationItem(): MonthlyInte
     )
 
 // SF `CategorySearchByTeamMember` row → web admin 카테고리 DTO 변환.
+// SF `setNull()` 정합 — 양월 0 지점 행은 수치 전부 null 로 유지 (행 자체는 보존).
 // 양 월 모두 0 인 row 는 SF `setNull()` 로 모든 수치가 null → 화면에서 제외 (returns null).
-private fun TeamMemberCategoryResultItem.toCategoryItem(): CategoryScheduleItem? {
-    val curTotal = currentMonthTotal ?: return null
-    val prevTotal = lastMonthTotal ?: BigDecimal.ZERO
-    return CategoryScheduleItem(
+private fun TeamMemberCategoryResultItem.toCategoryItem(): CategoryScheduleItem =
+    CategoryScheduleItem(
         branchName = branchName,
-        currentMonthTotal = curTotal,
-        previousMonthTotal = prevTotal,
-        totalChange = totalIncrease ?: BigDecimal.ZERO,
-        displayFixed = fix ?: BigDecimal.ZERO,
-        displayAlternate = store ?: BigDecimal.ZERO,
-        displayPatrol = rotate ?: BigDecimal.ZERO,
-        currentMonthDisplayTotal = currentExhibitionTotal ?: BigDecimal.ZERO,
-        previousMonthDisplayTotal = lastExhibitionTotal ?: BigDecimal.ZERO,
-        displayChange = exhibitionIncrease ?: BigDecimal.ZERO,
-        eventAmbient = roomTemperature ?: BigDecimal.ZERO,
-        eventFrozenChilled = refrigerationAndFreezing ?: BigDecimal.ZERO,
-        currentMonthEventTotal = currentEventTotal ?: BigDecimal.ZERO,
-        previousMonthEventTotal = lastEventTotal ?: BigDecimal.ZERO,
-        eventChange = eventIncrease ?: BigDecimal.ZERO,
+        currentMonthTotal = currentMonthTotal,
+        previousMonthTotal = lastMonthTotal,
+        totalChange = totalIncrease,
+        displayFixed = fix,
+        displayAlternate = store,
+        displayPatrol = rotate,
+        currentMonthDisplayTotal = currentExhibitionTotal,
+        previousMonthDisplayTotal = lastExhibitionTotal,
+        displayChange = exhibitionIncrease,
+        eventAmbient = roomTemperature,
+        eventFrozenChilled = refrigerationAndFreezing,
+        currentMonthEventTotal = currentEventTotal,
+        previousMonthEventTotal = lastEventTotal,
+        eventChange = eventIncrease,
     )
-}

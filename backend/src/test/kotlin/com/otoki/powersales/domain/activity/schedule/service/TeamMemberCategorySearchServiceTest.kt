@@ -4,7 +4,10 @@ import com.otoki.powersales.domain.activity.schedule.service.TeamMemberCategoryS
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.querydsl.jpa.impl.JPAQueryFactory
+import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -18,13 +21,81 @@ class TeamMemberCategorySearchServiceTest {
 
     private lateinit var expander: BranchCodeExpander
     private lateinit var queryFactory: JPAQueryFactory
+    private lateinit var branchResolver: WomenScheduleBranchResolver
     private lateinit var service: TeamMemberCategorySearchService
 
     @BeforeEach
     fun setUp() {
         expander = mockk()
         queryFactory = mockk()
-        service = TeamMemberCategorySearchService(expander, queryFactory)
+        branchResolver = mockk()
+        service = TeamMemberCategorySearchService(expander, queryFactory, branchResolver)
+    }
+
+    private fun principal() = WebUserPrincipal(
+        userId = 1L,
+        usernameValue = "u@otokims.co.kr",
+        employeeCode = "S001",
+        employeeId = 1L,
+        role = null,
+        costCenterCode = "5832",
+        isSalesSupport = false,
+        passwordChangeRequired = false,
+        permissions = emptySet(),
+        encodedPassword = "enc",
+        grantedAuthorities = emptyList(),
+        active = true,
+    )
+
+    @Nested
+    @DisplayName("지점 교집합 가드 — SF getCategory (cls:44-59) orgValues ∩ CurrentUserBranchNameList 동등")
+    inner class IntersectPermitted {
+
+        @Test
+        @DisplayName("허용 목록 외 지점 코드는 탈락, 허용 코드만 요청 순서 유지")
+        fun filtersToPermittedOnly() {
+            every { branchResolver.resolveBranches(any()) } returns listOf(
+                BranchResponse("5832", "원주1지점"),
+                BranchResponse("5833", "원주2지점"),
+            )
+            val result = service.intersectPermitted(listOf("5833", "9999", "5832"), principal())
+            assertThat(result).containsExactly("5833", "5832")
+        }
+
+        @Test
+        @DisplayName("요청 전부 허용 외 → search 는 빈 결과 + '검색결과가 없습니다.' (SF 동등, MFEIS 조회 미수행)")
+        fun allDeniedReturnsEmpty() {
+            every { branchResolver.resolveBranches(any()) } returns listOf(
+                BranchResponse("5832", "원주1지점"),
+            )
+            every { expander.expand(emptyList()) } returns emptySet()
+
+            val result = service.search("2026", "6", listOf("9999"), principal())
+
+            assertThat(result.resultCode).isEqualTo("S")
+            assertThat(result.resultMsg).isEqualTo("검색결과가 없습니다.")
+            assertThat(result.result).isEmpty()
+        }
+    }
+
+    @Nested
+    @DisplayName("행 정렬 — SF getCategory (cls:56-60) 지점 한글명 오름차순 동등")
+    inner class SortByBranchName {
+
+        @Test
+        @DisplayName("요청 코드 순서와 무관하게 한글 지점명 오름차순")
+        fun sortsByKoreanBranchName() {
+            val nameByCode = mapOf("1001" to "청주1지점", "1002" to "강북4지점", "1003" to "원주1지점")
+            val sorted = service.sortByBranchName(listOf("1001", "1002", "1003"), nameByCode)
+            assertThat(sorted).containsExactly("1002", "1003", "1001") // 강북 < 원주 < 청주
+        }
+
+        @Test
+        @DisplayName("이름 미해석 코드는 코드값 자체로 정렬 (결정적 순서 보장)")
+        fun unresolvedCodeFallsBackToCode() {
+            val sorted = service.sortByBranchName(listOf("9999", "1002"), mapOf("1002" to "강북4지점"))
+            assertThat(sorted).containsExactly("9999", "1002") // "9999" < "강북4지점" (숫자 < 한글)
+        }
     }
 
     @Nested
