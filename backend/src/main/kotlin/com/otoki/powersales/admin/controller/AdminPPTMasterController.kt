@@ -130,7 +130,7 @@ class AdminPPTMasterController(
     }
 
     @PostMapping("/api/v1/admin/ppt-masters")
-    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.CREATE)
     fun createMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @Valid @RequestBody request: PPTMasterCreateRequest
@@ -151,7 +151,7 @@ class AdminPPTMasterController(
     }
 
     @DeleteMapping("/api/v1/admin/ppt-masters/{id}")
-    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.DELETE)
     fun deleteMaster(
         @AuthenticationPrincipal principal: WebUserPrincipal,
         @PathVariable id: Long

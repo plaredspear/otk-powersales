@@ -87,6 +87,11 @@ export default function PPTMasterPage() {
   const canReadFemaleEmployee = hasEntityPermission('female_employee', 'READ');
   const employeeDetailBasePath = canReadFemaleEmployee ? '/female-employee' : '/employee';
 
+  // 전문행사조 쓰기 권한 — 등록/복제=CREATE, 수정=EDIT, 삭제=DELETE (backend 컨트롤러 가드와 정합).
+  const canCreate = hasEntityPermission(PPT_ENTITY, 'CREATE');
+  const canEdit = hasEntityPermission(PPT_ENTITY, 'EDIT');
+  const canDelete = hasEntityPermission(PPT_ENTITY, 'DELETE');
+
   // 지점 셀렉터 — 권한별 지점 화이트리스트.
   //  - 다중 지점: Select 로 선택
   //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시 (PeriodBranchFilterBar 정합). branchCode 는 빈 값이라
@@ -313,28 +318,38 @@ export default function PPTMasterPage() {
       width: 170,
       align: 'center',
       fixed: 'right',
-      render: (_, record) => (
-        <PermissionGate entity={PPT_ENTITY} operation="EDIT" fallback={<span>-</span>}>
+      render: (_, record) => {
+        // 수정=EDIT, 복제=CREATE, 삭제=DELETE 개별 게이팅. 세 버튼 모두 권한 없으면 '-' 표시.
+        if (!canEdit && !canCreate && !canDelete) {
+          return <span>-</span>;
+        }
+        return (
           <Space size={4}>
-            <Button size="small" onClick={() => handleEdit(record)}>
-              수정
-            </Button>
-            <Button size="small" onClick={() => handleClone(record)}>
-              복제
-            </Button>
-            <Popconfirm
-              title="이 마스터를 삭제하시겠습니까?"
-              onConfirm={() => handleDelete(record.id)}
-              okText="확인"
-              cancelText="취소"
-            >
-              <Button size="small" danger>
-                삭제
+            {canEdit && (
+              <Button size="small" onClick={() => handleEdit(record)}>
+                수정
               </Button>
-            </Popconfirm>
+            )}
+            {canCreate && (
+              <Button size="small" onClick={() => handleClone(record)}>
+                복제
+              </Button>
+            )}
+            {canDelete && (
+              <Popconfirm
+                title="이 마스터를 삭제하시겠습니까?"
+                onConfirm={() => handleDelete(record.id)}
+                okText="확인"
+                cancelText="취소"
+              >
+                <Button size="small" danger>
+                  삭제
+                </Button>
+              </Popconfirm>
+            )}
           </Space>
-        </PermissionGate>
-      ),
+        );
+      },
     },
   ];
 
@@ -434,12 +449,8 @@ export default function PPTMasterPage() {
         </PermissionGate>
         <Space>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-          <PermissionGate
-            entity={PPT_ENTITY}
-            operation="EDIT"
-            mode="disable"
-            deniedTooltip="전문행사조 등록 권한이 없습니다"
-          >
+          {/* 등록 권한(CREATE) 없으면 마스터 등록 버튼 숨김. */}
+          <PermissionGate entity={PPT_ENTITY} operation="CREATE">
             <Button icon={<PlusOutlined />} type="primary" onClick={handleAdd}>
               마스터 등록
             </Button>

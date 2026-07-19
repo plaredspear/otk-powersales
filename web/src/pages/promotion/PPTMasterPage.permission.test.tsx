@@ -75,14 +75,14 @@ function renderPage() {
 
 describe('PPTMasterPage 권한 게이팅', () => {
   beforeEach(() => {
-    // READ 만 보유 (페이지 진입자 기본). EDIT 미보유.
+    // READ 만 보유 (페이지 진입자 기본). 쓰기 권한(C/E/D) 전부 미보유.
     setPermissions(['professional_promotion_team_master:R']);
   });
 
-  describe('EDIT 권한 미보유 (READ only)', () => {
-    it('마스터 등록 버튼은 비활성으로 표시된다', () => {
+  describe('쓰기 권한 미보유 (READ only)', () => {
+    it('마스터 등록 버튼은 숨겨진다 (CREATE 미보유)', () => {
       renderPage();
-      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeDisabled();
+      expect(screen.queryByRole('button', { name: /마스터 등록/ })).not.toBeInTheDocument();
     });
 
     it('엑셀 업로드 버튼은 비활성으로 표시된다', () => {
@@ -108,40 +108,87 @@ describe('PPTMasterPage 권한 게이팅', () => {
     });
   });
 
-  describe('EDIT 권한 보유', () => {
+  describe('CREATE 권한만 보유', () => {
+    beforeEach(() => {
+      setPermissions(['professional_promotion_team_master:R', 'professional_promotion_team_master:C']);
+    });
+
+    it('마스터 등록 버튼이 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeInTheDocument();
+    });
+
+    it('복제 버튼만 노출되고 수정/삭제는 숨겨진다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: '복제' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('EDIT 권한만 보유', () => {
     beforeEach(() => {
       setPermissions(['professional_promotion_team_master:R', 'professional_promotion_team_master:E']);
     });
 
-    it('마스터 등록 버튼이 활성으로 노출된다', () => {
+    it('마스터 등록 버튼은 숨겨진다 (CREATE 미보유)', () => {
       renderPage();
-      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeEnabled();
+      expect(screen.queryByRole('button', { name: /마스터 등록/ })).not.toBeInTheDocument();
     });
 
-    it('엑셀 업로드 버튼이 활성으로 노출된다', () => {
-      renderPage();
-      expect(screen.getByRole('button', { name: /엑셀 업로드/ })).toBeEnabled();
-    });
-
-    it('행 액션(수정/복제/삭제) 버튼이 노출된다', () => {
+    it('수정 버튼만 노출되고 복제/삭제는 숨겨진다', () => {
       renderPage();
       expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '복제' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '복제' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
     });
 
-    it('선택 일괄 확정 버튼이 노출된다', () => {
+    it('선택 일괄 확정 버튼이 노출된다 (EDIT)', () => {
       renderPage();
       expect(screen.getByRole('button', { name: /선택 일괄 확정/ })).toBeInTheDocument();
     });
   });
 
+  describe('DELETE 권한만 보유', () => {
+    beforeEach(() => {
+      setPermissions(['professional_promotion_team_master:R', 'professional_promotion_team_master:D']);
+    });
+
+    it('삭제 버튼만 노출되고 수정/복제는 숨겨진다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '복제' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('CREATE+EDIT+DELETE 모두 보유', () => {
+    beforeEach(() => {
+      setPermissions([
+        'professional_promotion_team_master:R',
+        'professional_promotion_team_master:C',
+        'professional_promotion_team_master:E',
+        'professional_promotion_team_master:D',
+      ]);
+    });
+
+    it('마스터 등록 + 행 액션(수정/복제/삭제) 모두 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '복제' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    });
+  });
+
   describe('시스템 관리자', () => {
-    it('권한 set 이 비어도 EDIT 버튼이 노출된다', () => {
+    it('권한 set 이 비어도 등록/수정/복제/삭제 버튼이 모두 노출된다', () => {
       setPermissions([], '시스템 관리자');
       renderPage();
-      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeEnabled();
+      expect(screen.getByRole('button', { name: /마스터 등록/ })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '복제' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
     });
   });
 
