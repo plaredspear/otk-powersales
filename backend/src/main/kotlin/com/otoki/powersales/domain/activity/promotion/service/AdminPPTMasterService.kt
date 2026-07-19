@@ -9,6 +9,8 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.BulkConfirmRe
 import com.otoki.powersales.domain.activity.promotion.dto.response.BulkValidationResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.BulkValidationResultItem
 import com.otoki.powersales.domain.activity.promotion.dto.response.ConfirmByIdsResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterFormMetaResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTTeamTypeOption
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryListResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterListResponse
@@ -58,6 +60,20 @@ class AdminPPTMasterService(
     companion object {
         private const val BULK_MAX_SIZE = 450
         private const val EXPORT_MAX_ROWS = 50_000
+    }
+
+    /**
+     * 전문행사조 마스터 폼(등록/수정/복제) 렌더링용 메타.
+     *
+     * 행사마스터 `getPromotionFormMeta` 와 동일한 패턴 — 폼 Select 옵션(전문행사조 유형)을
+     * 프론트 상수가 아니라 [ProfessionalPromotionTeamType] enum 을 단일 출처로 내려준다.
+     * enum 선언 순서 = SF picklist 정의 순서(`<sorted>false</sorted>`) 이므로 그대로 UI 노출 순서로 사용한다.
+     * '일반'(미배정) 은 enum 값이 아니므로 등록용 옵션에서 제외(신규 저장 시 5개 정식 조만 허용).
+     */
+    fun getFormMeta(): PPTMasterFormMetaResponse {
+        val teamTypes = ProfessionalPromotionTeamType.entries
+            .map { PPTTeamTypeOption(value = it.displayName, name = it.displayName) }
+        return PPTMasterFormMetaResponse(teamTypes = teamTypes)
     }
 
     fun getMasters(

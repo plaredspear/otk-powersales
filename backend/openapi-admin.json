@@ -7155,6 +7155,35 @@
         },
         "type" : "object"
       },
+      "ApiResponsePPTMasterFormMetaResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PPTMasterFormMetaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePPTMasterHistoryListResponse" : {
         "properties" : {
           "data" : {
@@ -13767,6 +13796,17 @@
         "required" : [ "accountId", "employeeId", "startDate", "teamType" ],
         "type" : "object"
       },
+      "PPTMasterFormMetaResponse" : {
+        "properties" : {
+          "teamTypes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PPTTeamTypeOption"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "PPTMasterHistoryListResponse" : {
         "properties" : {
           "content" : {
@@ -13995,6 +14035,17 @@
           }
         },
         "required" : [ "accountId", "employeeId", "startDate", "teamType" ],
+        "type" : "object"
+      },
+      "PPTTeamTypeOption" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "PageAdminAttendInfoListItemResponse" : {
@@ -26285,6 +26336,24 @@
         "tags" : [ "admin-ppt-master-controller" ]
       }
     },
+    "/api/v1/admin/ppt-masters/form-meta" : {
+      "get" : {
+        "operationId" : "getFormMeta",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePPTMasterFormMetaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-ppt-master-controller" ]
+      }
+    },
     "/api/v1/admin/ppt-masters/{id}" : {
       "delete" : {
         "operationId" : "deleteMaster",
@@ -31854,6 +31923,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListString"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "sf-migration-stage-2-controller" ]
+      }
+    },
+    "/api/v1/admin/sf-migration/stage2/leader-profile-flags" : {
+      "post" : {
+        "operationId" : "runLeaderProfileFlags",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
                 }
               }
             },

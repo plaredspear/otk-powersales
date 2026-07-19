@@ -62,6 +62,22 @@ export interface PPTBranch {
   branchName: string;
 }
 
+/** 전문행사조 유형 옵션 — `value` 가 곧 create/update payload 로 전송되는 저장값(한글 displayName). */
+export interface PPTTeamTypeOption {
+  value: string;
+  name: string;
+}
+
+/**
+ * 전문행사조 마스터 폼(등록/수정/복제 모달) 렌더링용 메타.
+ *
+ * 행사마스터 `PromotionFormMeta` 와 동일한 "form 전용 API 분리" 패턴 —
+ * 폼 Select 옵션을 프론트 상수가 아니라 서버 enum 을 단일 출처로 받는다.
+ */
+export interface PPTMasterFormMeta {
+  teamTypes: PPTTeamTypeOption[];
+}
+
 export interface PPTMasterBulkItem {
   employeeCode: string;
   accountCode: string;
@@ -95,6 +111,19 @@ export interface ConfirmByIdsResult {
 
 
 // --- API functions ---
+
+/**
+ * 전문행사조 마스터 폼(등록/수정/복제 모달) 렌더링용 메타 조회.
+ *
+ * 폼 Select 옵션(전문행사조 유형)을 서버 enum 을 단일 출처로 받는다.
+ */
+export async function fetchPPTMasterFormMeta(): Promise<PPTMasterFormMeta> {
+  const res = await client.get<ApiResponse<PPTMasterFormMeta>>('/api/v1/admin/ppt-masters/form-meta');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '전문행사조 마스터 폼 메타 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
 
 /**
  * 전문행사조 화면 지점 셀렉터 옵션 조회.

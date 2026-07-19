@@ -31,6 +31,8 @@ import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.domain.activity.promotion.dto.response.BulkConfirmResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.BulkValidationResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.BulkValidationResultItem
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterFormMetaResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTTeamTypeOption
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryListResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterListResponse
@@ -103,6 +105,28 @@ class AdminPPTMasterControllerTest : AdminControllerTestSupport() {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.content[0].teamType").value("라면세일조"))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/ppt-masters/form-meta - 폼 메타 조회")
+    inner class GetFormMeta {
+
+        @Test
+        @DisplayName("성공 - 전문행사조 유형 옵션 반환")
+        fun getFormMeta_success() {
+            every { adminPPTMasterService.getFormMeta() } returns PPTMasterFormMetaResponse(
+                teamTypes = listOf(
+                    PPTTeamTypeOption(value = "라면세일조", name = "라면세일조"),
+                    PPTTeamTypeOption(value = "카레세일조", name = "카레세일조"),
+                )
+            )
+
+            mockMvc.perform(get("/api/v1/admin/ppt-masters/form-meta"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.teamTypes[0].value").value("라면세일조"))
+                .andExpect(jsonPath("$.data.teamTypes[0].name").value("라면세일조"))
         }
     }
 

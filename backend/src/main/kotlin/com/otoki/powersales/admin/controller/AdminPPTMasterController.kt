@@ -4,6 +4,7 @@ import com.otoki.powersales.domain.activity.promotion.dto.response.BulkConfirmRe
 import com.otoki.powersales.domain.activity.promotion.dto.response.BulkValidationResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.ConfirmByIdsResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTConfirmedReportResponse
+import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterFormMetaResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterHistoryListResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterListResponse
 import com.otoki.powersales.domain.activity.promotion.dto.response.PPTMasterResponse
@@ -53,6 +54,20 @@ class AdminPPTMasterController(
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
         val result = womenScheduleBranchResolver.resolveBranches(principal)
         return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
+    /**
+     * 전문행사조 마스터 폼(등록/수정/복제 모달) 렌더링용 메타.
+     *
+     * 행사마스터 `/promotions/form-meta` 와 동일한 "form 전용 API 분리" 패턴 —
+     * 폼 Select 옵션(전문행사조 유형)을 프론트 상수로 하드코딩하지 않고 서버 enum 을 단일 출처로 내려준다.
+     */
+    @GetMapping("/api/v1/admin/ppt-masters/form-meta")
+    @RequiresSfPermission(entity = "professional_promotion_team_master", operation = SfPermissionOperation.READ)
+    fun getFormMeta(
+        @AuthenticationPrincipal principal: WebUserPrincipal
+    ): ResponseEntity<ApiResponse<PPTMasterFormMetaResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(adminPPTMasterService.getFormMeta()))
     }
 
     @GetMapping("/api/v1/admin/ppt-masters")

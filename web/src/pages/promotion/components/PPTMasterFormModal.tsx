@@ -4,9 +4,10 @@ import dayjs from 'dayjs';
 import { fetchEmployeesForPromotionLookup, type Employee } from '@/api/employee';
 import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
 import { useCreatePPTMaster, useUpdatePPTMaster } from '@/hooks/promotion/usePPTMasters';
+import { usePPTMasterFormMeta } from '@/hooks/promotion/usePPTMasterFormMeta';
 import type { PPTMaster } from '@/api/pptMaster';
 import { AxiosError } from 'axios';
-import { PPT_TEAM_TYPE_OPTIONS, type PPTTeamType } from '@/constants/pptTeamType';
+import { type PPTTeamType } from '@/constants/pptTeamType';
 
 interface FormValues {
   employeeId: number;
@@ -28,6 +29,11 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
   const [form] = Form.useForm<FormValues>();
   const createMutation = useCreatePPTMaster();
   const updateMutation = useUpdatePPTMaster();
+  const { data: formMeta } = usePPTMasterFormMeta();
+
+  // 전문행사조 유형 옵션 — 서버 form-meta 를 단일 출처로 사용(프론트 상수 하드코딩 제거).
+  const teamTypeOptions =
+    formMeta?.teamTypes.map((t) => ({ value: t.value, label: t.name })) ?? [];
 
   const [employeeOptions, setEmployeeOptions] = useState<Employee[]>([]);
   const [accountOptions, setAccountOptions] = useState<Account[]>([]);
@@ -243,7 +249,7 @@ export default function PPTMasterFormModal({ open, editingItem, cloneSource, onC
           label="전문행사조"
           rules={[{ required: true, message: '전문행사조를 선택해주세요' }]}
         >
-          <Select placeholder="전문행사조 선택" options={PPT_TEAM_TYPE_OPTIONS} />
+          <Select placeholder="전문행사조 선택" options={teamTypeOptions} />
         </Form.Item>
       </Form>
     </Modal>

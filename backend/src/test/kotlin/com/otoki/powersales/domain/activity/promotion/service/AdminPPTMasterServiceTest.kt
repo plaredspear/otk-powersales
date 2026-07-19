@@ -124,6 +124,27 @@ class AdminPPTMasterServiceTest {
     }
 
     @Nested
+    @DisplayName("getFormMeta - 전문행사조 마스터 폼 메타 조회")
+    inner class GetFormMetaTests {
+
+        @Test
+        @DisplayName("정상 조회 - ProfessionalPromotionTeamType enum 5개 반환('일반' 제외)")
+        fun getFormMeta_success() {
+            val result = service.getFormMeta()
+
+            // enum 선언 순서 = SF picklist 정의 순서 그대로 노출
+            assertThat(result.teamTypes).hasSize(ProfessionalPromotionTeamType.entries.size)
+            assertThat(result.teamTypes).extracting("value")
+                .containsExactly("라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조")
+            // value(저장값) = name(표시명) = 한글 displayName
+            assertThat(result.teamTypes).allSatisfy { assertThat(it.value).isEqualTo(it.name) }
+            // '일반'(미배정, enum 값 아님)은 등록 옵션에서 제외
+            assertThat(result.teamTypes).extracting("value")
+                .doesNotContain(ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME)
+        }
+    }
+
+    @Nested
     @DisplayName("getMaster - 마스터 상세 조회")
     inner class GetMasterTests {
 
