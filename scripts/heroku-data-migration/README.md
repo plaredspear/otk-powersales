@@ -21,6 +21,10 @@ Stage 2 (web 화면 /admin/tools/heroku-migration-2)
    ↓
 Stage 2-C (SF 마이그레이션 web 화면 /admin/tools/sf-migration-2 의 FK Resolve 재사용)
    - ProductExpiration / SafetyCheckSubmission 의 *_sfid → *_id (sfid 자동 스캔)
+   ↓
+초기 비밀번호 적재 (web 화면 /admin/tools/heroku-migration-2 최하단 카드)
+   - employee_info.password ← BCrypt(pwrs1234!) + password_change_required=TRUE
+   - SF 화면의 user.password 와 동일 상수 공유 (대상 테이블은 서로 다름 — 각각 1회 실행)
 ```
 
 ## 실행 순서 (cut-over)
@@ -34,7 +38,11 @@ Stage 2-C (SF 마이그레이션 web 화면 /admin/tools/sf-migration-2 의 FK R
    - 일괄 적재 시 S3 에 CSV 가 없는 entity(404)는 **SKIPPED 로 건너뛰고 다음 entity 를 계속 적재**한다(batch 중단 안 함). 아직 export 안 된 테이블이 있어도 있는 것만 적재 가능. 단건 적재(SINGLE)는 지정 파일이 없으면 그대로 실패. (실패 FAILED 는 여전히 batch 중단)
 5. **Stage 2 FK Resolve** — web `/admin/tools/heroku-migration-2` 에서 "FK Resolve 실행". 패턴 A+B 일괄.
 6. **Stage 2-C sfid FK** — SF 마이그레이션 web `/admin/tools/sf-migration-2` 의 FK Resolve 재실행(ProductExpiration / SafetyCheckSubmission 의 *_sfid → *_id).
-7. **PII 정리** — cut-over 완료 후 S3 의 `employee_mng.csv`(사번/비밀번호/디바이스 UUID/FCM 토큰) 등 객체 삭제.
+7. **초기 비밀번호 적재 (EmployeeInfo)** — web `/admin/tools/heroku-migration-2` 최하단 **"초기 비밀번호 적재 (BCrypt) — EmployeeInfo"** 카드의 "실행" 버튼. `employee_info.password` 를 고정 초기 평문 `pwrs1234!` (`SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD`) 의 BCrypt hash 로 채우고 `password_change_required=TRUE` 설정. 대상은 `password IS NULL OR password = ''` — 멱등.
+   - **레거시 emp_pwd 는 재사용하지 않는다** (레거시 BCrypt hash 를 그대로 이관하지 않고 전원 동일 초기값으로 재발급).
+   - SF 화면(`/admin/tools/sf-migration-2`)의 **Stage 2-C — 초기 비밀번호 적재** 는 `user` (web 로그인), 본 카드는 `employee_info` (mobile 로그인) 로 **대상 테이블이 다르다**. 동일 초기 평문 상수를 공유하므로 비밀번호는 같지만, **양쪽 화면에서 각각 1회씩 실행**해야 한다.
+   - curl 대안: `curl -X POST "$BASE/api/v1/admin/heroku-migration/stage2/password" -H "Authorization: Bearer $JWT"`
+8. **PII 정리** — cut-over 완료 후 S3 의 `employee_mng.csv`(사번/비밀번호/디바이스 UUID/FCM 토큰) 등 객체 삭제.
 
 > 권한: Stage 1·2 web 화면은 로그인만 요구하고 사이드 메뉴 미노출(URL 직접 진입). 권한 부트스트랩
 > 닭-달걀 회피. cut-over 완료 후 가드 복원 권장.
@@ -49,7 +57,7 @@ Stage 2-C (SF 마이그레이션 web 화면 /admin/tools/sf-migration-2 의 FK R
 | 3 | TEXT 개행/콤마 | tmp_claim.description / education_mng.content → RFC4180 quoting |
 | 4 | timestamp 타임존 | Heroku inst_date UTC 여부 확인 → 신규 created_at KST 변환 정책 |
 | 5 | boolean 표현 | isdeleted / gps_yn 등 `t/f` vs `true/false` → COPY 시 자동 cast |
-| 6 | PII / 비밀번호 | employee_mng = 사번/emp_pwd/디바이스 UUID/FCM 토큰. **S3 업로드 후 cut-over 완료 시 객체 삭제**. emp_pwd 형식(BCrypt `$2a$` prefix) 확인. **emp_token(FCM 토큰) / emp_uuid(기기 UUID)는 적재 파서가 매핑 제외라 CSV 에 있어도 fcm_token/device_uuid 로 적재되지 않음**(신규 앱 로그인 시 재등록) — export 시 컬럼 유지/제거 무관 |
+| 6 | PII / 비밀번호 | employee_mng = 사번/emp_pwd/디바이스 UUID/FCM 토큰. **S3 업로드 후 cut-over 완료 시 객체 삭제**. **emp_pwd(레거시 평문) / emp_token(FCM 토큰) / emp_uuid(기기 UUID)는 적재 파서가 매핑 제외**(`HerokuStage1Targets.EXCLUDED_COLUMNS`)라 CSV 에 있어도 password/fcm_token/device_uuid 로 적재되지 않음 — export 시 컬럼 유지/제거 무관. password 는 Stage 2 substep 이 고정 초기값 BCrypt 로 채우고(위 실행 순서 7), 토큰/UUID 는 신규 앱 로그인 시 재등록 |
 | 7 | 부모키 포함 | 패턴 B 자식(education_file_mng / education_member_history) export 시 부모 식별 키(`edu_id`) 누락 금지 |
 | 8 | sfid 컬럼 검증 | 패턴 C 의 employeeid__c / masterId / eventmasterid 가 18자 sfid 인지 확인 |
 | 9 | S3 업로드 | export CSV 를 `s3://<bucket>/heroku-migration/input/<table>.csv` 로 업로드. bucket = 운영 `S3_BUCKET` 환경 속성 |

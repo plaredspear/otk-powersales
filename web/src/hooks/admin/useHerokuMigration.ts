@@ -3,9 +3,11 @@ import {
   getHerokuFkResolveProgress,
   getHerokuSfidFkResolvableTables,
   getHerokuSfidFkResolveProgress,
+  runHerokuPasswordHash,
   startHerokuFkResolve,
   startHerokuSfidFkResolve,
   type HerokuFkResolveProgress,
+  type HerokuPasswordHashResponse,
 } from '@/api/admin/herokuMigration';
 import type { FkResolveProgress } from '@/api/admin/sfMigration';
 
@@ -79,5 +81,17 @@ export function useStartHerokuSfidFkResolve() {
     onSuccess: (data) => {
       queryClient.setQueryData(SFID_PROGRESS_KEY, data);
     },
+  });
+}
+
+/**
+ * EmployeeInfo(mobile) 초기 비밀번호 BCrypt 적재 Mutation 훅.
+ *
+ * SF Stage 2-C (User.password) 와 동일 초기 평문 상수를 공유한다. 1회성 cut-over 도구라 무효화할
+ * 캐시 화면이 없어 결과를 mutation data 로 직접 표시한다. 동기 실행 — 사원 수에 비례한 시간 소요.
+ */
+export function useRunHerokuPasswordHash() {
+  return useMutation<HerokuPasswordHashResponse>({
+    mutationFn: runHerokuPasswordHash,
   });
 }

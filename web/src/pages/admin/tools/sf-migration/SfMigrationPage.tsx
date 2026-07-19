@@ -774,6 +774,11 @@ export default function SfMigrationPage() {
           변경을 강제한다. BCrypt salt 가 매 encode 마다 랜덤이라 사용자별 hash 는 서로 다르지만
           평문은 모두 동일하다. 동기 실행 — row 별로 개별 encode 하므로{' '}
           <Text strong>사원 수에 비례</Text>해 시간이 걸린다 (수천 건이면 수십 초).
+          <br />
+          본 카드는 <Text code>user</Text> (web) 만 처리한다. mobile 로그인에 쓰이는{' '}
+          <Text code>employee_info</Text> 는 <Text strong>Heroku 마이그레이션 Stage 2</Text> 화면의
+          동명 카드에서 별도 실행해야 하며, 양쪽이 동일한 초기 평문 상수를 공유하므로 초기
+          비밀번호는 같다.
         </Paragraph>
 
         <Alert

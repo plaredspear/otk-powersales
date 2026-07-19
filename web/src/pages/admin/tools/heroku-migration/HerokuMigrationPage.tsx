@@ -18,6 +18,7 @@ import {
   useHerokuFkResolveProgress,
   useHerokuSfidFkResolvableTables,
   useHerokuSfidFkResolveProgress,
+  useRunHerokuPasswordHash,
   useStartHerokuFkResolve,
   useStartHerokuSfidFkResolve,
 } from '@/hooks/admin/useHerokuMigration';
@@ -26,6 +27,7 @@ import type {
   HerokuFkResolveStatus,
   HerokuFkTableResult,
   HerokuFkUnmatched,
+  HerokuPasswordHashSubstepResult,
 } from '@/api/admin/herokuMigration';
 import type {
   FkResolveProgress,
@@ -263,6 +265,114 @@ function HerokuSfidFkResolveCard() {
   );
 }
 
+/**
+ * EmployeeInfo(mobile) 초기 비밀번호 BCrypt 적재 카드.
+ *
+ * SF Stage 2-C (User.password) 와 **동일한 초기 평문 상수**를 backend 에서 공유하므로, web(User) /
+ * mobile(EmployeeInfo) 어느 쪽으로 로그인해도 초기 비밀번호가 같다. 두 화면에서 각각 1회씩 실행해야
+ * 양쪽 테이블이 모두 채워진다 (대상 테이블이 다르므로 한쪽 실행으로 대체되지 않는다).
+ */
+function HerokuPasswordHashCard() {
+  const runMutation = useRunHerokuPasswordHash();
+
+  const result = runMutation.data;
+  const error = runMutation.error as Error | null;
+  const pending = runMutation.isPending;
+
+  return (
+    <Card title="초기 비밀번호 적재 (BCrypt) — EmployeeInfo" style={{ marginTop: 24 }}>
+      <Paragraph type="secondary">
+        레거시 비밀번호는 이전되지 않고, <Text code>employee_info.password</Text> 를{' '}
+        <Text strong>고정 초기 평문</Text> (<Text code>pwrs1234!</Text>) 의 BCrypt hash 로 새로
+        발급한다. 대상은 <Text code>password IS NULL OR password = &apos;&apos;</Text> 인 row —
+        이미 채워진 row 는 skip 이라 <Text strong>멱등</Text>이다.{' '}
+        <Text code>password_change_required = TRUE</Text> 를 함께 설정해 최초 로그인 시 비밀번호
+        변경을 강제한다.
+        <br />
+        SF 화면의 <Text strong>Stage 2-C (User.password)</Text> 와 동일한 초기 평문 상수를 공유하므로
+        web / mobile 어느 쪽으로 로그인해도 초기 비밀번호가 같다. 다만{' '}
+        <Text strong>대상 테이블이 다르므로 두 화면에서 각각 1회씩 실행</Text>해야 한다. 동기 실행 —
+        row 별 개별 encode 라 사원 수에 비례해 시간이 걸린다.
+      </Paragraph>
+
+      <Alert
+        type="warning"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="런칭 공지 필요"
+        description="초기 비밀번호가 전 사용자 공통 고정값이므로, 사용자에게 사번 + pwrs1234! 로 로그인 후 즉시 변경하도록 안내해야 한다."
+      />
+
+      <Space>
+        <Button
+          type="primary"
+          loading={pending}
+          disabled={pending}
+          onClick={() => {
+            runMutation.mutate();
+          }}
+        >
+          실행
+        </Button>
+      </Space>
+
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginTop: 12 }}
+          message="초기 비밀번호 적재 실패"
+          description={error.message}
+          closable
+          onClose={() => {
+            runMutation.reset();
+          }}
+        />
+      )}
+
+      {result && (
+        <div style={{ marginTop: 16 }}>
+          <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+            <Descriptions.Item label="substep">
+              <Text code>{result.substep}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="적용 row">
+              {result.totalRowsAffected.toLocaleString()}
+            </Descriptions.Item>
+          </Descriptions>
+          {result.totalRowsAffected === 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginTop: 12 }}
+              message="적용된 row 가 없습니다"
+              description="아래 사유를 확인하세요 — Stage 1 employee_info 적재 미완료, 또는 이미 비밀번호가 채워진 상태(멱등)."
+            />
+          )}
+          <ResizableTable<HerokuPasswordHashSubstepResult>
+            style={{ marginTop: 12 }}
+            size="small"
+            rowKey="label"
+            pagination={false}
+            columns={[
+              { title: '대상', dataIndex: 'label', key: 'label' },
+              {
+                title: '적용 row',
+                dataIndex: 'rowsAffected',
+                key: 'rowsAffected',
+                width: 160,
+                align: 'right',
+                render: (v: number) => v.toLocaleString(),
+              },
+            ]}
+            dataSource={result.results}
+          />
+        </div>
+      )}
+    </Card>
+  );
+}
+
 const tableColumns: ColumnsType<HerokuFkTableResult> = [
   {
     title: '테이블',
@@ -471,6 +581,8 @@ export default function HerokuMigrationPage() {
       )}
 
       <HerokuSfidFkResolveCard />
+
+      <HerokuPasswordHashCard />
     </div>
   );
 }

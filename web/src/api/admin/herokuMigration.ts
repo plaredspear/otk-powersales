@@ -123,3 +123,37 @@ export async function getHerokuSfidFkResolveProgress(): Promise<FkResolveProgres
   }
   return res.data.data;
 }
+
+/**
+ * EmployeeInfo(mobile) 초기 비밀번호 BCrypt hash 적재.
+ *
+ * SF `POST /sf-migration/stage2/password` (User.password) 와 대칭이며 **동일한 초기 평문 상수**
+ * (`SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD` = `pwrs1234!`) 를 공유한다 — web(User) /
+ * mobile(EmployeeInfo) 어느 쪽으로 로그인해도 초기 비밀번호가 같도록 보장하기 위함.
+ *
+ * 대상은 `password IS NULL OR password = ''` 인 employee_info row (이미 채워진 row 는 skip — 멱등).
+ * `password_change_required = TRUE` 를 함께 설정해 최초 로그인 시 변경을 강제한다. BCrypt salt 가
+ * 매 encode 마다 랜덤이라 사용자별 hash 는 다르지만 평문은 모두 동일하다.
+ *
+ * 동기 실행 — row 별 개별 encode 라 사원 수에 비례한 시간이 걸린다.
+ */
+export interface HerokuPasswordHashSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface HerokuPasswordHashResponse {
+  substep: string;
+  results: HerokuPasswordHashSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runHerokuPasswordHash(): Promise<HerokuPasswordHashResponse> {
+  const res = await client.post<ApiResponse<HerokuPasswordHashResponse>>(
+    '/api/v1/admin/heroku-migration/stage2/password',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '초기 비밀번호 적재에 실패했습니다');
+  }
+  return res.data.data;
+}
