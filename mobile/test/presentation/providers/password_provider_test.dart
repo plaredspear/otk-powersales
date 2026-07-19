@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/auth_token.dart';
 import 'package:mobile/domain/entities/password_validation.dart';
@@ -83,16 +84,20 @@ void main() {
       expect(notifier.state.value, false);
     });
 
-    test('verify 에러 발생 시 false 반환', () async {
+    test('verify 에러 발생 시 예외 전파 (false 로 삼키지 않음)', () async {
+      // 비밀번호 불일치/네트워크 오류는 호출측(VerifyPasswordPage)이 error.code 로
+      // 구분 처리하므로, notifier 는 예외를 false 로 삼키지 않고 그대로 전파한다.
       mockPasswordRepository.shouldThrowError = true;
 
       final notifier = PasswordVerificationNotifier(
         verifyUseCase: VerifyCurrentPasswordUseCase(mockPasswordRepository),
       );
 
-      final result = await notifier.verify('test');
-
-      expect(result, false);
+      await expectLater(
+        () => notifier.verify('test'),
+        throwsA(isA<Exception>()),
+      );
+      expect(notifier.state, isA<AsyncError<bool>>());
     });
 
     test('reset 호출 시 초기 상태로 복원', () async {

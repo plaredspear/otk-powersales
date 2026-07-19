@@ -47,20 +47,17 @@ class _VerifyPasswordPageState extends ConsumerState<VerifyPasswordPage> {
 
     try {
       final notifier = ref.read(passwordVerificationProvider.notifier);
-      final isValid = await notifier.verify(_passwordController.text);
+      // 검증 성공 시 true 반환. 불일치/네트워크 오류는 예외로 전파되어 catch 에서
+      // error.code 로 구분 처리한다 (아래 참고).
+      await notifier.verify(_passwordController.text);
 
       if (!mounted) return;
 
-      if (isValid) {
-        // 성공: 새 비밀번호 입력 화면으로 이동
-        Navigator.of(context).pushNamed(
-          '/change-password-new',
-          arguments: _passwordController.text, // 현재 비밀번호 전달
-        );
-      } else {
-        // 레거시: error == 'fail' 시 alert
-        await _showAlert('비밀번호가 일치하지 않습니다.');
-      }
+      // 성공: 새 비밀번호 입력 화면으로 이동
+      Navigator.of(context).pushNamed(
+        '/change-password-new',
+        arguments: _passwordController.text, // 현재 비밀번호 전달
+      );
     } catch (e) {
       if (!mounted) return;
       // 비밀번호 불일치는 서버 error.code(AUTH_CURRENT_PASSWORD_MISMATCH)로 판별한다.

@@ -60,7 +60,12 @@ class PasswordVerificationNotifier
   ///
   /// [currentPassword]: 확인할 현재 비밀번호
   ///
-  /// Returns: true (일치), false (불일치)
+  /// Returns: 검증 성공 시 true
+  ///
+  /// Throws: 비밀번호 불일치(서버 error.code=AUTH_CURRENT_PASSWORD_MISMATCH) /
+  /// 네트워크 오류 등은 예외로 전파한다. 호출측(VerifyPasswordPage)이
+  /// error.code 로 불일치와 그 밖의 오류를 구분해 안내하므로, 여기서 예외를
+  /// false 로 삼키지 않는다.
   Future<bool> verify(String currentPassword) async {
     state = const AsyncValue.loading();
 
@@ -70,7 +75,7 @@ class PasswordVerificationNotifier
       return isValid;
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
-      return false;
+      rethrow;
     }
   }
 

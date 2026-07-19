@@ -4,7 +4,6 @@ import 'auth_interceptor.dart';
 import '../models/change_password_request.dart';
 import '../models/login_response_model.dart';
 import '../models/auth_token_model.dart';
-import '../models/password_verification_response.dart';
 import '../models/user_model.dart';
 import 'auth_remote_datasource.dart';
 
@@ -77,16 +76,17 @@ class AuthApiDataSource implements AuthRemoteDataSource {
 
   @override
   Future<bool> verifyCurrentPassword(String currentPassword) async {
-    final response = await _dio.post(
+    // 백엔드 계약: 성공 시 200 + data=null, 불일치 시 400 예외
+    // (code=AUTH_CURRENT_PASSWORD_MISMATCH). 응답 body 에 isValid 필드가 없으므로
+    // 200 이 돌아오면 검증 성공으로 간주하고, 불일치(400)는 예외로 상위에 전파해
+    // error.code 로 판별하게 한다.
+    await _dio.post(
       '/api/v1/mobile/auth/verify-password',
       data: {
         'currentPassword': currentPassword,
       },
     );
-    final verification = PasswordVerificationResponse.fromJson(
-      response.data['data'] as Map<String, dynamic>,
-    );
-    return verification.isValid;
+    return true;
   }
 
   @override
