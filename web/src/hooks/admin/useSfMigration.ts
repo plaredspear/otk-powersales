@@ -6,6 +6,7 @@ import {
   runLeaderProfileFlags,
   runNaturalKeyFkResolve,
   runNoticeRtaPlaceholder,
+  runPasswordHash,
   runPicklistAll,
   runPicklistColumn,
   runUploadFilePolymorphicParent,
@@ -19,6 +20,7 @@ import {
   type SharingRecalcResult,
   type SharingRecalcStatus,
   type NoticeRtaPlaceholderResponse,
+  type PasswordHashResponse,
   type PicklistColumn,
   type PicklistResponse,
   type UploadFileParentResponse,
@@ -106,6 +108,18 @@ export function useRunUploadFilePolymorphicParent() {
 export function useRunUserRoleHierarchyRecalc() {
   return useMutation<UserRoleHierarchyRecalcResponse>({
     mutationFn: runUserRoleHierarchyRecalc,
+  });
+}
+
+/**
+ * Stage 2-C 초기 비밀번호 BCrypt 적재 Mutation 훅.
+ *
+ * 1회성 cut-over 도구라 무효화할 캐시 화면이 없어 결과를 mutation data 로 직접 표시한다.
+ * 대상 row 별로 개별 BCrypt encode 를 수행해 사원 수에 비례한 시간이 걸린다 (동기 실행).
+ */
+export function useRunPasswordHash() {
+  return useMutation<PasswordHashResponse>({
+    mutationFn: runPasswordHash,
   });
 }
 

@@ -55,7 +55,7 @@ scripts/sf-data-migration/
 | **Stage 2-A2** | Natural-key FK resolve — developer_name / name / sfid 컬럼 기반 join (spec #800, 9 mapping) | Stage 2 "Natural Key FK 해소" | `POST /stage2/fk-natural-key` | curl | substep 단위 |
 | **Stage 2-A3** | UploadFile polymorphic parent — record_id (SF Id text) → parent_id (Long FK) | Stage 2 "UploadFile Parent Resolve" | `POST /stage2/upload-file-polymorphic-parent` | curl | substep 단위 |
 | **Stage 2-B** | derived 캐시 동기화 — Employee.cost_center_code → User.cost_center_code + ProfessionalPromotionTeamMaster.branch_code (SF `CostCenterCode__c` dead field 라 사원 cost_center_code 로 백필. spec #807 이후 picklist→enum 변환 폐기. SF AppAuthority picklist value 가 곧 저장값) | Stage 2 "Derived 캐시 동기화" (전체 / 개별 컬럼) | `POST /stage2/picklist` · `POST /stage2/picklist/{column}` | curl | substep 단위 |
-| **Stage 2-C** | BCrypt password hash (사번 평문 → hash) | (web 미노출 — API/curl) | `POST /stage2/password` | curl | substep 단위 |
+| **Stage 2-C** | BCrypt password hash (고정 초기 평문 `pwrs1234!` → hash) | SF 데이터 마이그레이션 (Stage 2) | `POST /stage2/password` | 버튼 | substep 단위 |
 | **Stage 2-D** | UserRole hierarchy snapshot 재계산 (depth / all_subordinate_ids / ancestor_path) | Stage 2 "UserRole Hierarchy 재계산" | `POST /stage2/user-role-hierarchy` | curl | substep 단위 |
 | **Stage 2-E** | 공지 본문 rtaImage `<img>` → placeholder 치환 (dry-run 기본) | Stage 2 "공지 본문 이미지 placeholder 치환" (Dry-run/Apply) | `POST /stage2/notice-rta-placeholder?dryRun={bool}` | curl | substep 단위 |
 | **Stage 2-F** | profile_sfid 기준 User.profile_id 최종 정합 | (web 미노출 — API/curl) | `POST /stage2/user-profile-reconcile` | curl | substep 단위 |
@@ -301,8 +301,9 @@ web `관리 도구 → SF Migration Stage 2` (`/admin/tools/sf-migration-2`) 의
 - **FK Resolve** — "전체 실행" 또는 "선택 테이블만 실행" (드롭다운은 `GET /stage2/fk/tables`). 비동기 → completedTables/totalTables 진행률 바 + 현재 테이블 chunk 진행률 표시 (RUNNING 1s 폴링, 시작 직후 5s grace window).
 - **Natural Key FK 해소** / **UploadFile Parent Resolve** / **UserRole Hierarchy 재계산** — 각 "실행" 버튼 (동기, 응답 즉시 표시).
 - **공지 본문 이미지 placeholder 치환** — Dry-run/Apply 라디오 (기본 dry-run) + "실행".
+- **Stage 2-C — 초기 비밀번호 적재 (BCrypt)** — "실행" 버튼 (동기). 대상 row 별 개별 encode 라 사원 수에 비례한 시간 소요. 초기 평문은 고정 상수 `pwrs1234!` + `password_change_required=TRUE`.
 - **Derived 캐시 동기화** (picklist) — "전체 실행" / "User.cost_center_code 만" / "전문행사조 branch_code 만" 3버튼.
-- (`password` / `user-profile-reconcile` 는 web 에 노출되지 않음 — 아래 ② curl 사용.)
+- (`user-profile-reconcile` 는 web 에 노출되지 않음 — 아래 ② curl 사용. `password` 는 web 카드로 노출됨.)
 
 #### ② curl 직접 호출 (대안)
 
@@ -341,7 +342,7 @@ curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/user-role-hierarchy"       
 - **upload-file-polymorphic-parent substep** — UploadFile.record_id (SF Id text) → parent_id (Long FK). 매핑 표는 `com.otoki.powersales.common.storage.UPLOAD_FILE_POLYMORPHIC_PARENTS`. fk substep 직후 호출.
 - **notice-rta-placeholder substep** — 공지 본문 rtaImage `<img>` 를 placeholder 로 치환. `?dryRun=true` (기본) 로 변경 대상만 미리 집계 후 `dryRun=false` 로 실제 적용. upload-file-polymorphic-parent 직후 (공지 이미지 적재 이후) 호출.
 - **picklist substep** — 현재는 `user.cost_center_code` 동기화만 수행 (Employee.cost_center_code 를 employee_code 조인으로 User 에 복사). spec #807 이후 Employee.role / professional_promotion_team / User.profile_type 의 한글 picklist → enum 변환은 폐기 (SF AppAuthority picklist value 가 곧 저장값). 개별 컬럼 실행은 `POST /stage2/picklist/user_cost_center_code`.
-- **password substep** 은 `sfid IS NOT NULL AND (password IS NULL OR password = '')` 인 user row 의 password 를 `employee_code` (사번) 평문으로 BCrypt hash (backend 의 PasswordEncoder 빈 재사용, strength=10) + `password_change_required=TRUE` 설정. **web 미노출 — curl 로만 실행.**
+- **password substep** 은 `sfid IS NOT NULL AND (password IS NULL OR password = '')` 인 user row 의 password 를 **고정 초기 평문 `pwrs1234!`** (`SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD`) 로 BCrypt hash (backend 의 PasswordEncoder 빈 재사용, strength=10) + `password_change_required=TRUE` 설정. SF 는 비밀번호를 단방향 hash 로만 보관해 추출이 불가능하므로 **기존 비밀번호는 이전되지 않고 새로 발급**된다. BCrypt salt 가 매 encode 마다 랜덤이라 사용자별 hash 는 다르지만 평문은 모두 동일. **web 화면 "Stage 2-C — 초기 비밀번호 적재 (BCrypt)" 카드에서 실행** (curl 도 가능).
 - **user-role-hierarchy substep** (spec #790) — `user_role.parent_user_role_id` 트리 기반으로 `all_subordinate_ids` (jsonb) + `depth` + `ancestor_path` + `snapshot_at` 재계산. user_role 적재 + fk substep 으로 user_role_id 가 모두 채워진 후 1회 호출.
 - **user-profile-reconcile substep** — `profile_sfid` 기준으로 `User.profile_id` 를 최종 정합 (fk substep 이후 profile 적재 순서 어긋남 보정). **web 미노출 — curl 로만 실행.**
 - **leader-profile-flags substep** — SF frozen snapshot 에 없는 신규 조장 권한을 backend 코드 SoT (`backend/.../platform/auth/permission/LeaderProfileFlagsSeed.kt`) 기준으로 `profile_flags` 에 적용. 적용 대상은 **`6.조장` 단건** (`7.영업사원 + 조장` 은 web admin 권한 편집으로 수동 처리 — 대상 확대 시 `SfMigrationStage2Service.LEADER_FLAGS_TARGET_PROFILE_NAMES` 에 추가). **row 를 새로 만들지 않고 기존 row 만 UPDATE** 한다 — 과거 부팅 Runner (`LeaderProfileFlagsSyncRunner`) 가 Stage 1 이전에 create 하여 `profile_flags_profile_id_key` UNIQUE 충돌을 일으킨 사고 때문에 Runner 는 비활성(`@Component` 미부착)이고 본 substep 이 대체한다. `is_locally_modified=TRUE` 인 web admin 편집분은 skip (SF 재적재 dirty-skip 정책과 동일). 적용 시 profileFlags / permission-matrix / admin permission / data scope 캐시를 자동 invalidate. 멱등.
@@ -406,11 +407,10 @@ PGPASSWORD="..." psql -h localhost -p 15432 -U otkadmin -d otoki -c "
 1. **최종 CSV 추출** (cut-over 작업 윈도우 직전) — 로컬에서 `./extract-csv.sh --org otoki-prod`.
 2. **S3 업로드** — `input/*.csv` 를 운영 S3 bucket/prefix (기본 `sf-migration/input`) 로 업로드 (AWS 콘솔 또는 `aws s3 cp`).
 3. **Stage 1** — web `SF Migration Stage 1` 화면에서 BATCH "일괄 실행" (처음부터면 사전에 `db-reset.sh -s prod` 로 전체 TRUNCATE). 진행률이 COMPLETED 될 때까지 대기.
-4. **Stage 2** — web `SF Migration Stage 2` 화면에서 순서대로: FK Resolve (완료 대기) → Natural Key FK 해소 → UploadFile Parent Resolve → 공지 본문 이미지 placeholder 치환 (dry-run 확인 후 Apply) → Derived 캐시 동기화 → UserRole Hierarchy 재계산.
+4. **Stage 2** — web `SF Migration Stage 2` 화면에서 순서대로: FK Resolve (완료 대기) → Natural Key FK 해소 → UploadFile Parent Resolve → 공지 본문 이미지 placeholder 치환 (dry-run 확인 후 Apply) → 조장 ProfileFlags 적용 → **초기 비밀번호 적재 (BCrypt)** → Derived 캐시 동기화 → UserRole Hierarchy 재계산.
 5. **web 미노출 substep** — curl 로 실행:
    ```bash
    JWT="<SYSTEM_ADMIN access-token>"; BASE="https://<backend-host>"
-   curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/password"                 -H "Authorization: Bearer $JWT"
    curl -X POST "$BASE/api/v1/admin/sf-migration/stage2/user-profile-reconcile"   -H "Authorization: Bearer $JWT"
    ```
 6. **Sharing recalc** (spec #792) — OWD / Record Type / FLS / Sharing Rule 등 모든 sharing 관련 cache 일괄 무효화. web `SF Migration Stage 2` 화면 최하단 **"Sharing Recalc (cut-over 최종 단계)"** 카드의 "전체 Recalc 실행" 버튼으로 처리한다 (최근 실행 이력도 함께 표시). curl 대안:

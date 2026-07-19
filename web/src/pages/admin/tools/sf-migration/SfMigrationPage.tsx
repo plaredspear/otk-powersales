@@ -21,6 +21,7 @@ import {
   useRunLeaderProfileFlags,
   useRunNaturalKeyFkResolve,
   useRunNoticeRtaPlaceholder,
+  useRunPasswordHash,
   useRunPicklistAll,
   useRunPicklistColumn,
   useRunSharingRecalcAll,
@@ -37,6 +38,7 @@ import type {
   LeaderProfileFlagsSubstepResult,
   NaturalKeyFkSubstepResult,
   NoticeRtaPlaceholderSubstepResult,
+  PasswordHashSubstepResult,
   PicklistSubstepResult,
   UploadFileParentSubstepResult,
   UserProfileReconcileSubstepResult,
@@ -97,6 +99,7 @@ export default function SfMigrationPage() {
   const runHierarchyRecalcMutation = useRunUserRoleHierarchyRecalc();
   const runProfileReconcileMutation = useRunUserProfileSfidReconcile();
   const runLeaderProfileFlagsMutation = useRunLeaderProfileFlags();
+  const runPasswordHashMutation = useRunPasswordHash();
   const runSharingRecalcMutation = useRunSharingRecalcAll();
   const sharingRecalcStatusQuery = useSharingRecalcStatus();
   const runNoticeRtaMutation = useRunNoticeRtaPlaceholder();
@@ -138,6 +141,10 @@ export default function SfMigrationPage() {
   const leaderProfileFlagsResult = runLeaderProfileFlagsMutation.data;
   const leaderProfileFlagsError = runLeaderProfileFlagsMutation.error as Error | null;
   const leaderProfileFlagsPending = runLeaderProfileFlagsMutation.isPending;
+
+  const passwordHashResult = runPasswordHashMutation.data;
+  const passwordHashError = runPasswordHashMutation.error as Error | null;
+  const passwordHashPending = runPasswordHashMutation.isPending;
 
   const sharingRecalcResult = runSharingRecalcMutation.data;
   const sharingRecalcError = runSharingRecalcMutation.error as Error | null;
@@ -749,6 +756,97 @@ export default function SfMigrationPage() {
                 },
               ]}
               dataSource={leaderProfileFlagsResult.results}
+            />
+          </div>
+        )}
+      </Card>
+
+      <Card title="Stage 2-C — 초기 비밀번호 적재 (BCrypt)" style={{ marginTop: 24 }}>
+        <Paragraph type="secondary">
+          SF 는 비밀번호를 <Text strong>단방향 hash 로만 보관</Text>해 추출 자체가 불가능하므로,
+          마이그레이션 대상 user 의 비밀번호는 이전되지 않고 <Text strong>고정 초기 평문</Text>{' '}
+          (<Text code>pwrs1234!</Text>) 의 BCrypt hash 로 새로 발급된다. 대상은{' '}
+          <Text code>sfid IS NOT NULL AND (password IS NULL OR password = &apos;&apos;)</Text> 인 row —
+          Stage 1 이 NOT NULL 제약 회피용으로 넣어둔 <Text code>&apos;&apos;</Text> placeholder 를 덮어쓴다.
+          이미 채워진 row 는 skip 이라 <Text strong>멱등</Text>이다.
+          <br />
+          <Text code>password_change_required = TRUE</Text> 를 함께 설정해 최초 로그인 시 비밀번호
+          변경을 강제한다. BCrypt salt 가 매 encode 마다 랜덤이라 사용자별 hash 는 서로 다르지만
+          평문은 모두 동일하다. 동기 실행 — row 별로 개별 encode 하므로{' '}
+          <Text strong>사원 수에 비례</Text>해 시간이 걸린다 (수천 건이면 수십 초).
+        </Paragraph>
+
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="런칭 공지 필요"
+          description="초기 비밀번호가 전 사용자 공통 고정값이므로, 사용자에게 사번 + pwrs1234! 로 로그인 후 즉시 변경하도록 안내해야 한다."
+        />
+
+        <Space>
+          <Button
+            type="primary"
+            loading={passwordHashPending}
+            disabled={passwordHashPending}
+            onClick={() => {
+              runPasswordHashMutation.mutate();
+            }}
+          >
+            실행
+          </Button>
+        </Space>
+
+        {passwordHashError && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginTop: 12 }}
+            message="초기 비밀번호 적재 실패"
+            description={passwordHashError.message}
+            closable
+            onClose={() => {
+              runPasswordHashMutation.reset();
+            }}
+          />
+        )}
+
+        {passwordHashResult && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="substep">
+                <Text code>{passwordHashResult.substep}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="적용 row">
+                {passwordHashResult.totalRowsAffected.toLocaleString()}
+              </Descriptions.Item>
+            </Descriptions>
+            {passwordHashResult.totalRowsAffected === 0 && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: 12 }}
+                message="적용된 row 가 없습니다"
+                description="아래 사유를 확인하세요 — Stage 1 user 적재 미완료(sfid 보유 row 부재), 또는 이미 비밀번호가 채워진 상태(멱등)."
+              />
+            )}
+            <ResizableTable<PasswordHashSubstepResult>
+              style={{ marginTop: 12 }}
+              size="small"
+              rowKey="label"
+              pagination={false}
+              columns={[
+                { title: '대상', dataIndex: 'label', key: 'label' },
+                {
+                  title: '적용 row',
+                  dataIndex: 'rowsAffected',
+                  key: 'rowsAffected',
+                  width: 160,
+                  align: 'right',
+                  render: (v: number) => v.toLocaleString(),
+                },
+              ]}
+              dataSource={passwordHashResult.results}
             />
           </div>
         )}

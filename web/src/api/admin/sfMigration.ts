@@ -220,6 +220,40 @@ export async function runPicklistColumn(column: PicklistColumn): Promise<Picklis
 }
 
 /**
+ * Stage 2-C — User 초기 비밀번호 BCrypt hash 적재.
+ *
+ * SF 는 비밀번호를 단방향 hash 로만 보관해 추출 자체가 불가능하므로, 마이그레이션 대상 user 의
+ * 비밀번호는 이전되지 않고 고정 초기 평문 (`pwrs1234!`) 의 BCrypt hash 로 새로 발급된다.
+ * 대상은 `sfid IS NOT NULL AND (password IS NULL OR password = '')` 인 row (Stage 1 이 NOT NULL
+ * 제약 회피용으로 `''` placeholder 를 넣어둔 상태) — 이미 채워진 row 는 skip 이라 멱등이다.
+ *
+ * `password_change_required = TRUE` 를 함께 설정해 최초 로그인 시 비밀번호 변경을 강제한다.
+ * BCrypt salt 가 매 encode 마다 랜덤이라 사용자별 hash 는 서로 다르지만 평문은 모두 동일하다.
+ *
+ * 동기 실행 — 대상 row 수만큼 개별 encode 하므로 사원 수에 비례 (수천 건이면 수십 초).
+ */
+export interface PasswordHashSubstepResult {
+  label: string;
+  rowsAffected: number;
+}
+
+export interface PasswordHashResponse {
+  substep: string;
+  results: PasswordHashSubstepResult[];
+  totalRowsAffected: number;
+}
+
+export async function runPasswordHash(): Promise<PasswordHashResponse> {
+  const res = await client.post<ApiResponse<PasswordHashResponse>>(
+    '/api/v1/admin/sf-migration/stage2/password',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '초기 비밀번호 적재에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
  * Stage 2 — UserRole Hierarchy snapshot 재계산.
  *
  * `user_role_hierarchy_snapshot` 의 `all_subordinate_ids` (jsonb) + `depth` +
