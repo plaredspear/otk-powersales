@@ -1,9 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
+import '../../core/utils/image_picker_helper.dart';
 import '../../domain/entities/suggestion_draft.dart';
 import '../../domain/entities/suggestion_form.dart';
 import '../providers/pos_sales_provider.dart';
@@ -53,7 +51,6 @@ class _SuggestionRegisterPageState
     extends ConsumerState<SuggestionRegisterPage> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
-  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   void initState() {
@@ -380,16 +377,15 @@ class _SuggestionRegisterPageState
     ).showSnackBar(const SnackBar(content: Text('임시저장되었습니다')));
   }
 
+  /// 사진 추가 — 카메라/갤러리에서 선택한 이미지를 첨부.
+  ///
+  /// 소스 시트/650px 리사이즈/JPEG 재인코딩은 공용 헬퍼가 담당한다
+  /// (SF ContentVersion 규격 = 레거시 `ImageUtil.resizeImage(650, 650)` 정합).
   Future<void> _handleAddPhoto() async {
     final notifier = ref.read(suggestionRegisterProvider.notifier);
-    final XFile? picked = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-      maxWidth: 1920,
-    );
-    if (picked == null) return;
+    final file = await pickImageWithSourceSheet(context);
+    if (file == null || !mounted) return;
 
-    final file = File(picked.path);
     final size = await file.length();
     if (size > _maxPhotoSizeBytes) {
       if (mounted) {

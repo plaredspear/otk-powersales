@@ -3,10 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/utils/image_picker_helper.dart';
+
 /// 일매출 등록 사진 선택 위젯
 ///
 /// 카메라 촬영 또는 갤러리에서 사진을 선택하고 미리보기를 제공합니다.
 /// 최대 1장의 사진만 선택 가능합니다.
+///
+/// 선택/리사이즈(650px)/JPEG 재인코딩은 공용 [pickImageWithSourceSheet] 에 위임한다
+/// (SF ContentVersion 규격 = 레거시 `ImageUtil.resizeImage(650, 650)` 정합).
 class PhotoPickerWidget extends StatelessWidget {
   /// 선택된 사진 파일
   final File? photo;
@@ -86,7 +91,7 @@ class PhotoPickerWidget extends StatelessWidget {
             bottom: 8,
             right: 8,
             child: TextButton.icon(
-              onPressed: () => _showImageSourceDialog(context),
+              onPressed: () => _pickImage(context),
               icon: const Icon(Icons.edit),
               label: const Text('다시 선택'),
               style: TextButton.styleFrom(
@@ -126,86 +131,24 @@ class PhotoPickerWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 카메라 버튼
-              ElevatedButton.icon(
-                onPressed: () => _pickImage(context, ImageSource.camera),
-                icon: const Icon(Icons.camera_alt),
-                label: const Text('촬영'),
-                // Row 안 무한폭 제약 크래시 방지 (전역 테마 minimumSize 덮어쓰기).
-                style: ElevatedButton.styleFrom(minimumSize: Size.zero),
-              ),
-              const SizedBox(width: 12),
-              // 갤러리 버튼
-              ElevatedButton.icon(
-                onPressed: () => _pickImage(context, ImageSource.gallery),
-                icon: const Icon(Icons.photo_library),
-                label: const Text('갤러리'),
-                // Row 안 무한폭 제약 크래시 방지 (전역 테마 minimumSize 덮어쓰기).
-                style: ElevatedButton.styleFrom(minimumSize: Size.zero),
-              ),
-            ],
+          // 카메라/갤러리 선택은 공용 시트로 통일 (클레임/현장점검과 동일 UX)
+          ElevatedButton.icon(
+            onPressed: () => _pickImage(context),
+            icon: const Icon(Icons.add_a_photo),
+            label: const Text('사진 선택'),
+            // Row 안 무한폭 제약 크래시 방지 (전역 테마 minimumSize 덮어쓰기).
+            style: ElevatedButton.styleFrom(minimumSize: Size.zero),
           ),
         ],
       ),
     );
   }
 
-  /// 이미지 소스 선택 다이얼로그 표시
-  void _showImageSourceDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('사진 선택'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('카메라로 촬영'),
-              onTap: () {
-                Navigator.pop(dialogContext);
-                _pickImage(context, ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('갤러리에서 선택'),
-              onTap: () {
-                Navigator.pop(dialogContext);
-                _pickImage(context, ImageSource.gallery);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 이미지 선택 처리
-  Future<void> _pickImage(BuildContext context, ImageSource source) async {
-    try {
-      final picker = imagePicker ?? ImagePicker();
-      final XFile? pickedFile = await picker.pickImage(
-        source: source,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 85,
-      );
-
-      if (pickedFile != null) {
-        onPhotoChanged(File(pickedFile.path));
-      }
-    } catch (e) {
-      // 에러 처리 (권한 거부 등)
-      debugPrint('Image picker error: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('사진을 불러오지 못했습니다')),
-        );
-      }
+  /// 이미지 선택 처리 — 소스 시트/리사이즈/JPEG 재인코딩은 공용 헬퍼가 담당.
+  Future<void> _pickImage(BuildContext context) async {
+    final file = await pickImageWithSourceSheet(context, picker: imagePicker);
+    if (file != null) {
+      onPhotoChanged(file);
     }
   }
 }
