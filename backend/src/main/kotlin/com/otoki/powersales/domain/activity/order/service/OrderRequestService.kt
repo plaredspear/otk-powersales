@@ -206,6 +206,8 @@ class OrderRequestService(
 
         val processingGroups = mapped?.processingGroups?.takeIf { it.isNotEmpty() }
         val rejectedItems = mapped?.rejectedItems?.takeIf { it.isNotEmpty() }
+        // 미납 라인(신규 정책) — 마감 전후 모두 노출 (반려 섹션 노출 정책과 동일).
+        val unfulfilledItems = mapped?.unfulfilledItems?.takeIf { it.isNotEmpty() }
         val outOfStockReasons = mapped?.outOfStockReasons.orEmpty()
 
         // 취소 SAP timeout 미확정 라인의 정합 (Spec #858) — 취소 요청 흔적이 있으면서 SAP DefaultReason
@@ -261,6 +263,7 @@ class OrderRequestService(
             orderedItems = orderedItems,
             orderProcessingStatusList = finalProcessingGroups,
             rejectedItems = rejectedItems,
+            unfulfilledItems = unfulfilledItems,
         )
     }
 

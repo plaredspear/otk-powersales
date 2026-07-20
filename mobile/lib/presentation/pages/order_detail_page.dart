@@ -19,16 +19,20 @@ import '../widgets/order/ordered_item_expandable.dart';
 import '../widgets/order/ordered_item_list.dart';
 import '../widgets/order/rejected_item_list.dart';
 import '../widgets/order/resend_confirm_dialog.dart';
+import '../widgets/order/unfulfilled_item_list.dart';
 
 /// 주문 상세 페이지
 ///
 /// 주문 ID를 기반으로 주문 상세 정보를 조회하고,
-/// 마감 상태와 반려 여부에 따라 화면 구성을 동적으로 렌더링합니다.
+/// 마감 상태와 미납/반려 여부에 따라 화면 구성을 동적으로 렌더링합니다.
 ///
-/// - 마감전: 주문정보 + 주문취소/재전송 버튼 + 주문한 제품 목록 + 주문반려제품 목록(존재 시)
-/// - 마감후: 주문정보 + 주문한 제품 접기/펼치기 + 주문반려제품 목록(존재 시) + 주문처리현황
+/// 제품 표시 UI 배치 (마감 전후 공통): 미납 제품 → 주문반려제품 → 주문한 제품 (→ 처리현황).
 ///
-/// 반려 섹션은 레거시(view.jsp:284-322 before / 449-486 after) 동등으로 마감 전후 모두 표시합니다.
+/// - 마감전: 주문정보 + 주문취소/재전송 버튼 + 미납/반려 + 주문한 제품 목록
+/// - 마감후: 주문정보 + 미납/반려 + 주문한 제품 접기/펼치기 + 주문처리현황
+///
+/// 반려 섹션은 레거시(view.jsp:284-322 before / 449-486 after) 동등으로 마감 전후 모두 표시.
+/// 미납 섹션(LineItemStatus != "OK")은 신규 정책(2026-07-20 사용자 결정)으로 최상단 표시.
 class OrderDetailPage extends ConsumerStatefulWidget {
   /// 주문 ID (라우트 arguments로 전달)
   final int orderId;
@@ -221,18 +225,36 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              // 주문한 제품 목록 (마감전에는 바로 표시)
-              OrderedItemList(items: detail.orderedItems),
+              // 미납 제품 목록 (신규 정책) — 제품 UI 최상단.
+              if (detail.hasUnfulfilledItems) ...[
+                UnfulfilledItemList(unfulfilledItems: detail.unfulfilledItems!),
+                const SizedBox(height: AppSpacing.lg),
+              ],
 
               // 반려 제품 목록 — 레거시(view.jsp:284-322)는 마감 전에도 반려 섹션을 표시.
               if (detail.hasRejectedItems) ...[
-                const SizedBox(height: AppSpacing.lg),
                 RejectedItemList(rejectedItems: detail.rejectedItems!),
+                const SizedBox(height: AppSpacing.lg),
               ],
+
+              // 주문한 제품 목록 (마감전에는 바로 표시)
+              OrderedItemList(items: detail.orderedItems),
             ],
 
             // 마감후 전용 영역
             if (detail.isClosed) ...[
+              // 미납 제품 목록 (신규 정책) — 제품 UI 최상단.
+              if (detail.hasUnfulfilledItems) ...[
+                UnfulfilledItemList(unfulfilledItems: detail.unfulfilledItems!),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
+              // 반려 제품 목록 (반려제품 존재 시)
+              if (detail.hasRejectedItems) ...[
+                RejectedItemList(rejectedItems: detail.rejectedItems!),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
               // 주문한 제품 접기/펼치기
               OrderedItemExpandable(
                 items: detail.orderedItems,
@@ -246,12 +268,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               ),
 
               const SizedBox(height: AppSpacing.lg),
-
-              // 반려 제품 목록 (마감후 + 반려제품 존재 시)
-              if (detail.hasRejectedItems) ...[
-                RejectedItemList(rejectedItems: detail.rejectedItems!),
-                const SizedBox(height: AppSpacing.lg),
-              ],
 
               // 주문 처리 현황 (마감후) — SAP 주문번호별 그룹 N개 (Spec #595 Q1 옵션 2)
               if (detail.orderProcessingStatusList != null &&

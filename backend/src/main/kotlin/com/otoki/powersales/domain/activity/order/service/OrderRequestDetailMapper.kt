@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.activity.order.service
 import com.otoki.powersales.domain.activity.order.dto.response.OrderProcessingStatusResponse
 import com.otoki.powersales.domain.activity.order.dto.response.ProcessingItemResponse
 import com.otoki.powersales.domain.activity.order.dto.response.RejectedItemResponse
+import com.otoki.powersales.domain.activity.order.dto.response.UnfulfilledItemResponse
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
 import com.otoki.powersales.external.sap.outbound.sender.SapOrderRequestDetailLine
@@ -55,6 +56,8 @@ class OrderRequestDetailMapper {
         }
 
         val rejected = mutableListOf<RejectedItemResponse>()
+        // 미납(신규 정책): SAPOrderNumber 있는 라인 중 LineItemStatus 채워짐 && != "OK".
+        val unfulfilled = mutableListOf<UnfulfilledItemResponse>()
         // 결품(DefaultReason 채워짐) productCode → 사유. 레거시 `cls:158`/`view.jsp:414` 동등 —
         // 결품은 처리현황 그룹/반려가 아니라 "주문한 제품"(orderedItems) 에 회색 표시되므로,
         // service 가 orderedItems 빌드 시 본 맵으로 결품 플래그를 주입한다.
@@ -93,6 +96,21 @@ class OrderRequestDetailMapper {
             if (groupKey.isEmpty()) {
                 emptyKeyCount++
                 continue
+            }
+
+            // 미납(신규 정책, 2026-07-20 사용자 결정 — SF 레거시엔 없던 분류): SAP 주문번호 있는 라인 중
+            // LineItemStatus 채워짐 && != "OK". 결품(DefaultReason)은 제외(기존 결품 표시 유지),
+            // 빈 값(정상 대기 라인)도 제외. 라인 자체는 처리현황 그룹에도 그대로 남는다(이중 표시).
+            if (!isOutOfStock &&
+                !sapLine.lineItemStatus.isNullOrEmpty() &&
+                sapLine.lineItemStatus != NORMAL_LINE_ITEM_STATUS
+            ) {
+                unfulfilled += UnfulfilledItemResponse(
+                    productCode = productCode,
+                    productName = productName,
+                    orderQuantityBoxes = crmProduct?.quantityBoxes ?: BigDecimal.ZERO,
+                    reason = sapLine.lineItemStatus,
+                )
             }
 
             val deliveryStatus = if (isOutOfStock) DeliveryStatus.OUT_OF_STOCK else computeDeliveryStatus(sapLine)
@@ -148,6 +166,7 @@ class OrderRequestDetailMapper {
             processingGroups = processingGroups,
             rejectedItems = rejected.toList(),
             outOfStockReasons = outOfStockReasons.toMap(),
+            unfulfilledItems = unfulfilled.toList(),
         )
     }
 
@@ -291,10 +310,15 @@ class OrderRequestDetailMapper {
         val rejectedItems: List<RejectedItemResponse>,
         /** 결품 productCode → DefaultReason. orderedItems 결품 플래그 주입용 (레거시 화면 "주문한 제품" 회색 표시 동등). */
         val outOfStockReasons: Map<String, String> = emptyMap(),
+        /** 미납 라인 (SAPOrderNumber 있음 && LineItemStatus 채워짐 && != "OK") — 신규 정책, 별도 섹션 표시용. */
+        val unfulfilledItems: List<UnfulfilledItemResponse> = emptyList(),
     )
 
     companion object {
         const val MAX_LINES: Int = 1000
         private const val ZERO_TIME: String = "000000"
+
+        /** SAP `LineItemStatus` 정상 값 — 이 값이 아니면서 채워져 있으면 미납 (신규 정책). */
+        private const val NORMAL_LINE_ITEM_STATUS: String = "OK"
     }
 }

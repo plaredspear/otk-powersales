@@ -239,6 +239,59 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
+    @DisplayName("미납 — SAPOrderNumber 있음 + LineItemStatus 채워짐 && != OK → unfulfilledItems 수집 + 처리현황 그룹에도 유지 (신규 정책)")
+    fun unfulfilledCollected() {
+        val sap = listOf(
+            line(
+                productCode = "P1",
+                sapOrderNumber = "S1",
+                lineItemStatus = "배차 미확정",
+                shippingScheduleTime = "000000",
+                shippingCompleteTime = "000000",
+            ),
+        )
+        val crm = mapOf("P1" to product("P1", "진라면", boxReceivingQuantity = 30, quantityBoxes = BigDecimal("7")))
+
+        val result = mapper.map(requestNumber, sap, crm)
+
+        assertThat(result.unfulfilledItems).hasSize(1)
+        assertThat(result.unfulfilledItems[0].productCode).isEqualTo("P1")
+        assertThat(result.unfulfilledItems[0].reason).isEqualTo("배차 미확정")
+        assertThat(result.unfulfilledItems[0].orderQuantityBoxes).isEqualByComparingTo("7")
+        // 미납 라인은 처리현황 그룹에도 그대로 남는다 (이중 표시 — 여기선 시각 없음+상태 채움 → UNKNOWN).
+        assertThat(result.processingGroups).hasSize(1)
+        assertThat(result.processingGroups[0].items[0].deliveryStatus).isEqualTo(DeliveryStatus.UNKNOWN)
+        assertThat(result.rejectedItems).isEmpty()
+    }
+
+    @Test
+    @DisplayName("미납 제외 — OK/빈 값/반려(SAPOrderNumber 빈)/결품(DefaultReason) 라인은 unfulfilledItems 에 미수집")
+    fun unfulfilledExclusions() {
+        val sap = listOf(
+            // 정상(OK) — 제외
+            line(productCode = "P_OK", sapOrderNumber = "S1", lineItemStatus = "OK", shippingCompleteTime = "143000"),
+            // 빈 값(정상 대기) — 제외
+            line(productCode = "P_EMPTY", sapOrderNumber = "S1", lineItemStatus = ""),
+            // 반려(SAPOrderNumber 빈) — rejectedItems 로 분류, 미납 아님
+            line(productCode = "P_REJ", sapOrderNumber = "", lineItemStatus = "납품일자 오류"),
+            // 결품(DefaultReason) — 기존 결품 표시 유지, LineItemStatus non-OK 라도 미납 아님
+            line(productCode = "P_OOS", sapOrderNumber = "S1", lineItemStatus = "이상", defaultReason = "재고부족"),
+        )
+        val crm = mapOf(
+            "P_OK" to product("P_OK", "A", 10),
+            "P_EMPTY" to product("P_EMPTY", "B", 10),
+            "P_REJ" to product("P_REJ", "C", 10),
+            "P_OOS" to product("P_OOS", "D", 10),
+        )
+
+        val result = mapper.map(requestNumber, sap, crm)
+
+        assertThat(result.unfulfilledItems).isEmpty()
+        assertThat(result.rejectedItems).extracting("productCode").containsExactly("P_REJ")
+        assertThat(result.outOfStockReasons).containsOnlyKeys("P_OOS")
+    }
+
+    @Test
     @DisplayName("sumApprovedAmount — 전 라인 OrderSalesAmount 단순 합산, 반려/결품 제외 없음 (레거시 view.jsp:343-348 동등)")
     fun sumApprovedAmountAllLines() {
         val sap = listOf(

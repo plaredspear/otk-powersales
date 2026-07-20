@@ -276,4 +276,56 @@ void main() {
       expect(model.toEntity().orderQuantityBoxes, 2.5);
     });
   });
+
+  group('UnfulfilledItemModel.fromJson - 미납 제품 (신규 정책, LineItemStatus != OK)', () {
+    Map<String, dynamic> detailData({List<dynamic>? unfulfilledItems}) {
+      return {
+        'data': {
+          'id': 12345,
+          'orderRequestNumber': 'OR-0001234',
+          'clientId': 5678,
+          'clientName': '홍길동상회',
+          'orderDate': '2026-05-04T10:00:00',
+          'deliveryDate': '2026-05-06',
+          'totalAmount': 1234567,
+          'orderRequestStatus': 'APPROVED',
+          'orderRequestStatusName': '승인완료',
+          'isClosed': false,
+          'orderedItemCount': 0,
+          'orderedItems': <dynamic>[],
+          'orderProcessingStatusList': null,
+          'rejectedItems': null,
+          'unfulfilledItems': unfulfilledItems,
+        },
+      };
+    }
+
+    test('unfulfilledItems 배열 → 파싱 + 엔티티 변환 (사유/소수 박스 보존)', () {
+      final model = OrderRequestDetailModel.fromJson(detailData(
+        unfulfilledItems: [
+          {
+            'productCode': '1000023',
+            'productName': '진라면 매운맛',
+            'orderQuantityBoxes': 2.5,
+            'reason': '배차 미확정',
+          },
+        ],
+      ));
+
+      expect(model.unfulfilledItems, hasLength(1));
+      expect(model.unfulfilledItems![0].reason, '배차 미확정');
+
+      final entity = model.toEntity();
+      expect(entity.hasUnfulfilledItems, isTrue);
+      expect(entity.unfulfilledItems![0].productCode, '1000023');
+      expect(entity.unfulfilledItems![0].orderQuantityBoxes, 2.5);
+      expect(entity.unfulfilledItems![0].reason, '배차 미확정');
+    });
+
+    test('unfulfilledItems 부재/null → null 매핑 (하위호환, 크래시 없음)', () {
+      final model = OrderRequestDetailModel.fromJson(detailData());
+      expect(model.unfulfilledItems, isNull);
+      expect(model.toEntity().hasUnfulfilledItems, isFalse);
+    });
+  });
 }

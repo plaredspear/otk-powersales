@@ -466,6 +466,92 @@ class RejectedItem {
   }
 }
 
+/// 미납 제품 엔티티 (신규 정책, 2026-07-20 사용자 결정 — SF 레거시엔 없던 분류)
+///
+/// SAP 주문번호가 **있는** 라인 중 `LineItemStatus` 가 채워져 있으면서 "OK" 가 아닌 제품.
+/// 반려(SAP 주문번호 없음)와 구분되며, 결품(DefaultReason)은 포함하지 않습니다.
+/// 제품 표시 UI 최상단의 "미납 제품" 섹션에 표시됩니다.
+class UnfulfilledItem {
+  /// 제품 코드
+  final String productCode;
+
+  /// 제품명
+  final String productName;
+
+  /// 주문 수량 (BOX) — 서버 `BigDecimal` 정합으로 `double` (`RejectedItem` 과 동일)
+  final double orderQuantityBoxes;
+
+  /// 미납 사유 (SAP `LineItemStatus` 원문)
+  final String reason;
+
+  const UnfulfilledItem({
+    required this.productCode,
+    required this.productName,
+    required this.orderQuantityBoxes,
+    required this.reason,
+  });
+
+  UnfulfilledItem copyWith({
+    String? productCode,
+    String? productName,
+    double? orderQuantityBoxes,
+    String? reason,
+  }) {
+    return UnfulfilledItem(
+      productCode: productCode ?? this.productCode,
+      productName: productName ?? this.productName,
+      orderQuantityBoxes: orderQuantityBoxes ?? this.orderQuantityBoxes,
+      reason: reason ?? this.reason,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'productCode': productCode,
+      'productName': productName,
+      'orderQuantityBoxes': orderQuantityBoxes,
+      'reason': reason,
+    };
+  }
+
+  factory UnfulfilledItem.fromJson(Map<String, dynamic> json) {
+    return UnfulfilledItem(
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toDouble(),
+      reason: json['reason'] as String,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is UnfulfilledItem &&
+        other.productCode == productCode &&
+        other.productName == productName &&
+        other.orderQuantityBoxes == orderQuantityBoxes &&
+        other.reason == reason;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      productCode,
+      productName,
+      orderQuantityBoxes,
+      reason,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'UnfulfilledItem(productCode: $productCode, '
+        'productName: $productName, '
+        'orderQuantityBoxes: $orderQuantityBoxes, '
+        'reason: $reason)';
+  }
+}
+
 /// 주문 상세 엔티티
 ///
 /// 주문 상세 화면에 표시되는 전체 정보를 담는 도메인 엔티티입니다.
@@ -533,6 +619,9 @@ class OrderDetail {
   /// 반려 제품 목록 (반려 존재 시 — 레거시 동등으로 마감 전후 모두 표시)
   final List<RejectedItem>? rejectedItems;
 
+  /// 미납 제품 목록 (신규 정책 — LineItemStatus != "OK" && SAP 주문번호 있음, 마감 전후 모두 표시)
+  final List<UnfulfilledItem>? unfulfilledItems;
+
   const OrderDetail({
     required this.id,
     required this.orderRequestNumber,
@@ -552,11 +641,16 @@ class OrderDetail {
     required this.orderedItems,
     this.orderProcessingStatusList,
     this.rejectedItems,
+    this.unfulfilledItems,
   });
 
   /// 반려 제품이 있는지 여부
   bool get hasRejectedItems =>
       rejectedItems != null && rejectedItems!.isNotEmpty;
+
+  /// 미납 제품이 있는지 여부
+  bool get hasUnfulfilledItems =>
+      unfulfilledItems != null && unfulfilledItems!.isNotEmpty;
 
   /// 모든 제품이 취소되었는지 여부
   bool get allItemsCancelled =>
@@ -581,6 +675,7 @@ class OrderDetail {
     List<OrderedItem>? orderedItems,
     List<OrderProcessingStatus>? orderProcessingStatusList,
     List<RejectedItem>? rejectedItems,
+    List<UnfulfilledItem>? unfulfilledItems,
   }) {
     return OrderDetail(
       id: id ?? this.id,
@@ -603,6 +698,7 @@ class OrderDetail {
       orderProcessingStatusList:
           orderProcessingStatusList ?? this.orderProcessingStatusList,
       rejectedItems: rejectedItems ?? this.rejectedItems,
+      unfulfilledItems: unfulfilledItems ?? this.unfulfilledItems,
     );
   }
 
@@ -627,6 +723,7 @@ class OrderDetail {
       'orderProcessingStatusList':
           orderProcessingStatusList?.map((e) => e.toJson()).toList(),
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
+      'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -659,6 +756,11 @@ class OrderDetail {
       rejectedItems: json['rejectedItems'] != null
           ? (json['rejectedItems'] as List<dynamic>)
               .map((e) => RejectedItem.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : null,
+      unfulfilledItems: json['unfulfilledItems'] != null
+          ? (json['unfulfilledItems'] as List<dynamic>)
+              .map((e) => UnfulfilledItem.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
     );
@@ -706,6 +808,15 @@ class OrderDetail {
         if (other.rejectedItems![i] != rejectedItems![i]) return false;
       }
     }
+    if (other.hasUnfulfilledItems != hasUnfulfilledItems) return false;
+    if (hasUnfulfilledItems) {
+      if (other.unfulfilledItems!.length != unfulfilledItems!.length) {
+        return false;
+      }
+      for (var i = 0; i < unfulfilledItems!.length; i++) {
+        if (other.unfulfilledItems![i] != unfulfilledItems![i]) return false;
+      }
+    }
     return true;
   }
 
@@ -732,6 +843,7 @@ class OrderDetail {
           ? Object.hashAll(orderProcessingStatusList!)
           : null,
       rejectedItems != null ? Object.hashAll(rejectedItems!) : null,
+      unfulfilledItems != null ? Object.hashAll(unfulfilledItems!) : null,
     );
   }
 

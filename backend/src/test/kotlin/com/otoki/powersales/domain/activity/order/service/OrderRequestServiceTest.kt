@@ -469,6 +469,27 @@ class OrderRequestServiceTest {
         }
 
         @Test
+        @DisplayName("성공 — 미납 라인(LineItemStatus != OK) → unfulfilledItems 노출, 마감 전에도 노출 (신규 정책)")
+        fun unfulfilledExposedBeforeClose() {
+            // 마감 전(deliveryDate 미래) — 미납 섹션은 마감 전후 모두 노출.
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLine("1000023", "0300004993", "000000").copy(lineItemStatus = "배차 미확정", shippingScheduleTime = "000000"))
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            assertThat(response.isClosed).isFalse()
+            assertThat(response.unfulfilledItems).hasSize(1)
+            assertThat(response.unfulfilledItems!![0].productCode).isEqualTo("1000023")
+            assertThat(response.unfulfilledItems!![0].reason).isEqualTo("배차 미확정")
+            // 미납 라인은 orderedItems 에서 제외하지 않는다 (반려만 제외).
+            assertThat(response.orderedItems).hasSize(1)
+        }
+
+        @Test
         @DisplayName("성공 — SAP null 반환 → orderProcessingStatusList = null, rejectedItems = null, 200 유지")
         fun sapFailureFallback() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
