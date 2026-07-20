@@ -28990,7 +28990,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "startDateFrom",
+          "name" : "periodStart",
           "required" : false,
           "schema" : {
             "format" : "date",
@@ -28998,7 +28998,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "startDateTo",
+          "name" : "periodEnd",
           "required" : false,
           "schema" : {
             "format" : "date",
@@ -29130,7 +29130,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "startDateFrom",
+          "name" : "periodStart",
           "required" : false,
           "schema" : {
             "format" : "date",
@@ -29138,7 +29138,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "startDateTo",
+          "name" : "periodEnd",
           "required" : false,
           "schema" : {
             "format" : "date",

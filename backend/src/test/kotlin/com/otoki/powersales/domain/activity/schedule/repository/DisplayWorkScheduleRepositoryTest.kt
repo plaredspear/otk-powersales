@@ -985,4 +985,117 @@ class DisplayWorkScheduleRepositoryTest {
             assertThat(union).containsExactlyInAnyOrderElementsOf(cases.map { it.name })
         }
     }
+
+    @Nested
+    @DisplayName("findScheduleList - 조회기간(periodStart/periodEnd) 은 스케줄 기간과의 겹침 필터")
+    inner class FindScheduleListPeriodOverlapFilter {
+
+        /** 조회 기준 구간: [today, today+9]. 각 케이스는 이 구간과의 위치 관계로 명명. */
+        private val periodStart: LocalDate = today
+        private val periodEnd: LocalDate = today.plusDays(9)
+
+        private fun persistSchedule(name: String, start: LocalDate?, end: LocalDate?) {
+            val emp = testEntityManager.persistAndFlush(Employee(employeeCode = "P-$name", name = name))
+            testEntityManager.persistAndFlush(
+                DisplayWorkSchedule(
+                    employee = emp,
+                    account = testAccount1,
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    startDate = start,
+                    endDate = end,
+                )
+            )
+        }
+
+        private fun search(start: LocalDate?, end: LocalDate?): List<String?> =
+            displayWorkScheduleRepository.findScheduleList(
+                null, null, null, null, null, null, start, end, null, null, null,
+                Expressions.TRUE,
+                PageRequest.of(0, 50),
+            ).content.map { it.employeeName }
+
+        /**
+         * 조회 구간 [today, today+9] 대비 모든 위치 관계를 한 번에 적재.
+         * 이름이 기대 결과(포함/제외)를 설명한다.
+         */
+        private fun persistAllCases() {
+            // 겹침 → 포함되어야 함
+            persistSchedule("완전포함", today.plusDays(2), today.plusDays(5))
+            persistSchedule("구간을감쌈", today.minusDays(10), today.plusDays(20))
+            persistSchedule("앞쪽걸침", today.minusDays(5), today.plusDays(1))
+            persistSchedule("뒤쪽걸침", today.plusDays(8), today.plusDays(20))
+            persistSchedule("시작일경계", today.minusDays(5), today) // end == periodStart
+            persistSchedule("종료일경계", periodEnd, today.plusDays(20)) // start == periodEnd
+            persistSchedule("종료일NULL진행중", today.minusDays(5), null) // 무기한 → 포함
+            persistSchedule("시작일NULL", null, today.plusDays(3)) // 시작 미정 → 포함
+            persistSchedule("양쪽NULL", null, null) // 무제한 → 포함
+
+            // 겹치지 않음 → 제외되어야 함
+            persistSchedule("구간이전", today.minusDays(20), today.minusDays(1))
+            persistSchedule("구간이후", today.plusDays(10), today.plusDays(20))
+            persistSchedule("종료일NULL미래시작", today.plusDays(30), null)
+            testEntityManager.clear()
+        }
+
+        private val overlapping = listOf(
+            "완전포함", "구간을감쌈", "앞쪽걸침", "뒤쪽걸침", "시작일경계", "종료일경계",
+            "종료일NULL진행중", "시작일NULL", "양쪽NULL",
+        )
+
+        @Test
+        @DisplayName("조회기간과 하루라도 겹치면 포함, 겹치지 않으면 제외 (경계일 포함)")
+        fun overlappingSchedulesOnly() {
+            persistAllCases()
+
+            assertThat(search(periodStart, periodEnd))
+                .containsExactlyInAnyOrderElementsOf(overlapping)
+        }
+
+        @Test
+        @DisplayName("진행 중 스케줄은 시작일이 조회기간 밖이어도 조회된다 (시작일 단일축 검색과의 차이)")
+        fun inProgressScheduleStartedBeforePeriod() {
+            persistSchedule("진행중", today.minusDays(30), today.plusDays(30))
+            testEntityManager.clear()
+
+            // 시작일(today-30)은 조회구간 [today, today+9] 밖이지만 기간이 겹치므로 포함.
+            assertThat(search(periodStart, periodEnd)).containsExactly("진행중")
+        }
+
+        @Test
+        @DisplayName("periodStart 만 지정하면 그 이후로 걸치는 전건 (상한 없음)")
+        fun onlyPeriodStart() {
+            persistAllCases()
+
+            // endDate >= today 인 것 + endDate NULL. "구간이전"(end=today-1) 만 탈락.
+            assertThat(search(periodStart, null))
+                .containsExactlyInAnyOrder(
+                    "완전포함", "구간을감쌈", "앞쪽걸침", "뒤쪽걸침", "시작일경계", "종료일경계",
+                    "종료일NULL진행중", "시작일NULL", "양쪽NULL",
+                    "구간이후", "종료일NULL미래시작",
+                )
+        }
+
+        @Test
+        @DisplayName("periodEnd 만 지정하면 그 이전으로 걸치는 전건 (하한 없음)")
+        fun onlyPeriodEnd() {
+            persistAllCases()
+
+            // startDate <= today+9 인 것 + startDate NULL. "구간이후"(start=today+10),
+            // "종료일NULL미래시작"(start=today+30) 만 탈락.
+            assertThat(search(null, periodEnd))
+                .containsExactlyInAnyOrder(
+                    "완전포함", "구간을감쌈", "앞쪽걸침", "뒤쪽걸침", "시작일경계", "종료일경계",
+                    "종료일NULL진행중", "시작일NULL", "양쪽NULL",
+                    "구간이전",
+                )
+        }
+
+        @Test
+        @DisplayName("둘 다 null 이면 기간 필터 미적용 (전건)")
+        fun noPeriodFilter() {
+            persistAllCases()
+
+            assertThat(search(null, null)).hasSize(12)
+        }
+    }
 }

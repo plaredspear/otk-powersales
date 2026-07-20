@@ -109,8 +109,8 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         accountStatus: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
-        startDateFrom: LocalDate?,
-        startDateTo: LocalDate?,
+        periodStart: LocalDate?,
+        periodEnd: LocalDate?,
         preset: SchedulePreset?,
         validData: ScheduleValidData?,
         branchCodes: List<String>?,
@@ -127,8 +127,8 @@ class DisplayWorkScheduleRepositoryCustomImpl(
             .and(buildAccountStatusCondition(accountStatus))
             .and(buildConfirmedCondition(confirmed))
             .and(buildTypeOfWork3Condition(typeOfWork3))
-            .and(buildStartDateFromCondition(startDateFrom))
-            .and(buildStartDateToCondition(startDateTo))
+            .and(buildPeriodStartCondition(periodStart))
+            .and(buildPeriodEndCondition(periodEnd))
             .and(buildBranchCodesCondition(branchCodes))
             .and(buildPresetCondition(preset, today))
             .and(buildValidDataCondition(validData, today))
@@ -661,12 +661,26 @@ class DisplayWorkScheduleRepositoryCustomImpl(
         return displayWorkSchedule.typeOfWork3.eq(enumValue)
     }
 
-    private fun buildStartDateFromCondition(startDateFrom: LocalDate?): BooleanExpression? {
-        return startDateFrom?.let { displayWorkSchedule.startDate.goe(it) }
+    /**
+     * 조회 기간 [periodStart, periodEnd] 과 스케줄 기간 [startDate, endDate] 의 **겹침(overlap)** 판정.
+     *
+     * 표준 구간 겹침 조건 `scheduleStart <= periodEnd AND scheduleEnd >= periodStart` 를 두 조건으로
+     * 분리해 각각 독립 적용 (한쪽만 입력 시 나머지 조건 생략 → 열린 구간 조회).
+     *
+     * NULL 은 **무제한(열린 끝)** 으로 간주해 포함한다 — `endDate IS NULL` = 종료 미정(무기한 진행 중),
+     * `startDate IS NULL` = 시작 미정. `isNull` OR 을 붙이지 않으면 SQL 3-value logic 상 NULL 행이
+     * 조건 하나만 걸려도 전부 탈락한다. 근접 사례: 위 `findOverlappingSchedules` 의 endDate 취급과 동일 축.
+     */
+    private fun buildPeriodStartCondition(periodStart: LocalDate?): BooleanExpression? {
+        return periodStart?.let {
+            displayWorkSchedule.endDate.goe(it).or(displayWorkSchedule.endDate.isNull)
+        }
     }
 
-    private fun buildStartDateToCondition(startDateTo: LocalDate?): BooleanExpression? {
-        return startDateTo?.let { displayWorkSchedule.startDate.loe(it) }
+    private fun buildPeriodEndCondition(periodEnd: LocalDate?): BooleanExpression? {
+        return periodEnd?.let {
+            displayWorkSchedule.startDate.loe(it).or(displayWorkSchedule.startDate.isNull)
+        }
     }
 
     /**

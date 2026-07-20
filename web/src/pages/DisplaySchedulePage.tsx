@@ -309,7 +309,7 @@ export default function DisplaySchedulePage() {
   const [filterTypeOfWork3, setFilterTypeOfWork3] = useState<string | undefined>(undefined);
   const [filterConfirmed, setFilterConfirmed] = useState<boolean | undefined>(undefined);
   const [filterValidData, setFilterValidData] = useState<ScheduleValidData | undefined>(undefined);
-  const [filterStartDateRange, setFilterStartDateRange] = useState<[string, string] | null>(null);
+  const [filterPeriodRange, setFilterPeriodRange] = useState<[string, string] | null>(null);
   const [filterBranchCode, setFilterBranchCode] = useState('');
   const [sortBy, setSortBy] = useState<string | undefined>(undefined);
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | undefined>(undefined);
@@ -323,8 +323,8 @@ export default function DisplaySchedulePage() {
     typeOfWork3?: string;
     confirmed?: boolean;
     validData?: ScheduleValidData;
-    startDateFrom?: string;
-    startDateTo?: string;
+    periodStart?: string;
+    periodEnd?: string;
     branchCode?: string;
   }>({});
 
@@ -411,8 +411,8 @@ export default function DisplaySchedulePage() {
       typeOfWork3: filterTypeOfWork3,
       confirmed: filterConfirmed,
       validData: filterValidData,
-      startDateFrom: filterStartDateRange?.[0],
-      startDateTo: filterStartDateRange?.[1],
+      periodStart: filterPeriodRange?.[0],
+      periodEnd: filterPeriodRange?.[1],
       branchCode: filterBranchCode || undefined,
     });
   };
@@ -425,7 +425,7 @@ export default function DisplaySchedulePage() {
     setFilterTypeOfWork3(undefined);
     setFilterConfirmed(undefined);
     setFilterValidData(undefined);
-    setFilterStartDateRange(null);
+    setFilterPeriodRange(null);
     setFilterBranchCode('');
     setSortBy(undefined);
     setSortDir(undefined);
@@ -768,23 +768,27 @@ export default function DisplaySchedulePage() {
             style={{ width: 120 }}
             options={filterOptions('typeOfWork3')}
           />
+          {/*
+            조회 기간 — 스케줄 기간(시작일~종료일) 과 하루라도 겹치면 매칭 (진행 중 스케줄 포함).
+            시작일 단일 축 범위 검색이 아니므로 placeholder 를 「시작일 from/to」 로 쓰지 않는다.
+          */}
           <RangePicker
             value={
-              filterStartDateRange
+              filterPeriodRange
                 ? [
-                    filterStartDateRange[0] ? dayjs(filterStartDateRange[0]) : null,
-                    filterStartDateRange[1] ? dayjs(filterStartDateRange[1]) : null,
+                    filterPeriodRange[0] ? dayjs(filterPeriodRange[0]) : null,
+                    filterPeriodRange[1] ? dayjs(filterPeriodRange[1]) : null,
                   ]
                 : null
             }
             onChange={(_dates, dateStrings) => {
               if (dateStrings[0] && dateStrings[1]) {
-                setFilterStartDateRange([dateStrings[0], dateStrings[1]]);
+                setFilterPeriodRange([dateStrings[0], dateStrings[1]]);
               } else {
-                setFilterStartDateRange(null);
+                setFilterPeriodRange(null);
               }
             }}
-            placeholder={['시작일 from', '시작일 to']}
+            placeholder={['조회기간 시작일', '조회기간 종료일']}
           />
           <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
             조회

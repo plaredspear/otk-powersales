@@ -209,7 +209,8 @@ class AdminDisplayWorkScheduleServiceTest {
 
             assertThat(result.filters.first { it.key == "employeeCode" }.options).isNull()
             assertThat(result.filters.first { it.key == "accountName" }.options).isNull()
-            assertThat(result.filters.first { it.key == "startDate" }.type.name).isEqualTo("DATE")
+            // 조회기간 필터 — 스케줄 기간과의 겹침 검색 (시작일 단일축 범위 검색이 아니므로 key 는 "period")
+            assertThat(result.filters.first { it.key == "period" }.type.name).isEqualTo("DATE")
             assertThat(result.filters.map { it.key }).doesNotContain("branchCode")
         }
 

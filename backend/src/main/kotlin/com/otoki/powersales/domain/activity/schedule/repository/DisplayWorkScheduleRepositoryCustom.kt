@@ -83,6 +83,10 @@ interface DisplayWorkScheduleRepositoryCustom {
      *
      * `branchCodes` 는 지점 스코프(스케줄 소속 지점 `DisplayWorkSchedule.costCenterCode` IN) 필터.
      * null 이면 미적용(가시 범위 전건). 검색 필터와 AND 합성.
+     *
+     * `periodStart`/`periodEnd` 는 **조회 기간과 스케줄 기간의 겹침(overlap) 필터** — 시작일 자체의
+     * 범위 검색이 아니라, 스케줄 기간 [startDate, endDate] 이 조회 기간과 하루라도 겹치면 매칭된다
+     * (진행 중 스케줄 포함). 각각 null 이면 해당 쪽 조건 생략(열린 구간).
      */
     fun findScheduleList(
         employeeCode: String?,
@@ -91,8 +95,8 @@ interface DisplayWorkScheduleRepositoryCustom {
         accountStatus: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
-        startDateFrom: LocalDate?,
-        startDateTo: LocalDate?,
+        periodStart: LocalDate?,
+        periodEnd: LocalDate?,
         preset: SchedulePreset?,
         validData: ScheduleValidData?,
         branchCodes: List<String>?,

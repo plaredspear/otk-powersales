@@ -164,7 +164,8 @@ class AdminDisplayWorkScheduleService(
             ScheduleFilterMeta("typeOfWork3", ScheduleFilterType.SELECT, typeOfWork3Options),
             ScheduleFilterMeta("confirmed", ScheduleFilterType.SELECT, confirmedOptions),
             ScheduleFilterMeta("validData", ScheduleFilterType.SELECT, validDataOptions),
-            ScheduleFilterMeta("startDate", ScheduleFilterType.DATE),
+            // 조회 기간(periodStart~periodEnd) — 스케줄 기간과의 겹침 필터 (시작일 범위 검색 아님)
+            ScheduleFilterMeta("period", ScheduleFilterType.DATE),
         )
 
         return ScheduleListMetaResponse(
@@ -446,8 +447,8 @@ class AdminDisplayWorkScheduleService(
         accountStatus: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
-        startDateFrom: LocalDate?,
-        startDateTo: LocalDate?,
+        periodStart: LocalDate?,
+        periodEnd: LocalDate?,
         preset: SchedulePreset?,
         validData: ScheduleValidData?,
         branchCodes: List<String>?,
@@ -470,7 +471,7 @@ class AdminDisplayWorkScheduleService(
         val policyPredicate = schedulePolicyPredicate(scope)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, validData, branchCodes, policyPredicate, pageable
+            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, periodStart, periodEnd, preset, validData, branchCodes, policyPredicate, pageable
         )
 
         // 페이지 단위 출근등록 수 집계 (N+1 회피 — id IN + GROUP BY 1쿼리)
@@ -494,8 +495,8 @@ class AdminDisplayWorkScheduleService(
         accountStatus: String?,
         confirmed: Boolean?,
         typeOfWork3: String?,
-        startDateFrom: LocalDate?,
-        startDateTo: LocalDate?,
+        periodStart: LocalDate?,
+        periodEnd: LocalDate?,
         preset: SchedulePreset?,
         validData: ScheduleValidData?,
         branchCodes: List<String>?,
@@ -514,7 +515,7 @@ class AdminDisplayWorkScheduleService(
         val pageable = PageRequest.of(0, EXPORT_MAX_ROWS, sort)
 
         val schedulePage = scheduleRepository.findScheduleList(
-            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, startDateFrom, startDateTo, preset, validData, branchCodes, policyPredicate, pageable
+            employeeCode, accountIds, accountType, accountStatus, confirmed, typeOfWork3, periodStart, periodEnd, preset, validData, branchCodes, policyPredicate, pageable
         )
 
         val items = schedulePage.content.map { toListItemDto(it) }

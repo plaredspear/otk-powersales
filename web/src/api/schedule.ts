@@ -108,8 +108,8 @@ export interface ScheduleListParams {
   accountStatus?: string;
   confirmed?: boolean;
   typeOfWork3?: string;
-  startDateFrom?: string;
-  startDateTo?: string;
+  periodStart?: string;
+  periodEnd?: string;
   preset?: SchedulePreset;
   /** 유효여부(유효/예정/종료) — 화면 「유효」 신호등 dot 판정 기준. */
   validData?: ScheduleValidData;
@@ -233,8 +233,8 @@ export function scheduleExportParams(
   if (params.accountStatus) queryParams.accountStatus = params.accountStatus;
   if (params.confirmed != null) queryParams.confirmed = String(params.confirmed);
   if (params.typeOfWork3) queryParams.typeOfWork3 = params.typeOfWork3;
-  if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
-  if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
+  if (params.periodStart) queryParams.periodStart = params.periodStart;
+  if (params.periodEnd) queryParams.periodEnd = params.periodEnd;
   if (params.preset) queryParams.preset = params.preset;
   if (params.validData) queryParams.validData = params.validData;
   if (params.branchCode) queryParams.branchCode = params.branchCode;
@@ -325,8 +325,8 @@ export async function fetchScheduleList(params: ScheduleListParams): Promise<Sch
   if (params.accountStatus) queryParams.accountStatus = params.accountStatus;
   if (params.confirmed != null) queryParams.confirmed = String(params.confirmed);
   if (params.typeOfWork3) queryParams.typeOfWork3 = params.typeOfWork3;
-  if (params.startDateFrom) queryParams.startDateFrom = params.startDateFrom;
-  if (params.startDateTo) queryParams.startDateTo = params.startDateTo;
+  if (params.periodStart) queryParams.periodStart = params.periodStart;
+  if (params.periodEnd) queryParams.periodEnd = params.periodEnd;
   if (params.preset) queryParams.preset = params.preset;
   if (params.validData) queryParams.validData = params.validData;
   if (params.branchCode) queryParams.branchCode = params.branchCode;

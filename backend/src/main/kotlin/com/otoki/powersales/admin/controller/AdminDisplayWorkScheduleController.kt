@@ -104,8 +104,8 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) accountStatus: String?,
         @RequestParam(required = false) confirmed: Boolean?,
         @RequestParam(required = false) typeOfWork3: String?,
-        @RequestParam(required = false) startDateFrom: LocalDate?,
-        @RequestParam(required = false) startDateTo: LocalDate?,
+        @RequestParam(required = false) periodStart: LocalDate?,
+        @RequestParam(required = false) periodEnd: LocalDate?,
         @RequestParam(required = false) preset: SchedulePreset?,
         @RequestParam(required = false) validData: ScheduleValidData?,
         @RequestParam(required = false) branchCode: String?,
@@ -115,7 +115,7 @@ class AdminDisplayWorkScheduleController(
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.listSchedules(
             scope, page, size, employeeCode, accountName, accountType, accountStatus, confirmed,
-            typeOfWork3, startDateFrom, startDateTo, preset, validData, resolveBranchCodes(principal, branchCode), sort
+            typeOfWork3, periodStart, periodEnd, preset, validData, resolveBranchCodes(principal, branchCode), sort
         )
         return ResponseEntity.ok(ApiResponse.success(result))
     }
@@ -132,8 +132,8 @@ class AdminDisplayWorkScheduleController(
         @RequestParam(required = false) accountStatus: String?,
         @RequestParam(required = false) confirmed: Boolean?,
         @RequestParam(required = false) typeOfWork3: String?,
-        @RequestParam(required = false) startDateFrom: LocalDate?,
-        @RequestParam(required = false) startDateTo: LocalDate?,
+        @RequestParam(required = false) periodStart: LocalDate?,
+        @RequestParam(required = false) periodEnd: LocalDate?,
         @RequestParam(required = false) preset: SchedulePreset?,
         @RequestParam(required = false) validData: ScheduleValidData?,
         @RequestParam(required = false) branchCode: String?,
@@ -143,7 +143,7 @@ class AdminDisplayWorkScheduleController(
         val sort = resolveSort(sortBy, sortDir)
         val result = adminDisplayWorkScheduleService.exportAllSchedules(
             scope, employeeCode, accountName, accountType, accountStatus, confirmed,
-            typeOfWork3, startDateFrom, startDateTo, preset, validData, resolveBranchCodes(principal, branchCode), sort
+            typeOfWork3, periodStart, periodEnd, preset, validData, resolveBranchCodes(principal, branchCode), sort
         )
         return ExcelResponseUtils.build(result)
     }

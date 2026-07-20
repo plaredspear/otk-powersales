@@ -9997,46 +9997,46 @@
             "type" : "string"
           },
           "currentMonthDisplayTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "currentMonthEventTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "currentMonthTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "displayAlternate" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "displayChange" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "displayFixed" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "displayPatrol" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "eventAmbient" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "eventChange" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "eventFrozenChilled" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "previousMonthDisplayTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "previousMonthEventTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "previousMonthTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "totalChange" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
         "type" : "object"
@@ -21462,7 +21462,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "startDateFrom",
+          "name" : "periodStart",
           "required" : false,
           "schema" : {
             "format" : "date",
@@ -21470,7 +21470,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "startDateTo",
+          "name" : "periodEnd",
           "required" : false,
           "schema" : {
             "format" : "date",
@@ -21602,7 +21602,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "startDateFrom",
+          "name" : "periodStart",
           "required" : false,
           "schema" : {
             "format" : "date",
@@ -21610,7 +21610,7 @@
           }
         }, {
           "in" : "query",
-          "name" : "startDateTo",
+          "name" : "periodEnd",
           "required" : false,
           "schema" : {
             "format" : "date",
