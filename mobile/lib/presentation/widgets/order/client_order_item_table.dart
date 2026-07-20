@@ -110,34 +110,48 @@ class ClientOrderItemTable extends StatelessWidget {
                     bottom: BorderSide(color: AppColors.border),
                   ),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        '${item.productName} (${item.productCode})',
-                        style: AppTypography.bodyMedium,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 80,
-                      child: Text(
-                        item.deliveredQuantity,
-                        style: AppTypography.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    SizedBox(
-                      width: 80,
-                      child: Text(
-                        OrderDeliveryStatus.displayName(item.deliveryStatus),
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: _getStatusColor(item.deliveryStatus),
-                          fontWeight: FontWeight.bold,
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: Text(
+                            '${item.productName} (${item.productCode})',
+                            style: AppTypography.bodyMedium,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            item.deliveredQuantity,
+                            style: AppTypography.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            OrderDeliveryStatus.displayName(item.deliveryStatus),
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: _getStatusColor(item.deliveryStatus),
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // 배송수량 별도 행 (신규) — 실제 출하량 "N BOX (M EA)". 납품수량과 구분되도록
+                    // 라벨 접두 + 보조 텍스트 스타일. 배송 전 라인은 "0 BOX (0 EA)".
+                    SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '배송수량: ${item.shippedQuantity}',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],

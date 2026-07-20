@@ -1032,10 +1032,16 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
           ? '${random.nextInt(50) + 1} BOX'
           : '0 BOX';
 
+      // 배송완료(statusIndex==2)만 실제 출하량, 그 외는 0 BOX (0 EA).
+      final shippedQty = statusIndex == 2
+          ? '${deliveredQty.split(' ').first} BOX (${(int.tryParse(deliveredQty.split(' ').first) ?? 0) * 30} EA)'
+          : '0 BOX (0 EA)';
+
       return ClientOrderItem(
         productCode: product.$1,
         productName: product.$2,
         deliveredQuantity: deliveredQty,
+        shippedQuantity: shippedQty,
         deliveryStatus: statuses[statusIndex],
       );
     });

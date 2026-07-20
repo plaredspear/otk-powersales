@@ -67,8 +67,10 @@ class ClientOrderQueryServiceTest {
         fun success() {
             val order = createOrder(employeeCode = employeeCode)
             val products = listOf(
+                // 배송 전(대기/배송중) — 출하량 미도래 → 0 BOX (0 EA)
                 createProduct(lineNumber = "10", deliveryStatus = "배송중", productCode = "P001", productName = "예시1", confirmQuantityBox = BigDecimal("5")),
-                createProduct(lineNumber = "20", deliveryStatus = "배송 완료", productCode = "P002", productName = "예시2", confirmQuantityBox = BigDecimal("1234.5")),
+                // 배송완료 — 실제 출하량(box/ea) 적재
+                createProduct(lineNumber = "20", deliveryStatus = "배송 완료", productCode = "P002", productName = "예시2", confirmQuantityBox = BigDecimal("1234.5"), shippingQuantityBox = BigDecimal("1234.5"), shippingQuantity = BigDecimal("14814")),
             )
             every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
             every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
@@ -86,9 +88,13 @@ class ClientOrderQueryServiceTest {
             assertThat(result.orderedItems).hasSize(2)
             assertThat(result.orderedItems[0].deliveryStatus).isEqualTo(DeliveryStatus.SHIPPING)
             assertThat(result.orderedItems[0].deliveredQuantity).isEqualTo("5 BOX")
+            // 배송수량(신규) — 출하 전 라인은 0 BOX (0 EA)
+            assertThat(result.orderedItems[0].shippedQuantity).isEqualTo("0 BOX (0 EA)")
             assertThat(result.orderedItems[1].deliveryStatus).isEqualTo(DeliveryStatus.DELIVERED)
             // 레거시 `#,###.##` 정합 — 천단위 구분 + 소수 최대 2자리
             assertThat(result.orderedItems[1].deliveredQuantity).isEqualTo("1,234.5 BOX")
+            // 배송수량(신규) — box/ea 모두 SAP 원본 적재값 그대로, 천단위 구분
+            assertThat(result.orderedItems[1].shippedQuantity).isEqualTo("1,234.5 BOX (14,814 EA)")
         }
 
         @Test
@@ -348,6 +354,8 @@ class ClientOrderQueryServiceTest {
         productCode: String? = "P001",
         productName: String? = "예시 상품",
         confirmQuantityBox: BigDecimal? = BigDecimal.ZERO,
+        shippingQuantityBox: BigDecimal? = null,
+        shippingQuantity: BigDecimal? = null,
         unit: String? = "BOX",
     ): ErpOrderProduct {
         val order = createOrder(employeeCode = employeeCode)
@@ -359,6 +367,8 @@ class ClientOrderQueryServiceTest {
             productCode = productCode,
             productName = productName,
             confirmQuantityBox = confirmQuantityBox,
+            shippingQuantityBox = shippingQuantityBox,
+            shippingQuantity = shippingQuantity,
             unit = unit,
             deliveryStatus = deliveryStatus,
         )

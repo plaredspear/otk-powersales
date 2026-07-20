@@ -116,8 +116,12 @@ class ClientOrderItem {
   /// 제품명
   final String productName;
 
-  /// 납품 수량 (예: "0 BOX")
+  /// 납품 수량 (예: "0 BOX") — confirmQuantityBox 기반, 배송 전에도 주문 확정 수량.
   final String deliveredQuantity;
+
+  /// 배송 수량 (예: "10 BOX (300 EA)") — SAP 실제 출하량(shippingQuantityBox/shippingQuantity).
+  /// 배송 전(대기/결품) 라인은 "0 BOX (0 EA)". 신규 추가(2026-07-21 사용자 결정).
+  final String shippedQuantity;
 
   /// 배송 상태 코드 (서버 문자열 그대로 — [OrderDeliveryStatus] 상수와 비교). enum 미사용(crash 방어).
   final String deliveryStatus;
@@ -133,6 +137,7 @@ class ClientOrderItem {
     required this.productCode,
     required this.productName,
     required this.deliveredQuantity,
+    required this.shippedQuantity,
     required this.deliveryStatus,
     this.driverName,
     this.vehicle,
@@ -145,6 +150,7 @@ class ClientOrderItem {
     String? productCode,
     String? productName,
     String? deliveredQuantity,
+    String? shippedQuantity,
     String? deliveryStatus,
     String? driverName,
     String? vehicle,
@@ -156,6 +162,7 @@ class ClientOrderItem {
       productCode: productCode ?? this.productCode,
       productName: productName ?? this.productName,
       deliveredQuantity: deliveredQuantity ?? this.deliveredQuantity,
+      shippedQuantity: shippedQuantity ?? this.shippedQuantity,
       deliveryStatus: deliveryStatus ?? this.deliveryStatus,
       driverName: driverName ?? this.driverName,
       vehicle: vehicle ?? this.vehicle,
@@ -170,6 +177,7 @@ class ClientOrderItem {
       'productCode': productCode,
       'productName': productName,
       'deliveredQuantity': deliveredQuantity,
+      'shippedQuantity': shippedQuantity,
       'deliveryStatus': deliveryStatus,
       'driverName': driverName,
       'vehicle': vehicle,
@@ -184,6 +192,8 @@ class ClientOrderItem {
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
       deliveredQuantity: json['deliveredQuantity'] as String,
+      // 하위호환 — 구버전 서버 응답엔 shippedQuantity 부재 가능 → 0 BOX (0 EA) 폴백.
+      shippedQuantity: json['shippedQuantity'] as String? ?? '0 BOX (0 EA)',
       // 서버 문자열 그대로 보유 — enum 파싱 없음(미정의 코드에도 crash 없이 안전).
       deliveryStatus: json['deliveryStatus'] as String,
       driverName: json['driverName'] as String?,
@@ -201,6 +211,7 @@ class ClientOrderItem {
         other.productCode == productCode &&
         other.productName == productName &&
         other.deliveredQuantity == deliveredQuantity &&
+        other.shippedQuantity == shippedQuantity &&
         other.deliveryStatus == deliveryStatus &&
         other.driverName == driverName &&
         other.vehicle == vehicle &&
@@ -215,6 +226,7 @@ class ClientOrderItem {
       productCode,
       productName,
       deliveredQuantity,
+      shippedQuantity,
       deliveryStatus,
       driverName,
       vehicle,
@@ -229,6 +241,7 @@ class ClientOrderItem {
     return 'ClientOrderItem(productCode: $productCode, '
         'productName: $productName, '
         'deliveredQuantity: $deliveredQuantity, '
+        'shippedQuantity: $shippedQuantity, '
         'deliveryStatus: $deliveryStatus)';
   }
 }

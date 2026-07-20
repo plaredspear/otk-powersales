@@ -101,6 +101,7 @@ class ClientOrderItemModel {
   final String productCode;
   final String productName;
   final String deliveredQuantity;
+  final String shippedQuantity;
   final String deliveryStatus;
 
   /// 배송 정보 5필드 (배송중/배송완료 라인 탭 팝업용). 서버가 빈 값/`'000000'` sentinel 을
@@ -115,6 +116,7 @@ class ClientOrderItemModel {
     required this.productCode,
     required this.productName,
     required this.deliveredQuantity,
+    required this.shippedQuantity,
     required this.deliveryStatus,
     this.driverName,
     this.vehicle,
@@ -128,6 +130,8 @@ class ClientOrderItemModel {
       productCode: json['productCode'] as String,
       productName: json['productName'] as String,
       deliveredQuantity: json['deliveredQuantity'] as String,
+      // 하위호환 — 구버전 서버 응답엔 shippedQuantity 부재 가능 → 0 BOX (0 EA) 폴백.
+      shippedQuantity: json['shippedQuantity'] as String? ?? '0 BOX (0 EA)',
       deliveryStatus: json['deliveryStatus'] as String,
       driverName: json['driverName'] as String?,
       vehicle: json['vehicle'] as String?,
@@ -142,6 +146,7 @@ class ClientOrderItemModel {
       'productCode': productCode,
       'productName': productName,
       'deliveredQuantity': deliveredQuantity,
+      'shippedQuantity': shippedQuantity,
       'deliveryStatus': deliveryStatus,
       'driverName': driverName,
       'vehicle': vehicle,
@@ -156,6 +161,7 @@ class ClientOrderItemModel {
       productCode: productCode,
       productName: productName,
       deliveredQuantity: deliveredQuantity,
+      shippedQuantity: shippedQuantity,
       deliveryStatus: deliveryStatus,
       driverName: driverName,
       vehicle: vehicle,
@@ -170,6 +176,7 @@ class ClientOrderItemModel {
       productCode: entity.productCode,
       productName: entity.productName,
       deliveredQuantity: entity.deliveredQuantity,
+      shippedQuantity: entity.shippedQuantity,
       deliveryStatus: entity.deliveryStatus,
       driverName: entity.driverName,
       vehicle: entity.vehicle,
@@ -186,6 +193,7 @@ class ClientOrderItemModel {
         other.productCode == productCode &&
         other.productName == productName &&
         other.deliveredQuantity == deliveredQuantity &&
+        other.shippedQuantity == shippedQuantity &&
         other.deliveryStatus == deliveryStatus &&
         other.driverName == driverName &&
         other.vehicle == vehicle &&
@@ -197,8 +205,8 @@ class ClientOrderItemModel {
   @override
   int get hashCode {
     return Object.hash(productCode, productName, deliveredQuantity,
-        deliveryStatus, driverName, vehicle, driverPhone, scheduleTime,
-        completeTime);
+        shippedQuantity, deliveryStatus, driverName, vehicle, driverPhone,
+        scheduleTime, completeTime);
   }
 
   @override
@@ -206,6 +214,7 @@ class ClientOrderItemModel {
     return 'ClientOrderItemModel(productCode: $productCode, '
         'productName: $productName, '
         'deliveredQuantity: $deliveredQuantity, '
+        'shippedQuantity: $shippedQuantity, '
         'deliveryStatus: $deliveryStatus)';
   }
 }

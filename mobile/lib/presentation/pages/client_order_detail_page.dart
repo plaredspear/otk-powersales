@@ -57,7 +57,11 @@ class _ClientOrderDetailPageState
       completeTime: item.completeTime,
     );
 
-    DeliveryInfoPopup.show(context, item: processingItem);
+    DeliveryInfoPopup.show(
+      context,
+      item: processingItem,
+      shippedQuantity: item.shippedQuantity,
+    );
   }
 
   @override

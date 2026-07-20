@@ -99,6 +99,28 @@ void main() {
     });
   });
 
+  group('배송수량 병기 (거래처주문 상세, 신규)', () {
+    testWidgets('shippedQuantity 전달 시 "배송 수량" 행 표시', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: DeliveryInfoPopup(
+            processingItem: _item(OrderDeliveryStatus.delivered),
+            shippedQuantity: '10 BOX (300 EA)',
+          ),
+        ),
+      ));
+
+      expect(find.text('배송 수량'), findsOneWidget);
+      expect(find.text('10 BOX (300 EA)'), findsOneWidget);
+    });
+
+    testWidgets('shippedQuantity null(F18 내 주문상세) — "배송 수량" 행 미표시', (tester) async {
+      await tester.pumpWidget(buildPopup(_item(OrderDeliveryStatus.delivered)));
+
+      expect(find.text('배송 수량'), findsNothing);
+    });
+  });
+
   group('ProcessingItem.hasNoDeliveryDetail (Spec #595 Q5)', () {
     test('5필드 모두 null → true', () {
       const item = ProcessingItem(

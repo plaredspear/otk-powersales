@@ -7,15 +7,27 @@ import '../../../domain/entities/order_detail.dart';
 class DeliveryInfoPopup extends StatelessWidget {
   final ProcessingItem processingItem;
 
+  /// 배송수량 `"N BOX (M EA)"` — 거래처주문 상세에서만 채워지는 선택적 필드(신규, 2026-07-21).
+  /// null 이면 배송수량 행 미표시(F18 내 주문상세는 처리현황 그룹에서 이미 배송수량을 다루므로 null).
+  final String? shippedQuantity;
+
   const DeliveryInfoPopup({
     super.key,
     required this.processingItem,
+    this.shippedQuantity,
   });
 
-  static void show(BuildContext context, {required ProcessingItem item}) {
+  static void show(
+    BuildContext context, {
+    required ProcessingItem item,
+    String? shippedQuantity,
+  }) {
     showDialog(
       context: context,
-      builder: (ctx) => DeliveryInfoPopup(processingItem: item),
+      builder: (ctx) => DeliveryInfoPopup(
+        processingItem: item,
+        shippedQuantity: shippedQuantity,
+      ),
     );
   }
 
@@ -67,6 +79,11 @@ class DeliveryInfoPopup extends StatelessWidget {
           _buildInfoRow('제품', '${processingItem.productName} (${processingItem.productCode})'),
           SizedBox(height: AppSpacing.md),
           _buildInfoRow('납품 수량', processingItem.deliveredQuantity),
+          // 배송수량 — 거래처주문 상세에서만 병기 (실제 출하량 "N BOX (M EA)").
+          if (shippedQuantity != null) ...[
+            SizedBox(height: AppSpacing.md),
+            _buildInfoRow('배송 수량', shippedQuantity!),
+          ],
           SizedBox(height: AppSpacing.md),
           _buildInfoRow(
             '배송 상태',

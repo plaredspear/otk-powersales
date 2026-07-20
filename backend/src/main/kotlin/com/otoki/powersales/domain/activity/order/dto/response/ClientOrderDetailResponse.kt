@@ -73,6 +73,11 @@ data class ClientOrderDetailResponse(
  * 배송 전(대기/결품) 라인은 배송수량이 0 이므로 배송수량을 쓰면 전 라인이 `0 BOX` 로 오표시됨.
  * `deliveryStatus` 는 DB 한글 라벨을 [DeliveryStatus] enum 으로 변환한 영문 코드.
  *
+ * `shippedQuantity` 는 실제 출하량 `"N BOX (M EA)"` (신규 추가, 2026-07-20 사용자 결정 — 레거시는 화면
+ * 미표시 hidden input 만 보유). BOX = `shippingQuantityBox`(SAP `ShippingQuantity_Box`), EA =
+ * `shippingQuantity`(SAP `ShippingQuantity`, 최소주문단위) 둘 다 SAP 원본 적재값이라 제품마스터 재환산 없음.
+ * 배송 전 라인은 두 값 모두 null/0 이라 `"0 BOX (0 EA)"` 로 표기(납품수량 `deliveredQuantity` 와 별도 행).
+ *
  * 배송 5필드(기사명/차량/연락처/예정시간/완료시간) 는 배송중/배송완료 라인 탭 팝업용
  * (레거시 `view.jsp:141-158`). 빈 값/`'000000'` sentinel 은 `null` 로 매핑하며,
  * 시각은 F18 내 주문 상세(`OrderRequestDetailMapper`)와 동일하게 `HHmmss → HH:mm` 포맷.
@@ -81,6 +86,7 @@ data class ClientOrderItemResponse(
     val productCode: String?,
     val productName: String?,
     val deliveredQuantity: String,
+    val shippedQuantity: String,
     val deliveryStatus: DeliveryStatus,
     val driverName: String?,
     val vehicle: String?,
@@ -96,6 +102,7 @@ data class ClientOrderItemResponse(
                 productCode = product.productCode,
                 productName = product.productName,
                 deliveredQuantity = formatDeliveredQuantity(product.confirmQuantityBox),
+                shippedQuantity = formatShippedQuantity(product.shippingQuantityBox, product.shippingQuantity),
                 deliveryStatus = DeliveryStatus.fromKoreanLabel(product.deliveryStatus),
                 driverName = nullIfBlank(product.shippingDriverName),
                 vehicle = nullIfBlank(product.shippingVehicle),
@@ -123,6 +130,18 @@ data class ClientOrderItemResponse(
         private fun formatDeliveredQuantity(quantityBox: BigDecimal?): String {
             val qty = quantityBox ?: BigDecimal.ZERO
             return "${DecimalFormat("#,###.##").format(qty)} BOX"
+        }
+
+        /**
+         * 배송수량 `"N BOX (M EA)"` (신규, 2026-07-20 사용자 결정).
+         * BOX/EA 모두 SAP 원본 적재값(`shipping_quantity_box`/`shipping_quantity`) 사용 — 제품마스터 재환산 없음.
+         * 배송 전(대기/결품) 라인은 두 값 모두 null → `"0 BOX (0 EA)"` (배송수량은 confirm 과 달리 실제 출하량이라 0 이 정상).
+         */
+        private fun formatShippedQuantity(box: BigDecimal?, ea: BigDecimal?): String {
+            val fmt = DecimalFormat("#,###.##")
+            val boxStr = fmt.format(box ?: BigDecimal.ZERO)
+            val eaStr = fmt.format(ea ?: BigDecimal.ZERO)
+            return "$boxStr BOX ($eaStr EA)"
         }
     }
 }

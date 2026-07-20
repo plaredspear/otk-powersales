@@ -26,6 +26,15 @@ void main() {
       expect(find.text('결품'), findsOneWidget);
     });
 
+    testWidgets('배송수량 별도 행 표시 (라인마다 "배송수량: N BOX (M EA)")', (tester) async {
+      await tester.pumpWidget(buildTable(items: _items4));
+
+      // 배송완료 라인 — 실제 출하량
+      expect(find.text('배송수량: 10 BOX (300 EA)'), findsOneWidget);
+      // 배송 전(대기/결품) 라인 — 0 BOX (0 EA)
+      expect(find.text('배송수량: 0 BOX (0 EA)'), findsNWidgets(2));
+    });
+
     testWidgets('SHIPPING/DELIVERED 만 onItemTap 활성', (tester) async {
       final tapped = <String>[];
       await tester.pumpWidget(buildTable(
@@ -54,24 +63,28 @@ const _items4 = [
     productCode: 'P001',
     productName: '대기 상품',
     deliveredQuantity: '0 BOX',
+    shippedQuantity: '0 BOX (0 EA)',
     deliveryStatus: OrderDeliveryStatus.pending,
   ),
   ClientOrderItem(
     productCode: 'P002',
     productName: '배송중 상품',
     deliveredQuantity: '5 BOX',
+    shippedQuantity: '5 BOX (150 EA)',
     deliveryStatus: OrderDeliveryStatus.shipping,
   ),
   ClientOrderItem(
     productCode: 'P003',
     productName: '배송완료 상품',
     deliveredQuantity: '10 BOX',
+    shippedQuantity: '10 BOX (300 EA)',
     deliveryStatus: OrderDeliveryStatus.delivered,
   ),
   ClientOrderItem(
     productCode: 'P004',
     productName: '결품 상품',
     deliveredQuantity: '0 BOX',
+    shippedQuantity: '0 BOX (0 EA)',
     deliveryStatus: OrderDeliveryStatus.outOfStock,
   ),
 ];
