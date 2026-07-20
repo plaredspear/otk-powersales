@@ -33,8 +33,12 @@ class CalendarWidget extends StatelessWidget {
   /// 해당 월의 연차 건수
   final int annualLeaveCount;
 
-  /// 해당 월의 대휴 건수
-  final int substituteHolidayCount;
+  /// 캘린더가 차지할 가로 폭 (셀 높이 산출용)
+  ///
+  /// 내부에서 LayoutBuilder 로 측정하지 않고 호출측이 넘긴다.
+  /// (이 위젯은 IntrinsicHeight 아래에서 배치되는데, LayoutBuilder 는
+  ///  intrinsic 높이를 계산할 수 없어 layout 예외가 발생하기 때문이다.)
+  final double width;
 
   const CalendarWidget({
     super.key,
@@ -42,8 +46,8 @@ class CalendarWidget extends StatelessWidget {
     required this.month,
     required this.workDays,
     required this.onDateTap,
+    required this.width,
     this.annualLeaveCount = 0,
-    this.substituteHolidayCount = 0,
   });
 
   /// 해당 날짜의 일정 항목 조회 (없으면 null)
@@ -111,13 +115,11 @@ class CalendarWidget extends StatelessWidget {
     final isToday = _isToday(date);
     final workingType = workDay?.workingType;
     final isAnnualLeave = workingType == '연차';
-    final isSubstituteHoliday = workingType == '대휴';
     final isSunday = weekday == 0;
     final isSaturday = weekday == 6;
-    final isTappable = isWorkDay || isSubstituteHoliday;
 
     return GestureDetector(
-      onTap: isTappable ? () => onDateTap(date) : null,
+      onTap: isWorkDay ? () => onDateTap(date) : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
         height: height,
@@ -142,21 +144,9 @@ class CalendarWidget extends StatelessWidget {
                           : AppColors.textPrimary,
                 ),
               ),
-              // 대휴 표시
-              if (isSubstituteHoliday)
-                Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
-                  child: Text(
-                    '대휴',
-                    style: AppTypography.labelSmall.copyWith(
-                      color: AppColors.otokiBlue,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                )
               // 연차 표시
-              else if (isAnnualLeave)
+              // (레거시 본인 캘린더에는 '대휴' 근무유형 자체가 없어 배지도 두지 않는다.)
+              if (isAnnualLeave)
                 Padding(
                   padding: const EdgeInsets.only(top: 2.0),
                   child: Text(
@@ -218,6 +208,9 @@ class CalendarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final dates = _generateCalendarDates();
 
+    // 셀 높이는 레거시 비율(0.9)을 유지하도록 셀 너비에서 산출한다.
+    final cellHeight = (width / 7) / 0.9;
+
     // 시스템 글꼴 확대 시 셀 텍스트가 넘치지 않도록 스케일 상한을 제한한다.
     // (셀 내부는 추가로 FittedBox 로 축소되어 어떤 스케일에서도 숫자가 잘리지 않는다.)
     return MediaQuery.withClampedTextScaling(
@@ -226,55 +219,49 @@ class CalendarWidget extends StatelessWidget {
         children: [
           // Table + TableBorder 로 격자 선을 셀 경계에 정확히 그린다
           // (선이 셀 밖으로 삐져나오지 않는다).
-          LayoutBuilder(
-              builder: (context, constraints) {
-                // 셀 높이는 레거시 비율(0.9)을 유지하도록 셀 너비에서 산출한다.
-                final cellHeight = (constraints.maxWidth / 7) / 0.9;
-                return Table(
-                  border: TableBorder.all(color: AppColors.divider, width: 1),
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  children: [
-                    // 요일 헤더
-                    TableRow(
-                      children: [
-                        for (var i = 0; i < 7; i++)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.sm,
-                            ),
-                            child: Center(
-                              child: Text(
-                                _weekdayLabels[i],
-                                style: AppTypography.bodyMedium.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: i == 0
-                                      ? AppColors.otokiRed
-                                      : i == 6
-                                          ? AppColors.secondary
-                                          : AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
+          Table(
+            border: TableBorder.all(color: AppColors.divider, width: 1),
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+            children: [
+              // 요일 헤더
+              TableRow(
+                children: [
+                  for (var i = 0; i < 7; i++)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sm,
+                      ),
+                      child: Center(
+                        child: Text(
+                          _weekdayLabels[i],
+                          style: AppTypography.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: i == 0
+                                ? AppColors.otokiRed
+                                : i == 6
+                                    ? AppColors.secondary
+                                    : AppColors.textPrimary,
                           ),
-                      ],
-                    ),
-                    // 주별 날짜 행 (완전히 빈 주는 표시하지 않음)
-                    for (var week = 0; week * 7 < dates.length; week++)
-                      if (!_isEmptyWeek(dates, week))
-                        TableRow(
-                          children: [
-                            for (var dow = 0; dow < 7; dow++)
-                              _buildCell(
-                                dates[week * 7 + dow],
-                                dow,
-                                cellHeight,
-                              ),
-                          ],
                         ),
-                  ],
-                );
-              },
-            ),
+                      ),
+                    ),
+                ],
+              ),
+              // 주별 날짜 행 (완전히 빈 주는 표시하지 않음)
+              for (var week = 0; week * 7 < dates.length; week++)
+                if (!_isEmptyWeek(dates, week))
+                  TableRow(
+                    children: [
+                      for (var dow = 0; dow < 7; dow++)
+                        _buildCell(
+                          dates[week * 7 + dow],
+                          dow,
+                          cellHeight,
+                        ),
+                    ],
+                  ),
+            ],
+          ),
 
           // 캘린더 아래 남는 공간을 채워 요약을 화면 하단에 붙인다.
           const Spacer(),
@@ -295,25 +282,7 @@ class CalendarWidget extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  '연차: ${annualLeaveCount}일',
-                  style: AppTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                  ),
-                  child: Text(
-                    '|',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
-                Text(
-                  '대휴: ${substituteHolidayCount}일',
+                  '연차: $annualLeaveCount일',
                   style: AppTypography.bodyMedium.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,

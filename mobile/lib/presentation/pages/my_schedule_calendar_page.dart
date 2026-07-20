@@ -165,12 +165,11 @@ class _MyScheduleCalendarPageState
                                   child: CalendarWidget(
                                     year: state.currentYear,
                                     month: state.currentMonth,
+                                    width: constraints.maxWidth,
                                     workDays: state.workDays,
                                     onDateTap: (date) =>
                                         _onDateTap(context, date),
                                     annualLeaveCount: state.annualLeaveCount,
-                                    substituteHolidayCount:
-                                        state.substituteHolidayCount,
                                   ),
                                 ),
                               ),
