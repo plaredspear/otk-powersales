@@ -19,8 +19,13 @@ class OrderProcessingStatusSection extends StatelessWidget {
   /// 배송완료는 SF **조회 클래스**(IF_REST_MOBILE_OrderRequestDetail.cls:157) 정합으로 공백 없는
   /// '배송완료' 로 표시한다. enum 의 displayName('배송 완료', 공백)은 거래처주문(SF inbound cls:158)
   /// 도메인 표기라, 주문상세에서는 이 함수로 별도 매핑한다.
+  ///
+  /// 결품(OUT_OF_STOCK, SAP DefaultReason 존재 라인)은 주문상세 화면 한정으로 '미납' 으로 표기한다
+  /// (레거시 SF '결품' 표기에서 사용자 결정으로 이탈, 2026-07-20). 거래처주문 화면 표기('결품')와
+  /// 서버 상태 코드(OUT_OF_STOCK)는 그대로 유지 — 본 함수의 표시 매핑만 다르다.
   String _statusLabel(String status) {
     if (status == OrderDeliveryStatus.delivered) return '배송완료';
+    if (status == OrderDeliveryStatus.outOfStock) return '미납';
     return OrderDeliveryStatus.displayName(status);
   }
 
