@@ -23,11 +23,12 @@ import '../widgets/order/resend_confirm_dialog.dart';
 /// 주문 상세 페이지
 ///
 /// 주문 ID를 기반으로 주문 상세 정보를 조회하고,
-/// 마감 상태와 반려 여부에 따라 3가지 화면 구성을 동적으로 렌더링합니다.
+/// 마감 상태와 반려 여부에 따라 화면 구성을 동적으로 렌더링합니다.
 ///
-/// - 마감전: 주문정보 + 주문취소/재전송 버튼 + 주문한 제품 목록
-/// - 마감후: 주문정보 + 주문한 제품 접기/펼치기 + 주문처리현황
-/// - 마감후_반려: 주문정보 + 주문반려제품 목록
+/// - 마감전: 주문정보 + 주문취소/재전송 버튼 + 주문한 제품 목록 + 주문반려제품 목록(존재 시)
+/// - 마감후: 주문정보 + 주문한 제품 접기/펼치기 + 주문반려제품 목록(존재 시) + 주문처리현황
+///
+/// 반려 섹션은 레거시(view.jsp:284-322 before / 449-486 after) 동등으로 마감 전후 모두 표시합니다.
 class OrderDetailPage extends ConsumerStatefulWidget {
   /// 주문 ID (라우트 arguments로 전달)
   final int orderId;
@@ -222,6 +223,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
               // 주문한 제품 목록 (마감전에는 바로 표시)
               OrderedItemList(items: detail.orderedItems),
+
+              // 반려 제품 목록 — 레거시(view.jsp:284-322)는 마감 전에도 반려 섹션을 표시.
+              if (detail.hasRejectedItems) ...[
+                const SizedBox(height: AppSpacing.lg),
+                RejectedItemList(rejectedItems: detail.rejectedItems!),
+              ],
             ],
 
             // 마감후 전용 영역

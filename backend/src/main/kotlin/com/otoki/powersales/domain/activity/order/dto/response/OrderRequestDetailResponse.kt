@@ -23,6 +23,8 @@ data class OrderRequestDetailResponse(
     val orderDate: LocalDateTime?,
     val deliveryDate: LocalDate?,
     val totalAmount: BigDecimal?,
+    // 총 승인 금액 — SAP OrderRequestDetail 응답 전 라인 OrderSalesAmount 합산 (레거시 view.jsp:343-348
+    // 동등). DB order_request.total_approved_amount 컬럼이 아니라 조회 시점 SAP 실측치. SAP 실패 시 0.
     val totalApprovedAmount: BigDecimal,
     // 상태는 코드(영문)와 한글 표시명을 분리해 내려준다 (목록 API 와 정합). 모바일은 표시명을 그대로 출력하고
     // 코드는 색상/분기 로직에만 사용한다 (클라이언트 enum 매핑 제거).
@@ -45,6 +47,7 @@ data class OrderRequestDetailResponse(
             isClosed: Boolean,
             cancelable: Boolean,
             registrationInFlight: Boolean,
+            totalApprovedAmount: BigDecimal,
             orderedItems: List<OrderedItemResponse>,
             orderProcessingStatusList: List<OrderProcessingStatusResponse>?,
             rejectedItems: List<RejectedItemResponse>?,
@@ -58,7 +61,7 @@ data class OrderRequestDetailResponse(
                 orderDate = orderRequest.orderDate,
                 deliveryDate = orderRequest.deliveryDate,
                 totalAmount = orderRequest.totalAmount,
-                totalApprovedAmount = orderRequest.totalApprovedAmount ?: BigDecimal.ZERO,
+                totalApprovedAmount = totalApprovedAmount,
                 orderRequestStatus = orderRequest.orderRequestStatus?.name,
                 orderRequestStatusName = orderRequest.orderRequestStatus?.displayName,
                 isClosed = isClosed,

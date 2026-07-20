@@ -42,8 +42,9 @@ class OrderRequestDetailState {
   /// 마감후인지 여부
   bool get isAfterClose => hasData && orderDetail!.isClosed;
 
-  /// 마감후 + 반려제품 존재 여부
-  bool get hasRejectedItems => isAfterClose && orderDetail!.hasRejectedItems;
+  /// 반려제품 존재 여부 — 레거시(view.jsp:284-322 before / 449-486 after) 동등으로
+  /// 반려 섹션은 마감 전후 모두 표시하므로 마감 여부 게이트 없음.
+  bool get hasRejectedItems => hasData && orderDetail!.hasRejectedItems;
 
   /// 주문취소 버튼 표시 여부
   /// 마감전 + 전송실패 아님 + 전체 취소 아님 + 서버 취소 가능(cancelable).

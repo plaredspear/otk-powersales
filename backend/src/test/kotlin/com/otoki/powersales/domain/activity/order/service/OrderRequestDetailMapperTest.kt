@@ -171,8 +171,8 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
-    @DisplayName("결품 — DefaultReason 채워짐 → 처리현황/반려 아닌 outOfStockReasons 로 분리 (레거시 view.jsp:414 동등)")
-    fun outOfStockGoesToOrderedItems() {
+    @DisplayName("결품 — SAPOrderNumber 있는 라인은 처리현황 그룹에 OUT_OF_STOCK 로 포함 + outOfStockReasons 수집 (레거시 view.jsp:523/414 동등)")
+    fun outOfStockIncludedInProcessingGroup() {
         val sap = listOf(
             line(
                 productCode = "P_REJ",
@@ -180,15 +180,20 @@ class OrderRequestDetailMapperTest {
                 lineItemStatus = "OK",
                 defaultReason = "재고부족",
                 shippingCompleteTime = "143000",
+                shippingQuantityBox = "5",
             ),
         )
         val crm = mapOf("P_REJ" to product("P_REJ", "참기름", boxReceivingQuantity = 30, quantityBoxes = BigDecimal("5")))
 
         val result = mapper.map(requestNumber, sap, crm)
 
-        // 결품은 처리현황 그룹도 반려도 아니라 orderedItems 플래그용 맵으로만 수집된다.
-        assertThat(result.processingGroups).isEmpty()
+        // 레거시 처리현황 테이블(view.jsp:523)은 반려만 제외 — SAP 주문번호 있는 결품 라인은
+        // 상태 '결품' 으로 테이블에 표시된다. CompleteTime 채워져 있어도 결품이 우선 (cls:158 마지막 매칭).
+        assertThat(result.processingGroups).hasSize(1)
+        assertThat(result.processingGroups[0].sapOrderNumber).isEqualTo("S1")
+        assertThat(result.processingGroups[0].items[0].deliveryStatus).isEqualTo(DeliveryStatus.OUT_OF_STOCK)
         assertThat(result.rejectedItems).isEmpty()
+        // 동시에 orderedItems 회색+사유 표시용으로도 수집 (레거시는 두 곳 모두 표시).
         assertThat(result.outOfStockReasons).containsEntry("P_REJ", "재고부족")
     }
 
@@ -226,10 +231,41 @@ class OrderRequestDetailMapperTest {
             ),
         )
         val result = mapper.map(requestNumber, sap, mapOf("P1" to product("P1", "P1Name", 10)))
-        // DefaultReason 매칭이 최종(평가 5) — 반려가 아니라 결품으로 분류
+        // DefaultReason 매칭이 최종(평가 5) — 반려가 아니라 결품으로 분류.
+        // SAPOrderNumber 빈 값이라 처리현황 그룹에서는 제외 (view.jsp:494, 500 빈 키 그룹 제외 동등).
         assertThat(result.processingGroups).isEmpty()
         assertThat(result.rejectedItems).isEmpty()
         assertThat(result.outOfStockReasons).containsEntry("P1", "재고부족")
+    }
+
+    @Test
+    @DisplayName("sumApprovedAmount — 전 라인 OrderSalesAmount 단순 합산, 반려/결품 제외 없음 (레거시 view.jsp:343-348 동등)")
+    fun sumApprovedAmountAllLines() {
+        val sap = listOf(
+            // 정상 라인
+            line(productCode = "P1", sapOrderNumber = "S1", shippingCompleteTime = "143000")
+                .copy(orderSalesAmount = "120000"),
+            // 반려 라인도 합산 포함 (레거시 EL 은 전 라인 누적)
+            line(productCode = "P2", sapOrderNumber = "", lineItemStatus = "반려사유")
+                .copy(orderSalesAmount = "30000"),
+            // 결품 라인도 합산 포함
+            line(productCode = "P3", sapOrderNumber = "S1", defaultReason = "재고부족")
+                .copy(orderSalesAmount = "5000"),
+        )
+        assertThat(mapper.sumApprovedAmount(sap)).isEqualByComparingTo("155000")
+    }
+
+    @Test
+    @DisplayName("sumApprovedAmount — null/비숫자 값은 0 취급, null/빈 리스트는 0 (레거시 EL null→0 동등)")
+    fun sumApprovedAmountNullSafe() {
+        val sap = listOf(
+            line(productCode = "P1", sapOrderNumber = "S1").copy(orderSalesAmount = null),
+            line(productCode = "P2", sapOrderNumber = "S1").copy(orderSalesAmount = "-"),
+            line(productCode = "P3", sapOrderNumber = "S1").copy(orderSalesAmount = "1000"),
+        )
+        assertThat(mapper.sumApprovedAmount(sap)).isEqualByComparingTo("1000")
+        assertThat(mapper.sumApprovedAmount(null)).isEqualByComparingTo("0")
+        assertThat(mapper.sumApprovedAmount(emptyList())).isEqualByComparingTo("0")
     }
 
     @Test

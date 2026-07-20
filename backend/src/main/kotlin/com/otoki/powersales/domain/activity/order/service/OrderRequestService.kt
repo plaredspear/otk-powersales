@@ -167,6 +167,9 @@ class OrderRequestService(
      * 5. SAP 동기 호출 — 마감 여부 무관 항상 수행.
      * 6. SAP 응답 + CRM 라인 결합 → `orderProcessingStatusList[]` + `rejectedItems[]` 빌드.
      * 7. 마감 전(`isClosed = false`) 시 `orderProcessingStatusList = null` 강제 (Q6 — 레거시 동등).
+     * 8. 반려 라인은 `orderedItems`/`orderedItemCount` 에서 제외 (레거시 view.jsp:407, 377-383 동등 —
+     *    "주문한 제품" 은 반려 제외 목록, 반려는 반려 섹션에만 표시).
+     * 9. `totalApprovedAmount` = SAP 응답 전 라인 `OrderSalesAmount` 합산 (레거시 view.jsp:343-348 동등).
      */
     fun getOrderRequestDetail(orderRequestId: Long, userId: Long): OrderRequestDetailResponse {
         if (orderRequestId < 1) {
@@ -221,17 +224,24 @@ class OrderRequestService(
             .mapNotNull { p -> p.productCode?.let { it to p.name } }
             .toMap()
 
+        // 반려 라인은 "주문한 제품" 리스트/카운트에서 제외 (레거시 view.jsp:407 `SAP_Status ne '반려'`,
+        // 카운트 view.jsp:377-383 동등 — 반려 제품은 반려 섹션에만 표시, 이중 표시 없음).
+        // SAP 호출 실패 시엔 반려 판별 불가 → 전 라인 유지 (CRM 원장 표시 견고화, 레거시는 목록 자체가 비었음).
+        val rejectedProductCodes = mapped?.rejectedItems.orEmpty().map { it.productCode }.toSet()
+
         // 결품(SAP DefaultReason) 제품은 "주문한 제품" 리스트에 결품 플래그로 표시 (레거시 view.jsp:414 동등).
         // 정합 승격된 라인(Spec #858)은 forceCancelled 로 isCancelled=true 를 반영 — 조회 엔티티는 정합
         // (별도 트랜잭션) 반영 전 상태이므로 승격 결과를 응답에 직접 반영한다.
-        val orderedItems = crmProducts.map {
-            OrderedItemResponse.from(
-                it,
-                productName = productNamesByCode[it.productCode],
-                outOfStockReason = outOfStockReasons[it.productCode],
-                forceCancelled = it.productCode != null && it.productCode in promotedCancelledCodes,
-            )
-        }
+        val orderedItems = crmProducts
+            .filter { it.productCode == null || it.productCode !in rejectedProductCodes }
+            .map {
+                OrderedItemResponse.from(
+                    it,
+                    productName = productNamesByCode[it.productCode],
+                    outOfStockReason = outOfStockReasons[it.productCode],
+                    forceCancelled = it.productCode != null && it.productCode in promotedCancelledCodes,
+                )
+            }
 
         // 취소 가능 여부 — 취소 엔드포인트 가드와 동일한 [OrderCancelPolicy](상태+마감+outbox) 판정에
         // 더해, SD03052 응답상 주문 전체가 납품완료면 취소 버튼을 내린다. SAP 는 이미 납품완료된 주문의
@@ -246,6 +256,8 @@ class OrderRequestService(
             isClosed = isClosed,
             cancelable = cancelable,
             registrationInFlight = registrationInFlight,
+            // 레거시 view.jsp:343-348 동등 — SAP 응답 전 라인 OrderSalesAmount 합산 (DB 컬럼 아님).
+            totalApprovedAmount = orderRequestDetailMapper.sumApprovedAmount(sapLines),
             orderedItems = orderedItems,
             orderProcessingStatusList = finalProcessingGroups,
             rejectedItems = rejectedItems,

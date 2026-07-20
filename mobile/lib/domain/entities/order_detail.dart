@@ -530,7 +530,7 @@ class OrderDetail {
   /// - 다중 SAP 주문 분할 케이스에서 N개 그룹 (Q1 옵션 2).
   final List<OrderProcessingStatus>? orderProcessingStatusList;
 
-  /// 반려 제품 목록 (마감후, 반려 존재 시)
+  /// 반려 제품 목록 (반려 존재 시 — 레거시 동등으로 마감 전후 모두 표시)
   final List<RejectedItem>? rejectedItems;
 
   const OrderDetail({

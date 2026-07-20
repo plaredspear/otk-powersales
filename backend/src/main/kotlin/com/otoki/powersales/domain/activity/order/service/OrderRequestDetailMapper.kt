@@ -17,8 +17,10 @@ import java.math.BigDecimal
  * 레거시 `IF_REST_MOBILE_OrderRequestDetail.cls` 의 `Item` 파생 규칙을 동등 구현한다:
  * - 라인 derived 상태 5분기는 레거시 `cls:153-159` 의 **독립 if 5개** (`else if` 아님). **마지막 매칭 우선**.
  *   결품(평가 5, `DefaultReason` 채워짐)은 **반려와 달리 별도 분리하지 않고** 정상 라인 그룹에
- *   `deliveryStatus = OUT_OF_STOCK` 로 포함한다 (레거시 화면 `view.jsp` 가 결품을 정상 리스트 안에
- *   회색+상태텍스트로 표시 — 반려만 별도 섹션). 반려(평가 1)만 `rejectedItems` 로 분리.
+ *   `deliveryStatus = OUT_OF_STOCK` 로 포함한다 (레거시 처리현황 테이블 `view.jsp:523` 이 반려만
+ *   제외 — SAP 주문번호 있는 결품 라인은 상태 '결품' 으로 표시). 동시에 `outOfStockReasons` 로도
+ *   수집되어 "주문한 제품" 리스트의 회색+사유 표시에 쓰인다 (`view.jsp:414` 동등 — 레거시는 두 곳
+ *   모두에 표시). 반려(평가 1)만 `rejectedItems` 로 분리.
  * - SAP 주문번호별 그룹핑은 `LinkedHashMap` 기반으로 SAP 응답 자연 순서 유지 (Q7 강화).
  * - 빈 `SAPOrderNumber` 정상 라인은 응답 그룹에서 제외 (Q4, 레거시 JSP `view.jsp:494, 500` 동등).
  * - BOX→EA 환산은 레거시 `cls:147,151` 동등 — `ShippingQuantity_Box × Product.BoxReceivingQuantity__c`
@@ -67,16 +69,16 @@ class OrderRequestDetailMapper {
 
             val productName = crmProduct?.product?.name ?: sapLine.productName.orEmpty()
 
-            // 결품(평가 5, 마지막 매칭 우선): DefaultReason 채워짐 → 처리현황/반려에서 제외하고
-            // orderedItems 결품 플래그용으로만 수집 (레거시 화면은 "주문한 제품" 리스트에 회색 표시).
-            if (!sapLine.defaultReason.isNullOrEmpty()) {
-                outOfStockReasons.putIfAbsent(productCode, sapLine.defaultReason)
-                continue
-            }
-
-            // 반려(평가 1): SAPOrderNumber 빈 값 + LineItemStatus 채워짐 → 별도 섹션 분리.
-            // 레거시 `view.jsp:449-486` "주문 반려 제품" 별도 영역 동등.
-            if (sapLine.sapOrderNumber.isNullOrEmpty() && !sapLine.lineItemStatus.isNullOrEmpty()) {
+            // 결품(평가 5, 마지막 매칭 우선): DefaultReason 채워짐 → 반려 분리 대상에서 제외하고
+            // (레거시 cls:158 이 cls:154 반려 판정을 덮어씀) orderedItems 결품 플래그용으로 수집
+            // (레거시 화면은 "주문한 제품" 리스트에 회색 표시, view.jsp:414). 처리현황 그룹에는
+            // 상태 '결품' 으로 **포함**한다 — 레거시 처리현황 테이블(view.jsp:523)은 반려만 제외.
+            val isOutOfStock = !sapLine.defaultReason.isNullOrEmpty()
+            if (isOutOfStock) {
+                outOfStockReasons.putIfAbsent(productCode, sapLine.defaultReason.orEmpty())
+            } else if (sapLine.sapOrderNumber.isNullOrEmpty() && !sapLine.lineItemStatus.isNullOrEmpty()) {
+                // 반려(평가 1): SAPOrderNumber 빈 값 + LineItemStatus 채워짐 → 별도 섹션 분리.
+                // 레거시 `view.jsp:449-486` "주문 반려 제품" 별도 영역 동등.
                 rejected += RejectedItemResponse(
                     productCode = productCode,
                     productName = productName,
@@ -86,14 +88,14 @@ class OrderRequestDetailMapper {
                 continue
             }
 
-            // 정상 라인 — 그룹 키 결정.
+            // 그룹 키 결정 — 빈 SAPOrderNumber 라인(결품 포함)은 그룹에서 제외 (view.jsp:494, 500 동등).
             val groupKey = sapLine.sapOrderNumber ?: ""
             if (groupKey.isEmpty()) {
                 emptyKeyCount++
                 continue
             }
 
-            val deliveryStatus = computeDeliveryStatus(sapLine)
+            val deliveryStatus = if (isOutOfStock) DeliveryStatus.OUT_OF_STOCK else computeDeliveryStatus(sapLine)
             val deliveredQuantity = formatDeliveredQuantity(sapLine, crmProduct, requestNumber)
 
             val item = ProcessingItemResponse(
@@ -151,7 +153,8 @@ class OrderRequestDetailMapper {
 
     /**
      * 레거시 `cls:153-159` 의 **독립 if 5개** 중 처리현황 그룹에 들어오는 라인의 배송 차원만 매핑한다.
-     * 결품(평가 5)/반려(평가 1)는 [map] 에서 이미 분리되었으므로 여기서는 대기/배송중/배송완료 + 빈상태만 판정.
+     * 결품(평가 5)은 [map] 에서 `OUT_OF_STOCK` 으로 직접 지정되고 반려(평가 1)는 분리되었으므로
+     * 여기서는 대기/배송중/배송완료 + 빈상태만 판정.
      *
      * 레거시는 `String status=''` 에서 시작해 5개 독립 if 를 순차 실행하고 **아래 if 일수록 우선**(마지막
      * 참 조건이 최종값)이다. 여기서는 결품(158)/반려(154)가 이미 분리됐으므로 155~157 만 재현한다.
@@ -254,6 +257,21 @@ class OrderRequestDetailMapper {
         if (deliverableLines.isEmpty()) return false
         return deliverableLines.all { line ->
             !line.shippingCompleteTime.isNullOrEmpty() && line.shippingCompleteTime != ZERO_TIME
+        }
+    }
+
+    /**
+     * 총 승인 금액 — SAP 응답 **전 라인**의 `OrderSalesAmount` 단순 합산 (레거시 `view.jsp:343-348` 동등).
+     *
+     * 레거시는 반려/결품 제외 없이 itemList 전 라인을 EL 로 누적했고, null 값은 0 으로 취급됐다
+     * (Apex `String.valueOf(null)` 은 null → JSP EL 산술에서 0). 여기서도 null/비숫자 값은 0 으로 간주.
+     * SAP 호출 실패([sapLines] null)/빈 응답이면 0 — 레거시도 `resultCode != 'S'` 시 itemList 미생성으로
+     * sum=0 이 표시됐다. DB `order_request.total_approved_amount` 컬럼은 사용하지 않는다 (레거시 정합).
+     */
+    fun sumApprovedAmount(sapLines: List<SapOrderRequestDetailLine>?): BigDecimal {
+        if (sapLines.isNullOrEmpty()) return BigDecimal.ZERO
+        return sapLines.fold(BigDecimal.ZERO) { acc, line ->
+            acc + (parseDecimalOrNull(line.orderSalesAmount) ?: BigDecimal.ZERO)
         }
     }
 

@@ -384,6 +384,35 @@ class OrderRequestServiceTest {
             assertThat(response.orderProcessingStatusList!![0].sapOrderNumber).isEqualTo("0300004993")
             assertThat(response.orderedItems).hasSize(1)
             assertThat(response.orderedItems[0].productCode).isEqualTo("1000023")
+            // 총 승인 금액 = SAP 응답 전 라인 OrderSalesAmount 합산 (레거시 view.jsp:343-348 동등, DB 컬럼 아님)
+            assertThat(response.totalApprovedAmount).isEqualByComparingTo("120000")
+        }
+
+        @Test
+        @DisplayName("성공 — 반려 라인은 orderedItems/카운트에서 제외 + rejectedItems 에만 표시 (레거시 view.jsp:407 동등)")
+        fun rejectedLineExcludedFromOrderedItems() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(
+                    buildCrmProduct("1000023", "진라면", 30, orderRequest),
+                    buildCrmProduct("2000045", "참기름", 30, orderRequest),
+                )
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns listOf(
+                buildSapLine("1000023", "0300004993", "143000"),
+                // 반려 라인: SAPOrderNumber 빈 값 + LineItemStatus 채워짐
+                buildSapLine("2000045", "", "000000").copy(lineItemStatus = "납품일자가 업무일이 아닙니다."),
+            )
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            // 반려 제품은 "주문한 제품" 리스트/카운트에서 빠지고 반려 섹션에만 표시 (이중 표시 없음).
+            assertThat(response.orderedItems).hasSize(1)
+            assertThat(response.orderedItems[0].productCode).isEqualTo("1000023")
+            assertThat(response.orderedItemCount).isEqualTo(1)
+            assertThat(response.rejectedItems).hasSize(1)
+            assertThat(response.rejectedItems!![0].productCode).isEqualTo("2000045")
+            assertThat(response.rejectedItems!![0].rejectionReason).isEqualTo("납품일자가 업무일이 아닙니다.")
         }
 
         @Test
@@ -451,6 +480,8 @@ class OrderRequestServiceTest {
 
             assertThat(response.orderProcessingStatusList).isNull()
             assertThat(response.rejectedItems).isNull()
+            // SAP 실패 시 승인 금액 합산 불가 → 0 (레거시 itemList 미생성 시 sum=0 표시 동등)
+            assertThat(response.totalApprovedAmount).isEqualByComparingTo("0")
         }
 
         @Test

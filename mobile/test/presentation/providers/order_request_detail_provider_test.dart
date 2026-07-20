@@ -146,26 +146,27 @@ void main() {
       expect(state.isBeforeClose, false);
     });
 
-    test('hasRejectedItems is true when closed and has rejected items', () {
-      final stateWithRejected = OrderRequestDetailState(
-        orderDetail: _createOrderDetail(
-          isClosed: true,
-          rejectedItems: [
-            const RejectedItem(
-              productCode: 'P001',
-              productName: 'Product 1',
-              orderQuantityBoxes: 10,
-              rejectionReason: 'Out of stock',
-            ),
-          ],
-        ),
+    test('hasRejectedItems is true whenever rejected items exist (마감 전후 무관 — 레거시 동등)', () {
+      const rejected = RejectedItem(
+        productCode: 'P001',
+        productName: 'Product 1',
+        orderQuantityBoxes: 10,
+        rejectionReason: 'Out of stock',
       );
 
+      final stateClosedWithRejected = OrderRequestDetailState(
+        orderDetail: _createOrderDetail(isClosed: true, rejectedItems: [rejected]),
+      );
+      // 레거시(view.jsp:284-322)는 마감 전에도 반려 섹션을 표시 — 마감 여부 게이트 없음.
+      final stateBeforeCloseWithRejected = OrderRequestDetailState(
+        orderDetail: _createOrderDetail(isClosed: false, rejectedItems: [rejected]),
+      );
       final stateWithoutRejected = OrderRequestDetailState(
         orderDetail: _createOrderDetail(isClosed: true),
       );
 
-      expect(stateWithRejected.hasRejectedItems, true);
+      expect(stateClosedWithRejected.hasRejectedItems, true);
+      expect(stateBeforeCloseWithRejected.hasRejectedItems, true);
       expect(stateWithoutRejected.hasRejectedItems, false);
     });
 
