@@ -20,7 +20,7 @@ import {
   Modal,
   Tooltip,
 } from 'antd';
-import { DownloadOutlined, UploadOutlined, SearchOutlined, UndoOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownloadOutlined, UploadOutlined, SearchOutlined, UndoOutlined, PlusOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useScheduleUpload, useScheduleConfirm } from '@/hooks/schedule/useScheduleUpload';
@@ -44,6 +44,13 @@ const { RangePicker } = DatePicker;
 
 // 검색결과 엑셀 다운로드 최대 건수 — 서버 export 상한(EXPORT_MAX_ROWS) 정합. 초과 시 안내 후 진행.
 const EXPORT_MAX_ROWS = 50000;
+
+// 조회기간 필터 안내 — 시작일 단일 축 범위 검색이 아니라 스케줄 기간과의 겹침(overlap) 판정임을 설명.
+// backend buildPeriodStartCondition/buildPeriodEndCondition 정합.
+const PERIOD_FILTER_NOTICE =
+  '입력한 기간과 스케줄 기간(시작일~종료일)이 하루라도 겹치면 조회됩니다. ' +
+  '시작일이 기간 밖이더라도 기간 중 진행 중인 스케줄은 포함됩니다. ' +
+  '(예: 7/1~7/31 스케줄은 7/15~7/20 으로 조회해도 표시)';
 
 const errorColumns: ColumnsType<RowError> = [
   { title: '행', dataIndex: 'row', key: 'row', width: 60 },
@@ -770,26 +777,32 @@ export default function DisplaySchedulePage() {
           />
           {/*
             조회 기간 — 스케줄 기간(시작일~종료일) 과 하루라도 겹치면 매칭 (진행 중 스케줄 포함).
-            시작일 단일 축 범위 검색이 아니므로 placeholder 를 「시작일 from/to」 로 쓰지 않는다.
+            시작일 단일 축 범위 검색이 아니므로 placeholder 를 「시작일 from/to」 로 쓰지 않고,
+            겹침 검색이라는 점을 info 아이콘 tooltip 으로 명시한다 (건수가 늘어 보이는 혼동 방지).
           */}
-          <RangePicker
-            value={
-              filterPeriodRange
-                ? [
-                    filterPeriodRange[0] ? dayjs(filterPeriodRange[0]) : null,
-                    filterPeriodRange[1] ? dayjs(filterPeriodRange[1]) : null,
-                  ]
-                : null
-            }
-            onChange={(_dates, dateStrings) => {
-              if (dateStrings[0] && dateStrings[1]) {
-                setFilterPeriodRange([dateStrings[0], dateStrings[1]]);
-              } else {
-                setFilterPeriodRange(null);
+          <Space size={4}>
+            <RangePicker
+              value={
+                filterPeriodRange
+                  ? [
+                      filterPeriodRange[0] ? dayjs(filterPeriodRange[0]) : null,
+                      filterPeriodRange[1] ? dayjs(filterPeriodRange[1]) : null,
+                    ]
+                  : null
               }
-            }}
-            placeholder={['조회기간 시작일', '조회기간 종료일']}
-          />
+              onChange={(_dates, dateStrings) => {
+                if (dateStrings[0] && dateStrings[1]) {
+                  setFilterPeriodRange([dateStrings[0], dateStrings[1]]);
+                } else {
+                  setFilterPeriodRange(null);
+                }
+              }}
+              placeholder={['조회기간 시작일', '조회기간 종료일']}
+            />
+            <Tooltip title={PERIOD_FILTER_NOTICE}>
+              <InfoCircleOutlined style={{ color: '#8c8c8c', cursor: 'help' }} />
+            </Tooltip>
+          </Space>
           <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
             조회
           </Button>
