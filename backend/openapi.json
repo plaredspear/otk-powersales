@@ -12792,46 +12792,46 @@
             "type" : "string"
           },
           "currentMonthDisplayTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "currentMonthEventTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "currentMonthTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "displayAlternate" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "displayChange" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "displayFixed" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "displayPatrol" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "eventAmbient" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "eventChange" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "eventFrozenChilled" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "previousMonthDisplayTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "previousMonthEventTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "previousMonthTotal" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "totalChange" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           }
         },
         "type" : "object"
@@ -19747,6 +19747,48 @@
         },
         "type" : "object"
       },
+      "OvipResultWrapperMfeisPageResponse" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/MfeisPageResponse"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OvipResultWrapperSnapshotPageResponseAccountRow" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/SnapshotPageResponseAccountRow"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OvipResultWrapperSnapshotPageResponseEmployeeRow" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/SnapshotPageResponseEmployeeRow"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "PPTConfirmedReportItem" : {
         "properties" : {
           "accountCode" : {
@@ -22753,48 +22795,6 @@
           }
         },
         "required" : [ "branchCode", "targetEmployeeId" ],
-        "type" : "object"
-      },
-      "RdpResultWrapperMfeisPageResponse" : {
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/MfeisPageResponse"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "RdpResultWrapperSnapshotPageResponseAccountRow" : {
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/SnapshotPageResponseAccountRow"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "RdpResultWrapperSnapshotPageResponseEmployeeRow" : {
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/SnapshotPageResponseEmployeeRow"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          }
-        },
         "type" : "object"
       },
       "RecalcResult" : {
@@ -44245,7 +44245,7 @@
         "tags" : [ "suggestion-controller" ]
       }
     },
-    "/api/v1/rdp/account/search" : {
+    "/api/v1/ovip/account/search" : {
       "post" : {
         "description" : "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
         "operationId" : "search_2",
@@ -44264,7 +44264,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/RdpResultWrapperSnapshotPageResponseAccountRow"
+                  "$ref" : "#/components/schemas/OvipResultWrapperSnapshotPageResponseAccountRow"
                 }
               }
             },
@@ -44275,10 +44275,10 @@
           "Bearer" : [ ]
         } ],
         "summary" : "거래처 전량 스냅샷 조회 (keyset 페이지네이션)",
-        "tags" : [ "rdp-account-controller" ]
+        "tags" : [ "ovip-account-controller" ]
       }
     },
-    "/api/v1/rdp/employee/search" : {
+    "/api/v1/ovip/employee/search" : {
       "post" : {
         "description" : "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
         "operationId" : "search_1",
@@ -44297,7 +44297,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/RdpResultWrapperSnapshotPageResponseEmployeeRow"
+                  "$ref" : "#/components/schemas/OvipResultWrapperSnapshotPageResponseEmployeeRow"
                 }
               }
             },
@@ -44308,10 +44308,10 @@
           "Bearer" : [ ]
         } ],
         "summary" : "사원 전량 스냅샷 조회 (keyset 페이지네이션)",
-        "tags" : [ "rdp-employee-controller" ]
+        "tags" : [ "ovip-employee-controller" ]
       }
     },
-    "/api/v1/rdp/mfeis/search" : {
+    "/api/v1/ovip/mfeis/search" : {
       "post" : {
         "description" : "year+월 필수. cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지.",
         "operationId" : "search",
@@ -44330,7 +44330,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/RdpResultWrapperMfeisPageResponse"
+                  "$ref" : "#/components/schemas/OvipResultWrapperMfeisPageResponse"
                 }
               }
             },
@@ -44341,10 +44341,10 @@
           "Bearer" : [ ]
         } ],
         "summary" : "MFEIS 전량 스냅샷 조회 (keyset 페이지네이션)",
-        "tags" : [ "rdp-mfeis-controller" ]
+        "tags" : [ "ovip-mfeis-controller" ]
       }
     },
-    "/api/v1/rdp/oauth/token" : {
+    "/api/v1/ovip/oauth/token" : {
       "post" : {
         "operationId" : "issueTokenForm_2",
         "parameters" : [ {
@@ -44396,7 +44396,7 @@
             "description" : "OK"
           }
         },
-        "tags" : [ "rdp-token-controller" ]
+        "tags" : [ "ovip-token-controller" ]
       }
     },
     "/api/v1/sap/account" : {

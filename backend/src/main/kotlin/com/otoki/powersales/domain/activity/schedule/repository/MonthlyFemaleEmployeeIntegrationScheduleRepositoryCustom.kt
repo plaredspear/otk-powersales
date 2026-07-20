@@ -25,7 +25,7 @@ data class DashboardDeploymentRow(
 )
 
 /**
- * MFEIS 외부 조회(RDP inbound) 전량 스냅샷 projection — 레거시 여사원 통합일정 조회/엑셀 export 컬럼 셋 정합.
+ * MFEIS 외부 조회(OVIP inbound) 전량 스냅샷 projection — 레거시 여사원 통합일정 조회/엑셀 export 컬럼 셋 정합.
  *
  * entity 전 컬럼 + account/employee fetch join(80여 컬럼) 대신 노출 필드만 명시 select 하여
  * select 페이로드를 축소한다 (전량 스냅샷 배치 조회 부하 방지). [id] 는 keyset 커서 기준.
@@ -62,7 +62,7 @@ data class MfeisSnapshotRow(
 interface MonthlyFemaleEmployeeIntegrationScheduleRepositoryCustom {
 
     /**
-     * MFEIS 전량 스냅샷 keyset 페이지 조회 (RDP inbound).
+     * MFEIS 전량 스냅샷 keyset 페이지 조회 (OVIP inbound).
      *
      * `year` + `month` 로 좁힌 뒤 PK keyset(`id > cursor`) 으로 순차 인출한다. isDeleted 제외.
      * account/employee 는 left join 하여 노출 필드만 [MfeisSnapshotRow] projection 으로 select
