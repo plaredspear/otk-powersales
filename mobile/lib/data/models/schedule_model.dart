@@ -13,6 +13,10 @@ class ScheduleModel {
   final String workCategory;
   final String? workCategory2;
   final String? workType;
+
+  /// 근무유형4 (상온/냉동/냉장/라면/만두…) — 레거시 workingcategory4__c.
+  /// 행사 일정만 값이 있고 진열은 null. 오늘의 등록 현황 팝업의 "완료 (상온)" 표기에 사용된다.
+  final String? secondWorkType;
   final bool isCommuteRegistered;
   final DateTime? commuteRegisteredAt;
 
@@ -26,6 +30,7 @@ class ScheduleModel {
     required this.workCategory,
     this.workCategory2,
     this.workType,
+    this.secondWorkType,
     required this.isCommuteRegistered,
     this.commuteRegisteredAt,
   });
@@ -41,6 +46,7 @@ class ScheduleModel {
       workCategory: json['workCategory'] as String,
       workCategory2: json['workCategory2'] as String?,
       workType: json['workType'] as String?,
+      secondWorkType: json['secondWorkType'] as String?,
       isCommuteRegistered: json['isCommuteRegistered'] as bool,
       commuteRegisteredAt: json['commuteRegisteredAt'] != null
           ? DateTime.parse(json['commuteRegisteredAt'] as String)
@@ -59,6 +65,7 @@ class ScheduleModel {
       'workCategory': workCategory,
       'workCategory2': workCategory2,
       'workType': workType,
+      'secondWorkType': secondWorkType,
       'isCommuteRegistered': isCommuteRegistered,
       'commuteRegisteredAt': commuteRegisteredAt?.toIso8601String(),
     };
@@ -75,6 +82,7 @@ class ScheduleModel {
       workCategory: workCategory,
       workCategory2: workCategory2,
       workType: workType,
+      secondWorkType: secondWorkType,
       isCommuteRegistered: isCommuteRegistered,
       commuteRegisteredAt: commuteRegisteredAt,
     );
@@ -91,6 +99,7 @@ class ScheduleModel {
       workCategory: entity.workCategory,
       workCategory2: entity.workCategory2,
       workType: entity.workType,
+      secondWorkType: entity.secondWorkType,
       isCommuteRegistered: entity.isCommuteRegistered,
       commuteRegisteredAt: entity.commuteRegisteredAt,
     );
@@ -109,6 +118,7 @@ class ScheduleModel {
         other.workCategory == workCategory &&
         other.workCategory2 == workCategory2 &&
         other.workType == workType &&
+        other.secondWorkType == secondWorkType &&
         other.isCommuteRegistered == isCommuteRegistered &&
         other.commuteRegisteredAt == commuteRegisteredAt;
   }
@@ -125,6 +135,7 @@ class ScheduleModel {
       workCategory,
       workCategory2,
       workType,
+      secondWorkType,
       isCommuteRegistered,
       commuteRegisteredAt,
     );

@@ -9,11 +9,15 @@ class AttendanceStatusPopup extends StatelessWidget {
   final int totalCount;
   final int registeredCount;
 
+  /// 기준 날짜 (yyyy-MM-dd). 레거시 팝업 헤더의 "2020년 08월 20일 (목)" 대응.
+  final String? currentDate;
+
   const AttendanceStatusPopup({
     super.key,
     required this.statusList,
     required this.totalCount,
     required this.registeredCount,
+    this.currentDate,
   });
 
   /// BottomSheet로 현황 팝업 표시
@@ -22,6 +26,7 @@ class AttendanceStatusPopup extends StatelessWidget {
     required List<AttendanceStatus> statusList,
     required int totalCount,
     required int registeredCount,
+    String? currentDate,
   }) {
     showModalBottomSheet(
       context: context,
@@ -33,6 +38,7 @@ class AttendanceStatusPopup extends StatelessWidget {
         statusList: statusList,
         totalCount: totalCount,
         registeredCount: registeredCount,
+        currentDate: currentDate,
       ),
     );
   }
@@ -62,14 +68,18 @@ class AttendanceStatusPopup extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '출근등록 현황',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+              Expanded(
+                child: Text(
+                  _formatTitle(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -92,17 +102,28 @@ class AttendanceStatusPopup extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: 8),
 
-          // 상태 리스트
+          // 상태 리스트 (빈 경우에도 안내를 명시적으로 노출)
           Flexible(
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: statusList.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final status = statusList[index];
-                return _buildStatusItem(status);
-              },
-            ),
+            child: statusList.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Text(
+                      '오늘 등록된 근무지가 없습니다.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: statusList.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final status = statusList[index];
+                      return _buildStatusItem(status);
+                    },
+                  ),
           ),
 
           const SizedBox(height: 16),
@@ -134,13 +155,28 @@ class AttendanceStatusPopup extends StatelessWidget {
     );
   }
 
+  /// 팝업 제목: 기준일이 있으면 레거시처럼 "yyyy년 MM월 dd일 (요일)"
+  String _formatTitle() {
+    final date = currentDate;
+    if (date == null) return '출근등록 현황';
+    final parsed = DateTime.tryParse(date);
+    if (parsed == null) return '출근등록 현황';
+    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    final month = parsed.month.toString().padLeft(2, '0');
+    final day = parsed.day.toString().padLeft(2, '0');
+    return '${parsed.year}년 $month월 $day일 (${weekdays[parsed.weekday - 1]})';
+  }
+
+  /// 근무지 1행
+  ///
+  /// 레거시 home.jsp `#popPlace3` 정합:
+  /// - 대기: 거래처명·근태 모두 회색(`.state_waiting`), 근태는 "대기"
+  /// - 완료: 거래처명 기본색, 근태는 초록(`.state_finish`) "완료".
+  ///   근무유형4(workingCategory4)가 있을 때만 둘째 줄에 "(상온)" 등을 덧붙인다
+  ///   (행사 스케줄만 값이 있고 진열은 null).
   Widget _buildStatusItem(AttendanceStatus status) {
     final isCompleted = status.isCompleted;
-    final workTypeLabel = status.workType == 'ROOM_TEMP'
-        ? '상온'
-        : status.workType == 'REFRIGERATED'
-            ? '냉장/냉동'
-            : null;
+    final secondWorkType = status.secondWorkType;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -171,39 +207,30 @@ class AttendanceStatusPopup extends StatelessWidget {
               ),
             ),
           ),
-          if (workTypeLabel != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                workTypeLabel,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.success,
-                ),
-              ),
-            ),
-          ] else ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text(
-                '대기',
+          // 근태: 완료(초록, 근무유형4가 있으면 2줄) / 대기(회색)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                isCompleted ? '완료' : '대기',
                 style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textTertiary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      isCompleted ? AppColors.success : AppColors.textTertiary,
                 ),
               ),
-            ),
-          ],
+              if (isCompleted && secondWorkType != null)
+                Text(
+                  '($secondWorkType)',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.success,
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );

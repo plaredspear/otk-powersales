@@ -50,6 +50,14 @@ data class HomeResponse(
          * 모바일 홈 카드가 이 값으로 표시 분기를 수행한다.
          */
         val workType: String?,
+        /**
+         * 근무유형4 = 레거시 `workingcategory4__c` (SF SecondWorkType__c: 상온/냉동/냉장/라면/만두…).
+         *
+         * 오늘의 등록 현황 팝업(home.jsp `#popPlace3`)에서 등록 완료 행에만
+         * "완료 (상온)" 처럼 덧붙는 값이다. 레거시 `selectDisplayAccList` 는 이
+         * 컬럼을 조회하지 않으므로 진열 일정은 항상 null 이다(행사 전용).
+         */
+        val secondWorkType: String? = null,
         val isCommuteRegistered: Boolean,
         val commuteRegisteredAt: LocalDateTime?
     )

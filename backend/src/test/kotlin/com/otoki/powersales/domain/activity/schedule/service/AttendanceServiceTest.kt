@@ -2523,19 +2523,22 @@ class AttendanceServiceTest {
             assertThat(result.currentDate).isEqualTo(today.toString())
             assertThat(result.statusList).hasSize(3)
 
-            // 등록 완료 항목
-            assertThat(result.statusList[0].scheduleId).isEqualTo(1L)
-            assertThat(result.statusList[0].accountName).isEqualTo("이마트 강남점")
-            assertThat(result.statusList[0].workCategory).isEqualTo("진열")
-            assertThat(result.statusList[0].status).isEqualTo("REGISTERED")
-
-            assertThat(result.statusList[1].scheduleId).isEqualTo(2L)
-            assertThat(result.statusList[1].status).isEqualTo("REGISTERED")
+            // 레거시 home.jsp 현황 팝업 정합: 거래처명 오름차순 정렬
+            // (롯데마트 송파점 < 이마트 강남점 < 홈플러스 서초점)
 
             // 미등록 항목
-            assertThat(result.statusList[2].scheduleId).isEqualTo(3L)
-            assertThat(result.statusList[2].accountName).isEqualTo("롯데마트 송파점")
-            assertThat(result.statusList[2].status).isEqualTo("PENDING")
+            assertThat(result.statusList[0].scheduleId).isEqualTo(3L)
+            assertThat(result.statusList[0].accountName).isEqualTo("롯데마트 송파점")
+            assertThat(result.statusList[0].status).isEqualTo("PENDING")
+
+            // 등록 완료 항목
+            assertThat(result.statusList[1].scheduleId).isEqualTo(1L)
+            assertThat(result.statusList[1].accountName).isEqualTo("이마트 강남점")
+            assertThat(result.statusList[1].workCategory).isEqualTo("진열")
+            assertThat(result.statusList[1].status).isEqualTo("REGISTERED")
+
+            assertThat(result.statusList[2].scheduleId).isEqualTo(2L)
+            assertThat(result.statusList[2].status).isEqualTo("REGISTERED")
         }
 
         @Test

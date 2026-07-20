@@ -90,7 +90,7 @@ const _mockStatusList = [
     accountName: '이마트 해운대점',
     workCategory: '진열',
     status: 'REGISTERED',
-    workType: 'ROOM_TEMP',
+    secondWorkType: '상온',
   ),
   AttendanceStatus(
     scheduleId: 12346,

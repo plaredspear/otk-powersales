@@ -8,14 +8,14 @@ class AttendanceStatusModel {
   final String accountName;
   final String workCategory;
   final String status;
-  final String? workType;
+  final String? secondWorkType;
 
   const AttendanceStatusModel({
     required this.scheduleId,
     required this.accountName,
     required this.workCategory,
     required this.status,
-    this.workType,
+    this.secondWorkType,
   });
 
   /// snake_case JSON에서 파싱
@@ -25,7 +25,7 @@ class AttendanceStatusModel {
       accountName: json['accountName'] as String,
       workCategory: json['workCategory'] as String,
       status: json['status'] as String,
-      workType: json['workType'] as String?,
+      secondWorkType: json['secondWorkType'] as String?,
     );
   }
 
@@ -36,7 +36,7 @@ class AttendanceStatusModel {
       accountName: accountName,
       workCategory: workCategory,
       status: status,
-      workType: workType,
+      secondWorkType: secondWorkType,
     );
   }
 }

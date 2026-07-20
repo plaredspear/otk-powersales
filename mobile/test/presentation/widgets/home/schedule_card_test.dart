@@ -13,6 +13,7 @@ void main() {
     VoidCallback? onRegisterTap,
     void Function(Schedule)? onScheduleTap,
     VoidCallback? onScheduleManageTap,
+    VoidCallback? onAttendanceStatusTap,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -26,6 +27,7 @@ void main() {
             onRegisterTap: onRegisterTap,
             onScheduleTap: onScheduleTap,
             onScheduleManageTap: onScheduleManageTap,
+            onAttendanceStatusTap: onAttendanceStatusTap,
           ),
         ),
       ),
@@ -67,6 +69,22 @@ void main() {
         ));
 
         expect(find.text('0/8'), findsOneWidget);
+      });
+
+      // 레거시 home.jsp:567 배지는 버튼이며, 누르면 오늘의 등록 현황 팝업이 열린다.
+      testWidgets('배지를 누르면 onAttendanceStatusTap 이 호출되어야 한다', (tester) async {
+        var tapped = 0;
+        await tester.pumpWidget(buildTestWidget(
+          schedules: _makeSchedules(5, registered: 1, workType: '순회'),
+          attendanceSummary:
+              const AttendanceSummary(totalCount: 5, registeredCount: 1),
+          onAttendanceStatusTap: () => tapped++,
+        ));
+
+        await tester.tap(find.text('1/5'));
+        await tester.pump();
+
+        expect(tapped, 1);
       });
 
       testWidgets('T3: 순회 부분 출근 시 "X/N" 배지 표시', (tester) async {

@@ -14,6 +14,9 @@ import '../widgets/home/notice_carousel.dart';
 import '../widgets/home/product_search_bar.dart';
 import '../widgets/home/quick_menu_grid.dart';
 import '../widgets/home/activity_registration_popup.dart';
+import '../widgets/attendance/attendance_status_popup.dart';
+import '../../domain/entities/attendance_status.dart';
+import '../../domain/repositories/home_repository.dart';
 import '../../core/utils/throttled_tap_mixin.dart';
 import '../../app_router.dart';
 import '../providers/safety_check_provider.dart';
@@ -43,6 +46,35 @@ class _HomePageState extends ConsumerState<HomePage>
   /// Pull-to-refresh 핸들러
   Future<void> _onRefresh() async {
     await ref.read(homeProvider.notifier).refresh();
+  }
+
+  /// 오늘의 등록 현황 팝업 (레거시 home.jsp `#popPlace3`)
+  ///
+  /// 레거시는 배지·팝업이 홈에서 이미 렌더된 동일한 `list` 를 공유한다
+  /// (별도 AJAX 없음). 신규도 홈 응답의 `todaySchedules` 를 그대로 사용해야
+  /// 배지 카운트(= todaySchedules 집계)와 팝업 목록이 어긋나지 않는다.
+  /// `/attendance/status` 는 TMS 원본 기준이라 진열 확정마스터 기반인 홈 집계와
+  /// 건수가 달라질 수 있으므로 여기서는 쓰지 않는다.
+  void _showAttendanceStatus(HomeData homeData) {
+    final statusList = homeData.todaySchedules
+        .map(
+          (schedule) => AttendanceStatus(
+            scheduleId: schedule.displayWorkScheduleId ?? schedule.scheduleId,
+            accountName: schedule.accountName ?? '(미지정)',
+            workCategory: schedule.workCategory,
+            status: schedule.isCommuteRegistered ? 'REGISTERED' : 'PENDING',
+            secondWorkType: schedule.secondWorkType,
+          ),
+        )
+        .toList();
+
+    AttendanceStatusPopup.show(
+      context,
+      statusList: statusList,
+      totalCount: homeData.attendanceSummary.totalCount,
+      registeredCount: homeData.attendanceSummary.registeredCount,
+      currentDate: homeData.currentDate,
+    );
   }
 
   @override
@@ -169,6 +201,9 @@ class _HomePageState extends ConsumerState<HomePage>
                         ref.read(homeProvider.notifier).refresh();
                       }
                     }),
+                    // 레거시 home.jsp:567 배지 → 오늘의 등록 현황 팝업(#popPlace3)
+                    onAttendanceStatusTap: () =>
+                        throttledTap(() => _showAttendanceStatus(homeData)),
                     onScheduleTap: (schedule) {
                       final date =
                           DateTime.tryParse(homeData.currentDate) ??

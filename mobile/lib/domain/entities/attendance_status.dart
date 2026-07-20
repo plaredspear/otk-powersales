@@ -6,14 +6,14 @@ class AttendanceStatus {
   final String accountName;
   final String workCategory;
   final String status;
-  final String? workType;
+  final String? secondWorkType;
 
   const AttendanceStatus({
     required this.scheduleId,
     required this.accountName,
     required this.workCategory,
     required this.status,
-    this.workType,
+    this.secondWorkType,
   });
 
   /// 등록 완료 여부
@@ -27,14 +27,14 @@ class AttendanceStatus {
     String? accountName,
     String? workCategory,
     String? status,
-    String? workType,
+    String? secondWorkType,
   }) {
     return AttendanceStatus(
       scheduleId: scheduleId ?? this.scheduleId,
       accountName: accountName ?? this.accountName,
       workCategory: workCategory ?? this.workCategory,
       status: status ?? this.status,
-      workType: workType ?? this.workType,
+      secondWorkType: secondWorkType ?? this.secondWorkType,
     );
   }
 
@@ -44,7 +44,7 @@ class AttendanceStatus {
       'accountName': accountName,
       'workCategory': workCategory,
       'status': status,
-      'workType': workType,
+      'secondWorkType': secondWorkType,
     };
   }
 
@@ -54,7 +54,7 @@ class AttendanceStatus {
       accountName: json['accountName'] as String,
       workCategory: json['workCategory'] as String,
       status: json['status'] as String,
-      workType: json['workType'] as String?,
+      secondWorkType: json['secondWorkType'] as String?,
     );
   }
 
@@ -66,7 +66,7 @@ class AttendanceStatus {
         other.accountName == accountName &&
         other.workCategory == workCategory &&
         other.status == status &&
-        other.workType == workType;
+        other.secondWorkType == secondWorkType;
   }
 
   @override
@@ -76,13 +76,13 @@ class AttendanceStatus {
       accountName,
       workCategory,
       status,
-      workType,
+      secondWorkType,
     );
   }
 
   @override
   String toString() {
     return 'AttendanceStatus(scheduleId: $scheduleId, accountName: $accountName, '
-        'workCategory: $workCategory, status: $status, workType: $workType)';
+        'workCategory: $workCategory, status: $status, secondWorkType: $secondWorkType)';
   }
 }

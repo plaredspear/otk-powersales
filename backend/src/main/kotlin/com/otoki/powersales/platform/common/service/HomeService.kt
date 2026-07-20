@@ -283,6 +283,8 @@ class HomeService(
             // 근무형태(고정/순회/격고) — 레거시 workingcategory3__c 정합.
             // (DisplayWorkSchedule 측 typeOfWork3 와 의미 일치)
             workType = teamMemberSchedule.workingCategory3?.displayName,
+            // 근무유형4 — 레거시 selectAccList(행사) 만 조회하는 컬럼.
+            secondWorkType = teamMemberSchedule.workingCategory4?.takeIf { it.isNotBlank() },
             isCommuteRegistered = teamMemberSchedule.attendanceLog != null,
             commuteRegisteredAt = teamMemberSchedule.commuteReportDatetime
         )
@@ -316,6 +318,8 @@ class HomeService(
             workCategory2 = displayWorkSchedule.typeOfWork5?.displayName,
             // 근무형태(고정/순회/격고) — 레거시 workingcategory3__c 정합.
             workType = displayWorkSchedule.typeOfWork3?.displayName,
+            // 진열은 레거시 selectDisplayAccList 가 workingcategory4__c 를 조회하지 않아 항상 null.
+            secondWorkType = null,
             isCommuteRegistered = matchedTms?.attendanceLog != null,
             commuteRegisteredAt = matchedTms?.commuteReportDatetime
         )

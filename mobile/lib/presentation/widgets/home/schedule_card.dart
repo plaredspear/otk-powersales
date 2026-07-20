@@ -45,6 +45,12 @@ class ScheduleCard extends StatelessWidget {
   /// 일정 아이템 탭 콜백
   final void Function(Schedule schedule)? onScheduleTap;
 
+  /// 출근 카운트 배지 탭 콜백 (오늘의 등록 현황 팝업)
+  ///
+  /// 레거시 home.jsp:567 `butonClick('#popPlace3')` 대응 — 순회/격고 근무자가
+  /// 상단 `등록완료수/출근지수` 배지를 누르면 근무지별 근태 목록이 열린다.
+  final VoidCallback? onAttendanceStatusTap;
+
   /// 조장/지점장 뷰 "일정 관리" 버튼 탭 콜백
   ///
   /// 레거시 home.jsp 근태보고 영역의 조장 전용 "일정 관리" 버튼
@@ -59,6 +65,7 @@ class ScheduleCard extends StatelessWidget {
     this.userRole = 'USER',
     this.onRegisterTap,
     this.onScheduleTap,
+    this.onAttendanceStatusTap,
     this.onScheduleManageTap,
   });
 
@@ -180,19 +187,30 @@ class ScheduleCard extends StatelessWidget {
   }
 
   /// 출근 카운트 배지 (레거시 pill: 78×28, radius 50)
+  ///
+  /// 레거시 home.jsp:567 은 이 배지가 버튼이며, 누르면 오늘의 등록 현황
+  /// 팝업(`#popPlace3`)이 열린다.
   Widget _buildAttendanceBadge(int registeredCount, int totalCount) {
-    return Container(
-      width: 78,
-      height: 28,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0x05000000), // rgba(0,0,0,0.02)
-        border: Border.all(color: const Color(0x1A000000)), // rgba(0,0,0,0.1)
+    return Material(
+      color: const Color(0x05000000), // rgba(0,0,0,0.02)
+      borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
+      child: InkWell(
+        onTap: onAttendanceStatusTap,
         borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
-      ),
-      child: Text(
-        '$registeredCount/$totalCount',
-        style: AppTypography.legacyBody,
+        child: Container(
+          width: 78,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border:
+                Border.all(color: const Color(0x1A000000)), // rgba(0,0,0,0.1)
+            borderRadius: BorderRadius.circular(AppSpacing.homePillRadius),
+          ),
+          child: Text(
+            '$registeredCount/$totalCount',
+            style: AppTypography.legacyBody,
+          ),
+        ),
       ),
     );
   }

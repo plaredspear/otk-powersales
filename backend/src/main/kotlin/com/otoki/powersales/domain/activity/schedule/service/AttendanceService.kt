@@ -476,14 +476,17 @@ class AttendanceService(
 
         val teamMemberSchedules = teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(employee.id, today)
 
+        // 레거시 HomeController 는 홈 `list`(= 배지/현황 팝업 공용)를 거래처명 오름차순으로
+        // 재정렬한 뒤 화면에 넘긴다(HomeController.java:193). 동일 순서로 맞춘다.
         val statusList = teamMemberSchedules.map { teamMemberSchedule ->
             AttendanceStatusItem(
                 scheduleId = teamMemberSchedule.id,
                 accountName = teamMemberSchedule.account?.name ?: "",
                 workCategory = teamMemberSchedule.workingCategory1?.displayName ?: "",
-                status = if (teamMemberSchedule.attendanceLog != null) "REGISTERED" else "PENDING"
+                status = if (teamMemberSchedule.attendanceLog != null) "REGISTERED" else "PENDING",
+                secondWorkType = teamMemberSchedule.workingCategory4?.takeIf { it.isNotBlank() }
             )
-        }
+        }.sortedBy { it.accountName }
 
         val registeredCount = statusList.count { it.status == "REGISTERED" }
 

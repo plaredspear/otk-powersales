@@ -22,6 +22,10 @@ class Schedule {
   /// 순회/격고 근무자는 출근 전 일정을 숨기는 등 홈 카드 표시 분기에 사용된다.
   final String? workType;
 
+  /// 근무유형4 (상온/냉동/냉장/라면/만두…) — 레거시 workingcategory4__c.
+  /// 행사 일정만 값이 있고 진열은 null. 오늘의 등록 현황 팝업의 "완료 (상온)" 표기에 사용된다.
+  final String? secondWorkType;
+
   final bool isCommuteRegistered;
   final DateTime? commuteRegisteredAt;
 
@@ -35,6 +39,7 @@ class Schedule {
     required this.workCategory,
     this.workCategory2,
     this.workType,
+    this.secondWorkType,
     required this.isCommuteRegistered,
     this.commuteRegisteredAt,
   });
@@ -49,6 +54,7 @@ class Schedule {
     String? workCategory,
     String? workCategory2,
     String? workType,
+    String? secondWorkType,
     bool? isCommuteRegistered,
     DateTime? commuteRegisteredAt,
     bool clearAccountName = false,
@@ -68,6 +74,7 @@ class Schedule {
       workCategory: workCategory ?? this.workCategory,
       workCategory2: clearWorkCategory2 ? null : (workCategory2 ?? this.workCategory2),
       workType: clearWorkType ? null : (workType ?? this.workType),
+      secondWorkType: secondWorkType ?? this.secondWorkType,
       isCommuteRegistered: isCommuteRegistered ?? this.isCommuteRegistered,
       commuteRegisteredAt: clearCommuteRegisteredAt
           ? null
@@ -88,6 +95,7 @@ class Schedule {
         other.workCategory == workCategory &&
         other.workCategory2 == workCategory2 &&
         other.workType == workType &&
+        other.secondWorkType == secondWorkType &&
         other.isCommuteRegistered == isCommuteRegistered &&
         other.commuteRegisteredAt == commuteRegisteredAt;
   }
@@ -104,6 +112,7 @@ class Schedule {
       workCategory,
       workCategory2,
       workType,
+      secondWorkType,
       isCommuteRegistered,
       commuteRegisteredAt,
     );

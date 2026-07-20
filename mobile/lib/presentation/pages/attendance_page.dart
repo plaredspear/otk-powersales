@@ -157,14 +157,15 @@ class _AttendancePageState extends ConsumerState<AttendancePage>
                 totalCount: state.totalCount,
                 onTap: () => throttledTapAsync(() async {
                   await notifier.loadAttendanceStatus();
-                  if (context.mounted) {
-                    AttendanceStatusPopup.show(
-                      context,
-                      statusList: state.statusList,
-                      totalCount: state.totalCount,
-                      registeredCount: state.registeredCount,
-                    );
-                  }
+                  if (!context.mounted) return;
+                  // build 시점의 state 는 조회 이전 값이므로 재조회 후 다시 읽는다.
+                  final latest = ref.read(attendanceProvider);
+                  AttendanceStatusPopup.show(
+                    context,
+                    statusList: latest.statusList,
+                    totalCount: latest.totalCount,
+                    registeredCount: latest.registeredCount,
+                  );
                 }),
               ),
             ),
