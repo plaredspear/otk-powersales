@@ -8,8 +8,9 @@ package com.otoki.powersales.domain.activity.promotion.sap
  * 없으므로, 신규 거래처 식별자 `Account.id` 를 문자열로 채워 송신한다 (sfid 자리를 신규 PK 로 대체).
  * 별도 식별 키 `AccountCode` (ExternalKey) 도 레거시대로 함께 송신한다.
  *
- * 값은 모두 `String` 타입 — 레거시 `Map<String,String>` 정합. null 가능 필드도 빈 문자열이 아닌
- * `null` 또는 레거시 `String.valueOf(null)` = `"null"` 문자열로 직렬화될 수 있다.
+ * 값은 모두 `String` 타입 — 레거시 `Map<String,String>` 정합. null 가능 필드는 빈 문자열이 아닌
+ * JSON `null` 로 직렬화된다 (Apex `String.valueOf` 는 null 입력 시 null 을 반환하고,
+ * `JSON.serialize` 가 map 의 null 값을 JSON `null` 로 내보내는 것과 동일).
  */
 @Suppress("ConstructorParameterNaming", "PropertyName")
 data class PPTMasterSapPayloadRow(
@@ -31,8 +32,8 @@ data class PPTMasterSapPayloadRow(
     val AccountCode: String?,
     /** 시작일 `YYYY-MM-DD` (레거시 `String.valueOf(StartDate__c)`). */
     val StartDate: String,
-    /** 종료일 `YYYY-MM-DD` 또는 `"null"` 문자열 (레거시 `String.valueOf(EndDate__c)` 정합). */
-    val EndDate: String,
+    /** 종료일 `YYYY-MM-DD` 또는 JSON null (레거시 `String.valueOf(EndDate__c)` 는 null 입력 시 null 반환). */
+    val EndDate: String?,
     /** 유효데이터 (`미확정`/`유효`/`예정`/`종료` — 레거시 `ValidData__c` 수식 재현). */
     val ValidData: String,
     /** 재직상태 (`재직`/`휴직`/`퇴직YYYY-MM-DD`/`퇴직예정YYYY-MM-DD` — 레거시 `ValidConditionData__c` 수식 재현). */

@@ -57,11 +57,11 @@ class PPTMasterPayloadFactoryTest {
     }
 
     @Test
-    @DisplayName("null endDate — 레거시 String.valueOf(null) 정합으로 \"null\" 문자열 출력")
-    fun build_nullEndDateBecomesLiteralNullString() {
+    @DisplayName("null endDate — 레거시 String.valueOf(null)=null 정합으로 JSON null 출력 (\"null\" 문자열 금지)")
+    fun build_nullEndDateBecomesJsonNull() {
         val master = master(endDate = null)
         val payload = factory.build(listOf(master), today)
-        assertThat(payload.REQUEST.single().EndDate).isEqualTo("null")
+        assertThat(payload.REQUEST.single().EndDate).isNull()
     }
 
     @Test

@@ -13,7 +13,9 @@ import java.time.format.DateTimeFormatter
  * 정의를 reveal 하여 출처를 직원/거래처 entity 의 원본 필드에 매핑한다.
  *
  * - `ValidData` / `ValidConditionData` 는 SF 수식 (`field-meta.xml` 정의) 을 Kotlin 으로 재현 (§6.1.1 / §6.1.2)
- * - `EndDate` 가 null 인 경우 `"null"` 문자열로 직렬화 (레거시 `String.valueOf(null)` 정합 — Q1 노선 A 버그 재현 일관성)
+ * - `EndDate` 가 null 인 경우 JSON `null` 로 직렬화 — Apex `String.valueOf((Date)null)` 은 `"null"` 문자열이
+ *   아니라 null 을 반환하므로 레거시 wire 는 `"EndDate":null` 이다. `"null"` 문자열 송신 시 SAP RESTAdapter
+ *   날짜 매핑이 500 (Application error) 으로 실패한다.
  * - `Valid` key 는 미송신 (Q5 — 레거시 주석처리 dead 수용)
  */
 @Component
@@ -39,7 +41,7 @@ class PPTMasterPayloadFactory {
             AccountType = acc?.accountType,
             AccountCode = acc?.externalKey,
             StartDate = master.startDate.toString(),
-            EndDate = master.endDate?.toString() ?: LEGACY_NULL_DATE,
+            EndDate = master.endDate?.toString(),
             ValidData = computeValidData(master, today),
             ValidConditionData = computeValidConditionData(emp, today),
             CostCenterCode = master.branchCode,
@@ -88,7 +90,6 @@ class PPTMasterPayloadFactory {
     }
 
     companion object {
-        private const val LEGACY_NULL_DATE: String = "null"
         private val YEAR_MONTH_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMM")
     }
 }
