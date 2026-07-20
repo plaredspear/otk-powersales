@@ -17,6 +17,9 @@ import '../widgets/suggestion/suggestion_product_field.dart';
 
 const int _maxPhotoSizeBytes = 20 * 1024 * 1024;
 
+/// 사진 첨부 상한 ([SuggestionForm.validate] 와 동일 기준).
+const int _maxPhotoCount = 2;
+
 /// 제안하기 등록 페이지 (레거시 suggestWrite.jsp 정합)
 ///
 /// 기능:
@@ -379,24 +382,34 @@ class _SuggestionRegisterPageState
 
   /// 사진 추가 — 카메라/갤러리에서 선택한 이미지를 첨부.
   ///
+  /// 갤러리는 남은 매수(최대 2장)만큼 다중 선택할 수 있다.
   /// 소스 시트/650px 리사이즈/JPEG 재인코딩은 공용 헬퍼가 담당한다
   /// (SF ContentVersion 규격 = 레거시 `ImageUtil.resizeImage(650, 650)` 정합).
   Future<void> _handleAddPhoto() async {
-    final notifier = ref.read(suggestionRegisterProvider.notifier);
-    final file = await pickImageWithSourceSheet(context);
-    if (file == null || !mounted) return;
-
-    final size = await file.length();
-    if (size > _maxPhotoSizeBytes) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('사진 1장은 최대 20MB 까지 첨부 가능합니다')),
-        );
-      }
+    final remaining =
+        _maxPhotoCount - ref.read(suggestionRegisterProvider).form.photos.length;
+    if (remaining <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('사진은 최대 $_maxPhotoCount장까지 첨부 가능합니다')),
+      );
       return;
     }
 
-    notifier.addPhoto(file);
+    final files = await pickImagesWithSourceSheet(context, remaining: remaining);
+    if (files.isEmpty || !mounted) return;
+
+    final notifier = ref.read(suggestionRegisterProvider.notifier);
+    for (final file in files) {
+      final size = await file.length();
+      if (size > _maxPhotoSizeBytes) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('사진 1장은 최대 20MB 까지 첨부 가능합니다')),
+        );
+        continue;
+      }
+      notifier.addPhoto(file);
+    }
   }
 
   Future<void> _handleSubmit(SuggestionRegisterNotifier notifier) async {

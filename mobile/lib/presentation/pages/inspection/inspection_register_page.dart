@@ -15,6 +15,9 @@ import '../../widgets/inspection/inspection_competitor_form.dart';
 import '../../widgets/inspection/inspection_own_form.dart';
 import '../../widgets/inspection/inspection_photo_picker.dart';
 
+/// 사진 첨부 상한 (레거시 fieldChk 정합 — [InspectionForm.validate] 와 동일 기준).
+const int _maxPhotoCount = 2;
+
 /// 현장 점검 등록 페이지
 ///
 /// 기능:
@@ -347,11 +350,25 @@ class _InspectionRegisterPageState
     }
   }
 
-  /// 사진 추가 — 카메라/갤러리에서 선택한 이미지를 첨부
+  /// 사진 추가 — 카메라/갤러리에서 선택한 이미지를 첨부.
+  ///
+  /// 갤러리는 남은 매수(최대 2장)만큼 다중 선택할 수 있다.
   Future<void> _handleAddPhoto() async {
-    final file = await pickImageWithSourceSheet(context);
-    if (file == null || !mounted) return;
-    ref.read(inspectionRegisterProvider.notifier).addPhoto(file);
+    final remaining = _maxPhotoCount - ref.read(inspectionRegisterProvider).photoCount;
+    if (remaining <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('사진은 최대 $_maxPhotoCount장까지 첨부 가능합니다')),
+      );
+      return;
+    }
+
+    final files = await pickImagesWithSourceSheet(context, remaining: remaining);
+    if (files.isEmpty || !mounted) return;
+
+    final notifier = ref.read(inspectionRegisterProvider.notifier);
+    for (final file in files) {
+      notifier.addPhoto(file);
+    }
   }
 
   /// 임시 저장 — 검증 없이 현재 폼 상태를 서버에 저장(레거시 tempFieldChkProc 정합).
