@@ -3433,6 +3433,9 @@
           "scheduleTime" : {
             "type" : [ "string", "null" ]
           },
+          "shippedQuantity" : {
+            "type" : "string"
+          },
           "vehicle" : {
             "type" : [ "string", "null" ]
           }
