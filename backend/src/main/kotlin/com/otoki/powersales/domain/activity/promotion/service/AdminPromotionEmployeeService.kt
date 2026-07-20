@@ -28,7 +28,9 @@ import com.otoki.powersales.domain.activity.promotion.exception.PromotionInvalid
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.domain.activity.promotion.exception.ScheduleDateOutOfRangeException
 import com.otoki.powersales.domain.activity.promotion.exception.TeamCategoryMismatchException
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleWorkReportDeleteException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
@@ -445,6 +447,11 @@ class AdminPromotionEmployeeService(
             throw ClosedEmployeeDeleteException()
         }
 
+        // 1-2-C: 출근완료 보호 — 레거시 TeamMemberScheduleTriggerHandler.deleteblock 동등.
+        // 연쇄 삭제될 여사원일정에 출근등록(attendanceLog)이 있으면 시스템 관리자 외 삭제 차단
+        // (조장 경로 LeaderScheduleService.deleteEventAssignment 의 attendanceLog 가드와 정합).
+        validateScheduleNotAttended(principal, pe)
+
         // 1-4-B: 연쇄 삭제 — 스케줄 삭제
         // Spec #693 — cascade helper 로 validateDisplayMasterLink 가드 + MFEIS refresh 일관 적용
         // cascade 내부 refreshIntegration 의 SELECT auto-flush 시점에 PE 가 삭제될 schedule 을 참조하면
@@ -655,6 +662,12 @@ class AdminPromotionEmployeeService(
             pe.workType3?.displayName != workType3
 
         if (criticalChanged) {
+            // 출근완료 보호 — 레거시 TeamMemberScheduleTriggerHandler.deleteblock 동등.
+            // 핵심필드 변경으로 연쇄 삭제될 여사원일정에 출근등록이 있으면 시스템 관리자 외 수정 차단.
+            // (레거시도 removeScheduleOnUpdate 의 delete 가 before delete 트리거의 deleteblock 에 걸려
+            //  트랜잭션 전체가 롤백되는 구조 — 수정/배치수정 경로 공히 본 helper 를 타므로 동일 적용.)
+            validateScheduleNotAttended(principal, pe)
+
             // cascade 내부 refreshIntegration 의 SELECT 가 auto-flush 를 트리거하는데, 이때 PE 가 삭제될
             // TeamMemberSchedule 을 (FK 값 + 로드된 연관 객체로) 여전히 참조하면 TransientPropertyValueException.
             // schedule hard delete 전에 PE 의 연관을 먼저 끊고 flush 하여 dangling reference 를 제거한다.
@@ -664,6 +677,23 @@ class AdminPromotionEmployeeService(
             promotionEmployeeRepository.saveAndFlush(pe)
 
             teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(scheduleId))
+        }
+    }
+
+    /**
+     * 출근완료 여사원일정 연쇄 삭제 차단 — 레거시 `TeamMemberScheduleTriggerHandler.deleteblock` 동등.
+     *
+     * 행사조원 수정(핵심필드 변경)/삭제는 연결된 여사원일정을 연쇄 hard delete 하는데, 해당 일정에
+     * 출근등록(attendanceLog)이 완료되어 있으면 시스템 관리자 외에는 차단한다. 레거시는 여사원일정
+     * before delete 트리거에서 `근무 && isWorkReport != null` 이면 addError 로 전체 롤백했다
+     * (시스템 관리자 프로필은 우회). 일반 일정 삭제(`AdminTeamScheduleService.validateDeleteGuards`)
+     * 및 조장 경로(`LeaderScheduleService`)에는 이미 동일 가드가 있으며, 본 메소드가 web 행사조원
+     * 경로의 누락분을 채운다.
+     */
+    private fun validateScheduleNotAttended(principal: WebUserPrincipal, pe: PromotionEmployee) {
+        if (SystemAdminProfilePolicy.isSystemAdmin(principal.profileName)) return
+        if (pe.teamMemberSchedule?.attendanceLog != null) {
+            throw TeamScheduleWorkReportDeleteException()
         }
     }
 

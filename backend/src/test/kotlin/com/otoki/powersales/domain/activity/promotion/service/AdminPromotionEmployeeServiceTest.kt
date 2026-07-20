@@ -28,6 +28,9 @@ import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.auth.sharing.service.SharingRulePolicyEvaluator
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.domain.activity.schedule.entity.AttendanceLog
+import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.exception.TeamScheduleWorkReportDeleteException
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper
 import org.assertj.core.api.Assertions.assertThat
@@ -863,6 +866,60 @@ class AdminPromotionEmployeeServiceTest {
         }
 
         @Test
+        @DisplayName("출근완료 일정 + 핵심필드 변경 -> WORK_REPORT_DELETE_CONSTRAINT (레거시 deleteblock 동등)")
+        fun updateEmployee_attendedSchedule_criticalFieldChange_blocked() {
+            val pe = createPe(teamMemberScheduleId = 100L).also {
+                it.teamMemberSchedule = TeamMemberSchedule(id = 100L, attendanceLog = AttendanceLog(id = 500L))
+            }
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { employeeRepository.findById(999L) } returns Optional.empty()
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+
+            assertThatThrownBy { service.updateEmployee(principal, 1L, 1L, createRequest(employeeId = 999L)) }
+                .isInstanceOf(TeamScheduleWorkReportDeleteException::class.java)
+
+            verify(exactly = 0) { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(any<WebUserPrincipal>(), any()) }
+        }
+
+        @Test
+        @DisplayName("출근완료 일정 + 비핵심필드만 수정 -> 성공 (스케줄 삭제가 없으므로 가드 미적용)")
+        fun updateEmployee_attendedSchedule_nonCriticalChange_success() {
+            val pe = createPe(teamMemberScheduleId = 100L).also {
+                it.teamMemberSchedule = TeamMemberSchedule(id = 100L, attendanceLog = AttendanceLog(id = 500L))
+            }
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
+            stubRollup()
+
+            // 핵심필드(사원/투입일/근무유형3) 동일, 기준단가만 변경 — 스케줄 삭제 트리거 아님
+            service.updateEmployee(principal, 1L, 1L, createRequest(basePrice = BigDecimal.valueOf(2000L)))
+
+            verify(exactly = 0) { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(any<WebUserPrincipal>(), any()) }
+        }
+
+        @Test
+        @DisplayName("출근완료 일정 + 핵심필드 변경이라도 시스템 관리자 -> 삭제 진행 (레거시 deleteblock 우회 동등)")
+        fun updateEmployee_attendedSchedule_systemAdmin_bypass() {
+            every { principal.profileName } returns "시스템 관리자"
+            val pe = createPe(teamMemberScheduleId = 100L).also {
+                it.teamMemberSchedule = TeamMemberSchedule(id = 100L, attendanceLog = AttendanceLog(id = 500L))
+            }
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+            every { employeeRepository.findById(1L) } returns Optional.of(createEmployee())
+            every { employeeRepository.findById(999L) } returns Optional.empty()
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
+            stubRollup()
+
+            service.updateEmployee(principal, 1L, 1L, createRequest(employeeId = 999L))
+
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
+        }
+
+        @Test
         @DisplayName("professionalPromotionTeam 변경 시 -> 스케줄 삭제 안 함")
         fun updateEmployee_teamChange_noScheduleDelete() {
             val pe = createPe(teamMemberScheduleId = 100L)
@@ -1107,6 +1164,38 @@ class AdminPromotionEmployeeServiceTest {
 
             assertThatThrownBy { service.deleteEmployee(principal, 1L) }
                 .isInstanceOf(ClosedEmployeeDeleteException::class.java)
+        }
+
+        @Test
+        @DisplayName("출근완료 일정 연결 조원 삭제 -> WORK_REPORT_DELETE_CONSTRAINT (레거시 deleteblock 동등)")
+        fun deleteEmployee_attendedSchedule_blocked() {
+            val pe = createPe(teamMemberScheduleId = 100L).also {
+                it.teamMemberSchedule = TeamMemberSchedule(id = 100L, attendanceLog = AttendanceLog(id = 500L))
+            }
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+
+            assertThatThrownBy { service.deleteEmployee(principal, 1L) }
+                .isInstanceOf(TeamScheduleWorkReportDeleteException::class.java)
+
+            verify(exactly = 0) { promotionEmployeeRepository.delete(any<PromotionEmployee>()) }
+            verify(exactly = 0) { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(any<WebUserPrincipal>(), any()) }
+        }
+
+        @Test
+        @DisplayName("출근완료 일정이라도 시스템 관리자 삭제 -> 연쇄 삭제 진행 (레거시 deleteblock 우회 동등)")
+        fun deleteEmployee_attendedSchedule_systemAdmin_bypass() {
+            every { principal.profileName } returns "시스템 관리자"
+            val pe = createPe(teamMemberScheduleId = 100L).also {
+                it.teamMemberSchedule = TeamMemberSchedule(id = 100L, attendanceLog = AttendanceLog(id = 500L))
+            }
+            every { promotionEmployeeRepository.findById(1L) } returns Optional.of(pe)
+            every { promotionRepository.findById(10L) } returns Optional.of(createPromotion())
+            stubRollup()
+
+            service.deleteEmployee(principal, 1L)
+
+            verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
+            verify { promotionEmployeeRepository.delete(pe) }
         }
 
         @Test
