@@ -2697,6 +2697,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "secondWorkType" : {
+            "type" : [ "string", "null" ]
+          },
           "status" : {
             "type" : "string"
           },
@@ -5594,6 +5597,12 @@
           },
           "totalApprovedAmount" : {
             "type" : "number"
+          },
+          "unfulfilledItems" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UnfulfilledItemResponse"
+            },
+            "type" : [ "array", "null" ]
           }
         },
         "type" : "object"
@@ -7115,6 +7124,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "secondWorkType" : {
+            "type" : [ "string", "null" ]
+          },
           "workCategory" : {
             "type" : "string"
           },
@@ -7170,6 +7182,23 @@
             "type" : "integer"
           },
           "refreshToken" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "UnfulfilledItemResponse" : {
+        "properties" : {
+          "orderQuantityBoxes" : {
+            "type" : "number"
+          },
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "reason" : {
             "type" : "string"
           }
         },

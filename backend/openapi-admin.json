@@ -3184,6 +3184,9 @@
       },
       "AdminUserPasswordResetResponse" : {
         "properties" : {
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
           "passwordChangeRequired" : {
             "type" : "boolean"
           },
