@@ -15197,183 +15197,6 @@
         },
         "type" : "object"
       },
-      "EmployeeRow" : {
-        "properties" : {
-          "agreementFlag" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "appLoginActive" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "appointmentDate" : {
-            "format" : "date",
-            "type" : [ "string", "null" ]
-          },
-          "birthDate" : {
-            "type" : [ "string", "null" ]
-          },
-          "costCenterCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "createdAt" : {
-            "format" : "date-time",
-            "type" : [ "string", "null" ]
-          },
-          "createdById" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "createdBySfid" : {
-            "type" : [ "string", "null" ]
-          },
-          "crmWorkStartDate" : {
-            "format" : "date",
-            "type" : [ "string", "null" ]
-          },
-          "crmWorkType" : {
-            "type" : [ "string", "null" ]
-          },
-          "deleted" : {
-            "type" : "boolean"
-          },
-          "dkCostCenterCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "email" : {
-            "type" : [ "string", "null" ]
-          },
-          "employeeCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "endDate" : {
-            "format" : "date",
-            "type" : [ "string", "null" ]
-          },
-          "gender" : {
-            "type" : [ "string", "null" ]
-          },
-          "homePhone" : {
-            "type" : [ "string", "null" ]
-          },
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "isDeleted" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "jikchak" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikgub" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikjong" : {
-            "type" : [ "string", "null" ]
-          },
-          "jikwee" : {
-            "type" : [ "string", "null" ]
-          },
-          "jobCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "lastModifiedById" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "lastModifiedBySfid" : {
-            "type" : [ "string", "null" ]
-          },
-          "locationCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "lockingFlag" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "managerId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "managerSfid" : {
-            "type" : [ "string", "null" ]
-          },
-          "name" : {
-            "type" : [ "string", "null" ]
-          },
-          "officePhone" : {
-            "type" : [ "string", "null" ]
-          },
-          "ordDetailNode" : {
-            "type" : [ "string", "null" ]
-          },
-          "orgName" : {
-            "type" : [ "string", "null" ]
-          },
-          "origin" : {
-            "type" : [ "string", "null" ]
-          },
-          "ownerGroupId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "ownerSfid" : {
-            "type" : [ "string", "null" ]
-          },
-          "ownerUserId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "phone" : {
-            "type" : [ "string", "null" ]
-          },
-          "postponedAppointmentId" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          },
-          "postponedAppointmentSfid" : {
-            "type" : [ "string", "null" ]
-          },
-          "professionalPromotionTeam" : {
-            "type" : [ "string", "null" ]
-          },
-          "role" : {
-            "type" : [ "string", "null" ]
-          },
-          "sfid" : {
-            "type" : [ "string", "null" ]
-          },
-          "startDate" : {
-            "format" : "date",
-            "type" : [ "string", "null" ]
-          },
-          "status" : {
-            "type" : [ "string", "null" ]
-          },
-          "totalAnnualLeave" : {
-            "type" : [ "number", "null" ]
-          },
-          "updatedAt" : {
-            "format" : "date-time",
-            "type" : [ "string", "null" ]
-          },
-          "usedAnnualLeave" : {
-            "type" : [ "number", "null" ]
-          },
-          "workArea" : {
-            "type" : [ "string", "null" ]
-          },
-          "workEmail" : {
-            "type" : [ "string", "null" ]
-          },
-          "workPhone" : {
-            "type" : [ "string", "null" ]
-          },
-          "workType" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "type" : "object"
-      },
       "EmployeeWorkHistoryItem" : {
         "properties" : {
           "abcType" : {
@@ -19768,20 +19591,6 @@
           },
           "RESULT_DETAIL" : {
             "$ref" : "#/components/schemas/SnapshotPageResponseAccountRow"
-          },
-          "RESULT_MSG" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "OvipResultWrapperSnapshotPageResponseEmployeeRow" : {
-        "properties" : {
-          "RESULT_CODE" : {
-            "type" : "string"
-          },
-          "RESULT_DETAIL" : {
-            "$ref" : "#/components/schemas/SnapshotPageResponseEmployeeRow"
           },
           "RESULT_MSG" : {
             "type" : "string"
@@ -25148,24 +24957,6 @@
           "items" : {
             "items" : {
               "$ref" : "#/components/schemas/AccountRow"
-            },
-            "type" : "array"
-          },
-          "nextCursor" : {
-            "format" : "int64",
-            "type" : [ "integer", "null" ]
-          }
-        },
-        "type" : "object"
-      },
-      "SnapshotPageResponseEmployeeRow" : {
-        "properties" : {
-          "hasNext" : {
-            "type" : "boolean"
-          },
-          "items" : {
-            "items" : {
-              "$ref" : "#/components/schemas/EmployeeRow"
             },
             "type" : "array"
           },
@@ -44248,7 +44039,7 @@
     "/api/v1/ovip/account/search" : {
       "post" : {
         "description" : "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
-        "operationId" : "search_2",
+        "operationId" : "search_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -44276,39 +44067,6 @@
         } ],
         "summary" : "거래처 전량 스냅샷 조회 (keyset 페이지네이션)",
         "tags" : [ "ovip-account-controller" ]
-      }
-    },
-    "/api/v1/ovip/employee/search" : {
-      "post" : {
-        "description" : "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
-        "operationId" : "search_1",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/SnapshotSearchRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OvipResultWrapperSnapshotPageResponseEmployeeRow"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "security" : [ {
-          "Bearer" : [ ]
-        } ],
-        "summary" : "사원 전량 스냅샷 조회 (keyset 페이지네이션)",
-        "tags" : [ "ovip-employee-controller" ]
       }
     },
     "/api/v1/ovip/mfeis/search" : {

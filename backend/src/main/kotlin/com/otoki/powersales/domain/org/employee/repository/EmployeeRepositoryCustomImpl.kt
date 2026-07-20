@@ -246,44 +246,4 @@ class EmployeeRepositoryCustomImpl(
             )
             .fetch()
     }
-
-    override fun findSnapshotByKeyset(cursor: Long?, limit: Int): List<EmployeeSnapshotRow> {
-        val where = BooleanBuilder()
-            // soft delete 제외 (SF 자동 제외 정합 — MFEIS 스냅샷과 동일 규약)
-            .and(employee.isDeleted.isFalse.or(employee.isDeleted.isNull))
-
-        // keyset 커서 — 직전 페이지 마지막 id 초과분만. null 이면 처음부터.
-        if (cursor != null) {
-            where.and(employee.id.gt(cursor))
-        }
-
-        // 관계 FK 는 `employee.manager.id` 형태로 **FK 컬럼만** select 한다 — 연관 엔티티를 join 하지 않으므로
-        // 결과 row 수도 늘지 않고, 호출 측이 entity 의 LAZY 필드에 의존할 필요도 없어진다.
-        return queryFactory
-            .select(
-                employee,
-                employee.ownerUser.id,
-                employee.ownerGroup.id,
-                employee.createdBy.id,
-                employee.lastModifiedBy.id,
-                employee.manager.id,
-                employee.postponedAppointment.id,
-            )
-            .from(employee)
-            .where(where)
-            .orderBy(employee.id.asc())
-            .limit(limit.toLong())
-            .fetch()
-            .map { tuple ->
-                EmployeeSnapshotRow(
-                    employee = tuple.get(employee)!!,
-                    ownerUserId = tuple.get(employee.ownerUser.id),
-                    ownerGroupId = tuple.get(employee.ownerGroup.id),
-                    createdById = tuple.get(employee.createdBy.id),
-                    lastModifiedById = tuple.get(employee.lastModifiedBy.id),
-                    managerId = tuple.get(employee.manager.id),
-                    postponedAppointmentId = tuple.get(employee.postponedAppointment.id),
-                )
-            }
-    }
 }
