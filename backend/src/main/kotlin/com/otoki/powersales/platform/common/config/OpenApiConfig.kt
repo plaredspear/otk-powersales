@@ -60,4 +60,11 @@ class OpenApiConfig {
         .displayName("Mobile API")
         .pathsToMatch("/api/*/mobile/**")
         .build()
+
+    @Bean
+    fun ovipApi(): GroupedOpenApi = GroupedOpenApi.builder()
+        .group("ovip")
+        .displayName("OVIP Inbound API")
+        .pathsToMatch("/api/*/ovip/**")
+        .build()
 }
