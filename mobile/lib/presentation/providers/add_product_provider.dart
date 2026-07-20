@@ -176,6 +176,23 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     state = state.copyWith(selectedProductCodes: updatedSelection);
   }
 
+  /// 전체 선택/해제 — 지정한 제품 코드들을 한 번에 선택하거나 해제한다.
+  ///
+  /// 다건 선택 모드에서만 동작한다(단건 모드에는 전체 선택이 없다).
+  /// 차단 제품(전용상품 등) 제외는 호출 측에서 코드 목록을 걸러 전달한다.
+  void setSelectionForCodes(Iterable<String> productCodes, bool selected) {
+    if (!state.multiSelect) return;
+
+    final updatedSelection = Set<String>.from(state.selectedProductCodes);
+    if (selected) {
+      updatedSelection.addAll(productCodes);
+    } else {
+      updatedSelection.removeAll(productCodes);
+    }
+
+    state = state.copyWith(selectedProductCodes: updatedSelection);
+  }
+
   /// 선택 초기화
   void clearSelection() {
     state = state.copyWith(selectedProductCodes: const {});
