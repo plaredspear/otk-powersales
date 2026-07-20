@@ -120,6 +120,17 @@ class NoEmployeesException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
+/**
+ * 근무 일정 생성 시 거래처 필수 — 레거시 `TeamMemberScheduleTriggerHandler.IsAccIdEmpty()` 동등.
+ * 확정 경로에서 여사원일정의 거래처는 행사마스터의 거래처를 그대로 쓰므로, 행사마스터에 거래처가
+ * 비어 있으면 근무 상태(연차/대휴가 아닌) 행사조원의 일정을 만들 수 없다.
+ */
+class PromotionAccountRequiredException : BusinessException(
+    errorCode = "ACCOUNT_REQUIRED",
+    message = "근무일정 생성 시 거래처는 필수입력 사항입니다",
+    httpStatus = HttpStatus.BAD_REQUEST
+)
+
 class ValuesRequiredException(detail: String) : BusinessException(
     errorCode = "VALUES_REQUIRED",
     message = detail,

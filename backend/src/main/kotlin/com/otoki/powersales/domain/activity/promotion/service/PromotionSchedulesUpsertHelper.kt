@@ -9,6 +9,8 @@ import com.otoki.powersales.domain.activity.promotion.exception.EmployeeOnLeaveE
 import com.otoki.powersales.domain.activity.promotion.exception.EmployeeResignedException
 import com.otoki.powersales.domain.activity.promotion.exception.LeaveConflictException
 import com.otoki.powersales.domain.activity.promotion.exception.NoEmployeesException
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionAccountRequiredException
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionDateRequiredException
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
 import com.otoki.powersales.domain.activity.promotion.exception.ValuesRequiredException
 import com.otoki.powersales.domain.activity.promotion.exception.WorkType3LimitExceededException
@@ -48,6 +50,12 @@ class PromotionSchedulesUpsertHelper(
             .filter { !it.isDeleted }
             .orElseThrow { PromotionNotFoundException() }
 
+        // 행사 시작일/종료일 필수 — 레거시 PromotionToScheduleQuickActionController:8-11 ('DateRequired') 동등.
+        // 투입일 범위 검증(validateDateRange)이 두 값을 전제로 하므로 그보다 먼저 막는다.
+        if (promotion.startDate == null || promotion.endDate == null) {
+            throw PromotionDateRequiredException()
+        }
+
         val employees = promotionEmployeeRepository.findByPromotionId(promotionId)
         if (employees.isEmpty()) {
             throw NoEmployeesException()
@@ -79,6 +87,7 @@ class PromotionSchedulesUpsertHelper(
         } else emptyList()
 
         validateRequiredValues(employees, userByIdMap)
+        validateAccountRequired(employees, promotion)
         validateDateRange(employees, promotion, userByIdMap)
         validateWorkType3Limit(employees, existingTeamMemberSchedules, peIds, userByIdMap)
         validateLeaveConflict(employees, existingTeamMemberSchedules, peIds, userByIdMap)
@@ -103,7 +112,7 @@ class PromotionSchedulesUpsertHelper(
             if (existing != null) {
                 existing.updateForPromotion(
                     employee = empEntity,
-                    account = promotion.account!!,
+                    account = promotion.account,
                     workingDate = pe.scheduleDate!!,
                     workingType = pe.workStatus!!,
                     workingCategory1 = pe.workType1!!,
@@ -162,12 +171,11 @@ class PromotionSchedulesUpsertHelper(
             if (pe.workStatus == null) missingFields.add("근무상태")
             if (pe.workType1 == null) missingFields.add("근무유형1")
             if (pe.workType3 == null) missingFields.add("근무유형3")
-            if (pe.basePrice == null) missingFields.add("기준단가")
-            if (pe.dailyTargetCount == null) missingFields.add("목표수량")
-            // 목표금액(target_amount = 기준단가 × 목표수량 파생값)은 확정 필수에서 제외.
-            // SF 레거시(PromotionToScheduleQuickActionController) 확정 필수는 직원·투입일·근무유형1·근무유형3·근무상태
-            // 5개뿐이고 목표금액은 formula(required=false, BlankAsZero)라 검증 대상이 아니었다. SF 마이그레이션
-            // 적재 row 는 target_amount 미매핑으로 NULL 이라 이 조건을 두면 이관분이 전건 확정 탈락 → 레거시 동등 복원.
+            // 기준단가·목표수량·목표금액은 확정 필수에서 제외.
+            // SF 레거시(PromotionToScheduleQuickActionController:34-36) 확정 필수는 직원·투입일·근무유형1·
+            // 근무유형3·근무상태 5개뿐이다. 기준단가/목표수량은 SF 확정 검증 대상이 아니었고, 목표금액은
+            // formula(required=false, BlankAsZero)라 애초에 검증할 수 없는 값이었다. SF 마이그레이션 적재 row 는
+            // 이 값들이 미매핑 NULL 이라 확정 필수로 두면 이관분이 전건 확정 탈락 → 레거시 동등 복원.
 
             if (missingFields.isNotEmpty()) {
                 val name = pe.employeeId?.let { resolveEmployeeName(it, userByIdMap) } ?: pe.id.toString()
@@ -175,6 +183,23 @@ class PromotionSchedulesUpsertHelper(
                     "${name}의 필수 항목을 입력하세요 (${missingFields.joinToString(", ")})"
                 )
             }
+        }
+    }
+
+    /**
+     * 근무 상태 행사조원이 있으면 행사마스터의 거래처가 필수 — 레거시
+     * `TeamMemberScheduleTriggerHandler.IsAccIdEmpty()` (`근무 && AccountId__c == null` → addError) 동등.
+     *
+     * 확정 시 여사원일정의 거래처는 행사마스터의 거래처를 그대로 옮겨 담으므로, 행사마스터에 거래처가
+     * 비어 있으면 근무 일정을 만들 수 없다. 레거시와 동일하게 연차/대휴만 있는 행사는 통과시킨다.
+     */
+    private fun validateAccountRequired(
+        employees: List<PromotionEmployee>,
+        promotion: Promotion
+    ) {
+        if (promotion.account != null) return
+        if (employees.any { it.workStatus == WorkingType.WORK }) {
+            throw PromotionAccountRequiredException()
         }
     }
 
@@ -289,13 +314,16 @@ class PromotionSchedulesUpsertHelper(
         currentPeIds: List<Long>,
         userByIdMap: Map<Long, Employee>
     ) {
+        // 거래처 없는 행사(연차/대휴 전용)는 "동일 거래처 중복" 판정 자체가 성립하지 않으므로 건너뛴다.
+        val promotionAccountId = promotion.account?.id ?: return
+
         val externalTeamMemberSchedules = existingTeamMemberSchedules.filter { it.promotionEmployee?.id == null || it.promotionEmployee?.id !in currentPeIds }
 
         for (pe in employees) {
             val duplicate = externalTeamMemberSchedules.any {
                 it.employee?.id == pe.employeeId &&
                     it.workingDate == pe.scheduleDate!! &&
-                    it.account?.id == promotion.account!!.id
+                    it.account?.id == promotionAccountId
             }
             if (duplicate) {
                 val name = resolveEmployeeName(pe.employeeId!!, userByIdMap)

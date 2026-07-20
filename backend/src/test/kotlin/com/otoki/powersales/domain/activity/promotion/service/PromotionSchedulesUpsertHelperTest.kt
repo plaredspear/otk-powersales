@@ -12,6 +12,8 @@ import com.otoki.powersales.domain.activity.promotion.exception.EmployeeResigned
 import com.otoki.powersales.domain.activity.promotion.exception.LeaveConflictException
 import com.otoki.powersales.domain.activity.promotion.exception.NoEmployeesException
 import com.otoki.powersales.domain.activity.promotion.exception.PromotionNotFoundException
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionAccountRequiredException
+import com.otoki.powersales.domain.activity.promotion.exception.PromotionDateRequiredException
 import com.otoki.powersales.domain.activity.promotion.exception.ValuesRequiredException
 import com.otoki.powersales.domain.activity.promotion.exception.WorkType3LimitExceededException
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
@@ -294,31 +296,72 @@ class PromotionSchedulesUpsertHelperTest {
         }
 
         @Test
-        @DisplayName("기준단가 누락 -> 400 VALUES_REQUIRED")
-        fun confirm_missingBasePrice() {
+        @DisplayName("기준단가 null -> 확정 성공 (SF 레거시 동등 — 기준단가는 확정 필수 아님)")
+        fun confirm_nullBasePrice_success() {
             val promotion = createPromotion()
             val employees = listOf(
                 createPE(id = 1L, employeeId = 1L, basePrice = null)
             )
-            setupMocks(promotion, employees)
+            setupMocksForSuccess(promotion, employees)
 
-            assertThatThrownBy { helper.upsert(10L) }
-                .isInstanceOf(ValuesRequiredException::class.java)
-                .hasMessageContaining("기준단가")
+            val result = helper.upsert(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
         }
 
         @Test
-        @DisplayName("목표수량 누락 -> 400 VALUES_REQUIRED")
-        fun confirm_missingDailyTargetCount() {
+        @DisplayName("목표수량 null -> 확정 성공 (SF 마이그레이션 적재분 정합)")
+        fun confirm_nullDailyTargetCount_success() {
             val promotion = createPromotion()
             val employees = listOf(
                 createPE(id = 1L, employeeId = 1L, dailyTargetCount = null)
             )
-            setupMocks(promotion, employees)
+            setupMocksForSuccess(promotion, employees)
+
+            val result = helper.upsert(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("행사 시작일 null -> 400 DATE_REQUIRED (SF PromotionToScheduleQuickActionController 'DateRequired' 동등)")
+        fun confirm_nullStartDate() {
+            val promotion = createPromotion(startDate = null)
+            setupMocks(promotion, listOf(createPE(id = 1L, employeeId = 1L)))
 
             assertThatThrownBy { helper.upsert(10L) }
-                .isInstanceOf(ValuesRequiredException::class.java)
-                .hasMessageContaining("목표수량")
+                .isInstanceOf(PromotionDateRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("행사 종료일 null -> 400 DATE_REQUIRED")
+        fun confirm_nullEndDate() {
+            val promotion = createPromotion(endDate = null)
+            setupMocks(promotion, listOf(createPE(id = 1L, employeeId = 1L)))
+
+            assertThatThrownBy { helper.upsert(10L) }
+                .isInstanceOf(PromotionDateRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("거래처 null + 근무 행사조원 -> 400 ACCOUNT_REQUIRED (SF IsAccIdEmpty 동등)")
+        fun confirm_nullAccountWithWorkStatus() {
+            val promotion = createPromotion(account = null)
+            setupMocks(promotion, listOf(createPE(id = 1L, employeeId = 1L, workStatus = "근무")))
+
+            assertThatThrownBy { helper.upsert(10L) }
+                .isInstanceOf(PromotionAccountRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("거래처 null + 연차만 -> 확정 성공 (SF IsAccIdEmpty 는 '근무' 일 때만 차단)")
+        fun confirm_nullAccountWithLeaveOnly_success() {
+            val promotion = createPromotion(account = null)
+            setupMocksForSuccess(
+                promotion,
+                listOf(createPE(id = 1L, employeeId = 1L, workStatus = "연차"))
+            )
+
+            val result = helper.upsert(10L)
+            assertThat(result.upsertedTeamMemberSchedules).isEqualTo(1)
         }
 
         @Test
@@ -592,8 +635,10 @@ class PromotionSchedulesUpsertHelperTest {
 
     private fun createPromotion(
         id: Long = 10L,
-        account: Account = createAccount(),
-        isDeleted: Boolean = false
+        account: Account? = createAccount(),
+        isDeleted: Boolean = false,
+        startDate: LocalDate? = this.startDate,
+        endDate: LocalDate? = this.endDate
     ): Promotion = Promotion(
         id = id,
         promotionNumber = "PRO-0001",

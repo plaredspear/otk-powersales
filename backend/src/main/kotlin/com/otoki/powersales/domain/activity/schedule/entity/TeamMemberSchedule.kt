@@ -404,7 +404,9 @@ class TeamMemberSchedule(
 
     fun updateForPromotion(
         employee: Employee,
-        account: Account,
+        // 연차/대휴만 있는 행사는 거래처 없이도 확정된다(레거시 IsAccIdEmpty 는 '근무' 일 때만 차단).
+        // 신규 생성 경로와 동일하게 nullable 을 받는다.
+        account: Account?,
         workingDate: LocalDate,
         workingType: WorkingType,
         workingCategory1: WorkingCategory1,
