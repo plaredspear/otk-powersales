@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, Alert, Typography, notification } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
-import { changePassword } from '@/api/auth';
+import { changePassword, ChangePasswordError } from '@/api/auth';
 import { PASSWORD_MIN_LENGTH, hasEnoughCharacterTypes } from '@/lib/passwordPolicy';
 import PasswordPolicyChecklist from '@/components/PasswordPolicyChecklist';
 
@@ -31,6 +31,7 @@ export default function ChangePasswordPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const setTokens = useAuthStore((s) => s.setTokens);
   const clearPasswordChangeRequired = useAuthStore((s) => s.clearPasswordChangeRequired);
+  const logout = useAuthStore((s) => s.logout);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +58,18 @@ export default function ChangePasswordPage() {
       });
       navigate('/', { replace: true });
     } catch (err) {
+      // 잔존/만료 토큰으로 인한 401 — 이 화면에선 refresh 로 복구할 수 없다.
+      // 로그아웃(세션 정리)으로 라우터 가드 데드락을 풀고 재로그인으로 유도한다.
+      if (err instanceof ChangePasswordError && err.sessionExpired) {
+        logout();
+        notification.warning({
+          message: '세션이 만료되었습니다',
+          description: '다시 로그인해 주세요.',
+          duration: 4,
+        });
+        navigate('/login', { replace: true });
+        return;
+      }
       setError(err instanceof Error ? err.message : '비밀번호 변경 중 오류가 발생했습니다');
     } finally {
       setLoading(false);
@@ -141,11 +154,24 @@ export default function ChangePasswordPage() {
             <Input.Password placeholder="새 비밀번호를 다시 입력하세요" size="large" />
           </Form.Item>
 
-          <Form.Item>
+          <Form.Item style={{ marginBottom: 8 }}>
             <Button type="primary" htmlType="submit" loading={loading} block size="large">
               비밀번호 변경
             </Button>
           </Form.Item>
+
+          {/* 세션이 죽어 변경도 못 하고 다른 화면으로도 못 빠져나가는 데드락 탈출구.
+              logout() 이 강제 변경 플래그까지 정리해 라우터 가드 루프를 끊는다. */}
+          <Button
+            type="link"
+            block
+            onClick={() => {
+              logout();
+              navigate('/login', { replace: true });
+            }}
+          >
+            다시 로그인
+          </Button>
         </Form>
       </Card>
     </div>

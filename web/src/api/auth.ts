@@ -87,11 +87,32 @@ export interface ChangePasswordData {
 }
 
 /**
+ * 비밀번호 변경 실패를 세분화한 에러.
+ *
+ * `sessionExpired=true` 는 잔존/만료 access token 으로 호출해 backend 가 401
+ * (`TOKEN_EXPIRED` / `UNAUTHORIZED`) 을 반환한 경우다. 강제 변경 화면은 이 플래그를 보고
+ * 데드락(변경도 못 하고 /login 으로도 못 빠져나감) 대신 로그아웃 → 재로그인으로 유도한다.
+ */
+export class ChangePasswordError extends Error {
+  constructor(
+    message: string,
+    readonly sessionExpired: boolean,
+  ) {
+    super(message);
+    this.name = 'ChangePasswordError';
+  }
+}
+
+/**
  * Web 비밀번호 변경 (강제 / 자발 통합, backend `POST /api/v1/admin/auth/password`).
  *
  * 임시 비밀번호 상태(passwordChangeRequired=true)에서는 currentPassword 없이 호출한다.
  * `@/api/client` 는 refreshToken 을 import 해 순환 참조가 되므로, 여기서는 access token 을
  * 직접 첨부하여 순수 axios 로 호출한다 (강제 변경 화면 진입 시점엔 token 이 항상 존재).
+ *
+ * 잔존 세션(마이그레이션 등으로 서버측 세션이 없거나 access token 만료) 상태에서 호출하면
+ * backend 가 401 을 반환한다. 이 axios 는 client 인터셉터를 타지 않아 자동 refresh 가 없으므로,
+ * 401 을 `ChangePasswordError(sessionExpired=true)` 로 감싸 화면이 재로그인으로 탈출하게 한다.
  */
 export async function changePassword(request: ChangePasswordRequest): Promise<ChangePasswordData> {
   try {
@@ -102,13 +123,18 @@ export async function changePassword(request: ChangePasswordRequest): Promise<Ch
       { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined },
     );
     if (!res.data.success || !res.data.data) {
-      throw new Error(res.data.error?.message || '비밀번호 변경에 실패했습니다');
+      throw new ChangePasswordError(res.data.error?.message || '비밀번호 변경에 실패했습니다', false);
     }
     return res.data.data;
   } catch (err) {
+    if (err instanceof ChangePasswordError) {
+      throw err;
+    }
     if (err instanceof AxiosError) {
       const serverMessage = (err.response?.data as ApiResponse<unknown>)?.error?.message;
-      throw new Error(serverMessage || '비밀번호 변경에 실패했습니다');
+      // 401: 잔존/만료 토큰 — 재로그인 유도. (refresh token 미보유 상태라 자동 갱신 불가)
+      const sessionExpired = err.response?.status === 401;
+      throw new ChangePasswordError(serverMessage || '비밀번호 변경에 실패했습니다', sessionExpired);
     }
     throw err;
   }

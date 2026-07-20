@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import ChangePasswordPage from './ChangePasswordPage';
 import { useAuthStore } from '@/stores/authStore';
-import { changePassword } from '@/api/auth';
+import { changePassword, ChangePasswordError } from '@/api/auth';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -12,9 +12,12 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-vi.mock('@/api/auth', () => ({
-  changePassword: vi.fn(),
-}));
+// changePassword 만 mock 하고 ChangePasswordError 는 실제 클래스를 그대로 노출한다
+// (화면이 instanceof + sessionExpired 플래그로 세션 만료를 판별하므로).
+vi.mock('@/api/auth', async () => {
+  const actual = await vi.importActual<typeof import('@/api/auth')>('@/api/auth');
+  return { ...actual, changePassword: vi.fn() };
+});
 
 const mockedChangePassword = vi.mocked(changePassword);
 
@@ -174,5 +177,59 @@ describe('ChangePasswordPage', () => {
     setAuth(false);
     renderPage();
     expect(screen.queryByText('비밀번호 변경')).not.toBeInTheDocument();
+  });
+
+  it('세션 만료(401) 응답 시 로그아웃 후 /login 으로 탈출한다 (데드락 방지)', async () => {
+    localStorage.setItem('accessToken', 'stale');
+    localStorage.setItem('refreshToken', 'stale-refresh');
+    mockedChangePassword.mockRejectedValueOnce(
+      new ChangePasswordError('토큰이 만료되었습니다', true),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('새 비밀번호'), 'Newpw123!');
+    await user.type(screen.getByLabelText('새 비밀번호 확인'), 'Newpw123!');
+    await user.click(screen.getByRole('button', { name: '비밀번호 변경' }));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true });
+    });
+    // logout() 이 세션과 강제 플래그를 정리해 라우터 가드 루프를 끊는다.
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().passwordChangeRequired).toBe(false);
+    expect(localStorage.getItem('accessToken')).toBeNull();
+    expect(localStorage.getItem('refreshToken')).toBeNull();
+  });
+
+  it('세션 만료가 아닌 일반 실패는 에러만 표시하고 화면을 유지한다', async () => {
+    mockedChangePassword.mockRejectedValueOnce(
+      new ChangePasswordError('비밀번호 변경에 실패했습니다', false),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText('새 비밀번호'), 'Newpw123!');
+    await user.type(screen.getByLabelText('새 비밀번호 확인'), 'Newpw123!');
+    await user.click(screen.getByRole('button', { name: '비밀번호 변경' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('비밀번호 변경에 실패했습니다')).toBeInTheDocument();
+    });
+    expect(mockNavigate).not.toHaveBeenCalledWith('/login', { replace: true });
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  });
+
+  it('다시 로그인 버튼: 로그아웃 후 /login 으로 이동한다', async () => {
+    localStorage.setItem('accessToken', 'stale');
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: '다시 로그인' }));
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().passwordChangeRequired).toBe(false);
+    expect(localStorage.getItem('accessToken')).toBeNull();
+    expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true });
   });
 });
