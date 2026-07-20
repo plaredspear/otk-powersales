@@ -19413,6 +19413,99 @@
         },
         "type" : "object"
       },
+      "OrganizationRow" : {
+        "properties" : {
+          "costCenterLevel2" : {
+            "type" : [ "string", "null" ]
+          },
+          "costCenterLevel3" : {
+            "type" : [ "string", "null" ]
+          },
+          "costCenterLevel4" : {
+            "type" : [ "string", "null" ]
+          },
+          "costCenterLevel5" : {
+            "type" : [ "string", "null" ]
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "createdById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "createdBySfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "deleted" : {
+            "type" : "boolean"
+          },
+          "externalKey" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "isDeleted" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "lastModifiedById" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "lastModifiedBySfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgCodeLevel2" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgCodeLevel3" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgCodeLevel4" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgCodeLevel5" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgNameLevel2" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgNameLevel3" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgNameLevel4" : {
+            "type" : [ "string", "null" ]
+          },
+          "orgNameLevel5" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerGroupId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "ownerSfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "ownerUserId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "sfid" : {
+            "type" : [ "string", "null" ]
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "OroraDailyChunkCatalogResponse" : {
         "properties" : {
           "chunkCount" : {
@@ -19577,6 +19670,20 @@
           },
           "RESULT_DETAIL" : {
             "$ref" : "#/components/schemas/MfeisPageResponse"
+          },
+          "RESULT_MSG" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "OvipResultWrapperSnapshotListResponseOrganizationRow" : {
+        "properties" : {
+          "RESULT_CODE" : {
+            "type" : "string"
+          },
+          "RESULT_DETAIL" : {
+            "$ref" : "#/components/schemas/SnapshotListResponseOrganizationRow"
           },
           "RESULT_MSG" : {
             "type" : "string"
@@ -24945,6 +25052,21 @@
           "themeId" : {
             "format" : "int64",
             "type" : [ "integer", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "SnapshotListResponseOrganizationRow" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OrganizationRow"
+            },
+            "type" : "array"
+          },
+          "totalCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -44039,7 +44161,7 @@
     "/api/v1/ovip/account/search" : {
       "post" : {
         "description" : "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
-        "operationId" : "search_1",
+        "operationId" : "search_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -44072,7 +44194,7 @@
     "/api/v1/ovip/mfeis/search" : {
       "post" : {
         "description" : "year+월 필수. cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지.",
-        "operationId" : "search",
+        "operationId" : "search_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -44155,6 +44277,29 @@
           }
         },
         "tags" : [ "ovip-token-controller" ]
+      }
+    },
+    "/api/v1/ovip/organization/search" : {
+      "post" : {
+        "description" : "요청 파라미터 없이 전건을 한 번에 반환한다. 페이지네이션 없음.",
+        "operationId" : "search",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OvipResultWrapperSnapshotListResponseOrganizationRow"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "Bearer" : [ ]
+        } ],
+        "summary" : "조직 전량 스냅샷 조회",
+        "tags" : [ "ovip-organization-controller" ]
       }
     },
     "/api/v1/sap/account" : {

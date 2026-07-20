@@ -24,7 +24,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
     assignableTypes = [
         OvipTokenController::class,
         OvipMfeisController::class,
-        OvipAccountController::class
+        OvipAccountController::class,
+        OvipOrganizationController::class
     ]
 )
 @Order(Ordered.HIGHEST_PRECEDENCE)

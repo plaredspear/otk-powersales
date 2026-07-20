@@ -3,10 +3,12 @@ package com.otoki.powersales.external.ovip.inbound.dto
 import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
- * 마스터 전량 스냅샷 keyset 페이지네이션 응답 봉투 (거래처 / 사원 공용).
+ * 마스터 전량 스냅샷 keyset 페이지네이션 응답 봉투.
  *
  * MFEIS 의 [MfeisPageResponse] 와 동일한 3필드 계약이며, row 타입만 제네릭으로 일반화했다.
  * (MFEIS 는 선행 구현이라 전용 타입을 유지 — 기존 클라이언트 계약 불변.)
+ *
+ * 페이지를 나누지 않고 전건을 반환하는 조회는 [SnapshotListResponse] 를 쓴다.
  *
  * @property items       이번 페이지 row 목록
  * @property nextCursor  다음 페이지 조회 시 넘길 커서(마지막 row 의 PK). null 이면 마지막 페이지

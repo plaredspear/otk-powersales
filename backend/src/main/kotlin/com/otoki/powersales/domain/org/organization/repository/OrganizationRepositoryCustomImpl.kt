@@ -333,6 +333,33 @@ class OrganizationRepositoryCustomImpl(
         return (level5 + level4Only).distinct()
     }
 
+    override fun findAllSnapshot(): List<OrganizationSnapshotRow> {
+        // 관계 FK 는 `organization.ownerUser.id` 형태로 **FK 컬럼만** select 한다 — 연관 엔티티를 join 하지
+        // 않으므로 결과 row 수도 늘지 않고, 호출 측이 entity 의 LAZY 필드에 의존할 필요도 없어진다.
+        return queryFactory
+            .select(
+                organization,
+                organization.ownerUser.id,
+                organization.ownerGroup.id,
+                organization.createdBy.id,
+                organization.lastModifiedBy.id,
+            )
+            .from(organization)
+            // soft delete 제외 (SF 자동 제외 정합 — 거래처/MFEIS 스냅샷과 동일 규약)
+            .where(organization.isDeleted.isFalse.or(organization.isDeleted.isNull))
+            .orderBy(organization.id.asc())
+            .fetch()
+            .map { tuple ->
+                OrganizationSnapshotRow(
+                    organization = tuple.get(organization)!!,
+                    ownerUserId = tuple.get(organization.ownerUser.id),
+                    ownerGroupId = tuple.get(organization.ownerGroup.id),
+                    createdById = tuple.get(organization.createdBy.id),
+                    lastModifiedById = tuple.get(organization.lastModifiedBy.id),
+                )
+            }
+    }
+
     companion object {
         /** SF `CurrentUserBranchNameList.getOrgList()` (L32) 의 OrgNameLevel3 사업부 제약 3종. */
         private val SALES_DIVISION_NAMES = listOf("Retail사업부", "제1사업부", "CVS사업부")

@@ -8,16 +8,15 @@ import com.otoki.powersales.external.ovip.inbound.dto.SnapshotPageResponse
 import com.otoki.powersales.external.ovip.inbound.dto.SnapshotSearchRequest
 
 /**
- * 마스터 전량 스냅샷 keyset 페이지네이션 공통 처리 (거래처 / 사원 공용).
+ * 마스터 전량 스냅샷 keyset 페이지네이션 공통 처리.
  *
- * size clamp → (pageSize + 1) 조회 → hasNext 판정 → nextCursor 산출 → audit 적재 순서는 두 조회가
- * 완전히 동일하므로 본 헬퍼로 단일화한다. 각 서비스는 "무엇을 조회하고 어떻게 row 로 변환하는지"만 넘긴다.
+ * size clamp → (pageSize + 1) 조회 → hasNext 판정 → nextCursor 산출 → audit 적재 순서가 커서 기반
+ * 조회 전반에 동일하므로 본 헬퍼로 단일화한다. 각 서비스는 "무엇을 조회하고 어떻게 row 로 변환하는지"만 넘긴다.
  *
- * @param SCOPE_READ OVIP 조회 scope — audit 기록용
+ * 조직처럼 페이지를 나누지 않고 전건을 반환하는 조회는 본 헬퍼를 쓰지 않는다
+ * ([OvipOrganizationQueryService] 참조).
  */
 object SnapshotKeysetPager {
-
-    const val SCOPE_READ = "ovip.read"
 
     /**
      * @param request    커서/size 요청
@@ -54,7 +53,7 @@ object SnapshotKeysetPager {
                 endpoint = endpoint,
                 httpMethod = "POST",
                 clientIp = clientIp,
-                scope = SCOPE_READ,
+                scope = OvipInboundScopes.READ,
                 receivedCount = pageRows.size,
                 reason = "cursor=${request.cursor} size=$pageSize hasNext=$hasNext",
             )

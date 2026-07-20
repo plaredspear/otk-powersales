@@ -54,7 +54,7 @@ class OvipMfeisQueryService(
                 endpoint = ENDPOINT,
                 httpMethod = "POST",
                 clientIp = clientIp,
-                scope = SCOPE_READ,
+                scope = OvipInboundScopes.READ,
                 receivedCount = pageRows.size,
                 reason = "year=$year month=$month cursor=${request.cursor} size=$pageSize hasNext=$hasNext",
             )
@@ -80,7 +80,6 @@ class OvipMfeisQueryService(
 
     companion object {
         const val ENDPOINT = "/api/v1/ovip/mfeis/search"
-        const val SCOPE_READ = "ovip.read"
     }
 }
 

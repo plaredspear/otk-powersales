@@ -89,4 +89,33 @@ interface OrganizationRepositoryCustom {
      * @return 매칭된 OrganizationCacheDto 또는 null (cascade 모두 miss)
      */
     fun findFirstByOrgCodeCascade(orgCode: String): OrganizationCacheDto?
+
+    /**
+     * 외부 조회(OVIP inbound) 전량 스냅샷 — **페이지네이션 없이 전건**.
+     *
+     * 거래처/MFEIS 스냅샷이 keyset 커서로 나눠 인출하는 것과 달리 조직은 한 번에 전량을 반환한다.
+     * 조직 마스터는 SAP 동기화 때 전체 삭제 후 재삽입(DELETE_INSERT)되어 **PK 가 매 동기화마다
+     * 재발번**되므로([Organization] KDoc), PK keyset 커서로 페이지를 나누면 인출 도중 sync 가 돌 때
+     * 커서가 가리키던 PK 가 사라져 중복/누락이 발생한다. 전건을 단일 쿼리·단일 응답으로 내보내면
+     * 그 창 자체가 없다. 조직은 지점 트리 마스터라 건수도 페이지네이션을 요구할 규모가 아니다.
+     *
+     * 관계 FK(ownerUser/ownerGroup/createdBy/lastModifiedBy)는 **entity 가 아니라
+     * [OrganizationSnapshotRow] 의 별도 필드로 함께 select** 한다. 거래처 스냅샷과 동일 규약 —
+     * 관계 필드에 의존하지 않아야 대량 변환에서 추가 쿼리 여지가 원천적으로 없다.
+     */
+    fun findAllSnapshot(): List<OrganizationSnapshotRow>
 }
+
+/**
+ * 조직 전량 스냅샷 1건 — entity + 관계 FK id.
+ *
+ * 관계 FK 를 entity 의 LAZY 필드에 의존하지 않고 쿼리에서 함께 뽑아 오기 위한 묶음
+ * (근거는 [OrganizationRepositoryCustom.findAllSnapshot] KDoc).
+ */
+data class OrganizationSnapshotRow(
+    val organization: Organization,
+    val ownerUserId: Long?,
+    val ownerGroupId: Long?,
+    val createdById: Long?,
+    val lastModifiedById: Long?,
+)
