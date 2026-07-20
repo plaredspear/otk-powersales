@@ -79,8 +79,8 @@ class AttendanceService(
 
     companion object {
         private val DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        private val TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm")
         private val SEOUL_ZONE = ZoneId.of("Asia/Seoul")
-        private val REGISTRATION_DEADLINE = LocalTime.of(17, 0)
         private const val LAT_MIN = -90.0
         private const val LAT_MAX = 90.0
         private const val LNG_MIN = -180.0
@@ -180,8 +180,8 @@ class AttendanceService(
             totalCount = allAccounts.size,
             registeredCount = registeredCount,
             currentDate = today.format(DATE_FORMATTER),
-            registrationDeadline = "17:00",
-            isRegistrationClosed = !now.isBefore(REGISTRATION_DEADLINE)
+            registrationDeadline = attendanceProperties.registrationDeadline.format(TIME_FORMATTER),
+            isRegistrationClosed = !now.isBefore(attendanceProperties.registrationDeadline)
         )
     }
 
@@ -220,9 +220,9 @@ class AttendanceService(
             throw AttendanceTargetConflictException()
         }
 
-        // 시간 제한 검증: 17시 이후 등록 차단
+        // 시간 제한 검증: 마감 시각(기본 17시, dev 21시) 이후 등록 차단
         val now = LocalTime.now(clock.withZone(SEOUL_ZONE))
-        if (!now.isBefore(REGISTRATION_DEADLINE)) {
+        if (!now.isBefore(attendanceProperties.registrationDeadline)) {
             throw AttendanceTimeExceededException()
         }
 
@@ -353,7 +353,7 @@ class AttendanceService(
      * 본인 출근 등록([register])과의 차이:
      * - **GPS 거리 검증 없음** (조장은 현장에 없음 — 레거시 addScheduleProc 동일).
      * - 안전점검 완료 검증 대상이 **대상 여사원([targetEmployee])** 의 당일 안전점검.
-     * - 시간 제한(서울 17:00) 은 서버에서 동일하게 재검증.
+     * - 시간 제한(서울, 기본 17:00 / dev 21:00) 은 서버에서 동일하게 재검증.
      *
      * 진열=displayWorkScheduleId(마스터→TMS 동적 생성/재사용), 행사·기배정=scheduleId 분기.
      * 조장 권한/팀원 검증은 호출부([LeaderScheduleService.registerProxyAttendance]) 책임.
@@ -369,9 +369,9 @@ class AttendanceService(
         if (nonNullCount == 0) throw AttendanceTargetRequiredException()
         if (nonNullCount > 1) throw AttendanceTargetConflictException()
 
-        // 시간 제한: 17시 이후 차단 (서버 재검증)
+        // 시간 제한: 마감 시각(기본 17시, dev 21시) 이후 차단 (서버 재검증)
         val now = LocalTime.now(clock.withZone(SEOUL_ZONE))
-        if (!now.isBefore(REGISTRATION_DEADLINE)) {
+        if (!now.isBefore(attendanceProperties.registrationDeadline)) {
             throw AttendanceTimeExceededException()
         }
 

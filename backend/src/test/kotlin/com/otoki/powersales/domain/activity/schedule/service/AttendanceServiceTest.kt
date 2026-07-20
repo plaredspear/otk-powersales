@@ -53,6 +53,7 @@ import org.junit.jupiter.api.Test
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.*
@@ -576,6 +577,36 @@ class AttendanceServiceTest {
             // Then
             assertThat(result.registrationDeadline).isEqualTo("17:00")
             assertThat(result.isRegistrationClosed).isTrue()
+        }
+
+        @Test
+        @DisplayName("마감 시각 override(21:00) - 17시 이후에도 마감 전, registrationDeadline='21:00'")
+        fun getAccountList_deadlineOverride_registrationOpenAfter17() {
+            // Given — dev 환경처럼 registrationDeadline 을 21:00 으로 override
+            every { attendanceProperties.registrationDeadline } returns LocalTime.of(21, 0)
+
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            // 운영 마감(17:00) 은 지났지만 override 마감(21:00) 이전인 20:00
+            val clockAt20 = Clock.fixed(
+                today.atTime(20, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            every { clock.withZone(any()) } returns clockAt20
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns true
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, today) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, today) } returns emptyList()
+
+            // When
+            val result = attendanceService.getAccountList(userId, null)
+
+            // Then
+            assertThat(result.registrationDeadline).isEqualTo("21:00")
+            assertThat(result.isRegistrationClosed).isFalse()
         }
     }
 
@@ -1299,6 +1330,32 @@ class AttendanceServiceTest {
                 ZoneId.of("Asia/Seoul")
             )
             every { clock.withZone(any()) } returns beforeDeadlineClock
+
+            val userId = 1L
+            val employee = createEmployee(id = userId, sfid = "USR001")
+            val today = LocalDate.now()
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { safetyCheckSubmissionRepository.existsByEmployeeIdAndWorkingDate(userId, today) } returns false
+
+            // When & Then — 시간은 통과하고 안전점검 예외 발생 (시간 이후 로직까지 도달 확인)
+            assertThatThrownBy {
+                attendanceService.register(userId, 10L, null, null, nearUserLat, nearUserLon, null)
+            }.isInstanceOf(SafetyCheckRequiredException::class.java)
+        }
+
+        @Test
+        @DisplayName("마감 시각 override(21:00) - 20시 출근등록 시도 -> 시간 검증 통과 (dev 정합)")
+        fun register_deadlineOverride_passesTimeCheckAfter17() {
+            // Given — dev 환경처럼 registrationDeadline 을 21:00 으로 override
+            every { attendanceProperties.registrationDeadline } returns LocalTime.of(21, 0)
+
+            // 운영 마감(17:00) 은 지났지만 override 마감(21:00) 이전인 20:00
+            val clockAt20 = Clock.fixed(
+                LocalDate.now().atTime(20, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
+                ZoneId.of("Asia/Seoul")
+            )
+            every { clock.withZone(any()) } returns clockAt20
 
             val userId = 1L
             val employee = createEmployee(id = userId, sfid = "USR001")

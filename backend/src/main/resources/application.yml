@@ -551,6 +551,9 @@ app:
   auth:
     uuid-check:
       excluded-employee-codes: "00000009,20030239,20230001"
+  # dev 환경 출근등록 마감 시간 override (운영 17:00 → dev 21:00, 테스트 편의).
+  attendance:
+    registration-deadline: "21:00"
   # dev 환경에서 발화할 스케줄 잡 (전역 @EnableScheduling ON + 잡별 enabled 게이팅, 기본 OFF).
   # 클레임 / 물류클레임 상태 업데이트 sync + 전문행사조 마스터 sync/만료 를 dev 에서 활성화한다.
   batch:
