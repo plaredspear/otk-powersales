@@ -540,14 +540,17 @@ class AdminPromotionEmployeeService(
             return BatchItemError(index, item.employeeId, "TEAM_CATEGORY_MISMATCH", mismatchMessage)
         }
 
-        // 7. 마감 보호
+        // 7. 마감 보호 — 단건 validateClosedEmployeeModification 과 동일 판정(공용 helper), 에러 수집 방식만 상이
         if (pe.teamMemberScheduleId != null && pe.promoCloseByTm) {
             val resolvedForValidation = resolveEmployee(item.employeeId)
-            val criticalChanged = pe.employeeId != (resolvedForValidation?.id ?: item.employeeId) ||
-                pe.scheduleDate != item.scheduleDate ||
-                pe.workType3?.displayName != normalizedWorkType3 ||
-                pe.basePrice != item.basePrice ||
-                pe.dailyTargetCount != item.dailyTargetCount
+            val criticalChanged = isClosedProtectedFieldChanged(
+                pe,
+                newEmployeeId = resolvedForValidation?.id ?: item.employeeId,
+                scheduleDate = item.scheduleDate,
+                workType3 = normalizedWorkType3,
+                basePrice = item.basePrice,
+                dailyTargetCount = item.dailyTargetCount
+            )
 
             if (criticalChanged && !isAdmin) {
                 return BatchItemError(
@@ -638,14 +641,27 @@ class AdminPromotionEmployeeService(
     ) {
         if (pe.teamMemberScheduleId == null || !pe.promoCloseByTm) return
 
-        val criticalChanged = pe.employeeId != newEmployeeId ||
-            pe.scheduleDate != scheduleDate ||
-            pe.workType3?.displayName != workType3 ||
-            pe.basePrice != basePrice ||
-            pe.dailyTargetCount != dailyTargetCount
-
-        if (criticalChanged && !isAdmin) throw ClosedEmployeeModificationException()
+        if (isClosedProtectedFieldChanged(pe, newEmployeeId, scheduleDate, workType3, basePrice, dailyTargetCount) && !isAdmin) {
+            throw ClosedEmployeeModificationException()
+        }
     }
+
+    /**
+     * 마감 보호 대상 5필드 변경 판정 — 레거시 `PromotionEmployeeTriggerHandler.checkPromotionClose:105` 동등.
+     * 단건(`validateClosedEmployeeModification`)/배치(`validateBatchItem`) 공용 — 필드 추가 시 본 메소드만 수정.
+     */
+    private fun isClosedProtectedFieldChanged(
+        pe: PromotionEmployee,
+        newEmployeeId: Long?,
+        scheduleDate: LocalDate?,
+        workType3: String?,
+        basePrice: BigDecimal?,
+        dailyTargetCount: BigDecimal?
+    ): Boolean = pe.employeeId != newEmployeeId ||
+        pe.scheduleDate != scheduleDate ||
+        pe.workType3?.displayName != workType3 ||
+        pe.basePrice != basePrice ||
+        pe.dailyTargetCount != dailyTargetCount
 
     // Spec #693 — cascade helper 적용. PE.scheduleId NULL 동기화는 본 함수가 유지.
     private fun removeScheduleOnCriticalFieldChange(
@@ -671,9 +687,7 @@ class AdminPromotionEmployeeService(
             // cascade 내부 refreshIntegration 의 SELECT 가 auto-flush 를 트리거하는데, 이때 PE 가 삭제될
             // TeamMemberSchedule 을 (FK 값 + 로드된 연관 객체로) 여전히 참조하면 TransientPropertyValueException.
             // schedule hard delete 전에 PE 의 연관을 먼저 끊고 flush 하여 dangling reference 를 제거한다.
-            pe.teamMemberScheduleId = null
-            pe.teamMemberScheduleSfid = null
-            pe.teamMemberSchedule = null
+            pe.detachTeamMemberSchedule()
             promotionEmployeeRepository.saveAndFlush(pe)
 
             teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(scheduleId))

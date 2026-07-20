@@ -1110,6 +1110,7 @@ class AdminPromotionServiceTest {
             )
             every { promotionEmployeeRepository.findByPromotionId(1L) } returns listOf(pe)
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
+            every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
 
             val request = createRequest(accountId = 200)
             val result = adminPromotionService.updatePromotion(scope, principal, 1L, userId, request)
@@ -1188,7 +1189,8 @@ class AdminPromotionServiceTest {
             val pe = PromotionEmployee(
                 id = 5L, promotionId = 1L, employeeId = 1L,
                 scheduleDate = LocalDate.of(2026, 3, 15), workStatus = WorkingType.WORK,
-                workType1 = WorkingCategory1.EVENT, workType3 = WorkingCategory3.FIXED, teamMemberScheduleId = 100L
+                workType1 = WorkingCategory1.EVENT, workType3 = WorkingCategory3.FIXED,
+                teamMemberScheduleId = 100L, teamMemberScheduleSfid = "a0C5g00000TMSabc"
             )
             every { promotionEmployeeRepository.findByPromotionId(1L) } returns listOf(pe)
 
@@ -1197,11 +1199,14 @@ class AdminPromotionServiceTest {
             every { productRepository.findById(200L) } returns Optional.of(createProduct())
             every { promotionRepository.save(any<Promotion>()) } answers { firstArg<Promotion>() }
             every { promotionEmployeeRepository.save(any<PromotionEmployee>()) } answers { firstArg<PromotionEmployee>() }
+            every { promotionEmployeeRepository.saveAll(any<List<PromotionEmployee>>()) } answers { firstArg<List<PromotionEmployee>>() }
 
             adminPromotionService.updatePromotion(scope, principal, 1L, userId, createRequest(accountId = 200))
 
             verify { teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, listOf(100L)) }
+            // detachTeamMemberSchedule — 참조 3종(id/sfid/연관) 모두 해제 후 cascade
             assertThat(pe.teamMemberScheduleId).isNull()
+            assertThat(pe.teamMemberScheduleSfid).isNull()
         }
     }
 

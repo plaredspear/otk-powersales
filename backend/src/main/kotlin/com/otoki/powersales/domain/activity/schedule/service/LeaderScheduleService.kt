@@ -240,10 +240,13 @@ class LeaderScheduleService(
             throw LeaderEventScheduleClosedException()
         }
 
-        // TMS cascade 삭제 (조장=비admin) + PromotionEmployee 삭제
-        teamMemberScheduleCascadeHelper.cascadeDeleteByIds(actorIsAdminGrade = false, listOf(schedule.id))
+        // PromotionEmployee 삭제 → TMS cascade 삭제 (조장=비admin).
+        // 순서 주의: cascade 내부 refreshIntegration 의 SELECT auto-flush 시점에 PE 가 삭제될
+        // schedule 을 참조하면 TransientPropertyValueException — PE 를 먼저 삭제·flush 하여
+        // dangling reference 를 제거한 뒤 cascade 한다 (admin deleteEmployee 와 동일 순서).
         promotionEmployeeRepository.delete(pe)
         promotionEmployeeRepository.flush()
+        teamMemberScheduleCascadeHelper.cascadeDeleteByIds(actorIsAdminGrade = false, listOf(schedule.id))
     }
 
     /**

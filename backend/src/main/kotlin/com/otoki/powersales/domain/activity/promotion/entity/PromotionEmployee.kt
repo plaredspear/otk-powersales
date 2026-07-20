@@ -261,4 +261,18 @@ class PromotionEmployee(
         this.s3ImageUniqueKey = s3ImageUniqueKey
 
     }
+
+    /**
+     * 여사원일정 참조 3종(raw FK id / SF sfid / 로드된 연관 객체) 일괄 해제.
+     *
+     * 여사원일정 연쇄 hard delete 전에 호출해 dangling reference 를 제거한다 — id 만 끊으면
+     * sfid 가 stale 로 남아 SF 재전송/FK Resolve 시 죽은 SF Id 를 참조할 수 있고, 로드된 연관
+     * 객체가 남으면 cascade 내부 SELECT 의 auto-flush 시점에 `TransientPropertyValueException`
+     * 이 난다. 반드시 3종을 함께 끊는다 (연쇄 삭제 경로 공용).
+     */
+    fun detachTeamMemberSchedule() {
+        this.teamMemberScheduleId = null
+        this.teamMemberScheduleSfid = null
+        this.teamMemberSchedule = null
+    }
 }

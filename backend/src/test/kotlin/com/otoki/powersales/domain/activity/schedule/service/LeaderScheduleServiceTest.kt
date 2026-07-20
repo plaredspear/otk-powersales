@@ -23,7 +23,9 @@ import com.otoki.powersales.domain.activity.schedule.exception.LeaderScheduleNot
 import com.otoki.powersales.domain.activity.schedule.exception.LeaderScheduleNotTeamMemberException
 import com.otoki.powersales.domain.activity.schedule.exception.LeaderScheduleTargetEmployeeInactiveException
 import com.otoki.powersales.domain.activity.schedule.exception.LeaderScheduleTargetEmployeeNotFoundException
+import com.otoki.powersales.domain.activity.promotion.entity.PromotionEmployee
 import com.otoki.powersales.domain.activity.promotion.repository.PromotionEmployeeRepository
+import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.domain.activity.promotion.service.PromotionSchedulesUpsertHelper
 import com.otoki.powersales.domain.activity.schedule.service.TeamMemberScheduleCascadeHelper
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -37,9 +39,12 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 import java.util.Optional
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 
 @DisplayName("LeaderScheduleService 테스트")
 class LeaderScheduleServiceTest {
@@ -386,6 +391,45 @@ class LeaderScheduleServiceTest {
 
             assertThatThrownBy { leaderScheduleService.getAccounts(nonLeader.id, null) }
                 .isInstanceOf(LeaderScheduleNotLeaderException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteEventAssignment - 조장 행사 일정 삭제")
+    inner class DeleteEventAssignmentTests {
+
+        @Test
+        @DisplayName("정상 삭제 - PE 삭제 → flush → TMS cascade 순서 (auto-flush dangling reference 회피, admin deleteEmployee 정합)")
+        fun delete_success_peDeleteThenCascadeOrder() {
+            // Given
+            val leader = createEmployee(id = 4001, authority = AppAuthority.LEADER, costCenterCode = "C001")
+            val target = createEmployee(id = 5012, authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "활동")
+            val pe = PromotionEmployee(
+                id = 7L, promotionId = 10L, employeeId = target.id, teamMemberScheduleId = 100L
+            )
+            val schedule = TeamMemberSchedule(
+                id = 100L, employee = target,
+                workingCategory1 = WorkingCategory1.EVENT, promotionEmployee = pe
+            )
+
+            every { employeeRepository.findById(leader.id) } returns Optional.of(leader)
+            every { teamMemberScheduleRepository.findById(100L) } returns Optional.of(schedule)
+            every { promotionEmployeeRepository.delete(pe) } just Runs
+            every { promotionEmployeeRepository.flush() } just Runs
+            every {
+                teamMemberScheduleCascadeHelper.cascadeDeleteByIds(actorIsAdminGrade = false, listOf(100L))
+            } just Runs
+
+            // When
+            leaderScheduleService.deleteEventAssignment(leader.id, 100L)
+
+            // Then — cascade 내부 refreshIntegration SELECT 의 auto-flush 가 PE dangling reference 를
+            // 만나지 않도록, PE 삭제·flush 가 cascade 보다 반드시 선행해야 한다.
+            verifyOrder {
+                promotionEmployeeRepository.delete(pe)
+                promotionEmployeeRepository.flush()
+                teamMemberScheduleCascadeHelper.cascadeDeleteByIds(actorIsAdminGrade = false, listOf(100L))
+            }
         }
     }
 

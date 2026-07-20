@@ -665,13 +665,18 @@ class AdminPromotionService(
     private fun resetSchedulesForPromotion(principal: WebUserPrincipal, promotionId: Long) {
         val employees = promotionEmployeeRepository.findByPromotionId(promotionId)
         val scheduleIds = employees.mapNotNull { it.teamMemberScheduleId }
-        teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, scheduleIds)
-        employees.forEach { pe ->
-            if (pe.teamMemberScheduleId != null) {
-                pe.teamMemberScheduleId = null
-                promotionEmployeeRepository.save(pe)
-            }
+
+        // cascade 내부 refreshIntegration 의 SELECT auto-flush 시점에 PE 가 삭제될 schedule 을
+        // 참조하면 TransientPropertyValueException — 참조 3종(id/sfid/연관)을 먼저 끊고 flush 한 뒤
+        // cascade 한다 (AdminPromotionEmployeeService.removeScheduleOnCriticalFieldChange 와 동일 순서).
+        val detached = employees.filter { it.teamMemberScheduleId != null }
+        if (detached.isNotEmpty()) {
+            detached.forEach { it.detachTeamMemberSchedule() }
+            promotionEmployeeRepository.saveAll(detached)
+            promotionEmployeeRepository.flush()
         }
+
+        teamMemberScheduleCascadeHelper.cascadeDeleteByIds(principal, scheduleIds)
     }
 
     private fun parsePromotionType(value: String?): PromotionType? {
