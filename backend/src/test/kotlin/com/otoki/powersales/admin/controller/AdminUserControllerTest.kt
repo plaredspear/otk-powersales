@@ -202,6 +202,7 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
             val response = AdminUserPasswordResetResponse(
                 userId = 5L,
                 username = "kim@otokims.co.kr",
+                employeeCode = "100123",
                 temporaryPasswordIssued = true,
                 passwordChangeRequired = true,
                 resetAt = java.time.LocalDateTime.of(2026, 5, 14, 14, 30)
@@ -211,6 +212,8 @@ class AdminUserControllerTest : AdminControllerTestSupport() {
             mockMvc.perform(post("/api/v1/admin/users/5/reset-password"))
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.data.userId").value(5L))
+                // 화면이 임시 비밀번호("{사번}@pwrs") 를 재조립할 수 있도록 사번을 함께 내려준다.
+                .andExpect(jsonPath("$.data.employeeCode").value("100123"))
                 .andExpect(jsonPath("$.message").value("비밀번호가 초기화되었습니다"))
         }
 

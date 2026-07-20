@@ -127,9 +127,9 @@ export async function getHerokuSfidFkResolveProgress(): Promise<FkResolveProgres
 /**
  * EmployeeInfo(mobile) 초기 비밀번호 BCrypt hash 적재.
  *
- * SF `POST /sf-migration/stage2/password` (User.password) 와 대칭이며 **동일한 초기 평문 상수**
- * (`SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD` = `pwrs1234!`) 를 공유한다 — web(User) /
- * mobile(EmployeeInfo) 어느 쪽으로 로그인해도 초기 비밀번호가 같도록 보장하기 위함.
+ * SF `POST /sf-migration/stage2/password` (User.password) 와 대칭이며 **동일한 사번 기반 발급 규칙**
+ * (`TemporaryPasswordPolicy` = `{사번}@pwrs`) 을 공유한다 — web(User) / mobile(EmployeeInfo)
+ * 어느 쪽으로 로그인해도 초기 비밀번호가 같도록 보장하기 위함.
  *
  * 대상은 `password IS NULL OR password = ''` 인 employee_info row (이미 채워진 row 는 skip — 멱등).
  * `password_change_required = TRUE` 를 함께 설정해 최초 로그인 시 변경을 강제한다. BCrypt salt 가

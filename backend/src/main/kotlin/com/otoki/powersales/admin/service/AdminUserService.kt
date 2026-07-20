@@ -7,6 +7,7 @@ import com.otoki.powersales.admin.dto.AdminUserPasswordResetResponse
 import com.otoki.powersales.admin.dto.AdminUserProfileOption
 import com.otoki.powersales.admin.exception.AdminUserNotFoundException
 import com.otoki.powersales.admin.exception.CannotDeactivateSelfException
+import com.otoki.powersales.platform.auth.policy.TemporaryPasswordPolicy
 import com.otoki.powersales.platform.auth.repository.ProfileRepository
 import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.user.repository.UserRepository
@@ -20,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional
  * web admin User 관리 화면 서비스.
  *
  * - 목록/상세 조회 (USER_READ)
- * - 비밀번호 임시 리셋 → "pwrs1234!" BCrypt 해시 + passwordChangeRequired = true
+ * - 비밀번호 임시 리셋 → "{사번}@pwrs" ([TemporaryPasswordPolicy]) BCrypt 해시 + passwordChangeRequired = true.
+ *   사원과 매칭되지 않아 `employeeCode` 가 없는 순수 관리자 계정은 종전 고정값으로 되돌아간다.
  * - 활성/비활성 토글 — 자기 자신 비활성화 시도는 차단
  *
  * 권한 게이트는 컨트롤러 단의 `@RequiresPermission` 가 처리하며, 본 서비스는 진입 시점에
@@ -82,7 +84,7 @@ class AdminUserService(
         val user = userRepository.findById(userId)
             .orElseThrow { AdminUserNotFoundException(userId) }
 
-        val encoded = passwordEncoder.encode(TEMPORARY_PASSWORD)!!
+        val encoded = passwordEncoder.encode(TemporaryPasswordPolicy.forEmployeeCode(user.employeeCode))!!
         user.password = encoded
         user.passwordChangeRequired = true
 
@@ -114,9 +116,5 @@ class AdminUserService(
             user.username,
             isActive
         )
-    }
-
-    companion object {
-        const val TEMPORARY_PASSWORD = "pwrs1234!"
     }
 }

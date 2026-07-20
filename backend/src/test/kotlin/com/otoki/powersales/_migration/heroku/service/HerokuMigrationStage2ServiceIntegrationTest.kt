@@ -1,6 +1,5 @@
 package com.otoki.powersales._migration.heroku.service
 
-import com.otoki.powersales._migration.sf.service.SfMigrationStage2Service
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import org.assertj.core.api.Assertions.assertThat
@@ -52,6 +51,7 @@ class HerokuMigrationStage2ServiceIntegrationTest {
 
         em.createNativeQuery("CREATE SCHEMA IF NOT EXISTS powersales").executeUpdate()
         em.createNativeQuery("DROP TABLE IF EXISTS powersales.employee_info").executeUpdate()
+        em.createNativeQuery("DROP TABLE IF EXISTS powersales.employee").executeUpdate()
         em.createNativeQuery(
             """
             CREATE TABLE powersales.employee_info (
@@ -61,12 +61,25 @@ class HerokuMigrationStage2ServiceIntegrationTest {
             )
             """.trimIndent()
         ).executeUpdate()
+        // 사번 기반 초기 비밀번호 산출을 위해 employee 조인 대상 테이블도 생성.
+        em.createNativeQuery(
+            """
+            CREATE TABLE powersales.employee (
+                employee_id BIGINT PRIMARY KEY,
+                employee_code VARCHAR(20)
+            )
+            """.trimIndent()
+        ).executeUpdate()
     }
 
     @Test
     @Transactional
-    @DisplayName("password — password NULL/'' 인 employee_info 를 고정 상수 BCrypt 로 채움 + 멱등")
+    @DisplayName("password — password NULL/'' 인 employee_info 를 사번 기반 BCrypt 로 채움 + 멱등")
     fun runPasswordHash() {
+        em.createNativeQuery("INSERT INTO powersales.employee (employee_id, employee_code) VALUES (1, 'E100')").executeUpdate()
+        em.createNativeQuery("INSERT INTO powersales.employee (employee_id, employee_code) VALUES (2, 'E101')").executeUpdate()
+        em.createNativeQuery("INSERT INTO powersales.employee (employee_id, employee_code) VALUES (3, 'E102')").executeUpdate()
+
         // E1: password NULL → 대상
         em.createNativeQuery("INSERT INTO powersales.employee_info (employee_id, password) VALUES (1, NULL)").executeUpdate()
         // E2: password '' → 대상
@@ -79,14 +92,14 @@ class HerokuMigrationStage2ServiceIntegrationTest {
         assertThat(response.substep).isEqualTo("password")
         assertThat(response.totalRowsAffected).isEqualTo(2)
 
-        val initial = SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD
         val pw1 = strOf("SELECT password FROM powersales.employee_info WHERE employee_id = 1")
         val pw2 = strOf("SELECT password FROM powersales.employee_info WHERE employee_id = 2")
         assertThat(pw1).startsWith("\$2a\$")
         assertThat(pw2).startsWith("\$2a\$")
-        // 평문은 SF User.password 와 동일한 고정 공통 상수. salt 랜덤이라 hash 는 사용자별로 다름.
-        assertThat(BCryptPasswordEncoder().matches(initial, pw1)).isTrue()
-        assertThat(BCryptPasswordEncoder().matches(initial, pw2)).isTrue()
+        // 평문은 SF User.password 와 동일한 사번 기반 규칙 "{사번}@pwrs" — row 마다 다르다.
+        assertThat(BCryptPasswordEncoder().matches("E100@pwrs", pw1)).isTrue()
+        assertThat(BCryptPasswordEncoder().matches("E101@pwrs", pw2)).isTrue()
+        assertThat(BCryptPasswordEncoder().matches("E101@pwrs", pw1)).isFalse()
         assertThat(pw1).isNotEqualTo(pw2)
 
         // password_change_required 강제 변경 플래그 설정 확인.

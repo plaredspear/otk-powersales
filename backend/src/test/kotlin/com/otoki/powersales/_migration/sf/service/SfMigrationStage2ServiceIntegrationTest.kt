@@ -211,7 +211,7 @@ class SfMigrationStage2ServiceIntegrationTest {
 
     @Test
     @Transactional
-    @DisplayName("Stage 2-C password — sfid IS NOT NULL + password NULL 인 user 의 password 를 고정 상수 BCrypt 로 채움")
+    @DisplayName("Stage 2-C password — sfid IS NOT NULL + password NULL 인 user 의 password 를 사번 기반 BCrypt 로 채움")
     fun runPasswordHash() {
         em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, sfid) VALUES ('E100', '005AAAAAA000001AAA')").executeUpdate()
         em.createNativeQuery("INSERT INTO powersales.\"user\" (employee_code, sfid, password) VALUES ('E101', '005AAAAAA000002AAA', '')").executeUpdate()
@@ -223,14 +223,15 @@ class SfMigrationStage2ServiceIntegrationTest {
         assertThat(response.substep).isEqualTo("password")
         assertThat(response.totalRowsAffected).isEqualTo(2)
 
-        val initial = SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD
         val pw100 = strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'E100'")
         val pw101 = strOf("SELECT password FROM powersales.\"user\" WHERE employee_code = 'E101'")
         assertThat(pw100).startsWith("\$2a\$")
         assertThat(pw101).startsWith("\$2a\$")
-        // 평문은 사번이 아니라 고정 공통 상수. salt 랜덤이라 hash 는 사용자별로 다름.
-        assertThat(BCryptPasswordEncoder().matches(initial, pw100)).isTrue()
-        assertThat(BCryptPasswordEncoder().matches(initial, pw101)).isTrue()
+        // 평문은 사번 기반 "{사번}@pwrs" — row 마다 다르다.
+        assertThat(BCryptPasswordEncoder().matches("E100@pwrs", pw100)).isTrue()
+        assertThat(BCryptPasswordEncoder().matches("E101@pwrs", pw101)).isTrue()
+        // 다른 사번의 평문이나 사번 자체로는 매칭되지 않는다.
+        assertThat(BCryptPasswordEncoder().matches("E101@pwrs", pw100)).isFalse()
         assertThat(BCryptPasswordEncoder().matches("E100", pw100)).isFalse()
         assertThat(pw100).isNotEqualTo(pw101)
 

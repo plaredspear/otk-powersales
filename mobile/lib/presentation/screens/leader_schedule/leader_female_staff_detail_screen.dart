@@ -281,7 +281,7 @@ class _LeaderFemaleStaffDetailScreenState
         _actionButton(
           icon: Icons.lock_reset,
           label: '비밀번호 초기화',
-          description: "임시 비밀번호 'pwrs1234!' 로 초기화합니다.",
+          description: "임시 비밀번호 '${_temporaryPassword()}' 로 초기화합니다.",
           enabled: enabled,
           onTap: _onResetPassword,
         ),
@@ -339,11 +339,21 @@ class _LeaderFemaleStaffDetailScreenState
     );
   }
 
+  /// 임시 비밀번호 평문 (backend `TemporaryPasswordPolicy` 미러 — `{사번}@pwrs`).
+  ///
+  /// 초기화 API 는 평문을 응답에 담지 않으므로 대상자의 사번으로 동일 규칙을 재조립해 안내한다.
+  /// 사번이 비어 있는 계정은 종전 고정값으로 되돌아간다.
+  String _temporaryPassword() {
+    final code = member.employeeCode.trim();
+    return code.isEmpty ? 'pwrs1234!' : '$code@pwrs';
+  }
+
   Future<void> _onResetPassword() async {
+    final temporaryPassword = _temporaryPassword();
     final ok = await _confirm(
       title: '비밀번호 초기화',
       message:
-          "${member.name}(${member.employeeCode})님의 비밀번호를 임시 비밀번호 'pwrs1234!' 로 초기화합니다.\n"
+          "${member.name}(${member.employeeCode})님의 비밀번호를 임시 비밀번호 '$temporaryPassword' 로 초기화합니다.\n"
           '사원은 다음 로그인 시 비밀번호 변경을 요구받습니다.',
     );
     if (ok != true) return;
@@ -352,7 +362,7 @@ class _LeaderFemaleStaffDetailScreenState
           .read(leaderScheduleRepositoryProvider)
           .resetTeamMemberPassword(member.id),
       successMessage:
-          "비밀번호가 초기화되었습니다. 임시 비밀번호 'pwrs1234!' 를 사원에게 전달해 주세요.",
+          "비밀번호가 초기화되었습니다. 임시 비밀번호 '$temporaryPassword' 를 사원에게 전달해 주세요.",
     );
   }
 

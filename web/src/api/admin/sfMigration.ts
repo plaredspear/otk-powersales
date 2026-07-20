@@ -223,7 +223,7 @@ export async function runPicklistColumn(column: PicklistColumn): Promise<Picklis
  * Stage 2-C — User 초기 비밀번호 BCrypt hash 적재.
  *
  * SF 는 비밀번호를 단방향 hash 로만 보관해 추출 자체가 불가능하므로, 마이그레이션 대상 user 의
- * 비밀번호는 이전되지 않고 고정 초기 평문 (`pwrs1234!`) 의 BCrypt hash 로 새로 발급된다.
+ * 비밀번호는 이전되지 않고 사번 기반 초기 평문 (`{사번}@pwrs`) 의 BCrypt hash 로 새로 발급된다.
  * 대상은 `sfid IS NOT NULL AND (password IS NULL OR password = '')` 인 row (Stage 1 이 NOT NULL
  * 제약 회피용으로 `''` placeholder 를 넣어둔 상태) — 이미 채워진 row 는 skip 이라 멱등이다.
  *

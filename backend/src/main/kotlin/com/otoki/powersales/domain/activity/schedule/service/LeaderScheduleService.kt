@@ -321,7 +321,7 @@ class LeaderScheduleService(
     }
 
     /**
-     * 조장 — 본인 팀원(여사원) 비밀번호 임시 초기화 (임시비번 `pwrs1234!` + 강제 변경).
+     * 조장 — 본인 팀원(여사원) 비밀번호 임시 초기화 (임시비번 `{사번}@pwrs` + 강제 변경).
      *
      * 레거시 SF `EmployeePasswordReset` Quick Action(조장 레이아웃) 을 신규 모바일 조장 경로로 이관.
      * 본인 지점 소속 검증 후 [AdminEmployeeCredentialService.resetPassword] 에 위임.

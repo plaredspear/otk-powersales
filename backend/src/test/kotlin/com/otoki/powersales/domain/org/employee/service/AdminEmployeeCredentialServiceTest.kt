@@ -117,11 +117,11 @@ class AdminEmployeeCredentialServiceTest {
     inner class ResetPassword {
 
         @Test
-        @DisplayName("정상 - 임시 비밀번호 BCrypt 해시 저장 + passwordChangeRequired=true")
+        @DisplayName("정상 - 사번 기반 임시 비밀번호 BCrypt 해시 저장 + passwordChangeRequired=true")
         fun success() {
             val employee = activeEmployee()
             every { employeeRepository.findById(12345L) } returns Optional.of(employee)
-            every { passwordEncoder.encode(AdminEmployeeCredentialService.TEMPORARY_PASSWORD) } returns "BCRYPT_HASHED_1234"
+            every { passwordEncoder.encode("100123@pwrs") } returns "BCRYPT_HASHED_1234"
 
             val response = service.resetPassword(12345L)
 
@@ -137,11 +137,13 @@ class AdminEmployeeCredentialServiceTest {
         fun responseDoesNotIncludePlaintextPassword() {
             val employee = activeEmployee()
             every { employeeRepository.findById(12345L) } returns Optional.of(employee)
-            every { passwordEncoder.encode(AdminEmployeeCredentialService.TEMPORARY_PASSWORD) } returns "BCRYPT_HASHED"
+            every { passwordEncoder.encode("100123@pwrs") } returns "BCRYPT_HASHED"
 
             val response = service.resetPassword(12345L)
 
-            assertThat(response.toString()).doesNotContain("pwrs1234!")
+            // 사번(employeeCode) 은 응답에 담기되, 조립된 평문 "100123@pwrs" 자체는 노출하지 않는다.
+            assertThat(response.toString()).doesNotContain("100123@pwrs")
+            assertThat(response.toString()).doesNotContain("BCRYPT_HASHED")
         }
 
         @Test

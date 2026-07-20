@@ -21,10 +21,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { usePermission } from '@/hooks/usePermission';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
+import { temporaryPasswordFor } from '@/lib/temporaryPassword';
 
 const { Paragraph, Text } = Typography;
 
-const TEMPORARY_PASSWORD = 'pwrs1234!';
 const SELF_DEACTIVATE_TOOLTIP = '자기 자신 계정은 비활성화할 수 없습니다.';
 
 export default function UserDetailPage() {
@@ -91,7 +91,7 @@ export default function UserDetailPage() {
       await resetMutation.mutateAsync(user.id);
       notification.success({
         message: '비밀번호가 초기화되었습니다.',
-        description: `임시 비밀번호 '${TEMPORARY_PASSWORD}' 를 사용자에게 전달해 주세요. 사용자는 다음 로그인 시 비밀번호 변경을 요구받습니다.`,
+        description: `임시 비밀번호 '${temporaryPasswordFor(user.employeeCode)}' 를 사용자에게 전달해 주세요. 사용자는 다음 로그인 시 비밀번호 변경을 요구받습니다.`,
         duration: 10,
       });
       setResetOpen(false);
@@ -209,7 +209,7 @@ export default function UserDetailPage() {
           description={
             <>
               <Text strong copyable style={{ fontSize: 20 }}>
-                {TEMPORARY_PASSWORD}
+                {temporaryPasswordFor(user.employeeCode)}
               </Text>
               <Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
                 사용자 본인에게 별도 전달해 주세요.

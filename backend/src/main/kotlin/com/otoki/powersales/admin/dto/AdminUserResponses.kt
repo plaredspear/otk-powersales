@@ -107,6 +107,8 @@ data class AdminUserDetailResponse(
 data class AdminUserPasswordResetResponse(
     val userId: Long,
     val username: String,
+    /** 화면이 임시 비밀번호(`{사번}@pwrs`) 를 재조립해 안내하기 위한 사번. 미매칭 계정은 null. */
+    val employeeCode: String?,
     val temporaryPasswordIssued: Boolean,
     val passwordChangeRequired: Boolean,
     val resetAt: LocalDateTime
@@ -116,6 +118,7 @@ data class AdminUserPasswordResetResponse(
             AdminUserPasswordResetResponse(
                 userId = user.id,
                 username = user.username,
+                employeeCode = user.employeeCode,
                 temporaryPasswordIssued = true,
                 passwordChangeRequired = true,
                 resetAt = resetAt

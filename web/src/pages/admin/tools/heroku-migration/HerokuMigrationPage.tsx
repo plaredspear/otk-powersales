@@ -283,14 +283,14 @@ function HerokuPasswordHashCard() {
     <Card title="초기 비밀번호 적재 (BCrypt) — EmployeeInfo" style={{ marginTop: 24 }}>
       <Paragraph type="secondary">
         레거시 비밀번호는 이전되지 않고, <Text code>employee_info.password</Text> 를{' '}
-        <Text strong>고정 초기 평문</Text> (<Text code>pwrs1234!</Text>) 의 BCrypt hash 로 새로
-        발급한다. 대상은 <Text code>password IS NULL OR password = &apos;&apos;</Text> 인 row —
+        <Text strong>사번 기반 초기 평문</Text> (<Text code>{'{사번}@pwrs'}</Text>) 의 BCrypt hash 로
+        새로 발급한다. 대상은 <Text code>password IS NULL OR password = &apos;&apos;</Text> 인 row —
         이미 채워진 row 는 skip 이라 <Text strong>멱등</Text>이다.{' '}
         <Text code>password_change_required = TRUE</Text> 를 함께 설정해 최초 로그인 시 비밀번호
         변경을 강제한다.
         <br />
-        SF 화면의 <Text strong>Stage 2-C (User.password)</Text> 와 동일한 초기 평문 상수를 공유하므로
-        web / mobile 어느 쪽으로 로그인해도 초기 비밀번호가 같다. 다만{' '}
+        SF 화면의 <Text strong>Stage 2-C (User.password)</Text> 와 동일한 사번 기반 발급 규칙을
+        공유하므로 web / mobile 어느 쪽으로 로그인해도 초기 비밀번호가 같다. 다만{' '}
         <Text strong>대상 테이블이 다르므로 두 화면에서 각각 1회씩 실행</Text>해야 한다. 동기 실행 —
         row 별 개별 encode 라 사원 수에 비례해 시간이 걸린다.
       </Paragraph>
@@ -300,7 +300,7 @@ function HerokuPasswordHashCard() {
         showIcon
         style={{ marginBottom: 16 }}
         message="런칭 공지 필요"
-        description="초기 비밀번호가 전 사용자 공통 고정값이므로, 사용자에게 사번 + pwrs1234! 로 로그인 후 즉시 변경하도록 안내해야 한다."
+        description="초기 비밀번호가 사번으로부터 그대로 유추 가능하므로, 사용자에게 사번 + '사번@pwrs' 로 로그인 후 즉시 변경하도록 안내해야 한다."
       />
 
       <Space>

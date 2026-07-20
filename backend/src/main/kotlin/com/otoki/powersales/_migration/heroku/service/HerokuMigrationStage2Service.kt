@@ -3,6 +3,7 @@ package com.otoki.powersales._migration.heroku.service
 import com.otoki.powersales._migration.sf.dto.SfMigrationStage2Response
 import com.otoki.powersales._migration.sf.dto.SubstepResult
 import com.otoki.powersales._migration.sf.service.SfMigrationStage2Service
+import com.otoki.powersales.platform.auth.policy.TemporaryPasswordPolicy
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -27,27 +28,30 @@ class HerokuMigrationStage2Service(
 ) {
 
     /**
-     * password — 마이그레이션 대상 EmployeeInfo 의 초기 비밀번호를
-     * [SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD] 고정 상수의 BCrypt hash 로 채운다.
+     * password — 마이그레이션 대상 EmployeeInfo 의 초기 비밀번호를 사번 기반
+     * `"{사번}@pwrs"` ([TemporaryPasswordPolicy]) 의 BCrypt hash 로 채운다.
      *
      * 대상: `password IS NULL OR password = ''` 인 employee_info row (Heroku Stage 1 적재분).
      * 멱등 (이미 채워진 row skip). `password_change_required = TRUE` 로 최초 로그인 시 강제 변경 유도.
      *
-     * SF User.password 와 동일 상수를 공유하므로 web / mobile 초기 비밀번호가 일치한다. BCrypt salt 는
-     * 매 encode 마다 랜덤이라 사용자별 hash 는 다르지만 평문은 모두 동일하다 → row 별로 encode 한다.
+     * SF User.password 와 동일 규칙을 공유하므로 같은 사번이면 web / mobile 초기 비밀번호가 일치한다.
+     * 평문이 사번마다 다르므로 row 별로 encode 한다. 사번이 없는 row 는 정책상 고정 fallback 이 적용된다.
      */
     @Transactional
     fun runPasswordHash(): SfMigrationStage2Response {
-        val idsQuery = em.createNativeQuery(
-            "SELECT employee_id FROM powersales.employee_info " +
-                "WHERE password IS NULL OR password = ''"
+        val rowsQuery = em.createNativeQuery(
+            "SELECT i.employee_id, e.employee_code FROM powersales.employee_info i " +
+                "JOIN powersales.employee e ON e.employee_id = i.employee_id " +
+                "WHERE i.password IS NULL OR i.password = ''"
         )
         @Suppress("UNCHECKED_CAST")
-        val ids = (idsQuery.resultList as List<Number>).map { it.toLong() }
+        val rows = rowsQuery.resultList as List<Array<Any?>>
 
         var totalUpdated = 0
-        for (id in ids) {
-            val hash = passwordEncoder.encode(SfMigrationStage2Service.MIGRATION_INITIAL_PASSWORD)
+        for (row in rows) {
+            val id = (row[0] as Number).toLong()
+            val employeeCode = row[1] as String?
+            val hash = passwordEncoder.encode(TemporaryPasswordPolicy.forEmployeeCode(employeeCode))
             val updated = em.createNativeQuery(
                 "UPDATE powersales.employee_info SET password = :hash, password_change_required = TRUE " +
                     "WHERE employee_id = :id AND (password IS NULL OR password = '')"

@@ -7,6 +7,7 @@ import com.otoki.powersales._migration.sf.dto.SubstepResult
 import com.otoki.powersales.platform.auth.permission.LeaderProfileFlagsSeed
 import com.otoki.powersales.platform.auth.permission.SystemAdminGrantList
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.platform.auth.policy.TemporaryPasswordPolicy
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -22,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional
  * 구현 substep:
  * - 2-B picklist : User.cost_center_code derived 캐시 동기화만 (Employee.role enum 변환은 spec #807 폐기)
  * - 2-C password : BCrypt password hash (sfid IS NOT NULL AND password NULL 인 user).
- *                  초기 평문은 고정 상수 [MIGRATION_INITIAL_PASSWORD] (최초 로그인 시 변경 강제).
+ *                  초기 평문은 사번 기반 `"{사번}@pwrs"` ([TemporaryPasswordPolicy]) — 최초 로그인 시 변경 강제.
  *
  * 2-A FK resolve 는 별도 클래스 (SfMigrationStage2FkService) 로 분리.
  * 2-D permission 은 spec #801 SF 권한 모델 전면 적용으로 폐기 — user_permission 테이블 자체 폐기.
@@ -37,15 +38,6 @@ class SfMigrationStage2Service(
 ) {
 
     companion object {
-        /**
-         * 마이그레이션 대상 사용자의 초기 비밀번호 평문 (BCrypt 로 hash 되어 적재).
-         *
-         * User(web) / EmployeeInfo(mobile) 양쪽 password substep 이 동일 값을 공유한다
-         * ([com.otoki.powersales._migration.heroku.service.HerokuMigrationStage2Service] 재사용).
-         * 적재 시 `password_change_required = TRUE` 로 최초 로그인 시 강제 변경을 유도한다.
-         */
-        const val MIGRATION_INITIAL_PASSWORD = "pwrs1234!"
-
         /**
          * `leader-profile-flags` substep 의 적용 대상 profile.name.
          *
@@ -313,14 +305,13 @@ class SfMigrationStage2Service(
     }
 
     /**
-     * 2-C password — SF 마이그레이션 대상 user 의 초기 비밀번호를 [MIGRATION_INITIAL_PASSWORD]
-     * 고정 상수의 BCrypt hash 로 채운다.
+     * 2-C password — SF 마이그레이션 대상 user 의 초기 비밀번호를 사번 기반
+     * `"{사번}@pwrs"` ([TemporaryPasswordPolicy]) 의 BCrypt hash 로 채운다.
      *
      * 대상: `sfid IS NOT NULL AND (password IS NULL OR password = '')`. 멱등 (이미 채워진 row skip).
      * `password_change_required = TRUE` 로 최초 로그인 시 강제 변경 유도.
      *
-     * BCrypt salt 는 매 encode 마다 랜덤이라 사용자별 hash 는 서로 다르지만 평문은 모두 동일하다.
-     * 사용자마다 hash 가 달라야 하므로 상수 hash 를 재사용하지 않고 row 별로 encode 한다.
+     * 평문이 사번마다 다르므로 row 별로 encode 한다.
      */
     @Transactional
     fun runPasswordHash(): SfMigrationStage2Response {
@@ -334,7 +325,7 @@ class SfMigrationStage2Service(
 
         var totalUpdated = 0
         for (code in codes) {
-            val hash = passwordEncoder.encode(MIGRATION_INITIAL_PASSWORD)
+            val hash = passwordEncoder.encode(TemporaryPasswordPolicy.forEmployeeCode(code))
             val updated = em.createNativeQuery(
                 "UPDATE powersales.\"user\" SET password = :hash, password_change_required = TRUE " +
                     "WHERE employee_code = :code AND (password IS NULL OR password = '')"

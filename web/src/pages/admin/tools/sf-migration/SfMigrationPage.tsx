@@ -764,20 +764,19 @@ export default function SfMigrationPage() {
       <Card title="Stage 2-C — 초기 비밀번호 적재 (BCrypt)" style={{ marginTop: 24 }}>
         <Paragraph type="secondary">
           SF 는 비밀번호를 <Text strong>단방향 hash 로만 보관</Text>해 추출 자체가 불가능하므로,
-          마이그레이션 대상 user 의 비밀번호는 이전되지 않고 <Text strong>고정 초기 평문</Text>{' '}
-          (<Text code>pwrs1234!</Text>) 의 BCrypt hash 로 새로 발급된다. 대상은{' '}
+          마이그레이션 대상 user 의 비밀번호는 이전되지 않고 <Text strong>사번 기반 초기 평문</Text>{' '}
+          (<Text code>{'{사번}@pwrs'}</Text>) 의 BCrypt hash 로 새로 발급된다. 대상은{' '}
           <Text code>sfid IS NOT NULL AND (password IS NULL OR password = &apos;&apos;)</Text> 인 row —
           Stage 1 이 NOT NULL 제약 회피용으로 넣어둔 <Text code>&apos;&apos;</Text> placeholder 를 덮어쓴다.
           이미 채워진 row 는 skip 이라 <Text strong>멱등</Text>이다.
           <br />
           <Text code>password_change_required = TRUE</Text> 를 함께 설정해 최초 로그인 시 비밀번호
-          변경을 강제한다. BCrypt salt 가 매 encode 마다 랜덤이라 사용자별 hash 는 서로 다르지만
-          평문은 모두 동일하다. 동기 실행 — row 별로 개별 encode 하므로{' '}
+          변경을 강제한다. 평문이 사번마다 다르므로 row 별로 개별 encode 한다. 동기 실행 —{' '}
           <Text strong>사원 수에 비례</Text>해 시간이 걸린다 (수천 건이면 수십 초).
           <br />
           본 카드는 <Text code>user</Text> (web) 만 처리한다. mobile 로그인에 쓰이는{' '}
           <Text code>employee_info</Text> 는 <Text strong>Heroku 마이그레이션 Stage 2</Text> 화면의
-          동명 카드에서 별도 실행해야 하며, 양쪽이 동일한 초기 평문 상수를 공유하므로 초기
+          동명 카드에서 별도 실행해야 하며, 양쪽이 동일한 사번 기반 발급 규칙을 공유하므로 초기
           비밀번호는 같다.
         </Paragraph>
 
@@ -786,7 +785,7 @@ export default function SfMigrationPage() {
           showIcon
           style={{ marginBottom: 16 }}
           message="런칭 공지 필요"
-          description="초기 비밀번호가 전 사용자 공통 고정값이므로, 사용자에게 사번 + pwrs1234! 로 로그인 후 즉시 변경하도록 안내해야 한다."
+          description="초기 비밀번호가 사번으로부터 그대로 유추 가능하므로, 사용자에게 사번 + '사번@pwrs' 로 로그인 후 즉시 변경하도록 안내해야 한다."
         />
 
         <Space>
