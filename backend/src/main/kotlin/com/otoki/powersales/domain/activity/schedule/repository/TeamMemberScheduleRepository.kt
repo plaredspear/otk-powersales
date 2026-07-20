@@ -172,6 +172,37 @@ interface TeamMemberScheduleRepository : JpaRepository<TeamMemberSchedule, Long>
     )
     fun getNextNameSeq(): Long
 
+    /**
+     * team_member_schedule.name 벌크 채번 — [getNextNameSeq] 를 [count] 건만큼 반복하는 것과 동일한
+     * 번호 구간(마지막 발급 번호)을 **쿼리 1회**로 확정한다.
+     *
+     * [getNextNameSeq] 는 호출마다 `MAX(regexp_replace(name, ...))` 로 team_member_schedule 전체를
+     * 스캔한다(해당 표현식 인덱스 없음). 행사 확정·연차 전개처럼 N 건을 한 번에 만드는 경로에서 건별
+     * 호출하면 전체 스캔이 N 회 반복돼 확정 응답이 느려진다. 벌크 경로는 MAX 보정을 **1회만** 수행하고
+     * 나머지 N-1 개는 시퀀스 증분(`setval(base + count)`)으로 확보한다.
+     *
+     * 반환값은 **구간의 마지막 번호**이며, 발급 구간은 `[반환값 - count + 1, 반환값]` 이다.
+     * setval 로 시퀀스를 구간 끝까지 밀어두므로 동시 요청과 번호가 겹치지 않는다(건별 호출과 동일 보장).
+     */
+    @Query(
+        value = """
+            SELECT setval(
+                'powersales.team_member_schedule_name_seq',
+                GREATEST(
+                    nextval('powersales.team_member_schedule_name_seq'),
+                    COALESCE(
+                        (SELECT MAX(NULLIF(regexp_replace(name, '\D', '', 'g'), '')::bigint)
+                           FROM powersales.team_member_schedule
+                          WHERE name ~ '^TS[0-9]+$'),
+                        0
+                    ) + 1
+                ) + (:count - 1)
+            )
+        """,
+        nativeQuery = true
+    )
+    fun allocateNameSeqBlock(@Param("count") count: Long): Long
+
     /** name 이 비어(NULL/공백) 채번이 필요한 일정 건수 — 백필 도구 preview 용. */
     @Query(
         value = "SELECT COUNT(*) FROM powersales.team_member_schedule WHERE name IS NULL OR name = ''",

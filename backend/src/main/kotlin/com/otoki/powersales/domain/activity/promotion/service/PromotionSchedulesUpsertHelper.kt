@@ -66,15 +66,14 @@ class PromotionSchedulesUpsertHelper(
         val scheduleDates = employees.mapNotNull { it.scheduleDate }.distinct()
         val peIds = employees.map { it.id }
 
-        val userByIdMap: Map<Long, Employee> = if (employeeIds.isNotEmpty()) {
-            employeeRepository.findAllById(employeeIds).associateBy { it.id }
-        } else emptyMap()
+        // 동일 인자 findAllById 를 두 번 호출하지 않도록 1회 조회 결과를 map/list 양쪽에 재사용한다.
+        val employeeEntities: List<Employee> = if (employeeIds.isNotEmpty()) {
+            employeeRepository.findAllById(employeeIds).toList()
+        } else emptyList()
+        val userByIdMap: Map<Long, Employee> = employeeEntities.associateBy { it.id }
 
         val existingTeamMemberSchedulesByPeId = teamMemberScheduleRepository.findByPromotionEmployeeIn(employees)
             .associateBy { it.promotionEmployee?.id }
-        val employeeEntities = if (employeeIds.isNotEmpty()) {
-            employeeRepository.findAllById(employeeIds)
-        } else emptyList()
         val existingTeamMemberSchedules = if (employeeEntities.isNotEmpty()) {
             teamMemberScheduleRepository.findByEmployeeInAndWorkingDateIn(employeeEntities, scheduleDates)
         } else emptyList()
@@ -90,6 +89,11 @@ class PromotionSchedulesUpsertHelper(
         // 레거시는 insert(beforeInsert) 시점에만 owner 를 지정하므로 신규 row 에만 적용한다.
         val ownerByCostCenterCode = teamMemberScheduleOwnerResolver
             .resolveOwnersByCostCenterCode(userByIdMap.values)
+
+        // name 채번은 신규 생성분 개수만큼 한 번에 발급받는다. 건별 채번은 쿼리마다 team_member_schedule
+        // 전체를 스캔(MAX(regexp_replace(name, ...)))하므로 확정 건수에 비례해 느려진다.
+        val newScheduleCount = employees.count { existingTeamMemberSchedulesByPeId[it.id] == null }
+        val nameIterator = teamMemberScheduleNameGenerator.nextBatch(newScheduleCount).iterator()
 
         val teamMemberSchedulesToSave = mutableListOf<TeamMemberSchedule>()
         for (pe in employees) {
@@ -110,7 +114,7 @@ class PromotionSchedulesUpsertHelper(
                 teamMemberSchedulesToSave.add(existing)
             } else {
                 val newTeamMemberSchedule = TeamMemberSchedule(
-                    name = teamMemberScheduleNameGenerator.next(),
+                    name = nameIterator.next(),
                     employee = empEntity,
                     account = promotion.account,
                     workingDate = pe.scheduleDate!!,

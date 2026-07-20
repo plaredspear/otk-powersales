@@ -57,6 +57,11 @@ class PromotionSchedulesUpsertHelperTest {
     init {
         every { teamMemberScheduleOwnerResolver.resolveOwnersByCostCenterCode(any()) } returns emptyMap()
         every { teamMemberScheduleNameGenerator.next() } returns "TS00000001"
+        // 확정 경로는 신규 생성분 개수만큼 벌크 채번한다.
+        every { teamMemberScheduleNameGenerator.nextBatch(any()) } answers {
+            val count = firstArg<Int>()
+            (1..count).map { "TS%08d".format(it) }
+        }
     }
 
     private val startDate = LocalDate.of(2026, 3, 1)

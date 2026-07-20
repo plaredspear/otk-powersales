@@ -84,6 +84,10 @@ class LeaderScheduleServiceTest {
 
     init {
         every { teamMemberScheduleNameGenerator.next() } returns "TS00000001"
+        every { teamMemberScheduleNameGenerator.nextBatch(any()) } answers {
+            val count = firstArg<Int>()
+            (1..count).map { "TS%08d".format(it) }
+        }
         every { teamMemberScheduleOwnerResolver.resolveOwner(any()) } returns null
     }
 
