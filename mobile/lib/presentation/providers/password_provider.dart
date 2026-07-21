@@ -1,33 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/datasources/auth_api_datasource.dart';
-import '../../data/repositories/password_repository_impl.dart';
 import '../../domain/entities/password_validation.dart';
-import '../../domain/repositories/password_repository.dart';
 import '../../domain/usecases/change_password_usecase.dart';
-import '../../domain/usecases/verify_current_password_usecase.dart';
 import 'auth_provider.dart'; // auth_provider에서 changePasswordUseCaseProvider 재사용
-import '../../core/network/dio_provider.dart';
-
-// --- Repository & DataSource Providers ---
-
-/// Password Repository Provider (비밀번호 검증용)
-final passwordRepositoryProvider = Provider<PasswordRepository>((ref) {
-  final dio = ref.watch(dioProvider);
-  final authRemoteDataSource = AuthApiDataSource(dio);
-  final localDataSource = ref.watch(authLocalDataSourceProvider);
-  return PasswordRepositoryImpl(
-    remoteDataSource: authRemoteDataSource,
-    localDataSource: localDataSource,
-  );
-});
-
-/// VerifyCurrentPasswordUseCase Provider
-final verifyCurrentPasswordUseCaseProvider =
-    Provider<VerifyCurrentPasswordUseCase>((ref) {
-  final repository = ref.watch(passwordRepositoryProvider);
-  return VerifyCurrentPasswordUseCase(repository);
-});
 
 // --- Password Validation Provider ---
 
@@ -39,57 +14,6 @@ final verifyCurrentPasswordUseCaseProvider =
 final passwordValidationProvider =
     Provider.family<PasswordValidation, String>((ref, password) {
   return PasswordValidation.fromPassword(password);
-});
-
-// --- Password Verification Notifier ---
-
-/// 현재 비밀번호 검증 상태 Notifier
-///
-/// POST /api/v1/mobile/auth/verify-password API를 호출하여
-/// 현재 비밀번호가 일치하는지 확인합니다.
-class PasswordVerificationNotifier
-    extends StateNotifier<AsyncValue<bool>> {
-  final VerifyCurrentPasswordUseCase _verifyUseCase;
-
-  PasswordVerificationNotifier({
-    required VerifyCurrentPasswordUseCase verifyUseCase,
-  })  : _verifyUseCase = verifyUseCase,
-        super(const AsyncValue.data(false));
-
-  /// 현재 비밀번호 검증
-  ///
-  /// [currentPassword]: 확인할 현재 비밀번호
-  ///
-  /// Returns: 검증 성공 시 true
-  ///
-  /// Throws: 비밀번호 불일치(서버 error.code=AUTH_CURRENT_PASSWORD_MISMATCH) /
-  /// 네트워크 오류 등은 예외로 전파한다. 호출측(VerifyPasswordPage)이
-  /// error.code 로 불일치와 그 밖의 오류를 구분해 안내하므로, 여기서 예외를
-  /// false 로 삼키지 않는다.
-  Future<bool> verify(String currentPassword) async {
-    state = const AsyncValue.loading();
-
-    try {
-      final isValid = await _verifyUseCase(currentPassword);
-      state = AsyncValue.data(isValid);
-      return isValid;
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
-      rethrow;
-    }
-  }
-
-  /// 상태 초기화
-  void reset() {
-    state = const AsyncValue.data(false);
-  }
-}
-
-/// PasswordVerificationNotifier Provider
-final passwordVerificationProvider = StateNotifierProvider<
-    PasswordVerificationNotifier, AsyncValue<bool>>((ref) {
-  final verifyUseCase = ref.watch(verifyCurrentPasswordUseCaseProvider);
-  return PasswordVerificationNotifier(verifyUseCase: verifyUseCase);
 });
 
 // --- Password Change Notifier ---

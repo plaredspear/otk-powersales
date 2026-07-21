@@ -111,6 +111,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   PasswordPolicyChecklist(
                     password: _newPasswordController.text,
                   ),
+                  _buildMatchFeedback(),
                   const SizedBox(height: AppSpacing.xxxl),
                   _buildChangeButton(authState.isLoading),
                 ],
@@ -126,9 +127,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     return TextFormField(
       controller: _newPasswordController,
       obscureText: true,
+      cursorColor: AppColors.black,
       decoration: InputDecoration(
         labelText: '새 비밀번호',
         hintText: '새 비밀번호를 입력해주세요',
+        floatingLabelStyle: const TextStyle(
+          color: AppColors.secondary,
+          fontWeight: FontWeight.w600,
+        ),
         prefixIcon: const Icon(Icons.lock_outline),
         filled: true,
         fillColor: AppColors.surfaceVariant,
@@ -167,9 +173,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       controller: _confirmPasswordController,
       focusNode: _confirmPasswordFocusNode,
       obscureText: true,
+      cursorColor: AppColors.black,
       decoration: InputDecoration(
         labelText: '새 비밀번호 확인',
         hintText: '새 비밀번호를 다시 입력해주세요',
+        floatingLabelStyle: const TextStyle(
+          color: AppColors.secondary,
+          fontWeight: FontWeight.w600,
+        ),
         prefixIcon: const Icon(Icons.lock_outline),
         filled: true,
         fillColor: AppColors.surfaceVariant,
@@ -204,6 +215,34 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     );
   }
 
+  /// 새 비밀번호와 확인 값의 일치 여부 실시간 피드백.
+  /// 확인 입력이 비어 있으면 표시하지 않는다.
+  Widget _buildMatchFeedback() {
+    if (_confirmPasswordController.text.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final isMatch =
+        _newPasswordController.text == _confirmPasswordController.text;
+    final color = isMatch ? AppColors.success : AppColors.error;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs, left: AppSpacing.xs),
+      child: Row(
+        children: [
+          Icon(
+            isMatch ? Icons.check_circle : Icons.cancel,
+            size: 16,
+            color: color,
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Text(
+            isMatch ? '비밀번호가 일치합니다' : '비밀번호가 일치하지 않습니다',
+            style: AppTypography.bodySmall.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildChangeButton(bool isLoading) {
     final canSubmit = !isLoading && _isFormValid;
     return SizedBox(
@@ -213,7 +252,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,
-          disabledBackgroundColor: AppColors.primaryLight,
+          disabledBackgroundColor: AppColors.divider,
+          disabledForegroundColor: AppColors.textTertiary,
           shape: RoundedRectangleBorder(
             borderRadius: AppSpacing.buttonBorderRadius,
           ),

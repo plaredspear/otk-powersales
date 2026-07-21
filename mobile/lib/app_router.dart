@@ -33,7 +33,6 @@ import 'presentation/pages/product_expiration_delete_page.dart';
 import 'presentation/pages/product_expiration_register_page.dart';
 import 'presentation/pages/product_expiration_edit_page.dart';
 import 'presentation/pages/change_password_page.dart';
-import 'presentation/pages/verify_password_page.dart';
 import 'presentation/pages/my_schedule_calendar_page.dart';
 import 'presentation/pages/my_schedule_detail_page.dart';
 import 'presentation/pages/profile_page.dart';
@@ -66,8 +65,7 @@ class AppRouter {
   static const String splash = '/splash';
   static const String login = '/login';
   static const String changePassword = '/change-password';
-  static const String verifyPassword = '/verify-password'; // F54: 현재 비밀번호 확인
-  static const String changePasswordNew = '/change-password-new'; // F54: 새 비밀번호 입력
+  static const String verifyPassword = '/verify-password'; // F54: 마이페이지 비밀번호 변경(단일 폼)
   static const String gpsConsent = '/gps-consent'; // F62: GPS 사용 동의
   static const String main = '/';
   static const String posSales = '/pos-sales';
@@ -125,12 +123,8 @@ class AppRouter {
         login: (context) => const LoginScreen(),
         changePassword: (context) => const ChangePasswordScreen(),
         gpsConsent: (context) => const GpsConsentScreen(), // F62: GPS 동의
-        verifyPassword: (context) => const VerifyPasswordPage(), // F54: 현재 비밀번호 확인
-        changePasswordNew: (context) { // F54: 새 비밀번호 입력
-          final currentPassword =
-              ModalRoute.of(context)!.settings.arguments as String;
-          return ChangePasswordPage(currentPassword: currentPassword);
-        },
+        // F54: 마이페이지 비밀번호 변경 (현재+새+새확인 단일 폼)
+        verifyPassword: (context) => const ChangePasswordPage(),
         main: (context) => const MainScreen(),
         posSales: (context) => const PosSalesScreen(),
         logisticsSales: (context) => const LogisticsSalesScreen(),
