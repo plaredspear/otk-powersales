@@ -189,7 +189,14 @@ class _SearchProductsTabState extends ConsumerState<SearchProductsTab> {
             .toList()
         : state.searchResults as List;
 
-    if (results.isEmpty && state.searchQuery.isEmpty) {
+    // 검색어와 분류가 모두 없을 때만 "검색하세요" 안내를 노출한다.
+    // 분류만 선택해도 검색이 실행되므로, 그 결과가 0건이면 "검색 결과 없음"으로 안내한다.
+    final categoryState =
+        widget.showCategoryFilter ? ref.read(productAddProvider) : null;
+    final hasCategoryFilter = (categoryState?.selectedMiddle?.isNotEmpty ?? false) ||
+        (categoryState?.selectedSub?.isNotEmpty ?? false);
+
+    if (results.isEmpty && state.searchQuery.isEmpty && !hasCategoryFilter) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

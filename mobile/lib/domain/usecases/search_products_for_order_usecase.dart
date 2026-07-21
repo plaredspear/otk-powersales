@@ -20,7 +20,11 @@ class SearchProductsForOrder {
     String? categoryMid,
     String? categorySub,
   }) async {
-    if (query.trim().isEmpty) {
+    // 검색어가 없어도 중/소분류가 지정되면 해당 분류 전체를 조회한다(분류검색 정합).
+    // 검색어·분류가 모두 없을 때만 서버 호출 없이 빈 결과를 반환한다.
+    final hasCategory = (categoryMid != null && categoryMid.trim().isNotEmpty) ||
+        (categorySub != null && categorySub.trim().isNotEmpty);
+    if (query.trim().isEmpty && !hasCategory) {
       return [];
     }
     return await _repository.searchProductsForOrder(

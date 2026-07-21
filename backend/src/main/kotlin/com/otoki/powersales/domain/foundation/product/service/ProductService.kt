@@ -131,7 +131,7 @@ class ProductService(
         size: Int,
         userId: Long
     ): Page<OrderProductDto> {
-        validateTextQuery(query)
+        validateOrderSearchCriteria(query, categoryMid, categorySub)
         validatePagination(page, size)
 
         val pageable = PageRequest.of(page, size)
@@ -190,6 +190,26 @@ class ProductService(
     private fun validateSearchType(type: String) {
         if (type !in VALID_SEARCH_TYPES) {
             throw InvalidSearchTypeException()
+        }
+    }
+
+    /**
+     * 주문 제품검색 파라미터 검증 — 검색어 또는 중/소분류 중 하나 이상이 있어야 한다.
+     *
+     * 중/소분류만 선택해도 해당 분류의 발주가능 제품 전체를 조회할 수 있도록 빈 검색어를 허용한다
+     * (레거시 분류검색 정합). 검색어가 있으면 최소 길이(2자)를 검증하고, 검색어·분류가 모두 없으면 거부한다.
+     */
+    private fun validateOrderSearchCriteria(query: String, categoryMid: String?, categorySub: String?) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) {
+            val hasCategory = !categoryMid.isNullOrBlank() || !categorySub.isNullOrBlank()
+            if (!hasCategory) {
+                throw InvalidSearchParameterException("검색어를 입력하거나 분류를 선택해주세요")
+            }
+            return
+        }
+        if (trimmed.length < MIN_TEXT_QUERY_LENGTH) {
+            throw InvalidSearchParameterException("검색어는 ${MIN_TEXT_QUERY_LENGTH}자 이상이어야 합니다")
         }
     }
 
