@@ -7,9 +7,9 @@ import './approval_status_badge.dart';
 /// 주문 요청 상태 설명 바텀시트
 ///
 /// 주문 상세 헤더의 "주문 요청 상태" 옆 info 아이콘 탭 시 표시.
-/// 상태 목록은 단일 진실인 [OrderStatusCode.filterOptions](전송/전송완료/전송실패/주문취소)에
-/// 맞추고, 각 상태의 의미를 라이프사이클(전송 → 전송완료 또는 전송실패 → 주문취소) 기준으로 설명한다.
-/// (표시명은 서버가 내려주며, `APPROVED` 는 백엔드가 "전송완료" 로 변환해 전송한다.)
+/// 상태 목록은 단일 진실인 [OrderStatusCode.filterOptions](전송/전송완료/전송실패/주문취소요청완료)에
+/// 맞추고, 각 상태의 의미를 라이프사이클(전송 → 전송완료 또는 전송실패 → 주문취소요청완료) 기준으로 설명한다.
+/// (표시명은 서버가 내려주며, `APPROVED`→"전송완료"·`CANCELED`→"주문취소요청완료" 로 백엔드가 변환해 전송한다.)
 class OrderStatusInfoSheet extends StatelessWidget {
   const OrderStatusInfoSheet({super.key});
 
@@ -18,7 +18,8 @@ class OrderStatusInfoSheet extends StatelessWidget {
     OrderStatusCode.sent: '주문 요청이 전송되어 접수 처리 중인 상태입니다.',
     OrderStatusCode.approved: '주문 요청이 정상적으로 전송·접수된 상태입니다.',
     OrderStatusCode.sendFailed: '주문 요청 전송에 실패한 상태입니다. 재주문이 필요합니다.',
-    OrderStatusCode.canceled: '전송 완료된 주문을 취소한 상태입니다.',
+    OrderStatusCode.canceled:
+        '전송 완료된 주문에 대해 취소를 요청한 상태입니다. SAP에서 취소 요청을 접수한 뒤 실제 취소 처리까지는 시간이 걸릴 수 있습니다.',
   };
 
   /// 바텀시트로 상태 설명 표시
@@ -121,28 +122,23 @@ class OrderStatusInfoSheet extends StatelessWidget {
         border: Border.all(color: AppColors.border),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 76,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: OrderRequestStatusBadge(
-                statusCode: code,
-                statusName: label,
-              ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OrderRequestStatusBadge(
+              statusCode: code,
+              statusName: label,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _descriptions[code] ?? '',
-              style: const TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: AppColors.textSecondary,
-              ),
+          const SizedBox(height: 8),
+          Text(
+            _descriptions[code] ?? '',
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: AppColors.textSecondary,
             ),
           ),
         ],

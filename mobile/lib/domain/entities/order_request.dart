@@ -39,7 +39,7 @@ abstract final class OrderStatusCode {
     (code: sent, label: '전송'),
     (code: approved, label: '전송완료'),
     (code: sendFailed, label: '전송실패'),
-    (code: canceled, label: '주문취소'),
+    (code: canceled, label: '주문취소요청완료'),
   ];
 }
 

@@ -32,13 +32,19 @@ enum class OrderRequestStatus(
     /**
      * API 응답 표시명 (모바일 노출용).
      *
-     * `APPROVED` 는 "전송완료" 로 내려준다 — 실제 승인은 SF/SAP 측 자동 처리라 원본 "승인완료" 가
-     * 영업사원에게 오해를 줄 수 있어 **응답 표시명만** 재정의한다.
+     * 원본 표시명이 영업사원에게 오해를 줄 수 있는 상태만 **응답 표시명을** 재정의한다:
+     *  - `APPROVED`("승인완료") → "전송완료" (실제 승인은 SF/SAP 측 자동 처리)
+     *  - `CANCELED`("주문취소") → "주문취소요청완료" (실제 취소는 SAP 접수 후 시간이 걸릴 수 있음)
+     *
      * DB 저장값(`OrderRequestStatusConverter`)·SF Picklist 매핑(`fromDisplayName`)·[toJson] 직렬화는
-     * [displayName]("승인완료")을 그대로 사용한다.
+     * [displayName](원본, 예: "승인완료"/"주문취소")을 그대로 사용한다.
      */
     val clientDisplayName: String
-        get() = if (this == APPROVED) "전송완료" else displayName
+        get() = when (this) {
+            APPROVED -> "전송완료"
+            CANCELED -> "주문취소요청완료"
+            else -> displayName
+        }
 
     companion object {
         /** 취소 가능 상태 (Spec #597). `DRAFT` / `CANCELED` 는 취소 불가. */
