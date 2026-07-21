@@ -18,7 +18,6 @@ import '../widgets/order/order_processing_status_section.dart';
 import '../widgets/order/ordered_item_expandable.dart';
 import '../widgets/order/ordered_item_list.dart';
 import '../widgets/order/rejected_item_list.dart';
-import '../widgets/order/resend_confirm_dialog.dart';
 import '../widgets/order/unfulfilled_item_list.dart';
 
 /// 주문 상세 페이지
@@ -28,7 +27,7 @@ import '../widgets/order/unfulfilled_item_list.dart';
 ///
 /// 제품 표시 UI 배치 (마감 전후 공통): 미납 제품 → 주문반려제품 → 주문한 제품 (→ 처리현황).
 ///
-/// - 마감전: 주문정보 + 주문취소/재전송 버튼 + 미납/반려 + 주문한 제품 목록
+/// - 마감전: 주문정보 + 주문취소 버튼 + 미납/반려 + 주문한 제품 목록
 /// - 마감후: 주문정보 + 미납/반려 + 주문한 제품 접기/펼치기 + 주문처리현황
 ///
 /// 반려 섹션은 레거시(view.jsp:284-322 before / 449-486 after) 동등으로 마감 전후 모두 표시.
@@ -206,18 +205,21 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
 
             // 마감전 전용 영역
             if (!detail.isClosed) ...[
-              // 주문취소 / 재전송 버튼
+              // 주문취소 버튼
               OrderActionButtons(
                 orderDetail: detail,
                 showCancelButton: state.showCancelButton,
-                showResendButton: state.showResendButton,
-                isResending: state.isResending,
                 onCancel: () => _onCancelOrder(context),
-                onResend: () => _onResendOrder(context),
               ),
 
-              if (state.showCancelButton || state.showResendButton)
+              if (state.showCancelButton)
                 const SizedBox(height: AppSpacing.lg),
+
+              // 전송실패 안내 — 재전송 버튼 대신 재주문을 유도
+              if (state.showResendButton) ...[
+                _buildResendGuideNotice(),
+                const SizedBox(height: AppSpacing.lg),
+              ],
 
               // 전송 처리 중 안내 — 등록 SAP 전송이 진행 중이라 아직 취소할 수 없음
               if (state.showRegistrationInFlightNotice) ...[
@@ -313,6 +315,35 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
   }
 
+  /// 전송실패 안내 — 재전송 대신 재주문을 유도
+  Widget _buildResendGuideNotice() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        // ignore: deprecated_member_use
+        color: AppColors.error.withOpacity(0.08),
+        borderRadius: AppSpacing.buttonBorderRadius,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, size: 16, color: AppColors.error),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              '다시 재주문해주세요',
+              style: AppTypography.bodySmall.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// 주문 취소 버튼 탭
   Future<void> _onCancelOrder(BuildContext context) async {
     final orderId = widget.orderId;
@@ -339,33 +370,6 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
       ref
           .read(orderRequestDetailProvider(orderId).notifier)
           .loadOrderDetail(orderId: orderId);
-    }
-  }
-
-  /// 주문 재전송 버튼 탭
-  Future<void> _onResendOrder(BuildContext context) async {
-    final orderId = widget.orderId;
-    // 레거시 정합: 재전송 전 사용자 확인 (confirm('재전송 하시겠습니까?'))
-    final confirmed = await ResendConfirmDialog.show(context);
-    if (confirmed != true) return;
-
-    if (!context.mounted) return;
-
-    final success = await ref
-        .read(orderRequestDetailProvider(orderId).notifier)
-        .resendOrderRequest(orderId: orderId);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? '주문이 재전송되었습니다'
-                : '재전송에 실패했습니다. 잠시 후 다시 시도해주세요',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
     }
   }
 
