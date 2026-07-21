@@ -128,7 +128,24 @@ data class AccountDetailResponse(
     val annualRevenue: BigDecimal?,
     val numberOfEmployees: BigDecimal?,
     val consignmentAcc: String?,
-    val distribution: String?
+    val distribution: String?,
+    // 조직 정보 — 사업부/영업부/지점 CC코드 + 명 (레거시 SF Account 레코드 페이지 우측 패널 동등, 읽기 전용).
+    val divisionCostCenter: String?,
+    val divisionName: String?,
+    val salesDeptCostCenter: String?,
+    val salesDeptName: String?,
+    val branchCostCenter: String?,
+    // 물류센터 — 상온/냉장/냉동 코드(werk1~3) + 명(werk1Tx~3Tx). SAP 동기 값, 읽기 전용.
+    val werk1: String?,
+    val werk2: String?,
+    val werk3: String?,
+    val werk1Tx: String?,
+    val werk2Tx: String?,
+    val werk3Tx: String?,
+    // 상위 계정 — 상위 거래처명(parent.name). SF ParentId 관계 동등.
+    val parentName: String?,
+    // 거래처 소유자 — 소유 User 전체 이름(ownerUser.name). SF Owner 동등.
+    val ownerName: String?
 ) {
     companion object {
         fun from(account: Account): AccountDetailResponse = AccountDetailResponse(
@@ -179,7 +196,20 @@ data class AccountDetailResponse(
             annualRevenue = account.annualRevenue,
             numberOfEmployees = account.numberOfEmployees,
             consignmentAcc = account.consignmentAcc,
-            distribution = account.distribution
+            distribution = account.distribution,
+            divisionCostCenter = account.divisionCostCenter,
+            divisionName = account.divisionName,
+            salesDeptCostCenter = account.salesDeptCostCenter,
+            salesDeptName = account.salesDeptName,
+            branchCostCenter = account.branchCostCenter,
+            werk1 = account.werk1,
+            werk2 = account.werk2,
+            werk3 = account.werk3,
+            werk1Tx = account.werk1Tx,
+            werk2Tx = account.werk2Tx,
+            werk3Tx = account.werk3Tx,
+            parentName = account.parent?.name,
+            ownerName = account.ownerUser?.name
         )
     }
 }

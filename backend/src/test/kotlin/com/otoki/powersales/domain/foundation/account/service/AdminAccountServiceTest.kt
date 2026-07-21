@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.foundation.account.service
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
 import com.otoki.powersales.domain.foundation.account.exception.AccountNotFoundException
+import com.otoki.powersales.user.entity.User
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
@@ -452,6 +453,50 @@ class AdminAccountServiceTest {
                 )
             }
             verify(exactly = 1) { accountRepository.findAccessibleByPolicyAndId(any(), 7) }
+        }
+
+        @Test
+        @DisplayName("조직/물류센터/소유자/상위 계정 필드가 응답 DTO 로 매핑된다")
+        fun mapsOrganizationLogisticsOwnerParentFields() {
+            val scope = DataScope(branchCodes = emptyList(), isAllBranches = true)
+            stubEvaluator(scope)
+            val owner = User(username = "owner01", employeeCode = "E0001", password = "x")
+                .apply { name = "임성후" }
+            val parent = createAccount(id = 99, name = "대호할인마트 본사")
+            val account = createAccount(id = 7, name = "대호할인마트B").apply {
+                divisionCostCenter = "GHZ91"
+                divisionName = "Retail사업부"
+                salesDeptCostCenter = "GHC91"
+                salesDeptName = "2영업부"
+                branchCostCenter = "GHC02"
+                werk1 = "1041"
+                werk2 = "1054"
+                werk3 = "1054"
+                werk1Tx = "[물류L]곤지암물류"
+                werk2Tx = "[물류L]남사물류"
+                werk3Tx = "[물류L]남사물류"
+                consignmentAcc = "N"
+                ownerUser = owner
+                this.parent = parent
+            }
+            every { accountRepository.findAccessibleByPolicyAndId(any(), 7) } returns account
+
+            val result = adminAccountService.getAccountDetail(scope, 7)
+
+            assertThat(result.divisionCostCenter).isEqualTo("GHZ91")
+            assertThat(result.divisionName).isEqualTo("Retail사업부")
+            assertThat(result.salesDeptCostCenter).isEqualTo("GHC91")
+            assertThat(result.salesDeptName).isEqualTo("2영업부")
+            assertThat(result.branchCostCenter).isEqualTo("GHC02")
+            assertThat(result.werk1).isEqualTo("1041")
+            assertThat(result.werk2).isEqualTo("1054")
+            assertThat(result.werk3).isEqualTo("1054")
+            assertThat(result.werk1Tx).isEqualTo("[물류L]곤지암물류")
+            assertThat(result.werk2Tx).isEqualTo("[물류L]남사물류")
+            assertThat(result.werk3Tx).isEqualTo("[물류L]남사물류")
+            assertThat(result.consignmentAcc).isEqualTo("N")
+            assertThat(result.ownerName).isEqualTo("임성후")
+            assertThat(result.parentName).isEqualTo("대호할인마트 본사")
         }
 
         @Test

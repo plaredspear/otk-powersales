@@ -185,6 +185,37 @@ function AccountInfoTab({ account, canEdit }: { account: AccountDetail; canEdit:
           <Descriptions.Item label="업태">{dash(account.businessType)}</Descriptions.Item>
           <Descriptions.Item label="업종">{dash(account.businessCategory)}</Descriptions.Item>
           <Descriptions.Item label="산업">{dash(account.industry)}</Descriptions.Item>
+          <Descriptions.Item label="상위 계정">{dash(account.parentName)}</Descriptions.Item>
+          <Descriptions.Item label="거래처 소유자">{dash(account.ownerName)}</Descriptions.Item>
+          <Descriptions.Item label="위탁거래여부">{dash(account.consignmentAcc)}</Descriptions.Item>
+        </Descriptions>
+      </Card>
+
+      <Card size="small" title="조직 정보" style={{ marginBottom: 16 }}>
+        <Descriptions column={2} bordered size="small">
+          <Descriptions.Item label="거래처사업부CC코드">
+            {dash(account.divisionCostCenter)}
+          </Descriptions.Item>
+          <Descriptions.Item label="거래처사업부명">{dash(account.divisionName)}</Descriptions.Item>
+          <Descriptions.Item label="거래처영업부CC코드">
+            {dash(account.salesDeptCostCenter)}
+          </Descriptions.Item>
+          <Descriptions.Item label="거래처영업부명">{dash(account.salesDeptName)}</Descriptions.Item>
+          <Descriptions.Item label="거래처지점CC코드">
+            {dash(account.branchCostCenter)}
+          </Descriptions.Item>
+          <Descriptions.Item label="거래처지점명">{dash(account.branchName)}</Descriptions.Item>
+        </Descriptions>
+      </Card>
+
+      <Card size="small" title="물류센터 정보" style={{ marginBottom: 16 }}>
+        <Descriptions column={2} bordered size="small">
+          <Descriptions.Item label="물류센터_상온">{dash(account.werk1)}</Descriptions.Item>
+          <Descriptions.Item label="물류센터명_상온">{dash(account.werk1Tx)}</Descriptions.Item>
+          <Descriptions.Item label="물류센터_냉장">{dash(account.werk2)}</Descriptions.Item>
+          <Descriptions.Item label="물류센터명_냉장">{dash(account.werk2Tx)}</Descriptions.Item>
+          <Descriptions.Item label="물류센터_냉동">{dash(account.werk3)}</Descriptions.Item>
+          <Descriptions.Item label="물류센터명_냉동">{dash(account.werk3Tx)}</Descriptions.Item>
         </Descriptions>
       </Card>
 

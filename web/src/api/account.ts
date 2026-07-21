@@ -102,6 +102,23 @@ export interface AccountDetail {
   numberOfEmployees: number | null;
   consignmentAcc: string | null;
   distribution: string | null;
+  // 조직 정보 — 사업부/영업부/지점 CC코드 + 명 (레거시 SF 거래처 레코드 페이지 우측 패널 동등, 읽기 전용).
+  divisionCostCenter: string | null;
+  divisionName: string | null;
+  salesDeptCostCenter: string | null;
+  salesDeptName: string | null;
+  branchCostCenter: string | null;
+  // 물류센터 — 상온(werk1)/냉장(werk2)/냉동(werk3) 코드 + 명(werk1Tx~3Tx). SAP 동기 값, 읽기 전용.
+  werk1: string | null;
+  werk2: string | null;
+  werk3: string | null;
+  werk1Tx: string | null;
+  werk2Tx: string | null;
+  werk3Tx: string | null;
+  // 상위 계정 — 상위 거래처명 (SF ParentId 관계 동등).
+  parentName: string | null;
+  // 거래처 소유자 — 소유 사용자 전체 이름 (SF Owner 동등).
+  ownerName: string | null;
 }
 
 

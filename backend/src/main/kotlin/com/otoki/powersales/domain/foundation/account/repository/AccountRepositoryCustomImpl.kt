@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.foundation.account.repository
 
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.QAccount
 import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.account
 import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.BooleanBuilder
@@ -97,9 +98,14 @@ class AccountRepositoryCustomImpl(
     }
 
     override fun findAccessibleByPolicyAndId(policyPredicate: Predicate, id: Long): Account? {
+        // 상세 응답이 소유자명(ownerUser.name) / 상위 거래처명(parent.name) 을 노출하므로 fetchJoin 으로
+        // 함께 로드한다. bytecode enhancement 환경의 @ManyToOne(LAZY) 는 readOnly tx 안에서도 미초기화
+        // 상태로 남아 DTO 매핑 시 null 이 되므로, 단순 leftJoin 이 아닌 fetchJoin 이 필요하다.
+        val parentAccount = QAccount("parentAccount")
         return queryFactory
             .selectFrom(account)
-            .leftJoin(account.ownerUser, user)
+            .leftJoin(account.ownerUser, user).fetchJoin()
+            .leftJoin(account.parent, parentAccount).fetchJoin()
             .where(
                 notDeleted(),
                 policyPredicate,
