@@ -27,19 +27,34 @@ class PromotionDailySalesPage extends ConsumerStatefulWidget {
 class _PromotionDailySalesPageState
     extends ConsumerState<PromotionDailySalesPage>
     with ThrottledTapMixin {
-  /// 임시저장 복원 다이얼로그 1회만 노출 가드.
-  bool _restoreDialogShown = false;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(
-            promotionDailySalesProvider(widget.promotionEmployeeId).notifier,
-          )
-          .load();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
+  }
+
+  /// 진입 초기화. 데이터 로드 후 임시저장이 있으면 복원 팝업을 명령형으로 띄운다.
+  ///
+  /// build 의 리스너로 값 전이(false→true)를 감지하는 방식은 로드가 리스너 등록보다
+  /// 먼저 끝나면 전이를 놓쳐 팝업이 누락될 수 있으므로, 진입 시 여기서 직접 띄운다.
+  /// State 는 매 진입마다 새로 생성되어 initState 가 항상 재실행되므로 매번 보장된다.
+  Future<void> _initialize() async {
+    final notifier = ref.read(
+      promotionDailySalesProvider(widget.promotionEmployeeId).notifier,
+    );
+    await notifier.load();
+    if (!mounted) return;
+
+    final state = ref.read(
+      promotionDailySalesProvider(widget.promotionEmployeeId),
+    );
+    if (state.pendingDraftRestore) {
+      DraftRestoreDialog.show(
+        context,
+        onAccept: notifier.acceptDraft,
+        onDecline: notifier.declineDraft,
+      );
+    }
   }
 
   @override
@@ -57,22 +72,8 @@ class _PromotionDailySalesPageState
       }
     });
 
-    // 임시저장 발견 시 "이어서 작성하시겠습니까?" 다이얼로그(레거시 confirm 대응) 1회 노출.
-    ref.listen<bool>(provider.select((s) => s.pendingDraftRestore), (prev, next) {
-      if (next == true && !_restoreDialogShown) {
-        _restoreDialogShown = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          DraftRestoreDialog.show(
-            context,
-            onAccept: notifier.acceptDraft,
-            onDecline: notifier.declineDraft,
-          );
-        });
-      } else if (next == false) {
-        _restoreDialogShown = false;
-      }
-    });
+    // 임시저장 복원 팝업은 진입 시 _initialize() 에서 명령형으로 띄운다.
+    // (리스너 값 전이 감지 방식은 로드 타이밍에 따라 누락될 수 있어 사용 안 함)
 
     return Scaffold(
       appBar: AppBar(

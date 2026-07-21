@@ -322,8 +322,12 @@ class SuggestionRegisterNotifier
 // ============================================
 
 /// 제안하기 등록 Provider
-final suggestionRegisterProvider =
-    StateNotifierProvider<SuggestionRegisterNotifier, SuggestionRegisterState>(
+///
+/// autoDispose: 등록 화면을 벗어나면 폼 state 를 폐기한다. 재진입 시 항상 초기
+/// 상태로 시작하여 이전 등록 성공 메시지·입력이 남지 않는다. (화면 이탈 시 입력
+/// 유지는 요구되지 않는 UX — 이어쓰기는 임시저장으로 처리한다.)
+final suggestionRegisterProvider = StateNotifierProvider.autoDispose<
+    SuggestionRegisterNotifier, SuggestionRegisterState>(
         (ref) {
   return SuggestionRegisterNotifier(
     registerSuggestion: ref.watch(registerSuggestionUseCaseProvider),

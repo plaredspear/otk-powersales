@@ -103,9 +103,9 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       return;
     }
 
-    // 신규 작성 모드: 직전 세션 잔여 상태(등록 완료·이탈 후 재진입 등)를 폐기하고
-    // 빈 폼 + 새 멱등키(UUID v4)로 시작한다. Provider 가 autoDispose 가 아니어서
-    // 재진입 시 이전 품목/거래처/납기일이 남아 있는 문제를 방지한다.
+    // 신규 작성 모드: 빈 폼 + 새 멱등키(UUID v4)로 시작한다. Provider 는 autoDispose 라
+    // 재진입 시 이미 초기 상태지만, 같은 화면 내 재초기화(예: orderId 전환) 시에도
+    // 잔여 상태가 남지 않도록 여기서 명시적으로 초기화한다.
     state = OrderFormState.initial().copyWith(
       clientRequestId: _uuid.v4(),
     );
@@ -842,8 +842,12 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 }
 
 /// OrderForm StateNotifier Provider
+///
+/// autoDispose: 주문서 작성 화면을 벗어나면 폼 state 를 폐기한다. 재진입 시 항상 초기
+/// 상태로 시작하여 이전 세션 잔여 입력이 남지 않는다. (화면 이탈 시 입력 유지는 요구되지
+/// 않는 UX — 계속 이어쓰려면 임시저장 기능을 사용한다.)
 final orderFormProvider =
-    StateNotifierProvider<OrderFormNotifier, OrderFormState>((ref) {
+    StateNotifierProvider.autoDispose<OrderFormNotifier, OrderFormState>((ref) {
   return OrderFormNotifier(
     getLoanInquiry: ref.watch(getLoanInquiryUseCaseProvider),
     getOrderDraft: ref.watch(getOrderDraftUseCaseProvider),

@@ -38,22 +38,42 @@ class OrderFormPage extends ConsumerStatefulWidget {
 
 class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   late ScrollController _scrollController;
-  bool _restoreDialogShown = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final notifier = ref.read(orderFormProvider.notifier);
-      await notifier.initialize(orderId: widget.orderId);
-      // 제품검색에서 전달된 제품이 있으면 주문 라인에 미리 추가
-      final code = widget.initialProductCode;
-      if (code != null && code.isNotEmpty) {
-        await notifier.preloadProductByCode(code);
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialize());
+  }
+
+  /// 진입 초기화. 폼 로드 → (제품검색 진입이면 제품 preload) / (아니면 임시저장 복원 확인).
+  ///
+  /// 임시저장 복원 팝업은 build 의 리스너(값 전이 감지)가 아니라 여기서 진입 시
+  /// 명령형으로 띄운다. Provider 가 재진입 후에도 살아있어(non-autoDispose) hasDraft 가
+  /// 이미 true 인 상태로 재진입하면 리스너의 false→true 전이가 발생하지 않아 팝업이
+  /// 누락되던 문제를 방지하기 위함. State 는 매 진입마다 새로 생성되므로 initState 는
+  /// 항상 재실행되어 이 흐름이 매번 보장된다.
+  Future<void> _initialize() async {
+    final notifier = ref.read(orderFormProvider.notifier);
+    await notifier.initialize(orderId: widget.orderId);
+    if (!mounted) return;
+
+    // 제품검색에서 전달된 제품이 있으면 주문 라인에 미리 추가하고 임시저장 복원은 생략.
+    final code = widget.initialProductCode;
+    if (code != null && code.isNotEmpty) {
+      await notifier.preloadProductByCode(code);
+      return;
+    }
+
+    // 임시저장이 있으면 이어쓰기 여부를 묻는다.
+    if (ref.read(orderFormProvider).hasDraft && mounted) {
+      DraftRestoreDialog.show(
+        context,
+        onAccept: () => notifier.acceptDraft(),
+        onDecline: () => notifier.declineDraft(),
+      );
+    }
   }
 
   @override
@@ -169,22 +189,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
     final state = ref.watch(orderFormProvider);
     final notifier = ref.read(orderFormProvider.notifier);
 
-    // hasDraft 가 true 가 되는 순간 자동 다이얼로그 노출 (1회만).
-    ref.listen<bool>(orderFormProvider.select((s) => s.hasDraft), (prev, next) {
-      if (next == true && !_restoreDialogShown) {
-        _restoreDialogShown = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          DraftRestoreDialog.show(
-            context,
-            onAccept: () => notifier.acceptDraft(),
-            onDecline: () => notifier.declineDraft(),
-          );
-        });
-      } else if (next == false) {
-        _restoreDialogShown = false;
-      }
-    });
+    // 임시저장 복원 팝업은 진입 시 _initialize() 에서 명령형으로 띄운다.
+    // (리스너의 값 전이 감지 방식은 non-autoDispose provider 재진입 시 누락되므로 사용 안 함)
 
     // 승인요청 확인 다이얼로그 트리거 (검증 통과 후 전송 직전).
     ref.listen<bool>(
