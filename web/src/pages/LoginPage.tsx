@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Button, Alert, Typography } from 'antd';
+import { Card, Form, Input, Button, Alert, Typography, Checkbox } from 'antd';
 import { useAuthStore } from '@/stores/authStore';
 
 const { Title } = Typography;
 
+const REMEMBER_USERNAME_KEY = 'login.rememberedUsername';
+
 interface LoginForm {
   username: string;
   password: string;
+  remember: boolean;
 }
 
 export default function LoginPage() {
@@ -15,6 +18,8 @@ export default function LoginPage() {
   const { isAuthenticated, login } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const rememberedUsername = localStorage.getItem(REMEMBER_USERNAME_KEY) ?? '';
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -25,6 +30,11 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(values.username, values.password);
+      if (values.remember) {
+        localStorage.setItem(REMEMBER_USERNAME_KEY, values.username);
+      } else {
+        localStorage.removeItem(REMEMBER_USERNAME_KEY);
+      }
       navigate('/', { replace: true });
     } catch (err) {
       if (err instanceof Error) {
@@ -63,7 +73,15 @@ export default function LoginPage() {
           />
         )}
 
-        <Form<LoginForm> onFinish={handleSubmit} layout="vertical" autoComplete="off">
+        <Form<LoginForm>
+          onFinish={handleSubmit}
+          layout="vertical"
+          autoComplete="off"
+          initialValues={{
+            username: rememberedUsername,
+            remember: rememberedUsername !== '',
+          }}
+        >
           <Form.Item
             label="아이디"
             name="username"
@@ -78,6 +96,10 @@ export default function LoginPage() {
             rules={[{ required: true, message: '비밀번호를 입력하세요' }]}
           >
             <Input.Password placeholder="비밀번호를 입력하세요" size="large" />
+          </Form.Item>
+
+          <Form.Item name="remember" valuePropName="checked">
+            <Checkbox>아이디 저장</Checkbox>
           </Form.Item>
 
           <Form.Item>
