@@ -187,9 +187,6 @@ ovip:
     client-secret-hash: ${OVIP_INBOUND_CLIENT_SECRET_HASH:}
     jwt-signing-key: ${OVIP_INBOUND_JWT_SIGNING_KEY:otoki-ovip-inbound-dev-signing-key-change-in-production-256-bits}
     token-ttl-seconds: 86400
-    allowed-scopes:
-      - ovip.read
-      - ovip.write
   inbound:
     mfeis:
       default-page-size: 100

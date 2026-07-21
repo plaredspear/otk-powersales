@@ -7,7 +7,6 @@ import com.otoki.powersales.external.ovip.auth.config.OvipAuthProperties
 import com.otoki.powersales.external.ovip.auth.dto.TokenRequest
 import com.otoki.powersales.external.ovip.auth.dto.TokenResponse
 import com.otoki.powersales.external.ovip.auth.exception.OvipInvalidClientException
-import com.otoki.powersales.external.ovip.auth.exception.OvipInvalidScopeException
 import com.otoki.powersales.external.ovip.auth.exception.OvipUnsupportedGrantTypeException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.stereotype.Service
@@ -55,24 +54,12 @@ class OvipTokenService(
             throw OvipInvalidClientException()
         }
 
+        // scope 권한 체크는 수행하지 않는다. 요청 scope 는 검증 없이 그대로 토큰/응답에 반영만 한다
+        // (조회 API 의 @PreAuthorize scope 가드도 제거됨 — 유효한 client 인증만 통과하면 조회 허용).
         val requestedScopes = (request.scope ?: "")
             .split(" ")
             .map { it.trim() }
             .filter { it.isNotEmpty() }
-        if (requestedScopes.isEmpty() || requestedScopes.any { it !in properties.allowedScopes }) {
-            auditService.record(
-                OvipInboundAudit(
-                    eventType = OvipInboundAuditEventType.TOKEN_REJECTED,
-                    clientId = clientId,
-                    endpoint = TOKEN_ENDPOINT,
-                    httpMethod = "POST",
-                    clientIp = clientIp,
-                    scope = request.scope,
-                    reason = "허용되지 않은 scope"
-                )
-            )
-            throw OvipInvalidScopeException()
-        }
 
         val issued = jwtCodec.issue(clientId = clientId, scopes = requestedScopes)
         auditService.record(

@@ -15,22 +15,10 @@ class OvipUnsupportedGrantTypeException : BusinessException(
     httpStatus = HttpStatus.BAD_REQUEST
 )
 
-class OvipInvalidScopeException : BusinessException(
-    errorCode = "INVALID_SCOPE",
-    message = "허용되지 않은 scope",
-    httpStatus = HttpStatus.BAD_REQUEST
-)
-
 class OvipInvalidTokenException(detail: String? = null) : BusinessException(
     errorCode = "INVALID_TOKEN",
     message = detail ?: "토큰이 필요합니다",
     httpStatus = HttpStatus.UNAUTHORIZED
-)
-
-class OvipInsufficientScopeException : BusinessException(
-    errorCode = "INSUFFICIENT_SCOPE",
-    message = "권한 없음",
-    httpStatus = HttpStatus.FORBIDDEN
 )
 
 class OvipInvalidParameterException(detail: String? = null) : BusinessException(

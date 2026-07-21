@@ -7,6 +7,5 @@ data class OvipAuthProperties(
     val clientId: String = "",
     val clientSecretHash: String = "",
     val jwtSigningKey: String = "",
-    val tokenTtlSeconds: Long = 86400,
-    val allowedScopes: List<String> = emptyList()
+    val tokenTtlSeconds: Long = 86400
 )

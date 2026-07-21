@@ -6,7 +6,6 @@ import com.otoki.powersales.external.ovip.auth.audit.OvipInboundAuditService
 import com.otoki.powersales.external.ovip.auth.config.OvipAuthProperties
 import com.otoki.powersales.external.ovip.auth.dto.TokenRequest
 import com.otoki.powersales.external.ovip.auth.exception.OvipInvalidClientException
-import com.otoki.powersales.external.ovip.auth.exception.OvipInvalidScopeException
 import com.otoki.powersales.external.ovip.auth.exception.OvipUnsupportedGrantTypeException
 import com.otoki.powersales.external.ovip.auth.service.OvipJwtCodec
 import com.otoki.powersales.external.ovip.auth.service.OvipTokenService
@@ -30,15 +29,12 @@ class OvipTokenServiceTest {
 
     private val auditService: OvipInboundAuditService = mockk()
 
-    private fun service(
-        allowedScopes: List<String> = listOf("ovip.write")
-    ): OvipTokenService {
+    private fun service(): OvipTokenService {
         val props = OvipAuthProperties(
             clientId = "otoki-ovip-client",
             clientSecretHash = secretHash,
             jwtSigningKey = signingKey,
-            tokenTtlSeconds = 86400,
-            allowedScopes = allowedScopes
+            tokenTtlSeconds = 86400
         )
         every { auditService.record(any()) } answers { firstArg() }
         return OvipTokenService(props, auditService, OvipJwtCodec(props))
@@ -111,20 +107,26 @@ class OvipTokenServiceTest {
                 .isInstanceOf(OvipUnsupportedGrantTypeException::class.java)
         }
 
+    }
+
+    @Nested
+    @DisplayName("issue - scope 검증 없음 (권한 체크 미수행)")
+    inner class NoScopeCheck {
+
         @Test
-        @DisplayName("미허용 scope 요청 -> OvipInvalidScopeException")
-        fun issue_invalidScope() {
-            val req = validRequest(scope = "sap.write")
-            assertThatThrownBy { service().issue(req, "127.0.0.1") }
-                .isInstanceOf(OvipInvalidScopeException::class.java)
+        @DisplayName("임의 scope 요청도 거부 없이 그대로 발급된다")
+        fun issue_arbitraryScopeAccepted() {
+            val response = service().issue(validRequest(scope = "sap.write"), "127.0.0.1")
+            assertThat(response.accessToken).isNotBlank()
+            assertThat(response.scope).isEqualTo("sap.write")
         }
 
         @Test
-        @DisplayName("scope 누락(빈 문자열) -> OvipInvalidScopeException")
-        fun issue_emptyScope() {
-            val req = validRequest(scope = "")
-            assertThatThrownBy { service().issue(req, "127.0.0.1") }
-                .isInstanceOf(OvipInvalidScopeException::class.java)
+        @DisplayName("scope 누락(빈 문자열)이어도 빈 scope 로 발급된다")
+        fun issue_emptyScopeAccepted() {
+            val response = service().issue(validRequest(scope = ""), "127.0.0.1")
+            assertThat(response.accessToken).isNotBlank()
+            assertThat(response.scope).isEqualTo("")
         }
     }
 }
