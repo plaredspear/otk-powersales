@@ -34,7 +34,7 @@ data class OrderRequestSummaryResponse(
                 deliveryDate = entity.deliveryDate,
                 totalAmount = entity.totalAmount,
                 orderRequestStatus = entity.orderRequestStatus?.name,
-                orderRequestStatusName = entity.orderRequestStatus?.displayName,
+                orderRequestStatusName = entity.orderRequestStatus?.clientDisplayName,
                 isClosed = isClosed,
             )
     }

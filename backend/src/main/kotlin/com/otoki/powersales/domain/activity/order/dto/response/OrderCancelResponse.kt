@@ -23,7 +23,7 @@ data class OrderCancelResponse(
                 orderRequestId = orderRequest.id,
                 orderRequestNumber = orderRequest.orderRequestNumber,
                 orderRequestStatus = orderRequest.orderRequestStatus?.name,
-                orderRequestStatusName = orderRequest.orderRequestStatus?.displayName,
+                orderRequestStatusName = orderRequest.orderRequestStatus?.clientDisplayName,
                 cancelledLines = cancelledProducts.map(CancelledLineResponse::from),
             )
         }

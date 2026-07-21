@@ -67,7 +67,7 @@ data class OrderRequestDetailResponse(
                 totalAmount = orderRequest.totalAmount,
                 totalApprovedAmount = totalApprovedAmount,
                 orderRequestStatus = orderRequest.orderRequestStatus?.name,
-                orderRequestStatusName = orderRequest.orderRequestStatus?.displayName,
+                orderRequestStatusName = orderRequest.orderRequestStatus?.clientDisplayName,
                 isClosed = isClosed,
                 cancelable = cancelable,
                 registrationInFlight = registrationInFlight,

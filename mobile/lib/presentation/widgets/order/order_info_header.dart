@@ -5,6 +5,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_detail.dart';
 import './approval_status_badge.dart';
+import './order_status_info_sheet.dart';
 
 class OrderInfoHeader extends StatelessWidget {
   final OrderDetail orderDetail;
@@ -75,8 +76,9 @@ class OrderInfoHeader extends StatelessWidget {
           ],
           SizedBox(height: AppSpacing.sm),
           _buildInfoRow(
-            '승인 상태',
+            '주문 요청 상태',
             '',
+            onInfoTap: () => OrderStatusInfoSheet.show(context),
             customValue: OrderRequestStatusBadge(
               statusCode: orderDetail.orderRequestStatus,
               statusName: orderDetail.orderRequestStatusName,
@@ -94,18 +96,46 @@ class OrderInfoHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {Widget? customValue}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    Widget? customValue,
+    VoidCallback? onInfoTap,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           width: 120,
-          child: Text(
-            label,
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-            ),
-          ),
+          child: onInfoTap == null
+              ? Text(
+                  label,
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                )
+              : Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: onInfoTap,
+                      behavior: HitTestBehavior.opaque,
+                      child: Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
         ),
         SizedBox(width: AppSpacing.md),
         Expanded(

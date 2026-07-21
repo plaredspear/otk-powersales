@@ -20,7 +20,7 @@ data class OrderRequestCreateResponse(
             orderRequestId = entity.id,
             orderRequestNumber = entity.orderRequestNumber,
             status = entity.orderRequestStatus?.name,
-            statusName = entity.orderRequestStatus?.displayName,
+            statusName = entity.orderRequestStatus?.clientDisplayName,
             totalAmount = entity.totalAmount,
         )
     }

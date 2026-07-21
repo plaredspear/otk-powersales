@@ -37,7 +37,7 @@ abstract final class OrderStatusCode {
   /// (레거시 Heroku `list.jsp` 도 임시저장을 상태 필터에서 제외 — 필터 UX 정합.)
   static const List<({String code, String label})> filterOptions = [
     (code: sent, label: '전송'),
-    (code: approved, label: '승인완료'),
+    (code: approved, label: '전송완료'),
     (code: sendFailed, label: '전송실패'),
     (code: canceled, label: '주문취소'),
   ];
