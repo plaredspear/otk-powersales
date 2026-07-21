@@ -50,6 +50,50 @@ void main() {
         expect(notifier.state.alertDate, DateTime(2026, 3, 14));
         expect(notifier.state.description, '3층 선반');
       });
+
+      test('수정 직후에는 변경이 없어 저장 버튼이 비활성화되어야 한다', () {
+        notifier.initializeForEdit(_sampleItem);
+
+        expect(notifier.state.isDirty, false);
+        expect(notifier.state.canSave, false);
+      });
+
+      test('소비기한을 바꾸면 저장 버튼이 활성화되어야 한다', () {
+        notifier.initializeForEdit(_sampleItem);
+
+        notifier.updateExpiryDate(DateTime(2026, 3, 20));
+
+        expect(notifier.state.isDirty, true);
+        expect(notifier.state.canSave, true);
+      });
+
+      test('알림일을 바꾸면 저장 버튼이 활성화되어야 한다', () {
+        notifier.initializeForEdit(_sampleItem);
+
+        notifier.updateAlertDate(DateTime(2026, 3, 10));
+
+        expect(notifier.state.isDirty, true);
+        expect(notifier.state.canSave, true);
+      });
+
+      test('설명을 바꾸면 저장 버튼이 활성화되어야 한다', () {
+        notifier.initializeForEdit(_sampleItem);
+
+        notifier.updateDescription('2층 매대');
+
+        expect(notifier.state.isDirty, true);
+        expect(notifier.state.canSave, true);
+      });
+
+      test('같은 날짜(시간 성분만 다름)로 재선택하면 변경으로 보지 않아야 한다', () {
+        notifier.initializeForEdit(_sampleItem);
+
+        // DatePicker 는 자정 기준 날짜를 반환. 원본과 연·월·일이 같으면 dirty 아님
+        notifier.updateAlertDate(DateTime(2026, 3, 14));
+
+        expect(notifier.state.isDirty, false);
+        expect(notifier.state.canSave, false);
+      });
     });
 
     group('selectAccount', () {

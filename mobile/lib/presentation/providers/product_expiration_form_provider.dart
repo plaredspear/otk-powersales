@@ -71,6 +71,9 @@ class ProductExpirationFormNotifier extends StateNotifier<ProductExpirationFormS
       alertDate: item.alertDate,
       description: item.description,
       editSeq: item.seq,
+      originalExpiryDate: item.expiryDate,
+      originalAlertDate: item.alertDate,
+      originalDescription: item.description,
     );
   }
 

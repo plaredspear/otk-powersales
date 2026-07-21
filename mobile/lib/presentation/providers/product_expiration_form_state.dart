@@ -38,6 +38,15 @@ class ProductExpirationFormState {
   /// 수정 대상 소비기한 시퀀스 (null이면 등록 모드)
   final int? editSeq;
 
+  /// 수정 모드 진입 시점의 원본 소비기한 (변경 여부 판별용)
+  final DateTime? originalExpiryDate;
+
+  /// 수정 모드 진입 시점의 원본 알림일 (변경 여부 판별용)
+  final DateTime? originalAlertDate;
+
+  /// 수정 모드 진입 시점의 원본 설명 (변경 여부 판별용)
+  final String? originalDescription;
+
   // ── 결과 상태 ──
   /// 저장 완료 여부 (등록 또는 수정 완료)
   final bool isSaved;
@@ -56,6 +65,9 @@ class ProductExpirationFormState {
     required this.alertDate,
     this.description = '',
     this.editSeq,
+    this.originalExpiryDate,
+    this.originalAlertDate,
+    this.originalDescription,
     this.isSaved = false,
     this.isDeleted = false,
   });
@@ -97,8 +109,28 @@ class ProductExpirationFormState {
     return true; // 수정 모드는 소비기한/알림이 이미 설정됨
   }
 
+  /// 수정 모드에서 원본 대비 변경 여부
+  ///
+  /// 소비기한/알림일/설명 중 하나라도 진입 시점과 달라지면 true.
+  /// 날짜는 시/분 성분을 무시하고 연·월·일 단위로만 비교한다
+  /// (DatePicker 는 시간 성분이 0인 날짜만 반환하므로 원본에 시간이
+  /// 섞여 있으면 같은 날 재선택 시에도 오탐이 날 수 있다).
+  bool get isDirty {
+    if (isRegisterMode) return true;
+    return !_isSameDay(expiryDate, originalExpiryDate) ||
+        !_isSameDay(alertDate, originalAlertDate) ||
+        description != (originalDescription ?? '');
+  }
+
+  bool _isSameDay(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return a == b;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
   /// 저장 버튼 활성화 여부
-  bool get canSave => isValid && !isLoading;
+  ///
+  /// 수정 모드는 변경 사항이 있을 때만 활성화한다.
+  bool get canSave => isValid && isDirty && !isLoading;
 
   // ── State Transition Helpers ──
 
@@ -128,6 +160,9 @@ class ProductExpirationFormState {
     DateTime? alertDate,
     String? description,
     int? editSeq,
+    DateTime? originalExpiryDate,
+    DateTime? originalAlertDate,
+    String? originalDescription,
     bool? isSaved,
     bool? isDeleted,
   }) {
@@ -146,6 +181,9 @@ class ProductExpirationFormState {
       alertDate: alertDate ?? this.alertDate,
       description: description ?? this.description,
       editSeq: editSeq ?? this.editSeq,
+      originalExpiryDate: originalExpiryDate ?? this.originalExpiryDate,
+      originalAlertDate: originalAlertDate ?? this.originalAlertDate,
+      originalDescription: originalDescription ?? this.originalDescription,
       isSaved: isSaved ?? this.isSaved,
       isDeleted: isDeleted ?? this.isDeleted,
     );
