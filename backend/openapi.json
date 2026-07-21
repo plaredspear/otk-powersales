@@ -78,6 +78,9 @@
           "branchCode" : {
             "type" : [ "string", "null" ]
           },
+          "branchCostCenter" : {
+            "type" : [ "string", "null" ]
+          },
           "branchName" : {
             "type" : [ "string", "null" ]
           },
@@ -106,6 +109,12 @@
             "type" : [ "string", "null" ]
           },
           "distribution" : {
+            "type" : [ "string", "null" ]
+          },
+          "divisionCostCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "divisionName" : {
             "type" : [ "string", "null" ]
           },
           "email" : {
@@ -163,8 +172,14 @@
           "orderableType" : {
             "type" : "boolean"
           },
+          "ownerName" : {
+            "type" : [ "string", "null" ]
+          },
           "ownership" : {
             "enum" : [ "Public", "Private", "Subsidiary", "Other" ],
+            "type" : [ "string", "null" ]
+          },
+          "parentName" : {
             "type" : [ "string", "null" ]
           },
           "phone" : {
@@ -180,6 +195,12 @@
           "representative" : {
             "type" : [ "string", "null" ]
           },
+          "salesDeptCostCenter" : {
+            "type" : [ "string", "null" ]
+          },
+          "salesDeptName" : {
+            "type" : [ "string", "null" ]
+          },
           "site" : {
             "type" : [ "string", "null" ]
           },
@@ -187,6 +208,24 @@
             "type" : [ "number", "null" ]
           },
           "website" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk1" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk1Tx" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk2" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk2Tx" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk3" : {
+            "type" : [ "string", "null" ]
+          },
+          "werk3Tx" : {
             "type" : [ "string", "null" ]
           },
           "zipCode" : {
@@ -16000,9 +16039,6 @@
           "checkTime" : {
             "type" : [ "string", "null" ]
           },
-          "custName" : {
-            "type" : [ "string", "null" ]
-          },
           "employeeCode" : {
             "type" : "string"
           },
@@ -16048,6 +16084,9 @@
           "precautionChk" : {
             "format" : "double",
             "type" : [ "number", "null" ]
+          },
+          "scheduleName" : {
+            "type" : [ "string", "null" ]
           },
           "secondWorkType" : {
             "type" : [ "string", "null" ]
