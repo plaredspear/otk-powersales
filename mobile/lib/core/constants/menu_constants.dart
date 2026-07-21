@@ -129,6 +129,7 @@ abstract final class MenuConstants {
         MenuItem(
           id: 'logout',
           label: '로그아웃',
+          isAction: true,
         ),
         MenuItem(
           id: 'app-info',

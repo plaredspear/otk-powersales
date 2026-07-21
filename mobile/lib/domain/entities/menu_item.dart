@@ -66,15 +66,20 @@ class MenuItem {
   /// 라우트 이동 시 전달할 인자 (예: 탭 화면의 초기 탭 인덱스)
   final Object? arguments;
 
+  /// 라우트 이동이 아닌 특수 동작(예: 로그아웃) 항목 여부.
+  /// route 가 없어도 기능이 동작하므로 미구현(흐린 색)으로 보이지 않도록 한다.
+  final bool isAction;
+
   const MenuItem({
     required this.id,
     required this.label,
     this.route,
     this.arguments,
+    this.isAction = false,
   });
 
-  /// 구현 여부
-  bool get isImplemented => route != null;
+  /// 구현 여부(라우트가 있거나 특수 동작 항목이면 구현된 것으로 간주)
+  bool get isImplemented => route != null || isAction;
 
   @override
   bool operator ==(Object other) {
@@ -83,15 +88,16 @@ class MenuItem {
     return other.id == id &&
         other.label == label &&
         other.route == route &&
-        other.arguments == arguments;
+        other.arguments == arguments &&
+        other.isAction == isAction;
   }
 
   @override
-  int get hashCode => Object.hash(id, label, route, arguments);
+  int get hashCode => Object.hash(id, label, route, arguments, isAction);
 
   @override
   String toString() =>
-      'MenuItem(id: $id, label: $label, route: $route, arguments: $arguments)';
+      'MenuItem(id: $id, label: $label, route: $route, arguments: $arguments, isAction: $isAction)';
 }
 
 /// List equality helper

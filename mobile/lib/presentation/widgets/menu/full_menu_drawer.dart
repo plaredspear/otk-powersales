@@ -181,6 +181,11 @@ class FullMenuDrawer extends ConsumerWidget {
 
   /// 로그아웃 처리 (프로필 화면 로그아웃과 동일 흐름)
   void _handleLogout(BuildContext context, WidgetRef ref) {
+    // 이 시점에는 이미 드로워가 Navigator.pop 으로 닫혀 곧 dispose 되므로,
+    // 위젯 수명과 무관하게 살아있는 notifier 참조를 미리 캡처한다.
+    // (dispose 이후 다이얼로그 확인 콜백에서 ref 를 쓰면
+    //  "Cannot use ref after the widget was disposed" 예외가 발생)
+    final authNotifier = ref.read(authProvider.notifier);
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -199,7 +204,7 @@ class FullMenuDrawer extends ConsumerWidget {
               Navigator.of(dialogContext).pop(); // 다이얼로그 닫기
               // 로그아웃 → 루트 ProviderScope 재생성으로 로그인 화면 전환까지 처리되므로
               // 별도의 수동 네비게이션은 두지 않는다.
-              await ref.read(authProvider.notifier).logout();
+              await authNotifier.logout();
             },
             child: Text(
               '확인',
