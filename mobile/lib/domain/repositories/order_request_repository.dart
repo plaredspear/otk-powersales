@@ -3,6 +3,7 @@ import '../entities/order_request.dart';
 import '../entities/order_cancel.dart';
 import '../entities/order_detail.dart';
 import '../entities/product_for_order.dart';
+import '../entities/product_order_history_group.dart';
 
 /// 본인 주문요청 목록 조회 결과 값 객체 (클라이언트 슬라이스 패턴).
 ///
@@ -127,6 +128,17 @@ abstract class OrderRequestRepository {
   ///
   /// [productCode]: 즐겨찾기에서 삭제할 제품코드
   Future<void> removeFromFavorites({required String productCode});
+
+  /// 거래처 주문이력 조회 (제품 선택용)
+  ///
+  /// [accountCode]: 거래처 SAP 코드 (Account.externalKey)
+  /// [startDate]/[endDate]: 주문일 기간
+  /// Returns: 주문일별 그룹(최신순)
+  Future<List<ProductOrderHistoryGroup>> getAccountOrderHistory({
+    required String accountCode,
+    required DateTime startDate,
+    required DateTime endDate,
+  });
 
   // ─── 거래처별 주문 관련 메서드 (F28) ─────────────────────────────
 

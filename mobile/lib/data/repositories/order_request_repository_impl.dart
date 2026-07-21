@@ -2,6 +2,7 @@ import '../../domain/entities/client_order.dart';
 import '../../domain/entities/order_cancel.dart';
 import '../../domain/entities/order_detail.dart';
 import '../../domain/entities/product_for_order.dart';
+import '../../domain/entities/product_order_history_group.dart';
 import '../../domain/repositories/order_request_repository.dart';
 import '../datasources/order_request_remote_datasource.dart';
 import '../models/order_cancel_model.dart';
@@ -102,6 +103,27 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
   @override
   Future<void> removeFromFavorites({required String productCode}) async {
     await _remoteDataSource.removeFromFavorites(productCode: productCode);
+  }
+
+  @override
+  Future<List<ProductOrderHistoryGroup>> getAccountOrderHistory({
+    required String accountCode,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final models = await _remoteDataSource.getAccountOrderHistory(
+      accountCode: accountCode,
+      startDate: _formatDate(startDate),
+      endDate: _formatDate(endDate),
+    );
+    return models.map((model) => model.toEntity()).toList();
+  }
+
+  /// 날짜를 백엔드 요청용 `YYYY-MM-DD` 문자열로 변환한다.
+  String _formatDate(DateTime d) {
+    final month = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '${d.year}-$month-$day';
   }
 
   // ─── 거래처별 주문 관련 메서드 (F28) ─────────────────────────────

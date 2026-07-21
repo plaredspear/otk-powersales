@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.order.repository
 
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
+import com.otoki.powersales.domain.foundation.product.entity.Product
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -38,9 +39,14 @@ interface OrderRequestRepositoryCustom {
     ): List<OrderHistoryRow>
 }
 
-/** 거래처 주문이력 조회 행 (주문일시 + 제품). */
+/**
+ * 거래처 주문이력 조회 행 (주문일시 + 제품 마스터 + 단위매칭 바코드).
+ *
+ * 제품검색/즐겨찾기 탭과 동일한 [com.otoki.powersales.domain.foundation.product.dto.response.OrderProductDto]
+ * 로 변환하기 위해 제품 엔티티 전체와 단위매칭 바코드를 함께 담는다.
+ */
 data class OrderHistoryRow(
     val orderDate: LocalDateTime?,
-    val productCode: String?,
-    val productName: String?,
+    val product: Product?,
+    val barcode: String?,
 )

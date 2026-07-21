@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../models/client_order_model.dart';
 import '../models/order_cancel_model.dart';
+import '../models/order_history_group_model.dart';
 import '../models/order_request_detail_model.dart';
 import '../models/product_for_order_model.dart';
 import 'order_request_remote_datasource.dart';
@@ -170,6 +171,26 @@ class OrderRequestApiDataSource implements OrderRequestRemoteDataSource {
     return content
         .map((raw) =>
             ProductForOrderModel.fromJson(raw as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<List<OrderHistoryGroupModel>> getAccountOrderHistory({
+    required String accountCode,
+    required String startDate,
+    required String endDate,
+  }) async {
+    final response = await _dio.get(
+      '/api/v1/mobile/me/order-requests/product-history',
+      queryParameters: {
+        'accountCode': accountCode,
+        'startDate': startDate,
+        'endDate': endDate,
+      },
+    );
+    final data = (response.data['data'] as List<dynamic>?) ?? const [];
+    return data
+        .map((e) => OrderHistoryGroupModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 

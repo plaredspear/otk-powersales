@@ -4,7 +4,7 @@ import com.otoki.powersales.platform.common.test.MobileControllerTestSupport
 import com.otoki.powersales.domain.activity.order.dto.response.CancelledLineResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderCancelResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderHistoryGroupResponse
-import com.otoki.powersales.domain.activity.order.dto.response.OrderHistoryProductResponse
+import com.otoki.powersales.domain.foundation.product.dto.response.OrderProductDto
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestSummaryResponse
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
@@ -325,13 +325,13 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                 OrderHistoryGroupResponse(
                     orderDate = "2026-05-06",
                     products = listOf(
-                        OrderHistoryProductResponse("P001", "참깨라면"),
-                        OrderHistoryProductResponse("P002", "진라면순한맛"),
+                        historyDto("P001", "참깨라면"),
+                        historyDto("P002", "진라면순한맛"),
                     ),
                 ),
                 OrderHistoryGroupResponse(
                     orderDate = "2026-05-04",
-                    products = listOf(OrderHistoryProductResponse("P003", "열라면")),
+                    products = listOf(historyDto("P003", "열라면")),
                 ),
             )
             every {
@@ -366,6 +366,22 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
             )
                 .andExpect(status().isBadRequest)
         }
+
+        private fun historyDto(code: String, name: String): OrderProductDto =
+            OrderProductDto(
+                productCode = code,
+                productName = name,
+                barcode = "8800000000000",
+                storageType = "실온",
+                shelfLife = "9개월",
+                unitPrice = 1000,
+                boxSize = 8,
+                isFavorite = false,
+                categoryMid = null,
+                categorySub = null,
+                productType = null,
+                tasteGiftType = null,
+            )
     }
 
     companion object {

@@ -6,10 +6,13 @@ import com.otoki.powersales.domain.foundation.account.entity.QAccount.Companion.
 import com.otoki.powersales.domain.activity.order.entity.QOrderRequest.Companion.orderRequest
 import com.otoki.powersales.domain.activity.order.entity.QOrderRequestProduct.Companion.orderRequestProduct
 import com.otoki.powersales.domain.foundation.product.entity.QProduct.Companion.product
+import com.otoki.powersales.domain.foundation.product.entity.QProductBarcode.Companion.productBarcode
 import com.querydsl.core.BooleanBuilder
+import com.querydsl.core.types.Expression
 import com.querydsl.core.types.Order
 import com.querydsl.core.types.OrderSpecifier
 import com.querydsl.core.types.dsl.ComparableExpressionBase
+import com.querydsl.jpa.JPAExpressions
 import com.querydsl.jpa.impl.JPAQueryFactory
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -58,8 +61,18 @@ class OrderRequestRepositoryCustomImpl(
             .and(orderRequest.orderDate.lt(orderDateToExclusive))
             .and(orderRequest.isDeleted.isNull.or(orderRequest.isDeleted.eq(false)))
 
+        // 제품검색 탭과 동일한 단위매칭 바코드(제품 unit 과 일치하는 최소 바코드).
+        val matchedBarcode: Expression<String> = JPAExpressions
+            .select(productBarcode.barcode.min())
+            .from(productBarcode)
+            .where(
+                productBarcode.productId.eq(product.id),
+                productBarcode.unit.eq(product.unit),
+                productBarcode.barcode.isNotNull,
+            )
+
         return queryFactory
-            .select(orderRequest.orderDate, orderRequestProduct.productCode, product.name)
+            .select(orderRequest.orderDate, product, matchedBarcode)
             .from(orderRequestProduct)
             .join(orderRequestProduct.orderRequest, orderRequest)
             .leftJoin(orderRequestProduct.product, product)
@@ -69,8 +82,8 @@ class OrderRequestRepositoryCustomImpl(
             .map { tuple ->
                 OrderHistoryRow(
                     orderDate = tuple.get(orderRequest.orderDate),
-                    productCode = tuple.get(orderRequestProduct.productCode),
-                    productName = tuple.get(product.name),
+                    product = tuple.get(product),
+                    barcode = tuple.get(matchedBarcode),
                 )
             }
     }

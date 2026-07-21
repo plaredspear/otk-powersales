@@ -5370,20 +5370,9 @@
           },
           "products" : {
             "items" : {
-              "$ref" : "#/components/schemas/OrderHistoryProductResponse"
+              "$ref" : "#/components/schemas/OrderProductDto"
             },
             "type" : "array"
-          }
-        },
-        "type" : "object"
-      },
-      "OrderHistoryProductResponse" : {
-        "properties" : {
-          "productCode" : {
-            "type" : "string"
-          },
-          "productName" : {
-            "type" : [ "string", "null" ]
           }
         },
         "type" : "object"

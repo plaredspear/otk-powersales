@@ -1,5 +1,6 @@
 import '../models/client_order_model.dart';
 import '../models/order_cancel_model.dart';
+import '../models/order_history_group_model.dart';
 import '../models/order_request_detail_model.dart';
 import '../models/order_request_model.dart';
 import '../models/product_for_order_model.dart';
@@ -88,6 +89,15 @@ abstract class OrderRequestRemoteDataSource {
     required String query,
     String? categoryMid,
     String? categorySub,
+  });
+
+  /// GET /api/v1/mobile/me/order-requests/product-history
+  ///
+  /// 거래처(accountCode) + 주문일 기간으로 본인 주문이력을 주문일별 그룹으로 조회합니다.
+  Future<List<OrderHistoryGroupModel>> getAccountOrderHistory({
+    required String accountCode,
+    required String startDate,
+    required String endDate,
   });
 
   /// POST /api/v1/mobile/products/{productId}/favorite

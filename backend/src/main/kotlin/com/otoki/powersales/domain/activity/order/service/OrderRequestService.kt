@@ -1,12 +1,12 @@
 package com.otoki.powersales.domain.activity.order.service
 
 import com.otoki.powersales.domain.activity.order.dto.response.OrderHistoryGroupResponse
-import com.otoki.powersales.domain.activity.order.dto.response.OrderHistoryProductResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestDetailResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestListResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderRequestSummaryResponse
 import com.otoki.powersales.domain.activity.order.dto.response.OrderedItemResponse
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
+import com.otoki.powersales.domain.foundation.product.dto.response.OrderProductDto
 import com.otoki.powersales.domain.activity.order.exception.ForbiddenOrderAccessException
 import com.otoki.powersales.domain.activity.order.exception.InvalidDateRangeException
 import com.otoki.powersales.domain.activity.order.exception.InvalidOrderParameterException
@@ -145,13 +145,15 @@ class OrderRequestService(
         )
 
         return rows
-            .filter { it.orderDate != null && !it.productCode.isNullOrBlank() }
+            .filter { it.orderDate != null && it.product != null && !it.product.productCode.isNullOrBlank() }
             .groupBy { it.orderDate!!.toLocalDate() }
             .toSortedMap(reverseOrder())
             .map { (date, groupRows) ->
+                // 제품검색/즐겨찾기 탭과 동일한 OrderProductDto 형상으로 변환(바코드·단가·박스입수 포함).
+                // 이력 탭은 즐겨찾기 버튼을 노출하지 않으므로 isFavorite 플래그는 계산하지 않는다.
                 val products = groupRows
-                    .distinctBy { it.productCode }
-                    .map { OrderHistoryProductResponse(it.productCode!!, it.productName) }
+                    .distinctBy { it.product!!.productCode }
+                    .map { OrderProductDto.from(it.product!!, it.barcode) }
                 OrderHistoryGroupResponse(orderDate = date.toString(), products = products)
             }
     }

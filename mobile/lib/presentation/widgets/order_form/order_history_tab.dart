@@ -107,7 +107,9 @@ class OrderHistoryTab extends ConsumerWidget {
               notifier.toggleOrderHistoryExpansion(group.orderId);
             },
             title: Text(
-              '${group.orderDate} - ${group.clientName}',
+              group.clientName.isEmpty
+                  ? group.orderDate
+                  : '${group.orderDate} - ${group.clientName}',
               style: AppTypography.labelLarge,
             ),
             subtitle: Text(

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/product_for_order.dart';
 import '../../domain/usecases/add_to_favorites_usecase.dart';
+import '../../domain/usecases/get_account_order_history_usecase.dart';
 import '../../domain/usecases/get_favorite_products_usecase.dart';
 import '../../domain/usecases/remove_from_favorites_usecase.dart';
 import '../../domain/usecases/search_products_for_order_usecase.dart';
@@ -23,6 +24,13 @@ final searchProductsForOrderUseCaseProvider =
     Provider<SearchProductsForOrder>((ref) {
   final repository = ref.watch(orderRequestRepositoryProvider);
   return SearchProductsForOrder(repository);
+});
+
+/// GetAccountOrderHistory UseCase Provider
+final getAccountOrderHistoryUseCaseProvider =
+    Provider<GetAccountOrderHistory>((ref) {
+  final repository = ref.watch(orderRequestRepositoryProvider);
+  return GetAccountOrderHistory(repository);
 });
 
 /// AddToFavorites UseCase Provider
@@ -47,29 +55,86 @@ final removeFromFavoritesUseCaseProvider =
 class AddProductNotifier extends StateNotifier<AddProductState> {
   final GetFavoriteProducts _getFavoriteProducts;
   final SearchProductsForOrder _searchProductsForOrder;
+  final GetAccountOrderHistory _getAccountOrderHistory;
   final AddToFavorites _addToFavorites;
   final RemoveFromFavorites _removeFromFavorites;
+
+  /// 주문이력 조회용 거래처 SAP 코드(Account.externalKey). 주문서 작성처럼
+  /// 거래처가 선택된 화면에서만 주입되며, 없으면 주문이력 탭은 항상 비어 있다.
+  String? _orderHistoryAccountCode;
 
   AddProductNotifier({
     required GetFavoriteProducts getFavoriteProducts,
     required SearchProductsForOrder searchProductsForOrder,
+    required GetAccountOrderHistory getAccountOrderHistory,
     required AddToFavorites addToFavorites,
     required RemoveFromFavorites removeFromFavorites,
   })  : _getFavoriteProducts = getFavoriteProducts,
         _searchProductsForOrder = searchProductsForOrder,
+        _getAccountOrderHistory = getAccountOrderHistory,
         _addToFavorites = addToFavorites,
         _removeFromFavorites = removeFromFavorites,
         super(AddProductState.initial());
 
-  /// 초기화 — 선택 모드 설정 + 즐겨찾기 탭 데이터 로드
-  Future<void> initialize({bool multiSelect = true}) async {
+  /// 초기화 — 선택 모드 설정 + 즐겨찾기 탭 데이터 로드.
+  ///
+  /// [orderHistoryAccountCode] 를 주면 주문이력 탭에서 해당 거래처 주문이력을 조회한다.
+  Future<void> initialize({
+    bool multiSelect = true,
+    String? orderHistoryAccountCode,
+  }) async {
+    _orderHistoryAccountCode = orderHistoryAccountCode;
     state = state.copyWith(multiSelect: multiSelect);
     await loadFavoriteProducts();
   }
 
-  /// 탭 변경
+  /// 탭 변경 — 주문이력 탭 진입 시 거래처 주문이력을 조회한다.
   void changeTab(AddProductTab tab) {
     state = state.copyWith(currentTab: tab);
+    if (tab == AddProductTab.orderHistory) {
+      loadOrderHistory();
+    }
+  }
+
+  /// 거래처 주문이력 조회(현재 기간 기준). 거래처 코드가 없으면 빈 목록을 유지한다.
+  Future<void> loadOrderHistory() async {
+    final accountCode = _orderHistoryAccountCode;
+    if (accountCode == null || accountCode.isEmpty) {
+      state = state.copyWith(orderHistoryGroups: const [], isLoading: false);
+      return;
+    }
+
+    final now = DateTime.now();
+    final from = state.historyDateFrom ?? now.subtract(const Duration(days: 3));
+    final to = state.historyDateTo ?? now;
+
+    state = state.toLoading();
+    try {
+      final groups = await _getAccountOrderHistory.call(
+        accountCode: accountCode,
+        startDate: from,
+        endDate: to,
+      );
+      // 도메인 그룹 → 표시용 그룹. 그룹 키(orderId)는 주문일 인덱스로 부여하고,
+      // 단일 거래처 조회라 거래처명은 별도로 싣지 않는다(제목은 주문일만 표시).
+      final mapped = <OrderHistoryGroup>[
+        for (var i = 0; i < groups.length; i++)
+          OrderHistoryGroup(
+            orderId: i,
+            orderDate: groups[i].orderDate,
+            clientName: '',
+            products: groups[i].products,
+            isExpanded: i == 0,
+          ),
+      ];
+      state = state.copyWith(
+        isLoading: false,
+        orderHistoryGroups: mapped,
+        clearError: true,
+      );
+    } catch (e) {
+      state = state.toError(extractErrorMessage(e));
+    }
   }
 
   /// 즐겨찾기 제품 목록 조회
@@ -132,12 +197,13 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     state = state.copyWith(orderHistoryGroups: groups);
   }
 
-  /// 주문 이력 날짜 범위 설정
+  /// 주문 이력 날짜 범위 설정 — 변경 즉시 재조회한다.
   void setHistoryDateRange(DateTime from, DateTime to) {
     state = state.copyWith(
       historyDateFrom: from,
       historyDateTo: to,
     );
+    loadOrderHistory();
   }
 
   /// 주문 이력 그룹 확장/축소 토글
@@ -297,6 +363,7 @@ final addProductProvider =
   return AddProductNotifier(
     getFavoriteProducts: ref.watch(getFavoriteProductsUseCaseProvider),
     searchProductsForOrder: ref.watch(searchProductsForOrderUseCaseProvider),
+    getAccountOrderHistory: ref.watch(getAccountOrderHistoryUseCaseProvider),
     addToFavorites: ref.watch(addToFavoritesUseCaseProvider),
     removeFromFavorites: ref.watch(removeFromFavoritesUseCaseProvider),
   );

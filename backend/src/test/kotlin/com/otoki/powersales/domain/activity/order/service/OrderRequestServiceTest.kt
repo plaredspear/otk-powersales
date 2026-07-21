@@ -97,10 +97,10 @@ class OrderRequestServiceTest {
                     orderDateToExclusive = to.plusDays(1).atStartOfDay(),
                 )
             } returns listOf(
-                OrderHistoryRow(LocalDateTime.of(2026, 5, 6, 9, 30), "P001", "참깨라면"),
-                OrderHistoryRow(LocalDateTime.of(2026, 5, 6, 14, 0), "P001", "참깨라면"), // 중복
-                OrderHistoryRow(LocalDateTime.of(2026, 5, 6, 14, 0), "P002", "진라면"),
-                OrderHistoryRow(LocalDateTime.of(2026, 5, 4, 11, 0), "P003", "열라면"),
+                OrderHistoryRow(LocalDateTime.of(2026, 5, 6, 9, 30), historyProduct("P001", "참깨라면"), "8800000000001"),
+                OrderHistoryRow(LocalDateTime.of(2026, 5, 6, 14, 0), historyProduct("P001", "참깨라면"), "8800000000001"), // 중복
+                OrderHistoryRow(LocalDateTime.of(2026, 5, 6, 14, 0), historyProduct("P002", "진라면"), "8800000000002"),
+                OrderHistoryRow(LocalDateTime.of(2026, 5, 4, 11, 0), historyProduct("P003", "열라면"), "8800000000003"),
             )
 
             val result = service.getAccountOrderHistory(1L, accountCode, from, to)
@@ -130,6 +130,9 @@ class OrderRequestServiceTest {
                 service.getAccountOrderHistory(1L, accountCode, to, from)
             }.isInstanceOf(InvalidDateRangeException::class.java)
         }
+
+        private fun historyProduct(code: String, name: String): Product =
+            Product(productCode = code, name = name)
     }
 
     @Nested
