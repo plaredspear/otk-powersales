@@ -42,6 +42,7 @@ class SapErpOrderService(
 
     private fun ErpOrderRequestItem.toCommand(): ErpOrderUpsertCommand = ErpOrderUpsertCommand(
         sapOrderNumber = sapOrderNumber,
+        refSapOrderNumber = refSapOrderNumber,
         sapAccountCode = sapAccountCode,
         sapAccountName = sapAccountName,
         deliveryRequestDate = deliveryRequestDate,
@@ -58,6 +59,7 @@ class SapErpOrderService(
 
     private fun ErpOrderItemDetail.toLineCommand(): ErpOrderLineCommand = ErpOrderLineCommand(
         sapOrderNumber = sapOrderNumber,
+        refSapOrderNumber = refSapOrderNumber,
         lineNumber = lineNumber,
         productCode = productCode,
         productName = productName,

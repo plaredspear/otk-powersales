@@ -33,6 +33,10 @@ class ErpOrder(
     @Column(name = "sap_order_number", nullable = false, unique = true, length = 80)
     val sapOrderNumber: String,
 
+    @FieldName("참조 ERP 주문번호")
+    @Column(name = "ref_sap_order_number", length = 80)
+    var refSapOrderNumber: String? = null,
+
     @SFField("SAPAccountCode__c")
     @FieldName("거래처코드")
     @Column(name = "sap_account_code", length = 100)

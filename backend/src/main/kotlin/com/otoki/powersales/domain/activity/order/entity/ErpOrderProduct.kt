@@ -48,6 +48,10 @@ class ErpOrderProduct(
     @Column(name = "sap_order_number", length = 255)
     val sapOrderNumber: String? = null,
 
+    @FieldName("참조 ERP 주문번호")
+    @Column(name = "ref_sap_order_number", length = 255)
+    var refSapOrderNumber: String? = null,
+
     @SFField("LineNumber__c")
     @FieldName("시퀀스")
     // SF nillable=true 정합 — 마이그레이션 SF NULL row 보존.

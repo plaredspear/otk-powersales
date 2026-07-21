@@ -155,6 +155,7 @@ class ErpOrderUpsertService(
         // 거래처 미존재(또는 SAPAccountCode 누락) 시 account=null → FK/SFId 미연결로 적재 (레거시 검증 부재 정합).
         entity.account = account
         entity.accountSfid = account?.sfid
+        entity.refSapOrderNumber = command.refSapOrderNumber
         entity.sapAccountCode = command.sapAccountCode
         entity.sapAccountName = command.sapAccountName
         entity.deliveryRequestDate = parseDate(command.deliveryRequestDate)
@@ -185,6 +186,7 @@ class ErpOrderUpsertService(
     }
 
     private fun applyLineFields(entity: ErpOrderProduct, line: ErpOrderLineCommand) {
+        entity.refSapOrderNumber = line.refSapOrderNumber
         entity.productCode = line.productCode
         entity.productName = line.productName
         entity.orderQuantity = parseAmountLong(line.orderQuantity)

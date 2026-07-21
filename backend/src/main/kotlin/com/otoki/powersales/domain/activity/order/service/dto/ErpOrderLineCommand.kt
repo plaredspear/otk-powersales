@@ -8,6 +8,7 @@ package com.otoki.powersales.domain.activity.order.service.dto
  */
 data class ErpOrderLineCommand(
     val sapOrderNumber: String?,
+    val refSapOrderNumber: String?,
     val lineNumber: String?,
     val productCode: String?,
     val productName: String?,

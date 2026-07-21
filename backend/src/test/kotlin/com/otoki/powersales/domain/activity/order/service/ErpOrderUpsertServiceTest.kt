@@ -39,9 +39,11 @@ class ErpOrderUpsertServiceTest {
         lineItemStatus: String? = null,
         shippingScheduleTime: String? = null,
         shippingCompleteTime: String? = null,
-        shippingVehicle: String? = null
+        shippingVehicle: String? = null,
+        refSapOrderNumber: String? = null
     ): ErpOrderLineCommand = ErpOrderLineCommand(
         sapOrderNumber = sapOrderNumber,
+        refSapOrderNumber = refSapOrderNumber,
         lineNumber = lineNumber,
         productCode = productCode,
         productName = productName,
@@ -73,9 +75,11 @@ class ErpOrderUpsertServiceTest {
         sapAccountName: String? = "(주)홍길동상회",
         orderSalesAmount: String? = "1500000",
         orderChannel: String? = "01",
-        lines: List<ErpOrderLineCommand> = listOf(line())
+        lines: List<ErpOrderLineCommand> = listOf(line()),
+        refSapOrderNumber: String? = null
     ): ErpOrderUpsertCommand = ErpOrderUpsertCommand(
         sapOrderNumber = sapOrderNumber,
+        refSapOrderNumber = refSapOrderNumber,
         sapAccountCode = sapAccountCode,
         sapAccountName = sapAccountName,
         deliveryRequestDate = null,
@@ -123,6 +127,31 @@ class ErpOrderUpsertServiceTest {
             assertThat(result.headerSuccessCount).isEqualTo(1)
             assertThat(result.lineSuccessCount).isEqualTo(1)
             assertThat(result.failures).isEmpty()
+        }
+
+        @Test
+        @DisplayName("refSapOrderNumber - 헤더/라인 양쪽에 적재")
+        fun upsert_refSapOrderNumberPersisted() {
+            every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
+            every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+            every { erpOrderProductRepository.findByExternalKeyIn(any()) } returns emptyList()
+            mockHeaderSave()
+            val headerCaptor = slot<List<ErpOrder>>()
+            val lineCaptor = slot<List<ErpOrderProduct>>()
+            every { erpOrderRepository.saveAllAndFlush(capture(headerCaptor)) } answers { firstArg<List<ErpOrder>>() }
+            every { erpOrderProductRepository.saveAll(capture(lineCaptor)) } answers { firstArg<List<ErpOrderProduct>>() }
+
+            service.upsert(
+                listOf(
+                    command(
+                        refSapOrderNumber = "0010099999",
+                        lines = listOf(line(refSapOrderNumber = "0010099999"))
+                    )
+                )
+            )
+
+            assertThat(headerCaptor.captured.single().refSapOrderNumber).isEqualTo("0010099999")
+            assertThat(lineCaptor.captured.single().refSapOrderNumber).isEqualTo("0010099999")
         }
 
         @Test

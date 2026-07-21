@@ -8,6 +8,7 @@ package com.otoki.powersales.domain.activity.order.service.dto
  */
 data class ErpOrderUpsertCommand(
     val sapOrderNumber: String?,
+    val refSapOrderNumber: String?,
     val sapAccountCode: String?,
     val sapAccountName: String?,
     val deliveryRequestDate: String?,

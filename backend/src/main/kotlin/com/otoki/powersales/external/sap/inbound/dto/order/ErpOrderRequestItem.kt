@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
  */
 data class ErpOrderRequestItem(
     @JsonProperty("SAPOrderNumber") val sapOrderNumber: String? = null,
+    @JsonProperty("RefSAPOrderNumber") val refSapOrderNumber: String? = null,
     @JsonProperty("SAPAccountCode") val sapAccountCode: String? = null,
     @JsonProperty("SAPAccountName") val sapAccountName: String? = null,
     @JsonProperty("DeliveryRequestDate") val deliveryRequestDate: String? = null,
