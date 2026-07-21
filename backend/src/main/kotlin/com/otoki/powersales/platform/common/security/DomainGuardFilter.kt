@@ -5,7 +5,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.filter.OncePerRequestFilter
 
-// dev-powersalesapi.otoki.com 은 모바일 클라이언트 전용 (스펙 #542).
+// dev-powersalesapi.otoki.com 은 모바일 클라이언트 + 외부 연동(OVIP) 용 (스펙 #542).
 // admin path (/api/v1/admin/) 호출은 명시적으로 차단되며, 관리자 web 은 별도 도메인을 사용한다.
 class DomainGuardFilter(
     private val apiDomain: String,
@@ -13,11 +13,14 @@ class DomainGuardFilter(
 ) : OncePerRequestFilter() {
 
     companion object {
-        // 모바일 클라이언트가 호출하는 path 화이트리스트 + 개발 편의용 swagger/h2.
+        // 모바일 클라이언트 + 외부 연동이 호출하는 path 화이트리스트 + 개발 편의용 swagger/h2.
         // 모바일 전용 prefix(/api/v1/mobile/) 도입(스펙 #574) 이후, endpoint 추가 시에도 본 목록 갱신은 불필요하다.
+        // 단 새 최상위 prefix (예: 외부 연동 /api/v1/ovip/) 도입 시에는 본 목록에 반드시 추가해야 한다 —
+        // 누락 시 이 필터가 Security/Dispatcher 진입 전에 빈 404 를 반환해, 앱 로그에 아무 흔적도 남지 않는다.
         private val API_DOMAIN_ALLOWED_PREFIXES = listOf(
             "/api/health",
             "/api/v1/mobile/",
+            "/api/v1/ovip/",
             "/swagger-ui",
             "/v3/api-docs",
             "/h2-console"

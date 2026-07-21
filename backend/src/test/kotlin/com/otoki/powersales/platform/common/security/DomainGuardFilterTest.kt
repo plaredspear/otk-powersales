@@ -92,6 +92,28 @@ class DomainGuardFilterTest {
         }
 
         @Test
+        @DisplayName("API 도메인 + OVIP 토큰 발급 경로 - 통과")
+        fun apiDomain_ovipTokenPath_passes() {
+            val request = createRequest(apiDomain, "/api/v1/ovip/oauth/token")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify { filterChain.doFilter(request, response) }
+        }
+
+        @Test
+        @DisplayName("API 도메인 + OVIP 조회 경로 - 통과")
+        fun apiDomain_ovipQueryPath_passes() {
+            val request = createRequest(apiDomain, "/api/v1/ovip/mfeis")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            verify { filterChain.doFilter(request, response) }
+        }
+
+        @Test
         @DisplayName("API 도메인 + 관리자 API - 404 차단 (모바일 전용 도메인)")
         fun apiDomain_adminApi_blocked() {
             val request = createRequest(apiDomain, "/api/v1/admin/dashboard")
@@ -171,6 +193,18 @@ class DomainGuardFilterTest {
         @DisplayName("Admin 도메인 + 모바일 API 차단 - 404")
         fun adminDomain_mobileApi_blocked() {
             val request = createRequest(adminDomain, "/api/v1/mobile/home/dashboard")
+            val response = MockHttpServletResponse()
+
+            filter.doFilter(request, response, filterChain)
+
+            assertThat(response.status).isEqualTo(404)
+            verify { filterChain wasNot Called }
+        }
+
+        @Test
+        @DisplayName("Admin 도메인 + OVIP API 차단 - 404 (OVIP 는 API 도메인 전용)")
+        fun adminDomain_ovipApi_blocked() {
+            val request = createRequest(adminDomain, "/api/v1/ovip/oauth/token")
             val response = MockHttpServletResponse()
 
             filter.doFilter(request, response, filterChain)
