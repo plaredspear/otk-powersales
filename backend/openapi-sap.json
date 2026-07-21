@@ -507,6 +507,9 @@
           "ProductName" : {
             "type" : "string"
           },
+          "RefSAPOrderNumber" : {
+            "type" : "string"
+          },
           "ReleaseAmount" : {
             "type" : "string"
           },
@@ -590,6 +593,9 @@
             "type" : "string"
           },
           "OrderType_NM" : {
+            "type" : "string"
+          },
+          "RefSAPOrderNumber" : {
             "type" : "string"
           },
           "SAPAccountCode" : {
