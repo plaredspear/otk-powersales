@@ -455,6 +455,29 @@ class AdminMonthlyIntegrationService(
             .filter { it.externalKey != null }
             .associateBy { it.externalKey!! }
 
+        // thisMonthAmount 6개월 평균매출 — 그룹 루프 안에서 account 1개씩 조회하면 그룹 수만큼
+        // findBySalesDates(6개월 IN 조회) 가 반복돼 출근등록이 월말로 갈수록 느려진다. 배치 선채움
+        // (existing.thisMonthAmount) 이 없어 동기 fallback 이 필요한 account 만 모아 1회 배치 조회한다.
+        // (calculateAvgClosingAmounts 는 List<Account> 를 받아 이미 1쿼리로 처리 가능 — 호출 지점만 루프 밖으로)
+        val accountsNeedingAvg: List<Account> = groups.entries
+            .mapNotNull { (externalKey, rows) ->
+                val rep = rows.first()
+                // 루프 안 applyThreeFields 판정과 동일 (displayName non-null 기준)
+                val applyThreeFields = rep.workingCategory5?.displayName == "상시" &&
+                    rep.workingCategory1?.displayName != null && rep.workingCategory3?.displayName != null
+                val account = rep.account
+                if (!applyThreeFields || account == null) return@mapNotNull null
+                // 배치 선채움된 그룹은 fallback 조회 불필요 → 대상에서 제외 (spec #680 Q12 옵션 1)
+                val batchPersisted = existingByKey[externalKey]?.thisMonthAmount
+                if (batchPersisted != null) null else account
+            }
+            .distinctBy { it.id }
+        val avgClosingByAccountId: Map<Long, Long> = if (accountsNeedingAvg.isEmpty()) {
+            emptyMap()
+        } else {
+            calculateAvgClosingAmounts(yearMonth.year, yearMonth.monthValue, accountsNeedingAvg)
+        }
+
         for ((externalKey, rows) in groups) {
             val rep = rows.first()
             val employee = rep.employee
@@ -514,16 +537,15 @@ class AdminMonthlyIntegrationService(
                 othersSum.add(convertedHeadcount)
             } else null
 
-            // thisMonthAmount — Q12 옵션 1: batch persist 결과 우선 + 동기 fallback
+            // thisMonthAmount — Q12 옵션 1: batch persist 결과 우선 + 동기 fallback.
+            // 동기 fallback 은 루프 밖에서 대상 account 를 모아 1회 배치 조회(avgClosingByAccountId)한
+            // 결과를 map lookup 으로 사용 — 그룹마다 findBySalesDates 를 반복하지 않는다.
             val thisMonthAmount: BigDecimal? = if (applyThreeFields && account != null) {
                 val batchPersisted = existing?.thisMonthAmount
                 if (batchPersisted != null) {
                     batchPersisted
                 } else {
-                    val avgMap = calculateAvgClosingAmounts(
-                        yearMonth.year, yearMonth.monthValue, listOf(account)
-                    )
-                    avgMap[account.id]?.let { BigDecimal(it) }
+                    avgClosingByAccountId[account.id]?.let { BigDecimal(it) }
                 }
             } else null
 
