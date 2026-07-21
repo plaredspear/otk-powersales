@@ -13,6 +13,8 @@ data class AdminSuggestionFilter(
     val startDateTime: LocalDateTime,
     val endDateTime: LocalDateTime,
     val category: SuggestionCategory? = null,
+    /** 특정 제안구분을 목록에서 제외 (예: 제안사항 화면에서 물류 클레임 제외). null 이면 미적용. */
+    val excludeCategory: SuggestionCategory? = null,
     val employeeName: String? = null,
     val accountCode: String? = null,
     val actionStatus: SuggestionActionStatus? = null,

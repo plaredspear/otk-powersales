@@ -62,6 +62,7 @@ class AdminSuggestionController(
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") endDate: LocalDate?,
         @RequestParam(required = false) category: SuggestionCategory?,
+        @RequestParam(required = false) excludeCategory: SuggestionCategory?,
         @RequestParam(required = false) employeeName: String?,
         @RequestParam(required = false) accountCode: String?,
         @RequestParam(required = false) actionStatus: SuggestionActionStatus?,
@@ -75,6 +76,7 @@ class AdminSuggestionController(
             endDate = endDate,
             filter = AdminSuggestionFilterParams(
                 category = category,
+                excludeCategory = excludeCategory,
                 employeeName = employeeName,
                 accountCode = accountCode,
                 actionStatus = actionStatus,

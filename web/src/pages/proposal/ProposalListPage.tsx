@@ -19,11 +19,12 @@ import { listTableLocale } from '@/lib/listTableLocale';
 
 const { RangePicker } = DatePicker;
 
+// 물류 클레임은 별도 메뉴(/suggestion)에서 관리하므로 제안사항 화면에서는 제외.
+// 목록 조회는 excludeCategory=LOGISTICS_CLAIM 으로 서버에서 걸러내고, 제안구분 필터에도 노출하지 않는다.
 const CATEGORY_OPTIONS: Array<{ value: SuggestionCategory | ''; label: string }> = [
   { value: '', label: '전체' },
   { value: 'NEW_PRODUCT', label: '신제품 제안' },
   { value: 'EXISTING_PRODUCT', label: '기존제품 상품가치 향상' },
-  { value: 'LOGISTICS_CLAIM', label: '물류 클레임' },
 ];
 
 const CATEGORY_TAG: Record<SuggestionCategory, { color: string; label: string }> = {
@@ -87,6 +88,8 @@ export default function ProposalListPage() {
     startDate: filters.startDate,
     endDate: filters.endDate,
     category: (filters.category || undefined) as SuggestionCategory | undefined,
+    // 물류 클레임은 별도 메뉴(/suggestion) 소관 — 제안사항 목록에서 항상 제외.
+    excludeCategory: 'LOGISTICS_CLAIM',
     actionStatus: (filters.actionStatus || undefined) as SuggestionActionStatus | undefined,
     employeeName: filters.employeeName || undefined,
     accountCode: filters.accountCode || undefined,

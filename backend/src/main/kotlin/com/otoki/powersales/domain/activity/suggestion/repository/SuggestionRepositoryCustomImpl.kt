@@ -34,6 +34,7 @@ class SuggestionRepositoryCustomImpl(
             .and(suggestion.isDeleted.eq(false))
             .and(suggestion.createdAt.between(filter.startDateTime, filter.endDateTime))
             .and(categoryEq(filter))
+            .and(categoryNe(filter))
             .and(employeeNameLike(filter))
             .and(accountCodeEq(filter))
             .and(actionStatusEq(filter))
@@ -149,6 +150,9 @@ class SuggestionRepositoryCustomImpl(
 
     private fun categoryEq(filter: AdminSuggestionFilter): Predicate? =
         filter.category?.let { suggestion.category.eq(it) }
+
+    private fun categoryNe(filter: AdminSuggestionFilter): Predicate? =
+        filter.excludeCategory?.let { suggestion.category.ne(it) }
 
     private fun employeeNameLike(filter: AdminSuggestionFilter): Predicate? {
         val name = filter.employeeName?.trim().orEmpty()

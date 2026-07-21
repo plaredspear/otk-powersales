@@ -39810,6 +39810,14 @@
           }
         }, {
           "in" : "query",
+          "name" : "excludeCategory",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "NEW_PRODUCT", "EXISTING_PRODUCT", "LOGISTICS_CLAIM" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "employeeName",
           "required" : false,
           "schema" : {

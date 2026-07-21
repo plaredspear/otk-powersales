@@ -112,6 +112,7 @@ class AdminSuggestionService(
             startDateTime = effectiveStart.atStartOfDay(),
             endDateTime = effectiveEnd.atTime(LocalTime.MAX),
             category = filter.category,
+            excludeCategory = filter.excludeCategory,
             employeeName = filter.employeeName,
             accountCode = filter.accountCode,
             actionStatus = filter.actionStatus,
@@ -403,6 +404,7 @@ class AdminSuggestionService(
  */
 data class AdminSuggestionFilterParams(
     val category: SuggestionCategory? = null,
+    val excludeCategory: SuggestionCategory? = null,
     val employeeName: String? = null,
     val accountCode: String? = null,
     val actionStatus: SuggestionActionStatus? = null,

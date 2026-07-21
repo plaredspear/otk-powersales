@@ -22,6 +22,8 @@ export interface SuggestionListParams {
   startDate?: string;
   endDate?: string;
   category?: SuggestionCategory;
+  /** 특정 제안구분 제외 (예: 제안사항 화면에서 물류 클레임 제외) */
+  excludeCategory?: SuggestionCategory;
   employeeName?: string;
   accountCode?: string;
   actionStatus?: SuggestionActionStatus;

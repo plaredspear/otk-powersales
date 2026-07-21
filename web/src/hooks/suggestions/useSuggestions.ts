@@ -9,6 +9,7 @@ export function useSuggestions(params: SuggestionListParams) {
       params.startDate,
       params.endDate,
       params.category,
+      params.excludeCategory,
       params.employeeName,
       params.accountCode,
       params.actionStatus,

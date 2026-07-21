@@ -194,6 +194,23 @@ class AdminSuggestionServiceTest {
         }
 
         @Test
+        @DisplayName("필터 — excludeCategory 전달 (제안사항 화면의 물류 클레임 제외)")
+        fun excludeCategoryPropagation() {
+            val captured = slot<AdminSuggestionFilter>()
+            every { suggestionRepository.searchForAdmin(any(), capture(captured), any()) } returns
+                PageImpl(emptyList<Suggestion>(), PageRequest.of(0, 20), 0L)
+
+            service.search(
+                allowAllScope, null, null,
+                AdminSuggestionFilterParams(excludeCategory = SuggestionCategory.LOGISTICS_CLAIM),
+                0, 20
+            )
+
+            assertThat(captured.captured.excludeCategory).isEqualTo(SuggestionCategory.LOGISTICS_CLAIM)
+            assertThat(captured.captured.category).isNull()
+        }
+
+        @Test
         @DisplayName("SF 가시 범위 — evaluator 에 scope + DKRetail__Proposal__c 전달, 산출 Predicate 를 repository 에 합성")
         fun appliesSharingPolicy() {
             val scope = DataScope(branchCodes = listOf("GHD03"), isAllBranches = false, userId = 42L)
