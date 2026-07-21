@@ -15,8 +15,9 @@ class OrderStatusInfoSheet extends StatelessWidget {
 
   /// 코드별 설명 문구.
   static const Map<String, String> _descriptions = {
-    OrderStatusCode.sent: '주문 요청이 전송되어 접수 처리 중인 상태입니다.',
-    OrderStatusCode.approved: '주문 요청이 정상적으로 전송·접수된 상태입니다.',
+    OrderStatusCode.sent: '주문 요청을 전송 시도 중인 상태입니다.',
+    OrderStatusCode.approved:
+        'SAP에서 주문 요청을 접수한 상태입니다. 승인 처리까지는 시간이 걸릴 수 있습니다.',
     OrderStatusCode.sendFailed: '주문 요청 전송에 실패한 상태입니다. 재주문이 필요합니다.',
     OrderStatusCode.canceled:
         '전송 완료된 주문에 대해 취소를 요청한 상태입니다. SAP에서 취소 요청을 접수한 뒤 실제 취소 처리까지는 시간이 걸릴 수 있습니다.',
