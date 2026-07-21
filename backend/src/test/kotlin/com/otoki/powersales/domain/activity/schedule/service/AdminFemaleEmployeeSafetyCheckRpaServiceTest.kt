@@ -43,8 +43,9 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
     private fun owner(): User =
         User(username = "admin01", employeeCode = "A0001", name = "관리자", password = "x")
 
-    private fun schedule(withOwner: Boolean = true): TeamMemberSchedule {
+    private fun schedule(withScheduleName: Boolean = true): TeamMemberSchedule {
         val s = TeamMemberSchedule(
+            name = if (withScheduleName) "TS00012345" else null,
             workingDate = LocalDate.of(2026, 5, 29),
             workingCategory1 = WorkingCategory1.DISPLAY,
             traversalFlag = "O",
@@ -57,7 +58,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
         )
         s.employee = employee()
         s.account = account()
-        if (withOwner) s.ownerUser = owner()
+        s.ownerUser = owner()
         return s
     }
 
@@ -66,7 +67,7 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
     inner class GetReport {
 
         @Test
-        @DisplayName("점검 완료 일정을 24컬럼(CUST_NAME 포함)으로 매핑한다")
+        @DisplayName("점검 완료 일정을 24컬럼(스케줄번호 포함)으로 매핑한다")
         fun mapsRows() {
             every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule())
 
@@ -79,18 +80,18 @@ class AdminFemaleEmployeeSafetyCheckRpaServiceTest {
             assertThat(item.ladyName).isEqualTo("홍길동")
             assertThat(item.workingCategory1).isEqualTo("진열")
             assertThat(item.equipment1).isEqualTo("Y")
-            // CUST_NAME = owner User 이름
-            assertThat(item.custName).isEqualTo("관리자")
+            // 마지막 컬럼 = 여사원일정 스케줄번호 (TeamMemberSchedule.name)
+            assertThat(item.scheduleName).isEqualTo("TS00012345")
         }
 
         @Test
-        @DisplayName("owner 부재 시 custName = null")
-        fun nullOwner() {
-            every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule(withOwner = false))
+        @DisplayName("스케줄번호 부재 시 scheduleName = null")
+        fun nullScheduleName() {
+            every { repository.findSafetyCheckReportRpa(any(), any()) } returns listOf(schedule(withScheduleName = false))
 
             val res = service.getReport(allScope, null, LocalDate.of(2026, 5, 29))
 
-            assertThat(res.items[0].custName).isNull()
+            assertThat(res.items[0].scheduleName).isNull()
         }
 
         @Test

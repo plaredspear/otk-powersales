@@ -17,13 +17,13 @@ import java.time.LocalDate
 /**
  * 판매여사원 일일 안전점검 현황 (RPA용) 보고서 조회 + 엑셀 export.
  *
- * 레거시 매핑: SF Report `X00/new_report_xdB` (RPA용·scope=organization·24컬럼 CUST_NAME).
+ * 레거시 매핑: SF Report `X00/new_report_xdB` (RPA용·scope=organization·24컬럼).
  * 동작: 지정 일자(미지정 시 어제 KST)의 `TeamMemberSchedule` 안전점검 완료 건을 조회
- *       (traversalFlag='O' + yesChkCnt≠null). employee/account/owner 조인 결과를 24컬럼 행으로 매핑. 근무구분1 오름차순.
+ *       (traversalFlag='O' + yesChkCnt≠null). employee/account 조인 결과를 24컬럼 행으로 매핑. 근무구분1 오름차순.
  * 부수 효과: 없음 (조회 전용).
  *
  * 신규 차이: [AdminFemaleEmployeeSafetyCheckReportService] (#841) 와 데이터 소스/필터 동일하되,
- *   (a) 마지막 컬럼 CommuteDate 대신 CUST_NAME = 레코드 Owner User 이름,
+ *   (a) 마지막 컬럼 CommuteDate 대신 여사원일정 스케줄번호(TeamMemberSchedule.name),
  *   (b) 지점 필터 지원 — 레거시 RPA 는 SF scope=organization 전사였으나, 일별 안전점검과 동일하게
  *       DataScope(costCenterCode) 지점 스코프를 신규 적용 (전사 권한자 미선택 시 전건).
  * checkTime 은 startTime 직접 (#841 동일 — 레거시 `StartTime - 9/24` KST 보정 신규 미적용).
@@ -113,7 +113,7 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
             row.createCell(21).setCellValue(item.workingCategory2 ?: "")
             row.createCell(22).setCellValue(item.workingCategory3 ?: "")
             row.createCell(23).setCellValue(item.secondWorkType ?: "")
-            row.createCell(24).setCellValue(item.custName ?: "")
+            row.createCell(24).setCellValue(item.scheduleName ?: "")
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
@@ -122,7 +122,7 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
         return ExcelResult(bytes, filename)
     }
 
-    /** 여사원일정 1건 → 24컬럼 행 (CUST_NAME = owner User 이름). enum 필드는 displayName 직렬화. */
+    /** 여사원일정 1건 → 24컬럼 행 (마지막 컬럼 = 여사원일정 스케줄번호 name). enum 필드는 displayName 직렬화. */
     private fun toItem(s: TeamMemberSchedule): FemaleEmployeeSafetyCheckRpaItem {
         val emp = s.employee
         val acc = s.account
@@ -152,8 +152,8 @@ class AdminFemaleEmployeeSafetyCheckRpaService(
             workingCategory2 = s.workingCategory2?.displayName,
             workingCategory3 = s.workingCategory3?.displayName,
             secondWorkType = s.secondWorkType,
-            // SF CUST_NAME 의사 컬럼 = 레코드 Owner. ownerUser 이름.
-            custName = s.ownerUser?.name,
+            // 여사원일정 스케줄번호 (TeamMemberSchedule.name, `TS{00000000}` AutoNumber)
+            scheduleName = s.name,
         )
     }
 }

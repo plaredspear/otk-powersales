@@ -12,7 +12,6 @@ import com.otoki.powersales.domain.activity.schedule.entity.QAttendanceLog.Compa
 import com.otoki.powersales.domain.activity.schedule.entity.QTeamMemberSchedule.Companion.teamMemberSchedule
 import com.otoki.powersales.domain.activity.promotion.entity.QPromotionEmployee.Companion.promotionEmployee
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
-import com.otoki.powersales.user.entity.QUser.Companion.user
 import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.BooleanExpression
 import com.querydsl.core.types.dsl.CaseBuilder
@@ -647,8 +646,6 @@ open class TeamMemberScheduleRepositoryCustomImpl(
             .selectFrom(teamMemberSchedule)
             .join(teamMemberSchedule.employee, employee).fetchJoin()
             .leftJoin(teamMemberSchedule.account, account).fetchJoin()
-            // CUST_NAME 컬럼 — SF Report 의사 컬럼 = 레코드 Owner. ownerUser 조인.
-            .leftJoin(teamMemberSchedule.ownerUser, user).fetchJoin()
             .where(
                 teamMemberSchedule.workingDate.eq(date),
                 // 순회/점검 대상 (레거시 TraversalFlag = ',O')

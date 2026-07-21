@@ -82,7 +82,7 @@ export default function FemaleEmployeeSafetyCheckReportRpaPage() {
       { title: '근무구분2', dataIndex: 'workingCategory2', width: 90, render: (v) => v ?? '-' },
       { title: '근무구분3', dataIndex: 'workingCategory3', width: 90, render: (v) => v ?? '-' },
       { title: '부근무유형', dataIndex: 'secondWorkType', width: 100, render: (v) => v ?? '-' },
-      { title: '소유자명', dataIndex: 'custName', width: 120, render: (v) => v ?? '-' },
+      { title: '스케줄번호', dataIndex: 'scheduleName', width: 120, render: (v) => v ?? '-' },
     ],
     [],
   );

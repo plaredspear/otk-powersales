@@ -28,7 +28,7 @@ export interface FemaleEmployeeSafetyCheckRpaItem {
   workingCategory2: string | null;
   workingCategory3: string | null;
   secondWorkType: string | null;
-  custName: string | null;
+  scheduleName: string | null;
 }
 
 export interface FemaleEmployeeSafetyCheckRpaResponse {
