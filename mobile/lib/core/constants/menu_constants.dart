@@ -124,6 +124,12 @@ abstract final class MenuConstants {
           label: '비밀번호 변경',
           route: '/verify-password',
         ),
+        // 로그아웃은 라우트 이동이 아니라 확인 다이얼로그 + authProvider.logout()
+        // 특수 동작이므로 route 를 두지 않고 FullMenuDrawer 에서 id 로 분기 처리한다.
+        MenuItem(
+          id: 'logout',
+          label: '로그아웃',
+        ),
         MenuItem(
           id: 'app-info',
           label: '앱 정보',

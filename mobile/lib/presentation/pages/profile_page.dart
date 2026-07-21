@@ -10,7 +10,8 @@ import '../providers/auth_provider.dart';
 /// 전체메뉴 Drawer 상단 이름 영역을 탭하면 진입한다.
 /// 레거시 Heroku GNB `top_info`(노란 헤더 + 이름) + `mypage/modify.jsp`
 /// 폼 행 스타일을 정합해 사용자 정보를 표시하고, 계정 액션
-/// (비밀번호 변경 · 로그아웃) 진입점을 제공한다.
+/// (비밀번호 변경) 진입점을 제공한다. 로그아웃은 전체메뉴 Drawer 의
+/// "마이페이지" 그룹으로 이동했다.
 ///
 /// 레거시와 달리 "내 일정"은 전체메뉴에 별도 항목이 있으므로 여기에 두지 않는다.
 class ProfilePage extends ConsumerWidget {
@@ -103,10 +104,6 @@ class ProfilePage extends ConsumerWidget {
             onTap: () =>
                 Navigator.of(context).pushNamed(AppRouter.verifyPassword),
           ),
-          _actionRow(
-            label: '로그아웃',
-            onTap: () => _handleLogout(context, ref),
-          ),
         ],
       ),
     );
@@ -177,38 +174,6 @@ class ProfilePage extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  /// 로그아웃 처리 (전체메뉴 Drawer 로그아웃과 동일 흐름)
-  void _handleLogout(BuildContext context, WidgetRef ref) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('로그아웃'),
-        content: const Text('로그아웃 하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              '취소',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.of(dialogContext).pop(); // 다이얼로그 닫기
-              // 로그아웃 → 루트 ProviderScope 재생성으로 로그인 화면 전환까지 처리되므로
-              // 별도의 수동 네비게이션은 두지 않는다.
-              await ref.read(authProvider.notifier).logout();
-            },
-            child: Text(
-              '확인',
-              style: TextStyle(color: AppColors.otokiRed),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -22,7 +22,8 @@ import 'quick_action_bar.dart';
 /// - 빠른 액션: 제품 검색, 활동 등록
 /// - 메뉴 그룹: 7개 그룹, 13개 아이템
 ///
-/// 로그아웃은 프로필(내 정보) 화면에 있으므로 여기서는 제공하지 않는다.
+/// 로그아웃은 "마이페이지" 그룹의 "비밀번호 변경"과 "앱 정보" 사이에 위치하며,
+/// 라우트 이동이 아니라 확인 다이얼로그 + authProvider.logout() 특수 동작이다.
 class FullMenuDrawer extends ConsumerWidget {
   const FullMenuDrawer({super.key});
 
@@ -79,7 +80,8 @@ class FullMenuDrawer extends ConsumerWidget {
                     children: [
                       // 메뉴 그룹 목록 (조장은 "거래처" 다음에 "여사원 관리",
                       // AccountViewAll 은 "대리출근" 삽입)
-                      ..._buildMenuGroups(context, user?.role, user?.rawRole),
+                      ..._buildMenuGroups(
+                          context, ref, user?.role, user?.rawRole),
                       // 메뉴 가장 하단에 현재 버전 표시 (메뉴와 함께 스크롤)
                       const _MenuVersionFooter(),
                     ],
@@ -103,6 +105,7 @@ class FullMenuDrawer extends ConsumerWidget {
   /// 메뉴를 제외하며, 제외 후 항목이 비는 그룹(제품)은 그룹 자체를 노출하지 않는다.
   List<Widget> _buildMenuGroups(
     BuildContext context,
+    WidgetRef ref,
     String? role,
     String? rawRole,
   ) {
@@ -144,6 +147,10 @@ class FullMenuDrawer extends ConsumerWidget {
         isLast: index == groups.length - 1,
         onItemTap: (item) {
           Navigator.of(context).pop();
+          if (item.id == 'logout') {
+            _handleLogout(context, ref);
+            return;
+          }
           _handleMenuItemTap(context, item);
         },
       );
@@ -170,6 +177,38 @@ class FullMenuDrawer extends ConsumerWidget {
         ),
       );
     }
+  }
+
+  /// 로그아웃 처리 (프로필 화면 로그아웃과 동일 흐름)
+  void _handleLogout(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('로그아웃'),
+        content: const Text('로그아웃 하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              '취소',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop(); // 다이얼로그 닫기
+              // 로그아웃 → 루트 ProviderScope 재생성으로 로그인 화면 전환까지 처리되므로
+              // 별도의 수동 네비게이션은 두지 않는다.
+              await ref.read(authProvider.notifier).logout();
+            },
+            child: Text(
+              '확인',
+              style: TextStyle(color: AppColors.otokiRed),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 라우트 이동 (구현된 라우트만 Navigator, 미구현 시 스낵바)
