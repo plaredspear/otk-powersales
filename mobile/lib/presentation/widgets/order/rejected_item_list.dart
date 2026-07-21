@@ -51,6 +51,13 @@ class RejectedItemList extends StatelessWidget {
               ),
             ],
           ),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            '반려제품처리에 시간이 걸릴 수 있습니다.',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           SizedBox(height: AppSpacing.md),
           Divider(
             height: 1,
