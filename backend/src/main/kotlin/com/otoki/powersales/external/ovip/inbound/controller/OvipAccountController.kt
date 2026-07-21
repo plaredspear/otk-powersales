@@ -39,7 +39,7 @@ class OvipAccountController(
         description = "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
         security = [SecurityRequirement(name = "Bearer")]
     )
-    @PostMapping("/search")
+    @PostMapping
     fun search(
         @RequestBody request: SnapshotSearchRequest,
         authentication: Authentication?,

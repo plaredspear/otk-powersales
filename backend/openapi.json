@@ -44207,7 +44207,7 @@
         "tags" : [ "suggestion-controller" ]
       }
     },
-    "/api/v1/ovip/account/search" : {
+    "/api/v1/ovip/account" : {
       "post" : {
         "description" : "cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지. 필수 필터 없음.",
         "operationId" : "search_2",
@@ -44240,7 +44240,7 @@
         "tags" : [ "ovip-account-controller" ]
       }
     },
-    "/api/v1/ovip/mfeis/search" : {
+    "/api/v1/ovip/mfeis" : {
       "post" : {
         "description" : "year+월 필수. cursor(PK)/size 로 순차 인출. nextCursor 가 null 이면 마지막 페이지.",
         "operationId" : "search_1",
@@ -44328,7 +44328,7 @@
         "tags" : [ "ovip-token-controller" ]
       }
     },
-    "/api/v1/ovip/organization/search" : {
+    "/api/v1/ovip/organization" : {
       "post" : {
         "description" : "요청 파라미터 없이 전건을 한 번에 반환한다. 페이지네이션 없음.",
         "operationId" : "search",

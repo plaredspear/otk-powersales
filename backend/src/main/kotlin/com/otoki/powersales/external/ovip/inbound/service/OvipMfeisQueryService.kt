@@ -79,7 +79,7 @@ class OvipMfeisQueryService(
     }
 
     companion object {
-        const val ENDPOINT = "/api/v1/ovip/mfeis/search"
+        const val ENDPOINT = "/api/v1/ovip/mfeis"
     }
 }
 

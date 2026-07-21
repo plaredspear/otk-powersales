@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController
  * 마스터라 건수도 페이지를 나눌 규모가 아니기 때문 (상세 근거는
  * [com.otoki.powersales.domain.org.organization.repository.OrganizationRepositoryCustom.findAllSnapshot] KDoc).
  *
- * 조회 계열 endpoint 규약을 맞추기 위해 GET 이 아니라 POST `/search` 를 쓴다 (MFEIS/거래처와 동일).
+ * 조회 계열 endpoint 규약을 맞추기 위해 GET 이 아니라 리소스 경로에 POST 를 쓴다 (MFEIS/거래처와 동일).
  * 노출 필드는 entity 전 컬럼.
  */
 @RestController
@@ -36,7 +36,7 @@ class OvipOrganizationController(
         description = "요청 파라미터 없이 전건을 한 번에 반환한다. 페이지네이션 없음.",
         security = [SecurityRequirement(name = "Bearer")]
     )
-    @PostMapping("/search")
+    @PostMapping
     fun search(
         authentication: Authentication?,
         httpRequest: HttpServletRequest

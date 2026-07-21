@@ -50,6 +50,6 @@ class OvipOrganizationQueryService(
     }
 
     companion object {
-        const val ENDPOINT = "/api/v1/ovip/organization/search"
+        const val ENDPOINT = "/api/v1/ovip/organization"
     }
 }

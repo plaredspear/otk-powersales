@@ -43,6 +43,6 @@ class OvipAccountQueryService(
     )
 
     companion object {
-        const val ENDPOINT = "/api/v1/ovip/account/search"
+        const val ENDPOINT = "/api/v1/ovip/account"
     }
 }
