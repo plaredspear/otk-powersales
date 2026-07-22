@@ -405,7 +405,9 @@ export default function ElectronicSalesDashboardPage() {
                   onSearch={handleProductSearch}
                   options={productOptions}
                   placeholder="검색 후 추가 (미선택 시 전체)"
-                  style={{ minWidth: 260, maxWidth: 420 }}
+                  // 폭 고정 — 가변 폭(minWidth~maxWidth) + responsive 조합은 임계 폭 근처에서
+                  // 태그 펼침(폭 확장)↔접힘(폭 축소)이 무한 반복되며 화면이 깜빡인다(flickering).
+                  style={{ width: 320 }}
                   maxTagCount="responsive"
                   allowClear
                   showSearch
