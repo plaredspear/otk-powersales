@@ -5,7 +5,6 @@ import {
   Card,
   Col,
   DatePicker,
-  Input,
   Row,
   Select,
   Space,
@@ -14,18 +13,15 @@ import {
   Typography,
   message,
 } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import type { TableRowSelection } from 'antd/es/table/interface';
 import { useQuery } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import {
   MAX_SELECTABLE_ACCOUNTS,
   POS_SALES_EXPORT_LIST_PATH,
   exportPosSalesListParams,
-  fetchPosSalesAccounts,
   fetchPosSalesList,
-  type PosSalesAccountItem,
   type PosSalesDashboardListItem,
 } from '@/api/posSales';
 import {
@@ -37,12 +33,14 @@ import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
-import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { usePosSalesBranches } from '@/hooks/sales/usePosSalesBranches';
 import type { Branch } from '@/api/team-schedule';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import PosSalesDetailModal from './PosSalesDetailModal';
+import PosSalesAccountSelectModal, {
+  type PosSalesSelectedAccount,
+} from './PosSalesAccountSelectModal';
 
 const { Text } = Typography;
 
@@ -50,19 +48,10 @@ const { Text } = Typography;
 // 정합. backend PosSalesAdminQueryService.MAX_RANGE_DAYS 정합.
 const MAX_RANGE_DAYS = 31;
 
-// 지점 목록 미로드(undefined) 시 기본값 — 모듈 상수로 identity 를 고정한다. 인라인 `?? []` 는 매 렌더마다
-// 새 배열을 만들어, 그 배열을 소비하는 PeriodBranchFilterBar 의 useMemo/useEffect 를 재트리거한다.
+// 지점 목록 미로드(undefined) 시 기본값 — 모듈 상수로 identity 를 고정한다.
 const EMPTY_BRANCHES: Branch[] = [];
 
-/** 1단 거래처 조회 조건 (조회 버튼 클릭 시점에 확정). */
-interface AccountQueryParams {
-  codes: string[];
-  customerKeyword?: string;
-  distributionChannels: string[];
-  accountTypes: string[];
-}
-
-/** 2단 POS 조회 조건 (선택 거래처 + 기간 + 제품/분류). */
+/** POS 조회 조건 (선택 거래처 + 기간 + 제품/분류). */
 interface PosQueryParams {
   startDate: string;
   endDate: string;
@@ -73,32 +62,30 @@ interface PosQueryParams {
 }
 
 /**
- * POS매출 — web admin 2단 조회 페이지.
+ * POS매출 — web admin 조회 페이지.
  *
  * 레거시 「POS매출 조회」(`/sales/posMain` → `posmain.jsp`, POS `live_pos_sales_dh`) 의 거래처별 확장.
  * 외부 POS DB 부하를 줄이기 위해 조회를 2단으로 분리한다:
- * - 1단: 지점/거래처명/유통형태/거래처유형으로 메인 DB 거래처 목록만 조회 (POS 미접촉, 즉시 응답).
- *        결과 목록에서 거래처를 최대 20개 선택.
- * - 2단: 선택 거래처(+기간, 최대 31일 + 제품/중분류/소분류)만 외부 POS DB 로 집계. 상단 합계 카드는
- *        선택 거래처 기준. 페이징 + 정렬 + 엑셀 export. row 클릭 시 제품별 상세 modal.
+ * - 거래처 선택: 「거래처 선택」 모달(`PosSalesAccountSelectModal`)에서 지점/거래처명/유통형태/거래처
+ *   유형으로 메인 DB 거래처 목록만 조회(POS 미접촉)하고 최대 20개를 선택 → 메인에 칩으로 표시.
+ * - POS 조회: 선택 거래처(+기간 최대 31일 + 제품/중분류/소분류)만 외부 POS DB 로 집계. 상단 합계
+ *   카드는 선택 거래처 기준. 페이징 + 정렬 + 엑셀 export. row 클릭 시 제품별 상세 modal.
+ *
+ * 거래처 검색을 모달로 분리한 이유: 예전엔 메인 필터바의 [조회] 버튼이 "거래처 목록 조회"를 수행해
+ * POS매출 조회로 오인되던 UX 혼란이 있었다. 메인에는 POS 조회 조건(기간/제품)과 선택 거래처 칩,
+ * 그리고 최종 [POS 매출 조회] 버튼만 남긴다.
  *
  * 조건 옵션/제품 검색은 월매출(전산실적)과 동일 endpoint 재사용 (동일 권한 `monthly_sales_history`).
  */
 export default function SalesQueryPage() {
-  // 1단 거래처 조회 조건 (버퍼)
-  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
-  // POS매출 전용 지점 셀렉터 (monthly_sales_history 게이팅) — 조직 트리 스코프.
-  // data 가 undefined 여도 안정된 EMPTY_BRANCHES 참조를 넘겨 필터바의 불필요한 재계산을 막는다.
+  // POS매출 전용 지점 셀렉터 (monthly_sales_history 게이팅) — 조직 트리 스코프. 모달에 주입.
   const { data: branches = EMPTY_BRANCHES } = usePosSalesBranches();
-  const [customerKeyword, setCustomerKeyword] = useState<string>('');
-  const [distributionChannels, setDistributionChannels] = useState<string[]>([]);
-  const [accountTypes, setAccountTypes] = useState<string[]>([]);
-  const [accountQuery, setAccountQuery] = useState<AccountQueryParams | null>(null);
 
-  // 거래처 선택 (1단 결과에서 체크)
-  const [selectedAccountIds, setSelectedAccountIds] = useState<number[]>([]);
+  // 거래처 선택 (모달에서 확정). id + 칩 라벨 메타.
+  const [selectedAccounts, setSelectedAccounts] = useState<PosSalesSelectedAccount[]>([]);
+  const [accountModalOpen, setAccountModalOpen] = useState<boolean>(false);
 
-  // 2단 POS 조회 조건 (버퍼)
+  // POS 조회 조건 (버퍼)
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf('month'), dayjs()]);
   const [selectedProducts, setSelectedProducts] = useState<ElectronicSalesProductLookupItem[]>([]);
   const [category2, setCategory2] = useState<string | undefined>(undefined);
@@ -113,38 +100,13 @@ export default function SalesQueryPage() {
   // 두 끝점 일수 차이 31 초과 여부 — 초과 시 경고 + 조회 차단 (외부 POS DB 스캔 보호 + 레거시 maxSpan 정합).
   const rangeExceedsMax = dateRange[1].diff(dateRange[0], 'day') > MAX_RANGE_DAYS;
 
-  // 유통형태/거래처유형/중·소분류 옵션 — 메인 DB distinct, 메타 데이터라 10분 캐시.
-  // 전산실적과 동일 옵션이므로 동일 queryKey 로 캐시 공유.
+  // 중·소분류 옵션 — 메인 DB distinct, 메타 데이터라 10분 캐시. 전산실적과 동일 queryKey 로 캐시 공유.
   const filterOptionsQuery = useQuery({
     queryKey: ['electronicSalesDashboard', 'filter-options'],
     queryFn: fetchFilterOptions,
     staleTime: 10 * 60 * 1000,
   });
   const filterOptions = filterOptionsQuery.data;
-  // 드롭다운 옵션 배열은 useMemo 로 identity 를 고정한다. 인라인 .map() 은 매 렌더마다 새 배열/객체를
-  // 만들어, mode="multiple" + showSearch Select 에서 hover/선택 시 활성 항목·스크롤이 튀는(값이 바뀌는
-  // 것처럼 보이는) 현상을 유발한다.
-  const distributionChannelOptions = useMemo(
-    () => (filterOptions?.distributionChannels ?? []).map((v) => ({ value: v, label: v })),
-    [filterOptions],
-  );
-  // 거래처유형 옵션 — 유통형태 미선택 시 전체, 선택 시 선택된 유통형태들의 종속 거래처유형 합집합.
-  // (유통형태는 다중선택이므로 각 유통형태의 dependentAccountTypes 를 모두 합친다.)
-  const accountTypeOptions = useMemo(() => {
-    if (!filterOptions) return [];
-    let labels: string[];
-    if (distributionChannels.length === 0) {
-      labels = filterOptions.accountTypes;
-    } else {
-      const union = new Set<string>();
-      distributionChannels.forEach((dist) => {
-        (filterOptions.dependentAccountTypes[dist] ?? []).forEach((t) => union.add(t));
-      });
-      // 전체 목록 순서(정렬)를 유지하도록 accountTypes 기준으로 필터.
-      labels = filterOptions.accountTypes.filter((t) => union.has(t));
-    }
-    return labels.map((v) => ({ value: v, label: v }));
-  }, [filterOptions, distributionChannels]);
   const category2Options = useMemo(
     () => (filterOptions?.categories ?? []).map((c) => ({ value: c.category2, label: c.category2 })),
     [filterOptions],
@@ -192,38 +154,24 @@ export default function SalesQueryPage() {
     );
   };
 
-  // 유통형태 변경 시, 새 유통형태 집합의 종속 거래처유형에 더 이상 속하지 않는 거래처유형 선택값은 정리한다.
-  // (유통형태를 모두 비우면 거래처유형은 전체 대상이 되므로 기존 선택을 유지한다.)
-  const handleDistributionChange = (next: string[]) => {
-    setDistributionChannels(next);
-    if (accountTypes.length > 0 && next.length > 0 && filterOptions) {
-      const allowed = new Set<string>();
-      next.forEach((dist) => {
-        (filterOptions.dependentAccountTypes[dist] ?? []).forEach((t) => allowed.add(t));
-      });
-      const kept = accountTypes.filter((t) => allowed.has(t));
-      if (kept.length !== accountTypes.length) setAccountTypes(kept);
-    }
+  const selectedAccountIds = useMemo(
+    () => selectedAccounts.map((a) => a.accountId),
+    [selectedAccounts],
+  );
+
+  // 모달 [선택 완료] — 칩만 갱신. 선택 거래처가 바뀌면 기존 POS 결과는 초기화(조건 불일치 방지).
+  const handleAccountConfirm = (next: PosSalesSelectedAccount[]) => {
+    setSelectedAccounts(next);
+    setPosQuery(null);
   };
 
-  // 1단 — 거래처 목록 조회
-  const accountsQuery = useQuery({
-    queryKey: ['posSalesDashboard', 'accounts', accountQuery],
-    queryFn: () => {
-      const q = accountQuery!;
-      return fetchPosSalesAccounts({
-        costCenterCodes: q.codes,
-        customerKeyword: q.customerKeyword,
-        distributionChannels: q.distributionChannels,
-        accountTypes: q.accountTypes,
-      });
-    },
-    enabled: accountQuery != null,
-    placeholderData: (prev) => prev,
-  });
-  const accounts = accountsQuery.data;
+  // 칩 개별 제거.
+  const handleRemoveAccount = (accountId: number) => {
+    setSelectedAccounts((prev) => prev.filter((a) => a.accountId !== accountId));
+    setPosQuery(null);
+  };
 
-  // 2단 — 선택 거래처 POS 집계
+  // POS 조회 — 선택 거래처 집계
   const listQuery = useQuery({
     queryKey: ['posSalesDashboard', 'list', posQuery, page, pageSize, sort],
     queryFn: () => {
@@ -245,23 +193,7 @@ export default function SalesQueryPage() {
   });
   const list = listQuery.data;
 
-  // 1단 조회 — 거래처 목록 갱신 (선택/2단 결과 초기화)
-  const handleSearchAccounts = () => {
-    if (selectedCodes.length === 0) {
-      message.warning('지점은 필수항목입니다.');
-      return;
-    }
-    setSelectedAccountIds([]);
-    setPosQuery(null);
-    setAccountQuery({
-      codes: selectedCodes,
-      customerKeyword: customerKeyword.trim() || undefined,
-      distributionChannels,
-      accountTypes,
-    });
-  };
-
-  // 2단 조회 — 선택 거래처 POS 집계
+  // POS 조회 — 선택 거래처 집계 실행
   const handleSearchPos = () => {
     if (selectedAccountIds.length === 0) {
       message.warning('조회할 거래처를 선택해주세요.');
@@ -307,44 +239,7 @@ export default function SalesQueryPage() {
   const formatQty = (v: number | null | undefined) =>
     v == null ? '-' : v.toLocaleString();
 
-  // 1단 거래처 목록 컬럼 (체크박스 선택)
-  const accountColumns: ColumnsType<PosSalesAccountItem> = useMemo(
-    () => [
-      { title: '거래처', dataIndex: 'accountName', width: 200, render: (v) => v ?? '-' },
-      { title: 'SAP코드', dataIndex: 'sapAccountCode', width: 120, render: (v) => v ?? '-' },
-      { title: '유통형태', dataIndex: 'distributionChannel', width: 140, render: (v) => v ?? '-' },
-      { title: '거래처유형', dataIndex: 'accountType', width: 140, render: (v) => v ?? '-' },
-      { title: '지점', dataIndex: 'branchName', width: 140, render: (v) => v ?? '-' },
-    ],
-    [],
-  );
-
-  // 거래처 행 선택 토글 — 행 클릭/체크박스 공용. 선택 해제는 항상 허용, 신규 선택은 상한(20) 가드.
-  const toggleAccount = (accountId: number) => {
-    setSelectedAccountIds((prev) => {
-      if (prev.includes(accountId)) return prev.filter((id) => id !== accountId);
-      if (prev.length >= MAX_SELECTABLE_ACCOUNTS) {
-        message.warning(`거래처는 최대 ${MAX_SELECTABLE_ACCOUNTS}개까지 선택할 수 있습니다.`);
-        return prev;
-      }
-      return [...prev, accountId];
-    });
-  };
-
-  const rowSelection: TableRowSelection<PosSalesAccountItem> = {
-    // 최대 20개 상한이라 "전체 선택"은 무의미(20개 초과 목록에서 누르면 상한 초과로 0개 선택됨) → 숨김.
-    hideSelectAll: true,
-    selectedRowKeys: selectedAccountIds,
-    onSelect: (record) => toggleAccount(record.accountId),
-    getCheckboxProps: (record) => ({
-      // 상한 도달 시 미선택 행은 체크 비활성 (이미 선택된 행은 해제 가능하도록 유지)
-      disabled:
-        selectedAccountIds.length >= MAX_SELECTABLE_ACCOUNTS &&
-        !selectedAccountIds.includes(record.accountId),
-    }),
-  };
-
-  // 2단 POS 결과 컬럼
+  // POS 결과 컬럼
   const columns: ColumnsType<PosSalesDashboardListItem> = useMemo(
     () => [
       {
@@ -380,18 +275,13 @@ export default function SalesQueryPage() {
     [],
   );
 
+  const noAccountSelected = selectedAccountIds.length === 0;
+
   return (
     <div style={{ padding: 16 }}>
-      {/* ── 1단: 거래처 조회 조건 ── */}
-      <PeriodBranchFilterBar
-        branches={branches}
-        selectedCodes={selectedCodes}
-        onCodesChange={setSelectedCodes}
-        onSearch={handleSearchAccounts}
-        onExport={() => {}}
-        hideExport
-        searchLoading={accountsQuery.isFetching}
-        periodFilter={
+      {/* ── POS 조회 조건 (기간 + 제품/분류) ── */}
+      <Card size="small" style={{ marginBottom: 12 }}>
+        <Space wrap align="end">
           <div>
             <span>조회기간:</span>
             <div style={{ marginTop: 4 }}>
@@ -405,67 +295,114 @@ export default function SalesQueryPage() {
               />
             </div>
           </div>
-        }
-        extraFilters={
-          <>
-            <div>
-              <span>유통형태:</span>
-              <div style={{ marginTop: 4 }}>
-                <Select
-                  mode="multiple"
-                  value={distributionChannels}
-                  onChange={handleDistributionChange}
-                  options={distributionChannelOptions}
-                  placeholder="전체"
-                  // 폭은 고정한다. minWidth~maxWidth 가변 폭 + maxTagCount="responsive" 조합은,
-                  // 긴 라벨 하나가 컨테이너 경계 길이에 걸리면 태그 접힘↔펼침 측정이 무한 반복돼
-                  // 값이 해제/재선택되는 것처럼 깜빡이는 레이아웃 진동을 일으킨다.
-                  style={{ width: 220 }}
-                  maxTagCount="responsive"
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  loading={filterOptionsQuery.isLoading}
-                  notFoundContent="항목 없음"
-                />
-              </div>
+          <div>
+            <span>중분류:</span>
+            <div style={{ marginTop: 4 }}>
+              <Select
+                value={category2}
+                onChange={(v) => {
+                  setCategory2(v);
+                  setCategory3(undefined); // 중분류 변경 시 종속 소분류 초기화
+                }}
+                options={category2Options}
+                placeholder="전체"
+                style={{ width: 140 }}
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                loading={filterOptionsQuery.isLoading}
+                notFoundContent="항목 없음"
+              />
             </div>
-            <div>
-              <span>거래처유형:</span>
-              <div style={{ marginTop: 4 }}>
-                <Select
-                  mode="multiple"
-                  value={accountTypes}
-                  onChange={setAccountTypes}
-                  options={accountTypeOptions}
-                  placeholder="전체"
-                  // 폭 고정 — 유통형태 Select 와 동일 이유(가변 폭 + responsive 진동 방지).
-                  style={{ width: 220 }}
-                  maxTagCount="responsive"
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  loading={filterOptionsQuery.isLoading}
-                  notFoundContent="항목 없음"
-                />
-              </div>
+          </div>
+          <div>
+            <span>소분류:</span>
+            <div style={{ marginTop: 4 }}>
+              <Select
+                value={category3}
+                onChange={setCategory3}
+                options={category3Options}
+                placeholder={category2 ? '전체' : '중분류 먼저 선택'}
+                style={{ width: 140 }}
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                disabled={!category2}
+                notFoundContent="항목 없음"
+              />
             </div>
-            <div>
-              <span>거래처 검색:</span>
-              <div style={{ marginTop: 4 }}>
-                <Input
-                  placeholder="거래처명 부분 일치"
-                  value={customerKeyword}
-                  onChange={(e) => setCustomerKeyword(e.target.value)}
-                  onPressEnter={handleSearchAccounts}
-                  style={{ width: 180 }}
-                  allowClear
-                />
-              </div>
+          </div>
+          <div>
+            <span>제품 (제품명/제품코드/바코드):</span>
+            <div style={{ marginTop: 4 }}>
+              <Select
+                mode="multiple"
+                value={selectedProducts.map((p) => p.productId)}
+                onChange={handleProductChange}
+                onSearch={handleProductSearch}
+                options={productOptions}
+                placeholder="검색 후 추가 (미선택 시 전체)"
+                style={{ width: 420 }}
+                maxTagCount="responsive"
+                allowClear
+                showSearch
+                filterOption={false}
+                loading={productLookupQuery.isFetching}
+                notFoundContent={
+                  productKeyword ? '검색 결과 없음' : '제품명, 제품코드 또는 바코드를 입력하세요'
+                }
+              />
             </div>
-          </>
-        }
-      />
+          </div>
+        </Space>
+      </Card>
+
+      {/* ── 조회 거래처 (모달 선택 + 칩) ── */}
+      <Card size="small" style={{ marginBottom: 12 }}>
+        <div
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Space align="center" style={{ marginBottom: selectedAccounts.length > 0 ? 8 : 0 }}>
+              <Text strong>조회 거래처</Text>
+              <Button icon={<PlusOutlined />} onClick={() => setAccountModalOpen(true)}>
+                거래처 선택
+              </Button>
+              <Text type="secondary">
+                선택 {selectedAccounts.length}/{MAX_SELECTABLE_ACCOUNTS}
+              </Text>
+            </Space>
+            {selectedAccounts.length > 0 ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {selectedAccounts.map((a) => (
+                  <Tag
+                    key={a.accountId}
+                    closable
+                    onClose={() => handleRemoveAccount(a.accountId)}
+                    style={{ marginInlineEnd: 0 }}
+                  >
+                    {a.accountName ?? `#${a.accountId}`}
+                  </Tag>
+                ))}
+              </div>
+            ) : (
+              <Text type="secondary">
+                {' '}
+                — [거래처 선택]으로 조회할 거래처를 먼저 선택하세요.
+              </Text>
+            )}
+          </div>
+          <Button
+            type="primary"
+            icon={<SearchOutlined />}
+            onClick={handleSearchPos}
+            disabled={noAccountSelected || rangeExceedsMax}
+            loading={listQuery.isFetching}
+          >
+            POS 매출 조회
+          </Button>
+        </div>
+      </Card>
 
       {rangeExceedsMax && (
         <Alert
@@ -475,130 +412,7 @@ export default function SalesQueryPage() {
         />
       )}
 
-      {accountsQuery.isError && (
-        <Alert
-          type="error"
-          message={(accountsQuery.error as Error)?.message ?? '거래처 조회 실패'}
-          style={{ marginBottom: 8 }}
-        />
-      )}
-
-      {/* ── 1단 결과: 거래처 목록 (체크박스 선택) ── */}
-      {accountQuery != null && (
-        <Card size="small" style={{ marginBottom: 12 }}>
-          <div
-            style={{
-              marginBottom: 8,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Space>
-              <Text strong>거래처 선택</Text>
-              <Text type="secondary">
-                {accounts?.totalElements ?? 0}건 · 선택 {selectedAccountIds.length}/
-                {MAX_SELECTABLE_ACCOUNTS}
-              </Text>
-            </Space>
-            <Button
-              type="primary"
-              icon={<SearchOutlined />}
-              onClick={handleSearchPos}
-              disabled={selectedAccountIds.length === 0 || rangeExceedsMax}
-              loading={listQuery.isFetching}
-            >
-              선택 거래처 POS 조회
-            </Button>
-          </div>
-          <ResizableTable
-            rowKey={(r) => r.accountId}
-            size="small"
-            columns={accountColumns}
-            dataSource={accounts?.items ?? []}
-            loading={accountsQuery.isLoading}
-            rowSelection={rowSelection}
-            scroll={{ y: 280 }}
-            pagination={false}
-            // 행 아무 곳이나 클릭해도 선택/해제 (작은 체크박스만 조준할 필요 없음)
-            onRow={(record) => ({
-              onClick: () => toggleAccount(record.accountId),
-              style: { cursor: 'pointer' },
-            })}
-            locale={listTableLocale({ searched: accountQuery != null })}
-          />
-        </Card>
-      )}
-
-      {/* ── 2단: 제품/분류 필터 ── */}
-      {accountQuery != null && (
-        <Card size="small" style={{ marginBottom: 12 }}>
-          <Space wrap align="end">
-            <div>
-              <span>중분류:</span>
-              <div style={{ marginTop: 4 }}>
-                <Select
-                  value={category2}
-                  onChange={(v) => {
-                    setCategory2(v);
-                    setCategory3(undefined); // 중분류 변경 시 종속 소분류 초기화
-                  }}
-                  options={category2Options}
-                  placeholder="전체"
-                  style={{ width: 140 }}
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  loading={filterOptionsQuery.isLoading}
-                  notFoundContent="항목 없음"
-                />
-              </div>
-            </div>
-            <div>
-              <span>소분류:</span>
-              <div style={{ marginTop: 4 }}>
-                <Select
-                  value={category3}
-                  onChange={setCategory3}
-                  options={category3Options}
-                  placeholder={category2 ? '전체' : '중분류 먼저 선택'}
-                  style={{ width: 140 }}
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  disabled={!category2}
-                  notFoundContent="항목 없음"
-                />
-              </div>
-            </div>
-            <div>
-              <span>제품 (제품명/제품코드/바코드):</span>
-              <div style={{ marginTop: 4 }}>
-                <Select
-                  mode="multiple"
-                  value={selectedProducts.map((p) => p.productId)}
-                  onChange={handleProductChange}
-                  onSearch={handleProductSearch}
-                  options={productOptions}
-                  placeholder="검색 후 추가 (미선택 시 전체)"
-                  // 폭 고정 — 유통형태 Select 와 동일 이유(가변 폭 + responsive 진동 방지).
-                  style={{ width: 420 }}
-                  maxTagCount="responsive"
-                  allowClear
-                  showSearch
-                  filterOption={false}
-                  loading={productLookupQuery.isFetching}
-                  notFoundContent={
-                    productKeyword ? '검색 결과 없음' : '제품명, 제품코드 또는 바코드를 입력하세요'
-                  }
-                />
-              </div>
-            </div>
-          </Space>
-        </Card>
-      )}
-
-      {/* ── 2단 결과 ── */}
+      {/* ── POS 결과 액션 (새로고침 + 엑셀) ── */}
       {posQuery != null && (
         <div
           style={{
@@ -674,16 +488,24 @@ export default function SalesQueryPage() {
         />
       )}
 
-      {/* 조회 전 안내 — 어떤 조건도 조회하지 않은 초기 상태 */}
-      {accountQuery == null && (
+      {/* 조회 전 안내 — 아직 POS 조회하지 않은 초기 상태 */}
+      {posQuery == null && (
         <Card size="small">
           <Text type="secondary">
-            지점·기간 등 조건을 선택하고 <Tag color="blue">조회</Tag> 를 누르면 거래처 목록이
-            표시됩니다. 목록에서 거래처를 최대 {MAX_SELECTABLE_ACCOUNTS}개 선택한 뒤{' '}
-            <Tag color="geekblue">선택 거래처 POS 조회</Tag> 로 POS매출을 조회하세요.
+            <Tag color="blue">거래처 선택</Tag> 으로 조회할 거래처를 최대 {MAX_SELECTABLE_ACCOUNTS}개
+            고른 뒤, 기간·제품 조건을 확인하고 <Tag color="geekblue">POS 매출 조회</Tag> 를 누르면
+            POS매출이 조회됩니다.
           </Text>
         </Card>
       )}
+
+      <PosSalesAccountSelectModal
+        open={accountModalOpen}
+        onClose={() => setAccountModalOpen(false)}
+        branches={branches}
+        initialSelected={selectedAccounts}
+        onConfirm={handleAccountConfirm}
+      />
 
       <PosSalesDetailModal
         open={detailTarget != null}
