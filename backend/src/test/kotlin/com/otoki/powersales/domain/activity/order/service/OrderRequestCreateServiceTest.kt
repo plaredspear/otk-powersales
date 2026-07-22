@@ -216,7 +216,8 @@ class OrderRequestCreateServiceTest {
 
             assertThat(response.orderRequestId).isEqualTo(existing.id)
             assertThat(response.status).isEqualTo(OrderRequestStatus.APPROVED.name)
-            assertThat(response.statusName).isEqualTo(OrderRequestStatus.APPROVED.displayName)
+            // 응답 statusName 은 clientDisplayName(APPROVED→"전송완료") — 상태 코드+한글명 분리 정책 정합.
+            assertThat(response.statusName).isEqualTo(OrderRequestStatus.APPROVED.clientDisplayName)
             verify(exactly = 0) { inventorySearchClient.search(any(), any(), any()) }
             verify(exactly = 0) { loanInquiryClient.inquireCreditBalance(any()) }
             verify(exactly = 0) { orderRequestRepository.save(any<OrderRequest>()) }
