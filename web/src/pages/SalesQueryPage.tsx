@@ -10,6 +10,7 @@ import {
   Space,
   Statistic,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from 'antd';
@@ -392,15 +393,31 @@ export default function SalesQueryPage() {
               </Text>
             )}
           </div>
-          <Button
-            type="primary"
-            icon={<SearchOutlined />}
-            onClick={handleSearchPos}
-            disabled={noAccountSelected || rangeExceedsMax}
-            loading={listQuery.isFetching}
+          <Tooltip
+            title={
+              noAccountSelected || rangeExceedsMax ? (
+                <div>
+                  POS 매출 조회 활성화 조건:
+                  <ul style={{ margin: '4px 0 0', paddingInlineStart: 18 }}>
+                    <li>조회 거래처를 1개 이상 선택</li>
+                    <li>조회 기간이 최대 {MAX_RANGE_DAYS}일 이내</li>
+                  </ul>
+                </div>
+              ) : (
+                ''
+              )
+            }
           >
-            POS 매출 조회
-          </Button>
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              onClick={handleSearchPos}
+              disabled={noAccountSelected || rangeExceedsMax}
+              loading={listQuery.isFetching}
+            >
+              POS 매출 조회
+            </Button>
+          </Tooltip>
         </div>
       </Card>
 
@@ -486,17 +503,6 @@ export default function SalesQueryPage() {
           }}
           locale={listTableLocale({ searched: posQuery != null })}
         />
-      )}
-
-      {/* 조회 전 안내 — 아직 POS 조회하지 않은 초기 상태 */}
-      {posQuery == null && (
-        <Card size="small">
-          <Text type="secondary">
-            <Tag color="blue">거래처 선택</Tag> 으로 조회할 거래처를 최대 {MAX_SELECTABLE_ACCOUNTS}개
-            고른 뒤, 기간·제품 조건을 확인하고 <Tag color="geekblue">POS 매출 조회</Tag> 를 누르면
-            POS매출이 조회됩니다.
-          </Text>
-        </Card>
       )}
 
       <PosSalesAccountSelectModal
