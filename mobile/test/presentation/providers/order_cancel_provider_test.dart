@@ -62,7 +62,7 @@ class _MockOrderRepository implements OrderRequestRepository {
         OrderCancelResult(
           orderRequestId: orderId,
           orderRequestNumber: 'OP$orderId',
-          orderRequestStatus: 'CANCELED',
+          orderRequestStatus: 'CANCEL_REQUESTED',
           cancelledLines: orderProductIds
               .map((id) => CancelledLine(
                     orderProductId: id,

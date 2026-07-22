@@ -82,7 +82,7 @@ class OrderCancelResponseModel {
   ///   "data": {
   ///     "orderRequestId": 12,
   ///     "orderRequestNumber": "OP20260301",
-  ///     "orderRequestStatus": "CANCELED",
+  ///     "orderRequestStatus": "CANCEL_REQUESTED",
   ///     "cancelledLines": [
   ///       {
   ///         "orderProductId": 101,

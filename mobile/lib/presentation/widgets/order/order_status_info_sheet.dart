@@ -9,7 +9,7 @@ import './approval_status_badge.dart';
 /// 주문 상세 헤더의 "주문 요청 상태" 옆 info 아이콘 탭 시 표시.
 /// 상태 목록은 단일 진실인 [OrderStatusCode.filterOptions](전송/전송완료/전송실패/주문취소요청완료)에
 /// 맞추고, 각 상태의 의미를 라이프사이클(전송 → 전송완료 또는 전송실패 → 주문취소요청완료) 기준으로 설명한다.
-/// (표시명은 서버가 내려주며, `APPROVED`→"전송완료"·`CANCELED`→"주문취소요청완료" 로 백엔드가 변환해 전송한다.)
+/// (표시명은 서버가 내려주며, `APPROVED`→"전송완료"·`CANCEL_REQUESTED`→"주문취소요청완료" 로 백엔드가 변환해 전송한다.)
 class OrderStatusInfoSheet extends StatelessWidget {
   const OrderStatusInfoSheet({super.key});
 
@@ -19,7 +19,7 @@ class OrderStatusInfoSheet extends StatelessWidget {
     OrderStatusCode.approved:
         'SAP에서 주문 요청을 접수한 상태입니다. 승인 처리까지는 시간이 걸릴 수 있습니다.',
     OrderStatusCode.sendFailed: '주문 요청 전송에 실패한 상태입니다. 재주문이 필요합니다.',
-    OrderStatusCode.canceled:
+    OrderStatusCode.cancelRequested:
         '전송 완료된 주문에 대해 취소를 요청한 상태입니다. SAP에서 취소 요청을 접수한 뒤 실제 취소 처리까지는 시간이 걸릴 수 있습니다.',
   };
 

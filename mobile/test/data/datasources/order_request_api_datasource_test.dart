@@ -457,7 +457,7 @@ void main() {
                 'data': {
                   'orderRequestId': 7,
                   'orderRequestNumber': 'OP20260301',
-                  'orderRequestStatus': 'CANCELED',
+                  'orderRequestStatus': 'CANCEL_REQUESTED',
                   'cancelledLines': [
                     {
                       'orderProductId': 101,
@@ -492,7 +492,7 @@ void main() {
         });
         expect(result, isA<OrderCancelResponseModel>());
         expect(result.orderRequestId, 7);
-        expect(result.orderRequestStatus, 'CANCELED');
+        expect(result.orderRequestStatus, 'CANCEL_REQUESTED');
         expect(result.cancelledLines.length, 2);
         expect(result.cancelledLines[0].orderProductId, 101);
         expect(result.cancelledLines[0].productCode, '01101123');
@@ -513,7 +513,7 @@ void main() {
                 'data': {
                   'orderRequestId': 7,
                   'orderRequestNumber': 'OP20260301',
-                  'orderRequestStatus': 'CANCELED',
+                  'orderRequestStatus': 'CANCEL_REQUESTED',
                   'cancelledLines': [],
                 },
                 'message': '주문이 취소되었습니다',

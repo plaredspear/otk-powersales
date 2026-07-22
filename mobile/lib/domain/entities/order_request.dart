@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 ///
 /// 상태 표시명(한글)은 서버가 `orderRequestStatusName` 으로 함께 내려주므로 클라이언트에서 매핑하지 않는다.
 /// 코드는 색상/분기 로직(취소·재전송 버튼 등)에만 사용한다.
-/// 라이프사이클: DRAFT → SENT → APPROVED 또는 SEND_FAILED → (사용자 취소 시) CANCELED
+/// 라이프사이클: DRAFT → SENT → APPROVED 또는 SEND_FAILED → (사용자 취소 시) CANCEL_REQUESTED
 abstract final class OrderStatusCode {
   static const String draft = 'DRAFT';
   static const String sent = 'SENT';
   static const String approved = 'APPROVED';
   static const String sendFailed = 'SEND_FAILED';
-  static const String canceled = 'CANCELED';
+  static const String cancelRequested = 'CANCEL_REQUESTED';
 
   /// 상태 코드별 뱃지 색상. 미정의 코드/`null`(SF nillable NULL row)은 회색.
   static Color color(String? code) {
@@ -21,7 +21,7 @@ abstract final class OrderStatusCode {
         return Colors.green;
       case sendFailed:
         return Colors.red;
-      case canceled:
+      case cancelRequested:
         return Colors.brown;
       case draft:
       default:
@@ -39,7 +39,7 @@ abstract final class OrderStatusCode {
     (code: sent, label: '전송'),
     (code: approved, label: '전송완료'),
     (code: sendFailed, label: '전송실패'),
-    (code: canceled, label: '주문취소요청완료'),
+    (code: cancelRequested, label: '주문취소요청완료'),
   ];
 }
 

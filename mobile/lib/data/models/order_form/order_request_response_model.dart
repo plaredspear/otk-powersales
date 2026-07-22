@@ -6,7 +6,7 @@ class OrderRequestResponseModel {
   /// 백엔드 채번 (`ORD-YYYYMMDD-{seq}`)
   final String orderRequestNumber;
 
-  /// 등록 직후 = `SENT` (그 외 `APPROVED` / `SEND_FAILED` / `CANCELED`)
+  /// 등록 직후 = `SENT` (그 외 `APPROVED` / `SEND_FAILED` / `CANCEL_REQUESTED`)
   final String status;
 
   /// 등록 합계 금액

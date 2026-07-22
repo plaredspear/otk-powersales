@@ -607,7 +607,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     return OrderCancelResult(
       orderRequestId: orderId,
       orderRequestNumber: order.orderRequestNumber,
-      orderRequestStatus: 'CANCELED',
+      orderRequestStatus: 'CANCEL_REQUESTED',
       cancelledLines: cancelledLines,
     );
   }

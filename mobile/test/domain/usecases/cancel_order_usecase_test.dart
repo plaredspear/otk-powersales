@@ -19,7 +19,7 @@ class _MockOrderRepository implements OrderRequestRepository {
   OrderCancelResult resultToReturn = const OrderCancelResult(
     orderRequestId: 0,
     orderRequestNumber: '',
-    orderRequestStatus: 'CANCELED',
+    orderRequestStatus: 'CANCEL_REQUESTED',
     cancelledLines: [],
   );
 
@@ -113,7 +113,7 @@ void main() {
   OrderCancelResult buildResult(List<int> ids) => OrderCancelResult(
         orderRequestId: 1,
         orderRequestNumber: 'OP20260301',
-        orderRequestStatus: 'CANCELED',
+        orderRequestStatus: 'CANCEL_REQUESTED',
         cancelledLines: [
           for (final id in ids)
             CancelledLine(

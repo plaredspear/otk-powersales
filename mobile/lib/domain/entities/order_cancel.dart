@@ -116,7 +116,7 @@ class OrderCancelResult {
   /// 주문요청 번호
   final String orderRequestNumber;
 
-  /// 취소 처리 후 주문 상태 (예: `CANCELED`, `SENT`)
+  /// 취소 처리 후 주문 상태 (예: `CANCEL_REQUESTED`, `SENT`)
   final String orderRequestStatus;
 
   /// 취소된 라인 목록
