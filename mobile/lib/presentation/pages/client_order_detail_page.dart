@@ -84,7 +84,7 @@ class _ClientOrderDetailPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('주문 상세'),
+        title: const Text('[거래처별] 주문 상세'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => AppRouter.goBack(context),
