@@ -19310,7 +19310,16 @@
       },
       "OrderedItemResponse" : {
         "properties" : {
+          "cancelReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "cancelRequested" : {
+            "type" : "boolean"
+          },
           "cancelled" : {
+            "type" : "boolean"
+          },
+          "cancelledBySap" : {
             "type" : "boolean"
           },
           "orderProductId" : {
