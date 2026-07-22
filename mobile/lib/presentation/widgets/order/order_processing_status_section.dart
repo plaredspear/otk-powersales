@@ -82,7 +82,7 @@ class OrderProcessingStatusSection extends StatelessWidget {
               ),
               SizedBox(width: AppSpacing.sm),
               Text(
-                '주문 처리 현황',
+                '주문 처리 현황 (${processingStatus!.items.length})',
                 style: AppTypography.headlineSmall.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.bold,

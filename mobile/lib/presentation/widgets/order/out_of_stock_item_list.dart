@@ -56,13 +56,6 @@ class OutOfStockItemList extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: AppSpacing.sm),
-          Text(
-            '결품 제품은 재고 부족으로 이번 납품에서 제외됩니다.',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
           SizedBox(height: AppSpacing.md),
           Divider(
             height: 1,
