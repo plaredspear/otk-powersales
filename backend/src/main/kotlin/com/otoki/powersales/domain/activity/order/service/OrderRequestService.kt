@@ -250,20 +250,21 @@ class OrderRequestService(
         // 카운트 view.jsp:377-383 동등 — 반려 제품은 반려 섹션에만 표시, 이중 표시 없음).
         // SAP 호출 실패 시엔 반려 판별 불가 → 전 라인 유지 (CRM 원장 표시 견고화, 레거시는 목록 자체가 비었음).
         val rejectedProductCodes = mapped?.rejectedItems.orEmpty().map { it.productCode }.toSet()
-        // 결품 제품도 "주문한 제품" 리스트에서 제외 — 반려처럼 전용 섹션에만 표시(2026-07-23 사용자 결정).
-        val outOfStockProductCodes = mapped?.outOfStockItems.orEmpty().map { it.productCode }.toSet()
-        val excludedFromOrdered = rejectedProductCodes + outOfStockProductCodes
+        // 결품 제품은 전용 결품 섹션과 별개로 "주문한 제품" 리스트에도 포함한다(2026-07-23 재변경 — 사용자 결정:
+        // 결품 섹션 유지 + 주문한 제품에도 포함). 반려만 리스트에서 제외(반려 섹션 전용, 레거시 view.jsp:407 동등).
+        val excludedFromOrdered = rejectedProductCodes
 
         // 취소(SAP DefaultReason 취소셋) 제품은 "주문한 제품" 리스트에 주문취소 배지+사유로 남는다 (Spec #845).
-        // 결품/반려는 제외. 취소요청(로컬 흔적)은 OrderedItemResponse 가 cancel_requested_at 으로 직접 판정.
+        // 결품(DefaultReason 결품셋)은 회색+결품사유로 리스트에 남고 전용 섹션에도 표시(이중 표시). 반려만 제외.
+        // 취소요청(로컬 흔적)은 OrderedItemResponse 가 cancel_requested_at 으로 직접 판정.
         val orderedItems = crmProducts
             .filter { it.productCode == null || it.productCode !in excludedFromOrdered }
             .map {
                 OrderedItemResponse.from(
                     it,
                     productName = productNamesByCode[it.productCode],
-                    // 결품은 전용 섹션으로 분리되어 orderedItems 에 남지 않으므로 사유 주입 불필요.
-                    outOfStockReason = null,
+                    // 결품 사유 주입 — 리스트에서 회색+결품 배지/사유 표시.
+                    outOfStockReason = outOfStockReasons[it.productCode],
                     cancelReason = cancelledReasons[it.productCode],
                 )
             }
