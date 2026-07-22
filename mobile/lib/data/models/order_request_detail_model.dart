@@ -313,6 +313,9 @@ class OrderRequestDetailModel {
 
   /// SAP 주문번호별 그룹 배열 (Spec #595 Q1 옵션 2). SAP 호출 실패 또는 마감 전 시 null.
   final List<OrderProcessingStatusModel>? orderProcessingStatusList;
+
+  /// SAP 응답의 distinct SAP 주문번호 목록 (마감 무관, 헤더 조기 노출용). 없으면 빈 리스트.
+  final List<String> sapOrderNumbers;
   final List<RejectedItemModel>? rejectedItems;
   final List<UnfulfilledItemModel>? unfulfilledItems;
 
@@ -334,6 +337,7 @@ class OrderRequestDetailModel {
     required this.orderedItemCount,
     required this.orderedItems,
     this.orderProcessingStatusList,
+    this.sapOrderNumbers = const [],
     this.rejectedItems,
     this.unfulfilledItems,
   });
@@ -349,6 +353,7 @@ class OrderRequestDetailModel {
     final unfulfilledItemsJson = data['unfulfilledItems'] as List<dynamic>?;
     final processingListJson =
         data['orderProcessingStatusList'] as List<dynamic>?;
+    final sapOrderNumbersJson = data['sapOrderNumbers'] as List<dynamic>?;
 
     return OrderRequestDetailModel(
       id: data['id'] as int,
@@ -375,6 +380,8 @@ class OrderRequestDetailModel {
                   e as Map<String, dynamic>))
               .toList()
           : null,
+      sapOrderNumbers:
+          sapOrderNumbersJson?.map((e) => e as String).toList() ?? const [],
       rejectedItems: rejectedItemsJson != null
           ? rejectedItemsJson
               .map(
@@ -411,6 +418,7 @@ class OrderRequestDetailModel {
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
       'orderProcessingStatusList':
           orderProcessingStatusList?.map((e) => e.toJson()).toList(),
+      'sapOrderNumbers': sapOrderNumbers,
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
       'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
     };
@@ -437,6 +445,7 @@ class OrderRequestDetailModel {
       orderedItems: orderedItems.map((e) => e.toEntity()).toList(),
       orderProcessingStatusList:
           orderProcessingStatusList?.map((e) => e.toEntity()).toList(),
+      sapOrderNumbers: sapOrderNumbers,
       rejectedItems: rejectedItems?.map((e) => e.toEntity()).toList(),
       unfulfilledItems: unfulfilledItems?.map((e) => e.toEntity()).toList(),
     );

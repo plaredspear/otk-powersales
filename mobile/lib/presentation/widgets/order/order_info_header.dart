@@ -45,6 +45,14 @@ class OrderInfoHeader extends StatelessWidget {
             '주문요청번호',
             orderDetail.orderRequestNumber,
           ),
+          // SAP 주문번호 — SAP 응답이 있으면 마감 전에도 노출(distinct, 콤마 나열). 분할 주문 시 N개.
+          if (orderDetail.hasSapOrderNumbers) ...[
+            SizedBox(height: AppSpacing.sm),
+            _buildInfoRow(
+              'SAP 주문번호',
+              orderDetail.sapOrderNumbers.join(', '),
+            ),
+          ],
           SizedBox(height: AppSpacing.sm),
           _buildInfoRow(
             '거래처',

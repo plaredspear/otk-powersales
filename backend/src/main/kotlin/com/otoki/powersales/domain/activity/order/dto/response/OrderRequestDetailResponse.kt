@@ -11,6 +11,9 @@ import java.time.LocalDateTime
  * 레거시 `IF_REST_MOBILE_OrderRequestDetail.cls` + Heroku JSP 그룹 섹션을 신규 JSON 응답으로 동등 매핑.
  *
  * - `orderProcessingStatusList` 는 SAP 주문번호별 그룹 배열. 마감 전 / SAP 호출 실패 시 `null`.
+ * - `sapOrderNumbers` 는 SAP 응답 라인에서 뽑은 **비어있지 않은 distinct SAP 주문번호 목록**(응답 순서 유지).
+ *   처리현황과 달리 **마감 게이트 없이** 마감 전에도 채운다 — 헤더에 콤마 나열로 조기 노출하기 위함. SAP 호출
+ *   실패/빈 응답 시 빈 배열.
  * - `rejectedItems` 는 반려 라인 배열. 없으면 `null`.
  * - `unfulfilledItems` 는 미납 라인 배열 (SAPOrderNumber 있음 && LineItemStatus 채워짐 && != "OK" —
  *   신규 정책, SF 레거시엔 없던 분류). 없으면 `null`. 마감 전후 모두 노출.
@@ -41,6 +44,8 @@ data class OrderRequestDetailResponse(
     val orderedItemCount: Int,
     val orderedItems: List<OrderedItemResponse>,
     val orderProcessingStatusList: List<OrderProcessingStatusResponse>?,
+    // SAP 응답 라인의 distinct SAP 주문번호(마감 무관, 헤더 조기 노출용). 없으면 빈 배열.
+    val sapOrderNumbers: List<String> = emptyList(),
     val rejectedItems: List<RejectedItemResponse>?,
     val unfulfilledItems: List<UnfulfilledItemResponse>? = null,
 ) {
@@ -53,6 +58,7 @@ data class OrderRequestDetailResponse(
             totalApprovedAmount: BigDecimal,
             orderedItems: List<OrderedItemResponse>,
             orderProcessingStatusList: List<OrderProcessingStatusResponse>?,
+            sapOrderNumbers: List<String> = emptyList(),
             rejectedItems: List<RejectedItemResponse>?,
             unfulfilledItems: List<UnfulfilledItemResponse>? = null,
         ): OrderRequestDetailResponse =
@@ -74,6 +80,7 @@ data class OrderRequestDetailResponse(
                 orderedItemCount = orderedItems.size,
                 orderedItems = orderedItems,
                 orderProcessingStatusList = orderProcessingStatusList,
+                sapOrderNumbers = sapOrderNumbers,
                 rejectedItems = rejectedItems,
                 unfulfilledItems = unfulfilledItems,
             )

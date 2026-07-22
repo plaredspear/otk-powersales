@@ -220,6 +220,13 @@ class OrderRequestService(
         // 마감 전 — 그룹 응답 매핑 생략 (Q6, 레거시 동등). SAP 호출은 이미 수행.
         val finalProcessingGroups = if (isClosed) processingGroups else null
 
+        // SAP 주문번호(distinct) — 처리현황과 달리 마감 게이트 없이 헤더에 조기 노출한다(사용자 확인용).
+        // SAP 응답 라인에서 비어있지 않은 SAPOrderNumber 를 응답 순서 유지로 중복 제거. 반려 라인은 SAPOrderNumber
+        // 빈 값이라 자연 제외. SAP 호출 실패(sapLines==null)/빈 응답이면 빈 배열.
+        val sapOrderNumbers = sapLines.orEmpty()
+            .mapNotNull { it.sapOrderNumber?.takeIf { num -> num.isNotBlank() } }
+            .distinct()
+
         // 제품명은 product_code 로 제품마스터에서 조회 (레거시 CRM_ProductName = ProductId__r.Name 동등).
         // 주문 라인의 product FK 가 비어 있어도 코드 기준으로 이름을 채운다.
         // productCode 는 SF nillable=true 정합으로 nullable — 제품마스터 조회 키이므로 null 은 제외.
@@ -272,6 +279,7 @@ class OrderRequestService(
             totalApprovedAmount = orderRequestDetailMapper.sumApprovedAmount(sapLines),
             orderedItems = orderedItems,
             orderProcessingStatusList = finalProcessingGroups,
+            sapOrderNumbers = sapOrderNumbers,
             rejectedItems = rejectedItems,
             unfulfilledItems = unfulfilledItems,
         )

@@ -649,6 +649,12 @@ class OrderDetail {
   /// - 다중 SAP 주문 분할 케이스에서 N개 그룹 (Q1 옵션 2).
   final List<OrderProcessingStatus>? orderProcessingStatusList;
 
+  /// SAP 응답의 distinct SAP 주문번호 목록 (마감 무관, 헤더 조기 노출용). 없으면 빈 리스트.
+  ///
+  /// 처리현황(`orderProcessingStatusList`)은 마감 전 null 이지만, 이 목록은 SAP 응답이 있으면
+  /// 마감 전에도 채워져 헤더에 콤마 나열로 표시된다. 한 주문이 여러 SAP 주문으로 분할되면 N개.
+  final List<String> sapOrderNumbers;
+
   /// 반려 제품 목록 (반려 존재 시 — 레거시 동등으로 마감 전후 모두 표시)
   final List<RejectedItem>? rejectedItems;
 
@@ -673,9 +679,13 @@ class OrderDetail {
     required this.orderedItemCount,
     required this.orderedItems,
     this.orderProcessingStatusList,
+    this.sapOrderNumbers = const [],
     this.rejectedItems,
     this.unfulfilledItems,
   });
+
+  /// SAP 주문번호가 하나라도 있는지 여부
+  bool get hasSapOrderNumbers => sapOrderNumbers.isNotEmpty;
 
   /// 반려 제품이 있는지 여부
   bool get hasRejectedItems =>
@@ -707,6 +717,7 @@ class OrderDetail {
     int? orderedItemCount,
     List<OrderedItem>? orderedItems,
     List<OrderProcessingStatus>? orderProcessingStatusList,
+    List<String>? sapOrderNumbers,
     List<RejectedItem>? rejectedItems,
     List<UnfulfilledItem>? unfulfilledItems,
   }) {
@@ -730,6 +741,7 @@ class OrderDetail {
       orderedItems: orderedItems ?? this.orderedItems,
       orderProcessingStatusList:
           orderProcessingStatusList ?? this.orderProcessingStatusList,
+      sapOrderNumbers: sapOrderNumbers ?? this.sapOrderNumbers,
       rejectedItems: rejectedItems ?? this.rejectedItems,
       unfulfilledItems: unfulfilledItems ?? this.unfulfilledItems,
     );
@@ -755,6 +767,7 @@ class OrderDetail {
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
       'orderProcessingStatusList':
           orderProcessingStatusList?.map((e) => e.toJson()).toList(),
+      'sapOrderNumbers': sapOrderNumbers,
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
       'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
     };
@@ -786,6 +799,10 @@ class OrderDetail {
                   OrderProcessingStatus.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
+      sapOrderNumbers: (json['sapOrderNumbers'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       rejectedItems: json['rejectedItems'] != null
           ? (json['rejectedItems'] as List<dynamic>)
               .map((e) => RejectedItem.fromJson(e as Map<String, dynamic>))
