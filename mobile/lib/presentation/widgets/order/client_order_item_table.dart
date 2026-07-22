@@ -27,6 +27,8 @@ class ClientOrderItemTable extends StatelessWidget {
         return AppColors.success;
       case OrderDeliveryStatus.outOfStock:
         return AppColors.error;
+      // 취소 — 결품(빨강)과 구분되도록 회색 (내 주문 상세 처리현황 정합).
+      case OrderDeliveryStatus.cancelled:
       // 대기 / 미정의 코드 — 회색(default 로 crash 방어).
       case OrderDeliveryStatus.pending:
       default:

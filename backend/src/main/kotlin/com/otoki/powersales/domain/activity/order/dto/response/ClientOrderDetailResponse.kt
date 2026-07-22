@@ -2,6 +2,8 @@ package com.otoki.powersales.domain.activity.order.dto.response
 
 import com.otoki.powersales.domain.activity.order.entity.ErpOrder
 import com.otoki.powersales.domain.activity.order.entity.ErpOrderProduct
+import com.otoki.powersales.domain.activity.order.enums.DefaultReasonClassification
+import com.otoki.powersales.domain.activity.order.enums.DefaultReasonCode
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
 import java.math.BigDecimal
 import java.text.DecimalFormat
@@ -103,7 +105,7 @@ data class ClientOrderItemResponse(
                 productName = product.productName,
                 deliveredQuantity = formatDeliveredQuantity(product.confirmQuantityBox),
                 shippedQuantity = formatShippedQuantity(product.shippingQuantityBox, product.shippingQuantity),
-                deliveryStatus = DeliveryStatus.fromKoreanLabel(product.deliveryStatus),
+                deliveryStatus = resolveDeliveryStatus(product),
                 driverName = nullIfBlank(product.shippingDriverName),
                 vehicle = nullIfBlank(product.shippingVehicle),
                 driverPhone = nullIfBlank(product.shippingDriverPhone),
@@ -111,6 +113,21 @@ data class ClientOrderItemResponse(
                 completeTime = formatHHmm(product.shippingCompleteTime)
             )
         }
+
+        /**
+         * 라인 배송상태를 결정한다 (2026-07-23 사용자 결정 — 데이터 마이그레이션 없이 조회 시점 파생).
+         *
+         * `default_reason` 이 있으면 **저장된 `delivery_status`(전부 '결품'으로 뭉갬)를 쓰지 않고** 코드로 파생한다:
+         * 결품셋({F1,L1,L2,L3}) → [DeliveryStatus.OUT_OF_STOCK], 그 외 채워진 코드({L4,O1,S1,S2,S3}·미정의)
+         * → [DeliveryStatus.CANCELLED]. `default_reason` 이 없으면 저장된 한글 라벨을 그대로 변환한다.
+         * 내 주문 상세([com.otoki.powersales.domain.activity.order.service.OrderRequestDetailMapper]) 와 동일 기준.
+         */
+        private fun resolveDeliveryStatus(product: ErpOrderProduct): DeliveryStatus =
+            when (DefaultReasonCode.classify(product.defaultReason)) {
+                DefaultReasonClassification.OUT_OF_STOCK -> DeliveryStatus.OUT_OF_STOCK
+                DefaultReasonClassification.CANCELLED -> DeliveryStatus.CANCELLED
+                null -> DeliveryStatus.fromKoreanLabel(product.deliveryStatus)
+            }
 
         private fun nullIfBlank(s: String?): String? = if (s.isNullOrBlank()) null else s
 

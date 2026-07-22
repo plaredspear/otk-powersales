@@ -263,7 +263,9 @@ class ErpOrderUpsertService(
         if (!scheduleBlank && completeBlank) status = STATUS_SHIPPING
         // cls:158 — 배송 완료: CompleteTime 설정
         if (!completeBlank) status = STATUS_DELIVERED
-        // cls:159 — 결품: DefaultReason 설정 AND ScheduleTime 미설정 (마지막 평가 — 배송완료를 덮어씀)
+        // cls:159 — 결품: DefaultReason 설정 AND ScheduleTime 미설정 (마지막 평가 — 배송완료를 덮어씀).
+        // 저장값은 레거시 그대로 '결품'을 유지한다 — 결품/취소 구분은 조회 시점에 default_reason 코드로
+        // 파생한다(데이터 마이그레이션 없이 표시만 분리, 2026-07-23 사용자 결정). 저장 로직은 변경하지 않음.
         if (!defaultReasonBlank && scheduleBlank) status = STATUS_OUT_OF_STOCK
         return status
     }

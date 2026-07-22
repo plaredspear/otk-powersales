@@ -139,6 +139,27 @@ class ClientOrderQueryServiceTest {
         }
 
         @Test
+        @DisplayName("정상 - default_reason 있으면 저장된 delivery_status 대신 코드로 파생 (결품/취소 분리, 2026-07-23)")
+        fun defaultReasonDrivesStatus() {
+            val order = createOrder(employeeCode = employeeCode)
+            val products = listOf(
+                // 저장값은 둘 다 '결품'이지만 default_reason 코드로 결품/취소 분리 파생 (마이그레이션 없이).
+                createProduct(lineNumber = "10", deliveryStatus = "결품", defaultReason = "L1"), // 결품셋
+                createProduct(lineNumber = "20", deliveryStatus = "결품", defaultReason = "S1"), // 취소셋
+                // default_reason 없으면 저장된 라벨 그대로.
+                createProduct(lineNumber = "30", deliveryStatus = "배송중", defaultReason = null),
+            )
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            assertThat(result.orderedItems[0].deliveryStatus).isEqualTo(DeliveryStatus.OUT_OF_STOCK)
+            assertThat(result.orderedItems[1].deliveryStatus).isEqualTo(DeliveryStatus.CANCELLED)
+            assertThat(result.orderedItems[2].deliveryStatus).isEqualTo(DeliveryStatus.SHIPPING)
+        }
+
+        @Test
         @DisplayName("정상 - DB 한글 미정의 라벨 → PENDING fallback")
         fun unknownStatusFallback() {
             val order = createOrder(employeeCode = employeeCode)
@@ -197,12 +218,13 @@ class ClientOrderQueryServiceTest {
     inner class DeliveryStatusConversion {
 
         @Test
-        @DisplayName("4종 한글 라벨 변환")
+        @DisplayName("한글 라벨 변환 (결품/취소 분리, 2026-07-23)")
         fun fourLabels() {
             assertThat(DeliveryStatus.fromKoreanLabel("대기")).isEqualTo(DeliveryStatus.PENDING)
             assertThat(DeliveryStatus.fromKoreanLabel("배송중")).isEqualTo(DeliveryStatus.SHIPPING)
             assertThat(DeliveryStatus.fromKoreanLabel("배송 완료")).isEqualTo(DeliveryStatus.DELIVERED)
             assertThat(DeliveryStatus.fromKoreanLabel("결품")).isEqualTo(DeliveryStatus.OUT_OF_STOCK)
+            assertThat(DeliveryStatus.fromKoreanLabel("취소")).isEqualTo(DeliveryStatus.CANCELLED)
         }
 
         @Test
@@ -357,6 +379,7 @@ class ClientOrderQueryServiceTest {
         shippingQuantityBox: BigDecimal? = null,
         shippingQuantity: BigDecimal? = null,
         unit: String? = "BOX",
+        defaultReason: String? = null,
     ): ErpOrderProduct {
         val order = createOrder(employeeCode = employeeCode)
         return ErpOrderProduct(
@@ -371,6 +394,7 @@ class ClientOrderQueryServiceTest {
             shippingQuantity = shippingQuantity,
             unit = unit,
             deliveryStatus = deliveryStatus,
+            defaultReason = defaultReason,
         )
     }
 }

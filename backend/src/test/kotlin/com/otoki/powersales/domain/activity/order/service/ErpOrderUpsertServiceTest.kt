@@ -177,7 +177,7 @@ class ErpOrderUpsertServiceTest {
         }
 
         @Test
-        @DisplayName("orderStatus = 결품 - DefaultReason 있고 ShippingScheduleTime 000000")
+        @DisplayName("orderStatus = 결품 - DefaultReason 있고 ShippingScheduleTime 000000 (저장값은 결품/취소 무관 '결품' 유지)")
         fun upsert_deliveryStatusOutOfStock() {
             every { accountRepository.findByExternalKeyIn(any<List<String>>()) } returns listOf(account("1032619"))
             every { erpOrderRepository.findBySapOrderNumberIn(any()) } returns emptyList()
@@ -190,6 +190,7 @@ class ErpOrderUpsertServiceTest {
                 listOf(command(lines = listOf(line(defaultReason = "입고지연", shippingScheduleTime = "000000"))))
             )
 
+            // 저장 로직은 레거시 그대로 — DefaultReason 있으면 '결품' 저장. 결품/취소 구분은 조회 시점 파생.
             assertThat(captor.captured.single().deliveryStatus).isEqualTo(ErpOrderUpsertService.STATUS_OUT_OF_STOCK)
         }
 
