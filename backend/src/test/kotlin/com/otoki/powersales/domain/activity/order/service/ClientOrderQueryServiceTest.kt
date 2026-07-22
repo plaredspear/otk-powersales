@@ -144,10 +144,11 @@ class ClientOrderQueryServiceTest {
             val order = createOrder(employeeCode = employeeCode)
             val products = listOf(
                 // 저장값은 둘 다 '결품'이지만 default_reason 코드로 결품/취소 분리 파생 (마이그레이션 없이).
-                createProduct(lineNumber = "10", deliveryStatus = "결품", defaultReason = "L1"), // 결품셋
-                createProduct(lineNumber = "20", deliveryStatus = "결품", defaultReason = "S1"), // 취소셋
+                // 제품코드는 서로 달라야 제품별 dedup 에 뭉개지지 않음.
+                createProduct(lineNumber = "10", deliveryStatus = "결품", productCode = "P001", defaultReason = "L1"), // 결품셋
+                createProduct(lineNumber = "20", deliveryStatus = "결품", productCode = "P002", defaultReason = "S1"), // 취소셋
                 // default_reason 없으면 저장된 라벨 그대로.
-                createProduct(lineNumber = "30", deliveryStatus = "배송중", defaultReason = null),
+                createProduct(lineNumber = "30", deliveryStatus = "배송중", productCode = "P003", defaultReason = null),
             )
             every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
             every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
@@ -170,6 +171,46 @@ class ClientOrderQueryServiceTest {
             val result = service.getClientOrderDetail(sapOrderNumber)
 
             assertThat(result.orderedItems[0].deliveryStatus).isEqualTo(DeliveryStatus.PENDING)
+        }
+
+        @Test
+        @DisplayName("정상 - 같은 제품 다중 라인 → 제품별 최신(최대 id) 1건만 (대기/배송중 분리 축약, 2026-07-23)")
+        fun dedupKeepsLatestByProduct() {
+            val order = createOrder(employeeCode = employeeCode)
+            val products = listOf(
+                // 같은 제품(P001): 배차 전 대기(0 BOX, 낮은 id) + 배차 후 배송중(1 BOX, 높은 id) 별도 레코드.
+                createProduct(id = 100, lineNumber = "10", deliveryStatus = "대기", productCode = "P001", confirmQuantityBox = BigDecimal.ZERO),
+                createProduct(id = 101, lineNumber = "10", deliveryStatus = "배송중", productCode = "P001", confirmQuantityBox = BigDecimal.ONE, shippingQuantity = BigDecimal.ONE),
+                // 다른 제품(P002) 단일 라인은 그대로 유지.
+                createProduct(id = 50, lineNumber = "20", deliveryStatus = "대기", productCode = "P002"),
+            )
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            // P001 은 최신(배송중, id=101) 1건 + P002 1건 = 2건. 제품 개수(orderedItemCount)도 축약 반영.
+            assertThat(result.orderedItems).hasSize(2)
+            assertThat(result.orderedItemCount).isEqualTo(2)
+            val p001 = result.orderedItems.first { it.productCode == "P001" }
+            assertThat(p001.deliveryStatus).isEqualTo(DeliveryStatus.SHIPPING)
+            assertThat(p001.deliveredQuantity).isEqualTo("1 BOX")
+        }
+
+        @Test
+        @DisplayName("정상 - productCode 비어있는 라인은 병합하지 않고 각각 유지")
+        fun blankProductCodeNotMerged() {
+            val order = createOrder(employeeCode = employeeCode)
+            val products = listOf(
+                createProduct(id = 1, lineNumber = "10", deliveryStatus = "대기", productCode = null),
+                createProduct(id = 2, lineNumber = "20", deliveryStatus = "배송중", productCode = null),
+            )
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns products
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            assertThat(result.orderedItems).hasSize(2)
         }
     }
 
@@ -373,6 +414,7 @@ class ClientOrderQueryServiceTest {
     private fun createProduct(
         lineNumber: String,
         deliveryStatus: String?,
+        id: Long = 0,
         productCode: String? = "P001",
         productName: String? = "예시 상품",
         confirmQuantityBox: BigDecimal? = BigDecimal.ZERO,
@@ -383,6 +425,7 @@ class ClientOrderQueryServiceTest {
     ): ErpOrderProduct {
         val order = createOrder(employeeCode = employeeCode)
         return ErpOrderProduct(
+            id = id,
             erpOrder = order,
             sapOrderNumber = sapOrderNumber,
             lineNumber = lineNumber,
