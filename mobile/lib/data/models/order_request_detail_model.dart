@@ -8,8 +8,11 @@ class OrderedItemModel {
   final double totalQuantityBoxes;
   final int totalQuantityPieces;
   final bool isCancelled;
+  final bool isCancelRequested;
   final bool isOutOfStock;
   final String? outOfStockReason;
+  final bool isCancelledBySap;
+  final String? cancelReason;
 
   const OrderedItemModel({
     required this.orderProductId,
@@ -18,8 +21,11 @@ class OrderedItemModel {
     required this.totalQuantityBoxes,
     required this.totalQuantityPieces,
     required this.isCancelled,
+    this.isCancelRequested = false,
     this.isOutOfStock = false,
     this.outOfStockReason,
+    this.isCancelledBySap = false,
+    this.cancelReason,
   });
 
   factory OrderedItemModel.fromJson(Map<String, dynamic> json) {
@@ -30,8 +36,11 @@ class OrderedItemModel {
       totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
       totalQuantityPieces: (json['totalQuantityPieces'] as num).toInt(),
       isCancelled: json['isCancelled'] as bool,
+      isCancelRequested: json['isCancelRequested'] as bool? ?? false,
       isOutOfStock: json['isOutOfStock'] as bool? ?? false,
       outOfStockReason: json['outOfStockReason'] as String?,
+      isCancelledBySap: json['isCancelledBySap'] as bool? ?? false,
+      cancelReason: json['cancelReason'] as String?,
     );
   }
 
@@ -43,8 +52,11 @@ class OrderedItemModel {
       'totalQuantityBoxes': totalQuantityBoxes,
       'totalQuantityPieces': totalQuantityPieces,
       'isCancelled': isCancelled,
+      'isCancelRequested': isCancelRequested,
       'isOutOfStock': isOutOfStock,
       'outOfStockReason': outOfStockReason,
+      'isCancelledBySap': isCancelledBySap,
+      'cancelReason': cancelReason,
     };
   }
 
@@ -56,8 +68,11 @@ class OrderedItemModel {
       totalQuantityBoxes: totalQuantityBoxes,
       totalQuantityPieces: totalQuantityPieces,
       isCancelled: isCancelled,
+      isCancelRequested: isCancelRequested,
       isOutOfStock: isOutOfStock,
       outOfStockReason: outOfStockReason,
+      isCancelledBySap: isCancelledBySap,
+      cancelReason: cancelReason,
     );
   }
 
@@ -69,8 +84,11 @@ class OrderedItemModel {
       totalQuantityBoxes: entity.totalQuantityBoxes,
       totalQuantityPieces: entity.totalQuantityPieces,
       isCancelled: entity.isCancelled,
+      isCancelRequested: entity.isCancelRequested,
       isOutOfStock: entity.isOutOfStock,
       outOfStockReason: entity.outOfStockReason,
+      isCancelledBySap: entity.isCancelledBySap,
+      cancelReason: entity.cancelReason,
     );
   }
 }

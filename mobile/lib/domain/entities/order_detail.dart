@@ -61,15 +61,27 @@ class OrderedItem {
   /// 총 주문수량 - 낱개 단위 (예: 100, 1150)
   final int totalQuantityPieces;
 
-  /// 취소 여부
+  /// 취소 여부 — 마이그레이션된 과거 취소 이력(`line_change_type='X'`)만 표시(Spec #845).
+  /// 신규 취소는 이 플래그를 세팅하지 않고 [isCancelRequested]/[isCancelledBySap] 로 구분한다.
   final bool isCancelled;
 
-  /// 결품 여부 — SAP `OrderRequestDetail` 응답의 `DefaultReason` 이 있는 제품.
+  /// 취소 요청 흔적(로컬) — `cancel_requested_at != null` (Spec #845).
+  /// "취소요청" 배지. SAP 실제 반영([isCancelledBySap]) 여부와 독립적으로 켜질 수 있다.
+  final bool isCancelRequested;
+
+  /// 결품 여부 — SAP `OrderRequestDetail` 응답의 `DefaultReason` 코드가 결품셋({F1,L1,L2,L3}).
   /// 레거시 `view.jsp:414` 동등 — 결품 제품은 "주문한 제품" 리스트에 회색+사유로 표시.
   final bool isOutOfStock;
 
-  /// 결품 사유 (SAP `DefaultReason`). `isOutOfStock == true` 일 때만 채워진다.
+  /// 결품 사유 (SAP `DefaultReason`, `"{코드} {설명}"` 포맷). `isOutOfStock == true` 일 때만 채워진다.
   final String? outOfStockReason;
+
+  /// SAP 실제 취소 여부 — `DefaultReason` 코드가 채워졌고 결품셋이 아닌 경우(Spec #845).
+  /// "SAP취소됨" 배지. [isOutOfStock] 과 상호배타적(서버가 한 라인당 하나만 채움).
+  final bool isCancelledBySap;
+
+  /// 취소 사유 (SAP `DefaultReason`, `"{코드} {설명}"` 포맷). `isCancelledBySap == true` 일 때 채워진다.
+  final String? cancelReason;
 
   const OrderedItem({
     required this.orderProductId,
@@ -78,8 +90,11 @@ class OrderedItem {
     required this.totalQuantityBoxes,
     required this.totalQuantityPieces,
     required this.isCancelled,
+    this.isCancelRequested = false,
     this.isOutOfStock = false,
     this.outOfStockReason,
+    this.isCancelledBySap = false,
+    this.cancelReason,
   });
 
   OrderedItem copyWith({
@@ -89,8 +104,11 @@ class OrderedItem {
     double? totalQuantityBoxes,
     int? totalQuantityPieces,
     bool? isCancelled,
+    bool? isCancelRequested,
     bool? isOutOfStock,
     String? outOfStockReason,
+    bool? isCancelledBySap,
+    String? cancelReason,
   }) {
     return OrderedItem(
       orderProductId: orderProductId ?? this.orderProductId,
@@ -99,8 +117,11 @@ class OrderedItem {
       totalQuantityBoxes: totalQuantityBoxes ?? this.totalQuantityBoxes,
       totalQuantityPieces: totalQuantityPieces ?? this.totalQuantityPieces,
       isCancelled: isCancelled ?? this.isCancelled,
+      isCancelRequested: isCancelRequested ?? this.isCancelRequested,
       isOutOfStock: isOutOfStock ?? this.isOutOfStock,
       outOfStockReason: outOfStockReason ?? this.outOfStockReason,
+      isCancelledBySap: isCancelledBySap ?? this.isCancelledBySap,
+      cancelReason: cancelReason ?? this.cancelReason,
     );
   }
 
@@ -112,8 +133,11 @@ class OrderedItem {
       'totalQuantityBoxes': totalQuantityBoxes,
       'totalQuantityPieces': totalQuantityPieces,
       'isCancelled': isCancelled,
+      'isCancelRequested': isCancelRequested,
       'isOutOfStock': isOutOfStock,
       'outOfStockReason': outOfStockReason,
+      'isCancelledBySap': isCancelledBySap,
+      'cancelReason': cancelReason,
     };
   }
 
@@ -125,8 +149,11 @@ class OrderedItem {
       totalQuantityBoxes: (json['totalQuantityBoxes'] as num).toDouble(),
       totalQuantityPieces: json['totalQuantityPieces'] as int,
       isCancelled: json['isCancelled'] as bool,
+      isCancelRequested: json['isCancelRequested'] as bool? ?? false,
       isOutOfStock: json['isOutOfStock'] as bool? ?? false,
       outOfStockReason: json['outOfStockReason'] as String?,
+      isCancelledBySap: json['isCancelledBySap'] as bool? ?? false,
+      cancelReason: json['cancelReason'] as String?,
     );
   }
 
@@ -140,8 +167,11 @@ class OrderedItem {
         other.totalQuantityBoxes == totalQuantityBoxes &&
         other.totalQuantityPieces == totalQuantityPieces &&
         other.isCancelled == isCancelled &&
+        other.isCancelRequested == isCancelRequested &&
         other.isOutOfStock == isOutOfStock &&
-        other.outOfStockReason == outOfStockReason;
+        other.outOfStockReason == outOfStockReason &&
+        other.isCancelledBySap == isCancelledBySap &&
+        other.cancelReason == cancelReason;
   }
 
   @override
@@ -153,8 +183,11 @@ class OrderedItem {
       totalQuantityBoxes,
       totalQuantityPieces,
       isCancelled,
+      isCancelRequested,
       isOutOfStock,
       outOfStockReason,
+      isCancelledBySap,
+      cancelReason,
     );
   }
 

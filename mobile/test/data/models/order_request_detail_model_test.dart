@@ -208,6 +208,80 @@ void main() {
     });
   });
 
+  group('OrderedItem 취소요청/실제취소 비교 필드 (Spec #845 P2-M)', () {
+    // 신규 필드를 모두 담은 완성 JSON. '누락 방어' 테스트는 여기서 key 를 remove 한다.
+    Map<String, dynamic> itemJson({
+      bool isCancelled = false,
+      bool isCancelRequested = false,
+      bool isOutOfStock = false,
+      String? outOfStockReason,
+      bool isCancelledBySap = false,
+      String? cancelReason,
+    }) {
+      return {
+        'orderProductId': 101,
+        'productCode': '26010007',
+        'productName': '콩기름 0.9L',
+        'totalQuantityBoxes': 1.0,
+        'totalQuantityPieces': 12,
+        'isCancelled': isCancelled,
+        'isCancelRequested': isCancelRequested,
+        'isOutOfStock': isOutOfStock,
+        'outOfStockReason': outOfStockReason,
+        'isCancelledBySap': isCancelledBySap,
+        'cancelReason': cancelReason,
+      };
+    }
+
+    test('요청+SAP취소 반영 — isCancelRequested/isCancelledBySap/cancelReason 파싱', () {
+      final model = OrderedItemModel.fromJson(itemJson(
+        isCancelRequested: true,
+        isCancelledBySap: true,
+        cancelReason: 'S2 [영업] 고객사정에 의한 취소',
+      ));
+      expect(model.isCancelRequested, isTrue);
+      expect(model.isCancelledBySap, isTrue);
+      expect(model.cancelReason, 'S2 [영업] 고객사정에 의한 취소');
+
+      final entity = model.toEntity();
+      expect(entity.isCancelRequested, isTrue);
+      expect(entity.isCancelledBySap, isTrue);
+      expect(entity.cancelReason, 'S2 [영업] 고객사정에 의한 취소');
+    });
+
+    test('요청만(미반영) — isCancelRequested=true, 나머지 기본값', () {
+      final entity =
+          OrderedItemModel.fromJson(itemJson(isCancelRequested: true))
+              .toEntity();
+      expect(entity.isCancelRequested, isTrue);
+      expect(entity.isCancelledBySap, isFalse);
+      expect(entity.cancelReason, isNull);
+    });
+
+    test('파싱 누락 방어 — 신규 필드 없는 JSON → 기본값(false/null), 예외 없음', () {
+      final json = itemJson()
+        ..remove('isCancelRequested')
+        ..remove('isCancelledBySap')
+        ..remove('cancelReason');
+      final model = OrderedItemModel.fromJson(json);
+      expect(model.isCancelRequested, isFalse);
+      expect(model.isCancelledBySap, isFalse);
+      expect(model.cancelReason, isNull);
+    });
+
+    test('toJson ↔ fromJson 왕복 — 신규 필드 보존', () {
+      final original = OrderedItemModel.fromJson(itemJson(
+        isCancelRequested: true,
+        isCancelledBySap: true,
+        cancelReason: 'S2 [영업] 고객사정에 의한 취소',
+      ));
+      final roundTrip = OrderedItemModel.fromJson(original.toJson());
+      expect(roundTrip.isCancelRequested, isTrue);
+      expect(roundTrip.isCancelledBySap, isTrue);
+      expect(roundTrip.cancelReason, 'S2 [영업] 고객사정에 의한 취소');
+    });
+  });
+
   group('OrderRequestDetailModel.fromJson - 상태 null (SF nillable NULL row)', () {
     Map<String, dynamic> data({
       dynamic status = 'APPROVED',
