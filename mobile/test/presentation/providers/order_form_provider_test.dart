@@ -66,6 +66,55 @@ void main() {
       });
     });
 
+    group('addProductByBarcode (바코드 검색 → 다건 추가, 레거시 write.jsp \$.each 정합)', () {
+      test('검색 결과가 여러 건이면 전부 주문 라인에 추가한다', () async {
+        // '오뚜기' → '오뚜기 3분 카레 100g'(01101222) + '오뚜기밥 210g'(02101003) 2건.
+        await notifier.addProductByBarcode('오뚜기');
+
+        final items = notifier.state.orderDraft.items;
+        expect(items, hasLength(2));
+        expect(
+          items.map((i) => i.productCode),
+          containsAll(<String>['01101222', '02101003']),
+        );
+        expect(notifier.state.successMessage, '2개 제품이 추가되었습니다.');
+      });
+
+      test('검색 결과가 단건이면 제품명과 함께 추가 안내한다', () async {
+        // '토마토케찹' → '토마토케찹500G'(11110003) 1건.
+        await notifier.addProductByBarcode('토마토케찹');
+
+        final items = notifier.state.orderDraft.items;
+        expect(items, hasLength(1));
+        expect(items.first.productCode, '11110003');
+        expect(notifier.state.successMessage, '토마토케찹500G 추가됨');
+      });
+
+      test('이미 추가된 제품은 중복 차단되어 재추가되지 않는다', () async {
+        await notifier.addProductByBarcode('토마토케찹');
+        expect(notifier.state.orderDraft.items, hasLength(1));
+
+        // 같은 검색 재실행 — 이미 담긴 1건만 있으므로 추가 0건 + 차단 안내.
+        await notifier.addProductByBarcode('토마토케찹');
+
+        expect(notifier.state.orderDraft.items, hasLength(1));
+        expect(notifier.state.errorMessage, '이미 추가된 제품입니다.');
+      });
+
+      test('검색 결과가 없으면 안내 메시지만 표시하고 라인을 추가하지 않는다', () async {
+        await notifier.addProductByBarcode('NONEXISTENT_BARCODE');
+
+        expect(notifier.state.orderDraft.items, isEmpty);
+        expect(notifier.state.errorMessage, '바코드에 해당하는 제품이 없습니다.');
+      });
+
+      test('공백 바코드는 아무 동작도 하지 않는다', () async {
+        await notifier.addProductByBarcode('   ');
+
+        expect(notifier.state.orderDraft.items, isEmpty);
+      });
+    });
+
     group('initialize (#598 P2-M §2.1)', () {
       test('H1 — 임시저장 없음 → hasDraft = false + clientRequestId 발급', () async {
         formRepo.orderDraftToReturn = null;

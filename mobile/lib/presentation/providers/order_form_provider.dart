@@ -303,28 +303,38 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
   ///
   /// Returns true 면 라인 추가됨, false 면 차단 (errorMessage 가 SnackBar 로 표시).
   bool addProductLine(ProductForOrder product) {
+    final blockReason = _tryAddProductLine(product);
+    if (blockReason != null) {
+      state = state.copyWith(errorMessage: blockReason);
+      return false;
+    }
+    return true;
+  }
+
+  /// 차단 룰 4종 적용 후 라인을 추가하는 내부 헬퍼.
+  ///
+  /// 성공 시 라인을 추가하고 `null` 을, 차단 시 라인을 추가하지 않고 **차단 사유 문자열**을
+  /// 반환한다. state 메시지는 건드리지 않으므로 다건 순회([addProductByBarcode]) 시
+  /// 개별 차단 메시지가 state 를 반복 덮어쓰지 않는다.
+  String? _tryAddProductLine(ProductForOrder product) {
     // (1) 전용상품 차단 — 단 예외 제품코드(옛날_구수한끓여먹는누룽지 450g)는 허용.
     //     레거시 하드코딩 정합(poplayer.js): 1사업부 전용상품이지만 현업 요청으로 주문 허용된 제품.
     if (product.isExclusiveBlocked) {
-      state = state.copyWith(errorMessage: '전용상품은 주문이 불가능합니다.');
-      return false;
+      return '전용상품은 주문이 불가능합니다.';
     }
     // (2) 시식·증정용 차단
     if (product.isTastingGift) {
-      state = state.copyWith(errorMessage: '시식/증정용 상품은 추가할 수 없습니다.');
-      return false;
+      return '시식/증정용 상품은 추가할 수 없습니다.';
     }
     // (3) 중복 차단
     final isDuplicate = state.orderDraft.items
         .any((existing) => existing.productCode == product.productCode);
     if (isDuplicate) {
-      state = state.copyWith(errorMessage: '이미 추가된 제품입니다.');
-      return false;
+      return '이미 추가된 제품입니다.';
     }
     // (4) 100개 상한 — 담기 단계에서 사전 차단 (제출 검증 (F) 와 동일 상한).
     if (state.orderDraft.items.length >= 100) {
-      state = state.copyWith(errorMessage: '100개 이하로 등록해주세요');
-      return false;
+      return '100개 이하로 등록해주세요';
     }
 
     final newItem = OrderDraftItem(
@@ -345,7 +355,7 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         totalAmount: totalAmount,
       ),
     );
-    return true;
+    return null;
   }
 
   /// 제품검색 결과의 "주문서 등록"에서 진입 시, 제품코드로 제품을 찾아
@@ -371,9 +381,10 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 
   /// 바코드 스캔으로 제품을 조회해 주문 라인에 추가한다.
   ///
-  /// 스캐너에서 받은 [barcode] 로 제품 검색을 수행하고, 바코드/제품코드가 일치하는 제품
-  /// (없으면 첫 결과)을 [addProductLine] 으로 추가한다. 성공/차단/조회실패는
-  /// successMessage / errorMessage 로 표시되며 페이지 listener 가 SnackBar 로 노출한다.
+  /// 스캐너에서 받은 [barcode] 로 제품 검색을 수행하고, 검색된 제품을 (전용상품/시식·증정/
+  /// 중복/100개 상한 차단 룰 적용 후) **전부** 주문 라인에 추가한다 (레거시 write.jsp
+  /// `barcodeValue` → `$.each` 전건 추가 정합). 추가/차단 결과는 successMessage /
+  /// errorMessage 로 표시되며 페이지 listener 가 SnackBar 로 노출한다.
   Future<void> addProductByBarcode(String barcode) async {
     final code = barcode.trim();
     if (code.isEmpty) return;
@@ -383,12 +394,25 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         state = state.copyWith(errorMessage: '바코드에 해당하는 제품이 없습니다.');
         return;
       }
-      final match = results.firstWhere(
-        (p) => p.barcode == code || p.productCode == code,
-        orElse: () => results.first,
-      );
-      if (addProductLine(match)) {
-        state = state.copyWith(successMessage: '${match.productName} 추가됨');
+      var addedCount = 0;
+      String? lastAddedName;
+      String? blockReason;
+      for (final product in results) {
+        final result = _tryAddProductLine(product);
+        if (result == null) {
+          addedCount++;
+          lastAddedName = product.productName;
+        } else {
+          blockReason = result;
+        }
+      }
+      if (addedCount == 1) {
+        state = state.copyWith(successMessage: '$lastAddedName 추가됨');
+      } else if (addedCount > 1) {
+        state = state.copyWith(successMessage: '$addedCount개 제품이 추가되었습니다.');
+      } else {
+        // 한 건도 추가되지 않음 — 마지막 차단 사유를 안내.
+        state = state.copyWith(errorMessage: blockReason ?? '추가된 제품이 없습니다.');
       }
     } catch (e) {
       state = state.copyWith(errorMessage: extractErrorMessage(e));

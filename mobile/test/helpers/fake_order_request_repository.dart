@@ -5,6 +5,7 @@ import 'package:mobile/domain/entities/order_request.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
+import 'package:mobile/domain/entities/product_order_history_group.dart';
 import 'package:mobile/domain/repositories/order_request_repository.dart';
 
 /// 테스트용 주문 Fake Repository
@@ -753,6 +754,16 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
         .where((p) => _favoriteProductCodes.contains(p.productCode))
         .map((p) => p.copyWith(isFavorite: true))
         .toList();
+  }
+
+  @override
+  Future<List<ProductOrderHistoryGroup>> getAccountOrderHistory({
+    required String accountCode,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    await _simulateDelay();
+    return const <ProductOrderHistoryGroup>[];
   }
 
   @override
