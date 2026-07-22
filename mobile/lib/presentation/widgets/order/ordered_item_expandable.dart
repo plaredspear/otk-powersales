@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_detail.dart';
+import 'cancel_badge_info_sheet.dart';
 
 class OrderedItemExpandable extends StatelessWidget {
   final List<OrderedItem> items;
@@ -19,8 +20,49 @@ class OrderedItemExpandable extends StatelessWidget {
     required this.onToggle,
   });
 
-  /// 취소된 라인 수 (isCancelled). 결품(isOutOfStock)은 취소가 아니므로 제외.
-  int get _cancelledCount => items.where((i) => i.isCancelled).length;
+  /// 취소된 라인 수 — 주문 취소(SAP 상세 확정 isCancelledBySap 또는 마이그레이션 isCancelled) 기준.
+  /// 결품(isOutOfStock)은 취소가 아니므로 제외(결품 우선). OrderedItemList 정합.
+  int get _cancelledCount => items
+      .where((i) => (i.isCancelledBySap || i.isCancelled) && !i.isOutOfStock)
+      .length;
+
+  /// 취소요청/주문 취소 배지가 하나라도 있으면 헤더에 설명 info 아이콘을 노출 (OrderedItemList 정합).
+  bool get _hasCancelInfo => items.any((i) =>
+      i.isCancelRequested ||
+      ((i.isCancelledBySap || i.isCancelled) && !i.isOutOfStock));
+
+  /// 취소요청 표식 — 문구 없는 색 동그라미(8px). OrderedItemList._buildDot 정합.
+  Widget _buildDot(Color color) {
+    return Container(
+      key: const ValueKey('cancelRequestedDot'),
+      margin: EdgeInsets.only(right: AppSpacing.xs),
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+
+  /// 인라인 배지 (pill) — OrderedItemList._buildBadge 정합.
+  Widget _buildBadge(String label, Color background) {
+    return Container(
+      margin: EdgeInsets.only(right: AppSpacing.xs),
+      padding: EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.labelSmall.copyWith(
+          color: AppColors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +114,20 @@ class OrderedItemExpandable extends StatelessWidget {
                           ),
                         ),
                       ],
+                      // 취소 배지 설명 — 토글과 분리된 탭 영역(GestureDetector 가 InkWell 보다 우선).
+                      if (_hasCancelInfo)
+                        GestureDetector(
+                          onTap: () => CancelBadgeInfoSheet.show(context),
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: EdgeInsets.only(left: AppSpacing.xs),
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 18,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                   Row(
@@ -143,12 +199,18 @@ class OrderedItemExpandable extends StatelessWidget {
   }
 
   Widget _buildItemRow(OrderedItem item) {
-    // 취소/결품 제품은 짙은 회색 처리 + '[주문 취소]' 접두(빨간색) 공통.
-    // (레거시 view.jsp:414-415 는 연한 회색 #CCC 였으나, 취소 항목 가독성 개선으로 짙은 회색 +
-    //  접두만 빨간색으로 변경.)
-    final isGrayed = item.isCancelled || item.isOutOfStock;
+    // 취소/결품 제품은 짙은 회색 처리. 배지 체계는 OrderedItemList 와 동일(2배지 통합, 2026-07-22):
+    //  - 취소요청 : SAP 주문취소 API 요청 성공(로컬, isCancelRequested).
+    //  - 주문 취소 : SAP 주문 상세에서 취소 확정(isCancelledBySap) 또는 마이그레이션 취소(isCancelled).
+    //  - 결품 : isOutOfStock (최우선, 주문취소와 상호배타).
+    final isGrayed =
+        item.isCancelledBySap || item.isOutOfStock || item.isCancelled;
     final nameColor =
         isGrayed ? AppColors.textSecondary : AppColors.textPrimary;
+
+    final showOutOfStock = item.isOutOfStock;
+    final showCancelled =
+        (item.isCancelledBySap || item.isCancelled) && !item.isOutOfStock;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,13 +223,21 @@ class OrderedItemExpandable extends StatelessWidget {
               child: RichText(
                 text: TextSpan(
                   children: [
-                    if (isGrayed)
-                      TextSpan(
-                        text: '[주문 취소] ',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w700,
-                        ),
+                    // 취소요청 — 문구 없이 주황색 동그라미(OrderedItemList 정합). 의미는 헤더 info 안내.
+                    if (item.isCancelRequested)
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: _buildDot(AppColors.warning),
+                      ),
+                    if (showCancelled)
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: _buildBadge('주문 취소', AppColors.error),
+                      ),
+                    if (showOutOfStock)
+                      WidgetSpan(
+                        alignment: PlaceholderAlignment.middle,
+                        child: _buildBadge('결품', AppColors.textTertiary),
                       ),
                     // 레거시 view.jsp:414 동등 — 제품명 (제품코드) 순서.
                     TextSpan(
@@ -193,10 +263,18 @@ class OrderedItemExpandable extends StatelessWidget {
             ),
           ],
         ),
-        if (item.isOutOfStock && item.outOfStockReason != null) ...[
+        if (showOutOfStock && item.outOfStockReason != null) ...[
           SizedBox(height: AppSpacing.xs),
           Text(
             '결품사유: ${item.outOfStockReason}',
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ] else if (showCancelled && item.cancelReason != null) ...[
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            '취소사유: ${item.cancelReason}',
             style: AppTypography.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),
