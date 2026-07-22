@@ -114,7 +114,9 @@ export default function WorkHistoryPeriodPage() {
                 onChange={(values) => setSelectedCodes(values as string[])}
                 options={branchOptions}
                 placeholder="지점 선택 (미선택 시 전체)"
-                style={{ minWidth: 280, maxWidth: 480 }}
+                // 폭 고정 — 가변 폭(minWidth~maxWidth) + maxTagCount="responsive" 조합은 임계 폭
+                // 근처에서 태그 펼침(폭 확장)↔접힘(폭 축소)이 무한 반복되며 화면이 깜빡인다(flickering).
+                style={{ width: 480 }}
                 maxTagCount="responsive"
                 allowClear
                 showSearch
