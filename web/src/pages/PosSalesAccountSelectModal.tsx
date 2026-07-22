@@ -240,7 +240,12 @@ export default function PosSalesAccountSelectModal({
         <Button key="cancel" onClick={onClose}>
           취소
         </Button>,
-        <Button key="confirm" type="primary" onClick={handleConfirm}>
+        <Button
+          key="confirm"
+          type="primary"
+          onClick={handleConfirm}
+          disabled={selectedMap.size === 0}
+        >
           선택 완료 ({selectedMap.size})
         </Button>,
       ]}
