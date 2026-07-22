@@ -78,7 +78,7 @@ void main() {
       expect(dio.options.connectTimeout, const Duration(seconds: 10));
     });
 
-    test('receiveTimeout이 10초여야 한다', () {
+    test('receiveTimeout이 35초여야 한다', () {
       final container = ProviderContainer(
         overrides: [
           authLocalDataSourceProvider.overrideWithValue(
@@ -90,7 +90,8 @@ void main() {
 
       final dio = container.read(dioProvider);
 
-      expect(dio.options.receiveTimeout, const Duration(seconds: 10));
+      // SAP 경유 API(주문취소 등) 처리 대기 위해 lib에서 35초로 상향(dio_provider.dart 주석 참조).
+      expect(dio.options.receiveTimeout, const Duration(seconds: 35));
     });
   });
 }
