@@ -50,7 +50,6 @@ void main() {
       expect(AppRouter.login, '/login');
       expect(AppRouter.changePassword, '/change-password');
       expect(AppRouter.verifyPassword, '/verify-password');
-      expect(AppRouter.changePasswordNew, '/change-password-new');
       expect(AppRouter.main, '/');
       expect(AppRouter.posSales, '/pos-sales');
       expect(AppRouter.attendance, '/attendance');
@@ -82,7 +81,6 @@ void main() {
       expect(routes.containsKey(AppRouter.login), true);
       expect(routes.containsKey(AppRouter.changePassword), true);
       expect(routes.containsKey(AppRouter.verifyPassword), true);
-      expect(routes.containsKey(AppRouter.changePasswordNew), true);
       expect(routes.containsKey(AppRouter.main), true);
       expect(routes.containsKey(AppRouter.posSales), true);
       expect(routes.containsKey(AppRouter.attendance), true);
@@ -115,7 +113,7 @@ void main() {
       expect(routes.containsKey(AppRouter.staffEvaluation), true);
       expect(routes.containsKey(AppRouter.splash), true);
       expect(routes.containsKey(AppRouter.proxyAttendance), true);
-      expect(routes.length, 54);
+      expect(routes.length, 53);
     });
 
     test('routes 맵에 orderList 라우트가 포함되어 있다', () {

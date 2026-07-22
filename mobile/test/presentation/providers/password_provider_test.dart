@@ -1,20 +1,15 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/domain/entities/auth_token.dart';
 import 'package:mobile/domain/entities/password_validation.dart';
 import 'package:mobile/domain/entities/user.dart';
 import 'package:mobile/domain/repositories/auth_repository.dart';
-import 'package:mobile/domain/repositories/password_repository.dart';
 import 'package:mobile/domain/usecases/change_password_usecase.dart';
-import 'package:mobile/domain/usecases/verify_current_password_usecase.dart';
 import 'package:mobile/presentation/providers/password_provider.dart';
 
 void main() {
-  late MockPasswordRepository mockPasswordRepository;
   late MockAuthRepository mockAuthRepository;
 
   setUp(() {
-    mockPasswordRepository = MockPasswordRepository();
     mockAuthRepository = MockAuthRepository();
   });
 
@@ -46,73 +41,6 @@ void main() {
 
       expect(validation.isLengthValid, false);
       expect(validation.isValid, false);
-    });
-  });
-
-  group('PasswordVerificationNotifier', () {
-    test('초기 상태는 false', () {
-      final notifier = PasswordVerificationNotifier(
-        verifyUseCase: VerifyCurrentPasswordUseCase(mockPasswordRepository),
-      );
-
-      expect(notifier.state.value, false);
-    });
-
-    test('verify 성공 시 true 반환', () async {
-      mockPasswordRepository.verifyResult = true;
-
-      final notifier = PasswordVerificationNotifier(
-        verifyUseCase: VerifyCurrentPasswordUseCase(mockPasswordRepository),
-      );
-
-      final result = await notifier.verify('correct123');
-
-      expect(result, true);
-      expect(notifier.state.value, true);
-    });
-
-    test('verify 실패 시 false 반환', () async {
-      mockPasswordRepository.verifyResult = false;
-
-      final notifier = PasswordVerificationNotifier(
-        verifyUseCase: VerifyCurrentPasswordUseCase(mockPasswordRepository),
-      );
-
-      final result = await notifier.verify('wrong');
-
-      expect(result, false);
-      expect(notifier.state.value, false);
-    });
-
-    test('verify 에러 발생 시 예외 전파 (false 로 삼키지 않음)', () async {
-      // 비밀번호 불일치/네트워크 오류는 호출측(VerifyPasswordPage)이 error.code 로
-      // 구분 처리하므로, notifier 는 예외를 false 로 삼키지 않고 그대로 전파한다.
-      mockPasswordRepository.shouldThrowError = true;
-
-      final notifier = PasswordVerificationNotifier(
-        verifyUseCase: VerifyCurrentPasswordUseCase(mockPasswordRepository),
-      );
-
-      await expectLater(
-        () => notifier.verify('test'),
-        throwsA(isA<Exception>()),
-      );
-      expect(notifier.state, isA<AsyncError<bool>>());
-    });
-
-    test('reset 호출 시 초기 상태로 복원', () async {
-      mockPasswordRepository.verifyResult = true;
-
-      final notifier = PasswordVerificationNotifier(
-        verifyUseCase: VerifyCurrentPasswordUseCase(mockPasswordRepository),
-      );
-
-      await notifier.verify('correct123');
-      expect(notifier.state.value, true);
-
-      notifier.reset();
-
-      expect(notifier.state.value, false);
     });
   });
 
@@ -163,33 +91,6 @@ void main() {
       );
     });
   });
-}
-
-/// Mock Password Repository
-class MockPasswordRepository implements PasswordRepository {
-  bool verifyResult = true;
-  bool shouldThrowError = false;
-  String? lastCurrentPassword;
-  String? lastNewPassword;
-
-  @override
-  Future<bool> verifyCurrentPassword(String currentPassword) async {
-    if (shouldThrowError) {
-      throw Exception('Network error');
-    }
-    lastCurrentPassword = currentPassword;
-    return verifyResult;
-  }
-
-  @override
-  Future<AuthToken> changePassword({required String currentPassword, required String newPassword}) async {
-    if (shouldThrowError) {
-      throw Exception('Network error');
-    }
-    lastCurrentPassword = currentPassword;
-    lastNewPassword = newPassword;
-    return const AuthToken(accessToken: "new-access", refreshToken: "new-refresh", expiresIn: 3600);
-  }
 }
 
 /// Mock Auth Repository

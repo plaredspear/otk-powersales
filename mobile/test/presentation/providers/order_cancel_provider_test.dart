@@ -5,6 +5,7 @@ import 'package:mobile/domain/entities/client_order.dart';
 import 'package:mobile/domain/entities/order_cancel.dart';
 import 'package:mobile/domain/entities/order_detail.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
+import 'package:mobile/domain/entities/product_order_history_group.dart';
 import 'package:mobile/domain/repositories/order_request_repository.dart';
 import 'package:mobile/presentation/providers/order_cancel_provider.dart';
 import 'package:mobile/presentation/providers/order_request_list_provider.dart';
@@ -135,6 +136,15 @@ class _MockOrderRepository implements OrderRequestRepository {
 
   @override
   Future<void> removeFromFavorites({required String productCode}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<ProductOrderHistoryGroup>> getAccountOrderHistory({
+    required String accountCode,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) {
     throw UnimplementedError();
   }
 }
