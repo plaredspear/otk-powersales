@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Checkbox, Input, Modal, Select, Space, Tag, Typography, message } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
+} from 'antd';
+import { InfoCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { TableRowSelection } from 'antd/es/table/interface';
 import { useQuery } from '@tanstack/react-query';
@@ -362,9 +374,16 @@ export default function PosSalesAccountSelectModal({
 
       {/* ── 검색 결과 목록 (체크박스 선택) ── */}
       <div style={{ marginBottom: 8 }}>
-        <Text type="secondary">
-          {accounts?.totalElements ?? 0}건 · 선택 {selectedMap.size}/{MAX_SELECTABLE_ACCOUNTS}
-        </Text>
+        <Space size={4}>
+          <Text type="secondary">
+            {accounts?.totalElements ?? 0}건 · 선택 {selectedMap.size}/{MAX_SELECTABLE_ACCOUNTS}
+          </Text>
+          <Tooltip
+            title={`한 번에 조회할 수 있는 거래처는 최대 ${MAX_SELECTABLE_ACCOUNTS}개입니다. 과도한 동시 조회로 인한 시스템 부하·장애를 방지하기 위한 제한입니다.`}
+          >
+            <InfoCircleOutlined style={{ color: 'rgba(0, 0, 0, 0.45)', cursor: 'help' }} />
+          </Tooltip>
+        </Space>
       </div>
       <ResizableTable
         rowKey={(r) => r.accountId}
