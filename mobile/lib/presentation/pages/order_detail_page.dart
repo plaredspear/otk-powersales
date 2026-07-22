@@ -17,6 +17,7 @@ import '../widgets/order/order_info_header.dart';
 import '../widgets/order/order_processing_status_section.dart';
 import '../widgets/order/ordered_item_expandable.dart';
 import '../widgets/order/ordered_item_list.dart';
+import '../widgets/order/out_of_stock_item_list.dart';
 import '../widgets/order/rejected_item_list.dart';
 import '../widgets/order/unfulfilled_item_list.dart';
 
@@ -239,6 +240,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 const SizedBox(height: AppSpacing.lg),
               ],
 
+              // 결품 제품 목록 — 반려 섹션 다음에 표시(2026-07-23). 주문한 제품에서는 제외됨.
+              if (detail.hasOutOfStockItems) ...[
+                OutOfStockItemList(outOfStockItems: detail.outOfStockItems!),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
               // 주문한 제품 목록 (마감전에는 바로 표시)
               OrderedItemList(items: detail.orderedItems),
             ],
@@ -254,6 +261,12 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               // 반려 제품 목록 (반려제품 존재 시)
               if (detail.hasRejectedItems) ...[
                 RejectedItemList(rejectedItems: detail.rejectedItems!),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
+              // 결품 제품 목록 — 반려 섹션 다음에 표시(2026-07-23). 주문한 제품에서는 제외됨.
+              if (detail.hasOutOfStockItems) ...[
+                OutOfStockItemList(outOfStockItems: detail.outOfStockItems!),
                 const SizedBox(height: AppSpacing.lg),
               ],
 

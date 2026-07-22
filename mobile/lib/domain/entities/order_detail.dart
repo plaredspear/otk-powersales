@@ -585,6 +585,92 @@ class UnfulfilledItem {
   }
 }
 
+/// 결품 제품 엔티티 (2026-07-23 사용자 결정 — 반려처럼 별도 섹션으로 분리)
+///
+/// SAP `DefaultReason` 코드가 결품셋({F1,L1,L2,L3})으로 분류된 제품. 기존에는 "주문한 제품" 목록에
+/// 회색 배지로 인라인 표시했으나, 반려 섹션 다음에 전용 "결품 제품" 영역으로 분리하고 "주문한 제품"
+/// 목록에서는 제외합니다. [reason] 은 `"{코드} {설명}"`(예: `"L1 [물류] 재고부족"`).
+class OutOfStockItem {
+  /// 제품 코드
+  final String productCode;
+
+  /// 제품명
+  final String productName;
+
+  /// 주문 수량 (BOX) — 서버 `BigDecimal` 정합으로 `double` (`RejectedItem` 과 동일)
+  final double orderQuantityBoxes;
+
+  /// 결품 사유 (`"{코드} {설명}"`)
+  final String reason;
+
+  const OutOfStockItem({
+    required this.productCode,
+    required this.productName,
+    required this.orderQuantityBoxes,
+    required this.reason,
+  });
+
+  OutOfStockItem copyWith({
+    String? productCode,
+    String? productName,
+    double? orderQuantityBoxes,
+    String? reason,
+  }) {
+    return OutOfStockItem(
+      productCode: productCode ?? this.productCode,
+      productName: productName ?? this.productName,
+      orderQuantityBoxes: orderQuantityBoxes ?? this.orderQuantityBoxes,
+      reason: reason ?? this.reason,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'productCode': productCode,
+      'productName': productName,
+      'orderQuantityBoxes': orderQuantityBoxes,
+      'reason': reason,
+    };
+  }
+
+  factory OutOfStockItem.fromJson(Map<String, dynamic> json) {
+    return OutOfStockItem(
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toDouble(),
+      reason: json['reason'] as String,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is OutOfStockItem &&
+        other.productCode == productCode &&
+        other.productName == productName &&
+        other.orderQuantityBoxes == orderQuantityBoxes &&
+        other.reason == reason;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      productCode,
+      productName,
+      orderQuantityBoxes,
+      reason,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'OutOfStockItem(productCode: $productCode, '
+        'productName: $productName, '
+        'orderQuantityBoxes: $orderQuantityBoxes, '
+        'reason: $reason)';
+  }
+}
+
 /// 주문 상세 엔티티
 ///
 /// 주문 상세 화면에 표시되는 전체 정보를 담는 도메인 엔티티입니다.
@@ -658,6 +744,9 @@ class OrderDetail {
   /// 반려 제품 목록 (반려 존재 시 — 레거시 동등으로 마감 전후 모두 표시)
   final List<RejectedItem>? rejectedItems;
 
+  /// 결품 제품 목록 (2026-07-23 — 반려처럼 별도 섹션, 마감 전후 모두 표시. "주문한 제품"에서는 제외)
+  final List<OutOfStockItem>? outOfStockItems;
+
   /// 미납 제품 목록 (신규 정책 — LineItemStatus != "OK" && SAP 주문번호 있음, 마감 전후 모두 표시)
   final List<UnfulfilledItem>? unfulfilledItems;
 
@@ -681,6 +770,7 @@ class OrderDetail {
     this.orderProcessingStatusList,
     this.sapOrderNumbers = const [],
     this.rejectedItems,
+    this.outOfStockItems,
     this.unfulfilledItems,
   });
 
@@ -690,6 +780,10 @@ class OrderDetail {
   /// 반려 제품이 있는지 여부
   bool get hasRejectedItems =>
       rejectedItems != null && rejectedItems!.isNotEmpty;
+
+  /// 결품 제품이 있는지 여부
+  bool get hasOutOfStockItems =>
+      outOfStockItems != null && outOfStockItems!.isNotEmpty;
 
   /// 미납 제품이 있는지 여부
   bool get hasUnfulfilledItems =>
@@ -719,6 +813,7 @@ class OrderDetail {
     List<OrderProcessingStatus>? orderProcessingStatusList,
     List<String>? sapOrderNumbers,
     List<RejectedItem>? rejectedItems,
+    List<OutOfStockItem>? outOfStockItems,
     List<UnfulfilledItem>? unfulfilledItems,
   }) {
     return OrderDetail(
@@ -743,6 +838,7 @@ class OrderDetail {
           orderProcessingStatusList ?? this.orderProcessingStatusList,
       sapOrderNumbers: sapOrderNumbers ?? this.sapOrderNumbers,
       rejectedItems: rejectedItems ?? this.rejectedItems,
+      outOfStockItems: outOfStockItems ?? this.outOfStockItems,
       unfulfilledItems: unfulfilledItems ?? this.unfulfilledItems,
     );
   }
@@ -769,6 +865,7 @@ class OrderDetail {
           orderProcessingStatusList?.map((e) => e.toJson()).toList(),
       'sapOrderNumbers': sapOrderNumbers,
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
+      'outOfStockItems': outOfStockItems?.map((e) => e.toJson()).toList(),
       'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
     };
   }
@@ -806,6 +903,11 @@ class OrderDetail {
       rejectedItems: json['rejectedItems'] != null
           ? (json['rejectedItems'] as List<dynamic>)
               .map((e) => RejectedItem.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : null,
+      outOfStockItems: json['outOfStockItems'] != null
+          ? (json['outOfStockItems'] as List<dynamic>)
+              .map((e) => OutOfStockItem.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
       unfulfilledItems: json['unfulfilledItems'] != null

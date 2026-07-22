@@ -547,7 +547,7 @@ class OrderRequestServiceTest {
         }
 
         @Test
-        @DisplayName("성공 — SAP 결품 코드(L1) 라인 → isOutOfStock=true + outOfStockReason 세팅, SAP취소 아님 (#845)")
+        @DisplayName("성공 — SAP 결품 코드(L1) 라인 → 결품 전용 섹션(outOfStockItems)으로 분리, 주문한 제품에서 제외 (2026-07-23)")
         fun sapOutOfStockBadge() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
             every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
@@ -558,11 +558,11 @@ class OrderRequestServiceTest {
 
             val response = service.getOrderRequestDetail(100L, userId = 1L)
 
-            val item = response.orderedItems.first { it.productCode == "1000023" }
-            assertThat(item.isOutOfStock).isTrue()
-            assertThat(item.outOfStockReason).isEqualTo("L1 [물류] 재고부족")
-            assertThat(item.isCancelledBySap).isFalse()
-            assertThat(item.cancelReason).isNull()
+            // 결품 제품은 "주문한 제품" 목록에서 제외된다.
+            assertThat(response.orderedItems.none { it.productCode == "1000023" }).isTrue()
+            // 결품 전용 섹션에 사유와 함께 표시된다.
+            val outOfStock = response.outOfStockItems!!.first { it.productCode == "1000023" }
+            assertThat(outOfStock.reason).isEqualTo("L1 [물류] 재고부족")
         }
 
         @Test

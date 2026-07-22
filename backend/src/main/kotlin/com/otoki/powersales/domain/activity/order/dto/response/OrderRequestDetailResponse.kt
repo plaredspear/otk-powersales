@@ -47,6 +47,8 @@ data class OrderRequestDetailResponse(
     // SAP 응답 라인의 distinct SAP 주문번호(마감 무관, 헤더 조기 노출용). 없으면 빈 배열.
     val sapOrderNumbers: List<String> = emptyList(),
     val rejectedItems: List<RejectedItemResponse>?,
+    // 결품 라인 배열(반려처럼 별도 섹션). "주문한 제품"에서는 제외. 없으면 null.
+    val outOfStockItems: List<OutOfStockItemResponse>? = null,
     val unfulfilledItems: List<UnfulfilledItemResponse>? = null,
 ) {
     companion object {
@@ -60,6 +62,7 @@ data class OrderRequestDetailResponse(
             orderProcessingStatusList: List<OrderProcessingStatusResponse>?,
             sapOrderNumbers: List<String> = emptyList(),
             rejectedItems: List<RejectedItemResponse>?,
+            outOfStockItems: List<OutOfStockItemResponse>? = null,
             unfulfilledItems: List<UnfulfilledItemResponse>? = null,
         ): OrderRequestDetailResponse =
             OrderRequestDetailResponse(
@@ -82,6 +85,7 @@ data class OrderRequestDetailResponse(
                 orderProcessingStatusList = orderProcessingStatusList,
                 sapOrderNumbers = sapOrderNumbers,
                 rejectedItems = rejectedItems,
+                outOfStockItems = outOfStockItems,
                 unfulfilledItems = unfulfilledItems,
             )
     }

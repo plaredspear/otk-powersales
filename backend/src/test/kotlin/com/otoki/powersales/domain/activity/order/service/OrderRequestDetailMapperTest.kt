@@ -193,8 +193,11 @@ class OrderRequestDetailMapperTest {
         assertThat(result.processingGroups[0].sapOrderNumber).isEqualTo("S1")
         assertThat(result.processingGroups[0].items[0].deliveryStatus).isEqualTo(DeliveryStatus.OUT_OF_STOCK)
         assertThat(result.rejectedItems).isEmpty()
-        // 동시에 orderedItems 회색+사유 표시용으로도 수집 (레거시는 두 곳 모두 표시). 사유 = "{코드} {설명}".
+        // 동시에 결품 전용 섹션 목록으로도 수집 (2026-07-23 — 주문한 제품에서 제외, 별도 영역 표시).
         assertThat(result.outOfStockReasons).containsEntry("P_REJ", "L1 [물류] 재고부족")
+        assertThat(result.outOfStockItems).hasSize(1)
+        assertThat(result.outOfStockItems[0].productCode).isEqualTo("P_REJ")
+        assertThat(result.outOfStockItems[0].reason).isEqualTo("L1 [물류] 재고부족")
     }
 
     @Test

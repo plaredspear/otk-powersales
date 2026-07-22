@@ -211,6 +211,8 @@ class OrderRequestService(
 
         val processingGroups = mapped?.processingGroups?.takeIf { it.isNotEmpty() }
         val rejectedItems = mapped?.rejectedItems?.takeIf { it.isNotEmpty() }
+        // 결품 라인(2026-07-23) — 반려처럼 별도 섹션. 마감 전후 모두 노출. 없으면 null.
+        val outOfStockItems = mapped?.outOfStockItems?.takeIf { it.isNotEmpty() }
         // 미납 라인(신규 정책) — 마감 전후 모두 노출 (반려 섹션 노출 정책과 동일).
         val unfulfilledItems = mapped?.unfulfilledItems?.takeIf { it.isNotEmpty() }
         // DefaultReason 코드 분류 결과 (Spec #845) — 결품셋({F1,L1,L2,L3})과 취소(그 외)로 분리된 두 맵.
@@ -239,16 +241,20 @@ class OrderRequestService(
         // 카운트 view.jsp:377-383 동등 — 반려 제품은 반려 섹션에만 표시, 이중 표시 없음).
         // SAP 호출 실패 시엔 반려 판별 불가 → 전 라인 유지 (CRM 원장 표시 견고화, 레거시는 목록 자체가 비었음).
         val rejectedProductCodes = mapped?.rejectedItems.orEmpty().map { it.productCode }.toSet()
+        // 결품 제품도 "주문한 제품" 리스트에서 제외 — 반려처럼 전용 섹션에만 표시(2026-07-23 사용자 결정).
+        val outOfStockProductCodes = mapped?.outOfStockItems.orEmpty().map { it.productCode }.toSet()
+        val excludedFromOrdered = rejectedProductCodes + outOfStockProductCodes
 
-        // 결품/취소(SAP DefaultReason) 제품은 "주문한 제품" 리스트에 결품/SAP취소됨 배지+사유로 표시
-        // (Spec #845). 취소요청(로컬 흔적)은 OrderedItemResponse 가 cancel_requested_at 으로 직접 판정.
+        // 취소(SAP DefaultReason 취소셋) 제품은 "주문한 제품" 리스트에 주문취소 배지+사유로 남는다 (Spec #845).
+        // 결품/반려는 제외. 취소요청(로컬 흔적)은 OrderedItemResponse 가 cancel_requested_at 으로 직접 판정.
         val orderedItems = crmProducts
-            .filter { it.productCode == null || it.productCode !in rejectedProductCodes }
+            .filter { it.productCode == null || it.productCode !in excludedFromOrdered }
             .map {
                 OrderedItemResponse.from(
                     it,
                     productName = productNamesByCode[it.productCode],
-                    outOfStockReason = outOfStockReasons[it.productCode],
+                    // 결품은 전용 섹션으로 분리되어 orderedItems 에 남지 않으므로 사유 주입 불필요.
+                    outOfStockReason = null,
                     cancelReason = cancelledReasons[it.productCode],
                 )
             }
@@ -281,6 +287,7 @@ class OrderRequestService(
             orderProcessingStatusList = finalProcessingGroups,
             sapOrderNumbers = sapOrderNumbers,
             rejectedItems = rejectedItems,
+            outOfStockItems = outOfStockItems,
             unfulfilledItems = unfulfilledItems,
         )
     }

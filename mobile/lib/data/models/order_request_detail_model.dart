@@ -288,6 +288,52 @@ class UnfulfilledItemModel {
   }
 }
 
+/// 결품 제품 API 모델 (2026-07-23 — 반려처럼 별도 섹션)
+class OutOfStockItemModel {
+  final String productCode;
+  final String productName;
+
+  /// 서버 `BigDecimal` 정합 — `RejectedItemModel.orderQuantityBoxes` 와 동일하게 `double`.
+  final double orderQuantityBoxes;
+
+  /// 결품 사유 (`"{코드} {설명}"`)
+  final String reason;
+
+  const OutOfStockItemModel({
+    required this.productCode,
+    required this.productName,
+    required this.orderQuantityBoxes,
+    required this.reason,
+  });
+
+  factory OutOfStockItemModel.fromJson(Map<String, dynamic> json) {
+    return OutOfStockItemModel(
+      productCode: json['productCode'] as String,
+      productName: json['productName'] as String,
+      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toDouble(),
+      reason: json['reason'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'productCode': productCode,
+      'productName': productName,
+      'orderQuantityBoxes': orderQuantityBoxes,
+      'reason': reason,
+    };
+  }
+
+  OutOfStockItem toEntity() {
+    return OutOfStockItem(
+      productCode: productCode,
+      productName: productName,
+      orderQuantityBoxes: orderQuantityBoxes,
+      reason: reason,
+    );
+  }
+}
+
 /// 주문 상세 API 모델 (DTO)
 ///
 /// Backend API의 snake_case JSON을 파싱하여 OrderDetail 엔티티로 변환합니다.
@@ -317,6 +363,9 @@ class OrderRequestDetailModel {
   /// SAP 응답의 distinct SAP 주문번호 목록 (마감 무관, 헤더 조기 노출용). 없으면 빈 리스트.
   final List<String> sapOrderNumbers;
   final List<RejectedItemModel>? rejectedItems;
+
+  /// 결품 제품 목록 (2026-07-23 — 반려처럼 별도 섹션). 없으면 null.
+  final List<OutOfStockItemModel>? outOfStockItems;
   final List<UnfulfilledItemModel>? unfulfilledItems;
 
   const OrderRequestDetailModel({
@@ -339,6 +388,7 @@ class OrderRequestDetailModel {
     this.orderProcessingStatusList,
     this.sapOrderNumbers = const [],
     this.rejectedItems,
+    this.outOfStockItems,
     this.unfulfilledItems,
   });
 
@@ -350,6 +400,7 @@ class OrderRequestDetailModel {
 
     final orderedItemsJson = data['orderedItems'] as List<dynamic>? ?? [];
     final rejectedItemsJson = data['rejectedItems'] as List<dynamic>?;
+    final outOfStockItemsJson = data['outOfStockItems'] as List<dynamic>?;
     final unfulfilledItemsJson = data['unfulfilledItems'] as List<dynamic>?;
     final processingListJson =
         data['orderProcessingStatusList'] as List<dynamic>?;
@@ -388,6 +439,12 @@ class OrderRequestDetailModel {
                   (e) => RejectedItemModel.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
+      outOfStockItems: outOfStockItemsJson != null
+          ? outOfStockItemsJson
+              .map((e) =>
+                  OutOfStockItemModel.fromJson(e as Map<String, dynamic>))
+              .toList()
+          : null,
       unfulfilledItems: unfulfilledItemsJson != null
           ? unfulfilledItemsJson
               .map((e) =>
@@ -420,6 +477,7 @@ class OrderRequestDetailModel {
           orderProcessingStatusList?.map((e) => e.toJson()).toList(),
       'sapOrderNumbers': sapOrderNumbers,
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
+      'outOfStockItems': outOfStockItems?.map((e) => e.toJson()).toList(),
       'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
     };
   }
@@ -447,6 +505,7 @@ class OrderRequestDetailModel {
           orderProcessingStatusList?.map((e) => e.toEntity()).toList(),
       sapOrderNumbers: sapOrderNumbers,
       rejectedItems: rejectedItems?.map((e) => e.toEntity()).toList(),
+      outOfStockItems: outOfStockItems?.map((e) => e.toEntity()).toList(),
       unfulfilledItems: unfulfilledItems?.map((e) => e.toEntity()).toList(),
     );
   }
