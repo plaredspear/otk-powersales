@@ -24,8 +24,10 @@ import org.springframework.stereotype.Service
  *  1. 주문 + 라인 조회 + 검증 (본인 주문 / 상태 / 마감 시각 / 라인 ID)
  *  2. 취소 요청 흔적 기록 ([OrderCancelRequestRecorder]) — SAP 호출 전 `cancel_requested_at` 커밋
  *  3. SAP 동기 송신 (`OrderRequestCancelSender.send(...)`) — DB 트랜잭션 외부
- *  4. 응답 'S' 성공 → 응답을 **요청 대상 라인(targetLines)** 기준으로 구성. `line_change_type='X'` /
- *     헤더 `CANCELED` 전이 **없음** (Spec #845 로컬 확정 제거). `orderRequestStatus` 는 무변경 그대로 반환.
+ *  4. 응답 'S' 성공 → [OrderCancelHeaderStatusUpdater] 로 **헤더 전이만** 수행: 전량취소(전 라인이
+ *     취소요청 흔적 or 확정 취소로 커버)면 헤더를 `CANCEL_REQUESTED` 로 전이(부분취소면 무변경).
+ *     라인 `line_change_type='X'` 확정은 여전히 **없음**(Spec #845 비교 모델 유지). 응답은 갱신된
+ *     `orderRequest` + **요청 대상 라인(targetLines)** 기준으로 구성.
  *
  * 취소 여부 판단의 원천은 조회 시점 SAP `DefaultReason` + 로컬 `cancel_requested_at`(요청 흔적)뿐이다.
  * SAP 응답 'E' / timeout / HTML 가드 실패 시 [OrderCancelSapFailedException] (502) — 상태 무변경. 단
@@ -42,6 +44,7 @@ class OrderCancelService(
     private val orderRequestCancelPayloadFactory: OrderRequestCancelPayloadFactory,
     private val orderRequestCancelSender: OrderRequestCancelSender,
     private val orderCancelRequestRecorder: OrderCancelRequestRecorder,
+    private val orderCancelHeaderStatusUpdater: OrderCancelHeaderStatusUpdater,
 ) {
 
     fun cancel(orderRequestId: Long, userId: Long, orderProductIds: List<Long>): OrderCancelResponse {
@@ -60,8 +63,10 @@ class OrderCancelService(
         val payload = orderRequestCancelPayloadFactory.build(orderRequest, targetLines)
         orderRequestCancelSender.send(payload)
 
-        // 로컬 확정 없음 (Spec #845) — 응답은 요청 대상 라인 기준, orderRequest 상태는 무변경 그대로 반환.
-        return OrderCancelResponse.of(orderRequest, targetLines)
+        // SAP 'S' 성공 후 헤더 전이만 수행 — 전량취소 커버면 CANCEL_REQUESTED 로 전이(부분취소면 무변경).
+        // 라인 line_change_type='X' 확정은 없음(Spec #845 비교 모델 유지). 갱신된 orderRequest 로 응답 구성.
+        val updated = orderCancelHeaderStatusUpdater.markCancelRequestedIfFullyCovered(orderRequestId)
+        return OrderCancelResponse.of(updated, targetLines)
     }
 
     private fun loadAndValidate(orderRequestId: Long, userId: Long): OrderRequest {

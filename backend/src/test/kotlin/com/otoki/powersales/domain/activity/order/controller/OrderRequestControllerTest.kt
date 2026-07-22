@@ -219,8 +219,8 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                 OrderCancelResponse(
                     orderRequestId = 12345L,
                     orderRequestNumber = "OR00012345",
-                    orderRequestStatus = OrderRequestStatus.CANCELED.name,
-                    orderRequestStatusName = OrderRequestStatus.CANCELED.displayName,
+                    orderRequestStatus = OrderRequestStatus.CANCEL_REQUESTED.name,
+                    orderRequestStatusName = OrderRequestStatus.CANCEL_REQUESTED.displayName,
                     cancelledLines = listOf(
                         CancelledLineResponse(
                             orderProductId = 101L,
@@ -233,7 +233,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
 
             mockMvc.perform(post("/api/v1/mobile/me/order-requests/12345/cancel"))
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("$.data.orderRequestStatus").value("CANCELED"))
+                .andExpect(jsonPath("$.data.orderRequestStatus").value("CANCEL_REQUESTED"))
                 .andExpect(jsonPath("$.data.orderRequestStatusName").value("주문취소"))
                 .andExpect(jsonPath("$.data.cancelledLines[0].productCode").value("P001"))
         }

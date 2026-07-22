@@ -39,8 +39,8 @@ class OrderRequestSapOutboxStatusHandler(
             log.warn("OrderRequest 미존재 outboxId={} aggregateId={}", outbox.id, outbox.aggregateId)
             return
         }
-        // 경합 방어: 이미 취소(CANCELED, 터미널)된 주문을 등록 응답으로 되살리지 않는다.
-        if (order.orderRequestStatus == OrderRequestStatus.CANCELED) {
+        // 경합 방어: 이미 취소(CANCEL_REQUESTED, 터미널)된 주문을 등록 응답으로 되살리지 않는다.
+        if (order.orderRequestStatus == OrderRequestStatus.CANCEL_REQUESTED) {
             log.info(
                 "OrderRequest 이미 취소됨 - 등록 응답 상태전이 스킵 orderRequestId={} success={}",
                 order.id, success

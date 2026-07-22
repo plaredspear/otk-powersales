@@ -46,6 +46,7 @@ class OrderCancelServiceTest {
     private lateinit var payloadFactory: OrderRequestCancelPayloadFactory
     private lateinit var sender: OrderRequestCancelSender
     private lateinit var requestRecorder: OrderCancelRequestRecorder
+    private lateinit var headerStatusUpdater: OrderCancelHeaderStatusUpdater
     private lateinit var sapOutboxRepository: SapOutboxRepository
     private lateinit var service: OrderCancelService
 
@@ -67,6 +68,7 @@ class OrderCancelServiceTest {
         payloadFactory = OrderRequestCancelPayloadFactory()
         sender = mockk()
         requestRecorder = mockk(relaxed = true)
+        headerStatusUpdater = mockk()
         sapOutboxRepository = mockk()
         // 기본: 등록 outbox in-flight 아님 (취소 허용). in-flight 게이트 테스트에서만 true 로 override.
         every {
@@ -80,12 +82,13 @@ class OrderCancelServiceTest {
             orderRequestCancelPayloadFactory = payloadFactory,
             orderRequestCancelSender = sender,
             orderCancelRequestRecorder = requestRecorder,
+            orderCancelHeaderStatusUpdater = headerStatusUpdater,
         )
     }
 
     // ───────── HP1: 전체 취소 (빈 배열) ─────────
     @Test
-    @DisplayName("HP1 — 전체 취소(빈 배열) → 모든 라인 SAP 송신, 헤더 상태 무변경(#845 로컬 확정 제거)")
+    @DisplayName("HP1 — 전체 취소(빈 배열)+SAP성공 → 헤더 CANCEL_REQUESTED 전이, 라인 line_change_type 미변경")
     fun hp1_fullCancel() {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
         val lines = listOf(
@@ -94,17 +97,19 @@ class OrderCancelServiceTest {
         )
         stubLoad(orderRequest, lines)
         stubEmployee()
+        stubHeaderTransition(orderRequest)
         every { sender.send(any()) } returns Unit
 
         val response = service.cancel(orderRequestId, userId, emptyList())
 
         verify { sender.send(any()) }
-        // #845 — 로컬 확정 없음: 헤더 상태 무변경(APPROVED 그대로), 응답은 요청 대상 라인 기준.
-        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED.name)
-        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.APPROVED.clientDisplayName)
+        // 전량취소 커버 → 헤더 CANCEL_REQUESTED 전이. 응답은 요청 대상 라인 기준.
+        verify { headerStatusUpdater.markCancelRequestedIfFullyCovered(orderRequestId) }
+        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCEL_REQUESTED.name)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.CANCEL_REQUESTED.clientDisplayName)
         assertThat(response.cancelledLines).hasSize(2)
         assertThat(response.cancelledLines.map { it.orderProductId }).containsExactly(101L, 102L)
-        // 라인 로컬 확정 없음 — line_change_type 미변경.
+        // 헤더 전이만 — 라인 line_change_type='X' 확정 없음(#845 비교 모델 유지).
         assertThat(lines.all { !it.isCancelled() }).isTrue()
     }
 
@@ -119,6 +124,7 @@ class OrderCancelServiceTest {
         )
         stubLoad(orderRequest, lines)
         stubEmployee()
+        stubHeaderTransition(orderRequest)
         every { sender.send(any()) } returns Unit
 
         service.cancel(orderRequestId, userId, emptyList())
@@ -159,6 +165,8 @@ class OrderCancelServiceTest {
         )
         stubLoad(orderRequest, lines)
         stubEmployee()
+        // 커버 미달(3개 중 2개) → updater 는 헤더를 바꾸지 않고 그대로 반환.
+        stubHeaderNoChange(orderRequest)
         every { sender.send(any()) } returns Unit
 
         val response = service.cancel(orderRequestId, userId, listOf(101L, 102L))
@@ -170,21 +178,48 @@ class OrderCancelServiceTest {
         assertThat(response.cancelledLines).hasSize(2)
     }
 
+    // ───────── HP2b: 누적 취소 (일부 이미 취소요청 + 나머지 취소 → 전량 커버) ─────────
+    @Test
+    @DisplayName("HP2b — 일부 라인이 이미 cancelRequested 인 상태에서 나머지 취소 → 전량 커버로 CANCEL_REQUESTED")
+    fun hp2b_accumulatedFullCancel() {
+        val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
+        // 101 은 앞선 취소요청으로 이미 흔적 보유, 102 를 이번에 취소 → updater 는 전량 커버로 판정.
+        val already = product(101, BigDecimal.valueOf(10L), "P001", orderRequest)
+            .also { it.markCancelRequested(employeeCode) }
+        val lines = listOf(
+            already,
+            product(102, BigDecimal.valueOf(20L), "P002", orderRequest),
+        )
+        stubLoad(orderRequest, lines)
+        stubEmployee()
+        stubHeaderTransition(orderRequest)
+        every { sender.send(any()) } returns Unit
+
+        val response = service.cancel(orderRequestId, userId, listOf(102L))
+
+        // 나머지 라인 취소로 전량 커버 → 헤더 CANCEL_REQUESTED 전이.
+        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCEL_REQUESTED.name)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.CANCEL_REQUESTED.clientDisplayName)
+        // 이번 요청 대상 라인(102)만 응답에 포함.
+        assertThat(response.cancelledLines.map { it.orderProductId }).containsExactly(102L)
+    }
+
     // ───────── HP3: SEND_FAILED → 취소 가능 ─────────
     @Test
-    @DisplayName("HP3 — SEND_FAILED 상태에서 전체 취소 → SAP 송신, 헤더 상태 무변경(#845)")
+    @DisplayName("HP3 — SEND_FAILED 상태에서 전체 취소+SAP성공 → 헤더 CANCEL_REQUESTED 전이")
     fun hp3_sendFailed() {
         val orderRequest = orderRequest(status = OrderRequestStatus.SEND_FAILED)
         val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
         stubLoad(orderRequest, lines)
         stubEmployee()
+        stubHeaderTransition(orderRequest)
         every { sender.send(any()) } returns Unit
 
         val response = service.cancel(orderRequestId, userId, emptyList())
 
-        // #845 — 헤더 상태 무변경(SEND_FAILED 그대로 반환).
-        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.SEND_FAILED.name)
-        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.SEND_FAILED.clientDisplayName)
+        // 전량취소 커버 → SEND_FAILED 에서도 CANCEL_REQUESTED 로 전이.
+        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCEL_REQUESTED.name)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.CANCEL_REQUESTED.clientDisplayName)
         verify { sender.send(any()) }
     }
 
@@ -228,11 +263,11 @@ class OrderCancelServiceTest {
         verify(exactly = 0) { sender.send(any()) }
     }
 
-    // ───────── EP4: CANCELED (이미 취소) ─────────
+    // ───────── EP4: CANCEL_REQUESTED (이미 취소) ─────────
     @Test
-    @DisplayName("EP4 — 이미 CANCELED → ORD_CANCEL_INVALID_STATUS, SAP 미호출")
+    @DisplayName("EP4 — 이미 CANCEL_REQUESTED → ORD_CANCEL_INVALID_STATUS, SAP 미호출")
     fun ep4_invalidStatusCanceled() {
-        val orderRequest = orderRequest(status = OrderRequestStatus.CANCELED)
+        val orderRequest = orderRequest(status = OrderRequestStatus.CANCEL_REQUESTED)
         every { orderRequestRepository.findById(orderRequestId) } returns Optional.of(orderRequest)
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
@@ -265,7 +300,8 @@ class OrderCancelServiceTest {
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderCancelSapFailedException::class.java)
-        // #845 — 실패든 성공이든 line_change_type/헤더 확정 없음.
+        // SAP 실패 경로 — 헤더 updater 미호출, 헤더 무변경(APPROVED), 라인 line_change_type 미변경.
+        verify(exactly = 0) { headerStatusUpdater.markCancelRequestedIfFullyCovered(any()) }
         assertThat(orderRequest.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED)
         assertThat(lines.all { !it.isCancelled() }).isTrue()
     }
@@ -301,6 +337,19 @@ class OrderCancelServiceTest {
     private fun stubLoad(orderRequest: OrderRequest, lines: List<OrderRequestProduct>) {
         every { orderRequestRepository.findById(orderRequestId) } returns Optional.of(orderRequest)
         every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId) } returns lines
+    }
+
+    /** SAP 성공 후 헤더 updater 가 호출되지만 커버 미달로 헤더를 바꾸지 않는 경우(부분취소) 시뮬레이션. */
+    private fun stubHeaderNoChange(orderRequest: OrderRequest) {
+        every { headerStatusUpdater.markCancelRequestedIfFullyCovered(orderRequestId) } returns orderRequest
+    }
+
+    /** SAP 성공 후 헤더 updater 가 전량취소 커버로 CANCEL_REQUESTED 전이하는 경우 시뮬레이션. */
+    private fun stubHeaderTransition(orderRequest: OrderRequest) {
+        every { headerStatusUpdater.markCancelRequestedIfFullyCovered(orderRequestId) } answers {
+            orderRequest.orderRequestStatus = OrderRequestStatus.CANCEL_REQUESTED
+            orderRequest
+        }
     }
 
     private fun stubEmployee() {

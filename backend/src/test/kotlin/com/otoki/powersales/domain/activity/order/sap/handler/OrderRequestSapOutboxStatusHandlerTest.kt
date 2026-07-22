@@ -79,14 +79,14 @@ class OrderRequestSapOutboxStatusHandlerTest {
     }
 
     @Test
-    @DisplayName("경합 방어 - 이미 CANCELED 인 주문은 등록 응답으로 되살리지 않고 스킵")
+    @DisplayName("경합 방어 - 이미 CANCEL_REQUESTED 인 주문은 등록 응답으로 되살리지 않고 스킵")
     fun canceled_order_is_not_resurrected() {
-        val order = order(OrderRequestStatus.CANCELED)
+        val order = order(OrderRequestStatus.CANCEL_REQUESTED)
         every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns order
 
         handler.handle(outbox(), success = true, resultMessage = "S")
 
-        assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED)
+        assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCEL_REQUESTED)
         verify(exactly = 0) { orderRequestRepository.save(any()) }
     }
 

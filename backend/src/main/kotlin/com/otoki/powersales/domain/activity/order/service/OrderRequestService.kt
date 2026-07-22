@@ -251,8 +251,8 @@ class OrderRequestService(
         // OrderChange(취소)를 거부하는데 로컬 상태(order_request)로는 이를 알 수 없어, 버튼이 떴다가
         // 클릭 시 실패하던 문제를 선제 차단(레거시엔 없던 신규 가드). 취소 엔드포인트의 최종 방어는 SAP.
         //
-        // 재취소 가드 (Spec #845 §2.5): CANCELED 전이를 제거했으므로, SAP 기준 취소 가능한 잔여 라인이
-        // 없으면(전 라인이 DefaultReason(결품/취소) 보유 or 이미 마이그 취소) 취소 버튼을 내려 재취소→SAP502 를 막는다.
+        // 재취소 가드 (Spec #845 §2.5): 부분취소는 헤더가 CANCEL_REQUESTED 로 전이되지 않으므로, SAP 기준
+        // 취소 가능한 잔여 라인이 없으면(전 라인이 DefaultReason(결품/취소) 보유 or 이미 마이그 취소) 취소 버튼을 내려 재취소→SAP502 를 막는다.
         // DefaultReason productCodes = 결품 ∪ 취소. SAP 호출 실패(sapLines==null)면 판정 불가 → 가드 미적용.
         val registrationInFlight = orderCancelPolicy.isRegistrationInFlight(orderRequest.id)
         val defaultReasonProductCodes = outOfStockReasons.keys + cancelledReasons.keys

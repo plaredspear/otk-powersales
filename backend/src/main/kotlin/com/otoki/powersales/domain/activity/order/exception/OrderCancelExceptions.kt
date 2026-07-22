@@ -18,7 +18,7 @@ class OrderCancelDeadlinePassedException : BusinessException(
 /**
  * 주문 취소 불가 상태 (Spec #597).
  *
- * `OrderRequestStatus` 가 `SENT` / `APPROVED` / `SEND_FAILED` 가 아닌 경우 (`DRAFT`/`CANCELED` 거부).
+ * `OrderRequestStatus` 가 `SENT` / `APPROVED` / `SEND_FAILED` 가 아닌 경우 (`DRAFT`/`CANCEL_REQUESTED` 거부).
  */
 class OrderCancelInvalidStatusException(status: String) : BusinessException(
     errorCode = "ORD_CANCEL_INVALID_STATUS",
