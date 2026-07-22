@@ -178,7 +178,7 @@ class OrderRequestDetailMapperTest {
                 productCode = "P_REJ",
                 sapOrderNumber = "S1",
                 lineItemStatus = "OK",
-                defaultReason = "재고부족",
+                defaultReason = "L1",
                 shippingCompleteTime = "143000",
                 shippingQuantityBox = "5",
             ),
@@ -193,8 +193,28 @@ class OrderRequestDetailMapperTest {
         assertThat(result.processingGroups[0].sapOrderNumber).isEqualTo("S1")
         assertThat(result.processingGroups[0].items[0].deliveryStatus).isEqualTo(DeliveryStatus.OUT_OF_STOCK)
         assertThat(result.rejectedItems).isEmpty()
-        // 동시에 orderedItems 회색+사유 표시용으로도 수집 (레거시는 두 곳 모두 표시).
-        assertThat(result.outOfStockReasons).containsEntry("P_REJ", "재고부족")
+        // 동시에 orderedItems 회색+사유 표시용으로도 수집 (레거시는 두 곳 모두 표시). 사유 = "{코드} {설명}".
+        assertThat(result.outOfStockReasons).containsEntry("P_REJ", "L1 [물류] 재고부족")
+    }
+
+    @Test
+    @DisplayName("2맵 분리 (#845) — 결품(L1) + 취소(S2) 라인 혼재 → outOfStockReasons=[L1], cancelledReasons=[S2]")
+    fun defaultReasonSplitIntoTwoMaps() {
+        val sap = listOf(
+            line(productCode = "P_OOS", sapOrderNumber = "S1", defaultReason = "L1", shippingCompleteTime = "000000"),
+            line(productCode = "P_CAN", sapOrderNumber = "S1", defaultReason = "S2", shippingCompleteTime = "000000"),
+        )
+        val crm = mapOf("P_OOS" to product("P_OOS", "A", 10), "P_CAN" to product("P_CAN", "B", 10))
+
+        val result = mapper.map(requestNumber, sap, crm)
+
+        assertThat(result.outOfStockReasons).containsOnlyKeys("P_OOS")
+        assertThat(result.outOfStockReasons).containsEntry("P_OOS", "L1 [물류] 재고부족")
+        assertThat(result.cancelledReasons).containsOnlyKeys("P_CAN")
+        assertThat(result.cancelledReasons).containsEntry("P_CAN", "S2 [영업] 고객사정에 의한 취소")
+        // 취소 라인도 처리현황 그룹에 결품과 동일하게 OUT_OF_STOCK 로 포함 (D-1 결정).
+        assertThat(result.processingGroups[0].items).allMatch { it.deliveryStatus == DeliveryStatus.OUT_OF_STOCK }
+        assertThat(result.rejectedItems).isEmpty()
     }
 
     @Test
@@ -226,7 +246,7 @@ class OrderRequestDetailMapperTest {
                 productCode = "P1",
                 sapOrderNumber = "",
                 lineItemStatus = "REJ",
-                defaultReason = "재고부족",
+                defaultReason = "L1",
                 shippingCompleteTime = "143000",
             ),
         )
@@ -235,7 +255,7 @@ class OrderRequestDetailMapperTest {
         // SAPOrderNumber 빈 값이라 처리현황 그룹에서는 제외 (view.jsp:494, 500 빈 키 그룹 제외 동등).
         assertThat(result.processingGroups).isEmpty()
         assertThat(result.rejectedItems).isEmpty()
-        assertThat(result.outOfStockReasons).containsEntry("P1", "재고부족")
+        assertThat(result.outOfStockReasons).containsEntry("P1", "L1 [물류] 재고부족")
     }
 
     @Test
@@ -275,7 +295,7 @@ class OrderRequestDetailMapperTest {
             // 반려(SAPOrderNumber 빈) — rejectedItems 로 분류, 미납 아님
             line(productCode = "P_REJ", sapOrderNumber = "", lineItemStatus = "납품일자 오류"),
             // 결품(DefaultReason) — 기존 결품 표시 유지, LineItemStatus non-OK 라도 미납 아님
-            line(productCode = "P_OOS", sapOrderNumber = "S1", lineItemStatus = "이상", defaultReason = "재고부족"),
+            line(productCode = "P_OOS", sapOrderNumber = "S1", lineItemStatus = "이상", defaultReason = "L1"),
         )
         val crm = mapOf(
             "P_OK" to product("P_OK", "A", 10),

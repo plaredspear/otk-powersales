@@ -155,6 +155,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                         totalQuantityBoxes = BigDecimal("10"),
                         totalQuantityPieces = BigDecimal.valueOf(300L),
                         isCancelled = false,
+                        isCancelRequested = false,
                     ),
                 ),
                 orderProcessingStatusList = listOf(

@@ -23,7 +23,6 @@ import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestCancelSender
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
@@ -46,7 +45,6 @@ class OrderCancelServiceTest {
     private lateinit var deadlineCalculator: OrderDeadlineCalculator
     private lateinit var payloadFactory: OrderRequestCancelPayloadFactory
     private lateinit var sender: OrderRequestCancelSender
-    private lateinit var committer: OrderCancelCommitter
     private lateinit var requestRecorder: OrderCancelRequestRecorder
     private lateinit var sapOutboxRepository: SapOutboxRepository
     private lateinit var service: OrderCancelService
@@ -68,7 +66,6 @@ class OrderCancelServiceTest {
         )
         payloadFactory = OrderRequestCancelPayloadFactory()
         sender = mockk()
-        committer = mockk()
         requestRecorder = mockk(relaxed = true)
         sapOutboxRepository = mockk()
         // 기본: 등록 outbox in-flight 아님 (취소 허용). in-flight 게이트 테스트에서만 true 로 override.
@@ -82,14 +79,13 @@ class OrderCancelServiceTest {
             orderCancelPolicy = OrderCancelPolicy(deadlineCalculator, sapOutboxRepository),
             orderRequestCancelPayloadFactory = payloadFactory,
             orderRequestCancelSender = sender,
-            orderCancelCommitter = committer,
             orderCancelRequestRecorder = requestRecorder,
         )
     }
 
     // ───────── HP1: 전체 취소 (빈 배열) ─────────
     @Test
-    @DisplayName("HP1 — 전체 취소(빈 배열) → 모든 라인 SAP 송신, 헤더 CANCELED")
+    @DisplayName("HP1 — 전체 취소(빈 배열) → 모든 라인 SAP 송신, 헤더 상태 무변경(#845 로컬 확정 제거)")
     fun hp1_fullCancel() {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
         val lines = listOf(
@@ -99,17 +95,17 @@ class OrderCancelServiceTest {
         stubLoad(orderRequest, lines)
         stubEmployee()
         every { sender.send(any()) } returns Unit
-        val captor = slot<List<Long>>()
-        every { committer.commit(eq(orderRequestId), capture(captor), eq(employeeCode)) } returns
-            commitResult(orderRequest.copy(status = OrderRequestStatus.CANCELED), lines)
 
         val response = service.cancel(orderRequestId, userId, emptyList())
 
         verify { sender.send(any()) }
-        assertThat(captor.captured).containsExactly(101L, 102L)
-        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED.name)
-        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.CANCELED.displayName)
+        // #845 — 로컬 확정 없음: 헤더 상태 무변경(APPROVED 그대로), 응답은 요청 대상 라인 기준.
+        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED.name)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.APPROVED.clientDisplayName)
         assertThat(response.cancelledLines).hasSize(2)
+        assertThat(response.cancelledLines.map { it.orderProductId }).containsExactly(101L, 102L)
+        // 라인 로컬 확정 없음 — line_change_type 미변경.
+        assertThat(lines.all { !it.isCancelled() }).isTrue()
     }
 
     // ───────── HP1b: 취소 흔적 기록이 SAP 호출 전에 수행 (#858) ─────────
@@ -124,12 +120,10 @@ class OrderCancelServiceTest {
         stubLoad(orderRequest, lines)
         stubEmployee()
         every { sender.send(any()) } returns Unit
-        every { committer.commit(eq(orderRequestId), any(), eq(employeeCode)) } returns
-            commitResult(orderRequest.copy(status = OrderRequestStatus.CANCELED), lines)
 
         service.cancel(orderRequestId, userId, emptyList())
 
-        // 흔적 기록(recorder) → SAP 송신(sender) 순서 보장 — timeout 미확정 시 정합 근거 선기록.
+        // 흔적 기록(recorder) → SAP 송신(sender) 순서 보장 — SAP 미반영 시에도 "취소요청" 표시 근거 선기록.
         verifyOrder {
             requestRecorder.recordCancelRequested(eq(orderRequestId), listOf(101L, 102L), eq(employeeCode))
             sender.send(any())
@@ -149,9 +143,8 @@ class OrderCancelServiceTest {
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderCancelSapFailedException::class.java)
 
-        // SAP 실패 전에 흔적 기록은 이미 별도 트랜잭션으로 커밋됨 → 상세조회 정합 근거 유지.
+        // SAP 실패 전에 흔적 기록은 이미 별도 트랜잭션으로 커밋됨 → "취소요청" 표시 근거 유지, 재시도 가능.
         verify { requestRecorder.recordCancelRequested(eq(orderRequestId), listOf(101L), eq(employeeCode)) }
-        verify(exactly = 0) { committer.commit(any(), any(), any()) }
     }
 
     // ───────── HP2: 부분 취소 (3개 중 2개 라인) ─────────
@@ -167,34 +160,31 @@ class OrderCancelServiceTest {
         stubLoad(orderRequest, lines)
         stubEmployee()
         every { sender.send(any()) } returns Unit
-        val captor = slot<List<Long>>()
-        every { committer.commit(eq(orderRequestId), capture(captor), eq(employeeCode)) } returns
-            commitResult(orderRequest, lines.take(2))
 
         val response = service.cancel(orderRequestId, userId, listOf(101L, 102L))
 
-        assertThat(captor.captured).containsExactly(101L, 102L)
+        // 요청 대상 라인 2개만 SAP 송신 + 응답. 헤더 APPROVED 유지.
+        assertThat(response.cancelledLines.map { it.orderProductId }).containsExactly(101L, 102L)
         assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED.name)
-        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.APPROVED.displayName)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.APPROVED.clientDisplayName)
         assertThat(response.cancelledLines).hasSize(2)
     }
 
     // ───────── HP3: SEND_FAILED → 취소 가능 ─────────
     @Test
-    @DisplayName("HP3 — SEND_FAILED 상태에서 전체 취소 → 헤더 CANCELED")
+    @DisplayName("HP3 — SEND_FAILED 상태에서 전체 취소 → SAP 송신, 헤더 상태 무변경(#845)")
     fun hp3_sendFailed() {
         val orderRequest = orderRequest(status = OrderRequestStatus.SEND_FAILED)
         val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
         stubLoad(orderRequest, lines)
         stubEmployee()
         every { sender.send(any()) } returns Unit
-        every { committer.commit(eq(orderRequestId), any(), eq(employeeCode)) } returns
-            commitResult(orderRequest.copy(status = OrderRequestStatus.CANCELED), lines)
 
         val response = service.cancel(orderRequestId, userId, emptyList())
 
-        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCELED.name)
-        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.CANCELED.displayName)
+        // #845 — 헤더 상태 무변경(SEND_FAILED 그대로 반환).
+        assertThat(response.orderRequestStatus).isEqualTo(OrderRequestStatus.SEND_FAILED.name)
+        assertThat(response.orderRequestStatusName).isEqualTo(OrderRequestStatus.SEND_FAILED.clientDisplayName)
         verify { sender.send(any()) }
     }
 
@@ -265,7 +255,7 @@ class OrderCancelServiceTest {
 
     // ───────── EP7: SAP 응답 'E' ─────────
     @Test
-    @DisplayName("EP7 — SAP 응답 'E' → ORD_CANCEL_SAP_FAILED, 커미터 미호출")
+    @DisplayName("EP7 — SAP 응답 'E' → ORD_CANCEL_SAP_FAILED, 라인 로컬 확정 없음")
     fun ep7_sapResultCodeE() {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
         val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
@@ -275,7 +265,9 @@ class OrderCancelServiceTest {
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
             .isInstanceOf(OrderCancelSapFailedException::class.java)
-        verify(exactly = 0) { committer.commit(any(), any(), any()) }
+        // #845 — 실패든 성공이든 line_change_type/헤더 확정 없음.
+        assertThat(orderRequest.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED)
+        assertThat(lines.all { !it.isCancelled() }).isTrue()
     }
 
     // ───────── EP8: 등록 SAP 전송 진행중 (outbox in-flight) ─────────
@@ -314,26 +306,6 @@ class OrderCancelServiceTest {
     private fun stubEmployee() {
         val employee = Employee(id = userId, employeeCode = employeeCode, name = "tester", role = AppAuthority.WOMAN)
         every { employeeRepository.findById(userId) } returns Optional.of(employee)
-    }
-
-    private fun commitResult(
-        orderRequest: OrderRequest,
-        lines: List<OrderRequestProduct>,
-    ): OrderCancelCommitter.CommitResult {
-        return OrderCancelCommitter.CommitResult(orderRequest, lines)
-    }
-
-    private fun OrderRequest.copy(status: OrderRequestStatus): OrderRequest {
-        return OrderRequest(
-            id = id,
-            orderRequestNumber = orderRequestNumber,
-            orderDate = orderDate,
-            deliveryDate = deliveryDate,
-            totalAmount = totalAmount,
-            orderRequestStatus = status,
-            employee = employee,
-            account = account,
-        )
     }
 
     private fun orderRequest(

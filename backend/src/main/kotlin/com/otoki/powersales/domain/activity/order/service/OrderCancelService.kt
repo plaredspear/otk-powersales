@@ -18,17 +18,18 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 /**
- * 주문 취소 서비스 (Spec #597).
+ * 주문 취소 서비스 (Spec #597, #845 P1-B).
  *
- * 처리 흐름 (spec.md §2.1, Spec #858 흔적 기록 추가):
+ * 처리 흐름 (spec.md §2.1, Spec #858 흔적 기록, #845 로컬 확정 제거):
  *  1. 주문 + 라인 조회 + 검증 (본인 주문 / 상태 / 마감 시각 / 라인 ID)
  *  2. 취소 요청 흔적 기록 ([OrderCancelRequestRecorder]) — SAP 호출 전 `cancel_requested_at` 커밋
  *  3. SAP 동기 송신 (`OrderRequestCancelSender.send(...)`) — DB 트랜잭션 외부
- *  4. 응답 'S' 시 [OrderCancelCommitter] 위임으로 라인/헤더 상태 변경 커밋
+ *  4. 응답 'S' 성공 → 응답을 **요청 대상 라인(targetLines)** 기준으로 구성. `line_change_type='X'` /
+ *     헤더 `CANCELED` 전이 **없음** (Spec #845 로컬 확정 제거). `orderRequestStatus` 는 무변경 그대로 반환.
  *
- * SAP 응답 'E' / timeout / HTML 가드 실패 시 [OrderCancelSapFailedException] (502) — `line_change_type`
- * 무변경. 단 2단계의 `cancel_requested_at` 흔적은 롤백하지 않고 유지되어(별도 트랜잭션), 이후 상세조회
- * 정합([OrderCancelReconciler])이 SAP DefaultReason 과 교집합으로 미확정 라인을 `'X'` 로 승격할 수 있다.
+ * 취소 여부 판단의 원천은 조회 시점 SAP `DefaultReason` + 로컬 `cancel_requested_at`(요청 흔적)뿐이다.
+ * SAP 응답 'E' / timeout / HTML 가드 실패 시 [OrderCancelSapFailedException] (502) — 상태 무변경. 단
+ * 2단계의 `cancel_requested_at` 흔적은 롤백하지 않고 유지되어(별도 트랜잭션) 재시도 가능하다.
  *
  * 본 클래스는 의도적으로 `@Transactional` 미부여 — SAP 동기 호출을 트랜잭션 외부에서 수행해야 하므로.
  */
@@ -40,7 +41,6 @@ class OrderCancelService(
     private val orderCancelPolicy: OrderCancelPolicy,
     private val orderRequestCancelPayloadFactory: OrderRequestCancelPayloadFactory,
     private val orderRequestCancelSender: OrderRequestCancelSender,
-    private val orderCancelCommitter: OrderCancelCommitter,
     private val orderCancelRequestRecorder: OrderCancelRequestRecorder,
 ) {
 
@@ -54,14 +54,14 @@ class OrderCancelService(
         val employeeCode = employee.employeeCode ?: error("주문 취소 요청 사원의 사번이 null - 비정상")
         val targetIds = targetLines.map { it.id }
 
-        // SAP 호출 전 취소 요청 흔적 기록 (Spec #858) — timeout 미확정 시 상세조회 정합의 대상 식별 근거.
+        // SAP 호출 전 취소 요청 흔적 기록 (Spec #858) — SAP 미반영 시에도 "취소요청" 표시 근거로 유지.
         orderCancelRequestRecorder.recordCancelRequested(orderRequestId, targetIds, employeeCode)
 
         val payload = orderRequestCancelPayloadFactory.build(orderRequest, targetLines)
         orderRequestCancelSender.send(payload)
 
-        val result = orderCancelCommitter.commit(orderRequestId, targetIds, employeeCode)
-        return OrderCancelResponse.of(result.orderRequest, result.cancelledLines)
+        // 로컬 확정 없음 (Spec #845) — 응답은 요청 대상 라인 기준, orderRequest 상태는 무변경 그대로 반환.
+        return OrderCancelResponse.of(orderRequest, targetLines)
     }
 
     private fun loadAndValidate(orderRequestId: Long, userId: Long): OrderRequest {

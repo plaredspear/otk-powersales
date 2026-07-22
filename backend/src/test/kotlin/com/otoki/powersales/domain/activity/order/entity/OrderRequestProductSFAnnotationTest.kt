@@ -141,40 +141,6 @@ class OrderRequestProductSFAnnotationTest {
             assertThat(product.cancelledAt).isNull()
         }
 
-        @Test
-        @DisplayName("isCancelReconcilable() — 흔적 O + 미확정(X 아님 + cancelled_at null) 이면 true")
-        fun isCancelReconcilableWhenTracedAndUnconfirmed() {
-            val product = newProduct()
-            // 흔적 없음 → false
-            assertThat(product.isCancelReconcilable()).isFalse()
-
-            // 흔적 O + 미확정 → true
-            product.markCancelRequested("E001")
-            assertThat(product.isCancelReconcilable()).isTrue()
-
-            // 확정(line_change_type='X') → false (멱등)
-            product.lineChangeType = OrderRequestProduct.LINE_CHANGE_TYPE_CANCEL
-            assertThat(product.isCancelReconcilable()).isFalse()
-
-            // line_change_type 은 null 이지만 cancelled_at 세팅 → false (멱등 이중 방어)
-            product.lineChangeType = null
-            product.cancelledAt = LocalDateTime.of(2026, 7, 1, 0, 0)
-            assertThat(product.isCancelReconcilable()).isFalse()
-        }
-
-        @Test
-        @DisplayName("reconcileCancel() — X 마커 + cancelled 세팅, cancelledBy 는 요청자 승계")
-        fun reconcileCancelPromotesWithRequesterInherited() {
-            val product = newProduct()
-            product.markCancelRequested("E001")
-
-            product.reconcileCancel()
-
-            assertThat(product.isCancelled()).isTrue()
-            assertThat(product.cancelledAt).isNotNull()
-            assertThat(product.cancelledBy).isEqualTo("E001") // cancel_requested_by 승계
-        }
-
         private fun newProduct(): OrderRequestProduct {
             val account = Account(id = 1, name = "ACC")
             val employee = Employee(

@@ -263,29 +263,6 @@ class OrderRequestProduct(
     }
 
     /**
-     * 상세조회 정합 대상 판정 (Spec #858).
-     *
-     * "취소를 요청했으나(cancel_requested_at 존재) 아직 확정되지 않은(line_change_type≠"X" && cancelled_at NULL)"
-     * 라인인지 판정. 확정 라인은 두 조건(line_change_type/cancelled_at)을 AND 로 함께 봐 어느 한쪽만 세팅된
-     * 비정상 상태에서도 재정합되지 않도록 멱등성을 이중 보장한다. SAP DefaultReason 존재 여부(SAP 취소 반영)는
-     * 호출부에서 별도 판정한다.
-     */
-    fun isCancelReconcilable(): Boolean =
-        cancelRequestedAt != null && !isCancelled() && cancelledAt == null
-
-    /**
-     * 취소 확정 정합 승격 (Spec #858).
-     *
-     * SAP timeout 으로 미확정 상태였던 라인을 상세조회 시 확정 취소로 승격한다. 취소자는 `cancel_requested_by`
-     * (요청자)를 승계한다. [cancel] 과 동일하게 `line_change_type='X'` + `cancelled_at` 을 세팅한다.
-     */
-    fun reconcileCancel() {
-        this.lineChangeType = LINE_CHANGE_TYPE_CANCEL
-        this.cancelledAt = LocalDateTime.now()
-        this.cancelledBy = cancelRequestedBy
-    }
-
-    /**
      * 라인 취소 여부 판정.
      *
      * SF 운영 도메인 `{null, "X"}` 2-상태 — `"X"` 마커이면 취소.

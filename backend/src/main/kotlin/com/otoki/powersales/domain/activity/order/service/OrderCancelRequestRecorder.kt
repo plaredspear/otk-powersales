@@ -9,11 +9,11 @@ import org.springframework.transaction.annotation.Transactional
  * 주문 취소 요청 흔적 기록 컴포넌트 (Spec #858).
  *
  * 취소 SAP 호출(SD03051) **전에** 대상 라인에 `cancel_requested_at`/`cancel_requested_by` 를 기록한다.
- * SAP timeout 등으로 응답을 확정받지 못해 `line_change_type='X'` 를 세팅하지 못한 라인도 이 흔적을
- * 유지하며, 이후 상세조회 정합([OrderCancelReconciler])의 대상 식별 근거가 된다.
+ * SAP 미반영/실패 시에도 이 흔적을 유지하며, 상세조회에서 라인의 "취소요청" 표시 근거가 된다
+ * (Spec #845 — 로컬 확정 없이 요청 흔적 vs SAP 실제(DefaultReason) 를 나란히 비교).
  *
  * 별도 빈으로 분리 — [OrderCancelService.cancel] 가 SAP 호출을 트랜잭션 외부에서 수행해야 하므로,
- * 흔적 기록만 격리된 write 트랜잭션으로 커밋한다 ([OrderCancelCommitter] 와 동일 패턴).
+ * 흔적 기록만 격리된 write 트랜잭션으로 커밋한다.
  */
 @Component
 class OrderCancelRequestRecorder(

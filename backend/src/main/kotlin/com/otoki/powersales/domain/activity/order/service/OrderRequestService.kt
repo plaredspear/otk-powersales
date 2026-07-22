@@ -36,7 +36,6 @@ class OrderRequestService(
     private val orderRequestDetailMapper: OrderRequestDetailMapper,
     private val productRepository: ProductRepository,
     private val orderCancelPolicy: OrderCancelPolicy,
-    private val orderCancelReconciler: OrderCancelReconciler,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) {
 
@@ -159,7 +158,9 @@ class OrderRequestService(
     }
 
     /**
-     * 본인 주문요청 상세 조회 (Spec #595 P1-B).
+     * 본인 주문요청 상세 조회 (Spec #595 P1-B, #845 P1-B).
+     *
+     * **순수 읽기** — 어떤 write 도 수행하지 않는다 (Spec #845: 조회-시 정합 승격 side-effect 제거).
      *
      * 처리 흐름:
      * 1. `OrderRequest` 조회 → 미존재 시 `OrderNotFoundException`.
@@ -168,10 +169,12 @@ class OrderRequestService(
      * 4. 마감 여부 계산.
      * 5. SAP 동기 호출 — 마감 여부 무관 항상 수행.
      * 6. SAP 응답 + CRM 라인 결합 → `orderProcessingStatusList[]` + `rejectedItems[]` 빌드.
+     *    DefaultReason 코드 분류로 결품/취소 사유맵 산출 (Spec #845).
      * 7. 마감 전(`isClosed = false`) 시 `orderProcessingStatusList = null` 강제 (Q6 — 레거시 동등).
      * 8. 반려 라인은 `orderedItems`/`orderedItemCount` 에서 제외 (레거시 view.jsp:407, 377-383 동등 —
      *    "주문한 제품" 은 반려 제외 목록, 반려는 반려 섹션에만 표시).
      * 9. `totalApprovedAmount` = SAP 응답 전 라인 `OrderSalesAmount` 합산 (레거시 view.jsp:343-348 동등).
+     * 10. `cancelable` — 취소 정책 + 납품완료 여부 + 재취소 가드(DefaultReason 없는 미취소 잔여 라인 존재).
      */
     fun getOrderRequestDetail(orderRequestId: Long, userId: Long): OrderRequestDetailResponse {
         if (orderRequestId < 1) {
@@ -210,12 +213,9 @@ class OrderRequestService(
         val rejectedItems = mapped?.rejectedItems?.takeIf { it.isNotEmpty() }
         // 미납 라인(신규 정책) — 마감 전후 모두 노출 (반려 섹션 노출 정책과 동일).
         val unfulfilledItems = mapped?.unfulfilledItems?.takeIf { it.isNotEmpty() }
+        // DefaultReason 코드 분류 결과 (Spec #845) — 결품셋({F1,L1,L2,L3})과 취소(그 외)로 분리된 두 맵.
         val outOfStockReasons = mapped?.outOfStockReasons.orEmpty()
-
-        // 취소 SAP timeout 미확정 라인의 정합 (Spec #858) — 취소 요청 흔적이 있으면서 SAP DefaultReason
-        // 으로 돌아온 라인을 line_change_type='X' 로 승격한다. 정합은 별도 REQUIRES_NEW 트랜잭션(readOnly
-        // 조회와 격리)이며, 실패해도 조회 응답은 정상 반환한다(best-effort, 다음 조회에서 멱등 재시도).
-        val promotedCancelledCodes = reconcileTimedOutCancels(orderRequestId, outOfStockReasons.keys)
+        val cancelledReasons = mapped?.cancelledReasons.orEmpty()
 
         // 마감 전 — 그룹 응답 매핑 생략 (Q6, 레거시 동등). SAP 호출은 이미 수행.
         val finalProcessingGroups = if (isClosed) processingGroups else null
@@ -233,9 +233,8 @@ class OrderRequestService(
         // SAP 호출 실패 시엔 반려 판별 불가 → 전 라인 유지 (CRM 원장 표시 견고화, 레거시는 목록 자체가 비었음).
         val rejectedProductCodes = mapped?.rejectedItems.orEmpty().map { it.productCode }.toSet()
 
-        // 결품(SAP DefaultReason) 제품은 "주문한 제품" 리스트에 결품 플래그로 표시 (레거시 view.jsp:414 동등).
-        // 정합 승격된 라인(Spec #858)은 forceCancelled 로 isCancelled=true 를 반영 — 조회 엔티티는 정합
-        // (별도 트랜잭션) 반영 전 상태이므로 승격 결과를 응답에 직접 반영한다.
+        // 결품/취소(SAP DefaultReason) 제품은 "주문한 제품" 리스트에 결품/SAP취소됨 배지+사유로 표시
+        // (Spec #845). 취소요청(로컬 흔적)은 OrderedItemResponse 가 cancel_requested_at 으로 직접 판정.
         val orderedItems = crmProducts
             .filter { it.productCode == null || it.productCode !in rejectedProductCodes }
             .map {
@@ -243,7 +242,7 @@ class OrderRequestService(
                     it,
                     productName = productNamesByCode[it.productCode],
                     outOfStockReason = outOfStockReasons[it.productCode],
-                    forceCancelled = it.productCode != null && it.productCode in promotedCancelledCodes,
+                    cancelReason = cancelledReasons[it.productCode],
                 )
             }
 
@@ -251,9 +250,18 @@ class OrderRequestService(
         // 더해, SD03052 응답상 주문 전체가 납품완료면 취소 버튼을 내린다. SAP 는 이미 납품완료된 주문의
         // OrderChange(취소)를 거부하는데 로컬 상태(order_request)로는 이를 알 수 없어, 버튼이 떴다가
         // 클릭 시 실패하던 문제를 선제 차단(레거시엔 없던 신규 가드). 취소 엔드포인트의 최종 방어는 SAP.
+        //
+        // 재취소 가드 (Spec #845 §2.5): CANCELED 전이를 제거했으므로, SAP 기준 취소 가능한 잔여 라인이
+        // 없으면(전 라인이 DefaultReason(결품/취소) 보유 or 이미 마이그 취소) 취소 버튼을 내려 재취소→SAP502 를 막는다.
+        // DefaultReason productCodes = 결품 ∪ 취소. SAP 호출 실패(sapLines==null)면 판정 불가 → 가드 미적용.
         val registrationInFlight = orderCancelPolicy.isRegistrationInFlight(orderRequest.id)
+        val defaultReasonProductCodes = outOfStockReasons.keys + cancelledReasons.keys
+        val hasCancelableRemaining = crmProducts.any {
+            !it.isCancelled() && (it.productCode == null || it.productCode !in defaultReasonProductCodes)
+        }
         val cancelable = orderCancelPolicy.isCancelable(orderRequest) &&
-            !orderRequestDetailMapper.isFullyDelivered(sapLines)
+            !orderRequestDetailMapper.isFullyDelivered(sapLines) &&
+            (sapLines == null || hasCancelableRemaining)
 
         return OrderRequestDetailResponse.of(
             orderRequest = orderRequest,
@@ -267,27 +275,6 @@ class OrderRequestService(
             rejectedItems = rejectedItems,
             unfulfilledItems = unfulfilledItems,
         )
-    }
-
-    /**
-     * 취소 SAP timeout 미확정 라인의 정합 위임 (Spec #858).
-     *
-     * 정합은 조회(readOnly)와 격리된 별도 트랜잭션([OrderCancelReconciler])에서 수행하며, 실패해도
-     * 로그만 남기고 빈 집합을 반환해 조회 응답은 정상 반환한다(Q2 옵션 1 — best-effort, 다음 조회 재시도).
-     *
-     * @return 정합 승격된 productCode 집합 (실패 시 빈 집합)
-     */
-    private fun reconcileTimedOutCancels(orderRequestId: Long, defaultReasonProductCodes: Set<String>): Set<String> {
-        if (defaultReasonProductCodes.isEmpty()) return emptySet()
-        return try {
-            orderCancelReconciler.reconcileTimedOutCancels(orderRequestId, defaultReasonProductCodes)
-        } catch (e: Exception) {
-            log.warn(
-                "order.cancel.reconcile-failed orderRequestId={} — 조회 응답은 정상 반환, 다음 조회에서 재시도",
-                orderRequestId, e,
-            )
-            emptySet()
-        }
     }
 
     /**

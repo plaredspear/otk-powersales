@@ -44,7 +44,6 @@ class OrderRequestServiceTest {
     private val orderRequestDetailMapper = OrderRequestDetailMapper()
     private val productRepository: ProductRepository = mockk()
     private val sapOutboxRepository: SapOutboxRepository = mockk()
-    private val orderCancelReconciler: OrderCancelReconciler = mockk()
 
     private val fixedClock: Clock = Clock.fixed(
         LocalDateTime.of(2026, 5, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
@@ -65,7 +64,6 @@ class OrderRequestServiceTest {
             orderRequestDetailMapper,
             productRepository,
             orderCancelPolicy,
-            orderCancelReconciler,
             fixedClock,
         )
         // 기본값 — 상세 조회 시 제품명 일괄조회. 개별 테스트에서 필요 시 override.
@@ -74,8 +72,6 @@ class OrderRequestServiceTest {
         every {
             sapOutboxRepository.existsByDomainTypeAndAggregateIdAndStatusIn(any(), any(), any())
         } returns false
-        // 기본값 — 정합 대상 없음. 개별 테스트에서 필요 시 override (#858).
-        every { orderCancelReconciler.reconcileTimedOutCancels(any(), any()) } returns emptySet()
     }
 
     @Nested
@@ -528,24 +524,108 @@ class OrderRequestServiceTest {
         }
 
         @Test
-        @DisplayName("성공 — 정합 승격된 라인(#858)은 응답 orderedItems.isCancelled=true 로 반영")
-        fun reconciledLineReflectedAsCancelled() {
-            // SAP DefaultReason 으로 취소가 반영됐고 정합 컴포넌트가 해당 productCode 를 승격했다고 가정.
+        @DisplayName("성공 — SAP 취소 코드(S2) 라인 → isCancelledBySap=true + cancelReason 세팅, 결품 아님 (#845)")
+        fun sapCancelledBadge() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
             every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
             every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
                 listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
-            // SAP 응답에 DefaultReason(취소 반영) 채워진 라인.
+            // SAP DefaultReason = S2(취소 코드).
             every { orderRequestDetailSapSender.fetchDetail(any()) } returns
-                listOf(buildSapLineWithDefaultReason("1000023", "S1"))
-            // 정합 컴포넌트가 해당 productCode 를 승격했다고 stub.
-            every { orderCancelReconciler.reconcileTimedOutCancels(100L, setOf("1000023")) } returns setOf("1000023")
+                listOf(buildSapLineWithDefaultReason("1000023", "S2"))
 
             val response = service.getOrderRequestDetail(100L, userId = 1L)
 
             val item = response.orderedItems.first { it.productCode == "1000023" }
-            assertThat(item.isCancelled).isTrue() // 정합 승격 반영 (조회 엔티티는 미반영이나 forceCancelled)
-            assertThat(item.isOutOfStock).isTrue() // DefaultReason 존재로 결품 플래그도 여전히 true
+            assertThat(item.isCancelledBySap).isTrue()
+            assertThat(item.cancelReason).isEqualTo("S2 [영업] 고객사정에 의한 취소")
+            // 취소 코드는 결품 아님 (상호배타).
+            assertThat(item.isOutOfStock).isFalse()
+            assertThat(item.outOfStockReason).isNull()
+            // 로컬 확정 없음 — 마이그 취소 마커 아님.
+            assertThat(item.isCancelled).isFalse()
+        }
+
+        @Test
+        @DisplayName("성공 — SAP 결품 코드(L1) 라인 → isOutOfStock=true + outOfStockReason 세팅, SAP취소 아님 (#845)")
+        fun sapOutOfStockBadge() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLineWithDefaultReason("1000023", "L1"))
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            val item = response.orderedItems.first { it.productCode == "1000023" }
+            assertThat(item.isOutOfStock).isTrue()
+            assertThat(item.outOfStockReason).isEqualTo("L1 [물류] 재고부족")
+            assertThat(item.isCancelledBySap).isFalse()
+            assertThat(item.cancelReason).isNull()
+        }
+
+        @Test
+        @DisplayName("성공 — 취소요청(로컬 흔적) 라인 → isCancelRequested=true (SAP 미반영과 독립) (#845)")
+        fun cancelRequestedBadge() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            val line = buildCrmProduct("1000023", "진라면", 30, orderRequest).apply { markCancelRequested("E001") }
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns listOf(line)
+            // SAP 응답엔 아직 DefaultReason 없음(미반영).
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLine("1000023", "0300004993", "000000"))
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            val item = response.orderedItems.first { it.productCode == "1000023" }
+            assertThat(item.isCancelRequested).isTrue()
+            // SAP 미반영 — 결품/취소 배지 없음.
+            assertThat(item.isOutOfStock).isFalse()
+            assertThat(item.isCancelledBySap).isFalse()
+        }
+
+        @Test
+        @DisplayName("재취소 가드 — 모든 CRM 라인이 DefaultReason(결품/취소) 보유 → cancelable=false (#845 §2.5)")
+        fun reCancelGuardAllDefaultReason() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(
+                    buildCrmProduct("1000023", "진라면", 30, orderRequest),
+                    buildCrmProduct("2000045", "참기름", 30, orderRequest),
+                )
+            // 두 라인 모두 DefaultReason — 하나는 취소(S2), 하나는 결품(L1). 미납품이라 isFullyDelivered=false.
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns listOf(
+                buildSapLineWithDefaultReason("1000023", "S2"),
+                buildSapLineWithDefaultReason("2000045", "L1"),
+            )
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            // 취소 가능한 잔여 라인 없음 → 재취소 버튼 비활성화 (SAP502 선제 차단).
+            assertThat(response.cancelable).isFalse()
+        }
+
+        @Test
+        @DisplayName("재취소 가드 — 일부 라인만 DefaultReason → cancelable=true (잔여 라인 존재) (#845 §2.5)")
+        fun reCancelGuardPartialDefaultReason() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(
+                    buildCrmProduct("1000023", "진라면", 30, orderRequest),
+                    buildCrmProduct("2000045", "참기름", 30, orderRequest),
+                )
+            // 1000023 만 취소(S2), 2000045 는 정상 미납품 → 잔여 취소 가능 라인 존재.
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns listOf(
+                buildSapLineWithDefaultReason("1000023", "S2"),
+                buildSapLine("2000045", "0300004993", "000000"),
+            )
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            assertThat(response.cancelable).isTrue()
         }
     }
 
