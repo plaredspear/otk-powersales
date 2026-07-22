@@ -41,12 +41,18 @@ void main() {
       expect(find.text('배송 완료'), findsNothing);
     });
 
-    testWidgets('OUT_OF_STOCK — 결품이 아니라 미납 표시 (주문상세 한정 표기, 사용자 결정 2026-07-20)',
-        (tester) async {
+    testWidgets('OUT_OF_STOCK — 결품 표시 (DefaultReason 결품셋, 2026-07-23)', (tester) async {
       await tester.pumpWidget(buildSection([item(OrderDeliveryStatus.outOfStock)]));
-      expect(find.text('미납'), findsOneWidget);
-      expect(find.text('결품'), findsNothing);
+      expect(find.text('결품'), findsOneWidget);
+      expect(find.text('미납'), findsNothing);
       expect(find.text('대기'), findsNothing);
+    });
+
+    testWidgets('CANCELLED — 취소 표시 (DefaultReason 취소셋, 2026-07-23)', (tester) async {
+      await tester.pumpWidget(buildSection([item(OrderDeliveryStatus.cancelled)]));
+      expect(find.text('취소'), findsOneWidget);
+      expect(find.text('미납'), findsNothing);
+      expect(find.text('결품'), findsNothing);
     });
 
     testWidgets('UNKNOWN — 빈 라벨 (레거시 status=empty 정합)', (tester) async {

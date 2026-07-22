@@ -20,12 +20,11 @@ class OrderProcessingStatusSection extends StatelessWidget {
   /// '배송완료' 로 표시한다. enum 의 displayName('배송 완료', 공백)은 거래처주문(SF inbound cls:158)
   /// 도메인 표기라, 주문상세에서는 이 함수로 별도 매핑한다.
   ///
-  /// 결품(OUT_OF_STOCK, SAP DefaultReason 존재 라인)은 주문상세 화면 한정으로 '미납' 으로 표기한다
-  /// (레거시 SF '결품' 표기에서 사용자 결정으로 이탈, 2026-07-20). 거래처주문 화면 표기('결품')와
-  /// 서버 상태 코드(OUT_OF_STOCK)는 그대로 유지 — 본 함수의 표시 매핑만 다르다.
+  /// DefaultReason 라인은 코드 분류에 따라 서버가 결품(OUT_OF_STOCK, {F1,L1,L2,L3}) / 취소(CANCELLED,
+  /// {L4,O1,S1,S2,S3})로 내려주며, 각각 '결품' / '취소' 로 표기한다(2026-07-23 사용자 결정 — 기존 '미납'
+  /// 단일 표기에서 분리). displayName 이 두 코드를 각각 '결품'/'취소' 로 매핑하므로 별도 override 불필요.
   String _statusLabel(String status) {
     if (status == OrderDeliveryStatus.delivered) return '배송완료';
-    if (status == OrderDeliveryStatus.outOfStock) return '미납';
     return OrderDeliveryStatus.displayName(status);
   }
 
@@ -37,6 +36,9 @@ class OrderProcessingStatusSection extends StatelessWidget {
         return AppColors.success;
       case OrderDeliveryStatus.outOfStock:
         return AppColors.error;
+      // 취소 — 결품(빨강)과 구분되도록 회색.
+      case OrderDeliveryStatus.cancelled:
+        return AppColors.textSecondary;
       // 대기 / 빈상태(unknown, status='') / 미정의 코드 — 회색(default 로 crash 방어).
       case OrderDeliveryStatus.pending:
       default:

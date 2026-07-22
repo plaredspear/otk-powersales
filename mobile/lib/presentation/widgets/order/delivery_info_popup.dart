@@ -39,7 +39,8 @@ class DeliveryInfoPopup extends StatelessWidget {
         return AppColors.success;
       case OrderDeliveryStatus.outOfStock:
         return AppColors.error;
-      // 대기 / 빈상태(unknown) / 미정의 코드 — 회색(default 로 crash 방어).
+      // 취소 / 대기 / 빈상태(unknown) / 미정의 코드 — 회색(default 로 crash 방어).
+      case OrderDeliveryStatus.cancelled:
       case OrderDeliveryStatus.pending:
       default:
         return AppColors.textSecondary;
@@ -56,6 +57,8 @@ class DeliveryInfoPopup extends StatelessWidget {
         return '배송이 완료되었습니다.';
       case OrderDeliveryStatus.outOfStock:
         return '결품으로 인해 배송할 수 없습니다.';
+      case OrderDeliveryStatus.cancelled:
+        return '취소된 제품입니다.';
       // 빈상태(unknown) / 미정의 코드 — 빈 메시지(default 로 crash 방어).
       default:
         return '';

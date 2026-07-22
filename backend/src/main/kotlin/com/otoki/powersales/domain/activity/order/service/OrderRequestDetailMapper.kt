@@ -135,7 +135,15 @@ class OrderRequestDetailMapper {
                 )
             }
 
-            val deliveryStatus = if (isDefaultReasonFilled) DeliveryStatus.OUT_OF_STOCK else computeDeliveryStatus(sapLine)
+            // 처리현황 상태: DefaultReason 분류를 결품/취소로 분리 표기(2026-07-23 사용자 결정).
+            //  - 결품셋({F1,L1,L2,L3}) → OUT_OF_STOCK("결품")
+            //  - 취소셋({L4,O1,S1,S2,S3}) → CANCELLED("취소")
+            //  - DefaultReason 없음 → 배송 차원(대기/배송중/배송완료/빈) 파생.
+            val deliveryStatus = when (classification) {
+                DefaultReasonClassification.OUT_OF_STOCK -> DeliveryStatus.OUT_OF_STOCK
+                DefaultReasonClassification.CANCELLED -> DeliveryStatus.CANCELLED
+                null -> computeDeliveryStatus(sapLine)
+            }
             val deliveredQuantity = formatDeliveredQuantity(sapLine, crmProduct, requestNumber)
 
             val item = ProcessingItemResponse(

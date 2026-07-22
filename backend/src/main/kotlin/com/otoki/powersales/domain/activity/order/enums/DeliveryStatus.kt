@@ -19,6 +19,12 @@ enum class DeliveryStatus(val koreanLabel: String) {
     DELIVERED("배송 완료"),
     OUT_OF_STOCK("결품"),
 
+    // 취소 — SAP DefaultReason 코드가 취소셋({L4,O1,S1,S2,S3})으로 분류된 라인 (2026-07-23 사용자 결정).
+    // 결품셋({F1,L1,L2,L3})은 OUT_OF_STOCK, 그 외 DefaultReason 은 이 CANCELLED 로 표기한다.
+    //  - 내 주문 상세: OrderRequestDetailMapper 가 코드로 직접 지정.
+    //  - 거래처주문: ErpOrderUpsertService 가 delivery_status='취소' 로 저장 → fromKoreanLabel("취소")=CANCELLED.
+    CANCELLED("취소"),
+
     // 레거시 조회 클래스 cls:153-159 는 5개 독립 if 로 상태를 파생하며, 어느 조건에도 안 걸리면
     // status 가 최종 ''(빈 문자열)로 남는다 (예: 정상 라인이지만 LineItemStatus 만 채워지고 배차/완료
     // 시각이 없는 케이스). 신규는 이를 '대기'로 뭉개지 않고 UNKNOWN(빈 라벨)으로 구분해 SF 정합을 맞춘다.

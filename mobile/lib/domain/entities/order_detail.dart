@@ -14,6 +14,9 @@ abstract final class OrderDeliveryStatus {
   static const String delivered = 'DELIVERED';
   static const String outOfStock = 'OUT_OF_STOCK';
 
+  /// 취소 — SAP DefaultReason 취소셋({L4,O1,S1,S2,S3}) 라인 (2026-07-23). 결품셋은 [outOfStock].
+  static const String cancelled = 'CANCELLED';
+
   /// 레거시 cls:153-159 가 어느 조건에도 안 걸려 status='' 로 남기는 케이스(예: LineItemStatus 만
   /// 채워지고 배차/완료 시각 없음). 화면은 빈 라벨로 표시.
   static const String unknown = 'UNKNOWN';
@@ -32,6 +35,8 @@ abstract final class OrderDeliveryStatus {
         return '배송 완료';
       case outOfStock:
         return '결품';
+      case cancelled:
+        return '취소';
       case unknown:
       default:
         return '';

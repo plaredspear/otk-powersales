@@ -215,8 +215,11 @@ class OrderRequestDetailMapperTest {
         assertThat(result.outOfStockReasons).containsEntry("P_OOS", "L1 [물류] 재고부족")
         assertThat(result.cancelledReasons).containsOnlyKeys("P_CAN")
         assertThat(result.cancelledReasons).containsEntry("P_CAN", "S2 [영업] 고객사정에 의한 취소")
-        // 취소 라인도 처리현황 그룹에 결품과 동일하게 OUT_OF_STOCK 로 포함 (D-1 결정).
-        assertThat(result.processingGroups[0].items).allMatch { it.deliveryStatus == DeliveryStatus.OUT_OF_STOCK }
+        // 처리현황 상태: 결품셋(L1) → OUT_OF_STOCK("결품"), 취소셋(S2) → CANCELLED("취소") 분리 (2026-07-23).
+        val oos = result.processingGroups[0].items.first { it.productCode == "P_OOS" }
+        val can = result.processingGroups[0].items.first { it.productCode == "P_CAN" }
+        assertThat(oos.deliveryStatus).isEqualTo(DeliveryStatus.OUT_OF_STOCK)
+        assertThat(can.deliveryStatus).isEqualTo(DeliveryStatus.CANCELLED)
         assertThat(result.rejectedItems).isEmpty()
     }
 
