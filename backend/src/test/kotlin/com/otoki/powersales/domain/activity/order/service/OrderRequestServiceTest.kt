@@ -13,6 +13,8 @@ import com.otoki.powersales.domain.activity.order.exception.InvalidDateRangeExce
 import com.otoki.powersales.domain.activity.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.domain.activity.order.exception.OrderDateRangeTooWideException
 import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundException
+import com.otoki.powersales.domain.activity.order.entity.ErpOrderProduct
+import com.otoki.powersales.domain.activity.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderHistoryRow
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
@@ -42,6 +44,7 @@ class OrderRequestServiceTest {
     private val orderRequestProductRepository: OrderRequestProductRepository = mockk()
     private val orderRequestDetailSapSender: OrderRequestDetailSapSender = mockk()
     private val orderRequestDetailMapper = OrderRequestDetailMapper()
+    private val erpOrderProductRepository: ErpOrderProductRepository = mockk()
     private val productRepository: ProductRepository = mockk()
     private val sapOutboxRepository: SapOutboxRepository = mockk()
 
@@ -62,12 +65,15 @@ class OrderRequestServiceTest {
             orderRequestProductRepository,
             orderRequestDetailSapSender,
             orderRequestDetailMapper,
+            erpOrderProductRepository,
             productRepository,
             orderCancelPolicy,
             fixedClock,
         )
         // 기본값 — 상세 조회 시 제품명 일괄조회. 개별 테스트에서 필요 시 override.
         every { productRepository.findByProductCodeIn(any()) } returns emptyList()
+        // 기본값 — 처리현황 총납품수량 조인(erp_order_product)은 비어있음. 개별 테스트에서 필요 시 override.
+        every { erpOrderProductRepository.findBySapOrderNumberIn(any()) } returns emptyList()
         // 기본값 — 등록 outbox in-flight 아님 (취소 가능 판정용).
         every {
             sapOutboxRepository.existsByDomainTypeAndAggregateIdAndStatusIn(any(), any(), any())
@@ -385,6 +391,31 @@ class OrderRequestServiceTest {
             assertThat(response.orderedItems[0].productCode).isEqualTo("1000023")
             // 총 승인 금액 = SAP 응답 전 라인 OrderSalesAmount 합산 (레거시 view.jsp:343-348 동등, DB 컬럼 아님)
             assertThat(response.totalApprovedAmount).isEqualByComparingTo("120000")
+        }
+
+        @Test
+        @DisplayName("성공 — 처리현황 납품수량은 erp_order_product 총납품수량(ConfirmQuantity_Box)으로 표시 (선행 0 정규화 조인, 2026-07-23)")
+        fun processingStatusUsesConfirmQuantityBox() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            // 라이브 SAP: 선행 0 포함 주문번호 + 출하수량 0 BOX (EA 단위 출하라 박스는 0).
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLine("1000023", "0300004993", "143000").copy(shippingQuantityBox = "0"))
+            // 인바운드 적재본: 선행 0 없는 주문번호 + 총납품수량 7 BOX. 정규화("300004993")로 매칭.
+            every { erpOrderProductRepository.findBySapOrderNumberIn(any()) } returns listOf(
+                ErpOrderProduct(
+                    sapOrderNumber = "300004993",
+                    productCode = "1000023",
+                    confirmQuantityBox = BigDecimal("7"),
+                ),
+            )
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            // 출하수량 0 이 아니라 총납품수량 7 BOX 로 표시 (거래처별 주문 상세와 동일 수치).
+            assertThat(response.orderProcessingStatusList!![0].items[0].deliveredQuantity).isEqualTo("7 BOX")
         }
 
         @Test

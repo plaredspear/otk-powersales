@@ -14,4 +14,11 @@ interface ErpOrderProductRepository : JpaRepository<ErpOrderProduct, Long>, ErpO
     fun findByExternalKeyIn(externalKeys: Collection<String>): List<ErpOrderProduct>
 
     fun findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber: String): List<ErpOrderProduct>
+
+    /**
+     * 여러 SAP 주문번호의 라인을 IN 절 1회로 일괄 조회.
+     * 내 주문 상세 처리현황이 총납품수량(ConfirmQuantity_Box)을 주입할 때 사용
+     * ([com.otoki.powersales.domain.activity.order.service.OrderRequestService] 참조).
+     */
+    fun findBySapOrderNumberIn(sapOrderNumbers: Collection<String>): List<ErpOrderProduct>
 }

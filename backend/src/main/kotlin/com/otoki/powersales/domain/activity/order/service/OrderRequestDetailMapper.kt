@@ -13,6 +13,7 @@ import com.otoki.powersales.external.sap.outbound.sender.SapOrderRequestDetailLi
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
+import java.text.DecimalFormat
 
 /**
  * SAP `OrderRequestDetail` 응답 + CRM `OrderRequestProduct` 라인을 결합하여
@@ -40,10 +41,17 @@ class OrderRequestDetailMapper {
     /**
      * SAP 응답 라인 + CRM 라인을 결합하여 그룹/반려 결과를 산출한다.
      */
+    /**
+     * @param confirmQuantityBoxByKey `(SAPOrderNumber, ProductCode)` → 총납품수량(Box환산치). SAP 인바운드가
+     *   적재한 `erp_order_product.ConfirmQuantity_Box` 를 서비스가 조인해 주입한다. 존재하면 처리현황 납품수량을
+     *   이 값으로 표시(거래처별 주문 상세와 동일 수치, 2026-07-23 사용자 결정) — 라이브 SD03052 응답엔 총납품수량
+     *   필드가 없어 출하수량(0 BOX)만 나오던 문제 해소. 미존재 시 기존 출하수량/주문수량 폴백을 유지한다.
+     */
     fun map(
         requestNumber: String,
         sapLines: List<SapOrderRequestDetailLine>,
         crmProductsByCode: Map<String, OrderRequestProduct>,
+        confirmQuantityBoxByKey: Map<Pair<String, String>, BigDecimal> = emptyMap(),
     ): MapResult {
         if (sapLines.isEmpty()) {
             return MapResult(processingGroups = emptyList(), rejectedItems = emptyList())
@@ -144,7 +152,11 @@ class OrderRequestDetailMapper {
                 DefaultReasonClassification.CANCELLED -> DeliveryStatus.CANCELLED
                 null -> computeDeliveryStatus(sapLine)
             }
-            val deliveredQuantity = formatDeliveredQuantity(sapLine, crmProduct, requestNumber)
+            // 납품수량: 인바운드 총납품수량(ConfirmQuantity_Box)이 있으면 그 값으로 표시(거래처별과 동일 수치),
+            // 없으면 라이브 SAP 출하수량/주문수량 폴백. groupKey 는 여기서 비어있지 않음(위에서 continue).
+            val deliveredQuantity = confirmQuantityBoxByKey[groupKey to productCode]
+                ?.let { formatConfirmQuantity(it) }
+                ?: formatDeliveredQuantity(sapLine, crmProduct, requestNumber)
 
             val item = ProcessingItemResponse(
                 productCode = productCode,
@@ -247,6 +259,14 @@ class OrderRequestDetailMapper {
      *  - 주문수량 폴백 경로: 레거시 `view.jsp:533` 동등 — SAP 응답 `TotalQuantity`(EA)를 그대로 사용
      *    (박스입수량 재환산이 아니라 SAP 가 준 EA 값).
      */
+    /**
+     * 총납품수량(ConfirmQuantity_Box) 표시 — 거래처별 주문 상세(`ClientOrderItemResponse.formatDeliveredQuantity`)와
+     * 동일 포맷: 천단위 구분 + 소수 최대 2자리(후행 0 제거) + 리터럴 `" BOX"`. `DecimalFormat` 은 thread-safe 하지
+     * 않으므로 호출마다 생성.
+     */
+    private fun formatConfirmQuantity(quantityBox: BigDecimal): String =
+        "${DecimalFormat("#,###.##").format(quantityBox)} BOX"
+
     private fun formatDeliveredQuantity(
         line: SapOrderRequestDetailLine,
         crmProduct: OrderRequestProduct?,

@@ -12,8 +12,10 @@ import com.otoki.powersales.domain.activity.order.exception.InvalidDateRangeExce
 import com.otoki.powersales.domain.activity.order.exception.InvalidOrderParameterException
 import com.otoki.powersales.domain.activity.order.exception.OrderDateRangeTooWideException
 import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundException
+import com.otoki.powersales.domain.activity.order.repository.ErpOrderProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.external.sap.outbound.sender.SapOrderRequestDetailLine
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.external.sap.outbound.sender.OrderRequestDetailSapSender
 import org.slf4j.LoggerFactory
@@ -34,6 +36,7 @@ class OrderRequestService(
     private val orderRequestProductRepository: OrderRequestProductRepository,
     private val orderRequestDetailSapSender: OrderRequestDetailSapSender,
     private val orderRequestDetailMapper: OrderRequestDetailMapper,
+    private val erpOrderProductRepository: ErpOrderProductRepository,
     private val productRepository: ProductRepository,
     private val orderCancelPolicy: OrderCancelPolicy,
     private val clock: Clock = Clock.systemDefaultZone(),
@@ -199,6 +202,11 @@ class OrderRequestService(
 
         val sapLines = orderRequestDetailSapSender.fetchDetail(orderRequest.orderRequestNumber)
 
+        // 처리현황 납품수량은 라이브 SD03052 에 총납품수량(ConfirmQuantity_Box) 필드가 없어 출하수량만 나오고,
+        // 출하가 EA 단위(박스 미만)면 전 라인이 "0 BOX" 로 보였다. SAP 인바운드가 적재한 erp_order_product 의
+        // 총납품수량을 (SAP주문번호+제품코드)로 조인해 거래처별 주문 상세와 동일 수치를 표시한다(2026-07-23 사용자 결정).
+        val confirmQuantityBoxByKey = buildConfirmQuantityBoxByKey(sapLines)
+
         val mapped = if (sapLines == null) {
             null
         } else {
@@ -206,6 +214,7 @@ class OrderRequestService(
                 requestNumber = orderRequest.orderRequestNumber,
                 sapLines = sapLines,
                 crmProductsByCode = crmProductsByCode,
+                confirmQuantityBoxByKey = confirmQuantityBoxByKey,
             )
         }
 
@@ -317,6 +326,38 @@ class OrderRequestService(
         } catch (e: Exception) {
             false
         }
+    }
+
+    /**
+     * 처리현황 납품수량 주입용 `(SAPOrderNumber, ProductCode)` → 총납품수량(ConfirmQuantity_Box) 맵.
+     *
+     * 라이브 SD03052 는 SAP 주문번호에 선행 0 을 포함(`0333039654`)하지만, SAP 인바운드가 적재한
+     * `erp_order_product` 는 선행 0 없이(`333039654`) 저장돼 포맷이 어긋난다. 양측을 선행 0 제거로 정규화해
+     * 매칭하되, 맵 키는 매퍼가 그대로 조회할 수 있도록 **라이브 SAP 주문번호(원본)** 로 되돌려 둔다.
+     * 동일 제품이 다중 라인(배차 전 대기 / 배차 후 배송중)이면 거래처별 dedup 과 동일하게 **최신(최대 id) 행**의
+     * 총납품수량을 채택한다.
+     */
+    private fun buildConfirmQuantityBoxByKey(
+        sapLines: List<SapOrderRequestDetailLine>?,
+    ): Map<Pair<String, String>, java.math.BigDecimal> {
+        if (sapLines.isNullOrEmpty()) return emptyMap()
+        val liveNumbers = sapLines.mapNotNull { it.sapOrderNumber?.takeIf(String::isNotBlank) }.toSet()
+        if (liveNumbers.isEmpty()) return emptyMap()
+
+        // 라이브 번호를 선행 0 제거로 정규화 → 인바운드 저장 번호와 매칭 (정규화 충돌은 실무상 없음).
+        val liveByNormalized = liveNumbers.associateBy { it.trimStart('0') }
+        // 라이브 원본 + 정규화 변형 양쪽을 후보로 IN 조회 (인바운드 저장 포맷 불일치 흡수).
+        val candidates = (liveNumbers + liveByNormalized.keys).filter { it.isNotBlank() }.toSet()
+
+        return erpOrderProductRepository.findBySapOrderNumberIn(candidates)
+            .mapNotNull { row ->
+                val code = row.productCode?.takeIf(String::isNotBlank) ?: return@mapNotNull null
+                row.confirmQuantityBox ?: return@mapNotNull null
+                val live = liveByNormalized[row.sapOrderNumber?.trimStart('0')] ?: return@mapNotNull null
+                (live to code) to row
+            }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, rows) -> rows.maxByOrNull { it.id }!!.confirmQuantityBox!! }
     }
 
     private fun validateSortBy(sortBy: String) {
