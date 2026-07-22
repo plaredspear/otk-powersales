@@ -13788,7 +13788,7 @@
             "type" : "string"
           },
           "deliveryStatus" : {
-            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK", "UNKNOWN" ],
+            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK", "CANCELLED", "UNKNOWN" ],
             "type" : "string"
           },
           "driverName" : {
@@ -19206,6 +19206,12 @@
             },
             "type" : "array"
           },
+          "outOfStockItems" : {
+            "items" : {
+              "$ref" : "#/components/schemas/OutOfStockItemResponse"
+            },
+            "type" : [ "array", "null" ]
+          },
           "registrationInFlight" : {
             "type" : "boolean"
           },
@@ -19214,6 +19220,12 @@
               "$ref" : "#/components/schemas/RejectedItemResponse"
             },
             "type" : [ "array", "null" ]
+          },
+          "sapOrderNumbers" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           },
           "totalAmount" : {
             "type" : [ "number", "null" ]
@@ -19717,6 +19729,23 @@
             "example" : "202605",
             "pattern" : "^\\d{6}$",
             "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
+      "OutOfStockItemResponse" : {
+        "properties" : {
+          "orderQuantityBoxes" : {
+            "type" : "number"
+          },
+          "productCode" : {
+            "type" : "string"
+          },
+          "productName" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -21197,7 +21226,7 @@
             "type" : "string"
           },
           "deliveryStatus" : {
-            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK", "UNKNOWN" ],
+            "enum" : [ "PENDING", "SHIPPING", "DELIVERED", "OUT_OF_STOCK", "CANCELLED", "UNKNOWN" ],
             "type" : "string"
           },
           "driverName" : {
