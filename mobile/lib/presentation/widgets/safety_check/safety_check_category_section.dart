@@ -17,6 +17,9 @@ class SafetyCheckCategorySection extends StatelessWidget {
   /// 현재 펼쳐진 항목의 seqNum 집합 (아코디언용, 다중 펼침 허용)
   final Set<int> expandedSeqNums;
 
+  /// 항목(seqNum)별 GlobalKey — 답변 후 다음 항목 스크롤용
+  final Map<int, GlobalKey>? itemKeys;
+
   /// 라디오 선택 콜백
   final void Function(int seqNum, String answer)? onRadioSelect;
 
@@ -32,6 +35,7 @@ class SafetyCheckCategorySection extends StatelessWidget {
     this.equipmentAnswers = const {},
     this.precautionChecks = const {},
     this.expandedSeqNums = const {},
+    this.itemKeys,
     this.onRadioSelect,
     this.onCheckboxToggle,
     this.onToggleExpand,
@@ -83,6 +87,7 @@ class SafetyCheckCategorySection extends StatelessWidget {
           // 레거시(checkList.jsp): 항목 번호는 DB seqNum이 아니라 루프 1-based 순번
           ...category.items.asMap().entries.map(
             (entry) => SafetyCheckAccordionTile(
+              key: itemKeys?[entry.value.seqNum],
               item: entry.value,
               displayNumber: entry.key + 1,
               selectedAnswer: equipmentAnswers[entry.value.seqNum],

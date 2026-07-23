@@ -58,10 +58,17 @@ class SafetyCheckNotifier extends StateNotifier<SafetyCheckState> {
     }
   }
 
-  /// 아코디언 토글: 항목 탭 시 펼침/접힘 (여러 항목 동시 펼침 허용)
+  /// 아코디언 토글: 타이틀 탭 시
+  /// - 접혀 있으면 펼침
+  /// - 펼쳐져 있을 때는 답변(예/해당없음)이 선택된 항목만 접힘 (미응답 항목은 유지)
   void toggleExpand(int seqNum) {
+    final isExpanded = state.expandedSeqNums.contains(seqNum);
     final next = Set<int>.from(state.expandedSeqNums);
-    if (!next.remove(seqNum)) {
+    if (isExpanded) {
+      // 미응답 항목은 타이틀 탭으로 접히지 않음
+      if (state.equipmentAnswers[seqNum] == null) return;
+      next.remove(seqNum);
+    } else {
       next.add(seqNum);
     }
     state = state.copyWith(expandedSeqNums: next);

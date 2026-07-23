@@ -19,6 +19,12 @@ class SafetyCheckPage extends ConsumerStatefulWidget {
 }
 
 class _SafetyCheckPageState extends ConsumerState<SafetyCheckPage> {
+  /// 항목(seqNum)별 GlobalKey — 답변 후 다음 항목 스크롤용
+  final Map<int, GlobalKey> _itemKeys = {};
+
+  GlobalKey _keyFor(int seqNum) =>
+      _itemKeys.putIfAbsent(seqNum, () => GlobalKey());
+
   @override
   void initState() {
     super.initState();
@@ -112,6 +118,15 @@ class _SafetyCheckPageState extends ConsumerState<SafetyCheckPage> {
       );
     }
 
+    // RADIO 항목 GlobalKey 사전 확보 (스크롤 대상)
+    for (final category in state.categories!) {
+      if (category.inputType == 'RADIO') {
+        for (final item in category.items) {
+          _keyFor(item.seqNum);
+        }
+      }
+    }
+
     return Stack(
       children: [
         SingleChildScrollView(
@@ -124,10 +139,12 @@ class _SafetyCheckPageState extends ConsumerState<SafetyCheckPage> {
                     equipmentAnswers: state.equipmentAnswers,
                     precautionChecks: state.precautionChecks,
                     expandedSeqNums: state.expandedSeqNums,
+                    itemKeys: _itemKeys,
                     onRadioSelect: (seqNum, answer) {
                       ref
                           .read(safetyCheckProvider.notifier)
                           .setEquipmentAnswer(seqNum, answer);
+                      _scrollToNextItem(seqNum);
                     },
                     onCheckboxToggle: (seqNum) {
                       ref
@@ -219,6 +236,36 @@ class _SafetyCheckPageState extends ConsumerState<SafetyCheckPage> {
         ),
       ),
     );
+  }
+
+  /// 답변 선택 후, 다음 항목이 화면에 충분히 보이도록 스크롤
+  void _scrollToNextItem(int answeredSeqNum) {
+    final categories = ref.read(safetyCheckProvider).categories;
+    if (categories == null) return;
+
+    // RADIO 항목 seqNum 순서 목록
+    final radioSeqNums = <int>[
+      for (final category in categories)
+        if (category.inputType == 'RADIO')
+          for (final item in category.items) item.seqNum,
+    ];
+
+    final idx = radioSeqNums.indexOf(answeredSeqNum);
+    if (idx == -1 || idx + 1 >= radioSeqNums.length) return;
+    final nextSeqNum = radioSeqNums[idx + 1];
+
+    // 선택 항목 접힘(300ms) 이후 레이아웃 안정 시점에 스크롤
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      final ctx = _itemKeys[nextSeqNum]?.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.3,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    });
   }
 
   /// 제출 성공 → 토스트 + AttendancePage로 교체
