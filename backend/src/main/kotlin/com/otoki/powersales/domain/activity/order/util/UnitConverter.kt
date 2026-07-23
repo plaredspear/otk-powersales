@@ -41,4 +41,29 @@ object UnitConverter {
         return BigDecimal.valueOf(quantityPieces.toLong())
             .divide(BigDecimal.valueOf(conv.toLong()), 2, RoundingMode.HALF_UP)
     }
+
+    /**
+     * 주문 상세 **표시용** 박스 수량 (레거시 `CRM_TotalQuantity_Box` 정합).
+     *
+     * 레거시 확정: `CRM_TotalQuantity_Box = 총EA(TotalQuantity_Each) ÷ 박스입수(Product.BoxReceivingQuantity)`,
+     * `write.jsp:215-216` `qBox.toFixed(2)` → 소수 2자리 반올림. 분모는 **제품 마스터 박스입수**이며
+     * SAP InventorySearch `ConversionQuantity`(환산수량)가 **아니다**. 두 값은 SF 에서 별개 필드로,
+     * "10구" 계란류처럼 박스입수 ≠ 환산수량인 제품에서 갈린다.
+     *
+     * 저장된 [storedBoxes](`quantity_boxes` = 총EA÷환산수량, SAP 송신용)를 표시에 쓰면 위 제품에서
+     * 어긋나므로(예: 10÷10=1 대신 10÷20=0.5), 표시값은 박스입수로 재파생한다. SAP 송신 경로
+     * (`OrderRequestRegisterSender` = 총EA÷환산수량)는 그대로 두어 레거시 `orderQuantity` 와 정합 유지.
+     *
+     * @param boxReceivingQuantity 제품 마스터 박스입수(박스당 낱개수). null/0 이면 재파생 불가로 [storedBoxes] 폴백.
+     */
+    fun toDisplayBoxQuantity(
+        quantityPieces: BigDecimal?,
+        boxReceivingQuantity: BigDecimal?,
+        storedBoxes: BigDecimal?,
+    ): BigDecimal {
+        val fallback = storedBoxes ?: BigDecimal.ZERO
+        val pieces = quantityPieces ?: return fallback
+        if (boxReceivingQuantity == null || boxReceivingQuantity <= BigDecimal.ZERO) return fallback
+        return pieces.divide(boxReceivingQuantity, 2, RoundingMode.HALF_UP)
+    }
 }

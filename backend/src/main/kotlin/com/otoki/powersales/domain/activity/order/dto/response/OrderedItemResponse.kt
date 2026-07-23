@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.order.dto.response
 
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
+import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import java.math.BigDecimal
 
 /**
@@ -43,8 +44,14 @@ data class OrderedItemResponse(
                 orderProductId = item.id,
                 productCode = item.productCode,
                 productName = productName ?: item.product?.name,
+                // 표시용 박스 = 총EA ÷ 박스입수 (레거시 CRM_TotalQuantity_Box 정합). 저장된 quantityBoxes
+                // (총EA÷환산수량, SAP 송신용)를 그대로 쓰면 박스입수≠환산수량 제품에서 어긋나므로 재파생.
+                totalQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
+                    quantityPieces = item.quantityPieces,
+                    boxReceivingQuantity = item.product?.boxReceivingQuantity,
+                    storedBoxes = item.quantityBoxes,
+                ),
                 // SF nillable=true 정합으로 수량이 nullable — 응답은 0 으로 보정 (기존 의미 보존).
-                totalQuantityBoxes = item.quantityBoxes ?: BigDecimal.ZERO,
                 totalQuantityPieces = item.quantityPieces ?: BigDecimal.ZERO,
                 // 마이그레이션 과거 취소('X') 표시용 — 신규 취소는 로컬 확정하지 않으므로 세팅되지 않는다.
                 isCancelled = item.isCancelled(),

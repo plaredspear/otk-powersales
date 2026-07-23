@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.order.dto.response.ProcessingItemRes
 import com.otoki.powersales.domain.activity.order.dto.response.RejectedItemResponse
 import com.otoki.powersales.domain.activity.order.dto.response.UnfulfilledItemResponse
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
+import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.activity.order.enums.DefaultReasonClassification
 import com.otoki.powersales.domain.activity.order.enums.DefaultReasonCode
 import com.otoki.powersales.domain.activity.order.enums.DeliveryStatus
@@ -103,7 +104,11 @@ class OrderRequestDetailMapper {
                     outOfStockItems += OutOfStockItemResponse(
                         productCode = productCode,
                         productName = productName,
-                        orderQuantityBoxes = crmProduct?.quantityBoxes ?: BigDecimal.ZERO,
+                        orderQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
+                            quantityPieces = crmProduct?.quantityPieces,
+                            boxReceivingQuantity = crmProduct?.product?.boxReceivingQuantity,
+                            storedBoxes = crmProduct?.quantityBoxes,
+                        ),
                         reason = displayReason,
                     )
                 }
@@ -115,7 +120,11 @@ class OrderRequestDetailMapper {
                 rejected += RejectedItemResponse(
                     productCode = productCode,
                     productName = productName,
-                    orderQuantityBoxes = crmProduct?.quantityBoxes ?: BigDecimal.ZERO,
+                    orderQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
+                        quantityPieces = crmProduct?.quantityPieces,
+                        boxReceivingQuantity = crmProduct?.product?.boxReceivingQuantity,
+                        storedBoxes = crmProduct?.quantityBoxes,
+                    ),
                     rejectionReason = sapLine.lineItemStatus,
                 )
                 continue
@@ -138,7 +147,11 @@ class OrderRequestDetailMapper {
                 unfulfilled += UnfulfilledItemResponse(
                     productCode = productCode,
                     productName = productName,
-                    orderQuantityBoxes = crmProduct?.quantityBoxes ?: BigDecimal.ZERO,
+                    orderQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
+                        quantityPieces = crmProduct?.quantityPieces,
+                        boxReceivingQuantity = crmProduct?.product?.boxReceivingQuantity,
+                        storedBoxes = crmProduct?.quantityBoxes,
+                    ),
                     reason = sapLine.lineItemStatus,
                 )
             }

@@ -625,7 +625,9 @@ class OrderRequestDetailMapperTest {
             lineNumber = BigDecimal.valueOf(1L),
             productCode = productCode,
             quantityBoxes = quantityBoxes,
-            quantityPieces = BigDecimal.valueOf(0L),
+            // 표시용 박스 = 총EA ÷ 박스입수 (레거시 CRM_TotalQuantity_Box). 픽스처를 정합하게
+            // 총EA = 박스수 × 박스입수 로 두면 파생 박스값이 quantityBoxes 와 일치한다.
+            quantityPieces = quantityBoxes.multiply(BigDecimal.valueOf(boxReceivingQuantity.toLong())),
             unit = "BOX",
             unitPrice = BigDecimal.ZERO,
             amount = BigDecimal.ZERO,
