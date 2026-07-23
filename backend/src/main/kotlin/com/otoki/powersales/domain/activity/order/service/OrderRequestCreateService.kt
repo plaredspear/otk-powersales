@@ -219,11 +219,12 @@ class OrderRequestCreateService(
             // 단위 환산 정합 검증 — 레거시 OrderController.java:630-632.
             // 박스류(EA 외)는 총 EA(quantityPieces)가 환산수량 배수여야 정합 (박스+낱개 혼합은 총 EA 로 평탄화).
             if (!UnitConverter.isPiecesValid(unit, line.quantityPieces, conv)) {
-                // 레거시는 "환산수량 확인 오류" 문구 + 행에 "최소주문단위 N개"(conversionQuantity)를 함께
-                // 노출했다(write.jsp:704,710). 신규는 이를 한 줄 자연어로 합치되 레거시 용어
-                // "최소주문단위"를 그대로 살려 안내한다. 개발자용 raw 값(productCode/unit/quantityPieces) 제거.
+                // 레거시 원문 정합: 위반 행에 "최소주문단위 N개"(conversionQuantity) + 에러 사유
+                // "환산수량 확인 오류" 두 조각을 노출했다(write.jsp:704,710 / OrderController.java:638).
+                // 신규는 SnackBar 단일 문구이므로 두 조각을 그대로 이어붙이되, 어느 제품인지 식별할
+                // 수 있게 제품명을 앞에 둔다. 개발자용 raw 값(productCode/unit/quantityPieces) 제거.
                 throw OrderInvalidUnitException(
-                    "${info.productName}은(는) 최소주문단위 ${conv}개로만 주문할 수 있습니다."
+                    "${info.productName} 최소주문단위 ${conv}개 / 환산수량 확인 오류"
                 )
             }
 
