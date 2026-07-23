@@ -96,10 +96,10 @@ data class AdminAccountUpdateRequest(
     @field:Size(max = 20, message = "거래처 상태 코드는 20자 이하여야 합니다.")
     val accountStatusCode: String? = null,
 
-    @field:Size(max = 50, message = "업태는 50자 이하여야 합니다.")
+    @field:Size(max = 50, message = "업종은 50자 이하여야 합니다.")
     val businessType: String? = null,
 
-    @field:Size(max = 50, message = "업종 분류는 50자 이하여야 합니다.")
+    @field:Size(max = 50, message = "업태는 50자 이하여야 합니다.")
     val businessCategory: String? = null,
 
     @field:Size(max = 80, message = "사업자등록번호는 80자 이하여야 합니다.")

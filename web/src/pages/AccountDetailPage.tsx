@@ -158,6 +158,7 @@ function AccountInfoTab({ account, canEdit }: { account: AccountDetail; canEdit:
               '-'
             )}
           </Descriptions.Item>
+          <Descriptions.Item label="ABC유형코드">{dash(account.abcTypeCode)}</Descriptions.Item>
           <Descriptions.Item
             label={
               <span>
@@ -182,8 +183,8 @@ function AccountInfoTab({ account, canEdit }: { account: AccountDetail; canEdit:
           <Descriptions.Item label="사업자번호">
             {dash(account.businessLicenseNumber)}
           </Descriptions.Item>
-          <Descriptions.Item label="업태">{dash(account.businessType)}</Descriptions.Item>
-          <Descriptions.Item label="업종">{dash(account.businessCategory)}</Descriptions.Item>
+          <Descriptions.Item label="업종">{dash(account.businessType)}</Descriptions.Item>
+          <Descriptions.Item label="업태">{dash(account.businessCategory)}</Descriptions.Item>
           <Descriptions.Item label="산업">{dash(account.industry)}</Descriptions.Item>
           <Descriptions.Item label="상위 계정">{dash(account.parentName)}</Descriptions.Item>
           <Descriptions.Item label="거래처 소유자">{dash(account.ownerName)}</Descriptions.Item>
@@ -224,6 +225,7 @@ function AccountInfoTab({ account, canEdit }: { account: AccountDetail; canEdit:
       <Card size="small" title="거래 / 여신 정보" style={{ marginBottom: 16 }}>
         <Descriptions column={2} bordered size="small">
           <Descriptions.Item label="상태">{dash(account.accountStatusName)}</Descriptions.Item>
+          <Descriptions.Item label="거래처상태코드">{dash(account.accountStatusCode)}</Descriptions.Item>
           <Descriptions.Item label="거래처 유형">{dash(account.accountType)}</Descriptions.Item>
           <Descriptions.Item label="여신 한도">{won(account.totalCredit)}</Descriptions.Item>
           <Descriptions.Item label="여신 잔액">{won(account.remainingCredit)}</Descriptions.Item>
@@ -240,7 +242,7 @@ function AccountInfoTab({ account, canEdit }: { account: AccountDetail; canEdit:
           <Descriptions.Item label="마감시간1">{dash(account.closingTime1)}</Descriptions.Item>
           <Descriptions.Item label="마감시간2">{dash(account.closingTime2)}</Descriptions.Item>
           <Descriptions.Item label="마감시간3">{dash(account.closingTime3)}</Descriptions.Item>
-          <Descriptions.Item label="배송 구분">{dash(account.distribution)}</Descriptions.Item>
+          <Descriptions.Item label="배부대상거래처">{dash(account.distribution)}</Descriptions.Item>
         </Descriptions>
       </Card>
 

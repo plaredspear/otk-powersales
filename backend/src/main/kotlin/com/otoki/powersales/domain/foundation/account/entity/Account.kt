@@ -201,7 +201,7 @@ class Account(
     var accountStatusCode: String? = null,
 
     @SFField("BusinessType__c")
-    @FieldName("사업유형")
+    @FieldName("업종")
     @Column(name = "business_type", length = 100)
     var businessType: String? = null,
 
