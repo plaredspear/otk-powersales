@@ -303,8 +303,10 @@ class OrderRequestCreateServiceTest {
             val request = baseRequest(
                 lines = listOf(line(productCode = "P001", quantity = 10, unit = "BOX", quantityPieces = 999, quantityBoxes = 10))
             )
+            // 레거시 정합: 개발자용 raw 값 대신 환산수량(주문 단위) 자연어 안내를 노출한다.
             assertThatThrownBy { service.create(userId, request) }
                 .isInstanceOf(OrderInvalidUnitException::class.java)
+                .hasMessage("STUB_P001은(는) 30 개 단위로만 주문할 수 있습니다.")
         }
 
         @Test

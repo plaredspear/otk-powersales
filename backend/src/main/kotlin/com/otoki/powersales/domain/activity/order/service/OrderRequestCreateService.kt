@@ -219,9 +219,11 @@ class OrderRequestCreateService(
             // 단위 환산 정합 검증 — 레거시 OrderController.java:630-632.
             // 박스류(EA 외)는 총 EA(quantityPieces)가 환산수량 배수여야 정합 (박스+낱개 혼합은 총 EA 로 평탄화).
             if (!UnitConverter.isPiecesValid(unit, line.quantityPieces, conv)) {
+                // 레거시는 "환산수량 확인 오류" 문구 + 행에 "최소주문단위 N개"(conversionQuantity)를 함께
+                // 노출했다(write.jsp:704,710). 신규는 이를 한 줄 자연어로 합쳐 환산수량(주문 단위)을
+                // 담아 안내한다. 개발자용 raw 값(productCode/unit/quantityPieces) 노출은 제거.
                 throw OrderInvalidUnitException(
-                    "단위 환산 정합 위반 (productCode: ${line.productCode}, unit: $unit, " +
-                            "quantityPieces: ${line.quantityPieces}, conversionQuantity: $conv)"
+                    "${info.productName}은(는) $conv 개 단위로만 주문할 수 있습니다."
                 )
             }
 

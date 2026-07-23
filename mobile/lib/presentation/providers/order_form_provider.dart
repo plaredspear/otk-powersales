@@ -718,12 +718,10 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
     if (raw.contains('ORD_PRODUCT_RESTRICTED') || raw.contains('공급제한')) {
       return raw;
     }
-    if (raw.contains('ORD_INVALID_UNIT')) {
-      return raw;
-    }
-    if (raw.contains('ORD_INVALID_REQUEST')) {
-      return raw;
-    }
+    // ORD_INVALID_UNIT(단위 환산 정합 위반) / ORD_INVALID_REQUEST(입력 형식) 은
+    // 백엔드가 이미 사용자 관점 자연어 message(예: "OO은(는) 8개 단위(박스)로만 주문할 수
+    // 있습니다 …")를 담아 주므로, 아래 코드 기반 fallback(extractErrorCode != null → raw)
+    // 에서 그대로 노출된다. 여기서 별도 문자열 매칭은 두지 않는다.
     if (raw.contains('ORD_ACCOUNT_FORBIDDEN') || raw.contains('FORBIDDEN')) {
       return '본인 담당 거래처가 아닙니다.';
     }
