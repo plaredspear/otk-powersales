@@ -3391,6 +3391,12 @@
           "ordererName" : {
             "type" : [ "string", "null" ]
           },
+          "relatedOrders" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RelatedClientOrderResponse"
+            },
+            "type" : "array"
+          },
           "sapAccountCode" : {
             "type" : [ "string", "null" ]
           },
@@ -5590,6 +5596,12 @@
             },
             "type" : [ "array", "null" ]
           },
+          "relatedOrders" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RelatedClientOrderResponse"
+            },
+            "type" : "array"
+          },
           "sapOrderNumbers" : {
             "items" : {
               "type" : "string"
@@ -6457,6 +6469,37 @@
           },
           "rejectionReason" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "RelatedClientOrderResponse" : {
+        "properties" : {
+          "deliveryDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "orderDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "orderTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderTypeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "ordererCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "ordererName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapOrderNumber" : {
+            "type" : "string"
+          },
+          "totalApprovedAmount" : {
+            "type" : [ "number", "null" ]
           }
         },
         "type" : "object"
@@ -9015,10 +9058,11 @@
         "operationId" : "getAccountOrderHistory",
         "parameters" : [ {
           "in" : "query",
-          "name" : "accountCode",
+          "name" : "accountId",
           "required" : true,
           "schema" : {
-            "type" : "string"
+            "format" : "int64",
+            "type" : "integer"
           }
         }, {
           "in" : "query",
