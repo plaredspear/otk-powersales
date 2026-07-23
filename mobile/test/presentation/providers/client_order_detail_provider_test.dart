@@ -246,7 +246,7 @@ class _ErrorOrderRepository implements OrderRequestRepository {
 
   @override
   Future<List<ProductOrderHistoryGroup>> getAccountOrderHistory({
-    required String accountCode,
+    required int accountId,
     required DateTime startDate,
     required DateTime endDate,
   }) {

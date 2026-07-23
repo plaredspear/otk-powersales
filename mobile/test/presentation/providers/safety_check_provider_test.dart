@@ -148,10 +148,20 @@ void main() {
         expect(notifier.state.expandedSeqNums, {1, 2, 3});
       });
 
-      test('펼쳐진 항목을 탭하면 접는다', () async {
+      test('미응답 항목은 타이틀 탭으로 접히지 않는다', () async {
         mockRepository.categoriesToReturn = testCategories;
         await notifier.fetchItems();
 
+        // 접힘 조건 정리(2026-07): 응답(예/해당없음)한 항목만 타이틀 탭으로 접힘.
+        notifier.toggleExpand(1);
+        expect(notifier.state.expandedSeqNums.contains(1), true);
+      });
+
+      test('답변한 펼쳐진 항목을 탭하면 접는다', () async {
+        mockRepository.categoriesToReturn = testCategories;
+        await notifier.fetchItems();
+
+        notifier.setEquipmentAnswer(1, '예');
         notifier.toggleExpand(1);
         expect(notifier.state.expandedSeqNums.contains(1), false);
       });
@@ -160,16 +170,18 @@ void main() {
         mockRepository.categoriesToReturn = testCategories;
         await notifier.fetchItems();
 
-        notifier.toggleExpand(1); // 접힘
+        notifier.setEquipmentAnswer(1, '예');
+        notifier.toggleExpand(1); // 접힘 (응답 항목)
         notifier.toggleExpand(1); // 다시 펼침
         expect(notifier.state.expandedSeqNums.contains(1), true);
       });
 
-      test('여러 항목이 동시에 펼쳐진 상태를 유지한다', () async {
+      test('한 항목만 접어도 나머지는 펼친 상태를 유지한다', () async {
         mockRepository.categoriesToReturn = testCategories;
         await notifier.fetchItems();
 
-        // 기본으로 1,2,3 모두 펼침 → 1만 접어도 2,3은 그대로
+        // 기본으로 1,2,3 모두 펼침 → 응답한 1만 접어도 2,3은 그대로
+        notifier.setEquipmentAnswer(1, '예');
         notifier.toggleExpand(1);
         expect(notifier.state.expandedSeqNums, {2, 3});
       });

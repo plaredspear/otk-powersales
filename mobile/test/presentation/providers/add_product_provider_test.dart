@@ -454,8 +454,8 @@ void main() {
     });
 
     group('loadOrderHistory', () {
-      test('거래처 코드가 없으면 조회하지 않고 빈 목록 유지', () async {
-        // Arrange — accountCode 미주입 상태로 initialize
+      test('거래처 ID가 없으면 조회하지 않고 빈 목록 유지', () async {
+        // Arrange — accountId 미주입 상태로 initialize
         await notifier.initialize();
         fakeRepo.orderHistoryCalled = false;
 
@@ -467,7 +467,7 @@ void main() {
         expect(notifier.state.orderHistoryGroups, isEmpty);
       });
 
-      test('거래처 코드가 있으면 주문일 그룹으로 조회', () async {
+      test('거래처 ID가 있으면 주문일 그룹으로 조회', () async {
         // Arrange
         fakeRepo.orderHistoryResult = [
           ProductOrderHistoryGroup(
@@ -479,14 +479,14 @@ void main() {
             products: [_createTestProduct(productCode: 'P003')],
           ),
         ];
-        await notifier.initialize(orderHistoryAccountCode: '0001234567');
+        await notifier.initialize(orderHistoryAccountId: 1071460);
 
         // Act
         await notifier.loadOrderHistory();
 
         // Assert
         expect(fakeRepo.orderHistoryCalled, true);
-        expect(fakeRepo.lastOrderHistoryAccountCode, '0001234567');
+        expect(fakeRepo.lastOrderHistoryAccountId, 1071460);
         expect(notifier.state.orderHistoryGroups.length, 2);
         expect(notifier.state.orderHistoryGroups[0].orderDate, '2026-05-06');
         expect(notifier.state.orderHistoryGroups[0].isExpanded, true);
@@ -695,16 +695,16 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
   List<ProductOrderHistoryGroup> orderHistoryResult = [];
   bool shouldThrowOnOrderHistory = false;
   bool orderHistoryCalled = false;
-  String? lastOrderHistoryAccountCode;
+  int? lastOrderHistoryAccountId;
 
   @override
   Future<List<ProductOrderHistoryGroup>> getAccountOrderHistory({
-    required String accountCode,
+    required int accountId,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
     orderHistoryCalled = true;
-    lastOrderHistoryAccountCode = accountCode;
+    lastOrderHistoryAccountId = accountId;
     if (shouldThrowOnOrderHistory) throw Exception(errorMessage);
     return orderHistoryResult;
   }

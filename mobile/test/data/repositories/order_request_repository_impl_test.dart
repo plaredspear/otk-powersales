@@ -200,7 +200,7 @@ class FakeOrderRemoteDataSource implements OrderRequestRemoteDataSource {
 
   @override
   Future<List<OrderHistoryGroupModel>> getAccountOrderHistory({
-    required String accountCode,
+    required int accountId,
     required String startDate,
     required String endDate,
   }) {
