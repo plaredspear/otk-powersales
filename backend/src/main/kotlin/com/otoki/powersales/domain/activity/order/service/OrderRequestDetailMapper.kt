@@ -53,6 +53,8 @@ class OrderRequestDetailMapper {
         sapLines: List<SapOrderRequestDetailLine>,
         crmProductsByCode: Map<String, OrderRequestProduct>,
         confirmQuantityBoxByKey: Map<Pair<String, String>, BigDecimal> = emptyMap(),
+        // 표시용 박스 분모 = 제품 마스터 박스입수(product_code 조회). 결품/반려/미납 박스 = 총EA÷박스입수.
+        boxReceivingByCode: Map<String, BigDecimal?> = emptyMap(),
     ): MapResult {
         if (sapLines.isEmpty()) {
             return MapResult(processingGroups = emptyList(), rejectedItems = emptyList())
@@ -106,7 +108,7 @@ class OrderRequestDetailMapper {
                         productName = productName,
                         orderQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
                             quantityPieces = crmProduct?.quantityPieces,
-                            boxReceivingQuantity = crmProduct?.product?.boxReceivingQuantity,
+                            boxReceivingQuantity = boxReceivingByCode[productCode],
                             storedBoxes = crmProduct?.quantityBoxes,
                         ),
                         reason = displayReason,
@@ -122,7 +124,7 @@ class OrderRequestDetailMapper {
                     productName = productName,
                     orderQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
                         quantityPieces = crmProduct?.quantityPieces,
-                        boxReceivingQuantity = crmProduct?.product?.boxReceivingQuantity,
+                        boxReceivingQuantity = boxReceivingByCode[productCode],
                         storedBoxes = crmProduct?.quantityBoxes,
                     ),
                     rejectionReason = sapLine.lineItemStatus,
@@ -149,7 +151,7 @@ class OrderRequestDetailMapper {
                     productName = productName,
                     orderQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
                         quantityPieces = crmProduct?.quantityPieces,
-                        boxReceivingQuantity = crmProduct?.product?.boxReceivingQuantity,
+                        boxReceivingQuantity = boxReceivingByCode[productCode],
                         storedBoxes = crmProduct?.quantityBoxes,
                     ),
                     reason = sapLine.lineItemStatus,

@@ -291,6 +291,29 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
+    @DisplayName("표시 박스 = 총EA ÷ 박스입수 (by-code) — 결품 계란 10개 ÷ 20 = 0.5 (저장 quantityBoxes=1 무시)")
+    fun outOfStockBoxDerivedFromBoxReceiving() {
+        // 결품(DefaultReason L1) 라인. crm 저장값은 환산수량(10) 기반 1박스지만 표시는 박스입수(20)로 0.5.
+        val sap = listOf(line(productCode = "P_EGG", sapOrderNumber = "S1", defaultReason = "L1"))
+        val crm = mapOf(
+            "P_EGG" to product(
+                "P_EGG", "맛있는계란_10구",
+                boxReceivingQuantity = 20,
+                quantityBoxes = BigDecimal("1"), // SAP 환산수량(10) 역산 저장값 — 표시엔 안 씀
+                quantityPieces = BigDecimal("10"),
+            ),
+        )
+
+        val result = mapper.map(
+            requestNumber, sap, crm,
+            boxReceivingByCode = mapOf("P_EGG" to BigDecimal("20")),
+        )
+
+        assertThat(result.outOfStockItems).hasSize(1)
+        assertThat(result.outOfStockItems[0].orderQuantityBoxes).isEqualByComparingTo("0.5")
+    }
+
+    @Test
     @DisplayName("미납 제외 — OK/빈 값/반려(SAPOrderNumber 빈)/결품(DefaultReason) 라인은 unfulfilledItems 에 미수집")
     fun unfulfilledExclusions() {
         val sap = listOf(
@@ -600,6 +623,7 @@ class OrderRequestDetailMapperTest {
         productName: String,
         boxReceivingQuantity: Int = 30,
         quantityBoxes: BigDecimal = BigDecimal.ZERO,
+        quantityPieces: BigDecimal? = null,
     ): OrderRequestProduct {
         val account = Account(id = 1, name = "ACC")
         val employee = Employee(id = 1L, employeeCode = "20030117", name = "Test")
@@ -625,9 +649,10 @@ class OrderRequestDetailMapperTest {
             lineNumber = BigDecimal.valueOf(1L),
             productCode = productCode,
             quantityBoxes = quantityBoxes,
-            // 표시용 박스 = 총EA ÷ 박스입수 (레거시 CRM_TotalQuantity_Box). 픽스처를 정합하게
-            // 총EA = 박스수 × 박스입수 로 두면 파생 박스값이 quantityBoxes 와 일치한다.
-            quantityPieces = quantityBoxes.multiply(BigDecimal.valueOf(boxReceivingQuantity.toLong())),
+            // 표시용 박스 = 총EA ÷ 박스입수 (레거시 CRM_TotalQuantity_Box). 명시하지 않으면 픽스처를
+            // 정합하게 총EA = 박스수 × 박스입수 로 두어 파생 박스값이 quantityBoxes 와 일치한다.
+            quantityPieces = quantityPieces
+                ?: quantityBoxes.multiply(BigDecimal.valueOf(boxReceivingQuantity.toLong())),
             unit = "BOX",
             unitPrice = BigDecimal.ZERO,
             amount = BigDecimal.ZERO,

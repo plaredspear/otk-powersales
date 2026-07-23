@@ -198,6 +198,17 @@ class OrderRequestService(
             .mapNotNull { p -> p.productCode?.let { it to p } }
             .toMap()
 
+        // 제품 마스터를 product_code 로 1회 조회 — 이름·박스입수 파생. 주문 라인의 product FK 가 비어있거나
+        // (마이그레이션) lazy 미로드일 수 있어 FK 관계(item.product) 대신 코드 조회를 단일 소스로 쓴다
+        // (레거시 CRM_ProductName = ProductId__r.Name, 박스 표시분모 = BoxReceivingQuantity 동등).
+        val productsByCode = productRepository
+            .findByProductCodeIn(crmProducts.mapNotNull { it.productCode })
+            .mapNotNull { p -> p.productCode?.let { it to p } }
+            .toMap()
+        val productNamesByCode = productsByCode.mapValues { (_, p) -> p.name }
+        // 표시용 박스 분모 = 제품 마스터 박스입수(레거시 CRM_TotalQuantity_Box = 총EA÷박스입수 정합).
+        val boxReceivingByCode = productsByCode.mapValues { (_, p) -> p.boxReceivingQuantity }
+
         val isClosed = calculateIsClosed(orderRequest.deliveryDate, orderRequest.clientDeadlineTime)
 
         val sapLines = orderRequestDetailSapSender.fetchDetail(orderRequest.orderRequestNumber)
@@ -215,6 +226,7 @@ class OrderRequestService(
                 sapLines = sapLines,
                 crmProductsByCode = crmProductsByCode,
                 confirmQuantityBoxByKey = confirmQuantityBoxByKey,
+                boxReceivingByCode = boxReceivingByCode,
             )
         }
 
@@ -238,14 +250,6 @@ class OrderRequestService(
             .mapNotNull { it.sapOrderNumber?.takeIf { num -> num.isNotBlank() } }
             .distinct()
 
-        // 제품명은 product_code 로 제품마스터에서 조회 (레거시 CRM_ProductName = ProductId__r.Name 동등).
-        // 주문 라인의 product FK 가 비어 있어도 코드 기준으로 이름을 채운다.
-        // productCode 는 SF nillable=true 정합으로 nullable — 제품마스터 조회 키이므로 null 은 제외.
-        val productNamesByCode = productRepository
-            .findByProductCodeIn(crmProducts.mapNotNull { it.productCode })
-            .mapNotNull { p -> p.productCode?.let { it to p.name } }
-            .toMap()
-
         // 반려 라인은 "주문한 제품" 리스트/카운트에서 제외 (레거시 view.jsp:407 `SAP_Status ne '반려'`,
         // 카운트 view.jsp:377-383 동등 — 반려 제품은 반려 섹션에만 표시, 이중 표시 없음).
         // SAP 호출 실패 시엔 반려 판별 불가 → 전 라인 유지 (CRM 원장 표시 견고화, 레거시는 목록 자체가 비었음).
@@ -263,6 +267,8 @@ class OrderRequestService(
                 OrderedItemResponse.from(
                     it,
                     productName = productNamesByCode[it.productCode],
+                    // 표시용 박스 분모 = 제품 마스터 박스입수 (코드 조회, FK 관계 비의존).
+                    boxReceivingQuantity = boxReceivingByCode[it.productCode],
                     // 결품 사유 주입 — 리스트에서 회색+결품 배지/사유 표시.
                     outOfStockReason = outOfStockReasons[it.productCode],
                     cancelReason = cancelledReasons[it.productCode],

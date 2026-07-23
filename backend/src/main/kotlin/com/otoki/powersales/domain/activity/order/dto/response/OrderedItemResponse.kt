@@ -37,6 +37,7 @@ data class OrderedItemResponse(
         fun from(
             item: OrderRequestProduct,
             productName: String? = null,
+            boxReceivingQuantity: BigDecimal? = null,
             outOfStockReason: String? = null,
             cancelReason: String? = null,
         ): OrderedItemResponse =
@@ -46,9 +47,10 @@ data class OrderedItemResponse(
                 productName = productName ?: item.product?.name,
                 // 표시용 박스 = 총EA ÷ 박스입수 (레거시 CRM_TotalQuantity_Box 정합). 저장된 quantityBoxes
                 // (총EA÷환산수량, SAP 송신용)를 그대로 쓰면 박스입수≠환산수량 제품에서 어긋나므로 재파생.
+                // boxReceivingQuantity 는 product_code 로 조회한 마스터 값(FK 관계 비의존) — 없으면 저장값 폴백.
                 totalQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
                     quantityPieces = item.quantityPieces,
-                    boxReceivingQuantity = item.product?.boxReceivingQuantity,
+                    boxReceivingQuantity = boxReceivingQuantity ?: item.product?.boxReceivingQuantity,
                     storedBoxes = item.quantityBoxes,
                 ),
                 // SF nillable=true 정합으로 수량이 nullable — 응답은 0 으로 보정 (기존 의미 보존).
