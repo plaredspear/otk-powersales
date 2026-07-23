@@ -71,6 +71,15 @@ class OrderCancelService(
             // SAP 가 명시적으로 취소를 거부(HTTP 200 + resultCode != 'S')한 경우, 확정적으로 미반영이므로
             // 흔적을 롤백해 "취소요청중" 오표시를 제거한다. timeout 등 불확실 케이스(rejected=false)는
             // 흔적을 유지(Spec #858 원 동작) — 실제 SAP 반영 가능성이 있어 상세조회 정합 근거로 남긴다.
+            //
+            // ⚠️ 미해소 잔여 케이스 (timeout-then-E): SAP 호출이 timeout(rejected=false) 났지만 SAP 내부에서는
+            //    뒤늦게 'E'(거부) 로 확정된 경우. 응답을 못 받았으므로 여기서는 'S'/'E'/미도달을 구분할 수 없어
+            //    흔적을 유지하고, 결과적으로 상세조회에 "취소요청중"(isCancelRequested=true / isCancelledBySap=
+            //    false)이 계속 남는다. timeout 은 정의상 최종 상태 확정이 불가하여 이 시점 정적 판정으로는
+            //    해소 불가 — 상세조회의 SAP 실시간 재조회(DefaultReason)로도 'E' 는 흔적을 정리하지 못한다
+            //    (Spec #845 "조회-시 정합 승격 side-effect 제거" = 순수 읽기 원칙). 완전 해소하려면 흔적 나이
+            //    기반 reconcile(조회-시 승격 재도입) 또는 별도 재확인 배치가 필요하며, 이는 순수 읽기 원칙을
+            //    뒤집는 설계 결정이라 보류 상태다. 현 완충: 사용자 재시도 시 'S'/'E' 를 명확히 받아 정합된다.
             if (ex.rejected) {
                 orderCancelRequestRecorder.clearCancelRequested(orderRequestId, targetIds)
             }

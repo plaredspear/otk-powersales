@@ -47,6 +47,10 @@ class OrderCancelLineNotFoundException(invalidIds: List<Long>) : BusinessExcepti
  *    롤백해 "취소요청중" 오표시를 제거한다.
  *  - `false`: timeout / 네트워크 오류 / HTTP 4xx·5xx / HTML·빈 본문·JSON 파싱 실패 등 **결과 불확실**.
  *    실제로 SAP 에 반영됐을 수 있으므로 흔적을 유지해 상세조회 정합 근거로 남긴다 (기존 동작).
+ *    ⚠️ 이 그룹에는 "timeout 났지만 SAP 내부에선 실제 'E' 거부된" 케이스도 섞여 있어, 그 경우
+ *    흔적이 "취소요청중" 으로 잘못 남는다. timeout 은 최종 상태 확정 불가라 이 판정으로는 구분 못 함
+ *    — 잔여 케이스 상세는 [com.otoki.powersales.domain.activity.order.service.OrderCancelService.cancel]
+ *    catch 블록 주석 참조.
  */
 class OrderCancelSapFailedException(
     detail: String? = null,
