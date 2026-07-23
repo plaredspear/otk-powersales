@@ -55,7 +55,7 @@ class OrderRequestCancelSenderTest {
     }
 
     @Test
-    @DisplayName("실패 — resultCode='E' 시 ORD_CANCEL_SAP_FAILED")
+    @DisplayName("실패 — resultCode='E'(HTTP 200 명시적 거부) → ORD_CANCEL_SAP_FAILED, rejected=true")
     fun resultCodeE() {
         server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03051"))
             .andRespond(
@@ -68,10 +68,13 @@ class OrderRequestCancelSenderTest {
         assertThatThrownBy { sender.send(payload) }
             .isInstanceOf(OrderCancelSapFailedException::class.java)
             .hasMessageContaining("이미 취소된 주문")
+            // HTTP 200 + resultCode != 'S' = SAP 확정 거부 → 흔적 롤백 대상.
+            .extracting { (it as OrderCancelSapFailedException).rejected }
+            .isEqualTo(true)
     }
 
     @Test
-    @DisplayName("실패 — HTML 응답 → ORD_CANCEL_SAP_FAILED")
+    @DisplayName("실패 — HTML 응답(불확실) → ORD_CANCEL_SAP_FAILED, rejected=false")
     fun htmlResponse() {
         server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03051"))
             .andRespond(
@@ -83,15 +86,21 @@ class OrderRequestCancelSenderTest {
 
         assertThatThrownBy { sender.send(payload) }
             .isInstanceOf(OrderCancelSapFailedException::class.java)
+            // 형식 오류는 결과 불확실 → 흔적 유지.
+            .extracting { (it as OrderCancelSapFailedException).rejected }
+            .isEqualTo(false)
     }
 
     @Test
-    @DisplayName("실패 — SAP 5xx → ORD_CANCEL_SAP_FAILED")
+    @DisplayName("실패 — SAP 5xx(불확실) → ORD_CANCEL_SAP_FAILED, rejected=false")
     fun serverError() {
         server.expect(ExpectedCount.once(), requestTo("http://sap-mock/SD03051"))
             .andRespond(withServerError())
 
         assertThatThrownBy { sender.send(payload) }
             .isInstanceOf(OrderCancelSapFailedException::class.java)
+            // HTTP 5xx 는 결과 불확실 → 흔적 유지.
+            .extracting { (it as OrderCancelSapFailedException).rejected }
+            .isEqualTo(false)
     }
 }

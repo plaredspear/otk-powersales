@@ -136,14 +136,15 @@ class OrderCancelServiceTest {
         }
     }
 
-    // ───────── EP7b: SAP 실패 시에도 흔적은 기록됨 (#858) ─────────
+    // ───────── EP7b: SAP 불확실 실패(timeout) 시 흔적 기록 + 유지 (#858) ─────────
     @Test
-    @DisplayName("EP7b — SAP 실패(timeout 포함) 시에도 흔적 기록은 선행됨 (#858)")
+    @DisplayName("EP7b — SAP 불확실 실패(timeout, rejected=false) → 흔적 기록 선행 + 롤백 미호출(유지)")
     fun ep7b_recordEvenOnSapFailure() {
         val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
         val lines = listOf(product(101, BigDecimal.valueOf(10L), "P001", orderRequest))
         stubLoad(orderRequest, lines)
         stubEmployee()
+        // timeout = 결과 불확실(rejected=false 기본) → 흔적 유지.
         every { sender.send(any()) } throws OrderCancelSapFailedException("SAP timeout")
 
         assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
@@ -151,6 +152,35 @@ class OrderCancelServiceTest {
 
         // SAP 실패 전에 흔적 기록은 이미 별도 트랜잭션으로 커밋됨 → "취소요청" 표시 근거 유지, 재시도 가능.
         verify { requestRecorder.recordCancelRequested(eq(orderRequestId), listOf(101L), eq(employeeCode)) }
+        // 불확실 실패이므로 흔적 롤백은 호출되지 않음(실제 SAP 반영 가능성 대비).
+        verify(exactly = 0) { requestRecorder.clearCancelRequested(any(), any()) }
+    }
+
+    // ───────── EP7c: SAP 명시적 거부(rejected=true) 시 흔적 롤백 (#858 보강) ─────────
+    @Test
+    @DisplayName("EP7c — SAP 명시적 거부(HTTP 200 + resultCode!='S', rejected=true) → 흔적 롤백")
+    fun ep7c_clearOnExplicitReject() {
+        val orderRequest = orderRequest(status = OrderRequestStatus.APPROVED)
+        val lines = listOf(
+            product(101, BigDecimal.valueOf(10L), "P001", orderRequest),
+            product(102, BigDecimal.valueOf(20L), "P002", orderRequest),
+        )
+        stubLoad(orderRequest, lines)
+        stubEmployee()
+        // HTTP 200 + resultCode != 'S' = SAP 확정 거부 → rejected=true.
+        every { sender.send(any()) } throws OrderCancelSapFailedException("취소 불가", rejected = true)
+
+        assertThatThrownBy { service.cancel(orderRequestId, userId, emptyList()) }
+            .isInstanceOf(OrderCancelSapFailedException::class.java)
+
+        // 흔적 기록 후 명시적 거부 → 동일 대상 라인 흔적 롤백으로 "취소요청중" 오표시 제거.
+        verifyOrder {
+            requestRecorder.recordCancelRequested(eq(orderRequestId), listOf(101L, 102L), eq(employeeCode))
+            requestRecorder.clearCancelRequested(eq(orderRequestId), listOf(101L, 102L))
+        }
+        // 헤더 전이는 여전히 없음(실패 경로).
+        verify(exactly = 0) { headerStatusUpdater.markCancelRequestedIfFullyCovered(any()) }
+        assertThat(orderRequest.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED)
     }
 
     // ───────── HP2: 부분 취소 (3개 중 2개 라인) ─────────

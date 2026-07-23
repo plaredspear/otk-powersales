@@ -8,6 +8,7 @@ import com.otoki.powersales.domain.activity.order.exception.OrderCancelDeadlineP
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelInFlightException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelInvalidStatusException
 import com.otoki.powersales.domain.activity.order.exception.OrderCancelLineNotFoundException
+import com.otoki.powersales.domain.activity.order.exception.OrderCancelSapFailedException
 import com.otoki.powersales.domain.activity.order.exception.OrderNotFoundException
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
@@ -30,8 +31,11 @@ import org.springframework.stereotype.Service
  *     `orderRequest` + **요청 대상 라인(targetLines)** 기준으로 구성.
  *
  * 취소 여부 판단의 원천은 조회 시점 SAP `DefaultReason` + 로컬 `cancel_requested_at`(요청 흔적)뿐이다.
- * SAP 응답 'E' / timeout / HTML 가드 실패 시 [OrderCancelSapFailedException] (502) — 상태 무변경. 단
- * 2단계의 `cancel_requested_at` 흔적은 롤백하지 않고 유지되어(별도 트랜잭션) 재시도 가능하다.
+ * SAP 실패 시 [OrderCancelSapFailedException] (502) — 헤더/라인 상태 무변경. 2단계 흔적 처리는 실패
+ * 확실성에 따라 분기한다:
+ *  - 명시적 거부(HTTP 200 + `resultCode != 'S'`, `rejected=true`): 흔적을 롤백해 "취소요청중" 오표시 제거.
+ *  - timeout / 네트워크 / HTTP 4xx·5xx / 형식 오류 등 결과 불확실(`rejected=false`): 흔적 유지(별도
+ *    트랜잭션) — 실제 SAP 반영 가능성이 있어 상세조회 정합 근거로 남기고 재시도 가능.
  *
  * 본 클래스는 의도적으로 `@Transactional` 미부여 — SAP 동기 호출을 트랜잭션 외부에서 수행해야 하므로.
  */
@@ -61,7 +65,17 @@ class OrderCancelService(
         orderCancelRequestRecorder.recordCancelRequested(orderRequestId, targetIds, employeeCode)
 
         val payload = orderRequestCancelPayloadFactory.build(orderRequest, targetLines)
-        orderRequestCancelSender.send(payload)
+        try {
+            orderRequestCancelSender.send(payload)
+        } catch (ex: OrderCancelSapFailedException) {
+            // SAP 가 명시적으로 취소를 거부(HTTP 200 + resultCode != 'S')한 경우, 확정적으로 미반영이므로
+            // 흔적을 롤백해 "취소요청중" 오표시를 제거한다. timeout 등 불확실 케이스(rejected=false)는
+            // 흔적을 유지(Spec #858 원 동작) — 실제 SAP 반영 가능성이 있어 상세조회 정합 근거로 남긴다.
+            if (ex.rejected) {
+                orderCancelRequestRecorder.clearCancelRequested(orderRequestId, targetIds)
+            }
+            throw ex
+        }
 
         // SAP 'S' 성공 후 헤더 전이만 수행 — 전량취소 커버면 CANCEL_REQUESTED 로 전이(부분취소면 무변경).
         // 라인 line_change_type='X' 확정은 없음(Spec #845 비교 모델 유지). 갱신된 orderRequest 로 응답 구성.

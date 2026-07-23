@@ -19,6 +19,10 @@ import tools.jackson.databind.ObjectMapper
  *
  * 응답 `resultCode = 'S'` 만 성공으로 간주, 그 외 모두 [OrderCancelSapFailedException] 으로 변환.
  * DB 트랜잭션 외부에서 호출되어야 하며, 응답 'S' 확인 후 호출자가 별도 트랜잭션을 시작한다 (spec.md §6.3).
+ *
+ * 실패 확실성 구분: HTTP 200 + `resultCode != 'S'`(명시적 거부)만 `rejected=true` 로 던진다. timeout /
+ * 네트워크 / HTTP 4xx·5xx / 형식 오류 등 결과 불확실 케이스는 `rejected=false`. 자세한 처리는
+ * [OrderCancelSapFailedException] 주석 참조.
  */
 @Component
 class OrderRequestCancelSender(
@@ -68,7 +72,13 @@ class OrderRequestCancelSender(
         val resultCode = parsed["resultCode"]?.asString()
         val resultMsg = parsed["resutlMsg"]?.asString() ?: parsed["resultMsg"]?.asString()
         if (resultCode != "S") {
-            throw OrderCancelSapFailedException(resultMsg ?: "SAP 응답 오류 (resultCode=$resultCode)")
+            // HTTP 200 + resultCode != 'S' = SAP 가 요청을 받고 취소를 명시적으로 거부 (결과 확실).
+            // rejected=true 로 표기해 호출자가 취소요청 흔적을 롤백하게 한다.
+            log.warn("sap.outbound.cancel.failure 명시적 거부 interfaceId={} resultCode={} msg={}", interfaceId, resultCode, resultMsg)
+            throw OrderCancelSapFailedException(
+                resultMsg ?: "SAP 응답 오류 (resultCode=$resultCode)",
+                rejected = true,
+            )
         }
     }
 }

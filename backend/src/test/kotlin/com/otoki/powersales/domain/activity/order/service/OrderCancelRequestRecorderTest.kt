@@ -64,6 +64,40 @@ class OrderCancelRequestRecorderTest {
         assertThat(other.cancelRequestedBy).isNull()
     }
 
+    @Test
+    @DisplayName("흔적 롤백 — 대상 라인의 cancel_requested_at/by 를 NULL 로 되돌림 (SAP 명시적 거부)")
+    fun clear_rollbackTrace() {
+        val orderRequest = orderRequest()
+        val line1 = product(101, "P001", orderRequest).also { it.markCancelRequested(requester) }
+        val line2 = product(102, "P002", orderRequest).also { it.markCancelRequested(requester) }
+        every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId) } returns
+            listOf(line1, line2)
+
+        recorder.clearCancelRequested(orderRequestId, listOf(101L, 102L))
+
+        assertThat(line1.cancelRequestedAt).isNull()
+        assertThat(line1.cancelRequestedBy).isNull()
+        assertThat(line2.cancelRequestedAt).isNull()
+        assertThat(line2.cancelRequestedBy).isNull()
+    }
+
+    @Test
+    @DisplayName("흔적 롤백 부분 — 대상 라인만 NULL, 나머지 흔적 유지")
+    fun clear_partial() {
+        val orderRequest = orderRequest()
+        val target = product(101, "P001", orderRequest).also { it.markCancelRequested(requester) }
+        val other = product(102, "P002", orderRequest).also { it.markCancelRequested(requester) }
+        every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId) } returns
+            listOf(target, other)
+
+        recorder.clearCancelRequested(orderRequestId, listOf(101L))
+
+        assertThat(target.cancelRequestedAt).isNull()
+        // 롤백 대상 아닌 라인 흔적은 유지.
+        assertThat(other.cancelRequestedAt).isNotNull()
+        assertThat(other.cancelRequestedBy).isEqualTo(requester)
+    }
+
     // ───────── 헬퍼 ─────────
 
     private fun orderRequest() = OrderRequest(

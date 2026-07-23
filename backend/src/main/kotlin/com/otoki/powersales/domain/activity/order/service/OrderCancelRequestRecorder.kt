@@ -40,6 +40,26 @@ class OrderCancelRequestRecorder(
         )
     }
 
+    /**
+     * 취소 요청 흔적 롤백 (Spec #858 보강).
+     *
+     * SAP 가 취소를 명시적으로 거부(HTTP 200 + `resultCode != 'S'`)한 경우 [recordCancelRequested] 로
+     * 남긴 흔적을 되돌린다. [recordCancelRequested] 와 동일한 대상 라인 집합에 대해 격리된 write
+     * 트랜잭션으로 커밋한다 — 원 흔적 기록 트랜잭션과 대칭.
+     */
+    @Transactional
+    fun clearCancelRequested(orderRequestId: Long, lineIds: List<Long>) {
+        val targetIdSet = lineIds.toSet()
+        val lines = orderRequestProductRepository
+            .findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId)
+            .filter { it.id in targetIdSet }
+        lines.forEach { it.clearCancelRequested() }
+        log.info(
+            "order.cancel.requested-cleared orderRequestId={} lineIds={}",
+            orderRequestId, lines.map { it.id },
+        )
+    }
+
     companion object {
         private val log = LoggerFactory.getLogger(OrderCancelRequestRecorder::class.java)
     }

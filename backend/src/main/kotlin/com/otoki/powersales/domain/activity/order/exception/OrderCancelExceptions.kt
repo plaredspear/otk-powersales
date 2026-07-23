@@ -40,8 +40,18 @@ class OrderCancelLineNotFoundException(invalidIds: List<Long>) : BusinessExcepti
  *
  * 응답 `'E'` / timeout / HTML 가드 실패 시. DB 무변경. 사용자 재시도 가능.
  * 레거시 `IF_REST_MOBILE_OrderCancelRequest.cls:105-114` 동등 — `'S'` 가 아니면 라인 상태 변경 안 함.
+ *
+ * [rejected] — 실패 확실성 구분:
+ *  - `true`: SAP 가 HTTP 200 으로 응답했으나 `resultCode != 'S'` 로 **취소를 명시적으로 거부**한 경우.
+ *    SAP 에 요청이 도달했고 확정적으로 거절됐음이 분명하므로, 호출자는 `cancel_requested_at` 흔적을
+ *    롤백해 "취소요청중" 오표시를 제거한다.
+ *  - `false`: timeout / 네트워크 오류 / HTTP 4xx·5xx / HTML·빈 본문·JSON 파싱 실패 등 **결과 불확실**.
+ *    실제로 SAP 에 반영됐을 수 있으므로 흔적을 유지해 상세조회 정합 근거로 남긴다 (기존 동작).
  */
-class OrderCancelSapFailedException(detail: String? = null) : BusinessException(
+class OrderCancelSapFailedException(
+    detail: String? = null,
+    val rejected: Boolean = false,
+) : BusinessException(
     errorCode = "ORD_CANCEL_SAP_FAILED",
     message = detail ?: "SAP 송신에 실패했습니다",
     httpStatus = HttpStatus.BAD_GATEWAY,

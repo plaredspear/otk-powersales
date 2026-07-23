@@ -263,6 +263,18 @@ class OrderRequestProduct(
     }
 
     /**
+     * 취소 요청 흔적 롤백 (Spec #858 보강).
+     *
+     * SAP 가 HTTP 200 으로 취소를 **명시적으로 거부**(`resultCode != 'S'`)한 경우, [markCancelRequested]
+     * 로 미리 남긴 흔적을 되돌린다. SAP 에 확정적으로 반영되지 않았음이 분명하므로 "취소요청중" 오표시를
+     * 제거한다. timeout 등 결과 불확실 케이스에는 호출하지 않는다 (흔적 유지).
+     */
+    fun clearCancelRequested() {
+        this.cancelRequestedAt = null
+        this.cancelRequestedBy = null
+    }
+
+    /**
      * 라인 취소 여부 판정.
      *
      * SF 운영 도메인 `{null, "X"}` 2-상태 — `"X"` 마커이면 취소.
