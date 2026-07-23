@@ -81,6 +81,25 @@ class ErpOrderRepositoryTest {
     }
 
     @Test
+    @DisplayName("findClientOrders - ref_sap_order_number 가 있는 후속 주문(취소/변경)은 제외한다")
+    fun findClientOrders_excludesReferencingOrders() {
+        // 참조 주문번호가 있는 후속 주문(취소건) — 원주문 상세의 "관련 주문"으로만 노출되고 목록엔 미표시.
+        val cancel = ErpOrder(
+            sapOrderNumber = "0604311314",
+            refSapOrderNumber = "0300000001",
+            deliveryRequestDate = LocalDate.of(2026, 6, 10),
+        ).apply { account = this@ErpOrderRepositoryTest.account }
+        testEntityManager.persistAndFlush(cancel)
+        testEntityManager.clear()
+
+        val result = erpOrderRepository.findClientOrders(account.id, LocalDate.of(2026, 6, 10), pageable)
+
+        // 원주문(ref 없음)만 노출, 취소건(ref 있음)은 제외.
+        assertThat(result.content.map { it.sapOrderNumber })
+            .containsExactly("0300000001")
+    }
+
+    @Test
     @DisplayName("deleteByOrderDateBefore - cutoff 이전 order_date 헤더만 삭제하고 order_date null 은 보존한다")
     fun deleteByOrderDateBefore_deletesOldKeepsNull() {
         // 기본 픽스처(3건)는 order_date 미지정(null) — 삭제 대상 아님.

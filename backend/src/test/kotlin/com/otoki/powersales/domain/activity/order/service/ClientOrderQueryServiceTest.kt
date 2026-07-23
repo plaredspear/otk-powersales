@@ -56,6 +56,10 @@ class ClientOrderQueryServiceTest {
         every { employeeRepository.findByEmployeeCode(any()) } returns Optional.empty()
         // 기본값 — 목록 주문자명 배치 조회 미해석. 해석 테스트에서만 override.
         every { employeeRepository.findByEmployeeCodeIn(any()) } returns emptyList()
+        // 기본값 — 역참조 후속 주문 없음. 관련주문 테스트에서만 override.
+        every { erpOrderRepository.findByRefSapOrderNumberIn(any()) } returns emptyList()
+        // 기본값 — 후속주문 제품 배치 조회 없음. 통합 dedup 테스트에서만 override.
+        every { erpOrderProductRepository.findBySapOrderNumberIn(any()) } returns emptyList()
     }
 
     @Nested
@@ -211,6 +215,104 @@ class ClientOrderQueryServiceTest {
             val result = service.getClientOrderDetail(sapOrderNumber)
 
             assertThat(result.orderedItems).hasSize(2)
+        }
+    }
+
+    @Nested
+    @DisplayName("getClientOrderDetail - 역참조 후속 주문(취소/변경)")
+    inner class RelatedOrderCases {
+
+        @Test
+        @DisplayName("정상 - ref_sap_order_number 로 후속 주문 조회 시 padded/unpadded 양쪽 후보로 IN 조회")
+        fun queriesBothZeroPaddedCandidates() {
+            // 원본 주문번호는 선행 0 포함(0300011396). 후보는 {0300011396, 300011396} 이어야 함.
+            val order = createOrder(employeeCode = employeeCode)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
+            val candidatesSlot = slot<Collection<String>>()
+            every { erpOrderRepository.findByRefSapOrderNumberIn(capture(candidatesSlot)) } returns emptyList()
+
+            service.getClientOrderDetail(sapOrderNumber)
+
+            assertThat(candidatesSlot.captured).containsExactlyInAnyOrder("0300011396", "300011396")
+        }
+
+        @Test
+        @DisplayName("정상 - 후속 취소 주문은 요약(제품표 없음)으로 매핑")
+        fun mapsCancelOrderSummary() {
+            val order = createOrder(employeeCode = employeeCode)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
+
+            val cancel = cancelOrder()
+            every { erpOrderRepository.findByRefSapOrderNumberIn(any()) } returns listOf(cancel)
+            every { erpOrderProductRepository.findBySapOrderNumberIn(listOf("604311314")) } returns emptyList()
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            assertThat(result.relatedOrders).hasSize(1)
+            val related = result.relatedOrders[0]
+            assertThat(related.sapOrderNumber).isEqualTo("604311314")
+            assertThat(related.orderTypeCode).isEqualTo("ZRE1")
+            assertThat(related.orderTypeName).isEqualTo("Standard Cancel")
+            assertThat(related.deliveryDate).isEqualTo(LocalDate.of(2026, 7, 22))
+            assertThat(related.totalApprovedAmount).isEqualByComparingTo(BigDecimal.valueOf(84_000L))
+            assertThat(related.ordererName).isEqualTo("취소사원")
+        }
+
+        @Test
+        @DisplayName("정상 - 원주문+후속주문 동일 제품은 통합 dedup 되어 최신(취소, 최대 id) 1건만 노출")
+        fun unifiedDedupAcrossReferencingOrders() {
+            val order = createOrder(employeeCode = employeeCode)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            // 원주문: 라면사리(대기, 낮은 id) + 진라면(대기)
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns listOf(
+                createProduct(id = 10, lineNumber = "10", deliveryStatus = "대기", productCode = "P_RAMYEON", productName = "라면사리", confirmQuantityBox = BigDecimal("6")),
+                createProduct(id = 11, lineNumber = "20", deliveryStatus = "대기", productCode = "P_JIN", productName = "진라면", confirmQuantityBox = BigDecimal("5")),
+            )
+            val cancel = cancelOrder()
+            every { erpOrderRepository.findByRefSapOrderNumberIn(any()) } returns listOf(cancel)
+            // 후속주문(취소): 라면사리 취소 레코드(더 큰 id) — 원주문 라면사리를 대체해야 함
+            every { erpOrderProductRepository.findBySapOrderNumberIn(listOf("604311314")) } returns listOf(
+                createProduct(id = 500, lineNumber = "10", deliveryStatus = "취소", productCode = "P_RAMYEON", productName = "라면사리", confirmQuantityBox = BigDecimal("6")),
+            )
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            // 라면사리는 통합 dedup 으로 1건(취소), 진라면 1건 = 총 2건. 원주문 위치(라면사리 먼저) 유지.
+            assertThat(result.orderedItems).hasSize(2)
+            assertThat(result.orderedItemCount).isEqualTo(2)
+            val ramyeon = result.orderedItems.first { it.productCode == "P_RAMYEON" }
+            assertThat(ramyeon.deliveryStatus).isEqualTo(DeliveryStatus.CANCELLED)
+            // 후속 취소 요약은 제품표 없이 헤더만
+            assertThat(result.relatedOrders).hasSize(1)
+        }
+
+        @Test
+        @DisplayName("정상 - 후속 주문 없으면 relatedOrders 빈 배열")
+        fun noRelatedOrders() {
+            val order = createOrder(employeeCode = employeeCode)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
+            // findByRefSapOrderNumberIn 는 기본 stub(emptyList)
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            assertThat(result.relatedOrders).isEmpty()
+        }
+
+        @Test
+        @DisplayName("정상 - 자기 자신을 역참조하는 레코드는 제외")
+        fun excludesSelfReference() {
+            val order = createOrder(employeeCode = employeeCode)
+            every { erpOrderRepository.findBySapOrderNumber(sapOrderNumber) } returns order
+            every { erpOrderProductRepository.findBySapOrderNumberOrderByLineNumberAsc(sapOrderNumber) } returns emptyList()
+            // 방어적: 조회 결과에 원본 자기 자신이 섞여 있어도 걸러져야 함
+            every { erpOrderRepository.findByRefSapOrderNumberIn(any()) } returns listOf(order)
+
+            val result = service.getClientOrderDetail(sapOrderNumber)
+
+            assertThat(result.relatedOrders).isEmpty()
         }
     }
 
@@ -399,6 +501,21 @@ class ClientOrderQueryServiceTest {
                 .isInstanceOf(InvalidOrderParameterException::class.java)
         }
     }
+
+    /** 원주문(0300011396)을 역참조하는 취소 후속 주문 픽스처. */
+    private fun cancelOrder(): ErpOrder = ErpOrder(
+        sapOrderNumber = "604311314",
+        refSapOrderNumber = "0300011396",
+        sapAccountCode = "0001234567",
+        sapAccountName = "홍길동마트",
+        deliveryRequestDate = LocalDate.of(2026, 7, 22),
+        orderDate = LocalDate.of(2026, 7, 21),
+        employeeCode = "OTHER_CODE",
+        employeeName = "취소사원",
+        orderSalesAmount = BigDecimal.valueOf(84_000L),
+        orderType = "ZRE1",
+        orderTypeNm = "Standard Cancel",
+    )
 
     private fun createOrder(employeeCode: String?): ErpOrder = ErpOrder(
         sapOrderNumber = sapOrderNumber,

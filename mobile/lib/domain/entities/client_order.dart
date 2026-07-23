@@ -246,6 +246,112 @@ class ClientOrderItem {
   }
 }
 
+/// 역참조 후속 주문(취소/변경 등) 요약 엔티티
+///
+/// 상세 화면의 원본 주문번호를 `ref_sap_order_number` 로 역참조하는 후속 주문입니다.
+/// 후속 주문의 제품 라인은 원주문 제품표에 통합 dedup 되므로, 이 요약은 헤더 정보만 보유합니다
+/// (주문번호·유형·일자·금액·주문자). 후속 주문의 성격은 주문유형(코드/명)으로 표시합니다.
+class RelatedClientOrder {
+  /// 후속 주문의 SAP 주문번호 (예: 604311314)
+  final String sapOrderNumber;
+
+  /// 주문유형 코드 (예: ZRE1 = 취소, ZOR1 = 주문)
+  final String? orderTypeCode;
+
+  /// 주문유형 명 (SAP 원본 영문명, 예: "Standard Cancel")
+  final String? orderTypeName;
+
+  /// 주문일
+  final DateTime? orderDate;
+
+  /// 납기일
+  final DateTime? deliveryDate;
+
+  /// 총 승인 금액 (원)
+  final int? totalApprovedAmount;
+
+  /// 주문자명 (사번 기반 해석)
+  final String? ordererName;
+
+  /// 주문자 사번
+  final String? ordererCode;
+
+  const RelatedClientOrder({
+    required this.sapOrderNumber,
+    this.orderTypeCode,
+    this.orderTypeName,
+    this.orderDate,
+    this.deliveryDate,
+    this.totalApprovedAmount,
+    this.ordererName,
+    this.ordererCode,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'sapOrderNumber': sapOrderNumber,
+      'orderTypeCode': orderTypeCode,
+      'orderTypeName': orderTypeName,
+      'orderDate': orderDate?.toIso8601String(),
+      'deliveryDate': deliveryDate?.toIso8601String(),
+      'totalApprovedAmount': totalApprovedAmount,
+      'ordererName': ordererName,
+      'ordererCode': ordererCode,
+    };
+  }
+
+  factory RelatedClientOrder.fromJson(Map<String, dynamic> json) {
+    return RelatedClientOrder(
+      sapOrderNumber: json['sapOrderNumber'] as String,
+      orderTypeCode: json['orderTypeCode'] as String?,
+      orderTypeName: json['orderTypeName'] as String?,
+      orderDate: json['orderDate'] != null
+          ? DateTime.parse(json['orderDate'] as String)
+          : null,
+      deliveryDate: json['deliveryDate'] != null
+          ? DateTime.parse(json['deliveryDate'] as String)
+          : null,
+      totalApprovedAmount: json['totalApprovedAmount'] as int?,
+      ordererName: json['ordererName'] as String?,
+      ordererCode: json['ordererCode'] as String?,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! RelatedClientOrder) return false;
+    return other.sapOrderNumber == sapOrderNumber &&
+        other.orderTypeCode == orderTypeCode &&
+        other.orderTypeName == orderTypeName &&
+        other.orderDate == orderDate &&
+        other.deliveryDate == deliveryDate &&
+        other.totalApprovedAmount == totalApprovedAmount &&
+        other.ordererName == ordererName &&
+        other.ordererCode == ordererCode;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      sapOrderNumber,
+      orderTypeCode,
+      orderTypeName,
+      orderDate,
+      deliveryDate,
+      totalApprovedAmount,
+      ordererName,
+      ordererCode,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'RelatedClientOrder(sapOrderNumber: $sapOrderNumber, '
+        'orderTypeName: $orderTypeName)';
+  }
+}
+
 /// 거래처별 주문 상세 엔티티
 ///
 /// 거래처별 주문 상세 화면에 표시되는 전체 정보를 담는 도메인 엔티티입니다.
@@ -283,6 +389,9 @@ class ClientOrderDetail {
   /// 주문한 제품 목록
   final List<ClientOrderItem> orderedItems;
 
+  /// 이 주문번호를 역참조하는 후속 주문(취소/변경 등). 없으면 빈 배열.
+  final List<RelatedClientOrder> relatedOrders;
+
   const ClientOrderDetail({
     required this.sapOrderNumber,
     this.sapAccountCode,
@@ -295,6 +404,7 @@ class ClientOrderDetail {
     this.ordererCode,
     required this.orderedItemCount,
     required this.orderedItems,
+    this.relatedOrders = const [],
   });
 
   ClientOrderDetail copyWith({
@@ -309,6 +419,7 @@ class ClientOrderDetail {
     String? ordererCode,
     int? orderedItemCount,
     List<ClientOrderItem>? orderedItems,
+    List<RelatedClientOrder>? relatedOrders,
   }) {
     return ClientOrderDetail(
       sapOrderNumber: sapOrderNumber ?? this.sapOrderNumber,
@@ -322,6 +433,7 @@ class ClientOrderDetail {
       ordererCode: ordererCode ?? this.ordererCode,
       orderedItemCount: orderedItemCount ?? this.orderedItemCount,
       orderedItems: orderedItems ?? this.orderedItems,
+      relatedOrders: relatedOrders ?? this.relatedOrders,
     );
   }
 
@@ -338,6 +450,7 @@ class ClientOrderDetail {
       'ordererCode': ordererCode,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
+      'relatedOrders': relatedOrders.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -360,6 +473,9 @@ class ClientOrderDetail {
       orderedItems: (json['orderedItems'] as List<dynamic>)
           .map((e) => ClientOrderItem.fromJson(e as Map<String, dynamic>))
           .toList(),
+      relatedOrders: (json['relatedOrders'] as List<dynamic>? ?? [])
+          .map((e) => RelatedClientOrder.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -381,6 +497,10 @@ class ClientOrderDetail {
     for (var i = 0; i < orderedItems.length; i++) {
       if (other.orderedItems[i] != orderedItems[i]) return false;
     }
+    if (other.relatedOrders.length != relatedOrders.length) return false;
+    for (var i = 0; i < relatedOrders.length; i++) {
+      if (other.relatedOrders[i] != relatedOrders[i]) return false;
+    }
     return true;
   }
 
@@ -398,6 +518,7 @@ class ClientOrderDetail {
       ordererCode,
       orderedItemCount,
       Object.hashAll(orderedItems),
+      Object.hashAll(relatedOrders),
     );
   }
 

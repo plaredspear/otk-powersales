@@ -219,6 +219,83 @@ class ClientOrderItemModel {
   }
 }
 
+/// 역참조 후속 주문(취소/변경 등) 요약 API 모델 (DTO)
+///
+/// 제품 라인은 원주문 제품표에 통합 dedup 되므로 요약은 헤더 정보만 보유한다.
+class RelatedClientOrderModel {
+  final String sapOrderNumber;
+  final String? orderTypeCode;
+  final String? orderTypeName;
+  final String? orderDate;
+  final String? deliveryDate;
+  final int? totalApprovedAmount;
+  final String? ordererName;
+  final String? ordererCode;
+
+  const RelatedClientOrderModel({
+    required this.sapOrderNumber,
+    this.orderTypeCode,
+    this.orderTypeName,
+    this.orderDate,
+    this.deliveryDate,
+    this.totalApprovedAmount,
+    this.ordererName,
+    this.ordererCode,
+  });
+
+  factory RelatedClientOrderModel.fromJson(Map<String, dynamic> json) {
+    return RelatedClientOrderModel(
+      sapOrderNumber: json['sapOrderNumber'] as String,
+      orderTypeCode: json['orderTypeCode'] as String?,
+      orderTypeName: json['orderTypeName'] as String?,
+      orderDate: json['orderDate'] as String?,
+      deliveryDate: json['deliveryDate'] as String?,
+      totalApprovedAmount: (json['totalApprovedAmount'] as num?)?.toInt(),
+      ordererName: json['ordererName'] as String?,
+      ordererCode: json['ordererCode'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'sapOrderNumber': sapOrderNumber,
+      'orderTypeCode': orderTypeCode,
+      'orderTypeName': orderTypeName,
+      'orderDate': orderDate,
+      'deliveryDate': deliveryDate,
+      'totalApprovedAmount': totalApprovedAmount,
+      'ordererName': ordererName,
+      'ordererCode': ordererCode,
+    };
+  }
+
+  RelatedClientOrder toEntity() {
+    return RelatedClientOrder(
+      sapOrderNumber: sapOrderNumber,
+      orderTypeCode: orderTypeCode,
+      orderTypeName: orderTypeName,
+      orderDate: orderDate != null ? DateTime.parse(orderDate!) : null,
+      deliveryDate: deliveryDate != null ? DateTime.parse(deliveryDate!) : null,
+      totalApprovedAmount: totalApprovedAmount,
+      ordererName: ordererName,
+      ordererCode: ordererCode,
+    );
+  }
+
+  factory RelatedClientOrderModel.fromEntity(RelatedClientOrder entity) {
+    return RelatedClientOrderModel(
+      sapOrderNumber: entity.sapOrderNumber,
+      orderTypeCode: entity.orderTypeCode,
+      orderTypeName: entity.orderTypeName,
+      orderDate: entity.orderDate?.toIso8601String().split('T')[0],
+      deliveryDate: entity.deliveryDate?.toIso8601String().split('T')[0],
+      totalApprovedAmount: entity.totalApprovedAmount,
+      ordererName: entity.ordererName,
+      ordererCode: entity.ordererCode,
+    );
+  }
+}
+
 /// 거래처별 주문 상세 API 모델 (DTO)
 class ClientOrderDetailModel {
   final String sapOrderNumber;
@@ -232,6 +309,7 @@ class ClientOrderDetailModel {
   final String? ordererCode;
   final int orderedItemCount;
   final List<ClientOrderItemModel> orderedItems;
+  final List<RelatedClientOrderModel> relatedOrders;
 
   const ClientOrderDetailModel({
     required this.sapOrderNumber,
@@ -245,6 +323,7 @@ class ClientOrderDetailModel {
     this.ordererCode,
     required this.orderedItemCount,
     required this.orderedItems,
+    this.relatedOrders = const [],
   });
 
   factory ClientOrderDetailModel.fromJson(Map<String, dynamic> json) {
@@ -252,6 +331,7 @@ class ClientOrderDetailModel {
         ? json['data'] as Map<String, dynamic>
         : json;
     final itemsJson = data['orderedItems'] as List<dynamic>? ?? [];
+    final relatedJson = data['relatedOrders'] as List<dynamic>? ?? [];
 
     return ClientOrderDetailModel(
       sapOrderNumber: data['sapOrderNumber'] as String,
@@ -267,6 +347,10 @@ class ClientOrderDetailModel {
       orderedItems: itemsJson
           .map((e) =>
               ClientOrderItemModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      relatedOrders: relatedJson
+          .map((e) =>
+              RelatedClientOrderModel.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -284,6 +368,7 @@ class ClientOrderDetailModel {
       'ordererCode': ordererCode,
       'orderedItemCount': orderedItemCount,
       'orderedItems': orderedItems.map((e) => e.toJson()).toList(),
+      'relatedOrders': relatedOrders.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -301,6 +386,7 @@ class ClientOrderDetailModel {
       ordererCode: ordererCode,
       orderedItemCount: orderedItemCount,
       orderedItems: orderedItems.map((e) => e.toEntity()).toList(),
+      relatedOrders: relatedOrders.map((e) => e.toEntity()).toList(),
     );
   }
 
@@ -318,6 +404,9 @@ class ClientOrderDetailModel {
       orderedItemCount: entity.orderedItemCount,
       orderedItems: entity.orderedItems
           .map((e) => ClientOrderItemModel.fromEntity(e))
+          .toList(),
+      relatedOrders: entity.relatedOrders
+          .map((e) => RelatedClientOrderModel.fromEntity(e))
           .toList(),
     );
   }
@@ -340,6 +429,7 @@ class ClientOrderDetailModel {
     for (var i = 0; i < orderedItems.length; i++) {
       if (other.orderedItems[i] != orderedItems[i]) return false;
     }
+    if (other.relatedOrders.length != relatedOrders.length) return false;
     return true;
   }
 
@@ -357,6 +447,7 @@ class ClientOrderDetailModel {
       ordererCode,
       orderedItemCount,
       Object.hashAll(orderedItems),
+      relatedOrders.length,
     );
   }
 

@@ -33,6 +33,9 @@ open class ErpOrderRepositoryCustomImpl(
             .and(erpOrder.account.id.eq(accountId))
             .and(erpOrder.deliveryRequestDate.eq(deliveryDate))
             .and(erpOrder.isDeleted.isNull.or(erpOrder.isDeleted.eq(false)))
+            // 참조 주문번호가 있는 행(취소/변경 등 후속 주문)은 목록에서 제외 — 원주문 상세의 "관련 주문"으로 표시되므로
+            // 목록엔 원주문(ref 없음)만 노출 (2026-07-23 사용자 결정).
+            .and(erpOrder.refSapOrderNumber.isNull.or(erpOrder.refSapOrderNumber.isEmpty))
 
         val content = queryFactory
             .selectFrom(erpOrder)

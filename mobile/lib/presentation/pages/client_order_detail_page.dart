@@ -12,6 +12,7 @@ import '../providers/client_order_detail_state.dart';
 import '../widgets/order/client_order_info_header.dart';
 import '../widgets/order/client_order_item_table.dart';
 import '../widgets/order/delivery_info_popup.dart';
+import '../widgets/order/related_client_order_section.dart';
 
 /// 거래처별 주문 상세 페이지
 ///
@@ -145,6 +146,10 @@ class _ClientOrderDetailPageState
           ClientOrderItemTable(
             items: detail.orderedItems,
             onItemTap: _onItemTap,
+          ),
+          // 역참조 후속 주문(취소/변경 등) 요약 — 있을 때만 표시.
+          RelatedClientOrderSection(
+            relatedOrders: detail.relatedOrders,
           ),
         ],
       ),

@@ -29,7 +29,13 @@ data class ClientOrderDetailResponse(
     val ordererName: String?,
     val ordererCode: String?,
     val orderedItemCount: Int,
-    val orderedItems: List<ClientOrderItemResponse>
+    val orderedItems: List<ClientOrderItemResponse>,
+    /**
+     * 이 주문번호를 `ref_sap_order_number` 로 역참조하는 후속 주문(취소/변경 등).
+     * SAP 이 원본 주문번호를 zero-pad 하여 참조하므로 서비스가 padded/unpadded 양쪽으로 조회한 결과.
+     * 후속 주문이 없으면 빈 배열.
+     */
+    val relatedOrders: List<RelatedClientOrderResponse> = emptyList()
 ) {
     companion object {
         /**
@@ -42,11 +48,13 @@ data class ClientOrderDetailResponse(
          * @param ordererName 주문자 사번으로 Employee 마스터에서 해석한 실제 주문자명.
          *   `erp_order.employee_name`(SF `EmployeeName__c`)은 시스템 계정명이 적재되는 경우가 있어 신뢰하지 않고,
          *   서비스가 `employee_code` 로 조회한 이름을 주입한다. 미해석 시 `order.employeeName` 로 폴백.
+         * @param relatedOrders 이 주문번호를 역참조하는 후속 주문 목록 (없으면 빈 배열).
          */
         fun from(
             order: ErpOrder,
             products: List<ErpOrderProduct>,
             ordererName: String?,
+            relatedOrders: List<RelatedClientOrderResponse> = emptyList(),
         ): ClientOrderDetailResponse {
             val items = products.map(ClientOrderItemResponse::from)
             return ClientOrderDetailResponse(
@@ -61,7 +69,46 @@ data class ClientOrderDetailResponse(
                 ordererName = ordererName,
                 ordererCode = order.employeeCode,
                 orderedItemCount = items.size,
-                orderedItems = items
+                orderedItems = items,
+                relatedOrders = relatedOrders
+            )
+        }
+    }
+}
+
+/**
+ * 역참조 후속 주문(취소/변경 등) 요약 응답.
+ *
+ * 후속 주문의 **제품 라인은 원주문 제품표에 통합 dedup 되므로**(제품코드 기준 최신 1건, 2026-07-23 사용자 결정)
+ * 이 요약에는 제품표를 담지 않고 헤더 정보만 전달한다 — 주문번호/유형/일자/금액/주문자.
+ * 주문유형 코드/명(`order_type`/`order_type_nm`, 예: `ZRE1`/`Standard Cancel`)의 Korean 표시 라벨(취소/주문)은
+ * 모바일이 코드로 매핑한다 (SAP 원본은 영문명만 보유).
+ */
+data class RelatedClientOrderResponse(
+    val sapOrderNumber: String,
+    val orderTypeCode: String?,
+    val orderTypeName: String?,
+    val orderDate: LocalDate?,
+    val deliveryDate: LocalDate?,
+    val totalApprovedAmount: BigDecimal?,
+    val ordererName: String?,
+    val ordererCode: String?,
+) {
+    companion object {
+        /** @param ordererName 사번으로 해석한 주문자명 (미해석 시 `order.employeeName` 폴백). */
+        fun from(
+            order: ErpOrder,
+            ordererName: String?,
+        ): RelatedClientOrderResponse {
+            return RelatedClientOrderResponse(
+                sapOrderNumber = order.sapOrderNumber,
+                orderTypeCode = order.orderType?.takeIf { it.isNotBlank() },
+                orderTypeName = order.orderTypeNm?.takeIf { it.isNotBlank() },
+                orderDate = order.orderDate,
+                deliveryDate = order.deliveryRequestDate,
+                totalApprovedAmount = order.orderSalesAmount,
+                ordererName = ordererName,
+                ordererCode = order.employeeCode,
             )
         }
     }

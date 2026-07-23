@@ -111,6 +111,53 @@ void main() {
       expect(entity.totalApprovedAmount, isNull);
       expect(entity.orderedItems, isEmpty);
     });
+
+    test('relatedOrders 매핑 — 취소 후속 주문 요약(제품표 없음)', () {
+      final json = {
+        'data': {
+          'sapOrderNumber': '330884720',
+          'orderedItemCount': 0,
+          'orderedItems': [],
+          'relatedOrders': [
+            {
+              'sapOrderNumber': '604311314',
+              'orderTypeCode': 'ZRE1',
+              'orderTypeName': 'Standard Cancel',
+              'orderDate': '2026-07-21',
+              'deliveryDate': '2026-07-22',
+              'totalApprovedAmount': 84000,
+              'ordererName': '황동영',
+              'ordererCode': '20180073',
+            }
+          ],
+        }
+      };
+
+      final entity = ClientOrderDetailModel.fromJson(json).toEntity();
+
+      expect(entity.relatedOrders, hasLength(1));
+      final related = entity.relatedOrders.first;
+      expect(related.sapOrderNumber, '604311314');
+      expect(related.orderTypeCode, 'ZRE1');
+      expect(related.orderTypeName, 'Standard Cancel');
+      expect(related.orderDate, DateTime(2026, 7, 21));
+      expect(related.deliveryDate, DateTime(2026, 7, 22));
+      expect(related.totalApprovedAmount, 84000);
+      expect(related.ordererName, '황동영');
+      expect(related.ordererCode, '20180073');
+    });
+
+    test('relatedOrders 누락 시 빈 배열', () {
+      final json = {
+        'sapOrderNumber': '330884720',
+        'orderedItemCount': 0,
+        'orderedItems': [],
+      };
+
+      final entity = ClientOrderDetailModel.fromJson(json).toEntity();
+
+      expect(entity.relatedOrders, isEmpty);
+    });
   });
 
   group('OrderDeliveryStatus.displayName', () {
