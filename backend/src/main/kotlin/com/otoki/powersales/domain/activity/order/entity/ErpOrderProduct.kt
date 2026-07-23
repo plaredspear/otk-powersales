@@ -16,7 +16,10 @@ import com.otoki.powersales.platform.common.entity.FieldName
 @EntityListeners(OwnerUserDefaultListener::class)
 @DomainName("ERP주문상품")
 @Entity
-@Table(name = "erp_order_product")
+@Table(
+    name = "erp_order_product",
+    indexes = [Index(name = "idx_erp_order_product_ref_sap_order_number", columnList = "ref_sap_order_number")],
+)
 @SFObject("ERP_OrderProduct__c")
 class ErpOrderProduct(
 

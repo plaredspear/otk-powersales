@@ -15,7 +15,10 @@ import com.otoki.powersales.platform.common.entity.FieldName
 
 @DomainName("ERP주문")
 @Entity
-@Table(name = "erp_order")
+@Table(
+    name = "erp_order",
+    indexes = [Index(name = "idx_erp_order_ref_sap_order_number", columnList = "ref_sap_order_number")],
+)
 @SFObject("ERP_Order__c")
 class ErpOrder(
 
