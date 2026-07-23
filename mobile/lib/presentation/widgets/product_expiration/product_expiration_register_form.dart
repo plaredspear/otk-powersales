@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../claim/claim_form_row.dart';
 import '../claim/claim_product_field.dart';
+import '../common/synced_text_field.dart';
 import 'product_expiration_date_row.dart';
 
 /// 소비기한 등록 폼 위젯
@@ -108,8 +109,8 @@ class ProductExpirationRegisterForm extends StatelessWidget {
             ClaimFormRow(
               label: '설명',
               showDivider: false,
-              below: TextFormField(
-                initialValue: description,
+              below: SyncedTextField(
+                value: description,
                 style: const TextStyle(
                   fontSize: 14,
                   color: ClaimFormColors.value,

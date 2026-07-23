@@ -26,6 +26,9 @@ class _ProductExpirationEditPageState extends ConsumerState<ProductExpirationEdi
   @override
   void initState() {
     super.initState();
+    // provider 수정은 build 단계(라우트 마운트 포함)에서 금지되므로 post-frame
+    // 으로 미룬다. 낡은 값이 첫 build 에 노출되는 문제는 설명 필드(SyncedTextField)
+    // 가 state 값과 동기화해 해소한다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(productExpirationFormProvider.notifier)
