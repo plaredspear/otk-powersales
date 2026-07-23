@@ -97,8 +97,20 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
   /// 실서버 응답(DioException)은 `error.code`(Spec #597) 를 우선 매핑하고,
   /// 매핑이 없으면 서버가 내려준 한글 메시지를 그대로 사용한다.
   /// 도메인 레벨 예외 등은 메시지 문자열 매칭으로 보강한다.
+  ///
+  /// 예외: `ORD_CANCEL_SAP_FAILED` 는 백엔드가 SAP 응답 사유(resultMsg)를 message 에
+  /// 담아 내려주므로, 고정 문구로 덮지 않고 그 사유를 그대로 노출한다(사용자가 실패
+  /// 원인을 알 수 있도록). message 가 비어 있을 때만 고정 문구로 fallback.
   String _parseErrorMessage(Object error) {
     final code = extractErrorCode(error);
+
+    // SAP 실패는 서버가 준 SAP 사유 문구를 우선 노출. 사유가 비어 있을 때만 고정 문구.
+    if (code != null && code.contains('ORD_CANCEL_SAP_FAILED')) {
+      final sapMessage = extractRawErrorMessage(error);
+      if (sapMessage != null) return sapMessage;
+      return '주문 취소 전송에 실패했습니다. 잠시 후 다시 시도해주세요';
+    }
+
     final mapped = code == null ? null : _messageForCode(code);
     if (mapped != null) return mapped;
 
@@ -122,9 +134,8 @@ class OrderCancelNotifier extends StateNotifier<OrderCancelState> {
     if (value.contains('ORD_CANCEL_LINE_NOT_FOUND')) {
       return '취소할 수 없는 제품이 포함되어 있습니다';
     }
-    if (value.contains('ORD_CANCEL_SAP_FAILED')) {
-      return '주문 취소 전송에 실패했습니다. 잠시 후 다시 시도해주세요';
-    }
+    // ORD_CANCEL_SAP_FAILED 는 _parseErrorMessage 에서 SAP 사유 message 를 그대로
+    // 노출하도록 조기 처리한다(여기서 고정 문구로 매핑하지 않음).
     if (value.contains('ORD_CANCEL_IN_FLIGHT')) {
       return '주문 등록을 전송 처리 중입니다. 잠시 후 다시 시도해주세요';
     }

@@ -45,6 +45,27 @@ String extractErrorMessage(dynamic e) {
   return e.toString().replaceFirst('Exception: ', '');
 }
 
+/// 서버 표준 error 포맷의 `error.message` 원문만 추출한다.
+///
+/// [extractErrorMessage] 와 달리 timeout/5xx 친화 문구로 대체하지 않고,
+/// `error.message` 가 없거나 비어 있으면 null 을 반환한다. 백엔드가 담아 준
+/// 사유 문구(예: SAP 응답 메시지)를 그대로 노출해야 하는 경우에 사용한다.
+String? extractRawErrorMessage(dynamic e) {
+  if (e is DioException) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final error = data['error'];
+      if (error is Map<String, dynamic>) {
+        final message = error['message'];
+        if (message is String && message.isNotEmpty) {
+          return message;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /// 서버 응답 없이 발생한 네트워크/타임아웃 계열 오류 여부.
 ///
 /// 이 경우 서버 `error.code` 가 없으므로, 코드 기반 매핑 대신

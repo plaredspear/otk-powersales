@@ -437,8 +437,9 @@ void main() {
       expect(state.errorMessage, isNull);
     });
 
-    test('cancelOrderRequest: 백엔드 error.code(502 SAP 실패)는 확정 실패로 처리', () async {
+    test('cancelOrderRequest: 백엔드 error.code(502 SAP 실패)는 확정 실패로 처리 + SAP 사유 그대로 노출', () async {
       // 백엔드가 error.code 를 담아 502 를 응답했다면 결과가 확정된 것 — 미확정 아님.
+      // ORD_CANCEL_SAP_FAILED 의 message(SAP 사유)는 고정 문구로 덮지 않고 그대로 노출한다.
       final reqOpts = RequestOptions(path: '/cancel');
       mockRepository.errorToThrow = DioException(
         requestOptions: reqOpts,
@@ -447,7 +448,10 @@ void main() {
           requestOptions: reqOpts,
           statusCode: 502,
           data: {
-            'error': {'code': 'ORD_CANCEL_SAP_FAILED', 'message': 'x'},
+            'error': {
+              'code': 'ORD_CANCEL_SAP_FAILED',
+              'message': '이미 취소된 주문입니다',
+            },
           },
         ),
       );
@@ -460,6 +464,31 @@ void main() {
       final state = container.read(orderCancelProvider(params));
       expect(result, false);
       expect(state.cancelInconclusive, false); // 미확정 아님 — 확정 실패
+      expect(state.errorMessage, '이미 취소된 주문입니다'); // SAP 사유 그대로
+    });
+
+    test('cancelOrderRequest: SAP 실패인데 message 비어있으면 고정 문구로 fallback', () async {
+      final reqOpts = RequestOptions(path: '/cancel');
+      mockRepository.errorToThrow = DioException(
+        requestOptions: reqOpts,
+        type: DioExceptionType.badResponse,
+        response: Response<dynamic>(
+          requestOptions: reqOpts,
+          statusCode: 502,
+          data: {
+            'error': {'code': 'ORD_CANCEL_SAP_FAILED', 'message': ''},
+          },
+        ),
+      );
+
+      final notifier = container.read(orderCancelProvider(params).notifier);
+      notifier.toggleProduct(101);
+
+      final result = await notifier.cancelOrderRequest();
+
+      final state = container.read(orderCancelProvider(params));
+      expect(result, false);
+      expect(state.cancelInconclusive, false);
       expect(state.errorMessage, '주문 취소 전송에 실패했습니다. 잠시 후 다시 시도해주세요');
     });
 
