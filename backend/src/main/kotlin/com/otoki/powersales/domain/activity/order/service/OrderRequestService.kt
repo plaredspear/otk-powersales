@@ -39,6 +39,7 @@ class OrderRequestService(
     private val erpOrderProductRepository: ErpOrderProductRepository,
     private val productRepository: ProductRepository,
     private val orderCancelPolicy: OrderCancelPolicy,
+    private val relatedOrderQueryService: RelatedOrderQueryService,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) {
 
@@ -250,6 +251,11 @@ class OrderRequestService(
             .mapNotNull { it.sapOrderNumber?.takeIf { num -> num.isNotBlank() } }
             .distinct()
 
+        // 이 주문요청의 SAP 주문번호들을 `ref_sap_order_number` 로 역참조하는 후속 주문(취소/변경 등) 요약.
+        // 취소(ZRE1)는 원주문을 ref 로 참조하는 별도 erp_order 이고 라이브 SD03052 상세엔 안 잡히므로,
+        // 거래처별 상세와 동일하게 ref 역참조로 노출한다(2026-07-23 사용자 결정). 없으면 빈 배열.
+        val relatedOrders = relatedOrderQueryService.findRelatedSummaries(sapOrderNumbers)
+
         // 반려 라인은 "주문한 제품" 리스트/카운트에서 제외 (레거시 view.jsp:407 `SAP_Status ne '반려'`,
         // 카운트 view.jsp:377-383 동등 — 반려 제품은 반려 섹션에만 표시, 이중 표시 없음).
         // SAP 호출 실패 시엔 반려 판별 불가 → 전 라인 유지 (CRM 원장 표시 견고화, 레거시는 목록 자체가 비었음).
@@ -305,6 +311,7 @@ class OrderRequestService(
             rejectedItems = rejectedItems,
             outOfStockItems = outOfStockItems,
             unfulfilledItems = unfulfilledItems,
+            relatedOrders = relatedOrders,
         )
     }
 

@@ -1,4 +1,5 @@
 import '../../domain/entities/order_detail.dart';
+import 'client_order_model.dart';
 
 /// 주문한 제품 API 모델 (DTO)
 class OrderedItemModel {
@@ -368,6 +369,9 @@ class OrderRequestDetailModel {
   final List<OutOfStockItemModel>? outOfStockItems;
   final List<UnfulfilledItemModel>? unfulfilledItems;
 
+  /// 역참조 후속 주문(취소/변경 등) 요약. 없으면 빈 배열.
+  final List<RelatedClientOrderModel> relatedOrders;
+
   const OrderRequestDetailModel({
     required this.id,
     required this.orderRequestNumber,
@@ -390,6 +394,7 @@ class OrderRequestDetailModel {
     this.rejectedItems,
     this.outOfStockItems,
     this.unfulfilledItems,
+    this.relatedOrders = const [],
   });
 
   /// snake_case JSON에서 파싱
@@ -405,6 +410,7 @@ class OrderRequestDetailModel {
     final processingListJson =
         data['orderProcessingStatusList'] as List<dynamic>?;
     final sapOrderNumbersJson = data['sapOrderNumbers'] as List<dynamic>?;
+    final relatedOrdersJson = data['relatedOrders'] as List<dynamic>?;
 
     return OrderRequestDetailModel(
       id: data['id'] as int,
@@ -451,6 +457,11 @@ class OrderRequestDetailModel {
                   UnfulfilledItemModel.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
+      relatedOrders: relatedOrdersJson
+              ?.map((e) =>
+                  RelatedClientOrderModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
   }
 
@@ -479,6 +490,7 @@ class OrderRequestDetailModel {
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
       'outOfStockItems': outOfStockItems?.map((e) => e.toJson()).toList(),
       'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
+      'relatedOrders': relatedOrders.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -507,6 +519,7 @@ class OrderRequestDetailModel {
       rejectedItems: rejectedItems?.map((e) => e.toEntity()).toList(),
       outOfStockItems: outOfStockItems?.map((e) => e.toEntity()).toList(),
       unfulfilledItems: unfulfilledItems?.map((e) => e.toEntity()).toList(),
+      relatedOrders: relatedOrders.map((e) => e.toEntity()).toList(),
     );
   }
 

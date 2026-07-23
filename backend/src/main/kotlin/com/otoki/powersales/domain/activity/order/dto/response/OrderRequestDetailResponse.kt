@@ -50,6 +50,9 @@ data class OrderRequestDetailResponse(
     // 결품 라인 배열(반려처럼 별도 섹션). "주문한 제품"에서는 제외. 없으면 null.
     val outOfStockItems: List<OutOfStockItemResponse>? = null,
     val unfulfilledItems: List<UnfulfilledItemResponse>? = null,
+    // 이 주문요청의 SAP 주문번호(들)를 ref_sap_order_number 로 역참조하는 후속 주문(취소/변경 등) 요약.
+    // 거래처별 상세와 동일한 요약 형태(번호·유형·일자·금액·주문자). 없으면 빈 배열.
+    val relatedOrders: List<RelatedClientOrderResponse> = emptyList(),
 ) {
     companion object {
         fun of(
@@ -64,6 +67,7 @@ data class OrderRequestDetailResponse(
             rejectedItems: List<RejectedItemResponse>?,
             outOfStockItems: List<OutOfStockItemResponse>? = null,
             unfulfilledItems: List<UnfulfilledItemResponse>? = null,
+            relatedOrders: List<RelatedClientOrderResponse> = emptyList(),
         ): OrderRequestDetailResponse =
             OrderRequestDetailResponse(
                 id = orderRequest.id,
@@ -87,6 +91,7 @@ data class OrderRequestDetailResponse(
                 rejectedItems = rejectedItems,
                 outOfStockItems = outOfStockItems,
                 unfulfilledItems = unfulfilledItems,
+                relatedOrders = relatedOrders,
             )
     }
 }

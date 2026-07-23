@@ -18,6 +18,7 @@ import '../widgets/order/order_processing_status_section.dart';
 import '../widgets/order/ordered_item_expandable.dart';
 import '../widgets/order/ordered_item_list.dart';
 import '../widgets/order/out_of_stock_item_list.dart';
+import '../widgets/order/related_client_order_section.dart';
 import '../widgets/order/rejected_item_list.dart';
 import '../widgets/order/unfulfilled_item_list.dart';
 
@@ -288,6 +289,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               if (detail.orderProcessingStatusList != null &&
                   detail.orderProcessingStatusList!.isNotEmpty)
                 ..._buildProcessingStatusSections(context, detail),
+            ],
+
+            // 역참조 후속 주문(취소/변경 등) 요약 — 마감 전후 공통, 있을 때만 표시.
+            // 이 주문의 SAP 주문번호(들)를 ref 로 참조하는 취소/변경건을 거래처별 상세와 동일 형태로 노출.
+            if (detail.hasRelatedOrders) ...[
+              const SizedBox(height: AppSpacing.lg),
+              RelatedClientOrderSection(relatedOrders: detail.relatedOrders),
             ],
 
             // 하단 여백

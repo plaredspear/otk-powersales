@@ -402,4 +402,57 @@ void main() {
       expect(model.toEntity().hasUnfulfilledItems, isFalse);
     });
   });
+
+  group('relatedOrders — 역참조 후속 주문 요약 (내 주문 상세)', () {
+    Map<String, dynamic> detailData({List<dynamic>? relatedOrders}) {
+      return {
+        'data': {
+          'id': 1,
+          'orderRequestNumber': 'OR-0001234',
+          'clientId': 1,
+          'clientName': '홍길동상회',
+          'orderDate': '2026-07-21T10:00:00',
+          'deliveryDate': '2026-07-30',
+          'totalAmount': 114600,
+          'orderRequestStatus': 'APPROVED',
+          'orderRequestStatusName': '승인완료',
+          'isClosed': false,
+          'orderedItemCount': 0,
+          'orderedItems': <dynamic>[],
+          'rejectedItems': null,
+          if (relatedOrders != null) 'relatedOrders': relatedOrders,
+        },
+      };
+    }
+
+    test('취소 후속 주문 요약 파싱 (제품표 없음)', () {
+      final entity = OrderRequestDetailModel.fromJson(detailData(relatedOrders: [
+        {
+          'sapOrderNumber': '604311314',
+          'orderTypeCode': 'ZRE1',
+          'orderTypeName': 'Standard Cancel',
+          'orderDate': '2026-07-21',
+          'deliveryDate': '2026-07-22',
+          'totalApprovedAmount': 84000,
+          'ordererName': '황동영',
+          'ordererCode': '20180073',
+        },
+      ])).toEntity();
+
+      expect(entity.hasRelatedOrders, isTrue);
+      expect(entity.relatedOrders, hasLength(1));
+      final related = entity.relatedOrders.first;
+      expect(related.sapOrderNumber, '604311314');
+      expect(related.orderTypeCode, 'ZRE1');
+      expect(related.orderTypeName, 'Standard Cancel');
+      expect(related.totalApprovedAmount, 84000);
+      expect(related.ordererName, '황동영');
+    });
+
+    test('relatedOrders 부재/null → 빈 배열 (하위호환, 크래시 없음)', () {
+      final entity = OrderRequestDetailModel.fromJson(detailData()).toEntity();
+      expect(entity.hasRelatedOrders, isFalse);
+      expect(entity.relatedOrders, isEmpty);
+    });
+  });
 }

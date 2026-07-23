@@ -21,8 +21,10 @@ import com.otoki.powersales.domain.activity.order.repository.OrderRequestReposit
 import com.otoki.powersales.domain.activity.order.util.OrderDeadlineCalculator
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.external.sap.outbox.SapOutboxRepository
+import com.otoki.powersales.domain.activity.order.dto.response.RelatedClientOrderResponse
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -47,6 +49,7 @@ class OrderRequestServiceTest {
     private val erpOrderProductRepository: ErpOrderProductRepository = mockk()
     private val productRepository: ProductRepository = mockk()
     private val sapOutboxRepository: SapOutboxRepository = mockk()
+    private val relatedOrderQueryService: RelatedOrderQueryService = mockk()
 
     private val fixedClock: Clock = Clock.fixed(
         LocalDateTime.of(2026, 5, 5, 10, 0).atZone(ZoneId.of("Asia/Seoul")).toInstant(),
@@ -68,12 +71,15 @@ class OrderRequestServiceTest {
             erpOrderProductRepository,
             productRepository,
             orderCancelPolicy,
+            relatedOrderQueryService,
             fixedClock,
         )
         // 기본값 — 상세 조회 시 제품명 일괄조회. 개별 테스트에서 필요 시 override.
         every { productRepository.findByProductCodeIn(any()) } returns emptyList()
         // 기본값 — 처리현황 총납품수량 조인(erp_order_product)은 비어있음. 개별 테스트에서 필요 시 override.
         every { erpOrderProductRepository.findBySapOrderNumberIn(any()) } returns emptyList()
+        // 기본값 — 역참조 후속 주문 없음. 관련주문 테스트에서만 override.
+        every { relatedOrderQueryService.findRelatedSummaries(any()) } returns emptyList()
         // 기본값 — 등록 outbox in-flight 아님 (취소 가능 판정용).
         every {
             sapOutboxRepository.existsByDomainTypeAndAggregateIdAndStatusIn(any(), any(), any())
@@ -391,6 +397,39 @@ class OrderRequestServiceTest {
             assertThat(response.orderedItems[0].productCode).isEqualTo("1000023")
             // 총 승인 금액 = SAP 응답 전 라인 OrderSalesAmount 합산 (레거시 view.jsp:343-348 동등, DB 컬럼 아님)
             assertThat(response.totalApprovedAmount).isEqualByComparingTo("120000")
+        }
+
+        @Test
+        @DisplayName("성공 — 역참조 후속 주문(취소/변경)이 relatedOrders 로 노출 (SAP 주문번호 대상 조회)")
+        fun relatedOrdersExposed() {
+            val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 4))
+            every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
+            every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
+                listOf(buildCrmProduct("1000023", "진라면", 30, orderRequest))
+            every { orderRequestDetailSapSender.fetchDetail(any()) } returns
+                listOf(buildSapLine("1000023", "0300004993", "143000"))
+            val ownNumbersSlot = slot<Collection<String>>()
+            every { relatedOrderQueryService.findRelatedSummaries(capture(ownNumbersSlot)) } returns listOf(
+                RelatedClientOrderResponse(
+                    sapOrderNumber = "604311314",
+                    orderTypeCode = "ZRE1",
+                    orderTypeName = "Standard Cancel",
+                    orderDate = LocalDate.of(2026, 5, 3),
+                    deliveryDate = LocalDate.of(2026, 5, 4),
+                    totalApprovedAmount = BigDecimal("84000"),
+                    ordererName = "취소사원",
+                    ordererCode = "20180073",
+                ),
+            )
+
+            val response = service.getOrderRequestDetail(100L, userId = 1L)
+
+            // 헬퍼는 이 주문요청의 distinct SAP 주문번호를 대상으로 호출된다.
+            assertThat(ownNumbersSlot.captured).containsExactly("0300004993")
+            assertThat(response.relatedOrders).hasSize(1)
+            assertThat(response.relatedOrders[0].sapOrderNumber).isEqualTo("604311314")
+            assertThat(response.relatedOrders[0].orderTypeName).isEqualTo("Standard Cancel")
+            assertThat(response.relatedOrders[0].totalApprovedAmount).isEqualByComparingTo("84000")
         }
 
         @Test

@@ -1,4 +1,6 @@
 
+import 'client_order.dart';
+
 /// 배송 상태 코드 상수 (서버 `deliveryStatus` 코드값).
 ///
 /// **enum 이 아니라 문자열 상수**로 관리한다 — 서버가 미정의 상태 코드를 내려줘도 enum 파싱/exhaustive
@@ -755,6 +757,10 @@ class OrderDetail {
   /// 미납 제품 목록 (신규 정책 — LineItemStatus != "OK" && SAP 주문번호 있음, 마감 전후 모두 표시)
   final List<UnfulfilledItem>? unfulfilledItems;
 
+  /// 이 주문의 SAP 주문번호(들)를 역참조하는 후속 주문(취소/변경 등) 요약. 없으면 빈 배열.
+  /// 거래처별 주문 상세와 동일한 요약 형태 — 제품 목록 없이 헤더 정보만.
+  final List<RelatedClientOrder> relatedOrders;
+
   const OrderDetail({
     required this.id,
     required this.orderRequestNumber,
@@ -777,10 +783,14 @@ class OrderDetail {
     this.rejectedItems,
     this.outOfStockItems,
     this.unfulfilledItems,
+    this.relatedOrders = const [],
   });
 
   /// SAP 주문번호가 하나라도 있는지 여부
   bool get hasSapOrderNumbers => sapOrderNumbers.isNotEmpty;
+
+  /// 역참조 후속 주문(취소/변경)이 있는지 여부
+  bool get hasRelatedOrders => relatedOrders.isNotEmpty;
 
   /// 반려 제품이 있는지 여부
   bool get hasRejectedItems =>
@@ -820,6 +830,7 @@ class OrderDetail {
     List<RejectedItem>? rejectedItems,
     List<OutOfStockItem>? outOfStockItems,
     List<UnfulfilledItem>? unfulfilledItems,
+    List<RelatedClientOrder>? relatedOrders,
   }) {
     return OrderDetail(
       id: id ?? this.id,
@@ -845,6 +856,7 @@ class OrderDetail {
       rejectedItems: rejectedItems ?? this.rejectedItems,
       outOfStockItems: outOfStockItems ?? this.outOfStockItems,
       unfulfilledItems: unfulfilledItems ?? this.unfulfilledItems,
+      relatedOrders: relatedOrders ?? this.relatedOrders,
     );
   }
 
@@ -872,6 +884,7 @@ class OrderDetail {
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
       'outOfStockItems': outOfStockItems?.map((e) => e.toJson()).toList(),
       'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
+      'relatedOrders': relatedOrders.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -920,6 +933,9 @@ class OrderDetail {
               .map((e) => UnfulfilledItem.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
+      relatedOrders: (json['relatedOrders'] as List<dynamic>? ?? [])
+          .map((e) => RelatedClientOrder.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -974,6 +990,10 @@ class OrderDetail {
         if (other.unfulfilledItems![i] != unfulfilledItems![i]) return false;
       }
     }
+    if (other.relatedOrders.length != relatedOrders.length) return false;
+    for (var i = 0; i < relatedOrders.length; i++) {
+      if (other.relatedOrders[i] != relatedOrders[i]) return false;
+    }
     return true;
   }
 
@@ -1001,6 +1021,7 @@ class OrderDetail {
           : null,
       rejectedItems != null ? Object.hashAll(rejectedItems!) : null,
       unfulfilledItems != null ? Object.hashAll(unfulfilledItems!) : null,
+      Object.hashAll(relatedOrders),
     );
   }
 
