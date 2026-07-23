@@ -155,12 +155,12 @@ class ProductAddNotifier extends StateNotifier<ProductAddState> {
   }
 
   /// 거래처 주문이력 조회.
-  Future<void> searchOrderHistory(String accountCode) async {
+  Future<void> searchOrderHistory(int accountId) async {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final raw = await _dataSource.fetchOrderHistory(
-        accountCode: accountCode,
+        accountId: accountId,
         startDate: _fmtDate(state.historyFrom),
         endDate: _fmtDate(state.historyTo),
       );

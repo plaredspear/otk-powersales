@@ -131,11 +131,11 @@ abstract class OrderRequestRepository {
 
   /// 거래처 주문이력 조회 (제품 선택용)
   ///
-  /// [accountCode]: 거래처 SAP 코드 (Account.externalKey)
+  /// [accountId]: 거래처 내부 ID (Account.id)
   /// [startDate]/[endDate]: 주문일 기간
   /// Returns: 주문일별 그룹(최신순)
   Future<List<ProductOrderHistoryGroup>> getAccountOrderHistory({
-    required String accountCode,
+    required int accountId,
     required DateTime startDate,
     required DateTime endDate,
   });

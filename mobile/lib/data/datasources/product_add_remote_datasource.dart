@@ -53,14 +53,14 @@ class ProductAddRemoteDataSource {
   ///
   /// 반환: `[{ orderDate, products: [{ productCode, productName }] }, ...]`
   Future<List<Map<String, dynamic>>> fetchOrderHistory({
-    required String accountCode,
+    required int accountId,
     required String startDate,
     required String endDate,
   }) async {
     final response = await _dio.get(
       '/api/v1/mobile/me/order-requests/product-history',
       queryParameters: {
-        'accountCode': accountCode,
+        'accountId': accountId,
         'startDate': startDate,
         'endDate': endDate,
       },

@@ -115,12 +115,12 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
   Future<void> _handleAddProduct(OrderFormNotifier notifier) async {
     final messenger = ScaffoldMessenger.of(context);
     // 주문서 작성만 전용상품 추가를 막는다(주문 불가 룰). 그 외 화면은 선택 가능.
-    // 주문이력 탭은 현재 선택된 거래처(SAP 코드) 기준으로 본인 주문이력을 조회한다.
+    // 주문이력 탭은 현재 선택된 거래처(Account.id) 기준으로 본인 주문이력을 조회한다.
     final selected = await AddProductBottomSheet.show(
       context,
       showCategoryFilter: true,
       blockExclusive: true,
-      orderHistoryAccountCode: ref.read(orderFormProvider).selectedExternalKey,
+      orderHistoryAccountId: ref.read(orderFormProvider).selectedAccountId,
     );
     if (selected == null || selected.isEmpty || !mounted) return;
 

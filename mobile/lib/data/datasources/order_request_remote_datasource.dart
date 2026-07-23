@@ -93,9 +93,9 @@ abstract class OrderRequestRemoteDataSource {
 
   /// GET /api/v1/mobile/me/order-requests/product-history
   ///
-  /// 거래처(accountCode) + 주문일 기간으로 본인 주문이력을 주문일별 그룹으로 조회합니다.
+  /// 거래처(accountId) + 주문일 기간으로 본인 주문이력을 주문일별 그룹으로 조회합니다.
   Future<List<OrderHistoryGroupModel>> getAccountOrderHistory({
-    required String accountCode,
+    required int accountId,
     required String startDate,
     required String endDate,
   });

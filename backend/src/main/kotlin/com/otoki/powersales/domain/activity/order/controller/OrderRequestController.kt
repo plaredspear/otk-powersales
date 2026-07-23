@@ -75,19 +75,19 @@ class OrderRequestController(
      * 레거시: SF `IF_REST_MOBILE_OrderHistory`. 유통기한 등록 "제품 추가" 팝업의 주문 이력 탭에서
      * 거래처+기간으로 본인이 주문한 제품을 주문일별로 조회한다.
      *
-     * @param accountCode 거래처 SAP 코드 (Account.externalKey)
+     * @param accountId 거래처 내부 ID (Account.id)
      * @param startDate 주문일 시작 (YYYY-MM-DD)
      * @param endDate 주문일 종료 (YYYY-MM-DD)
      */
     @GetMapping("/me/order-requests/product-history")
     fun getAccountOrderHistory(
         @AuthenticationPrincipal principal: UserPrincipal,
-        @RequestParam accountCode: String,
+        @RequestParam accountId: Long,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate,
         @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate,
     ): ResponseEntity<ApiResponse<List<OrderHistoryGroupResponse>>> {
         val response = orderRequestService.getAccountOrderHistory(
-            principal.userId, accountCode, startDate, endDate,
+            principal.userId, accountId, startDate, endDate,
         )
         return ResponseEntity.ok(ApiResponse.success(response, "조회 성공"))
     }

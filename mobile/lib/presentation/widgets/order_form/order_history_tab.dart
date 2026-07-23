@@ -61,18 +61,20 @@ class OrderHistoryTab extends ConsumerWidget {
     }
 
     if (state.orderHistoryGroups.isEmpty) {
+      // 거래처 미선택과 "이력 없음"을 구분해 안내한다(빈 화면 금지).
+      final noAccount = !state.hasOrderHistoryAccount;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.history,
+              noAccount ? Icons.storefront_outlined : Icons.history,
               size: 48,
               color: AppColors.textTertiary,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              '주문 이력이 없습니다.',
+              noAccount ? '거래처를 먼저 선택해 주세요.' : '주문 이력이 없습니다.',
               style: AppTypography.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),

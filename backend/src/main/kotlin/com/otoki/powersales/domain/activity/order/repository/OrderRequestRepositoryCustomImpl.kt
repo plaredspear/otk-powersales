@@ -50,13 +50,13 @@ class OrderRequestRepositoryCustomImpl(
 
     override fun findOrderHistory(
         employeeId: Long,
-        accountCode: String,
+        accountId: Long,
         orderDateFrom: LocalDateTime,
         orderDateToExclusive: LocalDateTime,
     ): List<OrderHistoryRow> {
         val where = BooleanBuilder()
             .and(orderRequest.employee.id.eq(employeeId))
-            .and(orderRequest.account.externalKey.eq(accountCode))
+            .and(orderRequest.account.id.eq(accountId))
             .and(orderRequest.orderDate.goe(orderDateFrom))
             .and(orderRequest.orderDate.lt(orderDateToExclusive))
             .and(orderRequest.isDeleted.isNull.or(orderRequest.isDeleted.eq(false)))

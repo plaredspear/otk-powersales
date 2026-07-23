@@ -36,9 +36,9 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
   /// 그 외 화면(클레임/점검/제안/유통기한/매출조회)은 전용상품도 선택 가능.
   final bool blockExclusive;
 
-  /// 주문이력 탭 조회용 거래처 SAP 코드(Account.externalKey). 주문서처럼 거래처가
+  /// 주문이력 탭 조회용 거래처 내부 ID(Account.id). 주문서처럼 거래처가
   /// 선택된 화면에서만 넘기며, 없으면 주문이력 탭은 비어 있다.
-  final String? orderHistoryAccountCode;
+  final int? orderHistoryAccountId;
 
   const AddProductBottomSheet({
     super.key,
@@ -47,7 +47,7 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
     this.showCategoryFilter = false,
     this.requireBarcode = false,
     this.blockExclusive = false,
-    this.orderHistoryAccountCode,
+    this.orderHistoryAccountId,
   });
 
   /// BottomSheet 표시 — 선택된 제품 목록을 반환(취소 시 null).
@@ -58,7 +58,7 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
     bool showCategoryFilter = false,
     bool requireBarcode = false,
     bool blockExclusive = false,
-    String? orderHistoryAccountCode,
+    int? orderHistoryAccountId,
   }) {
     return showModalBottomSheet<List<ProductForOrder>>(
       context: context,
@@ -75,7 +75,7 @@ class AddProductBottomSheet extends ConsumerStatefulWidget {
         showCategoryFilter: showCategoryFilter,
         requireBarcode: requireBarcode,
         blockExclusive: blockExclusive,
-        orderHistoryAccountCode: orderHistoryAccountCode,
+        orderHistoryAccountId: orderHistoryAccountId,
       ),
     );
   }
@@ -106,7 +106,7 @@ class _AddProductBottomSheetState extends ConsumerState<AddProductBottomSheet>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(addProductProvider.notifier).initialize(
             multiSelect: widget.multiSelect,
-            orderHistoryAccountCode: widget.orderHistoryAccountCode,
+            orderHistoryAccountId: widget.orderHistoryAccountId,
           );
     });
   }

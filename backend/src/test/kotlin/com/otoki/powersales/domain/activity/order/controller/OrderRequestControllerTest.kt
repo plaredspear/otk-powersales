@@ -337,14 +337,14 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
             )
             every {
                 orderRequestService.getAccountOrderHistory(
-                    eq(1L), eq("0001234567"),
+                    eq(1L), eq(7L),
                     eq(LocalDate.of(2026, 5, 4)), eq(LocalDate.of(2026, 5, 6)),
                 )
             } returns groups
 
             mockMvc.perform(
                 get("/api/v1/mobile/me/order-requests/product-history")
-                    .param("accountCode", "0001234567")
+                    .param("accountId", "7")
                     .param("startDate", "2026-05-04")
                     .param("endDate", "2026-05-06"),
             )
@@ -358,8 +358,8 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
         }
 
         @Test
-        @DisplayName("실패 - 필수 파라미터(accountCode) 누락 시 400")
-        fun missingAccountCode() {
+        @DisplayName("실패 - 필수 파라미터(accountId) 누락 시 400")
+        fun missingAccountId() {
             mockMvc.perform(
                 get("/api/v1/mobile/me/order-requests/product-history")
                     .param("startDate", "2026-05-04")

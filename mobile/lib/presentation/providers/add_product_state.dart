@@ -81,6 +81,10 @@ class AddProductState {
   /// 주문 이력 검색 종료일
   final DateTime? historyDateTo;
 
+  /// 주문 이력 조회용 거래처가 선택되었는지 여부.
+  /// false 면 주문 이력 탭은 "거래처를 먼저 선택" 안내를 노출한다(빈 이력과 구분).
+  final bool hasOrderHistoryAccount;
+
   /// 로딩 상태
   final bool isLoading;
 
@@ -100,6 +104,7 @@ class AddProductState {
     this.searchQuery = '',
     this.historyDateFrom,
     this.historyDateTo,
+    this.hasOrderHistoryAccount = false,
     this.isLoading = false,
     this.errorMessage,
     this.successMessage,
@@ -167,6 +172,7 @@ class AddProductState {
     String? searchQuery,
     DateTime? historyDateFrom,
     DateTime? historyDateTo,
+    bool? hasOrderHistoryAccount,
     bool? isLoading,
     String? errorMessage,
     String? successMessage,
@@ -183,6 +189,8 @@ class AddProductState {
       searchQuery: searchQuery ?? this.searchQuery,
       historyDateFrom: historyDateFrom ?? this.historyDateFrom,
       historyDateTo: historyDateTo ?? this.historyDateTo,
+      hasOrderHistoryAccount:
+          hasOrderHistoryAccount ?? this.hasOrderHistoryAccount,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       successMessage:

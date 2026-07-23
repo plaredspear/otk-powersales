@@ -124,14 +124,14 @@ class OrderRequestService(
      * 레거시와 동일하게 종료일은 해당일 전체 포함(EndDate +1일), 그룹 내 제품코드는 중복제거.
      *
      * @param userId JWT 사용자 ID (= employee.id)
-     * @param accountCode 거래처 SAP 코드 (Account.externalKey)
+     * @param accountId 거래처 내부 ID (Account.id)
      * @param startDate 주문일 시작
      * @param endDate 주문일 종료 (inclusive)
      * @return 주문일 내림차순 그룹 목록
      */
     fun getAccountOrderHistory(
         userId: Long,
-        accountCode: String,
+        accountId: Long,
         startDate: LocalDate,
         endDate: LocalDate,
     ): List<OrderHistoryGroupResponse> {
@@ -141,7 +141,7 @@ class OrderRequestService(
 
         val rows = orderRequestRepository.findOrderHistory(
             employeeId = userId,
-            accountCode = accountCode,
+            accountId = accountId,
             orderDateFrom = startDate.atStartOfDay(),
             orderDateToExclusive = endDate.plusDays(1).atStartOfDay(),
         )

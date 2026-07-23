@@ -84,7 +84,7 @@ class OrderRequestServiceTest {
     @DisplayName("getAccountOrderHistory - 거래처 주문이력")
     inner class AccountOrderHistoryTests {
 
-        private val accountCode = "0001234567"
+        private val accountId = 7L
         private val from = LocalDate.of(2026, 5, 4)
         private val to = LocalDate.of(2026, 5, 6)
 
@@ -94,7 +94,7 @@ class OrderRequestServiceTest {
             every {
                 orderRequestRepository.findOrderHistory(
                     employeeId = 1L,
-                    accountCode = accountCode,
+                    accountId = accountId,
                     orderDateFrom = from.atStartOfDay(),
                     orderDateToExclusive = to.plusDays(1).atStartOfDay(),
                 )
@@ -105,7 +105,7 @@ class OrderRequestServiceTest {
                 OrderHistoryRow(LocalDateTime.of(2026, 5, 4, 11, 0), historyProduct("P003", "열라면"), "8800000000003"),
             )
 
-            val result = service.getAccountOrderHistory(1L, accountCode, from, to)
+            val result = service.getAccountOrderHistory(1L, accountId, from, to)
 
             assertThat(result).hasSize(2)
             assertThat(result[0].orderDate).isEqualTo("2026-05-06")
@@ -122,14 +122,14 @@ class OrderRequestServiceTest {
         fun empty() {
             every { orderRequestRepository.findOrderHistory(any(), any(), any(), any()) } returns emptyList()
 
-            assertThat(service.getAccountOrderHistory(1L, accountCode, from, to)).isEmpty()
+            assertThat(service.getAccountOrderHistory(1L, accountId, from, to)).isEmpty()
         }
 
         @Test
         @DisplayName("실패 - 종료일이 시작일보다 빠르면 InvalidDateRangeException")
         fun invalidRange() {
             assertThatThrownBy {
-                service.getAccountOrderHistory(1L, accountCode, to, from)
+                service.getAccountOrderHistory(1L, accountId, to, from)
             }.isInstanceOf(InvalidDateRangeException::class.java)
         }
 

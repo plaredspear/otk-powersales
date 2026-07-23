@@ -25,15 +25,16 @@ interface OrderRequestRepositoryCustom {
     /**
      * 거래처 주문이력(제품 선택용) — 레거시 SF `OrderHistory`(IF_REST_MOBILE_OrderHistory) 정합.
      *
-     * 본인(employeeId) 이 해당 거래처(account.externalKey = accountCode, 레거시 ExternalKey__c)에
-     * 등록한 주문요청의 제품을 주문일(orderDate) 범위로 조회한다. 그룹핑/중복제거는 서비스에서 수행.
+     * 본인(employeeId) 이 해당 거래처(account.id = accountId)에 등록한 주문요청의 제품을
+     * 주문일(orderDate) 범위로 조회한다. 그룹핑/중복제거는 서비스에서 수행.
+     * (거래처 식별을 SAP externalKey 가 아닌 내부 ID 로 하여, SAP 미연동 거래처도 조회 가능.)
      *
      * @param orderDateFrom 주문일 시작 (inclusive)
      * @param orderDateToExclusive 주문일 종료 (exclusive — 레거시 EndDate +1일 처리 대응)
      */
     fun findOrderHistory(
         employeeId: Long,
-        accountCode: String,
+        accountId: Long,
         orderDateFrom: LocalDateTime,
         orderDateToExclusive: LocalDateTime,
     ): List<OrderHistoryRow>

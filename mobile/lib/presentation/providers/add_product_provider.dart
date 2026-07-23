@@ -59,9 +59,9 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   final AddToFavorites _addToFavorites;
   final RemoveFromFavorites _removeFromFavorites;
 
-  /// 주문이력 조회용 거래처 SAP 코드(Account.externalKey). 주문서 작성처럼
+  /// 주문이력 조회용 거래처 내부 ID(Account.id). 주문서 작성처럼
   /// 거래처가 선택된 화면에서만 주입되며, 없으면 주문이력 탭은 항상 비어 있다.
-  String? _orderHistoryAccountCode;
+  int? _orderHistoryAccountId;
 
   AddProductNotifier({
     required GetFavoriteProducts getFavoriteProducts,
@@ -78,13 +78,16 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
 
   /// 초기화 — 선택 모드 설정 + 즐겨찾기 탭 데이터 로드.
   ///
-  /// [orderHistoryAccountCode] 를 주면 주문이력 탭에서 해당 거래처 주문이력을 조회한다.
+  /// [orderHistoryAccountId] 를 주면 주문이력 탭에서 해당 거래처 주문이력을 조회한다.
   Future<void> initialize({
     bool multiSelect = true,
-    String? orderHistoryAccountCode,
+    int? orderHistoryAccountId,
   }) async {
-    _orderHistoryAccountCode = orderHistoryAccountCode;
-    state = state.copyWith(multiSelect: multiSelect);
+    _orderHistoryAccountId = orderHistoryAccountId;
+    state = state.copyWith(
+      multiSelect: multiSelect,
+      hasOrderHistoryAccount: orderHistoryAccountId != null,
+    );
     await loadFavoriteProducts();
   }
 
@@ -96,10 +99,10 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     }
   }
 
-  /// 거래처 주문이력 조회(현재 기간 기준). 거래처 코드가 없으면 빈 목록을 유지한다.
+  /// 거래처 주문이력 조회(현재 기간 기준). 거래처가 선택되지 않았으면 빈 목록을 유지한다.
   Future<void> loadOrderHistory() async {
-    final accountCode = _orderHistoryAccountCode;
-    if (accountCode == null || accountCode.isEmpty) {
+    final accountId = _orderHistoryAccountId;
+    if (accountId == null) {
       state = state.copyWith(orderHistoryGroups: const [], isLoading: false);
       return;
     }
@@ -111,7 +114,7 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     state = state.toLoading();
     try {
       final groups = await _getAccountOrderHistory.call(
-        accountCode: accountCode,
+        accountId: accountId,
         startDate: from,
         endDate: to,
       );

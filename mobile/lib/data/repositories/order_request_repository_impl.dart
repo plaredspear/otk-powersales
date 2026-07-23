@@ -107,12 +107,12 @@ class OrderRequestRepositoryImpl implements OrderRequestRepository {
 
   @override
   Future<List<ProductOrderHistoryGroup>> getAccountOrderHistory({
-    required String accountCode,
+    required int accountId,
     required DateTime startDate,
     required DateTime endDate,
   }) async {
     final models = await _remoteDataSource.getAccountOrderHistory(
-      accountCode: accountCode,
+      accountId: accountId,
       startDate: _formatDate(startDate),
       endDate: _formatDate(endDate),
     );
