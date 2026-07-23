@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.order.sap.handler
 
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.activity.order.service.OrderDraftService
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbox.SapOutbox
 import com.otoki.powersales.external.sap.outbox.SapOutboxStatusHandler
@@ -25,11 +26,19 @@ import org.springframework.transaction.annotation.Transactional
  * 사용자가 상세에서 실패 사유를 확인할 수 있게 한다(비동기라 등록 응답 시점엔 노출 불가). 성공(APPROVED)
  * 전이 시엔 이전 실패 사유를 정리(null)한다.
  *
+ * **APPROVED 전이 시 임시저장(draft) 삭제**: SAP 등록이 최종 성공한 시점에만 해당 사원의 `tmp_order` 를
+ * 삭제한다(레거시 Heroku reqOrder 의 "등록 성공 시 tmp 삭제"에 대응하되, 삭제 시점을 접수(SENT)가 아닌
+ * SAP 최종 성공으로 늦춘 정책). 이렇게 하면 `SEND_FAILED`(확정 거부/재시도 소진) 시 draft 가 보존되어,
+ * "다시 재주문" 유도 시 사용자가 임시저장 내용을 복원해 재입력 부담 없이 재등록할 수 있다. draft 는
+ * order_request 와 FK 로 연결되지 않고 사번당 1건이라, 삭제 대상은 "이 주문에 대응하는 draft" 가 아니라
+ * "해당 사번의 현재 draft" 다(레거시 tmp_order 단일 슬롯 의미론과 동일).
+ *
  * 워커 트랜잭션 외부에서 호출되므로 본 핸들러가 자체 트랜잭션 (`REQUIRES_NEW`) 으로 도메인 상태 갱신.
  */
 @Component
 class OrderRequestSapOutboxStatusHandler(
     private val orderRequestRepository: OrderRequestRepository,
+    private val orderDraftService: OrderDraftService,
 ) : SapOutboxStatusHandler {
 
     private val log = LoggerFactory.getLogger(OrderRequestSapOutboxStatusHandler::class.java)
@@ -65,6 +74,9 @@ class OrderRequestSapOutboxStatusHandler(
             order.orderRequestStatus = OrderRequestStatus.APPROVED
             // 성공 전이 시 이전 실패 사유 정리 (재전송 성공 등).
             order.sendFailReason = null
+            // SAP 등록 최종 성공 시점에만 해당 사원의 임시저장 삭제 (SEND_FAILED 는 draft 보존 → 재주문 복원용).
+            // deleteByEmployeeId 는 멱등이라 draft 가 없어도 안전. employee 는 등록 시 항상 세팅됨.
+            order.employee?.id?.let { orderDraftService.deleteByEmployeeId(it) }
         } else {
             order.orderRequestStatus = OrderRequestStatus.SEND_FAILED
             // SAP 명시적 거부(rejected)일 때만 SAP 사유 원문을 노출용으로 기록. 재시도 소진/설정 오류 등

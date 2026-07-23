@@ -179,10 +179,9 @@ class OrderRequestCreateService(
         //      OrderRequestRegisterDispatcher → SapOutboxBatchService.processOne 가 수행.
         eventPublisher.publishEvent(OrderRequestRegisteredEvent(outbox.id))
 
-        // 주문 등록 성공 후에도 임시저장은 유지한다 (레거시 Heroku reqOrder 정합 — 현업 요청 2026-07-10).
-        // 레거시는 등록 성공 분기에서 tmp_order 를 삭제하지 않아, 다음 주문서 진입 시 직전 임시저장이
-        // 그대로 복원됐다. 임시저장 정리는 사용자의 명시적 삭제/덮어쓰기 시점에만 이뤄진다.
-        // (Spec #596 Q4 자동 삭제는 이 정합 요청으로 철회 — 중복 주문 방지 필요 시 재검토.)
+        // 임시저장(tmp_order) 삭제는 접수(SENT) 시점이 아니라 비동기 SAP 등록이 최종 성공(APPROVED)한
+        // 시점에 OrderRequestSapOutboxStatusHandler 가 수행한다. 여기(접수)서는 삭제하지 않는다 — SAP 가
+        // 확정 거부/재시도 소진으로 SEND_FAILED 가 되면 draft 를 보존해 "다시 재주문" 시 복원할 수 있게 하기 위함.
 
         return OrderRequestCreateResponse.from(savedHeader)
     }

@@ -24,10 +24,13 @@ import java.time.LocalDateTime
  * - **트랜잭션 보강 (Q9)**: 등록/삭제 모두 단일 `@Transactional`. 레거시 부분 적재 결함 보강.
  * - **납기일 보관 (레거시 정합)**: 레거시 Heroku `saveTemp` 가 화면 `#DeliveryRequestDate` 를
  *   `tmp_orderdate` 로 저장·복원했던 것과 동일 — `tmp_order.order_date`(`tmpOrderDate`) 에 담는다.
- * - **정식 등록 후에도 임시저장 유지 (레거시 Heroku reqOrder 정합 — 현업 요청 2026-07-10)**:
- *   Spec #596 Q4 의 "정식 등록 후 자동 삭제" 는 철회됐다. `OrderRequestCreateService` 는
- *   [deleteByEmployeeId] 를 호출하지 않으며, 임시저장 정리는 사용자의 명시적 삭제/덮어쓰기
- *   시점에만 이뤄진다. [deleteByEmployeeId] 는 사용자 명시적 DELETE(OrderDraftController)에서만 쓰인다.
+ * - **SAP 등록 최종 성공(APPROVED) 시 임시저장 삭제**: 접수(SENT) 시점이 아니라 비동기 SAP 송신이
+ *   최종 성공한 시점에만 삭제한다. `OrderRequestCreateService`(접수) 는 [deleteByEmployeeId] 를
+ *   호출하지 않고, [com.otoki.powersales.domain.activity.order.sap.handler.OrderRequestSapOutboxStatusHandler]
+ *   가 APPROVED 전이 시 호출한다. 이로써 `SEND_FAILED`(확정 거부/재시도 소진) 시엔 draft 가 보존되어
+ *   "다시 재주문" 시 복원 가능하다. 사용자 명시적 DELETE(OrderDraftController)에서도 호출된다.
+ *   (과거 Spec #596 Q4 자동 삭제는 현업 요청 2026-07-10 으로 철회됐다가, 삭제 시점을 SAP 최종 성공으로
+ *   늦춰 재도입 — SEND_FAILED 재입력 부담을 없애는 조건을 충족하므로 복원.)
  */
 @Service
 @Transactional(readOnly = true)

@@ -3,6 +3,8 @@ package com.otoki.powersales.domain.activity.order.sap.handler
 import com.otoki.powersales.domain.activity.order.entity.OrderRequest
 import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestRepository
+import com.otoki.powersales.domain.activity.order.service.OrderDraftService
+import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.external.sap.SapConstants
 import com.otoki.powersales.external.sap.outbox.SapOutbox
 import io.mockk.every
@@ -16,13 +18,15 @@ import org.junit.jupiter.api.Test
 class OrderRequestSapOutboxStatusHandlerTest {
 
     private val orderRequestRepository: OrderRequestRepository = mockk()
-    private val handler = OrderRequestSapOutboxStatusHandler(orderRequestRepository)
+    private val orderDraftService: OrderDraftService = mockk(relaxed = true)
+    private val handler = OrderRequestSapOutboxStatusHandler(orderRequestRepository, orderDraftService)
 
     init {
         every { orderRequestRepository.save(any<OrderRequest>()) } answers { firstArg() }
     }
 
     private val orderRequestId = 100L
+    private val employeeId = 7L
 
     // 워커(SapOutboxBatchService.processOne)가 handle 호출 전에 outbox.status 를 확정한다:
     //  - 성공 → SENT / 최종 실패(재시도 초과) → FAILED / 재시도 대기 → RETRY.
@@ -40,6 +44,7 @@ class OrderRequestSapOutboxStatusHandlerTest {
         id = orderRequestId,
         orderRequestNumber = "OR00000001",
         orderRequestStatus = status,
+        employee = Employee(id = employeeId, employeeCode = "E007", name = "tester"),
     )
 
     @Test
@@ -54,6 +59,8 @@ class OrderRequestSapOutboxStatusHandlerTest {
         // 성공 전이 시 이전 실패 사유는 정리된다.
         assertThat(order.sendFailReason).isNull()
         verify(exactly = 1) { orderRequestRepository.save(order) }
+        // SAP 최종 성공 시점에만 해당 사원의 임시저장 삭제.
+        verify(exactly = 1) { orderDraftService.deleteByEmployeeId(employeeId) }
     }
 
     @Test
@@ -73,6 +80,8 @@ class OrderRequestSapOutboxStatusHandlerTest {
         // 확정 거부이므로 SAP 사유 원문을 노출용으로 기록.
         assertThat(order.sendFailReason).isEqualTo("여신 한도 초과")
         verify(exactly = 1) { orderRequestRepository.save(order) }
+        // SEND_FAILED 는 draft 를 보존한다(재주문 복원용) — 삭제 미호출.
+        verify(exactly = 0) { orderDraftService.deleteByEmployeeId(any()) }
     }
 
     @Test
