@@ -97,6 +97,16 @@ class SapOutbox(
         this.lastError = error?.take(MAX_ERROR_LENGTH)
     }
 
+    /**
+     * SAP 가 명시적으로 거부(`resultCode` 존재 && ≠ `"S"`)한 확정 실패. 재시도해도 결과가 동일하므로
+     * `retryCount` 를 증가시키지 않고 즉시 `FAILED`(터미널) 로 확정한다 — 남은 재시도 예산을 낭비하지 않는다.
+     * 일시적 장애(EMPTY/HTML/HTTP/NETWORK)는 [markRetry]/[markFailed] 로 재시도 대상이 되는 것과 구분된다.
+     */
+    fun markRejected(error: String?) {
+        this.status = STATUS_FAILED
+        this.lastError = error?.take(MAX_ERROR_LENGTH)
+    }
+
     companion object {
         const val STATUS_PENDING = "PENDING"
         const val STATUS_SENT = "SENT"

@@ -110,6 +110,16 @@ class OrderRequest(
     @Convert(converter = OrderRequestStatusConverter::class)
     var orderRequestStatus: OrderRequestStatus? = OrderRequestStatus.DRAFT,
 
+    /**
+     * SAP 등록 확정 거부 사유 (SAP `resutlMsg` 원문). 비동기 outbox 송신에서 SAP 가 명시적으로 거부
+     * (`resultCode` ≠ `"S"`)해 `SEND_FAILED` 로 전이될 때 기록한다 — 사용자가 상세에서 실패 사유를 확인하도록.
+     * 재전송/재요청으로 다시 `SENT` 로 복귀할 때 null 로 초기화한다. 일시적 장애(재시도 소진)로 인한 실패는
+     * SAP 업무 사유가 아니므로 여기에 담지 않는다(사유 원문이 없음). 신규 컬럼이라 SF 매핑 없음.
+     */
+    @FieldName("전송실패사유")
+    @Column(name = "send_fail_reason", columnDefinition = "TEXT")
+    var sendFailReason: String? = null,
+
     @FieldName("마감여부")
     @Column(name = "is_closed", nullable = false)
     var isClosed: Boolean = false,

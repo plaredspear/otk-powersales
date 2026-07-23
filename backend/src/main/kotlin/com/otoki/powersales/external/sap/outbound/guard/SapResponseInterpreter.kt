@@ -39,5 +39,16 @@ object SapResponseInterpreter {
      * @param message     `resutlMsg`/`resultMsg` 또는 파싱 실패 사유
      * @param resultCodeRaw SAP 원본 `resultCode` (파싱 불가/누락 시 null)
      */
-    data class Result(val success: Boolean, val message: String?, val resultCodeRaw: String?)
+    data class Result(val success: Boolean, val message: String?, val resultCodeRaw: String?) {
+
+        /**
+         * **확정 거부** 여부 — SAP 가 `resultCode` 를 명시적으로 반환했고 그 값이 `"S"`(성공)가 아닌 경우.
+         *
+         * SAP 업무 로직이 주문을 명시적으로 반려/거부한 상태라 동일 payload 재송신은 같은 결과가 확정적이므로
+         * 재시도를 스킵해야 하는 케이스이다. 반면 `resultCodeRaw == null` 인 실패(EMPTY_RESPONSE / INVALID_JSON /
+         * HTML / HTTP 오류 / 네트워크·timeout)는 SAP 도달·처리 여부가 불확실하므로 확정 거부가 아니며 재시도 대상이다.
+         */
+        val rejected: Boolean
+            get() = !success && resultCodeRaw != null
+    }
 }

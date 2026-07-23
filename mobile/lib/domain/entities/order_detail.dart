@@ -719,6 +719,11 @@ class OrderDetail {
   /// 승인상태 표시명 (서버 `orderRequestStatusName`, 예: 승인완료). 화면 출력용. 서버 `null` 가능.
   final String? orderRequestStatusName;
 
+  /// SAP 등록 확정 거부 사유 (서버 `sendFailReason`, SAP 원문). 상태가 SEND_FAILED 이고 SAP 가
+  /// 명시적으로 거부(resultCode ≠ 'S')한 경우에만 채워진다. 재시도 소진/일시 장애로 인한 SEND_FAILED 는
+  /// `null`. 전송실패 안내에 "전송실패: {사유}" 로 노출한다.
+  final String? sendFailReason;
+
   /// 마감 여부
   final bool isClosed;
 
@@ -773,6 +778,7 @@ class OrderDetail {
     this.totalApprovedAmount,
     required this.orderRequestStatus,
     required this.orderRequestStatusName,
+    this.sendFailReason,
     required this.isClosed,
     this.cancelable = false,
     this.registrationInFlight = false,

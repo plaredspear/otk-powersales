@@ -143,6 +143,7 @@ class OrderRequestControllerTest : MobileControllerTestSupport() {
                 totalApprovedAmount = BigDecimal("1200000.00"),
                 orderRequestStatus = OrderRequestStatus.APPROVED.name,
                 orderRequestStatusName = OrderRequestStatus.APPROVED.displayName,
+                sendFailReason = null,
                 isClosed = true,
                 cancelable = false,
                 registrationInFlight = false,

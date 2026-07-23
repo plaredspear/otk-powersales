@@ -19,6 +19,9 @@ interface SapOutboxStatusHandler {
      * @param outbox 송신 outbox row
      * @param success SAP 응답 본문 검증 통과 + `resultCode='S'` 여부
      * @param resultMessage SAP 응답의 `resutlMsg` (오타 레거시 그대로) 또는 실패 사유
+     * @param rejected SAP 가 명시적으로 거부(`resultCode` 존재 && ≠ `"S"`)한 확정 실패 여부.
+     *   `true` 이면 [resultMessage] 는 SAP 업무 사유 원문이며 재시도 없이 최종 실패로 확정된 상태다.
+     *   일시적 장애(EMPTY/HTML/HTTP/NETWORK)로 인한 실패는 `false`.
      */
-    fun handle(outbox: SapOutbox, success: Boolean, resultMessage: String?)
+    fun handle(outbox: SapOutbox, success: Boolean, resultMessage: String?, rejected: Boolean)
 }

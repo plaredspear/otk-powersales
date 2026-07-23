@@ -58,7 +58,7 @@ class SapOutboxBatchServiceTest {
         every { interfaceRegistry.resolveEndpoint("UNKNOWN_IF") } returns null
         every { statusHandlerRegistry.resolve("ORDER_REQUEST_REGISTER") } returns statusHandler
         every { outboxRepository.save(any<SapOutbox>()) } returns outbox
-        every { statusHandler.handle(any(), any(), any()) } returns Unit
+        every { statusHandler.handle(any(), any(), any(), any()) } returns Unit
 
         val result = service.execute()
 
@@ -125,11 +125,107 @@ class SapOutboxBatchServiceTest {
     }
 
     @Test
+    @DisplayName("markRejected — 확정 거부는 retryCount 미증가 + 즉시 FAILED")
+    fun markRejectedSkipsRetry() {
+        val outbox = SapOutbox(
+            id = 1L, domainType = "X", aggregateId = 1L, interfaceId = "Y", payload = "{}",
+        )
+
+        outbox.markRejected("여신 한도 초과")
+
+        assertThat(outbox.status).isEqualTo(SapOutbox.STATUS_FAILED)
+        // 재시도 예산을 소진하지 않는다 — retryCount 0 유지 (markFailed 와의 차이).
+        assertThat(outbox.retryCount).isEqualTo(0)
+        assertThat(outbox.lastError).isEqualTo("여신 한도 초과")
+    }
+
+    @Test
+    @DisplayName("SAP resultCode='E' → 즉시 markRejected(재시도 스킵) + 핸들러 rejected=true")
+    fun sapExplicitRejectSkipsRetry() {
+        val outbox = SapOutbox(
+            id = 1L,
+            domainType = "ORDER_REQUEST_REGISTER",
+            aggregateId = 100L,
+            interfaceId = "IF_SD03050",
+            payload = "{}",
+        )
+        stubSapResponse(outbox, """{"resultCode":"E","resutlMsg":"여신 한도 초과"}""")
+        val successSlot = slot<Boolean>()
+        val msgSlot = slot<String>()
+        val rejectedSlot = slot<Boolean>()
+        every {
+            statusHandler.handle(any(), capture(successSlot), capture(msgSlot), capture(rejectedSlot))
+        } returns Unit
+
+        val ok = service.processOne(1L)
+
+        assertThat(ok).isFalse
+        // 재시도 없이 즉시 FAILED, retryCount 미증가.
+        assertThat(outbox.status).isEqualTo(SapOutbox.STATUS_FAILED)
+        assertThat(outbox.retryCount).isEqualTo(0)
+        assertThat(outbox.lastError).isEqualTo("여신 한도 초과")
+        // 핸들러엔 rejected=true + SAP 사유 원문 전달.
+        assertThat(successSlot.captured).isFalse
+        assertThat(rejectedSlot.captured).isTrue
+        assertThat(msgSlot.captured).isEqualTo("여신 한도 초과")
+    }
+
+    @Test
+    @DisplayName("HTTP 5xx(일시 장애) → markRetry(재시도 대상) + 핸들러 rejected=false")
+    fun sapTransientErrorRetries() {
+        val outbox = SapOutbox(
+            id = 1L,
+            domainType = "ORDER_REQUEST_REGISTER",
+            aggregateId = 100L,
+            interfaceId = "IF_SD03050",
+            payload = "{}",
+        )
+        every { outboxRepository.findById(1L) } returns Optional.of(outbox)
+        every { interfaceRegistry.resolveEndpoint("IF_SD03050") } returns "/IF_SD03050"
+        every { statusHandlerRegistry.resolve("ORDER_REQUEST_REGISTER") } returns statusHandler
+        every { outboxRepository.save(any<SapOutbox>()) } returns outbox
+        // RestClient 체인이 HttpStatusCodeException 을 던지도록 — retrieve() 에서 예외 발생.
+        val requestSpec = mockk<RestClient.RequestBodyUriSpec>(relaxed = true)
+        every { restClient.post() } returns requestSpec
+        every { requestSpec.uri(any<String>()) } returns requestSpec
+        every { requestSpec.body(any<Any>()) } returns requestSpec
+        every { requestSpec.retrieve() } throws
+            org.springframework.web.client.HttpServerErrorException(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+        val rejectedSlot = slot<Boolean>()
+        every { statusHandler.handle(any(), any(), any(), capture(rejectedSlot)) } returns Unit
+
+        val ok = service.processOne(1L)
+
+        assertThat(ok).isFalse
+        // 한도 미도달이므로 RETRY, retryCount 증가.
+        assertThat(outbox.status).isEqualTo(SapOutbox.STATUS_RETRY)
+        assertThat(outbox.retryCount).isEqualTo(1)
+        assertThat(rejectedSlot.captured).isFalse
+    }
+
+    /** RestClient post→uri→body→retrieve→toEntity 체인이 [body] 를 200 응답으로 반환하도록 stub. */
+    private fun stubSapResponse(outbox: SapOutbox, body: String) {
+        every { outboxRepository.findById(1L) } returns Optional.of(outbox)
+        every { interfaceRegistry.resolveEndpoint(outbox.interfaceId) } returns "/${outbox.interfaceId}"
+        every { statusHandlerRegistry.resolve(outbox.domainType) } returns statusHandler
+        every { outboxRepository.save(any<SapOutbox>()) } returns outbox
+
+        val requestSpec = mockk<RestClient.RequestBodyUriSpec>(relaxed = true)
+        val responseSpec = mockk<RestClient.ResponseSpec>()
+        every { restClient.post() } returns requestSpec
+        every { requestSpec.uri(any<String>()) } returns requestSpec
+        every { requestSpec.body(any<Any>()) } returns requestSpec
+        every { requestSpec.retrieve() } returns responseSpec
+        every { responseSpec.toEntity(String::class.java) } returns
+            org.springframework.http.ResponseEntity.ok(body)
+    }
+
+    @Test
     @DisplayName("SapOutboxStatusHandlerRegistry — supports() 키로 lookup")
     fun handlerRegistry() {
         val h = object : SapOutboxStatusHandler {
             override fun supports(): String = "TEST_DOMAIN"
-            override fun handle(outbox: SapOutbox, success: Boolean, resultMessage: String?) {}
+            override fun handle(outbox: SapOutbox, success: Boolean, resultMessage: String?, rejected: Boolean) {}
         }
         val registry = SapOutboxStatusHandlerRegistry(listOf(h))
         assertThat(registry.resolve("TEST_DOMAIN")).isSameAs(h)
@@ -159,13 +255,13 @@ class SapOutboxBatchServiceTest {
         every { interfaceRegistry.resolveEndpoint("UNKNOWN") } returns null
         every { statusHandlerRegistry.resolve("ORDER_REQUEST_REGISTER") } returns statusHandler
         every { outboxRepository.save(capture(captor)) } returns outbox
-        every { statusHandler.handle(any(), any(), any()) } returns Unit
+        every { statusHandler.handle(any(), any(), any(), any()) } returns Unit
 
         val ok = service.processOne(1L)
 
         assertThat(ok).isFalse
         verify { outboxRepository.save(any<SapOutbox>()) }
         assertThat(captor.captured.status).isEqualTo(SapOutbox.STATUS_FAILED)
-        verify(exactly = 1) { statusHandler.handle(any(), any(), any()) }
+        verify(exactly = 1) { statusHandler.handle(any(), any(), any(), any()) }
     }
 }

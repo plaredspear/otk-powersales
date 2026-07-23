@@ -15,10 +15,15 @@ import org.springframework.transaction.annotation.Transactional
  *
  * 상태 전이:
  *  - SAP `resultCode='S'` → `APPROVED`
- *  - SAP 송신 실패이고 재시도 한도 초과(outbox `FAILED`) → `SEND_FAILED`
+ *  - SAP 명시적 거부(`rejected=true`, outbox `FAILED`) → `SEND_FAILED` + SAP 사유 원문 기록.
+ *  - SAP 송신 실패이고 재시도 한도 초과(outbox `FAILED`) → `SEND_FAILED` (사유 원문 없음 → null).
  *  - SAP 송신 실패이나 재시도 대기(outbox `RETRY`/`PENDING`, in-flight) → **상태 미변경(SENT 유지)**.
  *    재시도 진행 중을 최종 "전송실패" 로 오표시하지 않기 위함이다. SENT 로 남겨두면 목록/상세의
  *    과도상태 자동 폴링 대상으로 유지되어, 이후 재시도가 성공하면 APPROVED 로 자연스럽게 전이한다.
+ *
+ * `SEND_FAILED` 전이 시 SAP 업무 거부 사유(`resutlMsg` 원문)를 `order_request.send_fail_reason` 에 기록해
+ * 사용자가 상세에서 실패 사유를 확인할 수 있게 한다(비동기라 등록 응답 시점엔 노출 불가). 성공(APPROVED)
+ * 전이 시엔 이전 실패 사유를 정리(null)한다.
  *
  * 워커 트랜잭션 외부에서 호출되므로 본 핸들러가 자체 트랜잭션 (`REQUIRES_NEW`) 으로 도메인 상태 갱신.
  */
@@ -32,7 +37,7 @@ class OrderRequestSapOutboxStatusHandler(
     override fun supports(): String = SapConstants.SAP_DOMAIN_ORDER_REQUEST_REGISTER
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    override fun handle(outbox: SapOutbox, success: Boolean, resultMessage: String?) {
+    override fun handle(outbox: SapOutbox, success: Boolean, resultMessage: String?, rejected: Boolean) {
         // 취소 커밋과 직렬화 — 동일 행에 PESSIMISTIC_WRITE 락 획득 후 상태 판정/갱신.
         val order = orderRequestRepository.findByIdForUpdate(outbox.aggregateId)
         if (order == null) {
@@ -56,11 +61,20 @@ class OrderRequestSapOutboxStatusHandler(
             )
             return
         }
-        order.orderRequestStatus = if (success) OrderRequestStatus.APPROVED else OrderRequestStatus.SEND_FAILED
+        if (success) {
+            order.orderRequestStatus = OrderRequestStatus.APPROVED
+            // 성공 전이 시 이전 실패 사유 정리 (재전송 성공 등).
+            order.sendFailReason = null
+        } else {
+            order.orderRequestStatus = OrderRequestStatus.SEND_FAILED
+            // SAP 명시적 거부(rejected)일 때만 SAP 사유 원문을 노출용으로 기록. 재시도 소진/설정 오류 등
+            // 코드성 실패 메시지(HTTP_5xx, NETWORK_ERROR 등)는 사용자 대상 사유가 아니므로 null 로 남긴다.
+            order.sendFailReason = if (rejected) resultMessage else null
+        }
         orderRequestRepository.save(order)
         log.info(
-            "OrderRequest 상태 전이 orderRequestId={} success={} status={} resultMsg={}",
-            order.id, success, order.orderRequestStatus, resultMessage
+            "OrderRequest 상태 전이 orderRequestId={} success={} rejected={} status={} resultMsg={}",
+            order.id, success, rejected, order.orderRequestStatus, resultMessage
         )
     }
 }

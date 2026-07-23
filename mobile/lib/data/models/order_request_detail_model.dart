@@ -352,6 +352,10 @@ class OrderRequestDetailModel {
   /// 서버 SF nillable=true 정합 — 마이그레이션 SF NULL row 는 두 필드 모두 `null` 로 온다.
   final String? orderRequestStatus;
   final String? orderRequestStatusName;
+
+  /// SAP 등록 확정 거부 사유 (SAP 원문). 상태가 SEND_FAILED 이고 SAP 가 명시적으로 거부한 경우에만 채워짐.
+  /// 재시도 소진/일시 장애로 인한 SEND_FAILED 는 null. 비동기 등록이라 등록 응답엔 없고 상세 조회 시에만 온다.
+  final String? sendFailReason;
   final bool isClosed;
   final bool cancelable;
   final bool registrationInFlight;
@@ -384,6 +388,7 @@ class OrderRequestDetailModel {
     this.totalApprovedAmount,
     required this.orderRequestStatus,
     required this.orderRequestStatusName,
+    this.sendFailReason,
     required this.isClosed,
     this.cancelable = false,
     this.registrationInFlight = false,
@@ -424,6 +429,7 @@ class OrderRequestDetailModel {
       totalApprovedAmount: (data['totalApprovedAmount'] as num?)?.toInt(),
       orderRequestStatus: data['orderRequestStatus'] as String?,
       orderRequestStatusName: data['orderRequestStatusName'] as String?,
+      sendFailReason: data['sendFailReason'] as String?,
       isClosed: data['isClosed'] as bool,
       cancelable: data['cancelable'] as bool? ?? false,
       registrationInFlight: data['registrationInFlight'] as bool? ?? false,
@@ -479,6 +485,7 @@ class OrderRequestDetailModel {
       'totalApprovedAmount': totalApprovedAmount,
       'orderRequestStatus': orderRequestStatus,
       'orderRequestStatusName': orderRequestStatusName,
+      'sendFailReason': sendFailReason,
       'isClosed': isClosed,
       'cancelable': cancelable,
       'registrationInFlight': registrationInFlight,
@@ -508,6 +515,7 @@ class OrderRequestDetailModel {
       totalApprovedAmount: totalApprovedAmount,
       orderRequestStatus: orderRequestStatus,
       orderRequestStatusName: orderRequestStatusName,
+      sendFailReason: sendFailReason,
       isClosed: isClosed,
       cancelable: cancelable,
       registrationInFlight: registrationInFlight,

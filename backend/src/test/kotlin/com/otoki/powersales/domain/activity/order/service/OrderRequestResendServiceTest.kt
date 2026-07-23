@@ -66,7 +66,9 @@ class OrderRequestResendServiceTest {
     @Test
     @DisplayName("HP1 — SEND_FAILED + 마감 전 → 상태 SENT 복귀 후 outbox 재적재")
     fun hp1_resendSuccess() {
+        // 이전 SAP 거부 사유가 남아있는 상태에서 재전송 시작 → 재전송 시점에 사유가 정리되는지 검증.
         val orderRequest = orderRequest(status = OrderRequestStatus.SEND_FAILED)
+            .apply { sendFailReason = "여신 한도 초과" }
         val lines = listOf(
             product(101, BigDecimal.valueOf(10L), "P001", orderRequest),
             product(102, BigDecimal.valueOf(20L), "P002", orderRequest),
@@ -80,6 +82,8 @@ class OrderRequestResendServiceTest {
         service.resend(orderRequestId, userId)
 
         assertThat(orderRequest.orderRequestStatus).isEqualTo(OrderRequestStatus.SENT)
+        // 재전송 시 이전 SAP 거부 사유는 정리된다.
+        assertThat(savedCaptor.captured.sendFailReason).isNull()
         verify(exactly = 1) { orderRequestRepository.save(orderRequest) }
         verify(exactly = 1) { registerSender.enqueue(orderRequest, lines) }
         assertThat(enqueueLines.captured).hasSize(2)

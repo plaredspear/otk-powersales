@@ -36,6 +36,9 @@ data class OrderRequestDetailResponse(
     // SF nillable=true 정합으로 orderRequestStatus 가 nullable — 마이그 SF NULL row 는 두 필드 모두 null.
     val orderRequestStatus: String?,
     val orderRequestStatusName: String?,
+    // SAP 등록 확정 거부 사유(SAP 원문). 상태가 SEND_FAILED 이고 SAP 가 명시적으로 거부한 경우에만 채워짐.
+    // 재시도 소진/일시 장애로 인한 SEND_FAILED 는 null. 모바일이 "전송실패: {사유}" 로 노출한다.
+    val sendFailReason: String?,
     val isClosed: Boolean,
     // 취소 가능 여부(서버 권위 판정: 상태 + 마감 + 등록 SAP 전송 not in-flight). 모바일 취소 버튼 게이트 단일 진실원.
     val cancelable: Boolean,
@@ -81,6 +84,7 @@ data class OrderRequestDetailResponse(
                 totalApprovedAmount = totalApprovedAmount,
                 orderRequestStatus = orderRequest.orderRequestStatus?.name,
                 orderRequestStatusName = orderRequest.orderRequestStatus?.clientDisplayName,
+                sendFailReason = orderRequest.sendFailReason,
                 isClosed = isClosed,
                 cancelable = cancelable,
                 registrationInFlight = registrationInFlight,

@@ -217,9 +217,10 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
               if (state.showCancelButton)
                 const SizedBox(height: AppSpacing.lg),
 
-              // 전송실패 안내 — 재전송 버튼 대신 재주문을 유도
+              // 전송실패 안내 — 재전송 버튼 대신 재주문을 유도.
+              // SAP 가 명시적으로 거부한 경우(sendFailReason 존재) 그 사유를 함께 노출한다.
               if (state.showResendButton) ...[
-                _buildResendGuideNotice(),
+                _buildResendGuideNotice(detail.sendFailReason),
                 const SizedBox(height: AppSpacing.lg),
               ],
 
@@ -336,8 +337,13 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
     );
   }
 
-  /// 전송실패 안내 — 재전송 대신 재주문을 유도
-  Widget _buildResendGuideNotice() {
+  /// 전송실패 안내 — 재전송 대신 재주문을 유도.
+  ///
+  /// [sendFailReason] 이 있으면(SAP 명시적 거부) 사유를 함께 노출한다. 비동기 등록이라 등록 시점엔
+  /// 실패 사유를 알 수 없고, SAP 가 거부한 경우에만 상세 조회에서 사유가 내려온다. 재시도 소진/일시 장애
+  /// (사유 null)면 안내 문구만 표시한다.
+  Widget _buildResendGuideNotice(String? sendFailReason) {
+    final hasReason = sendFailReason != null && sendFailReason.trim().isNotEmpty;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(
@@ -355,9 +361,23 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
           Icon(Icons.error_outline, size: 16, color: AppColors.error),
           const SizedBox(width: AppSpacing.xs),
           Expanded(
-            child: Text(
-              '다시 재주문해주세요',
-              style: AppTypography.bodySmall.copyWith(color: AppColors.error),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasReason) ...[
+                  Text(
+                    '전송실패: $sendFailReason',
+                    style: AppTypography.bodySmall
+                        .copyWith(color: AppColors.error),
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                ],
+                Text(
+                  '다시 재주문해주세요',
+                  style:
+                      AppTypography.bodySmall.copyWith(color: AppColors.error),
+                ),
+              ],
             ),
           ),
         ],

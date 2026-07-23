@@ -45,6 +45,8 @@ class OrderRequestResendService(
             .findByOrderRequest_IdOrderByLineNumberAsc(orderRequestId)
 
         orderRequest.orderRequestStatus = OrderRequestStatus.SENT
+        // 이전 SAP 거부 사유 정리 — 재전송 시도 시점에 지운다(재송신 결과로 다시 채워지거나 성공하면 null 유지).
+        orderRequest.sendFailReason = null
         orderRequestRepository.save(orderRequest)
         orderRequestRegisterSender.enqueue(orderRequest, lines)
     }

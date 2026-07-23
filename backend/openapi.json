@@ -19239,6 +19239,9 @@
             },
             "type" : "array"
           },
+          "sendFailReason" : {
+            "type" : [ "string", "null" ]
+          },
           "totalAmount" : {
             "type" : [ "number", "null" ]
           },

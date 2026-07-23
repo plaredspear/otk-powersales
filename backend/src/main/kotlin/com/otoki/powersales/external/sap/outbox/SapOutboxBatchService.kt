@@ -14,7 +14,6 @@ import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
 import tools.jackson.databind.ObjectMapper
-import kotlin.collections.get
 
 /**
  * 도메인 무관 범용 SAP outbound 송신 처리 (Spec #592). batch 진입점은 [com.otoki.powersales.platform.batch.SapOutboxBatch].
@@ -66,13 +65,17 @@ class SapOutboxBatchService(
             log.error("SAP outbox interfaceId 미등록 outboxId=$outboxId interfaceId=${outbox.interfaceId}")
             outbox.markFailed("UNREGISTERED_INTERFACE_ID")
             outboxRepository.save(outbox)
-            statusHandlerRegistry.resolve(outbox.domainType)?.handle(outbox, false, "UNREGISTERED_INTERFACE_ID")
+            // interfaceId 미등록은 설정 오류(SAP 도달 전) — 확정 거부(rejected)가 아니다.
+            statusHandlerRegistry.resolve(outbox.domainType)?.handle(outbox, false, "UNREGISTERED_INTERFACE_ID", false)
             return false
         }
 
         val payloadMap = parsePayload(outbox.payload)
 
-        val (success, resultMsg) = try {
+        // (성공 여부, 메시지, 확정 거부 여부) — rejected=true 는 SAP 가 resultCode 를 반환했고 ≠ 'S' 인 경우로,
+        // 재시도해도 결과가 동일하므로 즉시 확정 실패한다. 예외 경로(HTML/HTTP/NETWORK/UNEXPECTED)는 SAP 도달·처리
+        // 여부가 불확실해 rejected=false → 종전대로 재시도 대상.
+        val outcome: SendOutcome = try {
             val response = restClient.post()
                 .uri(endpoint)
                 .body(payloadMap)
@@ -82,21 +85,26 @@ class SapOutboxBatchService(
             val body = response.body
             val htmlOk = SapResponseHtmlGuard.isValid(body)
             if (!htmlOk) {
-                false to "HTML_RESPONSE_DETECTED"
+                SendOutcome(success = false, message = "HTML_RESPONSE_DETECTED", rejected = false)
             } else {
-                interpretSapResponse(body)
+                val result = SapResponseInterpreter.interpret(objectMapper, body)
+                SendOutcome(success = result.success, message = result.message, rejected = result.rejected)
             }
         } catch (ex: HttpStatusCodeException) {
-            false to "HTTP_${ex.statusCode.value()}"
+            SendOutcome(success = false, message = "HTTP_${ex.statusCode.value()}", rejected = false)
         } catch (ex: ResourceAccessException) {
-            false to "NETWORK_ERROR: ${ex.message}"
+            SendOutcome(success = false, message = "NETWORK_ERROR: ${ex.message}", rejected = false)
         } catch (ex: Exception) {
             log.warn("SAP outbox 송신 예외 outboxId=$outboxId", ex)
-            false to "UNEXPECTED: ${ex.javaClass.simpleName}"
+            SendOutcome(success = false, message = "UNEXPECTED: ${ex.javaClass.simpleName}", rejected = false)
         }
 
+        val (success, resultMsg, rejected) = outcome
         if (success) {
             outbox.markSent()
+        } else if (rejected) {
+            // SAP 명시적 거부 — 재시도 스킵, 즉시 FAILED 확정 (retryCount 미증가).
+            outbox.markRejected(resultMsg)
         } else if (outbox.retryCount + 1 >= SapOutbox.MAX_RETRY_COUNT) {
             outbox.markFailed(resultMsg)
         } else {
@@ -104,9 +112,11 @@ class SapOutboxBatchService(
         }
         outboxRepository.save(outbox)
 
-        statusHandlerRegistry.resolve(outbox.domainType)?.handle(outbox, success, resultMsg)
+        statusHandlerRegistry.resolve(outbox.domainType)?.handle(outbox, success, resultMsg, rejected)
         return success
     }
+
+    private data class SendOutcome(val success: Boolean, val message: String?, val rejected: Boolean)
 
     private fun parsePayload(payloadJson: String): Map<String, Any?> {
         return try {
@@ -116,11 +126,6 @@ class SapOutboxBatchService(
             log.error("SAP outbox payload JSON 파싱 실패", ex)
             emptyMap()
         }
-    }
-
-    private fun interpretSapResponse(body: String?): Pair<Boolean, String?> {
-        val result = SapResponseInterpreter.interpret(objectMapper, body)
-        return result.success to result.message
     }
 
     data class WorkerResult(val picked: Int, val sent: Int, val failed: Int)

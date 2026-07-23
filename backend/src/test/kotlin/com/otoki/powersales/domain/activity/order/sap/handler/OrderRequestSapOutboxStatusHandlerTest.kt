@@ -43,26 +43,54 @@ class OrderRequestSapOutboxStatusHandlerTest {
     )
 
     @Test
-    @DisplayName("성공 응답 → SENT 주문을 APPROVED 로 전이")
+    @DisplayName("성공 응답 → SENT 주문을 APPROVED 로 전이 + 이전 실패 사유 정리")
     fun success_transitions_to_approved() {
-        val order = order(OrderRequestStatus.SENT)
+        val order = order(OrderRequestStatus.SENT).apply { sendFailReason = "이전 실패 사유" }
         every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns order
 
-        handler.handle(outbox(), success = true, resultMessage = "S")
+        handler.handle(outbox(), success = true, resultMessage = "S", rejected = false)
 
         assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.APPROVED)
+        // 성공 전이 시 이전 실패 사유는 정리된다.
+        assertThat(order.sendFailReason).isNull()
         verify(exactly = 1) { orderRequestRepository.save(order) }
     }
 
     @Test
-    @DisplayName("최종 실패(outbox FAILED) → SENT 주문을 SEND_FAILED 로 전이")
-    fun final_failure_transitions_to_send_failed() {
+    @DisplayName("SAP 명시적 거부(rejected) → SEND_FAILED + SAP 사유 원문 기록")
+    fun rejected_transitions_to_send_failed_with_reason() {
         val order = order(OrderRequestStatus.SENT)
         every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns order
 
-        handler.handle(outbox(SapOutbox.STATUS_FAILED), success = false, resultMessage = "E")
+        handler.handle(
+            outbox(SapOutbox.STATUS_FAILED),
+            success = false,
+            resultMessage = "여신 한도 초과",
+            rejected = true,
+        )
 
         assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.SEND_FAILED)
+        // 확정 거부이므로 SAP 사유 원문을 노출용으로 기록.
+        assertThat(order.sendFailReason).isEqualTo("여신 한도 초과")
+        verify(exactly = 1) { orderRequestRepository.save(order) }
+    }
+
+    @Test
+    @DisplayName("일시 장애 재시도 소진(outbox FAILED, rejected=false) → SEND_FAILED + 사유 null")
+    fun transient_final_failure_transitions_without_reason() {
+        val order = order(OrderRequestStatus.SENT)
+        every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns order
+
+        handler.handle(
+            outbox(SapOutbox.STATUS_FAILED),
+            success = false,
+            resultMessage = "HTTP_500",
+            rejected = false,
+        )
+
+        assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.SEND_FAILED)
+        // 코드성 실패 메시지는 사용자 대상 사유가 아니므로 노출하지 않는다.
+        assertThat(order.sendFailReason).isNull()
         verify(exactly = 1) { orderRequestRepository.save(order) }
     }
 
@@ -72,7 +100,12 @@ class OrderRequestSapOutboxStatusHandlerTest {
         val order = order(OrderRequestStatus.SENT)
         every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns order
 
-        handler.handle(outbox(SapOutbox.STATUS_RETRY), success = false, resultMessage = "NETWORK_ERROR")
+        handler.handle(
+            outbox(SapOutbox.STATUS_RETRY),
+            success = false,
+            resultMessage = "NETWORK_ERROR",
+            rejected = false,
+        )
 
         assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.SENT)
         verify(exactly = 0) { orderRequestRepository.save(any()) }
@@ -84,7 +117,7 @@ class OrderRequestSapOutboxStatusHandlerTest {
         val order = order(OrderRequestStatus.CANCEL_REQUESTED)
         every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns order
 
-        handler.handle(outbox(), success = true, resultMessage = "S")
+        handler.handle(outbox(), success = true, resultMessage = "S", rejected = false)
 
         assertThat(order.orderRequestStatus).isEqualTo(OrderRequestStatus.CANCEL_REQUESTED)
         verify(exactly = 0) { orderRequestRepository.save(any()) }
@@ -95,7 +128,7 @@ class OrderRequestSapOutboxStatusHandlerTest {
     fun missing_order_is_skipped() {
         every { orderRequestRepository.findByIdForUpdate(orderRequestId) } returns null
 
-        handler.handle(outbox(), success = true, resultMessage = "S")
+        handler.handle(outbox(), success = true, resultMessage = "S", rejected = false)
 
         verify(exactly = 0) { orderRequestRepository.save(any()) }
     }
