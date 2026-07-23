@@ -270,20 +270,25 @@ class ClientOrderQueryServiceTest {
                 createProduct(id = 10, lineNumber = "10", deliveryStatus = "대기", productCode = "P_RAMYEON", productName = "라면사리", confirmQuantityBox = BigDecimal("6")),
                 createProduct(id = 11, lineNumber = "20", deliveryStatus = "대기", productCode = "P_JIN", productName = "진라면", confirmQuantityBox = BigDecimal("5")),
             )
-            val cancel = cancelOrder()
+            val cancel = cancelOrder() // order_type = ZRE1
             every { erpOrderRepository.findByRefSapOrderNumberIn(any()) } returns listOf(cancel)
-            // 후속주문(취소): 라면사리 취소 레코드(더 큰 id) — 원주문 라면사리를 대체해야 함
+            // 후속주문(취소): 라면사리 레코드(더 큰 id)로 원주문 라면사리를 대체. 단 라인 delivery_status 는 '대기'
+            // (취소는 헤더 order_type=ZRE1 로만 표현되고 라인엔 미반영) — 그래도 상태는 '취소'로 강제되어야 함.
             every { erpOrderProductRepository.findBySapOrderNumberIn(listOf("604311314")) } returns listOf(
-                createProduct(id = 500, lineNumber = "10", deliveryStatus = "취소", productCode = "P_RAMYEON", productName = "라면사리", confirmQuantityBox = BigDecimal("6")),
+                createProduct(id = 500, lineNumber = "10", deliveryStatus = "대기", productCode = "P_RAMYEON", productName = "라면사리", confirmQuantityBox = BigDecimal("6"), lineSapOrderNumber = "604311314"),
             )
 
             val result = service.getClientOrderDetail(sapOrderNumber)
 
-            // 라면사리는 통합 dedup 으로 1건(취소), 진라면 1건 = 총 2건. 원주문 위치(라면사리 먼저) 유지.
+            // 라면사리는 통합 dedup 으로 1건(취소 주문 최신 레코드), 진라면 1건 = 총 2건. 원주문 위치(라면사리 먼저) 유지.
             assertThat(result.orderedItems).hasSize(2)
             assertThat(result.orderedItemCount).isEqualTo(2)
             val ramyeon = result.orderedItems.first { it.productCode == "P_RAMYEON" }
+            // 라인 delivery_status 는 '대기'였지만 취소 주문(ZRE1) 소속이라 '취소'로 강제.
             assertThat(ramyeon.deliveryStatus).isEqualTo(DeliveryStatus.CANCELLED)
+            // 진라면은 원주문에만 존재 → 원래 상태 유지(대기).
+            val jin = result.orderedItems.first { it.productCode == "P_JIN" }
+            assertThat(jin.deliveryStatus).isEqualTo(DeliveryStatus.PENDING)
             // 후속 취소 요약은 제품표 없이 헤더만
             assertThat(result.relatedOrders).hasSize(1)
         }
@@ -539,14 +544,16 @@ class ClientOrderQueryServiceTest {
         shippingQuantity: BigDecimal? = null,
         unit: String? = "BOX",
         defaultReason: String? = null,
+        lineSapOrderNumber: String? = null,
     ): ErpOrderProduct {
         val order = createOrder(employeeCode = employeeCode)
+        val sap = lineSapOrderNumber ?: sapOrderNumber
         return ErpOrderProduct(
             id = id,
             erpOrder = order,
-            sapOrderNumber = sapOrderNumber,
+            sapOrderNumber = sap,
             lineNumber = lineNumber,
-            externalKey = "$sapOrderNumber-$lineNumber",
+            externalKey = "$sap-$lineNumber",
             productCode = productCode,
             productName = productName,
             confirmQuantityBox = confirmQuantityBox,

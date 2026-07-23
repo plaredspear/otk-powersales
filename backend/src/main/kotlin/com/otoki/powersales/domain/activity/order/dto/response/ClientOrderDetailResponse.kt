@@ -49,14 +49,23 @@ data class ClientOrderDetailResponse(
          *   `erp_order.employee_name`(SF `EmployeeName__c`)은 시스템 계정명이 적재되는 경우가 있어 신뢰하지 않고,
          *   서비스가 `employee_code` 로 조회한 이름을 주입한다. 미해석 시 `order.employeeName` 로 폴백.
          * @param relatedOrders 이 주문번호를 역참조하는 후속 주문 목록 (없으면 빈 배열).
+         * @param cancelledSapOrderNumbers 취소 주문(`order_type=ZRE1`)의 SAP 주문번호 집합.
+         *   통합 dedup 결과 어떤 제품의 최신 레코드가 취소 주문에 속하면 라인 상태를 '취소'로 강제한다
+         *   (취소는 헤더 레벨 order_type 으로 표현되고 라인 delivery_status 엔 반영되지 않으므로).
          */
         fun from(
             order: ErpOrder,
             products: List<ErpOrderProduct>,
             ordererName: String?,
             relatedOrders: List<RelatedClientOrderResponse> = emptyList(),
+            cancelledSapOrderNumbers: Set<String> = emptySet(),
         ): ClientOrderDetailResponse {
-            val items = products.map(ClientOrderItemResponse::from)
+            val items = products.map { product ->
+                ClientOrderItemResponse.from(
+                    product,
+                    forceCancelled = product.sapOrderNumber in cancelledSapOrderNumbers,
+                )
+            }
             return ClientOrderDetailResponse(
                 sapOrderNumber = order.sapOrderNumber,
                 sapAccountCode = order.sapAccountCode,
@@ -146,13 +155,17 @@ data class ClientOrderItemResponse(
     companion object {
         private const val ZERO_TIME: String = "000000"
 
-        fun from(product: ErpOrderProduct): ClientOrderItemResponse {
+        /**
+         * @param forceCancelled 이 라인이 취소 주문(`order_type=ZRE1`)에 속하면 true — 라인 delivery_status 와
+         *   무관하게 상태를 '취소'로 강제한다 (취소는 헤더 레벨로 표현되므로).
+         */
+        fun from(product: ErpOrderProduct, forceCancelled: Boolean = false): ClientOrderItemResponse {
             return ClientOrderItemResponse(
                 productCode = product.productCode,
                 productName = product.productName,
                 deliveredQuantity = formatDeliveredQuantity(product.confirmQuantityBox),
                 shippedQuantity = formatShippedQuantity(product.shippingQuantityBox, product.shippingQuantity),
-                deliveryStatus = resolveDeliveryStatus(product),
+                deliveryStatus = if (forceCancelled) DeliveryStatus.CANCELLED else resolveDeliveryStatus(product),
                 driverName = nullIfBlank(product.shippingDriverName),
                 vehicle = nullIfBlank(product.shippingVehicle),
                 driverPhone = nullIfBlank(product.shippingDriverPhone),

@@ -42,6 +42,9 @@ class ClientOrderQueryService(
         private val SAP_ORDER_NUMBER_PATTERN = Regex("^\\d{1,20}$")
         private const val DEFAULT_PAGE_SIZE = 20
         private const val MAX_PAGE_SIZE = 100
+
+        /** 취소 주문유형 코드 (SAP `Standard Cancel`). */
+        private const val CANCEL_ORDER_TYPE = "ZRE1"
     }
 
     /**
@@ -146,8 +149,20 @@ class ClientOrderQueryService(
 
         val relatedOrders = buildRelatedSummaries(referencingOrders)
 
-        return ClientOrderDetailResponse.from(order, products, ordererName, relatedOrders)
+        // 취소 주문(order_type=ZRE1)의 SAP 주문번호 — 통합 dedup 결과 최신 레코드가 취소 주문 소속이면
+        // 라인 상태를 '취소'로 강제(취소는 헤더 order_type 으로 표현되고 라인 delivery_status 엔 미반영).
+        val cancelledSapOrderNumbers = referencingOrders
+            .filter { isCancelOrderType(it.orderType) }
+            .map { it.sapOrderNumber }
+            .toSet()
+
+        return ClientOrderDetailResponse.from(
+            order, products, ordererName, relatedOrders, cancelledSapOrderNumbers
+        )
     }
+
+    /** 취소 주문유형 판정 — SAP `ZRE1`(Standard Cancel). */
+    private fun isCancelOrderType(orderType: String?): Boolean = orderType == CANCEL_ORDER_TYPE
 
     /**
      * 후속 주문 요약(제품표 없음) — 주문번호/유형/일자/금액/주문자만.
