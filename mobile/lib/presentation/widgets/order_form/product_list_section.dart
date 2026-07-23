@@ -7,7 +7,7 @@ import '../../../domain/entities/validation_error.dart';
 import 'order_product_card.dart';
 
 /// 제품 목록 섹션
-class ProductListSection extends StatelessWidget {
+class ProductListSection extends StatefulWidget {
   final List<OrderDraftItem> items;
   final Map<String, ValidationError> validationErrors;
   final bool allItemsSelected;
@@ -34,10 +34,40 @@ class ProductListSection extends StatelessWidget {
   });
 
   @override
+  State<ProductListSection> createState() => _ProductListSectionState();
+}
+
+class _ProductListSectionState extends State<ProductListSection> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final items = widget.items;
     final hasSelectedItems = items.any((item) => item.isSelected);
     // 100개 상한 도달 시 제품 추가 차단 (바코드/추가 버튼 비활성화).
     final canAddMore = items.length < 100;
+    // 품목이 1개라도 있으면 검색창을 상시 노출한다 (UX 일관성).
+    final showSearch = items.isNotEmpty;
+
+    // 필터링해도 원본 순번(레거시 "N." 표기)은 유지되도록 원래 인덱스를 함께 보관.
+    final query = _searchQuery.toLowerCase();
+    final filtered = <MapEntry<int, OrderDraftItem>>[];
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      if (query.isEmpty ||
+          item.productName.toLowerCase().contains(query) ||
+          item.productCode.toLowerCase().contains(query)) {
+        filtered.add(MapEntry(i, item));
+      }
+    }
+    final isSearching = _searchQuery.trim().isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,7 +93,7 @@ class ProductListSection extends StatelessWidget {
             ),
             const Spacer(),
             OutlinedButton.icon(
-              onPressed: canAddMore ? onBarcodeScan : null,
+              onPressed: canAddMore ? widget.onBarcodeScan : null,
               icon: const Icon(Icons.qr_code_scanner, size: 18),
               label: const Text('바코드'),
               style: OutlinedButton.styleFrom(
@@ -80,7 +110,7 @@ class ProductListSection extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             OutlinedButton.icon(
-              onPressed: canAddMore ? onAddProduct : null,
+              onPressed: canAddMore ? widget.onAddProduct : null,
               icon: const Icon(Icons.add, size: 18),
               label: const Text('추가'),
               style: OutlinedButton.styleFrom(
@@ -112,7 +142,7 @@ class ProductListSection extends StatelessWidget {
         Row(
           children: [
             ElevatedButton(
-              onPressed: hasSelectedItems ? onRemoveSelected : null,
+              onPressed: hasSelectedItems ? widget.onRemoveSelected : null,
               style: ElevatedButton.styleFrom(
                 // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
                 minimumSize: Size.zero,
@@ -132,41 +162,97 @@ class ProductListSection extends StatelessWidget {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: onToggleSelectAll,
+              onTap: widget.onToggleSelectAll,
               child: Text(
                 '전체 선택',
                 style: AppTypography.bodyMedium,
               ),
             ),
             Checkbox(
-              value: allItemsSelected,
-              onChanged: (value) => onToggleSelectAll(),
+              value: widget.allItemsSelected,
+              onChanged: (value) => widget.onToggleSelectAll(),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        ListView.builder(
-          controller: scrollController,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            final error = validationErrors[item.productCode];
+        // 추가 품목이 많을 때 제품명/코드로 목록을 좁혀 찾을 수 있는 검색창.
+        if (showSearch) ...[
+          TextField(
+            controller: _searchController,
+            onChanged: (value) => setState(() => _searchQuery = value),
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: '추가한 제품 검색 (제품명·코드)',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              suffixIcon: isSearching
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, size: 20),
+                      tooltip: '검색어 지우기',
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
+                    )
+                  : null,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.sm,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+            ),
+          ),
+          if (isSearching) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '${filtered.length}개 표시 중 (전체 ${items.length}개)',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        // 검색 결과가 없을 때는 빈 화면 대신 명시적 안내 노출.
+        if (isSearching && filtered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            child: Center(
+              child: Text(
+                "'${_searchQuery.trim()}'에 해당하는 제품이 없습니다.",
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          )
+        else
+          ListView.builder(
+            controller: widget.scrollController,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
+              // entry.key = 원본 순번(표시용), entry.value = 아이템.
+              final entry = filtered[index];
+              final item = entry.value;
+              final error = widget.validationErrors[item.productCode];
 
-            return OrderProductCard(
-              index: index,
-              item: item,
-              validationError: error,
-              onSelectionChanged: (selected) {
-                onToggleSelection(item.productCode);
-              },
-              onQuantityChanged: (boxes, pieces) {
-                onQuantityChanged(item.productCode, boxes, pieces);
-              },
-            );
-          },
-        ),
+              return OrderProductCard(
+                index: entry.key,
+                item: item,
+                validationError: error,
+                onSelectionChanged: (selected) {
+                  widget.onToggleSelection(item.productCode);
+                },
+                onQuantityChanged: (boxes, pieces) {
+                  widget.onQuantityChanged(item.productCode, boxes, pieces);
+                },
+              );
+            },
+          ),
       ],
     );
   }
