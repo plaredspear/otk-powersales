@@ -41,25 +41,22 @@ interface FormValues {
  * Form.Item 이 주입하는 value(현재 HTML)/onChange 를 ReactQuill 에 연결한다.
  * (직전에는 ReactQuill 을 <div> 로 감싸 Form.Item 의 value/onChange 가 에디터로
  *  전달되지 않아, 본문이 폼 값으로 수집되지 못하고 미리보기/저장에 누락되던 버그가 있었다.)
- * 붙여넣기 이미지 삽입은 wrapper div 의 onPaste 로 처리한다.
- * 드래그앤드롭은 Quill root(.ql-editor) 에 capture 단계 리스너를 직접 걸어 처리한다
- *  (wrapper 버블링으로는 Quill 기본 drop 삽입을 막지 못해 base64+presigned 2중 삽입되던 버그 회피).
+ * 붙여넣기/드래그앤드롭 이미지 삽입은 모두 Quill root(.ql-editor) 에 capture 단계 리스너를 직접 걸어 처리한다
+ *  (wrapper 버블링으로는 Quill 기본 삽입을 막지 못해 base64+presigned 2중 삽입되던 버그 회피).
  */
 function ContentEditor({
   value,
   onChange,
   quillRef,
   modules,
-  onPaste,
 }: {
   value?: string;
   onChange?: (html: string) => void;
   quillRef: React.RefObject<ReactQuill | null>;
   modules: Record<string, unknown>;
-  onPaste: (e: React.ClipboardEvent) => void;
 }) {
   return (
-    <div className="notice-content-editor" onPaste={onPaste}>
+    <div className="notice-content-editor">
       <ReactQuill
         ref={quillRef}
         theme="snow"
@@ -224,15 +221,6 @@ export default function NoticeFormPage() {
     input.click();
   };
 
-  // 붙여넣기 핸들러 (clipboardData.files 로 잡히는 이미지 파일 케이스).
-  // HTML(<img src="data:...">) 형태 붙여넣기는 아래 useEffect 의 clipboard matcher 가 별도 처리.
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
-    if (files.length === 0) return;
-    e.preventDefault();
-    for (const file of files) await uploadAndInsert(file);
-  };
-
   // base64 data URI → File 변환 (붙여넣기 HTML 안의 인라인 이미지 정규화용).
   const dataUriToFile = (dataUri: string): File | null => {
     const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/is.exec(dataUri);
@@ -249,15 +237,35 @@ export default function NoticeFormPage() {
     }
   };
 
-  // 붙여넣기 시 본문에 base64 로 박히는 인라인 이미지를 정상 업로드 경로로 돌린다.
-  // clipboardData.files 로 잡히지 않고 HTML(<img src="data:...">) 형태로 들어오는 경우(스크린샷 붙여넣기 등),
-  // Quill 기본 동작은 base64 를 그대로 본문에 삽입한다 → (1) 본문 비대화 (2) 모바일에서 http 아닌 src 렌더 불가.
-  // Quill clipboard matcher 로 data URI IMG 노드만 delta 에서 제거하고 비동기 업로드→presigned 삽입으로 대체한다
-  // (텍스트 등 나머지 붙여넣기 내용은 보존). 백엔드도 저장 시점에 동일 정규화를 수행하는 이중 방어.
+  // 붙여넣기/드래그앤드롭 이미지 삽입을 모두 Quill root(.ql-editor) capture 단계 리스너 + clipboard matcher
+  // 로 일원화한다. 붙여넣기 이미지가 본문에 2번 삽입되던 버그의 원인은, 과거 wrapper div 의 onPaste 핸들러
+  // (clipboardData.files 처리) 와 아래 clipboard matcher (HTML base64 <img> 처리) 가 상호 배제 없이 둘 다
+  // 발동한 것이었다 (스크린샷 붙여넣기는 clipboard 에 files 와 <img src="data:..."> 가 동시에 담긴다).
+  // → 붙여넣기 진입점을 아래 하나로 통합: files 가 있으면 paste capture 리스너가 처리 + preventDefault 로
+  //   Quill 기본 붙여넣기를 막아 matcher 가 발동하지 않게 하고, files 가 없는 base64 HTML 은 matcher 가 처리한다.
   useEffect(() => {
     const editor = quillRef.current?.getEditor();
     if (!editor) return;
     const Delta = Quill.import('delta') as new () => unknown;
+    const root = editor.root;
+
+    // 붙여넣기 파일 케이스 — clipboardData.files 로 잡히는 이미지. Quill root 에 capture 단계로 걸어
+    // Quill 기본 붙여넣기(base64 <img> 삽입 + 아래 matcher 발동)를 선제 차단하고 정상 업로드 경로 1회만 태운다.
+    const onPaste = (e: ClipboardEvent) => {
+      const files = Array.from(e.clipboardData?.files ?? []).filter((f) => f.type.startsWith('image/'));
+      if (files.length === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      void (async () => {
+        for (const file of files) await uploadAndInsert(file);
+      })();
+    };
+    root.addEventListener('paste', onPaste, { capture: true });
+
+    // 붙여넣기 base64 HTML 케이스 — clipboardData.files 로 잡히지 않고 HTML(<img src="data:...">) 형태로만
+    // 들어오는 경우. Quill 기본 동작은 base64 를 그대로 본문에 삽입한다 → (1) 본문 비대화 (2) 모바일에서 http
+    // 아닌 src 렌더 불가. clipboard matcher 로 data URI IMG 노드만 delta 에서 제거하고 비동기 업로드→presigned
+    // 삽입으로 대체한다 (텍스트 등 나머지 붙여넣기 내용은 보존). 백엔드도 저장 시점에 동일 정규화(이중 방어).
     // react-quill-new 의 clipboard 타입에 addMatcher 가 노출되지 않아 최소 인터페이스로 좁혀 접근한다.
     const clipboard = (editor as unknown as {
       clipboard: { addMatcher: (selector: string, fn: (node: Node, delta: unknown) => unknown) => void };
@@ -277,13 +285,12 @@ export default function NoticeFormPage() {
     // Quill 기본 drop 삽입(base64 <img>)을 선제 차단하고 정상 업로드 경로 1회만 태운다.
     // (wrapper div 버블링 방식은 하위 contenteditable 에서 이미 벌어진 Quill 기본 삽입을 막지 못해
     //  base64 + presigned 2중 삽입되던 버그가 있었다.)
-    const root = editor.root;
     const onDrop = (e: DragEvent) => {
       const files = Array.from(e.dataTransfer?.files ?? []).filter((f) => f.type.startsWith('image/'));
       if (files.length === 0) return;
       e.preventDefault();
       e.stopPropagation();
-      // 여러 파일 drop 시 handlePaste 와 동일하게 순차 업로드해 삽입 순서/커서를 안정화한다
+      // 여러 파일 drop 시 붙여넣기와 동일하게 순차 업로드해 삽입 순서/커서를 안정화한다
       // (동시 발사하면 삽입 위치가 업로드 응답 도착 순서에 좌우됨).
       void (async () => {
         for (const file of files) await uploadAndInsert(file);
@@ -293,6 +300,7 @@ export default function NoticeFormPage() {
     root.addEventListener('drop', onDrop, { capture: true });
     root.addEventListener('dragover', onDragOver, { capture: true });
     return () => {
+      root.removeEventListener('paste', onPaste, { capture: true } as EventListenerOptions);
       root.removeEventListener('drop', onDrop, { capture: true } as EventListenerOptions);
       root.removeEventListener('dragover', onDragOver, { capture: true } as EventListenerOptions);
     };
@@ -467,11 +475,7 @@ export default function NoticeFormPage() {
               extra="이미지는 툴바 버튼, 드래그앤드롭, 붙여넣기로 본문에 넣을 수 있습니다."
               rules={[{ required: true, message: '내용을 입력해주세요' }]}
             >
-              <ContentEditor
-                quillRef={quillRef}
-                modules={quillModules}
-                onPaste={handlePaste}
-              />
+              <ContentEditor quillRef={quillRef} modules={quillModules} />
             </Form.Item>
           </Col>
         </Row>
