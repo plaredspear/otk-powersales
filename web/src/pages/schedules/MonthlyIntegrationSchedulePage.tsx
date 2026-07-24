@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, DatePicker, Descriptions, Drawer, Empty, Grid, Input, message, Select, Space, Spin, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { DownloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import * as XLSX from 'xlsx';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
 import { useMonthlyIntegrationSchedule } from '@/hooks/schedules/useMonthlyIntegrationSchedule';
 import { useMonthlyIntegrationExport } from '@/hooks/schedules/useMonthlyIntegrationExport';
@@ -115,6 +117,29 @@ function MonthlyIntegrationDetailDrawer({
 }) {
   const { data: detail, isLoading } = useMonthlyIntegrationDetail(detailId);
 
+  // 집계 근거 일정 목록을 클라이언트에서 xlsx 로 생성해 다운로드한다.
+  // 상단 요약(사원/거래처)은 파일명에 담고, 시트에는 근거 일정 행만 채운다.
+  const handleExportDetail = () => {
+    if (!detail) return;
+    const rows = detail.schedules.map((s) => ({
+      근무일자: s.workingDate,
+      거래처: s.accountName ?? '-',
+      근무형태1: s.workingCategory1 ?? '-',
+      근무형태3: s.workingCategory3 ?? '-',
+      출근보고: s.attendanceReportedAt
+        ? s.attendanceReportedAt.substring(0, 16).replace('T', ' ')
+        : '-',
+      '당일 일정수': s.dailyScheduleCount,
+      '환산 기여분': Number(s.equivalentContribution.toFixed(4)),
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '집계근거일정');
+    const namePart = [detail.employeeName, detail.employeeCode].filter(Boolean).join('_') || '사원';
+    const fileName = `통합일정상세_${detail.year}${String(detail.month).padStart(2, '0')}_${namePart}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
   return (
     <Drawer
       title="통합일정 상세 — 계산 근거"
@@ -122,6 +147,13 @@ function MonthlyIntegrationDetailDrawer({
       open={detailId != null}
       onClose={onClose}
       loading={isLoading}
+      extra={
+        detail && detail.schedules.length > 0 ? (
+          <Button icon={<DownloadOutlined />} onClick={handleExportDetail}>
+            엑셀 다운로드
+          </Button>
+        ) : undefined
+      }
     >
       {detail && (
         <>
