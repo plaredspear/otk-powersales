@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Card, DatePicker, Descriptions, Drawer, Empty, Grid, Input, message, Select, Space, Spin, Table, Typography } from 'antd';
+import { Alert, Button, Card, DatePicker, Descriptions, Drawer, Empty, Grid, Input, message, Select, Space, Spin, Table, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import PeriodBranchFilterBar from '@/components/common/PeriodBranchFilterBar';
@@ -288,6 +288,34 @@ export default function MonthlyIntegrationSchedulePage() {
 
   const exportMutation = useMonthlyIntegrationExport();
 
+  // 마지막에 우측 고정(sticky) "상세" 버튼 컬럼을 덧붙인다. 가로 스크롤해도 항상 노출되어
+  // 사용자가 상세 진입 지점을 명확히 인지할 수 있게 한다.
+  // dataIndex 를 두면 ResizableTable 이 width 지정 컬럼에 ellipsis 를 자동 적용하면서
+  // 셀 내용을 텍스트로 축약하려다 Button 렌더가 잘리므로, key 만 두고 ellipsis 를 끈다.
+  const tableColumns: ColumnsType<MonthlyIntegrationScheduleItem> = [
+    ...columns,
+    {
+      title: '상세',
+      key: 'detailAction',
+      width: 80,
+      fixed: 'right',
+      align: 'center',
+      ellipsis: false,
+      render: (_v, record) =>
+        record.id != null ? (
+          <Button
+            type="link"
+            size="small"
+            onClick={() => setDetailId(record.id)}
+          >
+            상세
+          </Button>
+        ) : (
+          '-'
+        ),
+    },
+  ];
+
   const emptyNoticeShownForRef = useRef<string | null>(null);
   const autoSearchedRef = useRef(false);
 
@@ -467,7 +495,7 @@ export default function MonthlyIntegrationSchedulePage() {
           )}
           <ResizableTable
             rowKey={(record) => `${record.accountCode}-${record.employeeCode}`}
-            columns={columns}
+            columns={tableColumns}
             dataSource={data?.items ?? []}
             loading={isLoading}
             pagination={false}
@@ -475,10 +503,6 @@ export default function MonthlyIntegrationSchedulePage() {
             sticky
             tableLayout="fixed"
             locale={listTableLocale({ searched: queryParams != null })}
-            onRow={(record) => ({
-              onClick: record.id != null ? () => setDetailId(record.id) : undefined,
-              style: record.id != null ? { cursor: 'pointer' } : undefined,
-            })}
           />
         </>
       )}
