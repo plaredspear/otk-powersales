@@ -147,13 +147,6 @@ function MonthlyIntegrationDetailDrawer({
       open={detailId != null}
       onClose={onClose}
       loading={isLoading}
-      extra={
-        detail && detail.schedules.length > 0 ? (
-          <Button icon={<DownloadOutlined />} onClick={handleExportDetail}>
-            엑셀 다운로드
-          </Button>
-        ) : undefined
-      }
     >
       {detail && (
         <>
@@ -191,9 +184,21 @@ function MonthlyIntegrationDetailDrawer({
             }
           />
 
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>
-            집계 근거 일정 ({formatNumber(detail.schedules.length)}건)
-          </Text>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 8,
+            }}
+          >
+            <Text strong>집계 근거 일정 ({formatNumber(detail.schedules.length)}건)</Text>
+            {detail.schedules.length > 0 && (
+              <Button size="small" icon={<DownloadOutlined />} onClick={handleExportDetail}>
+                엑셀 다운로드
+              </Button>
+            )}
+          </div>
           {detail.schedules.length === 0 ? (
             <Empty description="집계 근거 일정이 없습니다" />
           ) : (
