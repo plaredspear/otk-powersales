@@ -38,8 +38,8 @@ class InspectionPhotoPicker extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Row(
             children: [
-              RichText(
-                text: const TextSpan(
+              Text.rich(
+                const TextSpan(
                   children: [
                     TextSpan(
                       text: '사진 (최대 2장)',

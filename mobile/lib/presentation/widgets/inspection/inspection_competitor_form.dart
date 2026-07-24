@@ -116,8 +116,8 @@ class InspectionCompetitorForm extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              RichText(
-                text: const TextSpan(
+              Text.rich(
+                const TextSpan(
                   children: [
                     TextSpan(
                       text: '시식 여부',

@@ -10,12 +10,18 @@ abstract final class AppTypography {
   ///
   /// weight 매핑: ExtraLight(200) / Light(300) / Medium(500) / Bold(700) / ExtraBold(800)
   /// w400·w600 등 미보유 weight는 Flutter가 가장 가까운 weight로 폴백.
+  ///
+  /// 아래 모든 TextStyle 상수는 fontFamily를 직접 명시한다.
+  /// ThemeData.fontFamily 전역 기본값에만 의존하면 RichText처럼
+  /// DefaultTextStyle을 상속하지 않는 위젯에서 오뚜기 폰트가 빠지므로
+  /// (예: 로그인 로고), 상수 단에서 폰트를 고정한다.
   static const String fontFamily = 'OtokiSans';
 
   // ─── Display ─────────────────────────────────────────────
   /// 실적 금액 등 대형 숫자 (28sp, Bold)
   /// 사용: "2,921만원" 등 핵심 수치
   static const TextStyle displayLarge = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 28,
     fontWeight: FontWeight.w700,
     height: 1.3,
@@ -26,6 +32,7 @@ abstract final class AppTypography {
   /// 화면 제목 (20sp, Bold)
   /// 사용: "매출 현황", AppBar 제목
   static const TextStyle headlineLarge = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 20,
     fontWeight: FontWeight.w700,
     height: 1.3,
@@ -36,6 +43,7 @@ abstract final class AppTypography {
   /// 사용: "당월 매출 실적", "전년 대비 동월 실적"
   /// OtokiSans 미보유 w600 → 보유 weight Bold(700)로 고정
   static const TextStyle headlineMedium = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 18,
     fontWeight: FontWeight.w700,
     height: 1.35,
@@ -46,6 +54,7 @@ abstract final class AppTypography {
   /// 사용: "마감합계 실적", "2025년 12월"
   /// OtokiSans 미보유 w600 → 보유 weight Bold(700)로 고정
   static const TextStyle headlineSmall = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w700,
     height: 1.35,
@@ -56,6 +65,7 @@ abstract final class AppTypography {
   /// 본문 텍스트 (16sp, Light)
   /// OtokiSans 미보유 w400 → 보유 weight Light(300)로 고정
   static const TextStyle bodyLarge = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w300,
     height: 1.5,
@@ -64,6 +74,7 @@ abstract final class AppTypography {
 
   /// 일반 본문, 리스트 항목 (14sp, Light)
   static const TextStyle bodyMedium = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w300,
     height: 1.5,
@@ -72,6 +83,7 @@ abstract final class AppTypography {
 
   /// 날짜, 부가 설명 (12sp, Light)
   static const TextStyle bodySmall = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w300,
     height: 1.4,
@@ -81,6 +93,7 @@ abstract final class AppTypography {
   // ─── Label ───────────────────────────────────────────────
   /// 버튼 텍스트 (14sp, Medium)
   static const TextStyle labelLarge = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -89,6 +102,7 @@ abstract final class AppTypography {
 
   /// 탭 레이블, 배지 (12sp, Medium)
   static const TextStyle labelMedium = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -98,6 +112,7 @@ abstract final class AppTypography {
   /// 단위 텍스트 (10sp, Medium)
   /// 사용: "단위 : 만원"
   static const TextStyle labelSmall = TextStyle(
+    fontFamily: fontFamily,
     fontSize: 10,
     fontWeight: FontWeight.w500,
     height: 1.2,

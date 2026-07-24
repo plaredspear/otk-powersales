@@ -123,8 +123,8 @@ class SafetyCheckCategorySection extends StatelessWidget {
           color: AppColors.surfaceVariant.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: RichText(
-          text: const TextSpan(
+        child: Text.rich(
+          const TextSpan(
             style: TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary,
@@ -187,8 +187,8 @@ class SafetyCheckCategorySection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          RichText(
-            text: const TextSpan(
+          Text.rich(
+            const TextSpan(
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
@@ -208,8 +208,8 @@ class SafetyCheckCategorySection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          RichText(
-            text: const TextSpan(
+          Text.rich(
+            const TextSpan(
               style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textTertiary,

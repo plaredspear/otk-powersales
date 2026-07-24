@@ -96,8 +96,8 @@ class InspectionCommonForm extends StatelessWidget {
   /// 테마 선택 필드
   Widget _buildThemeField(BuildContext context) {
     return ListTile(
-      title: RichText(
-        text: const TextSpan(
+      title: Text.rich(
+        const TextSpan(
           children: [
             TextSpan(
               text: '테마',
@@ -154,8 +154,8 @@ class InspectionCommonForm extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          RichText(
-            text: const TextSpan(
+          Text.rich(
+            const TextSpan(
               children: [
                 TextSpan(
                   text: '분류',
@@ -193,8 +193,8 @@ class InspectionCommonForm extends StatelessWidget {
   /// 거래처 선택 필드
   Widget _buildAccountField(BuildContext context) {
     return ListTile(
-      title: RichText(
-        text: const TextSpan(
+      title: Text.rich(
+        const TextSpan(
           children: [
             TextSpan(
               text: '거래처',
@@ -229,8 +229,8 @@ class InspectionCommonForm extends StatelessWidget {
   Widget _buildDateField(BuildContext context) {
     final dateFormat = DateFormat('yyyy-MM-dd');
     return ListTile(
-      title: RichText(
-        text: const TextSpan(
+      title: Text.rich(
+        const TextSpan(
           children: [
             TextSpan(
               text: '점검일',
@@ -272,8 +272,8 @@ class InspectionCommonForm extends StatelessWidget {
   /// 현장 유형 선택 필드
   Widget _buildFieldTypeField(BuildContext context) {
     return ListTile(
-      title: RichText(
-        text: const TextSpan(
+      title: Text.rich(
+        const TextSpan(
           children: [
             TextSpan(
               text: '현장 유형',

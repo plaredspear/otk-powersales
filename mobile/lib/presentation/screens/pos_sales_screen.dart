@@ -437,8 +437,8 @@ class _PosSalesScreenState extends ConsumerState<PosSalesScreen> {
   }
 
   Widget _label(String label, bool required) {
-    return RichText(
-      text: TextSpan(
+    return Text.rich(
+      TextSpan(
         text: label,
         style: const TextStyle(
           fontSize: 15,

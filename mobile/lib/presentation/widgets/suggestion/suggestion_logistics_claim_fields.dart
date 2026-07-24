@@ -31,8 +31,8 @@ class SuggestionFieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
+    return Text.rich(
+      TextSpan(
         text: text,
         style: const TextStyle(
           fontSize: 15,

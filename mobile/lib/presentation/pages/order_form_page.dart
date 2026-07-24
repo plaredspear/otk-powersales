@@ -295,8 +295,8 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          RichText(
-                            text: TextSpan(
+                          Text.rich(
+                            TextSpan(
                               text: '거래처 ',
                               style: TextStyle(
                                 color: AppColors.textPrimary,

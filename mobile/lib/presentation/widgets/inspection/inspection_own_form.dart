@@ -111,8 +111,8 @@ class InspectionOwnForm extends StatelessWidget {
 
   /// 필수(*) 라벨
   Widget _buildRequiredLabel(String text) {
-    return RichText(
-      text: TextSpan(
+    return Text.rich(
+      TextSpan(
         children: [
           TextSpan(
             text: text,
