@@ -304,7 +304,7 @@ export default function MonthlyIntegrationSchedulePage() {
       render: (_v, record) =>
         record.id != null ? (
           <Button
-            type="link"
+            type="primary"
             size="small"
             onClick={() => setDetailId(record.id)}
           >
