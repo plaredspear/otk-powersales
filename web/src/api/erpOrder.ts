@@ -28,7 +28,8 @@ export interface ErpOrder {
   orderDate: string | null;
   employeeCode: string | null;
   employeeName: string | null;
-  orderSalesAmount: string | null;
+  /** 백엔드 BigDecimal — Jackson 이 JSON 숫자로 직렬화하므로 number 로 도착 (문자열 방어 포함) */
+  orderSalesAmount: number | string | null;
   orderChannelNm: string | null;
   orderTypeNm: string | null;
 }
@@ -46,12 +47,13 @@ export interface ErpOrderProduct {
   lineNumber: string | null;
   productCode: string | null;
   productName: string | null;
-  orderQuantity: string | null;
+  /** 백엔드 BigDecimal — JSON 숫자로 도착 */
+  orderQuantity: number | string | null;
   unit: string | null;
-  confirmQuantity: string | null;
+  confirmQuantity: number | string | null;
   confirmUnit: string | null;
-  shippingQuantity: string | null;
-  orderSalesLineAmount: string | null;
+  shippingQuantity: number | string | null;
+  orderSalesLineAmount: number | string | null;
   lineItemStatus: string | null;
   deliveryStatus: string | null;
   plantNm: string | null;
@@ -69,7 +71,8 @@ export interface ErpOrderDetail {
   orderDate: string | null;
   employeeCode: string | null;
   employeeName: string | null;
-  orderSalesAmount: string | null;
+  /** 백엔드 BigDecimal — JSON 숫자로 도착 */
+  orderSalesAmount: number | string | null;
   orderChannel: string | null;
   orderChannelNm: string | null;
   orderType: string | null;
