@@ -233,47 +233,23 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
     );
   }
 
-  /// 부차 항목(레거시 미노출 일정) 안내 다이얼로그
-  void _showSecondaryScheduleInfo() {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('참고 일정'),
-        content: const Text(
-          '진열과 행사가 같은 날에 겹칠 때, 기존 시스템은 둘 중 한쪽만 보여주고 '
-          '나머지는 화면에서 생략했습니다.\n\n'
-          '방문할 매장을 놓치지 않도록 생략되던 일정도 함께 표시하되, '
-          '위쪽 목록과 구분해 여기에 모아 둡니다. 위의 보고 완료 건수에는 '
-          '포함되지 않습니다.\n\n'
-          '참고 일정도 동일하게 등록할 수 있으며, 출근을 등록하면 위쪽 목록으로 올라갑니다.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 부차 항목 그룹 헤더 (구분선 + 라벨 + info 아이콘)
+  /// 부차 항목 그룹 헤더 — 구분선 + 라벨 + 상시 노출 callout.
+  ///
+  /// 표시 사유를 아이콘 뒤에 숨기지 않고 항상 문구로 보여준다. 상단 카운터가
+  /// 레거시 정합(노출분만 집계)이라 "0 / 1" 인데 목록은 그보다 많아 보이는데,
+  /// 이 불일치를 사용자가 바로 납득할 수 있어야 하기 때문이다.
   Widget _buildSecondaryGroupHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(
-        left: 20,
-        right: 12,
-        top: AppSpacing.md,
-        bottom: AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, AppSpacing.md, 20, AppSpacing.sm),
       decoration: const BoxDecoration(
         // 주 일정과 명확히 분리하는 상단 구분선
         border: Border(
           top: BorderSide(color: AppColors.divider),
         ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '참고 일정',
@@ -282,15 +258,28 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
               fontWeight: FontWeight.w600,
             ),
           ),
-          IconButton(
-            onPressed: _showSecondaryScheduleInfo,
-            icon: const Icon(Icons.info_outline),
-            iconSize: 18,
-            color: AppColors.textSecondary,
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.all(4),
-            constraints: const BoxConstraints(),
-            tooltip: '참고 일정 안내',
+          const SizedBox(height: AppSpacing.xs),
+          // 안내 callout (배경 밴드 + 좌측 강조선)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 10,
+            ),
+            decoration: const BoxDecoration(
+              color: AppColors.legacyCounterBg,
+              border: Border(
+                left: BorderSide(color: AppColors.legacySlate, width: 3),
+              ),
+            ),
+            child: Text(
+              '진열·행사가 겹쳐 기존 화면에서는 생략되던 일정입니다.\n'
+              '보고 완료 건수에는 포함되지 않습니다.',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.legacyTextMute,
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),
