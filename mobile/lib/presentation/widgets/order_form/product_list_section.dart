@@ -42,10 +42,28 @@ class _ProductListSectionState extends State<ProductListSection> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  /// 툴바 앞(상단 폼 + 제품 헤더)의 스크롤 길이 = 툴바가 상단에 고정되는 지점.
+  /// 검색으로 목록이 짧아져도 그 지점을 유지하도록 채움 높이 계산에 쓴다.
+  /// 레이아웃 중 sliver 순서대로 갱신되므로 setState 대상이 아니다.
+  double _toolbarScrollExtent = 0;
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// 검색으로 목록이 줄었을 때 첫 결과가 툴바에 가려지지 않도록,
+  /// 툴바가 상단에 막 붙는 지점까지만 스크롤을 되돌린다(그 위로는 움직이지 않음).
+  void _alignToPinnedToolbar() {
+    if (_searchQuery.trim().isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final position = Scrollable.maybeOf(context)?.position;
+      if (position == null || !position.hasContentDimensions) return;
+      final target = _toolbarScrollExtent.clamp(0.0, position.maxScrollExtent);
+      if (position.pixels > target) position.jumpTo(target);
+    });
   }
 
   @override
@@ -70,6 +88,22 @@ class _ProductListSectionState extends State<ProductListSection> {
     }
     final isSearching = _searchQuery.trim().isNotEmpty;
 
+    final stickyToolbar = Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: _buildStickyToolbar(
+        hasSelectedItems: hasSelectedItems,
+        showSearch: showSearch,
+        isSearching: isSearching,
+        filteredCount: filtered.length,
+        totalCount: items.length,
+      ),
+    );
+
     return SliverMainAxisGroup(
       slivers: [
         // ── 스크롤되는 헤더 (제품 라벨 + 바코드/추가 버튼 + 100개 안내) ──
@@ -80,25 +114,32 @@ class _ProductListSectionState extends State<ProductListSection> {
           ),
         ),
         // ── 목록 위에 고정되는 툴바 (선택 삭제 / 전체 선택 / 검색) ──
-        PinnedHeaderSliver(
-          child: ColoredBox(
-            color: AppColors.background,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.sm,
+        SliverLayoutBuilder(
+          builder: (context, constraints) {
+            // scrollOffset > 0 = 툴바가 실제로 상단에 붙어 아래로 제품 카드가
+            // 지나가는 상태. 이때만 그림자로 층을 구분한다.
+            final isPinned = constraints.scrollOffset > 0;
+            _toolbarScrollExtent = constraints.precedingScrollExtent;
+            return PinnedHeaderSliver(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  boxShadow: isPinned
+                      ? [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : null,
+                ),
+                // 스크롤마다 재빌드되는 builder 안에서 같은 위젯 인스턴스를 넘겨
+                // 툴바 본문(TextField 포함) 서브트리는 재빌드되지 않게 한다.
+                child: stickyToolbar,
               ),
-              child: _buildStickyToolbar(
-                hasSelectedItems: hasSelectedItems,
-                showSearch: showSearch,
-                isSearching: isSearching,
-                filteredCount: filtered.length,
-                totalCount: items.length,
-              ),
-            ),
-          ),
+            );
+          },
         ),
         // ── 제품 카드 목록 ──
         if (isSearching && filtered.isEmpty)
@@ -140,6 +181,19 @@ class _ProductListSectionState extends State<ProductListSection> {
                 );
               },
             ),
+          ),
+        // 검색으로 목록이 짧아지면 스크롤 범위가 줄어 화면이 상단(거래처/납기일)으로
+        // 튕겨 올라가던 문제 방지 — 툴바가 상단에 붙은 위치를 유지할 만큼 여백을 채운다.
+        if (isSearching)
+          SliverLayoutBuilder(
+            builder: (context, constraints) {
+              // 툴바가 시작된 지점부터 여기까지 차지한 길이(툴바 + 카드 목록).
+              final belowToolbar =
+                  constraints.precedingScrollExtent - _toolbarScrollExtent;
+              final fill = (constraints.viewportMainAxisExtent - belowToolbar)
+                  .clamp(0.0, double.infinity);
+              return SliverToBoxAdapter(child: SizedBox(height: fill));
+            },
           ),
       ],
     );
@@ -237,8 +291,9 @@ class _ProductListSectionState extends State<ProductListSection> {
             ElevatedButton(
               onPressed: hasSelectedItems ? widget.onRemoveSelected : null,
               style: ElevatedButton.styleFrom(
-                // Row 안 무한폭 제약 크래시 방지 (전역 테마 덮어쓰기).
-                minimumSize: Size.zero,
+                // Row 안 무한폭 제약 크래시 방지 (폭 min 0). 툴바 안 보조 버튼이라
+                // 높이는 바코드/추가(44)보다 낮은 36 으로 둔다.
+                minimumSize: const Size(0, 36),
                 backgroundColor: AppColors.error,
                 foregroundColor: AppColors.white,
                 // ignore: deprecated_member_use
@@ -249,7 +304,6 @@ class _ProductListSectionState extends State<ProductListSection> {
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.lg,
                 ),
-                visualDensity: VisualDensity.compact,
               ),
               child: const Text('선택 삭제'),
             ),
@@ -264,15 +318,22 @@ class _ProductListSectionState extends State<ProductListSection> {
             Checkbox(
               value: widget.allItemsSelected,
               onChanged: (value) => widget.onToggleSelectAll(),
+              // 기본 48px 탭영역이 Row 높이를 부풀려 검색창과 간격이 벌어지던 것을 축소
+              // (라벨 "전체 선택" 도 탭 가능해 조작성은 유지).
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.xs),
         // 추가 품목이 많을 때 제품명/코드로 목록을 좁혀 찾을 수 있는 검색창.
         if (showSearch) ...[
           TextField(
             controller: _searchController,
-            onChanged: (value) => setState(() => _searchQuery = value),
+            onChanged: (value) {
+              setState(() => _searchQuery = value);
+              _alignToPinnedToolbar();
+            },
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               isDense: true,
