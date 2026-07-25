@@ -4,6 +4,7 @@ import com.otoki.powersales.admin.dto.DataScope
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.org.employee.entity.Employee
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.org.organization.repository.OrganizationRepository
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
@@ -466,6 +467,68 @@ class AdminEmployeeServiceTest {
             verify(exactly = 0) {
                 employeeRepository.findEmployees(any(), any(), any(), any(), any(), any(), any(), any(), any())
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("getFemaleEmployeeListMetaStatic - 여사원 현황 목록 조회 조건 로드(정적)")
+    inner class GetFemaleEmployeeListMetaStaticTests {
+
+        @Test
+        @DisplayName("재직상태 옵션 = 재직/휴직/퇴직 서버 상수 3종")
+        fun statusOptions() {
+            val result = adminEmployeeService.getFemaleEmployeeListMetaStatic()
+
+            val status = result.filters.first { it.key == "status" }
+            assertThat(status.type).isEqualTo(FemaleEmployeeFilterType.SELECT)
+            assertThat(status.options).extracting("value")
+                .containsExactly("재직", "휴직", "퇴직")
+        }
+
+        @Test
+        @DisplayName("근무형태1/3 옵션 = WorkingCategory1/3 displayName (선언 순서 = SF picklist 순서)")
+        fun workTypeOptions() {
+            val result = adminEmployeeService.getFemaleEmployeeListMetaStatic()
+
+            assertThat(result.filters.first { it.key == "workType1" }.options).extracting("value")
+                .containsExactly("진열", "행사")
+            assertThat(result.filters.first { it.key == "workType3" }.options).extracting("value")
+                .containsExactly("고정", "격고", "순회")
+        }
+
+        @Test
+        @DisplayName("전문행사조 옵션 = '일반'(미배정) 선두 + 정식 5개 조 (SF picklist 정의 순서)")
+        fun promotionTeamOptions() {
+            val result = adminEmployeeService.getFemaleEmployeeListMetaStatic()
+
+            val team = result.filters.first { it.key == "professionalPromotionTeam" }
+            assertThat(team.options).extracting("value").containsExactly(
+                "일반",
+                "라면세일조",
+                "프레시세일조_냉동",
+                "프레시세일조_냉장",
+                "프레시세일조_만두",
+                "카레세일조",
+            )
+        }
+
+        @Test
+        @DisplayName("텍스트 필터는 options 없음, 정적 메타에 costCenterCode 미포함(권한 의존은 컨트롤러 조립)")
+        fun textFilterAndNoBranch() {
+            val result = adminEmployeeService.getFemaleEmployeeListMetaStatic()
+
+            assertThat(result.filters.first { it.key == "keyword" }.type).isEqualTo(FemaleEmployeeFilterType.TEXT)
+            assertThat(result.filters.first { it.key == "keyword" }.options).isNull()
+            assertThat(result.filters.map { it.key }).doesNotContain("costCenterCode")
+        }
+
+        @Test
+        @DisplayName("기본값 — pageSize 20 / sort name,ASC (getEmployees 실제 정렬과 일치)")
+        fun defaults() {
+            val result = adminEmployeeService.getFemaleEmployeeListMetaStatic()
+
+            assertThat(result.defaults.pageSize).isEqualTo(20)
+            assertThat(result.defaults.sort).isEqualTo("name,ASC")
         }
     }
 

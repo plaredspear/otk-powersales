@@ -10,8 +10,8 @@ import { useFlexTableScrollY } from '@/hooks/common/useFlexTableScrollY';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 import { useFemaleEmployees } from '@/hooks/employee/useEmployees';
-import { useFemaleEmployeeBranches } from '@/hooks/employee/useFemaleEmployeeBranches';
-import { getPPTTeamTypeColor, PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL } from '@/constants/pptTeamType';
+import { useFemaleEmployeeListMeta } from '@/hooks/employee/useFemaleEmployeeListMeta';
+import { getPPTTeamTypeColor } from '@/constants/pptTeamType';
 import { useExcelDownload } from '@/hooks/common/useExcelDownload';
 import { EXCEL_EXPORT_MAX_ROWS } from '@/lib/excelDownload';
 import { FEMALE_EMPLOYEE_EXPORT_PATH, type Employee } from '@/api/employee';
@@ -26,33 +26,14 @@ const STATUS_TAG: Record<string, string> = {
   퇴직: 'red',
 };
 
-const STATUS_OPTIONS = [
-  { value: '', label: '상태 전체' },
-  { value: '재직', label: '재직' },
-  { value: '휴직', label: '휴직' },
-  { value: '퇴직', label: '퇴직' },
-];
-
-// 근무형태1(진열/행사) — backend WorkingCategory1 displayName 정합. '' 은 전체.
-const WORK_TYPE1_OPTIONS = [
-  { value: '', label: '근무형태 전체' },
-  { value: '진열', label: '진열' },
-  { value: '행사', label: '행사' },
-];
-
-// 근무형태3(고정/격고/순회) — backend WorkingCategory3 displayName 정합. 근무형태1 선택 시에만 활성.
-const WORK_TYPE3_OPTIONS = [
-  { value: '', label: '세부 전체' },
-  { value: '고정', label: '고정' },
-  { value: '격고', label: '격고' },
-  { value: '순회', label: '순회' },
-];
-
-// 전문행사조 — 일반 포함 6개 + '전체' 선택지. value '' = 전체(미필터).
-const PPT_FILTER_OPTIONS = [
-  { value: '', label: '전문행사조 전체' },
-  ...PPT_TEAM_TYPE_OPTIONS_WITH_GENERAL,
-];
+// 필터 옵션(재직상태 / 근무형태1 / 근무형태3 / 전문행사조 / 지점) 은 `/meta` 응답이 단일 출처.
+// value '' = 전체(미필터) 선택지는 화면에서만 붙인다 (서버는 실제 필터값만 내려줌).
+const ALL_OPTION_LABEL: Record<string, string> = {
+  status: '상태 전체',
+  workType1: '근무형태 전체',
+  workType3: '세부 전체',
+  professionalPromotionTeam: '전문행사조 전체',
+};
 
 const DEVICE_TOOLTIP =
   '단말 바인딩(deviceUuid)이 해제됩니다. 사원이 다음에 어떤 단말로 로그인하더라도 새 단말로 자동 등록됩니다.';
@@ -82,6 +63,11 @@ export default function EmployeePage() {
   // 페이지 전체 스크롤 제거 — 필터/툴바는 고정, 테이블 body(행) 만 세로 스크롤. 높이는 상단 가변 요소를
   // 실측 반영. headerReserve = 테이블 헤더 행(≈39) + 페이지네이션(≈56).
   const { containerRef, containerHeight, tableWrapperRef, scrollY } = useFlexTableScrollY(4, 95);
+  // 조회 조건 로드 — 지점 셀렉터 + 재직상태 + 근무형태1/3 + 전문행사조 옵션 + 기본값을 단일 응답으로 로드.
+  // 기존 useFemaleEmployeeBranches 호출 + 화면 하드코딩 옵션을 대체.
+  const { data: listMeta } = useFemaleEmployeeListMeta();
+  // 기본 페이지 크기 — 서버 defaults 를 단일 출처로. meta 미수신(초기 렌더) 시 서버값과 동일한 20 fallback.
+  const defaultPageSize = listMeta?.defaults.pageSize ?? 20;
   // page/size/필터를 URL query string 에 보관 — 상세 진입 후 뒤로가기/재진입 시 직전 조건 복원.
   const { page, setPage, size, setSize, filters, setFilters } = useListQueryParams({
     defaultFilters: {
@@ -92,6 +78,7 @@ export default function EmployeePage() {
       workType3: '',
       professionalPromotionTeam: '',
     },
+    defaultPageSize,
   });
   const { status, costCenterCode, keyword, workType1, workType3, professionalPromotionTeam } = filters;
   // 조회 조건 버퍼 — "조회" 버튼 / Enter 시점에만 URL 필터로 일괄 반영 (필터 변경만으로 조회하지 않음)
@@ -121,14 +108,24 @@ export default function EmployeePage() {
     });
   };
 
+  // meta.filters 에서 지정 key 의 SELECT 옵션을 추출.
+  const filterOptions = (key: string) => listMeta?.filters.find((f) => f.key === key)?.options ?? [];
+
+  // '전체'(미필터) 선택지를 앞에 붙인 셀렉터 옵션. 서버는 실제 필터값만 내려주므로 화면에서 조립한다.
+  const optionsWithAll = (key: string) => [
+    { value: '', label: ALL_OPTION_LABEL[key] ?? '전체' },
+    ...filterOptions(key),
+  ];
+
   // 지점 셀렉터 — 권한별 지점 화이트리스트 (전문행사조와 동일 backend resolver).
   //  - 다중 지점: Select 로 선택 → costCenterCode 필터로 전송
   //  - 단일 지점(조장 등): 고정 Tag 로 지점명 표시. costCenterCode 는 빈 값이라
   //    backend 가 본인 소속 지점으로 자동 스코프(applyBranchScope)하므로 별도 전송 불필요.
-  const { data: branches } = useFemaleEmployeeBranches();
-  const branchOptions = (branches ?? []).map((b) => ({ value: b.branchCode, label: b.branchName }));
-  const singleBranch = branches?.length === 1 ? branches[0] : null;
-  const isMultiBranch = (branches?.length ?? 0) > 1;
+  const branchFilterOptions = filterOptions('costCenterCode');
+  // 옵션은 지점명(label) 가나다순으로 정렬해 노출한다 (행사마스터/진열스케줄 지점 셀렉터 정합, 한국어 로케일).
+  const branchOptions = [...branchFilterOptions].sort((a, b) => a.label.localeCompare(b.label, 'ko'));
+  const singleBranch = branchFilterOptions.length === 1 ? branchFilterOptions[0] : null;
+  const isMultiBranch = branchFilterOptions.length > 1;
 
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
@@ -345,25 +342,25 @@ export default function EmployeePage() {
         )}
         {singleBranch && (
           <Tag color="geekblue" style={{ fontSize: 14, padding: '5px 12px', marginInlineEnd: 0 }}>
-            지점: {singleBranch.branchName}
+            지점: {singleBranch.label}
           </Tag>
         )}
         <Select
           style={{ width: 140 }}
           value={statusInput ?? ''}
-          options={STATUS_OPTIONS}
+          options={optionsWithAll('status')}
           onChange={setStatusInput}
         />
         <Select
           style={{ width: 140 }}
           value={workType1Input ?? ''}
-          options={WORK_TYPE1_OPTIONS}
+          options={optionsWithAll('workType1')}
           onChange={handleWorkType1Change}
         />
         <Select
           style={{ width: 120 }}
           value={workType3Input ?? ''}
-          options={WORK_TYPE3_OPTIONS}
+          options={optionsWithAll('workType3')}
           onChange={setWorkType3Input}
           // 근무형태(진열/행사) 선택 시에만 세부(고정/격고/순회) 선택 가능.
           disabled={!workType1Input}
@@ -371,7 +368,7 @@ export default function EmployeePage() {
         <Select
           style={{ width: 160 }}
           value={pptInput ?? ''}
-          options={PPT_FILTER_OPTIONS}
+          options={optionsWithAll('professionalPromotionTeam')}
           onChange={setPptInput}
         />
         <Input

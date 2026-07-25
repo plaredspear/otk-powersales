@@ -11,6 +11,10 @@ import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterMeta
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterOption
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListMetaResponse
 import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
 import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
@@ -77,6 +81,42 @@ class AdminFemaleEmployeeController(
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
         val result = womenScheduleBranchResolver.resolveBranches(principal)
         return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
+    /**
+     * 여사원 현황 목록 화면 조회 조건 로드 — "권한 기반 조건 로드" 표준 패턴 (행사마스터 `/meta` 정합).
+     *
+     * 기존 `/branches`(지점 셀렉터) 1회 호출 + web 하드코딩(재직상태·근무형태1·근무형태3·전문행사조)
+     * 으로 분산됐던 목록 조건 로드를 단일 응답으로 통합. 정적 조건(재직상태·근무형태·전문행사조)과
+     * 기본값은 서비스가, 권한 의존 지점 옵션은 [WomenScheduleBranchResolver] 결과를 컨트롤러가 조립해 붙인다.
+     *
+     * ## 지점 옵션 ↔ 목록 조회 스코프 축이 다름 (기존 `/branches` 동작 그대로 이관)
+     *
+     * 셀렉터 옵션은 [WomenScheduleBranchResolver] (본인 costCenterCode 의 **조직 트리 전체** — SF
+     * `CurrentUserBranchNameList` 정합) 이지만, [getFemaleEmployees] 의 지점 보안 스코프는
+     * `@CurrentDataScope` → `DataScope.branchCodes = listOfNotNull(costCenterCode)` (**본인 지점 1건**) 이다.
+     * 따라서 지점 권한자가 셀렉터에서 본인 소속 지점이 아닌 형제/상위 지점을 고르면
+     * `EffectiveBranchResult.NoAccess` 로 빈 목록이 된다.
+     *
+     * 이는 본 `/meta` 통합 이전의 `/branches` 셀렉터도 동일했던 **기존 동작**이며, 두 축을 통일하는 것은
+     * 지점 가시 범위(SF 동등성) 정책 변경이라 본 리팩토링 범위에서 제외했다.
+     */
+    @GetMapping("/meta")
+    @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
+    fun getFemaleEmployeeListMeta(
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<FemaleEmployeeListMetaResponse>> {
+        val base = adminEmployeeService.getFemaleEmployeeListMetaStatic()
+        val branchOptions = womenScheduleBranchResolver.resolveBranches(principal)
+            .map { FemaleEmployeeFilterOption(value = it.branchCode, label = it.branchName) }
+        val response = base.copy(
+            filters = base.filters + FemaleEmployeeFilterMeta(
+                key = "costCenterCode",
+                type = FemaleEmployeeFilterType.SELECT,
+                options = branchOptions,
+            ),
+        )
+        return ResponseEntity.ok(ApiResponse.success(response))
     }
 
     @GetMapping

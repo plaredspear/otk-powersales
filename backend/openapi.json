@@ -6483,6 +6483,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseFemaleEmployeeListMetaResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FemaleEmployeeListMetaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseFemaleEmployeePlacementCheckResponse" : {
         "properties" : {
           "data" : {
@@ -16090,6 +16119,61 @@
           "features" : {
             "items" : {
               "$ref" : "#/components/schemas/FeatureToggleItem"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeFilterMeta" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "options" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeFilterOption"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "type" : {
+            "enum" : [ "TEXT", "SELECT" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeFilterOption" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeListDefaults" : {
+        "properties" : {
+          "pageSize" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sort" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeListMetaResponse" : {
+        "properties" : {
+          "defaults" : {
+            "$ref" : "#/components/schemas/FemaleEmployeeListDefaults"
+          },
+          "filters" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeFilterMeta"
             },
             "type" : "array"
           }
@@ -31549,6 +31633,24 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/meta" : {
+      "get" : {
+        "operationId" : "getFemaleEmployeeListMeta",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFemaleEmployeeListMetaResponse"
                 }
               }
             },

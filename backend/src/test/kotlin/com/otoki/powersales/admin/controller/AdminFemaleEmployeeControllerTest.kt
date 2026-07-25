@@ -8,6 +8,11 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.common.test.AdminControllerTestSupport
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterMeta
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterOption
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListDefaults
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListMetaResponse
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
@@ -38,6 +43,21 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     companion object {
         /** 여사원 현황 컨트롤러가 전달하는 role 목록 (여사원 + 조장) — 컨트롤러 상수와 동일. */
         private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN, AppAuthority.LEADER)
+
+        /**
+         * 서비스가 내려주는 정적 메타 stub — 지점(costCenterCode) 은 포함하지 않는다.
+         * 컨트롤러가 resolver 결과로 지점 필터를 뒤에 조립하는지 검증하기 위한 최소 형태.
+         */
+        private fun staticListMeta() = FemaleEmployeeListMetaResponse(
+            filters = listOf(
+                FemaleEmployeeFilterMeta(
+                    key = "status",
+                    type = FemaleEmployeeFilterType.SELECT,
+                    options = listOf(FemaleEmployeeFilterOption("재직", "재직")),
+                ),
+            ),
+            defaults = FemaleEmployeeListDefaults(pageSize = 20, sort = "name,ASC"),
+        )
     }
 
     @MockkBean
@@ -151,6 +171,46 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data[1].branchCode").value("A002"))
 
         verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(any()) }
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/meta - 정적 필터 + 권한별 지점 옵션 조립 (다중 지점)")
+    fun getListMeta_assemblesBranchOptions() {
+        every { adminEmployeeService.getFemaleEmployeeListMetaStatic() } returns staticListMeta()
+        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "A001", branchName = "서울1지점"),
+            BranchResponse(branchCode = "A002", branchName = "서울2지점"),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/female-employees/meta"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.defaults.pageSize").value(20))
+            .andExpect(jsonPath("$.data.defaults.sort").value("name,ASC"))
+            .andExpect(jsonPath("$.data.filters[0].key").value("status"))
+            // costCenterCode 필터가 정적 메타 뒤에 조립됨 (권한 의존 — 컨트롤러가 resolver 결과로 붙임)
+            .andExpect(jsonPath("$.data.filters[1].key").value("costCenterCode"))
+            .andExpect(jsonPath("$.data.filters[1].type").value("SELECT"))
+            .andExpect(jsonPath("$.data.filters[1].options[0].value").value("A001"))
+            .andExpect(jsonPath("$.data.filters[1].options[0].label").value("서울1지점"))
+            .andExpect(jsonPath("$.data.filters[1].options[1].value").value("A002"))
+
+        verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(any()) }
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/meta - 조장 등 단일 지점: 지점 옵션 1건만 조립")
+    fun getListMeta_singleBranch() {
+        every { adminEmployeeService.getFemaleEmployeeListMetaStatic() } returns staticListMeta()
+        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "A001", branchName = "서울1지점"),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/female-employees/meta"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.filters[1].key").value("costCenterCode"))
+            .andExpect(jsonPath("$.data.filters[1].options.length()").value(1))
+            .andExpect(jsonPath("$.data.filters[1].options[0].label").value("서울1지점"))
     }
 
     @Test

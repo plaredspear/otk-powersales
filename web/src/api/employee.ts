@@ -302,23 +302,46 @@ export async function fetchFemaleEmployees(params: FetchFemaleEmployeesParams): 
   return res.data.data;
 }
 
-/** 여사원 현황 화면 지점 셀렉터 옵션. */
-export interface FemaleEmployeeBranch {
-  branchCode: string;
-  branchName: string;
+// --- 목록 조회 조건 로드(meta) — "권한 기반 조건 로드" 표준 패턴 ---
+
+export type FemaleEmployeeFilterType = 'TEXT' | 'SELECT';
+
+export interface FemaleEmployeeFilterOption {
+  value: string;
+  label: string;
+}
+
+export interface FemaleEmployeeFilterMeta {
+  key: string;
+  type: FemaleEmployeeFilterType;
+  options?: FemaleEmployeeFilterOption[] | null;
+}
+
+export interface FemaleEmployeeListDefaults {
+  pageSize: number;
+  sort: string;
+}
+
+export interface FemaleEmployeeListMeta {
+  filters: FemaleEmployeeFilterMeta[];
+  defaults: FemaleEmployeeListDefaults;
 }
 
 /**
- * 여사원 현황 화면 지점 셀렉터 옵션 조회.
+ * 여사원 현황 목록 화면 조회 조건 로드.
  *
- * backend 의 권한별 지점 화이트리스트(WomenScheduleBranchResolver)를 반환한다. 여사원 현황
+ * 지점 셀렉터(권한 의존, backend WomenScheduleBranchResolver) + 재직상태 + 근무형태1/3 +
+ * 전문행사조 + 텍스트 필터 + 기본값을 한 번에 반환한다. 기존 `/branches` 호출 + web 하드코딩
+ * 옵션(재직상태·근무형태·전문행사조)을 대체해 조건 정의를 서버 단일 출처로 모은다.
+ *
  * 화면의 게이팅 권한(`female_employee`)과 동일하게 가드되는 전용 endpoint 라, 조장 등 여사원
- * 권한만 가진 직책도 접근 가능하다.
+ * 권한만 가진 직책도 접근 가능하다. 지점(costCenterCode) 옵션 길이로 프론트가 단일/다중을
+ * 판별한다(단일이면 Tag, 다중이면 Select).
  */
-export async function fetchFemaleEmployeeBranches(): Promise<FemaleEmployeeBranch[]> {
-  const res = await client.get<ApiResponse<FemaleEmployeeBranch[]>>('/api/v1/admin/female-employees/branches');
+export async function fetchFemaleEmployeeListMeta(): Promise<FemaleEmployeeListMeta> {
+  const res = await client.get<ApiResponse<FemaleEmployeeListMeta>>('/api/v1/admin/female-employees/meta');
   if (!res.data.success || !res.data.data) {
-    throw new Error(res.data.message || '지점 목록 조회에 실패했습니다');
+    throw new Error(res.data.message || '여사원 현황 조회 조건 로드에 실패했습니다');
   }
   return res.data.data;
 }

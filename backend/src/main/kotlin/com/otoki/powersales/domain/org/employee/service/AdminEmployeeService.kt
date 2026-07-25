@@ -6,6 +6,12 @@ import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListItem
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterMeta
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterOption
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListDefaults
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListMetaResponse
+import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
@@ -34,6 +40,26 @@ class AdminEmployeeService(
     companion object {
         /** 검색결과 전체 엑셀 export 최대 건수 (초과분 잘라냄 — 타 도메인 export 정합). */
         private const val EXPORT_MAX_ROWS = 50_000
+
+        /**
+         * 여사원 현황 목록 기본 페이지 크기 / 정렬 — [getEmployees] 의 실제 동작과 일치시킨다.
+         * 정렬은 `Sort.by("name").ascending()` 고정이며, 서버가 단일 출처로 화면에 알린다.
+         */
+        private const val FEMALE_EMPLOYEE_LIST_DEFAULT_PAGE_SIZE = 20
+        private const val FEMALE_EMPLOYEE_LIST_DEFAULT_SORT = "name,ASC"
+
+        /**
+         * 재직상태 필터 옵션 — [EmploymentStatus] 에서 파생 (기존 web 하드코딩을 서버 단일 출처로 이전).
+         *
+         * `employee.status` 는 SF `DKRetail__Status__c` 가 free-form string 이라 컬럼 타입이 `String?` 이고,
+         * [EmploymentStatus] 는 그 표준 값을 `code` 로 보유한다. enum 선언 순서는 재직/퇴직/휴직 이지만
+         * 화면 노출은 재직/휴직/퇴직 순이라 표시 순서를 여기서 명시한다.
+         */
+        private val EMPLOYEE_STATUS_OPTIONS = listOf(
+            EmploymentStatus.ACTIVE,
+            EmploymentStatus.ON_LEAVE,
+            EmploymentStatus.RESIGNED,
+        ).map { it.code }
     }
 
     /**
@@ -100,6 +126,58 @@ class AdminEmployeeService(
      */
     fun getBranchOptions(): List<BranchResponse> =
         organizationRepository.findAllTeamScheduleBranches()
+
+    /**
+     * 여사원 현황 목록 조회 조건 중 **권한 무관 정적 부분** — 재직상태 / 근무형태1 / 근무형태3 /
+     * 전문행사조 옵션 + 목록 기본값.
+     *
+     * 권한 의존 지점(costCenterCode) 옵션은 호출자(controller)가
+     * [com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver] 결과로 조립해 붙인다
+     * (셀렉터-조회 스코프 동일 출처). 행사마스터 `getPromotionListMetaStatic` 과 동일한 역할 분담.
+     *
+     * 각 옵션의 value 는 [getEmployees] 가 그대로 받는 요청 파라미터 값(한글 displayName)이며,
+     * "전체" 를 뜻하는 빈 값 선택지는 서버가 내리지 않는다(화면이 표시 문구와 함께 앞에 붙인다).
+     */
+    fun getFemaleEmployeeListMetaStatic(): FemaleEmployeeListMetaResponse {
+        val statusOptions = EMPLOYEE_STATUS_OPTIONS
+            .map { FemaleEmployeeFilterOption(value = it, label = it) }
+
+        val workType1Options = WorkingCategory1.entries
+            .map { FemaleEmployeeFilterOption(value = it.displayName, label = it.displayName) }
+
+        val workType3Options = WorkingCategory3.entries
+            .map { FemaleEmployeeFilterOption(value = it.displayName, label = it.displayName) }
+
+        // 전문행사조 필터는 정식 5개 조 + '일반'(미배정, enum 값 아님) 을 함께 노출한다.
+        // 선언 순서가 SF picklist 정의 순서이며, '일반' 은 SF 레거시 표시 정합으로 맨 앞에 둔다.
+        val promotionTeamOptions = listOf(
+            FemaleEmployeeFilterOption(
+                value = ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME,
+                label = ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME,
+            ),
+        ) + ProfessionalPromotionTeamType.entries
+            .map { FemaleEmployeeFilterOption(value = it.displayName, label = it.displayName) }
+
+        val filters = listOf(
+            FemaleEmployeeFilterMeta("status", FemaleEmployeeFilterType.SELECT, statusOptions),
+            FemaleEmployeeFilterMeta("workType1", FemaleEmployeeFilterType.SELECT, workType1Options),
+            FemaleEmployeeFilterMeta("workType3", FemaleEmployeeFilterType.SELECT, workType3Options),
+            FemaleEmployeeFilterMeta(
+                "professionalPromotionTeam",
+                FemaleEmployeeFilterType.SELECT,
+                promotionTeamOptions,
+            ),
+            FemaleEmployeeFilterMeta("keyword", FemaleEmployeeFilterType.TEXT),
+        )
+
+        return FemaleEmployeeListMetaResponse(
+            filters = filters,
+            defaults = FemaleEmployeeListDefaults(
+                pageSize = FEMALE_EMPLOYEE_LIST_DEFAULT_PAGE_SIZE,
+                sort = FEMALE_EMPLOYEE_LIST_DEFAULT_SORT,
+            ),
+        )
+    }
 
     /**
      * 현재 페이지 사원들의 최근 출근등록 1건 정보(근무형태/근무거래처) Map<employeeId, info> 조회.
