@@ -495,6 +495,75 @@ void main() {
           'P001',
         );
       });
+
+      test('같은 거래처·기간이면 탭 재진입 시 재조회하지 않음', () async {
+        // Arrange
+        fakeRepo.orderHistoryResult = [
+          ProductOrderHistoryGroup(
+            orderDate: '2026-05-06',
+            products: [_createTestProduct(productCode: 'P001')],
+          ),
+        ];
+        await notifier.initialize(orderHistoryAccountId: 1071460);
+        await notifier.loadOrderHistory();
+        expect(fakeRepo.orderHistoryCallCount, 1);
+
+        // Act — 다른 탭 갔다가 주문이력 탭 재진입
+        notifier.changeTab(AddProductTab.favorites);
+        notifier.changeTab(AddProductTab.orderHistory);
+        await Future<void>.delayed(Duration.zero);
+
+        // Assert — 캐시 재사용
+        expect(fakeRepo.orderHistoryCallCount, 1);
+        expect(notifier.state.orderHistoryGroups.length, 1);
+      });
+
+      test('재조회 시 펼쳐둔 주문의 확장 상태를 유지', () async {
+        // Arrange — 2건 조회 후 두 번째 그룹만 펼침
+        fakeRepo.orderHistoryResult = [
+          ProductOrderHistoryGroup(
+            orderDate: '2026-05-06',
+            products: [_createTestProduct(productCode: 'P001')],
+          ),
+          ProductOrderHistoryGroup(
+            orderDate: '2026-05-04',
+            products: [_createTestProduct(productCode: 'P003')],
+          ),
+        ];
+        await notifier.initialize(orderHistoryAccountId: 1071460);
+        await notifier.loadOrderHistory();
+        notifier.toggleOrderHistoryExpansion(1); // 2026-05-04 펼침
+
+        // Act — 강제 재조회
+        await notifier.loadOrderHistory(force: true);
+
+        // Assert
+        expect(fakeRepo.orderHistoryCallCount, 2);
+        expect(notifier.state.orderHistoryGroups[1].orderDate, '2026-05-04');
+        expect(notifier.state.orderHistoryGroups[1].isExpanded, true);
+      });
+
+      test('기간을 변경하면 재조회', () async {
+        // Arrange
+        fakeRepo.orderHistoryResult = [
+          ProductOrderHistoryGroup(
+            orderDate: '2026-05-06',
+            products: [_createTestProduct(productCode: 'P001')],
+          ),
+        ];
+        await notifier.initialize(orderHistoryAccountId: 1071460);
+        await notifier.loadOrderHistory();
+
+        // Act
+        notifier.setHistoryDateRange(
+          DateTime(2026, 4, 1),
+          DateTime(2026, 4, 30),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        // Assert
+        expect(fakeRepo.orderHistoryCallCount, 2);
+      });
     });
 
     group('getSelectedProducts', () {
@@ -695,6 +764,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
   List<ProductOrderHistoryGroup> orderHistoryResult = [];
   bool shouldThrowOnOrderHistory = false;
   bool orderHistoryCalled = false;
+  int orderHistoryCallCount = 0;
   int? lastOrderHistoryAccountId;
 
   @override
@@ -704,6 +774,7 @@ class FakeOrderRequestRepository implements OrderRequestRepository {
     required DateTime endDate,
   }) async {
     orderHistoryCalled = true;
+    orderHistoryCallCount++;
     lastOrderHistoryAccountId = accountId;
     if (shouldThrowOnOrderHistory) throw Exception(errorMessage);
     return orderHistoryResult;

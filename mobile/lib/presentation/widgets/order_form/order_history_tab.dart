@@ -69,19 +69,22 @@ class OrderHistoryTab extends ConsumerWidget {
           children: [
             Icon(
               noAccount ? Icons.storefront_outlined : Icons.history,
-              size: 48,
+              // 안내 문구 굵기(w300)에 맞춰 아이콘도 작고 연하게 둔다
+              // (MaterialIcons 는 가변 폰트가 아니라 weight 조절이 불가).
+              size: 40,
               // 거래처 미선택은 사용자 액션 안내라 강조색(error), 이력 없음은 중립색으로 구분.
-              color: noAccount ? AppColors.error : AppColors.textTertiary,
+              color: noAccount
+                  ? AppColors.error.withValues(alpha: 0.7)
+                  : AppColors.textTertiary,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               noAccount ? '거래처를 먼저 선택해 주세요.' : '주문 이력이 없습니다.',
-              // 액션 안내(거래처 미선택)는 굵고 진한 강조색, 단순 결과 없음은 보조색으로
+              // 액션 안내(거래처 미선택)는 강조색, 단순 결과 없음은 보조색으로
               // 정보 레벨을 차등화한다.
               style: noAccount
                   ? AppTypography.bodyLarge.copyWith(
                       color: AppColors.error,
-                      fontWeight: FontWeight.bold,
                     )
                   : AppTypography.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
@@ -105,6 +108,15 @@ class OrderHistoryTab extends ConsumerWidget {
                 .where((p) => p.barcode.trim().isNotEmpty)
                 .toList()
             : group.products;
+        // 주문별 전체 선택 대상 — 선택이 차단된 제품(전용상품)은 제외한다.
+        final selectableCodes = groupProducts
+            .where((p) => !(blockExclusive && p.isExclusiveBlocked))
+            .map((p) => p.productCode)
+            .toList();
+        final allSelected = selectableCodes.isNotEmpty &&
+            selectableCodes.every((code) => state.isProductSelected(code));
+        final anySelected =
+            selectableCodes.any((code) => state.isProductSelected(code));
         return Card(
           margin: const EdgeInsets.only(bottom: AppSpacing.md),
           shape: RoundedRectangleBorder(
@@ -113,9 +125,26 @@ class OrderHistoryTab extends ConsumerWidget {
           ),
           child: ExpansionTile(
             initiallyExpanded: group.isExpanded,
+            // 펼침 시 기본값(colorScheme.primary=노랑) 대신 접힘 상태와 같은 회색 유지
+            iconColor: AppColors.textSecondary,
+            collapsedIconColor: AppColors.textSecondary,
             onExpansionChanged: (_) {
               notifier.toggleOrderHistoryExpansion(group.orderId);
             },
+            // 주문별 전체 선택(다건 선택 모드에서만 노출). 일부만 선택되면 중간 상태로 표시.
+            leading: state.multiSelect && selectableCodes.isNotEmpty
+                ? Checkbox(
+                    tristate: true,
+                    value: allSelected ? true : (anySelected ? null : false),
+                    activeColor: AppColors.primary,
+                    onChanged: (_) {
+                      notifier.setSelectionForCodes(
+                        selectableCodes,
+                        !allSelected,
+                      );
+                    },
+                  )
+                : null,
             title: Text(
               group.clientName.isEmpty
                   ? group.orderDate

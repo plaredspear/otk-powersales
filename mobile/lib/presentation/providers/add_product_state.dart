@@ -85,6 +85,10 @@ class AddProductState {
   /// false 면 주문 이력 탭은 "거래처를 먼저 선택" 안내를 노출한다(빈 이력과 구분).
   final bool hasOrderHistoryAccount;
 
+  /// 이미 조회 완료된 주문 이력의 조회 조건 키(거래처 + 기간).
+  /// 같은 키로 탭을 다시 열면 재조회하지 않는다(null 이면 미조회).
+  final String? orderHistoryLoadedKey;
+
   /// 로딩 상태
   final bool isLoading;
 
@@ -105,6 +109,7 @@ class AddProductState {
     this.historyDateFrom,
     this.historyDateTo,
     this.hasOrderHistoryAccount = false,
+    this.orderHistoryLoadedKey,
     this.isLoading = false,
     this.errorMessage,
     this.successMessage,
@@ -173,11 +178,13 @@ class AddProductState {
     DateTime? historyDateFrom,
     DateTime? historyDateTo,
     bool? hasOrderHistoryAccount,
+    String? orderHistoryLoadedKey,
     bool? isLoading,
     String? errorMessage,
     String? successMessage,
     bool clearError = false,
     bool clearSuccess = false,
+    bool clearOrderHistoryLoadedKey = false,
   }) {
     return AddProductState(
       currentTab: currentTab ?? this.currentTab,
@@ -191,6 +198,10 @@ class AddProductState {
       historyDateTo: historyDateTo ?? this.historyDateTo,
       hasOrderHistoryAccount:
           hasOrderHistoryAccount ?? this.hasOrderHistoryAccount,
+      // 캐시 무효화(clear)는 명시 플래그로만 — `?? this` 는 null 삭제를 무시한다.
+      orderHistoryLoadedKey: clearOrderHistoryLoadedKey
+          ? null
+          : (orderHistoryLoadedKey ?? this.orderHistoryLoadedKey),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       successMessage:

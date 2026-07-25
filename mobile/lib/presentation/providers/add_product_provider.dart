@@ -87,11 +87,17 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
     state = state.copyWith(
       multiSelect: multiSelect,
       hasOrderHistoryAccount: orderHistoryAccountId != null,
+      // 거래처가 바뀌어 다시 초기화될 수 있으므로 주문이력 캐시는 버린다.
+      orderHistoryGroups: const [],
+      clearOrderHistoryLoadedKey: true,
     );
     await loadFavoriteProducts();
   }
 
   /// 탭 변경 — 주문이력 탭 진입 시 거래처 주문이력을 조회한다.
+  ///
+  /// 이미 같은 조건(거래처 + 기간)으로 받아둔 이력이 있으면 재조회하지 않는다
+  /// (탭 왕복마다 API 호출 + 펼침 상태 초기화가 발생하던 문제).
   void changeTab(AddProductTab tab) {
     state = state.copyWith(currentTab: tab);
     if (tab == AddProductTab.orderHistory) {
@@ -100,16 +106,26 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
   }
 
   /// 거래처 주문이력 조회(현재 기간 기준). 거래처가 선택되지 않았으면 빈 목록을 유지한다.
-  Future<void> loadOrderHistory() async {
+  ///
+  /// [force] 가 false 면 직전 조회와 조건(거래처 + 기간)이 같을 때 캐시를 재사용한다.
+  Future<void> loadOrderHistory({bool force = false}) async {
     final accountId = _orderHistoryAccountId;
     if (accountId == null) {
-      state = state.copyWith(orderHistoryGroups: const [], isLoading: false);
+      state = state.copyWith(
+        orderHistoryGroups: const [],
+        isLoading: false,
+        clearOrderHistoryLoadedKey: true,
+      );
       return;
     }
 
     final now = DateTime.now();
     final from = state.historyDateFrom ?? now.subtract(const Duration(days: 3));
     final to = state.historyDateTo ?? now;
+
+    // 조회 조건 키 — 기간은 일 단위 비교(시:분 차이로 캐시가 깨지지 않게).
+    final loadKey = '$accountId|${_dateKey(from)}|${_dateKey(to)}';
+    if (!force && state.orderHistoryLoadedKey == loadKey) return;
 
     state = state.toLoading();
     try {
@@ -118,6 +134,11 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
         startDate: from,
         endDate: to,
       );
+      // 재조회 시 사용자가 펼쳐둔 주문(주문일 기준)은 그대로 승계한다.
+      final previousExpanded = {
+        for (final group in state.orderHistoryGroups)
+          group.orderDate: group.isExpanded,
+      };
       // 도메인 그룹 → 표시용 그룹. 그룹 키(orderId)는 주문일 인덱스로 부여하고,
       // 단일 거래처 조회라 거래처명은 별도로 싣지 않는다(제목은 주문일만 표시).
       final mapped = <OrderHistoryGroup>[
@@ -127,17 +148,26 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
             orderDate: groups[i].orderDate,
             clientName: '',
             products: groups[i].products,
-            isExpanded: i == 0,
+            isExpanded: previousExpanded[groups[i].orderDate] ?? (i == 0),
           ),
       ];
       state = state.copyWith(
         isLoading: false,
         orderHistoryGroups: mapped,
+        orderHistoryLoadedKey: loadKey,
         clearError: true,
       );
     } catch (e) {
+      // 실패는 캐시로 남기지 않는다(다음 진입 시 재시도).
       state = state.toError(extractErrorMessage(e));
     }
+  }
+
+  /// 주문이력 캐시 키용 일자 문자열(yyyy-MM-dd)
+  String _dateKey(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 
   /// 즐겨찾기 제품 목록 조회
@@ -206,7 +236,8 @@ class AddProductNotifier extends StateNotifier<AddProductState> {
       historyDateFrom: from,
       historyDateTo: to,
     );
-    loadOrderHistory();
+    // 기간 선택은 명시적 조회 액션이라 항상 재조회한다.
+    loadOrderHistory(force: true);
   }
 
   /// 주문 이력 그룹 확장/축소 토글
