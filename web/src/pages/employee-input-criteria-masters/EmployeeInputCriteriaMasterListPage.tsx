@@ -76,11 +76,12 @@ export default function EmployeeInputCriteriaMasterListPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [form] = Form.useForm<FormValues>();
 
-  // 등록/수정/확정/일괄확정/삭제 5개 쓰기 액션 모두 backend 가 EDIT 단일로 가드한다
-  // (AdminEmployeeInputCriteriaMasterController). PPT마스터처럼 CREATE/DELETE 를 분리해 게이팅하면
-  // 실제 API 가드와 어긋나므로(권한 평가는 operation 간 함의 없는 정확 매칭) EDIT 단일 기준을 따른다.
-  const { hasEntityPermission } = usePermission();
+  // 등록/수정/삭제는 EDIT 가드. 확정(단건·일괄)만 시스템 관리자 전용으로 분리된다 —
+  // SF 권한 모델의 entity × operation 은 object_permissions 4비트(R/C/E/D)에 1:1 매핑이라
+  // "확정" 축을 표현할 수 없어, backend 도 컨트롤러에서 시스템 관리자 판정으로 가드한다.
+  const { hasEntityPermission, isSystemAdmin } = usePermission();
   const canWrite = hasEntityPermission(ENTITY, 'EDIT');
+  const canConfirm = isSystemAdmin;
 
   const { data: items, isLoading, refetch, isFetching } = useEmployeeInputCriteriaMasters(status);
   const { data: formMeta } = useEmployeeInputCriteriaMasterFormMeta();
@@ -212,9 +213,11 @@ export default function EmployeeInputCriteriaMasterListPage() {
       render: (_, record) => (
         <Space size={4}>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>
-            수정
+            {/* 확정 레코드는 종료일만 편집 가능(시스템 관리자 예외) — 라벨로 편집 범위를 미리 알린다. */}
+            {record.confirmed && !isSystemAdmin ? '종료일 수정' : '수정'}
           </Button>
-          {!record.confirmed && (
+          {/* 확정은 시스템 관리자 전용. */}
+          {canConfirm && !record.confirmed && (
             <Popconfirm
               title="확정"
               description="확정 후에는 「종료일」이외는 편집할 수 없습니다. 진행하시겠습니까?"
@@ -316,6 +319,9 @@ export default function EmployeeInputCriteriaMasterListPage() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
 
+  // 확정 레코드는 종료일 외 편집 잠금 — 시스템 관리자만 예외 (backend validateConfirmedEditable 와 동일 조건).
+  const confirmedLocked = !!editingItem?.confirmed && !isSystemAdmin;
+
   return (
     <div style={{ padding: 16 }}>
       <Title level={4} style={{ marginTop: 0 }}>
@@ -346,8 +352,9 @@ export default function EmployeeInputCriteriaMasterListPage() {
         />
         <Space>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-          {/* 일괄 확정·신규 등록 모두 EDIT 가드 — 권한 미보유 시 숨김(선택 0건 disabled 는 업무 조건 분기로 별개). */}
-          {canWrite && (
+          {/* 일괄 확정은 확정 권한(시스템 관리자), 신규 등록은 EDIT — 축이 달라 각각 게이팅한다.
+              (선택 0건 disabled 는 업무 조건 분기로 권한과 별개.) */}
+          {canConfirm && (
             <Popconfirm
               title="일괄 확정"
               description={`선택한 ${selectedRowKeys.length}건을 일괄 확정합니다. 진행하시겠습니까?`}
@@ -376,9 +383,9 @@ export default function EmployeeInputCriteriaMasterListPage() {
         loading={isLoading}
         pagination={false}
         locale={listTableLocale()}
-        // 체크박스는 일괄 확정 전용 — 쓰기 권한 없으면 선택할 대상 액션이 없으므로 함께 숨긴다.
+        // 체크박스는 일괄 확정 전용 — 확정 권한 없으면 선택할 대상 액션이 없으므로 함께 숨긴다.
         rowSelection={
-          canWrite
+          canConfirm
             ? {
                 selectedRowKeys,
                 onChange: setSelectedRowKeys,
@@ -403,6 +410,15 @@ export default function EmployeeInputCriteriaMasterListPage() {
           </Space>
         }
       >
+        {confirmedLocked && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginTop: 8 }}
+            message="확정된 레코드입니다. 「종료일」만 수정할 수 있습니다."
+            description="그 외 항목을 수정하려면 시스템 관리자에게 문의하십시오."
+          />
+        )}
         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           <Form.Item
             name="categoryId"
@@ -413,13 +429,14 @@ export default function EmployeeInputCriteriaMasterListPage() {
               options={categoryOptions}
               placeholder="거래처유형을 선택해주세요"
               showSearch
+              disabled={confirmedLocked}
               filterOption={(input, option) =>
                 String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
               }
             />
           </Form.Item>
           <Form.Item name="typeOfWork1" label="근무형태1">
-            <Select allowClear options={typeOfWorkOptions} placeholder="선택" />
+            <Select allowClear options={typeOfWorkOptions} placeholder="선택" disabled={confirmedLocked} />
           </Form.Item>
           <Form.Item
             name="startDate"
@@ -427,7 +444,7 @@ export default function EmployeeInputCriteriaMasterListPage() {
             rules={[{ required: true, message: '시작일을 선택해주세요' }]}
             extra="저장 시 해당 월의 1일로 자동 보정됩니다"
           >
-            <DatePicker style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} disabled={confirmedLocked} />
           </Form.Item>
           <Form.Item
             name="endDate"
@@ -441,21 +458,28 @@ export default function EmployeeInputCriteriaMasterListPage() {
             label="경계율 (%)"
             rules={[{ required: true, message: '경계율을 입력해주세요' }]}
           >
-            <InputNumber style={{ width: '100%' }} min={0} max={100} step={1} addonAfter="%" />
+            <InputNumber
+              style={{ width: '100%' }}
+              min={0}
+              max={100}
+              step={1}
+              addonAfter="%"
+              disabled={confirmedLocked}
+            />
           </Form.Item>
           <Form.Item
             name="fixed1PersonStandardAmount"
             label="고정1명 기준금액"
             rules={[{ required: true, message: '고정1명 기준금액을 입력해주세요' }]}
           >
-            <InputNumber style={{ width: '100%' }} min={0} step={100000} />
+            <InputNumber style={{ width: '100%' }} min={0} step={100000} disabled={confirmedLocked} />
           </Form.Item>
           <Form.Item
             name="bifurcationHalfPersonStandard"
             label="격고0.5명 기준금액"
             rules={[{ required: true, message: '격고0.5명 기준금액을 입력해주세요' }]}
           >
-            <InputNumber style={{ width: '100%' }} min={0} step={100000} />
+            <InputNumber style={{ width: '100%' }} min={0} step={100000} disabled={confirmedLocked} />
           </Form.Item>
         </Form>
       </Modal>

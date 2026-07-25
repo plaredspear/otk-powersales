@@ -9,6 +9,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputC
 import com.otoki.powersales.domain.activity.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaCategoryNotFoundException
+import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaConfirmedEditDeniedException
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaDateRangeInvalidException
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaMasterNotFoundException
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaPeriodOverlapException
@@ -173,6 +174,130 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
 
             assertThatThrownBy { service.update(99L, request) }
                 .isInstanceOf(EmployeeInputCriteriaMasterNotFoundException::class.java)
+        }
+    }
+
+    /**
+     * 확정 후 편집 제한 — SF ValidationRule `EditDisableForEmployeeMaster` 동등.
+     * 확정 레코드는 종료일만 변경 가능하고, 시스템 관리자만 예외.
+     */
+    @Nested
+    @DisplayName("update - 확정 후 편집 제한")
+    inner class ConfirmedEditRestrictionTests {
+
+        private fun confirmedEntity() = newEntity(id = 1L, category = newCategory(10L), confirmed = true)
+
+        private fun baseRequest(
+            categoryId: Long = 10L,
+            typeOfWork1: TypeOfWork1? = TypeOfWork1.DISPLAY,
+            startDate: LocalDate = LocalDate.of(2026, 5, 1),
+            endDate: LocalDate? = LocalDate.of(2026, 12, 31),
+            boundary: BigDecimal = BigDecimal("30"),
+            fixed1PersonStandardAmount: BigDecimal = BigDecimal("1000"),
+            bifurcationHalfPersonStandard: BigDecimal = BigDecimal("500"),
+        ) = EmployeeInputCriteriaMasterUpdateRequest(
+            categoryId = categoryId,
+            typeOfWork1 = typeOfWork1,
+            startDate = startDate,
+            endDate = endDate,
+            boundary = boundary,
+            fixed1PersonStandardAmount = fixed1PersonStandardAmount,
+            bifurcationHalfPersonStandard = bifurcationHalfPersonStandard,
+        )
+
+        private fun stubRepositories(entity: EmployeeInputCriteriaMaster) {
+            every { repository.findById(1L) } returns Optional.of(entity)
+            every { categoryRepository.findById(any()) } answers {
+                Optional.of(newCategory(firstArg<Long>()))
+            }
+            every { repository.existsOverlapping(any(), any(), any(), any(), any()) } returns false
+        }
+
+        @Test
+        @DisplayName("확정 레코드 - 종료일만 변경은 허용")
+        fun confirmed_endDateOnly_allowed() {
+            stubRepositories(confirmedEntity())
+
+            val result = service.update(1L, baseRequest(endDate = LocalDate.of(2027, 3, 15)))
+
+            // 종료일은 해당 월 말일로 보정.
+            assertThat(result.endDate).isEqualTo(LocalDate.of(2027, 3, 31))
+        }
+
+        @Test
+        @DisplayName("확정 레코드 - 기준금액 변경은 차단")
+        fun confirmed_amountChange_denied() {
+            stubRepositories(confirmedEntity())
+
+            assertThatThrownBy {
+                service.update(1L, baseRequest(fixed1PersonStandardAmount = BigDecimal("9999")))
+            }.isInstanceOf(EmployeeInputCriteriaConfirmedEditDeniedException::class.java)
+        }
+
+        @Test
+        @DisplayName("확정 레코드 - 시작일 변경은 차단")
+        fun confirmed_startDateChange_denied() {
+            stubRepositories(confirmedEntity())
+
+            assertThatThrownBy {
+                service.update(1L, baseRequest(startDate = LocalDate.of(2026, 7, 1)))
+            }.isInstanceOf(EmployeeInputCriteriaConfirmedEditDeniedException::class.java)
+        }
+
+        @Test
+        @DisplayName("확정 레코드 - 구분(거래처유형) 변경은 차단")
+        fun confirmed_categoryChange_denied() {
+            stubRepositories(confirmedEntity())
+
+            assertThatThrownBy {
+                service.update(1L, baseRequest(categoryId = 20L))
+            }.isInstanceOf(EmployeeInputCriteriaConfirmedEditDeniedException::class.java)
+        }
+
+        @Test
+        @DisplayName("확정 레코드 - 근무형태1 변경은 차단")
+        fun confirmed_typeOfWorkChange_denied() {
+            stubRepositories(confirmedEntity())
+
+            assertThatThrownBy {
+                service.update(1L, baseRequest(typeOfWork1 = null))
+            }.isInstanceOf(EmployeeInputCriteriaConfirmedEditDeniedException::class.java)
+        }
+
+        @Test
+        @DisplayName("확정 레코드 - 시스템 관리자는 전 필드 편집 허용")
+        fun confirmed_systemAdmin_allowed() {
+            stubRepositories(confirmedEntity())
+
+            val result = service.update(
+                1L,
+                baseRequest(fixed1PersonStandardAmount = BigDecimal("9999"), startDate = LocalDate.of(2026, 7, 1)),
+                isSystemAdmin = true,
+            )
+
+            assertThat(result.fixed1PersonStandardAmount).isEqualByComparingTo(BigDecimal("9999"))
+            assertThat(result.startDate).isEqualTo(LocalDate.of(2026, 7, 1))
+        }
+
+        @Test
+        @DisplayName("미확정 레코드 - 제한 없음")
+        fun notConfirmed_noRestriction() {
+            stubRepositories(newEntity(id = 1L, category = newCategory(10L), confirmed = false))
+
+            val result = service.update(1L, baseRequest(fixed1PersonStandardAmount = BigDecimal("9999")))
+
+            assertThat(result.fixed1PersonStandardAmount).isEqualByComparingTo(BigDecimal("9999"))
+        }
+
+        @Test
+        @DisplayName("확정 레코드 - scale 만 다른 동일 금액은 변경으로 보지 않음")
+        fun confirmed_sameAmountDifferentScale_allowed() {
+            stubRepositories(confirmedEntity())
+
+            // entity 는 BigDecimal("1000"), 요청은 "1000.00" — equals 는 false 지만 compareTo 는 0.
+            val result = service.update(1L, baseRequest(fixed1PersonStandardAmount = BigDecimal("1000.00")))
+
+            assertThat(result.confirmed).isTrue()
         }
     }
 

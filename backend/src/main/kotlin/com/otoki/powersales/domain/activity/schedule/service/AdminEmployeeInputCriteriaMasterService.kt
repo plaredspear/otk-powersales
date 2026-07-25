@@ -14,6 +14,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.TypeOfWork1Opt
 import com.otoki.powersales.domain.activity.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaCategoryNotFoundException
+import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaConfirmedEditDeniedException
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaDateRangeInvalidException
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaMasterNotFoundException
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaPeriodOverlapException
@@ -21,6 +22,7 @@ import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCri
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
@@ -133,8 +135,16 @@ class AdminEmployeeInputCriteriaMasterService(
         return EmployeeInputCriteriaMasterResponse.from(repository.save(entity))
     }
 
+    /**
+     * @param isSystemAdmin 확정 후 편집 제한의 예외 여부. 컨트롤러가 principal 로부터 산출해 주입한다
+     *                      (service 가 ambient security context 에 의존하지 않도록 explicit parameter).
+     */
     @Transactional
-    fun update(id: Long, request: EmployeeInputCriteriaMasterUpdateRequest): EmployeeInputCriteriaMasterResponse {
+    fun update(
+        id: Long,
+        request: EmployeeInputCriteriaMasterUpdateRequest,
+        isSystemAdmin: Boolean = false,
+    ): EmployeeInputCriteriaMasterResponse {
         val entity = findEntityOrThrow(id)
         val category = categoryRepository.findById(request.categoryId)
             .orElseThrow { EmployeeInputCriteriaCategoryNotFoundException() }
@@ -142,6 +152,7 @@ class AdminEmployeeInputCriteriaMasterService(
         val normalizedStart = normalizeStartDate(request.startDate)
         val normalizedEnd = normalizeEndDate(request.endDate)
         validateDateRange(normalizedStart, normalizedEnd)
+        validateConfirmedEditable(entity, category.id, request, normalizedStart, isSystemAdmin)
         validateNoOverlap(
             categoryId = category.id,
             typeOfWork1 = request.typeOfWork1,
@@ -189,6 +200,46 @@ class AdminEmployeeInputCriteriaMasterService(
 
     private fun normalizeEndDate(date: LocalDate?): LocalDate? =
         date?.with(TemporalAdjusters.lastDayOfMonth())
+
+    /**
+     * 확정 후 편집 제한 — SF ValidationRule `EditDisableForEmployeeMaster` 동등.
+     *
+     * 확정된 레코드는 **종료일만** 변경 가능하고 나머지 키 필드는 잠긴다. 레거시 룰의 `ISCHANGED` 목록에서
+     * `EndDate__c` 만 의도적으로 제외된 것을 그대로 재현한다.
+     *
+     * 레거시 예외는 `$UserRole.Name = "영업지원실"` 또는 `$Profile.Name = "시스템 관리자"` 2종이었으나,
+     * 신규는 시스템 관리자 단일 기준으로 운영한다(사용자 결정). 예외 대상은 확정 레코드도 전 필드 편집 가능.
+     */
+    private fun validateConfirmedEditable(
+        entity: EmployeeInputCriteriaMaster,
+        categoryId: Long,
+        request: EmployeeInputCriteriaMasterUpdateRequest,
+        normalizedStart: LocalDate,
+        isSystemAdmin: Boolean,
+    ) {
+        if (!entity.confirmed || isSystemAdmin) return
+
+        val changed = entity.category?.id != categoryId ||
+            entity.typeOfWork1 != request.typeOfWork1 ||
+            entity.startDate != normalizedStart ||
+            isAmountChanged(entity.boundary, request.boundary) ||
+            isAmountChanged(entity.fixed1PersonStandardAmount, request.fixed1PersonStandardAmount) ||
+            isAmountChanged(entity.bifurcationHalfPersonStandard, request.bifurcationHalfPersonStandard)
+
+        if (changed) throw EmployeeInputCriteriaConfirmedEditDeniedException()
+    }
+
+    /**
+     * BigDecimal 변경 판정 — scale 무시 비교.
+     *
+     * `equals` 는 scale 까지 비교해 `30` 과 `30.0` 을 다른 값으로 보므로 [BigDecimal.compareTo] 를 쓴다.
+     * entity 측은 nullable (마이그레이션 유입분에 null 존재 가능) 이고 request 측은 필수라,
+     * null → 값 은 변경으로 판정한다.
+     */
+    private fun isAmountChanged(current: BigDecimal?, requested: BigDecimal): Boolean {
+        if (current == null) return true
+        return current.compareTo(requested) != 0
+    }
 
     private fun validateDateRange(start: LocalDate, end: LocalDate?) {
         if (end != null && end.isBefore(start)) {

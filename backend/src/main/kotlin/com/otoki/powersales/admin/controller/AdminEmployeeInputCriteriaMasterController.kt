@@ -2,6 +2,10 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
+import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
+import com.otoki.powersales.platform.auth.web.WebUserPrincipal
+import com.otoki.powersales.platform.common.exception.BusinessException
+import org.springframework.security.core.annotation.AuthenticationPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterBulkConfirmRequest
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterCreateRequest
@@ -71,18 +75,28 @@ class AdminEmployeeInputCriteriaMasterController(
             .body(ApiResponse.success(service.create(request)))
     }
 
+    /**
+     * 수정. 확정된 레코드는 종료일만 변경 가능하며(SF ValidationRule `EditDisableForEmployeeMaster` 동등),
+     * 시스템 관리자만 그 제한의 예외다.
+     */
     @PutMapping("/{id}")
     @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
     fun update(
         @PathVariable id: Long,
         @Valid @RequestBody request: EmployeeInputCriteriaMasterUpdateRequest,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterResponse>> {
-        return ResponseEntity.ok(ApiResponse.success(service.update(id, request)))
+        val isSystemAdmin = SystemAdminProfilePolicy.isSystemAdmin(principal.profileName)
+        return ResponseEntity.ok(ApiResponse.success(service.update(id, request, isSystemAdmin)))
     }
 
     @PostMapping("/{id}/confirm")
     @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
-    fun confirm(@PathVariable id: Long): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterResponse>> {
+    fun confirm(
+        @PathVariable id: Long,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
+    ): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterResponse>> {
+        requireSystemAdminForConfirm(principal)
         return ResponseEntity.ok(ApiResponse.success(service.confirm(id)))
     }
 
@@ -90,8 +104,28 @@ class AdminEmployeeInputCriteriaMasterController(
     @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
     fun bulkConfirm(
         @Valid @RequestBody request: EmployeeInputCriteriaMasterBulkConfirmRequest,
+        @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<EmployeeInputCriteriaMasterResponse>>> {
+        requireSystemAdminForConfirm(principal)
         return ResponseEntity.ok(ApiResponse.success(service.bulkConfirm(request.ids)))
+    }
+
+    /**
+     * 확정 권한 가드 — 확정은 수정과 분리된 시스템 관리자 전용 액션이다(사용자 결정).
+     *
+     * SF 권한 모델의 entity × operation 은 `object_permissions` 4비트(R/C/E/D) 에 1:1 매핑이라
+     * "확정" 이라는 다섯 번째 축을 표현할 수 없다. 기능 활성화 / 로그 레벨 관리와 동일하게
+     * [SystemAdminProfilePolicy.isSystemAdmin] 으로 컨트롤러에서 직접 판정한다.
+     * (`@RequiresSfPermission` 의 EDIT 는 유지 — 마스터 접근 자체의 최소 요건.)
+     */
+    private fun requireSystemAdminForConfirm(principal: WebUserPrincipal) {
+        if (!SystemAdminProfilePolicy.isSystemAdmin(principal.profileName)) {
+            throw BusinessException(
+                errorCode = "EMPLOYEE_INPUT_CRITERIA_CONFIRM_DENIED",
+                message = "확정은 시스템 관리자만 수행할 수 있습니다",
+                httpStatus = HttpStatus.FORBIDDEN,
+            )
+        }
     }
 
     @DeleteMapping("/{id}")

@@ -25,9 +25,12 @@ const sampleItem: EmployeeInputCriteriaMaster = {
   validData: '유효',
 };
 
+/** 목록 mock 이 돌려줄 확정 여부 — 케이스별로 renderPage / renderConfirmedPage 가 토글한다. */
+let listConfirmed = false;
+
 vi.mock('@/hooks/employee-input-criteria-master/useEmployeeInputCriteriaMasters', () => ({
   useEmployeeInputCriteriaMasters: () => ({
-    data: [sampleItem],
+    data: [{ ...sampleItem, confirmed: listConfirmed }],
     isLoading: false,
     refetch: vi.fn(),
     isFetching: false,
@@ -87,7 +90,8 @@ function setPermissions(permissions: string[], profileName: string | null = '5.�
   });
 }
 
-function renderPage() {
+function renderWith(confirmed: boolean) {
+  listConfirmed = confirmed;
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
@@ -97,6 +101,12 @@ function renderPage() {
     </QueryClientProvider>,
   );
 }
+
+/** 미확정 레코드 1건이 목록에 있는 상태로 렌더. */
+const renderPage = () => renderWith(false);
+
+/** 확정된 레코드 1건이 목록에 있는 상태로 렌더. */
+const renderConfirmedPage = () => renderWith(true);
 
 /**
  * 등록/수정/확정/일괄확정/삭제 5개 쓰기 액션 모두 backend 가 EDIT 단일로 가드하므로
@@ -144,7 +154,7 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
     });
   });
 
-  describe('쓰기 권한 보유 (EDIT)', () => {
+  describe('쓰기 권한 보유 (EDIT) — 확정 권한 없음', () => {
     beforeEach(() => {
       setPermissions(['employee_input_criteria_master:R', 'employee_input_criteria_master:E']);
     });
@@ -154,16 +164,49 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
       expect(screen.getByRole('button', { name: /신규 등록/ })).toBeInTheDocument();
     });
 
+    it('행 액션(수정/삭제) 버튼이 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    });
+
+    it('확정 버튼은 숨겨진다 (확정=시스템 관리자 전용)', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: '확정' })).not.toBeInTheDocument();
+    });
+
+    it('일괄 확정 버튼은 숨겨진다 (확정=시스템 관리자 전용)', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: /일괄 확정/ })).not.toBeInTheDocument();
+    });
+
+    it('일괄 확정 전용 행 선택 체크박스도 숨겨진다', () => {
+      renderPage();
+      expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('시스템 관리자 — 확정 포함 전체 액션', () => {
+    beforeEach(() => {
+      // permissions 가 비어 있어도 시스템 관리자는 전체 통과 (usePermission).
+      setPermissions([], '시스템 관리자');
+    });
+
+    it('등록/수정/삭제가 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /신규 등록/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    });
+
+    it('확정 버튼이 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: '확정' })).toBeInTheDocument();
+    });
+
     it('일괄 확정 버튼이 노출된다 (선택 0건이라 disabled)', () => {
       renderPage();
       expect(screen.getByRole('button', { name: /일괄 확정/ })).toBeDisabled();
-    });
-
-    it('행 액션(수정/확정/삭제) 버튼이 노출된다', () => {
-      renderPage();
-      expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '확정' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
     });
 
     it('행 선택 체크박스가 노출된다', () => {
@@ -172,17 +215,24 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
     });
   });
 
-  describe('시스템 관리자', () => {
-    beforeEach(() => {
-      // permissions 가 비어 있어도 시스템 관리자는 전체 통과 (usePermission).
-      setPermissions([], '시스템 관리자');
+  describe('확정된 레코드의 편집 제한', () => {
+    it('EDIT 보유자에게는 수정 버튼이 「종료일 수정」으로 표시된다', () => {
+      setPermissions(['employee_input_criteria_master:R', 'employee_input_criteria_master:E']);
+      renderConfirmedPage();
+      expect(screen.getByRole('button', { name: '종료일 수정' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
     });
 
-    it('쓰기 액션이 모두 노출된다', () => {
-      renderPage();
-      expect(screen.getByRole('button', { name: /신규 등록/ })).toBeInTheDocument();
+    it('시스템 관리자에게는 그대로 「수정」으로 표시된다 (제한 예외)', () => {
+      setPermissions([], '시스템 관리자');
+      renderConfirmedPage();
       expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    });
+
+    it('확정된 레코드에는 확정 버튼이 다시 노출되지 않는다', () => {
+      setPermissions([], '시스템 관리자');
+      renderConfirmedPage();
+      expect(screen.queryByRole('button', { name: '확정' })).not.toBeInTheDocument();
     });
   });
 });
