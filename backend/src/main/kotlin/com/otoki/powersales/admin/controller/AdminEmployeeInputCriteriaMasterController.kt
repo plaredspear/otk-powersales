@@ -1,10 +1,10 @@
 package com.otoki.powersales.admin.controller
 
+import com.otoki.powersales.platform.auth.permission.PermissionResource
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.platform.auth.permission.SystemAdminProfilePolicy
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
-import com.otoki.powersales.platform.common.exception.BusinessException
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterBulkConfirmRequest
@@ -22,9 +22,25 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/v1/admin/employee-input-criteria-masters")
+@PermissionResource(AdminEmployeeInputCriteriaMasterController.CONFIRM_RESOURCE)
 class AdminEmployeeInputCriteriaMasterController(
     private val service: AdminEmployeeInputCriteriaMasterService,
 ) {
+
+    companion object {
+        /**
+         * 확정(단건·일괄) 전용 가상 권한 자원 — 수정(EDIT)과 분리된 별도 축.
+         *
+         * SF 권한 모델의 entity × operation 은 `object_permissions` 4비트(R/C/E/D) 에 1:1 매핑이라
+         * `employee_input_criteria_master` 축 안에서는 "확정" 을 표현할 수 없다. JPA entity 가 없는
+         * 가상 자원으로 등록해 `custom_permissions` 경로로 부여한다 (SF `CustomPermission` 과 1:1 대응).
+         *
+         * 부여 SoT: [com.otoki.powersales.platform.auth.permission.LeaderProfileFlagsSeed] 의
+         * custom_permissions. 시스템 관리자는 MODIFY_ALL_DATA 펼침으로 자동 통과한다
+         * ([com.otoki.powersales.platform.auth.permission.SfPermissionResolver.expandAllDataBits]).
+         */
+        const val CONFIRM_RESOURCE = "employee_input_criteria_confirm"
+    }
 
     /**
      * 진열사원 투입기준 마스터 폼(등록/수정 모달) 렌더링용 메타.
@@ -91,41 +107,17 @@ class AdminEmployeeInputCriteriaMasterController(
     }
 
     @PostMapping("/{id}/confirm")
-    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
-    fun confirm(
-        @PathVariable id: Long,
-        @AuthenticationPrincipal principal: WebUserPrincipal,
-    ): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterResponse>> {
-        requireSystemAdminForConfirm(principal)
+    @RequiresSfPermission(entity = CONFIRM_RESOURCE, operation = SfPermissionOperation.EDIT)
+    fun confirm(@PathVariable id: Long): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterResponse>> {
         return ResponseEntity.ok(ApiResponse.success(service.confirm(id)))
     }
 
     @PostMapping("/bulk-confirm")
-    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = CONFIRM_RESOURCE, operation = SfPermissionOperation.EDIT)
     fun bulkConfirm(
         @Valid @RequestBody request: EmployeeInputCriteriaMasterBulkConfirmRequest,
-        @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<EmployeeInputCriteriaMasterResponse>>> {
-        requireSystemAdminForConfirm(principal)
         return ResponseEntity.ok(ApiResponse.success(service.bulkConfirm(request.ids)))
-    }
-
-    /**
-     * 확정 권한 가드 — 확정은 수정과 분리된 시스템 관리자 전용 액션이다(사용자 결정).
-     *
-     * SF 권한 모델의 entity × operation 은 `object_permissions` 4비트(R/C/E/D) 에 1:1 매핑이라
-     * "확정" 이라는 다섯 번째 축을 표현할 수 없다. 기능 활성화 / 로그 레벨 관리와 동일하게
-     * [SystemAdminProfilePolicy.isSystemAdmin] 으로 컨트롤러에서 직접 판정한다.
-     * (`@RequiresSfPermission` 의 EDIT 는 유지 — 마스터 접근 자체의 최소 요건.)
-     */
-    private fun requireSystemAdminForConfirm(principal: WebUserPrincipal) {
-        if (!SystemAdminProfilePolicy.isSystemAdmin(principal.profileName)) {
-            throw BusinessException(
-                errorCode = "EMPLOYEE_INPUT_CRITERIA_CONFIRM_DENIED",
-                message = "확정은 시스템 관리자만 수행할 수 있습니다",
-                httpStatus = HttpStatus.FORBIDDEN,
-            )
-        }
     }
 
     @DeleteMapping("/{id}")

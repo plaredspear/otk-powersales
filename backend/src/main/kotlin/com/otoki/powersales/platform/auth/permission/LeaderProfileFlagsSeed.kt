@@ -128,10 +128,17 @@ private val LEADER_6_OBJECT_PERMISSIONS = """
 //
 // 실제 dev/prod 반영은 web admin 권한 화면 편집(is_locally_modified=TRUE)이 담당 — 본 Runner 는 비활성이라
 // 런타임 미반영이며, 본 상수는 "조장이 가져야 할 권한" 의 문서화된 SoT.
+// `employee_input_criteria_confirm` 은 진열사원 투입기준 마스터의 **확정(단건·일괄) 전용 가상 자원**이다
+// (@PermissionResource, AdminEmployeeInputCriteriaMasterController.CONFIRM_RESOURCE). 확정은 수정(EDIT)과
+// 분리된 축인데 SF object_permissions 4비트(R/C/E/D) 로는 표현할 수 없어 custom_permissions 경로로 부여한다.
+//
+// 조장은 마스터 자체는 **조회만** 하고(EmployeeInputCriteriaMaster__c = allowRead 단독 — 등록/수정/삭제 없음),
+// 확정만 별도로 수행한다 (사용자 결정). 확정 가드는 EDIT operation 을 보므로 allowEdit 비트로 부여한다.
 private val LEADER_6_CUSTOM_PERMISSIONS = """
 {
   "female_employee": { "allowEdit": true, "allowRead": true, "allowCreate": true },
-  "education_post": { "allowRead": true }
+  "education_post": { "allowRead": true },
+  "employee_input_criteria_confirm": { "allowEdit": true }
 }
 """.trimIndent()
 

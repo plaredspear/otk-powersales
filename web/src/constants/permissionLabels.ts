@@ -23,6 +23,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   employee: '사원',
   female_employee: '여사원',
   employee_input_criteria_master: '진열사원 투입기준',
+  employee_input_criteria_confirm: '진열사원 투입기준 확정',
   monthly_sales_history: '월매출',
   notice_post: '공지사항',
   permission_set: '권한 세트',

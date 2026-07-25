@@ -97,8 +97,25 @@ class LeaderProfileFlagsSyncRunnerTest {
                 .describedAs("%s 는 가드 entity 가 아니므로 SoT 에 없어야 한다", key)
                 .isFalse
         }
+        // 진열사원 투입기준 **확정** 은 수정(EDIT)과 분리된 가상 자원으로 조장에게 부여한다 (사용자 결정).
+        // 확정 가드가 EDIT operation 을 보므로 allowEdit 비트여야 한다.
+        val confirmResource = leader6Custom.get("employee_input_criteria_confirm")
+        assertThat(confirmResource)
+            .describedAs("6.조장 에게 진열사원 투입기준 확정 권한이 부여돼야 한다")
+            .isNotNull
+        assertThat(confirmResource.get("allowEdit")?.asBoolean()).isTrue
+
         // PPT 마스터/이력 조회 권한 (요청 확인분 — 이미 부여돼 있어야 한다).
         val leader6Object = ObjectMapper().readTree(leader6.objectPermissions)
+        // 확정만 부여하고 마스터 자체의 등록/수정/삭제는 부여하지 않는다 — 권한 확대 회귀 방지.
+        val inputCriteriaMaster = leader6Object.get("EmployeeInputCriteriaMaster__c")
+        assertThat(inputCriteriaMaster?.get("allowRead")?.asBoolean()).isTrue
+        listOf("allowCreate", "allowEdit", "allowDelete").forEach { bit ->
+            assertThat(inputCriteriaMaster?.get(bit)?.asBoolean() ?: false)
+                .describedAs("6.조장 EmployeeInputCriteriaMaster__c.%s 는 부여되지 않아야 한다", bit)
+                .isFalse
+        }
+
         listOf("ProfessionalPromotionTeamMaster__c", "ProfessionalPromotionTeamHistory__c").forEach { obj ->
             assertThat(leader6Object.get(obj)?.get("allowRead")?.asBoolean())
                 .describedAs("6.조장 %s 는 read 가 부여돼야 한다", obj)

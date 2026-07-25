@@ -174,12 +174,12 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
       expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
     });
 
-    it('확정 버튼은 숨겨진다 (확정=시스템 관리자 전용)', () => {
+    it('확정 버튼은 숨겨진다 (확정 자원 권한 미보유)', () => {
       renderPage();
       expect(screen.queryByRole('button', { name: '확정' })).not.toBeInTheDocument();
     });
 
-    it('일괄 확정 버튼은 숨겨진다 (확정=시스템 관리자 전용)', () => {
+    it('일괄 확정 버튼은 숨겨진다 (확정 자원 권한 미보유)', () => {
       renderPage();
       expect(screen.queryByRole('button', { name: /일괄 확정/ })).not.toBeInTheDocument();
     });
@@ -213,6 +213,41 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
     it('관리 컬럼은 유지된다 (삭제가 가능하므로)', () => {
       renderPage();
       expect(screen.getAllByText('관리').length).toBeGreaterThan(0);
+    });
+  });
+
+  /**
+   * 6.조장 실제 부여 형태 — 마스터는 READ 단독, 확정만 가상 자원으로 별도 부여
+   * (LeaderProfileFlagsSeed 의 custom_permissions).
+   */
+  describe('조장 — 마스터 READ + 확정 권한만 보유', () => {
+    beforeEach(() => {
+      setPermissions([
+        'employee_input_criteria_master:R',
+        'employee_input_criteria_confirm:E',
+      ]);
+    });
+
+    it('확정 버튼이 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: '확정' })).toBeInTheDocument();
+    });
+
+    it('일괄 확정 버튼이 노출된다 (선택 0건이라 disabled)', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: /일괄 확정/ })).toBeDisabled();
+    });
+
+    it('일괄 확정용 행 선택 체크박스가 노출된다', () => {
+      renderPage();
+      expect(screen.queryAllByRole('checkbox').length).toBeGreaterThan(0);
+    });
+
+    it('신규 등록·수정·삭제 버튼은 숨겨진다 (마스터 EDIT/DELETE 미보유)', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: /신규 등록/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
     });
   });
 

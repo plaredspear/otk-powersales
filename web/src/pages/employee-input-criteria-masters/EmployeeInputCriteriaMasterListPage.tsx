@@ -42,6 +42,12 @@ const { Title, Text } = Typography;
 
 const ENTITY = 'employee_input_criteria_master';
 
+/**
+ * 확정(단건·일괄) 전용 가상 권한 자원 — 수정(EDIT)과 분리된 축.
+ * backend `AdminEmployeeInputCriteriaMasterController.CONFIRM_RESOURCE` 와 동일 문자열.
+ */
+const CONFIRM_RESOURCE = 'employee_input_criteria_confirm';
+
 /** 목록 meta 로드 전 초기 상태값. 로드 후 서버 기본값(defaults.status)으로 동기화된다. */
 const INITIAL_STATUS: ValidStatusFilter = 'ALL';
 
@@ -77,12 +83,12 @@ export default function EmployeeInputCriteriaMasterListPage() {
   const [form] = Form.useForm<FormValues>();
 
   // backend 가드와 1:1 정합 (AdminEmployeeInputCriteriaMasterController):
-  // 등록/수정 = EDIT, 삭제 = DELETE, 확정(단건·일괄) = 시스템 관리자.
-  // 확정은 SF 권한 모델의 4비트(R/C/E/D) 로 표현할 수 없는 축이라 컨트롤러가 직접 판정한다.
+  // 등록/수정 = master:EDIT, 삭제 = master:DELETE,
+  // 확정(단건·일괄) = employee_input_criteria_confirm:EDIT (수정과 분리된 가상 자원 축).
   const { hasEntityPermission, isSystemAdmin } = usePermission();
   const canWrite = hasEntityPermission(ENTITY, 'EDIT');
   const canDelete = hasEntityPermission(ENTITY, 'DELETE');
-  const canConfirm = isSystemAdmin;
+  const canConfirm = hasEntityPermission(CONFIRM_RESOURCE, 'EDIT');
 
   const { data: items, isLoading, refetch, isFetching } = useEmployeeInputCriteriaMasters(status);
   const { data: formMeta } = useEmployeeInputCriteriaMasterFormMeta();
