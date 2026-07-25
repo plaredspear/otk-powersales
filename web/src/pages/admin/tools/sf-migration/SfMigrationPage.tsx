@@ -704,7 +704,7 @@ export default function SfMigrationPage() {
                 system 비트는 <Text code>api_enabled</Text> 만 TRUE —{' '}
                 <Text code>view_all_data</Text> / <Text code>modify_all_data</Text> /{' '}
                 <Text code>view_all_users</Text> / <Text code>manage_users</Text> 는 모두 FALSE 다.
-                object 권한은 SF object 33종, custom 권한은 SF object 가 아닌 가상 자원 2종에
+                object 권한은 SF object 33종, custom 권한은 SF object 가 아닌 가상 자원 3종에
                 부여된다.
               </Paragraph>
               <ul style={{ marginBottom: 8, paddingLeft: 20 }}>
@@ -716,7 +716,7 @@ export default function SfMigrationPage() {
                   <Text strong>조회 전용 (20종)</Text> — 조직 · 거래처 · ERP주문(+주문상품) ·
                   출근정보 · 첨부파일 · 상품(+바코드) · 일별/월별 매출실적 · 푸시수신자 ·
                   출퇴근로그 · 거래처분류마스터 · 주문요청(+요청상품) · 현장활동 ·
-                  매출진척률마스터 · 사원입력기준마스터 ·{' '}
+                  매출진척률마스터 · 사원입력기준마스터<Text type="secondary">(확정은 아래 custom 자원으로 별도 부여)</Text> ·{' '}
                   <Text strong>전문판촉조마스터</Text> ·{' '}
                   <Text strong>전문판촉조이력</Text>
                 </li>
@@ -725,16 +725,32 @@ export default function SfMigrationPage() {
                   조회 없음) · 여사원일정 (조회/등록) · 월별여사원통합일정 (조회/등록/수정)
                 </li>
                 <li>
-                  <Text strong>custom 자원 (2종)</Text> — 여사원 <Text code>female_employee</Text>{' '}
-                  (조회/등록/수정) · 교육게시물 <Text code>education_post</Text> (조회 전용)
+                  <Text strong>custom 자원 (3종)</Text> — 여사원 <Text code>female_employee</Text>{' '}
+                  (조회/등록/수정) · 교육게시물 <Text code>education_post</Text> (조회 전용) ·{' '}
+                  <Text strong>진열사원 투입기준 확정</Text>{' '}
+                  <Text code>employee_input_criteria_confirm</Text> (확정 실행)
                 </li>
               </ul>
+              <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+                <Text strong>진열사원 투입기준 확정</Text> 은 마스터 자체와 분리된 별도 권한 축이다.
+                조장은 <Text code>사원입력기준마스터</Text> 를 <Text strong>조회만</Text> 하고
+                (등록/수정/삭제 없음), <Text strong>확정(단건 · 일괄)만</Text> 수행한다. SF
+                object 권한의 4비트(R/C/E/D)로는 &quot;확정&quot; 축을 표현할 수 없어 custom 자원
+                (SF <Text code>CustomPermission</Text> 대응) 경로로 부여하며, 가드가 EDIT
+                operation 을 보므로 <Text code>allowEdit</Text> 비트로 저장된다. 시스템 관리자는{' '}
+                <Text code>modify_all_data</Text> 펼침으로 자동 통과한다.
+              </Paragraph>
               <Paragraph type="secondary" style={{ marginBottom: 0 }}>
                 object 권한 키는 SF API name (<Text code>ProfessionalPromotionTeamMaster__c</Text>{' '}
                 등) 으로 저장되며, 권한 판정 시점에 각 entity 의 <Text code>@SFObject</Text>{' '}
                 매핑으로 테이블명 (<Text code>professional_promotion_team_master</Text> 등) 키로
                 변환된다. 정확한 비트 원문은 backend{' '}
                 <Text code>LeaderProfileFlagsSeed</Text> 가 단일 출처이며, 본 목록은 그 요약이다.
+              </Paragraph>
+              <Paragraph type="secondary" style={{ marginBottom: 0, marginTop: 8 }}>
+                적용 후 <Text strong>이미 로그인해 있는 사용자는 재로그인</Text>해야 반영된다 —
+                권한은 로그인 시점에 JWT claim 으로 스냅샷되므로, 서버 캐시 무효화만으로는 기존
+                세션의 권한이 갱신되지 않는다.
               </Paragraph>
             </div>
           }
