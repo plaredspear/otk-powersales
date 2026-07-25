@@ -134,7 +134,7 @@ export default function EmployeePage() {
   const canResetCredentials = hasSystemPermission('MANAGE_USERS');
   // "신규 사원 등록" 버튼은 female_employee:CREATE 보유자에게만 노출 — 신규 생성 행위라
   // EDIT(기존 레코드 수정) 이 아닌 CREATE 로 가드한다. (여사원 READ 만 받은 조장은 미노출.)
-  // 등록 API(`POST /api/v1/admin/employees/manual`) 자체는 employee:EDIT 가드 유지.
+  // 등록 API 도 동일 축 — `POST /api/v1/admin/female-employees/manual` (female_employee:CREATE).
   const canCreate = hasEntityPermission('female_employee', 'CREATE');
 
   const { data, isLoading, isError, error, refetch, isFetching } = useFemaleEmployees({
@@ -434,6 +434,7 @@ export default function EmployeePage() {
           open={true}
           onClose={() => setRegisterOpen(false)}
           detailBasePath="/female-employee"
+          isFemaleEmployee
         />
       )}
     </div>

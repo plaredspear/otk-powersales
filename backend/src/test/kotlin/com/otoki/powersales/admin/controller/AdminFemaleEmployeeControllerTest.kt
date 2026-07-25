@@ -14,7 +14,9 @@ import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilte
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListDefaults
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListMetaResponse
+import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeManualRegisterRequest
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
+import com.otoki.powersales.domain.org.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest
 import org.springframework.core.MethodParameter
+import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
@@ -72,6 +75,9 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
 
     @MockkBean
     private lateinit var adminEmployeeCredentialService: AdminEmployeeCredentialService
+
+    @MockkBean
+    private lateinit var adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService
 
     @MockkBean
     private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
@@ -438,5 +444,40 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.message").value("비밀번호가 초기화되었습니다"))
 
         verify(exactly = 1) { adminEmployeeCredentialService.resetPassword(7L) }
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/admin/female-employees/manual - 수동 등록 위임 + 201 (female_employee:CREATE 가드)")
+    fun manualRegisterFemaleEmployee_success() {
+        val requestSlot = slot<AdminEmployeeManualRegisterRequest>()
+        every { adminEmployeeManualRegisterService.register(capture(requestSlot)) } returns
+            mockk(relaxed = true)
+
+        mockMvc.perform(
+            post("/api/v1/admin/female-employees/manual")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"employeeCode":"100123","name":"김여사","role":"여사원"}"""),
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("사원이 등록되었습니다"))
+
+        // 공용 endpoint 와 동일 service 재사용 — 등록 정책(origin=MANUAL 등) 분기 없음.
+        verify(exactly = 1) { adminEmployeeManualRegisterService.register(any()) }
+        assertThat(requestSlot.captured.employeeCode).isEqualTo("100123")
+        assertThat(requestSlot.captured.name).isEqualTo("김여사")
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/admin/female-employees/manual - 필수값 누락은 400 (service 미호출)")
+    fun manualRegisterFemaleEmployee_validationError() {
+        mockMvc.perform(
+            post("/api/v1/admin/female-employees/manual")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"name":"김여사"}"""),
+        )
+            .andExpect(status().isBadRequest)
+
+        verify(exactly = 0) { adminEmployeeManualRegisterService.register(any()) }
     }
 }

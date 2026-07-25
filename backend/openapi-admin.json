@@ -1,17 +1,17 @@
 {
   "components" : {
     "schemas" : {
-      "AccountCategoryOptionResponse" : {
+      "AccountCategoryOption" : {
         "properties" : {
           "accountCode" : {
             "type" : "string"
           },
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
           "name" : {
             "type" : "string"
+          },
+          "value" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -5384,6 +5384,64 @@
         },
         "type" : "object"
       },
+      "ApiResponseEmployeeInputCriteriaMasterFormMetaResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterFormMetaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseEmployeeInputCriteriaMasterListMetaResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterListMetaResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseEmployeeInputCriteriaMasterResponse" : {
         "properties" : {
           "data" : {
@@ -5911,34 +5969,6 @@
             }, {
               "type" : "null"
             } ]
-          },
-          "error" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/ErrorDetail"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "message" : {
-            "type" : [ "string", "null" ]
-          },
-          "success" : {
-            "type" : "boolean"
-          },
-          "timestamp" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponseListAccountCategoryOptionResponse" : {
-        "properties" : {
-          "data" : {
-            "items" : {
-              "$ref" : "#/components/schemas/AccountCategoryOptionResponse"
-            },
-            "type" : [ "array", "null" ]
           },
           "error" : {
             "oneOf" : [ {
@@ -11336,6 +11366,74 @@
           }
         },
         "required" : [ "bifurcationHalfPersonStandard", "boundary", "categoryId", "fixed1PersonStandardAmount", "startDate" ],
+        "type" : "object"
+      },
+      "EmployeeInputCriteriaMasterFilterMeta" : {
+        "properties" : {
+          "key" : {
+            "type" : "string"
+          },
+          "options" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterFilterOption"
+            },
+            "type" : [ "array", "null" ]
+          },
+          "type" : {
+            "enum" : [ "TEXT", "SELECT", "DATE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EmployeeInputCriteriaMasterFilterOption" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EmployeeInputCriteriaMasterFormMetaResponse" : {
+        "properties" : {
+          "accountCategories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AccountCategoryOption"
+            },
+            "type" : "array"
+          },
+          "typeOfWork1Options" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TypeOfWork1Option"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "EmployeeInputCriteriaMasterListDefaults" : {
+        "properties" : {
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EmployeeInputCriteriaMasterListMetaResponse" : {
+        "properties" : {
+          "defaults" : {
+            "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterListDefaults"
+          },
+          "filters" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EmployeeInputCriteriaMasterFilterMeta"
+            },
+            "type" : "array"
+          }
+        },
         "type" : "object"
       },
       "EmployeeInputCriteriaMasterResponse" : {
@@ -19120,6 +19218,17 @@
         },
         "type" : "object"
       },
+      "TypeOfWork1Option" : {
+        "properties" : {
+          "name" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "UpdateFeatureToggleRequest" : {
         "properties" : {
           "code" : {
@@ -22581,24 +22690,6 @@
         "tags" : [ "admin-employee-input-criteria-master-controller" ]
       }
     },
-    "/api/v1/admin/employee-input-criteria-masters/account-categories" : {
-      "get" : {
-        "operationId" : "listAccountCategories",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListAccountCategoryOptionResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-employee-input-criteria-master-controller" ]
-      }
-    },
     "/api/v1/admin/employee-input-criteria-masters/bulk-confirm" : {
       "post" : {
         "operationId" : "bulkConfirm",
@@ -22618,6 +22709,42 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListEmployeeInputCriteriaMasterResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-employee-input-criteria-master-controller" ]
+      }
+    },
+    "/api/v1/admin/employee-input-criteria-masters/form-meta" : {
+      "get" : {
+        "operationId" : "getFormMeta_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeInputCriteriaMasterFormMetaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-employee-input-criteria-master-controller" ]
+      }
+    },
+    "/api/v1/admin/employee-input-criteria-masters/meta" : {
+      "get" : {
+        "operationId" : "getListMeta",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeInputCriteriaMasterListMetaResponse"
                 }
               }
             },
@@ -23959,6 +24086,34 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/manual" : {
+      "post" : {
+        "operationId" : "manualRegisterFemaleEmployee",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdminEmployeeManualRegisterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
                 }
               }
             },

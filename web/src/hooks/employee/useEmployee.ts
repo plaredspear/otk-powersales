@@ -43,12 +43,20 @@ export function useUpdateEmployeeRole() {
   });
 }
 
-export function useManualRegisterEmployee() {
+/**
+ * 사원 수동 등록.
+ *
+ * @param isFemaleEmployee 여사원 현황에서 호출하면 true — `female_employee:CREATE` 로 가드되는
+ *   `/female-employees/manual` 을 쓴다 (조장 등 여사원 권한만 가진 직책도 등록 가능).
+ *   설정>사원 목록은 false(기본) 로 공용 `employee:EDIT` endpoint 를 유지한다.
+ */
+export function useManualRegisterEmployee(isFemaleEmployee = false) {
   const queryClient = useQueryClient();
   return useMutation<EmployeeDetail, Error, EmployeeManualRegisterRequest>({
-    mutationFn: (request) => manualRegisterEmployee(request),
+    mutationFn: (request) => manualRegisterEmployee(request, { isFemaleEmployee }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'employees'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'female-employees'] });
     },
   });
 }

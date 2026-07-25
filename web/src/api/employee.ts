@@ -427,13 +427,22 @@ export async function updateEmployeeRole(
   return res.data.data;
 }
 
+/**
+ * 사원 수동 등록.
+ *
+ * 여사원 현황(`female_employee:CREATE`) 에서 호출하면 `/female-employees/manual` 을,
+ * 설정>사원 목록(`employee:EDIT`) 에서 호출하면 공용 `/employees/manual` 을 쓴다 —
+ * 두 화면의 게이팅 권한과 API 가드를 일치시키기 위한 분리 (등록 동작 자체는 backend 에서
+ * 동일 service 를 재사용해 완전히 같다).
+ */
 export async function manualRegisterEmployee(
   request: EmployeeManualRegisterRequest,
+  options?: { isFemaleEmployee?: boolean },
 ): Promise<EmployeeDetail> {
-  const res = await client.post<ApiResponse<EmployeeDetail>>(
-    '/api/v1/admin/employees/manual',
-    request,
-  );
+  const path = options?.isFemaleEmployee
+    ? '/api/v1/admin/female-employees/manual'
+    : '/api/v1/admin/employees/manual';
+  const res = await client.post<ApiResponse<EmployeeDetail>>(path, request);
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '사원 등록에 실패했습니다');
   }
