@@ -693,6 +693,53 @@ export default function SfMigrationPage() {
           완료.
         </Paragraph>
 
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="적용되는 권한 (6.조장)"
+          description={
+            <div>
+              <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+                system 비트는 <Text code>api_enabled</Text> 만 TRUE —{' '}
+                <Text code>view_all_data</Text> / <Text code>modify_all_data</Text> /{' '}
+                <Text code>view_all_users</Text> / <Text code>manage_users</Text> 는 모두 FALSE 다.
+                object 권한은 SF object 33종, custom 권한은 SF object 가 아닌 가상 자원 2종에
+                부여된다.
+              </Paragraph>
+              <ul style={{ marginBottom: 8, paddingLeft: 20 }}>
+                <li>
+                  <Text strong>CRUD 전체 (9종)</Text> — 테마 · 푸시메시지 · 클레임 · 공지사항 ·
+                  제안 · 행사 · 행사상품 · 행사사원 · 진열스케줄마스터
+                </li>
+                <li>
+                  <Text strong>조회 전용 (20종)</Text> — 조직 · 거래처 · ERP주문(+주문상품) ·
+                  출근정보 · 첨부파일 · 상품(+바코드) · 일별/월별 매출실적 · 푸시수신자 ·
+                  출퇴근로그 · 거래처분류마스터 · 주문요청(+요청상품) · 현장활동 ·
+                  매출진척률마스터 · 사원입력기준마스터 ·{' '}
+                  <Text strong>전문판촉조마스터</Text> ·{' '}
+                  <Text strong>전문판촉조이력</Text>
+                </li>
+                <li>
+                  <Text strong>부분 권한 (4종)</Text> — 사원평가 (조회/등록/수정) · 사원 (수정만,
+                  조회 없음) · 여사원일정 (조회/등록) · 월별여사원통합일정 (조회/등록/수정)
+                </li>
+                <li>
+                  <Text strong>custom 자원 (2종)</Text> — 여사원 <Text code>female_employee</Text>{' '}
+                  (조회/등록/수정) · 교육게시물 <Text code>education_post</Text> (조회 전용)
+                </li>
+              </ul>
+              <Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                object 권한 키는 SF API name (<Text code>ProfessionalPromotionTeamMaster__c</Text>{' '}
+                등) 으로 저장되며, 권한 판정 시점에 각 entity 의 <Text code>@SFObject</Text>{' '}
+                매핑으로 테이블명 (<Text code>professional_promotion_team_master</Text> 등) 키로
+                변환된다. 정확한 비트 원문은 backend{' '}
+                <Text code>LeaderProfileFlagsSeed</Text> 가 단일 출처이며, 본 목록은 그 요약이다.
+              </Paragraph>
+            </div>
+          }
+        />
+
         <Space>
           <Button
             type="primary"
