@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.activity.productexpiration.service
 
 import com.otoki.powersales.domain.activity.productexpiration.repository.ProductExpirationRepository
 import com.otoki.powersales.platform.push.sender.FcmSender
+import com.otoki.powersales.platform.push.service.PushBadgeService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -20,15 +21,23 @@ import java.time.LocalDate
 class ProductExpirationAlertService(
     private val productExpirationRepository: ProductExpirationRepository,
     private val fcmSender: FcmSender,
+    private val pushBadgeService: PushBadgeService,
 ) {
 
+    // 배지 카운터를 증가시키므로 클래스 기본값(readOnly)이 아닌 쓰기 트랜잭션이 필요하다.
+    @Transactional
     fun sendDailyAlerts(today: LocalDate): ProductExpirationAlertResult {
-        val tokens = productExpirationRepository.findDistinctFcmTokensByAlarmDate(today)
-        if (tokens.isEmpty()) return ProductExpirationAlertResult(0, 0, 0)
+        val targets = productExpirationRepository.findDistinctPushTargetsByAlarmDate(today)
+        if (targets.isEmpty()) return ProductExpirationAlertResult(0, 0, 0)
 
-        val result = fcmSender.sendNotificationToTokens(tokens, ALERT_TITLE, ALERT_BODY)
+        // 공지 push 와 동일하게 대상별 배지(미확인 푸시 건수)를 +1 한 절대값을 함께 싣는다.
+        val result = fcmSender.sendNotification(
+            targets = pushBadgeService.increaseAndBuildTargets(targets),
+            title = ALERT_TITLE,
+            body = ALERT_BODY,
+        )
         return ProductExpirationAlertResult(
-            targetTokens = tokens.size,
+            targetTokens = targets.size,
             successCount = result.successCount,
             failureCount = result.failureCount,
         )

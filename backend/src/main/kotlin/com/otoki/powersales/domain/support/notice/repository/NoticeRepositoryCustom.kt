@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.support.notice.repository
 
 import com.otoki.powersales.domain.support.notice.entity.Notice
 import com.otoki.powersales.domain.support.notice.enums.NoticeCategory
+import com.otoki.powersales.platform.push.dto.PushTargetEmployee
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 interface NoticeRepositoryCustom {
@@ -24,19 +25,21 @@ interface NoticeRepositoryCustom {
     ): List<Notice>
 
     /**
-     * 공지 push 대상 사원의 FCM 토큰을 조회한다.
+     * 공지 push 대상 사원(사원ID + FCM 토큰)을 조회한다.
      *
      * 대상 = 해당 공지가 앱 목록에 노출되는 사용자와 동일 (조회 노출 규칙 정합):
      * - 회사공지(COMPANY)/교육(EDUCATION): FCM 토큰 보유 전 사용자
      * - 지점공지(BRANCH): costCenterCode 가 공지 branchCode 와 일치하는 사용자만
      *
+     * 배지(미확인 푸시 건수)는 사원별 값이라 토큰만으로는 계산할 수 없어 사원ID 를 함께 반환한다.
+     *
      * @param category 공지 카테고리
      * @param branchCode 지점공지일 때 매칭할 지점코드 (그 외 카테고리는 무시)
      */
-    fun findPushTargetTokens(
+    fun findPushTargets(
         category: NoticeCategory,
         branchCode: String?
-    ): List<String>
+    ): List<PushTargetEmployee>
 
     /**
      * 공지 push 발송 대상 사원 수를 조회한다 (발송 전 예상 대상 수 표시용).

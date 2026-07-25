@@ -30,7 +30,7 @@ class RealFcmSenderTest {
         @DisplayName("빈 토큰 목록이면 EMPTY (S3 접근 없음)")
         fun emptyTokens() {
             val result = sender(enabled = true, s3Key = "config/fcm/key.json")
-                .sendNotificationToTokens(emptyList(), "t", "b", emptyMap())
+                .sendNotification(emptyList(), "t", "b", emptyMap())
 
             assertThat(result).isEqualTo(FcmSendResult.EMPTY)
             verify(exactly = 0) { storageService.download(any()) }
@@ -40,7 +40,7 @@ class RealFcmSenderTest {
         @DisplayName("enabled=false 면 EMPTY + S3 미접근")
         fun disabled() {
             val result = sender(enabled = false, s3Key = "config/fcm/key.json")
-                .sendNotificationToTokens(listOf("token-a"), "t", "b", emptyMap())
+                .sendNotification(listOf(PushTarget("token-a")), "t", "b", emptyMap())
 
             assertThat(result).isEqualTo(FcmSendResult.EMPTY)
             verify(exactly = 0) { storageService.download(any()) }
@@ -50,7 +50,7 @@ class RealFcmSenderTest {
         @DisplayName("credential-s3-key blank 면 EMPTY + S3 미접근")
         fun blankS3Key() {
             val result = sender(enabled = true, s3Key = "  ")
-                .sendNotificationToTokens(listOf("token-a"), "t", "b", emptyMap())
+                .sendNotification(listOf(PushTarget("token-a")), "t", "b", emptyMap())
 
             assertThat(result).isEqualTo(FcmSendResult.EMPTY)
             verify(exactly = 0) { storageService.download(any()) }
@@ -60,7 +60,7 @@ class RealFcmSenderTest {
         @DisplayName("credential-s3-key null 이면 EMPTY + S3 미접근")
         fun nullS3Key() {
             val result = sender(enabled = true, s3Key = null)
-                .sendNotificationToTokens(listOf("token-a"), "t", "b", emptyMap())
+                .sendNotification(listOf(PushTarget("token-a")), "t", "b", emptyMap())
 
             assertThat(result).isEqualTo(FcmSendResult.EMPTY)
             verify(exactly = 0) { storageService.download(any()) }
@@ -78,7 +78,7 @@ class RealFcmSenderTest {
                 StorageNotFoundException("config/fcm/key.json")
 
             val result = sender(enabled = true, s3Key = "config/fcm/key.json")
-                .sendNotificationToTokens(listOf("token-a"), "t", "b", emptyMap())
+                .sendNotification(listOf(PushTarget("token-a")), "t", "b", emptyMap())
 
             assertThat(result).isEqualTo(FcmSendResult.EMPTY)
             verify(exactly = 1) { storageService.download("config/fcm/key.json") }
@@ -91,7 +91,7 @@ class RealFcmSenderTest {
                 "not a valid service account json".toByteArray()
 
             val result = sender(enabled = true, s3Key = "config/fcm/key.json")
-                .sendNotificationToTokens(listOf("token-a"), "t", "b", emptyMap())
+                .sendNotification(listOf(PushTarget("token-a")), "t", "b", emptyMap())
 
             // credential 파싱/초기화 실패는 resolveMessaging 에서 catch → EMPTY (부팅/발송 미중단)
             assertThat(result).isEqualTo(FcmSendResult.EMPTY)
@@ -105,8 +105,8 @@ class RealFcmSenderTest {
                 "invalid".toByteArray()
             val s = sender(enabled = true, s3Key = "config/fcm/key.json")
 
-            s.sendNotificationToTokens(listOf("token-a"), "t", "b", emptyMap())
-            s.sendNotificationToTokens(listOf("token-b"), "t", "b", emptyMap())
+            s.sendNotification(listOf(PushTarget("token-a")), "t", "b", emptyMap())
+            s.sendNotification(listOf(PushTarget("token-b")), "t", "b", emptyMap())
 
             // resolveMessaging 이 initialized 플래그로 1회만 초기화 → S3 다운로드도 1회
             verify(exactly = 1) { storageService.download("config/fcm/key.json") }

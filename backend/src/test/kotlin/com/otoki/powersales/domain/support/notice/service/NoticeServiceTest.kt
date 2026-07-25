@@ -19,7 +19,10 @@ import com.otoki.powersales.domain.support.notice.exception.NoticeNotPublishedEx
 import com.otoki.powersales.domain.support.notice.exception.NoticeScopeNotPushableException
 import com.otoki.powersales.domain.support.notice.repository.NoticePushLogRepository
 import com.otoki.powersales.platform.push.sender.FcmSendResult
+import com.otoki.powersales.platform.push.dto.PushTargetEmployee
 import com.otoki.powersales.platform.push.sender.FcmSender
+import com.otoki.powersales.platform.push.sender.PushTarget
+import com.otoki.powersales.platform.push.service.PushBadgeService
 import com.otoki.powersales.domain.support.notice.exception.InvalidImageIdException
 import com.otoki.powersales.domain.support.notice.exception.BranchNoticeOnlyException
 import com.otoki.powersales.domain.support.notice.exception.InvalidNoticeCategoryException
@@ -64,6 +67,7 @@ class NoticeServiceTest {
     private val fileStorageService: FileStorageService = mockk()
     private val storageService: StorageService = mockk()
     private val fcmSender: FcmSender = mockk()
+    private val pushBadgeService: PushBadgeService = mockk()
     private val womenScheduleBranchResolver: WomenScheduleBranchResolver = mockk()
 
     private lateinit var noticeService: NoticeService
@@ -78,6 +82,7 @@ class NoticeServiceTest {
             fileStorageService,
             storageService,
             fcmSender,
+            pushBadgeService,
             womenScheduleBranchResolver
         )
         // 공지 이미지는 private presigned 조회 — uniqueKey 를 받아 presigned 형태 URL 반환 stub.
@@ -1516,9 +1521,12 @@ class NoticeServiceTest {
             val notice = createNotice(id = 10L, name = "전사 공지", category = NoticeCategory.COMPANY)
                 .apply { scope = NoticeScope.FIELD_FEMALE_EMPLOYEE }
             every { noticeRepository.findById(10L) } returns Optional.of(notice)
-            every { noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null) } returns
-                listOf("tok-a", "tok-b")
-            every { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) } returns
+            val targets = listOf(PushTargetEmployee(1L, "tok-a"), PushTargetEmployee(2L, "tok-b"))
+            every { noticeRepository.findPushTargets(NoticeCategory.COMPANY, null) } returns targets
+            // 배지(미확인 푸시 건수)는 대상별 +1 한 절대값이 실린다.
+            every { pushBadgeService.increaseAndBuildTargets(targets) } returns
+                listOf(PushTarget("tok-a", 1), PushTarget("tok-b", 4))
+            every { fcmSender.sendNotification(any(), any(), any(), any()) } returns
                 FcmSendResult(successCount = 2, failureCount = 0)
             every { employeeRepository.findById(7L) } returns Optional.of(mockk(relaxed = true))
             val logSlot = slot<NoticePushLog>()
@@ -1527,8 +1535,8 @@ class NoticeServiceTest {
             val result = noticeService.sendPush(10L, senderId = 7L)
 
             verify(exactly = 1) {
-                fcmSender.sendNotificationToTokens(
-                    listOf("tok-a", "tok-b"),
+                fcmSender.sendNotification(
+                    listOf(PushTarget("tok-a", 1), PushTarget("tok-b", 4)),
                     "공지사항",
                     "전사 공지",
                     mapOf("type" to "notice", "noticeId" to "10"),
@@ -1548,15 +1556,17 @@ class NoticeServiceTest {
                 id = 11L, name = "지점 공지", category = NoticeCategory.BRANCH, branchCode = "B100"
             ).apply { scope = NoticeScope.FIELD_FEMALE_EMPLOYEE }
             every { noticeRepository.findById(11L) } returns Optional.of(notice)
-            every { noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, "B100") } returns listOf("tok-x")
-            every { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) } returns
+            every { noticeRepository.findPushTargets(NoticeCategory.BRANCH, "B100") } returns
+                listOf(PushTargetEmployee(1L, "tok-x"))
+            every { pushBadgeService.increaseAndBuildTargets(any()) } returns listOf(PushTarget("tok-x", 1))
+            every { fcmSender.sendNotification(any(), any(), any(), any()) } returns
                 FcmSendResult(successCount = 1, failureCount = 0)
             every { employeeRepository.findById(any()) } returns Optional.of(mockk(relaxed = true))
             every { noticePushLogRepository.save(any()) } answers { firstArg() }
 
             val result = noticeService.sendPush(11L, senderId = 7L)
 
-            verify(exactly = 1) { noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, "B100") }
+            verify(exactly = 1) { noticeRepository.findPushTargets(NoticeCategory.BRANCH, "B100") }
             assertThat(result.targetCount).isEqualTo(1)
         }
 
@@ -1566,14 +1576,14 @@ class NoticeServiceTest {
             val notice = createNotice(id = 12L, category = NoticeCategory.COMPANY)
                 .apply { scope = NoticeScope.FIELD_FEMALE_EMPLOYEE }
             every { noticeRepository.findById(12L) } returns Optional.of(notice)
-            every { noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null) } returns emptyList()
+            every { noticeRepository.findPushTargets(NoticeCategory.COMPANY, null) } returns emptyList()
             every { employeeRepository.findById(any()) } returns Optional.of(mockk(relaxed = true))
             val logSlot = slot<NoticePushLog>()
             every { noticePushLogRepository.save(capture(logSlot)) } answers { firstArg() }
 
             val result = noticeService.sendPush(12L, senderId = 7L)
 
-            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+            verify(exactly = 0) { fcmSender.sendNotification(any(), any(), any(), any()) }
             assertThat(result.targetCount).isEqualTo(0)
             assertThat(logSlot.captured.targetCount).isEqualTo(0)
         }
@@ -1587,7 +1597,7 @@ class NoticeServiceTest {
 
             assertThatThrownBy { noticeService.sendPush(13L, senderId = 7L) }
                 .isInstanceOf(NoticeNotPublishedException::class.java)
-            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+            verify(exactly = 0) { fcmSender.sendNotification(any(), any(), any(), any()) }
         }
 
         @Test
@@ -1599,7 +1609,7 @@ class NoticeServiceTest {
 
             assertThatThrownBy { noticeService.sendPush(14L, senderId = 7L) }
                 .isInstanceOf(NoticeScopeNotPushableException::class.java)
-            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+            verify(exactly = 0) { fcmSender.sendNotification(any(), any(), any(), any()) }
         }
     }
 

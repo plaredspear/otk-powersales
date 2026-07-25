@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
 
+import 'package:app_badge_plus/app_badge_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -96,11 +97,16 @@ class PushNotificationService {
   ///
   /// [onMessageOpened]: 알림 탭으로 앱이 열렸을 때(백그라운드/종료 상태 FCM 탭,
   /// 또는 포그라운드 로컬 알림 탭) 호출되는 콜백. 딥링크 라우팅에 사용한다.
+  /// 포그라운드에서 푸시를 수신했을 때 호출되는 콜백 (배지 정리에 사용).
+  void Function(RemoteMessage message)? _onForegroundMessage;
+
   Future<void> initialize({
     void Function(RemoteMessage message)? onMessageOpened,
+    void Function(RemoteMessage message)? onForegroundMessage,
   }) async {
     if (_initialized) return;
     _onMessageOpened = onMessageOpened;
+    _onForegroundMessage = onForegroundMessage;
 
     // 네이티브 설정 파일이 없어 Firebase 가 초기화되지 않은 경우 skip.
     if (!isAvailable) {
@@ -195,6 +201,9 @@ class PushNotificationService {
   /// iOS 는 OS 가 배너를 직접 띄우므로 중복 방지를 위해 표시하지 않는다.
   void _showForegroundNotification(RemoteMessage message) {
     _logger.i('FCM 포그라운드 수신: ${message.notification?.title}');
+    // 앱을 보고 있는 중이므로 배지는 즉시 정리한다 (iOS 는 payload 의 aps.badge 가 포그라운드에도
+    // 적용되어, 다음 포그라운드 복귀까지 숫자가 남는다). 플랫폼 분기 전에 호출해야 iOS 도 태운다.
+    _onForegroundMessage?.call(message);
     if (Platform.isIOS) return;
 
     final notification = message.notification;
@@ -232,6 +241,29 @@ class PushNotificationService {
       return;
     }
     _onMessageOpened?.call(message);
+  }
+
+  /// 앱 아이콘 배지를 지운다 (앱 포그라운드 진입 / 로그인 직후 / 포그라운드 수신 시).
+  ///
+  /// 배지 숫자를 올리는 것은 서버다 — APNs `aps.badge` 는 증분이 아니라 "표시할 절대값" 이라
+  /// 앱이 백그라운드/종료 상태에서 스스로 올릴 수 없다. 앱은 "사용자가 확인했다" 는 사실만 반영한다:
+  /// - iOS: 배지를 0 으로 되돌린다 (알림센터의 기존 알림은 남겨 사용자가 다시 볼 수 있게 한다).
+  /// - Android: 런처 배지는 활성 알림에서 파생되므로 알림을 정리해야 사라진다.
+  ///
+  /// [cancelNotifications] 가 false 면 Android 알림 정리를 건너뛴다 — 앱이 이미 포그라운드일 때
+  /// 방금 띄운 알림을 스스로 지워버리는 것을 막기 위함(그 경우 배지 값만 되돌린다).
+  ///
+  /// 서버 카운터 리셋은 호출부([FcmTokenRegistrar.clearBadge])가 담당한다 — 다음 푸시가 1 부터
+  /// 다시 세게 하기 위함. 실패해도 앱 흐름을 막지 않는다(로깅만).
+  Future<void> clearBadge({bool cancelNotifications = true}) async {
+    try {
+      if (Platform.isAndroid && cancelNotifications) {
+        await _localNotifications.cancelAll();
+      }
+      await AppBadgePlus.updateBadge(0);
+    } catch (e) {
+      _logger.w('앱 배지 초기화 실패(무시): $e');
+    }
   }
 
   /// 로컬 알림 payload(JSON 문자열)를 FCM data 를 담은 [RemoteMessage] 로 복원한다.

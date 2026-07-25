@@ -217,9 +217,9 @@ class ProductExpirationRepositoryTest {
             )
             testEntityManager.clear()
 
-            val tokens = productExpirationRepository.findDistinctFcmTokensByAlarmDate(today)
+            val targets = productExpirationRepository.findDistinctPushTargetsByAlarmDate(today)
 
-            assertThat(tokens).containsExactly("tok-1")
+            assertThat(targets.map { it.token }).containsExactly("tok-1")
         }
 
         @Test
@@ -242,9 +242,9 @@ class ProductExpirationRepositoryTest {
             )
             testEntityManager.clear()
 
-            val tokens = productExpirationRepository.findDistinctFcmTokensByAlarmDate(today)
+            val targets = productExpirationRepository.findDistinctPushTargetsByAlarmDate(today)
 
-            assertThat(tokens).containsExactly("tok-1")
+            assertThat(targets.map { it.token }).containsExactly("tok-1")
         }
     }
 

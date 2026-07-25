@@ -387,8 +387,8 @@ class NoticeRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findPushTargetTokens - 푸시 대상 FCM 토큰 조회 (활성 사용자 필터)")
-    inner class FindPushTargetTokensTests {
+    @DisplayName("findPushTargets - 푸시 대상 FCM 토큰 조회 (활성 사용자 필터)")
+    inner class FindPushTargetsTests {
 
         /**
          * 푸시 대상 Employee(+EmployeeInfo) 를 직접 영속한다.
@@ -427,7 +427,7 @@ class NoticeRepositoryTest {
             persistEmployee(employeeCode = "A002", appLoginActive = true, fcmToken = "token-A002")
 
             // When
-            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+            val result = noticeRepository.findPushTargets(NoticeCategory.COMPANY, null).map { it.token }
 
             // Then
             assertThat(result).containsExactlyInAnyOrder("token-A001", "token-A002")
@@ -442,7 +442,7 @@ class NoticeRepositoryTest {
             persistEmployee(employeeCode = "B003", appLoginActive = null, fcmToken = "token-null-active")
 
             // When
-            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+            val result = noticeRepository.findPushTargets(NoticeCategory.COMPANY, null).map { it.token }
 
             // Then
             assertThat(result).containsExactly("token-active")
@@ -457,7 +457,7 @@ class NoticeRepositoryTest {
             persistEmployee(employeeCode = "C003", appLoginActive = true, isDeleted = true, fcmToken = "token-deleted")
 
             // When
-            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+            val result = noticeRepository.findPushTargets(NoticeCategory.COMPANY, null).map { it.token }
 
             // Then — isDeleted=true 만 제외, null/false 는 포함
             assertThat(result).containsExactlyInAnyOrder("token-not-deleted", "token-deleted-null")
@@ -472,7 +472,7 @@ class NoticeRepositoryTest {
             persistEmployee(employeeCode = "D003", appLoginActive = true, fcmToken = "")
 
             // When
-            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+            val result = noticeRepository.findPushTargets(NoticeCategory.COMPANY, null).map { it.token }
 
             // Then
             assertThat(result).containsExactly("token-valid")
@@ -489,7 +489,7 @@ class NoticeRepositoryTest {
             persistEmployee(employeeCode = "E004", appLoginActive = false, costCenterCode = "X", fcmToken = "token-X-inactive")
 
             // When
-            val result = noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, "X")
+            val result = noticeRepository.findPushTargets(NoticeCategory.BRANCH, "X").map { it.token }
 
             // Then
             assertThat(result).containsExactlyInAnyOrder("token-X-1", "token-X-2")
@@ -502,7 +502,7 @@ class NoticeRepositoryTest {
             persistEmployee(employeeCode = "F001", appLoginActive = true, costCenterCode = "X", fcmToken = "token-F")
 
             // When
-            val result = noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, null)
+            val result = noticeRepository.findPushTargets(NoticeCategory.BRANCH, null).map { it.token }
 
             // Then
             assertThat(result).isEmpty()
@@ -516,7 +516,7 @@ class NoticeRepositoryTest {
             persistEmployee(employeeCode = "G002", appLoginActive = true, fcmToken = "dup-token")
 
             // When
-            val result = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+            val result = noticeRepository.findPushTargets(NoticeCategory.COMPANY, null).map { it.token }
 
             // Then
             assertThat(result).containsExactly("dup-token")
@@ -524,10 +524,10 @@ class NoticeRepositoryTest {
     }
 
     @Nested
-    @DisplayName("countPushTargets - 푸시 대상 수 조회 (findPushTargetTokens 와 정합)")
+    @DisplayName("countPushTargets - 푸시 대상 수 조회 (findPushTargets 와 정합)")
     inner class CountPushTargetsTests {
 
-        /** FindPushTargetTokensTests 와 동일한 방식으로 대상 Employee(+EmployeeInfo) 를 영속한다. */
+        /** FindPushTargetsTests 와 동일한 방식으로 대상 Employee(+EmployeeInfo) 를 영속한다. */
         private fun persistEmployee(
             employeeCode: String,
             appLoginActive: Boolean?,
@@ -561,7 +561,7 @@ class NoticeRepositoryTest {
 
             // When
             val count = noticeRepository.countPushTargets(NoticeCategory.COMPANY, null)
-            val tokens = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+            val tokens = noticeRepository.findPushTargets(NoticeCategory.COMPANY, null).map { it.token }
 
             // Then — 핵심 불변식: 예상 대상 수 == 실제 발송 토큰 수
             assertThat(count).isEqualTo(2L)
@@ -578,7 +578,7 @@ class NoticeRepositoryTest {
 
             // When
             val count = noticeRepository.countPushTargets(NoticeCategory.BRANCH, "X")
-            val tokens = noticeRepository.findPushTargetTokens(NoticeCategory.BRANCH, "X")
+            val tokens = noticeRepository.findPushTargets(NoticeCategory.BRANCH, "X").map { it.token }
 
             // Then
             assertThat(count).isEqualTo(2L)
@@ -607,7 +607,7 @@ class NoticeRepositoryTest {
 
             // When
             val count = noticeRepository.countPushTargets(NoticeCategory.COMPANY, null)
-            val tokens = noticeRepository.findPushTargetTokens(NoticeCategory.COMPANY, null)
+            val tokens = noticeRepository.findPushTargets(NoticeCategory.COMPANY, null).map { it.token }
 
             // Then — distinct 정합 (토큰 목록도 1건)
             assertThat(count).isEqualTo(1L)

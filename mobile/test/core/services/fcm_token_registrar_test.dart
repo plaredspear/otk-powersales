@@ -61,14 +61,49 @@ void main() {
       expect(api.unregisterCalls, 1);
     });
   });
+
+  group('clearBadge', () {
+    test('기기 배지와 서버 카운터를 함께 초기화한다', () async {
+      await registrar.clearBadge();
+
+      // 서버 카운터를 리셋하지 않으면 다음 푸시가 이전 카운트를 이어받는다(APNs badge 는 절대값).
+      expect(push.clearBadgeCalls, 1);
+      expect(api.clearBadgeCalls, 1);
+    });
+
+    test('서버 리셋이 실패해도 예외를 전파하지 않는다', () async {
+      api.throwOnClearBadge = true;
+
+      await expectLater(registrar.clearBadge(), completes);
+      expect(push.clearBadgeCalls, 1);
+      expect(api.clearBadgeCalls, 1);
+    });
+
+    test('cancelNotifications 를 로컬 배지 처리에 그대로 전달한다', () async {
+      // 포그라운드 수신 경로 — 방금 띄운 알림을 지우지 않아야 한다.
+      await registrar.clearBadge(cancelNotifications: false);
+
+      expect(push.lastCancelNotifications, isFalse);
+      // 서버 카운터는 경로와 무관하게 리셋한다.
+      expect(api.clearBadgeCalls, 1);
+    });
+  });
 }
 
-/// getToken 만 제어하는 Fake PushNotificationService.
+/// getToken / clearBadge 만 제어하는 Fake PushNotificationService.
 class _FakePush implements PushNotificationService {
   String? tokenToReturn;
+  int clearBadgeCalls = 0;
+  bool? lastCancelNotifications;
 
   @override
   Future<String?> getToken() async => tokenToReturn;
+
+  @override
+  Future<void> clearBadge({bool cancelNotifications = true}) async {
+    clearBadgeCalls++;
+    lastCancelNotifications = cancelNotifications;
+  }
 
   @override
   noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -79,8 +114,10 @@ class _FakeApi implements FcmTokenApiDataSource {
   final List<String> registeredTokens = [];
   int registerAttempts = 0;
   int unregisterCalls = 0;
+  int clearBadgeCalls = 0;
   bool throwOnRegister = false;
   bool throwOnUnregister = false;
+  bool throwOnClearBadge = false;
 
   @override
   Future<void> register(String token) async {
@@ -93,5 +130,11 @@ class _FakeApi implements FcmTokenApiDataSource {
   Future<void> unregister() async {
     unregisterCalls++;
     if (throwOnUnregister) throw Exception('unregister 실패');
+  }
+
+  @override
+  Future<void> clearBadge() async {
+    clearBadgeCalls++;
+    if (throwOnClearBadge) throw Exception('clearBadge 실패');
   }
 }

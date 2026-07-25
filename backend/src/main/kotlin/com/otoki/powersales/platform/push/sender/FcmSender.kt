@@ -9,21 +9,35 @@ package com.otoki.powersales.platform.push.sender
 interface FcmSender {
 
     /**
-     * 다수 디바이스 토큰에 동일 notification 푸시를 발송한다.
+     * 다수 디바이스에 동일 notification 푸시를 발송한다 (배지 값만 대상별로 다름).
      *
-     * @param tokens 대상 FCM 디바이스 토큰 목록 (빈 목록이면 발송 없이 0 반환)
+     * @param targets 대상 디바이스 토큰 + 표시할 배지 값 (빈 목록이면 발송 없이 0 반환)
      * @param title notification 제목
      * @param body notification 본문
      * @param data 알림 탭 시 딥링크 라우팅에 쓰이는 data payload (예: {"type":"notice","noticeId":"12"}). 기본 빈 맵.
      * @return 성공/실패 건수 집계
      */
-    fun sendNotificationToTokens(
-        tokens: List<String>,
+    fun sendNotification(
+        targets: List<PushTarget>,
         title: String,
         body: String,
         data: Map<String, String> = emptyMap(),
     ): FcmSendResult
 }
+
+/**
+ * 발송 1건의 수신 대상.
+ *
+ * @property token 대상 디바이스 FCM 토큰
+ * @property badge 앱 아이콘에 표시할 배지 절대값. null 이면 배지 페이로드를 싣지 않는다
+ *   (iOS 는 기존 배지 유지, Android 는 런처 기본 동작). APNs `aps.badge` 는 증분이 아니라
+ *   "표시할 값" 이므로 서버가 계산한 누적 값을 그대로 넣는다
+ *   ([com.otoki.powersales.platform.push.service.PushBadgeService] 참고).
+ */
+data class PushTarget(
+    val token: String,
+    val badge: Int? = null,
+)
 
 /**
  * 발송 결과 집계.

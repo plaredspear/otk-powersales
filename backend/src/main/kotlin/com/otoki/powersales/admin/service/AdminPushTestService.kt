@@ -3,7 +3,9 @@ package com.otoki.powersales.admin.service
 import com.otoki.powersales.admin.dto.request.AdminPushTestRequest
 import com.otoki.powersales.admin.dto.response.AdminPushTestResponse
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.push.dto.PushTargetEmployee
 import com.otoki.powersales.platform.push.sender.FcmSender
+import com.otoki.powersales.platform.push.service.PushBadgeService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional
 class AdminPushTestService(
     private val employeeRepository: EmployeeRepository,
     private val fcmSender: FcmSender,
+    private val pushBadgeService: PushBadgeService,
 ) {
 
     companion object {
@@ -27,7 +30,8 @@ class AdminPushTestService(
         private const val TOKEN_MASK_PREFIX_LENGTH = 8
     }
 
-    @Transactional(readOnly = true)
+    // 배지 카운터를 증가시키므로 쓰기 트랜잭션.
+    @Transactional
     fun test(request: AdminPushTestRequest): AdminPushTestResponse {
         val employee = employeeRepository.findWithEmployeeInfoByEmployeeCode(request.employeeCode)
             ?: return AdminPushTestResponse(
@@ -53,8 +57,11 @@ class AdminPushTestService(
             )
         }
 
-        val result = fcmSender.sendNotificationToTokens(
-            tokens = listOf(token),
+        // 실제 발송과 동일한 경로 검증을 위해 배지(미확인 푸시 건수)도 동일하게 +1 해서 싣는다.
+        val result = fcmSender.sendNotification(
+            targets = pushBadgeService.increaseAndBuildTargets(
+                listOf(PushTargetEmployee(employeeId = employee.id, token = token))
+            ),
             title = request.title,
             body = request.body,
             data = mapOf("type" to PUSH_TYPE_TEST),

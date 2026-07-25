@@ -7,8 +7,10 @@ import com.otoki.powersales.domain.support.notice.enums.NoticeStatus
 import com.otoki.powersales.domain.support.notice.entity.QNotice.Companion.notice
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.org.employee.entity.QEmployeeInfo.Companion.employeeInfo
+import com.otoki.powersales.platform.push.dto.PushTargetEmployee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.Projections
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -99,20 +101,32 @@ class NoticeRepositoryCustomImpl(
             .fetch()
     }
 
-    override fun findPushTargetTokens(
+    override fun findPushTargets(
         category: NoticeCategory,
         branchCode: String?
-    ): List<String> {
+    ): List<PushTargetEmployee> {
         // 지점공지인데 branchCode 가 비면 대상 없음 (오발송 방지).
         if (category == NoticeCategory.BRANCH && branchCode.isNullOrBlank()) return emptyList()
 
         return queryFactory
-            .select(employeeInfo.fcmToken)
-            .distinct()
+            .select(
+                Projections.constructor(
+                    PushTargetEmployee::class.java,
+                    employee.id,
+                    employeeInfo.fcmToken
+                )
+            )
+            // employee ↔ employee_info 는 PK 공유 1:1 이라 행 중복이 없어 SELECT DISTINCT 가 불필요하다.
+            // (DISTINCT 를 붙이면 아래 ORDER BY 컬럼이 select 목록에 없어 DB 가 거부한다.)
             .from(employee)
             .join(employee.employeeInfo, employeeInfo)
             .where(*pushTargetPredicates(category, branchCode))
+            // 최근 등록 순 — 같은 토큰이 여러 사원에 남아 있으면(로그아웃 없이 단말 교체) 최신 사원만 남긴다.
+            .orderBy(employeeInfo.updatedAt.desc())
             .fetch()
+            // 토큰 기준 중복 제거 — 같은 기기로 두 번 발송되는 것을 막고,
+            // countPushTargets(distinct 토큰 수)와 실제 발송 건수를 일치시킨다.
+            .distinctBy { it.token }
     }
 
     override fun countPushTargets(

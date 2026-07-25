@@ -105,8 +105,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         super(AuthState.initial());
 
   /// 인증 완료 시 FCM 토큰을 서버에 등록한다 (fire-and-forget — 인증 흐름 비차단).
+  ///
+  /// 함께 앱 아이콘 배지도 지운다 — 로그인/세션복원은 사용자가 앱을 열어 확인한 시점이므로
+  /// 미확인 푸시 카운트(기기 배지 + 서버 카운터)를 0 으로 되돌린다.
   void _registerFcmToken() {
     unawaited(_fcmTokenRegistrar.registerCurrentToken());
+    unawaited(_fcmTokenRegistrar.clearBadge());
   }
 
   /// 앱 시작 시 초기화

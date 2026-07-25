@@ -5,8 +5,10 @@ import com.otoki.powersales.domain.activity.productexpiration.entity.ProductExpi
 import com.otoki.powersales.domain.activity.productexpiration.entity.QProductExpiration.Companion.productExpiration
 import com.otoki.powersales.domain.org.employee.entity.QEmployee.Companion.employee
 import com.otoki.powersales.domain.org.employee.entity.QEmployeeInfo.Companion.employeeInfo
+import com.otoki.powersales.platform.push.dto.PushTargetEmployee
 import com.querydsl.core.BooleanBuilder
 import com.querydsl.core.types.Predicate
+import com.querydsl.core.types.Projections
 import com.querydsl.core.types.dsl.CaseBuilder
 import com.querydsl.jpa.impl.JPAQueryFactory
 import org.springframework.data.domain.Page
@@ -92,9 +94,15 @@ class ProductExpirationRepositoryCustomImpl(
         )
     }
 
-    override fun findDistinctFcmTokensByAlarmDate(alarmDate: LocalDate): List<String> {
+    override fun findDistinctPushTargetsByAlarmDate(alarmDate: LocalDate): List<PushTargetEmployee> {
         return queryFactory
-            .select(employeeInfo.fcmToken)
+            .select(
+                Projections.constructor(
+                    PushTargetEmployee::class.java,
+                    employee.id,
+                    employeeInfo.fcmToken
+                )
+            )
             .distinct()
             .from(productExpiration)
             .join(productExpiration.employee, employee)
@@ -104,7 +112,9 @@ class ProductExpirationRepositoryCustomImpl(
                 employeeInfo.fcmToken.isNotNull,
                 employeeInfo.fcmToken.ne(""),
             )
+            // 같은 토큰이 여러 사원에 남아 있으면(로그아웃 없이 단말 교체) 한 기기에 중복 발송되지 않도록 정리.
             .fetch()
+            .distinctBy { it.token }
     }
 
     private fun buildDateRangeCondition(fromDate: LocalDate?, toDate: LocalDate?): Predicate? {

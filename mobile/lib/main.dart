@@ -181,7 +181,10 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     Future.microtask(() {
       // FCM 권한 요청 + 토큰/리스너 등록 (설정 파일 없으면 내부에서 skip)
       final push = ref.read(pushNotificationServiceProvider);
-      push.initialize(onMessageOpened: _handlePushOpened);
+      push.initialize(
+        onMessageOpened: _handlePushOpened,
+        onForegroundMessage: _handleForegroundPush,
+      );
 
       // FCM 토큰 갱신 시 인증 상태면 서버에 재등록 (Firebase 초기화된 경우만 구독)
       if (push.isAvailable) {
@@ -220,7 +223,30 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
   /// 체류 시간 기반 비활동 만료는 두지 않는다 — 만료된 세션은 다음 API 호출의 401 →
   /// 인터셉터 refresh 실패 시점에 정리된다.
   Future<void> _onResumed() async {
+    _clearPushBadgeOnResume();
     await _checkGpsConsentOnResume();
+  }
+
+  /// 포그라운드 복귀 시 앱 아이콘 배지를 지운다 (기기 배지 + 서버 카운터).
+  ///
+  /// 배지 숫자는 서버가 push payload 에 절대값으로 싣는다(APNs badge 는 증분 불가). 사용자가 앱을
+  /// 열었다는 사실을 서버에 알려야 다음 푸시가 1 부터 다시 세므로, 로컬/서버를 함께 리셋한다.
+  /// 미인증 상태에서는 서버 호출이 불가하고 배지도 이전 사용자 것이 아니므로 건너뛴다.
+  void _clearPushBadgeOnResume() {
+    if (!ref.read(authProvider).isAuthenticated) return;
+    unawaited(ref.read(fcmTokenRegistrarProvider).clearBadge());
+  }
+
+  /// 앱을 보고 있는 중에 푸시가 도착한 경우 — 배지 값만 되돌린다.
+  ///
+  /// iOS 는 payload 의 `aps.badge` 가 포그라운드 수신에도 적용되므로, 그대로 두면 사용자가 앱을
+  /// 쓰는 동안 붙은 숫자가 다음 포그라운드 복귀까지 남는다. 방금 띄운 알림은 유지해야 하므로
+  /// Android 알림 정리는 하지 않는다(cancelNotifications: false).
+  void _handleForegroundPush(RemoteMessage message) {
+    if (!ref.read(authProvider).isAuthenticated) return;
+    unawaited(
+      ref.read(fcmTokenRegistrarProvider).clearBadge(cancelNotifications: false),
+    );
   }
 
   /// 포그라운드 복귀 시 GPS 동의 상태 선제 확인

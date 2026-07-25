@@ -14,14 +14,18 @@ class StubFcmSender : FcmSender {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
-    override fun sendNotificationToTokens(
-        tokens: List<String>,
+    override fun sendNotification(
+        targets: List<PushTarget>,
         title: String,
         body: String,
         data: Map<String, String>,
     ): FcmSendResult {
-        if (tokens.isEmpty()) return FcmSendResult.EMPTY
-        log.info("[STUB-FCM] 발송 시뮬레이션 — tokens=${tokens.size}, title='$title', body='$body', data=$data")
-        return FcmSendResult(successCount = tokens.size, failureCount = 0)
+        if (targets.isEmpty()) return FcmSendResult.EMPTY
+        val badges = targets.mapNotNull { it.badge }
+        log.info(
+            "[STUB-FCM] 발송 시뮬레이션 — targets=${targets.size}, badges=$badges, " +
+                "title='$title', body='$body', data=$data"
+        )
+        return FcmSendResult(successCount = targets.size, failureCount = 0)
     }
 }

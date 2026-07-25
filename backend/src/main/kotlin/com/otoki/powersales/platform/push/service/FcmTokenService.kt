@@ -15,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional
  */
 @Service
 class FcmTokenService(
-    private val employeeRepository: EmployeeRepository
+    private val employeeRepository: EmployeeRepository,
+    private val pushBadgeService: PushBadgeService
 ) {
 
     /**
@@ -31,11 +32,15 @@ class FcmTokenService(
 
     /**
      * 인증 사용자의 FCM 토큰을 해제(null)한다.
+     *
+     * 배지 카운터도 함께 0 으로 리셋한다 — 로그아웃 후 다음 사용자가 같은 단말에 로그인했을 때
+     * 이전 사용자의 미확인 건수가 배지에 이어지지 않게 한다.
      */
     @Transactional
     fun unregister(employeeId: Long) {
         val employee = employeeRepository.findWithEmployeeInfoById(employeeId)
             ?: throw EmployeeNotFoundException()
         employee.fcmToken = null
+        pushBadgeService.clear(employeeId)
     }
 }

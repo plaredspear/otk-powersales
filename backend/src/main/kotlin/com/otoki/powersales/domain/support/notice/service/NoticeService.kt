@@ -40,6 +40,7 @@ import com.otoki.powersales.domain.support.notice.exception.NoticeVersionConflic
 import com.otoki.powersales.domain.support.notice.repository.NoticePushLogRepository
 import com.otoki.powersales.domain.support.notice.repository.NoticeRepository
 import com.otoki.powersales.platform.push.sender.FcmSender
+import com.otoki.powersales.platform.push.service.PushBadgeService
 import com.otoki.powersales.platform.push.sender.FcmSendResult
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -63,6 +64,7 @@ class NoticeService(
     private val fileStorageService: FileStorageService,
     private val storageService: StorageService,
     private val fcmSender: FcmSender,
+    private val pushBadgeService: PushBadgeService,
     private val womenScheduleBranchResolver: WomenScheduleBranchResolver
 ) {
 
@@ -454,6 +456,7 @@ class NoticeService(
      * scope=영업사원 공지는 앱에 노출되지 않으므로 발송 대상이 아니다 (레거시 Heroku 조회 정합).
      *
      * 알림 탭 시 딥링크(해당 공지 상세 이동)를 위해 data payload({"type":"notice","noticeId":...})를 함께 실는다.
+     * 앱 아이콘 배지는 대상 사원별 미확인 푸시 건수를 +1 한 절대값으로 함께 전송한다 ([PushBadgeService]).
      * 발송 결과는 notice_push_log 에 기록한다 (재발송/결과 확인 근거). 중복 발송 자체는 허용 —
      * 재발송 여부 판단은 이력을 내려받은 클라이언트(경고 모달)가 담당한다.
      */
@@ -468,13 +471,15 @@ class NoticeService(
         if (notice.scope == NoticeScope.SALES_EMPLOYEE) throw NoticeScopeNotPushableException()
 
         val category = notice.category ?: throw InvalidNoticeCategoryException()
-        val tokens = noticeRepository.findPushTargetTokens(category, notice.branchCode)
+        val targets = noticeRepository.findPushTargets(category, notice.branchCode)
 
-        val result = if (tokens.isEmpty()) {
+        val result = if (targets.isEmpty()) {
             FcmSendResult.EMPTY
         } else {
-            fcmSender.sendNotificationToTokens(
-                tokens = tokens,
+            // 대상별 배지(미확인 푸시 건수)를 +1 한 뒤 그 절대값을 payload 에 실어 보낸다.
+            // (APNs badge 는 증분이 아니라 표시값이라 서버가 계산해야 한다 — PushBadgeService 참고)
+            fcmSender.sendNotification(
+                targets = pushBadgeService.increaseAndBuildTargets(targets),
                 title = PUSH_TITLE,
                 body = notice.name ?: "",
                 data = mapOf("type" to PUSH_TYPE_NOTICE, "noticeId" to notice.id.toString())
@@ -487,14 +492,14 @@ class NoticeService(
                 noticeId = notice.id,
                 sentBy = sender,
                 targetScope = notice.scope?.displayName,
-                targetCount = tokens.size,
+                targetCount = targets.size,
                 successCount = result.successCount,
                 failureCount = result.failureCount
             )
         )
 
         return NoticePushResultResponse(
-            targetCount = tokens.size,
+            targetCount = targets.size,
             successCount = result.successCount,
             failureCount = result.failureCount
         )

@@ -4,6 +4,7 @@ import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.security.UserPrincipal
 import com.otoki.powersales.platform.push.dto.request.FcmTokenRegisterRequest
 import com.otoki.powersales.platform.push.service.FcmTokenService
+import com.otoki.powersales.platform.push.service.PushBadgeService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -24,7 +25,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/mobile/fcm-token")
 class FcmTokenController(
-    private val fcmTokenService: FcmTokenService
+    private val fcmTokenService: FcmTokenService,
+    private val pushBadgeService: PushBadgeService
 ) {
 
     /**
@@ -50,5 +52,20 @@ class FcmTokenController(
     ): ResponseEntity<ApiResponse<Unit>> {
         fcmTokenService.unregister(principal.userId)
         return ResponseEntity.ok(ApiResponse.success(Unit, "FCM 토큰이 해제되었습니다"))
+    }
+
+    /**
+     * 앱 아이콘 배지 초기화 (앱 포그라운드 진입 시 호출)
+     * DELETE /api/v1/mobile/fcm-token/badge
+     *
+     * 서버 카운터를 0 으로 되돌려 다음 푸시가 1 부터 다시 세도록 한다. 기기의 배지 자체는
+     * 앱이 로컬에서 지운다 — 서버는 다음 발송 값에만 관여한다.
+     */
+    @DeleteMapping("/badge")
+    fun clearBadge(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ApiResponse<Unit>> {
+        pushBadgeService.clear(principal.userId)
+        return ResponseEntity.ok(ApiResponse.success(Unit, "앱 배지가 초기화되었습니다"))
     }
 }

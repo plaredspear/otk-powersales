@@ -88,6 +88,16 @@ class EmployeeInfo(
     var appVersionSeenAt: LocalDateTime? = null,
 
     /**
+     * 앱 아이콘 배지에 표시할 미확인 푸시 건수 (백엔드 전용, HC sync 대상 아님).
+     *
+     * iOS(APNs)는 badge 가 절대값이라 서버가 누적 수를 계산해 보내야 한다 — 앱은 백그라운드/종료
+     * 상태에서 배지를 증가시킬 수 없다. 발송 시 +1, 사용자가 앱을 열면(배지 clear) / 로그아웃 시 0.
+     */
+    @FieldName("미확인푸시건수")
+    @Column(name = "push_badge_count", nullable = false)
+    var pushBadgeCount: Int = 0,
+
+    /**
      * Heroku 원본 생성/수정 시각.
      *
      * BaseEntity 의 createdAt/updatedAt 은 SF 표준 컬럼명(`createddate`/`lastmodifieddate`)으로

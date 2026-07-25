@@ -4,6 +4,9 @@ import com.otoki.powersales.admin.dto.request.AdminPushTestRequest
 import com.otoki.powersales.domain.org.employee.entity.Employee
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import com.otoki.powersales.platform.push.sender.FcmSender
+import com.otoki.powersales.platform.push.sender.PushTarget
+import com.otoki.powersales.platform.push.dto.PushTargetEmployee
+import com.otoki.powersales.platform.push.service.PushBadgeService
 import com.otoki.powersales.platform.push.sender.FcmSendResult
 import io.mockk.every
 import io.mockk.mockk
@@ -19,7 +22,8 @@ class AdminPushTestServiceTest {
 
     private val employeeRepository: EmployeeRepository = mockk()
     private val fcmSender: FcmSender = mockk()
-    private val service = AdminPushTestService(employeeRepository, fcmSender)
+    private val pushBadgeService: PushBadgeService = mockk()
+    private val service = AdminPushTestService(employeeRepository, fcmSender, pushBadgeService)
 
     private fun request(
         employeeCode: String = "00012345",
@@ -32,6 +36,13 @@ class AdminPushTestServiceTest {
         every { employee.name } returns name
         every { employee.fcmToken } returns token
         return employee
+    }
+
+    /** 배지 카운터 +1 후 발송 대상(배지 절대값 포함)이 만들어지는 상황. */
+    private fun stubBadge(token: String, badge: Int = 3): List<PushTarget> {
+        val targets = listOf(PushTarget(token, badge))
+        every { pushBadgeService.increaseAndBuildTargets(any()) } returns targets
+        return targets
     }
 
     @Nested
@@ -49,7 +60,7 @@ class AdminPushTestServiceTest {
             assertThat(result.employeeName).isNull()
             assertThat(result.successCount).isZero()
             assertThat(result.message).contains("사원을 찾을 수 없습니다")
-            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+            verify(exactly = 0) { fcmSender.sendNotification(any(), any(), any(), any()) }
         }
 
         @Test
@@ -64,7 +75,7 @@ class AdminPushTestServiceTest {
             assertThat(result.employeeName).isEqualTo("홍길동")
             assertThat(result.maskedToken).isNull()
             assertThat(result.message).contains("FCM 토큰이 없습니다")
-            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+            verify(exactly = 0) { fcmSender.sendNotification(any(), any(), any(), any()) }
         }
 
         @Test
@@ -76,7 +87,7 @@ class AdminPushTestServiceTest {
             val result = service.test(request())
 
             assertThat(result.tokenRegistered).isFalse()
-            verify(exactly = 0) { fcmSender.sendNotificationToTokens(any(), any(), any(), any()) }
+            verify(exactly = 0) { fcmSender.sendNotification(any(), any(), any(), any()) }
         }
 
         @Test
@@ -85,10 +96,13 @@ class AdminPushTestServiceTest {
             val token = "abcdefgh_1234567890_token_value"
             every { employeeRepository.findWithEmployeeInfoByEmployeeCode("00012345") } returns
                 employeeWith(name = "홍길동", token = token)
-            val tokensSlot = slot<List<String>>()
+            val targetSlot = slot<List<PushTarget>>()
+            val badgeInputSlot = slot<List<PushTargetEmployee>>()
+            every { pushBadgeService.increaseAndBuildTargets(capture(badgeInputSlot)) } returns
+                listOf(PushTarget(token, 3))
             val dataSlot = slot<Map<String, String>>()
             every {
-                fcmSender.sendNotificationToTokens(capture(tokensSlot), "테스트 알림", "본문", capture(dataSlot))
+                fcmSender.sendNotification(capture(targetSlot), "테스트 알림", "본문", capture(dataSlot))
             } returns FcmSendResult(successCount = 1, failureCount = 0)
 
             val result = service.test(request())
@@ -98,7 +112,10 @@ class AdminPushTestServiceTest {
             assertThat(result.failureCount).isZero()
             assertThat(result.maskedToken).startsWith("abcdefgh").contains("${token.length}자")
             assertThat(result.message).contains("발송 성공")
-            assertThat(tokensSlot.captured).containsExactly(token)
+            // 발송 대상에는 배지 절대값이 실려야 한다 (APNs badge 는 증분이 아니라 표시값).
+            assertThat(targetSlot.captured).containsExactly(PushTarget(token, 3))
+            // 배지 계산 입력에는 대상 사원 토큰이 그대로 전달된다.
+            assertThat(badgeInputSlot.captured.map { it.token }).containsExactly(token)
             assertThat(dataSlot.captured).containsEntry("type", "push-test")
         }
 
@@ -107,8 +124,9 @@ class AdminPushTestServiceTest {
         fun test_sendFailure() {
             every { employeeRepository.findWithEmployeeInfoByEmployeeCode("00012345") } returns
                 employeeWith(name = "홍길동", token = "token-value-abcdef")
+            stubBadge("token-value-abcdef")
             every {
-                fcmSender.sendNotificationToTokens(any(), any(), any(), any())
+                fcmSender.sendNotification(any(), any(), any(), any())
             } returns FcmSendResult(successCount = 0, failureCount = 1)
 
             val result = service.test(request())
@@ -123,8 +141,9 @@ class AdminPushTestServiceTest {
         fun test_notSent() {
             every { employeeRepository.findWithEmployeeInfoByEmployeeCode("00012345") } returns
                 employeeWith(name = "홍길동", token = "token-value-abcdef")
+            stubBadge("token-value-abcdef")
             every {
-                fcmSender.sendNotificationToTokens(any(), any(), any(), any())
+                fcmSender.sendNotification(any(), any(), any(), any())
             } returns FcmSendResult.EMPTY
 
             val result = service.test(request())

@@ -389,6 +389,14 @@ class Employee(
     val appVersionSeenAt: LocalDateTime?
         get() = employeeInfo?.appVersionSeenAt
 
+    /**
+     * 앱 아이콘 배지에 표시할 미확인 푸시 건수. EmployeeInfo 미보유(사번 없음) 사원은 0.
+     *
+     * 배지 값 관리는 [com.otoki.powersales.platform.push.service.PushBadgeService] 가 담당한다.
+     */
+    val pushBadgeCount: Int
+        get() = employeeInfo?.pushBadgeCount ?: 0
+
     private fun ensureEmployeeInfo(): EmployeeInfo {
         if (employeeInfo == null) {
             // 사번 미보유 사원은 인증/디바이스 정보 대상이 아니므로 EmployeeInfo 를 가질 수 없다.

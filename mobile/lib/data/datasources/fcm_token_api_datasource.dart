@@ -20,4 +20,12 @@ class FcmTokenApiDataSource {
   Future<void> unregister() async {
     await _dio.delete('/api/v1/mobile/fcm-token');
   }
+
+  /// 서버의 앱 배지 카운터(미확인 푸시 건수)를 0 으로 리셋한다 (앱 포그라운드 진입 시).
+  ///
+  /// 배지 숫자는 서버가 push payload 에 절대값으로 실어 보내므로(APNs 규약), 사용자가 앱을
+  /// 확인했다는 사실을 서버에 알려야 다음 푸시가 1 부터 다시 센다.
+  Future<void> clearBadge() async {
+    await _dio.delete('/api/v1/mobile/fcm-token/badge');
+  }
 }

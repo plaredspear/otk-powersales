@@ -46,6 +46,21 @@ class FcmTokenRegistrar {
       _logger.w('FCM 토큰 해제 실패(무시): $e');
     }
   }
+
+  /// 앱 아이콘 배지를 지운다 — 기기 배지(로컬) + 서버 카운터를 함께 0 으로.
+  ///
+  /// 배지 숫자는 서버가 계산해 push payload 에 싣는다(APNs badge 는 절대값). 따라서 기기 배지만
+  /// 지우면 다음 푸시가 이전 카운트를 이어받으므로 서버 카운터도 같이 리셋해야 한다.
+  /// 앱 포그라운드 진입/로그인 직후, 그리고 포그라운드 수신 시에 호출한다.
+  /// [cancelNotifications] 는 [PushNotificationService.clearBadge] 로 그대로 전달된다.
+  Future<void> clearBadge({bool cancelNotifications = true}) async {
+    await _push.clearBadge(cancelNotifications: cancelNotifications);
+    try {
+      await _api.clearBadge();
+    } catch (e) {
+      _logger.w('앱 배지 서버 리셋 실패(무시): $e');
+    }
+  }
 }
 
 /// FcmTokenApiDataSource Provider
