@@ -5,6 +5,7 @@ import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMast
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterCreateRequest
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterUpdateRequest
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterFilterType
 import com.otoki.powersales.domain.activity.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaCategoryNotFoundException
@@ -260,6 +261,65 @@ class AdminEmployeeInputCriteriaMasterServiceTest {
 
             assertThatThrownBy { service.delete(99L) }
                 .isInstanceOf(EmployeeInputCriteriaMasterNotFoundException::class.java)
+        }
+    }
+
+    @Nested
+    @DisplayName("getFormMeta - 폼 메타")
+    inner class FormMetaTests {
+
+        @Test
+        @DisplayName("거래처유형 옵션 - 삭제분 제외 + accountCode 정렬")
+        fun formMeta_accountCategories_filteredAndSorted() {
+            val normal = newCategory(id = 30L)
+            val deleted = newCategory(id = 10L).apply { isDeleted = true }
+            val other = newCategory(id = 20L)
+            every { categoryRepository.findAll() } returns listOf(normal, deleted, other)
+
+            val result = service.getFormMeta()
+
+            assertThat(result.accountCategories).extracting("value").containsExactly(20L, 30L)
+            assertThat(result.accountCategories[0].accountCode).isEqualTo("CAT-20")
+            assertThat(result.accountCategories[0].name).isEqualTo("거래처유형20")
+        }
+
+        @Test
+        @DisplayName("근무형태1 옵션 - 서버 enum 이 단일 출처")
+        fun formMeta_typeOfWork1_fromEnum() {
+            every { categoryRepository.findAll() } returns emptyList()
+
+            val result = service.getFormMeta()
+
+            assertThat(result.typeOfWork1Options).hasSize(TypeOfWork1.entries.size)
+            assertThat(result.typeOfWork1Options).extracting("value")
+                .containsExactlyElementsOf(TypeOfWork1.entries.map { it.displayName })
+        }
+    }
+
+    @Nested
+    @DisplayName("getListMeta - 목록 조회 조건")
+    inner class ListMetaTests {
+
+        @Test
+        @DisplayName("상태 필터 옵션 - ValidStatusFilter enum 전체 + 표시명")
+        fun listMeta_statusOptions() {
+            val result = service.getListMeta()
+
+            val statusFilter = result.filters.single { it.key == "status" }
+            assertThat(statusFilter.type).isEqualTo(EmployeeInputCriteriaMasterFilterType.SELECT)
+            assertThat(statusFilter.options).extracting("value")
+                .containsExactly("ALL", "VALID", "PLANNED", "ENDED")
+            assertThat(statusFilter.options).extracting("label")
+                .containsExactly("전체", "유효", "예정", "종료")
+        }
+
+        @Test
+        @DisplayName("기본값 - 목록 API status 파라미터와 동일한 enum 이름")
+        fun listMeta_defaults() {
+            val result = service.getListMeta()
+
+            assertThat(result.defaults.status)
+                .isEqualTo(AdminEmployeeInputCriteriaMasterService.ValidStatusFilter.ALL.name)
         }
     }
 

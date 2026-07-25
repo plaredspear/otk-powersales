@@ -2,11 +2,12 @@ package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
-import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterBulkConfirmRequest
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterCreateRequest
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterUpdateRequest
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterFormMetaResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterListMetaResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterResponse
 import com.otoki.powersales.domain.activity.schedule.service.AdminEmployeeInputCriteriaMasterService
 import com.otoki.powersales.domain.activity.schedule.service.AdminEmployeeInputCriteriaMasterService.ValidStatusFilter
@@ -15,27 +16,36 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
-data class AccountCategoryOptionResponse(
-    val id: Long,
-    val accountCode: String,
-    val name: String,
-)
-
 @RestController
 @RequestMapping("/api/v1/admin/employee-input-criteria-masters")
 class AdminEmployeeInputCriteriaMasterController(
     private val service: AdminEmployeeInputCriteriaMasterService,
-    private val accountCategoryMasterRepository: AccountCategoryMasterRepository,
 ) {
 
-    @GetMapping("/account-categories")
+    /**
+     * 진열사원 투입기준 마스터 폼(등록/수정 모달) 렌더링용 메타.
+     *
+     * 행사마스터 `/promotions/form-meta` 와 동일한 "form 전용 API 분리" 패턴 —
+     * 폼 Select 옵션(구분·근무형태1)을 프론트 상수로 하드코딩하지 않고 서버를 단일 출처로 내려준다.
+     * 기존 `/account-categories` lookup 을 흡수한다.
+     */
+    @GetMapping("/form-meta")
     @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.READ)
-    fun listAccountCategories(): ResponseEntity<ApiResponse<List<AccountCategoryOptionResponse>>> {
-        val categories = accountCategoryMasterRepository.findAll()
-            .filter { it.isDeleted != true }
-            .sortedBy { it.accountCode }
-            .map { AccountCategoryOptionResponse(it.id, it.accountCode ?: "", it.name ?: "") }
-        return ResponseEntity.ok(ApiResponse.success(categories))
+    fun getFormMeta(): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterFormMetaResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(service.getFormMeta()))
+    }
+
+    /**
+     * 진열사원 투입기준 마스터 목록 화면 조회 조건 로드.
+     *
+     * 행사마스터 `/promotions/meta` 와 동일한 "조회 조건 로드" 표준 패턴 —
+     * 상태 필터(전체/유효/예정/종료) 옵션과 기본값을 내려준다.
+     * 본 화면은 지점/권한 의존 조건이 없어(전사 공통 마스터) 서비스 산출을 그대로 반환한다.
+     */
+    @GetMapping("/meta")
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.READ)
+    fun getListMeta(): ResponseEntity<ApiResponse<EmployeeInputCriteriaMasterListMetaResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(service.getListMeta()))
     }
 
     @GetMapping

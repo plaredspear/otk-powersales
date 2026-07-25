@@ -4,7 +4,6 @@ import {
   confirmEmployeeInputCriteriaMaster,
   createEmployeeInputCriteriaMaster,
   deleteEmployeeInputCriteriaMaster,
-  fetchAccountCategoryOptions,
   fetchEmployeeInputCriteriaMasters,
   updateEmployeeInputCriteriaMaster,
   type EmployeeInputCriteriaMasterRequest,
@@ -13,22 +12,21 @@ import {
 
 const QUERY_KEY = ['admin', 'employee-input-criteria-masters'];
 
+/**
+ * 목록 queryKey. 도메인 prefix 아래 'list' 세그먼트로 한 단계 내려 form-meta / list-meta 와 분리한다.
+ * mutation 의 invalidate 가 정적 성격의 메타까지 재조회하지 않도록 하기 위함.
+ */
+const LIST_QUERY_KEY = [...QUERY_KEY, 'list'];
+
 export function useEmployeeInputCriteriaMasters(status: ValidStatusFilter) {
   return useQuery({
-    queryKey: [...QUERY_KEY, status],
+    queryKey: [...LIST_QUERY_KEY, status],
     queryFn: () => fetchEmployeeInputCriteriaMasters(status),
   });
 }
 
-export function useAccountCategoryOptions() {
-  return useQuery({
-    queryKey: [...QUERY_KEY, 'account-categories'],
-    queryFn: () => fetchAccountCategoryOptions(),
-  });
-}
-
 function invalidate(queryClient: ReturnType<typeof useQueryClient>) {
-  queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+  queryClient.invalidateQueries({ queryKey: LIST_QUERY_KEY });
 }
 
 export function useCreateEmployeeInputCriteriaMaster() {

@@ -2,7 +2,15 @@ package com.otoki.powersales.domain.activity.schedule.service
 
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterCreateRequest
 import com.otoki.powersales.domain.activity.schedule.dto.request.EmployeeInputCriteriaMasterUpdateRequest
+import com.otoki.powersales.domain.activity.schedule.dto.response.AccountCategoryOption
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterFilterMeta
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterFilterOption
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterFilterType
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterFormMetaResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterListDefaults
+import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterListMetaResponse
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeInputCriteriaMasterResponse
+import com.otoki.powersales.domain.activity.schedule.dto.response.TypeOfWork1Option
 import com.otoki.powersales.domain.activity.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.exception.EmployeeInputCriteriaCategoryNotFoundException
@@ -23,7 +31,64 @@ class AdminEmployeeInputCriteriaMasterService(
     private val categoryRepository: AccountCategoryMasterRepository,
 ) {
 
-    enum class ValidStatusFilter { ALL, VALID, PLANNED, ENDED }
+    enum class ValidStatusFilter(val displayName: String) {
+        ALL("전체"),
+        VALID("유효"),
+        PLANNED("예정"),
+        ENDED("종료"),
+    }
+
+    /**
+     * 폼(등록/수정 모달) 렌더링용 메타.
+     *
+     * 구분(거래처유형마스터) 옵션 + 근무형태1 옵션을 한 번에 내려준다.
+     * 기존 `/account-categories` lookup 을 흡수하며, 컨트롤러가 repository 를 직접 호출하던 구조를
+     * service 경유로 정리한다.
+     */
+    fun getFormMeta(): EmployeeInputCriteriaMasterFormMetaResponse {
+        val accountCategories = categoryRepository.findAll()
+            .filter { it.isDeleted != true }
+            .sortedBy { it.accountCode }
+            .map {
+                AccountCategoryOption(
+                    value = it.id,
+                    accountCode = it.accountCode ?: "",
+                    name = it.name ?: "",
+                )
+            }
+
+        val typeOfWork1Options = TypeOfWork1.entries
+            .map { TypeOfWork1Option(value = it.displayName, name = it.displayName) }
+
+        return EmployeeInputCriteriaMasterFormMetaResponse(
+            accountCategories = accountCategories,
+            typeOfWork1Options = typeOfWork1Options,
+        )
+    }
+
+    /**
+     * 목록 화면 조회 조건 로드.
+     *
+     * 상태 필터(전체/유효/예정/종료) 옵션과 기본값을 내려준다. 옵션 값은 목록 API 의
+     * `status` 파라미터([ValidStatusFilter]) 와 동일한 enum 이름을 쓴다.
+     */
+    fun getListMeta(): EmployeeInputCriteriaMasterListMetaResponse {
+        val statusOptions = ValidStatusFilter.entries
+            .map { EmployeeInputCriteriaMasterFilterOption(value = it.name, label = it.displayName) }
+
+        return EmployeeInputCriteriaMasterListMetaResponse(
+            filters = listOf(
+                EmployeeInputCriteriaMasterFilterMeta(
+                    key = "status",
+                    type = EmployeeInputCriteriaMasterFilterType.SELECT,
+                    options = statusOptions,
+                ),
+            ),
+            defaults = EmployeeInputCriteriaMasterListDefaults(
+                status = ValidStatusFilter.ALL.name,
+            ),
+        )
+    }
 
     fun list(status: ValidStatusFilter, today: LocalDate = LocalDate.now()): List<EmployeeInputCriteriaMasterResponse> {
         val all = repository.findAllNotDeleted()

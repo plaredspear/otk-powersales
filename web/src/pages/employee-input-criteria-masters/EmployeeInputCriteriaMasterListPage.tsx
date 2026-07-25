@@ -18,7 +18,6 @@ import { CheckCircleFilled, ClockCircleFilled, CloseCircleFilled, PlusOutlined }
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
-  useAccountCategoryOptions,
   useBulkConfirmEmployeeInputCriteriaMasters,
   useConfirmEmployeeInputCriteriaMaster,
   useCreateEmployeeInputCriteriaMaster,
@@ -26,6 +25,8 @@ import {
   useEmployeeInputCriteriaMasters,
   useUpdateEmployeeInputCriteriaMaster,
 } from '@/hooks/employee-input-criteria-master/useEmployeeInputCriteriaMasters';
+import { useEmployeeInputCriteriaMasterFormMeta } from '@/hooks/employee-input-criteria-master/useEmployeeInputCriteriaMasterFormMeta';
+import { useEmployeeInputCriteriaMasterListMeta } from '@/hooks/employee-input-criteria-master/useEmployeeInputCriteriaMasterListMeta';
 import type {
   EmployeeInputCriteriaMaster,
   EmployeeInputCriteriaMasterRequest,
@@ -38,14 +39,8 @@ import { listTableLocale } from '@/lib/listTableLocale';
 
 const { Title, Text } = Typography;
 
-const TYPE_OF_WORK_OPTIONS: { value: TypeOfWork1; label: string }[] = [{ value: '진열', label: '진열' }];
-
-const STATUS_OPTIONS: { value: ValidStatusFilter; label: string }[] = [
-  { value: 'ALL', label: '전체' },
-  { value: 'VALID', label: '유효' },
-  { value: 'PLANNED', label: '예정' },
-  { value: 'ENDED', label: '종료' },
-];
+/** 목록 meta 로드 전 초기 상태값. 로드 후 서버 기본값(defaults.status)으로 동기화된다. */
+const INITIAL_STATUS: ValidStatusFilter = 'ALL';
 
 interface FormValues {
   categoryId: number;
@@ -72,14 +67,15 @@ function formatNumber(value: string | null | undefined): string {
 }
 
 export default function EmployeeInputCriteriaMasterListPage() {
-  const [status, setStatus] = useState<ValidStatusFilter>('ALL');
+  const [status, setStatus] = useState<ValidStatusFilter>(INITIAL_STATUS);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<EmployeeInputCriteriaMaster | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [form] = Form.useForm<FormValues>();
 
   const { data: items, isLoading, refetch, isFetching } = useEmployeeInputCriteriaMasters(status);
-  const { data: categories } = useAccountCategoryOptions();
+  const { data: formMeta } = useEmployeeInputCriteriaMasterFormMeta();
+  const { data: listMeta } = useEmployeeInputCriteriaMasterListMeta();
   const createMutation = useCreateEmployeeInputCriteriaMaster();
   const updateMutation = useUpdateEmployeeInputCriteriaMaster();
   const confirmMutation = useConfirmEmployeeInputCriteriaMaster();
@@ -88,11 +84,29 @@ export default function EmployeeInputCriteriaMasterListPage() {
 
   const categoryOptions = useMemo(
     () =>
-      (categories ?? []).map((c) => ({
-        value: c.id,
+      (formMeta?.accountCategories ?? []).map((c) => ({
+        value: c.value,
         label: `${c.accountCode} · ${c.name}`,
       })),
-    [categories],
+    [formMeta],
+  );
+
+  const typeOfWorkOptions = useMemo(
+    () =>
+      (formMeta?.typeOfWork1Options ?? []).map((o) => ({
+        value: o.value,
+        label: o.name,
+      })),
+    [formMeta],
+  );
+
+  const statusOptions = useMemo(
+    () =>
+      (listMeta?.filters.find((f) => f.key === 'status')?.options ?? []).map((o) => ({
+        value: o.value as ValidStatusFilter,
+        label: o.label,
+      })),
+    [listMeta],
   );
 
   const handleAdd = () => {
@@ -314,7 +328,7 @@ export default function EmployeeInputCriteriaMasterListPage() {
           value={status}
           onChange={(e) => setStatus(e.target.value as ValidStatusFilter)}
           optionType="button"
-          options={STATUS_OPTIONS}
+          options={statusOptions}
         />
         <Space>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
@@ -381,7 +395,7 @@ export default function EmployeeInputCriteriaMasterListPage() {
             />
           </Form.Item>
           <Form.Item name="typeOfWork1" label="근무형태1">
-            <Select allowClear options={TYPE_OF_WORK_OPTIONS} placeholder="선택" />
+            <Select allowClear options={typeOfWorkOptions} placeholder="선택" />
           </Form.Item>
           <Form.Item
             name="startDate"
