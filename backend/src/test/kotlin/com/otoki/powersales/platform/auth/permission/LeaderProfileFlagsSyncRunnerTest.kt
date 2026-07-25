@@ -97,6 +97,18 @@ class LeaderProfileFlagsSyncRunnerTest {
                 .describedAs("%s 는 가드 entity 가 아니므로 SoT 에 없어야 한다", key)
                 .isFalse
         }
+        // 여사원 현황은 가드가 실재하는 READ / EDIT 2종만 부여한다 — 등록이 기준정보 > 사원 단일 관리로
+        // 이관되며 CREATE 가드가 사라져 allowCreate 는 죽은 키였다. 되살아나는 회귀를 막는다.
+        val femaleEmployee = leader6Custom.get("female_employee")
+        assertThat(femaleEmployee).isNotNull
+        assertThat(femaleEmployee.get("allowRead")?.asBoolean()).isTrue
+        assertThat(femaleEmployee.get("allowEdit")?.asBoolean()).isTrue
+        listOf("allowCreate", "allowDelete").forEach { bit ->
+            assertThat(femaleEmployee.get(bit)?.asBoolean() ?: false)
+                .describedAs("6.조장 female_employee.%s 는 대응 가드가 없어 부여하지 않는다", bit)
+                .isFalse
+        }
+
         // 진열사원 투입기준 **확정** 은 수정(EDIT)과 분리된 가상 자원으로 조장에게 부여한다 (사용자 결정).
         // 확정 가드가 EDIT operation 을 보므로 allowEdit 비트여야 한다.
         val confirmResource = leader6Custom.get("employee_input_criteria_confirm")

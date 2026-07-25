@@ -726,7 +726,7 @@ export default function SfMigrationPage() {
                 </li>
                 <li>
                   <Text strong>custom 자원 (3종)</Text> — 여사원 <Text code>female_employee</Text>{' '}
-                  (조회/등록/수정) · 교육게시물 <Text code>education_post</Text> (조회 전용) ·{' '}
+                  (조회/수정) · 교육게시물 <Text code>education_post</Text> (조회 전용) ·{' '}
                   <Text strong>진열사원 투입기준 확정</Text>{' '}
                   <Text code>employee_input_criteria_confirm</Text> (확정 실행)
                 </li>
