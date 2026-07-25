@@ -96,10 +96,11 @@ export interface AccountDetail {
   closingTime1: string | null;
   closingTime2: string | null;
   closingTime3: string | null;
-  remainingCredit: string | null;
-  totalCredit: string | null;
-  annualRevenue: string | null;
-  numberOfEmployees: number | null;
+  /** 백엔드 BigDecimal — Jackson 이 JSON 숫자로 직렬화하므로 number 로 도착 (문자열 방어 포함) */
+  remainingCredit: number | string | null;
+  totalCredit: number | string | null;
+  annualRevenue: number | string | null;
+  numberOfEmployees: number | string | null;
   consignmentAcc: string | null;
   distribution: string | null;
   // 조직 정보 — 사업부/영업부/지점 CC코드 + 명 (레거시 SF 거래처 레코드 페이지 우측 패널 동등, 읽기 전용).
@@ -384,10 +385,11 @@ export interface AdminAccountUpdateResponseData {
   closingTime1: string | null;
   closingTime2: string | null;
   closingTime3: string | null;
-  remainingCredit: string | null;
-  totalCredit: string | null;
-  annualRevenue: string | null;
-  numberOfEmployees: number | null;
+  /** 백엔드 BigDecimal — Jackson 이 JSON 숫자로 직렬화하므로 number 로 도착 (문자열 방어 포함) */
+  remainingCredit: number | string | null;
+  totalCredit: number | string | null;
+  annualRevenue: number | string | null;
+  numberOfEmployees: number | string | null;
   consignmentAcc: string | null;
   distribution: string | null;
 }

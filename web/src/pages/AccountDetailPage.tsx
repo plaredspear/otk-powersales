@@ -48,11 +48,17 @@ function dash(v: string | number | null | undefined): string {
   return s === '' ? '-' : s;
 }
 
-/** BigDecimal 문자열 → 천 단위 콤마. 숫자가 아니면 원본 표시. */
-function won(v: string | null): string {
-  if (v === null || v.trim() === '') return '-';
-  const n = Number(v);
-  return Number.isFinite(n) ? `${n.toLocaleString()}원` : v;
+/**
+ * BigDecimal → 천 단위 콤마 + '원'. 숫자가 아니면 원본 표시.
+ *
+ * 백엔드 BigDecimal 은 Jackson 이 JSON 숫자로 직렬화하므로 number 로 도착하지만,
+ * 직렬화 설정 변화에 대비해 문자열도 함께 허용한다.
+ */
+function won(v: number | string | null | undefined): string {
+  const s = dash(v);
+  if (s === '-') return '-';
+  const n = Number(s);
+  return Number.isFinite(n) ? `${n.toLocaleString()}원` : s;
 }
 
 /**
