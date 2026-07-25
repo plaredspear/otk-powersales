@@ -41,6 +41,8 @@ import org.junit.jupiter.api.Nested
 import com.otoki.powersales.domain.activity.order.event.OrderRequestRegisteredEvent
 import org.junit.jupiter.api.Test
 import org.springframework.context.ApplicationEventPublisher
+// ⚠️ 임시(2026-07-25) — 강제 실패 스위치 테스트용. 스위치 제거 시 함께 지운다.
+import org.springframework.mock.env.MockEnvironment
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -74,6 +76,9 @@ class OrderRequestCreateServiceTest {
         orderDeadlineCalculator,
         entityManager,
         eventPublisher,
+        // ⚠️ 임시(2026-07-25) — 강제 실패 스위치(dev QA 용). 테스트는 항상 평시 동작(false)으로 검증한다.
+        environment = MockEnvironment(),
+        forceInventoryViolation = false,
     )
 
     private val userId = 1L
@@ -409,6 +414,72 @@ class OrderRequestCreateServiceTest {
     }
 
     // ───── Test fixtures ─────
+
+    // ============ ⚠️ 임시 (2026-07-25) — dev 강제 재고 검증 실패 스위치. 스위치와 함께 제거 ⚠️ ============
+    @Nested
+    @DisplayName("[임시] dev 강제 재고 검증 실패 스위치")
+    inner class ForcedInventoryViolationCases {
+
+        private fun serviceWith(profile: String, flag: Boolean) = OrderRequestCreateService(
+            orderRequestRepository,
+            orderRequestProductRepository,
+            productRepository,
+            accountRepository,
+            employeeRepository,
+            inventorySearchClient,
+            loanInquiryClient,
+            orderRequestRegisterSender,
+            orderDeadlineCalculator,
+            entityManager,
+            eventPublisher,
+            environment = MockEnvironment().apply { setActiveProfiles(profile) },
+            forceInventoryViolation = flag,
+        )
+
+        @Test
+        @DisplayName("dev + 플래그 ON → 재고가 충분해도 전 라인 '공급제한수량 초과' 로 거부")
+        fun forcedOnDev() {
+            stubAuthAndAccount()
+            stubInventory(
+                mapOf(
+                    "P001" to inventoryInfo("P001", conv = 1, supply = 1000),
+                    "P002" to inventoryInfo("P002", conv = 8, supply = 1000, minOrderingUnit = "BOX"),
+                )
+            )
+            val request = baseRequest(
+                lines = listOf(
+                    line(lineNumber = 10, productCode = "P001", quantity = 10, unit = "EA", quantityPieces = 10),
+                    line(lineNumber = 20, productCode = "P002", quantity = 1, unit = "BOX", quantityPieces = 8, quantityBoxes = 1),
+                )
+            )
+
+            val thrown = catchThrowableOfType(
+                { serviceWith("dev", flag = true).create(userId, request) },
+                OrderProductRestrictedException::class.java,
+            )
+            // 모바일이 제품 카드별 인라인 에러를 그릴 수 있게 전 라인이 violations 로 내려간다.
+            assertThat(thrown.violations.map { it.productCode }).containsExactly("P001", "P002")
+            assertThat(thrown.violations.map { it.message }).containsOnly("공급제한수량 초과")
+            assertThat(thrown.violations.map { it.supplyQuantity }).containsOnly(0)
+            assertThat(thrown.violations.map { it.requestedQuantity }).containsExactly(10, 8)
+        }
+
+        @Test
+        @DisplayName("prod + 플래그 ON → 강제 실패하지 않고 평시 검증 결과대로 동작 (profile 이중 게이트)")
+        fun notForcedOutsideDev() {
+            stubAuthAndAccount()
+            // 환산수량 위반 라인 — 평시 검증이면 ORD_INVALID_UNIT 이고, 강제 스위치가 먹으면
+            // ORD_PRODUCT_RESTRICTED 가 된다. prod 에서는 전자여야 한다.
+            stubInventory(mapOf("P001" to inventoryInfo("P001", conv = 8, supply = 1000, minOrderingUnit = "BOX")))
+            val request = baseRequest(
+                lines = listOf(line(productCode = "P001", quantity = 1, unit = "BOX", quantityPieces = 5, quantityBoxes = 1))
+            )
+
+            assertThatThrownBy { serviceWith("prod", flag = true).create(userId, request) }
+                .isInstanceOf(OrderInvalidUnitException::class.java)
+        }
+    }
+    // ============ ⚠️ 임시 코드 끝 ⚠️ ============
 
     private fun stubAuthAndAccount() {
         every { employeeRepository.findById(userId) } returns Optional.of(employee(employeeCode = employeeCode))
