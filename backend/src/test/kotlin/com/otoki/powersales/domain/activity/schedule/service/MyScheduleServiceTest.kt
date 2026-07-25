@@ -452,9 +452,11 @@ class MyScheduleServiceTest {
             assertThat(result.reportProgress.workType).isEqualTo("진열")
             assertThat(result.accounts).hasSize(3)
             assertThat(result.accounts.all { !it.isRegistered }).isTrue()
-            // 레거시 myDaily.jsp 정합: 거래처명 + typeOfWork1/typeOfWork5/typeOfWork3
-            val first = result.accounts.first()
-            assertThat(first.accountId).isEqualTo(10L)
+            // 레거시 myDaily.jsp 정합: 거래처명 + typeOfWork1/typeOfWork5/typeOfWork3.
+            // 응답은 거래처명 오름차순 정렬이라(name null → "" 취급) 이름 없는 2건이 앞에 온다.
+            val first = result.accounts.first { it.accountId == 10L }
+            assertThat(result.accounts.map { it.accountName })
+                .isEqualTo(listOf("", "", "(주)이마트트레이더스명지점"))
             assertThat(first.accountName).isEqualTo("(주)이마트트레이더스명지점")
             assertThat(first.workType1).isEqualTo("진열")
             assertThat(first.workType2).isEqualTo("상시")

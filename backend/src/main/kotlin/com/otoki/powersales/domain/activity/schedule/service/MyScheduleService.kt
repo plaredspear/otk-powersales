@@ -291,7 +291,9 @@ class MyScheduleService(
                 total = total,
                 workType = workType
             ),
-            accounts = accountItems
+            // 레거시 myDaily 정합: 거래처명 오름차순 정렬 (MyPageController:193 personmergedList.sort,
+            // name null 은 "" 취급 — 신규 accountName 은 이미 "" fallback).
+            accounts = accountItems.sortedBy { it.accountName }
         )
     }
 
