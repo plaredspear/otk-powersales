@@ -498,10 +498,11 @@ class MyScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 상시 진열과 행사가 같은 날이면 행사 우선 (레거시 promoteTempList > displayTempList)")
-        fun getDailySchedule_eventWinsOverRegularDisplay() {
-            // Given — 레거시 MyPageController.myDaily:139 정합.
-            // 출근등록 없음 + 진열이 임시가 아님(상시) → 행사가 진열을 밀어낸다.
+        @DisplayName("성공 - 상시 진열과 행사가 같은 날이면 행사가 주 일정, 진열은 참고 일정")
+        fun getDailySchedule_eventIsPrimaryRegularDisplayIsSecondary() {
+            // Given — 레거시 MyPageController.myDaily:139 는 출근등록 없음 + 진열이 상시일 때
+            // 진열을 화면에서 버렸다. 신규는 방문 매장 누락을 막기 위해 진열도 함께 내려주되
+            // isLegacyVisible=false 로 표시하고 카운터에서 제외한다.
             val userId = 1L
             val date = LocalDate.of(2026, 8, 1)
             val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
@@ -530,11 +531,18 @@ class MyScheduleServiceTest {
             // When
             val result = myScheduleService.getDailySchedule(userId, date)
 
-            // Then — 행사만 노출, 상시 진열은 배제
-            assertThat(result.accounts).hasSize(1)
+            // Then — 행사·진열 모두 내려오되 진열은 참고 일정으로 구분되고 카운터에서 빠진다.
+            assertThat(result.accounts).hasSize(2)
+            // 주 일정이 앞, 참고 일정이 뒤 (모바일이 경계에 구분선을 넣는다)
             assertThat(result.accounts[0].accountId).isEqualTo(51L)
             assertThat(result.accounts[0].workType1).isEqualTo("행사")
+            assertThat(result.accounts[0].isLegacyVisible).isTrue()
+            assertThat(result.accounts[1].accountId).isEqualTo(50L)
+            assertThat(result.accounts[1].workType1).isEqualTo("진열")
+            assertThat(result.accounts[1].isLegacyVisible).isFalse()
+            // 카운터는 레거시 노출분(행사 1건)만 집계
             assertThat(result.reportProgress.total).isEqualTo(1)
+            assertThat(result.reportProgress.workType).isEqualTo("행사")
         }
 
         @Test
@@ -569,10 +577,85 @@ class MyScheduleServiceTest {
             // When
             val result = myScheduleService.getDailySchedule(userId, date)
 
-            // Then — 진열이 아니라 행사가 표시되어야 한다
+            // Then — 진열이 아니라 행사가 표시되어야 한다.
+            // 거래처가 같으면 dedup 으로 1건만 남는데, 이때 레거시 미노출분(진열)이 대표로 뽑히면
+            // 주 일정이 0건이 되고 화면 전체가 참고 일정으로 밀려난다 → 노출분을 대표로 채택.
             assertThat(result.accounts).hasSize(1)
             assertThat(result.accounts[0].workType1).isEqualTo("행사")
+            assertThat(result.accounts[0].isLegacyVisible).isTrue()
+            assertThat(result.reportProgress.total).isEqualTo(1)
             assertThat(result.reportProgress.workType).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("성공 - 진열·행사 동시 보유일이 아니면 참고 일정이 생기지 않는다")
+        fun getDailySchedule_noSecondaryWhenSingleSource() {
+            // Given — 진열만 있는 날. 레거시도 진열을 그대로 보여줬으므로 전건 주 일정이어야 한다.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = Account(id = 90L, name = "진열거래처A"),
+                    startDate = date
+                ),
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = Account(id = 91L, name = "진열거래처B"),
+                    startDate = date
+                )
+            )
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns emptyList()
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then — 참고 일정 없음, 카운터 모수도 전건
+            assertThat(result.accounts).hasSize(2)
+            assertThat(result.accounts).allMatch { it.isLegacyVisible }
+            assertThat(result.reportProgress.total).isEqualTo(2)
+        }
+
+        @Test
+        @DisplayName("성공 - 출근등록이 있으면 진열·행사 전건이 주 일정 (레거시 필터 면제)")
+        fun getDailySchedule_noSecondaryWhenRegistered() {
+            // Given — 레거시 staticCommList 는 우선순위 1단이 아니라 필터 면제 통로라,
+            // 출근등록이 있으면 진열·행사 어느 쪽도 버려지지 않는다.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = Account(id = 130L, name = "상시진열거래처"),
+                    startDate = date
+                )
+            )
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date, workingType = WorkingType.WORK,
+                    account = Account(id = 131L, name = "행사거래처"),
+                    attendanceLog = AttendanceLog(id = 310L),
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then — 상시 진열도 주 일정으로 남는다 (참고 일정 없음)
+            assertThat(result.accounts).hasSize(2)
+            assertThat(result.accounts).allMatch { it.isLegacyVisible }
+            assertThat(result.reportProgress.total).isEqualTo(2)
+            assertThat(result.reportProgress.completed).isEqualTo(1)
         }
 
         @Test
@@ -657,9 +740,10 @@ class MyScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 진열이 임시면 진열 우선 (레거시 tempList > promoteTempList)")
-        fun getDailySchedule_temporaryDisplayWinsOverEvent() {
-            // Given — 레거시 MyPageController.myDaily:134,136 정합.
+        @DisplayName("성공 - 진열이 임시면 진열이 주 일정, 행사는 참고 일정")
+        fun getDailySchedule_temporaryDisplayIsPrimaryEventIsSecondary() {
+            // Given — 레거시 MyPageController.myDaily:134,136 은 진열 임시 보유 시 행사를 버렸다.
+            // 신규는 행사도 함께 내려주되 참고 일정으로 구분한다 (배제 방향만 반대인 대칭 케이스).
             val userId = 1L
             val date = LocalDate.of(2026, 8, 1)
             val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
@@ -687,11 +771,18 @@ class MyScheduleServiceTest {
             // When
             val result = myScheduleService.getDailySchedule(userId, date)
 
-            // Then — 임시 진열만 노출, 행사는 배제
-            assertThat(result.accounts).hasSize(1)
+            // Then — 임시 진열이 주 일정, 행사는 참고 일정
+            assertThat(result.accounts).hasSize(2)
             assertThat(result.accounts[0].accountId).isEqualTo(70L)
             assertThat(result.accounts[0].workType1).isEqualTo("진열")
             assertThat(result.accounts[0].workType2).isEqualTo("임시")
+            assertThat(result.accounts[0].isLegacyVisible).isTrue()
+            assertThat(result.accounts[1].accountId).isEqualTo(71L)
+            assertThat(result.accounts[1].workType1).isEqualTo("행사")
+            assertThat(result.accounts[1].isLegacyVisible).isFalse()
+            // 카운터는 레거시 노출분(진열 임시 1건)만
+            assertThat(result.reportProgress.total).isEqualTo(1)
+            assertThat(result.reportProgress.workType).isEqualTo("진열")
         }
 
         @Test

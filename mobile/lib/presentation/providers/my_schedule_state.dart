@@ -1,5 +1,6 @@
 import '../../domain/entities/daily_schedule_info.dart';
 import '../../domain/entities/monthly_schedule_day.dart';
+import '../../domain/entities/schedule_account_detail.dart';
 
 /// 월간 캘린더 화면 상태
 ///
@@ -176,7 +177,7 @@ class MyScheduleDetailState {
   }
 
   /// 필터 적용된 거래처 목록
-  List<dynamic> get filteredAccounts {
+  List<ScheduleAccountDetail> get filteredAccounts {
     if (scheduleInfo == null) return [];
     if (!showOnlyUnregistered) return scheduleInfo!.accounts;
     return scheduleInfo!.accounts.where((account) => !account.isRegistered).toList();

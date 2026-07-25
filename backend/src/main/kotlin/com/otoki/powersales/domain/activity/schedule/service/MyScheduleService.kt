@@ -114,27 +114,33 @@ class MyScheduleService(
                 .mapNotNull { it.account?.id }
                 .toSet()
 
-            // 출처 선택은 일간 상세(getDailySchedule)와 동일한 레거시 승자독식 규칙을 따른다
-            // (레거시 calSchedule 도 myDaily 와 같은 4단 우선순위를 쓰므로 월간 셀 카운트와
-            //  일간 상세 건수가 어긋나지 않아야 한다).
-            //   ① 출근등록 완료 → 진열 ∪ 행사 합집합 ② 진열 임시 → 진열 ③ 행사 → 행사 ④ 진열
+            // 셀 카운트 모수는 일간 상세(getDailySchedule)의 보고완료 카운터와 같아야 한다.
+            // 일간은 진열 ∪ 행사를 모두 내려주되 레거시가 버리던 쪽을 isLegacyVisible = false 로
+            // 표시해 카운터에서 제외하므로, 여기서도 "레거시 노출분" 만 센다.
+            //
+            // 레거시가 실제로 버리는 건 "출근등록 전 + 진열·행사 동시 보유" 인 날뿐이다
+            // (출근등록이 있으면 필터 면제로 양쪽 모두 남는다 — 레거시 MyPageController:127-139).
+            //   - 진열 임시 보유 → 행사가 밀린다
+            //   - 그 외          → 진열이 밀린다
             val hasRegistered = (displayAccountIds + eventAccountIds).any { it in attendedAccountIds }
             val hasTemporaryDisplay = dayMasters.any { it.typeOfWork5 == TypeOfWork5.TEMPORARY }
 
-            val accountIds = when {
+            val legacyVisibleAccountIds = when {
                 hasRegistered -> displayAccountIds + eventAccountIds
+                displayAccountIds.isEmpty() || eventAccountIds.isEmpty() -> displayAccountIds + eventAccountIds
                 hasTemporaryDisplay -> displayAccountIds
-                eventAccountIds.isNotEmpty() -> eventAccountIds
-                else -> displayAccountIds
+                else -> eventAccountIds
             }
+            // 부차 항목만 있는 날은 없지만(부차는 항상 반대편과 공존), 근무일 판정은 전체 기준으로 둔다.
+            val allAccountIds = displayAccountIds + eventAccountIds
 
             workDays.add(
                 WorkDayDto(
                     date = currentDate.toString(),
-                    hasWork = accountIds.isNotEmpty(),
+                    hasWork = allAccountIds.isNotEmpty(),
                     workingType = workingTypeByDate[currentDate],
-                    completedCount = accountIds.count { it in attendedAccountIds },
-                    totalCount = accountIds.size
+                    completedCount = legacyVisibleAccountIds.count { it in attendedAccountIds },
+                    totalCount = legacyVisibleAccountIds.size
                 )
             )
             currentDate = currentDate.plusDays(1)
@@ -232,50 +238,58 @@ class MyScheduleService(
                 )
             }
 
-        // 진열 ∪ 행사 출처 선택 (레거시 MyPageController.myDaily 정합).
+        // 진열 ∪ 행사 병합 + 레거시 노출 여부 판정 (레거시 MyPageController.myDaily:127-192 정합).
         //
-        // 레거시는 사원×날짜 단위로 출처를 "배타적 승자독식"으로 하나 고른 뒤, 선택된 행의
-        // workingcategory1 에 따라 진열/행사 중 한쪽 거래처 목록만 조회한다. 우선순위는
-        //   ① 출근등록 완료 → ② 진열 임시(typeOfWork5=임시) → ③ 행사 → ④ 진열
-        // 즉 출근등록도 없고 진열이 임시도 아니면 행사가 진열을 밀어낸다. 상시 진열이 걸린
-        // 거래처에 행사가 배치되는 정상 운영 케이스에서 행사가 반드시 노출되어야 하기 때문이다.
+        // 레거시 실제 동작 (원문 재확인 결과):
+        //   - `staticCommList`(:127) 는 우선순위 1단이 아니라 "필터 면제 통로" 다. 출근등록된 사원의
+        //     진열행·행사행은 둘 다 남고, :129/:131 의 제외는 staticCommList 이후 버킷에만 적용된다.
+        //   - 진열/행사가 실제로 배제되는 건 "출근등록 전 + 진열·행사 동시 보유" 인 날뿐이다.
+        //     이때 진열 임시(typeOfWork5=임시) 보유자는 행사가 밀리고(:136), 아니면 진열이 밀린다(:139).
+        //   - 그 배제는 `personmergedList` 가 for 루프 밖에 선언돼 누적되는 버그(:155)와 한 세트라
+        //     설계된 규칙이라기보다 버킷 필터의 부작용에 가깝다.
         //
-        // 과거 구현은 거래처 id 기준 dedup + 진열 우선이라, 상시 진열과 같은 거래처의 행사가
-        // 영구 미노출됐다(진열이 items.first() 승자). 레거시와 정반대라 교정한다.
+        // 신규 정책: 그날 방문할 매장을 놓치지 않도록 배제되던 쪽도 함께 내려주되, 레거시가 보여주지
+        // 않던 항목은 `isLegacyVisible = false` 로 표시해 화면에서 부차 항목으로 구분하고
+        // 보고완료 카운터 집계에서는 제외한다 (레거시 카운터 정합 유지).
         val hasRegistered = displayAccountItems.any { it.isRegistered } || eventAccountItems.any { it.isRegistered }
         val hasTemporaryDisplay = schedules.any { it.typeOfWork5 == TypeOfWork5.TEMPORARY }
 
-        val accountItems = when {
-            // ① 출근등록 완료행이 있으면 진열·행사를 함께 노출하고 거래처 기준으로만 합친다.
-            //
-            //    신규 차이 (의도적): 레거시 MyPageController:180-188 은 출근등록 행이 있을 때
-            //    `disAccList` 를 할당하지 않아(:178 빈 리스트 유지), 출근등록 행과 (근무유형1, 근무유형2)
-            //    가 일치하지 않는 미등록 거래처를 버린다. 이는 `else` 분기에만 할당하는 비대칭으로
-            //    의도로 보기 어렵고, 결과가 "한 거래처에 출근등록하면 근무유형이 다른 나머지 거래처가
-            //    화면에서 사라짐" 이라 여사원이 그날 방문할 다른 매장을 놓치는 정보 손실이 된다.
-            //    따라서 잔여 거래처를 누적 노출한다 (레거시 버그 미재현).
-            hasRegistered -> (displayAccountItems + eventAccountItems)
-                .groupBy { it.accountId }
-                .flatMap { (accountId, items) ->
-                    if (accountId == 0L) items
-                    else listOf(items.firstOrNull { it.isRegistered } ?: items.first())
-                }
-            // ② 진열 임시가 있으면 진열 우선 (행사 배제).
-            hasTemporaryDisplay -> displayAccountItems
-            // ③ 행사가 있으면 행사 우선 (진열 배제).
-            eventAccountItems.isNotEmpty() -> eventAccountItems
-            // ④ 나머지는 진열.
+        // 레거시가 그날 화면에서 버리던 쪽. 출근등록이 있으면 아무것도 버리지 않는다(필터 면제).
+        val legacyHiddenSource: List<DisplayWorkScheduleItemDto> = when {
+            hasRegistered -> emptyList()
+            displayAccountItems.isEmpty() || eventAccountItems.isEmpty() -> emptyList()
+            // 진열 임시 보유 → 행사가 밀린다 (레거시 :136 promoteTempList 제외).
+            hasTemporaryDisplay -> eventAccountItems
+            // 그 외 → 진열이 밀린다 (레거시 :139 displayTempList 제외).
             else -> displayAccountItems
         }
+        val legacyHiddenIdentity = legacyHiddenSource.map { it.identity() }.toSet()
 
-        // 보고 진행 상황 계산
-        val completed = accountItems.count { it.isRegistered }
-        val total = accountItems.size
-        // 화면 상단 "N / M 보고 완료 (workType)" 라벨. 진열 마스터를 무조건 먼저 보면 위 우선순위에서
-        // 행사가 선택된 날에도 "진열"로 표기되므로, 실제 선택된 목록의 workType1 을 쓴다.
-        // ① 순위(출근등록)에서는 진열·행사가 섞이는데 삽입 순서상 진열이 앞이라, 출근등록한 행을
-        // 먼저 보고 그 근무유형을 라벨로 쓴다.
-        val labelSource = accountItems.firstOrNull { it.isRegistered } ?: accountItems.firstOrNull()
+        // 진열 ∪ 행사 병합. 같은 거래처가 진열·행사 양쪽에 있으면 대표 1건만 남긴다
+        // (accountId = 0L 은 거래처 식별 불가라 합치지 않는다). 채택 우선순위는
+        //   ① 출근등록된 행 (레거시 :174 staticCommAccList 우선 정합)
+        //   ② 레거시 노출분
+        // ②가 없으면 같은 거래처의 두 일정 중 레거시가 버리던 쪽만 남아 주 일정이 0건이 되고,
+        // 화면 전체가 참고 일정으로 밀려난다 (상시 진열과 행사의 거래처가 같은 정상 운영 케이스).
+        val accountItems = (displayAccountItems + eventAccountItems)
+            .map { it.copy(isLegacyVisible = it.identity() !in legacyHiddenIdentity) }
+            .groupBy { it.accountId }
+            .flatMap { (accountId, items) ->
+                if (accountId == 0L) items
+                else listOf(
+                    items.firstOrNull { it.isRegistered }
+                        ?: items.firstOrNull { it.isLegacyVisible }
+                        ?: items.first()
+                )
+            }
+
+        // 보고 진행 상황 계산. 레거시가 보여주던 항목만 집계해 월간 캘린더 셀 카운트와 일치시킨다.
+        val legacyVisibleItems = accountItems.filter { it.isLegacyVisible }
+        val completed = legacyVisibleItems.count { it.isRegistered }
+        val total = legacyVisibleItems.size
+        // 화면 상단 "N / M 보고 완료 (workType)" 라벨. 카운터와 같은 모수(레거시 노출분)를 보고,
+        // 출근등록한 행을 먼저 본다 (진열·행사 혼재 시 삽입 순서상 진열로 고정되던 문제 회피).
+        val labelSource = legacyVisibleItems.firstOrNull { it.isRegistered } ?: legacyVisibleItems.firstOrNull()
         val workType = labelSource?.workType1?.takeIf { it.isNotBlank() }
             ?: schedules.firstOrNull()?.typeOfWork1?.displayName
             ?: ""
@@ -291,11 +305,24 @@ class MyScheduleService(
                 total = total,
                 workType = workType
             ),
-            // 레거시 myDaily 정합: 거래처명 오름차순 정렬 (MyPageController:193 personmergedList.sort,
-            // name null 은 "" 취급 — 신규 accountName 은 이미 "" fallback).
-            accounts = accountItems.sortedBy { it.accountName }
+            // 레거시 노출분을 앞에, 부차 항목을 뒤에 두고 각 그룹 안에서 거래처명 오름차순 정렬
+            // (레거시 MyPageController:193 personmergedList.sort, name null 은 "" 취급 —
+            //  신규 accountName 은 이미 "" fallback). 모바일이 두 그룹을 구분선으로 나눠 표시한다.
+            accounts = accountItems.sortedWith(
+                compareByDescending<DisplayWorkScheduleItemDto> { it.isLegacyVisible }
+                    .thenBy { it.accountName }
+            )
         )
     }
+
+    /**
+     * 레거시 미노출 판정용 항목 식별자.
+     *
+     * 거래처 id 만으로는 accountId = 0L(거래처 식별 불가) 항목이 진열·행사 양쪽에 있을 때
+     * 서로를 같은 항목으로 오인해 노출분까지 부차 항목으로 떨어뜨린다. 근무유형까지 포함해 구분한다.
+     */
+    private fun DisplayWorkScheduleItemDto.identity() =
+        listOf(accountId, accountName, workType1, workType2, workType3)
 
     /** 진열 마스터 기간(startDate~endDate, endDate NULL=무기한)이 특정 날짜를 포함하는지. */
     private fun DisplayWorkSchedule.overlapsDate(date: LocalDate): Boolean {

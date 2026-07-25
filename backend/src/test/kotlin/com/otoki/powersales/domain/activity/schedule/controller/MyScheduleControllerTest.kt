@@ -136,6 +136,57 @@ class MyScheduleControllerTest : MobileControllerTestSupport() {
     }
 
     @Test
+    @DisplayName("일간 일정 상세 조회 - 거래처 항목 boolean 필드가 is 접두사 그대로 직렬화")
+    fun getDailySchedule_serializesBooleanFieldsWithIsPrefix() {
+        // Given — Kotlin `is` prefix 프로퍼티는 Java bean getter 규칙상 접두사가 떨어져
+        // `registered` / `legacyVisible` 로 나갈 수 있다. 모바일은 `isRegistered` /
+        // `isLegacyVisible` 키로 파싱하므로 계약이 어긋나면 참고 일정 구분이 통째로 무력화된다
+        // (isLegacyVisible 누락 시 모바일 fallback 이 전건 주 일정으로 처리).
+        val mockResponse = DailyScheduleResponse(
+            date = "2026-08-01",
+            dayOfWeek = "토",
+            memberName = "홍유미",
+            employeeCode = "20210283",
+            reportProgress = ReportProgressDto(completed = 0, total = 1, workType = "행사"),
+            accounts = listOf(
+                DisplayWorkScheduleItemDto(
+                    accountId = 1L,
+                    accountName = "(주)오동",
+                    workType1 = "행사",
+                    workType2 = "",
+                    workType3 = "순회",
+                    isRegistered = false,
+                    isLegacyVisible = true
+                ),
+                DisplayWorkScheduleItemDto(
+                    accountId = 2L,
+                    accountName = "상시진열거래처",
+                    workType1 = "진열",
+                    workType2 = "상시",
+                    workType3 = "고정",
+                    isRegistered = false,
+                    isLegacyVisible = false
+                )
+            )
+        )
+        every { myScheduleService.getDailySchedule(eq(1L), any()) } returns mockResponse
+
+        // When & Then
+        mockMvc.perform(
+            get("/api/v1/mobile/mypage/schedule/daily")
+                .param("date", "2026-08-01")
+                .contentType(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.accounts[0].isRegistered").value(false))
+            .andExpect(jsonPath("$.data.accounts[0].isLegacyVisible").value(true))
+            .andExpect(jsonPath("$.data.accounts[1].isLegacyVisible").value(false))
+            // 접두사가 떨어진 키가 함께 나가면 계약 혼선 → 존재하지 않아야 한다
+            .andExpect(jsonPath("$.data.accounts[0].registered").doesNotExist())
+            .andExpect(jsonPath("$.data.accounts[0].legacyVisible").doesNotExist())
+    }
+
+    @Test
     @DisplayName("일간 일정 상세 조회 - date 파라미터 누락 시 400 에러")
     fun getDailySchedule_missingDate() {
         // When & Then

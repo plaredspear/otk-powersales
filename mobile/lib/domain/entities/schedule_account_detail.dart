@@ -18,6 +18,13 @@ class ScheduleAccountDetail {
   /// 등록 완료 여부
   final bool isRegistered;
 
+  /// 레거시 화면에 노출되던 항목인지 여부.
+  ///
+  /// false 면 "출근등록 전이면서 진열·행사를 동시에 보유한 날" 에 레거시가 화면에서
+  /// 버리던 항목이다. 방문 매장 누락을 막기 위해 함께 표시하되 부차 항목으로 구분하고,
+  /// 상단 보고완료 카운터 집계에서는 제외한다 (백엔드 isLegacyVisible).
+  final bool isLegacyVisible;
+
   const ScheduleAccountDetail({
     required this.accountId,
     required this.accountName,
@@ -25,6 +32,7 @@ class ScheduleAccountDetail {
     required this.workType2,
     required this.workType3,
     required this.isRegistered,
+    this.isLegacyVisible = true,
   });
 
   ScheduleAccountDetail copyWith({
@@ -34,6 +42,7 @@ class ScheduleAccountDetail {
     String? workType2,
     String? workType3,
     bool? isRegistered,
+    bool? isLegacyVisible,
   }) {
     return ScheduleAccountDetail(
       accountId: accountId ?? this.accountId,
@@ -42,6 +51,7 @@ class ScheduleAccountDetail {
       workType2: workType2 ?? this.workType2,
       workType3: workType3 ?? this.workType3,
       isRegistered: isRegistered ?? this.isRegistered,
+      isLegacyVisible: isLegacyVisible ?? this.isLegacyVisible,
     );
   }
 
@@ -53,6 +63,7 @@ class ScheduleAccountDetail {
       'workType2': workType2,
       'workType3': workType3,
       'isRegistered': isRegistered,
+      'isLegacyVisible': isLegacyVisible,
     };
   }
 
@@ -64,6 +75,7 @@ class ScheduleAccountDetail {
       workType2: json['workType2'] as String,
       workType3: json['workType3'] as String,
       isRegistered: json['isRegistered'] as bool,
+      isLegacyVisible: json['isLegacyVisible'] as bool? ?? true,
     );
   }
 
@@ -76,7 +88,8 @@ class ScheduleAccountDetail {
         other.workType1 == workType1 &&
         other.workType2 == workType2 &&
         other.workType3 == workType3 &&
-        other.isRegistered == isRegistered;
+        other.isRegistered == isRegistered &&
+        other.isLegacyVisible == isLegacyVisible;
   }
 
   @override
@@ -88,6 +101,7 @@ class ScheduleAccountDetail {
       workType2,
       workType3,
       isRegistered,
+      isLegacyVisible,
     );
   }
 
@@ -95,6 +109,6 @@ class ScheduleAccountDetail {
   String toString() {
     return 'ScheduleAccountDetail(accountId: $accountId, accountName: $accountName, '
         'workType1: $workType1, workType2: $workType2, workType3: $workType3, '
-        'isRegistered: $isRegistered)';
+        'isRegistered: $isRegistered, isLegacyVisible: $isLegacyVisible)';
   }
 }

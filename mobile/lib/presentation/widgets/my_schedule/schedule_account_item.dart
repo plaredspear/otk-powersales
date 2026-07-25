@@ -26,6 +26,12 @@ class ScheduleAccountItem extends StatelessWidget {
   /// 등록 상태 표시 여부 (= 등록 탭 레이아웃 사용 여부)
   final bool showRegistrationStatus;
 
+  /// 부차 항목 여부 (레거시 화면에 노출되지 않던 일정).
+  ///
+  /// true 면 본문을 한 단계 흐린 색으로 낮춰 주 일정과 시각적으로 구분합니다.
+  /// 정보 자체는 동일하게 제공하며 등록 동작에도 제약을 두지 않습니다.
+  final bool isSecondary;
+
   const ScheduleAccountItem({
     super.key,
     required this.accountName,
@@ -34,6 +40,7 @@ class ScheduleAccountItem extends StatelessWidget {
     required this.workType3,
     this.isRegistered,
     this.showRegistrationStatus = false,
+    this.isSecondary = false,
   });
 
   // 레거시: ${c1}/${c2}/${c3} (빈 값은 그대로 슬래시만 노출)
@@ -46,6 +53,17 @@ class ScheduleAccountItem extends StatelessWidget {
     color: AppColors.legacyTextMute,
     height: 1.2,
   );
+
+  /// 부차 항목 본문 색 — 주 일정(#666)보다 한 단계 흐리게
+  static const TextStyle _secondaryBodyStyle = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
+    color: AppColors.legacyRegisteredGray,
+    height: 1.2,
+  );
+
+  TextStyle get _effectiveBodyStyle =>
+      isSecondary ? _secondaryBodyStyle : _bodyStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +79,7 @@ class ScheduleAccountItem extends StatelessWidget {
   Widget _buildScheduleRow() {
     return Text.rich(
       TextSpan(
-        style: _bodyStyle,
+        style: _effectiveBodyStyle,
         children: [
           TextSpan(text: accountName),
           const TextSpan(
@@ -89,16 +107,18 @@ class ScheduleAccountItem extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
                     accountName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.black,
+                      color: isSecondary
+                          ? AppColors.legacyTextMute
+                          : AppColors.black,
                       height: 1.2,
                     ),
                   ),
                 ),
               // 근무유형
-              Text(_categories, style: _bodyStyle),
+              Text(_categories, style: _effectiveBodyStyle),
             ],
           ),
         ),

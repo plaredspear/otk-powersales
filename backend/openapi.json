@@ -14546,6 +14546,9 @@
           "accountName" : {
             "type" : "string"
           },
+          "legacyVisible" : {
+            "type" : "boolean"
+          },
           "registered" : {
             "type" : "boolean"
           },

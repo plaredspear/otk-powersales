@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/entities/daily_schedule_info.dart';
+import '../../domain/entities/schedule_account_detail.dart';
 import '../providers/my_schedule_provider.dart';
 import '../widgets/common/loading_indicator.dart';
 import '../widgets/my_schedule/schedule_account_item.dart';
@@ -232,6 +233,125 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
     );
   }
 
+  /// 부차 항목(레거시 미노출 일정) 안내 다이얼로그
+  void _showSecondaryScheduleInfo() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('참고 일정'),
+        content: const Text(
+          '진열과 행사가 같은 날에 겹칠 때, 기존 시스템은 둘 중 한쪽만 보여주고 '
+          '나머지는 화면에서 생략했습니다.\n\n'
+          '방문할 매장을 놓치지 않도록 생략되던 일정도 함께 표시하되, '
+          '위쪽 목록과 구분해 여기에 모아 둡니다. 위의 보고 완료 건수에는 '
+          '포함되지 않습니다.\n\n'
+          '참고 일정도 동일하게 등록할 수 있으며, 출근을 등록하면 위쪽 목록으로 올라갑니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 부차 항목 그룹 헤더 (구분선 + 라벨 + info 아이콘)
+  Widget _buildSecondaryGroupHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(
+        left: 20,
+        right: 12,
+        top: AppSpacing.md,
+        bottom: AppSpacing.xs,
+      ),
+      decoration: const BoxDecoration(
+        // 주 일정과 명확히 분리하는 상단 구분선
+        border: Border(
+          top: BorderSide(color: AppColors.divider),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            '참고 일정',
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          IconButton(
+            onPressed: _showSecondaryScheduleInfo,
+            icon: const Icon(Icons.info_outline),
+            iconSize: 18,
+            color: AppColors.textSecondary,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(),
+            tooltip: '참고 일정 안내',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 주 일정 → (구분선 + 참고 일정 헤더) → 부차 항목 순으로 목록을 구성한다.
+  ///
+  /// 백엔드가 isLegacyVisible 내림차순으로 정렬해 내려주므로 순서를 그대로 쓰되,
+  /// 경계에 헤더를 삽입한다.
+  Widget _buildAccountList(
+    List<ScheduleAccountDetail> accounts, {
+    required bool showRegistrationStatus,
+  }) {
+    final primary = accounts.where((a) => a.isLegacyVisible).toList();
+    final secondary = accounts.where((a) => !a.isLegacyVisible).toList();
+
+    // 헤더 1개를 부차 항목 앞에 끼워 넣는다 (부차 항목이 없으면 헤더도 없음)
+    final itemCount =
+        primary.length + (secondary.isEmpty ? 0 : 1 + secondary.length);
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (index < primary.length) {
+          return _buildAccountRow(
+            primary[index],
+            showRegistrationStatus: showRegistrationStatus,
+            isSecondary: false,
+          );
+        }
+        if (index == primary.length) {
+          return _buildSecondaryGroupHeader();
+        }
+        final account = secondary[index - primary.length - 1];
+        return _buildAccountRow(
+          account,
+          showRegistrationStatus: showRegistrationStatus,
+          isSecondary: true,
+        );
+      },
+    );
+  }
+
+  Widget _buildAccountRow(
+    ScheduleAccountDetail account, {
+    required bool showRegistrationStatus,
+    required bool isSecondary,
+  }) {
+    return ScheduleAccountItem(
+      accountName: account.accountName,
+      workType1: account.workType1,
+      workType2: account.workType2,
+      workType3: account.workType3,
+      isRegistered: showRegistrationStatus ? account.isRegistered : null,
+      showRegistrationStatus: showRegistrationStatus,
+      isSecondary: isSecondary,
+    );
+  }
+
   /// 일정 탭 콘텐츠
   Widget _buildScheduleTab(state) {
     if (state.scheduleInfo == null) {
@@ -267,18 +387,9 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
 
         // 거래처 목록 (레거시: 행 사이 구분선 없이 6px 간격으로 나열)
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            itemCount: info.accounts.length,
-            itemBuilder: (context, index) {
-              final account = info.accounts[index];
-              return ScheduleAccountItem(
-                accountName: account.accountName,
-                workType1: account.workType1,
-                workType2: account.workType2,
-                workType3: account.workType3,
-              );
-            },
+          child: _buildAccountList(
+            info.accounts,
+            showRegistrationStatus: false,
           ),
         ),
       ],
@@ -356,20 +467,10 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
                     ),
                   ),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  itemCount: state.filteredAccounts.length,
-                  itemBuilder: (context, index) {
-                    final account = state.filteredAccounts[index];
-                    return ScheduleAccountItem(
-                      accountName: account.accountName,
-                      workType1: account.workType1,
-                      workType2: account.workType2,
-                      workType3: account.workType3,
-                      isRegistered: account.isRegistered,
-                      showRegistrationStatus: true,
-                    );
-                  },
+              // 참고 일정도 동일하게 등록할 수 있다 (구분만 두고 동작 제약 없음)
+              : _buildAccountList(
+                  state.filteredAccounts,
+                  showRegistrationStatus: true,
                 ),
         ),
       ],

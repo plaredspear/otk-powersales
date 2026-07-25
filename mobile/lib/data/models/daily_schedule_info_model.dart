@@ -67,6 +67,9 @@ class ScheduleAccountDetailModel {
   final String workType3;
   final bool isRegistered;
 
+  /// 레거시 화면에 노출되던 항목인지 여부 (false = 부차 항목, 카운터 집계 제외)
+  final bool isLegacyVisible;
+
   const ScheduleAccountDetailModel({
     required this.accountId,
     required this.accountName,
@@ -74,6 +77,7 @@ class ScheduleAccountDetailModel {
     required this.workType2,
     required this.workType3,
     required this.isRegistered,
+    this.isLegacyVisible = true,
   });
 
   factory ScheduleAccountDetailModel.fromJson(Map<String, dynamic> json) {
@@ -84,6 +88,8 @@ class ScheduleAccountDetailModel {
       workType2: json['workType2'] as String,
       workType3: json['workType3'] as String,
       isRegistered: json['isRegistered'] as bool,
+      // 구버전 백엔드 응답에는 없는 필드 → 노출분으로 간주
+      isLegacyVisible: json['isLegacyVisible'] as bool? ?? true,
     );
   }
 
@@ -95,6 +101,7 @@ class ScheduleAccountDetailModel {
       'workType2': workType2,
       'workType3': workType3,
       'isRegistered': isRegistered,
+      'isLegacyVisible': isLegacyVisible,
     };
   }
 
@@ -106,6 +113,7 @@ class ScheduleAccountDetailModel {
       workType2: workType2,
       workType3: workType3,
       isRegistered: isRegistered,
+      isLegacyVisible: isLegacyVisible,
     );
   }
 
@@ -117,6 +125,7 @@ class ScheduleAccountDetailModel {
       workType2: entity.workType2,
       workType3: entity.workType3,
       isRegistered: entity.isRegistered,
+      isLegacyVisible: entity.isLegacyVisible,
     );
   }
 
@@ -129,7 +138,8 @@ class ScheduleAccountDetailModel {
         other.workType1 == workType1 &&
         other.workType2 == workType2 &&
         other.workType3 == workType3 &&
-        other.isRegistered == isRegistered;
+        other.isRegistered == isRegistered &&
+        other.isLegacyVisible == isLegacyVisible;
   }
 
   @override
@@ -141,6 +151,7 @@ class ScheduleAccountDetailModel {
       workType2,
       workType3,
       isRegistered,
+      isLegacyVisible,
     );
   }
 }
