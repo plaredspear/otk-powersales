@@ -321,8 +321,8 @@ class OrderRequestDetailMapper {
     /**
      * SD03052 응답 기준 **주문 전체가 납품완료** 인지 판정한다 (취소 버튼 비활성화용).
      *
-     * 취소 시점(마감 전)에는 처리현황 그룹이 응답에서 null 로 강제되지만, SAP 호출 자체는 마감 여부와
-     * 무관하게 수행되므로([OrderRequestService] `fetchDetail`) 원본 [sapLines] 로 납품완료를 판정할 수 있다.
+     * SAP 호출은 마감 여부와 무관하게 수행되므로([OrderRequestService] `fetchDetail`) 취소 시점(마감 전)에도
+     * 원본 [sapLines] 로 납품완료를 판정할 수 있다.
      *
      * 판정 규칙:
      *  - 결품(`DefaultReason` 채워짐)·반려(`SAPOrderNumber` 빈값 && `LineItemStatus` 채워짐) 라인은 제외.

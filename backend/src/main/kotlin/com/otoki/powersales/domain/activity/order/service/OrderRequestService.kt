@@ -174,7 +174,8 @@ class OrderRequestService(
      * 5. SAP 동기 호출 — 마감 여부 무관 항상 수행.
      * 6. SAP 응답 + CRM 라인 결합 → `orderProcessingStatusList[]` + `rejectedItems[]` 빌드.
      *    DefaultReason 코드 분류로 결품/취소 사유맵 산출 (Spec #845).
-     * 7. 마감 전(`isClosed = false`) 시 `orderProcessingStatusList = null` 강제 (Q6 — 레거시 동등).
+     * 7. `orderProcessingStatusList` 는 마감 여부와 무관하게 항상 노출 (2026-07-25 사용자 결정 — 기존
+     *    Q6 "마감 전 null 강제" 제거). SAP 호출 실패/빈 응답일 때만 `null`.
      * 8. 반려 라인은 `orderedItems`/`orderedItemCount` 에서 제외 (레거시 view.jsp:407, 377-383 동등 —
      *    "주문한 제품" 은 반려 제외 목록, 반려는 반려 섹션에만 표시).
      * 9. `totalApprovedAmount` = SAP 응답 전 라인 `OrderSalesAmount` 합산 (레거시 view.jsp:343-348 동등).
@@ -241,8 +242,9 @@ class OrderRequestService(
         val outOfStockReasons = mapped?.outOfStockReasons.orEmpty()
         val cancelledReasons = mapped?.cancelledReasons.orEmpty()
 
-        // 마감 전 — 그룹 응답 매핑 생략 (Q6, 레거시 동등). SAP 호출은 이미 수행.
-        val finalProcessingGroups = if (isClosed) processingGroups else null
+        // 처리현황은 납기일 마감 게이트 없이 항상 노출한다 (2026-07-25 사용자 결정 — 기존 Q6 마감 전
+        // null 강제 제거). 반려/결품/미납 섹션과 동일하게 SAP 응답이 있으면 마감 전에도 그대로 내린다.
+        val finalProcessingGroups = processingGroups
 
         // SAP 주문번호(distinct) — 처리현황과 달리 마감 게이트 없이 헤더에 조기 노출한다(사용자 확인용).
         // SAP 응답 라인에서 비어있지 않은 SAPOrderNumber 를 응답 순서 유지로 중복 제거. 반려 라인은 SAPOrderNumber

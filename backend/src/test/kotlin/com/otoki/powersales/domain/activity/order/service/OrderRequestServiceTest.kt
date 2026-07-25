@@ -485,8 +485,8 @@ class OrderRequestServiceTest {
         }
 
         @Test
-        @DisplayName("성공 — 마감 전(isClosed=false) → orderProcessingStatusList = null (Q6, SAP 호출은 수행)")
-        fun beforeCloseListNull() {
+        @DisplayName("성공 — 마감 전(isClosed=false) 에도 orderProcessingStatusList 노출 (마감 게이트 제거)")
+        fun beforeCloseListExposed() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
             every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
             every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
@@ -497,8 +497,9 @@ class OrderRequestServiceTest {
             val response = service.getOrderRequestDetail(100L, userId = 1L)
 
             assertThat(response.isClosed).isFalse()
-            assertThat(response.orderProcessingStatusList).isNull()
-            // SAP 호출은 수행되었어야 함
+            // 마감 전이어도 SAP 응답이 있으면 처리현황을 그대로 내린다 (2026-07-25 사용자 결정).
+            assertThat(response.orderProcessingStatusList).hasSize(1)
+            assertThat(response.orderProcessingStatusList!![0].sapOrderNumber).isEqualTo("0300004993")
             verify { orderRequestDetailSapSender.fetchDetail(any()) }
         }
 
