@@ -114,6 +114,224 @@ class HomeServiceTest {
             assertThat(result.todaySchedules[0].accountName).isEqualTo("이마트 부산점")
         }
 
+        // ========== 진열 ∪ 행사 출처 선택 (레거시 HomeController:127-144 4단 우선순위) ==========
+
+        @Test
+        @DisplayName("여사원 - 상시 진열과 행사가 같은 날이면 행사 우선 (레거시 promoteTempList > displayTempList)")
+        fun legacyPriority_eventWinsOverRegularDisplay() {
+            // Given — 출근등록 없음 + 진열이 임시가 아님(상시) → 행사가 진열을 밀어낸다.
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20210283", name = "홍유미", role = AppAuthority.WOMAN)
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns listOf(
+                createTeamMemberSchedule(
+                    id = 1L, employeeId = userId, accountId = 51L,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(
+                createDisplayWorkSchedule(
+                    id = 2L, employeeId = userId, accountId = 50L,
+                    typeOfWork5 = TypeOfWork5.REGULAR
+                )
+            )
+            every { accountRepository.findByIdIn(any()) } returns listOf(
+                createAccount(id = 50L, name = "(주)오동"),
+                createAccount(id = 51L, name = "행사거래처")
+            )
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then — 행사만 노출, 상시 진열은 배제
+            assertThat(result.todaySchedules).hasSize(1)
+            assertThat(result.todaySchedules[0].accountId).isEqualTo(51L)
+            assertThat(result.todaySchedules[0].workCategory).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("여사원 - 진열이 임시면 진열 우선 (레거시 tempList > promoteTempList)")
+        fun legacyPriority_temporaryDisplayWinsOverEvent() {
+            // Given
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20210283", name = "홍유미", role = AppAuthority.WOMAN)
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns listOf(
+                createTeamMemberSchedule(
+                    id = 1L, employeeId = userId, accountId = 71L,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(
+                createDisplayWorkSchedule(
+                    id = 2L, employeeId = userId, accountId = 70L,
+                    typeOfWork5 = TypeOfWork5.TEMPORARY
+                )
+            )
+            every { accountRepository.findByIdIn(any()) } returns listOf(
+                createAccount(id = 70L, name = "임시진열거래처"),
+                createAccount(id = 71L, name = "행사거래처")
+            )
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then — 임시 진열만 노출, 행사는 배제
+            assertThat(result.todaySchedules).hasSize(1)
+            assertThat(result.todaySchedules[0].accountId).isEqualTo(70L)
+            assertThat(result.todaySchedules[0].workCategory).isEqualTo("진열")
+            assertThat(result.todaySchedules[0].workCategory2).isEqualTo("임시")
+        }
+
+        @Test
+        @DisplayName("여사원 - 출근등록 완료 시 진열·행사를 함께 노출 (레거시 staticCommList 우선)")
+        fun legacyPriority_registeredKeepsBothSources() {
+            // Given — 출근등록(attendanceLog)이 있으면 배타 선택 없이 진열·행사 모두 유지.
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20210283", name = "홍유미", role = AppAuthority.WOMAN)
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns listOf(
+                createTeamMemberSchedule(
+                    id = 1L, employeeId = userId, accountId = 91L,
+                    workingCategory1 = WorkingCategory1.EVENT,
+                    commuteLogSfid = "a0C000000000001"
+                )
+            )
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(
+                createDisplayWorkSchedule(
+                    id = 2L, employeeId = userId, accountId = 90L,
+                    typeOfWork5 = TypeOfWork5.REGULAR
+                )
+            )
+            every { accountRepository.findByIdIn(any()) } returns listOf(
+                createAccount(id = 90L, name = "상시진열거래처"),
+                createAccount(id = 91L, name = "행사거래처")
+            )
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then — 진열·행사 2건 모두 유지
+            assertThat(result.todaySchedules).hasSize(2)
+            assertThat(result.todaySchedules.map { it.accountId }).containsExactlyInAnyOrder(90L, 91L)
+        }
+
+        @Test
+        @DisplayName("조장 - 우선순위는 팀원별로 독립 적용 (한 팀원의 행사가 다른 팀원 진열을 밀어내지 않음)")
+        fun legacyPriority_appliedPerEmployeeForLeader() {
+            // Given — 레거시는 employeeid__c 기준 판정이므로 팀원 간 간섭이 없어야 한다.
+            val leaderId = 1L
+            val memberId = 2L
+            val leader = createEmployee(id = leaderId, employeeCode = "L001", name = "조장", role = AppAuthority.LEADER)
+            val member = createEmployee(id = memberId, employeeCode = "M002", name = "팀원", role = AppAuthority.WOMAN)
+
+            every { employeeRepository.findById(leaderId) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCode("10010") } returns listOf(leader, member)
+            // 조장은 행사만, 팀원은 진열(상시)만
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns listOf(
+                createTeamMemberSchedule(
+                    id = 1L, employeeId = leaderId, accountId = 101L,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(
+                createDisplayWorkSchedule(
+                    id = 2L, employeeId = memberId, accountId = 102L,
+                    typeOfWork5 = TypeOfWork5.REGULAR
+                )
+            )
+            every { accountRepository.findByIdIn(any()) } returns listOf(
+                createAccount(id = 101L, name = "조장행사거래처"),
+                createAccount(id = 102L, name = "팀원진열거래처")
+            )
+
+            // When
+            val result = homeService.getHomeData(leaderId)
+
+            // Then — 조장 행사 1건 + 팀원 진열 1건 모두 유지
+            assertThat(result.todaySchedules).hasSize(2)
+            assertThat(result.todaySchedules.map { it.employeeCode }).containsExactlyInAnyOrder("L001", "M002")
+        }
+
+        @Test
+        @DisplayName("조장 - 사번(employeeCode) 미보유 팀원 2명이어도 사원 PK 로 분리 판정")
+        fun legacyPriority_nullEmployeeCodeDoesNotMergeGroups() {
+            // Given — Employee.employeeCode 는 nullable(plain UNIQUE 는 NULL 다중 허용)이고
+            // DTO 변환 시 `?: ""` 로 붕괴된다. employeeCode 를 그룹핑 키로 쓰면 사번 미보유 팀원
+            // 2명이 한 그룹("")으로 병합되어 한 사람의 행사가 다른 사람의 진열을 밀어낸다.
+            val leaderId = 1L
+            val memberAId = 2L
+            val memberBId = 3L
+            val leader = createEmployee(id = leaderId, employeeCode = "L001", name = "조장", role = AppAuthority.LEADER)
+            val memberA = createEmployee(id = memberAId, employeeCode = null, name = "사번없는A", role = AppAuthority.WOMAN)
+            val memberB = createEmployee(id = memberBId, employeeCode = null, name = "사번없는B", role = AppAuthority.WOMAN)
+
+            every { employeeRepository.findById(leaderId) } returns Optional.of(leader)
+            every { employeeRepository.findByCostCenterCode("10010") } returns listOf(leader, memberA, memberB)
+            // A 는 행사만
+            every { teamMemberScheduleRepository.findByWorkingDateAndEmployeeIn(any(), any()) } returns listOf(
+                createTeamMemberSchedule(
+                    id = 1L, employeeId = memberAId, accountId = 201L,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+            // B 는 상시 진열만
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(
+                createDisplayWorkSchedule(
+                    id = 2L, employeeId = memberBId, accountId = 202L,
+                    typeOfWork5 = TypeOfWork5.REGULAR
+                )
+            )
+            every { accountRepository.findByIdIn(any()) } returns listOf(
+                createAccount(id = 201L, name = "A행사거래처"),
+                createAccount(id = 202L, name = "B진열거래처")
+            )
+
+            // When
+            val result = homeService.getHomeData(leaderId)
+
+            // Then — A 행사 1건 + B 진열 1건 모두 유지 (employeeCode 로 그룹핑했다면 B 진열이 탈락)
+            assertThat(result.todaySchedules).hasSize(2)
+            assertThat(result.todaySchedules.map { it.accountId }).containsExactlyInAnyOrder(201L, 202L)
+        }
+
+        @Test
+        @DisplayName("여사원 - 진열 workCategory2 가 null 이어도 행사 우선 판정이 정상 동작")
+        fun legacyPriority_nullWorkCategory2FallsThroughToEvent() {
+            // Given — typeOfWork5 미설정 진열(=임시 아님) + 행사 → ③ 행사 우선.
+            // DTO 의 workCategory2 문자열이 아니라 enum 원본으로 판정하는지 확인.
+            val userId = 1L
+            val employee = createEmployee(id = userId, employeeCode = "20210283", name = "홍유미", role = AppAuthority.WOMAN)
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, any()) } returns listOf(
+                createTeamMemberSchedule(
+                    id = 1L, employeeId = userId, accountId = 211L,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdsAndDate(any(), any()) } returns listOf(
+                createDisplayWorkSchedule(
+                    id = 2L, employeeId = userId, accountId = 210L,
+                    typeOfWork5 = null
+                )
+            )
+            every { accountRepository.findByIdIn(any()) } returns listOf(
+                createAccount(id = 210L, name = "진열거래처"),
+                createAccount(id = 211L, name = "행사거래처")
+            )
+
+            // When
+            val result = homeService.getHomeData(userId)
+
+            // Then — 행사만 노출
+            assertThat(result.todaySchedules).hasSize(1)
+            assertThat(result.todaySchedules[0].accountId).isEqualTo(211L)
+        }
+
         // ========== 출근/근태 영역 노출 대상 여부 (attendanceApplicable) ==========
 
         @Test
@@ -711,7 +929,8 @@ class HomeServiceTest {
 
     private fun createEmployee(
         id: Long = 1L,
-        employeeCode: String = "20030117",
+        // Employee.employeeCode 는 nullable (사번 미보유 사원 존재 — plain UNIQUE 는 NULL 다중 허용)
+        employeeCode: String? = "20030117",
         name: String = "최금주",
         orgName: String? = "부산1지점",
         costCenterCode: String? = "10010",

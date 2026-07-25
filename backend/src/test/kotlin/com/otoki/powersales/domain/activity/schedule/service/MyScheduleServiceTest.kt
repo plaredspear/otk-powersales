@@ -14,7 +14,6 @@ import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork3
 import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.foundation.account.entity.Account
-import com.otoki.powersales.domain.activity.schedule.service.MyScheduleService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -354,6 +353,49 @@ class MyScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 상시 진열과 행사가 겹친 날은 행사 기준으로 집계 (일간 상세와 건수 일치)")
+        fun getMonthlySchedule_eventWinsOverRegularDisplay() {
+            // Given — 월간 셀 카운트도 일간 상세와 같은 레거시 승자독식 규칙을 따라야 한다.
+            // 같은 거래처면 과거 Set 합집합에서 totalCount 가 1로 축소돼 증상이 은폐됐다.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+            val displayAccount = Account(id = 80L, name = "상시진열거래처")
+            val eventAccount = Account(id = 81L, name = "행사거래처")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
+                eq(userId), eq(LocalDate.of(2026, 8, 1)), eq(LocalDate.of(2026, 8, 31))
+            ) } returns listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = displayAccount,
+                    startDate = date
+                )
+            )
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any(), any()
+            ) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date,
+                    workingType = WorkingType.WORK,
+                    account = eventAccount,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            // When
+            val result = myScheduleService.getMonthlySchedule(userId, 2026, 8)
+
+            // Then — 행사 1건만 집계 (진열 + 행사 = 2건이 아님)
+            val day1 = result.workDays.first { it.date == "2026-08-01" }
+            assertThat(day1.hasWork).isTrue()
+            assertThat(day1.totalCount).isEqualTo(1)
+            assertThat(day1.completedCount).isEqualTo(0)
+        }
+
+        @Test
         @DisplayName("실패 - 사용자 없음")
         fun getMonthlySchedule_userNotFound() {
             // Given
@@ -454,9 +496,207 @@ class MyScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("성공 - 진열·행사 동일 거래처는 accountId 기준 1건으로 dedup")
+        @DisplayName("성공 - 상시 진열과 행사가 같은 날이면 행사 우선 (레거시 promoteTempList > displayTempList)")
+        fun getDailySchedule_eventWinsOverRegularDisplay() {
+            // Given — 레거시 MyPageController.myDaily:139 정합.
+            // 출근등록 없음 + 진열이 임시가 아님(상시) → 행사가 진열을 밀어낸다.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+            val displayAccount = Account(id = 50L, name = "(주)오동")
+            val eventAccount = Account(id = 51L, name = "행사거래처")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork3 = TypeOfWork3.ROTATION,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = displayAccount,
+                    startDate = date
+                )
+            )
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date,
+                    workingType = WorkingType.WORK,
+                    account = eventAccount,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then — 행사만 노출, 상시 진열은 배제
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountId).isEqualTo(51L)
+            assertThat(result.accounts[0].workType1).isEqualTo("행사")
+            assertThat(result.reportProgress.total).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("성공 - 같은 거래처에 상시 진열과 행사가 겹쳐도 행사가 노출 (거래처 dedup 흡수 회귀 방지)")
+        fun getDailySchedule_eventWinsOnSharedAccountWithoutAttendance() {
+            // Given — 상시 진열과 행사의 거래처가 동일한 실제 사건 재현.
+            // 과거 구현은 accountId dedup + 진열 우선이라 행사가 영구 미노출됐다.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+            val sharedAccount = Account(id = 60L, name = "(주)오동")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork3 = TypeOfWork3.FIXED,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = sharedAccount,
+                    startDate = date
+                )
+            )
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date,
+                    workingType = WorkingType.WORK,
+                    account = sharedAccount,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then — 진열이 아니라 행사가 표시되어야 한다
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].workType1).isEqualTo("행사")
+            assertThat(result.reportProgress.workType).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("성공 - 같은 날 [근무, 연차] 혼재 시 월간 totalCount 와 일간 accounts 건수가 일치")
+        fun monthlyAndDailyAgreeOnMixedLeaveDay() {
+            // Given — 조회에 정렬이 없어 firstOrNull() 이 집는 행이 비결정적이므로,
+            // 연차 판정을 any 로 통일했는지 검증한다. 근무 행이 먼저 오도록 배치.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+            val eventAccount = Account(id = 110L, name = "행사거래처")
+            val schedules = listOf(
+                createMockMemberSchedule(
+                    workingDate = date, workingType = WorkingType.WORK,
+                    account = eventAccount, workingCategory1 = WorkingCategory1.EVENT
+                ),
+                createMockMemberSchedule(
+                    workingDate = date, workingType = WorkingType.ANNUAL_LEAVE,
+                    account = eventAccount, workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns emptyList()
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
+                eq(userId), any(), any()
+            ) } returns emptyList()
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns schedules
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any(), any()
+            ) } returns schedules
+
+            // When
+            val daily = myScheduleService.getDailySchedule(userId, date)
+            val monthly = myScheduleService.getMonthlySchedule(userId, 2026, 8)
+
+            // Then — 양쪽 모두 연차로 판정해 거래처 0건 (한쪽만 0건이면 캘린더/상세 불일치)
+            val day1 = monthly.workDays.first { it.date == "2026-08-01" }
+            assertThat(daily.accounts).hasSize(day1.totalCount)
+            assertThat(daily.accounts).isEmpty()
+            assertThat(day1.hasWork).isFalse()
+            // 라벨도 연차 우선 (근무 라벨 + 거래처 0건 모순 방지)
+            assertThat(daily.workingType).isEqualTo("연차")
+            assertThat(day1.workingType).isEqualTo("연차")
+        }
+
+        @Test
+        @DisplayName("성공 - 출근등록이 진열 임시보다 우선 (① > ②)")
+        fun getDailySchedule_registeredBeatsTemporaryDisplay() {
+            // Given — 진열 임시가 있어도 출근등록 완료행이 있으면 진열·행사를 함께 노출.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+            val displayAccount = Account(id = 120L, name = "임시진열거래처")
+            val eventAccount = Account(id = 121L, name = "행사거래처")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork5 = TypeOfWork5.TEMPORARY,
+                    account = displayAccount,
+                    startDate = date
+                )
+            )
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date, workingType = WorkingType.WORK,
+                    account = eventAccount, attendanceLog = AttendanceLog(id = 300L),
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then — 진열 임시 + 행사 2건 모두 노출, 라벨은 출근등록 행(행사) 기준
+            assertThat(result.accounts).hasSize(2)
+            assertThat(result.accounts.map { it.accountId }).containsExactlyInAnyOrder(120L, 121L)
+            assertThat(result.reportProgress.completed).isEqualTo(1)
+            assertThat(result.reportProgress.workType).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("성공 - 진열이 임시면 진열 우선 (레거시 tempList > promoteTempList)")
+        fun getDailySchedule_temporaryDisplayWinsOverEvent() {
+            // Given — 레거시 MyPageController.myDaily:134,136 정합.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+            val displayAccount = Account(id = 70L, name = "임시진열거래처")
+            val eventAccount = Account(id = 71L, name = "행사거래처")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork5 = TypeOfWork5.TEMPORARY,
+                    account = displayAccount,
+                    startDate = date
+                )
+            )
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns listOf(
+                createMockMemberSchedule(
+                    workingDate = date,
+                    workingType = WorkingType.WORK,
+                    account = eventAccount,
+                    workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then — 임시 진열만 노출, 행사는 배제
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.accounts[0].accountId).isEqualTo(70L)
+            assertThat(result.accounts[0].workType1).isEqualTo("진열")
+            assertThat(result.accounts[0].workType2).isEqualTo("임시")
+        }
+
+        @Test
+        @DisplayName("성공 - 출근등록 완료 시 진열·행사를 합치고 동일 거래처는 accountId 기준 1건으로 dedup")
         fun getDailySchedule_dedupsSharedAccountById() {
-            // Given
+            // Given — 레거시 1순위(staticCommList) 케이스.
+            // 출근등록(attendanceLog)이 있으면 진열/행사 배타 선택 없이 합집합 + 거래처 기준 dedup.
             val userId = 1L
             val date = LocalDate.of(2020, 8, 11)
             val mockUser = createMockEmployee(userId, "최금주", "20030117", sfid = "a0B000000012345")

@@ -6,6 +6,7 @@ import com.otoki.powersales.domain.activity.schedule.dto.response.MonthlySchedul
 import com.otoki.powersales.domain.activity.schedule.dto.response.ReportProgressDto
 import com.otoki.powersales.domain.activity.schedule.dto.response.WorkDayDto
 import com.otoki.powersales.domain.activity.schedule.entity.DisplayWorkSchedule
+import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork5
 import com.otoki.powersales.domain.activity.schedule.repository.DisplayWorkScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.platform.auth.exception.EmployeeNotFoundException
@@ -69,9 +70,14 @@ class MyScheduleService(
         val memberSchedules = teamMemberScheduleRepository
             .findMonthlyByEmployeeIds(listOf(employee.id), startDate, endDate)
         val schedulesByDate = memberSchedules.groupBy { it.workingDate }
-        val workingTypeByDate = memberSchedules
-            .groupBy { it.workingDate }
-            .mapValues { (_, schedules) -> schedules.firstOrNull()?.workingType?.displayName }
+        // 날짜 라벨용 workingType. 연차/대휴가 섞인 날은 그 날 거래처 집계를 비우므로(isLeave),
+        // 라벨도 연차/대휴를 우선 노출해야 "근무" 라벨 + 거래처 0건 이라는 모순이 생기지 않는다.
+        val workingTypeByDate = schedulesByDate.mapValues { (_, schedules) ->
+            val leave = schedules.firstOrNull {
+                it.workingType == WorkingType.ANNUAL_LEAVE || it.workingType == WorkingType.ALT_HOLIDAY
+            }
+            (leave ?: schedules.firstOrNull())?.workingType?.displayName
+        }
 
         // 연차/대휴 건수 카운트
         val annualLeaveCount = memberSchedules.count { it.workingType == WorkingType.ANNUAL_LEAVE }
@@ -89,11 +95,8 @@ class MyScheduleService(
             }
 
             // 진열 거래처: 마스터 기간이 그날을 포함하면 노출 (안전점검 게이트 없음 — 여사원 본인 계획 화면).
-            val displayAccountIds = if (!isLeave) {
-                masters.filter { it.overlapsDate(currentDate) }.mapNotNull { it.account?.id }.toSet()
-            } else {
-                emptySet()
-            }
+            val dayMasters = if (!isLeave) masters.filter { it.overlapsDate(currentDate) } else emptyList()
+            val displayAccountIds = dayMasters.mapNotNull { it.account?.id }.toSet()
 
             // 행사 거래처: 안전점검 게이트 없이 EVENT team_member_schedule (레거시 selectHomeSchedulePromote 정합).
             val eventAccountIds = if (!isLeave) {
@@ -105,13 +108,25 @@ class MyScheduleService(
                 emptySet()
             }
 
-            val accountIds = displayAccountIds + eventAccountIds
-
             // 보고완료(sum): 그날 attendanceLog 존재하는 거래처 (진열/행사 공통, 레거시 commutelogid 유무).
             val attendedAccountIds = daySchedules
                 .filter { it.attendanceLog != null }
                 .mapNotNull { it.account?.id }
                 .toSet()
+
+            // 출처 선택은 일간 상세(getDailySchedule)와 동일한 레거시 승자독식 규칙을 따른다
+            // (레거시 calSchedule 도 myDaily 와 같은 4단 우선순위를 쓰므로 월간 셀 카운트와
+            //  일간 상세 건수가 어긋나지 않아야 한다).
+            //   ① 출근등록 완료 → 진열 ∪ 행사 합집합 ② 진열 임시 → 진열 ③ 행사 → 행사 ④ 진열
+            val hasRegistered = (displayAccountIds + eventAccountIds).any { it in attendedAccountIds }
+            val hasTemporaryDisplay = dayMasters.any { it.typeOfWork5 == TypeOfWork5.TEMPORARY }
+
+            val accountIds = when {
+                hasRegistered -> displayAccountIds + eventAccountIds
+                hasTemporaryDisplay -> displayAccountIds
+                eventAccountIds.isNotEmpty() -> eventAccountIds
+                else -> displayAccountIds
+            }
 
             workDays.add(
                 WorkDayDto(
@@ -148,16 +163,21 @@ class MyScheduleService(
         // 해당 날짜의 TeamMemberSchedule에서 workingType 조회
         val memberSchedules = teamMemberScheduleRepository
             .findByEmployeeIdAndWorkingDate(employee.id, date)
-        val workingType = memberSchedules.firstOrNull()?.workingType
 
-        // 대휴/연차인 경우 거래처 목록 없이 반환
-        if (workingType == WorkingType.ALT_HOLIDAY || workingType == WorkingType.ANNUAL_LEAVE) {
+        // 대휴/연차인 경우 거래처 목록 없이 반환.
+        // 판정은 월간(getMonthlySchedule)과 동일하게 `any` 로 한다 — 조회에 정렬이 없어
+        // `firstOrNull()` 은 DB 반환 순서에 의존하며, 같은 날 [근무, 연차] 2건이 섞이면
+        // 월간 셀은 "근무 없음"인데 그 날을 탭하면 거래처가 나오는 불일치가 생긴다.
+        val leaveSchedule = memberSchedules.firstOrNull {
+            it.workingType == WorkingType.ALT_HOLIDAY || it.workingType == WorkingType.ANNUAL_LEAVE
+        }
+        if (leaveSchedule != null) {
             return DailyScheduleResponse(
                 date = date.toString(),
                 dayOfWeek = dayOfWeek,
                 memberName = employee.name,
                 employeeCode = employee.employeeCode,
-                workingType = workingType.displayName,
+                workingType = leaveSchedule.workingType?.displayName,
                 reportProgress = ReportProgressDto(
                     completed = 0,
                     total = 0,
@@ -212,20 +232,52 @@ class MyScheduleService(
                 )
             }
 
-        // 진열 ∪ 행사 후 거래처 id 기준 중복 제거 (레거시 정합: 출근완료 항목 우선).
-        // accountId = 0L(식별 불가)은 합치지 않고 그대로 둔다.
-        val accountItems = (displayAccountItems + eventAccountItems)
-            .groupBy { it.accountId }
-            .flatMap { (accountId, items) ->
-                if (accountId == 0L) items
-                else listOf(items.firstOrNull { it.isRegistered } ?: items.first())
-            }
+        // 진열 ∪ 행사 출처 선택 (레거시 MyPageController.myDaily 정합).
+        //
+        // 레거시는 사원×날짜 단위로 출처를 "배타적 승자독식"으로 하나 고른 뒤, 선택된 행의
+        // workingcategory1 에 따라 진열/행사 중 한쪽 거래처 목록만 조회한다. 우선순위는
+        //   ① 출근등록 완료 → ② 진열 임시(typeOfWork5=임시) → ③ 행사 → ④ 진열
+        // 즉 출근등록도 없고 진열이 임시도 아니면 행사가 진열을 밀어낸다. 상시 진열이 걸린
+        // 거래처에 행사가 배치되는 정상 운영 케이스에서 행사가 반드시 노출되어야 하기 때문이다.
+        //
+        // 과거 구현은 거래처 id 기준 dedup + 진열 우선이라, 상시 진열과 같은 거래처의 행사가
+        // 영구 미노출됐다(진열이 items.first() 승자). 레거시와 정반대라 교정한다.
+        val hasRegistered = displayAccountItems.any { it.isRegistered } || eventAccountItems.any { it.isRegistered }
+        val hasTemporaryDisplay = schedules.any { it.typeOfWork5 == TypeOfWork5.TEMPORARY }
+
+        val accountItems = when {
+            // ① 출근등록 완료행이 있으면 진열·행사를 함께 노출하고 거래처 기준으로만 합친다.
+            //
+            //    신규 차이 (의도적): 레거시 MyPageController:180-188 은 출근등록 행이 있을 때
+            //    `disAccList` 를 할당하지 않아(:178 빈 리스트 유지), 출근등록 행과 (근무유형1, 근무유형2)
+            //    가 일치하지 않는 미등록 거래처를 버린다. 이는 `else` 분기에만 할당하는 비대칭으로
+            //    의도로 보기 어렵고, 결과가 "한 거래처에 출근등록하면 근무유형이 다른 나머지 거래처가
+            //    화면에서 사라짐" 이라 여사원이 그날 방문할 다른 매장을 놓치는 정보 손실이 된다.
+            //    따라서 잔여 거래처를 누적 노출한다 (레거시 버그 미재현).
+            hasRegistered -> (displayAccountItems + eventAccountItems)
+                .groupBy { it.accountId }
+                .flatMap { (accountId, items) ->
+                    if (accountId == 0L) items
+                    else listOf(items.firstOrNull { it.isRegistered } ?: items.first())
+                }
+            // ② 진열 임시가 있으면 진열 우선 (행사 배제).
+            hasTemporaryDisplay -> displayAccountItems
+            // ③ 행사가 있으면 행사 우선 (진열 배제).
+            eventAccountItems.isNotEmpty() -> eventAccountItems
+            // ④ 나머지는 진열.
+            else -> displayAccountItems
+        }
 
         // 보고 진행 상황 계산
         val completed = accountItems.count { it.isRegistered }
         val total = accountItems.size
-        val workType = schedules.firstOrNull()?.typeOfWork1?.displayName
-            ?: eventAccountItems.firstOrNull()?.workType1
+        // 화면 상단 "N / M 보고 완료 (workType)" 라벨. 진열 마스터를 무조건 먼저 보면 위 우선순위에서
+        // 행사가 선택된 날에도 "진열"로 표기되므로, 실제 선택된 목록의 workType1 을 쓴다.
+        // ① 순위(출근등록)에서는 진열·행사가 섞이는데 삽입 순서상 진열이 앞이라, 출근등록한 행을
+        // 먼저 보고 그 근무유형을 라벨로 쓴다.
+        val labelSource = accountItems.firstOrNull { it.isRegistered } ?: accountItems.firstOrNull()
+        val workType = labelSource?.workType1?.takeIf { it.isNotBlank() }
+            ?: schedules.firstOrNull()?.typeOfWork1?.displayName
             ?: ""
 
         return DailyScheduleResponse(
