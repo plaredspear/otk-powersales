@@ -26,11 +26,7 @@ import com.otoki.powersales.domain.foundation.product.enums.ProductType
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
 import jakarta.persistence.EntityManager
-// ⚠️ 임시(2026-07-25) — 강제 실패 스위치용 import 3개. 스위치 제거 시 함께 지운다.
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.core.env.Environment
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -67,20 +63,7 @@ class OrderRequestCreateService(
     private val orderDeadlineCalculator: OrderDeadlineCalculator,
     private val entityManager: EntityManager,
     private val eventPublisher: ApplicationEventPublisher,
-    // ⚠️ 임시(2026-07-25) — 재고 검증 실패 인라인 표시 QA 용 강제 실패 스위치. 테스트 후 제거 대상.
-    // placeholder 기본값 false(=미설정 환경은 평시 동작). true 는 `application-dev.yml` 에만 존재한다.
-    private val environment: Environment,
-    @Value("\${app.order.debug.force-inventory-violation:false}")
-    private val forceInventoryViolation: Boolean,
 ) {
-
-    // ⚠️ 임시(2026-07-25) — 위 강제 실패 스위치 경고 로그용. 스위치와 함께 제거한다.
-    private val log = LoggerFactory.getLogger(OrderRequestCreateService::class.java)
-
-    // ⚠️ 임시(2026-07-25) — 강제 실패는 **active profile 이 dev** 이고 플래그가 true 일 때만 발동한다.
-    // 설정 실수(운영 EB 환경 속성 오입력 등)로 플래그가 켜져도 dev 밖에서는 동작하지 않도록 이중 게이트.
-    private val forceInventoryViolationActive: Boolean =
-        forceInventoryViolation && environment.matchesProfiles(DEV_PROFILE)
 
     @Transactional
     fun create(userId: Long, request: OrderRequestCreateRequest): OrderRequestCreateResponse {
@@ -227,36 +210,6 @@ class OrderRequestCreateService(
         request: OrderRequestCreateRequest,
         inventoryMap: Map<String, InventoryInfo>,
     ) {
-        // ================= ⚠️ 임시 코드 (2026-07-25) — 테스트 후 제거 ⚠️ =================
-        // 재고 검증 실패의 제품별 인라인 에러 표시를 dev 에서 항상 재현하기 위한 강제 실패 스위치.
-        // active profile 이 dev 이고 `app.order.debug.force-inventory-violation=true`(→ `application-dev.yml`)
-        // 일 때만 동작하며, 전 주문 라인을 "공급제한수량 초과"(ORD_PRODUCT_RESTRICTED) 위반으로 만들어
-        // 등록을 거부한다. 임시저장(OrderDraft)은 재고 검증을 타지 않으므로 영향 없다.
-        // 되돌릴 때: 이 블록 + 생성자 `environment`/`forceInventoryViolation` 파라미터 +
-        // `log`/`forceInventoryViolationActive` 필드 + import 3개 + `DEV_PROFILE` 상수 +
-        // `application-dev.yml` 파일 + 테스트 인자 2줄을 제거한다.
-        if (forceInventoryViolationActive) {
-            log.warn(
-                "[TEMP-DEV] force-inventory-violation=true — 주문 등록 {}건 전 라인을 공급제한 초과로 강제 거부합니다",
-                request.lines.size,
-            )
-            throw OrderProductRestrictedException(
-                request.lines.map { line ->
-                    val info = inventoryMap[line.productCode]
-                    OrderLineViolation(
-                        productCode = line.productCode,
-                        productName = info?.productName ?: line.productCode,
-                        reason = OrderLineViolation.Reason.SUPPLY_LIMIT_EXCEEDED,
-                        message = "공급제한수량 초과",
-                        minOrderQuantity = info?.conversionQuantity?.coerceAtLeast(1),
-                        supplyQuantity = 0,
-                        requestedQuantity = line.quantityPieces,
-                    )
-                },
-            )
-        }
-        // ================= ⚠️ 임시 코드 끝 ⚠️ =================
-
         // 레거시 write.jsp 는 위반 행을 모두 붉게 표시했으므로 첫 위반에서 멈추지 않고 전 라인을 검사해
         // 위반 목록을 모은다. 모바일은 이 목록으로 제품 카드마다 사유를 표시한다.
         val violations = mutableListOf<OrderLineViolation>()
@@ -334,8 +287,6 @@ class OrderRequestCreateService(
     }
 
     companion object {
-        // ⚠️ 임시(2026-07-25) — 강제 실패 스위치 게이트용 프로파일명. 스위치와 함께 제거한다.
-        private const val DEV_PROFILE = "dev"
         private const val UNIT_EA = "EA"
         private val ALLOWED_UNITS = setOf("BOX", "EA")
 
