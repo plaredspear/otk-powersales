@@ -138,7 +138,7 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
 
     it('관리 컬럼 헤더가 사라진다', () => {
       renderPage();
-      expect(screen.queryByText('관리')).not.toBeInTheDocument();
+      expect(screen.queryAllByText('관리')).toHaveLength(0);
     });
 
     it('일괄 확정 전용 행 선택 체크박스가 사라진다', () => {
@@ -154,7 +154,7 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
     });
   });
 
-  describe('쓰기 권한 보유 (EDIT) — 확정 권한 없음', () => {
+  describe('EDIT 만 보유 — 확정/삭제 권한 없음', () => {
     beforeEach(() => {
       setPermissions(['employee_input_criteria_master:R', 'employee_input_criteria_master:E']);
     });
@@ -164,10 +164,14 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
       expect(screen.getByRole('button', { name: /신규 등록/ })).toBeInTheDocument();
     });
 
-    it('행 액션(수정/삭제) 버튼이 노출된다', () => {
+    it('수정 버튼이 노출된다', () => {
       renderPage();
       expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    });
+
+    it('삭제 버튼은 숨겨진다 (DELETE 미보유)', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
     });
 
     it('확정 버튼은 숨겨진다 (확정=시스템 관리자 전용)', () => {
@@ -183,6 +187,32 @@ describe('EmployeeInputCriteriaMasterListPage 권한 게이팅', () => {
     it('일괄 확정 전용 행 선택 체크박스도 숨겨진다', () => {
       renderPage();
       expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('DELETE 만 보유 — 수정 권한 없음', () => {
+    beforeEach(() => {
+      setPermissions(['employee_input_criteria_master:R', 'employee_input_criteria_master:D']);
+    });
+
+    it('삭제 버튼이 노출된다', () => {
+      renderPage();
+      expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    });
+
+    it('수정 버튼은 숨겨진다 (EDIT 미보유)', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: '수정' })).not.toBeInTheDocument();
+    });
+
+    it('신규 등록 버튼은 숨겨진다 (EDIT 미보유)', () => {
+      renderPage();
+      expect(screen.queryByRole('button', { name: /신규 등록/ })).not.toBeInTheDocument();
+    });
+
+    it('관리 컬럼은 유지된다 (삭제가 가능하므로)', () => {
+      renderPage();
+      expect(screen.getAllByText('관리').length).toBeGreaterThan(0);
     });
   });
 

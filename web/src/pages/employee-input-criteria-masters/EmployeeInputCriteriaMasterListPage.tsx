@@ -76,11 +76,12 @@ export default function EmployeeInputCriteriaMasterListPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [form] = Form.useForm<FormValues>();
 
-  // 등록/수정/삭제는 EDIT 가드. 확정(단건·일괄)만 시스템 관리자 전용으로 분리된다 —
-  // SF 권한 모델의 entity × operation 은 object_permissions 4비트(R/C/E/D)에 1:1 매핑이라
-  // "확정" 축을 표현할 수 없어, backend 도 컨트롤러에서 시스템 관리자 판정으로 가드한다.
+  // backend 가드와 1:1 정합 (AdminEmployeeInputCriteriaMasterController):
+  // 등록/수정 = EDIT, 삭제 = DELETE, 확정(단건·일괄) = 시스템 관리자.
+  // 확정은 SF 권한 모델의 4비트(R/C/E/D) 로 표현할 수 없는 축이라 컨트롤러가 직접 판정한다.
   const { hasEntityPermission, isSystemAdmin } = usePermission();
   const canWrite = hasEntityPermission(ENTITY, 'EDIT');
+  const canDelete = hasEntityPermission(ENTITY, 'DELETE');
   const canConfirm = isSystemAdmin;
 
   const { data: items, isLoading, refetch, isFetching } = useEmployeeInputCriteriaMasters(status);
@@ -212,10 +213,13 @@ export default function EmployeeInputCriteriaMasterListPage() {
       align: 'center',
       render: (_, record) => (
         <Space size={4}>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>
-            {/* 확정 레코드는 종료일만 편집 가능(시스템 관리자 예외) — 라벨로 편집 범위를 미리 알린다. */}
-            {record.confirmed && !isSystemAdmin ? '종료일 수정' : '수정'}
-          </Button>
+          {/* 수정 = EDIT. */}
+          {canWrite && (
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>
+              {/* 확정 레코드는 종료일만 편집 가능(시스템 관리자 예외) — 라벨로 편집 범위를 미리 알린다. */}
+              {record.confirmed && !isSystemAdmin ? '종료일 수정' : '수정'}
+            </Button>
+          )}
           {/* 확정은 시스템 관리자 전용. */}
           {canConfirm && !record.confirmed && (
             <Popconfirm
@@ -230,17 +234,20 @@ export default function EmployeeInputCriteriaMasterListPage() {
               </Button>
             </Popconfirm>
           )}
-          <Popconfirm
-            title="삭제"
-            description="해당 레코드를 참조하던 월별 여사원 통합일정의 참조가 비워집니다. 진행하시겠습니까?"
-            onConfirm={() => handleDelete(record)}
-            okText="확인"
-            cancelText="취소"
-          >
-            <Button type="link" size="small" danger>
-              삭제
-            </Button>
-          </Popconfirm>
+          {/* 삭제 = DELETE (EDIT 와 별개 축). */}
+          {canDelete && (
+            <Popconfirm
+              title="삭제"
+              description="해당 레코드를 참조하던 월별 여사원 통합일정의 참조가 비워집니다. 진행하시겠습니까?"
+              onConfirm={() => handleDelete(record)}
+              okText="확인"
+              cancelText="취소"
+            >
+              <Button type="link" size="small" danger>
+                삭제
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -313,8 +320,9 @@ export default function EmployeeInputCriteriaMasterListPage() {
       render: (value: boolean) =>
         value ? <Tag color="green">확정</Tag> : <Tag color="default">미확정</Tag>,
     },
-    // 관리 컬럼(수정·확정·삭제)은 쓰기 권한 보유자에게만 — 셋 다 EDIT 가드라 권한 미보유 시 컬럼 자체를 제거.
-    ...(canWrite ? manageColumn : []),
+    // 관리 컬럼은 수정(EDIT) / 확정(시스템 관리자) / 삭제(DELETE) 중 하나라도 가능할 때만 —
+    // 셋 다 불가하면 빈 컬럼이 남지 않도록 컬럼 자체를 제거.
+    ...(canWrite || canDelete || canConfirm ? manageColumn : []),
   ];
 
   const isSaving = createMutation.isPending || updateMutation.isPending;

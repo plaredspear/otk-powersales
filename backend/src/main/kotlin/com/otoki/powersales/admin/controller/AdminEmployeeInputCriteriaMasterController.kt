@@ -129,7 +129,7 @@ class AdminEmployeeInputCriteriaMasterController(
     }
 
     @DeleteMapping("/{id}")
-    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.EDIT)
+    @RequiresSfPermission(entity = "employee_input_criteria_master", operation = SfPermissionOperation.DELETE)
     fun delete(@PathVariable id: Long): ResponseEntity<ApiResponse<Any?>> {
         service.delete(id)
         return ResponseEntity.ok(ApiResponse.success(null as Any?))
