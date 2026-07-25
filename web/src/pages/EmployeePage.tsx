@@ -18,7 +18,6 @@ import { FEMALE_EMPLOYEE_EXPORT_PATH, type Employee } from '@/api/employee';
 import { usePermission } from '@/hooks/usePermission';
 import DeviceResetModal from '@/pages/employee/components/DeviceResetModal';
 import PasswordResetModal from '@/pages/employee/components/PasswordResetModal';
-import EmployeeRegisterModal from '@/pages/employee/components/EmployeeRegisterModal';
 
 const STATUS_TAG: Record<string, string> = {
   재직: 'green',
@@ -129,13 +128,9 @@ export default function EmployeePage() {
 
   const [deviceTarget, setDeviceTarget] = useState<Employee | null>(null);
   const [passwordTarget, setPasswordTarget] = useState<Employee | null>(null);
-  const [registerOpen, setRegisterOpen] = useState(false);
-  const { hasEntityPermission, hasSystemPermission } = usePermission();
+  const { hasSystemPermission } = usePermission();
   const canResetCredentials = hasSystemPermission('MANAGE_USERS');
-  // "신규 사원 등록" 버튼은 female_employee:CREATE 보유자에게만 노출 — 신규 생성 행위라
-  // EDIT(기존 레코드 수정) 이 아닌 CREATE 로 가드한다. (여사원 READ 만 받은 조장은 미노출.)
-  // 등록 API 도 동일 축 — `POST /api/v1/admin/female-employees/manual` (female_employee:CREATE).
-  const canCreate = hasEntityPermission('female_employee', 'CREATE');
+  // 여사원 현황은 조회 전용 화면 — 사원 등록은 기준정보 > 사원(`/settings/employees`) 에서 관리한다.
 
   const { data, isLoading, isError, error, refetch, isFetching } = useFemaleEmployees({
     status: status || undefined,
@@ -388,11 +383,6 @@ export default function EmployeePage() {
             엑셀 다운로드
           </Button>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-          {canCreate && (
-            <Button type="primary" onClick={() => setRegisterOpen(true)}>
-              + 신규 사원 등록
-            </Button>
-          )}
         </Space>
       </div>
 
@@ -427,14 +417,6 @@ export default function EmployeePage() {
           employee={passwordTarget}
           open={true}
           onClose={() => setPasswordTarget(null)}
-        />
-      )}
-      {registerOpen && (
-        <EmployeeRegisterModal
-          open={true}
-          onClose={() => setRegisterOpen(false)}
-          detailBasePath="/female-employee"
-          isFemaleEmployee
         />
       )}
     </div>

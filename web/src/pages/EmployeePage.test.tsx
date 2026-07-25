@@ -161,7 +161,8 @@ describe('EmployeePage 계정 관리 컬럼 (Spec #582 P2-W)', () => {
   });
 });
 
-describe('EmployeePage 신규 사원 등록 버튼 권한 게이팅', () => {
+// 여사원 현황은 조회 전용 화면 — 사원 등록은 기준정보 > 사원(`/settings/employees`) 에서만 관리한다.
+describe('EmployeePage 조회 전용 (사원 등록 경로 없음)', () => {
   const REGISTER_BUTTON = '+ 신규 사원 등록';
 
   beforeEach(() => {
@@ -169,28 +170,20 @@ describe('EmployeePage 신규 사원 등록 버튼 권한 게이팅', () => {
     listMetaResult.current = listMeta([{ value: 'A001', label: '서울1지점' }]);
   });
 
-  it('female_employee CREATE 미보유 (READ 만) - 등록 버튼 미노출', () => {
+  it('female_employee READ 만 보유 - 등록 버튼 미노출', () => {
     setPermissions([entityPermissionKey('female_employee', 'READ')]);
     renderPage();
     expect(screen.queryByRole('button', { name: REGISTER_BUTTON })).not.toBeInTheDocument();
   });
 
-  it('female_employee EDIT 만 보유 - 등록 버튼 미노출 (생성은 CREATE 로 가드)', () => {
+  it('female_employee CREATE/EDIT 를 모두 보유해도 등록 버튼 미노출 (화면 자체가 조회 전용)', () => {
     setPermissions([
       entityPermissionKey('female_employee', 'READ'),
+      entityPermissionKey('female_employee', 'CREATE'),
       entityPermissionKey('female_employee', 'EDIT'),
     ]);
     renderPage();
     expect(screen.queryByRole('button', { name: REGISTER_BUTTON })).not.toBeInTheDocument();
-  });
-
-  it('female_employee CREATE 보유 - 등록 버튼 노출', () => {
-    setPermissions([
-      entityPermissionKey('female_employee', 'READ'),
-      entityPermissionKey('female_employee', 'CREATE'),
-    ]);
-    renderPage();
-    expect(screen.getByRole('button', { name: REGISTER_BUTTON })).toBeInTheDocument();
   });
 });
 

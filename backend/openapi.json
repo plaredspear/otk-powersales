@@ -31737,34 +31737,6 @@
         "tags" : [ "admin-female-employee-controller" ]
       }
     },
-    "/api/v1/admin/female-employees/manual" : {
-      "post" : {
-        "operationId" : "manualRegisterFemaleEmployee",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AdminEmployeeManualRegisterRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseEmployeeDetailResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-female-employee-controller" ]
-      }
-    },
     "/api/v1/admin/female-employees/meta" : {
       "get" : {
         "operationId" : "getFemaleEmployeeListMeta",

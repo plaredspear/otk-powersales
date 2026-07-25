@@ -9,14 +9,6 @@ import { PPT_TEAM_TYPES, type PPTTeamType } from '@/constants/pptTeamType';
 interface EmployeeRegisterModalProps {
   open: boolean;
   onClose: () => void;
-  /** 등록 완료 후 이동할 상세 페이지의 base path (예: '/female-employee'). 기본값은 '/employee'. */
-  detailBasePath?: string;
-  /**
-   * 여사원 현황에서 열렸는지 여부. true 면 `female_employee:CREATE` 로 가드되는 여사원 전용
-   * 등록 endpoint 를 호출한다 (조장 등 여사원 권한만 가진 직책도 등록 가능).
-   * 기본값 false — 설정>사원 목록은 공용 `employee:EDIT` endpoint 를 쓴다.
-   */
-  isFemaleEmployee?: boolean;
 }
 
 interface FormValues {
@@ -46,14 +38,9 @@ const MANUAL_REGISTER_ROLES: Array<{ value: AppAuthority; label: string }> = [
   { value: 'AccountViewAll', label: 'AccountViewAll' },
 ];
 
-export default function EmployeeRegisterModal({
-  open,
-  onClose,
-  detailBasePath = '/employee',
-  isFemaleEmployee = false,
-}: EmployeeRegisterModalProps) {
+export default function EmployeeRegisterModal({ open, onClose }: EmployeeRegisterModalProps) {
   const [form] = Form.useForm<FormValues>();
-  const mutation = useManualRegisterEmployee(isFemaleEmployee);
+  const mutation = useManualRegisterEmployee();
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
@@ -83,7 +70,7 @@ export default function EmployeeRegisterModal({
       });
       form.resetFields();
       onClose();
-      navigate(`${detailBasePath}/${result.id}`);
+      navigate(`/employee/${result.id}`);
     } catch (err) {
       if (err && typeof err === 'object' && 'errorFields' in err) {
         return;

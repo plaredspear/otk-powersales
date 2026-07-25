@@ -8,7 +8,6 @@ import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResponseUtils
-import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeManualRegisterRequest
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListResponse
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterMeta
@@ -18,21 +17,17 @@ import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListM
 import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
 import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
-import com.otoki.powersales.domain.org.employee.service.AdminEmployeeManualRegisterService
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
-import jakarta.validation.Valid
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.YearMonth
@@ -69,7 +64,6 @@ class AdminFemaleEmployeeController(
     private val adminEmployeeService: AdminEmployeeService,
     private val employeeWorkHistoryService: EmployeeWorkHistoryService,
     private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
-    private val adminEmployeeManualRegisterService: AdminEmployeeManualRegisterService,
     private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
     private val branchCodeExpander: BranchCodeExpander,
 ) {
@@ -230,29 +224,6 @@ class AdminFemaleEmployeeController(
         }
         val response = employeeWorkHistoryService.getMonthlyHistory(employeeId, parsed)
         return ResponseEntity.ok(ApiResponse.success(response))
-    }
-
-    /**
-     * 여사원 수동 등록 — [AdminEmployeeController.manualRegister] 와 동일 동작이나
-     * `female_employee:CREATE` 권한으로 가드. 여사원 현황 화면의 "신규 사원 등록" 전용.
-     *
-     * 공용 endpoint(`POST /api/v1/admin/employees/manual`) 는 `employee:EDIT` 가드라, 조장 등
-     * 여사원 권한만 가진 직책은 호출할 수 없었다. 상세/근무이력과 동일하게 본 컨트롤러로 분리해
-     * 여사원 권한만으로 등록까지 완결되도록 한다 — 생성 행위이므로 EDIT 이 아닌 CREATE 로 가드
-     * (화면의 버튼 게이팅과 동일 축).
-     *
-     * 등록 자체의 정책(origin=MANUAL 고정 / role picklist 4종 제한 / appLoginActive=false 시작)은
-     * 공용 endpoint 와 동일한 [AdminEmployeeManualRegisterService] 를 재사용해 분기 없이 일치시킨다.
-     */
-    @PostMapping("/manual")
-    @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.CREATE)
-    fun manualRegisterFemaleEmployee(
-        @Valid @RequestBody request: AdminEmployeeManualRegisterRequest,
-    ): ResponseEntity<ApiResponse<EmployeeDetailResponse>> {
-        val response = adminEmployeeManualRegisterService.register(request)
-        return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .body(ApiResponse.success(response, "사원이 등록되었습니다"))
     }
 
     /**
