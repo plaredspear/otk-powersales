@@ -8374,6 +8374,24 @@
         "tags" : [ "fcm-token-controller" ]
       }
     },
+    "/api/v1/mobile/fcm-token/badge" : {
+      "delete" : {
+        "operationId" : "clearBadge",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "fcm-token-controller" ]
+      }
+    },
     "/api/v1/mobile/holidays" : {
       "get" : {
         "operationId" : "getHolidays",
