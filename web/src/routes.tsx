@@ -219,7 +219,12 @@ export const router = createBrowserRouter(
                 { path: '/settings/alternative-holidays', element: <LazyWrapper><AlternativeHolidayPage /></LazyWrapper> },
                 { path: '/settings/organizations', element: <LazyWrapper><OrganizationPage /></LazyWrapper> },
                 { path: '/settings/holiday-masters', element: <LazyWrapper><HolidayMasterListPage /></LazyWrapper> },
-                { path: '/settings/employee-input-criteria-masters', element: <LazyWrapper><EmployeeInputCriteriaMasterListPage /></LazyWrapper> },
+                {
+                  element: <PermissionRoute entity="employee_input_criteria_master" operation="READ" />,
+                  children: [
+                    { path: '/settings/employee-input-criteria-masters', element: <LazyWrapper><EmployeeInputCriteriaMasterListPage /></LazyWrapper> },
+                  ],
+                },
                 {
                   element: <RoleRoute allowedProfileNames={['시스템 관리자']} />,
                   children: [

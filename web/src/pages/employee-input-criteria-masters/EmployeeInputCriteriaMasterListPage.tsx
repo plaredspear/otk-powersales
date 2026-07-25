@@ -36,8 +36,11 @@ import type {
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import { listTableLocale } from '@/lib/listTableLocale';
+import { usePermission } from '@/hooks/usePermission';
 
 const { Title, Text } = Typography;
+
+const ENTITY = 'employee_input_criteria_master';
 
 /** 목록 meta 로드 전 초기 상태값. 로드 후 서버 기본값(defaults.status)으로 동기화된다. */
 const INITIAL_STATUS: ValidStatusFilter = 'ALL';
@@ -72,6 +75,12 @@ export default function EmployeeInputCriteriaMasterListPage() {
   const [editingItem, setEditingItem] = useState<EmployeeInputCriteriaMaster | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [form] = Form.useForm<FormValues>();
+
+  // 등록/수정/확정/일괄확정/삭제 5개 쓰기 액션 모두 backend 가 EDIT 단일로 가드한다
+  // (AdminEmployeeInputCriteriaMasterController). PPT마스터처럼 CREATE/DELETE 를 분리해 게이팅하면
+  // 실제 API 가드와 어긋나므로(권한 평가는 operation 간 함의 없는 정확 매칭) EDIT 단일 기준을 따른다.
+  const { hasEntityPermission } = usePermission();
+  const canWrite = hasEntityPermission(ENTITY, 'EDIT');
 
   const { data: items, isLoading, refetch, isFetching } = useEmployeeInputCriteriaMasters(status);
   const { data: formMeta } = useEmployeeInputCriteriaMasterFormMeta();
@@ -195,6 +204,45 @@ export default function EmployeeInputCriteriaMasterListPage() {
     }
   };
 
+  const manageColumn: ColumnsType<EmployeeInputCriteriaMaster> = [
+    {
+      title: '관리',
+      width: 220,
+      align: 'center',
+      render: (_, record) => (
+        <Space size={4}>
+          <Button type="link" size="small" onClick={() => handleEdit(record)}>
+            수정
+          </Button>
+          {!record.confirmed && (
+            <Popconfirm
+              title="확정"
+              description="확정 후에는 「종료일」이외는 편집할 수 없습니다. 진행하시겠습니까?"
+              onConfirm={() => handleConfirm(record)}
+              okText="확인"
+              cancelText="취소"
+            >
+              <Button type="link" size="small">
+                확정
+              </Button>
+            </Popconfirm>
+          )}
+          <Popconfirm
+            title="삭제"
+            description="해당 레코드를 참조하던 월별 여사원 통합일정의 참조가 비워집니다. 진행하시겠습니까?"
+            onConfirm={() => handleDelete(record)}
+            okText="확인"
+            cancelText="취소"
+          >
+            <Button type="link" size="small" danger>
+              삭제
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
   const columns: ColumnsType<EmployeeInputCriteriaMaster> = [
     {
       title: '유효',
@@ -262,42 +310,8 @@ export default function EmployeeInputCriteriaMasterListPage() {
       render: (value: boolean) =>
         value ? <Tag color="green">확정</Tag> : <Tag color="default">미확정</Tag>,
     },
-    {
-      title: '관리',
-      width: 220,
-      align: 'center',
-      render: (_, record) => (
-        <Space size={4}>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>
-            수정
-          </Button>
-          {!record.confirmed && (
-            <Popconfirm
-              title="확정"
-              description="확정 후에는 「종료일」이외는 편집할 수 없습니다. 진행하시겠습니까?"
-              onConfirm={() => handleConfirm(record)}
-              okText="확인"
-              cancelText="취소"
-            >
-              <Button type="link" size="small">
-                확정
-              </Button>
-            </Popconfirm>
-          )}
-          <Popconfirm
-            title="삭제"
-            description="해당 레코드를 참조하던 월별 여사원 통합일정의 참조가 비워집니다. 진행하시겠습니까?"
-            onConfirm={() => handleDelete(record)}
-            okText="확인"
-            cancelText="취소"
-          >
-            <Button type="link" size="small" danger>
-              삭제
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
+    // 관리 컬럼(수정·확정·삭제)은 쓰기 권한 보유자에게만 — 셋 다 EDIT 가드라 권한 미보유 시 컬럼 자체를 제거.
+    ...(canWrite ? manageColumn : []),
   ];
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -332,21 +346,26 @@ export default function EmployeeInputCriteriaMasterListPage() {
         />
         <Space>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-          <Popconfirm
-            title="일괄 확정"
-            description={`선택한 ${selectedRowKeys.length}건을 일괄 확정합니다. 진행하시겠습니까?`}
-            onConfirm={handleBulkConfirm}
-            okText="확인"
-            cancelText="취소"
-            disabled={selectedRowKeys.length === 0}
-          >
-            <Button disabled={selectedRowKeys.length === 0} loading={bulkConfirmMutation.isPending}>
-              일괄 확정 ({selectedRowKeys.length})
+          {/* 일괄 확정·신규 등록 모두 EDIT 가드 — 권한 미보유 시 숨김(선택 0건 disabled 는 업무 조건 분기로 별개). */}
+          {canWrite && (
+            <Popconfirm
+              title="일괄 확정"
+              description={`선택한 ${selectedRowKeys.length}건을 일괄 확정합니다. 진행하시겠습니까?`}
+              onConfirm={handleBulkConfirm}
+              okText="확인"
+              cancelText="취소"
+              disabled={selectedRowKeys.length === 0}
+            >
+              <Button disabled={selectedRowKeys.length === 0} loading={bulkConfirmMutation.isPending}>
+                일괄 확정 ({selectedRowKeys.length})
+              </Button>
+            </Popconfirm>
+          )}
+          {canWrite && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              신규 등록
             </Button>
-          </Popconfirm>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            신규 등록
-          </Button>
+          )}
         </Space>
       </div>
 
@@ -357,11 +376,16 @@ export default function EmployeeInputCriteriaMasterListPage() {
         loading={isLoading}
         pagination={false}
         locale={listTableLocale()}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-          getCheckboxProps: (record) => ({ disabled: record.confirmed }),
-        }}
+        // 체크박스는 일괄 확정 전용 — 쓰기 권한 없으면 선택할 대상 액션이 없으므로 함께 숨긴다.
+        rowSelection={
+          canWrite
+            ? {
+                selectedRowKeys,
+                onChange: setSelectedRowKeys,
+                getCheckboxProps: (record) => ({ disabled: record.confirmed }),
+              }
+            : undefined
+        }
         scroll={{ x: 1400 }}
       />
 
