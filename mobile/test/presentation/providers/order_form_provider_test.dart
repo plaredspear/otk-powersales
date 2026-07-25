@@ -798,10 +798,14 @@ void main() {
         expect(restricted.message, '공급제한수량 초과');
         expect(restricted.supplyQuantity, 0);
         expect(restricted.minOrderQuantity, 20);
+        // 서버가 준 에러 시점 수량 — 이후 수량이 이 값과 달라지면 카드 테두리가 주황으로 바뀐다.
+        expect(restricted.requestedQuantity, 36);
         expect(
           notifier.state.validationErrors['P003']!.errorType,
           ValidationErrorType.minOrderQuantity,
         );
+        // 서버가 requestedQuantity 를 안 준 위반(환산 오류)은 현재 라인 총 EA(1박스 × 20)로 스냅샷.
+        expect(notifier.state.validationErrors['P003']!.requestedQuantity, 20);
         // SnackBar 는 요약만 (레거시도 상세는 행에 표시).
         expect(notifier.state.errorMessage, '주문할 수 없는 제품이 2건 있습니다');
       });
@@ -820,6 +824,41 @@ void main() {
 
         await notifier.validateAndSubmitOrder();
         await notifier.confirmSubmit();
+
+        expect(notifier.state.validationErrors, isEmpty);
+      });
+    });
+
+    group('인라인 에러 + 수량 수정 표시', () {
+      test('수량을 고쳐도 에러 메시지/지표는 그대로 유지된다', () {
+        const original = ValidationError(
+          errorType: ValidationErrorType.supplyQuantity,
+          message: '공급제한수량 초과',
+          minOrderQuantity: 20,
+          supplyQuantity: 0,
+          requestedQuantity: 20,
+        );
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(
+            items: [_item('P001', boxes: 1)],
+          ),
+          validationErrors: {'P001': original},
+        );
+
+        notifier.updateProductQuantity('P001', 2, 0);
+
+        // 사유·지표·에러 시점 수량(주황 판정 기준)이 모두 그대로 남는다.
+        expect(notifier.state.validationErrors['P001'], original);
+      });
+
+      test('에러가 없는 제품의 수량 변경은 에러 맵을 만들지 않는다', () {
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(
+            items: [_item('P001', boxes: 1)],
+          ),
+        );
+
+        notifier.updateProductQuantity('P001', 3, 0);
 
         expect(notifier.state.validationErrors, isEmpty);
       });

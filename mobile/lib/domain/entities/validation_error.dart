@@ -53,12 +53,22 @@ class ValidationError {
   /// DC 수량
   final int? dcQuantity;
 
+  /// 이 에러가 발생한 시점에 검증된 요청 수량 (총 EA).
+  ///
+  /// 수량을 고쳐도 서버 재검증(승인요청) 전까지는 위반 사실이 유효하므로 메시지는 유지하고,
+  /// 대신 **현재 수량 ≠ 이 값** 일 때 카드 테두리를 주황으로 바꿔 "고친 줄 / 아직 안 고친 줄" 을
+  /// 구분한다. 수정 이벤트가 아니라 값 비교라서, 고쳤다가 원래 수량으로 되돌리면 다시 붉게 돌아온다.
+  ///
+  /// 서버 violations 의 `requestedQuantity` 를 그대로 받고, 없으면 에러 표시 시점의 총 EA 를 스냅샷한다.
+  final int? requestedQuantity;
+
   const ValidationError({
     required this.errorType,
     required this.message,
     this.minOrderQuantity,
     this.supplyQuantity,
     this.dcQuantity,
+    this.requestedQuantity,
   });
 
   ValidationError copyWith({
@@ -67,6 +77,7 @@ class ValidationError {
     int? minOrderQuantity,
     int? supplyQuantity,
     int? dcQuantity,
+    int? requestedQuantity,
   }) {
     return ValidationError(
       errorType: errorType ?? this.errorType,
@@ -74,6 +85,7 @@ class ValidationError {
       minOrderQuantity: minOrderQuantity ?? this.minOrderQuantity,
       supplyQuantity: supplyQuantity ?? this.supplyQuantity,
       dcQuantity: dcQuantity ?? this.dcQuantity,
+      requestedQuantity: requestedQuantity ?? this.requestedQuantity,
     );
   }
 
@@ -84,6 +96,7 @@ class ValidationError {
       'minOrderQuantity': minOrderQuantity,
       'supplyQuantity': supplyQuantity,
       'dcQuantity': dcQuantity,
+      'requestedQuantity': requestedQuantity,
     };
   }
 
@@ -94,6 +107,7 @@ class ValidationError {
       minOrderQuantity: json['minOrderQuantity'] as int?,
       supplyQuantity: json['supplyQuantity'] as int?,
       dcQuantity: json['dcQuantity'] as int?,
+      requestedQuantity: json['requestedQuantity'] as int?,
     );
   }
 
@@ -105,7 +119,8 @@ class ValidationError {
         other.message == message &&
         other.minOrderQuantity == minOrderQuantity &&
         other.supplyQuantity == supplyQuantity &&
-        other.dcQuantity == dcQuantity;
+        other.dcQuantity == dcQuantity &&
+        other.requestedQuantity == requestedQuantity;
   }
 
   @override
@@ -116,6 +131,7 @@ class ValidationError {
       minOrderQuantity,
       supplyQuantity,
       dcQuantity,
+      requestedQuantity,
     );
   }
 
@@ -123,7 +139,8 @@ class ValidationError {
   String toString() {
     return 'ValidationError(errorType: $errorType, message: $message, '
         'minOrderQuantity: $minOrderQuantity, '
-        'supplyQuantity: $supplyQuantity, dcQuantity: $dcQuantity)';
+        'supplyQuantity: $supplyQuantity, dcQuantity: $dcQuantity, '
+        'requestedQuantity: $requestedQuantity)';
   }
 }
 

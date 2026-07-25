@@ -60,6 +60,10 @@ abstract final class AppColors {
   /// 주의 상태
   static const Color warning = Color(0xFFFF8F00);
 
+  /// 주의 배경 (연한 주황) — [errorLight] 와 같은 Material 50 계열.
+  /// "아직 해결되지 않았고 재확인이 필요한" 상태 표시용 (초록·파랑 = 정상 과 구분).
+  static const Color warningLight = Color(0xFFFFF3E0);
+
   /// 정보성 메시지
   static const Color info = Color(0xFF1976D2);
 

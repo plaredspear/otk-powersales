@@ -492,17 +492,15 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
 
     final totalAmount = updatedItems.fold(0, (sum, item) => sum + item.totalPrice);
 
-    // 해당 제품의 유효성 에러 제거
-    final updatedValidationErrors =
-        Map<String, ValidationError>.from(state.validationErrors);
-    updatedValidationErrors.remove(productCode);
-
+    // 인라인 에러는 건드리지 않는다 — 수량을 고쳐도 서버 재검증(승인요청) 전까지는 위반 사실이
+    // 그대로 유효하므로, 사유를 보면서 수치를 조정할 수 있어야 한다(2026-07-25 사용자 결정).
+    // "고친 줄" 표시는 별도 플래그가 아니라 `ValidationError.requestedQuantity`(에러 시점 총 EA) 와
+    // 현재 총 EA 의 비교로 카드가 판단한다 — 되돌리면 다시 붉게 돌아온다.
     state = state.copyWith(
       orderDraft: state.orderDraft.copyWith(
         items: updatedItems,
         totalAmount: totalAmount,
       ),
-      validationErrors: updatedValidationErrors,
     );
   }
 
@@ -723,9 +721,23 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
             : '주문할 수 없는 제품입니다',
         minOrderQuantity: _asInt(raw['minOrderQuantity']),
         supplyQuantity: _asInt(raw['supplyQuantity']),
+        // 에러 시점 수량(총 EA) — 카드가 "현재 수량 ≠ 이 값" 일 때 테두리를 주황으로 바꾼다.
+        // 서버가 값을 안 주는 위반 유형(환산 위반 등)은 현재 라인의 총 EA 로 스냅샷한다.
+        requestedQuantity:
+            _asInt(raw['requestedQuantity']) ?? _currentTotalPieces(productCode),
       );
     }
     return result.isEmpty ? null : result;
+  }
+
+  /// 주문 라인의 현재 총 EA (박스 × 박스입수 + 낱개). 라인이 없으면 null.
+  int? _currentTotalPieces(String productCode) {
+    for (final item in state.orderDraft.items) {
+      if (item.productCode == productCode) {
+        return (item.quantityBoxes * item.boxSize).round() + item.quantityPieces;
+      }
+    }
+    return null;
   }
 
   int? _asInt(Object? value) {

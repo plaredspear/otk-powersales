@@ -49,14 +49,22 @@ class OrderProductCard extends StatelessWidget {
     // 레거시 write.jsp: 총 EA = 박스 × 1박스당 EA + 낱개.
     final totalEach =
         (item.quantityBoxes * item.boxSize).round() + item.quantityPieces;
+    // 에러가 표시된 줄에서 수량이 **에러 시점 수량과 달라지면** 사유(메시지)는 유지한 채 사유 블록
+    // 배경만 분홍(errorLight) → 연한 파랑(infoLight) 으로 바꿔 "고친 줄 / 아직 안 고친 줄" 을 구분한다
+    // (2026-07-25 사용자 결정 — 테두리색 변경은 인지가 어려워 배경으로 변경. 테두리는 빨강 유지).
+    // 수정 이벤트가 아니라 값 비교이므로, 원래 수량으로 되돌리면 다시 분홍으로 돌아온다.
+    final validatedQuantity = validationError?.requestedQuantity;
+    final isQuantityChanged =
+        validatedQuantity != null && totalEach != validatedQuantity;
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        side: hasError
-            ? BorderSide(color: AppColors.error, width: 1)
-            : BorderSide(color: AppColors.border, width: 1),
+        side: BorderSide(
+          color: hasError ? AppColors.error : AppColors.border,
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,7 +197,11 @@ class OrderProductCard extends StatelessWidget {
               width: double.infinity,
               padding: AppSpacing.cardPadding,
               decoration: BoxDecoration(
-                color: AppColors.errorLight,
+                // 수량을 고친 줄은 연한 주황 — 아직 안 고친 분홍 줄과 구분되면서도 "해결됨" 으로는
+                // 읽히지 않는다(초록·파랑 회피). 실제 해소 여부는 승인요청 재검증으로만 확정된다.
+                color: isQuantityChanged
+                    ? AppColors.warningLight
+                    : AppColors.errorLight,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(AppSpacing.radiusMd),
                   bottomRight: Radius.circular(AppSpacing.radiusMd),
