@@ -253,56 +253,69 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
     );
   }
 
-  /// 부차 항목 그룹 헤더 — 구분선 + 라벨 + 상시 노출 callout.
+  /// 부차 항목 그룹 헤더 — 여백 + 구분선 + 여백 + 라벨 + 상시 노출 callout.
+  ///
+  /// 주 일정 바로 뒤에 붙으면 같은 목록으로 읽히므로, 구분선 위아래로 넉넉한
+  /// 빈 여백을 둬서 두 영역이 확실히 갈라져 보이게 한다.
   ///
   /// 표시 사유를 아이콘 뒤에 숨기지 않고 항상 문구로 보여준다. 상단 카운터가
   /// 레거시 정합(노출분만 집계)이라 "0 / 1" 인데 목록은 그보다 많아 보이는데,
   /// 이 불일치를 사용자가 바로 납득할 수 있어야 하기 때문이다.
   Widget _buildSecondaryGroupHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, AppSpacing.md, 20, AppSpacing.sm),
-      decoration: const BoxDecoration(
-        // 주 일정과 명확히 분리하는 상단 구분선
-        border: Border(
-          top: BorderSide(color: AppColors.divider),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 주 일정 영역과의 분리: 위쪽에 큰 빈 여백 → 구분선 → 참고 일정은 바로 이어짐
+        const SizedBox(height: AppSpacing.xxxl * 2),
+        const Divider(
+          height: 1,
+          thickness: 1,
+          color: AppColors.divider,
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '참고 일정',
-            style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w600,
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            20,
+            AppSpacing.lg,
+            20,
+            AppSpacing.sm,
           ),
-          const SizedBox(height: AppSpacing.xs),
-          // 안내 callout (배경 밴드 + 좌측 강조선)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 10,
-            ),
-            decoration: const BoxDecoration(
-              color: AppColors.legacyCounterBg,
-              border: Border(
-                left: BorderSide(color: AppColors.legacySlate, width: 3),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '참고 일정',
+                style: AppTypography.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            child: Text(
-              '진열·행사가 겹쳐 기존 화면에서는 생략되던 일정입니다.\n'
-              '보고 완료 건수에는 포함되지 않습니다.',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.legacyTextMute,
-                height: 1.4,
+              const SizedBox(height: AppSpacing.xs),
+              // 안내 callout (배경 밴드 + 좌측 강조선)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: const BoxDecoration(
+                  color: AppColors.legacyCounterBg,
+                  border: Border(
+                    left: BorderSide(color: AppColors.legacySlate, width: 3),
+                  ),
+                ),
+                child: Text(
+                  '진열·행사가 겹쳐 기존 화면에서는 생략되던 일정입니다.\n'
+                  '보고 완료 건수에는 포함되지 않습니다.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.legacyTextMute,
+                    height: 1.4,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -421,6 +434,13 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
 
     final info = state.scheduleInfo!;
 
+    // 등록 탭은 레거시 노출 대상(주 일정)만 다룬다.
+    // 참고 일정은 보고 완료 건수에도 잡히지 않는 부가 정보라 등록 목록에서는 감춘다.
+    final List<ScheduleAccountDetail> registrationAccounts =
+        (state.filteredAccounts as List<ScheduleAccountDetail>)
+            .where((a) => a.isLegacyVisible)
+            .toList();
+
     return _refreshable(
       Column(
         children: [
@@ -474,7 +494,7 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
 
           // 거래처 목록 (필터 적용)
           Expanded(
-            child: state.filteredAccounts.isEmpty
+            child: registrationAccounts.isEmpty
                 ? RefreshableCenter(
                     child: Text(
                       state.showOnlyUnregistered
@@ -485,9 +505,8 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
                       ),
                     ),
                   )
-                // 참고 일정도 동일하게 등록할 수 있다 (구분만 두고 동작 제약 없음)
                 : _buildAccountList(
-                    state.filteredAccounts,
+                    registrationAccounts,
                     showRegistrationStatus: true,
                   ),
           ),
