@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../providers/my_schedule_provider.dart';
 import '../widgets/common/loading_indicator.dart';
+import '../widgets/common/refreshable_center.dart';
 import '../widgets/my_schedule/calendar_widget.dart';
 
 /// 마이페이지 일정 캘린더 화면
@@ -130,9 +131,9 @@ class _MyScheduleCalendarPageState
             child: RefreshIndicator(
               onRefresh: _refresh,
               child: state.isLoading
-                  ? const _RefreshableCenter(child: LoadingIndicator())
+                  ? const RefreshableCenter(child: LoadingIndicator())
                   : state.errorMessage != null
-                      ? _RefreshableCenter(
+                      ? RefreshableCenter(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -180,29 +181,6 @@ class _MyScheduleCalendarPageState
           ),
         ],
       ),
-    );
-  }
-}
-
-/// 로딩/에러 상태에서도 아래로 당겨 새로고침 제스처가 동작하도록,
-/// 자식을 뷰포트 높이만큼 채워 중앙 정렬하는 스크롤 가능한 컨테이너.
-class _RefreshableCenter extends StatelessWidget {
-  const _RefreshableCenter({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(child: child),
-          ),
-        );
-      },
     );
   }
 }

@@ -9,6 +9,7 @@ import '../../domain/entities/daily_schedule_info.dart';
 import '../../domain/entities/schedule_account_detail.dart';
 import '../providers/my_schedule_provider.dart';
 import '../widgets/common/loading_indicator.dart';
+import '../widgets/common/refreshable_center.dart';
 import '../widgets/my_schedule/schedule_account_item.dart';
 
 /// 마이페이지 일정 상세 화면
@@ -38,10 +39,27 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
 
     // 선택한 날짜의 일정 상세 데이터 로드
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(myScheduleDetailProvider.notifier)
-          .loadDailySchedule(widget.selectedDate);
+      if (!mounted) return;
+      _refresh();
     });
+  }
+
+  Future<void> _refresh() {
+    return ref
+        .read(myScheduleDetailProvider.notifier)
+        .loadDailySchedule(widget.selectedDate);
+  }
+
+  /// 아래로 당겨 새로고침 래퍼
+  ///
+  /// TabBarView 는 내부에 자체 뷰포트(PageView)를 두어 스크롤 알림 depth 가
+  /// 올라가므로, RefreshIndicator 를 TabBarView 바깥에 한 번만 두면 동작하지
+  /// 않는다. 각 탭/상태 화면을 개별로 감싼다.
+  Widget _refreshable(Widget child) {
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: child,
+    );
   }
 
   @override
@@ -94,29 +112,27 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
               ),
       ),
       body: state.isLoading
-          ? const Center(child: LoadingIndicator())
+          ? _refreshable(const RefreshableCenter(child: LoadingIndicator()))
           : state.errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        state.errorMessage!,
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.error,
+              ? _refreshable(
+                  RefreshableCenter(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          state.errorMessage!,
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: AppColors.error,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      ElevatedButton(
-                        onPressed: () {
-                          ref
-                              .read(myScheduleDetailProvider.notifier)
-                              .loadDailySchedule(widget.selectedDate);
-                        },
-                        child: const Text('다시 시도'),
-                      ),
-                    ],
+                        const SizedBox(height: AppSpacing.md),
+                        ElevatedButton(
+                          onPressed: _refresh,
+                          child: const Text('다시 시도'),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : isDayOff
@@ -135,7 +151,9 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
   Widget _buildDayOffScreen(state) {
     final info = state.scheduleInfo;
     if (info == null) {
-      return const Center(child: Text('일정 정보가 없습니다'));
+      return _refreshable(
+        const RefreshableCenter(child: Text('일정 정보가 없습니다')),
+      );
     }
 
     final isSubstituteHoliday = info.workingType == '대휴';
@@ -145,43 +163,45 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
     final message =
         isSubstituteHoliday ? '대휴가 예정된 날입니다' : '연차가 예정된 날입니다';
 
-    return Column(
-      children: [
-        // 날짜 헤더 (일정/등록 탭과 동일한 레거시 18px/800 정합)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              info.date,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.black,
-                height: 1.1,
+    return _refreshable(
+      Column(
+        children: [
+          // 날짜 헤더 (일정/등록 탭과 동일한 레거시 18px/800 정합)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                info.date,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.black,
+                  height: 1.1,
+                ),
               ),
             ),
           ),
-        ),
-        // 아이콘 + 메시지
-        Expanded(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 64, color: color),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  message,
-                  style: AppTypography.bodyLarge.copyWith(
-                    color: AppColors.textSecondary,
+          // 아이콘 + 메시지
+          Expanded(
+            child: RefreshableCenter(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 64, color: color),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    message,
+                    style: AppTypography.bodyLarge.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -302,6 +322,8 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
         primary.length + (secondary.isEmpty ? 0 : 1 + secondary.length);
 
     return ListView.builder(
+      // 목록이 짧아도 아래로 당겨 새로고침이 동작하도록 항상 스크롤 가능하게 둔다
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       itemCount: itemCount,
       itemBuilder: (context, index) {
@@ -344,125 +366,133 @@ class _MyScheduleDetailPageState extends ConsumerState<MyScheduleDetailPage>
   /// 일정 탭 콘텐츠
   Widget _buildScheduleTab(state) {
     if (state.scheduleInfo == null) {
-      return const Center(child: Text('일정 정보가 없습니다'));
+      return _refreshable(
+        const RefreshableCenter(child: Text('일정 정보가 없습니다')),
+      );
     }
 
     final info = state.scheduleInfo!;
 
-    return Column(
-      children: [
-        // 날짜 및 보고 진행 정보
-        _buildDateHeader(info),
+    return _refreshable(
+      Column(
+        children: [
+          // 날짜 및 보고 진행 정보
+          _buildDateHeader(info),
 
-        // 조원명 헤더 (레거시 .board_list02 li p strong: 16px bold, 하단 구분선)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            border: Border(
-              bottom: BorderSide(color: AppColors.divider),
+          // 조원명 헤더 (레거시 .board_list02 li p strong: 16px bold, 하단 구분선)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: const BoxDecoration(
+              color: AppColors.background,
+              border: Border(
+                bottom: BorderSide(color: AppColors.divider),
+              ),
+            ),
+            child: Text(
+              '${info.memberName} (${info.employeeCode})',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.black,
+              ),
             ),
           ),
-          child: Text(
-            '${info.memberName} (${info.employeeCode})',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: AppColors.black,
+
+          // 거래처 목록 (레거시: 행 사이 구분선 없이 6px 간격으로 나열)
+          Expanded(
+            child: _buildAccountList(
+              info.accounts,
+              showRegistrationStatus: false,
             ),
           ),
-        ),
-
-        // 거래처 목록 (레거시: 행 사이 구분선 없이 6px 간격으로 나열)
-        Expanded(
-          child: _buildAccountList(
-            info.accounts,
-            showRegistrationStatus: false,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   /// 등록 탭 콘텐츠
   Widget _buildRegistrationTab(state) {
     if (state.scheduleInfo == null) {
-      return const Center(child: Text('일정 정보가 없습니다'));
+      return _refreshable(
+        const RefreshableCenter(child: Text('일정 정보가 없습니다')),
+      );
     }
 
     final info = state.scheduleInfo!;
 
-    return Column(
-      children: [
-        // 날짜 및 보고 진행 정보
-        _buildDateHeader(info),
+    return _refreshable(
+      Column(
+        children: [
+          // 날짜 및 보고 진행 정보
+          _buildDateHeader(info),
 
-        // 등록 전 필터
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
-          ),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: AppColors.divider),
+          // 등록 전 필터
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Checkbox(
-                value: state.showOnlyUnregistered,
-                onChanged: (value) {
-                  ref
-                      .read(myScheduleDetailProvider.notifier)
-                      .toggleUnregisteredFilter();
-                },
-                activeColor: AppColors.otokiBlue,
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: AppColors.divider),
               ),
-              Text(
-                '등록 전',
-                style: AppTypography.bodyMedium,
-              ),
-            ],
-          ),
-        ),
-
-        // 조원명 배너 (레거시 .list_title: bg #7C91A7 slate, 흰 글씨 15px)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          color: AppColors.legacySlate,
-          child: Text(
-            '${info.memberName} (${info.reportProgress.workType})',
-            style: const TextStyle(
-              fontSize: 15,
-              color: AppColors.white,
             ),
-          ),
-        ),
-
-        // 거래처 목록 (필터 적용)
-        Expanded(
-          child: state.filteredAccounts.isEmpty
-              ? Center(
-                  child: Text(
-                    state.showOnlyUnregistered
-                        ? '등록 전 항목이 없습니다'
-                        : '거래처가 없습니다',
-                    style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                )
-              // 참고 일정도 동일하게 등록할 수 있다 (구분만 두고 동작 제약 없음)
-              : _buildAccountList(
-                  state.filteredAccounts,
-                  showRegistrationStatus: true,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Checkbox(
+                  value: state.showOnlyUnregistered,
+                  onChanged: (value) {
+                    ref
+                        .read(myScheduleDetailProvider.notifier)
+                        .toggleUnregisteredFilter();
+                  },
+                  activeColor: AppColors.otokiBlue,
                 ),
-        ),
-      ],
+                Text(
+                  '등록 전',
+                  style: AppTypography.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+
+          // 조원명 배너 (레거시 .list_title: bg #7C91A7 slate, 흰 글씨 15px)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            color: AppColors.legacySlate,
+            child: Text(
+              '${info.memberName} (${info.reportProgress.workType})',
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.white,
+              ),
+            ),
+          ),
+
+          // 거래처 목록 (필터 적용)
+          Expanded(
+            child: state.filteredAccounts.isEmpty
+                ? RefreshableCenter(
+                    child: Text(
+                      state.showOnlyUnregistered
+                          ? '등록 전 항목이 없습니다'
+                          : '거래처가 없습니다',
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  )
+                // 참고 일정도 동일하게 등록할 수 있다 (구분만 두고 동작 제약 없음)
+                : _buildAccountList(
+                    state.filteredAccounts,
+                    showRegistrationStatus: true,
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
