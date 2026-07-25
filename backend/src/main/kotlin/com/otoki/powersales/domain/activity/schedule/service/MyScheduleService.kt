@@ -265,22 +265,21 @@ class MyScheduleService(
         }
         val legacyHiddenIdentity = legacyHiddenSource.map { it.identity() }.toSet()
 
-        // 진열 ∪ 행사 병합. 같은 거래처가 진열·행사 양쪽에 있으면 대표 1건만 남긴다
-        // (accountId = 0L 은 거래처 식별 불가라 합치지 않는다). 채택 우선순위는
-        //   ① 출근등록된 행 (레거시 :174 staticCommAccList 우선 정합)
-        //   ② 레거시 노출분
-        // ②가 없으면 같은 거래처의 두 일정 중 레거시가 버리던 쪽만 남아 주 일정이 0건이 되고,
-        // 화면 전체가 참고 일정으로 밀려난다 (상시 진열과 행사의 거래처가 같은 정상 운영 케이스).
+        // 진열 ∪ 행사 병합 후 dedup.
+        //
+        // dedup 은 (거래처 × 노출구분) 단위로 한다. 거래처만으로 합치면 같은 거래처에 진열과
+        // 행사가 함께 걸린 날(상시 진열 매장에 행사가 배치되는 정상 운영 케이스) 한쪽이 통째로
+        // 사라진다 — 참고 일정으로 보여주기로 한 항목을 dedup 이 삼켜 버리므로, 노출분과
+        // 참고분은 서로 흡수하지 않고 각각 남긴다.
+        // 같은 구분 안에서 중복될 때의 채택 우선순위는 출근등록된 행 (레거시 :174 정합).
+        // accountId = 0L 은 거래처 식별 불가라 합치지 않는다.
         val accountItems = (displayAccountItems + eventAccountItems)
             .map { it.copy(isLegacyVisible = it.identity() !in legacyHiddenIdentity) }
-            .groupBy { it.accountId }
-            .flatMap { (accountId, items) ->
+            .groupBy { it.accountId to it.isLegacyVisible }
+            .flatMap { (key, items) ->
+                val (accountId, _) = key
                 if (accountId == 0L) items
-                else listOf(
-                    items.firstOrNull { it.isRegistered }
-                        ?: items.firstOrNull { it.isLegacyVisible }
-                        ?: items.first()
-                )
+                else listOf(items.firstOrNull { it.isRegistered } ?: items.first())
             }
 
         // 보고 진행 상황 계산. 레거시가 보여주던 항목만 집계해 월간 캘린더 셀 카운트와 일치시킨다.

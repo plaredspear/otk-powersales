@@ -577,14 +577,58 @@ class MyScheduleServiceTest {
             // When
             val result = myScheduleService.getDailySchedule(userId, date)
 
-            // Then — 진열이 아니라 행사가 표시되어야 한다.
-            // 거래처가 같으면 dedup 으로 1건만 남는데, 이때 레거시 미노출분(진열)이 대표로 뽑히면
-            // 주 일정이 0건이 되고 화면 전체가 참고 일정으로 밀려난다 → 노출분을 대표로 채택.
-            assertThat(result.accounts).hasSize(1)
+            // Then — 행사는 주 일정, 상시 진열은 참고 일정으로 둘 다 표시되어야 한다.
+            //
+            // 거래처가 같다고 dedup 으로 1건만 남기면, 참고 일정으로 보여주기로 한 진열이
+            // 통째로 사라진다(상시 진열 매장에 행사가 배치되는 정상 운영 케이스에서 관측된 증상).
+            // dedup 은 거래처 단독이 아니라 (거래처 × 노출구분) 단위여야 한다.
+            assertThat(result.accounts).hasSize(2)
             assertThat(result.accounts[0].workType1).isEqualTo("행사")
             assertThat(result.accounts[0].isLegacyVisible).isTrue()
+            assertThat(result.accounts[1].workType1).isEqualTo("진열")
+            assertThat(result.accounts[1].isLegacyVisible).isFalse()
+            // 두 항목의 거래처는 동일
+            assertThat(result.accounts.map { it.accountId }).containsExactly(60L, 60L)
+            // 카운터는 노출분(행사 1건)만
             assertThat(result.reportProgress.total).isEqualTo(1)
             assertThat(result.reportProgress.workType).isEqualTo("행사")
+        }
+
+        @Test
+        @DisplayName("성공 - 같은 거래처·같은 노출구분의 중복은 여전히 1건으로 합친다")
+        fun getDailySchedule_dedupsWithinSameVisibilityGroup() {
+            // Given — 진열만 있는 날, 같은 거래처 마스터가 2건(기간 겹침 등). 노출구분이 같으므로
+            // 참고 일정 분리와 무관하게 dedup 되어야 한다 (dedup 키 확장이 중복 노출을 유발하지 않음).
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+            val sharedAccount = Account(id = 140L, name = "(주)오동")
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork3 = TypeOfWork3.FIXED,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = sharedAccount,
+                    startDate = date
+                ),
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork3 = TypeOfWork3.FIXED,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = sharedAccount,
+                    startDate = date
+                )
+            )
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns emptyList()
+
+            // When
+            val result = myScheduleService.getDailySchedule(userId, date)
+
+            // Then
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.reportProgress.total).isEqualTo(1)
         }
 
         @Test
@@ -700,6 +744,56 @@ class MyScheduleServiceTest {
             // 라벨도 연차 우선 (근무 라벨 + 거래처 0건 모순 방지)
             assertThat(daily.workingType).isEqualTo("연차")
             assertThat(day1.workingType).isEqualTo("연차")
+        }
+
+        @Test
+        @DisplayName("성공 - 참고 일정이 생겨도 캘린더 셀 수치와 일간 카운터가 레거시와 일치")
+        fun monthlyAndDailyCountersStayLegacyAlignedWithSecondaryItems() {
+            // Given — 같은 거래처(주)오동에 상시 진열 + 행사가 겹친 실제 케이스.
+            // 참고 일정은 목록에만 추가로 노출하고, 캘린더 셀 수치와 일간 보고완료 카운터는
+            // 레거시 노출분(행사 1건)만 세야 한다.
+            val userId = 1L
+            val date = LocalDate.of(2026, 8, 1)
+            val mockUser = createMockEmployee(userId, "홍유미", "20210283", sfid = "a0B000000012345")
+            val sharedAccount = Account(id = 60L, name = "(주)오동")
+            val masters = listOf(
+                createMockSchedule(
+                    typeOfWork1 = TypeOfWork1.DISPLAY,
+                    typeOfWork3 = TypeOfWork3.FIXED,
+                    typeOfWork5 = TypeOfWork5.REGULAR,
+                    account = sharedAccount,
+                    startDate = date
+                )
+            )
+            val memberSchedules = listOf(
+                createMockMemberSchedule(
+                    workingDate = date, workingType = WorkingType.WORK,
+                    account = sharedAccount, workingCategory1 = WorkingCategory1.EVENT
+                )
+            )
+
+            every { employeeRepository.findById(userId) } returns Optional.of(mockUser)
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeAndDate(userId, date) } returns masters
+            every { displayWorkScheduleRepository.findConfirmedValidByEmployeeIdAndDateRange(
+                eq(userId), any(), any()
+            ) } returns masters
+            every { teamMemberScheduleRepository.findByEmployeeIdAndWorkingDate(userId, date) } returns memberSchedules
+            every { teamMemberScheduleRepository.findMonthlyByEmployeeIds(
+                eq(listOf(userId)), any(), any(), any()
+            ) } returns memberSchedules
+
+            // When
+            val daily = myScheduleService.getDailySchedule(userId, date)
+            val monthly = myScheduleService.getMonthlySchedule(userId, 2026, 8)
+            val day1 = monthly.workDays.first { it.date == "2026-08-01" }
+
+            // Then — 수치는 레거시 정합(1건), 목록만 참고 일정 포함 2건
+            assertThat(day1.totalCount).isEqualTo(1)
+            assertThat(daily.reportProgress.total).isEqualTo(1)
+            assertThat(day1.totalCount).isEqualTo(daily.reportProgress.total)
+            assertThat(day1.completedCount).isEqualTo(daily.reportProgress.completed)
+            assertThat(daily.accounts).hasSize(2)
+            assertThat(daily.accounts.count { it.isLegacyVisible }).isEqualTo(1)
         }
 
         @Test
