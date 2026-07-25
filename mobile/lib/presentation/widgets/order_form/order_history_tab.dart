@@ -70,14 +70,22 @@ class OrderHistoryTab extends ConsumerWidget {
             Icon(
               noAccount ? Icons.storefront_outlined : Icons.history,
               size: 48,
-              color: AppColors.textTertiary,
+              // 거래처 미선택은 사용자 액션 안내라 강조색(error), 이력 없음은 중립색으로 구분.
+              color: noAccount ? AppColors.error : AppColors.textTertiary,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               noAccount ? '거래처를 먼저 선택해 주세요.' : '주문 이력이 없습니다.',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              // 액션 안내(거래처 미선택)는 굵고 진한 강조색, 단순 결과 없음은 보조색으로
+              // 정보 레벨을 차등화한다.
+              style: noAccount
+                  ? AppTypography.bodyLarge.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    )
+                  : AppTypography.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
             ),
           ],
         ),
