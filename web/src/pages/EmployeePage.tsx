@@ -132,9 +132,10 @@ export default function EmployeePage() {
   const [registerOpen, setRegisterOpen] = useState(false);
   const { hasEntityPermission, hasSystemPermission } = usePermission();
   const canResetCredentials = hasSystemPermission('MANAGE_USERS');
-  // 여사원 현황은 조회 전용 정책 — 등록/수정 버튼은 female_employee:EDIT 보유자에게만 노출.
-  // (여사원 READ 만 받은 조장은 미노출.) 등록/수정 API 자체는 employee 가드 유지.
-  const canWrite = hasEntityPermission('female_employee', 'EDIT');
+  // "신규 사원 등록" 버튼은 female_employee:CREATE 보유자에게만 노출 — 신규 생성 행위라
+  // EDIT(기존 레코드 수정) 이 아닌 CREATE 로 가드한다. (여사원 READ 만 받은 조장은 미노출.)
+  // 등록 API(`POST /api/v1/admin/employees/manual`) 자체는 employee:EDIT 가드 유지.
+  const canCreate = hasEntityPermission('female_employee', 'CREATE');
 
   const { data, isLoading, isError, error, refetch, isFetching } = useFemaleEmployees({
     status: status || undefined,
@@ -387,7 +388,7 @@ export default function EmployeePage() {
             엑셀 다운로드
           </Button>
           <RefreshButton onRefresh={refetch} refreshing={isFetching} />
-          {canWrite && (
+          {canCreate && (
             <Button type="primary" onClick={() => setRegisterOpen(true)}>
               + 신규 사원 등록
             </Button>
