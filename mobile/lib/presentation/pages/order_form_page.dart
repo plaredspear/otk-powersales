@@ -277,96 +277,117 @@ class _OrderFormPageState extends ConsumerState<OrderFormPage> {
             : GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => FocusScope.of(context).unfocus(),
-                child: SingleChildScrollView(
+                // 제품 목록 툴바(선택 삭제/전체 선택/검색)를 고정하기 위해
+                // 단일 스크롤뷰가 아닌 sliver 구성으로 그린다.
+                child: CustomScrollView(
                   controller: _scrollController,
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: AppSpacing.screenAll,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (state.hasDraft)
-                        DraftBanner(
-                          onLoadDraft: () => notifier.acceptDraft(),
-                          onNewOrder: () => notifier.declineDraft(),
-                        ),
-                      if (state.hasDraft) const SizedBox(height: AppSpacing.lg),
-                      // 거래처 선택 (월매출과 동일한 거래처 선택 바텀시트 재사용)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text.rich(
-                            TextSpan(
-                              text: '거래처 ',
-                              style: TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        AppSpacing.lg,
+                        0,
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (state.hasDraft)
+                              DraftBanner(
+                                onLoadDraft: () => notifier.acceptDraft(),
+                                onNewOrder: () => notifier.declineDraft(),
                               ),
+                            if (state.hasDraft)
+                              const SizedBox(height: AppSpacing.lg),
+                            // 거래처 선택 (월매출과 동일한 거래처 선택 바텀시트 재사용)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                TextSpan(
-                                  text: '*',
-                                  style: TextStyle(color: AppColors.error),
+                                Text.rich(
+                                  TextSpan(
+                                    text: '거래처 ',
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: '*',
+                                        style: TextStyle(
+                                          color: AppColors.error,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: AppSpacing.sm),
+                                DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      AppSpacing.radiusMd,
+                                    ),
+                                    border: Border.all(
+                                      color: AppColors.border,
+                                    ),
+                                  ),
+                                  child: AccountSelectorField(
+                                    selectedName: state.selectedClientName,
+                                    scope: MyAccountScope.order,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppSpacing.md,
+                                      vertical: AppSpacing.md,
+                                    ),
+                                    onSelected: (account) =>
+                                        notifier.selectClient(
+                                      account.accountId,
+                                      account.accountName,
+                                      account.accountCode,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(
-                                AppSpacing.radiusMd,
-                              ),
-                              border: Border.all(color: AppColors.border),
+                            const SizedBox(height: AppSpacing.lg),
+                            CreditBalanceDisplay(
+                              creditBalance: state.creditBalance,
+                              isLoading: state.isLoanInquiryLoading,
+                              isFailed: state.isLoanInquiryFailed,
+                              onRetry: notifier.retryLoanInquiry,
                             ),
-                            child: AccountSelectorField(
-                              selectedName: state.selectedClientName,
-                              scope: MyAccountScope.order,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.md,
-                                vertical: AppSpacing.md,
-                              ),
-                              onSelected: (account) => notifier.selectClient(
-                                account.accountId,
-                                account.accountName,
-                                account.accountCode,
+                            const SizedBox(height: AppSpacing.lg),
+                            DeliveryDatePicker(
+                              selectedDate: state.deliveryDate,
+                              onTap: () => _showDatePicker(
+                                context,
+                                notifier,
+                                state.deliveryDate,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      CreditBalanceDisplay(
-                        creditBalance: state.creditBalance,
-                        isLoading: state.isLoanInquiryLoading,
-                        isFailed: state.isLoanInquiryFailed,
-                        onRetry: notifier.retryLoanInquiry,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      DeliveryDatePicker(
-                        selectedDate: state.deliveryDate,
-                        onTap: () => _showDatePicker(
-                          context,
-                          notifier,
-                          state.deliveryDate,
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: AppSpacing.lg),
-                      ProductListSection(
-                        items: state.items,
-                        validationErrors: state.validationErrors,
-                        allItemsSelected: state.allItemsSelected,
-                        onToggleSelection: notifier.toggleProductSelection,
-                        onToggleSelectAll: notifier.toggleSelectAllProducts,
-                        onAddProduct: () => _handleAddProduct(notifier),
-                        onBarcodeScan: () => _handleBarcodeScan(notifier),
-                        onRemoveSelected: notifier.removeSelectedProducts,
-                        onQuantityChanged: notifier.updateProductQuantity,
-                        scrollController: _scrollController,
-                      ),
-                      const SizedBox(height: AppSpacing.xxxl),
-                    ],
-                  ),
+                    ),
+                    // 제품 목록(툴바 고정 포함)은 자체 sliver 구성으로 그린다.
+                    ProductListSection(
+                      items: state.items,
+                      validationErrors: state.validationErrors,
+                      allItemsSelected: state.allItemsSelected,
+                      onToggleSelection: notifier.toggleProductSelection,
+                      onToggleSelectAll: notifier.toggleSelectAllProducts,
+                      onAddProduct: () => _handleAddProduct(notifier),
+                      onBarcodeScan: () => _handleBarcodeScan(notifier),
+                      onRemoveSelected: notifier.removeSelectedProducts,
+                      onQuantityChanged: notifier.updateProductQuantity,
+                    ),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: AppSpacing.xxxl),
+                    ),
+                  ],
                 ),
               ),
         // 레거시 write.jsp: 총 주문금액 + 삭제/임시저장/승인요청 하단 고정 바.

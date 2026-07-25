@@ -7,6 +7,9 @@ import '../../../domain/entities/validation_error.dart';
 import 'order_product_card.dart';
 
 /// 제품 목록 섹션
+///
+/// CustomScrollView 안에 놓이는 **sliver** 위젯이다. 선택 삭제/전체 선택/검색 바는
+/// 제품이 많아도 위아래로 스크롤하지 않게 목록 위에 고정(pinned)한다.
 class ProductListSection extends StatefulWidget {
   final List<OrderDraftItem> items;
   final Map<String, ValidationError> validationErrors;
@@ -17,7 +20,6 @@ class ProductListSection extends StatefulWidget {
   final VoidCallback onBarcodeScan;
   final VoidCallback onRemoveSelected;
   final Function(String productCode, double boxes, int pieces) onQuantityChanged;
-  final ScrollController? scrollController;
 
   const ProductListSection({
     super.key,
@@ -30,7 +32,6 @@ class ProductListSection extends StatefulWidget {
     required this.onBarcodeScan,
     required this.onRemoveSelected,
     required this.onQuantityChanged,
-    this.scrollController,
   });
 
   @override
@@ -69,6 +70,83 @@ class _ProductListSectionState extends State<ProductListSection> {
     }
     final isSearching = _searchQuery.trim().isNotEmpty;
 
+    return SliverMainAxisGroup(
+      slivers: [
+        // ── 스크롤되는 헤더 (제품 라벨 + 바코드/추가 버튼 + 100개 안내) ──
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: AppSpacing.screenHorizontal,
+            child: _buildHeader(canAddMore),
+          ),
+        ),
+        // ── 목록 위에 고정되는 툴바 (선택 삭제 / 전체 선택 / 검색) ──
+        PinnedHeaderSliver(
+          child: ColoredBox(
+            color: AppColors.background,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: _buildStickyToolbar(
+                hasSelectedItems: hasSelectedItems,
+                showSearch: showSearch,
+                isSearching: isSearching,
+                filteredCount: filtered.length,
+                totalCount: items.length,
+              ),
+            ),
+          ),
+        ),
+        // ── 제품 카드 목록 ──
+        if (isSearching && filtered.isEmpty)
+          SliverToBoxAdapter(
+            // 검색 결과가 없을 때는 빈 화면 대신 명시적 안내 노출.
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: Center(
+                child: Text(
+                  "'${_searchQuery.trim()}'에 해당하는 제품이 없습니다.",
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: AppSpacing.screenHorizontal,
+            sliver: SliverList.builder(
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                // entry.key = 원본 순번(표시용), entry.value = 아이템.
+                final entry = filtered[index];
+                final item = entry.value;
+                final error = widget.validationErrors[item.productCode];
+
+                return OrderProductCard(
+                  index: entry.key,
+                  item: item,
+                  validationError: error,
+                  onSelectionChanged: (selected) {
+                    widget.onToggleSelection(item.productCode);
+                  },
+                  onQuantityChanged: (boxes, pieces) {
+                    widget.onQuantityChanged(item.productCode, boxes, pieces);
+                  },
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// 스크롤되는 헤더 — 제품 라벨 + 바코드/추가 버튼 + 100개 권장 안내
+  Widget _buildHeader(bool canAddMore) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -138,6 +216,21 @@ class _ProductListSectionState extends State<ProductListSection> {
           style: AppTypography.bodySmall.copyWith(color: AppColors.error),
         ),
         const SizedBox(height: AppSpacing.lg),
+      ],
+    );
+  }
+
+  /// 목록 위에 고정되는 툴바 — 선택 삭제 / 전체 선택 / 추가 품목 검색
+  Widget _buildStickyToolbar({
+    required bool hasSelectedItems,
+    required bool showSearch,
+    required bool isSearching,
+    required int filteredCount,
+    required int totalCount,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         // 레거시 write.jsp: 선택 삭제(좌, 빨강 버튼) / 전체 선택(우, 체크박스).
         Row(
           children: [
@@ -207,52 +300,13 @@ class _ProductListSectionState extends State<ProductListSection> {
           if (isSearching) ...[
             const SizedBox(height: AppSpacing.xs),
             Text(
-              '${filtered.length}개 표시 중 (전체 ${items.length}개)',
+              '$filteredCount개 표시 중 (전체 $totalCount개)',
               style: AppTypography.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.sm),
         ],
-        // 검색 결과가 없을 때는 빈 화면 대신 명시적 안내 노출.
-        if (isSearching && filtered.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            child: Center(
-              child: Text(
-                "'${_searchQuery.trim()}'에 해당하는 제품이 없습니다.",
-                style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-          )
-        else
-          ListView.builder(
-            controller: widget.scrollController,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              // entry.key = 원본 순번(표시용), entry.value = 아이템.
-              final entry = filtered[index];
-              final item = entry.value;
-              final error = widget.validationErrors[item.productCode];
-
-              return OrderProductCard(
-                index: entry.key,
-                item: item,
-                validationError: error,
-                onSelectionChanged: (selected) {
-                  widget.onToggleSelection(item.productCode);
-                },
-                onQuantityChanged: (boxes, pieces) {
-                  widget.onQuantityChanged(item.productCode, boxes, pieces);
-                },
-              );
-            },
-          ),
       ],
     );
   }
