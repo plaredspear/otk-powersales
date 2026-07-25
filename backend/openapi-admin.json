@@ -1899,6 +1899,188 @@
         },
         "type" : "object"
       },
+      "AdminErpOrderDetailResponse" : {
+        "properties" : {
+          "accountId" : {
+            "format" : "int64",
+            "type" : [ "integer", "null" ]
+          },
+          "accountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "deleted" : {
+            "type" : "boolean"
+          },
+          "deliveryRequestDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "orderChannel" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderChannelNm" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "orderSalesAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "orderType" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderTypeNm" : {
+            "type" : [ "string", "null" ]
+          },
+          "products" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AdminErpOrderProductItem"
+            },
+            "type" : "array"
+          },
+          "refSapOrderNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapOrderNumber" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminErpOrderListItem" : {
+        "properties" : {
+          "deliveryRequestDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "employeeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "employeeName" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "orderChannelNm" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderDate" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "orderSalesAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "orderTypeNm" : {
+            "type" : [ "string", "null" ]
+          },
+          "refSapOrderNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapAccountName" : {
+            "type" : [ "string", "null" ]
+          },
+          "sapOrderNumber" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminErpOrderListResponse" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AdminErpOrderListItem"
+            },
+            "type" : "array"
+          },
+          "page" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "AdminErpOrderProductItem" : {
+        "properties" : {
+          "confirmQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "confirmUnit" : {
+            "type" : [ "string", "null" ]
+          },
+          "deliveryStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lineItemStatus" : {
+            "type" : [ "string", "null" ]
+          },
+          "lineNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "orderQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "orderSalesLineAmount" : {
+            "type" : [ "number", "null" ]
+          },
+          "plantNm" : {
+            "type" : [ "string", "null" ]
+          },
+          "productCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "productName" : {
+            "type" : [ "string", "null" ]
+          },
+          "shippingQuantity" : {
+            "type" : [ "number", "null" ]
+          },
+          "unit" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "type" : "object"
+      },
       "AdminLogisticsClaimMasterSyncTestRequest" : {
         "properties" : {
           "modDt" : {
@@ -3873,6 +4055,64 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/AdminEmployeeRegisterResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminErpOrderDetailResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminErpOrderDetailResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseAdminErpOrderListResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdminErpOrderListResponse"
             }, {
               "type" : "null"
             } ]
@@ -23062,6 +23302,114 @@
           }
         },
         "tags" : [ "admin-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/erp-orders" : {
+      "get" : {
+        "operationId" : "getErpOrders",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "keyword",
+          "required" : false,
+          "schema" : {
+            "maxLength" : 50,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "deliveryDateFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "deliveryDateTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "orderDateFrom",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "orderDateTo",
+          "required" : false,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminErpOrderListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-erp-order-controller" ]
+      }
+    },
+    "/api/v1/admin/erp-orders/{id}" : {
+      "get" : {
+        "operationId" : "getErpOrderDetail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAdminErpOrderDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-erp-order-controller" ]
       }
     },
     "/api/v1/admin/external-api/integration-info" : {

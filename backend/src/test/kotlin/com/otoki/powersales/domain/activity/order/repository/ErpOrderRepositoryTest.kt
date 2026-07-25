@@ -119,6 +119,80 @@ class ErpOrderRepositoryTest {
         )
     }
 
+    @DisplayName("findAdminErpOrders - 관리자 웹 ERP주문 목록 조회 (기준정보 화면)")
+    @org.junit.jupiter.api.Nested
+    inner class FindAdminErpOrders {
+
+        private val adminPageable = PageRequest.of(0, 20)
+
+        @Test
+        @DisplayName("필터 없으면 삭제 제외 전체를 id DESC 로 반환한다")
+        fun noFilter_returnsAllExceptDeleted() {
+            val result = erpOrderRepository.findAdminErpOrders(null, null, null, null, null, adminPageable)
+
+            // setUp 3건(0300000001~3) 모두 반환. 최신(id DESC) 순.
+            assertThat(result.totalElements).isEqualTo(3)
+            assertThat(result.content.map { it.sapOrderNumber }).containsExactly(
+                "0300000003", "0300000002", "0300000001",
+            )
+        }
+
+        @Test
+        @DisplayName("keyword 로 주문번호/거래처명/주문자명 부분 일치 조회한다")
+        fun keyword_matchesMultipleFields() {
+            persistNamedOrder("0300000050", sapAccountName = "홍길동마트", employeeName = "김영업")
+
+            assertThat(
+                erpOrderRepository.findAdminErpOrders("홍길동", null, null, null, null, adminPageable).totalElements,
+            ).isEqualTo(1)
+            assertThat(
+                erpOrderRepository.findAdminErpOrders("김영업", null, null, null, null, adminPageable).totalElements,
+            ).isEqualTo(1)
+            assertThat(
+                erpOrderRepository.findAdminErpOrders("0300000050", null, null, null, null, adminPageable).totalElements,
+            ).isEqualTo(1)
+        }
+
+        @Test
+        @DisplayName("납기일 기간(from~to inclusive) 으로 조회한다")
+        fun deliveryDateRange() {
+            // setUp: 0300000001=6/10, 0300000002=6/11, 0300000003=null
+            val result = erpOrderRepository.findAdminErpOrders(
+                null, LocalDate.of(2026, 6, 11), LocalDate.of(2026, 6, 11), null, null, adminPageable,
+            )
+
+            assertThat(result.content.map { it.sapOrderNumber }).containsExactly("0300000002")
+        }
+
+        @Test
+        @DisplayName("주문생성일 기간으로 조회한다")
+        fun orderDateRange() {
+            persistOrderWithOrderDate("0300000060", LocalDate.of(2026, 4, 15))
+
+            val result = erpOrderRepository.findAdminErpOrders(
+                null, null, null, LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), adminPageable,
+            )
+
+            assertThat(result.content.map { it.sapOrderNumber }).containsExactly("0300000060")
+        }
+
+        @Test
+        @DisplayName("is_deleted=true 주문은 제외한다")
+        fun excludesDeleted() {
+            val deleted = ErpOrder(sapOrderNumber = "0300000099").apply {
+                account = this@ErpOrderRepositoryTest.account
+                isDeleted = true
+            }
+            testEntityManager.persistAndFlush(deleted)
+
+            val numbers = erpOrderRepository
+                .findAdminErpOrders(null, null, null, null, null, adminPageable)
+                .content.map { it.sapOrderNumber }
+
+            assertThat(numbers).doesNotContain("0300000099")
+        }
+    }
+
     private fun persistOrder(sapOrderNumber: String, deliveryRequestDate: LocalDate?) {
         val order = ErpOrder(sapOrderNumber = sapOrderNumber, deliveryRequestDate = deliveryRequestDate).apply {
             account = this@ErpOrderRepositoryTest.account
@@ -128,6 +202,17 @@ class ErpOrderRepositoryTest {
 
     private fun persistOrderWithOrderDate(sapOrderNumber: String, orderDate: LocalDate) {
         val order = ErpOrder(sapOrderNumber = sapOrderNumber, orderDate = orderDate).apply {
+            account = this@ErpOrderRepositoryTest.account
+        }
+        testEntityManager.persistAndFlush(order)
+    }
+
+    private fun persistNamedOrder(sapOrderNumber: String, sapAccountName: String, employeeName: String) {
+        val order = ErpOrder(
+            sapOrderNumber = sapOrderNumber,
+            sapAccountName = sapAccountName,
+            employeeName = employeeName,
+        ).apply {
             account = this@ErpOrderRepositoryTest.account
         }
         testEntityManager.persistAndFlush(order)

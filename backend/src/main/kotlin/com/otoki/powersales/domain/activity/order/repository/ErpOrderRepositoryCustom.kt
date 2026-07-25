@@ -26,4 +26,26 @@ interface ErpOrderRepositoryCustom {
         deliveryDate: LocalDate,
         pageable: Pageable
     ): Page<ErpOrder>
+
+    /**
+     * 관리자 웹 ERP주문 목록 조회 (기준정보 > ERP주문 조회 화면).
+     *
+     * 거래처별 조회(`findClientOrders`)와 달리 거래처 제약 없이 전체 ERP주문을 대상으로 하며,
+     * 키워드(주문번호/거래처코드/거래처명/주문자명)와 납기일·주문일 기간으로 좁혀 조회한다.
+     * 정렬은 최신 주문(id DESC) 순.
+     *
+     * @param keyword 주문번호·거래처코드·거래처명·주문자명 부분 일치 (null/blank 이면 미적용)
+     * @param deliveryDateFrom 납기일 시작 (inclusive, null 이면 미적용)
+     * @param deliveryDateTo 납기일 종료 (inclusive, null 이면 미적용)
+     * @param orderDateFrom 주문생성일 시작 (inclusive, null 이면 미적용)
+     * @param orderDateTo 주문생성일 종료 (inclusive, null 이면 미적용)
+     */
+    fun findAdminErpOrders(
+        keyword: String?,
+        deliveryDateFrom: LocalDate?,
+        deliveryDateTo: LocalDate?,
+        orderDateFrom: LocalDate?,
+        orderDateTo: LocalDate?,
+        pageable: Pageable
+    ): Page<ErpOrder>
 }

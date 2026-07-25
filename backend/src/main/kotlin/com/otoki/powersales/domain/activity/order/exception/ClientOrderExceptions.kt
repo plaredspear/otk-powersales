@@ -39,3 +39,12 @@ class SapOrderNotFoundException : BusinessException(
     message = "주문을 찾을 수 없습니다",
     httpStatus = HttpStatus.NOT_FOUND
 )
+
+/**
+ * ERP주문 ID로 주문을 찾을 수 없음 (관리자 웹 ERP주문 상세 조회).
+ */
+class ErpOrderNotFoundException : BusinessException(
+    errorCode = "ERP_ORDER_NOT_FOUND",
+    message = "ERP주문을 찾을 수 없습니다",
+    httpStatus = HttpStatus.NOT_FOUND
+)

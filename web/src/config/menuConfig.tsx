@@ -303,6 +303,15 @@ export const menuRoute: MenuRoute = {
         },
         { path: '/account', name: '거래처', entity: 'account', operation: 'READ' },
         {
+          path: '/erp-orders',
+          name: 'ERP주문',
+          entity: 'erp_order',
+          operation: 'READ',
+          subRoutes: [
+            { path: '/erp-orders/:id', name: 'ERP주문 상세', entity: 'erp_order', operation: 'READ' },
+          ],
+        },
+        {
           path: '/settings/employees',
           name: '사원',
           entity: 'employee',

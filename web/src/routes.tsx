@@ -32,6 +32,8 @@ const ProductPage = lazy(() => import('@/pages/ProductPage'));
 const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage'));
 const AccountPage = lazy(() => import('@/pages/AccountPage'));
 const AccountDetailPage = lazy(() => import('@/pages/AccountDetailPage'));
+const ErpOrderPage = lazy(() => import('@/pages/ErpOrderPage'));
+const ErpOrderDetailPage = lazy(() => import('@/pages/ErpOrderDetailPage'));
 const EmployeePage = lazy(() => import('@/pages/EmployeePage'));
 const EmployeeListPage = lazy(() => import('@/pages/settings/EmployeeListPage'));
 const EmployeeDetailPage = lazy(() => import('@/pages/EmployeeDetailPage'));
@@ -350,6 +352,13 @@ export const router = createBrowserRouter(
                   children: [
                     { path: '/account', element: <LazyWrapper><AccountPage /></LazyWrapper> },
                     { path: '/account/:id', element: <LazyWrapper><AccountDetailPage /></LazyWrapper> },
+                  ],
+                },
+                {
+                  element: <PermissionRoute entity="erp_order" operation="READ" />,
+                  children: [
+                    { path: '/erp-orders', element: <LazyWrapper><ErpOrderPage /></LazyWrapper> },
+                    { path: '/erp-orders/:id', element: <LazyWrapper><ErpOrderDetailPage /></LazyWrapper> },
                   ],
                 },
                 {
