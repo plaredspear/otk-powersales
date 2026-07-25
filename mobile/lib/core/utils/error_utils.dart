@@ -113,6 +113,26 @@ bool isInconclusiveError(dynamic e) {
   }
 }
 
+/// API 에러 응답에서 부가 정보(`error.details`)를 추출합니다.
+///
+/// 백엔드가 라인별 위반 목록처럼 구조화된 사유를 담아 주는 경우
+/// (예: 주문 등록의 `details.violations`) 화면이 항목별로 표시할 수 있게 한다.
+Map<String, dynamic>? extractErrorDetails(dynamic e) {
+  if (e is DioException) {
+    final data = e.response?.data;
+    if (data is Map<String, dynamic>) {
+      final error = data['error'];
+      if (error is Map<String, dynamic>) {
+        final details = error['details'];
+        if (details is Map<String, dynamic>) {
+          return details;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 /// API 에러 응답에서 에러 코드(`error.code`)를 추출합니다.
 ///
 /// DioException 의 서버 응답에서 `error.code` 를 반환하고,

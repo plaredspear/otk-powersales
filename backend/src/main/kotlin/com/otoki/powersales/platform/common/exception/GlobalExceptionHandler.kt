@@ -3,6 +3,7 @@ package com.otoki.powersales.platform.common.exception
 import com.otoki.powersales.platform.auth.exception.NewPasswordPolicyViolationException
 import com.otoki.powersales.platform.common.dto.ApiResponse
 import com.otoki.powersales.platform.common.dto.ErrorDetail
+import com.otoki.powersales.domain.activity.order.exception.OrderLineViolationsAware
 import com.otoki.powersales.domain.activity.promotion.exception.BatchValidationException
 import com.otoki.powersales.external.sap.inbound.dto.SapResultWrapper
 import org.springframework.http.HttpStatus
@@ -224,9 +225,15 @@ class GlobalExceptionHandler {
             log.warn("BusinessException {} ({}): {}", ex.errorCode, ex.httpStatus, ex.message)
         }
 
+        // 라인별 위반 목록을 가진 예외(주문 등록의 공급제한/환산 위반 등)는 `error.details.violations`
+        // 로 함께 내려 클라이언트가 제품 카드마다 사유를 표시할 수 있게 한다.
+        val violations = (ex as? OrderLineViolationsAware)?.violations
         val response = ApiResponse.error<Any>(
-            code = ex.errorCode,
-            message = ex.message ?: "Business logic error"
+            ErrorDetail(
+                code = ex.errorCode,
+                message = ex.message ?: "Business logic error",
+                details = if (violations.isNullOrEmpty()) null else mapOf("violations" to violations)
+            )
         )
 
         return ResponseEntity

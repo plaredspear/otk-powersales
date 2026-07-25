@@ -25,6 +25,17 @@ class OrderProductCard extends StatelessWidget {
     required this.onQuantityChanged,
   });
 
+  /// 에러 상세 지표 — 레거시 "최소주문단위 40개 | 공급 0개 | DC 0개" 정합.
+  List<String> get _errorMetrics {
+    final error = validationError;
+    if (error == null) return const [];
+    return [
+      if (error.minOrderQuantity != null) '최소주문단위 ${error.minOrderQuantity}개',
+      if (error.supplyQuantity != null) '공급 ${error.supplyQuantity}개',
+      if (error.dcQuantity != null) 'DC ${error.dcQuantity}개',
+    ];
+  }
+
   String _formatNumber(int value) {
     return value.toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
@@ -64,7 +75,12 @@ class OrderProductCard extends StatelessWidget {
                         padding: const EdgeInsets.only(top: AppSpacing.sm),
                         child: Text(
                           '${index + 1}. (${item.productCode}) ${item.productName}',
-                          style: AppTypography.headlineSmall,
+                          // 레거시: 위반 행은 제목까지 붉게 표시해 어느 제품인지 바로 보이게 한다.
+                          style: hasError
+                              ? AppTypography.headlineSmall.copyWith(
+                                  color: AppColors.error,
+                                )
+                              : AppTypography.headlineSmall,
                         ),
                       ),
                     ),
@@ -182,28 +198,16 @@ class OrderProductCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (validationError!.minOrderQuantity != null)
+                  // 레거시 write.jsp 문구/배치: "최소주문단위 N개 | 공급 N개 | DC N개" 한 줄.
+                  if (_errorMetrics.isNotEmpty)
                     Text(
-                      '최소 주문수량: ${validationError!.minOrderQuantity}박스',
+                      _errorMetrics.join('  |  '),
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.error,
                       ),
                     ),
-                  if (validationError!.supplyQuantity != null)
-                    Text(
-                      '공급수량: ${validationError!.supplyQuantity}개',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.error,
-                      ),
-                    ),
-                  if (validationError!.dcQuantity != null)
-                    Text(
-                      'DC수량: ${validationError!.dcQuantity}개',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.error,
-                      ),
-                    ),
-                  const SizedBox(height: AppSpacing.xs),
+                  if (_errorMetrics.isNotEmpty)
+                    const SizedBox(height: AppSpacing.xs),
                   Text(
                     validationError!.message,
                     style: AppTypography.bodySmall.copyWith(

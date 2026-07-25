@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/data/models/order_form/loan_inquiry_response_model.dart';
 import 'package:mobile/data/models/order_form/order_draft_response_model.dart';
 import 'package:mobile/domain/entities/order_draft.dart';
+import 'package:mobile/domain/entities/validation_error.dart';
 import 'package:mobile/domain/entities/product_for_order.dart';
 import 'package:mobile/domain/usecases/order_form/delete_order_draft.dart';
 import 'package:mobile/domain/usecases/order_form/get_loan_inquiry.dart';
@@ -748,12 +749,90 @@ void main() {
           '거래처 SAP 코드(external_key)가 없습니다',
         );
       });
+
+      test('등록 ORD_PRODUCT_RESTRICTED — details.violations 를 제품별 인라인 에러로 반영',
+          () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(
+            creditBalance: 1000000,
+            items: [
+              _item('P001', boxes: 1, pieces: 0),
+              _item('P002', boxes: 1, pieces: 0),
+              _item('P003', boxes: 1, pieces: 0),
+            ],
+          ),
+        );
+        formRepo.exceptionToThrow = _apiError(
+          'ORD_PRODUCT_RESTRICTED',
+          '주문할 수 없는 제품이 2건 있습니다',
+          details: {
+            'violations': [
+              {
+                'productCode': 'P001',
+                'productName': '제품1',
+                'reason': 'SUPPLY_LIMIT_EXCEEDED',
+                'message': '공급제한수량 초과',
+                'minOrderQuantity': 20,
+                'supplyQuantity': 0,
+                'requestedQuantity': 36,
+              },
+              {
+                'productCode': 'P003',
+                'productName': '제품3',
+                'reason': 'INVALID_UNIT',
+                'message': '환산수량 확인 오류',
+                'minOrderQuantity': 8,
+              },
+            ],
+          },
+        );
+
+        await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
+
+        // 위반 제품만 인라인 에러 — 정상 제품(P002)은 표시하지 않는다.
+        expect(notifier.state.validationErrors.keys, {'P001', 'P003'});
+        final restricted = notifier.state.validationErrors['P001']!;
+        expect(restricted.errorType, ValidationErrorType.supplyQuantity);
+        expect(restricted.message, '공급제한수량 초과');
+        expect(restricted.supplyQuantity, 0);
+        expect(restricted.minOrderQuantity, 20);
+        expect(
+          notifier.state.validationErrors['P003']!.errorType,
+          ValidationErrorType.minOrderQuantity,
+        );
+        // SnackBar 는 요약만 (레거시도 상세는 행에 표시).
+        expect(notifier.state.errorMessage, '주문할 수 없는 제품이 2건 있습니다');
+      });
+
+      test('등록 재시도 시 직전 인라인 에러는 초기화된다', () async {
+        seedValidState();
+        notifier.state = notifier.state.copyWith(
+          orderDraft: notifier.state.orderDraft.copyWith(creditBalance: 1000000),
+          validationErrors: {
+            'P001': const ValidationError(
+              errorType: ValidationErrorType.supplyQuantity,
+              message: '공급제한수량 초과',
+            ),
+          },
+        );
+
+        await notifier.validateAndSubmitOrder();
+        await notifier.confirmSubmit();
+
+        expect(notifier.state.validationErrors, isEmpty);
+      });
     });
   });
 }
 
 /// 서버 표준 에러 응답(`{"error": {"code", "message"}}`) 형태의 DioException 생성.
-DioException _apiError(String code, String message) {
+DioException _apiError(
+  String code,
+  String message, {
+  Map<String, dynamic>? details,
+}) {
   final options = RequestOptions(path: '/api/v1/mobile/order-requests');
   return DioException(
     requestOptions: options,
@@ -762,7 +841,11 @@ DioException _apiError(String code, String message) {
       requestOptions: options,
       statusCode: 500,
       data: {
-        'error': {'code': code, 'message': message},
+        'error': {
+          'code': code,
+          'message': message,
+          if (details != null) 'details': details,
+        },
       },
     ),
   );

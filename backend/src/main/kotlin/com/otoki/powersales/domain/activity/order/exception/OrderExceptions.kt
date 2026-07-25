@@ -107,22 +107,76 @@ class OrderLoanExceededException(creditBalance: BigDecimal, totalAmount: BigDeci
 )
 
 /**
- * 공급제한 초과 (`InventorySearch.SupplyLimitQTY < quantityPieces`).
+ * 라인(제품) 단위 검증 위반 1건. 레거시 write.jsp 는 위반 제품 **행마다** 사유를 표시했으므로
+ * (한 건만 알려주고 끝내지 않는다) 모바일이 제품 카드별로 표시할 수 있게 구조화해 내려준다.
+ * `error.details.violations` 배열로 직렬화된다.
  */
-class OrderProductRestrictedException(productCode: String, limit: Int, requested: Int) : BusinessException(
+data class OrderLineViolation(
+    val productCode: String,
+    val productName: String,
+    val reason: Reason,
+    /** 제품 카드 하단에 그대로 노출되는 사유 문구 (레거시 "공급제한수량 초과" 등). */
+    val message: String,
+    /** 환산수량(주문 단위) — 레거시 "최소주문단위 N개". */
+    val minOrderQuantity: Int? = null,
+    /** 공급 가능 수량(총 EA 환산) — 레거시 "공급 N개". */
+    val supplyQuantity: Int? = null,
+    /** 요청 수량(총 EA). */
+    val requestedQuantity: Int? = null,
+) {
+    enum class Reason { INVALID_UNIT, SUPPLY_LIMIT_EXCEEDED }
+}
+
+/**
+ * 라인별 위반 목록을 담는 예외 표식. GlobalExceptionHandler 가 `error.details.violations` 로 내려준다.
+ */
+interface OrderLineViolationsAware {
+    val violations: List<OrderLineViolation>
+}
+
+/**
+ * 공급제한 초과 (`InventorySearch.SupplyLimitQTY < quantityPieces`).
+ *
+ * 위반 라인을 **모두** 담는다(첫 건에서 중단하지 않음). 환산수량 위반이 섞여 있으면 그 건도 함께 담고
+ * 코드는 공급제한(ORD_PRODUCT_RESTRICTED)으로 대표한다 — 모바일은 라인별 reason 으로 구분해 표시한다.
+ */
+class OrderProductRestrictedException(
+    override val violations: List<OrderLineViolation>
+) : BusinessException(
     errorCode = "ORD_PRODUCT_RESTRICTED",
-    message = "공급제한을 초과한 제품이 있습니다 (productCode: $productCode, limit: $limit, requested: $requested)",
+    message = summarize(violations),
     httpStatus = HttpStatus.BAD_REQUEST
-)
+),
+    OrderLineViolationsAware {
+    companion object {
+        private fun summarize(violations: List<OrderLineViolation>): String {
+            val single = violations.singleOrNull()
+                ?: return "주문할 수 없는 제품이 ${violations.size}건 있습니다"
+            return "${single.productName} ${single.message}" +
+                if (single.supplyQuantity != null && single.requestedQuantity != null) {
+                    " (공급 ${single.supplyQuantity}개 / 요청 ${single.requestedQuantity}개)"
+                } else {
+                    ""
+                }
+        }
+    }
+}
 
 /**
  * 단위 환산 정합 위반 또는 unit enum 위반.
+ *
+ * 환산 위반은 라인별 [violations] 를 함께 담아 모바일이 제품 카드마다 사유를 표시할 수 있게 한다
+ * (unit enum 위반 등 라인 정보가 없는 경우는 빈 목록).
  */
-class OrderInvalidUnitException(detail: String) : BusinessException(
+class OrderInvalidUnitException(
+    detail: String,
+    override val violations: List<OrderLineViolation> = emptyList()
+) : BusinessException(
     errorCode = "ORD_INVALID_UNIT",
     message = detail,
     httpStatus = HttpStatus.BAD_REQUEST
-)
+),
+    OrderLineViolationsAware
 
 /**
  * 입력값 형식 검증 위반 (라인 누락 / 음수 / 미래 일자 / 제품 마스터 미등록 등).

@@ -10,6 +10,7 @@ import com.otoki.powersales.domain.activity.order.exception.OrderAccountForbidde
 import com.otoki.powersales.domain.activity.order.exception.OrderDeadlinePassedException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidRequestException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidUnitException
+import com.otoki.powersales.domain.activity.order.exception.OrderLineViolation
 import com.otoki.powersales.domain.activity.order.exception.OrderLoanExceededException
 import com.otoki.powersales.domain.activity.order.exception.OrderProductRestrictedException
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
@@ -209,6 +210,10 @@ class OrderRequestCreateService(
         request: OrderRequestCreateRequest,
         inventoryMap: Map<String, InventoryInfo>,
     ) {
+        // 레거시 write.jsp 는 위반 행을 모두 붉게 표시했으므로 첫 위반에서 멈추지 않고 전 라인을 검사해
+        // 위반 목록을 모은다. 모바일은 이 목록으로 제품 카드마다 사유를 표시한다.
+        val violations = mutableListOf<OrderLineViolation>()
+
         request.lines.forEach { line ->
             val info = inventoryMap[line.productCode]
                 ?: throw OrderInvalidRequestException("제품 마스터 미등록 (productCode: ${line.productCode})")
@@ -221,11 +226,15 @@ class OrderRequestCreateService(
             if (!UnitConverter.isPiecesValid(unit, line.quantityPieces, conv)) {
                 // 레거시 원문 정합: 위반 행에 "최소주문단위 N개"(conversionQuantity) + 에러 사유
                 // "환산수량 확인 오류" 두 조각을 노출했다(write.jsp:704,710 / OrderController.java:638).
-                // 신규는 SnackBar 단일 문구이므로 두 조각을 그대로 이어붙이되, 어느 제품인지 식별할
-                // 수 있게 제품명을 앞에 둔다. 개발자용 raw 값(productCode/unit/quantityPieces) 제거.
-                throw OrderInvalidUnitException(
-                    "${info.productName} 최소주문단위 ${conv}개 / 환산수량 확인 오류"
+                violations += OrderLineViolation(
+                    productCode = line.productCode,
+                    productName = info.productName,
+                    reason = OrderLineViolation.Reason.INVALID_UNIT,
+                    message = "환산수량 확인 오류",
+                    minOrderQuantity = conv,
+                    requestedQuantity = line.quantityPieces,
                 )
+                return@forEach
             }
 
             // 공급제한 검증 — 레거시 OrderController.java:557-558,650.
@@ -235,13 +244,37 @@ class OrderRequestCreateService(
                 if (unit == UNIT_EA) info.supplyLimitQuantity.toLong()
                 else info.supplyLimitQuantity.toLong() * conv.toLong()
             if (supplyLimitPieces < line.quantityPieces.toLong()) {
-                throw OrderProductRestrictedException(
+                violations += OrderLineViolation(
                     productCode = line.productCode,
-                    limit = info.supplyLimitQuantity,
-                    requested = line.quantityPieces,
+                    productName = info.productName,
+                    reason = OrderLineViolation.Reason.SUPPLY_LIMIT_EXCEEDED,
+                    // 레거시 write.jsp 문구 그대로.
+                    message = "공급제한수량 초과",
+                    minOrderQuantity = conv,
+                    supplyQuantity = supplyLimitPieces.toInt(),
+                    requestedQuantity = line.quantityPieces,
                 )
             }
         }
+
+        if (violations.isEmpty()) return
+
+        // 공급제한 위반이 하나라도 있으면 ORD_PRODUCT_RESTRICTED 로 대표하고, 환산 위반만이면
+        // 기존 ORD_INVALID_UNIT 을 유지한다(라인별 사유는 어느 쪽이든 violations 로 함께 전달).
+        val hasSupplyViolation =
+            violations.any { it.reason == OrderLineViolation.Reason.SUPPLY_LIMIT_EXCEEDED }
+        if (hasSupplyViolation) {
+            throw OrderProductRestrictedException(violations)
+        }
+        val single = violations.singleOrNull()
+        throw OrderInvalidUnitException(
+            detail = if (single != null) {
+                "${single.productName} 최소주문단위 ${single.minOrderQuantity}개 / ${single.message}"
+            } else {
+                "환산수량 확인이 필요한 제품이 ${violations.size}건 있습니다"
+            },
+            violations = violations,
+        )
     }
 
     // 레거시 SF Auto Number `OP{00000000}` 와 동일 폭 (prefix 2자 + 8자리) 으로 채번.

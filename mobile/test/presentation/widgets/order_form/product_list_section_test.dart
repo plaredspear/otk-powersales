@@ -31,7 +31,7 @@ Widget _host(List<OrderDraftItem> items, ScrollController controller) {
             onAddProduct: () {},
             onBarcodeScan: () {},
             onRemoveSelected: () {},
-            onQuantityChanged: (_, __, ___) {},
+            onQuantityChanged: (_, _, _) {},
           ),
           // 실제 화면(order_form_page)과 동일하게 섹션 뒤 하단 여백을 둔다.
           const SliverToBoxAdapter(child: SizedBox(height: 32)),

@@ -645,6 +645,8 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
       isSubmitting: true,
       clearError: true,
       clearSuccess: true,
+      // 직전 시도의 라인별 에러 표시는 재시도 시점에 지운다.
+      clearValidationErrors: true,
     );
 
     final payload = OrderRequestPayloadModel(
@@ -688,11 +690,48 @@ class OrderFormNotifier extends StateNotifier<OrderFormState> {
         clearClientRequestId: true,
       );
     } catch (e) {
+      // 서버가 라인별 위반 목록을 내려주면(공급제한/환산수량) 제품 카드마다 사유를 표시한다
+      // (레거시 write.jsp 정합 — 위반 제품을 전부 붉게 표시).
+      final lineErrors = _extractLineValidationErrors(e);
       state = state.copyWith(
         isSubmitting: false,
         errorMessage: _mapSubmitError(e),
+        validationErrors: lineErrors,
+        clearValidationErrors: lineErrors == null,
       );
     }
+  }
+
+  /// 주문 등록 실패 응답의 `error.details.violations` → 제품별 [ValidationError] 맵.
+  /// 위반 목록이 없으면 null (기존 인라인 에러는 지운다).
+  Map<String, ValidationError>? _extractLineValidationErrors(Object error) {
+    final violations = extractErrorDetails(error)?['violations'];
+    if (violations is! List || violations.isEmpty) return null;
+
+    final result = <String, ValidationError>{};
+    for (final raw in violations) {
+      if (raw is! Map) continue;
+      final productCode = raw['productCode'];
+      if (productCode is! String || productCode.isEmpty) continue;
+      final reason = raw['reason'];
+      result[productCode] = ValidationError(
+        errorType: reason == 'INVALID_UNIT'
+            ? ValidationErrorType.minOrderQuantity
+            : ValidationErrorType.supplyQuantity,
+        message: raw['message'] is String
+            ? raw['message'] as String
+            : '주문할 수 없는 제품입니다',
+        minOrderQuantity: _asInt(raw['minOrderQuantity']),
+        supplyQuantity: _asInt(raw['supplyQuantity']),
+      );
+    }
+    return result.isEmpty ? null : result;
+  }
+
+  int? _asInt(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return null;
   }
 
   String _mapSubmitError(Object error) {

@@ -15,6 +15,7 @@ import com.otoki.powersales.domain.activity.order.enums.OrderRequestStatus
 import com.otoki.powersales.domain.activity.order.exception.OrderDeadlinePassedException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidRequestException
 import com.otoki.powersales.domain.activity.order.exception.OrderInvalidUnitException
+import com.otoki.powersales.domain.activity.order.exception.OrderLineViolation
 import com.otoki.powersales.domain.activity.order.exception.OrderLoanExceededException
 import com.otoki.powersales.domain.activity.order.exception.OrderProductRestrictedException
 import com.otoki.powersales.domain.activity.order.repository.OrderRequestProductRepository
@@ -33,6 +34,7 @@ import jakarta.persistence.EntityManager
 import jakarta.persistence.Query
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.assertj.core.api.Assertions.catchThrowableOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -320,6 +322,40 @@ class OrderRequestCreateServiceTest {
             )
             assertThatThrownBy { service.create(userId, request) }
                 .isInstanceOf(OrderProductRestrictedException::class.java)
+        }
+
+        @Test
+        @DisplayName("공급제한 위반 라인이 여러 건이면 전부 violations 로 반환 (첫 건에서 중단하지 않음)")
+        fun productRestrictedCollectsAllLines() {
+            stubAuthAndAccount()
+            stubInventory(
+                mapOf(
+                    "P001" to inventoryInfo("P001", conv = 1, supply = 50),
+                    "P002" to inventoryInfo("P002", conv = 1, supply = 1000),
+                    "P003" to inventoryInfo("P003", conv = 1, supply = 0),
+                )
+            )
+
+            val request = baseRequest(
+                lines = listOf(
+                    line(lineNumber = 10, productCode = "P001", quantity = 100, unit = "EA", quantityPieces = 100),
+                    line(lineNumber = 20, productCode = "P002", quantity = 10, unit = "EA", quantityPieces = 10),
+                    line(lineNumber = 30, productCode = "P003", quantity = 36, unit = "EA", quantityPieces = 36),
+                )
+            )
+
+            val thrown = catchThrowableOfType(
+                { service.create(userId, request) },
+                OrderProductRestrictedException::class.java,
+            )
+            assertThat(thrown.violations).hasSize(2)
+            assertThat(thrown.violations.map { it.productCode }).containsExactly("P001", "P003")
+            assertThat(thrown.violations.map { it.reason })
+                .containsOnly(OrderLineViolation.Reason.SUPPLY_LIMIT_EXCEEDED)
+            assertThat(thrown.violations.first().supplyQuantity).isEqualTo(50)
+            assertThat(thrown.violations.first().requestedQuantity).isEqualTo(100)
+            assertThat(thrown.violations.first().message).isEqualTo("공급제한수량 초과")
+            assertThat(thrown.message).isEqualTo("주문할 수 없는 제품이 2건 있습니다")
         }
 
         @Test
