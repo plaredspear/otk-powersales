@@ -19809,7 +19809,7 @@
     },
     "/api/v1/admin/accounts/branches" : {
       "get" : {
-        "operationId" : "getBranches_8",
+        "operationId" : "getBranches_7",
         "responses" : {
           "200" : {
             "content" : {
@@ -20767,7 +20767,7 @@
     },
     "/api/v1/admin/attend-info/branches" : {
       "get" : {
-        "operationId" : "getBranches_7",
+        "operationId" : "getBranches_6",
         "responses" : {
           "200" : {
             "content" : {
@@ -21603,7 +21603,7 @@
     },
     "/api/v1/admin/dashboard/branches" : {
       "get" : {
-        "operationId" : "getBranches_6",
+        "operationId" : "getBranches_5",
         "responses" : {
           "200" : {
             "content" : {
@@ -22841,7 +22841,7 @@
     },
     "/api/v1/admin/employees/branches" : {
       "get" : {
-        "operationId" : "getBranches_5",
+        "operationId" : "getBranches_4",
         "responses" : {
           "200" : {
             "content" : {
@@ -23737,13 +23737,6 @@
         "operationId" : "getFemaleEmployees",
         "parameters" : [ {
           "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
-          "in" : "query",
           "name" : "status",
           "required" : false,
           "schema" : {
@@ -23809,24 +23802,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseEmployeeListResponse"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "admin-female-employee-controller" ]
-      }
-    },
-    "/api/v1/admin/female-employees/branches" : {
-      "get" : {
-        "operationId" : "getBranches_4",
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListBranchResponse"
                 }
               }
             },
@@ -23935,13 +23910,6 @@
       "get" : {
         "operationId" : "exportFemaleEmployees",
         "parameters" : [ {
-          "in" : "query",
-          "name" : "scope",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/DataScope"
-          }
-        }, {
           "in" : "query",
           "name" : "status",
           "required" : false,

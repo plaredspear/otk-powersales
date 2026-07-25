@@ -95,6 +95,59 @@ class WomenScheduleBranchResolverTest {
         assertThat(resolver.isBranchAllowed(principal, "9999")).isFalse()
     }
 
+    @Test
+    @DisplayName("isAllBranchesUser - 전사 프로필(시스템 관리자/영업지원/본부장·사업부장·영업부장) 이면 true")
+    fun isAllBranchesUser_allBranchProfiles() {
+        assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = "9999", profileName = "시스템 관리자")))
+            .isTrue()
+        assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = "3475", isSalesSupport = true)))
+            .isTrue()
+        assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = "3475", profileName = "1.본부장")))
+            .isTrue()
+        assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = "3475", profileName = "3.영업부장")))
+            .isTrue()
+    }
+
+    @Test
+    @DisplayName("isAllBranchesUser - 지점 권한자(조장 등) 는 false. 4889 단독으로는 전사가 되지 않는다")
+    fun isAllBranchesUser_scopedUsers() {
+        assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = "5457"))).isFalse()
+        assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = null))).isFalse()
+        // 4889(영업지원2팀) 는 isAllBranchLookupUser 로만 전사 — resolveBranches 의 전사 분기에 없는
+        // 조건이므로 isAllBranchesUser 에 포함하면 셀렉터(조직 트리)↔조회(전사) 가 fail-open 으로 갈라진다.
+        assertThat(resolver.isAllBranchesUser(principalOf(costCenterCode = "4889"))).isFalse()
+    }
+
+    @Test
+    @DisplayName("드리프트 가드 - isAllBranchesUser 와 resolveBranches 의 전사 분기 판정이 항상 일치")
+    fun isAllBranchesUser_matchesResolveBranchesAllBranchBranch() {
+        // resolveBranches 가 어떤 분기를 탔는지 반환값으로 식별하기 위해 분기별 마커 지점을 stub 한다.
+        val allBranchMarker = listOf(BranchResponse("ALL", "전사"))
+        val scopedMarker = listOf(BranchResponse("SCOPED", "본인지점"))
+        every { organizationRepository.findAllTeamScheduleBranches() } returns allBranchMarker
+        every { organizationRepository.findTeamScheduleBranches(null, true) } returns allBranchMarker
+        every { organizationRepository.findTeamScheduleBranches(any(), false) } returns scopedMarker
+
+        val principals = listOf(
+            principalOf(costCenterCode = "9999", profileName = "시스템 관리자"),
+            principalOf(costCenterCode = "3475", isSalesSupport = true),
+            principalOf(costCenterCode = "3475", profileName = "1.본부장"),
+            principalOf(costCenterCode = "3475", profileName = "2.사업부장"),
+            principalOf(costCenterCode = "3475", profileName = "3.영업부장"),
+            principalOf(costCenterCode = "5457"),
+            // 영업지원2팀 — isSalesSupport 캐시 컬럼이 아직 false 인 상태를 재현 (fail-open 회귀 방지 핵심 케이스)
+            principalOf(costCenterCode = "4889"),
+            principalOf(costCenterCode = null),
+        )
+
+        for (principal in principals) {
+            val tookAllBranchBranch = resolver.resolveBranches(principal) == allBranchMarker
+            assertThat(resolver.isAllBranchesUser(principal))
+                .describedAs("costCenterCode=%s profile=%s", principal.costCenterCode, principal.profileName)
+                .isEqualTo(tookAllBranchBranch)
+        }
+    }
+
     private fun principalOf(
         costCenterCode: String?,
         profileName: String = "9. Staff",

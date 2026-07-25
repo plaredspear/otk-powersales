@@ -45,13 +45,37 @@ class WomenScheduleBranchResolver(
     fun isAllBranchLookupUser(principal: WebUserPrincipal): Boolean =
         principal.costCenterCode == ALL_BRANCH_LOOKUP_COST_CENTER_CODE
 
+    /**
+     * 지점 보안 필터를 적용하지 않는 "전사 가시" 사용자인지 여부 — [resolveBranches] 의 전사 분기와 **동일 술어**.
+     *
+     * 목록/엑셀 조회 스코프를 셀렉터 옵션([resolveBranches]) 과 동일 출처로 맞추려는 호출부가
+     * `DataScope.isAllBranches` 를 결정할 때 사용한다 (전사 판정 로직을 호출부에 복제하지 않도록 노출).
+     *
+     * **주의**: [isAllBranchLookupUser] (영업지원2팀 4889) 는 여기에 포함하지 않는다 — [resolveBranches]
+     * 의 전사 분기에 없는 조건을 넣으면 셀렉터는 본인 조직 트리만 주는데 조회는 전사가 되어
+     * fail-open 방향으로 두 축이 갈라진다. 4889 를 여사원 현황에서도 전사로 취급해야 한다면
+     * [resolveBranches] 의 전사 분기와 **함께** 넓혀야 한다 (셀렉터 UX 까지 영향).
+     */
+    fun isAllBranchesUser(principal: WebUserPrincipal): Boolean = isAllBranchesScope(principal)
+
+    /**
+     * [resolveBranches] 전사 분기 / [isAllBranchesUser] 가 공유하는 단일 술어.
+     * 두 함수가 구조적으로 갈라질 수 없도록 판정을 한 곳에 둔다.
+     */
+    private fun isAllBranchesScope(principal: WebUserPrincipal): Boolean {
+        val profileName = principal.profileName
+        return profileName == SYSTEM_ADMIN_PROFILE_NAME ||
+            principal.isSalesSupport ||
+            profileName in allBranchesProfiles
+    }
+
     /** 권한별 조회 허용 지점 목록. */
     fun resolveBranches(principal: WebUserPrincipal): List<BranchResponse> {
         val profileName = principal.profileName
-        val isAllBranches = principal.isSalesSupport || profileName in allBranchesProfiles
         return when {
             profileName == SYSTEM_ADMIN_PROFILE_NAME -> organizationRepository.findAllTeamScheduleBranches()
-            isAllBranches -> organizationRepository.findTeamScheduleBranches(hrCode = null, allBranches = true)
+            isAllBranchesScope(principal) ->
+                organizationRepository.findTeamScheduleBranches(hrCode = null, allBranches = true)
             else -> organizationRepository.findTeamScheduleBranches(
                 hrCode = principal.costCenterCode,
                 allBranches = false,

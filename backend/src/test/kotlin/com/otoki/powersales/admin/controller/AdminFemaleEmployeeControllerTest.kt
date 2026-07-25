@@ -2,6 +2,7 @@ package com.otoki.powersales.admin.controller
 
 import com.ninjasquad.springmockk.MockkBean
 import com.otoki.powersales.admin.dto.DataScope
+import com.otoki.powersales.admin.dto.EffectiveBranchResult
 import com.otoki.powersales.admin.security.CurrentAdminContextArgumentResolver
 import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.entity.AppAuthority
@@ -18,11 +19,14 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import com.otoki.powersales.platform.common.dto.response.BranchResponse
 import com.otoki.powersales.platform.common.util.excel.ExcelResult
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -73,16 +77,29 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     private lateinit var womenScheduleBranchResolver: WomenScheduleBranchResolver
 
     @MockkBean
+    private lateinit var branchCodeExpander: BranchCodeExpander
+
+    @MockkBean
     private lateinit var currentAdminContextArgumentResolver: CurrentAdminContextArgumentResolver
 
     @BeforeEach
+    fun stubBranchScope() {
+        // 목록/엑셀 지점 스코프 기본 stub — 전사 권한자로 두어 지점 필터 없이 조회되게 한다.
+        // 지점 권한자 경로를 검증하는 테스트에서 override.
+        every { womenScheduleBranchResolver.isAllBranchesUser(any()) } returns true
+        // 이력 코드(BranchMapping) 확장은 기본적으로 pass-through — 확장 자체는 BranchCodeExpanderTest 책임.
+        every { branchCodeExpander.expand(any()) } answers { firstArg<Collection<String>>().toSet() }
+    }
+
+    @BeforeEach
     fun stubArgumentResolver() {
+        // 본 컨트롤러는 @CurrentDataScope 를 쓰지 않지만 (지점 스코프는 resolveBranchScope 가 산출),
+        // JacksonConfig 가 resolver 빈을 요구하고 Spring 이 모든 핸들러 파라미터마다 supportsParameter 를
+        // 호출하므로 stub 을 유지한다. resolveArgument 는 호출되지 않아 stub 하지 않는다.
         every { currentAdminContextArgumentResolver.supportsParameter(any()) } answers {
             val parameter = firstArg<MethodParameter>()
             parameter.hasParameterAnnotation(CurrentDataScope::class.java)
         }
-        every { currentAdminContextArgumentResolver.resolveArgument(any(), any(), any(), any()) } returns
-            DataScope(branchCodes = emptyList(), isAllBranches = true)
     }
 
     @Test
@@ -156,21 +173,57 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
     }
 
     @Test
-    @DisplayName("GET /api/v1/admin/female-employees/branches - 권한별 지점 화이트리스트 반환 (female_employee 가드)")
-    fun getBranches_returnsWhitelist() {
+    @DisplayName("지점 권한자 - /meta 셀렉터 옵션 지점을 조회하면 그 지점 스코프로 조회 (셀렉터↔조회 동일 출처)")
+    fun getFemaleEmployees_selectorBranchIsQueryable() {
+        // 조장 등 지점 권한자: 셀렉터 옵션 = 본인 costCenterCode 의 조직 트리 (A001 + 형제 A002).
+        every { womenScheduleBranchResolver.isAllBranchesUser(any()) } returns false
         every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
             BranchResponse(branchCode = "A001", branchName = "서울1지점"),
             BranchResponse(branchCode = "A002", branchName = "서울2지점"),
         )
+        val scopeSlot = slot<DataScope>()
+        every {
+            adminEmployeeService.getEmployees(
+                scope = capture(scopeSlot), status = any(), costCenterCode = any(), keyword = any(),
+                role = any(), page = any(), size = any(), applyBranchScope = eq(true),
+                roles = eq(FEMALE_EMPLOYEE_ROLES), workType1 = any(), workType3 = any(),
+                professionalPromotionTeam = any(),
+            )
+        } returns EmployeeListResponse(emptyList(), 0, 20, 0, 0)
 
-        mockMvc.perform(get("/api/v1/admin/female-employees/branches"))
+        // 셀렉터가 옵션으로 내려준 형제 지점(A002) 을 선택해 조회 — 본인 소속 지점이 아니어도 허용돼야 한다.
+        mockMvc.perform(get("/api/v1/admin/female-employees").param("costCenterCode", "A002"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data[0].branchCode").value("A001"))
-            .andExpect(jsonPath("$.data[0].branchName").value("서울1지점"))
-            .andExpect(jsonPath("$.data[1].branchCode").value("A002"))
 
-        verify(exactly = 1) { womenScheduleBranchResolver.resolveBranches(any()) }
+        // 스코프의 지점 집합이 셀렉터 옵션(조직 트리) 과 동일 출처 — A002 가 포함돼 NoAccess 가 아니다.
+        assertThat(scopeSlot.captured.isAllBranches).isFalse()
+        assertThat(scopeSlot.captured.branchCodes).containsExactlyInAnyOrder("A001", "A002")
+        assertThat(scopeSlot.captured.effectiveBranchCodes("A002"))
+            .isInstanceOf(EffectiveBranchResult.Filtered::class.java)
+    }
+
+    @Test
+    @DisplayName("지점 권한자 - 권한 밖 지점 요청은 빈 목록 (IDOR 차단)")
+    fun getFemaleEmployees_deniesBranchOutsideScope() {
+        every { womenScheduleBranchResolver.isAllBranchesUser(any()) } returns false
+        // 셀렉터 화이트리스트에 없는 지점(Z999) 요청 — 조직 트리는 A001 뿐이다.
+        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "A001", branchName = "서울1지점"),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/female-employees").param("costCenterCode", "Z999"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.content").isEmpty)
+            .andExpect(jsonPath("$.data.totalElements").value(0))
+
+        // 권한 밖 지점은 서비스 조회 자체를 하지 않는다.
+        verify(exactly = 0) {
+            adminEmployeeService.getEmployees(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+            )
+        }
     }
 
     @Test
@@ -290,6 +343,32 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
                 applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
             )
         }
+    }
+
+    @Test
+    @DisplayName("export - 권한 밖 지점 요청은 NO_ACCESS 스코프 전달 → 헤더만 있는 빈 엑셀 (IDOR 차단)")
+    fun exportFemaleEmployees_deniesBranchOutsideScope() {
+        every { womenScheduleBranchResolver.isAllBranchesUser(any()) } returns false
+        every { womenScheduleBranchResolver.resolveBranches(any()) } returns listOf(
+            BranchResponse(branchCode = "A001", branchName = "서울1지점"),
+        )
+        val scopeSlot = slot<DataScope>()
+        every {
+            adminEmployeeService.exportEmployees(
+                scope = capture(scopeSlot), status = any(), costCenterCode = any(), keyword = any(),
+                role = any(), applyBranchScope = eq(true), roles = eq(FEMALE_EMPLOYEE_ROLES),
+                workType1 = any(), workType3 = any(), professionalPromotionTeam = any(),
+            )
+        } returns ExcelResult(bytes = ByteArray(10), filename = "여사원현황.xlsx")
+
+        mockMvc.perform(get("/api/v1/admin/female-employees/export").param("costCenterCode", "Z999"))
+            .andExpect(status().isOk)
+
+        // branchCodes 가 비어 있어 서비스의 effectiveBranchCodes 가 NoAccess → 빈 목록으로 export.
+        assertThat(scopeSlot.captured.isAllBranches).isFalse()
+        assertThat(scopeSlot.captured.branchCodes).isEmpty()
+        assertThat(scopeSlot.captured.effectiveBranchCodes("Z999"))
+            .isEqualTo(EffectiveBranchResult.NoAccess)
     }
 
     @Test

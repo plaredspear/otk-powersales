@@ -4,7 +4,6 @@ import com.otoki.powersales.platform.auth.permission.PermissionResource
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
 import com.otoki.powersales.admin.dto.DataScope
-import com.otoki.powersales.admin.security.CurrentDataScope
 import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.dto.ApiResponse
@@ -22,7 +21,7 @@ import com.otoki.powersales.domain.org.employee.service.AdminEmployeeService
 import com.otoki.powersales.domain.activity.schedule.dto.response.EmployeeWorkHistoryResponse
 import com.otoki.powersales.domain.activity.schedule.service.EmployeeWorkHistoryService
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
-import com.otoki.powersales.platform.common.dto.response.BranchResponse
+import com.otoki.powersales.domain.org.organization.branchmapping.BranchCodeExpander
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
@@ -50,6 +49,13 @@ import java.time.format.DateTimeParseException
  * (`female_employee`) 으로 부여한다 — JPA entity 가 없는 가상 자원이라 [PermissionResource] 로 등록.
  * 상세/근무이력은 [AdminEmployeeController] 의 공용 endpoint 를 쓰지 않고 본 컨트롤러에서
  * `female_employee` 가드로 제공하여 여사원 권한만으로 현황+상세 완결 접근이 되도록 한다.
+ *
+ * ## 지점 스코프 단일 출처 — [WomenScheduleBranchResolver]
+ *
+ * 목록 조회 조건(`/meta` 의 지점 셀렉터 옵션) 과 목록/엑셀 조회의 지점 보안 스코프
+ * ([resolveBranchScope]) 가 **동일 resolver** 를 공유한다. 과거에는 셀렉터만 resolver 를 쓰고
+ * 조회는 `@CurrentDataScope` (본인 지점 1건) 를 써서, 셀렉터에 노출된 형제/상위 지점을 고르면
+ * 빈 목록이 되는 드리프트가 있었다.
  */
 @RestController
 @RequestMapping("/api/v1/admin/female-employees")
@@ -59,47 +65,27 @@ class AdminFemaleEmployeeController(
     private val employeeWorkHistoryService: EmployeeWorkHistoryService,
     private val adminEmployeeCredentialService: AdminEmployeeCredentialService,
     private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
+    private val branchCodeExpander: BranchCodeExpander,
 ) {
 
     companion object {
         /** 여사원 현황에 노출할 직책 — 여사원 + 조장(여사원 조직 관리자). */
         private val FEMALE_EMPLOYEE_ROLES = listOf(AppAuthority.WOMAN, AppAuthority.LEADER)
-    }
 
-    /**
-     * 여사원 현황 화면 지점 셀렉터 옵션 — `female_employee` 권한으로 가드.
-     *
-     * 여사원 일정/대시보드/전문행사조와 동일하게 [WomenScheduleBranchResolver] 로 권한별 지점
-     * 화이트리스트를 산출한다 (단일 출처). 여사원 현황 화면이 필요로 하는 lookup 이므로 화면의
-     * 게이팅 권한(`female_employee`)과 동일하게 가드한다 — 다른 도메인(전문행사조) endpoint 를
-     * 빌려쓰지 않아 조장 등 여사원 권한만 가진 직책도 접근 가능하게 한다.
-     */
-    @GetMapping("/branches")
-    @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
-    fun getBranches(
-        @AuthenticationPrincipal principal: WebUserPrincipal,
-    ): ResponseEntity<ApiResponse<List<BranchResponse>>> {
-        val result = womenScheduleBranchResolver.resolveBranches(principal)
-        return ResponseEntity.ok(ApiResponse.success(result))
+        /** 권한 밖 지점 요청 시 사용 — `branchCodes` 가 비어 `effectiveBranchCodes` 가 NoAccess 로 판정한다. */
+        private val NO_ACCESS_SCOPE = DataScope(branchCodes = emptyList(), isAllBranches = false)
     }
 
     /**
      * 여사원 현황 목록 화면 조회 조건 로드 — "권한 기반 조건 로드" 표준 패턴 (행사마스터 `/meta` 정합).
      *
-     * 기존 `/branches`(지점 셀렉터) 1회 호출 + web 하드코딩(재직상태·근무형태1·근무형태3·전문행사조)
-     * 으로 분산됐던 목록 조건 로드를 단일 응답으로 통합. 정적 조건(재직상태·근무형태·전문행사조)과
-     * 기본값은 서비스가, 권한 의존 지점 옵션은 [WomenScheduleBranchResolver] 결과를 컨트롤러가 조립해 붙인다.
+     * 별도 `/branches` endpoint(지점 셀렉터) + web 하드코딩(재직상태·근무형태1·근무형태3·전문행사조)
+     * 으로 분산됐던 목록 조건 로드를 단일 응답으로 통합했다 (`/branches` 는 호출처가 없어져 제거).
+     * 정적 조건(재직상태·근무형태·전문행사조)과 기본값은 서비스가, 권한 의존 지점 옵션은
+     * [WomenScheduleBranchResolver] 결과를 컨트롤러가 조립해 붙인다.
      *
-     * ## 지점 옵션 ↔ 목록 조회 스코프 축이 다름 (기존 `/branches` 동작 그대로 이관)
-     *
-     * 셀렉터 옵션은 [WomenScheduleBranchResolver] (본인 costCenterCode 의 **조직 트리 전체** — SF
-     * `CurrentUserBranchNameList` 정합) 이지만, [getFemaleEmployees] 의 지점 보안 스코프는
-     * `@CurrentDataScope` → `DataScope.branchCodes = listOfNotNull(costCenterCode)` (**본인 지점 1건**) 이다.
-     * 따라서 지점 권한자가 셀렉터에서 본인 소속 지점이 아닌 형제/상위 지점을 고르면
-     * `EffectiveBranchResult.NoAccess` 로 빈 목록이 된다.
-     *
-     * 이는 본 `/meta` 통합 이전의 `/branches` 셀렉터도 동일했던 **기존 동작**이며, 두 축을 통일하는 것은
-     * 지점 가시 범위(SF 동등성) 정책 변경이라 본 리팩토링 범위에서 제외했다.
+     * 셀렉터 옵션과 목록/엑셀 조회 스코프는 **동일 출처**([WomenScheduleBranchResolver]) 를 공유한다
+     * ([resolveBranchScope] 참조) — 셀렉터에 노출된 지점을 고르면 항상 그 지점 결과가 나온다.
      */
     @GetMapping("/meta")
     @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
@@ -119,11 +105,16 @@ class AdminFemaleEmployeeController(
         return ResponseEntity.ok(ApiResponse.success(response))
     }
 
+    /**
+     * 여사원 현황 목록 조회.
+     *
+     * 지점 스코프는 [resolveBranchScope] 로 산출한다 — `/meta` 셀렉터 옵션과 동일 출처
+     * ([WomenScheduleBranchResolver]) 이므로 셀렉터에 보이는 지점을 고르면 그 지점 결과가 나온다.
+     */
     @GetMapping
     @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
     fun getFemaleEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false) keyword: String?,
@@ -135,15 +126,23 @@ class AdminFemaleEmployeeController(
         @RequestParam(required = false, defaultValue = "0") page: Int,
         @RequestParam(required = false, defaultValue = "20") size: Int,
     ): ResponseEntity<ApiResponse<EmployeeListResponse>> {
+        val branchScope = resolveBranchScope(principal, costCenterCode)
+            ?: return ResponseEntity.ok(
+                ApiResponse.success(
+                    EmployeeListResponse(
+                        content = emptyList(), page = page, size = size, totalElements = 0, totalPages = 0,
+                    ),
+                ),
+            )
         val response = adminEmployeeService.getEmployees(
-            scope = scope,
+            scope = branchScope,
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,
             roles = FEMALE_EMPLOYEE_ROLES,
             page = page,
             size = size,
-            // SF `SalesMemberListController` / `TeamMemberListController` 의 CostCenterCode 본인 지점 스코프 정합
+            // SF `SalesMemberListController` / `TeamMemberListController` 의 CostCenterCode 지점 스코프 정합
             applyBranchScope = true,
             workType1 = workType1,
             workType3 = workType3,
@@ -157,7 +156,6 @@ class AdminFemaleEmployeeController(
     @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
     fun exportFemaleEmployees(
         @AuthenticationPrincipal principal: WebUserPrincipal,
-        @CurrentDataScope scope: DataScope,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) costCenterCode: String?,
         @RequestParam(required = false) keyword: String?,
@@ -165,8 +163,11 @@ class AdminFemaleEmployeeController(
         @RequestParam(required = false) workType3: String?,
         @RequestParam(required = false) professionalPromotionTeam: String?,
     ): ResponseEntity<ByteArray> {
+        // 권한 밖 지점 요청이면 NO_ACCESS_SCOPE (branchCodes 비어 있음) → 서비스가 NoAccess 로 판정해
+        // 헤더만 있는 빈 엑셀을 반환한다 (목록의 빈 결과와 동일 취급).
+        val branchScope = resolveBranchScope(principal, costCenterCode) ?: NO_ACCESS_SCOPE
         val result = adminEmployeeService.exportEmployees(
-            scope = scope,
+            scope = branchScope,
             status = status,
             costCenterCode = costCenterCode,
             keyword = keyword,
@@ -250,5 +251,51 @@ class AdminFemaleEmployeeController(
     ): ResponseEntity<ApiResponse<ResetPasswordResponse>> {
         val response = adminEmployeeCredentialService.resetPassword(employeeId)
         return ResponseEntity.ok(ApiResponse.success(response, "비밀번호가 초기화되었습니다"))
+    }
+
+    /**
+     * 목록/엑셀 조회의 지점 보안 스코프 산출 — **`/meta` 셀렉터 옵션과 동일 출처**.
+     *
+     * 기존에는 `@CurrentDataScope` (→ `DataScope.branchCodes = listOfNotNull(costCenterCode)`, 본인 지점
+     * 1건) 를 썼기 때문에, 셀렉터가 [WomenScheduleBranchResolver] 로 조직 트리 전체를 옵션으로 내려주면서도
+     * 그 중 본인 소속 지점이 아닌 지점을 고르면 `NoAccess` → 빈 목록이 되는 스코프 드리프트가 있었다.
+     * 본 메서드는 스코프를 셀렉터와 같은 resolver 로 통일해 그 불일치를 제거한다.
+     *
+     * 반환한 [DataScope] 는 `getEmployees`/`exportEmployees` 의 `applyBranchScope = true` 경로에서
+     * `effectiveBranchCodes(requestedBranch)` 로 소비된다 — 즉 IDOR 판정(요청 지점이 권한 집합에 속하는지)은
+     * 기존 [DataScope] 규칙을 그대로 재사용하고, **권한 집합의 출처만** 셀렉터와 일치시킨다.
+     *
+     * - 전사 권한자 (시스템 관리자 / 영업지원 / 본부장·사업부장·영업부장 —
+     *   [WomenScheduleBranchResolver.isAllBranchesUser]): `isAllBranches = true`
+     *   → 지점 미선택 시 전사, 선택 시 그 지점.
+     * - 지점 권한자 (지점장 / 조장 / 여사원): 본인 costCenterCode 의 조직 트리 지점 코드 집합.
+     *   [BranchCodeExpander] 로 이력 코드(BranchMapping — 동일 지점의 조직 개편 전/후 코드) 까지 확장한다.
+     *
+     * 확장한 이력 코드가 실제 필터에 반영되는 범위는 지점 선택 여부에 따라 다르다 —
+     * `DataScope.effectiveBranchCodes` 가 지점 **선택 시** 요청 코드 1건만 `Filtered` 로 남기므로 이력 코드는
+     * IDOR 통과 판정에만 쓰이고, **미선택 시**에는 확장 집합 전체가 필터로 들어간다. (근무기간 조회
+     * [com.otoki.powersales.domain.activity.schedule.service.AdminAttendInfoService.getMembers] 는 선택 지점
+     * 1건을 확장해 필터에 쓰므로 선택 시 매칭 폭이 본 메서드보다 넓다.)
+     *
+     * **주의**: 반환하는 [DataScope] 는 `branchCodes` / `isAllBranches` 2차원만 채운 **부분 DataScope** 다
+     * (`AdminDataScopeService` 가 채우는 sharing policy 차원 — userId / profileFlags / evaluatorRules 등은
+     * 기본값). 현재 소비처(`getEmployees` / `exportEmployees`) 가 지점 2차원만 쓰기 때문에 안전하나,
+     * 그 경로에 sharing rule 평가가 도입되면 본 메서드도 함께 갱신해야 한다.
+     *
+     * @return 권한 밖 지점을 요청했으면 `null` (호출부가 빈 결과로 응답).
+     */
+    private fun resolveBranchScope(principal: WebUserPrincipal, costCenterCode: String?): DataScope? {
+        val requested = costCenterCode?.takeIf { it.isNotBlank() }
+        if (womenScheduleBranchResolver.isAllBranchesUser(principal)) {
+            // 전사 권한자는 어떤 지점을 골라도 허용 — 셀렉터 옵션도 전 지점이다.
+            return DataScope(branchCodes = emptyList(), isAllBranches = true)
+        }
+        // 셀렉터 옵션과 동일한 화이트리스트를 1회 산출해 IDOR 검증과 스코프 조립에 함께 쓴다.
+        val allowedCodes = womenScheduleBranchResolver.resolveBranches(principal).map { it.branchCode }
+        if (requested != null && requested !in allowedCodes) return null
+        return DataScope(
+            branchCodes = branchCodeExpander.expand(allowedCodes).toList(),
+            isAllBranches = false,
+        )
     }
 }
