@@ -19672,12 +19672,6 @@
           },
           "totalApprovedAmount" : {
             "type" : "number"
-          },
-          "unfulfilledItems" : {
-            "items" : {
-              "$ref" : "#/components/schemas/UnfulfilledItemResponse"
-            },
-            "type" : [ "array", "null" ]
           }
         },
         "type" : "object"
@@ -19777,12 +19771,6 @@
           "orderProductId" : {
             "format" : "int64",
             "type" : "integer"
-          },
-          "outOfStock" : {
-            "type" : "boolean"
-          },
-          "outOfStockReason" : {
-            "type" : [ "string", "null" ]
           },
           "productCode" : {
             "type" : [ "string", "null" ]
@@ -26778,23 +26766,6 @@
             "type" : "string"
           },
           "value" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "UnfulfilledItemResponse" : {
-        "properties" : {
-          "orderQuantityBoxes" : {
-            "type" : "number"
-          },
-          "productCode" : {
-            "type" : "string"
-          },
-          "productName" : {
-            "type" : "string"
-          },
-          "reason" : {
             "type" : "string"
           }
         },

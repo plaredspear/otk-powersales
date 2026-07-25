@@ -95,7 +95,7 @@ class OrderInfoHeader extends StatelessWidget {
           if (orderDetail.isClosed) ...[
             SizedBox(height: AppSpacing.sm),
             _buildInfoRow(
-              '주문한 제품 수',
+              '주문한 품목 수',
               '${orderDetail.orderedItemCount}개',
             ),
           ],

@@ -165,7 +165,7 @@ void main() {
       expect(OrderDeliveryStatus.displayName('PENDING'), '대기');
       expect(OrderDeliveryStatus.displayName('SHIPPING'), '배송중');
       expect(OrderDeliveryStatus.displayName('DELIVERED'), '배송 완료');
-      expect(OrderDeliveryStatus.displayName('OUT_OF_STOCK'), '결품');
+      expect(OrderDeliveryStatus.displayName('OUT_OF_STOCK'), '미납');
     });
 
     test('빈상태(UNKNOWN)/미정의/null → 빈 문자열 (crash 대신)', () {

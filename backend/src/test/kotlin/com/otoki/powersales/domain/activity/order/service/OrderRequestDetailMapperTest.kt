@@ -265,8 +265,8 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
-    @DisplayName("미납 — SAPOrderNumber 있음 + LineItemStatus 채워짐 && != OK → unfulfilledItems 수집 + 처리현황 그룹에도 유지 (신규 정책)")
-    fun unfulfilledCollected() {
+    @DisplayName("LineItemStatus non-OK 라인 — 별도 섹션 분리 없이 처리현황 그룹에만 유지 (2026-07-25 LineItemStatus 기반 섹션 제거)")
+    fun lineItemStatusNonOkStaysInProcessingGroup() {
         val sap = listOf(
             line(
                 productCode = "P1",
@@ -280,14 +280,11 @@ class OrderRequestDetailMapperTest {
 
         val result = mapper.map(requestNumber, sap, crm)
 
-        assertThat(result.unfulfilledItems).hasSize(1)
-        assertThat(result.unfulfilledItems[0].productCode).isEqualTo("P1")
-        assertThat(result.unfulfilledItems[0].reason).isEqualTo("배차 미확정")
-        assertThat(result.unfulfilledItems[0].orderQuantityBoxes).isEqualByComparingTo("7")
-        // 미납 라인은 처리현황 그룹에도 그대로 남는다 (이중 표시 — 여기선 시각 없음+상태 채움 → UNKNOWN).
+        // 처리현황 그룹에만 남는다 (여기선 시각 없음+상태 채움 → UNKNOWN). 반려/결품 어느 쪽도 아님.
         assertThat(result.processingGroups).hasSize(1)
         assertThat(result.processingGroups[0].items[0].deliveryStatus).isEqualTo(DeliveryStatus.UNKNOWN)
         assertThat(result.rejectedItems).isEmpty()
+        assertThat(result.outOfStockItems).isEmpty()
     }
 
     @Test
@@ -314,16 +311,16 @@ class OrderRequestDetailMapperTest {
     }
 
     @Test
-    @DisplayName("미납 제외 — OK/빈 값/반려(SAPOrderNumber 빈)/결품(DefaultReason) 라인은 unfulfilledItems 에 미수집")
-    fun unfulfilledExclusions() {
+    @DisplayName("라인 분류 — LineItemStatus 값과 무관하게 반려(SAPOrderNumber 빈)/결품(DefaultReason)만 별도 수집")
+    fun lineClassificationByRejectedAndOutOfStockOnly() {
         val sap = listOf(
-            // 정상(OK) — 제외
+            // 정상(OK)
             line(productCode = "P_OK", sapOrderNumber = "S1", lineItemStatus = "OK", shippingCompleteTime = "143000"),
-            // 빈 값(정상 대기) — 제외
+            // 빈 값(정상 대기)
             line(productCode = "P_EMPTY", sapOrderNumber = "S1", lineItemStatus = ""),
-            // 반려(SAPOrderNumber 빈) — rejectedItems 로 분류, 미납 아님
+            // 반려(SAPOrderNumber 빈) — rejectedItems 로 분류
             line(productCode = "P_REJ", sapOrderNumber = "", lineItemStatus = "납품일자 오류"),
-            // 결품(DefaultReason) — 기존 결품 표시 유지, LineItemStatus non-OK 라도 미납 아님
+            // 결품(DefaultReason) — outOfStock 으로 분류 (LineItemStatus non-OK 는 판정에 미영향)
             line(productCode = "P_OOS", sapOrderNumber = "S1", lineItemStatus = "이상", defaultReason = "L1"),
         )
         val crm = mapOf(
@@ -335,7 +332,6 @@ class OrderRequestDetailMapperTest {
 
         val result = mapper.map(requestNumber, sap, crm)
 
-        assertThat(result.unfulfilledItems).isEmpty()
         assertThat(result.rejectedItems).extracting("productCode").containsExactly("P_REJ")
         assertThat(result.outOfStockReasons).containsOnlyKeys("P_OOS")
     }

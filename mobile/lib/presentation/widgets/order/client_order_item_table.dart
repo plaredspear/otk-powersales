@@ -62,7 +62,7 @@ class ClientOrderItemTable extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: Text(
-                  '제품',
+                  '품목',
                   style: AppTypography.bodyMedium.copyWith(
                     fontWeight: FontWeight.bold,
                   ),

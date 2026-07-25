@@ -176,8 +176,9 @@ class OrderRequestService(
      *    DefaultReason 코드 분류로 결품/취소 사유맵 산출 (Spec #845).
      * 7. `orderProcessingStatusList` 는 마감 여부와 무관하게 항상 노출 (2026-07-25 사용자 결정 — 기존
      *    Q6 "마감 전 null 강제" 제거). SAP 호출 실패/빈 응답일 때만 `null`.
-     * 8. 반려 라인은 `orderedItems`/`orderedItemCount` 에서 제외 (레거시 view.jsp:407, 377-383 동등 —
-     *    "주문한 제품" 은 반려 제외 목록, 반려는 반려 섹션에만 표시).
+     * 8. 반려 라인 + 미납(DefaultReason 결품셋) 라인은 `orderedItems`/`orderedItemCount` 에서 제외
+     *    (반려는 레거시 view.jsp:407, 377-383 동등. 미납 제외는 2026-07-25 사용자 결정 — 각각 전용
+     *    섹션에만 표시하고 이중 표시하지 않는다).
      * 9. `totalApprovedAmount` = SAP 응답 전 라인 `OrderSalesAmount` 합산 (레거시 view.jsp:343-348 동등).
      * 10. `cancelable` — 취소 정책 + 납품완료 여부 + 재취소 가드(DefaultReason 없는 미취소 잔여 라인 존재).
      */
@@ -234,16 +235,14 @@ class OrderRequestService(
 
         val processingGroups = mapped?.processingGroups?.takeIf { it.isNotEmpty() }
         val rejectedItems = mapped?.rejectedItems?.takeIf { it.isNotEmpty() }
-        // 결품 라인(2026-07-23) — 반려처럼 별도 섹션. 마감 전후 모두 노출. 없으면 null.
+        // 미납(결품) 라인(2026-07-23) — 반려처럼 별도 섹션. 마감 전후 모두 노출. 없으면 null.
         val outOfStockItems = mapped?.outOfStockItems?.takeIf { it.isNotEmpty() }
-        // 미납 라인(신규 정책) — 마감 전후 모두 노출 (반려 섹션 노출 정책과 동일).
-        val unfulfilledItems = mapped?.unfulfilledItems?.takeIf { it.isNotEmpty() }
         // DefaultReason 코드 분류 결과 (Spec #845) — 결품셋({F1,L1,L2,L3})과 취소(그 외)로 분리된 두 맵.
         val outOfStockReasons = mapped?.outOfStockReasons.orEmpty()
         val cancelledReasons = mapped?.cancelledReasons.orEmpty()
 
         // 처리현황은 납기일 마감 게이트 없이 항상 노출한다 (2026-07-25 사용자 결정 — 기존 Q6 마감 전
-        // null 강제 제거). 반려/결품/미납 섹션과 동일하게 SAP 응답이 있으면 마감 전에도 그대로 내린다.
+        // null 강제 제거). 반려/미납 섹션과 동일하게 SAP 응답이 있으면 마감 전에도 그대로 내린다.
         val finalProcessingGroups = processingGroups
 
         // SAP 주문번호(distinct) — 처리현황과 달리 마감 게이트 없이 헤더에 조기 노출한다(사용자 확인용).
@@ -258,16 +257,16 @@ class OrderRequestService(
         // 거래처별 상세와 동일하게 ref 역참조로 노출한다(2026-07-23 사용자 결정). 없으면 빈 배열.
         val relatedOrders = relatedOrderQueryService.findRelatedSummaries(sapOrderNumbers)
 
-        // 반려 라인은 "주문한 제품" 리스트/카운트에서 제외 (레거시 view.jsp:407 `SAP_Status ne '반려'`,
-        // 카운트 view.jsp:377-383 동등 — 반려 제품은 반려 섹션에만 표시, 이중 표시 없음).
+        // 반려 라인은 "주문한 품목" 리스트/카운트에서 제외 (레거시 view.jsp:407 `SAP_Status ne '반려'`,
+        // 카운트 view.jsp:377-383 동등 — 반려 품목은 반려 섹션에만 표시, 이중 표시 없음).
         // SAP 호출 실패 시엔 반려 판별 불가 → 전 라인 유지 (CRM 원장 표시 견고화, 레거시는 목록 자체가 비었음).
         val rejectedProductCodes = mapped?.rejectedItems.orEmpty().map { it.productCode }.toSet()
-        // 결품 제품은 전용 결품 섹션과 별개로 "주문한 제품" 리스트에도 포함한다(2026-07-23 재변경 — 사용자 결정:
-        // 결품 섹션 유지 + 주문한 제품에도 포함). 반려만 리스트에서 제외(반려 섹션 전용, 레거시 view.jsp:407 동등).
-        val excludedFromOrdered = rejectedProductCodes
+        // 미납(DefaultReason 결품셋) 제품은 반려와 동일하게 "주문한 품목" 리스트/카운트에서 제외하고
+        // 미납 전용 섹션에만 표시한다 (2026-07-25 사용자 결정 — 기존 양쪽 표시 철회, 이중 표시 없음).
+        val excludedFromOrdered = rejectedProductCodes + outOfStockReasons.keys
 
-        // 취소(SAP DefaultReason 취소셋) 제품은 "주문한 제품" 리스트에 주문취소 배지+사유로 남는다 (Spec #845).
-        // 결품(DefaultReason 결품셋)은 회색+결품사유로 리스트에 남고 전용 섹션에도 표시(이중 표시). 반려만 제외.
+        // 취소(SAP DefaultReason 취소셋) 품목은 "주문한 품목" 리스트에 주문취소 배지+사유로 남는다 (Spec #845).
+        // 반려/미납(DefaultReason 결품셋)은 위 [excludedFromOrdered] 로 제외되어 각 전용 섹션에만 표시된다.
         // 취소요청(로컬 흔적)은 OrderedItemResponse 가 cancel_requested_at 으로 직접 판정.
         val orderedItems = crmProducts
             .filter { it.productCode == null || it.productCode !in excludedFromOrdered }
@@ -277,8 +276,6 @@ class OrderRequestService(
                     productName = productNamesByCode[it.productCode],
                     // 표시용 박스 분모 = 제품 마스터 박스입수 (코드 조회, FK 관계 비의존).
                     boxReceivingQuantity = boxReceivingByCode[it.productCode],
-                    // 결품 사유 주입 — 리스트에서 회색+결품 배지/사유 표시.
-                    outOfStockReason = outOfStockReasons[it.productCode],
                     cancelReason = cancelledReasons[it.productCode],
                 )
             }
@@ -312,7 +309,6 @@ class OrderRequestService(
             sapOrderNumbers = sapOrderNumbers,
             rejectedItems = rejectedItems,
             outOfStockItems = outOfStockItems,
-            unfulfilledItems = unfulfilledItems,
             relatedOrders = relatedOrders,
         )
     }

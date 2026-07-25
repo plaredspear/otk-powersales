@@ -15,15 +15,12 @@ class OrderedItemList extends StatelessWidget {
   });
 
   /// 취소된 라인 수 — 주문 취소(SAP 상세 확정 isCancelledBySap 또는 마이그레이션 isCancelled) 기준.
-  /// 결품(isOutOfStock)은 취소가 아니므로 제외(결품 우선).
-  int get _cancelledCount => items
-      .where((i) => (i.isCancelledBySap || i.isCancelled) && !i.isOutOfStock)
-      .length;
+  int get _cancelledCount =>
+      items.where((i) => i.isCancelledBySap || i.isCancelled).length;
 
   /// 취소요청/주문 취소 배지가 하나라도 있으면 헤더에 설명 info 아이콘을 노출.
-  bool get _hasCancelInfo => items.any((i) =>
-      i.isCancelRequested ||
-      ((i.isCancelledBySap || i.isCancelled) && !i.isOutOfStock));
+  bool get _hasCancelInfo => items
+      .any((i) => i.isCancelRequested || i.isCancelledBySap || i.isCancelled);
 
   // 레거시 view.jsp:274 동등 — 박스 수량은 소수 2자리까지(#,###.##).
   String _formatBoxes(double boxes) {
@@ -58,7 +55,7 @@ class OrderedItemList extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        '주문한 제품 (${items.length})',
+                        '주문한 품목 (${items.length})',
                         style: AppTypography.headlineSmall.copyWith(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.bold,
@@ -101,7 +98,7 @@ class OrderedItemList extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
                 child: Text(
-                  '주문한 제품이 없습니다',
+                  '주문한 품목이 없습니다',
                   style: AppTypography.bodyMedium.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -162,9 +159,8 @@ class OrderedItemList extends StatelessWidget {
   }
 
   Widget _buildItemRow(OrderedItem item) {
-    // 결품/주문취소(SAP 상세 확정·마이그레이션) 라인은 짙은 회색 처리로 시각 구분(Spec #845 §2).
-    final isGrayed =
-        item.isCancelledBySap || item.isOutOfStock || item.isCancelled;
+    // 주문취소(SAP 상세 확정·마이그레이션) 라인은 짙은 회색 처리로 시각 구분(Spec #845 §2).
+    final isGrayed = item.isCancelledBySap || item.isCancelled;
     final nameColor =
         isGrayed ? AppColors.textSecondary : AppColors.textPrimary;
 
@@ -173,10 +169,8 @@ class OrderedItemList extends StatelessWidget {
     //  - 주문 취소 : SAP 주문 상세에서 해당 제품이 취소된 경우(확정) — SAP 상세 취소(isCancelledBySap)
     //               또는 마이그레이션 취소('X', isCancelled)를 하나로 묶는다(기존 SAP취소됨 배지 +
     //               [주문 취소] 접두를 단일 '주문 취소' 배지로 대체).
-    // 결품이 최우선이며 주문취소와 상호배타(방어적으로 둘 다 true 여도 결품 우선).
-    final showOutOfStock = item.isOutOfStock;
-    final showCancelled =
-        (item.isCancelledBySap || item.isCancelled) && !item.isOutOfStock;
+    // 미납 라인은 서버가 이 목록에서 제외하므로(미납 품목 섹션 전용) 취소 배지만 다룬다.
+    final showCancelled = item.isCancelledBySap || item.isCancelled;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,12 +195,6 @@ class OrderedItemList extends StatelessWidget {
                       WidgetSpan(
                         alignment: PlaceholderAlignment.middle,
                         child: _buildBadge('주문 취소', AppColors.error),
-                      ),
-                    // 결품 — 회색.
-                    if (showOutOfStock)
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: _buildBadge('결품', AppColors.textTertiary),
                       ),
                     // 레거시 view.jsp:273 동등 — 제품명 (제품코드) 순서.
                     TextSpan(
@@ -233,16 +221,7 @@ class OrderedItemList extends StatelessWidget {
           ],
         ),
         // 하단 사유 1줄 — 서버가 '{코드} {설명}' 완성 문자열 전달(모바일 라벨만 부착).
-        // 결품/취소 상호배타이나 방어적으로 결품 우선.
-        if (showOutOfStock && item.outOfStockReason != null) ...[
-          SizedBox(height: AppSpacing.xs),
-          Text(
-            '결품사유: ${item.outOfStockReason}',
-            style: AppTypography.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ] else if (showCancelled && item.cancelReason != null) ...[
+        if (showCancelled && item.cancelReason != null) ...[
           SizedBox(height: AppSpacing.xs),
           Text(
             '취소사유: ${item.cancelReason}',

@@ -1,7 +1,7 @@
 import '../../domain/entities/order_detail.dart';
 import 'client_order_model.dart';
 
-/// 주문한 제품 API 모델 (DTO)
+/// 주문한 품목 API 모델 (DTO)
 class OrderedItemModel {
   final int orderProductId;
   final String productCode;
@@ -10,8 +10,6 @@ class OrderedItemModel {
   final int totalQuantityPieces;
   final bool isCancelled;
   final bool isCancelRequested;
-  final bool isOutOfStock;
-  final String? outOfStockReason;
   final bool isCancelledBySap;
   final String? cancelReason;
 
@@ -23,8 +21,6 @@ class OrderedItemModel {
     required this.totalQuantityPieces,
     required this.isCancelled,
     this.isCancelRequested = false,
-    this.isOutOfStock = false,
-    this.outOfStockReason,
     this.isCancelledBySap = false,
     this.cancelReason,
   });
@@ -38,8 +34,6 @@ class OrderedItemModel {
       totalQuantityPieces: (json['totalQuantityPieces'] as num).toInt(),
       isCancelled: json['isCancelled'] as bool,
       isCancelRequested: json['isCancelRequested'] as bool? ?? false,
-      isOutOfStock: json['isOutOfStock'] as bool? ?? false,
-      outOfStockReason: json['outOfStockReason'] as String?,
       isCancelledBySap: json['isCancelledBySap'] as bool? ?? false,
       cancelReason: json['cancelReason'] as String?,
     );
@@ -54,8 +48,6 @@ class OrderedItemModel {
       'totalQuantityPieces': totalQuantityPieces,
       'isCancelled': isCancelled,
       'isCancelRequested': isCancelRequested,
-      'isOutOfStock': isOutOfStock,
-      'outOfStockReason': outOfStockReason,
       'isCancelledBySap': isCancelledBySap,
       'cancelReason': cancelReason,
     };
@@ -70,8 +62,6 @@ class OrderedItemModel {
       totalQuantityPieces: totalQuantityPieces,
       isCancelled: isCancelled,
       isCancelRequested: isCancelRequested,
-      isOutOfStock: isOutOfStock,
-      outOfStockReason: outOfStockReason,
       isCancelledBySap: isCancelledBySap,
       cancelReason: cancelReason,
     );
@@ -86,8 +76,6 @@ class OrderedItemModel {
       totalQuantityPieces: entity.totalQuantityPieces,
       isCancelled: entity.isCancelled,
       isCancelRequested: entity.isCancelRequested,
-      isOutOfStock: entity.isOutOfStock,
-      outOfStockReason: entity.outOfStockReason,
       isCancelledBySap: entity.isCancelledBySap,
       cancelReason: entity.cancelReason,
     );
@@ -243,53 +231,7 @@ class RejectedItemModel {
   }
 }
 
-/// 미납 제품 API 모델 (신규 정책 — LineItemStatus != "OK" && SAP 주문번호 있음)
-class UnfulfilledItemModel {
-  final String productCode;
-  final String productName;
-
-  /// 서버 `BigDecimal` 정합 — `RejectedItemModel.orderQuantityBoxes` 와 동일하게 `double`.
-  final double orderQuantityBoxes;
-
-  /// 미납 사유 (SAP `LineItemStatus` 원문)
-  final String reason;
-
-  const UnfulfilledItemModel({
-    required this.productCode,
-    required this.productName,
-    required this.orderQuantityBoxes,
-    required this.reason,
-  });
-
-  factory UnfulfilledItemModel.fromJson(Map<String, dynamic> json) {
-    return UnfulfilledItemModel(
-      productCode: json['productCode'] as String,
-      productName: json['productName'] as String,
-      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toDouble(),
-      reason: json['reason'] as String,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'productCode': productCode,
-      'productName': productName,
-      'orderQuantityBoxes': orderQuantityBoxes,
-      'reason': reason,
-    };
-  }
-
-  UnfulfilledItem toEntity() {
-    return UnfulfilledItem(
-      productCode: productCode,
-      productName: productName,
-      orderQuantityBoxes: orderQuantityBoxes,
-      reason: reason,
-    );
-  }
-}
-
-/// 결품 제품 API 모델 (2026-07-23 — 반려처럼 별도 섹션)
+/// 미납 품목 API 모델 (2026-07-23 — 반려처럼 별도 섹션)
 class OutOfStockItemModel {
   final String productCode;
   final String productName;
@@ -369,9 +311,8 @@ class OrderRequestDetailModel {
   final List<String> sapOrderNumbers;
   final List<RejectedItemModel>? rejectedItems;
 
-  /// 결품 제품 목록 (2026-07-23 — 반려처럼 별도 섹션). 없으면 null.
+  /// 미납 품목 목록 (2026-07-23 — 반려처럼 별도 섹션). 없으면 null.
   final List<OutOfStockItemModel>? outOfStockItems;
-  final List<UnfulfilledItemModel>? unfulfilledItems;
 
   /// 역참조 후속 주문(취소/변경 등) 요약. 없으면 빈 배열.
   final List<RelatedClientOrderModel> relatedOrders;
@@ -398,7 +339,6 @@ class OrderRequestDetailModel {
     this.sapOrderNumbers = const [],
     this.rejectedItems,
     this.outOfStockItems,
-    this.unfulfilledItems,
     this.relatedOrders = const [],
   });
 
@@ -411,7 +351,6 @@ class OrderRequestDetailModel {
     final orderedItemsJson = data['orderedItems'] as List<dynamic>? ?? [];
     final rejectedItemsJson = data['rejectedItems'] as List<dynamic>?;
     final outOfStockItemsJson = data['outOfStockItems'] as List<dynamic>?;
-    final unfulfilledItemsJson = data['unfulfilledItems'] as List<dynamic>?;
     final processingListJson =
         data['orderProcessingStatusList'] as List<dynamic>?;
     final sapOrderNumbersJson = data['sapOrderNumbers'] as List<dynamic>?;
@@ -457,12 +396,6 @@ class OrderRequestDetailModel {
                   OutOfStockItemModel.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
-      unfulfilledItems: unfulfilledItemsJson != null
-          ? unfulfilledItemsJson
-              .map((e) =>
-                  UnfulfilledItemModel.fromJson(e as Map<String, dynamic>))
-              .toList()
-          : null,
       relatedOrders: relatedOrdersJson
               ?.map((e) =>
                   RelatedClientOrderModel.fromJson(e as Map<String, dynamic>))
@@ -496,7 +429,6 @@ class OrderRequestDetailModel {
       'sapOrderNumbers': sapOrderNumbers,
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
       'outOfStockItems': outOfStockItems?.map((e) => e.toJson()).toList(),
-      'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
       'relatedOrders': relatedOrders.map((e) => e.toJson()).toList(),
     };
   }
@@ -526,7 +458,6 @@ class OrderRequestDetailModel {
       sapOrderNumbers: sapOrderNumbers,
       rejectedItems: rejectedItems?.map((e) => e.toEntity()).toList(),
       outOfStockItems: outOfStockItems?.map((e) => e.toEntity()).toList(),
-      unfulfilledItems: unfulfilledItems?.map((e) => e.toEntity()).toList(),
       relatedOrders: relatedOrders.map((e) => e.toEntity()).toList(),
     );
   }

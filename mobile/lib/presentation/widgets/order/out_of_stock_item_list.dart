@@ -5,11 +5,11 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/order_detail.dart';
 
-/// 결품 제품 목록 (2026-07-23 사용자 결정 — 반려 섹션처럼 별도 영역)
+/// 미납 품목 목록 (2026-07-23 사용자 결정 — 반려 섹션처럼 별도 영역)
 ///
-/// SAP `DefaultReason` 코드가 결품셋({F1,L1,L2,L3})으로 분류된 제품을 "주문 반려 제품" 영역과 동일한
-/// 레이아웃으로 표시한다. "주문한 제품" 목록에서는 제외되며(백엔드), 반려(빨강)와 구분되도록 회색 계열로
-/// 표시한다. 마감 전후 모두 노출(반려 섹션 정책과 동일).
+/// SAP `DefaultReason`(레거시 `미납사유`) 코드가 결품셋({F1,L1,L2,L3})으로 분류된 품목을 "주문 반려 품목"
+/// 영역과 동일한 레이아웃으로 표시한다. 반려(빨강)와 구분되도록 회색 계열로 표시하며, 마감 전후 모두
+/// 노출한다(반려 섹션 정책과 동일).
 class OutOfStockItemList extends StatelessWidget {
   final List<OutOfStockItem> outOfStockItems;
 
@@ -48,7 +48,7 @@ class OutOfStockItemList extends StatelessWidget {
               ),
               SizedBox(width: AppSpacing.sm),
               Text(
-                '결품 제품 (${outOfStockItems.length})',
+                '미납 품목 (${outOfStockItems.length})',
                 style: AppTypography.headlineSmall.copyWith(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.bold,
@@ -120,7 +120,7 @@ class OutOfStockItemList extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           ),
           child: Text(
-            '결품사유: ${item.reason}',
+            '미납사유: ${item.reason}',
             style: AppTypography.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),

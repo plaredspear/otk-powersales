@@ -161,60 +161,11 @@ void main() {
     });
   });
 
-  group('OrderedItem 결품 플래그 (레거시 view.jsp:414 동등)', () {
-    Map<String, dynamic> orderedItemJson({
-      bool isOutOfStock = false,
-      String? outOfStockReason,
-    }) {
-      return {
-        'orderProductId': 101,
-        'productCode': '1000023',
-        'productName': '진라면 매운맛',
-        'totalQuantityBoxes': 10.0,
-        'totalQuantityPieces': 300,
-        'isCancelled': false,
-        'isOutOfStock': isOutOfStock,
-        'outOfStockReason': outOfStockReason,
-      };
-    }
-
-    test('결품 제품 — isOutOfStock=true + outOfStockReason 파싱', () {
-      final model = OrderedItemModel.fromJson(
-        orderedItemJson(isOutOfStock: true, outOfStockReason: '재고부족'),
-      );
-      expect(model.isOutOfStock, isTrue);
-      expect(model.outOfStockReason, '재고부족');
-      final entity = model.toEntity();
-      expect(entity.isOutOfStock, isTrue);
-      expect(entity.outOfStockReason, '재고부족');
-    });
-
-    test('정상 제품 — 필드 부재 시 isOutOfStock=false 기본값 (하위호환)', () {
-      final json = orderedItemJson();
-      json.remove('isOutOfStock');
-      json.remove('outOfStockReason');
-      final model = OrderedItemModel.fromJson(json);
-      expect(model.isOutOfStock, isFalse);
-      expect(model.outOfStockReason, isNull);
-    });
-
-    test('toJson ↔ fromJson 왕복 — 결품 필드 보존', () {
-      final original = OrderedItemModel.fromJson(
-        orderedItemJson(isOutOfStock: true, outOfStockReason: '재고부족'),
-      );
-      final roundTrip = OrderedItemModel.fromJson(original.toJson());
-      expect(roundTrip.isOutOfStock, isTrue);
-      expect(roundTrip.outOfStockReason, '재고부족');
-    });
-  });
-
   group('OrderedItem 취소요청/실제취소 비교 필드 (Spec #845 P2-M)', () {
     // 신규 필드를 모두 담은 완성 JSON. '누락 방어' 테스트는 여기서 key 를 remove 한다.
     Map<String, dynamic> itemJson({
       bool isCancelled = false,
       bool isCancelRequested = false,
-      bool isOutOfStock = false,
-      String? outOfStockReason,
       bool isCancelledBySap = false,
       String? cancelReason,
     }) {
@@ -226,8 +177,6 @@ void main() {
         'totalQuantityPieces': 12,
         'isCancelled': isCancelled,
         'isCancelRequested': isCancelRequested,
-        'isOutOfStock': isOutOfStock,
-        'outOfStockReason': outOfStockReason,
         'isCancelledBySap': isCancelledBySap,
         'cancelReason': cancelReason,
       };
@@ -351,9 +300,9 @@ void main() {
     });
   });
 
-  group('UnfulfilledItemModel.fromJson - 미납 제품 (신규 정책, LineItemStatus != OK)', () {
-    Map<String, dynamic> detailData({List<dynamic>? unfulfilledItems}) {
-      return {
+  group('제거된 unfulfilledItems 필드 (2026-07-25 — LineItemStatus 기반 미납 섹션 제거)', () {
+    test('구버전 서버가 unfulfilledItems 를 내려도 무시하고 파싱 성공 (크래시 없음)', () {
+      final model = OrderRequestDetailModel.fromJson({
         'data': {
           'id': 12345,
           'orderRequestNumber': 'OR-0001234',
@@ -369,37 +318,19 @@ void main() {
           'orderedItems': <dynamic>[],
           'orderProcessingStatusList': null,
           'rejectedItems': null,
-          'unfulfilledItems': unfulfilledItems,
+          'unfulfilledItems': [
+            {
+              'productCode': '1000023',
+              'productName': '진라면 매운맛',
+              'orderQuantityBoxes': 2.5,
+              'reason': '배차 미확정',
+            },
+          ],
         },
-      };
-    }
+      });
 
-    test('unfulfilledItems 배열 → 파싱 + 엔티티 변환 (사유/소수 박스 보존)', () {
-      final model = OrderRequestDetailModel.fromJson(detailData(
-        unfulfilledItems: [
-          {
-            'productCode': '1000023',
-            'productName': '진라면 매운맛',
-            'orderQuantityBoxes': 2.5,
-            'reason': '배차 미확정',
-          },
-        ],
-      ));
-
-      expect(model.unfulfilledItems, hasLength(1));
-      expect(model.unfulfilledItems![0].reason, '배차 미확정');
-
-      final entity = model.toEntity();
-      expect(entity.hasUnfulfilledItems, isTrue);
-      expect(entity.unfulfilledItems![0].productCode, '1000023');
-      expect(entity.unfulfilledItems![0].orderQuantityBoxes, 2.5);
-      expect(entity.unfulfilledItems![0].reason, '배차 미확정');
-    });
-
-    test('unfulfilledItems 부재/null → null 매핑 (하위호환, 크래시 없음)', () {
-      final model = OrderRequestDetailModel.fromJson(detailData());
-      expect(model.unfulfilledItems, isNull);
-      expect(model.toEntity().hasUnfulfilledItems, isFalse);
+      expect(model.id, 12345);
+      expect(model.toJson().containsKey('unfulfilledItems'), isFalse);
     });
   });
 

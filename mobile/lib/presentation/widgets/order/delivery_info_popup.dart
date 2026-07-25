@@ -56,9 +56,9 @@ class DeliveryInfoPopup extends StatelessWidget {
       case OrderDeliveryStatus.delivered:
         return '배송이 완료되었습니다.';
       case OrderDeliveryStatus.outOfStock:
-        return '결품으로 인해 배송할 수 없습니다.';
+        return '미납으로 인해 배송할 수 없습니다.';
       case OrderDeliveryStatus.cancelled:
-        return '취소된 제품입니다.';
+        return '취소된 품목입니다.';
       // 빈상태(unknown) / 미정의 코드 — 빈 메시지(default 로 crash 방어).
       default:
         return '';
@@ -79,7 +79,7 @@ class DeliveryInfoPopup extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildInfoRow('제품', '${processingItem.productName} (${processingItem.productCode})'),
+          _buildInfoRow('품목', '${processingItem.productName} (${processingItem.productCode})'),
           SizedBox(height: AppSpacing.md),
           _buildInfoRow('납품 수량', processingItem.deliveredQuantity),
           // 배송수량 — 거래처주문 상세에서만 병기 (실제 출하량 "N BOX (M EA)").

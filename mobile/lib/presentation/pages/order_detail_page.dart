@@ -20,21 +20,21 @@ import '../widgets/order/ordered_item_list.dart';
 import '../widgets/order/out_of_stock_item_list.dart';
 import '../widgets/order/related_client_order_section.dart';
 import '../widgets/order/rejected_item_list.dart';
-import '../widgets/order/unfulfilled_item_list.dart';
 
 /// 주문 상세 페이지
 ///
 /// 주문 ID를 기반으로 주문 상세 정보를 조회하고,
 /// 마감 상태와 미납/반려 여부에 따라 화면 구성을 동적으로 렌더링합니다.
 ///
-/// 제품 표시 UI 배치 (마감 전후 공통): 미납 제품 → 주문반려제품 → 주문한 제품 → 처리현황.
+/// 품목 표시 UI 배치 (마감 전후 공통): 주문반려품목 → 미납 품목 → 주문한 품목 → 처리현황.
 ///
-/// - 마감전: 주문정보 + 주문취소 버튼 + 미납/반려 + 주문한 제품 목록 + 주문처리현황
-/// - 마감후: 주문정보 + 미납/반려 + 주문한 제품 접기/펼치기 + 주문처리현황
+/// - 마감전: 주문정보 + 주문취소 버튼 + 반려/미납 + 주문한 품목 목록 + 주문처리현황
+/// - 마감후: 주문정보 + 반려/미납 + 주문한 품목 접기/펼치기 + 주문처리현황
 ///
 /// 반려 섹션은 레거시(view.jsp:284-322 before / 449-486 after) 동등으로 마감 전후 모두 표시.
 /// 주문처리현황도 마감 전후 모두 표시한다 (2026-07-25 사용자 결정 — 납기일 마감 게이트 제거).
-/// 미납 섹션(LineItemStatus != "OK")은 신규 정책(2026-07-20 사용자 결정)으로 최상단 표시.
+/// 미납 섹션은 SAP `DefaultReason` 결품셋 라인만 표시한다 (2026-07-25 사용자 결정 — 기존
+/// `LineItemStatus != "OK"` 기반 섹션은 제거).
 class OrderDetailPage extends ConsumerStatefulWidget {
   /// 주문 ID (라우트 arguments로 전달)
   final int orderId;
@@ -231,49 +231,37 @@ class _OrderDetailPageState extends ConsumerState<OrderDetailPage> {
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              // 미납 제품 목록 (신규 정책) — 제품 UI 최상단.
-              if (detail.hasUnfulfilledItems) ...[
-                UnfulfilledItemList(unfulfilledItems: detail.unfulfilledItems!),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-
-              // 반려 제품 목록 — 레거시(view.jsp:284-322)는 마감 전에도 반려 섹션을 표시.
+              // 반려 품목 목록 — 레거시(view.jsp:284-322)는 마감 전에도 반려 섹션을 표시.
               if (detail.hasRejectedItems) ...[
                 RejectedItemList(rejectedItems: detail.rejectedItems!),
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              // 결품 제품 목록 — 반려 섹션 다음에 표시(2026-07-23). 주문한 제품에서는 제외됨.
+              // 미납 품목 목록 — 반려 섹션 다음에 표시(2026-07-23).
               if (detail.hasOutOfStockItems) ...[
                 OutOfStockItemList(outOfStockItems: detail.outOfStockItems!),
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              // 주문한 제품 목록 (마감전에는 바로 표시)
+              // 주문한 품목 목록 (마감전에는 바로 표시)
               OrderedItemList(items: detail.orderedItems),
             ],
 
             // 마감후 전용 영역
             if (detail.isClosed) ...[
-              // 미납 제품 목록 (신규 정책) — 제품 UI 최상단.
-              if (detail.hasUnfulfilledItems) ...[
-                UnfulfilledItemList(unfulfilledItems: detail.unfulfilledItems!),
-                const SizedBox(height: AppSpacing.lg),
-              ],
-
-              // 반려 제품 목록 (반려제품 존재 시)
+              // 반려 품목 목록 (반려품목 존재 시)
               if (detail.hasRejectedItems) ...[
                 RejectedItemList(rejectedItems: detail.rejectedItems!),
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              // 결품 제품 목록 — 반려 섹션 다음에 표시(2026-07-23). 주문한 제품에서는 제외됨.
+              // 미납 품목 목록 — 반려 섹션 다음에 표시(2026-07-23).
               if (detail.hasOutOfStockItems) ...[
                 OutOfStockItemList(outOfStockItems: detail.outOfStockItems!),
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              // 주문한 제품 접기/펼치기
+              // 주문한 품목 접기/펼치기
               OrderedItemExpandable(
                 items: detail.orderedItems,
                 itemCount: detail.orderedItemCount,

@@ -4,7 +4,6 @@ import com.otoki.powersales.domain.activity.order.dto.response.OrderProcessingSt
 import com.otoki.powersales.domain.activity.order.dto.response.OutOfStockItemResponse
 import com.otoki.powersales.domain.activity.order.dto.response.ProcessingItemResponse
 import com.otoki.powersales.domain.activity.order.dto.response.RejectedItemResponse
-import com.otoki.powersales.domain.activity.order.dto.response.UnfulfilledItemResponse
 import com.otoki.powersales.domain.activity.order.entity.OrderRequestProduct
 import com.otoki.powersales.domain.activity.order.util.UnitConverter
 import com.otoki.powersales.domain.activity.order.enums.DefaultReasonClassification
@@ -24,9 +23,9 @@ import java.text.DecimalFormat
  * - 라인 derived 상태 5분기는 레거시 `cls:153-159` 의 **독립 if 5개** (`else if` 아님). **마지막 매칭 우선**.
  *   결품(평가 5, `DefaultReason` 채워짐)은 **반려와 달리 별도 분리하지 않고** 정상 라인 그룹에
  *   `deliveryStatus = OUT_OF_STOCK` 로 포함한다 (레거시 처리현황 테이블 `view.jsp:523` 이 반려만
- *   제외 — SAP 주문번호 있는 결품 라인은 상태 '결품' 으로 표시). 동시에 `outOfStockReasons` 로도
- *   수집되어 "주문한 제품" 리스트의 회색+사유 표시에 쓰인다 (`view.jsp:414` 동등 — 레거시는 두 곳
- *   모두에 표시). 반려(평가 1)만 `rejectedItems` 로 분리.
+ *   제외 — SAP 주문번호 있는 결품 라인은 처리현황에 미납 상태로 표시). 동시에 `outOfStockItems` 전용
+ *   섹션으로도 수집되며, "주문한 품목" 리스트에서는 반려와 함께 제외된다(2026-07-25 사용자 결정).
+ *   반려(평가 1)만 `rejectedItems` 로 분리.
  * - SAP 주문번호별 그룹핑은 `LinkedHashMap` 기반으로 SAP 응답 자연 순서 유지 (Q7 강화).
  * - 빈 `SAPOrderNumber` 정상 라인은 응답 그룹에서 제외 (Q4, 레거시 JSP `view.jsp:494, 500` 동등).
  * - BOX→EA 환산은 레거시 `cls:147,151` 동등 — `ShippingQuantity_Box × Product.BoxReceivingQuantity__c`
@@ -53,7 +52,7 @@ class OrderRequestDetailMapper {
         sapLines: List<SapOrderRequestDetailLine>,
         crmProductsByCode: Map<String, OrderRequestProduct>,
         confirmQuantityBoxByKey: Map<Pair<String, String>, BigDecimal> = emptyMap(),
-        // 표시용 박스 분모 = 제품 마스터 박스입수(product_code 조회). 결품/반려/미납 박스 = 총EA÷박스입수.
+        // 표시용 박스 분모 = 제품 마스터 박스입수(product_code 조회). 결품/반려 박스 = 총EA÷박스입수.
         boxReceivingByCode: Map<String, BigDecimal?> = emptyMap(),
     ): MapResult {
         if (sapLines.isEmpty()) {
@@ -70,12 +69,10 @@ class OrderRequestDetailMapper {
         }
 
         val rejected = mutableListOf<RejectedItemResponse>()
-        // 미납(신규 정책): SAPOrderNumber 있는 라인 중 LineItemStatus 채워짐 && != "OK".
-        val unfulfilled = mutableListOf<UnfulfilledItemResponse>()
-        // 결품(DefaultReason 코드 ∈ {F1,L1,L2,L3}) productCode → `"{코드} {설명}"`. 재취소 가드용 코드셋
-        // 산출에 쓰인다(defaultReasonProductCodes). 표시는 아래 outOfStockItems 전용 섹션으로 분리.
+        // 미납(DefaultReason 코드 ∈ {F1,L1,L2,L3}) productCode → `"{코드} {설명}"`. 서비스가 "주문한 품목"
+        // 제외 판정과 재취소 가드(defaultReasonProductCodes)에 쓴다. 표시는 outOfStockItems 전용 섹션으로.
         val outOfStockReasons = LinkedHashMap<String, String>()
-        // 결품 전용 섹션 목록 (2026-07-23 사용자 결정) — 반려처럼 별도 영역으로 표시하고 "주문한 제품"에서 제외.
+        // 미납 전용 섹션 목록 (2026-07-23 사용자 결정) — 반려처럼 별도 영역으로 표시하고 "주문한 품목"에서 제외.
         // productCode 기준 중복 제거(동일 제품 다중 라인 방어).
         val outOfStockItems = mutableListOf<OutOfStockItemResponse>()
         val outOfStockSeen = mutableSetOf<String>()
@@ -97,11 +94,10 @@ class OrderRequestDetailMapper {
             // 취소든 결품이든 DefaultReason 이 있으면 반려로 분리하지 않음). 처리현황 그룹에는 결품·취소
             // 모두 상태 '결품'(OUT_OF_STOCK)으로 **포함**한다 (D-1 결정, view.jsp:523 은 반려만 제외).
             val classification = DefaultReasonCode.classify(sapLine.defaultReason)
-            val isDefaultReasonFilled = classification != null
             val displayReason = DefaultReasonCode.displayReason(sapLine.defaultReason).orEmpty()
             if (classification == DefaultReasonClassification.OUT_OF_STOCK) {
                 outOfStockReasons.putIfAbsent(productCode, displayReason)
-                // 결품 전용 섹션 수집(반려처럼 별도 영역). productCode 중복 제거.
+                // 미납 전용 섹션 수집(반려처럼 별도 영역). productCode 중복 제거.
                 if (outOfStockSeen.add(productCode)) {
                     outOfStockItems += OutOfStockItemResponse(
                         productCode = productCode,
@@ -137,25 +133,6 @@ class OrderRequestDetailMapper {
             if (groupKey.isEmpty()) {
                 emptyKeyCount++
                 continue
-            }
-
-            // 미납(신규 정책, 2026-07-20 사용자 결정 — SF 레거시엔 없던 분류): SAP 주문번호 있는 라인 중
-            // LineItemStatus 채워짐 && != "OK". 결품(DefaultReason)은 제외(기존 결품 표시 유지),
-            // 빈 값(정상 대기 라인)도 제외. 라인 자체는 처리현황 그룹에도 그대로 남는다(이중 표시).
-            if (!isDefaultReasonFilled &&
-                !sapLine.lineItemStatus.isNullOrEmpty() &&
-                sapLine.lineItemStatus != NORMAL_LINE_ITEM_STATUS
-            ) {
-                unfulfilled += UnfulfilledItemResponse(
-                    productCode = productCode,
-                    productName = productName,
-                    orderQuantityBoxes = UnitConverter.toDisplayBoxQuantity(
-                        quantityPieces = crmProduct?.quantityPieces,
-                        boxReceivingQuantity = boxReceivingByCode[productCode],
-                        storedBoxes = crmProduct?.quantityBoxes,
-                    ),
-                    reason = sapLine.lineItemStatus,
-                )
             }
 
             // 처리현황 상태: DefaultReason 분류를 결품/취소로 분리 표기(2026-07-23 사용자 결정).
@@ -225,7 +202,6 @@ class OrderRequestDetailMapper {
             outOfStockReasons = outOfStockReasons.toMap(),
             outOfStockItems = outOfStockItems.toList(),
             cancelledReasons = cancelledReasons.toMap(),
-            unfulfilledItems = unfulfilled.toList(),
         )
     }
 
@@ -375,21 +351,16 @@ class OrderRequestDetailMapper {
     data class MapResult(
         val processingGroups: List<OrderProcessingStatusResponse>,
         val rejectedItems: List<RejectedItemResponse>,
-        /** 결품 productCode → `"{코드} {설명}"`. 재취소 가드용 코드셋 산출에 사용(표시는 outOfStockItems 로 분리). */
+        /** 미납 productCode → `"{코드} {설명}"`. "주문한 품목" 제외 판정 + 재취소 가드용(표시는 outOfStockItems). */
         val outOfStockReasons: Map<String, String> = emptyMap(),
-        /** 결품 라인 (DefaultReason ∈ {F1,L1,L2,L3}) — 반려처럼 별도 섹션 표시용. "주문한 제품"에서는 제외. */
+        /** 미납 라인 (DefaultReason ∈ {F1,L1,L2,L3}) — 반려처럼 별도 섹션 표시용. "주문한 품목"에서는 제외. */
         val outOfStockItems: List<OutOfStockItemResponse> = emptyList(),
         /** 취소 productCode → `"{코드} {설명}"`. orderedItems "SAP취소됨" 배지/사유 주입용 (Spec #845 P1-B). */
         val cancelledReasons: Map<String, String> = emptyMap(),
-        /** 미납 라인 (SAPOrderNumber 있음 && LineItemStatus 채워짐 && != "OK") — 신규 정책, 별도 섹션 표시용. */
-        val unfulfilledItems: List<UnfulfilledItemResponse> = emptyList(),
     )
 
     companion object {
         const val MAX_LINES: Int = 1000
         private const val ZERO_TIME: String = "000000"
-
-        /** SAP `LineItemStatus` 정상 값 — 이 값이 아니면서 채워져 있으면 미납 (신규 정책). */
-        private const val NORMAL_LINE_ITEM_STATUS: String = "OK"
     }
 }

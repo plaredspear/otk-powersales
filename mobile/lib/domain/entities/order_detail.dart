@@ -7,8 +7,9 @@ import 'client_order.dart';
 /// switch 에서 crash 나지 않도록 하기 위함(방어). 엔티티의 `deliveryStatus` 는 서버 문자열을 그대로
 /// 보유하고, 화면은 이 상수와 `==` 로 비교하거나 [OrderDeliveryStatus.displayName] 로 라벨을 얻는다.
 ///
-/// 주문 처리 현황 + 거래처 출하 상세에서 각 제품의 배송 상태를 나타낸다.
+/// 주문 처리 현황 + 거래처 출하 상세에서 각 품목의 배송 상태를 나타낸다.
 /// 백엔드 권위: heroku 의 한글 4종 (`'대기'`/`'배송중'`/`'배송 완료'`/`'결품'`) 과 1:1 대응.
+/// 단 결품은 화면 표시명을 `'미납'` 으로 쓴다 (2026-07-25 사용자 결정 — 레거시 `미납사유` 용어 환원).
 /// 응답은 영문 코드(`PENDING`/`SHIPPING`/`DELIVERED`/`OUT_OF_STOCK`, 빈 상태는 `UNKNOWN`)로 직렬화된다.
 abstract final class OrderDeliveryStatus {
   static const String pending = 'PENDING';
@@ -16,7 +17,7 @@ abstract final class OrderDeliveryStatus {
   static const String delivered = 'DELIVERED';
   static const String outOfStock = 'OUT_OF_STOCK';
 
-  /// 취소 — SAP DefaultReason 취소셋({L4,O1,S1,S2,S3}) 라인 (2026-07-23). 결품셋은 [outOfStock].
+  /// 취소 — SAP DefaultReason 취소셋({L4,O1,S1,S2,S3}) 라인 (2026-07-23). 결품셋(표시명 '미납')은 [outOfStock].
   static const String cancelled = 'CANCELLED';
 
   /// 레거시 cls:153-159 가 어느 조건에도 안 걸려 status='' 로 남기는 케이스(예: LineItemStatus 만
@@ -36,7 +37,7 @@ abstract final class OrderDeliveryStatus {
       case delivered:
         return '배송 완료';
       case outOfStock:
-        return '결품';
+        return '미납';
       case cancelled:
         return '취소';
       case unknown:
@@ -76,15 +77,8 @@ class OrderedItem {
   /// "취소요청" 배지. SAP 실제 반영([isCancelledBySap]) 여부와 독립적으로 켜질 수 있다.
   final bool isCancelRequested;
 
-  /// 결품 여부 — SAP `OrderRequestDetail` 응답의 `DefaultReason` 코드가 결품셋({F1,L1,L2,L3}).
-  /// 레거시 `view.jsp:414` 동등 — 결품 제품은 "주문한 제품" 리스트에 회색+사유로 표시.
-  final bool isOutOfStock;
-
-  /// 결품 사유 (SAP `DefaultReason`, `"{코드} {설명}"` 포맷). `isOutOfStock == true` 일 때만 채워진다.
-  final String? outOfStockReason;
-
   /// SAP 실제 취소 여부 — `DefaultReason` 코드가 채워졌고 결품셋이 아닌 경우(Spec #845).
-  /// "SAP취소됨" 배지. [isOutOfStock] 과 상호배타적(서버가 한 라인당 하나만 채움).
+  /// "SAP취소됨" 배지. 결품셋 라인(미납)은 서버가 "주문한 품목" 목록에서 제외하므로 여기 오지 않는다.
   final bool isCancelledBySap;
 
   /// 취소 사유 (SAP `DefaultReason`, `"{코드} {설명}"` 포맷). `isCancelledBySap == true` 일 때 채워진다.
@@ -98,8 +92,6 @@ class OrderedItem {
     required this.totalQuantityPieces,
     required this.isCancelled,
     this.isCancelRequested = false,
-    this.isOutOfStock = false,
-    this.outOfStockReason,
     this.isCancelledBySap = false,
     this.cancelReason,
   });
@@ -112,8 +104,6 @@ class OrderedItem {
     int? totalQuantityPieces,
     bool? isCancelled,
     bool? isCancelRequested,
-    bool? isOutOfStock,
-    String? outOfStockReason,
     bool? isCancelledBySap,
     String? cancelReason,
   }) {
@@ -125,8 +115,6 @@ class OrderedItem {
       totalQuantityPieces: totalQuantityPieces ?? this.totalQuantityPieces,
       isCancelled: isCancelled ?? this.isCancelled,
       isCancelRequested: isCancelRequested ?? this.isCancelRequested,
-      isOutOfStock: isOutOfStock ?? this.isOutOfStock,
-      outOfStockReason: outOfStockReason ?? this.outOfStockReason,
       isCancelledBySap: isCancelledBySap ?? this.isCancelledBySap,
       cancelReason: cancelReason ?? this.cancelReason,
     );
@@ -141,8 +129,6 @@ class OrderedItem {
       'totalQuantityPieces': totalQuantityPieces,
       'isCancelled': isCancelled,
       'isCancelRequested': isCancelRequested,
-      'isOutOfStock': isOutOfStock,
-      'outOfStockReason': outOfStockReason,
       'isCancelledBySap': isCancelledBySap,
       'cancelReason': cancelReason,
     };
@@ -157,8 +143,6 @@ class OrderedItem {
       totalQuantityPieces: json['totalQuantityPieces'] as int,
       isCancelled: json['isCancelled'] as bool,
       isCancelRequested: json['isCancelRequested'] as bool? ?? false,
-      isOutOfStock: json['isOutOfStock'] as bool? ?? false,
-      outOfStockReason: json['outOfStockReason'] as String?,
       isCancelledBySap: json['isCancelledBySap'] as bool? ?? false,
       cancelReason: json['cancelReason'] as String?,
     );
@@ -175,8 +159,6 @@ class OrderedItem {
         other.totalQuantityPieces == totalQuantityPieces &&
         other.isCancelled == isCancelled &&
         other.isCancelRequested == isCancelRequested &&
-        other.isOutOfStock == isOutOfStock &&
-        other.outOfStockReason == outOfStockReason &&
         other.isCancelledBySap == isCancelledBySap &&
         other.cancelReason == cancelReason;
   }
@@ -191,8 +173,6 @@ class OrderedItem {
       totalQuantityPieces,
       isCancelled,
       isCancelRequested,
-      isOutOfStock,
-      outOfStockReason,
       isCancelledBySap,
       cancelReason,
     );
@@ -204,7 +184,7 @@ class OrderedItem {
         'productCode: $productCode, productName: $productName, '
         'totalQuantityBoxes: $totalQuantityBoxes, '
         'totalQuantityPieces: $totalQuantityPieces, '
-        'isCancelled: $isCancelled, isOutOfStock: $isOutOfStock)';
+        'isCancelled: $isCancelled, isCancelledBySap: $isCancelledBySap)';
   }
 }
 
@@ -506,97 +486,11 @@ class RejectedItem {
   }
 }
 
-/// 미납 제품 엔티티 (신규 정책, 2026-07-20 사용자 결정 — SF 레거시엔 없던 분류)
+/// 미납 품목 엔티티 (2026-07-23 사용자 결정 — 반려처럼 별도 섹션으로 분리)
 ///
-/// SAP 주문번호가 **있는** 라인 중 `LineItemStatus` 가 채워져 있으면서 "OK" 가 아닌 제품.
-/// 반려(SAP 주문번호 없음)와 구분되며, 결품(DefaultReason)은 포함하지 않습니다.
-/// 제품 표시 UI 최상단의 "미납 제품" 섹션에 표시됩니다.
-class UnfulfilledItem {
-  /// 제품 코드
-  final String productCode;
-
-  /// 제품명
-  final String productName;
-
-  /// 주문 수량 (BOX) — 서버 `BigDecimal` 정합으로 `double` (`RejectedItem` 과 동일)
-  final double orderQuantityBoxes;
-
-  /// 미납 사유 (SAP `LineItemStatus` 원문)
-  final String reason;
-
-  const UnfulfilledItem({
-    required this.productCode,
-    required this.productName,
-    required this.orderQuantityBoxes,
-    required this.reason,
-  });
-
-  UnfulfilledItem copyWith({
-    String? productCode,
-    String? productName,
-    double? orderQuantityBoxes,
-    String? reason,
-  }) {
-    return UnfulfilledItem(
-      productCode: productCode ?? this.productCode,
-      productName: productName ?? this.productName,
-      orderQuantityBoxes: orderQuantityBoxes ?? this.orderQuantityBoxes,
-      reason: reason ?? this.reason,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'productCode': productCode,
-      'productName': productName,
-      'orderQuantityBoxes': orderQuantityBoxes,
-      'reason': reason,
-    };
-  }
-
-  factory UnfulfilledItem.fromJson(Map<String, dynamic> json) {
-    return UnfulfilledItem(
-      productCode: json['productCode'] as String,
-      productName: json['productName'] as String,
-      orderQuantityBoxes: (json['orderQuantityBoxes'] as num).toDouble(),
-      reason: json['reason'] as String,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is UnfulfilledItem &&
-        other.productCode == productCode &&
-        other.productName == productName &&
-        other.orderQuantityBoxes == orderQuantityBoxes &&
-        other.reason == reason;
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(
-      productCode,
-      productName,
-      orderQuantityBoxes,
-      reason,
-    );
-  }
-
-  @override
-  String toString() {
-    return 'UnfulfilledItem(productCode: $productCode, '
-        'productName: $productName, '
-        'orderQuantityBoxes: $orderQuantityBoxes, '
-        'reason: $reason)';
-  }
-}
-
-/// 결품 제품 엔티티 (2026-07-23 사용자 결정 — 반려처럼 별도 섹션으로 분리)
-///
-/// SAP `DefaultReason` 코드가 결품셋({F1,L1,L2,L3})으로 분류된 제품. 기존에는 "주문한 제품" 목록에
-/// 회색 배지로 인라인 표시했으나, 반려 섹션 다음에 전용 "결품 제품" 영역으로 분리하고 "주문한 제품"
-/// 목록에서는 제외합니다. [reason] 은 `"{코드} {설명}"`(예: `"L1 [물류] 재고부족"`).
+/// SAP `DefaultReason`(레거시 `미납사유`) 코드가 결품셋({F1,L1,L2,L3})으로 분류된 품목.
+/// 반려 섹션 다음에 전용 "미납 품목" 영역으로 표시하며, "주문한 품목" 목록/카운트에서는 제외됩니다
+/// (2026-07-25 사용자 결정). [reason] 은 `"{코드} {설명}"`(예: `"L1 [물류] 재고부족"`).
 class OutOfStockItem {
   /// 제품 코드
   final String productCode;
@@ -756,11 +650,8 @@ class OrderDetail {
   /// 반려 제품 목록 (반려 존재 시 — 레거시 동등으로 마감 전후 모두 표시)
   final List<RejectedItem>? rejectedItems;
 
-  /// 결품 제품 목록 (2026-07-23 — 반려처럼 별도 섹션, 마감 전후 모두 표시. "주문한 제품"에서는 제외)
+  /// 미납 품목 목록 (SAP `DefaultReason` 결품셋 — 반려처럼 별도 섹션, 마감 전후 모두 표시)
   final List<OutOfStockItem>? outOfStockItems;
-
-  /// 미납 제품 목록 (신규 정책 — LineItemStatus != "OK" && SAP 주문번호 있음, 마감 전후 모두 표시)
-  final List<UnfulfilledItem>? unfulfilledItems;
 
   /// 이 주문의 SAP 주문번호(들)를 역참조하는 후속 주문(취소/변경 등) 요약. 없으면 빈 배열.
   /// 거래처별 주문 상세와 동일한 요약 형태 — 제품 목록 없이 헤더 정보만.
@@ -788,7 +679,6 @@ class OrderDetail {
     this.sapOrderNumbers = const [],
     this.rejectedItems,
     this.outOfStockItems,
-    this.unfulfilledItems,
     this.relatedOrders = const [],
   });
 
@@ -802,15 +692,11 @@ class OrderDetail {
   bool get hasRejectedItems =>
       rejectedItems != null && rejectedItems!.isNotEmpty;
 
-  /// 결품 제품이 있는지 여부
+  /// 미납 품목이 있는지 여부
   bool get hasOutOfStockItems =>
       outOfStockItems != null && outOfStockItems!.isNotEmpty;
 
-  /// 미납 제품이 있는지 여부
-  bool get hasUnfulfilledItems =>
-      unfulfilledItems != null && unfulfilledItems!.isNotEmpty;
-
-  /// 모든 제품이 취소되었는지 여부
+  /// 모든 품목이 취소되었는지 여부
   bool get allItemsCancelled =>
       orderedItems.isNotEmpty && orderedItems.every((item) => item.isCancelled);
 
@@ -835,7 +721,6 @@ class OrderDetail {
     List<String>? sapOrderNumbers,
     List<RejectedItem>? rejectedItems,
     List<OutOfStockItem>? outOfStockItems,
-    List<UnfulfilledItem>? unfulfilledItems,
     List<RelatedClientOrder>? relatedOrders,
   }) {
     return OrderDetail(
@@ -861,7 +746,6 @@ class OrderDetail {
       sapOrderNumbers: sapOrderNumbers ?? this.sapOrderNumbers,
       rejectedItems: rejectedItems ?? this.rejectedItems,
       outOfStockItems: outOfStockItems ?? this.outOfStockItems,
-      unfulfilledItems: unfulfilledItems ?? this.unfulfilledItems,
       relatedOrders: relatedOrders ?? this.relatedOrders,
     );
   }
@@ -889,7 +773,6 @@ class OrderDetail {
       'sapOrderNumbers': sapOrderNumbers,
       'rejectedItems': rejectedItems?.map((e) => e.toJson()).toList(),
       'outOfStockItems': outOfStockItems?.map((e) => e.toJson()).toList(),
-      'unfulfilledItems': unfulfilledItems?.map((e) => e.toJson()).toList(),
       'relatedOrders': relatedOrders.map((e) => e.toJson()).toList(),
     };
   }
@@ -932,11 +815,6 @@ class OrderDetail {
       outOfStockItems: json['outOfStockItems'] != null
           ? (json['outOfStockItems'] as List<dynamic>)
               .map((e) => OutOfStockItem.fromJson(e as Map<String, dynamic>))
-              .toList()
-          : null,
-      unfulfilledItems: json['unfulfilledItems'] != null
-          ? (json['unfulfilledItems'] as List<dynamic>)
-              .map((e) => UnfulfilledItem.fromJson(e as Map<String, dynamic>))
               .toList()
           : null,
       relatedOrders: (json['relatedOrders'] as List<dynamic>? ?? [])
@@ -987,13 +865,13 @@ class OrderDetail {
         if (other.rejectedItems![i] != rejectedItems![i]) return false;
       }
     }
-    if (other.hasUnfulfilledItems != hasUnfulfilledItems) return false;
-    if (hasUnfulfilledItems) {
-      if (other.unfulfilledItems!.length != unfulfilledItems!.length) {
+    if (other.hasOutOfStockItems != hasOutOfStockItems) return false;
+    if (hasOutOfStockItems) {
+      if (other.outOfStockItems!.length != outOfStockItems!.length) {
         return false;
       }
-      for (var i = 0; i < unfulfilledItems!.length; i++) {
-        if (other.unfulfilledItems![i] != unfulfilledItems![i]) return false;
+      for (var i = 0; i < outOfStockItems!.length; i++) {
+        if (other.outOfStockItems![i] != outOfStockItems![i]) return false;
       }
     }
     if (other.relatedOrders.length != relatedOrders.length) return false;
@@ -1026,7 +904,7 @@ class OrderDetail {
           ? Object.hashAll(orderProcessingStatusList!)
           : null,
       rejectedItems != null ? Object.hashAll(rejectedItems!) : null,
-      unfulfilledItems != null ? Object.hashAll(unfulfilledItems!) : null,
+      outOfStockItems != null ? Object.hashAll(outOfStockItems!) : null,
       Object.hashAll(relatedOrders),
     );
   }

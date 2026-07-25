@@ -539,9 +539,9 @@ class OrderRequestServiceTest {
         }
 
         @Test
-        @DisplayName("성공 — 미납 라인(LineItemStatus != OK) → unfulfilledItems 노출, 마감 전에도 노출 (신규 정책)")
-        fun unfulfilledExposedBeforeClose() {
-            // 마감 전(deliveryDate 미래) — 미납 섹션은 마감 전후 모두 노출.
+        @DisplayName("성공 — LineItemStatus != OK 라인은 별도 섹션 없이 orderedItems 에 유지 (2026-07-25 LineItemStatus 섹션 제거)")
+        fun lineItemStatusNonOkKeptInOrderedItems() {
+            // 마감 전(deliveryDate 미래).
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
             every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
             every { orderRequestProductRepository.findByOrderRequest_IdOrderByLineNumberAsc(100L) } returns
@@ -552,11 +552,10 @@ class OrderRequestServiceTest {
             val response = service.getOrderRequestDetail(100L, userId = 1L)
 
             assertThat(response.isClosed).isFalse()
-            assertThat(response.unfulfilledItems).hasSize(1)
-            assertThat(response.unfulfilledItems!![0].productCode).isEqualTo("1000023")
-            assertThat(response.unfulfilledItems!![0].reason).isEqualTo("배차 미확정")
-            // 미납 라인은 orderedItems 에서 제외하지 않는다 (반려만 제외).
+            // 별도 섹션(미납/결품)으로 분리하지 않고 orderedItems 에 그대로 유지한다 (반려만 제외).
+            assertThat(response.outOfStockItems).isNull()
             assertThat(response.orderedItems).hasSize(1)
+            assertThat(response.orderedItems[0].productCode).isEqualTo("1000023")
         }
 
         @Test
@@ -595,7 +594,7 @@ class OrderRequestServiceTest {
         }
 
         @Test
-        @DisplayName("성공 — SAP 취소 코드(S2) 라인 → isCancelledBySap=true + cancelReason 세팅, 결품 아님 (#845)")
+        @DisplayName("성공 — SAP 취소 코드(S2) 라인 → isCancelledBySap=true + cancelReason 세팅, 미납 아님 (#845)")
         fun sapCancelledBadge() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
             every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
@@ -610,15 +609,14 @@ class OrderRequestServiceTest {
             val item = response.orderedItems.first { it.productCode == "1000023" }
             assertThat(item.isCancelledBySap).isTrue()
             assertThat(item.cancelReason).isEqualTo("S2 [영업] 고객사정에 의한 취소")
-            // 취소 코드는 결품 아님 (상호배타).
-            assertThat(item.isOutOfStock).isFalse()
-            assertThat(item.outOfStockReason).isNull()
+            // 취소 코드는 미납 아님 — 미납(결품셋) 라인이면 orderedItems 에서 제외되므로 여기 없다.
+            assertThat(response.outOfStockItems).isNull()
             // 로컬 확정 없음 — 마이그 취소 마커 아님.
             assertThat(item.isCancelled).isFalse()
         }
 
         @Test
-        @DisplayName("성공 — SAP 결품 코드(L1) 라인 → 결품 전용 섹션 + 주문한 제품에도 회색+결품사유로 포함 (양쪽 표시, 2026-07-23 재변경)")
+        @DisplayName("성공 — SAP 결품 코드(L1) 라인 → 미납 전용 섹션에만 표시, 주문한 품목/카운트에서 제외 (2026-07-25)")
         fun sapOutOfStockBadge() {
             val orderRequest = createOrderRequestWithEmployeeId(employeeId = 1L, deliveryDate = LocalDate.of(2026, 5, 10))
             every { orderRequestRepository.findById(eq(100L)) } returns Optional.of(orderRequest)
@@ -629,13 +627,10 @@ class OrderRequestServiceTest {
 
             val response = service.getOrderRequestDetail(100L, userId = 1L)
 
-            // 결품 제품은 "주문한 제품" 목록에도 결품 배지+사유와 함께 포함된다.
-            val ordered = response.orderedItems.first { it.productCode == "1000023" }
-            assertThat(ordered.isOutOfStock).isTrue()
-            assertThat(ordered.outOfStockReason).isEqualTo("L1 [물류] 재고부족")
-            // 취소 아님 (상호배타).
-            assertThat(ordered.isCancelledBySap).isFalse()
-            // 동시에 결품 전용 섹션에도 사유와 함께 표시된다(이중 표시).
+            // 미납 품목은 "주문한 품목" 목록/카운트에서 빠진다 (반려와 동일 정책, 이중 표시 없음).
+            assertThat(response.orderedItems).isEmpty()
+            assertThat(response.orderedItemCount).isZero()
+            // 미납 전용 섹션에만 사유와 함께 표시된다.
             val outOfStock = response.outOfStockItems!!.first { it.productCode == "1000023" }
             assertThat(outOfStock.reason).isEqualTo("L1 [물류] 재고부족")
         }
@@ -655,9 +650,9 @@ class OrderRequestServiceTest {
 
             val item = response.orderedItems.first { it.productCode == "1000023" }
             assertThat(item.isCancelRequested).isTrue()
-            // SAP 미반영 — 결품/취소 배지 없음.
-            assertThat(item.isOutOfStock).isFalse()
+            // SAP 미반영 — 취소 배지 없음, 미납 섹션도 비어있음.
             assertThat(item.isCancelledBySap).isFalse()
+            assertThat(response.outOfStockItems).isNull()
         }
 
         @Test

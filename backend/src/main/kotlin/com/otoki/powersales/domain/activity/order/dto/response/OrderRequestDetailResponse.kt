@@ -15,8 +15,7 @@ import java.time.LocalDateTime
  * - `sapOrderNumbers` 는 SAP 응답 라인에서 뽑은 **비어있지 않은 distinct SAP 주문번호 목록**(응답 순서 유지).
  *   SAP 호출 실패/빈 응답 시 빈 배열.
  * - `rejectedItems` 는 반려 라인 배열. 없으면 `null`.
- * - `unfulfilledItems` 는 미납 라인 배열 (SAPOrderNumber 있음 && LineItemStatus 채워짐 && != "OK" —
- *   신규 정책, SF 레거시엔 없던 분류). 없으면 `null`. 마감 전후 모두 노출.
+ * - `outOfStockItems` 는 미납(SAP `DefaultReason` 결품셋) 라인 배열. 없으면 `null`. 마감 전후 모두 노출.
  */
 data class OrderRequestDetailResponse(
     val id: Long,
@@ -50,9 +49,8 @@ data class OrderRequestDetailResponse(
     // SAP 응답 라인의 distinct SAP 주문번호(마감 무관, 헤더 조기 노출용). 없으면 빈 배열.
     val sapOrderNumbers: List<String> = emptyList(),
     val rejectedItems: List<RejectedItemResponse>?,
-    // 결품 라인 배열(반려처럼 별도 섹션). "주문한 제품"에서는 제외. 없으면 null.
+    // 미납(결품) 라인 배열(반려처럼 별도 섹션). "주문한 품목" 리스트/카운트에서는 제외된다. 없으면 null.
     val outOfStockItems: List<OutOfStockItemResponse>? = null,
-    val unfulfilledItems: List<UnfulfilledItemResponse>? = null,
     // 이 주문요청의 SAP 주문번호(들)를 ref_sap_order_number 로 역참조하는 후속 주문(취소/변경 등) 요약.
     // 거래처별 상세와 동일한 요약 형태(번호·유형·일자·금액·주문자). 없으면 빈 배열.
     val relatedOrders: List<RelatedClientOrderResponse> = emptyList(),
@@ -69,7 +67,6 @@ data class OrderRequestDetailResponse(
             sapOrderNumbers: List<String> = emptyList(),
             rejectedItems: List<RejectedItemResponse>?,
             outOfStockItems: List<OutOfStockItemResponse>? = null,
-            unfulfilledItems: List<UnfulfilledItemResponse>? = null,
             relatedOrders: List<RelatedClientOrderResponse> = emptyList(),
         ): OrderRequestDetailResponse =
             OrderRequestDetailResponse(
@@ -94,7 +91,6 @@ data class OrderRequestDetailResponse(
                 sapOrderNumbers = sapOrderNumbers,
                 rejectedItems = rejectedItems,
                 outOfStockItems = outOfStockItems,
-                unfulfilledItems = unfulfilledItems,
                 relatedOrders = relatedOrders,
             )
     }

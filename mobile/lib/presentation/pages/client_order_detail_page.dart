@@ -133,12 +133,12 @@ class _ClientOrderDetailPageState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClientOrderInfoHeader(detail: detail),
-          // "주문한 제품 (N)" header
+          // "주문한 품목 (N)" header
           Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             child: Text(
-              '주문한 제품 (${detail.orderedItemCount})',
+              '주문한 품목 (${detail.orderedItemCount})',
               style: AppTypography.headlineSmall,
             ),
           ),

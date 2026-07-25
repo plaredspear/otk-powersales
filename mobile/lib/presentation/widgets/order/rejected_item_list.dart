@@ -43,7 +43,7 @@ class RejectedItemList extends StatelessWidget {
               ),
               SizedBox(width: AppSpacing.sm),
               Text(
-                '주문 반려 제품 (${rejectedItems.length})',
+                '주문 반려 품목 (${rejectedItems.length})',
                 style: AppTypography.headlineSmall.copyWith(
                   color: AppColors.error,
                   fontWeight: FontWeight.bold,
@@ -53,7 +53,7 @@ class RejectedItemList extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.sm),
           Text(
-            '반려제품처리에 시간이 걸릴 수 있습니다.',
+            '반려품목처리에 시간이 걸릴 수 있습니다.',
             style: AppTypography.bodySmall.copyWith(
               color: AppColors.textSecondary,
             ),

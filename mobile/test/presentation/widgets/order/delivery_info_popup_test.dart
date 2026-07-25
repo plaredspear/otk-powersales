@@ -29,10 +29,10 @@ void main() {
       expect(find.text('배송 완료'), findsOneWidget);
     });
 
-    testWidgets('OUT_OF_STOCK — 결품 메시지 표시', (tester) async {
+    testWidgets('OUT_OF_STOCK — 미납 메시지 표시', (tester) async {
       await tester.pumpWidget(buildPopup(_item(OrderDeliveryStatus.outOfStock)));
-      expect(find.text('결품으로 인해 배송할 수 없습니다.'), findsOneWidget);
-      expect(find.text('결품'), findsOneWidget);
+      expect(find.text('미납으로 인해 배송할 수 없습니다.'), findsOneWidget);
+      expect(find.text('미납'), findsOneWidget);
     });
   });
 

@@ -17,13 +17,13 @@ void main() {
   }
 
   group('ClientOrderItemTable - 4종 분기', () {
-    testWidgets('4종 displayName 모두 표시 (대기/배송중/배송 완료/결품)', (tester) async {
+    testWidgets('4종 displayName 모두 표시 (대기/배송중/배송 완료/미납)', (tester) async {
       await tester.pumpWidget(buildTable(items: _items4));
 
       expect(find.text('대기'), findsOneWidget);
       expect(find.text('배송중'), findsOneWidget);
       expect(find.text('배송 완료'), findsOneWidget);
-      expect(find.text('결품'), findsOneWidget);
+      expect(find.text('미납'), findsOneWidget);
     });
 
     testWidgets('배송수량 별도 행 표시 (라인마다 "배송수량: N BOX (M EA)")', (tester) async {
@@ -31,7 +31,7 @@ void main() {
 
       // 배송완료 라인 — 실제 출하량
       expect(find.text('배송수량: 10 BOX (300 EA)'), findsOneWidget);
-      // 배송 전(대기/결품) 라인 — 0 BOX (0 EA)
+      // 배송 전(대기/미납) 라인 — 0 BOX (0 EA)
       expect(find.text('배송수량: 0 BOX (0 EA)'), findsNWidgets(2));
     });
 
@@ -45,7 +45,7 @@ void main() {
       await tester.tap(find.text('대기'), warnIfMissed: false);
       await tester.tap(find.text('배송중'));
       await tester.tap(find.text('배송 완료'));
-      await tester.tap(find.text('결품'), warnIfMissed: false);
+      await tester.tap(find.text('미납'), warnIfMissed: false);
       await tester.pump();
 
       expect(
@@ -82,7 +82,7 @@ const _items4 = [
   ),
   ClientOrderItem(
     productCode: 'P004',
-    productName: '결품 상품',
+    productName: '미납 상품',
     deliveredQuantity: '0 BOX',
     shippedQuantity: '0 BOX (0 EA)',
     deliveryStatus: OrderDeliveryStatus.outOfStock,
