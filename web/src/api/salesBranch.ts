@@ -45,7 +45,12 @@ export function fetchInputAdequacyBranches(): Promise<Branch[]> {
   return fetchBranches('/api/v1/admin/sales/input-adequacy/branches');
 }
 
-/** 진열사원 배치 적합성 전용 지점 셀렉터 옵션 조회 — 조직 트리 스코프. */
+/**
+ * 진열사원 배치 적합성 전용 지점 셀렉터 옵션 조회 — 고정 지점 화이트리스트.
+ *
+ * 다른 매출/실적 화면(조직 트리 스코프)과 달리 팀 단위 조직이 섞이지 않도록 행사마스터와 동일한
+ * 지점 목록을 쓴다. 목록만 다르고 실제 조회 스코프는 backend 권한 기준 그대로다.
+ */
 export function fetchDeploymentBranches(): Promise<Branch[]> {
   return fetchBranches('/api/v1/admin/sales/deployment/branches');
 }

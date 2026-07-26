@@ -3,7 +3,7 @@ import { fetchDeploymentBranches } from '@/api/salesBranch';
 import { useAuthStore } from '@/stores/authStore';
 
 /**
- * 진열사원 배치 적합성 전용 지점 셀렉터 옵션 — 조직 트리 스코프.
+ * 진열사원 배치 적합성 전용 지점 셀렉터 옵션 — 고정 지점 화이트리스트(팀 단위 조직 제외).
  *
  * 화면별 전용 endpoint(`/api/v1/admin/sales/deployment/branches`)로 분리해 향후 화면별 권한/스코프를
  * 독립적으로 조정할 수 있게 한다. 지점 목록은 권한 주체(사용자)별로 다르므로 대행 전환 시 캐시 분리를

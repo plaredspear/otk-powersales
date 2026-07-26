@@ -1,6 +1,7 @@
 package com.otoki.powersales.admin.controller
 
 import com.otoki.powersales.admin.service.DashboardBranchResolver
+import com.otoki.powersales.admin.service.WhitelistBranchScopeResolver
 import com.otoki.powersales.domain.activity.schedule.service.WomenScheduleBranchResolver
 import com.otoki.powersales.platform.auth.permission.RequiresSfPermission
 import com.otoki.powersales.platform.auth.permission.SfPermissionOperation
@@ -26,7 +27,8 @@ import org.springframework.web.bind.annotation.RestController
  *
  * 지점 목록 산출:
  * - 월 매출(물류배부)만 대시보드와 동일한 고정 화이트리스트(34개, [DashboardBranchResolver]).
- * - 나머지 4개 화면은 여사원 일정/현황/전문행사조와 동일 단일 출처([WomenScheduleBranchResolver],
+ * - 배치 적합성은 지점 단위 화면이라 행사마스터와 동일한 고정 지점 목록([WhitelistBranchScopeResolver]).
+ * - 나머지 3개 화면은 여사원 일정/현황/전문행사조와 동일 단일 출처([WomenScheduleBranchResolver],
  *   사용자 권한 기준 조직 트리 스코프) 를 재사용한다.
  */
 @RestController
@@ -34,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController
 class AdminSalesBranchController(
     private val womenScheduleBranchResolver: WomenScheduleBranchResolver,
     private val dashboardBranchResolver: DashboardBranchResolver,
+    private val whitelistBranchScopeResolver: WhitelistBranchScopeResolver,
 ) {
 
     /** 월 매출(전산실적) 전용 지점 셀렉터 옵션 — 조직 트리 스코프([WomenScheduleBranchResolver]). */
@@ -60,13 +63,23 @@ class AdminSalesBranchController(
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
         ResponseEntity.ok(ApiResponse.success(womenScheduleBranchResolver.resolveBranches(principal)))
 
-    /** 진열사원 배치 적합성 전용 지점 셀렉터 옵션 — 조직 트리 스코프([WomenScheduleBranchResolver]). */
+    /**
+     * 진열사원 배치 적합성 전용 지점 셀렉터 옵션 — 고정 지점 화이트리스트([WhitelistBranchScopeResolver]).
+     *
+     * 다른 매출/실적 화면이 쓰는 [WomenScheduleBranchResolver] 는 `Organization` 을 필터 없이 조회한 뒤
+     * Level5(지점) 가 비어 있으면 Level4(팀) 로 fallback 하므로, 전사 권한자에게 `FS마케팅1팀` /
+     * `FS판매전략팀` 같은 **팀 단위 조직까지 섞여 노출**된다. 배치 적합성은 지점 단위 화면이므로
+     * 행사마스터·진열스케줄마스터와 동일한 고정 지점 목록(34개)을 쓴다.
+     *
+     * 셀렉터 목록만 바꾸며 실제 조회 스코프는 기존과 동일하다 — 조회는 `@CurrentDataScope`(sharing
+     * policy) 기반이고 `AdminSalesComparisonService.applyScope` 가 교집합으로 재차 가드한다.
+     */
     @GetMapping("/deployment/branches")
     @RequiresSfPermission(entity = "monthly_sales_history", operation = SfPermissionOperation.READ)
     fun getDeploymentBranches(
         @AuthenticationPrincipal principal: WebUserPrincipal,
     ): ResponseEntity<ApiResponse<List<BranchResponse>>> =
-        ResponseEntity.ok(ApiResponse.success(womenScheduleBranchResolver.resolveBranches(principal)))
+        ResponseEntity.ok(ApiResponse.success(whitelistBranchScopeResolver.getBranches(principal)))
 
     /**
      * 월 매출(물류배부) 전용 지점 셀렉터 옵션.
