@@ -123,6 +123,28 @@ class MyAccountServiceTest {
         }
 
         @Test
+        @DisplayName("지점장 - 조장과 동일하게 지점코드 기반 거래처 조회 (레거시 `eq '조장'` 확장)")
+        fun getMyAccounts_branchManager_branchAccounts() {
+            val userId = 1L
+            val employee = createEmployee(
+                id = userId, employeeCode = "20030117",
+                role = AppAuthority.BRANCH_MANAGER, costCenterCode = "1100"
+            )
+            val accounts = listOf(createAccount(id = 10, name = "A마트", externalKey = "2001"))
+
+            every { employeeRepository.findById(userId) } returns Optional.of(employee)
+            every {
+                accountRepository.findByBranchCodeAndAccountGroupInAndIsDeletedNot("1100", listOf("1000", "1010"), true)
+            } returns accounts
+
+            val result = myAccountService.getMyAccounts(userId, null)
+
+            assertThat(result.accounts).hasSize(1)
+            assertThat(result.meta.criteriaLines).containsExactly("소속 지점의 거래처가 표시됩니다")
+            verify(exactly = 0) { teamMemberScheduleRepository.findDistinctAccountIdsByEmployeeIdAndDateRange(any(), any(), any()) }
+        }
+
+        @Test
         @DisplayName("조장 - costCenterCode null -> 빈 리스트")
         fun getMyAccounts_leader_noCostCenterCode() {
             val userId = 1L

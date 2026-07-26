@@ -312,12 +312,42 @@ class LeaderScheduleServiceTest {
         }
 
         @Test
+        @DisplayName("성공 - 지점장도 조장과 동일하게 팀원 목록 조회 (레거시 `eq '조장'` 확장)")
+        fun getTeamMembers_branchManagerAllowed() {
+            val branchManager = createEmployee(id = 4002, authority = AppAuthority.BRANCH_MANAGER, costCenterCode = "C001")
+            val member = createEmployee(id = 5012, employeeCode = "20300002", authority = AppAuthority.WOMAN, costCenterCode = "C001", status = "활동", name = "최여사")
+
+            every { employeeRepository.findById(branchManager.id) } returns Optional.of(branchManager)
+            every {
+                employeeRepository.findByCostCenterCodeAndRoleNotIn(
+                    "C001",
+                    listOf(AppAuthority.LEADER, AppAuthority.BRANCH_MANAGER)
+                )
+            } returns listOf(member)
+
+            val result = leaderScheduleService.getTeamMembers(branchManager.id)
+
+            assertThat(result).hasSize(1)
+            assertThat(result[0].name).isEqualTo("최여사")
+        }
+
+        @Test
         @DisplayName("실패 - 비조장 -> NOT_LEADER")
         fun getTeamMembers_notLeader() {
             val nonLeader = createEmployee(id = 4001, authority = AppAuthority.WOMAN, costCenterCode = "C001")
             every { employeeRepository.findById(nonLeader.id) } returns Optional.of(nonLeader)
 
             assertThatThrownBy { leaderScheduleService.getTeamMembers(nonLeader.id) }
+                .isInstanceOf(LeaderScheduleNotLeaderException::class.java)
+        }
+
+        @Test
+        @DisplayName("실패 - 부서장(AccountViewAll) 은 팀 관리 권한 아님 -> NOT_LEADER")
+        fun getTeamMembers_accountViewAllRejected() {
+            val accountViewAll = createEmployee(id = 4003, authority = AppAuthority.ACCOUNT_VIEW_ALL, costCenterCode = "C001")
+            every { employeeRepository.findById(accountViewAll.id) } returns Optional.of(accountViewAll)
+
+            assertThatThrownBy { leaderScheduleService.getTeamMembers(accountViewAll.id) }
                 .isInstanceOf(LeaderScheduleNotLeaderException::class.java)
         }
     }

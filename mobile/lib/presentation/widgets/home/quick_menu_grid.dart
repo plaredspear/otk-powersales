@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app_router.dart';
+import '../../../core/constants/user_roles.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/app_colors.dart';
@@ -28,11 +29,11 @@ class QuickMenuItem {
 /// 내 일정, 매출 현황, 주문 관리, 활동 등록, 교육, 행사매출 등록
 /// (레거시 Heroku home.jsp .main_quick_nav 6개 항목과 1:1 정합)
 ///
-/// 조장(LEADER):
-/// - 조장은 본인 행사/진열 일정이 없어 "내 일정"이 무의미하므로, 첫 번째 항목을
-///   "일정 관리"(팀원 월간 일정 캘린더, 날짜 카드 navy 버튼과 동일 목적지)로 대체한다.
-///
 /// 조장(LEADER)·지점장(ADMIN):
+/// - 본인 행사/진열 일정이 없어 "내 일정"이 무의미하므로, 첫 번째 항목을
+///   "일정 관리"(팀원 월간 일정 캘린더, 날짜 카드 navy 버튼과 동일 목적지)로 대체한다.
+///   지점장은 서버 `attendanceApplicable == false` 로 홈 출근 카드 자체가 비노출이라
+///   본인 일정 진입이 무의미한 점도 조장과 동일하다.
 /// - 행사매출은 행사 담당자(여사원)만 등록하므로 "행사매출 등록" 항목을 숨긴다.
 class QuickMenuGrid extends StatelessWidget {
   /// 메뉴 아이템 탭 콜백
@@ -57,7 +58,7 @@ class QuickMenuGrid extends StatelessWidget {
     QuickMenuItem(assetPath: 'assets/images/ico_quick6.png', label: '행사매출\n등록'),
   ];
 
-  /// 조장(LEADER): 첫 항목을 "일정 관리"(팀원 월간 일정)로 대체한 목록
+  /// 팀 관리 권한(조장·지점장): 첫 항목을 "일정 관리"(팀원 월간 일정)로 대체한 목록
   static const QuickMenuItem _leaderScheduleItem = QuickMenuItem(
     assetPath: 'assets/images/ico_quick1.png',
     label: '일정 관리',
@@ -65,14 +66,13 @@ class QuickMenuGrid extends StatelessWidget {
   );
 
   /// 역할별 빠른 메뉴 목록
-  /// - 조장(LEADER): 첫 항목을 "일정 관리"로 대체 (레거시 `eq '조장'` 정확 일치)
-  /// - 조장(LEADER)·지점장(ADMIN): "행사매출 등록" 항목 제외
+  /// - 조장(LEADER)·지점장(ADMIN): 첫 항목을 "일정 관리"로 대체 + "행사매출 등록" 제외
   List<QuickMenuItem> get _resolvedItems {
-    final hidePromotionSales = userRole == 'LEADER' || userRole == 'ADMIN';
-    final base = hidePromotionSales
+    final canManageTeam = UserRoles.canManageTeam(userRole);
+    final base = canManageTeam
         ? menuItems.where((item) => item.label != '행사매출\n등록').toList()
         : menuItems;
-    if (userRole != 'LEADER') return base;
+    if (!canManageTeam) return base;
     return [_leaderScheduleItem, ...base.skip(1)];
   }
 

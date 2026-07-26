@@ -50,9 +50,11 @@ class MyAccountService(
         // C형(매출 계열) 부서장: 일정이 잡힌 전체 거래처 (레거시 selectAllAccount)
         val isAllScheduled = scope == MyAccountScope.SALES && employee.role == AppAuthority.ACCOUNT_VIEW_ALL
         // 조장 중 레거시 person-specific 예외(yang_sfid): 팀장 기준 스케줄 거래처 (레거시 selectMyAccount 조장 분기)
+        // 예외는 특정 조장 1명(sfid) 한정이라 지점장으로 확장하지 않는다.
         val isLeaderScheduleException = employee.role == AppAuthority.LEADER && employee.sfid == LEGACY_SCHEDULE_LEADER_SFID
-        // 조장 일반: 지점코드 + 거래처 그룹 1000/1010 (레거시 teamleaderAccList)
-        val isLeader = employee.role == AppAuthority.LEADER && !isLeaderScheduleException
+        // 조장·지점장: 지점코드 + 거래처 그룹 1000/1010 (레거시 teamleaderAccList).
+        // 레거시는 `eq '조장'` 정확 일치였으나 지점장을 조장과 동일 처리하도록 확장 ([AppAuthority.isTeamManager]).
+        val isLeader = AppAuthority.isTeamManager(employee.role) && !isLeaderScheduleException
 
         val accounts = when {
             // 전사 거래처는 수천 건이라 keyword 필터 + 상한을 DB 레벨로 푸시다운 (레거시 검색+페이지네이션 정합).
@@ -100,7 +102,7 @@ class MyAccountService(
             searchHint = "거래처명·코드로 검색하세요 (최대 ${ALL_ACCOUNTS_LIMIT}건 표시)"
         )
 
-        // 조장: 소속 지점 거래처 (기간·주문가능유형 필터 없음)
+        // 조장·지점장: 소속 지점 거래처 (기간·주문가능유형 필터 없음)
         isLeader -> MyAccountMeta(
             criteriaLines = listOf("소속 지점의 거래처가 표시됩니다"),
             searchHint = DEFAULT_SEARCH_HINT

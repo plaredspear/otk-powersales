@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/user_roles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -161,8 +162,10 @@ class _AccountSelectorSheetState extends ConsumerState<AccountSelectorSheet> {
   String get _searchHint =>
       _meta?.searchHint ?? '검색은 표시된 목록 안에서 이름·코드로 찾습니다.';
 
-  /// 현재 로그인 사원이 조장(LEADER)인지 여부 (서버 meta 미제공 시 폴백 분기에만 사용).
-  bool get _isLeader => ref.read(authProvider).user?.role == 'LEADER';
+  /// 현재 로그인 사원이 지점 단위 거래처(조장·지점장)를 보는지 여부.
+  /// 서버 meta 미제공 시 폴백 분기에만 사용 — 서버는 `MyAccountService.isLeader` 로 동일 판정.
+  bool get _isLeader =>
+      UserRoles.canManageTeam(ref.read(authProvider).user?.role);
 
   /// 서버 meta 미제공 시 폴백: scope × 역할 별 표시 기준 문구.
   List<String> get _fallbackCriteriaLines => switch (widget.scope) {

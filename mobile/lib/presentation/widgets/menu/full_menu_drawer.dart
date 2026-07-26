@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../app_router.dart';
 import '../../../core/constants/menu_constants.dart';
+import '../../../core/constants/user_roles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/menu_item.dart' as domain;
@@ -97,9 +98,10 @@ class FullMenuDrawer extends ConsumerWidget {
 
   /// 메뉴 그룹 위젯 목록 생성
   ///
-  /// 조장(LEADER)일 때만 "거래처" 그룹 다음에 "여사원 관리" 그룹을 삽입한다.
-  /// 레거시 GNB(gnb.jsp:212-218) nav7 조건이 `eq '조장'` 정확 일치이므로,
-  /// 지점장(ADMIN)·부서장(AccountViewAll)에게는 노출하지 않는다.
+  /// 팀 관리 권한(조장 LEADER + 지점장 ADMIN)일 때 "거래처" 그룹 다음에
+  /// "여사원 관리" 그룹을 삽입한다. 레거시 GNB(gnb.jsp:212-218) nav7 조건은
+  /// `eq '조장'` 정확 일치였으나, 지점장도 조장과 동일하게 팀을 관리하도록
+  /// 확장한 지점이다([UserRoles.canManageTeam]). 부서장(AccountViewAll)은 제외.
   ///
   /// 또한 조장(LEADER)·지점장(ADMIN)은 소비기한 기능을 사용하지 않으므로 'expiry'
   /// 메뉴를 제외하며, 제외 후 항목이 비는 그룹(제품)은 그룹 자체를 노출하지 않는다.
@@ -109,8 +111,8 @@ class FullMenuDrawer extends ConsumerWidget {
     String? role,
     String? rawRole,
   ) {
-    final isLeader = role == 'LEADER';
-    final hideExpiry = role == 'LEADER' || role == 'ADMIN';
+    final canManageTeam = UserRoles.canManageTeam(role);
+    final hideExpiry = role == UserRoles.leader || role == UserRoles.branchManager;
     // AccountViewAll(부서장)은 도메인 role 로는 USER 로 뭉개지므로 SF 원본 rawRole 로 판별한다.
     final isAccountViewAll = rawRole == 'AccountViewAll';
 
@@ -131,7 +133,7 @@ class FullMenuDrawer extends ConsumerWidget {
       } else {
         groups.add(group);
       }
-      if (isLeader && group.id == 'trade') {
+      if (canManageTeam && group.id == 'trade') {
         groups.add(MenuConstants.teamManagementGroup);
       }
       // AccountViewAll 전용 대리출근 그룹 — "거래처" 그룹 다음에 삽입.

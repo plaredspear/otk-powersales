@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_router.dart';
+import '../../../core/constants/user_roles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -53,16 +54,17 @@ class _PromotionListViewState extends ConsumerState<PromotionListView>
     super.dispose();
   }
 
-  /// 현재 사용자가 조장(leader) 권한인지 여부.
+  /// 현재 사용자가 조장형 필터(기간 범위 + 행사명 검색)를 쓰는 권한인지 여부.
   ///
   /// 레거시는 `appauthority__c` 가 `조장`(group_leader) 이면 기간 범위 + 행사명 검색,
-  /// `여사원`(group_member) 이면 단일 날짜 + 검색 버튼만 노출한다(list.jsp:9-11 정확 일치).
-  /// 지점장/부서장은 두 조건 어디에도 해당하지 않아 여사원형 필터로 폴백한다.
-  /// 모바일 도메인 role 은 `여사원→USER`, `조장→LEADER`, `지점장→ADMIN`, `부서장→USER` 로 번역된다.
-  bool get _isLeader {
-    final role = ref.read(authProvider).user?.role;
-    return role == 'LEADER';
-  }
+  /// `여사원`(group_member) 이면 단일 날짜 + 검색 버튼만 노출한다(list.jsp:9-11).
+  /// 레거시는 지점장을 여사원형으로 폴백시켰으나, 지점장을 조장과 동일 처리하도록
+  /// 확장했다([UserRoles.canManageTeam]). 부서장(AccountViewAll)은 여사원형 유지.
+  ///
+  /// 서버(`MobilePromotionService`) 는 여사원 여부만 분기하므로 조장·지점장의 목록
+  /// 데이터는 이미 동일하다 — 필터 UI 만 정합을 맞추는 변경이다.
+  bool get _isLeader =>
+      UserRoles.canManageTeam(ref.read(authProvider).user?.role);
 
   void _onScroll() {
     if (_scrollController.position.pixels >=

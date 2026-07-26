@@ -55,6 +55,10 @@ import kotlin.collections.contains
  * - 본인 팀원 목록 조회 (GET)
  * - 본인 거래처 목록 조회 (GET)
  *
+ * 권한: 팀 관리 권한([AppAuthority.isTeamManager] — 조장 + 지점장). 레거시는 `eq '조장'`
+ * 정확 일치였으나 지점장을 조장과 동일 처리하도록 확장했다. 여사원(WOMAN) /
+ * 부서장(ACCOUNT_VIEW_ALL) 은 여전히 차단.
+ *
  * 거래처 매핑은 레거시 `accountMapper.xml:239-256` (`teamleaderAccList`) 의 간접 매핑 그대로:
  * `account.branch_code = employee.cost_center_code` AND `account.account_group IN ('1000','1010')`.
  */
@@ -94,8 +98,8 @@ class LeaderScheduleService(
         // step 1: 등록자 매핑
         val registrant = findRegistrant(registrantId)
 
-        // step 2: 조장 권한 검증
-        requireLeader(registrant)
+        // step 2: 팀 관리 권한(조장·지점장) 검증
+        requireTeamManager(registrant)
 
         // step 3: 요청 필드 정합성 검증
         validateRequestFields(request)
@@ -175,7 +179,7 @@ class LeaderScheduleService(
         request: LeaderEventScheduleChangeRequest
     ): LeaderEventScheduleChangeResponse {
         val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
+        requireTeamManager(registrant)
 
         val targetEmployeeId = request.targetEmployeeId
             ?: throw LeaderScheduleTargetEmployeeNotFoundException()
@@ -226,7 +230,7 @@ class LeaderScheduleService(
     @Transactional
     fun deleteEventAssignment(registrantId: Long, scheduleId: Long) {
         val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
+        requireTeamManager(registrant)
 
         val (schedule, pe) = resolveEventAssignment(scheduleId, registrant)
 
@@ -278,7 +282,7 @@ class LeaderScheduleService(
 
     fun getTeamMembers(registrantId: Long): List<LeaderTeamMemberListResponse> {
         val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
+        requireTeamManager(registrant)
 
         val costCenterCode = registrant.costCenterCode
             ?: return emptyList()
@@ -340,7 +344,7 @@ class LeaderScheduleService(
      */
     private fun requireTeamMember(registrantId: Long, targetEmployeeId: Long): Employee {
         val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
+        requireTeamManager(registrant)
 
         val target = employeeRepository.findById(targetEmployeeId)
             .orElseThrow { LeaderScheduleTargetEmployeeNotFoundException() }
@@ -374,7 +378,7 @@ class LeaderScheduleService(
      */
     fun getDailyStatus(registrantId: Long, date: LocalDate): LeaderDailyStatusResponse {
         val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
+        requireTeamManager(registrant)
 
         val costCenterCode = registrant.costCenterCode
             ?: return teamDailyStatusCalculator.emptyDailyStatus(date)
@@ -406,7 +410,7 @@ class LeaderScheduleService(
         month: Int
     ): LeaderMonthlyCalendarResponse {
         val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
+        requireTeamManager(registrant)
 
         val costCenterCode = registrant.costCenterCode
             ?: return LeaderMonthlyCalendarResponse(year, month, emptyList())
@@ -441,7 +445,7 @@ class LeaderScheduleService(
 
     fun getAccounts(registrantId: Long, keyword: String?): List<LeaderAccountListResponse> {
         val registrant = findRegistrant(registrantId)
-        requireLeader(registrant)
+        requireTeamManager(registrant)
 
         val branchCode = registrant.costCenterCode
             ?: return emptyList()
@@ -473,8 +477,14 @@ class LeaderScheduleService(
         employeeRepository.findById(registrantId)
             .orElseThrow { EmployeeNotFoundException() }
 
-    private fun requireLeader(employee: Employee) {
-        if (employee.role != AppAuthority.LEADER) {
+    /**
+     * 팀 관리 권한(조장 + 지점장) 게이트.
+     *
+     * 레거시 `eq '조장'` 정확 일치에서 지점장을 포함하도록 확장한 지점 —
+     * 근거는 [AppAuthority.isTeamManager] KDoc 참조. 출근 / 안전점검 축은 확장 대상이 아니다.
+     */
+    private fun requireTeamManager(employee: Employee) {
+        if (!AppAuthority.isTeamManager(employee.role)) {
             throw LeaderScheduleNotLeaderException()
         }
     }
