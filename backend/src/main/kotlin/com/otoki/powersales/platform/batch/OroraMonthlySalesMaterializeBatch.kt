@@ -38,7 +38,8 @@ class OroraMonthlySalesMaterializeBatch(
 
     // 기본값 매주 목요일 + 매월 3일 11:30 KST (전월 재적재) — 일별 batch (기본 매일 11:00) 와 30분 간격을 두어
     // ORORA 부하 분산. 레거시 첫째 목요일 1회 + 수동 재실행 관행을 주기 재적재로 대체 (2개 cron 사유는 클래스 주석 참조).
-    // 실 운영은 환경변수 `app.batch.orora.monthly.cron`/`day3-cron` override — 본 변경 적용 시 운영값도 함께 조정 필요.
+    // 실 운영 발화 시각은 application.yml `app.batch.orora.monthly.cron`/`day3-cron` (05:00 KST) 고정값이
+    // override — 환경변수 설정 없이 yml 만으로 전체 스케줄이 동작한다. 스케줄 변경은 코드 배포로만.
     // JVM/컨테이너 TZ=Asia/Seoul (Dockerfile) 이므로 zone 명시 없이 KST 로 발화.
     @Scheduled(cron = "\${app.batch.orora.monthly.cron:0 30 11 * * THU}")
     @Scheduled(cron = "\${app.batch.orora.monthly.day3-cron:0 30 11 3 * *}")
