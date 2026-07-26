@@ -3,6 +3,7 @@ import {
   getHerokuFkResolveProgress,
   getHerokuSfidFkResolvableTables,
   getHerokuSfidFkResolveProgress,
+  runHerokuEducationCategoryRemap,
   runHerokuPasswordHash,
   startHerokuFkResolve,
   startHerokuSfidFkResolve,
@@ -93,5 +94,17 @@ export function useStartHerokuSfidFkResolve() {
 export function useRunHerokuPasswordHash() {
   return useMutation<HerokuPasswordHashResponse>({
     mutationFn: runHerokuPasswordHash,
+  });
+}
+
+/**
+ * 교육 게시물 카테고리 재분류(안전교육 → APP 매뉴얼) Mutation 훅.
+ *
+ * password 와 동일하게 1회성 cut-over 도구라 무효화할 캐시 화면이 없어 결과를 mutation data 로
+ * 직접 표시한다. 단일 UPDATE 라 즉시 끝나고, 재실행해도 0 건인 멱등 연산이다.
+ */
+export function useRunHerokuEducationCategoryRemap() {
+  return useMutation<HerokuPasswordHashResponse>({
+    mutationFn: runHerokuEducationCategoryRemap,
   });
 }

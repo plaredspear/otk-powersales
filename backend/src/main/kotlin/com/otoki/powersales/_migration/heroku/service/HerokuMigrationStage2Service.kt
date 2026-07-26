@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional
  * - password : EmployeeInfo(mobile) 초기 비밀번호를 BCrypt hash 로 채움. Heroku Stage 1 은
  *   레거시 평문(emp_pwd)을 적재하지 않고 password NULL 로 두므로 (HerokuStage1Targets.EXCLUDED_COLUMNS),
  *   본 substep 이 SF User.password 재해시와 동일한 초기 비밀번호 정책을 적용한다.
+ * - education-category : 안전교육(c00002) 으로 등록돼 있던 앱 사용법 게시물을 신설 카테고리
+ *   APP 매뉴얼(c00005) 로 재분류. Stage 1 은 edu_code 를 원본 그대로 복사하므로 적재 후 보정한다.
  */
 @Service
 class HerokuMigrationStage2Service(
@@ -66,6 +68,60 @@ class HerokuMigrationStage2Service(
             substep = "password",
             results = listOf(SubstepResult(label = "EmployeeInfo.password (BCrypt)", rowsAffected = totalUpdated)),
             totalRowsAffected = totalUpdated,
+        )
+    }
+
+    /**
+     * education-category — 안전교육(c00002) 게시물 중 앱 사용법 안내 5건을 APP 매뉴얼(c00005) 로 옮긴다.
+     *
+     * 교육 메인이 APP 매뉴얼 카테고리를 신설하면서, 레거시에서 안전교육에 섞여 있던 앱 조작 매뉴얼
+     * (매출현황 조회 / 물류클레임 등록 / 출근등록 변경 안내) 을 분리한다. 제목 패턴으로 일반화할 수
+     * 없어 대상 edu_id 를 명시한다 ([EDUCATION_APP_MANUAL_EDU_IDS]). 나머지 안전교육 게시물은 유지.
+     *
+     * 멱등 — `edu_code = 'c00002'` 가드로 이미 옮긴 row 는 재실행해도 0 건.
+     */
+    @Transactional
+    fun runEducationCategoryRemap(): SfMigrationStage2Response {
+        val updated = em.createNativeQuery(
+            "UPDATE powersales.education_post SET edu_code = :target, updated_at = now() " +
+                "WHERE edu_id IN (:eduIds) AND edu_code = :source"
+        )
+            .setParameter("target", APP_MANUAL_CODE)
+            .setParameter("source", SAFETY_CODE)
+            .setParameter("eduIds", EDUCATION_APP_MANUAL_EDU_IDS)
+            .executeUpdate()
+
+        return SfMigrationStage2Response(
+            substep = "education-category",
+            results = listOf(
+                SubstepResult(
+                    label = "EducationPost.edu_code 안전교육(c00002) → APP 매뉴얼(c00005)",
+                    rowsAffected = updated,
+                )
+            ),
+            totalRowsAffected = updated,
+        )
+    }
+
+    companion object {
+        private const val SAFETY_CODE = "c00002"
+        private const val APP_MANUAL_CODE = "c00005"
+
+        /**
+         * APP 매뉴얼로 옮길 안전교육 게시물 (레거시 education_post.edu_id).
+         *
+         * - edu20230915112030 : 출근등록 방식 변경 안내 + 사용법 영상
+         * - edu20240416084907 : 물류클레임 등록 매뉴얼
+         * - edu20260331173038 : 매출현황-POS매출 조회
+         * - edu20260331173623 : 매출현황-월 매출 조회(전산)
+         * - edu20260331173907 : 매출현황-월 매출 조회(물류)
+         */
+        val EDUCATION_APP_MANUAL_EDU_IDS: List<String> = listOf(
+            "edu20230915112030",
+            "edu20240416084907",
+            "edu20260331173038",
+            "edu20260331173623",
+            "edu20260331173907",
         )
     }
 }

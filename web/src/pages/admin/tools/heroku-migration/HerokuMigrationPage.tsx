@@ -18,6 +18,7 @@ import {
   useHerokuFkResolveProgress,
   useHerokuSfidFkResolvableTables,
   useHerokuSfidFkResolveProgress,
+  useRunHerokuEducationCategoryRemap,
   useRunHerokuPasswordHash,
   useStartHerokuFkResolve,
   useStartHerokuSfidFkResolve,
@@ -373,6 +374,103 @@ function HerokuPasswordHashCard() {
   );
 }
 
+/**
+ * 교육 게시물 카테고리 재분류 카드 (안전교육 → APP 매뉴얼).
+ *
+ * Stage 1 이 edu_code 를 원본 그대로 복사하므로 education_post 적재 후 1회 실행한다.
+ * 대상 edu_id 목록은 backend 상수라 화면에서 선택하지 않는다. 멱등 — 재실행 시 0 건.
+ */
+function HerokuEducationCategoryCard() {
+  const runMutation = useRunHerokuEducationCategoryRemap();
+
+  const result = runMutation.data;
+  const error = runMutation.error as Error | null;
+  const pending = runMutation.isPending;
+
+  return (
+    <Card title="교육 카테고리 재분류 — 안전교육 → APP 매뉴얼" style={{ marginTop: 24 }}>
+      <Paragraph type="secondary">
+        레거시에서 <Text code>안전교육(c00002)</Text> 에 섞여 등록돼 있던 <Text strong>앱 사용법
+        게시물 5건</Text> (매출현황 조회 3건 / 물류클레임 등록 매뉴얼 / 출근등록 방식 변경 안내) 을
+        신설 카테고리 <Text code>APP 매뉴얼(c00005)</Text> 로 옮긴다. 나머지 안전교육 게시물은
+        그대로 유지된다.
+        <br />
+        대상은 제목 패턴으로 일반화할 수 없어 backend 가 <Text code>edu_id</Text> 목록을 상수로
+        들고 있다. <Text code>edu_code = &apos;c00002&apos;</Text> 가드가 있어 재실행해도 0 건 —{' '}
+        <Text strong>멱등</Text>이다. Stage 1 의 <Text code>EducationPost</Text> 적재가 끝난 뒤에
+        실행해야 한다.
+      </Paragraph>
+
+      <Space>
+        <Button
+          type="primary"
+          loading={pending}
+          disabled={pending}
+          onClick={() => {
+            runMutation.mutate();
+          }}
+        >
+          실행
+        </Button>
+      </Space>
+
+      {error && (
+        <Alert
+          type="error"
+          showIcon
+          style={{ marginTop: 12 }}
+          message="교육 카테고리 재분류 실패"
+          description={error.message}
+          closable
+          onClose={() => {
+            runMutation.reset();
+          }}
+        />
+      )}
+
+      {result && (
+        <div style={{ marginTop: 16 }}>
+          <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+            <Descriptions.Item label="substep">
+              <Text code>{result.substep}</Text>
+            </Descriptions.Item>
+            <Descriptions.Item label="적용 row">
+              {result.totalRowsAffected.toLocaleString()}
+            </Descriptions.Item>
+          </Descriptions>
+          {result.totalRowsAffected === 0 && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginTop: 12 }}
+              message="적용된 row 가 없습니다"
+              description="아래 사유를 확인하세요 — Stage 1 education_post 적재 미완료, 또는 이미 재분류된 상태(멱등)."
+            />
+          )}
+          <ResizableTable<HerokuPasswordHashSubstepResult>
+            style={{ marginTop: 12 }}
+            size="small"
+            rowKey="label"
+            pagination={false}
+            columns={[
+              { title: '대상', dataIndex: 'label', key: 'label' },
+              {
+                title: '적용 row',
+                dataIndex: 'rowsAffected',
+                key: 'rowsAffected',
+                width: 160,
+                align: 'right',
+                render: (v: number) => v.toLocaleString(),
+              },
+            ]}
+            dataSource={result.results}
+          />
+        </div>
+      )}
+    </Card>
+  );
+}
+
 const tableColumns: ColumnsType<HerokuFkTableResult> = [
   {
     title: '테이블',
@@ -583,6 +681,8 @@ export default function HerokuMigrationPage() {
       <HerokuSfidFkResolveCard />
 
       <HerokuPasswordHashCard />
+
+      <HerokuEducationCategoryCard />
     </div>
   );
 }

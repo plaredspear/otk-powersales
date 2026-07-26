@@ -139,4 +139,16 @@ class HerokuMigrationStage2Controller(
         val response = stage2Service.runPasswordHash()
         return ResponseEntity.ok(ApiResponse.success(response))
     }
+
+    /**
+     * 안전교육(c00002) 에 섞여 있던 앱 사용법 게시물 5건을 APP 매뉴얼(c00005) 로 재분류한다.
+     *
+     * Stage 1 은 edu_code 를 원본 그대로 복사하므로 적재 후 실행한다. password 와 마찬가지로
+     * 동기 실행 + 멱등이라 executor/progress 없이 curl 1회로 끝난다.
+     */
+    @PostMapping("/api/v1/admin/heroku-migration/stage2/education-category")
+    fun runEducationCategoryRemap(): ResponseEntity<ApiResponse<SfMigrationStage2Response>> {
+        val response = stage2Service.runEducationCategoryRemap()
+        return ResponseEntity.ok(ApiResponse.success(response))
+    }
 }

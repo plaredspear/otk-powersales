@@ -157,3 +157,21 @@ export async function runHerokuPasswordHash(): Promise<HerokuPasswordHashRespons
   }
   return res.data.data;
 }
+
+/**
+ * 교육 게시물 카테고리 재분류 — 안전교육(c00002) 에 섞여 있던 앱 사용법 게시물 5건을
+ * 신설 카테고리 APP 매뉴얼(c00005) 로 옮긴다.
+ *
+ * Stage 1 은 `edu_code` 를 원본 그대로 복사하므로 적재 후 실행한다. 대상은 제목 패턴으로
+ * 일반화할 수 없어 backend 가 `edu_id` 목록을 상수로 들고 있다. `edu_code = 'c00002'` 가드가
+ * 있어 재실행해도 0 건 — **멱등**. 동기 실행 (단일 UPDATE).
+ */
+export async function runHerokuEducationCategoryRemap(): Promise<HerokuPasswordHashResponse> {
+  const res = await client.post<ApiResponse<HerokuPasswordHashResponse>>(
+    '/api/v1/admin/heroku-migration/stage2/education-category',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '교육 카테고리 재분류에 실패했습니다');
+  }
+  return res.data.data;
+}
