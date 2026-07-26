@@ -18,6 +18,7 @@ import { fetchProducts } from '@/api/product';
 import { fetchThemes } from '@/api/inspectionThemes';
 import { fetchUsers } from '@/api/user';
 import { useCreateInspection, useUpdateInspection } from '@/hooks/inspections/useInspections';
+import { useDebouncedValue } from '@/hooks/common/useDebouncedValue';
 import type {
   InspectionCategory,
   InspectionDetail,
@@ -73,6 +74,10 @@ export default function InspectionCreateModal({ open, onClose, editDetail }: Pro
   const [accountKeyword, setAccountKeyword] = useState('');
   const [productKeyword, setProductKeyword] = useState('');
   const [employeeKeyword, setEmployeeKeyword] = useState('');
+  // 검색어를 그대로 queryKey 에 넣으면 키 입력마다 쿼리가 발생하므로 debounce 후 조회한다.
+  const debouncedAccountKeyword = useDebouncedValue(accountKeyword);
+  const debouncedProductKeyword = useDebouncedValue(productKeyword);
+  const debouncedEmployeeKeyword = useDebouncedValue(employeeKeyword);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   // 수정 진입 시 현재 선택값을 옵션에 보존(검색 결과 밖일 수 있음).
   const [accountPatch, setAccountPatch] = useState<Option[]>([]);
@@ -114,18 +119,26 @@ export default function InspectionCreateModal({ open, onClose, editDetail }: Pro
     enabled: open,
   });
   const { data: accounts } = useQuery({
-    queryKey: ['inspection-create', 'accounts', accountKeyword],
-    queryFn: () => fetchAccounts({ keyword: accountKeyword || undefined, page: 0, size: 20 }),
+    queryKey: ['inspection-create', 'accounts', debouncedAccountKeyword],
+    queryFn: () =>
+      fetchAccounts({ keyword: debouncedAccountKeyword || undefined, page: 0, size: 20 }),
     enabled: open,
   });
   const { data: products } = useQuery({
-    queryKey: ['inspection-create', 'products', productKeyword],
-    queryFn: () => fetchProducts({ keyword: productKeyword || undefined, page: 0, size: 20 }),
+    queryKey: ['inspection-create', 'products', debouncedProductKeyword],
+    queryFn: () =>
+      fetchProducts({ keyword: debouncedProductKeyword || undefined, page: 0, size: 20 }),
     enabled: open && category === 'OWN',
   });
   const { data: employees } = useQuery({
-    queryKey: ['inspection-create', 'employees', employeeKeyword],
-    queryFn: () => fetchUsers({ keyword: employeeKeyword || undefined, isActive: true, page: 0, size: 20 }),
+    queryKey: ['inspection-create', 'employees', debouncedEmployeeKeyword],
+    queryFn: () =>
+      fetchUsers({
+        keyword: debouncedEmployeeKeyword || undefined,
+        isActive: true,
+        page: 0,
+        size: 20,
+      }),
     enabled: open,
   });
 
