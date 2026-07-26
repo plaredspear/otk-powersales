@@ -72,6 +72,7 @@ export interface SalesComparisonMiddleItem {
   accountCode: string;
   accountName: string;
   accountBranchName: string | null;
+  distributionChannelLabel: string | null;
   accountCategory: string;
   suitability: string;
   avgClosingAmount: number;
@@ -110,6 +111,7 @@ export interface SalesComparisonDetailItem {
   accountCode: string;
   accountName: string;
   accountBranchName: string | null;
+  distributionChannelLabel: string | null;
   accountCategory: string;
   employeeCode: string;
   employeeName: string;

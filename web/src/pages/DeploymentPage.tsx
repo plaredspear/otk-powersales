@@ -441,6 +441,7 @@ export default function DeploymentPage() {
     { title: '총 진열인원', dataIndex: 'totalDisplayHeadcount', width: 72, align: 'right', render: (v: number) => formatNumber(v) },
     { title: '총 진열환산인원', dataIndex: 'totalDisplayConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
     { title: '총 행사환산인원', dataIndex: 'totalEventConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '유통형태', dataIndex: 'distributionChannelLabel', width: 84, render: (v) => v ?? '-' },
     { title: '거래처유형', dataIndex: 'accountCategory', width: 76 },
     {
       title: '거래처명',
@@ -470,6 +471,7 @@ export default function DeploymentPage() {
     { title: '총 진열인원', dataIndex: 'totalDisplayHeadcount', width: 72, align: 'right', render: (v: number) => formatNumber(v) },
     { title: '총 진열환산인원', dataIndex: 'totalDisplayConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
     { title: '총 행사환산인원', dataIndex: 'totalEventConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
+    { title: '유통형태', dataIndex: 'distributionChannelLabel', width: 84, render: (v) => v ?? '-' },
     { title: '거래처유형', dataIndex: 'accountCategory', width: 76 },
     { title: '거래처명', dataIndex: 'accountName', width: 120 },
     { title: '거래처코드', dataIndex: 'accountCode', width: 84, align: 'right' },
@@ -750,7 +752,7 @@ export default function DeploymentPage() {
                               <ResizableTable.Summary.Cell index={0} colSpan={6}>
                                 <span style={{ ...suitabilityCellStyle('소계'), padding: '4px 8px' }}>{`${sub.suitability} 소계`}</span>
                               </ResizableTable.Summary.Cell>
-                              <ResizableTable.Summary.Cell index={6} colSpan={8} align="right">
+                              <ResizableTable.Summary.Cell index={6} colSpan={9} align="right">
                                 {`거래처 ${sub.accountCount}개`}
                               </ResizableTable.Summary.Cell>
                             </ResizableTable.Summary.Row>
@@ -759,7 +761,7 @@ export default function DeploymentPage() {
                             <ResizableTable.Summary.Cell index={0} colSpan={6}>
                               <span style={{ ...suitabilityCellStyle('총계'), padding: '4px 8px' }}>총계</span>
                             </ResizableTable.Summary.Cell>
-                            <ResizableTable.Summary.Cell index={6} colSpan={8} align="right">
+                            <ResizableTable.Summary.Cell index={6} colSpan={9} align="right">
                               {`거래처 ${middleQuery.data.total.accountCount}개`}
                             </ResizableTable.Summary.Cell>
                           </ResizableTable.Summary.Row>

@@ -73,6 +73,7 @@ class AdminMonthlyInputAdequacyServiceTest {
         accountCode = account.externalKey ?: "",
         accountName = account.name ?: "",
         accountBranchName = "지점A",
+        distributionChannelLabel = "02 슈퍼",
         accountCategory = AccountCategoryColumn.HYPER.displayName,
         accountCategoryCode = "01",
         totalDisplayConvertedHeadcount = BigDecimal.ONE,

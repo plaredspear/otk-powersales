@@ -83,7 +83,8 @@ class AdminSalesComparisonServiceTest {
         convertedHeadcount: BigDecimal,
         avgClosingAmount: Long,
         totalInputCount: Int = 1,
-        equivalentWorkingDays: BigDecimal = BigDecimal.ONE
+        equivalentWorkingDays: BigDecimal = BigDecimal.ONE,
+        distributionChannelLabel: String? = null
     ): TeamMemberScheduleResultItem = TeamMemberScheduleResultItem(
         year = "2026",
         month = "5",
@@ -91,7 +92,7 @@ class AdminSalesComparisonServiceTest {
         accountBranchName = "지점A",
         accountName = accountName,
         accountCode = accountCode,
-        distributionChannelLabel = null,
+        distributionChannelLabel = distributionChannelLabel,
         abcTypeLabel = null,
         orgName = "지점A",
         employeeNumber = employeeCode,
@@ -726,6 +727,24 @@ class AdminSalesComparisonServiceTest {
 
             assertThat(response.items.map { it.accountName }).containsExactly("나거래처", "가거래처")
             assertThat(response.items.map { it.accountCategory }).containsExactly("대형마트", "체인")
+        }
+
+        @Test
+        fun `유통형태는 중간집계-상세 응답 모두에 거래처 단위로 전달`() {
+            val displayItm = item(
+                "A001", "거래처A", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L,
+                distributionChannelLabel = "02 슈퍼"
+            )
+            val acc = account(1, "A001", "거래처A", "대형마트(3대)")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(displayItm))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(acc)
+
+            val middle = service.getMiddle(allScope, 2026, 5, listOf("CC001"), listOf(1))
+            val detail = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), null, null)
+
+            assertThat(middle.items.single().distributionChannelLabel).isEqualTo("02 슈퍼")
+            assertThat(detail.items.single().distributionChannelLabel).isEqualTo("02 슈퍼")
         }
     }
 

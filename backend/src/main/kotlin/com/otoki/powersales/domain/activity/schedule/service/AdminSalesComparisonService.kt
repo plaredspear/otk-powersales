@@ -267,7 +267,7 @@ class AdminSalesComparisonService(
 
         val headers = listOf(
             "거래처지점명", "배치적합성", "월평균매출", "총 진열인원",
-            "총 진열환산인원", "총 행사환산인원", "거래처유형", "거래처명", "거래처코드",
+            "총 진열환산인원", "총 행사환산인원", "유통형태", "거래처유형", "거래처명", "거래처코드",
             "고정배치기준", "격고배치기준", "총 투입횟수", "총 환산일수", "당월매출"
         )
 
@@ -295,14 +295,15 @@ class AdminSalesComparisonService(
             excelRow.createCell(3).apply { setCellValue(item.totalDisplayHeadcount.toDouble()); cellStyle = intStyle }
             excelRow.createCell(4).apply { setCellValue(item.totalDisplayConvertedHeadcount.toDouble()); cellStyle = decimal3Style }
             excelRow.createCell(5).apply { setCellValue(item.totalEventConvertedHeadcount.toDouble()); cellStyle = decimal3Style }
-            excelRow.createCell(6).setCellValue(item.accountCategory)
-            excelRow.createCell(7).setCellValue(item.accountName)
-            excelRow.createCell(8).setCellValue(item.accountCode)
-            excelRow.createCell(9).apply { setCellValue((item.fixedStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
-            excelRow.createCell(10).apply { setCellValue((item.bifurcationHalfStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
-            excelRow.createCell(11).apply { setCellValue(item.totalInputCount.toDouble()); cellStyle = intStyle }
-            excelRow.createCell(12).apply { setCellValue(item.totalEquivalentWorkingDays.toDouble()); cellStyle = decimal3Style }
-            excelRow.createCell(13).apply { setCellValue(item.thisMonthSalesAmount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(6).setCellValue(item.distributionChannelLabel ?: "")
+            excelRow.createCell(7).setCellValue(item.accountCategory)
+            excelRow.createCell(8).setCellValue(item.accountName)
+            excelRow.createCell(9).setCellValue(item.accountCode)
+            excelRow.createCell(10).apply { setCellValue((item.fixedStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
+            excelRow.createCell(11).apply { setCellValue((item.bifurcationHalfStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
+            excelRow.createCell(12).apply { setCellValue(item.totalInputCount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(13).apply { setCellValue(item.totalEquivalentWorkingDays.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(14).apply { setCellValue(item.thisMonthSalesAmount.toDouble()); cellStyle = intStyle }
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
@@ -338,7 +339,7 @@ class AdminSalesComparisonService(
 
         val headers = listOf(
             "거래처지점명", "배치적합성", "월평균매출", "총 진열인원",
-            "총 진열환산인원", "총 행사환산인원", "거래처유형",
+            "총 진열환산인원", "총 행사환산인원", "유통형태", "거래처유형",
             "거래처명", "거래처코드", "사원명", "사번", "직위",
             "근무형태1", "근무형태3", "근무형태4", "근무형태5",
             "고정배치기준", "격고배치기준", "투입횟수", "환산일수", "환산인원",
@@ -368,22 +369,23 @@ class AdminSalesComparisonService(
             excelRow.createCell(3).apply { setCellValue(item.totalDisplayHeadcount.toDouble()); cellStyle = intStyle }
             excelRow.createCell(4).apply { setCellValue(item.totalDisplayConvertedHeadcount.toDouble()); cellStyle = decimal3Style }
             excelRow.createCell(5).apply { setCellValue(item.totalEventConvertedHeadcount.toDouble()); cellStyle = decimal3Style }
-            excelRow.createCell(6).setCellValue(item.accountCategory)
-            excelRow.createCell(7).setCellValue(item.accountName)
-            excelRow.createCell(8).setCellValue(item.accountCode)
-            excelRow.createCell(9).setCellValue(item.employeeName)
-            excelRow.createCell(10).setCellValue(item.employeeCode)
-            excelRow.createCell(11).setCellValue(item.title ?: "")
-            excelRow.createCell(12).setCellValue(item.workingCategory1)
-            excelRow.createCell(13).setCellValue(item.workingCategory3 ?: "")
-            excelRow.createCell(14).setCellValue(item.workingCategory4 ?: "")
-            excelRow.createCell(15).setCellValue(item.workingCategory5 ?: "")
-            excelRow.createCell(16).apply { setCellValue((item.fixedStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
-            excelRow.createCell(17).apply { setCellValue((item.bifurcationHalfStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
-            excelRow.createCell(18).apply { setCellValue(item.inputCount.toDouble()); cellStyle = intStyle }
-            excelRow.createCell(19).apply { setCellValue(item.equivalentWorkingDays.toDouble()); cellStyle = decimal3Style }
-            excelRow.createCell(20).apply { setCellValue(item.convertedHeadcount.toDouble()); cellStyle = decimal3Style }
-            excelRow.createCell(21).apply { setCellValue(item.thisMonthSalesAmount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(6).setCellValue(item.distributionChannelLabel ?: "")
+            excelRow.createCell(7).setCellValue(item.accountCategory)
+            excelRow.createCell(8).setCellValue(item.accountName)
+            excelRow.createCell(9).setCellValue(item.accountCode)
+            excelRow.createCell(10).setCellValue(item.employeeName)
+            excelRow.createCell(11).setCellValue(item.employeeCode)
+            excelRow.createCell(12).setCellValue(item.title ?: "")
+            excelRow.createCell(13).setCellValue(item.workingCategory1)
+            excelRow.createCell(14).setCellValue(item.workingCategory3 ?: "")
+            excelRow.createCell(15).setCellValue(item.workingCategory4 ?: "")
+            excelRow.createCell(16).setCellValue(item.workingCategory5 ?: "")
+            excelRow.createCell(17).apply { setCellValue((item.fixedStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
+            excelRow.createCell(18).apply { setCellValue((item.bifurcationHalfStandardAmount ?: BigDecimal.ZERO).toDouble()); cellStyle = intStyle }
+            excelRow.createCell(19).apply { setCellValue(item.inputCount.toDouble()); cellStyle = intStyle }
+            excelRow.createCell(20).apply { setCellValue(item.equivalentWorkingDays.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(21).apply { setCellValue(item.convertedHeadcount.toDouble()); cellStyle = decimal3Style }
+            excelRow.createCell(22).apply { setCellValue(item.thisMonthSalesAmount.toDouble()); cellStyle = intStyle }
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
@@ -553,6 +555,7 @@ class AdminSalesComparisonService(
                 accountCode = accountCode,
                 accountName = items.first().accountName,
                 accountBranchName = items.first().accountBranchName,
+                distributionChannelLabel = items.first().distributionChannelLabel,
                 accountCategory = accountCategory,
                 accountCategoryCode = accountCategoryCode,
                 totalDisplayConvertedHeadcount = totalDisplayConverted,
@@ -658,6 +661,7 @@ class AdminSalesComparisonService(
         accountCode = accountCode,
         accountName = accountName,
         accountBranchName = accountBranchName,
+        distributionChannelLabel = distributionChannelLabel,
         accountCategory = accountCategory,
         suitability = computeAccountLevelSuitability(),
         avgClosingAmount = avgClosingAmount,
@@ -692,6 +696,7 @@ class AdminSalesComparisonService(
             accountCode = accountCode,
             accountName = accountName,
             accountBranchName = accountBranchName,
+            distributionChannelLabel = distributionChannelLabel,
             accountCategory = accountCategory,
             employeeCode = item.employeeCode,
             employeeName = item.employeeName,
@@ -909,6 +914,8 @@ class AdminSalesComparisonService(
         val accountCode: String,
         val accountName: String,
         val accountBranchName: String?,
+        /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). 거래처 단위 값. */
+        val distributionChannelLabel: String?,
         val accountCategory: String,
         val accountCategoryCode: String?,
         val totalDisplayConvertedHeadcount: BigDecimal,

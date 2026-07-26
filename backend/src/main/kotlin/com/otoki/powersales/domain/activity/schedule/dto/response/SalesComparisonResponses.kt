@@ -60,6 +60,8 @@ data class SalesComparisonMiddleItem(
     val accountCode: String,
     val accountName: String,
     val accountBranchName: String?,
+    /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). */
+    val distributionChannelLabel: String?,
     val accountCategory: String,
     val suitability: String,
     val avgClosingAmount: Long,
@@ -100,6 +102,8 @@ data class SalesComparisonDetailItem(
     val accountCode: String,
     val accountName: String,
     val accountBranchName: String?,
+    /** 유통형태 — 거래처상태코드 + 거래처유형명 조합 (예: "02 슈퍼"). */
+    val distributionChannelLabel: String?,
     val accountCategory: String,
     val employeeCode: String,
     val employeeName: String,
