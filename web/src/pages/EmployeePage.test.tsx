@@ -222,7 +222,7 @@ describe('EmployeePage 조회 조건 로드 (/meta 단일 응답)', () => {
     expect(screen.getByText('상태 전체')).toBeInTheDocument();
     expect(screen.getByText('근무형태 전체')).toBeInTheDocument();
     expect(screen.getByText('세부 전체')).toBeInTheDocument();
-    expect(screen.getByText('전문행사조 전체')).toBeInTheDocument();
+    expect(screen.getByText('행사조 전체')).toBeInTheDocument();
   });
 
   it('meta 미수신(초기 렌더) - 지점 셀렉터/Tag 없이도 렌더 실패하지 않음', () => {

@@ -31,7 +31,7 @@ const ALL_OPTION_LABEL: Record<string, string> = {
   status: '상태 전체',
   workType1: '근무형태 전체',
   workType3: '세부 전체',
-  professionalPromotionTeam: '전문행사조 전체',
+  professionalPromotionTeam: '행사조 전체',
 };
 
 const DEVICE_TOOLTIP =
