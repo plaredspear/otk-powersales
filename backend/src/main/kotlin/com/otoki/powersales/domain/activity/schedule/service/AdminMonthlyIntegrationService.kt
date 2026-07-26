@@ -20,6 +20,7 @@ import com.otoki.powersales.platform.auth.web.WebUserPrincipal
 import com.otoki.powersales.platform.common.config.CacheConfig
 import com.otoki.powersales.platform.common.exception.BusinessException
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
@@ -478,6 +479,54 @@ class AdminMonthlyIntegrationService(
             calculateAvgClosingAmounts(yearMonth.year, yearMonth.monthValue, accountsNeedingAvg)
         }
 
+        // === 그룹 루프 내 반복 쿼리 배치 선조회 (성능) ===
+        // applyThreeFields 그룹의 대표 row 만 모아, 루프 안에서 그룹당 3회씩 돌던 쿼리
+        // (accountConvertedHeadcount 합산 / AccountCategoryMaster.findByName / EICM 활성 lookup) 를
+        // 사원 당월 조합 수와 무관한 상수 회수로 줄인다. 출근등록이 월말로 갈수록 그룹이 누적돼
+        // 선형 증가하던 병목 제거.
+        val threeFieldReps: List<TeamMemberSchedule> = groups.values
+            .map { it.first() }
+            .filter { rep ->
+                rep.workingCategory5?.displayName == "상시" &&
+                    rep.workingCategory1?.displayName != null &&
+                    rep.workingCategory3?.displayName != null &&
+                    rep.account != null
+            }
+
+        // (1) accountConvertedHeadcount 합산용 — 재집계 대상 거래처 전체 MFEIS 를 accountId IN 1회 조회 후
+        //     (accountId, workingCategory1) 로 그룹핑. 년월은 상수라 동일.
+        val threeFieldAccountIds: List<Long> = threeFieldReps.mapNotNull { it.account?.id }.distinct()
+        val accountConvertedRowsByKey: Map<Pair<Long, String>, List<MonthlyFemaleEmployeeIntegrationSchedule>> =
+            if (threeFieldAccountIds.isEmpty()) {
+                emptyMap()
+            } else {
+                monthlyIntegrationScheduleRepository
+                    .findByAccountIdInAndYearAndMonth(threeFieldAccountIds, yearStr, monthStr)
+                    .filter { it.account?.id != null && it.workingCategory1 != null }
+                    .groupBy { it.account!!.id to it.workingCategory1!! }
+            }
+
+        // (2) AccountCategoryMaster — 대표 row 의 accountType(Name) 전체를 IN 1회 조회 후 name → 단건 map.
+        val categoryNames: List<String> = threeFieldReps.mapNotNull { it.account?.accountType }.distinct()
+        val categoryByName: Map<String, AccountCategoryMaster> =
+            if (categoryNames.isEmpty()) {
+                emptyMap()
+            } else {
+                accountCategoryMasterRepository.findByNameIn(categoryNames)
+                    .mapNotNull { cat -> cat.name?.let { name -> name to cat } }
+                    .toMap()
+            }
+
+        // (3) EmployeeInputCriteriaMaster — (2) 로 얻은 categoryId 전체를 IN 1회 조회 후 categoryId → 활성 단건 map.
+        //     typeOfWork1=DISPLAY, referenceDate=검색월 첫날 은 루프 내 단건 조회와 동일한 상수.
+        val categoryIds: List<Long> = categoryByName.values.map { it.id }.distinct()
+        val eicmByCategoryId: Map<Long, EmployeeInputCriteriaMaster> =
+            employeeInputCriteriaMasterRepository.findActiveByCategoriesAndTypeOfWork1(
+                categoryIds = categoryIds,
+                typeOfWork1 = TypeOfWork1.DISPLAY,
+                referenceDate = yearMonth.atDay(1),
+            )
+
         for ((externalKey, rows) in groups) {
             val rep = rows.first()
             val employee = rep.employee
@@ -527,8 +576,9 @@ class AdminMonthlyIntegrationService(
             // (legacy 는 listNew + 기존 DB row 합산 — bypass 로 다른 row 의 accountConvertedHeadcount
             // 갱신은 미발생. 본 spec 도 동일하게 본 row 만 set, 다른 row 의 stale 갱신은 비범위)
             val accountConvertedHeadcount: BigDecimal? = if (applyThreeFields && account != null) {
-                val others = monthlyIntegrationScheduleRepository
-                    .findByAccountIdAndWorkingCategory1AndYearAndMonth(account.id, workingCategory1, yearStr, monthStr)
+                // 루프 밖 배치 조회(accountConvertedRowsByKey) 를 (accountId, workingCategory1) 키로 lookup —
+                // findByAccountIdAndWorkingCategory1AndYearAndMonth 단건 조회와 동일 결과.
+                val others = (accountConvertedRowsByKey[account.id to workingCategory1] ?: emptyList())
                     .filter { it.id != (existing?.id ?: -1L) }
                 val othersSum = others
                     .mapNotNull { it.convertedHeadcount }
@@ -558,14 +608,10 @@ class AdminMonthlyIntegrationService(
                 if (applyThreeFields && account != null) {
                     val accountTypeName = account.accountType
                     if (accountTypeName != null) {
-                        val category = accountCategoryMasterRepository.findByName(accountTypeName)
-                        if (category != null) {
-                            employeeInputCriteriaMasterRepository.findActiveByCategoryAndTypeOfWork1(
-                                categoryId = category.id,
-                                typeOfWork1 = TypeOfWork1.DISPLAY,
-                                referenceDate = yearMonth.atDay(1),
-                            )
-                        } else null
+                        // 루프 밖 배치 map(categoryByName / eicmByCategoryId) 을 lookup —
+                        // findByName → findActiveByCategoryAndTypeOfWork1 단건 체인과 동일 결과.
+                        val category = categoryByName[accountTypeName]
+                        if (category != null) eicmByCategoryId[category.id] else null
                     } else null
                 } else null
 

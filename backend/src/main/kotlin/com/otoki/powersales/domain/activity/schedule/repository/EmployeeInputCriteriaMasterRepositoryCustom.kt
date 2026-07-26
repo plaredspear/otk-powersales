@@ -37,4 +37,17 @@ interface EmployeeInputCriteriaMasterRepositoryCustom {
         typeOfWork1: TypeOfWork1,
         referenceDate: LocalDate,
     ): EmployeeInputCriteriaMaster?
+
+    /**
+     * `findActiveByCategoryAndTypeOfWork1` 의 배치 버전 (spec #680 §5.3) — refreshIntegration 성능.
+     *
+     * 그룹 루프 안에서 categoryId 별로 반복 조회하던 것을 categoryId IN 1회 조회로 대체.
+     * 활성 기간·confirmed·미삭제 필터는 동일하며, 반환은 각 categoryId 별로 단건 조회와 같은
+     * 우선순위(startDate 내림차순 → id 내림차순) 첫 row 만 남긴 map 이다.
+     */
+    fun findActiveByCategoriesAndTypeOfWork1(
+        categoryIds: Collection<Long>,
+        typeOfWork1: TypeOfWork1,
+        referenceDate: LocalDate,
+    ): Map<Long, EmployeeInputCriteriaMaster>
 }

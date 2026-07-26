@@ -18,6 +18,14 @@ interface AccountCategoryMasterRepository : JpaRepository<AccountCategoryMaster,
     fun findByName(name: String): AccountCategoryMaster?
 
     /**
+     * `findByName` 의 배치 버전 — refreshIntegration 성능 (spec #680 §5.3).
+     *
+     * 그룹 루프 안에서 accountType 별로 반복 조회하던 것을 name IN 1회 조회로 대체.
+     * 동명(Name) 중복이 없다는 마스터 특성상 name → 단건 map 으로 사용한다.
+     */
+    fun findByNameIn(names: Collection<String>): List<AccountCategoryMaster>
+
+    /**
      * 거래처유형(유통형태) 검색용 — 이름 부분일치 + 조회화면이용(useSearch) + 미삭제.
      *
      * 화면 검색어로 매칭되는 거래처유형마스터 Name 목록을 얻어, 그 Name 으로 `Account.accountType`

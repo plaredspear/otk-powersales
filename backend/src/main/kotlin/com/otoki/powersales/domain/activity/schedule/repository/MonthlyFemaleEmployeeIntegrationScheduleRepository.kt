@@ -52,4 +52,18 @@ interface MonthlyFemaleEmployeeIntegrationScheduleRepository :
         year: String,
         month: String,
     ): List<MonthlyFemaleEmployeeIntegrationSchedule>
+
+    /**
+     * spec #680 §5.3 — `accountConvertedHeadcount` 합산의 배치 버전.
+     *
+     * `findByAccountIdAndWorkingCategory1AndYearAndMonth` 를 그룹 루프 안에서 accountId 별로
+     * 반복 호출하면 출근등록이 월말로 갈수록 그룹 수만큼 쿼리가 늘어난다. 재집계 대상 거래처
+     * 전체를 accountId IN 으로 1회 조회한 뒤, 호출측에서 (accountId, workingCategory1) 로
+     * 그룹핑해 map lookup 으로 사용한다. 년월 필터는 상수라 그대로 동일.
+     */
+    fun findByAccountIdInAndYearAndMonth(
+        accountIds: Collection<Long>,
+        year: String,
+        month: String,
+    ): List<MonthlyFemaleEmployeeIntegrationSchedule>
 }

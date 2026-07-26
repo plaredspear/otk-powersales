@@ -1,11 +1,14 @@
 package com.otoki.powersales.domain.activity.schedule.service
 
+import com.otoki.powersales.domain.activity.schedule.entity.EmployeeInputCriteriaMaster
 import com.otoki.powersales.domain.activity.schedule.entity.MonthlyFemaleEmployeeIntegrationSchedule
 import com.otoki.powersales.domain.activity.schedule.entity.TeamMemberSchedule
+import com.otoki.powersales.domain.activity.schedule.enums.TypeOfWork1
 import com.otoki.powersales.domain.activity.schedule.repository.EmployeeInputCriteriaMasterRepository
 import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmployeeIntegrationScheduleRepository
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
 import com.otoki.powersales.domain.foundation.account.entity.Account
+import com.otoki.powersales.domain.foundation.account.entity.AccountCategoryMaster
 import com.otoki.powersales.domain.foundation.account.repository.AccountCategoryMasterRepository
 import com.otoki.powersales.domain.foundation.account.repository.AccountRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -15,6 +18,7 @@ import com.otoki.powersales.domain.org.organization.repository.OrganizationRepos
 import com.otoki.powersales.domain.sales.service.MonthlySalesHistoryQueryGateway
 import com.otoki.powersales.platform.common.enums.WorkingCategory1
 import com.otoki.powersales.platform.common.enums.WorkingCategory3
+import com.otoki.powersales.platform.common.enums.WorkingCategory5
 import com.otoki.powersales.platform.common.enums.WorkingType
 import io.mockk.every
 import io.mockk.mockk
@@ -78,8 +82,9 @@ class AdminMonthlyIntegrationServiceRefreshTest {
         )
         every { monthlyIntegrationScheduleRepository.save(any()) } answers { firstArg() }
         every { monthlyIntegrationScheduleRepository.findByEmployeeIdAndYearAndMonth(10L, "2026", "6") } returns emptyList()
+        // accountConvertedHeadcount 합산은 배치 조회(findByAccountIdInAndYearAndMonth) 로 대체됨.
         every {
-            monthlyIntegrationScheduleRepository.findByAccountIdAndWorkingCategory1AndYearAndMonth(any(), any(), any(), any())
+            monthlyIntegrationScheduleRepository.findByAccountIdInAndYearAndMonth(any(), any(), any())
         } returns emptyList()
     }
 
@@ -100,6 +105,7 @@ class AdminMonthlyIntegrationServiceRefreshTest {
         date: LocalDate,
         cat1: WorkingCategory1? = WorkingCategory1.DISPLAY,
         cat3: WorkingCategory3? = WorkingCategory3.FIXED,
+        cat5: WorkingCategory5? = null,
         costCenterCode: String? = "4889",
         professionalPromotionTeam: String? = "일반",
     ): TeamMemberSchedule = TeamMemberSchedule(
@@ -110,6 +116,7 @@ class AdminMonthlyIntegrationServiceRefreshTest {
         workingType = WorkingType.WORK,
         workingCategory1 = cat1,
         workingCategory3 = cat3,
+        workingCategory5 = cat5,
         costCenterCode = costCenterCode,
         professionalPromotionTeam = professionalPromotionTeam,
     )
@@ -431,5 +438,65 @@ class AdminMonthlyIntegrationServiceRefreshTest {
         val at5000 = saved.single { it.costCenterCode == "5000" }
         assertThat(at4889.workingDaysMonth).isEqualByComparingTo(BigDecimal("2"))
         assertThat(at5000.workingDaysMonth).isEqualByComparingTo(BigDecimal("1"))
+    }
+
+    // === 배치화(그룹 루프 내 반복 쿼리 제거) 정합 검증 ===
+    // applyThreeFields (상시 + 근무유형1/3 non-null) 그룹에서만 타는 accountConvertedHeadcount 합산 /
+    // AccountCategoryMaster.findByName / EICM 활성 lookup 을 그룹 루프 밖 배치 조회로 옮긴 것에 대한 검증.
+
+    @Test
+    @DisplayName("배치화 — accountConvertedHeadcount 는 배치 조회(findByAccountIdIn) 결과로 합산하고 단건 조회는 호출하지 않는다")
+    fun accountConvertedHeadcountUsesBatchQuery() {
+        val acc = account(100L, "1234567")
+        // 상시 + 진열 + 고정 → applyThreeFields=true 경로. 같은 거래처+근무유형1(진열) 년월의 다른 MFEIS row
+        // (환산인원 0.5) 가 이미 존재한다고 배치 조회로 주입 → 본 row 환산인원 + 0.5 로 합산돼야 한다.
+        val other = MonthlyFemaleEmployeeIntegrationSchedule(
+            id = 55L, externalKey = "OTHER", year = "2026", month = "6",
+            employee = employee, account = acc, workingCategory1 = "진열",
+            convertedHeadcount = BigDecimal("0.5"),
+        )
+        every {
+            monthlyIntegrationScheduleRepository.findByAccountIdInAndYearAndMonth(any(), "2026", "6")
+        } returns listOf(other)
+        // 15일 단독 투입 → 본 row 환산인원 = 1/1 / 1 = 1.0
+        stubPopulation(listOf(schedule(1L, acc, LocalDate.of(2026, 6, 15), cat5 = WorkingCategory5.REGULAR)))
+
+        service.refreshIntegration(10L, yearMonth)
+
+        val saved = savedRecords().single()
+        // accountConvertedHeadcount = 다른 row 합(0.5) + 본 row 환산인원(1.0) = 1.5
+        assertThat(saved.accountConvertedHeadcount).isEqualByComparingTo(BigDecimal("1.5"))
+        // 배치 조회는 1회, 단건 조회는 호출되지 않는다 (배치화 회귀 방지)
+        verify(exactly = 1) { monthlyIntegrationScheduleRepository.findByAccountIdInAndYearAndMonth(any(), "2026", "6") }
+        verify(exactly = 0) {
+            monthlyIntegrationScheduleRepository.findByAccountIdAndWorkingCategory1AndYearAndMonth(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    @DisplayName("배치화 — EICM lookup 은 배치 조회(findByNameIn → findActiveByCategories)로 세팅하고 단건 조회는 호출하지 않는다")
+    fun eicmLookupUsesBatchQuery() {
+        val acc = account(100L, "1234567").apply { accountType = "슈퍼" }
+        val category = AccountCategoryMaster(id = 7L, name = "슈퍼")
+        val eicm = EmployeeInputCriteriaMaster(id = 42L, name = "슈퍼-진열-기준", confirmed = true)
+        every { accountCategoryMasterRepository.findByNameIn(listOf("슈퍼")) } returns listOf(category)
+        every {
+            employeeInputCriteriaMasterRepository.findActiveByCategoriesAndTypeOfWork1(
+                listOf(7L), TypeOfWork1.DISPLAY, yearMonth.atDay(1)
+            )
+        } returns mapOf(7L to eicm)
+
+        stubPopulation(listOf(schedule(1L, acc, LocalDate.of(2026, 6, 15), cat5 = WorkingCategory5.REGULAR)))
+
+        service.refreshIntegration(10L, yearMonth)
+
+        val saved = savedRecords().single()
+        assertThat(saved.employeeInputCriteriaMaster?.id).isEqualTo(42L)
+        // 배치 조회만 호출, 단건 findByName / findActiveByCategoryAndTypeOfWork1 는 호출 안 함
+        verify(exactly = 1) { accountCategoryMasterRepository.findByNameIn(listOf("슈퍼")) }
+        verify(exactly = 0) { accountCategoryMasterRepository.findByName(any()) }
+        verify(exactly = 0) {
+            employeeInputCriteriaMasterRepository.findActiveByCategoryAndTypeOfWork1(any(), any(), any())
+        }
     }
 }
