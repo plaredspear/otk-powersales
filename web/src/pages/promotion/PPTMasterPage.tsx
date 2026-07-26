@@ -91,6 +91,9 @@ export default function PPTMasterPage() {
   const canCreate = hasEntityPermission(PPT_ENTITY, 'CREATE');
   const canEdit = hasEntityPermission(PPT_ENTITY, 'EDIT');
   const canDelete = hasEntityPermission(PPT_ENTITY, 'DELETE');
+  // 액션 컬럼 노출 여부 — 수정/복제/삭제 중 하나라도 권한이 있어야 컬럼 자체를 표시한다.
+  // 셋 다 없는 직책(예: 조장)에게는 빈 '-' 컬럼이 우측 고정 폭만 차지하므로 컬럼째 제거한다.
+  const showActionColumn = canEdit || canCreate || canDelete;
 
   // 지점 셀렉터 — 권한별 지점 화이트리스트.
   //  - 다중 지점: Select 로 선택
@@ -313,44 +316,43 @@ export default function PPTMasterPage() {
       align: 'center',
       render: (val: boolean) => (val ? '✅' : '-'),
     },
-    {
-      title: '액션',
-      width: 170,
-      align: 'center',
-      fixed: 'right',
-      render: (_, record) => {
-        // 수정=EDIT, 복제=CREATE, 삭제=DELETE 개별 게이팅. 세 버튼 모두 권한 없으면 '-' 표시.
-        if (!canEdit && !canCreate && !canDelete) {
-          return <span>-</span>;
-        }
-        return (
-          <Space size={4}>
-            {canEdit && (
-              <Button size="small" onClick={() => handleEdit(record)}>
-                수정
-              </Button>
-            )}
-            {canCreate && (
-              <Button size="small" onClick={() => handleClone(record)}>
-                복제
-              </Button>
-            )}
-            {canDelete && (
-              <Popconfirm
-                title="이 마스터를 삭제하시겠습니까?"
-                onConfirm={() => handleDelete(record.id)}
-                okText="확인"
-                cancelText="취소"
-              >
-                <Button size="small" danger>
-                  삭제
-                </Button>
-              </Popconfirm>
-            )}
-          </Space>
-        );
-      },
-    },
+    // 수정=EDIT, 복제=CREATE, 삭제=DELETE 개별 게이팅. 셋 다 권한이 없으면 컬럼 자체를 제거한다(showActionColumn).
+    ...(showActionColumn
+      ? ([
+          {
+            title: '액션',
+            width: 170,
+            align: 'center',
+            fixed: 'right',
+            render: (_, record) => (
+              <Space size={4}>
+                {canEdit && (
+                  <Button size="small" onClick={() => handleEdit(record)}>
+                    수정
+                  </Button>
+                )}
+                {canCreate && (
+                  <Button size="small" onClick={() => handleClone(record)}>
+                    복제
+                  </Button>
+                )}
+                {canDelete && (
+                  <Popconfirm
+                    title="이 마스터를 삭제하시겠습니까?"
+                    onConfirm={() => handleDelete(record.id)}
+                    okText="확인"
+                    cancelText="취소"
+                  >
+                    <Button size="small" danger>
+                      삭제
+                    </Button>
+                  </Popconfirm>
+                )}
+              </Space>
+            ),
+          },
+        ] satisfies ColumnsType<PPTMaster>)
+      : []),
   ];
 
   return (

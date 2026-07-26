@@ -102,6 +102,11 @@ describe('PPTMasterPage 권한 게이팅', () => {
       expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
     });
 
+    it('액션 컬럼 헤더 자체가 렌더되지 않는다 (C/E/D 모두 미보유)', () => {
+      renderPage();
+      expect(screen.queryByRole('columnheader', { name: '액션' })).not.toBeInTheDocument();
+    });
+
     it('선택 일괄 확정 버튼은 숨겨진다', () => {
       renderPage();
       expect(screen.queryByRole('button', { name: /선택 일괄 확정/ })).not.toBeInTheDocument();
@@ -153,6 +158,11 @@ describe('PPTMasterPage 권한 게이팅', () => {
       expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '복제' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: '삭제' })).not.toBeInTheDocument();
+    });
+
+    it('액션 컬럼 헤더가 노출된다 (EDIT 보유)', () => {
+      renderPage();
+      expect(screen.getByRole('columnheader', { name: '액션' })).toBeInTheDocument();
     });
 
     it('엑셀 업로드 + 엑셀 템플릿 다운로드 버튼은 숨겨진다 (CREATE 미보유)', () => {
