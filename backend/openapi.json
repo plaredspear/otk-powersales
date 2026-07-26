@@ -23683,9 +23683,6 @@
           "accountCategory" : {
             "type" : "string"
           },
-          "accountCategoryCode" : {
-            "type" : [ "string", "null" ]
-          },
           "accountCode" : {
             "type" : "string"
           },
@@ -23706,7 +23703,7 @@
           "convertedHeadcount" : {
             "type" : "number"
           },
-          "ediPos" : {
+          "distributionChannelLabel" : {
             "type" : [ "string", "null" ]
           },
           "employeeCode" : {
@@ -23840,7 +23837,7 @@
           "bifurcationHalfStandardAmount" : {
             "type" : [ "number", "null" ]
           },
-          "ediPos" : {
+          "distributionChannelLabel" : {
             "type" : [ "string", "null" ]
           },
           "fixedStandardAmount" : {
@@ -32412,6 +32409,24 @@
           }
         },
         "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/heroku-migration/stage2/education-category" : {
+      "post" : {
+        "operationId" : "runEducationCategoryRemap",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSfMigrationStage2Response"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "heroku-migration-stage-2-controller" ]
       }
     },
     "/api/v1/admin/heroku-migration/stage2/fk" : {
