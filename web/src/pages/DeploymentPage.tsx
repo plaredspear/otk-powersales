@@ -471,7 +471,6 @@ export default function DeploymentPage() {
     { title: '총 진열환산인원', dataIndex: 'totalDisplayConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
     { title: '총 행사환산인원', dataIndex: 'totalEventConvertedHeadcount', width: 84, align: 'right', render: (v: number) => formatDecimal3(v) },
     { title: '거래처유형', dataIndex: 'accountCategory', width: 76 },
-    { title: '거래처유형코드', dataIndex: 'accountCategoryCode', width: 80, align: 'right', render: (v) => v ?? '-' },
     { title: '거래처명', dataIndex: 'accountName', width: 120 },
     { title: '거래처코드', dataIndex: 'accountCode', width: 84, align: 'right' },
     { title: '사원명', dataIndex: 'employeeName', width: 72 },

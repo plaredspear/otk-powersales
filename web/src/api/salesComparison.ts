@@ -111,7 +111,6 @@ export interface SalesComparisonDetailItem {
   accountName: string;
   accountBranchName: string | null;
   accountCategory: string;
-  accountCategoryCode: string | null;
   employeeCode: string;
   employeeName: string;
   title: string | null;

@@ -708,6 +708,25 @@ class AdminSalesComparisonServiceTest {
             assertThat(response.items).hasSize(2)
             assertThat(response.total.rowCount).isEqualTo(2)
         }
+
+        @Test
+        fun `정렬은 거래처유형코드 우선 - 응답에 코드가 없어도 SF 정합 유지`() {
+            // SF lowDataItems.compareTo 정합 — 1순위 거래처유형코드(01 대형마트 < 02 체인).
+            // 거래처유형코드는 화면 미표시라 응답 DTO 에 없다. 산출 모델 값으로 정렬됨을 가드.
+            // 거래처명은 코드 역순(체인=가거래처 / 대형마트=나거래처)이라 이름 정렬이면 순서가 뒤집힌다.
+            val chainItm = item("A002", "가거래처", "E002", "사원B", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
+            val hyperItm = item("A001", "나거래처", "E001", "사원A", "진열", "고정", "상시", BigDecimal.ONE, 1_500_000L)
+            val chainAcc = account(2, "A002", "가거래처", "체인")
+            val hyperAcc = account(1, "A001", "나거래처", "대형마트(3대)")
+
+            every { teamMemberScheduleSearchService.search(any(), any(), any()) } returns searchResult(listOf(chainItm, hyperItm))
+            every { accountRepository.findByExternalKeyIn(any()) } returns listOf(chainAcc, hyperAcc)
+
+            val response = service.getDetail(allScope, 2026, 5, listOf("CC001"), emptyList(), null, null)
+
+            assertThat(response.items.map { it.accountName }).containsExactly("나거래처", "가거래처")
+            assertThat(response.items.map { it.accountCategory }).containsExactly("대형마트", "체인")
+        }
     }
 
     @Nested

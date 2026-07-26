@@ -101,7 +101,6 @@ data class SalesComparisonDetailItem(
     val accountName: String,
     val accountBranchName: String?,
     val accountCategory: String,
-    val accountCategoryCode: String?,
     val employeeCode: String,
     val employeeName: String,
     val title: String?,
