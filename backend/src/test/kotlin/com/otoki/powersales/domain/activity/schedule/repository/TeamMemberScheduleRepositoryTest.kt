@@ -797,7 +797,7 @@ class TeamMemberScheduleRepositoryTest {
             // native 매칭 결과가 {e1, e2} 라고 가정 — findEmployees 가 employee.id IN 으로 정확히 필터하는지.
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                setOf(e1.id, e2.id), null, false,
+                setOf(e1.id, e2.id), null, false, false,
                 PageRequest.of(0, 20),
             )
 
@@ -815,7 +815,7 @@ class TeamMemberScheduleRepositoryTest {
             // 매칭 0명(빈 집합) → 전체 사원이 새어 나오면 안 되고 반드시 빈 결과여야 한다(빈 IN 방어).
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                emptySet(), null, false,
+                emptySet(), null, false, false,
                 PageRequest.of(0, 20),
             )
 
@@ -833,7 +833,7 @@ class TeamMemberScheduleRepositoryTest {
 
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                null, ProfessionalPromotionTeamType.RAMEN_SALE, false,
+                null, ProfessionalPromotionTeamType.RAMEN_SALE, false, false,
                 PageRequest.of(0, 20),
             )
 
@@ -849,7 +849,7 @@ class TeamMemberScheduleRepositoryTest {
 
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                null, null, true,
+                null, null, true, false,
                 PageRequest.of(0, 20),
             )
 
@@ -866,7 +866,7 @@ class TeamMemberScheduleRepositoryTest {
             // 근무형태 매칭이 {M1, M2} 여도 전문행사조(라면세일조) AND 조건으로 M1 만 남아야 한다.
             val result = employeeRepository.findEmployees(
                 null, null, null, null, null,
-                setOf(match.id, wrongTeam.id), ProfessionalPromotionTeamType.RAMEN_SALE, false,
+                setOf(match.id, wrongTeam.id), ProfessionalPromotionTeamType.RAMEN_SALE, false, false,
                 PageRequest.of(0, 20),
             )
 

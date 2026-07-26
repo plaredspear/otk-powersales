@@ -160,6 +160,7 @@ class EmployeeRepositoryCustomImpl(
         workTypeMatchedEmployeeIds: Set<Long>?,
         promotionTeam: ProfessionalPromotionTeamType?,
         promotionTeamGeneral: Boolean,
+        promotionTeamAssignedOnly: Boolean,
         pageable: Pageable
     ): Page<Employee> {
         // 근무형태 필터가 걸렸으나 매칭 사원이 0명이면 빈 결과 — employee.id IN (empty) 의 DB/QueryDSL
@@ -196,6 +197,12 @@ class EmployeeRepositoryCustomImpl(
             where.and(
                 employee.professionalPromotionTeam.isNull
                     .or(employee.professionalPromotionTeam.stringValue().`in`(ProfessionalPromotionTeamType.UNASSIGNED_LEGACY_VALUES))
+            )
+        } else if (promotionTeamAssignedOnly) {
+            // '행사조 전체' = 일반(미배정) 제외 — '일반' 필터(IS NULL OR 레거시 미배정 문자열) 의 정확한 여집합.
+            where.and(
+                employee.professionalPromotionTeam.isNotNull
+                    .and(employee.professionalPromotionTeam.stringValue().notIn(ProfessionalPromotionTeamType.UNASSIGNED_LEGACY_VALUES))
             )
         } else if (promotionTeam != null) {
             where.and(employee.professionalPromotionTeam.eq(promotionTeam))

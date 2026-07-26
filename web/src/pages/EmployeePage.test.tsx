@@ -54,7 +54,10 @@ function listMeta(branches: { value: string; label: string }[]) {
       {
         key: 'professionalPromotionTeam',
         type: 'SELECT' as const,
-        options: [{ value: '일반', label: '일반' }],
+        options: [
+          { value: '행사조 전체', label: '행사조 전체' },
+          { value: '일반', label: '일반' },
+        ],
       },
       { key: 'keyword', type: 'TEXT' as const, options: null },
       { key: 'costCenterCode', type: 'SELECT' as const, options: branches },
@@ -222,7 +225,8 @@ describe('EmployeePage 조회 조건 로드 (/meta 단일 응답)', () => {
     expect(screen.getByText('상태 전체')).toBeInTheDocument();
     expect(screen.getByText('근무형태 전체')).toBeInTheDocument();
     expect(screen.getByText('세부 전체')).toBeInTheDocument();
-    expect(screen.getByText('행사조 전체')).toBeInTheDocument();
+    // 전문행사조 셀렉터의 빈 값('') 기본 라벨은 '전체'(일반 포함 완전 전체) — '일반 제외'는 meta 의 '행사조 전체' 옵션.
+    expect(screen.getByText('전체')).toBeInTheDocument();
   });
 
   it('meta 미수신(초기 렌더) - 지점 셀렉터/Tag 없이도 렌더 실패하지 않음', () => {

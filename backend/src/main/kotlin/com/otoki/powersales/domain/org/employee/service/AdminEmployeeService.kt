@@ -71,6 +71,8 @@ class AdminEmployeeService(
         val workType3: WorkingCategory3?,
         val promotionTeam: ProfessionalPromotionTeamType?,
         val promotionTeamGeneral: Boolean,
+        // "행사조 전체" — 일반(미배정) 을 제외한, 전문행사조가 배정된 모든 사원.
+        val promotionTeamAssignedOnly: Boolean,
     )
 
     /**
@@ -93,11 +95,12 @@ class AdminEmployeeService(
         }
         val pptRaw = professionalPromotionTeam?.takeIf { it.isNotBlank() }
         val general = pptRaw == ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME
-        val ppt = if (general) null else pptRaw?.let {
+        val assignedOnly = pptRaw == ProfessionalPromotionTeamType.ASSIGNED_ONLY_DISPLAY_NAME
+        val ppt = if (general || assignedOnly) null else pptRaw?.let {
             ProfessionalPromotionTeamType.fromDisplayNameOrNull(it)
                 ?: throw IllegalArgumentException("유효하지 않은 전문행사조: $it")
         }
-        return EmployeeSearchFilters(wt1, wt3, ppt, general)
+        return EmployeeSearchFilters(wt1, wt3, ppt, general, assignedOnly)
     }
 
     /**
@@ -148,9 +151,14 @@ class AdminEmployeeService(
         val workType3Options = WorkingCategory3.entries
             .map { FemaleEmployeeFilterOption(value = it.displayName, label = it.displayName) }
 
-        // 전문행사조 필터는 정식 5개 조 + '일반'(미배정, enum 값 아님) 을 함께 노출한다.
-        // 선언 순서가 SF picklist 정의 순서이며, '일반' 은 SF 레거시 표시 정합으로 맨 앞에 둔다.
+        // 전문행사조 필터는 '행사조 전체'(일반 제외) + 정식 5개 조 + '일반'(미배정, enum 값 아님) 을 함께 노출한다.
+        // 셀렉터의 빈 값('') = 완전 전체(일반 포함) 는 화면이 앞에 붙이고, 그 다음에 이 옵션들이 온다.
+        // '행사조 전체'(일반 제외) 를 맨 앞에, '일반' 은 SF 레거시 표시 정합으로 그 다음에 둔다.
         val promotionTeamOptions = listOf(
+            FemaleEmployeeFilterOption(
+                value = ProfessionalPromotionTeamType.ASSIGNED_ONLY_DISPLAY_NAME,
+                label = ProfessionalPromotionTeamType.ASSIGNED_ONLY_DISPLAY_NAME,
+            ),
             FemaleEmployeeFilterOption(
                 value = ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME,
                 label = ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME,
@@ -249,6 +257,7 @@ class AdminEmployeeService(
         val userPage = employeeRepository.findEmployees(
             status, branchFilter, keyword, role, roles,
             workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
+            filters.promotionTeamAssignedOnly,
             pageable,
         )
 
@@ -312,6 +321,7 @@ class AdminEmployeeService(
             val employees = employeeRepository.findEmployees(
                 status, branchFilter, keyword, role, roles,
                 workTypeMatchedEmployeeIds, filters.promotionTeam, filters.promotionTeamGeneral,
+            filters.promotionTeamAssignedOnly,
                 pageable,
             ).content
             val attendanceInfo = loadAttendanceInfo(employees.map { it.id })

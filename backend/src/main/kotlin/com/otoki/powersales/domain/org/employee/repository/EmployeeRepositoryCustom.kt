@@ -84,6 +84,9 @@ interface EmployeeRepositoryCustom {
      *                       null 이면 미적용 (단 [promotionTeamGeneral] 참조).
      * @param promotionTeamGeneral  '일반'(전문행사조 미배정 = null) 필터 여부. true 면
      *                              `employee.professionalPromotionTeam IS NULL`. [promotionTeam] 과 상호배타.
+     * @param promotionTeamAssignedOnly  '행사조 전체'(일반 제외 = 배정된 모든 조) 필터 여부. true 면
+     *                                   `professionalPromotionTeam IS NOT NULL AND NOT IN 레거시 미배정 값`.
+     *                                   [promotionTeam] / [promotionTeamGeneral] 과 상호배타.
      */
     fun findEmployees(
         status: String?,
@@ -94,6 +97,7 @@ interface EmployeeRepositoryCustom {
         workTypeMatchedEmployeeIds: Set<Long>? = null,
         promotionTeam: ProfessionalPromotionTeamType? = null,
         promotionTeamGeneral: Boolean = false,
+        promotionTeamAssignedOnly: Boolean = false,
         pageable: Pageable
     ): Page<Employee>
 

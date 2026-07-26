@@ -31,7 +31,8 @@ const ALL_OPTION_LABEL: Record<string, string> = {
   status: '상태 전체',
   workType1: '근무형태 전체',
   workType3: '세부 전체',
-  professionalPromotionTeam: '행사조 전체',
+  // 빈 값('') = 완전 전체(일반 포함). '일반 제외'는 서버 meta 의 '행사조 전체' 옵션이 담당한다.
+  professionalPromotionTeam: '전체',
 };
 
 const DEVICE_TOOLTIP =

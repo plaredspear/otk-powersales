@@ -96,6 +96,37 @@ class EmployeeRepositoryPromotionTeamFilterTest {
     }
 
     @Test
+    @DisplayName("전문행사조 '행사조 전체' 필터 - 일반(NULL/'일반'/'해당없음') 을 제외한 배정된 조만 조회한다")
+    fun assigned_only_filter_excludes_general_and_legacy_strings() {
+        // NULL / '일반' / '해당없음' — 미배정 → 제외되어야 함
+        persist("EMP_NULL", promotionTeam = null)
+        persist("EMP_GENERAL_STR", promotionTeam = null)
+        persist("EMP_NONE_STR", promotionTeam = null)
+        updatePromotionTeamRaw("EMP_GENERAL_STR", "일반")
+        updatePromotionTeamRaw("EMP_NONE_STR", "해당없음")
+        // 정식 조 — 조회에 포함되어야 함
+        persist("EMP_RAMEN", promotionTeam = ProfessionalPromotionTeamType.RAMEN_SALE)
+        persist("EMP_CURRY", promotionTeam = ProfessionalPromotionTeamType.CURRY_PROMOTION)
+
+        val page = employeeRepository.findEmployees(
+            status = null,
+            branchCodes = null,
+            keyword = null,
+            role = null,
+            roles = null,
+            promotionTeam = null,
+            promotionTeamGeneral = false,
+            promotionTeamAssignedOnly = true,
+            pageable = PageRequest.of(0, 20),
+        )
+
+        assertThat(page.content.map { it.employeeCode })
+            .containsExactlyInAnyOrder("EMP_RAMEN", "EMP_CURRY")
+        assertThat(page.content.map { it.employeeCode })
+            .doesNotContain("EMP_NULL", "EMP_GENERAL_STR", "EMP_NONE_STR")
+    }
+
+    @Test
     @DisplayName("전문행사조 특정 조 필터 - 등호 매칭으로 해당 조만 조회한다")
     fun specific_team_filter_matches_only_that_team() {
         persist("EMP_NULL", promotionTeam = null)

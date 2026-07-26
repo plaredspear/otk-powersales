@@ -42,6 +42,14 @@ enum class ProfessionalPromotionTeamType(
         const val GENERAL_DISPLAY_NAME = "일반"
 
         /**
+         * 검색 필터에서 "일반(미배정) 을 제외한, 전문행사조가 배정된 모든 사원" 을 뜻하는 표시명 — enum 값 아님.
+         *
+         * 셀렉터의 빈 값('') = 완전 전체(일반 포함) 와 구분되는 별도 선택지로, 이 문자열을 필터 값으로
+         * 받으면 repository 가 `professionalPromotionTeam IS NOT NULL AND NOT IN 레거시 미배정 값` 술어를 적용한다.
+         */
+        const val ASSIGNED_ONLY_DISPLAY_NAME = "행사조 전체"
+
+        /**
          * "미배정"으로 취급하는 DB 저장 문자열 목록.
          *
          * 신규 시스템의 미배정은 null 이지만, SF 레거시 데이터가 정규화 없이 적재되어
