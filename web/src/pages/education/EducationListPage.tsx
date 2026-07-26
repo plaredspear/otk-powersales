@@ -13,11 +13,14 @@ import RefreshButton from '@/components/common/RefreshButton';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
-const CATEGORY_TAG: Record<string, { color: string; label: string }> = {
-  c00001: { color: 'orange', label: '시식매뉴얼' },
-  c00002: { color: 'red', label: 'CS/안전' },
-  c00003: { color: 'blue', label: '교육평가' },
-  c00004: { color: 'green', label: '신제품소개' },
+// 코드→표시명 매핑은 백엔드 enum(EducationCategoryCode)이 단일 진실 공급원이라
+// 목록 API 의 eduCodeNm 을 그대로 라벨로 쓴다. 여기서는 색상만 코드별로 부여한다.
+const CATEGORY_COLOR: Record<string, string> = {
+  c00001: 'orange', // 시식 매뉴얼
+  c00002: 'red', // 안전교육
+  c00003: 'blue', // 영업 교육
+  c00004: 'purple', // 설문조사
+  c00005: 'green', // APP 매뉴얼
 };
 
 export default function EducationListPage() {
@@ -53,10 +56,9 @@ export default function EducationListPage() {
       title: '카테고리',
       dataIndex: 'eduCode',
       width: 120,
-      render: (code: string) => {
-        const tag = CATEGORY_TAG[code];
-        return tag ? <Tag color={tag.color}>{tag.label}</Tag> : <Tag>{code}</Tag>;
-      },
+      render: (code: string, record) => (
+        <Tag color={CATEGORY_COLOR[code]}>{record.eduCodeNm || code}</Tag>
+      ),
     },
     {
       title: '제목',
