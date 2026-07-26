@@ -110,7 +110,7 @@ class ScheduledJobCatalogTest {
     }
 
     @Test
-    @DisplayName("ORORA 매출 적재 배치 cron 이 SF 운영 CronTrigger 와 정합한다 (일별=매일 11시, 월별=첫째 주 목요일 11시)")
+    @DisplayName("ORORA 매출 적재 배치 cron 정합 (일별=매일 11시 SF 동등, 월별=매일 11시30분 전월 재마감 자동 추적)")
     fun ororaSalesCrons_alignWithLegacyOperationalSchedule() {
         val byName = ScheduledJobCatalog.ENTRIES.associateBy { it.jobName }
 
@@ -119,9 +119,11 @@ class ScheduledJobCatalogTest {
         assertThat(dailyCron).isEqualTo("0 0 11 * * *")
         assertThat(CronExpression.isValidExpression(dailyCron)).isTrue()
 
-        // legacy SF "오로라 월별 매출 이력 수신" = 0 0 11 ? * 5#1 (매월 첫째 주 목요일 11:00 Asia/Seoul)
+        // legacy SF "오로라 월별 매출 이력 수신" 은 첫째 목요일 1회(0 0 11 ? * 5#1) + 전월 재마감 시
+        // OroraYearMonth__mdt 수동 재실행 관행 — 신규는 매일 11:30 전월 재적재로 수동 관행을 자동 흡수.
+        // 일별(11:00) 과 30분 간격을 두어 ORORA 부하 분산.
         val monthlyCron = cronDefault(byName.getValue(OroraMonthlySalesMaterializeBatch.JOB_NAME).cron)
-        assertThat(monthlyCron).isEqualTo("0 0 11 ? * THU#1")
+        assertThat(monthlyCron).isEqualTo("0 30 11 * * *")
         assertThat(CronExpression.isValidExpression(monthlyCron)).isTrue()
     }
 

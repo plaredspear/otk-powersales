@@ -52,8 +52,8 @@ object DashboardScheduledJobTargets {
         Target(
             OroraMonthlySalesMaterializeBatch.JOB_NAME,
             "ORORA 월매출",
-            "매월 3일 05시",
-            note = "매월 3일에만 실행됩니다. 조회일이 매월 3일이 아니면 예상 실행 횟수는 0회입니다.",
+            "매일 05시",
+            note = "전월분을 매일 재적재해 전월 재마감 조정을 자동 반영합니다.",
         ),
     )
 

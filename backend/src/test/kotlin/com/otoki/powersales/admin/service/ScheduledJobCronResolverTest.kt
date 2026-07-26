@@ -58,7 +58,7 @@ class ScheduledJobCronResolverTest {
     }
 
     @Test
-    @DisplayName("ORORA 월매출(매월 3일 05시) — 3일을 포함하지 않는 윈도우는 0회")
+    @DisplayName("월 1회 cron(매월 3일 05시) — 3일을 포함하지 않는 윈도우는 0회")
     fun monthlyDay3_notMatchingWindow_zero() {
         // 7/14~7/15 윈도우에는 3일이 없으므로 0회.
         val count = resolver.expectedFireCount("0 0 5 3 * *", from, to)
@@ -66,7 +66,7 @@ class ScheduledJobCronResolverTest {
     }
 
     @Test
-    @DisplayName("ORORA 월매출(매월 3일 05시) — 3일을 포함하는 윈도우는 1회")
+    @DisplayName("월 1회 cron(매월 3일 05시) — 3일을 포함하는 윈도우는 1회")
     fun monthlyDay3_matchingWindow_one() {
         // 8/2 22:00 ~ 8/3 22:00 윈도우에는 8/3 05:00 발화 = 1회.
         val f = LocalDateTime.of(2026, 8, 2, 22, 0, 0)

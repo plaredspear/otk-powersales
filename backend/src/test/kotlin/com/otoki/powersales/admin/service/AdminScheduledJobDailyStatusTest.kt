@@ -137,7 +137,7 @@ class AdminScheduledJobDailyStatusTest {
     }
 
     @Test
-    @DisplayName("ORORA 월매출은 note(매월 3일 안내)를 포함한다")
+    @DisplayName("ORORA 월매출은 note(전월 매일 재적재 안내)를 포함한다")
     fun ororaMonthlyHasNote() {
         allBeansRegistered()
         every { repository.aggregateByJobNameWithin(any(), any(), any()) } returns emptyList()
@@ -147,6 +147,6 @@ class AdminScheduledJobDailyStatusTest {
         val monthly = response.items.first { it.jobName == OroraMonthlySalesMaterializeBatch.JOB_NAME }
 
         assertThat(monthly.note).isNotNull()
-        assertThat(monthly.note).contains("3일")
+        assertThat(monthly.note).contains("재마감")
     }
 }

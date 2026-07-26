@@ -70,7 +70,7 @@ export interface ScheduledJobDailyStatusItem {
   label: string;
   /** 사람이 읽는 실행 주기 (예: "매일 01시"). */
   scheduleText: string;
-  /** 잡별 추가 안내 문구 (예: ORORA 월매출 "매월 3일 실행"). 없으면 null. */
+  /** 잡별 추가 안내 문구 (예: ORORA 월매출 "전월분 매일 재적재"). 없으면 null. */
   note: string | null;
   /** 현재 환경에서 스케줄링 활성 여부 (빈 등록 기준). false 면 자동 실행 안 됨. */
   enabled: boolean;
