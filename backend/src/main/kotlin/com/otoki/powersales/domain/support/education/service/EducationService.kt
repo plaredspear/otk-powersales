@@ -13,13 +13,13 @@ import com.otoki.powersales.domain.support.education.dto.response.EducationPostL
 import com.otoki.powersales.domain.support.education.dto.response.EducationPostSummaryResponse
 import com.otoki.powersales.domain.support.education.entity.EducationPost
 import com.otoki.powersales.domain.support.education.entity.EducationPostAttachment
+import com.otoki.powersales.domain.support.education.enums.EducationCategoryCode
 import com.otoki.powersales.domain.support.education.exception.EducationPostNotFoundException
 import com.otoki.powersales.domain.support.education.exception.FileLimitExceededException
 import com.otoki.powersales.domain.support.education.exception.FileSizeExceededException
 import com.otoki.powersales.domain.support.education.exception.InvalidEducationCategoryException
 import com.otoki.powersales.domain.support.education.exception.InvalidEducationParameterException
 import com.otoki.powersales.domain.support.education.exception.InvalidFileKeyException
-import com.otoki.powersales.domain.support.education.repository.EducationCodeRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostAttachmentRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostRepository
 // import com.otoki.powersales.education.repository.EducationPostImageRepository  // Phase2: PG 대응 테이블 없음
@@ -40,7 +40,6 @@ class EducationService(
     private val educationPostRepository: EducationPostRepository,
     // private val educationPostImageRepository: EducationPostImageRepository,  // Phase2: PG 대응 테이블 없음
     private val educationPostAttachmentRepository: EducationPostAttachmentRepository,
-    private val educationCodeRepository: EducationCodeRepository,
     private val fileStorageService: FileStorageService,
     private val employeeRepository: EmployeeRepository
 ) {
@@ -61,8 +60,8 @@ class EducationService(
         page: Int = 1,
         size: Int = 10
     ): EducationPostListResponse {
-        // 1. 카테고리 유효성 검증 (education_code 테이블 참조)
-        if (!educationCodeRepository.existsByEduCode(category)) {
+        // 1. 카테고리 유효성 검증 (EducationCategoryCode enum 기준)
+        if (!EducationCategoryCode.exists(category)) {
             throw InvalidEducationCategoryException()
         }
 
@@ -137,9 +136,7 @@ class EducationService(
             }
 
         // 4. 카테고리명 조회
-        val categoryName = post.eduCode?.let { code ->
-            educationCodeRepository.findByEduCode(code)?.eduCodeNm
-        } ?: ""
+        val categoryName = EducationCategoryCode.displayNameOf(post.eduCode)
 
         // 5. 응답 생성
         return EducationPostDetailResponse(
@@ -163,7 +160,7 @@ class EducationService(
         page: Int = 1,
         size: Int = 10
     ): AdminEducationListResponse {
-        if (!category.isNullOrBlank() && !educationCodeRepository.existsByEduCode(category)) {
+        if (!category.isNullOrBlank() && !EducationCategoryCode.exists(category)) {
             throw InvalidEducationCategoryException()
         }
 
@@ -177,9 +174,7 @@ class EducationService(
         }
 
         val summaries = postsPage.content.map { post ->
-            val categoryName = post.eduCode?.let { code ->
-                educationCodeRepository.findByEduCode(code)?.eduCodeNm
-            } ?: ""
+            val categoryName = EducationCategoryCode.displayNameOf(post.eduCode)
 
             AdminEducationPostSummary(
                 eduId = post.eduId ?: "",
@@ -231,7 +226,7 @@ class EducationService(
         val savedPost = educationPostRepository.save(post)
 
         val attachments = saveAttachments(savedPost, files)
-        val categoryName = educationCodeRepository.findByEduCode(category)?.eduCodeNm ?: ""
+        val categoryName = EducationCategoryCode.displayNameOf(category)
 
         return toMutationResponse(savedPost, categoryName, attachments)
     }
@@ -297,7 +292,7 @@ class EducationService(
         educationPostRepository.save(updated)
 
         val allAttachments = educationPostAttachmentRepository.findByEducationPost(updated)
-        val categoryName = educationCodeRepository.findByEduCode(category)?.eduCodeNm ?: ""
+        val categoryName = EducationCategoryCode.displayNameOf(category)
 
         return toMutationResponse(updated, categoryName, allAttachments)
     }
@@ -319,12 +314,12 @@ class EducationService(
     }
 
     /**
-     * 카테고리 목록 조회
+     * 카테고리 목록 조회 (enum 선언 순서 = 노출 순서)
      */
     fun getCategories(): List<EducationCategoryResponse> {
-        return educationCodeRepository.findAll()
-            .sortedBy { it.eduCode }
-            .map { EducationCategoryResponse(eduCode = it.eduCode, eduCodeNm = it.eduCodeNm ?: "") }
+        return EducationCategoryCode.entries.map {
+            EducationCategoryResponse(eduCode = it.code, eduCodeNm = it.displayName)
+        }
     }
 
     // --- Private helpers ---
@@ -336,7 +331,7 @@ class EducationService(
         if (content.isBlank()) {
             throw InvalidEducationParameterException("본문은 필수입니다")
         }
-        if (!educationCodeRepository.existsByEduCode(category)) {
+        if (!EducationCategoryCode.exists(category)) {
             throw InvalidEducationCategoryException()
         }
     }

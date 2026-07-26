@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.support.education.service
 
 import com.otoki.powersales.platform.common.service.FileStorageService
-import com.otoki.powersales.domain.support.education.entity.EducationCode
 import com.otoki.powersales.domain.support.education.entity.EducationPost
 import com.otoki.powersales.domain.support.education.entity.EducationPostAttachment
 import com.otoki.powersales.domain.support.education.exception.EducationPostNotFoundException
@@ -10,7 +9,6 @@ import com.otoki.powersales.domain.support.education.exception.FileSizeExceededE
 import com.otoki.powersales.domain.support.education.exception.InvalidEducationCategoryException
 import com.otoki.powersales.domain.support.education.exception.InvalidEducationParameterException
 import com.otoki.powersales.domain.support.education.exception.InvalidFileKeyException
-import com.otoki.powersales.domain.support.education.repository.EducationCodeRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostAttachmentRepository
 import com.otoki.powersales.domain.support.education.repository.EducationPostRepository
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -37,14 +35,12 @@ class EducationServiceTest {
 
     private val educationPostRepository: EducationPostRepository = mockk()
     private val educationPostAttachmentRepository: EducationPostAttachmentRepository = mockk()
-    private val educationCodeRepository: EducationCodeRepository = mockk()
     private val fileStorageService: FileStorageService = mockk()
     private val employeeRepository: EmployeeRepository = mockk()
 
     private val educationService = EducationService(
         educationPostRepository,
         educationPostAttachmentRepository,
-        educationCodeRepository,
         fileStorageService,
         employeeRepository,
     )
@@ -57,7 +53,7 @@ class EducationServiceTest {
             eduId = "EDU001",
             eduTitle = "진짬뽕 시식 매뉴얼",
             eduContent = "진짬뽕 시식 방법을 안내합니다.",
-            eduCode = "TASTING_MANUAL",
+            eduCode = "c00001",
             empCode = "10000001"
         ).apply {
             createdAt = LocalDateTime.of(2020, 8, 10, 0, 0, 0)
@@ -74,11 +70,10 @@ class EducationServiceTest {
             val posts = listOf(testPost)
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
-            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
             every { educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()) } returns page
 
             val result = educationService.getPosts(
-                category = "TASTING_MANUAL",
+                category = "c00001",
                 search = null,
                 page = 1,
                 size = 10
@@ -100,11 +95,10 @@ class EducationServiceTest {
             val posts = listOf(testPost)
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
 
-            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
             every { educationPostRepository.findByEduCodeAndSearchWithPaging(any(), any(), any()) } returns page
 
             val result = educationService.getPosts(
-                category = "TASTING_MANUAL",
+                category = "c00001",
                 search = "시식",
                 page = 1,
                 size = 10
@@ -117,7 +111,6 @@ class EducationServiceTest {
         @Test
         @DisplayName("유효하지 않은 카테고리 - InvalidEducationCategoryException")
         fun getPosts_invalidCategory() {
-            every { educationCodeRepository.existsByEduCode("INVALID_CATEGORY") } returns false
 
             assertThatThrownBy {
                 educationService.getPosts(
@@ -134,11 +127,10 @@ class EducationServiceTest {
         fun getPosts_emptyResult() {
             val emptyPage = PageImpl<EducationPost>(emptyList(), PageRequest.of(0, 10), 0)
 
-            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
             every { educationPostRepository.findByEduCodeOrderByCreatedAtDesc(any(), any()) } returns emptyPage
 
             val result = educationService.getPosts(
-                category = "TASTING_MANUAL",
+                category = "c00001",
                 search = null,
                 page = 1,
                 size = 10
@@ -165,20 +157,14 @@ class EducationServiceTest {
                 )
             )
 
-            val eduCode = EducationCode(
-                eduCode = "TASTING_MANUAL",
-                eduCodeNm = "시식 매뉴얼"
-            )
-
             every { educationPostRepository.findByEduId("EDU001") } returns testPost
             every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns attachments
-            every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns eduCode
             every { fileStorageService.getEducationFileUrl("file-key-001") } returns "https://signed/guide.pdf"
 
             val result = educationService.getPostDetail("EDU001")
 
             assertThat(result.id).isEqualTo("EDU001")
-            assertThat(result.category).isEqualTo("TASTING_MANUAL")
+            assertThat(result.category).isEqualTo("c00001")
             assertThat(result.categoryName).isEqualTo("시식 매뉴얼")
             assertThat(result.title).isEqualTo("진짬뽕 시식 매뉴얼")
             assertThat(result.content).isEqualTo("진짬뽕 시식 방법을 안내합니다.")
@@ -209,13 +195,11 @@ class EducationServiceTest {
         fun getPostsForAdmin_allCategories() {
             val posts = listOf(testPost)
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
-            val eduCode = EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼")
 
             every {
                 educationPostRepository.findByOptionalEduCodeAndSearchWithPaging(null, null, any())
             } returns page
             every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns emptyList()
-            every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns eduCode
 
             val result = educationService.getPostsForAdmin(null, null, 1, 10)
 
@@ -229,18 +213,15 @@ class EducationServiceTest {
         fun getPostsForAdmin_withCategory() {
             val posts = listOf(testPost)
             val page = PageImpl(posts, PageRequest.of(0, 10), 1)
-            val eduCode = EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼")
 
-            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
             every {
-                educationPostRepository.findByOptionalEduCodeAndSearchWithPaging("TASTING_MANUAL", null, any())
+                educationPostRepository.findByOptionalEduCodeAndSearchWithPaging("c00001", null, any())
             } returns page
             every { educationPostAttachmentRepository.findByEducationPost(testPost) } returns listOf(
                 EducationPostAttachment(educationPost = testPost, fileKey = "key1", fileType = "f00003", fileOriginalName = "doc.pdf")
             )
-            every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns eduCode
 
-            val result = educationService.getPostsForAdmin("TASTING_MANUAL", null, 1, 10)
+            val result = educationService.getPostsForAdmin("c00001", null, 1, 10)
 
             assertThat(result.content).hasSize(1)
             assertThat(result.content[0].attachmentCount).isEqualTo(1)
@@ -249,7 +230,6 @@ class EducationServiceTest {
         @Test
         @DisplayName("유효하지 않은 카테고리 - InvalidEducationCategoryException")
         fun getPostsForAdmin_invalidCategory() {
-            every { educationCodeRepository.existsByEduCode("INVALID") } returns false
 
             assertThatThrownBy {
                 educationService.getPostsForAdmin("INVALID", null, 1, 10)
@@ -266,18 +246,15 @@ class EducationServiceTest {
         @Test
         @DisplayName("정상 작성 - 파일 없이 교육 자료 생성")
         fun createPost_success_noFiles() {
-            every { educationCodeRepository.existsByEduCode("c00001") } returns true
             every { employeeRepository.findById(1L) } returns Optional.of(testEmployee)
             every { educationPostRepository.save(any<EducationPost>()) } answers { firstArg() }
-            every { educationCodeRepository.findByEduCode("c00001") } returns
-                EducationCode(eduCode = "c00001", eduCodeNm = "시식매뉴얼")
 
             val result = educationService.createPost(1L, "테스트 교육", "교육 내용", "c00001", null)
 
             assertThat(result.eduTitle).isEqualTo("테스트 교육")
             assertThat(result.eduContent).isEqualTo("교육 내용")
             assertThat(result.eduCode).isEqualTo("c00001")
-            assertThat(result.eduCodeNm).isEqualTo("시식매뉴얼")
+            assertThat(result.eduCodeNm).isEqualTo("시식 매뉴얼")
             assertThat(result.employeeId).isNotNull()
             assertThat(result.attachments).isEmpty()
         }
@@ -287,13 +264,10 @@ class EducationServiceTest {
         fun createPost_success_withFiles() {
             val file = MockMultipartFile("files", "test.pdf", "application/pdf", ByteArray(100))
 
-            every { educationCodeRepository.existsByEduCode("c00004") } returns true
             every { employeeRepository.findById(1L) } returns Optional.of(testEmployee)
             every { educationPostRepository.save(any<EducationPost>()) } answers { firstArg() }
             every { fileStorageService.uploadEducationFile(any(), any()) } returns "uuid-file.pdf"
             every { educationPostAttachmentRepository.save(any<EducationPostAttachment>()) } answers { firstArg() }
-            every { educationCodeRepository.findByEduCode("c00004") } returns
-                EducationCode(eduCode = "c00004", eduCodeNm = "신제품소개")
 
             val result = educationService.createPost(1L, "신제품 교육", "내용", "c00004", listOf(file))
 
@@ -321,7 +295,6 @@ class EducationServiceTest {
         @Test
         @DisplayName("잘못된 카테고리 - InvalidEducationCategoryException")
         fun createPost_invalidCategory() {
-            every { educationCodeRepository.existsByEduCode("c99999") } returns false
 
             assertThatThrownBy {
                 educationService.createPost(1L, "제목", "내용", "c99999", null)
@@ -331,7 +304,6 @@ class EducationServiceTest {
         @Test
         @DisplayName("파일 수 초과 - FileLimitExceededException")
         fun createPost_fileLimitExceeded() {
-            every { educationCodeRepository.existsByEduCode("c00001") } returns true
             val files = (1..21).map { MockMultipartFile("files", "file$it.txt", "text/plain", ByteArray(10)) }
 
             assertThatThrownBy {
@@ -342,7 +314,6 @@ class EducationServiceTest {
         @Test
         @DisplayName("파일 크기 초과 - FileSizeExceededException")
         fun createPost_fileSizeExceeded() {
-            every { educationCodeRepository.existsByEduCode("c00001") } returns true
             val largeFile = MockMultipartFile("files", "big.pdf", "application/pdf", ByteArray(51 * 1024 * 1024))
 
             assertThatThrownBy {
@@ -363,16 +334,13 @@ class EducationServiceTest {
             )
 
             every { educationPostRepository.findByEduId("EDU001") } returns testPost
-            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
             // 동일 인자에 대해 호출 횟수만큼 같은 결과 반환 — MockK 는 default 가 모든 호출에 동일 응답
             every { educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()) } returns
                 listOf(existingAttachment)
             every { educationPostRepository.save(any<EducationPost>()) } answers { firstArg() }
-            every { educationCodeRepository.findByEduCode("TASTING_MANUAL") } returns
-                EducationCode(eduCode = "TASTING_MANUAL", eduCodeNm = "시식 매뉴얼")
 
             val result = educationService.updatePost(
-                "EDU001", "수정된 제목", "수정된 내용", "TASTING_MANUAL", null, listOf("existing-key")
+                "EDU001", "수정된 제목", "수정된 내용", "c00001", null, listOf("existing-key")
             )
 
             assertThat(result.eduTitle).isEqualTo("수정된 제목")
@@ -397,12 +365,11 @@ class EducationServiceTest {
             )
 
             every { educationPostRepository.findByEduId("EDU001") } returns testPost
-            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
             every { educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()) } returns
                 listOf(existingAttachment)
 
             assertThatThrownBy {
-                educationService.updatePost("EDU001", "제목", "내용", "TASTING_MANUAL", null, listOf("wrong-key"))
+                educationService.updatePost("EDU001", "제목", "내용", "c00001", null, listOf("wrong-key"))
             }.isInstanceOf(InvalidFileKeyException::class.java)
         }
 
@@ -415,13 +382,12 @@ class EducationServiceTest {
             val newFiles = (1..6).map { MockMultipartFile("files", "new$it.pdf", "application/pdf", ByteArray(10)) }
 
             every { educationPostRepository.findByEduId("EDU001") } returns testPost
-            every { educationCodeRepository.existsByEduCode("TASTING_MANUAL") } returns true
             every { educationPostAttachmentRepository.findByEducationPost(any<EducationPost>()) } returns
                 existingAttachments
 
             assertThatThrownBy {
                 educationService.updatePost(
-                    "EDU001", "제목", "내용", "TASTING_MANUAL", newFiles,
+                    "EDU001", "제목", "내용", "c00001", newFiles,
                     existingAttachments.map { it.fileKey }
                 )
             }.isInstanceOf(FileLimitExceededException::class.java)
@@ -470,17 +436,13 @@ class EducationServiceTest {
         @Test
         @DisplayName("정상 조회 - 카테고리 목록 반환")
         fun getCategories_success() {
-            val categories = listOf(
-                EducationCode(eduCode = "c00002", eduCodeNm = "CS/안전"),
-                EducationCode(eduCode = "c00001", eduCodeNm = "시식매뉴얼")
-            )
-            every { educationCodeRepository.findAll() } returns categories
-
             val result = educationService.getCategories()
 
-            assertThat(result).hasSize(2)
-            assertThat(result[0].eduCode).isEqualTo("c00001") // 오름차순 정렬
-            assertThat(result[1].eduCode).isEqualTo("c00002")
+            // enum 선언 순서 = 노출 순서 (어드민 선택 목록)
+            assertThat(result.map { it.eduCode })
+                .containsExactly("c00001", "c00002", "c00003", "c00005", "c00004")
+            assertThat(result.map { it.eduCodeNm })
+                .containsExactly("시식 매뉴얼", "안전교육", "영업 교육", "APP 매뉴얼", "설문조사")
         }
     }
 }

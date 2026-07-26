@@ -9,14 +9,40 @@ import 'package:url_launcher/url_launcher.dart';
 /// 교육 메인 화면
 ///
 /// Heroku 레거시 교육 메인(community/edu/main.jsp) 디자인에 정합.
-/// 안내 문구와 4개의 교육 카테고리를 2x2 그리드로 표시한다.
+/// 안내 문구와 교육 카테고리를 2열 그리드로 표시한다.
 /// 카테고리를 선택하면 해당 카테고리의 게시물 목록 화면으로 이동한다.
 class EducationMainPage extends StatelessWidget {
   const EducationMainPage({super.key});
 
+  static const double _gridRowSpacing = 10;
+  static const double _gridColumnSpacing = 10;
+  // 셀 높이를 카드 내용(아이콘 72 + 여백)에 가깝게 맞춰 빈 공간을 줄인다
+  static const double _cardAspectRatio = 1.3;
+
+  /// 2열을 꽉 채우는 카테고리 (홀수면 마지막 1개 제외)
+  static List<EducationCategory> get _fullRowCategories {
+    final categories = EducationCategory.values;
+    return categories.length.isOdd
+        ? categories.sublist(0, categories.length - 1)
+        : categories;
+  }
+
+  /// 마지막 줄에 홀로 남는 카테고리 (짝수면 null)
+  static EducationCategory? get _trailingCategory =>
+      EducationCategory.values.length.isOdd
+          ? EducationCategory.values.last
+          : null;
+
+  Widget _buildCard(BuildContext context, EducationCategory category) {
+    return EducationCategoryCard(
+      category: category,
+      onTap: () => _onCategoryTap(context, category),
+    );
+  }
+
   /// 카테고리 선택 핸들러
   ///
-  /// 외부 링크 카테고리(예: 교육 평가)는 외부 브라우저로 연결하고,
+  /// 외부 링크 카테고리(예: 영업 교육)는 외부 브라우저로 연결하고,
   /// 그 외에는 해당 카테고리의 게시물 목록 화면으로 이동한다.
   Future<void> _onCategoryTap(
     BuildContext context,
@@ -72,24 +98,36 @@ class EducationMainPage extends StatelessWidget {
             const _EducationIntro(),
             const SizedBox(height: 20),
 
-            // 카테고리 그리드 (2x2)
+            // 카테고리 그리드 (2열 — 홀수로 남는 마지막 1개는 가로 중앙 정렬)
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               clipBehavior: Clip.none, // 카드 드롭섀도 클리핑 방지
-              mainAxisSpacing: 20,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.1,
-              children: EducationCategory.values
-                  .map(
-                    (category) => EducationCategoryCard(
-                      category: category,
-                      onTap: () => _onCategoryTap(context, category),
-                    ),
-                  )
+              mainAxisSpacing: _gridRowSpacing,
+              crossAxisSpacing: _gridColumnSpacing,
+              childAspectRatio: _cardAspectRatio,
+              children: _fullRowCategories
+                  .map((category) => _buildCard(context, category))
                   .toList(),
             ),
+            if (_trailingCategory != null)
+              Padding(
+                padding: const EdgeInsets.only(top: _gridRowSpacing),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Center(
+                    child: SizedBox(
+                      // 그리드 셀과 같은 폭을 유지한 채 전체 가로폭 중앙에 배치
+                      width:
+                          (constraints.maxWidth - _gridColumnSpacing) / 2,
+                      child: AspectRatio(
+                        aspectRatio: _cardAspectRatio,
+                        child: _buildCard(context, _trailingCategory!),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

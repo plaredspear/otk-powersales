@@ -38,8 +38,8 @@ class EducationCategoryCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppSpacing.homeCardRadius),
             boxShadow: AppSpacing.cardShadow,
           ),
-          // 레거시 padding: 28px 0 20px
-          padding: const EdgeInsets.only(top: 28, bottom: 20),
+          // 레거시 padding(28px 0 20px) 대비 상하 여백을 줄여 카드 간 간격을 좁힘
+          padding: const EdgeInsets.only(top: 16, bottom: 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
