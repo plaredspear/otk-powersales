@@ -135,8 +135,15 @@ class ProductRepositoryCustomImpl(
             builder.and(product.productCategory3.eq(category3))
         }
         if (!productStatus.isNullOrBlank()) {
-            ProductStatus.Companion.fromDisplayNameOrNull(productStatus)?.let {
-                builder.and(product.productStatus.eq(it))
+            // 필터 파라미터는 화면 표시명("판매중"/"단종") 으로 들어온다. "판매중" 은 저장값이 없는
+            // (null) 제품을 가리키므로 eq 가 아니라 isNull 로 평가해야 한다 — PLACEHOLDER("-") 는
+            // 운영 데이터에 존재하지 않지만, 있더라도 같은 "판매중" 집합에 포함시킨다.
+            ProductStatus.Companion.fromLabelOrNull(productStatus)?.let {
+                if (it.label == ProductStatus.DEFAULT_LABEL) {
+                    builder.and(product.productStatus.isNull.or(product.productStatus.eq(it)))
+                } else {
+                    builder.and(product.productStatus.eq(it))
+                }
             }
         }
 

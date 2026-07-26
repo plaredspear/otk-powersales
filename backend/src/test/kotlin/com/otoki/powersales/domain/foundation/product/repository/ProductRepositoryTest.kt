@@ -427,4 +427,73 @@ class ProductRepositoryTest {
             assertThat(productRepository.findOrderRowsByProductCodes(emptyList())).isEmpty()
         }
     }
+
+    // ========== searchForAdmin 제품상태 필터 Tests ==========
+
+    @Nested
+    @DisplayName("searchForAdmin - 제품상태 필터 (화면 표시명 기준)")
+    inner class SearchForAdminProductStatusTests {
+
+        @BeforeEach
+        fun seedStatusProducts() {
+            // setUp() 의 7건은 productStatus = null (= "판매중") 이다. 단종 제품 1건을 추가한다.
+            testEntityManager.persistAndFlush(
+                createProduct(
+                    "단종라면_봉지120G", "18990001", "8801045579001",
+                    category1 = "라면", category2 = "봉지면",
+                    productStatus = ProductStatus.OUT_OF_STOCK
+                )
+            )
+            testEntityManager.clear()
+        }
+
+        @Test
+        @DisplayName("'단종' 필터 - 출고중지 제품만 반환")
+        fun filterByDiscontinued() {
+            val result = productRepository.searchForAdmin(
+                keyword = null, category1 = null, category2 = null, category3 = null,
+                productStatus = "단종", pageable = PageRequest.of(0, 20)
+            )
+
+            assertThat(result.content).hasSize(1)
+            assertThat(result.content[0].productCode).isEqualTo("18990001")
+            assertThat(result.content[0].productStatus).isEqualTo(ProductStatus.OUT_OF_STOCK)
+        }
+
+        @Test
+        @DisplayName("'판매중' 필터 - 상태값이 없는(null) 제품을 반환한다 (eq 아닌 isNull 매칭)")
+        fun filterByOnSaleMatchesNullStatus() {
+            val result = productRepository.searchForAdmin(
+                keyword = null, category1 = null, category2 = null, category3 = null,
+                productStatus = "판매중", pageable = PageRequest.of(0, 20)
+            )
+
+            // setUp() 의 7건 (전부 productStatus = null) 이 잡히고, 단종 1건은 제외된다.
+            assertThat(result.content).hasSize(7)
+            assertThat(result.content).allSatisfy { assertThat(it.productStatus).isNull() }
+        }
+
+        @Test
+        @DisplayName("상태 미지정 - 판매중/단종 전건 반환")
+        fun noStatusFilterReturnsAll() {
+            val result = productRepository.searchForAdmin(
+                keyword = null, category1 = null, category2 = null, category3 = null,
+                productStatus = null, pageable = PageRequest.of(0, 20)
+            )
+
+            assertThat(result.content).hasSize(8)
+        }
+
+        @Test
+        @DisplayName("저장값('출고중지')을 그대로 넘기면 매칭되지 않는다 — 파라미터는 표시명 기준")
+        fun rawStoredValueIsNotAccepted() {
+            val result = productRepository.searchForAdmin(
+                keyword = null, category1 = null, category2 = null, category3 = null,
+                productStatus = "출고중지", pageable = PageRequest.of(0, 20)
+            )
+
+            // 해소 실패 시 조건 자체가 붙지 않아 전건 반환 (기존 동작 유지).
+            assertThat(result.content).hasSize(8)
+        }
+    }
 }

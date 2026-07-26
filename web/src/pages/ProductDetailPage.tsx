@@ -7,12 +7,9 @@ import { useProductDetail } from '@/hooks/product/useProducts';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
 import InventorySearchModal from '@/components/product/InventorySearchModal';
 import ResizableTable from '@/components/common/ResizableTable';
+import { PRODUCT_STATUS_TAG } from '@/components/product/productStatus';
+import ProductStatusInfoIcon from '@/components/product/ProductStatusInfoIcon';
 
-const STATUS_TAG: Record<string, string> = {
-  판매중: 'green',
-  단종: 'red',
-  출고중지: 'red',
-};
 
 const BARCODE_COLUMNS: ColumnsType<ProductBarcodeItem> = [
   { title: '바코드', dataIndex: 'barcode', render: (v: string | null) => v ?? '-' },
@@ -159,9 +156,17 @@ export default function ProductDetailPage() {
               <Descriptions.Item label="보관 방법">{data.storageCondition ?? '-'}</Descriptions.Item>
               <Descriptions.Item label="유통 기한">{shelfLifeText}</Descriptions.Item>
               <Descriptions.Item label="제품 형태">{data.productType ?? '-'}</Descriptions.Item>
-              <Descriptions.Item label="제품 상태">
+              <Descriptions.Item
+                label={
+                  <span>
+                    제품 상태 <ProductStatusInfoIcon />
+                  </span>
+                }
+              >
                 {data.productStatus ? (
-                  <Tag color={STATUS_TAG[data.productStatus] ?? undefined}>{data.productStatus}</Tag>
+                  <Tag color={PRODUCT_STATUS_TAG[data.productStatus] ?? undefined}>
+                    {data.productStatus}
+                  </Tag>
                 ) : (
                   '-'
                 )}

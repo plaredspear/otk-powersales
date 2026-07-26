@@ -1,5 +1,6 @@
 package com.otoki.powersales.domain.foundation.product.service
 
+import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
 import com.otoki.powersales.domain.foundation.product.repository.ProductRepository
 import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.HorizontalAlignment
@@ -27,7 +28,7 @@ class AdminProductExportService(
 
     fun exportSelectedProducts(productCodes: List<String>): ByteArray {
         val products = productRepository.findByProductCodeIn(productCodes)
-            .filter { it.productStatus?.displayName != STATUS_DISCONTINUED }
+            .filter { it.productStatus != ProductStatus.OUT_OF_STOCK }
 
         XSSFWorkbook().use { workbook ->
             val sheet = workbook.createSheet("선택제품")
@@ -51,7 +52,8 @@ class AdminProductExportService(
                 row.createCell(6).setCellValue(product.unit ?: "")
                 row.createCell(7).setCellValue(product.launchDate?.toString() ?: "")
                 row.createCell(8).setCellValue(product.standardUnitPrice?.toPlainString() ?: "")
-                row.createCell(9).setCellValue(product.productStatus?.displayName ?: "")
+                // 목록/lookup 응답과 동일하게 화면 표시명 — 값이 없으면 "판매중".
+                row.createCell(9).setCellValue(product.productStatus?.label ?: ProductStatus.DEFAULT_LABEL)
                 row.createCell(10).setCellValue(convertTasteGift(product.tasteGift))
             }
 
@@ -81,8 +83,6 @@ class AdminProductExportService(
     }
 
     companion object {
-        private const val STATUS_DISCONTINUED = "출고중지"
-
         private val HEADERS = listOf(
             "제품코드", "제품명", "카테고리1", "카테고리2", "카테고리3",
             "보관방법", "단위", "출시일", "표준출고가", "제품상태", "형태구분"

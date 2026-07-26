@@ -2,6 +2,8 @@ import { Modal, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import ResizableTable from '@/components/common/ResizableTable';
 import type { Product } from '@/api/product';
+import { PRODUCT_STATUS_TAG } from '@/components/product/productStatus';
+import ProductStatusInfoIcon from '@/components/product/ProductStatusInfoIcon';
 
 interface Props {
   open: boolean;
@@ -9,11 +11,6 @@ interface Props {
   products: Product[];
 }
 
-const STATUS_TAG: Record<string, string> = {
-  판매중: 'green',
-  단종: 'red',
-  출고중지: 'red',
-};
 
 /**
  * UC-05: 선택제품 비교 보기 모달.
@@ -45,11 +42,16 @@ export default function SelectedProductsCompareModal({ open, onClose, products }
       render: (v: number | null) => (v != null ? v.toLocaleString() : '-'),
     },
     {
-      title: '상태',
+      title: (
+        <span>
+          상태 <ProductStatusInfoIcon />
+        </span>
+      ),
       dataIndex: 'productStatus',
-      width: 80,
+      width: 90,
       align: 'center',
-      render: (v: string | null) => (v ? <Tag color={STATUS_TAG[v] ?? undefined}>{v}</Tag> : '-'),
+      render: (v: string | null) =>
+        v ? <Tag color={PRODUCT_STATUS_TAG[v] ?? undefined}>{v}</Tag> : '-',
     },
   ];
 

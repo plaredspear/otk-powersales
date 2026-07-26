@@ -8,23 +8,21 @@ import { downloadProductsExcel, type Product } from '@/api/product';
 import { useProductInventorySearchStore } from '@/stores/productInventorySearchStore';
 import InventorySearchModal from '@/components/product/InventorySearchModal';
 import SelectedProductsCompareModal from '@/components/product/SelectedProductsCompareModal';
+import { PRODUCT_STATUS_TAG } from '@/components/product/productStatus';
+import ProductStatusInfoIcon from '@/components/product/ProductStatusInfoIcon';
 import ResizableTable from '@/components/common/ResizableTable';
 import RefreshButton from '@/components/common/RefreshButton';
 import DetailLink from '@/components/common/DetailLink';
 import { buildListPagination } from '@/lib/listPagination';
 import { listTableLocale } from '@/lib/listTableLocale';
 
-const STATUS_TAG: Record<string, string> = {
-  판매중: 'green',
-  단종: 'red',
-  출고중지: 'red',
-};
 
 const STATUS_OPTIONS = [
   { value: '', label: '상태 전체' },
   { value: '판매중', label: '판매중' },
   { value: '단종', label: '단종' },
 ];
+
 
 const INVENTORY_SEARCH_MAX = 50;
 
@@ -233,12 +231,16 @@ export default function ProductPage() {
         record.shelfLife ? `${record.shelfLife}${shelfLifeUnitLabel(record.shelfLifeUnit)}` : '-',
     },
     {
-      title: '제품상태',
+      title: (
+        <span>
+          제품상태 <ProductStatusInfoIcon />
+        </span>
+      ),
       dataIndex: 'productStatus',
-      width: 80,
+      width: 100,
       align: 'center',
       render: (val: string | null) =>
-        val ? <Tag color={STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
+        val ? <Tag color={PRODUCT_STATUS_TAG[val] ?? undefined}>{val}</Tag> : '-',
     },
     {
       title: '증정/시식 구분',
