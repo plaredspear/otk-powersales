@@ -1,12 +1,25 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { DatePicker, Descriptions, Input, Select, Spin, Tag, Tooltip, message } from 'antd';
+import {
+  Button,
+  DatePicker,
+  Descriptions,
+  Input,
+  Select,
+  Space,
+  Spin,
+  Tag,
+  Tooltip,
+  message,
+} from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { PromotionDetail, PromotionFormMeta } from '@/api/promotion';
 import type { Account } from '@/api/account';
-import { fetchAccountsForPromotionLookup } from '@/api/account';
+import { useAccountLookupSearch } from '@/hooks/promotion/useAccountLookupSearch';
 import { usePermission } from '@/hooks/usePermission';
+import AccountAdvancedSearchModal from '../components/AccountAdvancedSearchModal';
+import LookupDropdownFooter from '../components/LookupDropdownFooter';
 
 const PROMOTION_TYPE_TAG: Record<string, string> = {
   시식: 'blue',
@@ -58,32 +71,31 @@ export default function PromotionDetailSection({
   onFormChange,
   formMeta,
 }: Props) {
-  const [accountOptions, setAccountOptions] = useState<Account[]>([]);
-  const [accountSearching, setAccountSearching] = useState(false);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
+  // 드롭다운은 첫 10건만 노출 — 검색/키워드 보관 로직은 등록·수정 폼과 공유한다.
+  const {
+    items: accountOptions,
+    total: accountTotal,
+    searching: accountSearching,
+    keyword: accountKeyword,
+    onSearch: handleAccountSearch,
+    clearKeyword,
+    selectItem: selectAccount,
+  } = useAccountLookupSearch({ size: 10 });
 
   const { hasEntityPermission } = usePermission();
   // 작성자 → 사용자 상세(/users/:id) 링크는 user READ 권한 보유자(시스템 관리자급)에게만 (목록과 동일).
   const canReadUser = hasEntityPermission('user', 'READ');
 
-  const handleAccountSearch = (keyword: string) => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    if (keyword.length < 2) {
-      setAccountOptions([]);
-      setAccountSearching(false);
-      return;
-    }
-    setAccountSearching(true);
-    searchTimerRef.current = setTimeout(async () => {
-      try {
-        const result = await fetchAccountsForPromotionLookup({ keyword, size: 10 });
-        setAccountOptions(result.content);
-      } catch {
-        setAccountOptions([]);
-      } finally {
-        setAccountSearching(false);
-      }
-    }, 300);
+  const handleAdvancedSearchSelect = (account: Account) => {
+    // 고급 검색 그리드에서 고른 거래처를 폼 값 + Select 옵션에 반영 — 빠른 검색 결과와 동일 형식.
+    selectAccount({
+      id: account.id,
+      name: account.name,
+      externalKey: account.externalKey,
+      accountStatusName: account.accountStatusName,
+    });
+    onFormChange({ accountId: account.id, accountName: account.name });
   };
 
   const handleCopyPromotionNumber = async () => {
@@ -110,156 +122,183 @@ export default function PromotionDetailSection({
   })) ?? [];
 
   return (
-    <Descriptions column={2} bordered size="small">
-      <Descriptions.Item label="행사번호">
-        {promotion.promotionNumber}
-        <Tooltip title="행사번호 복사">
-          <CopyOutlined
-            onClick={handleCopyPromotionNumber}
-            style={{ marginLeft: 8, color: '#1677ff', cursor: 'pointer' }}
-          />
-        </Tooltip>
-      </Descriptions.Item>
-      <Descriptions.Item label={<RequiredLabel text="시작일" required={editing} />}>
-        {editing ? (
-          <DatePicker
-            size="small"
-            format="YYYY-MM-DD"
-            value={formValues.startDate ? dayjs(formValues.startDate) : null}
-            onChange={(d) => onFormChange({ startDate: d ? d.format('YYYY-MM-DD') : '' })}
-            style={{ width: '100%' }}
-          />
-        ) : (
-          promotion.startDate ?? '-'
-        )}
-      </Descriptions.Item>
-
-      <Descriptions.Item label="행사명">
-        {promotion.promotionName ?? '-'}
-        {editing && <CalculatedHint />}
-      </Descriptions.Item>
-      <Descriptions.Item label={<RequiredLabel text="종료일" required={editing} />}>
-        {editing ? (
-          <DatePicker
-            size="small"
-            format="YYYY-MM-DD"
-            value={formValues.endDate ? dayjs(formValues.endDate) : null}
-            onChange={(d) => onFormChange({ endDate: d ? d.format('YYYY-MM-DD') : '' })}
-            style={{ width: '100%' }}
-          />
-        ) : (
-          promotion.endDate ?? '-'
-        )}
-      </Descriptions.Item>
-
-      <Descriptions.Item label={<RequiredLabel text="거래처" required={editing} />}>
-        {editing ? (
-          <Select
-            size="small"
-            showSearch
-            filterOption={false}
-            placeholder="거래처 검색..."
-            value={
-              formValues.accountId
-                ? {
-                    value: formValues.accountId,
-                    label: formValues.accountName ?? String(formValues.accountId),
-                  }
-                : undefined
-            }
-            labelInValue
-            onSearch={handleAccountSearch}
-            onChange={(option) => {
-              if (option) {
-                const selected = accountOptions.find((a) => a.id === option.value);
-                onFormChange({
-                  accountId: option.value as number,
-                  accountName: selected?.name ?? (option.label as string),
-                });
-              }
-            }}
-            notFoundContent={accountSearching ? <Spin size="small" /> : '검색 결과 없음'}
-            options={accountOptions.map((a) => ({
-              value: a.id,
-              label: `${a.name} (${a.externalKey})`,
-            }))}
-            style={{ width: '100%' }}
-          />
-        ) : promotion.accountName ? (
-          <Link to={`/account/${promotion.accountId}`}>{promotion.accountName}</Link>
-        ) : (
-          '-'
-        )}
-      </Descriptions.Item>
-      <Descriptions.Item label="행사유형">
-        {editing ? (
-          <Select
-            size="small"
-            options={promotionTypeOptions}
-            value={formValues.promotionType}
-            onChange={(v) => onFormChange({ promotionType: v })}
-            style={{ width: '100%' }}
-          />
-        ) : promotion.promotionType ? (
-          <Tag color={typeColor}>{promotion.promotionType}</Tag>
-        ) : (
-          '-'
-        )}
-      </Descriptions.Item>
-
-      <Descriptions.Item label="거래처코드">
-        {promotion.accountCode ?? '-'}
-        {editing && <CalculatedHint />}
-      </Descriptions.Item>
-      <Descriptions.Item label="매대위치">
-        {editing ? (
-          <Select
-            size="small"
-            options={standLocationOptions}
-            value={formValues.standLocation ?? undefined}
-            onChange={(v) => onFormChange({ standLocation: v || null })}
-            allowClear
-            style={{ width: '100%' }}
-          />
-        ) : (
-          promotion.standLocation ?? '-'
-        )}
-      </Descriptions.Item>
-
-      <Descriptions.Item label="메시지">
-        {editing ? (
-          <Input.TextArea
-            size="small"
-            maxLength={255}
-            value={formValues.message ?? ''}
-            onChange={(e) => onFormChange({ message: e.target.value || null })}
-            autoSize={{ minRows: 1, maxRows: 3 }}
-          />
-        ) : (
-          promotion.message ?? '-'
-        )}
-      </Descriptions.Item>
-      <Descriptions.Item label="CC코드">
-        {promotion.costCenterCode ?? '-'}
-      </Descriptions.Item>
-      <Descriptions.Item label="마감여부">
-        {promotion.isClosed ? <Tag color="red">마감</Tag> : '미마감'}
-      </Descriptions.Item>
-
-      <Descriptions.Item label="작성자">
-        {promotion.createdByName ? (
-          canReadUser && promotion.createdById != null ? (
-            <Link to={`/users/${promotion.createdById}`}>{promotion.createdByName}</Link>
+    <>
+      <Descriptions column={2} bordered size="small">
+        <Descriptions.Item label="행사번호">
+          {promotion.promotionNumber}
+          <Tooltip title="행사번호 복사">
+            <CopyOutlined
+              onClick={handleCopyPromotionNumber}
+              style={{ marginLeft: 8, color: '#1677ff', cursor: 'pointer' }}
+            />
+          </Tooltip>
+        </Descriptions.Item>
+        <Descriptions.Item label={<RequiredLabel text="시작일" required={editing} />}>
+          {editing ? (
+            <DatePicker
+              size="small"
+              format="YYYY-MM-DD"
+              value={formValues.startDate ? dayjs(formValues.startDate) : null}
+              onChange={(d) => onFormChange({ startDate: d ? d.format('YYYY-MM-DD') : '' })}
+              style={{ width: '100%' }}
+            />
           ) : (
-            promotion.createdByName
-          )
-        ) : (
-          '-'
-        )}
-      </Descriptions.Item>
-      <Descriptions.Item label="작성일">
-        {promotion.createdAt ? dayjs(promotion.createdAt).format('YYYY-MM-DD HH:mm') : '-'}
-      </Descriptions.Item>
-    </Descriptions>
+            promotion.startDate ?? '-'
+          )}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="행사명">
+          {promotion.promotionName ?? '-'}
+          {editing && <CalculatedHint />}
+        </Descriptions.Item>
+        <Descriptions.Item label={<RequiredLabel text="종료일" required={editing} />}>
+          {editing ? (
+            <DatePicker
+              size="small"
+              format="YYYY-MM-DD"
+              value={formValues.endDate ? dayjs(formValues.endDate) : null}
+              onChange={(d) => onFormChange({ endDate: d ? d.format('YYYY-MM-DD') : '' })}
+              style={{ width: '100%' }}
+            />
+          ) : (
+            promotion.endDate ?? '-'
+          )}
+        </Descriptions.Item>
+
+        <Descriptions.Item label={<RequiredLabel text="거래처" required={editing} />}>
+          {editing ? (
+            <Space.Compact style={{ width: '100%' }}>
+              <Select
+                size="small"
+                showSearch
+                filterOption={false}
+                placeholder="거래처 검색..."
+                value={
+                  formValues.accountId
+                    ? {
+                        value: formValues.accountId,
+                        label: formValues.accountName ?? String(formValues.accountId),
+                      }
+                    : undefined
+                }
+                labelInValue
+                onSearch={handleAccountSearch}
+                onChange={(option) => {
+                  if (option) {
+                    const selected = accountOptions.find((a) => a.id === option.value);
+                    onFormChange({
+                      accountId: option.value as number,
+                      accountName: selected?.name ?? formValues.accountName,
+                    });
+                    // 선택 확정 시 고급 검색이 이어받을 키워드를 비운다.
+                    clearKeyword();
+                  }
+                }}
+                notFoundContent={accountSearching ? <Spin size="small" /> : '검색 결과 없음'}
+                options={accountOptions.map((a) => ({
+                  value: a.id,
+                  label: a.externalKey ? `${a.name} (${a.externalKey})` : (a.name ?? ''),
+                }))}
+                // 빠른 검색은 첫 페이지 10건만 노출 — 총 건수를 알리고 고급 검색 진입로를
+                // 드롭다운 하단에 상시 제공한다 (동일 키워드를 이어받아 전체 결과를 페이지로 열람).
+                popupRender={(menu) => (
+                  <>
+                    {menu}
+                    <LookupDropdownFooter
+                      onMore={() => setAdvancedSearchOpen(true)}
+                      total={accountTotal}
+                    />
+                  </>
+                )}
+                style={{ width: '100%' }}
+              />
+              <Button size="small" onClick={() => setAdvancedSearchOpen(true)}>
+                고급 검색
+              </Button>
+            </Space.Compact>
+          ) : promotion.accountName ? (
+            <Link to={`/account/${promotion.accountId}`}>{promotion.accountName}</Link>
+          ) : (
+            '-'
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label="행사유형">
+          {editing ? (
+            <Select
+              size="small"
+              options={promotionTypeOptions}
+              value={formValues.promotionType}
+              onChange={(v) => onFormChange({ promotionType: v })}
+              style={{ width: '100%' }}
+            />
+          ) : promotion.promotionType ? (
+            <Tag color={typeColor}>{promotion.promotionType}</Tag>
+          ) : (
+            '-'
+          )}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="거래처코드">
+          {promotion.accountCode ?? '-'}
+          {editing && <CalculatedHint />}
+        </Descriptions.Item>
+        <Descriptions.Item label="매대위치">
+          {editing ? (
+            <Select
+              size="small"
+              options={standLocationOptions}
+              value={formValues.standLocation ?? undefined}
+              onChange={(v) => onFormChange({ standLocation: v || null })}
+              allowClear
+              style={{ width: '100%' }}
+            />
+          ) : (
+            promotion.standLocation ?? '-'
+          )}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="메시지">
+          {editing ? (
+            <Input.TextArea
+              size="small"
+              maxLength={255}
+              value={formValues.message ?? ''}
+              onChange={(e) => onFormChange({ message: e.target.value || null })}
+              autoSize={{ minRows: 1, maxRows: 3 }}
+            />
+          ) : (
+            promotion.message ?? '-'
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label="CC코드">
+          {promotion.costCenterCode ?? '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label="마감여부">
+          {promotion.isClosed ? <Tag color="red">마감</Tag> : '미마감'}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="작성자">
+          {promotion.createdByName ? (
+            canReadUser && promotion.createdById != null ? (
+              <Link to={`/users/${promotion.createdById}`}>{promotion.createdByName}</Link>
+            ) : (
+              promotion.createdByName
+            )
+          ) : (
+            '-'
+          )}
+        </Descriptions.Item>
+        <Descriptions.Item label="작성일">
+          {promotion.createdAt ? dayjs(promotion.createdAt).format('YYYY-MM-DD HH:mm') : '-'}
+        </Descriptions.Item>
+      </Descriptions>
+
+      <AccountAdvancedSearchModal
+        open={advancedSearchOpen}
+        onClose={() => setAdvancedSearchOpen(false)}
+        onSelect={handleAdvancedSearchSelect}
+        initialKeyword={accountKeyword}
+      />
+    </>
   );
 }

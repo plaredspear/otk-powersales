@@ -21,11 +21,16 @@ import {
   useUpdatePromotion,
 } from '@/hooks/promotion/usePromotionMutation';
 import { usePromotionFormMeta } from '@/hooks/promotion/usePromotionFormMeta';
-import { fetchAccountsForPromotionLookup, type Account } from '@/api/account';
-import { fetchProductsForPromotionLookup } from '@/api/product';
+import type { Account } from '@/api/account';
+import { useAccountLookupSearch } from '@/hooks/promotion/useAccountLookupSearch';
+import type { Product } from '@/api/product';
+import { useProductLookupSearch } from '@/hooks/promotion/useProductLookupSearch';
+import ProductLookupOptionLabel from '@/components/product/ProductLookupOptionLabel';
 import { BreadcrumbContext } from '@/contexts/BreadcrumbContext';
 import type { PromotionFormData } from '@/api/promotion';
 import AccountAdvancedSearchModal from './components/AccountAdvancedSearchModal';
+import ProductAdvancedSearchModal from './components/ProductAdvancedSearchModal';
+import LookupDropdownFooter from './components/LookupDropdownFooter';
 
 const { TextArea } = Input;
 
@@ -36,7 +41,8 @@ interface AccountOption {
 
 interface ProductOption {
   value: number;
-  label: string;
+  /** 드롭다운은 상태 Tag 를 포함한 ReactNode, 선택값 복원 시에는 문자열이 들어온다. */
+  label: React.ReactNode;
 }
 
 interface FormValues {
@@ -66,7 +72,6 @@ export default function PromotionFormPage() {
   const sourceId = isEdit ? promotionId : cloneFromId;
 
   const [form] = Form.useForm<FormValues>();
-  const accountIdValue = Form.useWatch('accountId', form);
   const { setDynamicTitle } = useContext(BreadcrumbContext);
   const { data: promotion, isLoading: detailLoading } = usePromotion(sourceId);
   const { data: formMeta, isLoading: formMetaLoading } = usePromotionFormMeta();
@@ -74,13 +79,53 @@ export default function PromotionFormPage() {
   const updateMutation = useUpdatePromotion();
   const cloneMutation = useClonePromotion();
 
-  const [accountOptions, setAccountOptions] = useState<AccountOption[]>([]);
-  const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
-  const [accountSearching, setAccountSearching] = useState(false);
-  const [productSearching, setProductSearching] = useState(false);
+  // 거래처 / 대표제품 lookup 검색 — debounce·요청 순번·키워드 보관은 공용 훅이 담당한다.
+  // 대표제품은 상세 인라인 편집(PromotionProductSection)과도 로직을 공유한다.
+  const {
+    items: accountSearchResults,
+    total: accountTotal,
+    searching: accountSearching,
+    keyword: accountKeyword,
+    onSearch: handleAccountSearch,
+    clearKeyword: clearAccountKeyword,
+    selectItem: selectAccount,
+  } = useAccountLookupSearch({ size: 20 });
+  const {
+    items: productSearchResults,
+    total: productTotal,
+    searching: productSearching,
+    keyword: productKeyword,
+    onSearch: handleProductSearch,
+    clearKeyword: clearProductKeyword,
+    selectItem: selectProduct,
+  } = useProductLookupSearch({ size: 20 });
+
+  // 드롭다운 옵션 — 거래처는 텍스트 라벨, 대표제품은 상태 Tag 를 포함한 ReactNode 라벨.
+  const accountOptions: AccountOption[] = useMemo(
+    () =>
+      accountSearchResults.map((a) => ({
+        value: a.id,
+        // 거래처코드가 없으면(수정 진입 시 복원한 옵션) 이름만 표시한다.
+        label: a.externalKey ? `${a.name} (${a.externalKey})` : (a.name ?? ''),
+      })),
+    [accountSearchResults],
+  );
+  const productOptions: ProductOption[] = useMemo(
+    () =>
+      productSearchResults.map((p) => ({
+        value: p.id,
+        label: (
+          <ProductLookupOptionLabel
+            name={p.name}
+            productCode={p.productCode}
+            productStatus={p.productStatus}
+          />
+        ),
+      })),
+    [productSearchResults],
+  );
   const [advancedSearchOpen, setAdvancedSearchOpen] = useState(false);
-  // 빠른 검색 결과 원본 — Select onChange 시 거래상태 등 부가 정보를 되찾기 위해 보관.
-  const [accountSearchResults, setAccountSearchResults] = useState<Account[]>([]);
+  const [productAdvancedSearchOpen, setProductAdvancedSearchOpen] = useState(false);
   // 선택된 거래처의 거래상태 — 신규등록 시 거래처 선택 즉시 표시 (수정/복제 초기 로드 제외).
   const [selectedAccountStatus, setSelectedAccountStatus] = useState<string | null>(null);
 
@@ -114,71 +159,53 @@ export default function PromotionFormPage() {
       });
 
       if (promotion.accountName) {
-        setAccountOptions([{ value: promotion.accountId, label: promotion.accountName }]);
+        // 수정 진입 시 재검색 없이 옵션 복원. 상세 응답에는 거래처코드/거래상태가 없어
+        // 라벨은 이름만 나오고, 거래상태는 사용자가 다시 선택할 때 표시된다.
+        selectAccount({
+          id: promotion.accountId,
+          name: promotion.accountName,
+          externalKey: null,
+          accountStatusName: null,
+        });
       }
       if (promotion.primaryProductId && promotion.primaryProductName) {
-        setProductOptions([
-          {
-            value: promotion.primaryProductId,
-            label: promotion.primaryProductName,
-          },
-        ]);
+        // 검색 결과와 동일한 표기(제품코드 + 상태 Tag)로 복원 — 수정 진입 시 재검색 불요.
+        selectProduct({
+          id: promotion.primaryProductId,
+          name: promotion.primaryProductName,
+          productCode: promotion.primaryProductCode,
+          productStatus: promotion.primaryProductStatus,
+        });
       }
     }
-  }, [isEdit, isClone, promotion, form]);
-
-  const handleAccountSearch = async (keyword: string) => {
-    if (keyword.length < 2) return;
-    setAccountSearching(true);
-    try {
-      const result = await fetchAccountsForPromotionLookup({ keyword, size: 20 });
-      setAccountSearchResults(result.content);
-      setAccountOptions(
-        result.content
-          .filter((a) => a.id != null && a.name != null)
-          .map((a) => ({
-            value: a.id!,
-            label: `${a.name} (${a.externalKey ?? ''})`,
-          })),
-      );
-    } finally {
-      setAccountSearching(false);
-    }
-  };
+  }, [isEdit, isClone, promotion, form, selectAccount, selectProduct]);
 
   const handleAccountChange = (accountId: number) => {
+    // Form.Item 이 주입하는 onChange 를 가로챘으므로 폼 값은 직접 반영한다.
     form.setFieldValue('accountId', accountId);
+    // 선택 확정 시 고급 검색이 이어받을 키워드를 비운다.
+    clearAccountKeyword();
     // 빠른 검색 결과 원본에서 거래상태를 되찾아 표시 (선택 즉시 반영).
     const matched = accountSearchResults.find((a) => a.id === accountId);
     setSelectedAccountStatus(matched?.accountStatusName ?? null);
   };
 
   const handleAdvancedSearchSelect = (account: Account) => {
-    // 고급 검색 그리드에서 고른 거래처를 폼 값 + Select 옵션에 반영 — 기존 빠른 검색 라벨 형식과 동일.
-    setAccountOptions([
-      { value: account.id, label: `${account.name} (${account.externalKey ?? ''})` },
-    ]);
-    setAccountSearchResults([account]);
+    // 고급 검색 그리드에서 고른 거래처를 폼 값 + Select 옵션에 반영 — 빠른 검색 결과와 동일 형식.
+    selectAccount({
+      id: account.id,
+      name: account.name,
+      externalKey: account.externalKey,
+      accountStatusName: account.accountStatusName,
+    });
     form.setFieldValue('accountId', account.id);
     setSelectedAccountStatus(account.accountStatusName);
   };
 
-  const handleProductSearch = async (keyword: string) => {
-    if (keyword.length < 2) return;
-    setProductSearching(true);
-    try {
-      const result = await fetchProductsForPromotionLookup({ keyword, size: 20 });
-      setProductOptions(
-        result.content
-          .filter((p) => p.id != null && p.name != null)
-          .map((p) => ({
-            value: p.id!,
-            label: `${p.name} (${p.productCode ?? ''})`,
-          })),
-      );
-    } finally {
-      setProductSearching(false);
-    }
+  const handleProductAdvancedSearchSelect = (product: Product) => {
+    // 고급 검색 그리드에서 고른 제품을 폼 값 + Select 옵션에 반영 — 빠른 검색 결과와 동일 형식.
+    selectProduct(product);
+    form.setFieldValue('primaryProductId', product.id);
   };
 
   const handleSubmit = async (values: FormValues) => {
@@ -244,12 +271,20 @@ export default function PromotionFormPage() {
         <Card title="정보" style={{ marginBottom: 16 }}>
           <Row gutter={24}>
             <Col xs={24} sm={12}>
-              <Form.Item
-                name="accountId"
-                label="거래처"
-                rules={[{ required: true, message: '거래처를 선택해주세요' }]}
-              >
-                <Space.Compact style={{ width: '100%' }}>
+              {/*
+                Form.Item 의 직접 자식이 Space.Compact 이면 Form 이 value/onChange 를 Select 가
+                아닌 Space.Compact 에 주입해 폼 값이 검색어로 오염된다. Form.Item 이 Select 만
+                감싸도록 두고, 버튼은 바깥 flex 로 나란히 배치한다(Space.Compact 는 자식 props 를
+                건드리므로 쓰지 않는다).
+              */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <Form.Item
+                  name="accountId"
+                  label="거래처"
+                  rules={[{ required: true, message: '거래처를 선택해주세요' }]}
+                  // flex item 기본 min-width:auto 를 풀어야 남는 폭을 모두 차지한다.
+                  style={{ flex: 1, minWidth: 0, marginBottom: 24 }}
+                >
                   <Select
                     showSearch
                     style={{ width: '100%' }}
@@ -259,12 +294,30 @@ export default function PromotionFormPage() {
                     loading={accountSearching}
                     options={accountOptions}
                     notFoundContent={accountSearching ? <Spin size="small" /> : null}
-                    value={accountIdValue}
+                    // 선택 시 거래상태를 함께 표시해야 해 onChange 를 가로챈다 — Form.Item 이
+                    // 주입한 onChange 는 덮이므로 handleAccountChange 안에서 폼 값을 직접 세팅한다.
                     onChange={handleAccountChange}
+                    // 검색어 입력 상태는 AntD 기본 동작에 맡긴다(blur 시 초기화). searchValue 를
+                    // 제어하면 내부 상태와 경합해 입력이 막히므로 쓰지 않는다.
+                    // 고급 검색이 이어받을 키워드는 onSearch 콜백에서 accountKeyword 로 따로 보관한다.
+                    // 빠른 검색은 첫 페이지 20건만 노출 — 총 건수를 알리고 고급 검색 진입로를
+                    // 드롭다운 하단에 상시 제공한다 (동일 키워드를 이어받아 전체 결과를 페이지로 열람).
+                    popupRender={(menu) => (
+                      <>
+                        {menu}
+                        <LookupDropdownFooter
+                          onMore={() => setAdvancedSearchOpen(true)}
+                          total={accountTotal}
+                        />
+                      </>
+                    )}
                   />
-                  <Button onClick={() => setAdvancedSearchOpen(true)}>고급 검색</Button>
-                </Space.Compact>
-              </Form.Item>
+                </Form.Item>
+                {/* Form.Item 의 label 높이만큼 내려 Select 와 가로 정렬을 맞춘다. */}
+                <Button style={{ marginTop: 30 }} onClick={() => setAdvancedSearchOpen(true)}>
+                  고급 검색
+                </Button>
+              </div>
               {selectedAccountStatus && (
                 <div style={{ marginTop: -12, marginBottom: 12 }}>
                   <span style={{ color: '#8c8c8c', marginRight: 8 }}>거래상태</span>
@@ -354,22 +407,56 @@ export default function PromotionFormPage() {
         <Card title="행사품목" style={{ marginBottom: 16 }}>
           <Row gutter={24}>
             <Col xs={24} sm={12}>
-              <Form.Item
-                name="primaryProductId"
-                label="대표제품"
-                rules={[{ required: true, message: '대표제품을 선택해주세요' }]}
-              >
-                <Select
-                  showSearch
-                  allowClear
-                  placeholder="제품 검색 (2자 이상 입력)"
-                  filterOption={false}
-                  onSearch={handleProductSearch}
-                  loading={productSearching}
-                  options={productOptions}
-                  notFoundContent={productSearching ? <Spin size="small" /> : null}
-                />
-              </Form.Item>
+              {/*
+                Form.Item 의 직접 자식이 Space.Compact 이면 Form 이 value/onChange 를 Select 가
+                아닌 Space.Compact 에 주입해 폼 값이 검색어로 오염된다. Form.Item 이 Select 만
+                감싸도록 두고, 버튼은 바깥 flex 로 나란히 배치한다(Space.Compact 는 자식 props 를
+                건드리므로 쓰지 않는다).
+              */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <Form.Item
+                  name="primaryProductId"
+                  label="대표제품"
+                  rules={[{ required: true, message: '대표제품을 선택해주세요' }]}
+                  // flex item 기본 min-width:auto 를 풀어야 남는 폭을 모두 차지한다.
+                  style={{ flex: 1, minWidth: 0, marginBottom: 24 }}
+                >
+                  <Select
+                    showSearch
+                    allowClear
+                    style={{ width: '100%' }}
+                    placeholder="제품 검색 (2자 이상 입력)"
+                    filterOption={false}
+                    onSearch={handleProductSearch}
+                    // 사용자가 x 로 비운 경우는 보관 키워드도 함께 정리한다(빈 onSearch 무시와 구분).
+                    onClear={clearProductKeyword}
+                    loading={productSearching}
+                    options={productOptions}
+                    notFoundContent={productSearching ? <Spin size="small" /> : null}
+                    // 검색어 입력 상태는 AntD 기본 동작에 맡긴다(blur 시 초기화). searchValue 를
+                    // 제어하면 내부 상태와 경합해 입력이 막히므로 쓰지 않는다.
+                    // 고급 검색이 이어받을 키워드는 onSearch 콜백에서 productKeyword 로 따로 보관한다.
+                    // 빠른 검색은 첫 페이지 20건만 노출 — 총 건수를 알리고 고급 검색 진입로를
+                    // 드롭다운 하단에 상시 제공한다 (동일 키워드를 이어받아 전체 결과를 페이지로 열람).
+                    popupRender={(menu) => (
+                      <>
+                        {menu}
+                        <LookupDropdownFooter
+                          onMore={() => setProductAdvancedSearchOpen(true)}
+                          total={productTotal}
+                        />
+                      </>
+                    )}
+                  />
+                </Form.Item>
+                {/* Form.Item 의 label 높이만큼 내려 Select 와 가로 정렬을 맞춘다. */}
+                <Button
+                  style={{ marginTop: 30 }}
+                  onClick={() => setProductAdvancedSearchOpen(true)}
+                >
+                  고급 검색
+                </Button>
+              </div>
             </Col>
             <Col xs={24} sm={12}>
               <Form.Item
@@ -421,6 +508,14 @@ export default function PromotionFormPage() {
         open={advancedSearchOpen}
         onClose={() => setAdvancedSearchOpen(false)}
         onSelect={handleAdvancedSearchSelect}
+        initialKeyword={accountKeyword}
+      />
+
+      <ProductAdvancedSearchModal
+        open={productAdvancedSearchOpen}
+        onClose={() => setProductAdvancedSearchOpen(false)}
+        onSelect={handleProductAdvancedSearchSelect}
+        initialKeyword={productKeyword}
       />
     </div>
   );

@@ -114,7 +114,7 @@ export interface CategoryTree {
   children: Category2Node[];
 }
 
-interface Category2Node {
+export interface Category2Node {
   category2: string;
   children: string[];
 }
@@ -136,11 +136,36 @@ export async function fetchProducts(params: FetchProductsParams): Promise<Produc
  * Product READ 권한 없이도 호출 가능 (SF lookup search 메커니즘 정합).
  */
 export async function fetchProductsForPromotionLookup(
-  params: Pick<FetchProductsParams, 'keyword' | 'page' | 'size'>,
+  params: Pick<
+    FetchProductsParams,
+    'keyword' | 'category1' | 'category2' | 'category3' | 'productStatus' | 'page' | 'size'
+  >,
 ): Promise<ProductListData> {
   const res = await client.get<ApiResponse<ProductListData>>('/api/v1/admin/products/lookup', { params });
   if (!res.data.success || !res.data.data) {
     throw new Error(res.data.message || '제품 검색에 실패했습니다');
+  }
+  return res.data.data;
+}
+
+/**
+ * 행사마스터 제품 고급 검색 모달의 필터 드롭다운 옵션 (`GET /api/v1/admin/products/lookup-filter-options`).
+ *
+ * 거래처 고급 검색의 `fetchPromotionLookupFilterOptions` 와 동일 패턴 — 모달 오픈 시점에만 호출한다.
+ * `/categories` 는 product READ 권한 가드라 행사마스터 권한만 가진 사용자가 403 이 되므로 재사용 불가.
+ */
+export interface ProductLookupFilterOptions {
+  categories: CategoryTree[];
+  /** 제품상태 선택지 — SF picklist 가 현재 '-' 1개뿐이라 선택지도 1개다. */
+  productStatuses: string[];
+}
+
+export async function fetchProductLookupFilterOptions(): Promise<ProductLookupFilterOptions> {
+  const res = await client.get<ApiResponse<ProductLookupFilterOptions>>(
+    '/api/v1/admin/products/lookup-filter-options',
+  );
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '제품 검색 필터 옵션 조회에 실패했습니다');
   }
   return res.data.data;
 }

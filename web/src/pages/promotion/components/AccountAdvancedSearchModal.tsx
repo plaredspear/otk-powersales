@@ -15,6 +15,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSelect: (account: Account) => void;
+  /**
+   * 드롭다운 빠른 검색에서 입력 중이던 키워드 — "더보기"/"고급 검색" 진입 시 이어받아 즉시 조회한다.
+   * 2자 미만이면 빈 검색 상태로 열린다 (백엔드 keyword 최소 길이 정합).
+   */
+  initialKeyword?: string;
 }
 
 /**
@@ -26,7 +31,12 @@ interface Props {
  *
  * keyword 는 백엔드에서 거래처명/SAP코드/전화/대표자명/주소/거래처지점명 OR 매칭된다.
  */
-export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: Props) {
+export default function AccountAdvancedSearchModal({
+  open,
+  onClose,
+  onSelect,
+  initialKeyword,
+}: Props) {
   // 입력 중 필터 (검색 버튼 누르기 전 임시값).
   const [keywordInput, setKeywordInput] = useState('');
   const [accountTypeInput, setAccountTypeInput] = useState<string | undefined>(undefined);
@@ -40,9 +50,13 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
   const [page, setPage] = useState(0);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  // 모달을 닫을 때마다 검색 상태 초기화 — 다음 오픈 시 이전 검색 잔상 방지.
+  // 모달 오픈 시 드롭다운 키워드를 이어받아 즉시 조회, 닫을 때 검색 상태 초기화 (이전 검색 잔상 방지).
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      const seed = initialKeyword?.trim() ?? '';
+      setKeywordInput(seed);
+      setSubmitted(seed.length >= 2 ? { keyword: seed } : null);
+    } else {
       setKeywordInput('');
       setAccountTypeInput(undefined);
       setAccountStatusInput(undefined);
@@ -50,6 +64,8 @@ export default function AccountAdvancedSearchModal({ open, onClose, onSelect }: 
       setPage(0);
       setSelectedId(null);
     }
+    // initialKeyword 는 오픈 시점 값만 사용 — 열려 있는 동안 부모의 입력 변화로 검색이 리셋되지 않게 한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // 거래처유형/거래상태 필터 드롭다운 옵션 — 실제 검색 대상 집합의 distinct 값.

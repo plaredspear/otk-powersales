@@ -72,6 +72,8 @@ export interface PromotionDetail {
   primaryProductId: number | null;
   primaryProductName: string | null;
   primaryProductCode: string | null;
+  /** 대표제품의 제품상태 — 화면 표시명("판매중"/"단종"). 수정 화면 lookup 의 상태 Tag 복원용. */
+  primaryProductStatus: string | null;
   otherProduct: string | null;
   message: string | null;
   standLocation: string | null;
