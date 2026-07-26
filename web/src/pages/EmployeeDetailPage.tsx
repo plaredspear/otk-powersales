@@ -65,9 +65,12 @@ const ORIGIN_TAG: Record<string, { color: string; label: string }> = {
 /**
  * 권한(App권한) info 툴팁 — 4종 권한 목록과 각각의 지정 방법 안내.
  *
- * 부여 경로는 (1) SAP 발령 자동계산(조장/여사원만) (2) web admin '권한 변경' 이다.
+ * 부여 경로는 (1) SAP 발령 자동계산(조장/여사원만) (2) 설정 사원 상세의 '권한 변경' 이다.
+ *
+ * @param canChangeRole 이 화면에 「권한 변경」 버튼이 있는지 (설정 사원 상세만 true).
+ *   여사원 현황 진입은 버튼이 없으므로 "이 화면에서" 라고 안내하지 않는다.
  */
-const ROLE_INFO_TOOLTIP = (
+const roleInfoTooltip = (canChangeRole: boolean) => (
   <div style={{ maxWidth: 340 }}>
     <div style={{ fontWeight: 600, marginBottom: 6 }}>App권한 안내</div>
     <div style={{ marginBottom: 6 }}>
@@ -92,8 +95,9 @@ const ROLE_INFO_TOOLTIP = (
     <ul style={{ margin: 0, paddingLeft: 18 }}>
       <li>여사원 / 조장 — SAP 발령(직무·직책)에 따라 자동으로 지정됩니다.</li>
       <li>
-        지점장 / 영업부장 — SAP 발령으로는 지정되지 않으며, 이 화면의 「권한 변경」 으로만
-        부여할 수 있습니다.
+        지점장 / 영업부장 — SAP 발령으로는 지정되지 않으며,{' '}
+        {canChangeRole ? '이 화면의' : '설정 > 사원 상세의'} 「권한 변경」 으로만 부여할 수
+        있습니다.
       </li>
       <li>「권한 변경」 은 SAP 인입으로 관리되는 사원도 변경할 수 있습니다.</li>
     </ul>
@@ -183,13 +187,18 @@ export default function EmployeeDetailPage() {
             수정
           </Button>
         </Tooltip>
-        <Tooltip title={canEdit ? '' : '수정 권한이 없습니다'}>
-          {/* 권한(role) 은 SAP 인입과 경합하지 않아 origin=SAP 사원도 변경 가능 —
-              수정 권한만 있으면 활성. AccountViewAll 부여의 유일한 경로. */}
-          <Button disabled={!canEdit} onClick={() => setRoleOpen(true)}>
-            권한 변경
-          </Button>
-        </Tooltip>
+        {/* 권한 변경은 설정 사원 상세 전용 — 여사원 현황에서는 제외한다.
+            호출 API(`PATCH /employees/{id}/role`) 가 employee:EDIT 로 가드되어,
+            female_employee 권한만 가진 직책(조장 등)에게는 어차피 403 이다. */}
+        {!isFemale && (
+          <Tooltip title={canEdit ? '' : '수정 권한이 없습니다'}>
+            {/* 권한(role) 은 SAP 인입과 경합하지 않아 origin=SAP 사원도 변경 가능 —
+                수정 권한만 있으면 활성. AccountViewAll 부여의 유일한 경로. */}
+            <Button disabled={!canEdit} onClick={() => setRoleOpen(true)}>
+              권한 변경
+            </Button>
+          </Tooltip>
+        )}
         <Tooltip title={credentialsTooltip}>
           <Button danger disabled={credentialsDisabled} onClick={() => setPasswordOpen(true)}>
             비밀번호 초기화
@@ -270,7 +279,7 @@ export default function EmployeeDetailPage() {
             label={
               <span>
                 권한{' '}
-                <Tooltip title={ROLE_INFO_TOOLTIP}>
+                <Tooltip title={roleInfoTooltip(!isFemale)}>
                   <InfoCircleOutlined
                     style={{ color: '#8c8c8c', cursor: 'help', fontSize: 14 }}
                   />
@@ -339,7 +348,9 @@ export default function EmployeeDetailPage() {
           formMeta={formMeta}
         />
       )}
-      {roleOpen && (
+      {/* 여사원 현황 진입에는 「권한 변경」 버튼이 없어 roleOpen 이 켜지지 않지만, 진입 맥락
+          조건을 함께 걸어 여사원 경로에서 권한 변경이 열리지 않음을 명시한다. */}
+      {!isFemale && roleOpen && (
         <EmployeeRoleModal
           employee={employee}
           open={true}

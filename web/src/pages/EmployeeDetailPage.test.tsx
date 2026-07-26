@@ -77,13 +77,18 @@ vi.mock('@/hooks/employee/useEmployee', () => ({
   }),
 }));
 
-function renderPage() {
+/**
+ * @param isFemale 여사원 현황(`/female-employee/...`) 진입 여부. 화면이 진입 맥락을
+ *   pathname 으로 판별하므로 라우트를 함께 바꿔 렌더한다.
+ */
+function renderPage(isFemale = false) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const base = isFemale ? '/female-employee' : '/employee';
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={['/employee/100']}>
+      <MemoryRouter initialEntries={[`${base}/100`]}>
         <Routes>
-          <Route path="/employee/:employeeId" element={<EmployeeDetailPage />} />
+          <Route path={`${base}/:employeeId`} element={<EmployeeDetailPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -127,5 +132,31 @@ describe('EmployeeDetailPage', () => {
   it('SAP origin 표시 태그', () => {
     renderPage();
     expect(screen.getByText('SAP 인입')).toBeInTheDocument();
+  });
+
+  it('설정 사원 상세 진입 -> 「권한 변경」 버튼 노출', () => {
+    renderPage();
+    expect(screen.getByRole('button', { name: '권한 변경' })).toBeInTheDocument();
+  });
+
+  it('여사원 현황 진입 -> 「권한 변경」 버튼 미노출 (호출 API 가 employee:EDIT 가드)', () => {
+    useAuthStore.setState({
+      user: {
+        employeeId: 1,
+        employeeCode: 'LEADER-001',
+        name: '조장',
+        // 여사원 권한만 보유 — employee:EDIT 없음
+        permissions: [
+          entityPermissionKey('female_employee', 'READ'),
+          entityPermissionKey('female_employee', 'EDIT'),
+        ],
+      } as never,
+    });
+
+    renderPage(true);
+
+    expect(screen.queryByRole('button', { name: '권한 변경' })).not.toBeInTheDocument();
+    // 나머지 액션은 그대로 노출된다 (권한 변경만 제외).
+    expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
   });
 });
