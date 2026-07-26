@@ -104,9 +104,9 @@ class AdminScheduledJobDailyStatusTest {
         val claimJob = ClaimMasterSyncBatch.JOB_NAME
         every { repository.aggregateByJobNameWithin(any(), any(), any()) } returns emptyList()
         // 클레임만 cron 등록 (매시간). 나머지는 미등록 → expectedCount=null.
-        every { cronResolver.resolvedCronByJobName() } returns mapOf(claimJob to "0 0 * * * *")
+        every { cronResolver.resolvedCronByJobName() } returns mapOf(claimJob to listOf("0 0 * * * *"))
         // 매시간 정각 = 24시간 윈도우에서 24회 (실제 계산 로직은 ScheduledJobCronResolverTest 에서 검증).
-        every { cronResolver.expectedFireCount("0 0 * * * *", expectedFrom, expectedTo) } returns 24
+        every { cronResolver.expectedUnionFireCount(listOf("0 0 * * * *"), expectedFrom, expectedTo) } returns 24
 
         val response = service.dailyStatus(date)
         val claim = response.items.first { it.jobName == claimJob }
@@ -137,7 +137,7 @@ class AdminScheduledJobDailyStatusTest {
     }
 
     @Test
-    @DisplayName("ORORA 월매출은 note(전월 매주 재적재 안내)를 포함한다")
+    @DisplayName("ORORA 월매출은 note(전월 주기 재적재 안내)를 포함한다")
     fun ororaMonthlyHasNote() {
         allBeansRegistered()
         every { repository.aggregateByJobNameWithin(any(), any(), any()) } returns emptyList()

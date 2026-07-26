@@ -116,8 +116,9 @@ class AdminScheduledJobService(
             // SKIPPED 는 본문 미실행이라 실제 실행 횟수에서 제외한다.
             val actualCount = agg?.let { it.totalCount - it.skippedCount } ?: 0L
 
-            val expectedCount = resolvedCron[target.jobName]?.let { cron ->
-                scheduledJobCronResolver.expectedFireCount(cron, windowFrom, windowTo)
+            // 잡에 cron 이 여러 개면 (예: ORORA 월매출 매주 목요일 + 매월 3일) 합집합 발화 횟수로 계산.
+            val expectedCount = resolvedCron[target.jobName]?.let { crons ->
+                scheduledJobCronResolver.expectedUnionFireCount(crons, windowFrom, windowTo)
             }
 
             ScheduledJobDailyStatusItem(
@@ -159,7 +160,8 @@ class AdminScheduledJobService(
         return ScheduledJobCatalog.ENTRIES.map {
             RegisteredScheduledJobDto(
                 jobName = it.jobName,
-                cron = it.cron,
+                // cron 이 여러 개인 잡은 " / " 로 이어 표기 (화면 표시 전용 — 파싱 용도 아님).
+                cron = (listOf(it.cron) + it.extraCrons).joinToString(" / "),
                 description = it.description,
                 enabled = beanFactory.getBeanNamesForType(it.beanType).isNotEmpty(),
                 runtimeEnabled = runtimeStates[it.jobName] ?: true,

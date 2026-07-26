@@ -24,6 +24,13 @@ object ScheduledJobCatalog {
          * 로 켜고 꺼지므로, 빈 등록 여부가 곧 현재 환경의 실제 스케줄링 활성 여부와 일치한다.
          */
         val beanType: Class<*>,
+        /**
+         * 같은 잡에 `@Scheduled` 가 2개 이상 걸린 경우의 추가 cron 원문 (표기 순서는 어노테이션 선언 순).
+         *
+         * Spring cron 은 day-of-month 와 day-of-week 동시 지정을 AND 로 해석하므로 "매주 목요일 또는
+         * 매월 3일" 같은 합집합 스케줄은 cron 을 나눠 선언한다. 잡 대부분은 단일 cron 이라 기본 빈 목록.
+         */
+        val extraCrons: List<String> = emptyList(),
     )
 
     val ENTRIES: List<Entry> = listOf(
@@ -126,8 +133,9 @@ object ScheduledJobCatalog {
         Entry(
             jobName = OroraMonthlySalesMaterializeBatch.JOB_NAME,
             cron = "\${app.batch.orora.monthly.cron:0 30 11 * * THU}",
-            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매주 목요일 11:30, 전월분) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등. 레거시는 첫째 목요일 1회 + 전월 재마감 시 OroraYearMonth__mdt 수동 재실행 관행이라, 신규는 매주 목요일 전월 재적재(멱등 upsert)로 자동 흡수. 수동 트리거로 특정 월 재적재 가능",
+            description = "ORORA 월별 마감 → monthly_sales_history 적재 (기본 매주 목요일 + 매월 3일 11:30, 전월분) — legacy IF_REST_ORORA_ReceiveMonthlySalesHistory 동등. 레거시는 첫째 목요일 1회 + 전월 재마감 시 OroraYearMonth__mdt 수동 재실행 관행이라, 신규는 매주 목요일 + 매월 3일 전월 재적재(멱등 upsert)로 자동 흡수. 수동 트리거로 특정 월 재적재 가능",
             beanType = OroraMonthlySalesMaterializeBatch::class.java,
+            extraCrons = listOf("\${app.batch.orora.monthly.day3-cron:0 30 11 3 * *}"),
         ),
         Entry(
             jobName = ErpOrderRetentionBatch.JOB_NAME,

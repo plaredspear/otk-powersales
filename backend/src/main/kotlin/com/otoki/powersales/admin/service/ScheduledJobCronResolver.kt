@@ -27,13 +27,14 @@ class ScheduledJobCronResolver(
 ) {
 
     /**
-     * jobName → 실제 해석된 cron 표현식 맵.
+     * jobName → 실제 해석된 cron 표현식 목록 맵.
      *
      * [ScheduledTaskHolder] 에 등록된 [CronTask] 만 대상이므로, 현재 환경에서 스케줄링 활성인
      * (빈 등록된) 잡만 포함된다. 비활성 잡은 맵에 없다 (호출부에서 catalog 원문으로 fallback).
+     * `@Scheduled` 가 2개 이상 걸린 잡 (예: ORORA 월매출 매주 목요일 + 매월 3일) 은 cron 이 여러 개 담긴다.
      */
-    fun resolvedCronByJobName(): Map<String, String> {
-        val result = LinkedHashMap<String, String>()
+    fun resolvedCronByJobName(): Map<String, List<String>> {
+        val result = LinkedHashMap<String, MutableList<String>>()
         for (scheduledTask in scheduledTaskHolder.scheduledTasks) {
             val task = scheduledTask.task
             if (task !is CronTask) continue
@@ -42,7 +43,7 @@ class ScheduledJobCronResolver(
             val target = runnable.target
             // catalog 의 beanType 재사용으로 JOB_NAME 매핑 (ShedLock AOP 프록시 여부와 무관하게 isInstance 매칭).
             val entry = ScheduledJobCatalog.ENTRIES.firstOrNull { it.beanType.isInstance(target) } ?: continue
-            result[entry.jobName] = task.expression
+            result.getOrPut(entry.jobName) { mutableListOf() }.add(task.expression)
         }
         return result
     }
@@ -56,22 +57,37 @@ class ScheduledJobCronResolver(
      * @param from 윈도우 시작 (포함). KST `LocalDateTime`.
      * @param to 윈도우 끝 (제외). KST `LocalDateTime`.
      */
-    fun expectedFireCount(cron: String, from: LocalDateTime, to: LocalDateTime): Int? {
-        val expression = try {
-            CronExpression.parse(cron)
-        } catch (e: IllegalArgumentException) {
-            return null
+    fun expectedFireCount(cron: String, from: LocalDateTime, to: LocalDateTime): Int? =
+        expectedUnionFireCount(listOf(cron), from, to)
+
+    /**
+     * 여러 cron 의 `[from, to)` 윈도우 내 **합집합** 발화 횟수.
+     *
+     * 두 cron 이 같은 시각에 발화하는 경우 (예: ORORA 월매출 매주 목요일 cron 과 매월 3일 cron 이 겹치는
+     * "목요일인 3일") ShedLock 이 한쪽만 실행시켜 실제 이력도 1건이므로, 시각 기준으로 dedup 해 1회로 센다.
+     * 목록이 비었거나 하나라도 파싱에 실패하면 null (예상 횟수 미산출 — 화면에서 '-' 표기).
+     */
+    fun expectedUnionFireCount(crons: List<String>, from: LocalDateTime, to: LocalDateTime): Int? {
+        if (crons.isEmpty()) return null
+        val fireTimes = HashSet<LocalDateTime>()
+        for (cron in crons) {
+            val expression = try {
+                CronExpression.parse(cron)
+            } catch (e: IllegalArgumentException) {
+                return null
+            }
+            var count = 0
+            // next(cursor) 는 cursor 이후 첫 발화를 준다. from 정각 발화를 포함하려면 from 직전부터 시작.
+            var cursor: LocalDateTime = from.minusNanos(1)
+            while (count <= MAX_FIRE_COUNT) {
+                val next = expression.next(cursor) ?: break
+                if (!next.isBefore(to)) break
+                fireTimes.add(next)
+                count++
+                cursor = next
+            }
         }
-        var count = 0
-        // next(cursor) 는 cursor 이후 첫 발화를 준다. from 정각 발화를 포함하려면 from 직전부터 시작.
-        var cursor: LocalDateTime = from.minusNanos(1)
-        while (count <= MAX_FIRE_COUNT) {
-            val next = expression.next(cursor) ?: break
-            if (!next.isBefore(to)) break
-            count++
-            cursor = next
-        }
-        return count
+        return fireTimes.size
     }
 
     companion object {

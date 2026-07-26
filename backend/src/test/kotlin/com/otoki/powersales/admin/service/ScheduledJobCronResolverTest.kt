@@ -81,4 +81,30 @@ class ScheduledJobCronResolverTest {
         val count = resolver.expectedFireCount("not-a-cron", from, to)
         assertThat(count).isNull()
     }
+
+    @Test
+    @DisplayName("합집합 — 서로 다른 시각의 cron 2개는 발화 횟수를 합산한다")
+    fun union_distinctTimes_summed() {
+        // 매일 01시 + 매일 23시 → 24시간 윈도우에서 2회.
+        val count = resolver.expectedUnionFireCount(listOf("0 0 1 * * *", "0 0 23 * * *"), from, to)
+        assertThat(count).isEqualTo(2)
+    }
+
+    @Test
+    @DisplayName("합집합 — 같은 시각에 겹치는 발화는 1회로 dedup 된다 (ORORA 월매출 목요일인 3일)")
+    fun union_sameInstant_deduped() {
+        // 2026-09-03 은 목요일이면서 3일 — 매주 목요일 cron 과 매월 3일 cron 이 05:00 에 동시 발화하지만
+        // ShedLock 이 한쪽만 실행시키므로 예상 횟수도 1회.
+        val f = LocalDateTime.of(2026, 9, 2, 22, 0, 0)
+        val t = LocalDateTime.of(2026, 9, 3, 22, 0, 0)
+        val count = resolver.expectedUnionFireCount(listOf("0 0 5 * * THU", "0 0 5 3 * *"), f, t)
+        assertThat(count).isEqualTo(1)
+    }
+
+    @Test
+    @DisplayName("합집합 — 빈 목록 또는 파싱 불가 cron 포함 시 null 반환")
+    fun union_emptyOrInvalid_null() {
+        assertThat(resolver.expectedUnionFireCount(emptyList(), from, to)).isNull()
+        assertThat(resolver.expectedUnionFireCount(listOf("0 0 1 * * *", "not-a-cron"), from, to)).isNull()
+    }
 }

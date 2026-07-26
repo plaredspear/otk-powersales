@@ -106,7 +106,7 @@ const JOB_SCHEDULES: Record<string, string> = {
   'sap-outbox-worker': '기본 30초 주기',
   'scheduledJobRun.cleanup': '매일 04시',
   'orora-daily-sales-materialize-batch': '기본 매일 04:30',
-  'orora-monthly-sales-materialize-batch': '기본 매주 목요일 05시 (전월 재적재)',
+  'orora-monthly-sales-materialize-batch': '기본 매주 목요일 + 매월 3일 05시 (전월 재적재)',
   'erpOrder.retention': '기본 매주 일요일 04시',
   'sf-claim-resend': '기본 매시간 50분',
 };

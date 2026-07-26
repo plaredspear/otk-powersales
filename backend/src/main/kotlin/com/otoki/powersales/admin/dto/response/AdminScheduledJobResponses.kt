@@ -54,7 +54,7 @@ data class ScheduledJobDailyStatusResponse(
  * @property jobName 잡 이름 (`scheduled_job_run.job_name`)
  * @property label 화면 표시용 한글 라벨
  * @property scheduleText 사람이 읽는 실행 주기 (예: "매일 01시", "매시간 정각")
- * @property note 잡별 추가 안내 문구 (예: ORORA 월매출 "전월분 매주 재적재"). 없으면 null
+ * @property note 잡별 추가 안내 문구 (예: ORORA 월매출 "전월분 매주 목요일 + 매월 3일 재적재"). 없으면 null
  * @property enabled 현재 환경에서 스케줄링 활성 여부 (빈 등록 기준). false 면 자동 실행 안 됨
  * @property executed 윈도우 내 1회 이상 실행됐는지 (SKIPPED 제외한 실제 실행 기준)
  * @property expectedCount 정상 실행 시 윈도우 내 예상 발화 횟수. cron 파싱 실패/미등록 시 null
