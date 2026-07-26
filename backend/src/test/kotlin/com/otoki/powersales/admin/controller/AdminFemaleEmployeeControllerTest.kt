@@ -12,6 +12,8 @@ import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListRespons
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterMeta
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterOption
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFormMetaResponse
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFormOption
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListDefaults
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListMetaResponse
 import com.otoki.powersales.domain.org.employee.service.AdminEmployeeCredentialService
@@ -264,6 +266,32 @@ class AdminFemaleEmployeeControllerTest : AdminControllerTestSupport() {
             .andExpect(jsonPath("$.data.filters[1].key").value("costCenterCode"))
             .andExpect(jsonPath("$.data.filters[1].options.length()").value(1))
             .andExpect(jsonPath("$.data.filters[1].options[0].label").value("서울1지점"))
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/admin/female-employees/form-meta - 폼 Select 3종을 서비스 응답 그대로 전달")
+    fun getFormMeta_returnsServiceResponse() {
+        every { adminEmployeeService.getFemaleEmployeeFormMeta() } returns FemaleEmployeeFormMetaResponse(
+            statuses = listOf(FemaleEmployeeFormOption("재직", "재직")),
+            roles = listOf(FemaleEmployeeFormOption("AccountViewAll", "영업부장 (AccountViewAll)")),
+            professionalPromotionTeams = listOf(
+                FemaleEmployeeFormOption("일반", "일반"),
+                FemaleEmployeeFormOption("라면세일조", "라면세일조"),
+            ),
+        )
+
+        mockMvc.perform(get("/api/v1/admin/female-employees/form-meta"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.statuses[0].value").value("재직"))
+            // raw value 만으로 의미가 안 드러나는 권한은 label 에 한글 병기
+            .andExpect(jsonPath("$.data.roles[0].value").value("AccountViewAll"))
+            .andExpect(jsonPath("$.data.roles[0].label").value("영업부장 (AccountViewAll)"))
+            .andExpect(jsonPath("$.data.professionalPromotionTeams[0].value").value("일반"))
+            .andExpect(jsonPath("$.data.professionalPromotionTeams[1].value").value("라면세일조"))
+
+        // 목록 `/meta` 와 달리 권한 의존 옵션이 없어 지점 resolver 를 타지 않는다.
+        verify(exactly = 0) { womenScheduleBranchResolver.resolveBranches(any()) }
     }
 
     @Test

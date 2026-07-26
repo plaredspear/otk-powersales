@@ -1,6 +1,6 @@
 import { Modal, Form, Input, Select, DatePicker, Switch, notification, Alert } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
-import type { EmployeeDetail, EmployeeUpdateRequest } from '@/api/employee';
+import type { EmployeeDetail, EmployeeUpdateRequest, FemaleEmployeeFormMeta } from '@/api/employee';
 import { useUpdateEmployee } from '@/hooks/employee/useEmployee';
 import { APP_AUTHORITY_OPTIONS, type AppAuthority } from '@/constants/userRole';
 import { PPT_TEAM_TYPES, type PPTTeamType } from '@/constants/pptTeamType';
@@ -9,6 +9,14 @@ interface EmployeeEditModalProps {
   employee: EmployeeDetail;
   open: boolean;
   onClose: () => void;
+  /**
+   * 서버 form-meta (재직상태 / 권한 / 전문행사조 옵션).
+   *
+   * 여사원 상세는 `/female-employees/form-meta` 응답을 넘겨 서버를 단일 출처로 삼는다.
+   * 설정 사원 상세(`employee` 권한 진입) 는 전용 endpoint 가 없어 넘기지 않으며, 이 경우
+   * 아래 프론트 상수로 폴백한다. 로딩 중에도 undefined 라 폴백이 적용된다.
+   */
+  formMeta?: FemaleEmployeeFormMeta;
 }
 
 interface FormValues {
@@ -35,6 +43,8 @@ interface FormValues {
   professionalPromotionTeam?: PPTTeamType;
 }
 
+// --- form-meta 미제공(설정 사원 상세 진입 / 로딩 중) 시 폴백 상수 ---
+
 const STATUS_OPTIONS = [
   { value: '재직', label: '재직' },
   { value: '휴직', label: '휴직' },
@@ -48,9 +58,19 @@ const ROLE_SELECT_OPTIONS = APP_AUTHORITY_OPTIONS.map((opt) => ({
   label: opt.label,
 }));
 
-export default function EmployeeEditModal({ employee, open, onClose }: EmployeeEditModalProps) {
+export default function EmployeeEditModal({
+  employee,
+  open,
+  onClose,
+  formMeta,
+}: EmployeeEditModalProps) {
   const [form] = Form.useForm<FormValues>();
   const mutation = useUpdateEmployee();
+
+  // 서버 form-meta 우선, 미제공이면 프론트 상수 폴백.
+  const statusOptions = formMeta?.statuses ?? STATUS_OPTIONS;
+  const roleOptions = formMeta?.roles ?? ROLE_SELECT_OPTIONS;
+  const pptOptions = formMeta?.professionalPromotionTeams ?? PPT_OPTIONS;
 
   const initial: FormValues = {
     status: employee.status ?? undefined,
@@ -123,10 +143,10 @@ export default function EmployeeEditModal({ employee, open, onClose }: EmployeeE
       )}
       <Form form={form} layout="vertical" initialValues={initial}>
         <Form.Item name="status" label="재직 상태">
-          <Select options={STATUS_OPTIONS} allowClear placeholder="선택" />
+          <Select options={statusOptions} allowClear placeholder="선택" />
         </Form.Item>
         <Form.Item name="role" label="권한">
-          <Select options={ROLE_SELECT_OPTIONS} allowClear placeholder="선택" />
+          <Select options={roleOptions} allowClear placeholder="선택" />
         </Form.Item>
         <Form.Item name="orgName" label="조직명">
           <Input maxLength={100} />
@@ -184,8 +204,12 @@ export default function EmployeeEditModal({ employee, open, onClose }: EmployeeE
         >
           <Input maxLength={100} />
         </Form.Item>
+        {/*
+          '일반' 은 미배정 복귀를 뜻하는 명시적 선택지 — 서버가 null 저장으로 해석한다.
+          비워두면(allowClear) 값 미전송이라 기존 값이 유지된다.
+        */}
         <Form.Item name="professionalPromotionTeam" label="전문행사조">
-          <Select options={PPT_OPTIONS} allowClear placeholder="선택" />
+          <Select options={pptOptions} allowClear placeholder="선택" />
         </Form.Item>
         <Form.Item name="appLoginActive" label="앱 로그인 활성" valuePropName="checked">
           <Switch />

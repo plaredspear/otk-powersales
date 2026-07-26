@@ -9,10 +9,13 @@ import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListRespons
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterMeta
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterOption
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFormMetaResponse
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFormOption
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListDefaults
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListMetaResponse
 import com.otoki.powersales.domain.org.employee.enums.EmploymentStatus
 import com.otoki.powersales.domain.org.employee.repository.EmployeeRepository
+import com.otoki.powersales.platform.auth.entity.AppAuthority
 import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.activity.schedule.repository.LatestAttendanceInfo
 import com.otoki.powersales.domain.activity.schedule.repository.TeamMemberScheduleRepository
@@ -60,6 +63,20 @@ class AdminEmployeeService(
             EmploymentStatus.ON_LEAVE,
             EmploymentStatus.RESIGNED,
         ).map { it.code }
+
+        /**
+         * 권한(role) 폼 옵션 — SF `DKRetail__AppAuthority__c` picklist 4종.
+         *
+         * [AppAuthority] 는 상수 object 라 선언 순서/라벨을 담지 않으므로 표시 순서와 라벨을 여기서 명시한다.
+         * value 는 SF picklist raw value(= DB 저장값) 라 변경 불가. `AccountViewAll` 은 전체 거래처 조회
+         * 권한(영업부장) 이라 영문 raw value 만으로는 운영자가 의미를 알기 어려워 label 에 한글을 병기한다.
+         */
+        private val EMPLOYEE_ROLE_FORM_OPTIONS = listOf(
+            AppAuthority.WOMAN to AppAuthority.WOMAN,
+            AppAuthority.LEADER to AppAuthority.LEADER,
+            AppAuthority.BRANCH_MANAGER to AppAuthority.BRANCH_MANAGER,
+            AppAuthority.ACCOUNT_VIEW_ALL to "영업부장 (${AppAuthority.ACCOUNT_VIEW_ALL})",
+        )
     }
 
     /**
@@ -184,6 +201,45 @@ class AdminEmployeeService(
                 pageSize = FEMALE_EMPLOYEE_LIST_DEFAULT_PAGE_SIZE,
                 sort = FEMALE_EMPLOYEE_LIST_DEFAULT_SORT,
             ),
+        )
+    }
+
+    /**
+     * 여사원 상세 폼(수정 모달) 렌더링용 메타 — 재직상태 / 권한 / 전문행사조 Select 옵션.
+     *
+     * web 화면이 하드코딩하던 상수 3종(`STATUS_OPTIONS` / `ROLE_SELECT_OPTIONS` / `PPT_OPTIONS`)을
+     * 서버 단일 출처로 이전한다. 권한 의존 옵션이 없어 전 사용자 동일 응답이다.
+     *
+     * ## 목록 [getFemaleEmployeeListMetaStatic] 과의 차이 — 전문행사조 옵션 구성
+     *
+     * 목록 필터는 검색 전용 선택지 '행사조 전체'([ProfessionalPromotionTeamType.ASSIGNED_ONLY_DISPLAY_NAME])
+     * 를 포함하지만, 폼은 **저장 가능한 값만** 내려야 하므로 제외한다. 대신 '일반'
+     * ([ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME]) 은 미배정으로 되돌리는 명시적 선택지라
+     * 포함한다 — 신규 시스템의 미배정은 null 이므로 이 값을 받은 수정 요청은
+     * [AdminEmployeeUpdateService] 가 null 로 해석해 저장한다.
+     *
+     * 정식 5개 조는 enum 선언 순서(= SF picklist 정의 순서, `sorted=false`) 를 그대로 따른다.
+     */
+    fun getFemaleEmployeeFormMeta(): FemaleEmployeeFormMetaResponse {
+        val statuses = EMPLOYEE_STATUS_OPTIONS
+            .map { FemaleEmployeeFormOption(value = it, label = it) }
+
+        val roles = EMPLOYEE_ROLE_FORM_OPTIONS
+            .map { (value, label) -> FemaleEmployeeFormOption(value = value, label = label) }
+
+        // '일반'(미배정) 을 맨 앞에 두고 정식 5개 조가 뒤따른다 — SF 레거시 표시 정합.
+        val promotionTeams = listOf(
+            FemaleEmployeeFormOption(
+                value = ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME,
+                label = ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME,
+            ),
+        ) + ProfessionalPromotionTeamType.entries
+            .map { FemaleEmployeeFormOption(value = it.displayName, label = it.displayName) }
+
+        return FemaleEmployeeFormMetaResponse(
+            statuses = statuses,
+            roles = roles,
+            professionalPromotionTeams = promotionTeams,
         )
     }
 

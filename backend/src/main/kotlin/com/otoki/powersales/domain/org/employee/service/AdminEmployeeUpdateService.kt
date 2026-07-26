@@ -2,6 +2,7 @@ package com.otoki.powersales.domain.org.employee.service
 
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.admin.exception.SapOriginEmployeeNotEditableException
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeRoleUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.response.EmployeeDetailResponse
@@ -25,8 +26,8 @@ import org.springframework.transaction.annotation.Transactional
  *
  * ## 동등성 매핑
  * - 레거시 EmployeeTriggerHandler 의 before/after update 자동 처리 중 P0 범위:
- *   - 전문행사조 허용값 검증 — applyProfessionalPromotionTeam 호출에서 enum 변환만으로 검증됨
- *     (DTO 의 ProfessionalPromotionTeamType 이 fromDisplayName 검증)
+ *   - 전문행사조 허용값 검증 — [applyProfessionalPromotionTeam] 의 enum 변환이 겸한다
+ *     (허용값 밖 문자열은 예외. '일반' 은 미배정 복귀 신호라 별도 처리)
  *   - 잠금 ON → 앱 로그인 자동 비활성화 — `applyLockingFlag` 가 적용
  * - 미구현 영역은 매핑 문서 [docs/plan/legacy-pages/기본 여사원 현황/IMPLEMENTATION_MAPPING.md] P1·P2 참조.
  */
@@ -116,12 +117,37 @@ class AdminEmployeeUpdateService(
         request.email?.let { entity.email = it }
         request.appLoginActive?.let { entity.appLoginActive = it }
         request.lockingFlag?.let { entity.lockingFlag = it }
-        request.professionalPromotionTeam?.let { entity.professionalPromotionTeam = it }
+        applyProfessionalPromotionTeam(entity, request.professionalPromotionTeam)
         request.crmWorkType?.let { entity.crmWorkType = it }
         request.crmWorkStartDate?.let { entity.crmWorkStartDate = it }
         request.totalAnnualLeave?.let { entity.totalAnnualLeave = it }
         request.usedAnnualLeave?.let { entity.usedAnnualLeave = it }
         // phone 은 mirroring trigger 가 채우므로 직접 할당하지 않는다 (homePhone 우선)
+    }
+
+    /**
+     * 전문행사조 갱신 — partial update 규칙의 유일한 예외 (명시적 해제 지원).
+     *
+     * 요청 필드는 `String?` 이라 세 가지 입력을 구분한다:
+     * - `null` / 공백 — 필드 미전송. 다른 필드와 동일하게 **값 변경 없음**.
+     * - `'일반'` ([ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME]) — 명시적 미배정 복귀.
+     *   신규 시스템의 미배정은 null 이므로 `null` 로 저장한다 (레거시 잔존 문자열 '일반'/'해당없음' 을
+     *   새로 쓰지 않는다).
+     * - 정식 5개 조 표시명 — 해당 enum 으로 갱신. 표시명이 바뀐 유형(카레세일조 ← 카레행사조)의
+     *   이전 문자열도 `legacyAliases` 로 매핑된다.
+     *
+     * 폼이 내려받는 옵션 출처는 `GET /api/v1/admin/female-employees/form-meta`
+     * ([AdminEmployeeService.getFemaleEmployeeFormMeta]) 이며, 그 6개 값이 여기서 허용되는 입력과 일치한다.
+     * 레거시 EmployeeTriggerHandler 의 전문행사조 허용값 검증 동등 — 허용값 밖 문자열은 예외로 거른다.
+     */
+    private fun applyProfessionalPromotionTeam(entity: Employee, requested: String?) {
+        val value = requested?.takeIf { it.isNotBlank() } ?: return
+        if (value == ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME) {
+            entity.professionalPromotionTeam = null
+            return
+        }
+        entity.professionalPromotionTeam = ProfessionalPromotionTeamType.fromDisplayNameOrNull(value)
+            ?: throw IllegalArgumentException("유효하지 않은 전문행사조 유형: $value")
     }
 
     /**

@@ -13,6 +13,7 @@ import {
 import { InfoCircleOutlined } from '@ant-design/icons';
 import type { Employee, EmployeeDetail } from '@/api/employee';
 import { useEmployee } from '@/hooks/employee/useEmployee';
+import { useFemaleEmployeeFormMeta } from '@/hooks/employee/useFemaleEmployeeFormMeta';
 import { usePermission } from '@/hooks/usePermission';
 import EmployeeEditModal from '@/pages/employee/components/EmployeeEditModal';
 import EmployeeRoleModal from '@/pages/employee/components/EmployeeRoleModal';
@@ -127,6 +128,9 @@ export default function EmployeeDetailPage() {
   const [deviceOpen, setDeviceOpen] = useState(false);
 
   const { data: employee, isLoading, isError, error, refetch } = useEmployee(employeeId, isFemale);
+  // 수정 모달 Select 옵션 — 여사원 진입에서 모달을 연 시점에만 로드 (설정 사원 상세는 전용
+  // endpoint 가 없어 모달이 프론트 상수로 폴백한다).
+  const { data: formMeta } = useFemaleEmployeeFormMeta(isFemale && editOpen);
 
   if (isLoading) {
     return (
@@ -332,6 +336,7 @@ export default function EmployeeDetailPage() {
           employee={employee}
           open={true}
           onClose={() => setEditOpen(false)}
+          formMeta={formMeta}
         />
       )}
       {roleOpen && (

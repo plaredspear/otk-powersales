@@ -1,7 +1,6 @@
 package com.otoki.powersales.domain.org.employee.dto.request
 
 import com.otoki.powersales.domain.org.employee.enums.CrmWorkType
-import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
@@ -17,8 +16,8 @@ import java.time.LocalDate
  * PATCH semantics. 신규에서는 명시적 nullification 이 필요하면 별도 endpoint 로 분리한다).
  * 본 PATCH 는 "비어 있지 않은 필드만 갱신" 방식으로 처리한다 — 빈 문자열은 trim 후 빈 값으로 취급.
  *
- * `professionalPromotionTeam` 은 직무코드 판촉직·레이디직·OSC직 사원에 한해 ProfessionalPromotionTeamType
- * 허용값으로 검증 (Service 단에서 발화).
+ * `professionalPromotionTeam` 은 위 partial update 규칙의 **유일한 예외** — '일반'(미배정) 을 명시적
+ * 해제 신호로 받아 null 로 갱신한다. 상세는 해당 필드 주석 참조.
  */
 data class AdminEmployeeUpdateRequest(
 
@@ -94,7 +93,17 @@ data class AdminEmployeeUpdateRequest(
 
     val lockingFlag: Boolean? = null,
 
-    val professionalPromotionTeam: ProfessionalPromotionTeamType? = null,
+    /**
+     * 전문행사조 — 정식 5개 조 표시명 또는 '일반'(미배정). 폼 옵션 출처는
+     * `GET /api/v1/admin/female-employees/form-meta`.
+     *
+     * enum 이 아니라 String 으로 받는 이유: 신규 시스템의 미배정은 `null` 인데, 본 DTO 는
+     * "null = 값 변경 없음" 인 partial update 라 enum 타입으로는 미배정 복귀를 표현할 수 없다.
+     * '일반' 문자열을 **명시적 해제 신호**로 받아 서비스가 null 저장으로 해석한다
+     * ([com.otoki.powersales.domain.org.employee.service.AdminEmployeeUpdateService.applyMutableFields]).
+     * 값 자체의 유효성 검증도 서비스가 수행한다 (허용값 외 문자열은 예외).
+     */
+    val professionalPromotionTeam: String? = null,
 
     val crmWorkType: CrmWorkType? = null,
 

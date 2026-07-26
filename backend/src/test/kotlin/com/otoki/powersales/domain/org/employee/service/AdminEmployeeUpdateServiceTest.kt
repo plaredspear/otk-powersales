@@ -3,6 +3,7 @@ package com.otoki.powersales.domain.org.employee.service
 import com.otoki.powersales.admin.exception.EmployeeNotFoundException
 import com.otoki.powersales.admin.exception.SapOriginEmployeeNotEditableException
 import com.otoki.powersales.platform.auth.entity.AppAuthority
+import com.otoki.powersales.domain.activity.promotion.enums.ProfessionalPromotionTeamType
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeRoleUpdateRequest
 import com.otoki.powersales.domain.org.employee.dto.request.AdminEmployeeUpdateRequest
 import com.otoki.powersales.domain.org.employee.entity.Employee
@@ -124,6 +125,85 @@ class AdminEmployeeUpdateServiceTest {
         assertThat(existing.costCenterCode).isEqualTo("2000")
         assertThat(user.costCenterCode).isEqualTo("2000")
     }
+
+    @Test
+    @DisplayName("전문행사조 - 정식 5개 조 표시명이면 해당 enum 으로 갱신")
+    fun update_promotionTeam_assignsEnum() {
+        val existing = promotionTeamEmployee(current = null)
+        every { employeeRepository.findWithEmployeeInfoById(30L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        service.update(30L, AdminEmployeeUpdateRequest(professionalPromotionTeam = "라면세일조"))
+
+        assertThat(existing.professionalPromotionTeam)
+            .isEqualTo(ProfessionalPromotionTeamType.RAMEN_SALE)
+    }
+
+    @Test
+    @DisplayName("전문행사조 - '일반'(미배정) 은 명시적 해제 신호라 null 로 저장")
+    fun update_promotionTeam_generalClearsToNull() {
+        val existing = promotionTeamEmployee(current = ProfessionalPromotionTeamType.RAMEN_SALE)
+        every { employeeRepository.findWithEmployeeInfoById(30L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        service.update(
+            30L,
+            AdminEmployeeUpdateRequest(
+                professionalPromotionTeam = ProfessionalPromotionTeamType.GENERAL_DISPLAY_NAME,
+            ),
+        )
+
+        // 신규 시스템의 미배정은 null — 레거시 잔존 문자열 '일반' 을 새로 쓰지 않는다.
+        assertThat(existing.professionalPromotionTeam).isNull()
+    }
+
+    @Test
+    @DisplayName("전문행사조 - 미전송(null)/공백은 partial update 규칙대로 기존 값 유지")
+    fun update_promotionTeam_absentKeepsCurrent() {
+        val existing = promotionTeamEmployee(current = ProfessionalPromotionTeamType.CURRY_PROMOTION)
+        every { employeeRepository.findWithEmployeeInfoById(30L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        service.update(30L, AdminEmployeeUpdateRequest(jikchak = "다른필드만"))
+        assertThat(existing.professionalPromotionTeam)
+            .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
+
+        service.update(30L, AdminEmployeeUpdateRequest(professionalPromotionTeam = "  "))
+        assertThat(existing.professionalPromotionTeam)
+            .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
+    }
+
+    @Test
+    @DisplayName("전문행사조 - 표시명이 바뀐 유형의 이전 문자열('카레행사조')도 동일 enum 으로 매핑")
+    fun update_promotionTeam_legacyAlias() {
+        val existing = promotionTeamEmployee(current = null)
+        every { employeeRepository.findWithEmployeeInfoById(30L) } returns existing
+        every { employeeRepository.save(any<Employee>()) } answers { firstArg() }
+
+        service.update(30L, AdminEmployeeUpdateRequest(professionalPromotionTeam = "카레행사조"))
+
+        assertThat(existing.professionalPromotionTeam)
+            .isEqualTo(ProfessionalPromotionTeamType.CURRY_PROMOTION)
+    }
+
+    @Test
+    @DisplayName("전문행사조 - 허용값 밖 문자열은 예외 (Trigger 허용값 검증 동등)")
+    fun update_promotionTeam_invalidRejected() {
+        val existing = promotionTeamEmployee(current = null)
+        every { employeeRepository.findWithEmployeeInfoById(30L) } returns existing
+
+        assertThatThrownBy {
+            service.update(30L, AdminEmployeeUpdateRequest(professionalPromotionTeam = "없는조"))
+        }.isInstanceOf(IllegalArgumentException::class.java)
+            .hasMessageContaining("없는조")
+    }
+
+    /** 전문행사조 갱신 검증용 MANUAL 사원 — [current] 가 수정 전 배정 상태. */
+    private fun promotionTeamEmployee(current: ProfessionalPromotionTeamType?) =
+        Employee(id = 30L, employeeCode = "100500", name = "행사조테스트").apply {
+            origin = EmployeeOrigin.MANUAL
+            professionalPromotionTeam = current
+        }
 
     @Test
     @DisplayName("updateEmployeeRole - origin=SAP 사원도 role 변경 성공 (일반 수정과 달리 차단 안 함)")

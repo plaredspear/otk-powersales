@@ -2172,7 +2172,6 @@
             "type" : [ "string", "null" ]
           },
           "professionalPromotionTeam" : {
-            "enum" : [ "라면세일조", "프레시세일조_냉동", "프레시세일조_냉장", "프레시세일조_만두", "카레세일조" ],
             "type" : [ "string", "null" ]
           },
           "role" : {
@@ -6517,6 +6516,35 @@
           "data" : {
             "oneOf" : [ {
               "$ref" : "#/components/schemas/FeatureToggleListResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseFemaleEmployeeFormMetaResponse" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FemaleEmployeeFormMetaResponse"
             }, {
               "type" : "null"
             } ]
@@ -16271,6 +16299,40 @@
         "type" : "object"
       },
       "FemaleEmployeeFilterOption" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "value" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeFormMetaResponse" : {
+        "properties" : {
+          "professionalPromotionTeams" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeFormOption"
+            },
+            "type" : "array"
+          },
+          "roles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeFormOption"
+            },
+            "type" : "array"
+          },
+          "statuses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/FemaleEmployeeFormOption"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "FemaleEmployeeFormOption" : {
         "properties" : {
           "label" : {
             "type" : "string"
@@ -31748,6 +31810,24 @@
                 "schema" : {
                   "format" : "byte",
                   "type" : "string"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-female-employee-controller" ]
+      }
+    },
+    "/api/v1/admin/female-employees/form-meta" : {
+      "get" : {
+        "operationId" : "getFemaleEmployeeFormMeta",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseFemaleEmployeeFormMetaResponse"
                 }
               }
             },

@@ -13,6 +13,7 @@ import com.otoki.powersales.domain.org.employee.dto.response.EmployeeListRespons
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterMeta
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterOption
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFilterType
+import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeFormMetaResponse
 import com.otoki.powersales.domain.org.employee.dto.response.FemaleEmployeeListMetaResponse
 import com.otoki.powersales.domain.org.employee.dto.response.ResetDeviceResponse
 import com.otoki.powersales.domain.org.employee.dto.response.ResetPasswordResponse
@@ -103,6 +104,23 @@ class AdminFemaleEmployeeController(
             ),
         )
         return ResponseEntity.ok(ApiResponse.success(response))
+    }
+
+    /**
+     * 여사원 상세 폼(수정 모달) 렌더링용 메타 — "form 전용 API 분리" 패턴
+     * (행사마스터 `/promotions/form-meta` · 전문행사조 마스터 `/ppt-masters/form-meta` 정합).
+     *
+     * 재직상태 / 권한 / 전문행사조 Select 옵션을 내려, web 화면이 하드코딩하던 상수 3종을 대체한다.
+     * 목록 조건 로드([getFemaleEmployeeListMeta]) 와 달리 권한 의존 옵션이 없어 전 사용자 동일 응답이며,
+     * 상세 진입이 아니라 **모달을 여는 시점에만** 조회한다.
+     *
+     * 목록 `/meta` 의 전문행사조 옵션과는 구성이 다르다 — 검색 전용 '행사조 전체' 는 빠지고,
+     * 미배정 복귀용 '일반' 은 포함된다 ([AdminEmployeeService.getFemaleEmployeeFormMeta] 참조).
+     */
+    @GetMapping("/form-meta")
+    @RequiresSfPermission(entity = "female_employee", operation = SfPermissionOperation.READ)
+    fun getFemaleEmployeeFormMeta(): ResponseEntity<ApiResponse<FemaleEmployeeFormMetaResponse>> {
+        return ResponseEntity.ok(ApiResponse.success(adminEmployeeService.getFemaleEmployeeFormMeta()))
     }
 
     /**

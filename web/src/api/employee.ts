@@ -157,6 +157,10 @@ export interface EmployeeUpdateRequest {
   email?: string;
   appLoginActive?: boolean;
   lockingFlag?: boolean;
+  /**
+   * 전문행사조. 미전송(undefined)은 값 변경 없음, `'일반'` 은 미배정 복귀(서버가 null 로 저장),
+   * 정식 5개 조는 해당 값으로 갱신. 옵션 출처는 [fetchFemaleEmployeeFormMeta].
+   */
   professionalPromotionTeam?: PPTTeamType;
 }
 
@@ -348,6 +352,40 @@ export async function fetchFemaleEmployeeListMeta(): Promise<FemaleEmployeeListM
 
 /** 여사원 현황 엑셀 다운로드 경로 (GET, 목록과 동일 검색 파라미터). */
 export const FEMALE_EMPLOYEE_EXPORT_PATH = '/api/v1/admin/female-employees/export';
+
+// --- 상세 폼(수정 모달) 렌더링용 메타(form-meta) — "form 전용 API 분리" 표준 패턴 ---
+
+export interface FemaleEmployeeFormOption {
+  value: string;
+  label: string;
+}
+
+export interface FemaleEmployeeFormMeta {
+  /** 재직상태 — 재직 / 휴직 / 퇴직. */
+  statuses: FemaleEmployeeFormOption[];
+  /** 권한 — SF AppAuthority picklist 4종. */
+  roles: FemaleEmployeeFormOption[];
+  /** 전문행사조 — '일반'(미배정) + 정식 5개 조. */
+  professionalPromotionTeams: FemaleEmployeeFormOption[];
+}
+
+/**
+ * 여사원 상세 폼(수정 모달) 렌더링용 메타.
+ *
+ * 재직상태 / 권한 / 전문행사조 Select 옵션을 서버 단일 출처로 로드해, 화면 하드코딩 상수를 대체한다.
+ * 목록 조건 로드(`/meta`) 와 달리 권한 의존 옵션이 없어 전 사용자 동일 응답이며, 상세 진입이 아니라
+ * 모달을 여는 시점에만 조회한다.
+ *
+ * 전문행사조 옵션은 목록 필터와 구성이 다르다 — 검색 전용 '행사조 전체' 는 빠지고, 미배정으로
+ * 되돌리는 '일반' 이 포함된다(서버가 '일반' 을 null 저장으로 해석).
+ */
+export async function fetchFemaleEmployeeFormMeta(): Promise<FemaleEmployeeFormMeta> {
+  const res = await client.get<ApiResponse<FemaleEmployeeFormMeta>>('/api/v1/admin/female-employees/form-meta');
+  if (!res.data.success || !res.data.data) {
+    throw new Error(res.data.message || '여사원 폼 메타 조회에 실패했습니다');
+  }
+  return res.data.data;
+}
 
 /**
  * 상세/근무이력 endpoint base path 선택자.

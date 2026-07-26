@@ -553,6 +553,62 @@ class AdminEmployeeServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getFemaleEmployeeFormMeta - 여사원 상세 폼(수정 모달) 옵션 로드")
+    inner class GetFemaleEmployeeFormMetaTests {
+
+        @Test
+        @DisplayName("재직상태 옵션 = 재직/휴직/퇴직 (목록 필터와 동일 출처)")
+        fun statusOptions() {
+            val result = adminEmployeeService.getFemaleEmployeeFormMeta()
+
+            assertThat(result.statuses).extracting("value").containsExactly("재직", "휴직", "퇴직")
+        }
+
+        @Test
+        @DisplayName("권한 옵션 = SF AppAuthority picklist 4종, AccountViewAll 만 label 에 한글 병기")
+        fun roleOptions() {
+            val result = adminEmployeeService.getFemaleEmployeeFormMeta()
+
+            assertThat(result.roles).extracting("value")
+                .containsExactly("여사원", "조장", "지점장", "AccountViewAll")
+            // raw value = label 인 3종과 달리 AccountViewAll 은 의미가 안 드러나 한글 병기
+            assertThat(result.roles.first { it.value == "AccountViewAll" }.label)
+                .isEqualTo("영업부장 (AccountViewAll)")
+            assertThat(result.roles.first { it.value == "여사원" }.label).isEqualTo("여사원")
+        }
+
+        @Test
+        @DisplayName("전문행사조 옵션 = '일반'(미배정) 선두 + 정식 5개 조 (SF picklist 정의 순서)")
+        fun promotionTeamOptions() {
+            val result = adminEmployeeService.getFemaleEmployeeFormMeta()
+
+            assertThat(result.professionalPromotionTeams).extracting("value").containsExactly(
+                "일반",
+                "라면세일조",
+                "프레시세일조_냉동",
+                "프레시세일조_냉장",
+                "프레시세일조_만두",
+                "카레세일조",
+            )
+        }
+
+        @Test
+        @DisplayName("전문행사조 폼 옵션에는 검색 전용 '행사조 전체' 가 없다 (목록 필터와의 차이)")
+        fun promotionTeamExcludesSearchOnlyOption() {
+            val formMeta = adminEmployeeService.getFemaleEmployeeFormMeta()
+            val listMeta = adminEmployeeService.getFemaleEmployeeListMetaStatic()
+
+            // 폼은 저장 가능한 값만 내려야 하므로 검색 전용 선택지를 제외한다.
+            assertThat(formMeta.professionalPromotionTeams).extracting("value")
+                .doesNotContain(ProfessionalPromotionTeamType.ASSIGNED_ONLY_DISPLAY_NAME)
+            // 목록 필터에는 그대로 남아 있어야 한다 (본 변경이 목록을 건드리지 않았음을 고정).
+            assertThat(listMeta.filters.first { it.key == "professionalPromotionTeam" }.options)
+                .extracting("value")
+                .contains(ProfessionalPromotionTeamType.ASSIGNED_ONLY_DISPLAY_NAME)
+        }
+    }
+
     private fun createEmployee(
         id: Long = 1L,
         employeeCode: String = "10000001",
