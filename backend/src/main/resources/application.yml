@@ -270,10 +270,10 @@ app:
       daily:
         cron: ${ORORA_MATERIALIZE_DAILY_CRON:0 30 4 * * *}
       monthly:
-        # 매일 05:00 KST 전월 재적재 — 전월 재마감(정산/반품 조정)을 자동 추적. 레거시는 익월 초
-        # 1회(매월 3일 분포) + 재마감 시 OroraYearMonth__mdt 수동 재실행 관행이라 매일 자동으로 흡수
-        # (멱등 upsert 라 반복 실행 무해). 일매출(04:30) 과 30분 간격으로 ORORA 부하 분산.
-        cron: ${ORORA_MATERIALIZE_MONTHLY_CRON:0 0 5 * * *}
+        # 매주 목요일 05:00 KST 전월 재적재 — 전월 재마감(정산/반품 조정)을 자동 추적. 레거시는 익월 초
+        # 1회(매월 3일 분포) + 재마감 시 OroraYearMonth__mdt 수동 재실행 관행이라 주 1회 자동으로 흡수
+        # (멱등 upsert 라 반복 실행 무해). 요일은 레거시 CronTrigger 목요일 정합, 일매출(04:30) 과 30분 간격으로 ORORA 부하 분산.
+        cron: ${ORORA_MATERIALIZE_MONTHLY_CRON:0 0 5 * * THU}
 
   # ---------------------------------------------------------------------------
   # ORORA 외부 MSSQL DB 직결 DataSource
@@ -485,7 +485,7 @@ app:
         enabled: true
       expire:
         enabled: true
-    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 04:30 / 월매출 매일 — 전월 재적재로 재마감 자동 추적. 발화 시각은 env cron override).
+    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 04:30 / 월매출 매주 목요일 — 전월 재적재로 재마감 자동 추적. 발화 시각은 env cron override).
     orora:
       daily:
         enabled: true
@@ -569,7 +569,7 @@ app:
         enabled: true
       expire:
         enabled: true
-    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 04:30 / 월매출 매일 — 전월 재적재로 재마감 자동 추적. 발화 시각은 env cron override).
+    # ORORA 매출이력 RDS 적재 배치 (일매출 매일 04:30 / 월매출 매주 목요일 — 전월 재적재로 재마감 자동 추적. 발화 시각은 env cron override).
     orora:
       daily:
         enabled: true

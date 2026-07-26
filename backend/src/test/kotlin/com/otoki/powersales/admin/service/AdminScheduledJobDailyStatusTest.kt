@@ -137,7 +137,7 @@ class AdminScheduledJobDailyStatusTest {
     }
 
     @Test
-    @DisplayName("ORORA 월매출은 note(전월 매일 재적재 안내)를 포함한다")
+    @DisplayName("ORORA 월매출은 note(전월 매주 재적재 안내)를 포함한다")
     fun ororaMonthlyHasNote() {
         allBeansRegistered()
         every { repository.aggregateByJobNameWithin(any(), any(), any()) } returns emptyList()
