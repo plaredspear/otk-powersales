@@ -1,9 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../network/dio_provider.dart';
 import '../../data/datasources/app_version_api_datasource.dart';
 
 /// 앱 버전 게이트 체커.
@@ -11,6 +9,9 @@ import '../../data/datasources/app_version_api_datasource.dart';
 /// 현재 플랫폼/버전을 해석해 서버 버전 정책과 비교한다.
 /// - 미지원 플랫폼(web/desktop)이거나 호출 실패 시 null 반환 → 게이트 skip(fail-open).
 ///   버전 체크 실패가 앱 진입을 막아선 안 된다.
+///
+/// 이 체커를 쓰는 주체는 [ForceUpdateGate] 싱글턴 하나뿐이다(Provider 로 노출하지 않는다) —
+/// 강제 업데이트 차단은 `ProviderScope` 재생성에도 유지돼야 하기 때문이다.
 class AppVersionChecker {
   final AppVersionApiDataSource _api;
 
@@ -39,11 +40,3 @@ class AppVersionChecker {
     }
   }
 }
-
-final appVersionApiDataSourceProvider = Provider<AppVersionApiDataSource>((ref) {
-  return AppVersionApiDataSource(ref.watch(dioProvider));
-});
-
-final appVersionCheckerProvider = Provider<AppVersionChecker>((ref) {
-  return AppVersionChecker(ref.watch(appVersionApiDataSourceProvider));
-});

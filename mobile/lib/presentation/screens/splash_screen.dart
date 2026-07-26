@@ -1,10 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/services/app_version_checker.dart';
+import '../../core/services/force_update_gate.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/datasources/app_version_api_datasource.dart';
 import '../providers/auth_provider.dart';
@@ -14,6 +12,10 @@ import '../providers/auth_provider.dart';
 /// 순서: ① 버전 게이트(강제 업데이트면 진입 차단) → ② 자동 로그인 초기화.
 /// 자동 로그인이 끝나면 main.dart 의 authProvider 리스너가 적절한 화면으로 전환한다.
 /// (인증 상태 resolve 전까지는 이 화면이 유지된다)
+///
+/// 강제 업데이트 차단 UI 자체는 이 화면이 아니라 [ForceUpdateGate] + 루트 오버레이가
+/// 담당한다 — 스플래시를 거치지 않는 진입(로그인/로그아웃 후 세션 재생성)과 resume
+/// 에서도 동일하게 차단돼야 하기 때문이다.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -30,13 +32,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _bootstrap() async {
-    final result = await ref.read(appVersionCheckerProvider).check();
+    final result = await ForceUpdateGate.instance.check();
 
-    // 강제 업데이트 → 진입 차단 (자동 로그인 시작하지 않음)
-    if (result != null && result.forceUpdate) {
-      await _showForceUpdateDialog(result);
-      return;
-    }
+    // 강제 업데이트 → 진입 차단 (자동 로그인 시작하지 않음).
+    // 차단 화면은 게이트가 세운 전역 오버레이가 스플래시 위에 표시한다.
+    if (ForceUpdateGate.instance.isBlocking) return;
 
     // 권장 업데이트 → 안내 후 계속 진행
     if (result != null && result.updateAvailable) {
@@ -59,37 +59,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final uri = Uri.tryParse(downloadUrl);
     if (uri == null) return;
     await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  Future<void> _showForceUpdateDialog(AppVersionResult result) async {
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: const Text('업데이트가 필요합니다'),
-          content: Text(
-            result.releaseNote?.isNotEmpty == true
-                ? result.releaseNote!
-                : '원활한 사용을 위해 최신 버전으로 업데이트해 주세요.\n'
-                    '업데이트 후 다시 실행해 주세요.',
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () async {
-                // OTA 설치 요청 후, 설치를 시작하려면 앱이 종료돼야 하므로
-                // 안내 다이얼로그를 띄우고 사용자가 직접 종료하게 한다.
-                await _openDownload(result.downloadUrl);
-                await _showInstallGuideAndExit();
-              },
-              child: const Text('업데이트하기'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   /// 권장 업데이트 다이얼로그. 사용자가 '업데이트'를 선택했으면 true 반환.
@@ -137,35 +106,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             child: const Text('확인'),
           ),
         ],
-      ),
-    );
-  }
-
-  /// 강제 업데이트용 설치 안내 + 앱 종료.
-  ///
-  /// iOS는 대상 앱이 실행 중이면 OTA 설치를 시작하지 않으므로,
-  /// 사용자가 '앱 종료'를 누르면 즉시 프로세스를 종료해 설치가 진행되게 한다.
-  Future<void> _showInstallGuideAndExit() async {
-    if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: const Text('업데이트 진행'),
-          content: const Text(
-            '업데이트가 시작됩니다.\n'
-            '아래 "앱 종료"를 누르면 앱이 종료되고 설치가 진행됩니다.\n'
-            '설치가 끝나면 앱을 다시 실행해 주세요.',
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () => exit(0),
-              child: const Text('앱 종료'),
-            ),
-          ],
-        ),
       ),
     );
   }

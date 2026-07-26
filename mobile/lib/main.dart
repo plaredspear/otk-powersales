@@ -12,11 +12,13 @@ import 'app_router.dart';
 import 'core/navigation/navigator_key.dart';
 import 'core/network/request_cancel_controller.dart';
 import 'core/services/fcm_token_registrar.dart';
+import 'core/services/force_update_gate.dart';
 import 'core/services/push_notification_service.dart';
 import 'core/session/session_reset_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/auth_state.dart';
+import 'presentation/widgets/common/force_update_overlay.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
@@ -168,6 +170,11 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
       });
     }
     WidgetsBinding.instance.addObserver(this);
+    // 버전 게이트 — 시작 경로와 무관하게 항상 실행한다. 스플래시를 거치는 콜드 스타트뿐
+    // 아니라 세션 리셋(로그인/로그아웃)으로 재생성돼 스플래시를 건너뛰는 진입에서도
+    // 강제 업데이트가 걸려야 하기 때문이다. 스플래시와 동시에 호출되면 게이트가 진행 중인
+    // 요청에 합류시키므로 중복 호출은 발생하지 않는다.
+    unawaited(ForceUpdateGate.instance.check());
     // 첫 프레임 직후 현재 authState 로 화면 전환을 1회 평가한다.
     // `ref.listen` 은 상태 "변화" 만 잡으므로, 자동 로그인이 첫 build 와 listen 등록
     // 사이의 좁은 창에서 종료 상태로 전이를 끝내버리면 그 전이를 영영 놓쳐 스플래시가
@@ -217,12 +224,16 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
     }
   }
 
-  /// 포그라운드 복귀 시 GPS 동의 상태를 선제 확인한다.
+  /// 포그라운드 복귀 시 버전 게이트 + GPS 동의 상태를 선제 확인한다.
+  ///
+  /// 버전 게이트는 인증 여부와 무관하게 매 복귀마다 재확인한다 — 앱을 켜 둔 사이에 서버가
+  /// 강제 버전을 올리면 다음 복귀에서 곧바로 차단돼야 한다(차단은 전역 오버레이가 표시).
   ///
   /// 세션 지속은 refresh token 유효성으로 관리하므로(일반적인 토큰 관리), 백그라운드
   /// 체류 시간 기반 비활동 만료는 두지 않는다 — 만료된 세션은 다음 API 호출의 401 →
   /// 인터셉터 refresh 실패 시점에 정리된다.
   Future<void> _onResumed() async {
+    unawaited(ForceUpdateGate.instance.check());
     _clearPushBadgeOnResume();
     await _checkGpsConsentOnResume();
   }
@@ -344,6 +355,10 @@ class _OtokiAppState extends ConsumerState<OtokiApp>
           : AppRouter.initialRoute,
       routes: AppRouter.routes,
       onUnknownRoute: AppRouter.onUnknownRoute,
+      // 강제 업데이트 차단 오버레이를 Navigator 위에 상시 얹는다 — 다이얼로그 라우트와 달리
+      // 라우트 스택 교체(pushNamedAndRemoveUntil)에도 사라지지 않아 어느 화면에서든 유지된다.
+      builder: (context, child) =>
+          ForceUpdateOverlay(child: child ?? const SizedBox.shrink()),
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
