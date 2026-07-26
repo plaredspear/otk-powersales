@@ -265,7 +265,7 @@ class AdminSalesComparisonService(
         val headers = listOf(
             "거래처지점명", "배치적합성", "월평균매출", "총 진열인원",
             "총 진열환산인원", "총 행사환산인원", "거래처유형", "거래처명", "거래처코드",
-            "고정배치기준", "격고배치기준", "총 투입횟수", "총 환산일수", "당월매출", "EDI/POS"
+            "고정배치기준", "격고배치기준", "총 투입횟수", "총 환산일수", "당월매출"
         )
 
         val headerRow = sheet.createRow(0)
@@ -300,7 +300,6 @@ class AdminSalesComparisonService(
             excelRow.createCell(11).apply { setCellValue(item.totalInputCount.toDouble()); cellStyle = intStyle }
             excelRow.createCell(12).apply { setCellValue(item.totalEquivalentWorkingDays.toDouble()); cellStyle = decimal3Style }
             excelRow.createCell(13).apply { setCellValue(item.thisMonthSalesAmount.toDouble()); cellStyle = intStyle }
-            excelRow.createCell(14).setCellValue(item.ediPos ?: "")
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
@@ -340,7 +339,7 @@ class AdminSalesComparisonService(
             "거래처명", "거래처코드", "사원명", "사번", "직위",
             "근무형태1", "근무형태3", "근무형태4", "근무형태5",
             "고정배치기준", "격고배치기준", "투입횟수", "환산일수", "환산인원",
-            "당월매출", "EDI/POS"
+            "당월매출"
         )
 
         val headerRow = sheet.createRow(0)
@@ -383,7 +382,6 @@ class AdminSalesComparisonService(
             excelRow.createCell(20).apply { setCellValue(item.equivalentWorkingDays.toDouble()); cellStyle = decimal3Style }
             excelRow.createCell(21).apply { setCellValue(item.convertedHeadcount.toDouble()); cellStyle = decimal3Style }
             excelRow.createCell(22).apply { setCellValue(item.thisMonthSalesAmount.toDouble()); cellStyle = intStyle }
-            excelRow.createCell(23).setCellValue(item.ediPos ?: "")
         }
         headers.indices.forEach { sheet.autoSizeColumn(it) }
 
@@ -566,8 +564,7 @@ class AdminSalesComparisonService(
                 fixedMinAmount = fixedMin,
                 bifurcationHalfStandardAmount = bifurcationStandard,
                 bifurcationHalfMinAmount = bifurcationMin,
-                allEmployeeItems = items,
-                ediPos = account.abcType
+                allEmployeeItems = items
             )
         }
     }
@@ -669,8 +666,7 @@ class AdminSalesComparisonService(
         bifurcationHalfStandardAmount = bifurcationHalfStandardAmount,
         totalInputCount = totalInputCount,
         totalEquivalentWorkingDays = totalEquivalentWorkingDays,
-        thisMonthSalesAmount = thisMonthSalesAmount,
-        ediPos = ediPos
+        thisMonthSalesAmount = thisMonthSalesAmount
     )
 
     private fun AccountSuitability.toDetailItem(
@@ -713,8 +709,7 @@ class AdminSalesComparisonService(
             inputCount = item.totalInputCount,
             equivalentWorkingDays = item.equivalentWorkingDays,
             convertedHeadcount = item.convertedHeadcount,
-            thisMonthSalesAmount = thisMonthSalesAmount,
-            ediPos = ediPos
+            thisMonthSalesAmount = thisMonthSalesAmount
         )
     }
 
@@ -926,7 +921,6 @@ class AdminSalesComparisonService(
         val fixedMinAmount: BigDecimal?,
         val bifurcationHalfStandardAmount: BigDecimal?,
         val bifurcationHalfMinAmount: BigDecimal?,
-        val allEmployeeItems: List<MonthlyIntegrationScheduleItem>,
-        val ediPos: String?
+        val allEmployeeItems: List<MonthlyIntegrationScheduleItem>
     )
 }

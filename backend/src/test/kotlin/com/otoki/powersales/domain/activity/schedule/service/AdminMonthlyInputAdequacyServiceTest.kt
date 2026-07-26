@@ -86,8 +86,7 @@ class AdminMonthlyInputAdequacyServiceTest {
         fixedMinAmount = BigDecimal(400_000),
         bifurcationHalfStandardAmount = null,
         bifurcationHalfMinAmount = null,
-        allEmployeeItems = empItems,
-        ediPos = null
+        allEmployeeItems = empItems
     )
 
     @Nested

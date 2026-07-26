@@ -83,7 +83,6 @@ export interface SalesComparisonMiddleItem {
   totalInputCount: number;
   totalEquivalentWorkingDays: number;
   thisMonthSalesAmount: number;
-  ediPos: string | null;
 }
 
 export interface SalesComparisonMiddleSubtotal {
@@ -131,7 +130,6 @@ export interface SalesComparisonDetailItem {
   equivalentWorkingDays: number;
   convertedHeadcount: number;
   thisMonthSalesAmount: number;
-  ediPos: string | null;
 }
 
 export interface SalesComparisonDetailTotal {

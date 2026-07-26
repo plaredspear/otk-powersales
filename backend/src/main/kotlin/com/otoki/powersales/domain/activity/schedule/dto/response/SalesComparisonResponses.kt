@@ -70,8 +70,7 @@ data class SalesComparisonMiddleItem(
     val bifurcationHalfStandardAmount: BigDecimal?,
     val totalInputCount: Int,
     val totalEquivalentWorkingDays: BigDecimal,
-    val thisMonthSalesAmount: Long,
-    val ediPos: String?
+    val thisMonthSalesAmount: Long
 )
 
 /** 중간집계 소계 — 적합성 구분별 또는 전체 총계. */
@@ -120,8 +119,7 @@ data class SalesComparisonDetailItem(
     val inputCount: Int,
     val equivalentWorkingDays: BigDecimal,
     val convertedHeadcount: BigDecimal,
-    val thisMonthSalesAmount: Long,
-    val ediPos: String?
+    val thisMonthSalesAmount: Long
 )
 
 /** 상세 총계 — 한 응답 안 모든 행의 합계. */

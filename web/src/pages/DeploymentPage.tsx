@@ -456,7 +456,6 @@ export default function DeploymentPage() {
     { title: '총 투입횟수', dataIndex: 'totalInputCount', width: 72, align: 'right', render: (v: number) => formatNumber(v) },
     { title: '총 환산일수', dataIndex: 'totalEquivalentWorkingDays', width: 72, align: 'right', render: (v: number) => formatDecimal3(v) },
     { title: '당월매출', dataIndex: 'thisMonthSalesAmount', width: 92, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: 'EDI/POS', dataIndex: 'ediPos', width: 72, render: (v) => v ?? '-' },
   ];
 
   const detailColumns: ColumnsType<SalesComparisonDetailItem> = [
@@ -488,7 +487,6 @@ export default function DeploymentPage() {
     { title: '환산일수', dataIndex: 'equivalentWorkingDays', width: 72, align: 'right', render: (v: number) => formatDecimal3(v) },
     { title: '환산인원', dataIndex: 'convertedHeadcount', width: 72, align: 'right', render: (v: number) => formatDecimal3(v) },
     { title: '당월매출', dataIndex: 'thisMonthSalesAmount', width: 92, align: 'right', render: (v: number) => formatNumber(v) },
-    { title: 'EDI/POS', dataIndex: 'ediPos', width: 72, render: (v) => v ?? '-' },
   ];
 
   const handleExportSummary = async () => {
@@ -753,7 +751,7 @@ export default function DeploymentPage() {
                               <ResizableTable.Summary.Cell index={0} colSpan={6}>
                                 <span style={{ ...suitabilityCellStyle('소계'), padding: '4px 8px' }}>{`${sub.suitability} 소계`}</span>
                               </ResizableTable.Summary.Cell>
-                              <ResizableTable.Summary.Cell index={6} colSpan={9} align="right">
+                              <ResizableTable.Summary.Cell index={6} colSpan={8} align="right">
                                 {`거래처 ${sub.accountCount}개`}
                               </ResizableTable.Summary.Cell>
                             </ResizableTable.Summary.Row>
@@ -762,7 +760,7 @@ export default function DeploymentPage() {
                             <ResizableTable.Summary.Cell index={0} colSpan={6}>
                               <span style={{ ...suitabilityCellStyle('총계'), padding: '4px 8px' }}>총계</span>
                             </ResizableTable.Summary.Cell>
-                            <ResizableTable.Summary.Cell index={6} colSpan={9} align="right">
+                            <ResizableTable.Summary.Cell index={6} colSpan={8} align="right">
                               {`거래처 ${middleQuery.data.total.accountCount}개`}
                             </ResizableTable.Summary.Cell>
                           </ResizableTable.Summary.Row>
