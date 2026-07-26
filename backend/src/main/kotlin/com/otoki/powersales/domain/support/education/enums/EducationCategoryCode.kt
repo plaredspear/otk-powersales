@@ -3,7 +3,7 @@ package com.otoki.powersales.domain.support.education.enums
 /**
  * 교육 카테고리 Enum
  *
- * `education_post.edu_code` 에 저장되는 분류 코드의 단일 진실 공급원이다.
+ * `education_post.education_code` (Heroku 원본 `edu_code`) 에 저장되는 분류 코드의 단일 진실 공급원이다.
  *
  * 원래 이 값은 `education_code` 테이블(레거시 `education_code_mng`)에서 읽었지만,
  * - 카테고리를 CRUD 하는 관리 기능이 없고,

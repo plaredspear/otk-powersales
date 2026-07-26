@@ -78,13 +78,15 @@ class HerokuMigrationStage2Service(
      * (매출현황 조회 / 물류클레임 등록 / 출근등록 변경 안내) 을 분리한다. 제목 패턴으로 일반화할 수
      * 없어 대상 edu_id 를 명시한다 ([EDUCATION_APP_MANUAL_EDU_IDS]). 나머지 안전교육 게시물은 유지.
      *
-     * 멱등 — `edu_code = 'c00002'` 가드로 이미 옮긴 row 는 재실행해도 0 건.
+     * 멱등 — `education_code = 'c00002'` 가드로 이미 옮긴 row 는 재실행해도 0 건.
      */
     @Transactional
     fun runEducationCategoryRemap(): SfMigrationStage2Response {
         val updated = em.createNativeQuery(
-            "UPDATE powersales.education_post SET edu_code = :target, updated_at = now() " +
-                "WHERE edu_id IN (:eduIds) AND edu_code = :source"
+            // 컬럼명 주의 — Heroku 원본 edu_code 는 신규 스키마에서 education_post.education_code 다
+            // (EducationPost.eduCode @Column(name = "education_code")). edu_id 만 이름이 같다.
+            "UPDATE powersales.education_post SET education_code = :target, updated_at = now() " +
+                "WHERE edu_id IN (:eduIds) AND education_code = :source"
         )
             .setParameter("target", APP_MANUAL_CODE)
             .setParameter("source", SAFETY_CODE)
@@ -95,7 +97,7 @@ class HerokuMigrationStage2Service(
             substep = "education-category",
             results = listOf(
                 SubstepResult(
-                    label = "EducationPost.edu_code 안전교육(c00002) → APP 매뉴얼(c00005)",
+                    label = "EducationPost.education_code 안전교육(c00002) → APP 매뉴얼(c00005)",
                     rowsAffected = updated,
                 )
             ),
