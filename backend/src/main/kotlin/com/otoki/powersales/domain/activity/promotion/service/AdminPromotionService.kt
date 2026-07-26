@@ -271,6 +271,7 @@ class AdminPromotionService(
             accountCode = promotion.account?.externalKey,
             primaryProductName = promotion.primaryProduct?.name,
             primaryProductCode = promotion.primaryProduct?.productCode,
+            primaryProductStatus = promotion.primaryProduct?.productStatus,
             targetAmount = amounts?.first ?: 0L,
             actualAmount = amounts?.second ?: 0L
         )
@@ -421,6 +422,7 @@ class AdminPromotionService(
             accountCode = account.externalKey,
             primaryProductName = product.name,
             primaryProductCode = product.productCode,
+            primaryProductStatus = product.productStatus,
             // 신규 생성 직후 — 조원 미존재이므로 합계 0.
             targetAmount = 0L,
             actualAmount = 0L
@@ -505,6 +507,7 @@ class AdminPromotionService(
             accountCode = account?.externalKey,
             primaryProductName = product.name,
             primaryProductCode = product.productCode,
+            primaryProductStatus = product.productStatus,
             targetAmount = amounts?.first ?: 0L,
             actualAmount = amounts?.second ?: 0L
         )

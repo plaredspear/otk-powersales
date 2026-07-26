@@ -1,6 +1,7 @@
 package com.otoki.powersales.domain.activity.promotion.dto.response
 
 import com.otoki.powersales.domain.activity.promotion.entity.Promotion
+import com.otoki.powersales.domain.foundation.product.enums.ProductStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -100,6 +101,13 @@ data class PromotionDetailResponse(
     val primaryProductId: Long?,
     val primaryProductName: String?,
     val primaryProductCode: String?,
+    /**
+     * 대표제품의 제품상태 — 화면 표시명("판매중"/"단종"). 저장값이 아니다.
+     *
+     * 수정 화면 진입 시 lookup 드롭다운이 검색 없이도 상태 Tag 를 복원할 수 있게 내려준다
+     * (검색 결과 [ProductListItem.productStatus] 와 동일 표기).
+     */
+    val primaryProductStatus: String?,
     val otherProduct: String?,
     val message: String?,
     val standLocation: String?,
@@ -125,6 +133,7 @@ data class PromotionDetailResponse(
             accountCode: String?,
             primaryProductName: String?,
             primaryProductCode: String?,
+            primaryProductStatus: ProductStatus?,
             // 조원 파생값 SUM (SF rollup DKRetail__TargetAmount__c / ActualAmount__c 재현).
             targetAmount: Long,
             actualAmount: Long
@@ -147,6 +156,10 @@ data class PromotionDetailResponse(
                 primaryProductId = promotion.primaryProductId,
                 primaryProductName = primaryProductName,
                 primaryProductCode = primaryProductCode,
+                // 대표제품이 없으면 상태도 내리지 않는다. 제품은 있는데 상태값이 없으면 "판매중".
+                primaryProductStatus = if (promotion.primaryProductId != null) {
+                    primaryProductStatus?.label ?: ProductStatus.DEFAULT_LABEL
+                } else null,
                 otherProduct = promotion.otherProduct,
                 message = promotion.message,
                 standLocation = promotion.standLocation?.displayName,

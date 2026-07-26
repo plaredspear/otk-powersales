@@ -478,6 +478,7 @@ class AdminPromotionControllerTest : AdminControllerTestSupport() {
         primaryProductId = 200L,
         primaryProductName = "진라면 매운맛 120g",
         primaryProductCode = "10010011",
+        primaryProductStatus = "판매중",
         otherProduct = "너구리, 진짬뽕",
         message = "3월 라면 프로모션 진행",
         standLocation = "매장 입구 좌측",

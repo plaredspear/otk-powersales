@@ -155,6 +155,128 @@ class AdminProductControllerTest : AdminControllerTestSupport() {
     }
 
     @Nested
+    @DisplayName("GET /api/v1/admin/products/lookup - 행사마스터 제품 lookup search")
+    inner class LookupProducts {
+
+        @Test
+        @DisplayName("성공 - 카테고리 미지정 시 분류 필터 없이 keyword 만 전달 (드롭다운 빠른 검색)")
+        fun lookupProducts_keywordOnly_success() {
+            val response = ProductListResponse(
+                content = emptyList(),
+                page = 0, size = 20, totalElements = 45, totalPages = 3
+            )
+            every { adminProductService.getProducts(
+                keyword = eq("진라면_매운맛"), category1 = null, category2 = null,
+                category3 = null, productStatus = null,
+                page = eq(0), size = eq(20)
+            ) } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/products/lookup")
+                    .param("keyword", "진라면_매운맛")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.totalElements").value(45))
+        }
+
+        @Test
+        @DisplayName("성공 - 고급 검색 모달의 대/중/소분류 필터가 서비스로 전달된다")
+        fun lookupProducts_withCategoryFilters_success() {
+            val response = ProductListResponse(
+                content = emptyList(),
+                page = 0, size = 20, totalElements = 0, totalPages = 0
+            )
+            every { adminProductService.getProducts(
+                keyword = eq("진라면"), category1 = eq("라면류"), category2 = eq("봉지면류"),
+                category3 = eq("가정"), productStatus = null,
+                page = eq(0), size = eq(20)
+            ) } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/products/lookup")
+                    .param("keyword", "진라면")
+                    .param("category1", "라면류")
+                    .param("category2", "봉지면류")
+                    .param("category3", "가정")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+        }
+
+        @Test
+        @DisplayName("성공 - 고급 검색 모달의 제품상태 필터가 서비스로 전달된다")
+        fun lookupProducts_withProductStatus_success() {
+            val response = ProductListResponse(
+                content = emptyList(),
+                page = 0, size = 20, totalElements = 0, totalPages = 0
+            )
+            every { adminProductService.getProducts(
+                keyword = null, category1 = null, category2 = null,
+                category3 = null, productStatus = eq("단종"),
+                page = eq(0), size = eq(20)
+            ) } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/products/lookup")
+                    .param("productStatus", "단종")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.success").value(true))
+        }
+
+        @Test
+        @DisplayName("성공 - 고급 검색 모달의 페이지 이동으로 2페이지 이후 결과에 도달한다")
+        fun lookupProducts_pagination_success() {
+            val response = ProductListResponse(
+                content = emptyList(),
+                page = 2, size = 20, totalElements = 45, totalPages = 3
+            )
+            every { adminProductService.getProducts(
+                keyword = eq("진라면_매운맛"), category1 = null, category2 = null,
+                category3 = null, productStatus = null,
+                page = eq(2), size = eq(20)
+            ) } returns response
+
+            mockMvc.perform(
+                get("/api/v1/admin/products/lookup")
+                    .param("keyword", "진라면_매운맛")
+                    .param("page", "2")
+            )
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.page").value(2))
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/v1/admin/products/lookup-filter-options - 고급 검색 필터 옵션")
+    inner class LookupFilterOptions {
+
+        @Test
+        @DisplayName("성공 - 카테고리 트리 반환 (product.READ 불요, promotion.READ 가드)")
+        fun lookupFilterOptions_success() {
+            val categories = listOf(
+                CategoryTree(
+                    category1 = "라면류",
+                    children = listOf(
+                        Category2Node(category2 = "봉지면류", children = listOf("가정", "업소", "수출"))
+                    )
+                )
+            )
+            every { adminProductService.getCategories() } returns categories
+
+            mockMvc.perform(get("/api/v1/admin/products/lookup-filter-options"))
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("$.data.categories[0].category1").value("라면류"))
+                .andExpect(jsonPath("$.data.categories[0].children[0].category2").value("봉지면류"))
+                .andExpect(jsonPath("$.data.categories[0].children[0].children[0]").value("가정"))
+                // 제품상태 선택지는 저장값이 아니라 화면 표시명 — "판매중"(값 없음) / "단종"(출고중지).
+                .andExpect(jsonPath("$.data.productStatuses").isArray)
+                .andExpect(jsonPath("$.data.productStatuses[0]").value("판매중"))
+                .andExpect(jsonPath("$.data.productStatuses[1]").value("단종"))
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/v1/admin/products/{productCode} - 제품 상세 조회 (UC-02)")
     inner class GetProductDetail {
 

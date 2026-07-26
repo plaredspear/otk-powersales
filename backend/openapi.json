@@ -10148,6 +10148,35 @@
         },
         "type" : "object"
       },
+      "ApiResponseProductLookupFilterOptions" : {
+        "properties" : {
+          "data" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ProductLookupFilterOptions"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "error" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ErrorDetail"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "message" : {
+            "type" : [ "string", "null" ]
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "timestamp" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseProfileDetail" : {
         "properties" : {
           "data" : {
@@ -22085,6 +22114,23 @@
         },
         "type" : "object"
       },
+      "ProductLookupFilterOptions" : {
+        "properties" : {
+          "categories" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CategoryTree"
+            },
+            "type" : "array"
+          },
+          "productStatuses" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "ProductMasterDetail" : {
         "properties" : {
           "failureCount" : {
@@ -22540,6 +22586,9 @@
             "type" : [ "integer", "null" ]
           },
           "primaryProductName" : {
+            "type" : [ "string", "null" ]
+          },
+          "primaryProductStatus" : {
             "type" : [ "string", "null" ]
           },
           "productType" : {
@@ -27619,7 +27668,7 @@
     },
     "/api/v1/admin/accounts/lookup-filter-options" : {
       "get" : {
-        "operationId" : "lookupFilterOptions",
+        "operationId" : "lookupFilterOptions_1",
         "responses" : {
           "200" : {
             "content" : {
@@ -35078,6 +35127,34 @@
           }
         }, {
           "in" : "query",
+          "name" : "category1",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category2",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "category3",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "productStatus",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
           "name" : "page",
           "required" : false,
           "schema" : {
@@ -35104,6 +35181,24 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseProductListResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "admin-product-controller" ]
+      }
+    },
+    "/api/v1/admin/products/lookup-filter-options" : {
+      "get" : {
+        "operationId" : "lookupFilterOptions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseProductLookupFilterOptions"
                 }
               }
             },
