@@ -288,6 +288,28 @@ class AdminDashboardServiceTest {
     }
 
     @Test
+    @DisplayName("직급별 인원현황 — 판매조장은 판촉직에서만 선임되므로 OSC직 열에 조장이 섞이지 않는다")
+    fun rankGroupsLeaderNeverAppearsInOsc() {
+        stubEmpty()
+        every { employeeRepository.findDashboardBasicStatsProjection(any()) } returns listOf(
+            employee(jobCode = "판촉직", jikchak = "판매조장", jikwee = "주임"),
+            employee(jobCode = "판촉직", jikwee = "OSPM"),
+            employee(jobCode = "OSC직", jikwee = "OSC"),
+        )
+
+        val byRank = service.getDashboard(emptyList(), "2026-05").basicStats.byRank
+
+        // OSC직 열은 조장을 제외한 순수 OSC직 인원만
+        val osc = byRank.first { it.group == "OSC직" }
+        assertThat(osc.ranks.sumOf { it.count }).isEqualTo(1)
+        // 판촉직 열에도 조장이 중복되지 않는다
+        val promotion = byRank.first { it.group == "판촉직" }
+        assertThat(promotion.ranks.sumOf { it.count }).isEqualTo(1)
+        // 총합계는 모수 3명과 일치 (조장 1 + 판촉직 1 + OSC직 1)
+        assertThat(byRank.sumOf { g -> g.ranks.sumOf { it.count } }).isEqualTo(3)
+    }
+
+    @Test
     @DisplayName("직급별 인원현황 — 인원 0인 그룹은 표에서 제외한다")
     fun rankGroupsOmitsEmptyGroups() {
         stubEmpty()

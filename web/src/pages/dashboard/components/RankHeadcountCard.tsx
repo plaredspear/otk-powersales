@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Card, Empty } from 'antd';
 import ReactECharts from 'echarts-for-react';
 import type { RankGroupCount } from '@/api/adminDashboard';
+import { chartRows, flatten, type FlatRank } from './rankHeadcountRows';
 
 /**
  * 직급별 인원현황 — 2단 헤더 표 + 가로 막대 차트.
@@ -12,6 +13,11 @@ import type { RankGroupCount } from '@/api/adminDashboard';
  * 판매조장은 해당 지점에 실제 존재하는 직위를 그대로 노출하고(지점에 따라 '주임'/'OSPM' 등으로
  * 달라짐), 판촉직·OSC직은 OSPM/OSPE/OSPJ/OSC 고정 + '기타' 합산이다. 서버가 이 구성을 확정해
  * 내려주므로([RankGroupCount]) 화면은 받은 순서대로 렌더링만 한다.
+ *
+ * ## 표 ≠ 그래프
+ *
+ * 그래프는 판매조장을 직위 무관 1줄로 접는다 (`chartRows`) — 표는 직위별로 편다 (`flatten`).
+ * 두 구성의 합계는 항상 같다.
  *
  * ## 총합계
  *
@@ -24,17 +30,6 @@ const BAR_COLOR = '#1677ff';
 /** 막대 1개당 세로 높이(px) — 항목 수에 비례해 차트 높이를 잡는다. */
 const BAR_ROW_HEIGHT = 28;
 const CHART_MIN_HEIGHT = 160;
-
-/** 표/차트가 공유하는 평탄화된 행 1건. */
-type FlatRank = {
-  group: string;
-  label: string;
-  count: number;
-};
-
-function flatten(groups: RankGroupCount[]): FlatRank[] {
-  return groups.flatMap((g) => g.ranks.map((r) => ({ group: g.group, label: r.label, count: r.count })));
-}
 
 /**
  * 가로 막대 옵션 — 총합계 행만 다른 색으로 강조한다.
@@ -80,7 +75,10 @@ export default function RankHeadcountCard({
   /** 카드 제목 노드 (info 아이콘 툴팁 포함). */
   title: React.ReactNode;
 }) {
+  // 표는 판매조장을 직위별로 펴고(rows), 그래프는 판매조장을 1줄로 접는다(barRows).
+  // 두 구성의 합계는 같아야 하므로 total 은 표 기준 하나만 계산해 공유한다.
   const rows = useMemo(() => flatten(groups), [groups]);
+  const barRows = useMemo(() => chartRows(groups), [groups]);
   const total = useMemo(() => rows.reduce((sum, r) => sum + r.count, 0), [rows]);
 
   if (rows.length === 0) {
@@ -91,7 +89,7 @@ export default function RankHeadcountCard({
     );
   }
 
-  const chartHeight = Math.max(CHART_MIN_HEIGHT, (rows.length + 1) * BAR_ROW_HEIGHT);
+  const chartHeight = Math.max(CHART_MIN_HEIGHT, (barRows.length + 1) * BAR_ROW_HEIGHT);
 
   return (
     <Card
@@ -134,7 +132,7 @@ export default function RankHeadcountCard({
       </div>
 
       <ReactECharts
-        option={horizontalBarOption(rows, total)}
+        option={horizontalBarOption(barRows, total)}
         style={{ height: chartHeight, width: '100%', marginTop: 16 }}
         notMerge
       />

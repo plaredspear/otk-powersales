@@ -24,6 +24,7 @@ import com.otoki.powersales.domain.activity.schedule.repository.MonthlyFemaleEmp
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService
 import com.otoki.powersales.domain.sales.service.MonthlySalesAdminQueryService.InvestedAccountRef
 import com.otoki.powersales.platform.common.util.TimeZones
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -63,6 +64,8 @@ class AdminDashboardService(
     // 기본 현황 기준일 계산용 — 클라이언트 로컬 시각이 아닌 서버 KST 기준으로 산출한다.
     private val clock: Clock,
 ) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     /**
      * 대시보드 3섹션 집계 — yearMonth 미지정 시 당월.
@@ -331,7 +334,11 @@ class AdminDashboardService(
      * 직급별 인원현황 — 1단 그룹(판매조장/판촉직/OSC직) × 2단 직급([Employee.jikwee]) 교차 집계.
      *
      * 그룹 판정 순서가 중요하다: **판매조장을 먼저 떼어낸 뒤** 나머지를 직무코드로 나눈다.
-     * 조장도 jobCode 는 판촉직/OSC직이라, 순서를 바꾸면 조장이 판촉직 열에 중복 계상된다.
+     * 조장도 jobCode 는 판촉직이라, 순서를 바꾸면 조장이 판촉직 열에 중복 계상된다.
+     *
+     * 업무 규칙상 판매조장은 **판촉직에서만 선임**되므로 OSC직 판매조장은 존재하지 않는다.
+     * 위반 데이터가 들어오면 경고 로그를 남긴다 — 조용히 판매조장 열로 흡수되면 OSC직 인원이
+     * 실제보다 적게 보이기 때문이다.
      *
      * 2단 구성이 그룹마다 다르다:
      * - **판매조장**: 지점마다 조장의 직위가 달라(운영 실측: OSPM 20 / 주임 12 / OSPE 2 / OSPJ 1 / 과장·대리 각 1)
@@ -344,6 +351,16 @@ class AdminDashboardService(
     private fun buildRankGroups(employees: List<DashboardEmployeeProjection>): List<RankGroupCount> {
         val (leaders, others) = employees.partition {
             it.jikchak?.trim() == FemaleStaffHeadcountFilter.LEADER_JIKCHAK
+        }
+        // 업무 규칙: 판매조장은 판촉직에서만 선임되므로 OSC직 판매조장은 존재하지 않는다.
+        // 위반 데이터는 표에서 판매조장 열에 들어가 OSC직 인원과 어긋나므로, 조용히 넘기지 않고 남긴다.
+        val oscLeaders = leaders.count { it.jobCode in JOB_CODES_OSC }
+        if (oscLeaders > 0) {
+            log.warn(
+                "OSC직 판매조장 {}명 감지 — 판매조장은 판촉직에서만 선임되므로 사원 마스터 확인 필요 " +
+                    "(직급별 인원현황 집계에서 판매조장 열로 계상됨)",
+                oscLeaders,
+            )
         }
         val groups = mutableListOf<RankGroupCount>()
 
